@@ -21,8 +21,6 @@ class Timeline:
 
     def assign_entity(self, entities):
         self.entities = entities
-        for entity in self.entities:
-            entity.timeline = self
 
     def run(self):
         while self.events.size()>0:
