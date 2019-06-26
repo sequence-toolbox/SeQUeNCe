@@ -1,5 +1,5 @@
-from eventlist import EventList
 import math
+from eventlist import EventList
 
 class Timeline:
 
@@ -16,18 +16,16 @@ class Timeline:
         return self.events.push(event)
 
     def init(self):
-        for event in self.events:
-            event.init()
+        for entity in self.entities:
+            entity.init()
 
     def assign_entity(self, entities):
         self.entities = entities
 
     def run(self):
-        while self.events.size()>0:
+        while len(self.events)>0:
             event = self.events.pop()
             if event.time > self.stop_time: break
             self.time = event.time
-            #TODO: run process in event
-            print("run")
-
+            event.process.run()
 
