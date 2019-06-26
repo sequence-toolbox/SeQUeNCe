@@ -2,20 +2,20 @@ import heapq
 
 class EventList:
     def __init__(self):
-        self.__data = []
+        self.data = []
 
     def __len__(self):
-        return len(self.__data)
+        return len(self.data)
 
     def __iter__(self):
-        for data in self.__data:
+        for data in self.data:
             yield data
 
     def push(self, event):
-        heapq.heappush(self.__data, event)
+        heapq.heappush(self.data, event)
 
     def pop(self):
-        return heapq.heappop(self.__data)
+        return heapq.heappop(self.data)
 
     def empty(self):
-        return len(self.__data) == 0
+        return len(self.data) == 0

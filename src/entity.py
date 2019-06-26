@@ -5,10 +5,10 @@ class Entity(ABC):
 
     def __init__(self, timeline, name=None):
         if name is None:
-            self.__name = ""
+            self.name = ""
         else:
-            self.__name = name
-        self.__timeline = timeline
+            self.name = name
+        self.timeline = timeline
 
         # TODO: what to do if name is not specified
 
