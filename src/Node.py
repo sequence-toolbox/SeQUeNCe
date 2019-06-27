@@ -4,34 +4,37 @@ from Photon import Photon
 
 class LightSource(Entity):
 
-    def __init__(self, timeline, node, rate, frequency, jitter, name=None):
+    def __init__(self, timeline, frequency, wavelength, mean_photon_num, encoding_type, direct_receiver, name=None):
         Entity.__init__(self, timeline, name)
-        self.node = node
-        self.rate = rate
         self.frequency = frequency
-        self.jitter = jitter
+        self.wavelength = wavelength
+        self.mean_photon_num = mean_photon_num
+        self.encoding_type = encoding_type
+        self.direct_receiver = direct_receiver
+        self.photon_counter = 0
 
     def init(self):
         pass
 
     # emit_photon does not currently account for poisson distribution
-    def emit_photon(self, channel, node):
-        photon = Photon(self.timeline, self.frequency, self.node.name + "photon")
+    def emit_photon(self):
+        photon = Photon(self.timeline, self.wavelength, "photon")
         # TODO: figure out photon naming scheme
 
         self.timeline.entities.append(photon)
-        channel.transmit_photon(photon, node)
+        self.direct_receiver.transmit_photon(photon)
+
+        self.photon_counter += 1
 
 
 class Detector(Entity):
 
-    def __init__(self, timeline, node, rate, efficiency, dark_count, jitter, name=None):
+    def __init__(self, timeline, efficiency, dark_count, count_rate, time_resolution, name=None):
         Entity.__init__(self, timeline, name)
-        self.node = node
-        self.rate = rate
         self.efficiency = efficiency
         self.dark_count = dark_count
-        self.jitter = jitter
+        self.count_rate = count_rate
+        self.time_resolution = time_resolution
 
     def init(self):
         pass
@@ -43,9 +46,8 @@ class Detector(Entity):
 
 class Memory(Entity):
 
-    def __init__(self, timeline, node, decoherence, efficiency, fidelity, name=None):
+    def __init__(self, timeline, decoherence, efficiency, fidelity, name=None):
         Entity.__init__(self, timeline, name)
-        self.node = node
         self.decoherence = decoherence
         self.efficiency = efficiency
         self.fidelity = fidelity
@@ -63,12 +65,14 @@ class Node(Entity):
         self.detector = detector
         self.connected_channel = connected_channel
 
+        self.source.direct_receiver = connected_channel
+
     def init(self):
         pass
 
-    def send_photon(self, node):
+    def send_photon(self):
         # use emitter to send photon over connected channel to node
-        self.source.emit_photon(self.connected_channel, node)
+        self.source.emit_photon()
 
     def receive_photon(self, photon):
         # use detector to sense photon (return frequency information)
