@@ -1,0 +1,60 @@
+{
+	Topo: {
+		nodes: [
+			{
+				name : "sender",
+				timeline : 0,
+				components : [
+					{
+						type : 'LightSource',
+						name : 'lightsource',
+						timeline : 0,
+						frequency : 8000, 				//hz
+						wavelength : 100, 				//nm
+						mean_photon_num : 0.1,
+						encoding_type : 'pol',
+						quantum_state : [			
+							[0.6,0], 					// complex number
+							[0.8,9]						// complex number
+						]
+					}
+				],
+			},
+			{
+				name : "receiver",
+				timeline : 0,
+				components : [
+					{	type : "Detector",
+						name : 'detector',
+						timeline : 0,
+						efficiency : 0.8,               // percentage
+						dark_count : 10.0,              // per second
+						count_rate : 100000000, 		// per second
+						time_resolution : 10, 			// ps
+					}
+				],
+			}
+		],
+		QChannel: [
+			{
+				name : "quantum_channel",
+				timeline : 0,
+				distance : 10000, 						// m
+				temperature : 20.0, 					// C
+				fidelity : 0.99, 						// percentage
+				sender : "sender.lightsource",			// node_name.device_name
+				receiver : "receiver.detector",			// node_name.device_name
+			}
+		]
+	},
+	Actions : [
+		{
+			start_time : 0,								// ps
+			actor : "sender.lightsource",				// node_name.device_name
+			action : "emit",							// function name
+			params : [1000000000000], 					// ps
+            priority : 10                               // higher value lower priority
+		}
+	],
+	Metrics : ['photon_count_rate', 'bit_errors_rate']	// list of metrics name
+}
