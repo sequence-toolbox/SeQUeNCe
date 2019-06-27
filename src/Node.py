@@ -18,7 +18,7 @@ class LightSource(Entity):
         pass
 
     # emit_photon does not currently account for poisson distribution
-    def emit_photon(self, time):
+    def emit(self, time):
         photon = Photon(self.timeline, self.wavelength,
                         self.direct_receiver, self.encoding_type, self.quantum_state, "photon")
         # TODO: figure out photon naming scheme

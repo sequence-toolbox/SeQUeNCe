@@ -24,9 +24,8 @@ class OpticalChannel(Entity):
         # TODO: check if node connected to optical channel
 
         # generate chance to lose photon
-        length = self.distance # calculate based on temp
 
-        loss = length * self.attenuation
+        loss = self.distance * self.attenuation
         chance_photon_kept = 10 ** (loss / -20)
         chance_photon_kept *= self.fidelity
 
@@ -35,7 +34,7 @@ class OpticalChannel(Entity):
             self.timeline.entities.remove(photon)
         else:
             # schedule receiving node to receive photon at future time determined by light speed
-            future_time = self.timeline.now() + int(length/self.light_speed)
+            future_time = self.timeline.now() + int(self.distance/self.light_speed)
             process = Process(self.receiver, Node.receive_photon, [photon])
 
             event = Event(future_time, process)
@@ -47,5 +46,6 @@ class OpticalChannel(Entity):
     def set_receiver(self, receiver):
         self.receiver = receiver
 
-    def change_distance(self, distance):
-        self.distance = distance
+    def change_distance(self):
+        # update distance based on temperature
+        self.distance = self.distance
