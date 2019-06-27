@@ -1,0 +1,3 @@
+nodeID  2
+nodeName    node2
+components  Detector

@@ -1,0 +1,3 @@
+nodeID  1
+nodeName    node1
+components  LightSource

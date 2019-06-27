@@ -1,0 +1,2 @@
+topology: single_path
+nodefiles: node1.txt node2.txt
