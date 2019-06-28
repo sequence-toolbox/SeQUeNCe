@@ -5,7 +5,7 @@ from process import Process
 from event import Event
 from topology import Topology
 
-from numba import jit
+from numba import jit   ## speed up the python by 10x??
 
 def create_timelines(config_file):
     timelines = []
