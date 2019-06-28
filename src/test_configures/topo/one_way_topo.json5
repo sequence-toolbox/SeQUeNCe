@@ -1,5 +1,4 @@
 {
-	Topo: {
 		nodes: [
 			{
 				name : "sender",
@@ -46,15 +45,4 @@
 				receiver : "receiver.detector",			// node_name.device_name
 			}
 		]
-	},
-	Actions : [
-		{
-			start_time : 0,								// ps
-			actor : "sender.lightsource",				// node_name.device_name
-			action : "emit",							// function name
-			params : [1000000000000], 					// ps
-            priority : 10                               // higher value lower priority
-		}
-	],
-	Metrics : ['photon_count_rate', 'bit_errors_rate']	// list of metrics name
 }

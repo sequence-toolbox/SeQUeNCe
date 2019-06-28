@@ -12,7 +12,9 @@ def create_timelines(config_file):
     timelines = []
     max_tl_num = 0
     config = json5.load(open(config_file))
-    for node in config['Topo']['nodes']:
+    topo_config = json5.load(open(config['Topo']))
+
+    for node in topo_config['nodes']:
         max_tl_num = max(max_tl_num, node['timeline'])
         for component in node['components']:
             max_tl_num = max(max_tl_num, component['timeline'])
@@ -31,9 +33,10 @@ def find_entity_by_name(entities, name):
 def create_entities(config_file, timelines):
     entities = []
     config = json5.load(open(config_file))
+    topo_config = json5.load(open(config['Topo']))
 
     # create nodes
-    for node_config in config['Topo']['nodes']:
+    for node_config in topo_config['nodes']:
         components = {}
         for component_config in node_config['components']:
             if component_config['name'] in components:
@@ -59,7 +62,7 @@ def create_entities(config_file, timelines):
         entities.append(Node(node_config['name'], timelines[node_config['timeline']], components))
 
     # create quantum channels
-    for qc_config in config['Topo']['QChannel']:
+    for qc_config in topo_config['QChannel']:
         qc = QChannel(qc_config['name'], timelines[qc_config['timeline']], qc_config['distance'], qc_config['temperature'], qc_config['fidelity'])
         sender = find_entity_by_name(entities, qc_config['sender'])
         receiver = find_entity_by_name(entities, qc_config['receiver'])
