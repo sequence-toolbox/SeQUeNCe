@@ -5,6 +5,8 @@ from process import Process
 from event import Event
 from topology import Topology
 
+from numba import jit
+
 def create_timelines(config_file):
     timelines = []
     max_tl_num = 0
