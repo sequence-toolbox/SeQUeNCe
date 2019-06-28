@@ -17,5 +17,5 @@ class EventList:
     def pop(self):
         return heapq.heappop(self.data)
 
-    def empty(self):
-        return len(self.data) == 0
+    def isempty(self):
+        return len(self.__data) == 0
