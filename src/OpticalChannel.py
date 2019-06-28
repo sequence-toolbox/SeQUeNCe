@@ -27,7 +27,7 @@ class OpticalChannel(Entity):
         chance_photon_kept *= self.fidelity
 
         # check if photon kept
-        if numpy.random.random < chance_photon_kept:
+        if numpy.random.random_sample() < chance_photon_kept:
             # schedule receiving node to receive photon at future time determined by light speed
             future_time = self.timeline.now() + int(self.distance/self.light_speed)
             process = Process(self.receiver, Node.receive_photon, [photon])
