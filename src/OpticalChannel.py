@@ -7,15 +7,15 @@ import numpy
 
 class OpticalChannel(Entity):
 
-    def __init__(self, timeline, name=None, **kwargs):
-        Entity.__init__(self, timeline, name)
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(self, name, timeline)
         self.attenuation = kwargs.get("attenuation", 0)
         self.distance = kwargs.get("distance", 0)
         self.temperature = kwargs.get("temperature", 0)
         self.fidelity = kwargs.get("fidelity", 1)
         self.sender = None
         self.receiver = None
-        self.light_speed = 3 * 10 ** -4  # used for photon timing calculations
+        self.light_speed = 3 * 10 ** -4  # used for photon timing calculations (measured in m/ps)
 
     def init(self):
         pass

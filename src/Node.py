@@ -8,10 +8,10 @@ import numpy
 
 class LightSource(Entity):
 
-    def __init__(self, timeline, name=None, **kwargs):
-        Entity.__init__(self, timeline, name)
-        self.frequency = kwargs.get("frequency", 0)
-        self.wavelength = kwargs.get("wavelength", 0)
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(self, name, timeline)
+        self.frequency = kwargs.get("frequency", 0)  # measured in Hz
+        self.wavelength = kwargs.get("wavelength", 0)  # measured in nm
         self.mean_photon_num = kwargs.get("mean_photon_num", 0)
         self.encoding_type = kwargs.get("encoding_type")
         self.direct_receiver = kwargs.get("direct_receiver", None)
@@ -22,7 +22,8 @@ class LightSource(Entity):
         pass
 
     def emit(self, time):
-        num_pulses = int(time * self.frequency)
+        freq_pico = self.frequency / (10 ** 12)  # frequency in THz
+        num_pulses = int(time * freq_pico)
         photons = numpy.random.poisson(self.mean_photon_num, num_pulses)
         current_time = self.timeline.now()
 
@@ -31,7 +32,7 @@ class LightSource(Entity):
                 new_photon = Photon(self.timeline, self.wavelength, self.direct_receiver, self.encoding_type, self. quantum_state)
                 process = Process(self.direct_receiver, self.direct_receiver.transmit, [new_photon])
 
-                time = current_time + (i / self.frequency)
+                time = current_time + (i / freq_pico)
                 event = Event(time, process)
 
                 self.timeline.schedule(event)
@@ -44,12 +45,12 @@ class LightSource(Entity):
 
 class Detector(Entity):
 
-    def __init__(self, timeline, name=None, **kwargs):
-        Entity.__init__(self, timeline, name)
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(self, name, timeline)
         self.efficiency = kwargs.get("efficiency", 1)
-        self.dark_count = kwargs.get("dark_count", 0)
-        self.count_rate = kwargs.get("count_rate", math.inf)
-        self.time_resolution = kwargs.get("time_resolution", 0)
+        self.dark_count = kwargs.get("dark_count", 0)  # measured in Hz
+        self.count_rate = kwargs.get("count_rate", math.inf)  # measured in Hz
+        self.time_resolution = kwargs.get("time_resolution", 0)  # measured in ps(?)
         self.photon_counter = 0
         self.photons_past_second = 0
 
@@ -61,12 +62,12 @@ class Detector(Entity):
             self.photon_counter += 1
 
             self.photons_past_second += 1
-            process = Process(self, self.decrease_pps_count())
-            event = Event(self.timeline.now() + 1, process)
+            process = Process(self, self.decrease_pps_count)
+            event = Event(self.timeline.now() + (10 ** 12), process)
             self.timeline.schedule(event)
 
     def add_dark_count(self):
-        self.photon_counter += self.timeline.now() * self.dark_count
+        self.photon_counter += self.timeline.now() * (self.dark_count / (10 ** 12))
 
     def decrease_pps_count(self):
         self.photons_past_second -= 1
@@ -74,8 +75,8 @@ class Detector(Entity):
 
 class Node(Entity):
 
-    def __init__(self, timeline, name=None, **kwargs):
-        Entity.__init__(self, timeline, name)
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(self, name, timeline)
         self.components = kwargs.get("components", {})
 
     def init(self):
@@ -83,11 +84,11 @@ class Node(Entity):
 
     def send_photon(self, time):
         # use emitter to send photon over connected channel to node
-        self.components["light_source"].emit(time)
+        self.components["LightSource"].emit(time)
 
     def receive_photon(self, photon):
-        self.components["detector"].detect(photon)
+        self.components["Detector"].detect(photon)
 
     def get_photon_count(self):
-        self.components["detector"].add_dark_count()
-        return self.components["detector"].photon_counter
+        self.components["Detector"].add_dark_count()
+        return self.components["Detector"].photon_counter
