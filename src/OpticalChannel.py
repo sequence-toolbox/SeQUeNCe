@@ -12,7 +12,6 @@ class OpticalChannel(Entity):
         self.attenuation = kwargs.get("attenuation", 0)
         self.distance = kwargs.get("distance", 0)
         self.temperature = kwargs.get("temperature", 0)
-        self.fidelity = kwargs.get("fidelity", 1)
         self.sender = None
         self.receiver = None
         self.light_speed = 3 * 10 ** -4  # used for photon timing calculations (measured in m/ps)
@@ -24,7 +23,6 @@ class OpticalChannel(Entity):
         # generate chance to lose photon
         loss = self.distance * self.attenuation
         chance_photon_kept = 10 ** (loss / -20)
-        chance_photon_kept *= self.fidelity
 
         # check if photon kept
         if numpy.random.random_sample() < chance_photon_kept:

@@ -28,7 +28,7 @@ class LightSource(Entity):
         current_time = self.timeline.now()
 
         for i in range(num_pulses):
-            if photons[i] > 0:
+            for _ in range(photons[i]):
                 new_photon = Photon(None, self.timeline,
                                     wavelength=self.wavelength,
                                     location=self.direct_receiver,
@@ -80,7 +80,7 @@ class Detector(Entity):
             self.timeline.schedule(event)
 
     def add_dark_count(self):
-        self.photon_counter += self.timeline.now() * (self.dark_count / (10 ** 12))
+        return self.timeline.now() * (self.dark_count / (10 ** 12))
 
     def decrease_pps_count(self):
         self.photons_past_second -= 1
@@ -106,5 +106,5 @@ class Node(Entity):
         self.components["Detector"].detect(photon)
 
     def get_photon_count(self):
-        self.components["Detector"].add_dark_count()
-        return self.components["Detector"].photon_counter
+        dark_count = self.components["Detector"].add_dark_count()
+        return self.components["Detector"].photon_counter + dark_count
