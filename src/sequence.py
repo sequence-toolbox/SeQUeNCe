@@ -60,11 +60,11 @@ if __name__ == "__main__":
     print("created topo")
     for tl in timelines:
         tl.init()
-    print("created events")
+    print("created timelines")
     create_events(config_file, entities)
+    print("created events")
     for tl in timelines:
         tl.run()
     print("run tl finish")
     print_metrics_res(config_file, entities)
-    print("print out metrics")
-
+    print("printed out metrics")
