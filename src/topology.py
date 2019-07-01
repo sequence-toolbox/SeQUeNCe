@@ -13,7 +13,7 @@ class TemperatureModel():
 
     def read_temperature_file(self,filename):
         self.df = pd.read_csv(filename)
-        print (filename,df)
+        print (filename,self.df)
         return self.df
 
     def temperature_from_time(self,time):
