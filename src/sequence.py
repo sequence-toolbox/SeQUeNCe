@@ -40,6 +40,11 @@ def create_events(config_file, entities):
         entity.timeline.schedule(Event(action_config['start_time'], process))
 
 def print_metrics_res(config_file, entities):
+    metrics = json5.load(open(config_file))["Metrics"]
+    for m in metrics:
+        entity_name = '.'.join(m.split('.')[:-1])
+        attribute_name = m.split('.')[-1]
+        print(m, ':', getattr(topo.find_entity_by_name(entity_name), attribute_name)())
     pass
 
 if __name__ == "__main__":

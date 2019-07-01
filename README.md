@@ -4,8 +4,14 @@ SEQUENCE-Python is a prototype version of official SEQUENCE release. We will use
 
 ## Rerequirements
 
-### Install json5
+### Install json5 (json5)
 
 ```
 $ pip3 install json5
+```
+
+### Install numba (jit)
+
+```
+$ pip3 install numba
 ```

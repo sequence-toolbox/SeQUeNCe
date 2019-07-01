@@ -5,18 +5,28 @@ class Node:
     def __init__(self, name, timeline, *params):
         self.name = name
         self.timeline = timeline
+        self.components = params[0]
+
+    def send_photon(self, *params):
+        print("node send_photon function")
+
+    def get_photon_count(self):
+        return self.components["detector"].photon_counter+1
 
 
 class LightSource:
     def __init__(self, name, timeline, paramDict):
         self.name = name
         self.timeline = timeline
+        self.photon_counter=0
         print("create ls")
 
     def emit(self, paramDict):
         print("ls emit")
         pass
 
+    def get_photon_count(self):
+        return self.photon_counter
 
 class QChannel:
     def __init__(self, name, timeline, *params):
@@ -35,6 +45,7 @@ class Detector:
     def __init__(self, name, timeline, paramDict):
         self.name = name
         self.timeline = timeline
+        self.photon_counter=0
 
 
 class Topology:
