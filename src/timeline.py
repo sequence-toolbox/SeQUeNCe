@@ -28,4 +28,3 @@ class Timeline:
             if event.time > self.stop_time: break
             self.time = event.time
             event.process.run()
-
