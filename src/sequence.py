@@ -1,5 +1,6 @@
 import sys
 import json5
+from numpy import random
 from timeline import Timeline
 from process import Process
 from event import Event
@@ -39,6 +40,13 @@ def create_events(config_file, entities):
         process = Process(entity, action_config['action'], action_config['params'])
         entity.timeline.schedule(Event(action_config['start_time'], process))
 
+def simulation_config(config_file):
+    config = json5.load(open(config_file))
+
+    # set random seed
+    if 'random_seed' in config:
+        random.seed(config['random_seed'])
+
 def print_metrics_res(config_file, entities):
     pass
 
@@ -58,6 +66,8 @@ if __name__ == "__main__":
     print("created timelines")
     create_events(config_file, entities)
     print("created events")
+    simulation_config(config_file)
+    print("configured simulation")
     for tl in timelines:
         tl.run()
     print("run tl finish")
