@@ -1,10 +1,26 @@
 import math
 import numpy
 import json5
+import pandas as pd
 
 from process import Process
 from entity import Entity
 from event import Event
+
+
+class TemperatureModel():
+    df = pd.DataFrame()
+
+    def read_temperature_file(self,filename):
+        self.df = pd.read_csv(filename)
+        print (filename,df)
+        return self.df
+
+    def temperature_from_time(self,time):
+        ## TODO
+        ## interpolation of time
+        temperature = 60
+        return temperature
 
 
 class Photon(Entity):
@@ -55,9 +71,19 @@ class OpticalChannel(Entity):
     def set_receiver(self, receiver):
         self.receiver = receiver
 
-    def change_distance(self):
-        # update distance based on temperature
-        self.distance = self.distance
+    def set_distance(self,distance):
+        self.distance = distance
+
+    def distance_from_time(self,time):
+        distance = self.distance
+        ## TODO: distance as a function of temperature
+        temperature = self.tModel.temperature_from_time(time)
+
+        return distance
+
+    def set_temerature_model(self,filename):
+        self.tModel = TemperatureModel()
+        self.tModel.read_temperature_file(filename)
                                                        
 
 class LightSource(Entity):
