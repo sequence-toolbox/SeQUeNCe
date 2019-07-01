@@ -34,7 +34,7 @@ class LightSource(Entity):
                                     location=self.direct_receiver,
                                     encoding_type=self.encoding_type,
                                     quantum_state=self.quantum_state)
-                process = Process(self.direct_receiver, self.direct_receiver.transmit, [new_photon])
+                process = Process(self.direct_receiver, "transmit", [new_photon])
 
                 time = current_time + (i / freq_pico)
                 event = Event(time, process)
@@ -70,12 +70,12 @@ class Detector(Entity):
             self.detected_in_resolution = True
 
             # schedule event to decrease the count of photons in the past second by 1 in 1 second
-            process = Process(self, self.decrease_pps_count)
+            process = Process(self, "decrease_pps_count", [])
             event = Event(self.timeline.now() + (10 ** 12), process)
             self.timeline.schedule(event)
 
             # schedule event to reset detected_in_resolution after 1 resolution time
-            process = Process(self, self.reset_timestep)
+            process = Process(self, "reset_timestep", [])
             event = Event(self.timeline.now() + self.time_resolution, process)
             self.timeline.schedule(event)
 
@@ -98,13 +98,13 @@ class Node(Entity):
     def init(self):
         pass
 
-    def send_photon(self, time):
+    def send_photon(self, time, source_name):
         # use emitter to send photon over connected channel to node
-        self.components["LightSource"].emit(time)
+        self.components[source_name].emit(time)
 
-    def receive_photon(self, photon):
-        self.components["Detector"].detect(photon)
+    def receive_photon(self, photon, detector_name):
+        self.components[detector_name].detect(photon)
 
-    def get_photon_count(self):
-        dark_count = self.components["Detector"].add_dark_count()
-        return self.components["Detector"].photon_counter + dark_count
+    def get_photon_count(self, detector_name):
+        dark_count = self.components[detector_name].add_dark_count()
+        return self.components[detector_name].photon_counter + dark_count

@@ -1,7 +1,6 @@
 from entity import Entity
 from event import Event
 from process import Process
-from Node import Node
 import numpy
 
 
@@ -28,7 +27,7 @@ class OpticalChannel(Entity):
         if numpy.random.random_sample() < chance_photon_kept:
             # schedule receiving node to receive photon at future time determined by light speed
             future_time = self.timeline.now() + int(self.distance/self.light_speed)
-            process = Process(self.receiver, Node.receive_photon, [photon])
+            process = Process(self.receiver, "detect", [photon])
 
             event = Event(future_time, process)
             self.timeline.schedule(event)
