@@ -73,3 +73,7 @@ if __name__ == "__main__":
     print("run tl finish")
     print_metrics_res(config_file, entities)
     print("printed out metrics")
+    e = topo.find_entity_by_name('sender.lightsource')
+    print('sender.lightsource.photon_counter', e.photon_counter)
+    e = topo.find_entity_by_name('receiver.detector')
+    print('receiver.detector.photon_counter', e.photon_counter)

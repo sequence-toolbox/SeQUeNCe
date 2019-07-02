@@ -8,7 +8,7 @@
 						type : 'LightSource',
 						name : 'lightsource',
 						timeline : 0,
-						frequency : 8000, 				//hz
+						frequency : 80000000, 				//hz
 						wavelength : 100, 				//nm
 						mean_photon_num : 0.1,
 						encoding_type : 'pol',

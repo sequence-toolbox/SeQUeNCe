@@ -8,11 +8,13 @@ class Timeline:
         self.entities = []
         self.time = 0
         self.stop_time = stop_time
+        self.event_counter=0
 
     def now(self):
         return self.time
 
     def schedule(self, event):
+        self.event_counter+=1
         return self.events.push(event)
 
     def init(self):
@@ -28,3 +30,4 @@ class Timeline:
             if event.time > self.stop_time: break
             self.time = event.time
             event.process.run()
+        print('number of event',self.event_counter)

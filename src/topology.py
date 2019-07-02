@@ -263,7 +263,8 @@ class Topology:
 
     def find_entity_by_name(self, name):
         for e in self.entities:
-            if e.name == name: return e
+            if e.name == name:
+                return e
         raise Exception('unknown entity name')
 
     def find_node_by_name(self, name):
