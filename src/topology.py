@@ -169,7 +169,9 @@ class Detector(Entity):
             self.timeline.schedule(event)
 
     def add_dark_count(self):
-        return self.timeline.now() * (self.dark_count / (10 ** 12))
+        num_dark = int(self.timeline.now() * self.dark_count * (10 ** -12))  # mean number of dark counts
+        num_0 = int((num_dark / 2) + (math.sqrt(num_dark) * numpy.random.normal(0, 1/4)))  # number measured as |0>
+        return [num_0, num_dark - num_0]
 
     def decrease_pps_count(self):
         self.photons_past_second -= 1
@@ -195,7 +197,7 @@ class Node(Entity):
 
     def get_photon_count(self, detector_name):
         dark_count = self.components[detector_name].add_dark_count()
-        return self.components[detector_name].photon_counter + dark_count
+        return numpy.add(self.components[detector_name].photon_counter, dark_count)
 
 
 class Topology:
@@ -241,7 +243,7 @@ class Topology:
                 else:
                     raise Exception('unknown device type')
 
-            node = Node(node_config['name'], timelines[node_config['timeline']], **components)
+            node = Node(node_config['name'], timelines[node_config['timeline']], components=components)
             self.entities.append(node)
 
             if node.name in self.nodes:
