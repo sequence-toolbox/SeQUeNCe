@@ -29,13 +29,20 @@ class Photon(Entity):
         self.wavelength = kwargs.get("wavelength", 0)
         self.location = kwargs.get("location", None)
         self.encoding_type = kwargs.get("encoding_type")
-        self.quantum_state = kwargs.get("quantum_state", [complex(math.sqrt(2)), complex(math.sqrt(2))])
+        qs_array = kwargs.get("quantum_state", [[math.sqrt(1 / 2), 0], [math.sqrt(1 / 2), 0]])
+        self.quantum_state = [complex(*qs_array[0]), complex(*qs_array[1])]  # convert to complex number
 
     def init(self):
         pass
 
     def random_noise(self):
         pass
+
+    def measure(self, basis):
+        alpha = numpy.dot(self.quantum_state, basis[0])  # projection onto basis vector
+        if numpy.random.random_sample() < (alpha ** 2).real:
+            return 0
+        return 1
 
 
 class OpticalChannel(Entity):
@@ -46,7 +53,8 @@ class OpticalChannel(Entity):
         self.temperature = kwargs.get("temperature", 0)
         self.sender = None
         self.receiver = None
-        self.light_speed = kwargs.get("light_speed",3 * 10 ** -4)  # used for photon timing calculations (measured in m/ps)
+        self.light_speed = kwargs.get("light_speed",
+                                      3 * 10 ** -4)  # used for photon timing calculations (measured in m/ps)
 
     def init(self):
         pass
@@ -54,12 +62,12 @@ class OpticalChannel(Entity):
     def transmit(self, photon):
         # generate chance to lose photon
         loss = self.distance * self.attenuation
-        chance_photon_kept = 10 ** (loss / -20)
+        chance_photon_kept = 10 ** (loss / -10)
 
         # check if photon kept
         if numpy.random.random_sample() < chance_photon_kept:
             # schedule receiving node to receive photon at future time determined by light speed
-            future_time = self.timeline.now() + int(self.distance/self.light_speed)
+            future_time = self.timeline.now() + int(self.distance / self.light_speed)
             process = Process(self.receiver, "detect", [photon])
 
             event = Event(future_time, process)
@@ -71,17 +79,17 @@ class OpticalChannel(Entity):
     def set_receiver(self, receiver):
         self.receiver = receiver
 
-    def set_distance(self,distance):
+    def set_distance(self, distance):
         self.distance = distance
 
-    def distance_from_time(self,time):
+    def distance_from_time(self, time):
         distance = self.distance
         ## TODO: distance as a function of temperature
         temperature = self.tModel.temperature_from_time(time)
 
         return distance
 
-    def set_temerature_model(self,filename):
+    def set_temerature_model(self, filename):
         self.tModel = TemperatureModel()
         self.tModel.read_temperature_file(filename)
 
@@ -133,7 +141,8 @@ class Detector(Entity):
         self.dark_count = kwargs.get("dark_count", 0)  # measured in Hz
         self.count_rate = kwargs.get("count_rate", math.inf)  # measured in Hz
         self.time_resolution = kwargs.get("time_resolution", 0)  # measured in ps(?)
-        self.photon_counter = 0
+        self.basis = kwargs.get("basis", [[1, 0], [0, 1]])
+        self.photon_counter = [0, 0]
         self.photons_past_second = 0
         self.detected_in_resolution = False
 
@@ -143,7 +152,9 @@ class Detector(Entity):
     def detect(self, photon):
         if numpy.random.random_sample() < self.efficiency and self.photons_past_second < self.count_rate \
                 and not self.detected_in_resolution:
-            self.photon_counter += 1
+
+            self.photon_counter[photon.measure(self.basis)] += 1
+
             self.photons_past_second += 1
             self.detected_in_resolution = True
 
