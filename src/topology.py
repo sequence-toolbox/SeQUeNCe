@@ -29,8 +29,7 @@ class Photon(Entity):
         self.wavelength = kwargs.get("wavelength", 0)
         self.location = kwargs.get("location", None)
         self.encoding_type = kwargs.get("encoding_type")
-        qs_array = kwargs.get("quantum_state", [[math.sqrt(1 / 2), 0], [math.sqrt(1 / 2), 0]])
-        self.quantum_state = [complex(*qs_array[0]), complex(*qs_array[1])]  # convert to complex number
+        self.quantum_state = kwargs.get("quantum_state", [complex(1/2), complex(1/2)])
 
     def init(self):
         pass
@@ -102,7 +101,8 @@ class LightSource(Entity):
         self.mean_photon_num = kwargs.get("mean_photon_num", 0)
         self.encoding_type = kwargs.get("encoding_type")
         self.direct_receiver = kwargs.get("direct_receiver", None)
-        self.quantum_state = kwargs.get("quantum_state", [complex(math.sqrt(2)), complex(math.sqrt(2))])
+        qs_array = kwargs.get("quantum_state", [[math.sqrt(1 / 2), 0], [math.sqrt(1 / 2), 0]])
+        self.quantum_state = [complex(*qs_array[0]), complex(*qs_array[1])]  # convert to complex number
         self.photon_counter = 0
 
     def init(self):
