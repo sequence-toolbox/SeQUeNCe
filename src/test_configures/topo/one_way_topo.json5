@@ -40,6 +40,8 @@
 				timeline : 0,
 				distance : 10000, 						// m
 				temperature : 20.0, 					// C
+                attenuation : 0.0002,                   // db/m
+                light_speed: 0.0003,                    // m/ps
 				sender : "sender.lightsource",			// node_name.device_name
 				receiver : "receiver.detector",			// node_name.device_name
 			}

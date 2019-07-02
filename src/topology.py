@@ -46,7 +46,7 @@ class OpticalChannel(Entity):
         self.temperature = kwargs.get("temperature", 0)
         self.sender = None
         self.receiver = None
-        self.light_speed = 3 * 10 ** -4  # used for photon timing calculations (measured in m/ps)
+        self.light_speed = kwargs.get("light_speed",3 * 10 ** -4)  # used for photon timing calculations (measured in m/ps)
 
     def init(self):
         pass
@@ -84,7 +84,7 @@ class OpticalChannel(Entity):
     def set_temerature_model(self,filename):
         self.tModel = TemperatureModel()
         self.tModel.read_temperature_file(filename)
-                                                       
+
 
 class LightSource(Entity):
     def __init__(self, name, timeline, **kwargs):
