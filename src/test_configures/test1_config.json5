@@ -1,5 +1,6 @@
 {
-	Topo: './test_configures/topo/one_way_topo.json5',
+	//Topo: './test_configures/topo/one_way_topo.json5',
+	Topo: './test_configures/topo/splitter_topo.json5',
 	Actions : [
 		{
 			start_time : 0,								// ps
@@ -9,7 +10,8 @@
             priority : 10                               // higher value lower priority
 		}
 	],
-	Metrics : ['sender.lightsource.photon_counter', 'receiver.detector.photon_counter'],	// list of metrics name
+	Metrics : ['sender.get_source_count', 'receiver.get_detector_count'],
+	//Metrics : ['sender.lightsource.photon_counter', 'receiver.detector.photon_counter'],	// list of metrics name
 	//Metrics : ['photon_count_rate', 'bit_errors_rate']	
     random_seed : 1
 }
