@@ -155,10 +155,13 @@ class LightSource(Entity):
 class QSDetector(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
-        detector_0 = kwargs.get("detector_0", None)
-        detector_1 = kwargs.get("detector_1", None)
-        self.detectors = [detector_0, detector_1]
-        self.splitter = kwargs.get("splitter")
+        detectors = kwargs.get("detectors")
+        self.detectors = []
+        for d in detectors:
+            detector = Detector(timeline,**d)
+            self.detectors.append(detector)
+        splitter = kwargs.get("splitter")
+        self.splitter = BeamSplitter(timeline,**splitter)
 
     def init(self):
         pass
@@ -168,8 +171,8 @@ class QSDetector(Entity):
 
 
 class Detector(Entity):
-    def __init__(self, name, timeline, **kwargs):
-        Entity.__init__(self, name, timeline)
+    def __init__(self, timeline, **kwargs):
+        #Entity.__init__(self, name, timeline) ## Detector is part of the QSDetector, and does not have it's own name as an entity
         self.efficiency = kwargs.get("efficiency", 1)
         self.dark_count = kwargs.get("dark_count", 0)  # measured in Hz
         self.count_rate = kwargs.get("count_rate", math.inf)  # measured in Hz
@@ -199,8 +202,8 @@ class Detector(Entity):
 
 
 class BeamSplitter(Entity):
-    def __init__(self, name, timeline, **kwargs):
-        Entity.__init__(self, name, timeline)
+    def __init__(self, timeline, **kwargs):
+        #Entity.__init__(self, name, timeline)  ## Splitter is part of the QSDetector, and does not have it's own name as an entity
         self.basis = kwargs.get("basis", [0, 90])
         self.fidelity = kwargs.get("fidelity", 1)
 
@@ -231,8 +234,8 @@ class Node(Entity):
 
         # use emitter to send photon over connected channel to node
         state_list = []
-        for i in bit_list:
-            state_list.append(basis_list[i][bit_list[i]])
+        for bit in bit_list:
+            state_list.append(basis_list[bit])
 
         self.components[source_name].emit(state_list)
 
@@ -299,7 +302,7 @@ class Topology:
 
                 # detector instantiation
                 elif component_config["type"] == 'QSDetector':
-                    detector = Detector(name, tl, **component_config)
+                    detector = QSDetector(name, tl, **component_config)
                     components[component_name] = detector
                     self.entities.append(detector)
 
