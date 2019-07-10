@@ -234,7 +234,7 @@ class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.components = kwargs.get("components", {})
-        self.message = None
+        self.message = None  # temporary storage for message received through classical channel
         self.protocol = None
 
     def init(self):
@@ -243,8 +243,8 @@ class Node(Entity):
     def send_photons(self, basis_list, bit_list, source_name):
         # use emitter to send photon over connected channel to node
         state_list = []
-        for i in bit_list:
-            state_list.append(basis_list[i][bit_list[i]])
+        for i, bit in enumerate(bit_list):
+            state_list.append(basis_list[i][bit])
 
         self.components[source_name].emit(state_list)
 
@@ -266,6 +266,7 @@ class Node(Entity):
 
     def receive_message(self, msg):
         self.message = msg
+        # signal to protocol that we've received a message
         self.protocol.received_message()
 
 
