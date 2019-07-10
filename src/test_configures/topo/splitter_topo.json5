@@ -1,8 +1,22 @@
 {
 		nodes: [
 			{
-				name : "sender",
+				name : "Alice",
 				timeline : 0,
+				protocols : [
+					{
+						protocol : 'BB84',
+						name : 'bb84',
+						timeline : 0,
+						type : 'SENDER',
+					},
+					{
+						protocol : 'Cascade',
+						name : 'cascade',
+						timeline : 0,
+						type : 'SENDER'
+					}
+				],
 				components : [
 					{
 						type : 'LightSource',
@@ -19,8 +33,22 @@
 				],
 			},
 			{
-				name : "receiver",
+				name : "Bob",
 				timeline : 0,
+				protocols : [
+					{
+						protocol : 'BB84',
+						name : 'bb84',
+						timeline : 0,
+						type : 'RECEIVER',
+					},
+					{
+						protocol : 'Cascade',
+						name : 'cascade',
+						timeline : 0,
+						type : 'RECEIVER'
+					}
+				],
 				components : [
 					{	type : "QSDetector",
 						name : 'detector',
@@ -59,8 +87,17 @@
 				temperature : 20.0, 					// C
                 attenuation : 0.0002,                   // db/m
                 light_speed: 0.0003,                    // m/ps
-				sender : "sender.lightsource",			// node_name.device_name
-				receiver : "receiver.detector",			// node_name.device_name
+                depo_rate : 0.02,						// percentage
+				sender : "Alice.lightsource",			// node_name.device_name
+				receiver : "Bob.detector",				// node_name.device_name
+			}
+		],
+		CChannel: [
+			{
+				name : "classical_channel",
+				timeline : 0,
+				delay : 5000000000,						// ps
+				ends : ["Alice","Bob"]
 			}
 		]
 }

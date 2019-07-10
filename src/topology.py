@@ -54,8 +54,8 @@ class OpticalChannel(Entity):
         self.distance = kwargs.get("distance", 0)
         self.temperature = kwargs.get("temperature", 0)
         self.polarization_fidelity = kwargs.get("polarization_fidelity", 1)
-        self.sender = None
-        self.receiver = None
+        self.sender = kwargs.get("sender",None)
+        self.receiver = kwargs.get("receiver",None)
         self.light_speed = kwargs.get("light_speed",
                                       3 * 10 ** -4)  # used for photon timing calculations (measured in m/ps)
 
@@ -87,6 +87,16 @@ class OpticalChannel(Entity):
 
 
 class QuantumChannel(OpticalChannel, Entity):
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(self, name, timeline)
+        self.attenuation = kwargs.get("attenuation", 0)
+        self.distance = kwargs.get("distance", 0)
+        self.temperature = kwargs.get("temperature", 0)
+        self.polarization_fidelity = kwargs.get("polarization_fidelity", 1)
+        self.sender = kwargs.get("sender",None)
+        self.receiver = kwargs.get("receiver",None)
+        self.light_speed = kwargs.get("light_speed",3 * 10 ** -4)  # measured in m/ps
+
     def transmit(self, photon):
         # generate chance to lose photon
         loss = self.distance * self.attenuation
@@ -106,6 +116,11 @@ class QuantumChannel(OpticalChannel, Entity):
 
 
 class ClassicalChannel(OpticalChannel, Entity):
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(self, name, timeline)
+        self.delay = kwargs.get("delay", 5000000000)
+        self.ends = kwargs.get("ends", [])
+
     def transmit(self, message):
         future_time = self.timeline.now() + int(self.distance / self.light_speed)
         process = Process(self.receiver, "receive_message", [message])
@@ -275,8 +290,8 @@ class Topology:
         topo_config = json5.load(open(config_file))
         nodes_config = topo_config['nodes']
         self.create_nodes(nodes_config, timelines)
-        qchannel_config = topo_config['QChannel']
-        self.create_qchannel(qchannel_config, timelines)
+        self.create_qchannel(topo_config['QChannel'], timelines)
+        self.create_cchannel(topo_config['CChannel'], timelines)
 
     def create_nodes(self, nodes_config, timelines):
         for node_config in nodes_config:
@@ -317,22 +332,32 @@ class Topology:
 
             self.nodes[node.name] = node
 
-    def create_qchannel(self, qchannel_config, timelines):
-        for qc_config in qchannel_config:
-            name = qc_config['name']
-            tl = timelines[qc_config['timeline']]
-            del qc_config['name']
-            del qc_config['timeline']
+    def create_qchannel(self, channel_config, timelines):
+        for config in channel_config:
+            name = config['name']
+            tl = timelines[config['timeline']]
+            del config['name']
+            del config['timeline']
 
-            qc = OpticalChannel(name, tl, **qc_config)
+            chan = QuantumChannel(name, tl, **config)
 
-            sender = self.find_entity_by_name(qc_config['sender'])
-            receiver = self.find_entity_by_name(qc_config['receiver'])
+            sender = self.find_entity_by_name(config['sender'])
+            receiver = self.find_entity_by_name(config['receiver'])
 
-            qc.set_sender(sender)
-            sender.direct_receiver = qc
-            qc.set_receiver(receiver)
-            self.entities.append(qc)
+            chan.set_sender(sender)
+            sender.direct_receiver = chan
+            chan.set_receiver(receiver)
+            self.entities.append(chan)
+
+    def create_cchannel(self, channel_config, timelines):
+        for config in channel_config:
+            name = config['name']
+            tl = timelines[config['timeline']]
+            del config['name']
+            del config['timeline']
+
+            chan = ClassicalChannel(name, tl, **config)
+            self.entities.append(chan)
 
     def print_topology(self):
         pass
@@ -344,7 +369,7 @@ class Topology:
         for e in self.entities:
             if e.name == name:
                 return e
-        raise Exception('unknown entity name')
+        raise Exception('unknown entity name',name)
 
     def find_node_by_name(self, name):
         pass

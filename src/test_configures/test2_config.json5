@@ -1,0 +1,13 @@
+{
+	//Topo: './test_configures/topo/one_way_topo.json5',
+	Topo: './test_configures/topo/splitter_topo.json5',
+	Actions : [
+		{
+			start_time : 0,
+			actor : "cascade",
+			action : "generate_key",
+			params : [10000]
+		}
+	],
+	Metrics : ['cascade.throughput', 'cascade.bit_errors_rate']	// list of metrics name
+}
