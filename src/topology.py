@@ -202,7 +202,7 @@ class Detector(Entity):
             self.next_detection_time = self.timeline.now() + (10 ** 12 / self.count_rate)  # period in ps
 
     def add_dark_count(self):
-        time_to_next = int(numpy.random.exponential(self.dark_count) * (10 ** 12))  # time interval to next dark count
+        time_to_next = int(numpy.random.exponential(1 / self.dark_count) * (10 ** 12))  # time interval to next dark count
         time = time_to_next + self.timeline.now()  # time of next dark count
 
         process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future

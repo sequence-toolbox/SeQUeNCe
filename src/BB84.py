@@ -78,11 +78,17 @@ class BB84(Entity):
 
         elif message[0] == "basis_list":  # Bob will compare bases
             # parse alice basis list
-            # compare own basis with basis message
-            # create list of matching indices
-            # set key equal to bits with matching bases
+            basis_list_alice = []
+
+            # compare own basis with basis message and create list of matching indices
+            indices = []
+            for i in range(len(self.basis_list)):
+                if self.basis_list[i] == basis_list_alice[i]:
+                    indices.append(i)
+                    self.key.append(self.bits[i])
+
             # send to Alice list of matching indices
-            pass
+            self.node.send_message("")
 
         elif message[0] == "matching_indices":  # Alice will create own version of key
             # parse matching indices
