@@ -39,7 +39,7 @@ class Photon(Entity):
 
     def measure(self, basis):
         # alpha = numpy.dot(self.quantum_state, basis[0])  # projection onto basis vector
-        alpha = numpy.cos((self.quantum_state - basis[0])/180.0 * num.pi)
+        alpha = numpy.cos((self.quantum_state - basis[0])/180.0 * numpy.pi)
         if numpy.random.random_sample() < alpha ** 2:
             self.quantum_state = basis[0]
             return 0
@@ -232,7 +232,7 @@ class Node(Entity):
         # use emitter to send photon over connected channel to node
         state_list = []
         for i in bit_list:
-            state_list.append(basis_list[bit_list[i]])
+            state_list.append(basis_list[i][bit_list[i]])
 
         self.components[source_name].emit(state_list)
 
