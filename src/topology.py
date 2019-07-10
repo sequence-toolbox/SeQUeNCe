@@ -1,4 +1,6 @@
 import math
+from typing import List, Any
+
 import numpy
 import json5
 import pandas as pd
@@ -166,6 +168,19 @@ class QSDetector(Entity):
     def detect(self, photon):
         self.detectors[self.splitter.transmit(photon)].detect()
 
+    def clear_detectors(self):
+        for d in self.detectors:
+            d.photon_times = []
+
+    def get_photon_times(self):
+        times = []
+        for d in self.detectors:
+            times.append(d.photon_times)
+        return times
+
+    def set_basis(self, basis):
+        self.splitter.set_basis(basis)
+
 
 class Detector(Entity):
     def __init__(self, name, timeline, **kwargs):
@@ -226,21 +241,12 @@ class Node(Entity):
         pass
 
     def send_photons(self, basis_list, bit_list, source_name):
-        # message that photon pulse is beginning
-        self.send_message("begin_photon_pulse")
-
         # use emitter to send photon over connected channel to node
         state_list = []
         for i in bit_list:
             state_list.append(basis_list[i][bit_list[i]])
 
         self.components[source_name].emit(state_list)
-
-        # schedule event to message that photon pulse is finished
-        future_time = self.timeline.now() + len(state_list) * (10 ** 12 / self.components[source_name].frequency)
-        process = Process(self, "send_message", ["end_photon_pulse"])
-        event = Event(future_time, process)
-        self.timeline.schedule(event)
 
     def receive_photon(self, photon, detector_name):
         self.components[detector_name].detect(photon)
