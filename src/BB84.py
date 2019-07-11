@@ -13,7 +13,7 @@ class BB84(Entity):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline)
         self.role = kwargs.get("role", None)
-        self.light_time = kwargs.get("light_time", 0.1)  # time to use laser (measured in s)
+        self.light_time = 0  # time to use laser (measured in s)
         self.qubit_frequency = 0  # frequency of qubit sending
         self.start_time = 0  # start time of light pulse
         self.node = None
@@ -143,13 +143,18 @@ class BB84(Entity):
                 self.another.set_key()
                 self.another.parent.get_key_from_BB84(self.another.key)
             else:
-                self.generate_key(self.key_length)
+                process = Process(self, "generate_key", [self.key_length])
+                event = Event(self.timeline.now(), process)
+                self.timeline.schedule(event)
 
-    # TODO: calculate light_time based on length
     def generate_key(self, length):
         self.key_length = length
+
+        # calculate number of pulses based on number of bits to generate
+        num_pulses = int(length * (1 / self.node.components["lightsource"].mean_photon_num))
+        self.light_time = num_pulses / self.node.components["lightsource"].frequency
+
         self.qubit_frequency = self.node.components["lightsource"].frequency
-        num_pulses = int(self.node.components["lightsource"].frequency * self.light_time)
 
         # list of random bases for 1 second
         bases = [[0, 90], [45, 135]]
@@ -160,12 +165,12 @@ class BB84(Entity):
         self.bits = numpy.random.choice([0, 1], num_pulses)  # list of random bits for 1 second
 
         # send message that photon pulse is beginning, then send bits, then send message that pulse is ending
-        self.start_time = self.timeline.now()
+        self.start_time = int(self.timeline.now()) + int(self.classical_delay)
         self.node.send_message("begin_photon_pulse {} {} {}"
                                .format(self.qubit_frequency, self.light_time, self.start_time))
 
         process = Process(self.node, "send_photons", [self.basis_list, self.bits, "lightsource"])
-        event = Event(self.timeline.now(), process)
+        event = Event(self.start_time, process)
         self.timeline.schedule(event)
         # self.node.send_photons(self.basis_list, self.bits, "lightsource")
 
@@ -221,8 +226,8 @@ if __name__ == "__main__":
     tl.entities.append(bob)
 
     # BB84
-    bba = BB84("bba", tl, role="alice", light_time=0.001)
-    bbb = BB84("bbb", tl, role="bob", light_time=0.001)
+    bba = BB84("bba", tl, role="alice")
+    bbb = BB84("bbb", tl, role="bob")
     bba.assign_node(alice)
     bbb.assign_node(bob)
     bba.another = bbb
