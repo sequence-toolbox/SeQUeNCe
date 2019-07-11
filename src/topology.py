@@ -62,9 +62,6 @@ class OpticalChannel(Entity):
     def init(self):
         pass
 
-    def transmit(self, photon):
-        pass
-
     def set_distance(self, distance):
         self.distance = distance
 
@@ -82,7 +79,7 @@ class OpticalChannel(Entity):
 
 class QuantumChannel(OpticalChannel):
     def __init__(self, name, timeline, **kwargs):
-        super().__init__(name, timeline, kwargs)
+        super().__init__(name, timeline, **kwargs)
         self.sender = None
         self.receiver = None
 
@@ -116,11 +113,25 @@ class ClassicalChannel(OpticalChannel):
         self.ends = []
 
     def add_end(self, node):
-        pass
+        if node in self.ends:
+            Exception("already have endpoint", node)
+        if len(self.ends) == 2:
+            Exception("channel already has 2 endpoints")
 
-    def transmit(self, message):
+        self.ends.append(node)
+
+    def transmit(self, message, source):
+        # get node that's not equal to source
+        if source not in self.ends:
+            Exception("no endpoint", source)
+
+        receiver = None
+        for e in self.ends:
+            if e != source:
+                receiver = e
+
         future_time = self.timeline.now() + int(self.distance / self.light_speed)
-        process = Process(self.receiver, "receive_message", [message])
+        process = Process(receiver, "receive_message", [message])
         event = Event(future_time, process)
         self.timeline.schedule(event)
 
@@ -275,7 +286,7 @@ class Node(Entity):
         return source.photon_counter
 
     def send_message(self, msg):
-        self.components['cchannel'].transmit(msg)
+        self.components['cchannel'].transmit(msg, self)
 
     def receive_message(self, msg):
         self.message = msg
@@ -338,14 +349,14 @@ class Topology:
         for config in channel_config:
             name = config['name']
             tl = timelines[config['timeline']]
-            del config['name']
-            del config['timeline']
-
-            chan = QuantumChannel(name, tl, **config)
-
             sender = self.find_entity_by_name(config['sender'])
             receiver = self.find_entity_by_name(config['receiver'])
+            del config['name']
+            del config['timeline']
+            del config['sender']
+            del config['receiver']
 
+            chan = QuantumChannel(name, tl, **config)
             chan.set_sender(sender)
             sender.direct_receiver = chan
             chan.set_receiver(receiver)

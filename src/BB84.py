@@ -199,28 +199,30 @@ if __name__ == "__main__":
     tl = timeline.Timeline(10 ** 13)  # stop time is 10 seconds
 
     qc = topology.QuantumChannel("qc", tl, distance=10)
-    cc0 = topology.ClassicalChannel("cc", tl, distance=10)
-    cc1 = topology.ClassicalChannel("cc", tl, distance=10)
+    cc = topology.ClassicalChannel("cc", tl, distance=10)
 
     # Alice
     ls = topology.LightSource("alice.lightsource", tl,
                               frequency=80000000, mean_photon_num=0.1, direct_receiver=qc)
-    components = {"lightsource": ls, "cchannel": cc0, "qchannel": qc}
+    components = {"lightsource": ls, "cchannel": cc, "qchannel": qc}
+
     alice = topology.Node("alice", tl, components=components)
     qc.set_sender(ls)
-    cc0.set_sender(alice)
-    cc1.set_receiver(alice)
+    cc.add_end(alice)
 
     # Bob
-    d_0 = topology.Detector("bob.detector_0", tl, dark_count=1, time_resolution=1)
-    d_1 = topology.Detector("bob.detector_1", tl, dark_count=1, time_resolution=1)
-    bs = topology.BeamSplitter("bob.beamsplitter", tl)
-    qsd = topology.QSDetector("bob.qsdetector", tl, detector_0=d_0, detector_1=d_1, splitter=bs)
-    components = {"detector": qsd, "cchannel": cc1, "qchannel": qc}
+    # d_0 = topology.Detector(tl, dark_count=1, time_resolution=1)
+    # d_1 = topology.Detector(tl, dark_count=1, time_resolution=1)
+    # bs = topology.BeamSplitter(tl)
+    detectors = [{"dark_count": 1, "time_resolution": 1},
+                 {"dark_count": 1, "time_resolution": 1}]
+    splitter = {}
+    qsd = topology.QSDetector("bob.qsdetector", tl, detectors=detectors, splitter=splitter)
+    components = {"detector": qsd, "cchannel": cc, "qchannel": qc}
+
     bob = topology.Node("bob", tl, components=components)
     qc.set_receiver(qsd)
-    cc0.set_receiver(bob)
-    cc1.set_sender(bob)
+    cc.add_end(bob)
 
     tl.entities.append(alice)
     tl.entities.append(bob)
