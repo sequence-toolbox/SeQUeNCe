@@ -1,4 +1,6 @@
 import math
+from typing import List, Any
+
 import numpy
 import json5
 import pandas as pd
@@ -54,8 +56,6 @@ class OpticalChannel(Entity):
         self.distance = kwargs.get("distance", 0)
         self.temperature = kwargs.get("temperature", 0)
         self.polarization_fidelity = kwargs.get("polarization_fidelity", 1)
-        self.sender = kwargs.get("sender",None)
-        self.receiver = kwargs.get("receiver",None)
         self.light_speed = kwargs.get("light_speed",
                                       3 * 10 ** -4)  # used for photon timing calculations (measured in m/ps)
 
@@ -64,12 +64,6 @@ class OpticalChannel(Entity):
 
     def transmit(self, photon):
         pass
-
-    def set_sender(self, sender):
-        self.sender = sender
-
-    def set_receiver(self, receiver):
-        self.receiver = receiver
 
     def set_distance(self, distance):
         self.distance = distance
@@ -86,16 +80,17 @@ class OpticalChannel(Entity):
         self.tModel.read_temperature_file(filename)
 
 
-class QuantumChannel(OpticalChannel, Entity):
+class QuantumChannel(OpticalChannel):
     def __init__(self, name, timeline, **kwargs):
-        Entity.__init__(self, name, timeline)
-        self.attenuation = kwargs.get("attenuation", 0)
-        self.distance = kwargs.get("distance", 0)
-        self.temperature = kwargs.get("temperature", 0)
-        self.polarization_fidelity = kwargs.get("polarization_fidelity", 1)
-        self.sender = kwargs.get("sender",None)
-        self.receiver = kwargs.get("receiver",None)
-        self.light_speed = kwargs.get("light_speed",3 * 10 ** -4)  # measured in m/ps
+        super().__init__(name, timeline, kwargs)
+        self.sender = None
+        self.receiver = None
+
+    def set_sender(self, sender):
+        self.sender = sender
+
+    def set_receiver(self, receiver):
+        self.receiver = receiver
 
     def transmit(self, photon):
         # generate chance to lose photon
@@ -115,11 +110,13 @@ class QuantumChannel(OpticalChannel, Entity):
             self.timeline.schedule(event)
 
 
-class ClassicalChannel(OpticalChannel, Entity):
+class ClassicalChannel(OpticalChannel):
     def __init__(self, name, timeline, **kwargs):
-        Entity.__init__(self, name, timeline)
-        self.delay = kwargs.get("delay", 5000000000)
-        self.ends = kwargs.get("ends", [])
+        super().__init__(name, timeline, **kwargs)
+        self.ends = []
+
+    def add_end(self, node):
+        pass
 
     def transmit(self, message):
         future_time = self.timeline.now() + int(self.distance / self.light_speed)
@@ -170,13 +167,13 @@ class LightSource(Entity):
 class QSDetector(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
-        detectors = kwargs.get("detectors")
+        detectors = kwargs.get("detectors", [])
         self.detectors = []
         for d in detectors:
-            detector = Detector(timeline,**d)
+            detector = Detector(timeline, **d)
             self.detectors.append(detector)
         splitter = kwargs.get("splitter")
-        self.splitter = BeamSplitter(timeline,**splitter)
+        self.splitter = BeamSplitter(timeline, **splitter)
 
     def init(self):
         pass
@@ -184,10 +181,23 @@ class QSDetector(Entity):
     def detect(self, photon):
         self.detectors[self.splitter.transmit(photon)].detect()
 
+    def clear_detectors(self):
+        for d in self.detectors:
+            d.photon_times = []
+
+    def get_photon_times(self):
+        times = []
+        for d in self.detectors:
+            times.append(d.photon_times)
+        return times
+
+    def set_basis(self, basis):
+        self.splitter.set_basis(basis)
+
 
 class Detector(Entity):
     def __init__(self, timeline, **kwargs):
-        #Entity.__init__(self, name, timeline) ## Detector is part of the QSDetector, and does not have it's own name as an entity
+        Entity.__init__(self, "", timeline)  # Detector is part of the QSDetector, and does not have its own name
         self.efficiency = kwargs.get("efficiency", 1)
         self.dark_count = kwargs.get("dark_count", 0)  # measured in Hz
         self.count_rate = kwargs.get("count_rate", math.inf)  # measured in Hz
@@ -205,7 +215,7 @@ class Detector(Entity):
             self.next_detection_time = self.timeline.now() + (10 ** 12 / self.count_rate)  # period in ps
 
     def add_dark_count(self):
-        time_to_next = int(numpy.random.exponential(self.dark_count) * (10 ** 12))  # time interval to next dark count
+        time_to_next = int(numpy.random.exponential(1 / self.dark_count) * (10 ** 12))  # time to next dark count
         time = time_to_next + self.timeline.now()  # time of next dark count
 
         process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
@@ -218,7 +228,7 @@ class Detector(Entity):
 
 class BeamSplitter(Entity):
     def __init__(self, timeline, **kwargs):
-        #Entity.__init__(self, name, timeline)  ## Splitter is part of the QSDetector, and does not have it's own name as an entity
+        Entity.__init__(self, "", timeline)  # Splitter is part of the QSDetector, and does not have its own name
         self.basis = kwargs.get("basis", [0, 90])
         self.fidelity = kwargs.get("fidelity", 1)
 
@@ -237,28 +247,19 @@ class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.components = kwargs.get("components", {})
-        self.message = None
+        self.message = None  # temporary storage for message received through classical channel
         self.protocol = None
 
     def init(self):
         pass
 
     def send_photons(self, basis_list, bit_list, source_name):
-        # message that photon pulse is beginning
-        self.send_message("begin_photon_pulse")
-
         # use emitter to send photon over connected channel to node
         state_list = []
-        for bit in bit_list:
-            state_list.append(basis_list[bit])
+        for i, bit in enumerate(bit_list):
+            state_list.append(basis_list[i][bit])
 
         self.components[source_name].emit(state_list)
-
-        # schedule event to message that photon pulse is finished
-        future_time = self.timeline.now() + len(state_list) * (10 ** 12 / self.components[source_name].frequency)
-        process = Process(self, "send_message", ["end_photon_pulse"])
-        event = Event(future_time, process)
-        self.timeline.schedule(event)
 
     def receive_photon(self, photon, detector_name):
         self.components[detector_name].detect(photon)
@@ -274,10 +275,11 @@ class Node(Entity):
         return source.photon_counter
 
     def send_message(self, msg):
-        self.components['cchannel'].transmit(msg, self)
+        self.components['cchannel'].transmit(msg)
 
     def receive_message(self, msg):
         self.message = msg
+        # signal to protocol that we've received a message
         self.protocol.received_message()
 
 
