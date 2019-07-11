@@ -262,7 +262,7 @@ class Node(Entity):
         return source.photon_counter
 
     def send_message(self, msg):
-        self.components['cchannel'].transmit(msg, self)
+        self.components['cchannel'].transmit(msg)
 
     def receive_message(self, msg):
         self.message = msg
