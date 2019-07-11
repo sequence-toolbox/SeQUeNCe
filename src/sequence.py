@@ -79,3 +79,4 @@ if __name__ == "__main__":
     print("run tl finish")
     print_metrics_res(config_file, entities)
     print("printed out metrics")
+    print("simulation now:", tl.now())
