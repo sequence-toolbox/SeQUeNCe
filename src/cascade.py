@@ -14,6 +14,7 @@ class Cascade(Entity):
         Entity.__init__(self, name, timeline)
         self.w = kwargs.get("w", 4)
         self.bb84 = kwargs.get("bb84", None)
+        # for sender role==0; for receiver role==1
         self.role = kwargs.get("role", None)
         self.another = None
         self.state = 0
@@ -30,6 +31,8 @@ class Cascade(Entity):
         self.throughput = None # bit/(timeline time unit)
         self.error_bit_rate = None
         self.tmp = {}
+        self.cur_block = 0
+        self.time_cost = None
         """
         state of protocol:
             0: initialization step of protocol
@@ -80,7 +83,7 @@ class Cascade(Entity):
         if self.state == 0 and self.role == 1:
             self.send_key()
         elif self.state == 1 and self.role == 0:
-            self.send_checksum(self.state, 0)
+            self.send_checksums()
 
     def send_key(self):
         """
@@ -214,63 +217,54 @@ class Cascade(Entity):
         process = Process(self.another, "generate_key", [self.keylen])
         self.send_by_cc(process)
 
-    def send_checksum(self, pass_id, block_id):
+    def send_checksums(self):
         """
-        Sender send checksum of block_id-th block in pass_id pass
+        Sender send all checksums to receiver
         """
-        self.log('send_checksum params= ' + str([pass_id, block_id]))
-        #print('send_checksum params= ' + str([pass_id, block_id]))
-        if pass_id > self.state:
-            self.state += 1
-        if self.state >= len(self.checksum_table):
-            self.end_time = self.timeline.now()
-            self.performance_measure()
-            self.another.throughput = self.throughput
-            self.another.error_bit_rate = self.error_bit_rate
-            return
-
-        process = Process(self.another, "receive_checksum", [pass_id, block_id, self.checksum_table[pass_id][block_id]])
-        self.send_by_cc(process)
-
-    def receive_checksum(self, pass_id, block_id, checksum):
-        """
-        Receiver receive checksum from sender
-        Compare checksum with the checksum of same block
-        If checksums are same, receiver requests next block
-        If checksums are different, do interactive_binary_search function
-        """
-        self.log('receive_checksum params= ' + str([pass_id, block_id, checksum]))
-        if not (
-            (pass_id == len(self.another_checksum) - 1 and block_id == len(self.another_checksum[pass_id]))
-            or (pass_id == len(self.another_checksum) and block_id == 0)):
+        if self.role == 1:
             raise Exception(
-                self.name + ".receive_checksum does not receive checksum in order")
-
-        self.another_checksum[pass_id].append(checksum)
-
-        if self.checksum_table[pass_id][block_id] == checksum:
-            self.log('two checksums are same')
-            self.request_next_checksum()
-        else:
-            self.log('two checksums are different')
-            block_size = len(self.block_id_to_index[pass_id][block_id])
-            self.interactive_binary_search(pass_id, block_id, 0, block_size)
-
-    def request_next_checksum(self):
-        """
-        Receiver requests next block checksum from sender
-        """
-        block_id = None
-        if len(self.checksum_table[self.state]) > len(self.another_checksum[self.state]):
-            block_id = len(self.another_checksum[self.state])
-        elif len(self.checksum_table[self.state]) == len(self.another_checksum[self.state]):
-            self.state += 1
-            block_id = 0
-            self.another_checksum.append([])
-
-        pass_id = self.state
-        process = Process(self.another, "send_checksum", [pass_id, block_id])
+                "Cascade protocol type is receiver (type==1); receiver cannot send checksums to sender")
+        self.state = 1
+        process = Process(self.another, "receive_checksums", [self.checksum_table])
         self.send_by_cc(process)
+
+    def receive_checksums(self, checksums):
+        self.another_checksum = checksums
+        self.check_checksum()
+
+    def check_checksum(self):
+        cur_pass = self.state
+        cur_block = self.cur_block
+        for _pass in range(cur_pass,len(self.another_checksum)):
+            self.state = _pass
+            self.another.state = _pass
+            for _block in range(cur_block, len(self.another_checksum[_pass])):
+                self.cur_block = _block
+                if self.checksum_table[_pass][_block] != self.another_checksum[_pass][_block]:
+                    self.log('two checksums are different')
+                    block_size = len(self.block_id_to_index[_pass][_block])
+                    self.interactive_binary_search(_pass, _block, 0, block_size)
+                    return
+            self.cur_block = cur_block = 0
+        self.state+=1
+        self.send_end_message()
+
+    def send_end_message(self):
+        """
+        Receiver send end message to sender to tell sender key is ready
+        """
+        process = Process(self.another, "receive_end_message",[])
+        self.send_by_cc(process)
+
+    def receive_end_message(self):
+        """
+        Sender receive end message from receiver and measure performance
+        """
+        self.end_time = self.timeline.now()
+        self.performance_measure()
+        self.another.throughput = self.throughput
+        self.another.error_bit_rate = self.error_bit_rate
+        self.another.time_cost = self.time_cost
 
     def send_for_binary(self, pass_id, block_id, start, end):
         """
@@ -313,12 +307,12 @@ class Cascade(Entity):
 
                 if self.state == 1:
                     # for 1st pass, just continue send checksums
-                    self.request_next_checksum()
+                    self.check_checksum()
                 else:
                     # if all of error in previous pass are fixed, continue send
                     # checksum
                     if not self.correct_error_in_previous():
-                        self.request_next_checksum()
+                        self.check_checksum()
             else:
                 self.interactive_binary_search(pass_id, block_id, start, end)
 
@@ -366,6 +360,7 @@ class Cascade(Entity):
             if (self.key >> i & 1) != (self.another.key >> i & 1):
                 counter += 1
         self.error_bit_rate = counter/self.keylen
+        self.time_cost = self.end_time - self.start_time
 
     def init():
         pass
@@ -437,15 +432,11 @@ if __name__ == "__main__":
     p = Process(cascade_1, 'generate_key', [10000])
     t.schedule(Event(0, p))
     t.run()
-    counter = 0
-    for i in range(200):
-        if (cascade_2.key >> i & 1) != (cascade_1.key >> i & 1):
-            counter += 1
     print("throughput: ",cascade_1.throughput*1000, " bit/sec")
     print("error rate:", cascade_1.error_bit_rate)
-    print("diff bit number:", counter)
     print("key1=", cascade_1.key)
     print("key2=", cascade_2.key)
+    print("time cost=", cascade_1.time_cost)
     print(cascade_1.tmp)
     print(cascade_2.tmp)
     print(t.now())
