@@ -25,6 +25,11 @@ class Cascade(Entity):
         self.index_to_block_id = [[]]
         self.block_id_to_index = [[]]
         self.logflag = False
+        self.start_time = None
+        self.end_time = None
+        self.throughput = None # bit/(timeline time unit)
+        self.error_bit_rate = None
+        self.tmp = {}
         """
         state of protocol:
             0: initialization step of protocol
@@ -57,6 +62,7 @@ class Cascade(Entity):
         if self.state == 0:
             self.log('generate_key with state 0')
             self.keylen = keylen
+            self.start_time = self.timeline.now()
             self.bb84.generate_key(10000)
         else:
             self.log('generate_key with state ' + str(self.state))
@@ -193,7 +199,8 @@ class Cascade(Entity):
         """
         Receiver receive k, keylen from sender
         """
-        self.log('receive_params with k0= ' + str([k, keylen]))
+        self.log('receive_params with params= ' + str([k, keylen]))
+        print('receive_params with params= ' + str([k, keylen]))
         if self.role == 0:
             raise Exception(
                 "Cascade protocol type is sender (type==0); sender cannot receive parameters from receiver")
@@ -212,9 +219,14 @@ class Cascade(Entity):
         Sender send checksum of block_id-th block in pass_id pass
         """
         self.log('send_checksum params= ' + str([pass_id, block_id]))
+        #print('send_checksum params= ' + str([pass_id, block_id]))
         if pass_id > self.state:
             self.state += 1
         if self.state >= len(self.checksum_table):
+            self.end_time = self.timeline.now()
+            self.performance_measure()
+            self.another.throughput = self.throughput
+            self.another.error_bit_rate = self.error_bit_rate
             return
 
         process = Process(self.another, "receive_checksum", [pass_id, block_id, self.checksum_table[pass_id][block_id]])
@@ -343,6 +355,17 @@ class Cascade(Entity):
         future_time = self.timeline.now() + self.cchanel.delay
         event = Event(future_time, process)
         self.timeline.schedule(event)
+        if not process.activation in self.tmp:
+            self.tmp[process.activation] = 0
+        self.tmp[process.activation]+=1
+
+    def performance_measure(self):
+        self.throughput = self.keylen/(self.end_time-self.start_time)
+        counter = 0
+        for i in range(self.keylen):
+            if (self.key >> i & 1) != (self.another.key >> i & 1):
+                counter += 1
+        self.error_bit_rate = counter/self.keylen
 
     def init():
         pass
@@ -392,7 +415,7 @@ if __name__ == "__main__":
         pass
 
     t = Timeline()
-    bb84_1 = BB84("bb84_1", t, keys=[(1 << 9999) - 1, (1 << 9999) - 1])
+    bb84_1 = BB84("bb84_1", t, keys=[(1 << 2) - 1, (1 << 100) - 1])
     cascade_1 = Cascade("cascade_1", t, bb84=bb84_1, role=0)
     bb84_1.assign_parent(cascade_1)
     bb84_2 = BB84("bb84_2", t, keys=[0, 0])
@@ -408,8 +431,8 @@ if __name__ == "__main__":
         delay=5)
     cascade_1.assign_cchannel(cchanel)
     cascade_2.assign_cchannel(cchanel)
-    cascade_1.logflag = True
-    cascade_2.logflag = True
+    cascade_1.logflag = False
+    cascade_2.logflag = False
 
     p = Process(cascade_1, 'generate_key', [10000])
     t.schedule(Event(0, p))
@@ -418,6 +441,11 @@ if __name__ == "__main__":
     for i in range(200):
         if (cascade_2.key >> i & 1) != (cascade_1.key >> i & 1):
             counter += 1
+    print("throughput: ",cascade_1.throughput*1000, " bit/sec")
+    print("error rate:", cascade_1.error_bit_rate)
     print("diff bit number:", counter)
     print("key1=", cascade_1.key)
     print("key2=", cascade_2.key)
+    print(cascade_1.tmp)
+    print(cascade_2.tmp)
+    print(t.now())
