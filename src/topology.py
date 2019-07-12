@@ -9,6 +9,8 @@ from process import Process
 from entity import Entity
 from event import Event
 
+from BB84 import BB84
+
 
 class TemperatureModel():
     df = pd.DataFrame()
@@ -339,6 +341,22 @@ class Topology:
                     raise Exception('unknown device type')
 
             node = Node(node_config['name'], timelines[node_config['timeline']], components=components)
+
+            for protocol_config in node_config['protocols']:
+                protocol_name = protocol_config['name']
+                name = node_config['name'] + '.' + protocol_name
+                tl = timelines[protocol_config['timeline']]
+                del protocol_config['name']
+                del protocol_config['timeline']
+
+                if protocol_config["protocol"] == 'BB84':
+                    bb84 = BB84(name, tl, **protocol_config)
+                    bb84.assign_node(node)
+                    node.protocol = bb84
+                    self.entities.append(bb84)
+
+                # add cascade config
+
             self.entities.append(node)
 
             if node.name in self.nodes:

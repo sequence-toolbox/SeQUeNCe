@@ -96,7 +96,8 @@
 			{
 				name : "classical_channel",
 				timeline : 0,
-				delay : 5000000000,						// ps
+				distance : 10000,
+				light_speed : 0.0003,
 				ends : ["Alice","Bob"]
 			}
 		]
