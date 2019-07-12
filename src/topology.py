@@ -111,6 +111,7 @@ class ClassicalChannel(OpticalChannel):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline, **kwargs)
         self.ends = []
+        self.delay = int(self.distance / self.light_speed)
 
     def add_end(self, node):
         if node in self.ends:
@@ -130,7 +131,7 @@ class ClassicalChannel(OpticalChannel):
             if e != source:
                 receiver = e
 
-        future_time = self.timeline.now() + int(self.distance / self.light_speed)
+        future_time = self.timeline.now() + self.delay
         process = Process(receiver, "receive_message", [message])
         event = Event(future_time, process)
         self.timeline.schedule(event)

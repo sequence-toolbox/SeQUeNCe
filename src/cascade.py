@@ -30,7 +30,7 @@ class Cascade(Entity):
         self.end_time = None
         self.throughput = None # bit/(timeline time unit)
         self.error_bit_rate = None
-        self.tmp = {}
+        #self.tmp = {}
         self.cur_block = 0
         self.time_cost = None
         """
@@ -47,10 +47,6 @@ class Cascade(Entity):
 
     def assign_cchannel(self, cchanel):
         self.cchanel = cchanel
-        if cchanel.end_1.name == self.name:
-            self.another = cchanel.end_2
-        else:
-            self.another = cchanel.end_1
 
     def generate_key(self, keylen):
         """
@@ -203,7 +199,6 @@ class Cascade(Entity):
         Receiver receive k, keylen from sender
         """
         self.log('receive_params with params= ' + str([k, keylen]))
-        print('receive_params with params= ' + str([k, keylen]))
         if self.role == 0:
             raise Exception(
                 "Cascade protocol type is sender (type==0); sender cannot receive parameters from receiver")
@@ -349,16 +344,21 @@ class Cascade(Entity):
         future_time = self.timeline.now() + self.cchanel.delay
         event = Event(future_time, process)
         self.timeline.schedule(event)
+        '''
         if not process.activation in self.tmp:
             self.tmp[process.activation] = 0
         self.tmp[process.activation]+=1
+        '''
 
     def performance_measure(self):
         self.throughput = self.keylen/(self.end_time-self.start_time)
         counter = 0
-        for i in range(self.keylen):
-            if (self.key >> i & 1) != (self.another.key >> i & 1):
+        val = self.key ^ self.another.key
+        i = 0
+        while val>>i:
+            if (val>>i)&1 == 1:
                 counter += 1
+            i+=1
         self.error_bit_rate = counter/self.keylen
         self.time_cost = self.end_time - self.start_time
 
@@ -368,75 +368,66 @@ class Cascade(Entity):
 
 if __name__ == "__main__":
     from timeline import Timeline
+    import topology
+    from BB84 import BB84
 
-    class BB84(Entity):
-        def log(self, info):
-            print(self.timeline.now(), self.name, info)
+    tl = Timeline()  # stop time is 10 seconds
 
-        def __init__(self, name, timeline, **kwargs):
-            Entity.__init__(self, name, timeline)
-            self.keys = kwargs.get("keys")
-            self.parent = None
-            self.another = None
+    qc = topology.QuantumChannel("qc", tl, distance=10)
+    cc = topology.ClassicalChannel("cc", tl, distance=10)
+    cc.delay = 5*10**9 # 5ms delay
 
-        def assign_parent(self, parent):
-            self.parent = parent
+    # Alice
+    ls = topology.LightSource("alice.lightsource", tl,
+                              frequency=80000000, mean_photon_num=0.1, direct_receiver=qc)
+    components = {"lightsource": ls, "cchannel": cc, "qchannel": qc}
 
-        def assign_another(self, another):
-            self.another = another
+    alice = topology.Node("alice", tl, components=components)
+    qc.set_sender(ls)
+    cc.add_end(alice)
 
-        def generate_key(self, keylen):
-            self.log("generate_key, params = " + str(keylen))
-            self.parent.get_key_from_BB84(self.keys.pop())
-            self.another.parent.get_key_from_BB84(self.another.keys.pop())
+    # Bob
+    detectors = [{"dark_count": 1, "time_resolution": 1},
+                 {"dark_count": 1, "time_resolution": 1}]
+    splitter = {}
+    qsd = topology.QSDetector("bob.qsdetector", tl, detectors=detectors, splitter=splitter)
+    components = {"detector": qsd, "cchannel": cc, "qchannel": qc}
 
-        def init():
-            pass
+    bob = topology.Node("bob", tl, components=components)
+    qc.set_receiver(qsd)
+    cc.add_end(bob)
 
-    class CChannel(Entity):
-        def log(self, info):
-            print(self.timeline.now(), self.name, info)
+    tl.entities.append(alice)
+    tl.entities.append(bob)
 
-        def __init__(self, name, timeline, **kwargs):
-            Entity.__init__(self, name, timeline)
-            self.delay = kwargs.get("delay")
-            self.end_1 = kwargs.get("end_1")
-            self.end_2 = kwargs.get("end_2")
+    # BB84
+    bba = BB84("bba", tl, role="alice")
+    bbb = BB84("bbb", tl, role="bob")
+    bba.assign_node(alice)
+    bbb.assign_node(bob)
+    bba.another = bbb
+    bbb.another = bba
+    alice.protocol = bba
+    bob.protocol = bbb
 
-        def init():
-            pass
+    # Parent
+    cascade_a = Cascade("cascade_a", tl, bb84=bba, role=0)
+    cascade_b = Cascade("cascade_b", tl, bb84=bbb, role=1)
+    cascade_a.assign_cchannel(cc)
+    cascade_b.assign_cchannel(cc)
+    cascade_a.another = cascade_b
+    cascade_b.another = cascade_a
+    bba.add_parent(cascade_a)
+    bbb.add_parent(cascade_b)
 
-    def add_error(key):
-        pass
+    import sys
+    p = Process(cascade_a, 'generate_key', [1000])
+    tl.schedule(Event(0, p))
+    tl.run()
 
-    t = Timeline()
-    bb84_1 = BB84("bb84_1", t, keys=[(1 << 2) - 1, (1 << 100) - 1])
-    cascade_1 = Cascade("cascade_1", t, bb84=bb84_1, role=0)
-    bb84_1.assign_parent(cascade_1)
-    bb84_2 = BB84("bb84_2", t, keys=[0, 0])
-    cascade_2 = Cascade("cascade_2", t, bb84=bb84_2, role=1)
-    bb84_2.assign_parent(cascade_2)
-    bb84_1.assign_another(bb84_2)
-    bb84_2.assign_another(bb84_1)
-    cchanel = CChannel(
-        "cchannel",
-        t,
-        end_1=cascade_1,
-        end_2=cascade_2,
-        delay=5)
-    cascade_1.assign_cchannel(cchanel)
-    cascade_2.assign_cchannel(cchanel)
-    cascade_1.logflag = False
-    cascade_2.logflag = False
-
-    p = Process(cascade_1, 'generate_key', [10000])
-    t.schedule(Event(0, p))
-    t.run()
-    print("throughput: ",cascade_1.throughput*1000, " bit/sec")
-    print("error rate:", cascade_1.error_bit_rate)
-    print("key1=", cascade_1.key)
-    print("key2=", cascade_2.key)
-    print("time cost=", cascade_1.time_cost)
-    print(cascade_1.tmp)
-    print(cascade_2.tmp)
-    print(t.now())
+    print("throughput: ",cascade_a.throughput*10**12, " bit/sec")
+    print("error rate:", cascade_a.error_bit_rate)
+    print("time cost=", cascade_a.time_cost)
+    #print(cascade_a.tmp)
+    #print(cascade_b.tmp)
+    print(tl.now())

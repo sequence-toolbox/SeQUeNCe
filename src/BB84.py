@@ -34,7 +34,7 @@ class BB84(Entity):
         self.node = node
         cchannel = node.components["cchannel"]
         qchannel = node.components["qchannel"]
-        self.classical_delay = cchannel.distance / cchannel.light_speed
+        self.classical_delay = cchannel.delay
         self.quantum_delay = qchannel.distance / qchannel.light_speed
 
     def add_parent(self, parent):
