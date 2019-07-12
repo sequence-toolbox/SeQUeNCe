@@ -113,7 +113,7 @@ class ClassicalChannel(OpticalChannel):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline, **kwargs)
         self.ends = []
-        self.delay = int(self.distance / self.light_speed)
+        self.delay = kwargs.get("delay", (self.distance / self.light_speed))
 
     def add_end(self, node):
         if node in self.ends:
@@ -224,7 +224,7 @@ class Detector(Entity):
 
     def detect(self):
         if numpy.random.random_sample() < self.efficiency and self.timeline.now() > self.next_detection_time:
-            time = int(self.timeline.now() / self.time_resolution) * self.time_resolution
+            time = int(round(self.timeline.now() / self.time_resolution)) * self.time_resolution
             self.photon_times.append(time)
             self.next_detection_time = self.timeline.now() + (10 ** 12 / self.count_rate)  # period in ps
 
@@ -308,6 +308,7 @@ class Topology:
         self.create_nodes(nodes_config, timelines)
         self.create_qchannel(topo_config['QChannel'], timelines)
         self.create_cchannel(topo_config['CChannel'], timelines)
+        self.create_protocols(nodes_config, timelines)
 
     def create_nodes(self, nodes_config, timelines):
         for node_config in nodes_config:
@@ -381,6 +382,7 @@ class Topology:
             chan.set_receiver(receiver)
             self.entities.append(chan)
 
+    # TODO: use add_end function for classical channel
     def create_cchannel(self, channel_config, timelines):
         for config in channel_config:
             name = config['name']
@@ -390,6 +392,10 @@ class Topology:
 
             chan = ClassicalChannel(name, tl, **config)
             self.entities.append(chan)
+
+    # TODO: populate
+    def create_protocols(self, nodes_config, timelines):
+        pass
 
     def print_topology(self):
         pass
