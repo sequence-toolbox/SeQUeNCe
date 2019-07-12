@@ -1,5 +1,6 @@
 import numpy
 import re
+import math
 
 from process import Process
 from entity import Entity
@@ -26,6 +27,8 @@ class BB84(Entity):
         self.key_length = 0  # desired key length (from parent)
         self.parent = None
         self.another = None
+        self.keys_left = 0
+        self.end_run_time = 0
 
     def init(self):
         pass
@@ -142,13 +145,31 @@ class BB84(Entity):
                 self.parent.get_key_from_BB84(self.key)  # call parent
                 self.another.set_key()
                 self.another.parent.get_key_from_BB84(self.another.key)
+
+                self.keys_left -= 1
+                # check if we've made enough keys or run out of time
+                if self.keys_left > 0 and self.end_run_time > self.timeline.now():
+                    self.key_bits = 0
+                    self.key = 0
+                    self.key_bits = []
+                    self.another.key_bits = []
+                    process = Process(self, "generate_key", [self.key_length,
+                                                             self.keys_left,
+                                                             self.end_run_time - self.timeline.now()])
+                    event = Event(self.timeline.now(), process)
+                    self.timeline.schedule(event)
+
             else:
-                process = Process(self, "generate_key", [self.key_length])
+                process = Process(self, "generate_key", [self.key_length,
+                                                         self.keys_left,
+                                                         self.end_run_time - self.timeline.now()])
                 event = Event(self.timeline.now(), process)
                 self.timeline.schedule(event)
 
-    def generate_key(self, length):
+    def generate_key(self, length, key_num=1, run_time=math.inf):
         self.key_length = length
+        self.keys_left = key_num
+        self.end_run_time = run_time + self.timeline.now()
 
         # calculate number of pulses based on number of bits to generate
         num_pulses = int(length * (1 / self.node.components["lightsource"].mean_photon_num))
