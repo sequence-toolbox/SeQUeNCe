@@ -49,11 +49,11 @@ class BB84(Entity):
 
         # determine indices from detection times and record bits
         for time in detection_times[0]:  # detection times for |0> detector
-            index = int(((time - self.start_time) * 10 ** -12) * self.qubit_frequency)
+            index = int(round((time - self.start_time) * self.qubit_frequency * (10 ** -12)))
             self.bits[index] = 0
 
         for time in detection_times[1]:  # detection times for |1> detector
-            index = int(((time - self.start_time) * 10 ** -12) * self.qubit_frequency)
+            index = int((time - self.start_time) * self.qubit_frequency * (10 ** -12))
             if self.bits[index] == 0:
                 self.bits[index] = -1
             else:
@@ -67,7 +67,7 @@ class BB84(Entity):
         if message[0] == "begin_photon_pulse":  # (current node is Bob): start to receive photons
             self.qubit_frequency = float(message[1])
             self.light_time = float(message[2])
-            self.start_time = int(message[3]) + int(self.quantum_delay)  # self.timeline.now()
+            self.start_time = int(message[3]) + int(round(self.quantum_delay))  # self.timeline.now()
 
             # generate basis list
             num_pulses = int(self.light_time * self.qubit_frequency)
@@ -165,7 +165,7 @@ class BB84(Entity):
         self.bits = numpy.random.choice([0, 1], num_pulses)  # list of random bits for 1 second
 
         # send message that photon pulse is beginning, then send bits, then send message that pulse is ending
-        self.start_time = int(self.timeline.now()) + int(self.classical_delay)
+        self.start_time = int(self.timeline.now()) + int(round(self.classical_delay))
         self.node.send_message("begin_photon_pulse {} {} {}"
                                .format(self.qubit_frequency, self.light_time, self.start_time))
 
@@ -198,8 +198,8 @@ if __name__ == "__main__":
 
     tl = timeline.Timeline(10 ** 13)  # stop time is 10 seconds
 
-    qc = topology.QuantumChannel("qc", tl, distance=10)
-    cc = topology.ClassicalChannel("cc", tl, distance=10)
+    qc = topology.QuantumChannel("qc", tl, distance=10000, polarization_fidelity=0.99)
+    cc = topology.ClassicalChannel("cc", tl, distance=10000)
 
     # Alice
     ls = topology.LightSource("alice.lightsource", tl,
@@ -214,8 +214,8 @@ if __name__ == "__main__":
     # d_0 = topology.Detector(tl, dark_count=1, time_resolution=1)
     # d_1 = topology.Detector(tl, dark_count=1, time_resolution=1)
     # bs = topology.BeamSplitter(tl)
-    detectors = [{"dark_count": 1, "time_resolution": 1},
-                 {"dark_count": 1, "time_resolution": 1}]
+    detectors = [{"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
+                 {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10}]
     splitter = {}
     qsd = topology.QSDetector("bob.qsdetector", tl, detectors=detectors, splitter=splitter)
     components = {"detector": qsd, "cchannel": cc, "qchannel": qc}
