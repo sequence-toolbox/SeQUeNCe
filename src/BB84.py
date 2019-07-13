@@ -5,9 +5,6 @@ import math
 from process import Process
 from entity import Entity
 from event import Event
-# use for testing
-import topology
-import timeline
 
 
 class BB84(Entity):
@@ -25,10 +22,16 @@ class BB84(Entity):
         self.key = 0  # key as int
         self.key_bits = []  # key as list of bits
         self.key_length = 0  # desired key length (from parent)
+        self.key_counter = 0
         self.parent = None
         self.another = None
         self.keys_left = 0
         self.end_run_time = 0
+        # performance
+        self.throughput = None
+        self.error_bit = 0
+        self.error_bit_rate = None
+        self.latency = None
 
     def init(self):
         pass
@@ -142,9 +145,28 @@ class BB84(Entity):
                 del self.key_bits[self.key_length:]
                 del self.another.key_bits[self.key_length:]
                 self.set_key()  # convert from binary list to int
-                self.parent.get_key_from_BB84(self.key)  # call parent
+
+                self.key_counter+=1
+                if self.key_counter==1:
+                    self.latency = self.timeline.now()
+                def get_diff_bit_num(val1, val2):
+                    i = 0
+                    res = 0
+                    val = val1^val2
+                    while val>>i:
+                        if (val>>i)&1==1:
+                            res+=1
+                        i+=1
+                    return res
+                self.error_bit += get_diff_bit_num(self.key, self.another.key)
+                self.error_bit_rate = self.error_bit / (self.key_length*self.key_counter)
+                self.throughput = self.key_length*self.key_counter/(self.timeline.now())
+
+                if not self.parent is None:
+                    self.parent.get_key_from_BB84(self.key)  # call parent
                 self.another.set_key()
-                self.another.parent.get_key_from_BB84(self.another.key)
+                if not self.another.parent is None:
+                    self.another.parent.get_key_from_BB84(self.another.key)
 
                 self.keys_left -= 1
                 # check if we've made enough keys or run out of time
@@ -202,6 +224,8 @@ class BB84(Entity):
 
 
 if __name__ == "__main__":
+    import topology
+    import timeline
     # dummy parent class to test BB84 functionality
     class Parent:
         def __init__(self, keysize, role):

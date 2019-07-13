@@ -285,7 +285,7 @@ class Cascade(Entity):
 
         #print("k0: ",self.keys[self.cur_key-1])
         #print("k1: ",self.another.keys[self.cur_key-1])
-        print(self.timeline.now()/(10**12), self.name, self.cur_key-1, "error bit number: ", get_diff_bit_num(self.keys[self.cur_key-1], self.another.keys[self.cur_key-1]))
+        #print(self.timeline.now()/(10**12), self.name, self.cur_key-1, "error bit number: ", get_diff_bit_num(self.keys[self.cur_key-1], self.another.keys[self.cur_key-1]))
         if self.cur_key < len(self.keys):
             self.check_checksum()
 
@@ -469,7 +469,6 @@ if __name__ == "__main__":
     bba.add_parent(cascade_a)
     bbb.add_parent(cascade_b)
 
-    import sys
     p = Process(cascade_a, 'generate_key', [256,math.inf,60*10**12])
     tl.schedule(Event(0, p))
     tl.run()
