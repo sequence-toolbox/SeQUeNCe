@@ -158,13 +158,14 @@ class LightSource(Entity):
 
     # for BB84
     def emit_photon(self):
-        basis = numpy.random.choice([[0, 90], [45, 135]])
-        self.basis_list.append(basis)
-        bit = numpy.random.choice([0, 1])
-        self.bit_list.append(bit)
-        state = basis[bit]
-
         if self.is_on:
+            bases = [[0, 90], [45, 135]]
+            basis = bases[numpy.random.choice([0, 1])]
+            self.basis_list.append(basis)
+            bit = numpy.random.choice([0, 1])
+            self.bit_list.append(bit)
+            state = basis[bit]
+
             num_photons = numpy.random.poisson(self.mean_photon_num)
             for _ in range(num_photons):
                 new_photon = Photon(None, self.timeline,
@@ -308,9 +309,6 @@ class Node(Entity):
             state_list.append(basis_list[i][bit])
 
         self.components[source_name].emit(state_list)
-
-    def receive_photon(self, photon, detector_name):
-        self.components[detector_name].detect(photon)
 
     def get_detector_count(self):
         detector = self.components['detector']  # QSDetector class
