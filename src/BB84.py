@@ -14,6 +14,7 @@ class BB84(Entity):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline)
         self.role = kwargs.get("role", None)
+        self.working = False
         self.light_time = 0  # time to use laser (measured in s)
         self.qubit_frequency = 0  # frequency of qubit sending
         self.start_time = 0  # start time of light pulse
@@ -56,7 +57,7 @@ class BB84(Entity):
             self.bits[index] = 0
 
         for time in detection_times[1]:  # detection times for |1> detector
-            index = int((time - self.start_time) * self.qubit_frequency * (10 ** -12))
+            index = int(round((time - self.start_time) * self.qubit_frequency * (10 ** -12)))
             if self.bits[index] == 0:
                 self.bits[index] = -1
             else:
@@ -70,7 +71,7 @@ class BB84(Entity):
         if message[0] == "begin_photon_pulse":  # (current node is Bob): start to receive photons
             self.qubit_frequency = float(message[1])
             self.light_time = float(message[2])
-            self.start_time = int(message[3]) + int(round(self.quantum_delay))  # self.timeline.now()
+            self.start_time = int(float(message[3]) + float(self.quantum_delay))
 
             # generate basis list
             num_pulses = int(self.light_time * self.qubit_frequency)
@@ -92,9 +93,18 @@ class BB84(Entity):
             self.timeline.schedule(event)
 
             # clear detector photon times to restart measurement
-            self.node.components["detector"].clear_detectors()
+            process = Process(self.node.components["detector"], "clear_detectors", [])
+            event = Event(self.start_time, process)
+            self.timeline.schedule(event)
+            # self.node.components["detector"].clear_detectors()
 
         elif message[0] == "received_qubits":  # (Current node is Alice): can send basis
+            light_source = self.node.components["lightsource"]
+            self.basis_list = light_source.basis_list
+            light_source.basis_list = []
+            self.bits = light_source.bit_list
+            light_source.bit_list = []
+
             self.node.send_message("basis_list {}".format(self.basis_list))
 
         elif message[0] == "basis_list":  # (Current node is Bob): compare bases
@@ -130,8 +140,9 @@ class BB84(Entity):
         elif message[0] == "matching_indices":  # (Current node is Alice): create key from matching indices
             # parse matching indices
             indices = []
-            for val in message[1:]:
-                indices.append(int(re.sub("[],[]", "", val)))
+            if message[1] != "[]":
+                for val in message[1:]:
+                    indices.append(int(re.sub("[],[]", "", val)))
 
             # set key equal to bits at received indices
             for i in indices:
@@ -160,6 +171,9 @@ class BB84(Entity):
                     self.timeline.schedule(event)
 
             else:
+                light_source = self.node.components["lightsource"]
+                light_source.bit_list = []
+                light_source.basis_list = []
                 process = Process(self, "generate_key", [self.key_length,
                                                          self.keys_left,
                                                          self.end_run_time - self.timeline.now()])
@@ -171,29 +185,26 @@ class BB84(Entity):
         self.keys_left = key_num
         self.end_run_time = run_time + self.timeline.now()
 
-        # calculate number of pulses based on number of bits to generate
-        num_pulses = int(length * (1 / self.node.components["lightsource"].mean_photon_num))
-        self.light_time = num_pulses / self.node.components["lightsource"].frequency
+        light_source = self.node.components["lightsource"]
 
-        self.qubit_frequency = self.node.components["lightsource"].frequency
+        # calculate number of pulses based on delay
+        num_pulses = int(length * (1 / light_source.mean_photon_num))
+        self.light_time = num_pulses / light_source.frequency
 
-        # list of random bases for 1 second
-        bases = [[0, 90], [45, 135]]
-        self.basis_list = [[]] * num_pulses
-        for i in range(num_pulses):
-            self.basis_list[i] = bases[numpy.random.choice([0, 1])]
-
-        self.bits = numpy.random.choice([0, 1], num_pulses)  # list of random bits for 1 second
+        self.qubit_frequency = light_source.frequency
 
         # send message that photon pulse is beginning, then send bits, then send message that pulse is ending
         self.start_time = int(self.timeline.now()) + int(round(self.classical_delay))
         self.node.send_message("begin_photon_pulse {} {} {}"
                                .format(self.qubit_frequency, self.light_time, self.start_time))
 
-        process = Process(self.node, "send_photons", [self.basis_list, self.bits, "lightsource"])
+        process = Process(light_source, "turn_on", [])
         event = Event(self.start_time, process)
         self.timeline.schedule(event)
-        # self.node.send_photons(self.basis_list, self.bits, "lightsource")
+
+        process = Process(light_source, "turn_off", [])
+        event = Event(self.start_time + (self.light_time * (10 ** 12)), process)
+        self.timeline.schedule(event)
 
         # call to get_key_from_BB84 is handled in received_message (after processing is done)
 
@@ -211,20 +222,20 @@ if __name__ == "__main__":
             self.key = 0
 
         def run(self):
-            self.child.generate_key(self.keysize)
+            self.child.generate_key(self.keysize, 2)
 
         def get_key_from_BB84(self, key):
             print("key for " + self.role + ":\t{:0b}".format(key))
             self.key = key
 
-    tl = timeline.Timeline(10 ** 13)  # stop time is 10 seconds
+    tl = timeline.Timeline(10 ** 10)  # stop time is 1 ms
 
-    qc = topology.QuantumChannel("qc", tl, distance=10000, polarization_fidelity=0.99)
-    cc = topology.ClassicalChannel("cc", tl, distance=10000)
+    qc = topology.QuantumChannel("qc", tl, distance=10e3, polarization_fidelity=0.99)
+    cc = topology.ClassicalChannel("cc", tl, distance=10e3)
 
     # Alice
     ls = topology.LightSource("alice.lightsource", tl,
-                              frequency=80000000, mean_photon_num=0.1, direct_receiver=qc)
+                              frequency=80e6, mean_photon_num=0.1, direct_receiver=qc)
     components = {"lightsource": ls, "cchannel": cc, "qchannel": qc}
 
     alice = topology.Node("alice", tl, components=components)
@@ -232,9 +243,6 @@ if __name__ == "__main__":
     cc.add_end(alice)
 
     # Bob
-    # d_0 = topology.Detector(tl, dark_count=1, time_resolution=1)
-    # d_1 = topology.Detector(tl, dark_count=1, time_resolution=1)
-    # bs = topology.BeamSplitter(tl)
     detectors = [{"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
                  {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10}]
     splitter = {}
