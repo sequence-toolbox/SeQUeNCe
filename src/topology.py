@@ -147,13 +147,41 @@ class LightSource(Entity):
         self.mean_photon_num = kwargs.get("mean_photon_num", 0)
         self.encoding_type = kwargs.get("encoding_type")
         self.direct_receiver = kwargs.get("direct_receiver", None)
-        # qs_array = kwargs.get("quantum_state", [[math.sqrt(1 / 2), 0], [math.sqrt(1 / 2), 0]])
-        self.quantum_state = kwargs.get("quantum_state", 45)  # polarization angle 45 degrees instead of pi/4
         self.photon_counter = 0
+        # for BB84
+        self.basis_list = []
+        self.bit_list = []
+        self.is_on = False
 
     def init(self):
         pass
 
+    # for BB84
+    def emit_photon(self):
+        if self.is_on:
+            bases = [[0, 90], [45, 135]]
+            basis = bases[numpy.random.choice([0, 1])]
+            self.basis_list.append(basis)
+            bit = numpy.random.choice([0, 1])
+            self.bit_list.append(bit)
+            state = basis[bit]
+
+            num_photons = numpy.random.poisson(self.mean_photon_num)
+            for _ in range(num_photons):
+                new_photon = Photon(None, self.timeline,
+                                    wavelength=self.wavelength,
+                                    location=self.direct_receiver,
+                                    encoding_type=self.encoding_type,
+                                    quantum_state=state)
+                self.direct_receiver.transmit(new_photon)
+
+                self.photon_counter += 1
+
+            process = Process(self, "emit_photon", [])
+            event = Event(self.timeline.now() + (10 ** 12) / self.frequency, process)
+            self.timeline.schedule(event)
+
+    # for general use
     def emit(self, state_list):
         time = self.timeline.now()
 
@@ -173,6 +201,13 @@ class LightSource(Entity):
                 self.photon_counter += 1
 
             time += (10 ** 12) / self.frequency
+
+    def turn_on(self):
+        self.is_on = True
+        self.emit_photon()
+
+    def turn_off(self):
+        self.is_on = False
 
     def assign_receiver(self, receiver):
         self.direct_receiver = receiver
@@ -274,9 +309,6 @@ class Node(Entity):
             state_list.append(basis_list[i][bit])
 
         self.components[source_name].emit(state_list)
-
-    def receive_photon(self, photon, detector_name):
-        self.components[detector_name].detect(photon)
 
     def get_detector_count(self):
         detector = self.components['detector']  # QSDetector class
