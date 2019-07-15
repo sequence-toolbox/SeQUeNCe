@@ -8,14 +8,20 @@ from process import Process
 
 if __name__ == "__main__":
     random.seed(1)
-    fh = open('results/sensitivity/efficiency_bb84.log','w')
-    for e in range(5,10):
+    import sys
+    frequency = sys.argv[1] # GHz
+    filename = "results/sensitivity/freq_mean_bb84_"+frequency+".log"
+    frequency = float(frequency)
+    fh = open(filename,'w')
+
+    for mean_num in range(1,2):
         tl = Timeline()
-        qc = topology.QuantumChannel("qc", tl, distance=10000, polarization_fidelity=0.9, attenuation=0.0002)
-        cc = topology.ClassicalChannel("cc", tl, distance=10000, delay=5*10**9)
+        qc = topology.QuantumChannel("qc", tl, distance=20000, polarization_fidelity=0.97, attenuation=0.0002)
+        cc = topology.ClassicalChannel("cc", tl, distance=20000)
+        cc.delay+= 10**9
 
         # Alice
-        ls = topology.LightSource("alice.lightsource", tl, frequency=80*10**6, mean_photon_num=0.1, direct_receiver=qc)
+        ls = topology.LightSource("alice.lightsource", tl, frequency=frequency*10**9, mean_photon_num=mean_num/10, direct_receiver=qc)
         components = {"lightsource": ls, "cchannel":cc, "qchannel":qc}
         alice = topology.Node("alice", tl, components=components)
         qc.set_sender(ls)
@@ -23,8 +29,8 @@ if __name__ == "__main__":
         tl.entities.append(alice)
 
         # Bob
-        detectors = [{"efficiency":e/10, "dark_count":10, "time_resolution":10, "count_rate":50*10**6},
-                     {"efficiency":e/10, "dark_count":10, "time_resolution":10, "count_rate":50*10**6}]
+        detectors = [{"efficiency":0.8, "dark_count":10, "time_resolution":10, "count_rate":50*10**6},
+                     {"efficiency":0.8, "dark_count":10, "time_resolution":10, "count_rate":50*10**6}]
         splitter = {}
         qsd = topology.QSDetector("bob.qsdetector", tl, detectors=detectors, splitter=splitter)
         components = {"detector":qsd, "cchannel":cc, "qchannel":qc}
@@ -43,11 +49,13 @@ if __name__ == "__main__":
         alice.protocol = bba
         bob.protocol = bbb
 
-        process = Process(bba, "generate_key", [256,math.inf,600*10**12])
+        process = Process(bba, "generate_key", [256,math.inf,0.6*10**12])
         event = Event(0,process)
         tl.schedule(event)
         tl.run()
-        fh.write(str(e/10))
+        fh.write(str(frequency))
+        fh.write(' ')
+        fh.write(str(mean_num/10))
         fh.write(' ')
         fh.write(str(bba.throughput*10**12))
         fh.write(' ')
@@ -55,5 +63,13 @@ if __name__ == "__main__":
         fh.write(' ')
         fh.write(str(bba.latency/10**12))
         fh.write('\n')
-    fh.close()
 
+        print(ls.photon_counter)
+        print(ls.pulse_id)
+        print(qsd.detectors[0].photon_counter)
+        print(qsd.detectors[1].photon_counter)
+        print(bbb.discard)
+        print(bba.throughput)
+        print(bba.key_counter)
+
+    fh.close()

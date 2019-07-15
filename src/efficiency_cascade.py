@@ -1,3 +1,4 @@
+from numpy import random
 import math
 from event import Event
 from timeline import Timeline
@@ -7,6 +8,7 @@ import topology
 from process import Process
 
 if __name__ == "__main__":
+    random.seed(1)
     fh = open('results/sensitivity/efficiency_cascade.log','w')
     for e in range(5,10):
         tl = Timeline()

@@ -261,7 +261,7 @@ class Cascade(Entity):
                     return
             self.cur_block = cur_block = 0
         if self.cur_key == 1:
-            self.latency = self.timeline.now() - self.start_time
+            self.latency = self.timeline.now()
             self.another.latency = self.latency
         self.cur_key += 1
         self.another.cur_key += 1
@@ -283,9 +283,6 @@ class Cascade(Entity):
                 i+=1
             return counter
 
-        #print("k0: ",self.keys[self.cur_key-1])
-        #print("k1: ",self.another.keys[self.cur_key-1])
-        #print(self.timeline.now()/(10**12), self.name, self.cur_key-1, "error bit number: ", get_diff_bit_num(self.keys[self.cur_key-1], self.another.keys[self.cur_key-1]))
         if self.cur_key < len(self.keys):
             self.check_checksum()
 
@@ -407,7 +404,10 @@ class Cascade(Entity):
                 if (val>>i)&1 == 1:
                     counter += 1
                 i+=1
-        self.error_bit_rate = counter / (self.keylen * (self.cur_key - 1))
+        if self.cur_key > 1:
+            self.error_bit_rate = counter / (self.keylen * (self.cur_key - 1))
+        else:
+            self.error_bit_rate = 0
         self.time_cost = self.end_time - self.start_time
 
     def init():

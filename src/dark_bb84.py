@@ -1,3 +1,4 @@
+from numpy import random
 import math
 from event import Event
 from timeline import Timeline
@@ -6,6 +7,7 @@ import topology
 from process import Process
 
 if __name__ == "__main__":
+    random.seed(1)
     fh = open('results/sensitivity/dark_bb84.log','w')
     for d in range(-3,3):
         tl = Timeline()

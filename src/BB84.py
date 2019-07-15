@@ -33,6 +33,8 @@ class BB84(Entity):
         self.error_bit = 0
         self.error_bit_rate = None
         self.latency = None
+        self.double_trigger = 0
+        self.discard = 0
 
     def init(self):
         pass
@@ -57,12 +59,17 @@ class BB84(Entity):
         # determine indices from detection times and record bits
         for time in detection_times[0]:  # detection times for |0> detector
             index = int(round((time - self.start_time) * self.qubit_frequency * (10 ** -12)))
+            while index >= len(self.bits):
+                self.bits.append(-1)
             self.bits[index] = 0
 
         for time in detection_times[1]:  # detection times for |1> detector
             index = int(round((time - self.start_time) * self.qubit_frequency * (10 ** -12)))
+            while index >= len(self.bits):
+                self.bits.append(-1)
             if self.bits[index] == 0:
                 self.bits[index] = -1
+                self.double_trigger+=1
             else:
                 self.bits[index] = 1
 
@@ -85,7 +92,7 @@ class BB84(Entity):
 
             # schedule changes for BeamSplitter Basis
             for i in range(len(self.basis_list)):
-                time = (i / self.qubit_frequency) * (10 ** 12)
+                time = int((i / self.qubit_frequency) * (10 ** 12)) - 10
                 process = Process(self.node.components["detector"], "set_basis", [self.basis_list[i]])
                 event = Event(self.start_time + time, process)
                 self.timeline.schedule(event)
@@ -132,10 +139,12 @@ class BB84(Entity):
 
             # compare own basis with basis message and create list of matching indices
             indices = []
-            for i in range(len(self.basis_list)):
+            for i in range(1,len(self.basis_list)):
                 if self.bits[i] != -1 and self.basis_list[i] == basis_list_alice[i]:
                     indices.append(i)
                     self.key_bits.append(self.bits[i])
+                else:
+                    self.discard+=1
 
             # send to Alice list of matching indices
             self.node.send_message("matching_indices {}".format(indices))
@@ -157,6 +166,12 @@ class BB84(Entity):
                 del self.another.key_bits[self.key_length:]
                 self.set_key()  # convert from binary list to int
 
+                if not self.parent is None:
+                    self.parent.get_key_from_BB84(self.key)  # call parent
+                self.another.set_key()
+                if not self.another.parent is None:
+                    self.another.parent.get_key_from_BB84(self.another.key)
+
                 self.key_counter+=1
                 if self.key_counter==1:
                     self.latency = self.timeline.now()
@@ -172,12 +187,6 @@ class BB84(Entity):
                 self.error_bit += get_diff_bit_num(self.key, self.another.key)
                 self.error_bit_rate = self.error_bit / (self.key_length*self.key_counter)
                 self.throughput = self.key_length*self.key_counter/(self.timeline.now())
-
-                if not self.parent is None:
-                    self.parent.get_key_from_BB84(self.key)  # call parent
-                self.another.set_key()
-                if not self.another.parent is None:
-                    self.another.parent.get_key_from_BB84(self.another.key)
 
                 self.keys_left -= 1
                 # check if we've made enough keys or run out of time
@@ -210,7 +219,7 @@ class BB84(Entity):
         light_source = self.node.components["lightsource"]
 
         # calculate number of pulses based on delay
-        num_pulses = int(length * (1 / light_source.mean_photon_num))
+        num_pulses = int(length * (1 / 0.1))
         self.light_time = num_pulses / light_source.frequency
 
         self.qubit_frequency = light_source.frequency
@@ -225,7 +234,7 @@ class BB84(Entity):
         self.timeline.schedule(event)
 
         process = Process(light_source, "turn_off", [])
-        event = Event(self.start_time + (self.light_time * (10 ** 12)), process)
+        event = Event(self.start_time + int(self.light_time * (10 ** 12)), process)
         self.timeline.schedule(event)
 
         # call to get_key_from_BB84 is handled in received_message (after processing is done)
