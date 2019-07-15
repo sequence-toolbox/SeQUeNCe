@@ -225,7 +225,9 @@ class QSDetector(Entity):
         self.splitter = BeamSplitter(timeline, **splitter)
 
     def init(self):
-        pass
+        for d in self.detectors:
+            d.init()
+        self.splitter.init()
 
     def detect(self, photon):
         self.detectors[self.splitter.transmit(photon)].detect()

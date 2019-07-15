@@ -81,20 +81,21 @@ class BB84(Entity):
                 self.basis_list[i] = bases[numpy.random.choice([0, 1])]
 
             # schedule changes for BeamSplitter Basis
+            basis_start_time = self.start_time - 1 / (2 * self.qubit_frequency)
             for i in range(len(self.basis_list)):
                 time = (i / self.qubit_frequency) * (10 ** 12)
                 process = Process(self.node.components["detector"], "set_basis", [self.basis_list[i]])
-                event = Event(self.start_time + time, process)
+                event = Event(int(basis_start_time + time), process)
                 self.timeline.schedule(event)
 
             # schedule end_photon_pulse()
             process = Process(self, "end_photon_pulse", [])
-            event = Event(self.start_time + self.light_time * (10 ** 12), process)
+            event = Event(int(self.start_time + self.light_time * (10 ** 12)), process)
             self.timeline.schedule(event)
 
             # clear detector photon times to restart measurement
             process = Process(self.node.components["detector"], "clear_detectors", [])
-            event = Event(self.start_time, process)
+            event = Event(int(self.start_time), process)
             self.timeline.schedule(event)
             # self.node.components["detector"].clear_detectors()
 
@@ -199,11 +200,11 @@ class BB84(Entity):
                                .format(self.qubit_frequency, self.light_time, self.start_time))
 
         process = Process(light_source, "turn_on", [])
-        event = Event(self.start_time, process)
+        event = Event(int(self.start_time), process)
         self.timeline.schedule(event)
 
         process = Process(light_source, "turn_off", [])
-        event = Event(self.start_time + (self.light_time * (10 ** 12)), process)
+        event = Event(int(self.start_time + (self.light_time * (10 ** 12))), process)
         self.timeline.schedule(event)
 
         # call to get_key_from_BB84 is handled in received_message (after processing is done)
@@ -255,6 +256,10 @@ if __name__ == "__main__":
 
     tl.entities.append(alice)
     tl.entities.append(bob)
+    for key in alice.components:
+        tl.entities.append(alice.components[key])
+    for key in bob.components:
+        tl.entities.append(bob.components[key])
 
     # BB84
     bba = BB84("bba", tl, role="alice")
@@ -278,6 +283,7 @@ if __name__ == "__main__":
     event = Event(0, process)
     tl.schedule(event)
 
+    tl.init()
     tl.run()
 
     key_diff = pa.key ^ pb.key
