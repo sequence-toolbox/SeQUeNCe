@@ -407,7 +407,10 @@ class Cascade(Entity):
                 if (val>>i)&1 == 1:
                     counter += 1
                 i+=1
-        self.error_bit_rate = counter / (self.keylen * (self.cur_key - 1))
+        if self.cur_key>1:
+            self.error_bit_rate = counter / (self.keylen * (self.cur_key - 1))
+        else:
+            self.error_bit_rate = 0
         self.time_cost = self.end_time - self.start_time
 
     def init():
