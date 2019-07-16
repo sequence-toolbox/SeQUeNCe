@@ -133,7 +133,7 @@ class ClassicalChannel(OpticalChannel):
             if e != source:
                 receiver = e
 
-        future_time = self.timeline.now() + self.delay
+        future_time = int(round(self.timeline.now() + self.delay))
         process = Process(receiver, "receive_message", [message])
         event = Event(future_time, process)
         self.timeline.schedule(event)
@@ -149,7 +149,9 @@ class LightSource(Entity):
         self.direct_receiver = kwargs.get("direct_receiver", None)
         self.photon_counter = 0
         # for BB84
+        self.basis_lists = []
         self.basis_list = []
+        self.bit_lists = []
         self.bit_list = []
         self.is_on = False
 
@@ -178,7 +180,7 @@ class LightSource(Entity):
                 self.photon_counter += 1
 
             process = Process(self, "emit_photon", [])
-            event = Event(self.timeline.now() + (10 ** 12) / self.frequency, process)
+            event = Event(self.timeline.now() + 1e12 / self.frequency, process)
             self.timeline.schedule(event)
 
     # for general use
@@ -200,13 +202,17 @@ class LightSource(Entity):
 
                 self.photon_counter += 1
 
-            time += (10 ** 12) / self.frequency
+            time += 1e12 / self.frequency
 
     def turn_on(self):
         self.is_on = True
         self.emit_photon()
 
     def turn_off(self):
+        self.basis_lists.append(self.basis_list)
+        self.basis_list = []
+        self.bit_lists.append(self.bit_list)
+        self.bit_list = []
         self.is_on = False
 
     def assign_receiver(self, receiver):
@@ -263,10 +269,10 @@ class Detector(Entity):
         if numpy.random.random_sample() < self.efficiency and self.timeline.now() > self.next_detection_time:
             time = int(round(self.timeline.now() / self.time_resolution)) * self.time_resolution
             self.photon_times.append(time)
-            self.next_detection_time = self.timeline.now() + (10 ** 12 / self.count_rate)  # period in ps
+            self.next_detection_time = self.timeline.now() + (1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self):
-        time_to_next = int(numpy.random.exponential(1 / self.dark_count) * (10 ** 12))  # time to next dark count
+        time_to_next = int(numpy.random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
         time = time_to_next + self.timeline.now()  # time of next dark count
 
         process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
