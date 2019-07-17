@@ -31,6 +31,12 @@ class BB84(Entity):
         self.keys_left = 0
         self.end_run_time = 0
 
+        # metrics
+        self.latency = 0  # measured in seconds
+        self.last_key_time = 0
+        self.throughputs = []  # measured in bits/sec
+        self.error_rates = []
+
     def init(self):
         pass
 
@@ -207,10 +213,18 @@ class BB84(Entity):
                     self.another.set_key()
                     self.another.parent.get_key_from_BB84(self.another.key)
 
-                    # for testing
+                    # for metrics
+                    if self.latency == 0:
+                        self.latency = (self.timeline.now() - self.last_key_time) * 1e-12
+                    self.throughputs.append(self.key_length * 1e12 / (self.timeline.now() - self.last_key_time))
+                    self.last_key_time = self.timeline.now()
+
                     key_diff = self.key ^ self.another.key
-                    num_errors = bin(key_diff).count("1")
-                    print("bit error rate: {}%".format(num_errors / self.key_length * 100))
+                    num_errors = 0
+                    while key_diff:
+                        key_diff &= key_diff - 1
+                        num_errors += 1
+                    self.error_rates.append(num_errors / self.key_length)
 
                     self.keys_left -= 1
 
@@ -247,6 +261,8 @@ class BB84(Entity):
         process = Process(self, "begin_photon_pulse", [])
         event = Event(self.start_time, process)
         self.timeline.schedule(event)
+
+        self.last_key_time = self.timeline.now()
 
         # call to get_key_from_BB84 is handled in received_message (after processing is done)
 
@@ -328,3 +344,5 @@ if __name__ == "__main__":
 
     tl.init()
     tl.run()
+
+    print(bba.error_rates)
