@@ -14,20 +14,21 @@ class BB84(Entity):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline)
         self.role = kwargs.get("role", -1)
+        self.encoding_type = kwargs.get("encoding_type")
         self.working = False
         self.light_time = 0  # time to use laser (measured in s)
         self.qubit_frequency = 0  # frequency of qubit sending
         self.start_time = 0  # start time of light pulse
-        self.node = None
         self.classical_delay = 0  # time delay of classical communication (ps)
         self.quantum_delay = 0  # time delay of quantum communication (ps)
         self.basis_lists = []
         self.bit_lists = []
         self.key = 0  # key as int
         self.key_bits = []  # key as list of bits
-        self.key_length = 0  # desired key length (from parent)
+        self.node = None
         self.parent = None
         self.another = None
+        self.key_length = 0  # desired key length (from parent)
         self.keys_left = 0
         self.end_run_time = 0
 
@@ -36,6 +37,13 @@ class BB84(Entity):
         self.last_key_time = 0
         self.throughputs = []  # measured in bits/sec
         self.error_rates = []
+
+        self.bases = []
+        if self.encoding_type == 0:
+            self.bases = [[[complex(1), complex(0)], [complex(0), complex(1)]],
+                          [[complex(math.sqrt(2)), complex(math.sqrt(2))], [complex(-math.sqrt(2)), complex(math.sqrt(2))]]]
+        else:
+            raise SyntaxError("encoding scheme not specified properly")
 
     def init(self):
         pass
@@ -56,10 +64,9 @@ class BB84(Entity):
     def set_bases(self):
         # generate basis list
         num_pulses = int(round(self.light_time * self.qubit_frequency))
-        bases = [[0, 90], [45, 135]]
         basis_list = [[]] * num_pulses
         for i in range(num_pulses):
-            basis_list[i] = bases[numpy.random.choice([0, 1])]
+            basis_list[i] = self.bases[numpy.random.choice([0, 1])]
 
         self.basis_lists.append(basis_list)
 
@@ -75,10 +82,9 @@ class BB84(Entity):
         if self.working:
             # generate basis list
             num_pulses = int(round(self.light_time * self.qubit_frequency))
-            bases = [[0, 90], [45, 135]]
             basis_list = [[]] * num_pulses
             for i in range(num_pulses):
-                basis_list[i] = bases[numpy.random.choice([0, 1])]
+                basis_list[i] = self.bases[numpy.random.choice([0, 1])]
 
             # generate bit list
             bit_list = numpy.random.choice([0, 1], num_pulses)
@@ -164,22 +170,27 @@ class BB84(Entity):
             elif message[0] == "basis_list":  # (Current node is Bob): compare bases
                 # parse alice basis list
                 # NOTE: basis measurements are adjacent but not yet collapsed into a list
-                basis_states = []
+                basis_coefficients = []
                 for state in message[1:]:
-                    basis_states.append(int(re.sub("[],[]", "", state)))
+                    basis_coefficients.append(complex(re.sub("[],[()]", "", state)))
+
+                # collapse adjacent basis coefficients into single basis state
+                basis_states = []
+                state = []
+                for i, c in enumerate(basis_coefficients):
+                    state.append(c)
+                    if i % 2:
+                        basis_states.append(state)
+                        state = []
 
                 # collapse adjacent basis_states into single basis
                 basis_list_alice = []
                 basis = []
-                count = 0
-                while count < len(basis_states):
-                    if count % 2:
-                        basis.append(basis_states[count])
+                for i, s in enumerate(basis_states):
+                    basis.append(s)
+                    if i % 2:
                         basis_list_alice.append(basis)
                         basis = []
-                    else:
-                        basis.append(basis_states[count])
-                    count += 1
 
                 # compare own basis with basis message and create list of matching indices
                 indices = []
@@ -321,8 +332,8 @@ if __name__ == "__main__":
         tl.entities.append(bob.components[key])
 
     # BB84
-    bba = BB84("bba", tl, role=0)
-    bbb = BB84("bbb", tl, role=1)
+    bba = BB84("bba", tl, role=0, encoding_type=0)
+    bbb = BB84("bbb", tl, role=1, encoding_type=0)
     bba.assign_node(alice)
     bbb.assign_node(bob)
     bba.another = bbb

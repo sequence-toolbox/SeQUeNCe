@@ -33,17 +33,18 @@ class Photon(Entity):
         self.wavelength = kwargs.get("wavelength", 0)
         self.location = kwargs.get("location", None)
         self.encoding_type = kwargs.get("encoding_type")
-        self.quantum_state = kwargs.get("quantum_state", 45) ## 45 degrees instead of pi/4
+        self.quantum_state = kwargs.get("quantum_state", [complex(1), complex(0)])
 
     def init(self):
         pass
 
     def random_noise(self):
-        self.quantum_state += numpy.random.random() * 360  # add random angle, use 360 instead of 2*pi
+        pass
+        # self.quantum_state += numpy.random.random() * 360  # add random angle, use 360 instead of 2*pi
 
     def measure(self, basis):
-        # alpha = numpy.dot(self.quantum_state, basis[0])  # projection onto basis vector
-        alpha = numpy.cos((self.quantum_state - basis[0])/180.0 * numpy.pi)
+        alpha = numpy.dot(self.quantum_state, basis[0])  # projection onto basis vector
+        # alpha = numpy.cos((self.quantum_state - basis[0])/180.0 * numpy.pi)
         if numpy.random.random_sample() < alpha ** 2:
             self.quantum_state = basis[0]
             return 0
@@ -236,7 +237,9 @@ class QSDetector(Entity):
         self.splitter.init()
 
     def detect(self, photon):
-        self.detectors[self.splitter.transmit(photon)].detect()
+        detector = self.splitter.transmit(photon)
+        if detector == 0 or detector == 1:
+            self.detectors[self.splitter.transmit(photon)].detect()
 
     def clear_detectors(self):
         for d in self.detectors:
@@ -286,7 +289,7 @@ class Detector(Entity):
 class BeamSplitter(Entity):
     def __init__(self, timeline, **kwargs):
         Entity.__init__(self, "", timeline)  # Splitter is part of the QSDetector, and does not have its own name
-        self.basis = kwargs.get("basis", [0, 90])
+        self.basis = kwargs.get("basis", [[complex(1), complex(0)], [complex(0), complex(1)]])
         self.fidelity = kwargs.get("fidelity", 1)
 
     def init(self):
@@ -295,6 +298,8 @@ class BeamSplitter(Entity):
     def transmit(self, photon):
         if numpy.random.random_sample() < self.fidelity:
             return photon.measure(self.basis)
+        else:
+            return -1
 
     def set_basis(self, basis):
         self.basis = basis
