@@ -293,13 +293,13 @@ if __name__ == "__main__":
             self.key = 0
 
         def run(self):
-            self.child.generate_key(self.keysize, 10)
+            self.child.generate_key(self.keysize, 20)
 
         def get_key_from_BB84(self, key):
             print("key for " + self.role + ":\t{:0{}b}".format(key, self.keysize))
             self.key = key
 
-    tl = timeline.Timeline(1e9)  # stop time is 1 ms
+    tl = timeline.Timeline(1e10)  # stop time is 1 ms
 
     qc = topology.QuantumChannel("qc", tl, distance=10e3, polarization_fidelity=0.99)
     cc = topology.ClassicalChannel("cc", tl, distance=10e3)

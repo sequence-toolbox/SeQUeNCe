@@ -39,7 +39,8 @@ class Photon(Entity):
         pass
 
     def random_noise(self):
-        pass
+        angle = numpy.random.random() * 2 * numpy.pi
+        self.quantum_state = [complex(numpy.cos(angle)), complex(numpy.sin(angle))]
         # self.quantum_state += numpy.random.random() * 360  # add random angle, use 360 instead of 2*pi
 
     def measure(self, basis):
