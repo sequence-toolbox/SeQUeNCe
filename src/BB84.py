@@ -54,14 +54,15 @@ class BB84(Entity):
         basis_list = [[]] * num_pulses
         for i in range(num_pulses):
             basis_list[i] = bases[numpy.random.choice([0, 1])]
+
         self.basis_lists.append(basis_list)
 
         # schedule changes for BeamSplitter Basis
-        basis_start_time = self.start_time - 1 / (2 * self.qubit_frequency)
+        basis_start_time = self.start_time - 1e12 / (2 * self.qubit_frequency)
         for i in range(len(basis_list)):
             time = (i * 1e12) / self.qubit_frequency
             process = Process(self.node.components["detector"], "set_basis", [basis_list[i]])
-            event = Event(int(basis_start_time + time), process)
+            event = Event(int(round(basis_start_time + time)), process)
             self.timeline.schedule(event)
 
     def begin_photon_pulse(self):
@@ -110,15 +111,17 @@ class BB84(Entity):
 
             self.bit_lists.append(bits)
 
-            # generate basis list and set beamsplitter
-            self.set_bases()
-
             # clear detector photon times to restart measurement
             self.node.components["detector"].clear_detectors()
 
             # schedule another if necessary
             if self.timeline.now() + self.light_time * 1e12 < self.end_run_time:
                 self.start_time = self.timeline.now()
+
+                # set beamsplitter bases
+                self.set_bases()
+
+                # schedule another
                 process = Process(self, "end_photon_pulse", [])
                 event = Event(self.start_time + int(round(self.light_time * 1e12)), process)
                 self.timeline.schedule(event)
@@ -233,7 +236,7 @@ class BB84(Entity):
         self.qubit_frequency = light_source.frequency
 
         # calculate light time based on delay
-        # self.light_time = self.classical_delay * 0.1 * 1e-12
+        # self.light_time = self.classical_delay * 2 * 1e-12
         self.light_time = self.key_length / (self.qubit_frequency * light_source.mean_photon_num)
 
         # send message that photon pulse is beginning, then send bits
