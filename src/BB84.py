@@ -72,11 +72,10 @@ class BB84(Entity):
 
         # schedule changes for BeamSplitter Basis
         basis_start_time = self.start_time - 1e12 / (2 * self.qubit_frequency)
-        for i in range(len(basis_list)):
-            time = (i * 1e12) / self.qubit_frequency
-            process = Process(self.node.components["detector"], "set_basis", [basis_list[i]])
-            event = Event(int(round(basis_start_time + time)), process)
-            self.timeline.schedule(event)
+        splitter = self.node.components["detector"].splitter
+        splitter.start_time = basis_start_time
+        splitter.frequency = self.qubit_frequency
+        splitter.basis_list = basis_list
 
     def begin_photon_pulse(self):
         if self.working:
@@ -218,26 +217,30 @@ class BB84(Entity):
                     self.key_bits.append(bits[i])
 
                 # check if key long enough. If it is, truncate if necessary and call cascade
-                while len(self.key_bits) >= self.key_length and self.keys_left > 0:
-                    self.set_key()  # convert from binary list to int
-                    self.parent.get_key_from_BB84(self.key)  # call parent
-                    self.another.set_key()
-                    self.another.parent.get_key_from_BB84(self.another.key)
+                if len(self.key_bits) >= self.key_length:
+                    while len(self.key_bits) >= self.key_length and self.keys_left > 0:
+                        self.set_key()  # convert from binary list to int
+                        if self.parent is not None:
+                            self.parent.get_key_from_BB84(self.key)  # call parent
+                        self.another.set_key()
+                        if self.another.parent is not None:
+                            self.another.parent.get_key_from_BB84(self.another.key)
 
-                    # for metrics
-                    if self.latency == 0:
-                        self.latency = (self.timeline.now() - self.last_key_time) * 1e-12
-                    self.throughputs.append(self.key_length * 1e12 / (self.timeline.now() - self.last_key_time))
+                        # for metrics
+                        if self.latency == 0:
+                            self.latency = (self.timeline.now() - self.last_key_time) * 1e-12
+                        self.throughputs.append(self.key_length * 1e12 / (self.timeline.now() - self.last_key_time))
+
+                        key_diff = self.key ^ self.another.key
+                        num_errors = 0
+                        while key_diff:
+                            key_diff &= key_diff - 1
+                            num_errors += 1
+                        self.error_rates.append(num_errors / self.key_length)
+
+                        self.keys_left -= 1
+
                     self.last_key_time = self.timeline.now()
-
-                    key_diff = self.key ^ self.another.key
-                    num_errors = 0
-                    while key_diff:
-                        key_diff &= key_diff - 1
-                        num_errors += 1
-                    self.error_rates.append(num_errors / self.key_length)
-
-                    self.keys_left -= 1
 
                 # check if we're done
                 if self.keys_left < 1 or self.timeline.now() >= self.end_run_time:
