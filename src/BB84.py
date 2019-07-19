@@ -261,13 +261,6 @@ class BB84(Entity):
         self.keys_left = key_num
         self.end_run_time = run_time + self.timeline.now()
         self.another.end_run_time = self.end_run_time
-        self.basis_lists = []
-        self.bit_lists = []
-        self.key_bits = []  # key as list of bits
-        self.another.basis_lists = []
-        self.another.bit_lists = []
-        self.another.key_bits = []  # key as list of bits
-        self.latency = 0
 
         # reset buffers for self and another
         self.basis_lists = []
