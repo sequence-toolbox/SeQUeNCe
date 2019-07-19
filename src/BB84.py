@@ -11,21 +11,21 @@ class BB84(Entity):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline)
         self.role = kwargs.get("role", -1)
+        self.encoding_type = kwargs.get("encoding_type")
         self.working = False
         self.light_time = 0  # time to use laser (measured in s)
         self.qubit_frequency = 0  # frequency of qubit sending
         self.start_time = 0  # start time of light pulse
-        self.node = None
         self.classical_delay = 0  # time delay of classical communication (ps)
         self.quantum_delay = 0  # time delay of quantum communication (ps)
         self.basis_lists = []
         self.bit_lists = []
         self.key = 0  # key as int
         self.key_bits = []  # key as list of bits
-        self.key_length = 0  # desired key length (from parent)
-        self.key_counter = 0
+        self.node = None
         self.parent = None
         self.another = None
+        self.key_length = 0  # desired key length (from parent)
         self.keys_left = 0
         self.end_run_time = 0
         # performance
@@ -39,6 +39,13 @@ class BB84(Entity):
         self.last_key_time = 0
         self.throughputs = []  # measured in bits/sec
         self.error_rates = []
+
+        self.bases = []
+        if self.encoding_type == 0:
+            self.bases = [[[complex(1), complex(0)], [complex(0), complex(1)]],
+                          [[complex(math.sqrt(2)), complex(math.sqrt(2))], [complex(-math.sqrt(2)), complex(math.sqrt(2))]]]
+        else:
+            raise SyntaxError("encoding scheme not specified properly")
 
     def init(self):
         pass
@@ -59,29 +66,26 @@ class BB84(Entity):
     def set_bases(self):
         # generate basis list
         num_pulses = int(round(self.light_time * self.qubit_frequency))
-        bases = [[0, 90], [45, 135]]
         basis_list = [[]] * num_pulses
         for i in range(num_pulses):
-            basis_list[i] = bases[numpy.random.choice([0, 1])]
+            basis_list[i] = self.bases[numpy.random.choice([0, 1])]
 
         self.basis_lists.append(basis_list)
 
         # schedule changes for BeamSplitter Basis
         basis_start_time = self.start_time - 1e12 / (2 * self.qubit_frequency)
-        for i in range(len(basis_list)):
-            time = (i * 1e12) / self.qubit_frequency
-            process = Process(self.node.components["detector"], "set_basis", [basis_list[i]])
-            event = Event(int(round(basis_start_time + time)), process)
-            self.timeline.schedule(event)
+        splitter = self.node.components["detector"].splitter
+        splitter.start_time = basis_start_time
+        splitter.frequency = self.qubit_frequency
+        splitter.basis_list = basis_list
 
     def begin_photon_pulse(self):
         if self.working:
             # generate basis list
             num_pulses = int(round(self.light_time * self.qubit_frequency))
-            bases = [[0, 90], [45, 135]]
             basis_list = [[]] * num_pulses
             for i in range(num_pulses):
-                basis_list[i] = bases[numpy.random.choice([0, 1])]
+                basis_list[i] = self.bases[numpy.random.choice([0, 1])]
 
             # generate bit list
             bit_list = numpy.random.choice([0, 1], num_pulses)
@@ -167,22 +171,27 @@ class BB84(Entity):
             elif message[0] == "basis_list":  # (Current node is Bob): compare bases
                 # parse alice basis list
                 # NOTE: basis measurements are adjacent but not yet collapsed into a list
-                basis_states = []
+                basis_coefficients = []
                 for state in message[1:]:
-                    basis_states.append(int(re.sub("[],[]", "", state)))
+                    basis_coefficients.append(complex(re.sub("[],[()]", "", state)))
+
+                # collapse adjacent basis coefficients into single basis state
+                basis_states = []
+                state = []
+                for i, c in enumerate(basis_coefficients):
+                    state.append(c)
+                    if i % 2:
+                        basis_states.append(state)
+                        state = []
 
                 # collapse adjacent basis_states into single basis
                 basis_list_alice = []
                 basis = []
-                count = 0
-                while count < len(basis_states):
-                    if count % 2:
-                        basis.append(basis_states[count])
+                for i, s in enumerate(basis_states):
+                    basis.append(s)
+                    if i % 2:
                         basis_list_alice.append(basis)
                         basis = []
-                    else:
-                        basis.append(basis_states[count])
-                    count += 1
 
                 # compare own basis with basis message and create list of matching indices
                 indices = []
@@ -210,31 +219,30 @@ class BB84(Entity):
                     self.key_bits.append(bits[i])
 
                 # check if key long enough. If it is, truncate if necessary and call cascade
-                while len(self.key_bits) >= self.key_length and self.keys_left > 0:
-                    self.set_key()  # convert from binary list to int
-                    if self.parent:
-                        self.parent.get_key_from_BB84(self.key, self.key_counter)  # call parent
-                    self.another.set_key()
-                    if self.another.parent:
-                        self.another.parent.get_key_from_BB84(self.another.key, self.another.key_counter)
+                if len(self.key_bits) >= self.key_length:
+                    while len(self.key_bits) >= self.key_length and self.keys_left > 0:
+                        self.set_key()  # convert from binary list to int
+                        if self.parent is not None:
+                            self.parent.get_key_from_BB84(self.key)  # call parent
+                        self.another.set_key()
+                        if self.another.parent is not None:
+                            self.another.parent.get_key_from_BB84(self.another.key)
 
-                    # for metrics
-                    if self.latency == 0:
-                        self.latency = (self.timeline.now() - self.last_key_time) * 1e-12
-                    if self.timeline.now() - self.last_key_time:
+                        # for metrics
+                        if self.latency == 0:
+                            self.latency = (self.timeline.now() - self.last_key_time) * 1e-12
                         self.throughputs.append(self.key_length * 1e12 / (self.timeline.now() - self.last_key_time))
+
+                        key_diff = self.key ^ self.another.key
+                        num_errors = 0
+                        while key_diff:
+                            key_diff &= key_diff - 1
+                            num_errors += 1
+                        self.error_rates.append(num_errors / self.key_length)
+
+                        self.keys_left -= 1
+
                     self.last_key_time = self.timeline.now()
-
-                    key_diff = self.key ^ self.another.key
-                    num_errors = 0
-                    while key_diff:
-                        key_diff &= key_diff - 1
-                        num_errors += 1
-                    self.error_rates.append(num_errors / self.key_length)
-
-                    self.keys_left -= 1
-                    self.key_counter += 1
-                    self.another.key_counter += 1
 
                 # check if we're done
                 if self.keys_left < 1 or self.timeline.now() >= self.end_run_time:
@@ -256,6 +264,7 @@ class BB84(Entity):
         self.another.basis_lists = []
         self.another.bit_lists = []
         self.another.key_bits = []  # key as list of bits
+        self.latency = 0
 
         self.working = True
         self.another.working = True
@@ -298,13 +307,13 @@ if __name__ == "__main__":
             self.key = 0
 
         def run(self):
-            self.child.generate_key(self.keysize, 10)
+            self.child.generate_key(self.keysize, 20)
 
         def get_key_from_BB84(self, key):
             print("key for " + self.role + ":\t{:0{}b}".format(key, self.keysize))
             self.key = key
 
-    tl = timeline.Timeline(1e9)  # stop time is 1 ms
+    tl = timeline.Timeline(1e10)  # stop time is 1 ms
 
     qc = topology.QuantumChannel("qc", tl, distance=10e3, polarization_fidelity=0.99)
     cc = topology.ClassicalChannel("cc", tl, distance=10e3)
@@ -337,8 +346,8 @@ if __name__ == "__main__":
         tl.entities.append(bob.components[key])
 
     # BB84
-    bba = BB84("bba", tl, role=0)
-    bbb = BB84("bbb", tl, role=1)
+    bba = BB84("bba", tl, role=0, encoding_type=0)
+    bbb = BB84("bbb", tl, role=1, encoding_type=0)
     bba.assign_node(alice)
     bbb.assign_node(bob)
     bba.another = bbb

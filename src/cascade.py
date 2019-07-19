@@ -21,7 +21,7 @@ class Cascade(Entity):
         self.keylen = None
         self.key_num = None
         self.run_time = None
-        self.keys = []
+        self.bits = []
         self.valid_keys = []
         self.k1 = 0
         self.checksum_tables = [[]]
@@ -31,6 +31,7 @@ class Cascade(Entity):
         self.logflag = False
         #self.tmp = {}
         self.time_cost = None
+        self.setup_time = None
         self.start_time = None
         self.end_time = math.inf
         self.throughput = None # bit/(timeline time unit)
@@ -58,22 +59,23 @@ class Cascade(Entity):
 
         if self.state == 0:
             self.log('generate_key with state 0')
+            self.setup_time = self.timeline.now()
             self.keylen = keylen
             self.key_num = key_num
             self.run_time = run_time
-            self.start_time = self.timeline.now()
-            self.end_time = self.start_time + self.run_time
             self.bb84.generate_key(10000, key_num = 1)
         else:
+            self.start_time = self.timeline.now()
+            self.end_time = self.start_time + self.run_time
             self.log('generate_key with state ' + str(self.state))
-            self.bb84.generate_key(self.keylen, self.key_num, self.run_time)
+            self.bb84.generate_key(10240, self.key_num, self.run_time)
 
-    def get_key_from_BB84(self, key, key_id):
+    def get_key_from_BB84(self, key):
         """
         Function called by BB84 when it creates a key
         """
         self.log('get_key_from_BB84, key= ' + str(key))
-        self.keys.append(key)
+        self.bits.append(key)
 
         if self.state == 1:
             self.create_checksum_table()
@@ -87,7 +89,7 @@ class Cascade(Entity):
         Schedule a receive key event
         """
         self.log('send_key')
-        process = Process(self.another, "receive_key", [self.keys[0]])
+        process = Process(self.another, "receive_key", [self.bits[0]])
         self.send_by_cc(process)
 
     def receive_key(self, key):
@@ -120,7 +122,7 @@ class Cascade(Entity):
                 i+=1
             return counter
 
-        p = get_diff_bit_num(key, self.keys[0]) / 10000
+        p = get_diff_bit_num(key, self.bits[0]) / 10000
         # avoid p==0, which will cause k1 to an infinite large number
         if p == 0:
             p = 0.0001
@@ -191,7 +193,7 @@ class Cascade(Entity):
             checksum_table.append([0] * block_num)
             for i in range(self.keylen):
                 block_id = index_to_block_id[pass_id][i]
-                checksum_table[pass_id][block_id] ^= ((self.keys[-1] >> i) & 1)
+                checksum_table[pass_id][block_id] ^= ((self.bits[-1] >> i) & 1)
         self.checksum_tables.append(checksum_table)
 
     def send_params(self):
@@ -255,14 +257,13 @@ class Cascade(Entity):
                     self.interactive_binary_search(cur_key, _pass, _block, 0, block_size)
                     return False
 
-        self.performance_measure()
+        for i in range(40):
+            self.valid_keys.append( (self.bits[key_id]>>(i*256)) & ((1<<256)-1) )
 
+        self.performance_measure()
         process = Process(self.another, "key_is_valid", [key_id])
         self.send_by_cc(process)
 
-        if len(self.valid_keys) == 1:
-            self.latency = self.timeline.now()
-            self.another.latency = self.latency
         return True
 
     def end_cascade(self):
@@ -271,7 +272,8 @@ class Cascade(Entity):
         self.state = 2
 
     def key_is_valid(self, key_id):
-        self.valid_keys.append(self.keys[key_id])
+        for i in range(40):
+            self.valid_keys.append( (self.bits[key_id]>>(i*256)) & ((1<<256)-1) )
         self.performance_measure()
 
     def send_for_binary(self, key_id, pass_id, block_id, start, end):
@@ -282,7 +284,7 @@ class Cascade(Entity):
         checksum = 0
         block_id_to_index = self.block_id_to_index_lists[key_id]
         for pos in block_id_to_index[pass_id][block_id][start:end]:
-            checksum ^= ((self.keys[key_id] >> pos) & 1)
+            checksum ^= ((self.bits[key_id] >> pos) & 1)
 
         process = Process(self.another, "receive_for_binary", [key_id, pass_id, block_id, start, end, checksum])
         self.send_by_cc(process)
@@ -304,14 +306,14 @@ class Cascade(Entity):
         block_id_to_index = self.block_id_to_index_lists[key_id]
         index_to_block_id = self.index_to_block_id_lists[key_id]
         checksum_table = self.checksum_tables[key_id]
-        key = self.keys[key_id]
+        key = self.bits[key_id]
         for pos in block_id_to_index[pass_id][block_id][start:end]:
             _checksum ^= ((key >> pos) & 1)
 
         if checksum != _checksum:
             if end - start == 1:
                 pos = block_id_to_index[pass_id][block_id][start]
-                self.keys[key_id] = flip_bit_at_pos(key, pos)
+                self.bits[key_id] = flip_bit_at_pos(key, pos)
                 self.log("::: flip at " + str(pos))
                 # update checksum_table
                 for _pass in range(1, len(checksum_table)):
@@ -355,6 +357,9 @@ class Cascade(Entity):
         '''
 
     def performance_measure(self):
+        if self.latency is None:
+            self.latency = self.timeline.now() - self.start_time
+
         if self.timeline.now() - self.start_time:
             self.throughput = 1e12 * len(self.valid_keys) * self.keylen / (self.timeline.now() - self.start_time)
         counter = 0
