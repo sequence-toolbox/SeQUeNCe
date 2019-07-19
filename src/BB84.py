@@ -16,6 +16,7 @@ class BB84(Entity):
         self.role = kwargs.get("role", -1)
         self.encoding_type = kwargs.get("encoding_type")
         self.working = False
+        self.ready = True  # (for Alice) not currently processing a generate_key request
         self.light_time = 0  # time to use laser (measured in s)
         self.qubit_frequency = 0  # frequency of qubit sending
         self.start_time = 0  # start time of light pulse
@@ -78,7 +79,7 @@ class BB84(Entity):
         splitter.basis_list = basis_list
 
     def begin_photon_pulse(self):
-        if self.working:
+        if self.working and self.timeline.now() < self.end_run_times[0]:
             # generate basis list
             num_pulses = int(round(self.light_time * self.qubit_frequency))
             basis_list = [[]] * num_pulses
@@ -94,22 +95,30 @@ class BB84(Entity):
             self.basis_lists.append(basis_list)
             self.bit_lists.append(bit_list)
 
-            # schedule another if necessary
-            if self.timeline.now() + self.light_time * 1e12 < self.end_run_times[0]:
-                self.start_time = self.timeline.now()
-                process = Process(self, "begin_photon_pulse", [])
-                event = Event(self.start_time + int(round(self.light_time * 1e12)), process)
-                self.timeline.schedule(event)
+            # schedule another
+            self.start_time = self.timeline.now()
+            process = Process(self, "begin_photon_pulse", [])
+            event = Event(self.start_time + int(round(self.light_time * 1e12)), process)
+            self.timeline.schedule(event)
 
-        elif len(self.key_lengths) > 0:
-            # wait for quantum channel to clear of photons then begin protocol again
-            process = Process(self, "start_protocol", [])
+        else:
+            self.working = False
+            self.another.working = False
+
+            self.key_lengths.pop(0)
+            self.keys_left_list.pop(0)
+            self.end_run_times.pop(0)
+            self.another.key_lengths.pop(0)
+            self.another.end_run_times.pop(0)
+
+            # wait for quantum channel to clear of photons, then start protocol
             time = self.timeline.now() + self.quantum_delay
+            process = Process(self, "start_protocol", [])
             event = Event(time, process)
             self.timeline.schedule(event)
 
     def end_photon_pulse(self):
-        if self.working:
+        if self.working and self.timeline.now() < self.end_run_times[0]:
             detection_times = self.node.components["detector"].get_photon_times()
             bits = [-1] * int(round(self.light_time * self.qubit_frequency))  # -1 used for invalid bits
 
@@ -148,7 +157,7 @@ class BB84(Entity):
             self.node.send_message("received_qubits")
 
     def received_message(self):
-        if self.working:
+        if self.working and self.timeline.now() < self.end_run_times[0]:
             message = self.node.message.split(" ")
 
             if message[0] == "begin_photon_pulse":  # (current node is Bob): start to receive photons
@@ -253,13 +262,9 @@ class BB84(Entity):
                     self.last_key_time = self.timeline.now()
 
                 # check if we're done
-                if self.keys_left_list[0] < 1 or self.timeline.now() >= self.end_run_times[0]:
+                if self.keys_left_list[0] < 1:
                     self.working = False
                     self.another.working = False
-
-                    self.key_lengths.pop(0)
-                    self.keys_left_list.pop(0)
-                    self.end_run_times.pop(0)
 
     def generate_key(self, length, key_num=1, run_time=math.inf):
         if self.role != 0:
@@ -272,40 +277,46 @@ class BB84(Entity):
         self.end_run_times.append(end_run_time)
         self.another.end_run_times.append(end_run_time)
 
-        if not self.working:
+        if self.ready:
+            self.ready = False
             self.working = True
             self.another.working = True
             self.start_protocol()
 
     def start_protocol(self):
-        # reset buffers for self and another
-        self.basis_lists = []
-        self.another.basis_lists = []
-        self.bit_lists = []
-        self.another.bit_lists = []
-        self.key_bits = []
-        self.another.key_bits = []
-        self.latency = 0
-        self.another.latency = 0
+        if len(self.key_lengths) > 0:
+            # reset buffers for self and another
+            self.basis_lists = []
+            self.another.basis_lists = []
+            self.bit_lists = []
+            self.another.bit_lists = []
+            self.key_bits = []
+            self.another.key_bits = []
+            self.latency = 0
+            self.another.latency = 0
 
-        light_source = self.node.components["lightsource"]
-        self.qubit_frequency = light_source.frequency
+            self.working = True
+            self.another.working = True
 
-        # calculate light time based on key length
-        self.light_time = self.key_lengths[0] / (self.qubit_frequency * light_source.mean_photon_num)
+            light_source = self.node.components["lightsource"]
+            self.qubit_frequency = light_source.frequency
 
-        # send message that photon pulse is beginning, then send bits
-        self.start_time = int(self.timeline.now()) + int(round(self.classical_delay))
-        self.node.send_message("begin_photon_pulse {} {} {}"
-                               .format(self.qubit_frequency, self.light_time, self.start_time))
+            # calculate light time based on key length
+            self.light_time = self.key_lengths[0] / (self.qubit_frequency * light_source.mean_photon_num)
 
-        process = Process(self, "begin_photon_pulse", [])
-        event = Event(self.start_time, process)
-        self.timeline.schedule(event)
+            # send message that photon pulse is beginning, then send bits
+            self.start_time = int(self.timeline.now()) + int(round(self.classical_delay))
+            self.node.send_message("begin_photon_pulse {} {} {}"
+                                   .format(self.qubit_frequency, self.light_time, self.start_time))
 
-        self.last_key_time = self.timeline.now()
+            process = Process(self, "begin_photon_pulse", [])
+            event = Event(self.start_time, process)
+            self.timeline.schedule(event)
 
-        # call to get_key_from_BB84 is handled in received_message (after processing is done)
+            self.last_key_time = self.timeline.now()
+
+        else:
+            self.ready = True
 
     def set_key(self):
         key_bits = self.key_bits[0:self.key_lengths[0] - 1]
@@ -372,19 +383,19 @@ if __name__ == "__main__":
     bob.protocol = bbb
 
     # Parent
-    pa = Parent(256, "alice")
-    pb = Parent(256, "bob")
+    pa = Parent(512, "alice")
+    pb = Parent(512, "bob")
     pa.child = bba
     pb.child = bbb
     bba.add_parent(pa)
     bbb.add_parent(pb)
 
     process1 = Process(bba, "generate_key", [256, 1])
-    # process2 = Process(pa, "run", [])
+    process2 = Process(pa, "run", [])
     event1 = Event(0, process1)
-    # event2 = Event(10, process2)
+    event2 = Event(10, process2)
     tl.schedule(event1)
-    # tl.schedule(event2)
+    tl.schedule(event2)
 
     tl.init()
     tl.run()
