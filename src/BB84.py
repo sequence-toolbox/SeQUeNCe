@@ -29,10 +29,8 @@ class BB84(Entity):
         self.keys_left = 0
         self.end_run_time = 0
         # performance
-        self.throughput = None
         self.error_bit = 0
         self.error_bit_rate = None
-        self.latency = None
         self.double_trigger = 0
         self.discard = 0
 
@@ -190,7 +188,7 @@ class BB84(Entity):
                 indices = []
                 basis_list = self.basis_lists.pop(0)
                 bits = self.bit_lists.pop(0)
-                for i in range(len(basis_list)):
+                for i in range(len(basis_list_alice)):
                     if bits[i] != -1 and basis_list[i] == basis_list_alice[i]:
                         indices.append(i)
                         self.key_bits.append(bits[i])
@@ -214,14 +212,17 @@ class BB84(Entity):
                 # check if key long enough. If it is, truncate if necessary and call cascade
                 while len(self.key_bits) >= self.key_length and self.keys_left > 0:
                     self.set_key()  # convert from binary list to int
-                    self.parent.get_key_from_BB84(self.key)  # call parent
+                    if self.parent:
+                        self.parent.get_key_from_BB84(self.key, self.key_counter)  # call parent
                     self.another.set_key()
-                    self.another.parent.get_key_from_BB84(self.another.key)
+                    if self.another.parent:
+                        self.another.parent.get_key_from_BB84(self.another.key, self.another.key_counter)
 
                     # for metrics
                     if self.latency == 0:
                         self.latency = (self.timeline.now() - self.last_key_time) * 1e-12
-                    self.throughputs.append(self.key_length * 1e12 / (self.timeline.now() - self.last_key_time))
+                    if self.timeline.now() - self.last_key_time:
+                        self.throughputs.append(self.key_length * 1e12 / (self.timeline.now() - self.last_key_time))
                     self.last_key_time = self.timeline.now()
 
                     key_diff = self.key ^ self.another.key
@@ -232,6 +233,8 @@ class BB84(Entity):
                     self.error_rates.append(num_errors / self.key_length)
 
                     self.keys_left -= 1
+                    self.key_counter += 1
+                    self.another.key_counter += 1
 
                 # check if we're done
                 if self.keys_left < 1 or self.timeline.now() >= self.end_run_time:
@@ -247,6 +250,12 @@ class BB84(Entity):
         self.keys_left = key_num
         self.end_run_time = run_time + self.timeline.now()
         self.another.end_run_time = self.end_run_time
+        self.basis_lists = []
+        self.bit_lists = []
+        self.key_bits = []  # key as list of bits
+        self.another.basis_lists = []
+        self.another.bit_lists = []
+        self.another.key_bits = []  # key as list of bits
 
         self.working = True
         self.another.working = True

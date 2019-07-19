@@ -34,8 +34,8 @@ if __name__ == "__main__":
         tl.entities.append(bob)
 
         # BB84
-        bba = BB84("bba", tl, role="alice")
-        bbb = BB84("bbb", tl, role="bob")
+        bba = BB84("bba", tl, role=0)
+        bbb = BB84("bbb", tl, role=1)
         bba.assign_node(alice)
         bbb.assign_node(bob)
         bba.another = bbb

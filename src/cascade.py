@@ -22,16 +22,14 @@ class Cascade(Entity):
         self.key_num = None
         self.run_time = None
         self.keys = []
-        self.k = 0
+        self.valid_keys = []
+        self.k1 = 0
         self.checksum_tables = [[]]
         self.another_checksums = [[]]
         self.index_to_block_id_lists = [[]]
         self.block_id_to_index_lists = [[]]
         self.logflag = False
         #self.tmp = {}
-        self.cur_key = 1
-        self.cur_pass = 1
-        self.cur_block = 0
         self.time_cost = None
         self.start_time = None
         self.end_time = math.inf
@@ -70,7 +68,7 @@ class Cascade(Entity):
             self.log('generate_key with state ' + str(self.state))
             self.bb84.generate_key(self.keylen, self.key_num, self.run_time)
 
-    def get_key_from_BB84(self, key):
+    def get_key_from_BB84(self, key, key_id):
         """
         Function called by BB84 when it creates a key
         """
@@ -126,7 +124,7 @@ class Cascade(Entity):
         # avoid p==0, which will cause k1 to an infinite large number
         if p == 0:
             p = 0.0001
-        self.k = get_k1(p, 0, 10000)
+        self.k1 = get_k1(p, 0, 10000)
         self.send_params()
         self.state = 1
 
@@ -139,11 +137,11 @@ class Cascade(Entity):
         index_to_block_id = [[]]
         for pass_id in range(1, self.w + 1):
             index_to_block_relation = []
-            block_size = self.k * (2**(pass_id - 1))
+            block_size = self.k1 * (2**(pass_id - 1))
 
             if pass_id == 1:
                 for i in range(self.keylen):
-                    index_to_block_relation.append(int(i / self.k))
+                    index_to_block_relation.append(int(i / block_size))
             else:
                 # if block_size/2 has been greater than key length, more pass
                 # will not fix error bit
@@ -163,7 +161,7 @@ class Cascade(Entity):
         block_id_to_index = [[]]
         for pass_id in range(1, self.w + 1):
             block_to_index_relation = []
-            block_size = self.k * (2**(pass_id - 1))
+            block_size = self.k1 * (2**(pass_id - 1))
             block_num = math.ceil(self.keylen / block_size)
             for _ in range(block_num):
                 block_to_index_relation.append([None] * block_size)
@@ -188,7 +186,7 @@ class Cascade(Entity):
         # create checksum_table
         checksum_table = [[]]
         for pass_id in range(1, len(index_to_block_id)):
-            block_size = self.k * (2**(pass_id - 1))
+            block_size = self.k1 * (2**(pass_id - 1))
             block_num = math.ceil(self.keylen / block_size)
             checksum_table.append([0] * block_num)
             for i in range(self.keylen):
@@ -200,8 +198,8 @@ class Cascade(Entity):
         """
         Schedule a receive paramters event
         """
-        self.log('send_params')
-        process = Process(self.another, "receive_params", [self.k, self.keylen, self.key_num, self.run_time])
+        self.log('send_params'+str([self.k1, self.keylen, self.key_num, self.run_time]))
+        process = Process(self.another, "receive_params", [self.k1, self.keylen, self.key_num, self.run_time])
         self.send_by_cc(process)
 
     def receive_params(self, k, keylen, key_num, run_time):
@@ -213,7 +211,7 @@ class Cascade(Entity):
             raise Exception(
                 "Cascade protocol type is sender (type==0); sender cannot receive parameters from receiver")
 
-        self.k = k
+        self.k1 = k
         self.keylen = keylen
         self.key_num = key_num
         self.run_time = run_time
@@ -234,62 +232,46 @@ class Cascade(Entity):
             raise Exception(
                 "Cascade protocol type is receiver (type==1); receiver cannot send checksums to sender")
         self.state = 1
-        process = Process(self.another, "receive_checksums", [self.checksum_tables[-1]])
+        process = Process(self.another, "receive_checksums", [len(self.checksum_tables)-1, self.checksum_tables[-1]])
         self.send_by_cc(process)
 
-    def receive_checksums(self, checksums):
+    def receive_checksums(self, key_id, checksums):
         self.log("receive_checksums ")
-        self.another_checksums.append(checksums)
-        if self.cur_key == len(self.another_checksums) - 1:
-            self.check_checksum()
+        while len(self.another_checksums) <= key_id:
+            self.another_checksums.append(None)
+        self.another_checksums[key_id] = checksums
+        self.check_checksum(key_id)
 
-    def check_checksum(self):
+    def check_checksum(self, key_id):
         self.log("check_checksum")
-        cur_key = self.cur_key
-        cur_pass = self.cur_pass
-        cur_block = self.cur_block
+        cur_key = key_id
         another_checksum = self.another_checksums[cur_key]
         block_id_to_index = self.block_id_to_index_lists[cur_key]
-        for _pass in range(cur_pass,len(another_checksum)):
-            self.cur_pass = _pass
-            for _block in range(cur_block, len(another_checksum[_pass])):
-                self.cur_block = _block
+        for _pass in range(1,len(another_checksum)):
+            for _block in range(len(another_checksum[_pass])):
                 if self.checksum_tables[cur_key][_pass][_block] != self.another_checksums[cur_key][_pass][_block]:
-                    self.log('two checksums are different')
+                    self.log('two checksums are different'+str([cur_key,_pass,_block]))
                     block_size = len(block_id_to_index[_pass][_block])
                     self.interactive_binary_search(cur_key, _pass, _block, 0, block_size)
-                    return
-            self.cur_block = cur_block = 0
-        if self.cur_key == 1:
+                    return False
+
+        self.performance_measure()
+
+        process = Process(self.another, "key_is_valid", [key_id])
+        self.send_by_cc(process)
+
+        if len(self.valid_keys) == 1:
             self.latency = self.timeline.now()
             self.another.latency = self.latency
-        self.cur_key += 1
-        self.another.cur_key += 1
-        self.cur_pass = 0
-        self.cur_block = 0
-        self.pop_key_operations()
-
-
-    def pop_key_operations(self):
-        self.log("pop_key_operations")
-
-        def get_diff_bit_num(key1, key2):
-            val = key1^key2
-            counter = 0
-            i = 0
-            while val>>i:
-                if (val>>i)&1 == 1:
-                    counter += 1
-                i+=1
-            return counter
-
-        if self.cur_key < len(self.keys):
-            self.check_checksum()
+        return True
 
     def end_cascade(self):
         """
         """
         self.state = 2
+
+    def key_is_valid(self, key_id):
+        self.valid_keys.append(self.keys[key_id])
         self.performance_measure()
 
     def send_for_binary(self, key_id, pass_id, block_id, start, end):
@@ -336,14 +318,7 @@ class Cascade(Entity):
                     _block = index_to_block_id[_pass][pos]
                     checksum_table[_pass][_block] ^= 1
 
-                if self.cur_pass == 1:
-                    # for 1st pass, just continue send checksums
-                    self.check_checksum()
-                else:
-                    # if all of error in previous pass are fixed, continue send
-                    # checksum
-                    if not self.correct_error_in_previous():
-                        self.check_checksum()
+                    if not self.check_checksum(key_id): break
             else:
                 self.interactive_binary_search(key_id, pass_id, block_id, start, end)
 
@@ -360,27 +335,12 @@ class Cascade(Entity):
         process = Process(self.another, "send_for_binary", [key_id, pass_id, block_id, int((end + start) / 2), end])
         self.send_by_cc(process)
 
-    def correct_error_in_previous(self):
-        """
-        for i-th pass, correct error in blocks of previous pass
-        """
-        self.log('correct_error_in_previous')
-        another_checksum = self.another_checksums[self.cur_key]
-        checksum_table = self.checksum_tables[self.cur_key]
-        block_id_to_index = self.block_id_to_index_lists[self.cur_key]
-        for _pass in range(1, self.cur_pass):
-            for _block in range(len(another_checksum[_pass])):
-                if checksum_table[_pass][_block] != another_checksum[_pass][_block]:
-                    block_size = len(block_id_to_index[_pass][_block])
-                    self.interactive_binary_search(self.cur_key, _pass, _block, 0, block_size)
-                    return True
-        return False
-
     def send_by_cc(self, process):
         """
         Schedule an event after delay time
         """
-        if self.timeline.now() > self.end_time:
+
+        if self.timeline.now() > self.end_time and self.state!=2:
             self.end_cascade()
             self.another.end_cascade()
             return
@@ -395,17 +355,18 @@ class Cascade(Entity):
         '''
 
     def performance_measure(self):
-        self.throughput = (self.cur_key-1) * self.keylen / (self.end_time-self.start_time)
+        if self.timeline.now() - self.start_time:
+            self.throughput = 1e12 * len(self.valid_keys) * self.keylen / (self.timeline.now() - self.start_time)
         counter = 0
-        i = 0
-        for j in range(1,self.cur_key):
-            val = self.keys[j] ^ self.another.keys[j]
+        for j in range(min(len(self.valid_keys), len(self.another.valid_keys))):
+            i = 0
+            val = self.valid_keys[j] ^ self.another.valid_keys[j]
             while val>>i:
                 if (val>>i)&1 == 1:
                     counter += 1
                 i+=1
-        if self.cur_key > 1:
-            self.error_bit_rate = counter / (self.keylen * (self.cur_key - 1))
+        if len(self.valid_keys) > 1:
+            self.error_bit_rate = counter / (self.keylen * (len(self.valid_keys)))
         else:
             self.error_bit_rate = 0
         self.time_cost = self.end_time - self.start_time
@@ -450,8 +411,8 @@ if __name__ == "__main__":
     tl.entities.append(bob)
 
     # BB84
-    bba = BB84("bba", tl, role="alice")
-    bbb = BB84("bbb", tl, role="bob")
+    bba = BB84("bba", tl, role=0)
+    bbb = BB84("bbb", tl, role=1)
     bba.assign_node(alice)
     bbb.assign_node(bob)
     bba.another = bbb

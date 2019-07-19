@@ -34,8 +34,8 @@ if __name__ == "__main__":
         tl.entities.append(bob)
 
         # BB84
-        bba = BB84("bba", tl, role="alice")
-        bbb = BB84("bbb", tl, role="bob")
+        bba = BB84("bba", tl, role=0)
+        bbb = BB84("bbb", tl, role=1)
         bba.assign_node(alice)
         bbb.assign_node(bob)
         bba.another = bbb
@@ -49,9 +49,9 @@ if __name__ == "__main__":
         tl.run()
         fh.write(str(e/10))
         fh.write(' ')
-        fh.write(str(bba.throughput*10**12))
+        fh.write(str(sum(bba.throughputs*10**12)/len(bba.throughputs)))
         fh.write(' ')
-        fh.write(str(bba.error_bit_rate))
+        fh.write(str(sum(bba.error_rates)/len(bba.error_rates)))
         fh.write(' ')
         fh.write(str(bba.latency/10**12))
         fh.write('\n')

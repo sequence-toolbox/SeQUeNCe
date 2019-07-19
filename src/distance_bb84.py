@@ -14,7 +14,7 @@ if __name__ == "__main__":
     fh = open(filename,'w')
     distance = max(1000,10000*int(id))
 
-    tl = Timeline()
+    tl = Timeline(0.06*1e12)
     qc = topology.QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
     cc = topology.ClassicalChannel("cc", tl, distance=distance)
     cc.delay+= 10**9
@@ -39,8 +39,8 @@ if __name__ == "__main__":
     tl.entities.append(bob)
 
     # BB84
-    bba = BB84("bba", tl, role="alice")
-    bbb = BB84("bbb", tl, role="bob")
+    bba = BB84("bba", tl, role=0)
+    bbb = BB84("bbb", tl, role=1)
     bba.assign_node(alice)
     bbb.assign_node(bob)
     bba.another = bbb
@@ -48,17 +48,21 @@ if __name__ == "__main__":
     alice.protocol = bba
     bob.protocol = bbb
 
-    process = Process(bba, "generate_key", [256,math.inf,6*10**12])
+    process = Process(bba, "generate_key", [256,math.inf,0.06*10**12])
     event = Event(0,process)
     tl.schedule(event)
     tl.run()
+
     fh.write(str(distance))
     fh.write(' ')
-    fh.write(str(bba.throughput*10**12))
+    fh.write(str(sum(bba.throughputs) / len(bba.throughputs)))
     fh.write(' ')
-    fh.write(str(bba.error_bit_rate))
+    fh.write(str(sum(bba.error_rates) / len(bba.error_rates)))
     fh.write(' ')
     fh.write(str(bba.latency/10**12))
     fh.write('\n')
-
     fh.close()
+
+    print(bba.throughputs)
+    print(bba.error_rates)
+

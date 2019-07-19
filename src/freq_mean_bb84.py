@@ -40,8 +40,8 @@ if __name__ == "__main__":
         tl.entities.append(bob)
 
         # BB84
-        bba = BB84("bba", tl, role="alice")
-        bbb = BB84("bbb", tl, role="bob")
+        bba = BB84("bba", tl, role=0)
+        bbb = BB84("bbb", tl, role=1)
         bba.assign_node(alice)
         bbb.assign_node(bob)
         bba.another = bbb
@@ -49,7 +49,7 @@ if __name__ == "__main__":
         alice.protocol = bba
         bob.protocol = bbb
 
-        process = Process(bba, "generate_key", [256,math.inf,0.6*10**12])
+        process = Process(bba, "generate_key", [256,math.inf,0.06*10**12])
         event = Event(0,process)
         tl.schedule(event)
         tl.run()
@@ -57,19 +57,19 @@ if __name__ == "__main__":
         fh.write(' ')
         fh.write(str(mean_num/10))
         fh.write(' ')
-        fh.write(str(bba.throughput*10**12))
+        fh.write(str(sum(bba.throughputs) / len(bba.throughputs)))
         fh.write(' ')
-        fh.write(str(bba.error_bit_rate))
+        fh.write(str(sum(bba.error_rates) / len(bba.error_rates)))
         fh.write(' ')
         fh.write(str(bba.latency/10**12))
         fh.write('\n')
 
-        print(ls.photon_counter)
-        print(ls.pulse_id)
-        print(qsd.detectors[0].photon_counter)
-        print(qsd.detectors[1].photon_counter)
-        print(bbb.discard)
-        print(bba.throughput)
-        print(bba.key_counter)
+        #print(ls.photon_counter)
+        #print(ls.pulse_id)
+        #print(qsd.detectors[0].photon_counter)
+        #print(qsd.detectors[1].photon_counter)
+        #print(bbb.discard)
+        #print(bba.throughput)
+        #print(bba.key_counter)
 
     fh.close()
