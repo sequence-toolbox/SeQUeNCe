@@ -139,11 +139,16 @@ class BB84(Entity):
 
             # send message that we got photons
             self.node.send_message("received_qubits")
+        else:
+            self.node.send_message("finished_iteration")
 
     def received_message(self):
-        if self.working:
-            message = self.node.message.split(" ")
+        message = self.node.message.split(" ")
 
+        if message[0] == "finished_iteration":
+            print("done")
+
+        if self.working:
             if message[0] == "begin_photon_pulse":  # (current node is Bob): start to receive photons
                 self.qubit_frequency = float(message[1])
                 self.light_time = float(message[2])
@@ -267,11 +272,15 @@ class BB84(Entity):
         self.another.bit_lists = []
         self.key_bits = []
         self.another.key_bits = []
-        self.working = True
-        self.another.working = True
         self.latency = 0
         self.another.latency = 0
 
+        if not self.working:
+            self.working = True
+            self.another.working = True
+            self.start_protocol()
+
+    def start_protocol(self):
         light_source = self.node.components["lightsource"]
         self.qubit_frequency = light_source.frequency
 
@@ -307,13 +316,13 @@ if __name__ == "__main__":
             self.key = 0
 
         def run(self):
-            self.child.generate_key(self.keysize, 20)
+            self.child.generate_key(self.keysize, 17)
 
         def get_key_from_BB84(self, key):
             print("key for " + self.role + ":\t{:0{}b}".format(key, self.keysize))
             self.key = key
 
-    tl = timeline.Timeline(1e10)  # stop time is 1 ms
+    tl = timeline.Timeline(1e11)  # stop time is 100 ms
 
     qc = topology.QuantumChannel("qc", tl, distance=10e3, polarization_fidelity=0.99)
     cc = topology.ClassicalChannel("cc", tl, distance=10e3)
@@ -363,9 +372,12 @@ if __name__ == "__main__":
     bba.add_parent(pa)
     bbb.add_parent(pb)
 
-    process = Process(pa, "run", [])
-    event = Event(0, process)
-    tl.schedule(event)
+    process1 = Process(bba, "generate_key", [256, 1])
+    # process2 = Process(pa, "run", [])
+    event1 = Event(0, process1)
+    # event2 = Event(10, process2)
+    tl.schedule(event1)
+    # tl.schedule(event2)
 
     tl.init()
     tl.run()
@@ -374,4 +386,4 @@ if __name__ == "__main__":
     print("average throughput (Mb/s): {}".format(1e-6 * sum(bba.throughputs) / len(bba.throughputs)))
     print("bit error rates:")
     for i, e in enumerate(bba.error_rates):
-        print("\tkey {}:\t{}%".format(i, e * 100))
+        print("\tkey {}:\t{}%".format(i + 1, e * 100))
