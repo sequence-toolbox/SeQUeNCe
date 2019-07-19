@@ -290,22 +290,22 @@ class Detector(Entity):
 class BeamSplitter(Entity):
     def __init__(self, timeline, **kwargs):
         Entity.__init__(self, "", timeline)  # Splitter is part of the QSDetector, and does not have its own name
-        self.basis = kwargs.get("basis", [[complex(1), complex(0)], [complex(0), complex(1)]])
+        basis = kwargs.get("basis", [[complex(1), complex(0)], [complex(0), complex(1)]])
         self.fidelity = kwargs.get("fidelity", 1)
         # for BB84
         self.start_time = 0
         self.frequency = 0
-        self.basis_list = [[[complex(1), complex(0)], [complex(0), complex(1)]]]  # default value
+        self.basis_list = [basis]  # default value
 
     def init(self):
         pass
 
-    # for general use
-    def transmit_general(self, photon):
-        if numpy.random.random_sample() < self.fidelity:
-            return photon.measure(self.basis)
-        else:
-            return -1
+    # # for general use
+    # def transmit_general(self, photon):
+    #     if numpy.random.random_sample() < self.fidelity:
+    #         return photon.measure(self.basis)
+    #     else:
+    #         return -1
 
     # for BB84
     # TODO: determine if protocol is BB84
