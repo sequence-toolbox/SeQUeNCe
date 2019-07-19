@@ -28,9 +28,9 @@ class BB84(Entity):
         self.node = None
         self.parent = None
         self.another = None
-        self.key_length = 0  # desired key length (from parent)
-        self.keys_left = 0
-        self.end_run_time = 0
+        self.key_lengths = []  # desired key lengths (from parent)
+        self.keys_left_list = []
+        self.end_run_times = []
 
         # metrics
         self.latency = 0  # measured in seconds
@@ -95,11 +95,18 @@ class BB84(Entity):
             self.bit_lists.append(bit_list)
 
             # schedule another if necessary
-            if self.timeline.now() + self.light_time * 1e12 < self.end_run_time:
+            if self.timeline.now() + self.light_time * 1e12 < self.end_run_times[0]:
                 self.start_time = self.timeline.now()
                 process = Process(self, "begin_photon_pulse", [])
                 event = Event(self.start_time + int(round(self.light_time * 1e12)), process)
                 self.timeline.schedule(event)
+
+        elif len(self.key_lengths) > 0:
+            # wait for quantum channel to clear of photons then begin protocol again
+            process = Process(self, "start_protocol", [])
+            time = self.timeline.now() + self.quantum_delay
+            event = Event(time, process)
+            self.timeline.schedule(event)
 
     def end_photon_pulse(self):
         if self.working:
@@ -126,7 +133,7 @@ class BB84(Entity):
             self.node.components["detector"].clear_detectors()
 
             # schedule another if necessary
-            if self.timeline.now() + self.light_time * 1e12 < self.end_run_time:
+            if self.timeline.now() + self.light_time * 1e12 < self.end_run_times[0]:
                 self.start_time = self.timeline.now()
 
                 # set beamsplitter bases
@@ -139,16 +146,11 @@ class BB84(Entity):
 
             # send message that we got photons
             self.node.send_message("received_qubits")
-        else:
-            self.node.send_message("finished_iteration")
 
     def received_message(self):
-        message = self.node.message.split(" ")
-
-        if message[0] == "finished_iteration":
-            print("done")
-
         if self.working:
+            message = self.node.message.split(" ")
+
             if message[0] == "begin_photon_pulse":  # (current node is Bob): start to receive photons
                 self.qubit_frequency = float(message[1])
                 self.light_time = float(message[2])
@@ -222,10 +224,10 @@ class BB84(Entity):
                     self.key_bits.append(bits[i])
 
                 # check if key long enough. If it is, truncate if necessary and call cascade
-                if len(self.key_bits) >= self.key_length:
-                    throughput = self.key_length * 1e12 / (self.timeline.now() - self.last_key_time)
+                if len(self.key_bits) >= self.key_lengths[0]:
+                    throughput = self.key_lengths[0] * 1e12 / (self.timeline.now() - self.last_key_time)
 
-                    while len(self.key_bits) >= self.key_length and self.keys_left > 0:
+                    while len(self.key_bits) >= self.key_lengths[0] and self.keys_left_list[0] > 0:
                         self.set_key()  # convert from binary list to int
                         if self.parent is not None:
                             self.parent.get_key_from_BB84(self.key)  # call parent
@@ -244,27 +246,38 @@ class BB84(Entity):
                         while key_diff:
                             key_diff &= key_diff - 1
                             num_errors += 1
-                        self.error_rates.append(num_errors / self.key_length)
+                        self.error_rates.append(num_errors / self.key_lengths[0])
 
-                        self.keys_left -= 1
+                        self.keys_left_list[0] -= 1
 
                     self.last_key_time = self.timeline.now()
 
                 # check if we're done
-                if self.keys_left < 1 or self.timeline.now() >= self.end_run_time:
+                if self.keys_left_list[0] < 1 or self.timeline.now() >= self.end_run_times[0]:
                     self.working = False
                     self.another.working = False
+
+                    self.key_lengths.pop(0)
+                    self.keys_left_list.pop(0)
+                    self.end_run_times.pop(0)
 
     def generate_key(self, length, key_num=1, run_time=math.inf):
         if self.role != 0:
             raise AssertionError("generate key must be called from Alice")
 
-        self.key_length = length
-        self.another.key_length = length
-        self.keys_left = key_num
-        self.end_run_time = run_time + self.timeline.now()
-        self.another.end_run_time = self.end_run_time
+        self.key_lengths.append(length)
+        self.another.key_lengths.append(length)
+        self.keys_left_list.append(key_num)
+        end_run_time = run_time + self.timeline.now()
+        self.end_run_times.append(end_run_time)
+        self.another.end_run_times.append(end_run_time)
 
+        if not self.working:
+            self.working = True
+            self.another.working = True
+            self.start_protocol()
+
+    def start_protocol(self):
         # reset buffers for self and another
         self.basis_lists = []
         self.another.basis_lists = []
@@ -275,17 +288,11 @@ class BB84(Entity):
         self.latency = 0
         self.another.latency = 0
 
-        if not self.working:
-            self.working = True
-            self.another.working = True
-            self.start_protocol()
-
-    def start_protocol(self):
         light_source = self.node.components["lightsource"]
         self.qubit_frequency = light_source.frequency
 
         # calculate light time based on key length
-        self.light_time = self.key_length / (self.qubit_frequency * light_source.mean_photon_num)
+        self.light_time = self.key_lengths[0] / (self.qubit_frequency * light_source.mean_photon_num)
 
         # send message that photon pulse is beginning, then send bits
         self.start_time = int(self.timeline.now()) + int(round(self.classical_delay))
@@ -301,8 +308,8 @@ class BB84(Entity):
         # call to get_key_from_BB84 is handled in received_message (after processing is done)
 
     def set_key(self):
-        key_bits = self.key_bits[0:self.key_length - 1]
-        del self.key_bits[0:self.key_length - 1]
+        key_bits = self.key_bits[0:self.key_lengths[0] - 1]
+        del self.key_bits[0:self.key_lengths[0] - 1]
         self.key = int("".join(str(x) for x in key_bits), 2)  # convert from binary list to int
 
 
