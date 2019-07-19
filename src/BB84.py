@@ -334,10 +334,10 @@ if __name__ == "__main__":
             self.key = 0
 
         def run(self):
-            self.child.generate_key(self.keysize, 17)
+            self.child.generate_key(self.keysize, 10)
 
         def get_key_from_BB84(self, key):
-            print("key for " + self.role + ":\t{:0{}b}".format(key, self.keysize))
+            print("key for " + self.role + ":\t{:0{}b}".format(key, self.child.key_lengths[0]))
             self.key = key
 
     tl = timeline.Timeline(1e11)  # stop time is 100 ms
@@ -383,8 +383,8 @@ if __name__ == "__main__":
     bob.protocol = bbb
 
     # Parent
-    pa = Parent(512, "alice")
-    pb = Parent(512, "bob")
+    pa = Parent(10240, "alice")
+    pb = Parent(10240, "bob")
     pa.child = bba
     pb.child = bbb
     bba.add_parent(pa)
@@ -393,7 +393,7 @@ if __name__ == "__main__":
     process1 = Process(bba, "generate_key", [256, 1])
     process2 = Process(pa, "run", [])
     event1 = Event(0, process1)
-    event2 = Event(10, process2)
+    event2 = Event(1e3, process2)
     tl.schedule(event1)
     tl.schedule(event2)
 
