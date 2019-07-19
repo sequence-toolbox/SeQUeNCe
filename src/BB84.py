@@ -18,10 +18,10 @@ class BB84(Entity):
         self.start_time = 0  # start time of light pulse
         self.classical_delay = 0  # time delay of classical communication (ps)
         self.quantum_delay = 0  # time delay of quantum communication (ps)
-        self.basis_lists = []
-        self.bit_lists = []
+        self.basis_lists = None
+        self.bit_lists = None
         self.key = 0  # key as int
-        self.key_bits = []  # key as list of bits
+        self.key_bits = None  # key as list of bits
         self.node = None
         self.parent = None
         self.another = None
@@ -220,6 +220,8 @@ class BB84(Entity):
 
                 # check if key long enough. If it is, truncate if necessary and call cascade
                 if len(self.key_bits) >= self.key_length:
+                    throughput = self.key_length * 1e12 / (self.timeline.now() - self.last_key_time)
+
                     while len(self.key_bits) >= self.key_length and self.keys_left > 0:
                         self.set_key()  # convert from binary list to int
                         if self.parent is not None:
@@ -231,7 +233,8 @@ class BB84(Entity):
                         # for metrics
                         if self.latency == 0:
                             self.latency = (self.timeline.now() - self.last_key_time) * 1e-12
-                        self.throughputs.append(self.key_length * 1e12 / (self.timeline.now() - self.last_key_time))
+
+                        self.throughputs.append(throughput)
 
                         key_diff = self.key ^ self.another.key
                         num_errors = 0
@@ -266,14 +269,22 @@ class BB84(Entity):
         self.another.key_bits = []  # key as list of bits
         self.latency = 0
 
+        # reset buffers for self and another
+        self.basis_lists = []
+        self.another.basis_lists = []
+        self.bit_lists = []
+        self.another.bit_lists = []
+        self.key_bits = []
+        self.another.key_bits = []
         self.working = True
         self.another.working = True
+        self.latency = 0
+        self.another.latency = 0
 
         light_source = self.node.components["lightsource"]
         self.qubit_frequency = light_source.frequency
 
-        # calculate light time based on delay
-        # self.light_time = self.classical_delay * 2 * 1e-12
+        # calculate light time based on key length
         self.light_time = self.key_length / (self.qubit_frequency * light_source.mean_photon_num)
 
         # send message that photon pulse is beginning, then send bits
@@ -370,4 +381,8 @@ if __name__ == "__main__":
     tl.init()
     tl.run()
 
-    print(bba.error_rates)
+    print("latency (s): {}".format(bba.latency))
+    print("average throughput (Mb/s): {}".format(1e-6 * sum(bba.throughputs) / len(bba.throughputs)))
+    print("bit error rates:")
+    for i, e in enumerate(bba.error_rates):
+        print("\tkey {}:\t{}%".format(i, e * 100))
