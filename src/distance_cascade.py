@@ -15,7 +15,7 @@ if __name__ == "__main__":
     fh = open(filename,'w')
     distance = max(1000,10000*int(id))
 
-    tl = Timeline(1.2*1e12)
+    tl = Timeline(12*1e12)
     qc = topology.QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
     cc = topology.ClassicalChannel("cc", tl, distance=distance)
     cc.delay += 10**9
@@ -61,23 +61,30 @@ if __name__ == "__main__":
 
     #cascade_a.logflag = True
 
-    process = Process(cascade_a, 'generate_key', [256,math.inf,1.2*10**12])
+    process = Process(cascade_a, 'generate_key', [256,math.inf,12*10**12])
     tl.schedule(Event(0, process))
+    process = Process(ls, 'turn_off',[])
     tl.run()
 
     fh.write(str(distance))
     fh.write(' ')
-    fh.write(str(cascade_a.throughput))
+    if cascade_a.throughput: fh.write(str(cascade_a.throughput))
+    else: fh.write(str(None))
     fh.write(' ')
-    fh.write(str(cascade_a.error_bit_rate))
+    if cascade_a.error_bit_rate: fh.write(str(cascade_a.error_bit_rate))
+    else: fh.write(str(None))
     fh.write(' ')
-    fh.write(str(cascade_a.latency/1e12))
+    if cascade_a.latency: fh.write(str(cascade_a.latency/1e12))
+    else: fh.write(str(None))
     fh.write(' ')
-    fh.write(str(cascade_a.setup_time/1e12))
+    if cascade_a.setup_time: fh.write(str(cascade_a.setup_time/1e12))
+    else: fh.write(str(None))
     fh.write(' ')
-    fh.write(str(cascade_a.start_time/1e12))
+    if cascade_a.start_time: fh.write(str(cascade_a.start_time/1e12))
+    else: fh.write(str(None))
     fh.write(' ')
-    fh.write(str(bba.latency))
+    if bba.latency: fh.write(str(bba.latency))
+    else: fh.write(str(None))
     fh.write('\n')
     fh.close()
 
