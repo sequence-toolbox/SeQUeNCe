@@ -33,17 +33,19 @@ class Photon(Entity):
         self.wavelength = kwargs.get("wavelength", 0)
         self.location = kwargs.get("location", None)
         self.encoding_type = kwargs.get("encoding_type")
-        self.quantum_state = kwargs.get("quantum_state", 45) ## 45 degrees instead of pi/4
+        self.quantum_state = kwargs.get("quantum_state", [complex(1), complex(0)])
 
     def init(self):
         pass
 
     def random_noise(self):
-        self.quantum_state += numpy.random.random() * 360  # add random angle, use 360 instead of 2*pi
+        angle = numpy.random.random() * 2 * numpy.pi
+        self.quantum_state = [complex(numpy.cos(angle)), complex(numpy.sin(angle))]
+        # self.quantum_state += numpy.random.random() * 360  # add random angle, use 360 instead of 2*pi
 
     def measure(self, basis):
-        # alpha = numpy.dot(self.quantum_state, basis[0])  # projection onto basis vector
-        alpha = numpy.cos((self.quantum_state - basis[0])/180.0 * numpy.pi)
+        alpha = numpy.dot(self.quantum_state, basis[0])  # projection onto basis vector
+        # alpha = numpy.cos((self.quantum_state - basis[0])/180.0 * numpy.pi)
         if numpy.random.random_sample() < alpha ** 2:
             self.quantum_state = basis[0]
             return 0
@@ -84,6 +86,8 @@ class QuantumChannel(OpticalChannel):
         super().__init__(name, timeline, **kwargs)
         self.sender = None
         self.receiver = None
+        self.depo_counter = 0
+        self.photon_counter = 0
 
     def set_sender(self, sender):
         self.sender = sender
@@ -98,9 +102,11 @@ class QuantumChannel(OpticalChannel):
 
         # check if photon kept
         if numpy.random.random_sample() < chance_photon_kept:
+            self.photon_counter+=1
             # check if random polarization noise applied
             if numpy.random.random_sample() > self.polarization_fidelity:
                 photon.random_noise()
+                self.depo_counter+=1
             # schedule receiving node to receive photon at future time determined by light speed
             future_time = self.timeline.now() + int(self.distance / self.light_speed)
             process = Process(self.receiver, "detect", [photon])
@@ -133,7 +139,7 @@ class ClassicalChannel(OpticalChannel):
             if e != source:
                 receiver = e
 
-        future_time = self.timeline.now() + self.delay
+        future_time = int(round(self.timeline.now() + self.delay))
         process = Process(receiver, "receive_message", [message])
         event = Event(future_time, process)
         self.timeline.schedule(event)
@@ -149,9 +155,12 @@ class LightSource(Entity):
         self.direct_receiver = kwargs.get("direct_receiver", None)
         self.photon_counter = 0
         # for BB84
+        self.basis_lists = []
         self.basis_list = []
+        self.bit_lists = []
         self.bit_list = []
         self.is_on = False
+        self.pulse_id = 0
 
     def init(self):
         pass
@@ -168,7 +177,7 @@ class LightSource(Entity):
 
             num_photons = numpy.random.poisson(self.mean_photon_num)
             for _ in range(num_photons):
-                new_photon = Photon(None, self.timeline,
+                new_photon = Photon(self.pulse_id, self.timeline,
                                     wavelength=self.wavelength,
                                     location=self.direct_receiver,
                                     encoding_type=self.encoding_type,
@@ -177,15 +186,16 @@ class LightSource(Entity):
 
                 self.photon_counter += 1
 
+            self.pulse_id+=1
             process = Process(self, "emit_photon", [])
-            event = Event(self.timeline.now() + (10 ** 12) / self.frequency, process)
+            event = Event(self.timeline.now() + 1e12 / self.frequency, process)
             self.timeline.schedule(event)
 
     # for general use
     def emit(self, state_list):
         time = self.timeline.now()
 
-        for state in state_list:
+        for i, state in enumerate(state_list):
             num_photons = numpy.random.poisson(self.mean_photon_num)
 
             for _ in range(num_photons):
@@ -195,18 +205,22 @@ class LightSource(Entity):
                                     encoding_type=self.encoding_type,
                                     quantum_state=state)
                 process = Process(self.direct_receiver, "transmit", [new_photon])
-                event = Event(time, process)
+                event = Event(int(round(time)), process)
                 self.timeline.schedule(event)
 
                 self.photon_counter += 1
 
-            time += (10 ** 12) / self.frequency
+            time += 1e12 / self.frequency
 
     def turn_on(self):
         self.is_on = True
         self.emit_photon()
 
     def turn_off(self):
+        self.basis_lists.append(self.basis_list)
+        self.basis_list = []
+        self.bit_lists.append(self.bit_list)
+        self.bit_list = []
         self.is_on = False
 
     def assign_receiver(self, receiver):
@@ -225,10 +239,14 @@ class QSDetector(Entity):
         self.splitter = BeamSplitter(timeline, **splitter)
 
     def init(self):
-        pass
+        for d in self.detectors:
+            d.init()
+        self.splitter.init()
 
     def detect(self, photon):
-        self.detectors[self.splitter.transmit(photon)].detect()
+        detector = self.splitter.transmit(photon)
+        if detector == 0 or detector == 1:
+            self.detectors[self.splitter.transmit(photon)].detect()
 
     def clear_detectors(self):
         for d in self.detectors:
@@ -253,18 +271,20 @@ class Detector(Entity):
         self.time_resolution = kwargs.get("time_resolution", 0)  # measured in ps
         self.photon_times = []
         self.next_detection_time = 0
+        self.photon_counter = 0
 
     def init(self):
         self.add_dark_count()
 
     def detect(self):
+        self.photon_counter+=1
         if numpy.random.random_sample() < self.efficiency and self.timeline.now() > self.next_detection_time:
             time = int(round(self.timeline.now() / self.time_resolution)) * self.time_resolution
             self.photon_times.append(time)
-            self.next_detection_time = self.timeline.now() + (10 ** 12 / self.count_rate)  # period in ps
+            self.next_detection_time = self.timeline.now() + (1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self):
-        time_to_next = int(numpy.random.exponential(1 / self.dark_count) * (10 ** 12))  # time to next dark count
+        time_to_next = int(numpy.random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
         time = time_to_next + self.timeline.now()  # time of next dark count
 
         process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
@@ -278,17 +298,37 @@ class Detector(Entity):
 class BeamSplitter(Entity):
     def __init__(self, timeline, **kwargs):
         Entity.__init__(self, "", timeline)  # Splitter is part of the QSDetector, and does not have its own name
-        self.basis = kwargs.get("basis", [0, 90])
+        basis = kwargs.get("basis", [[complex(1), complex(0)], [complex(0), complex(1)]])
         self.fidelity = kwargs.get("fidelity", 1)
+        # for BB84
+        self.start_time = 0
+        self.frequency = 0
+        self.basis_list = [basis]  # default value
 
     def init(self):
         pass
 
+    # # for general use
+    # def transmit_general(self, photon):
+    #     if numpy.random.random_sample() < self.fidelity:
+    #         return photon.measure(self.basis)
+    #     else:
+    #         return -1
+
+    # for BB84
+    # TODO: determine if protocol is BB84
     def transmit(self, photon):
         if numpy.random.random_sample() < self.fidelity:
-            return photon.measure(self.basis)
+            index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
+            if 0 <= index < len(self.basis_list):
+                return photon.measure(self.basis_list[index])
+            else:
+                return photon.measure(self.basis_list[0])
+        else:
+            return -1
 
     def set_basis(self, basis):
+        self.set_counter+=1
         self.basis = basis
 
 
