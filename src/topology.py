@@ -5,6 +5,7 @@ import numpy
 import json5
 import pandas as pd
 
+import encoding
 from process import Process
 from entity import Entity
 from event import Event
@@ -32,7 +33,7 @@ class Photon(Entity):
         Entity.__init__(self, name, timeline)
         self.wavelength = kwargs.get("wavelength", 0)
         self.location = kwargs.get("location", None)
-        self.encoding_type = kwargs.get("encoding_type")
+        self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
         self.quantum_state = kwargs.get("quantum_state", [complex(1), complex(0)])
 
     def init(self):
@@ -151,7 +152,7 @@ class LightSource(Entity):
         self.frequency = kwargs.get("frequency", 0)  # measured in Hz
         self.wavelength = kwargs.get("wavelength", 0)  # measured in nm
         self.mean_photon_num = kwargs.get("mean_photon_num", 0)
-        self.encoding_type = kwargs.get("encoding_type")
+        self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
         self.direct_receiver = kwargs.get("direct_receiver", None)
         self.photon_counter = 0
         # for BB84
@@ -276,19 +277,26 @@ class Detector(Entity):
     def init(self):
         self.add_dark_count()
 
-    def get(self):
-        self.photon_counter+=1
-        if numpy.random.random_sample() < self.efficiency and self.timeline.now() > self.next_detection_time:
-            time = int(round(self.timeline.now() / self.time_resolution)) * self.time_resolution
+    def get(self, photon=None):
+        self.photon_counter += 1
+        now = self.timeline.now()
+
+        if photon and photon.encoding_type["name"] == "time_bin":
+            # check if photon is in "late" bin. If it is, detect at late time
+            if photon.measure(photon.encoding_type["bases"][0]):
+                now += photon.encoding_type["bin_separation"]
+
+        if numpy.random.random_sample() < self.efficiency and now > self.next_detection_time:
+            time = int(round(now / self.time_resolution)) * self.time_resolution
             self.photon_times.append(time)
-            self.next_detection_time = self.timeline.now() + (1e12 / self.count_rate)  # period in ps
+            self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self):
         time_to_next = int(numpy.random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
         time = time_to_next + self.timeline.now()  # time of next dark count
 
         process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
-        process2 = Process(self, "detect", [])
+        process2 = Process(self, "get", [])
         event1 = Event(time, process1)
         event2 = Event(time, process2)
         self.timeline.schedule(event1)

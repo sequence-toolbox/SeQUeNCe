@@ -2,6 +2,7 @@ import numpy
 import re
 import math
 
+import encoding
 from process import Process
 from entity import Entity
 from event import Event
@@ -11,7 +12,7 @@ class BB84(Entity):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline)
         self.role = kwargs.get("role", -1)
-        self.encoding_type = kwargs.get("encoding_type")
+        self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
         self.working = False
         self.ready = True  # (for Alice) not currently processing a generate_key request
         self.light_time = 0  # time to use laser (measured in s)
@@ -37,9 +38,8 @@ class BB84(Entity):
         self.error_rates = []
 
         self.bases = []
-        if self.encoding_type == 0:
-            self.bases = [[[complex(1), complex(0)], [complex(0), complex(1)]],
-                          [[complex(math.sqrt(2)), complex(math.sqrt(2))], [complex(-math.sqrt(2)), complex(math.sqrt(2))]]]
+        if self.encoding_type["name"] == "polarization":
+            self.bases = self.encoding_type["bases"]
         else:
             raise SyntaxError("encoding scheme not specified properly")
 
@@ -372,8 +372,8 @@ if __name__ == "__main__":
         tl.entities.append(bob.components[key])
 
     # BB84
-    bba = BB84("bba", tl, role=0, encoding_type=0)
-    bbb = BB84("bbb", tl, role=1, encoding_type=0)
+    bba = BB84("bba", tl, role=0)
+    bbb = BB84("bbb", tl, role=1)
     bba.assign_node(alice)
     bbb.assign_node(bob)
     bba.another = bbb
@@ -389,12 +389,12 @@ if __name__ == "__main__":
     bba.add_parent(pa)
     bbb.add_parent(pb)
 
-    process1 = Process(bba, "generate_key", [256, 1])
-    process2 = Process(pa, "run", [])
+    process1 = Process(bba, "generate_key", [512, 1])
+    # process2 = Process(pa, "run", [])
     event1 = Event(0, process1)
-    event2 = Event(1e3, process2)
+    # event2 = Event(1e3, process2)
     tl.schedule(event1)
-    tl.schedule(event2)
+    # tl.schedule(event2)
 
     tl.init()
     tl.run()
