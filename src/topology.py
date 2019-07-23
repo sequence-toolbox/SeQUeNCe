@@ -331,6 +331,41 @@ class BeamSplitter(Entity):
         self.basis_list = [basis]
 
 
+class Interferometer(Entity):
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(self, name, timeline)
+        detectors = kwargs.get("detectors", [])
+        self.detectors = []
+        for d in detectors:
+            detector = Detector(timeline, **d)
+            self.detectors.append(detector)
+
+    def init(self):
+        pass
+
+    def detect(self):
+        pass
+
+
+class Switch(Entity):
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(self, name, timeline)
+        self.receivers = []
+        self.state = 0
+
+    def init(self):
+        pass
+
+    def add_receiver(self, entity):
+        self.receivers.append(entity)
+
+    def set_state(self, state):
+        self.state = state
+
+    def detect(self, photon):
+        self.receivers[self.state].detect(photon)
+
+
 class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
