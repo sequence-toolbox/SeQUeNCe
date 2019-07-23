@@ -328,8 +328,7 @@ class BeamSplitter(Entity):
             return -1
 
     def set_basis(self, basis):
-        self.set_counter+=1
-        self.basis = basis
+        self.basis_list = [basis]
 
 
 class Node(Entity):
