@@ -95,7 +95,7 @@ class QuantumChannel(OpticalChannel):
     def set_receiver(self, receiver):
         self.receiver = receiver
 
-    def transmit(self, photon):
+    def get(self, photon):
         # generate chance to lose photon
         loss = self.distance * self.attenuation
         chance_photon_kept = 10 ** (loss / -10)
@@ -109,7 +109,7 @@ class QuantumChannel(OpticalChannel):
                 self.depo_counter+=1
             # schedule receiving node to receive photon at future time determined by light speed
             future_time = self.timeline.now() + int(self.distance / self.light_speed)
-            process = Process(self.receiver, "detect", [photon])
+            process = Process(self.receiver, "get", [photon])
 
             event = Event(future_time, process)
             self.timeline.schedule(event)
@@ -182,7 +182,7 @@ class LightSource(Entity):
                                     location=self.direct_receiver,
                                     encoding_type=self.encoding_type,
                                     quantum_state=state)
-                self.direct_receiver.transmit(new_photon)
+                self.direct_receiver.get(new_photon)
 
                 self.photon_counter += 1
 
@@ -204,7 +204,7 @@ class LightSource(Entity):
                                     location=self.direct_receiver,
                                     encoding_type=self.encoding_type,
                                     quantum_state=state)
-                process = Process(self.direct_receiver, "transmit", [new_photon])
+                process = Process(self.direct_receiver, "get", [new_photon])
                 event = Event(int(round(time)), process)
                 self.timeline.schedule(event)
 
@@ -243,10 +243,10 @@ class QSDetector(Entity):
             d.init()
         self.splitter.init()
 
-    def detect(self, photon):
-        detector = self.splitter.transmit(photon)
+    def get(self, photon):
+        detector = self.splitter.get(photon)
         if detector == 0 or detector == 1:
-            self.detectors[self.splitter.transmit(photon)].detect()
+            self.detectors[self.splitter.get(photon)].get()
 
     def clear_detectors(self):
         for d in self.detectors:
@@ -276,7 +276,7 @@ class Detector(Entity):
     def init(self):
         self.add_dark_count()
 
-    def detect(self):
+    def get(self):
         self.photon_counter+=1
         if numpy.random.random_sample() < self.efficiency and self.timeline.now() > self.next_detection_time:
             time = int(round(self.timeline.now() / self.time_resolution)) * self.time_resolution
@@ -317,7 +317,7 @@ class BeamSplitter(Entity):
 
     # for BB84
     # TODO: determine if protocol is BB84
-    def transmit(self, photon):
+    def get(self, photon):
         if numpy.random.random_sample() < self.fidelity:
             index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
             if 0 <= index < len(self.basis_list):
@@ -343,7 +343,7 @@ class Interferometer(Entity):
     def init(self):
         pass
 
-    def detect(self):
+    def get(self):
         pass
 
 
@@ -362,8 +362,8 @@ class Switch(Entity):
     def set_state(self, state):
         self.state = state
 
-    def detect(self, photon):
-        self.receivers[self.state].detect(photon)
+    def get(self, photon):
+        self.receivers[self.state].get(photon)
 
 
 class Node(Entity):
