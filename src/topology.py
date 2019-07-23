@@ -334,6 +334,7 @@ class BeamSplitter(Entity):
 class Interferometer(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
+        self.path_difference = ("path_difference", 0)  # time difference in ps
         detectors = kwargs.get("detectors", [])
         self.detectors = []
         for d in detectors:
@@ -343,8 +344,44 @@ class Interferometer(Entity):
     def init(self):
         pass
 
-    def get(self):
-        pass
+    def get(self, photon):
+        detector_num = numpy.random.choice([0, 1])
+        quantum_state = photon.quantum_state
+        time = 0
+        random = numpy.random.random_sample()
+
+        if quantum_state == [complex(1), complex(0)]:  # Early
+            if random <= 0.5:
+                time = 0
+            else:
+                time = self.path_difference
+        if quantum_state == [complex(0), complex(1)]:  # Late
+            if random <= 0.5:
+                time = self.path_difference
+            else:
+                time = 2 * self.path_difference
+        if quantum_state == [complex(math.sqrt(2)), complex(math.sqrt(2))]:  # Early + Late
+            if random <= 0.25:
+                time = 0
+            elif random <= 0.5:
+                time = 2 * self.path_difference
+            elif detector_num == 0:
+                time = self.path_difference
+            else:
+                return
+        if quantum_state == [complex(math.sqrt(2)), complex(-math.sqrt(2))]:  # Early - Late
+            if random <= 0.25:
+                time = 0
+            elif random <= 0.5:
+                time = 2 * self.path_difference
+            elif detector_num == 1:
+                time = self.path_difference
+            else:
+                return
+
+        process = Process(self.detectors[detector_num], "get", [])
+        event = Event(self.timeline.now() + time, process)
+        self.timeline.schedule(event)
 
 
 class Switch(Entity):
