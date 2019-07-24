@@ -231,23 +231,44 @@ class LightSource(Entity):
 class QSDetector(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
+        self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
+
         detectors = kwargs.get("detectors", [])
+        if (self.encoding_type["name"] == "polarization" and len(detectors) != 2) or\
+                (self.encoding_type["name"] == "time_bin" and len(detectors) != 3):
+            raise Exception("invalid number of detectors specified")
         self.detectors = []
         for d in detectors:
             detector = Detector(timeline, **d)
             self.detectors.append(detector)
-        splitter = kwargs.get("splitter")
-        self.splitter = BeamSplitter(timeline, **splitter)
+
+        if self.encoding_type["name"] == "polarization":
+            splitter = kwargs.get("splitter")
+            self.splitter = BeamSplitter(timeline, **splitter)
+
+        elif self.encoding_type["name"] == "time_bin":
+            interferometer = kwargs.get("interferometer")
+            self.interferometer = Interferometer(timeline, **interferometer)
+            self.interferometer.detectors = self.detectors[1:2]
+            switch = kwargs.get("switch")
+            self.switch = Switch(timeline, **switch)
+            self.switch.receivers = [self.detectors[0], self.interferometer]
+
+        else:
+            raise Exception("invalid encoding type for QSDetector " + self.name)
 
     def init(self):
         for d in self.detectors:
             d.init()
-        self.splitter.init()
 
     def get(self, photon):
-        detector = self.splitter.get(photon)
-        if detector == 0 or detector == 1:
-            self.detectors[self.splitter.get(photon)].get()
+        if self.encoding_type["name"] == "polarization":
+            detector = self.splitter.get(photon)
+            if detector == 0 or detector == 1:
+                self.detectors[self.splitter.get(photon)].get()
+
+        elif self.encoding_type["name"] == "time_bin":
+            self.switch.get(photon)
 
     def clear_detectors(self):
         for d in self.detectors:
@@ -340,14 +361,10 @@ class BeamSplitter(Entity):
 
 
 class Interferometer(Entity):
-    def __init__(self, name, timeline, **kwargs):
-        Entity.__init__(self, name, timeline)
+    def __init__(self, timeline, **kwargs):
+        Entity.__init__(self, "", timeline)
         self.path_difference = ("path_difference", 0)  # time difference in ps
-        detectors = kwargs.get("detectors", [])
         self.detectors = []
-        for d in detectors:
-            detector = Detector(timeline, **d)
-            self.detectors.append(detector)
 
     def init(self):
         pass
@@ -399,8 +416,8 @@ class Interferometer(Entity):
 
 
 class Switch(Entity):
-    def __init__(self, name, timeline, **kwargs):
-        Entity.__init__(self, name, timeline)
+    def __init__(self, timeline, **kwargs):
+        Entity.__init__(self, "", timeline)
         self.receivers = []
         self.start_time = 0
         self.frequency = 0
@@ -505,7 +522,7 @@ class Node(Entity):
             splitter.basis_list = splitter_basis_list
 
         elif self.encoding_type["name"] == "time_bin":
-            switch = self.components["switch"]
+            switch = self.components["detector"].switch
             switch.start_time = basis_start_time
             switch.frequency = frequency
             switch.state_list = basis_list
