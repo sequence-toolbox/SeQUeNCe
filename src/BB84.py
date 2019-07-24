@@ -352,3 +352,76 @@ if __name__ == "__main__":
     print("bit error rates:")
     for i, e in enumerate(bba.error_rates):
         print("\tkey {}:\t{}%".format(i + 1, e * 100))
+
+    """
+    TIME BIN TESTING
+    """
+
+    tl = timeline.Timeline(1e11)  # stop time is 100 ms
+
+    qc = topology.QuantumChannel("qc", tl, distance=10e3, polarization_fidelity=0.99)
+    cc = topology.ClassicalChannel("cc", tl, distance=10e3)
+
+    # Alice
+    ls = topology.LightSource("alice.lightsource", tl,
+                              frequency=80e6, mean_photon_num=0.1, direct_receiver=qc, encoding_type=encoding.time_bin)
+    components = {"lightsource": ls, "cchannel": cc, "qchannel": qc}
+
+    alice = topology.Node("alice", tl, components=components, encoding_type=encoding.time_bin)
+    qc.set_sender(ls)
+    cc.add_end(alice)
+
+    # Bob
+    detectors = [{"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
+                 {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
+                 {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10}]
+    interferometer = {"path_difference": encoding.time_bin["bin_separation"]}
+    switch = {}
+    qsd = topology.QSDetector("bob.qsdetector", tl,
+                              encoding_type=encoding.time_bin, detectors=detectors, interferometer=interferometer, switch=switch)
+    components = {"detector": qsd, "cchannel": cc, "qchannel": qc}
+
+    bob = topology.Node("bob", tl, components=components, encoding_type=encoding.time_bin)
+    qc.set_receiver(qsd)
+    cc.add_end(bob)
+
+    tl.entities.append(alice)
+    tl.entities.append(bob)
+    for key in alice.components:
+        tl.entities.append(alice.components[key])
+    for key in bob.components:
+        tl.entities.append(bob.components[key])
+
+    # BB84
+    bba = BB84("bba", tl, role=0)
+    bbb = BB84("bbb", tl, role=1)
+    bba.assign_node(alice)
+    bbb.assign_node(bob)
+    bba.another = bbb
+    bbb.another = bba
+    alice.protocol = bba
+    bob.protocol = bbb
+
+    # Parent
+    pa = Parent(10240, "alice")
+    pb = Parent(10240, "bob")
+    pa.child = bba
+    pb.child = bbb
+    bba.add_parent(pa)
+    bbb.add_parent(pb)
+
+    process1 = Process(bba, "generate_key", [512, 1])
+    # process2 = Process(pa, "run", [])
+    event1 = Event(0, process1)
+    # event2 = Event(1e3, process2)
+    tl.schedule(event1)
+    # tl.schedule(event2)
+
+    tl.init()
+    tl.run()
+
+    print("latency (s): {}".format(bba.latency))
+    print("average throughput (Mb/s): {}".format(1e-6 * sum(bba.throughputs) / len(bba.throughputs)))
+    print("bit error rates:")
+    for i, e in enumerate(bba.error_rates):
+        print("\tkey {}:\t{}%".format(i + 1, e * 100))

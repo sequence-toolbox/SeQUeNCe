@@ -103,11 +103,14 @@ class QuantumChannel(OpticalChannel):
 
         # check if photon kept
         if numpy.random.random_sample() < chance_photon_kept:
-            self.photon_counter+=1
+            self.photon_counter += 1
+
             # check if random polarization noise applied
-            if numpy.random.random_sample() > self.polarization_fidelity:
+            if numpy.random.random_sample() > self.polarization_fidelity and\
+                    photon.encoding_type["name"] == "polarization":
                 photon.random_noise()
                 self.depo_counter+=1
+
             # schedule receiving node to receive photon at future time determined by light speed
             future_time = self.timeline.now() + int(self.distance / self.light_speed)
             process = Process(self.receiver, "get", [photon])
@@ -249,7 +252,7 @@ class QSDetector(Entity):
         elif self.encoding_type["name"] == "time_bin":
             interferometer = kwargs.get("interferometer")
             self.interferometer = Interferometer(timeline, **interferometer)
-            self.interferometer.detectors = self.detectors[1:2]
+            self.interferometer.detectors = self.detectors[1:]
             switch = kwargs.get("switch")
             self.switch = Switch(timeline, **switch)
             self.switch.receivers = [self.detectors[0], self.interferometer]
@@ -363,7 +366,7 @@ class BeamSplitter(Entity):
 class Interferometer(Entity):
     def __init__(self, timeline, **kwargs):
         Entity.__init__(self, "", timeline)
-        self.path_difference = ("path_difference", 0)  # time difference in ps
+        self.path_difference = kwargs.get("path_difference", 0)  # time difference in ps
         self.detectors = []
 
     def init(self):
