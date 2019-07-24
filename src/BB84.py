@@ -62,32 +62,34 @@ class BB84(Entity):
     def set_bases(self):
         # generate basis list
         num_pulses = int(round(self.light_time * self.qubit_frequency))
-        basis_list = [[]] * num_pulses
-        for i in range(num_pulses):
-            basis_list[i] = self.bases[numpy.random.choice([0, 1])]
-
+        basis_list = numpy.random.choice([0, 1], num_pulses)
         self.basis_lists.append(basis_list)
-
-        # schedule changes for BeamSplitter Basis
-        basis_start_time = self.start_time - 1e12 / (2 * self.qubit_frequency)
-        splitter = self.node.components["detector"].splitter
-        splitter.start_time = basis_start_time
-        splitter.frequency = self.qubit_frequency
-        splitter.basis_list = basis_list
+        self.node.set_bases(basis_list, self.start_time, self.qubit_frequency)
 
     def begin_photon_pulse(self):
         if self.working and self.timeline.now() < self.end_run_times[0]:
-            # generate basis list
-            num_pulses = int(round(self.light_time * self.qubit_frequency))
-            basis_list = [[]] * num_pulses
-            for i in range(num_pulses):
-                basis_list[i] = self.bases[numpy.random.choice([0, 1])]
+            # # generate basis list
+            # num_pulses = int(round(self.light_time * self.qubit_frequency))
+            # basis_list = [[]] * num_pulses
+            # for i in range(num_pulses):
+            #     basis_list[i] = self.bases[numpy.random.choice([0, 1])]
+            #
+            # # generate bit list
+            # bit_list = numpy.random.choice([0, 1], num_pulses)
+            #
+            # # emit photons
+            # self.node.send_photons(basis_list, bit_list, "lightsource")
+            #
+            # self.basis_lists.append(basis_list)
+            # self.bit_lists.append(bit_list)
 
-            # generate bit list
+            # generate basis/bit list
+            num_pulses = int(round(self.light_time * self.qubit_frequency))
+            basis_list = numpy.random.choice([0, 1], num_pulses)
             bit_list = numpy.random.choice([0, 1], num_pulses)
 
             # emit photons
-            self.node.send_photons(basis_list, bit_list, "lightsource")
+            self.node.send_qubits(basis_list, bit_list, "lightsource")
 
             self.basis_lists.append(basis_list)
             self.bit_lists.append(bit_list)
@@ -116,24 +118,27 @@ class BB84(Entity):
 
     def end_photon_pulse(self):
         if self.working and self.timeline.now() < self.end_run_times[0]:
-            detection_times = self.node.components["detector"].get_photon_times()
-            bits = [-1] * int(round(self.light_time * self.qubit_frequency))  # -1 used for invalid bits
+            # detection_times = self.node.components["detector"].get_photon_times()
+            # bits = [-1] * int(round(self.light_time * self.qubit_frequency))  # -1 used for invalid bits
+            #
+            # # determine indices from detection times and record bits
+            # for time in detection_times[0]:  # detection times for |0> detector
+            #     index = int(round((time - self.start_time) * self.qubit_frequency * 1e-12))
+            #     if index < len(bits):
+            #         bits[index] = 0
+            #
+            # for time in detection_times[1]:  # detection times for |1> detector
+            #     index = int(round((time - self.start_time) * self.qubit_frequency * 1e-12))
+            #     if index < len(bits):
+            #         if bits[index] == 0:
+            #             bits[index] = -1
+            #         else:
+            #             bits[index] = 1
+            #
+            # self.bit_lists.append(bits)
 
-            # determine indices from detection times and record bits
-            for time in detection_times[0]:  # detection times for |0> detector
-                index = int(round((time - self.start_time) * self.qubit_frequency * 1e-12))
-                if index < len(bits):
-                    bits[index] = 0
-
-            for time in detection_times[1]:  # detection times for |1> detector
-                index = int(round((time - self.start_time) * self.qubit_frequency * 1e-12))
-                if index < len(bits):
-                    if bits[index] == 0:
-                        bits[index] = -1
-                    else:
-                        bits[index] = 1
-
-            self.bit_lists.append(bits)
+            # get bits
+            self.bit_lists.append(self.node.get_bits(self.light_time, self.start_time, self.qubit_frequency))
 
             # clear detector photon times to restart measurement
             self.node.components["detector"].clear_detectors()
@@ -142,7 +147,7 @@ class BB84(Entity):
             if self.timeline.now() + self.light_time * 1e12 < self.end_run_times[0]:
                 self.start_time = self.timeline.now()
 
-                # set beamsplitter bases
+                # set bases for measurement
                 self.set_bases()
 
                 # schedule another
@@ -162,7 +167,7 @@ class BB84(Entity):
                 self.light_time = float(message[2])
                 self.start_time = int(message[3]) + self.quantum_delay
 
-                # generate basis list and set beamsplitter
+                # generate basis list and set bases for measurement
                 self.set_bases()
 
                 # schedule end_photon_pulse()
@@ -181,34 +186,15 @@ class BB84(Entity):
 
             elif message[0] == "basis_list":  # (Current node is Bob): compare bases
                 # parse alice basis list
-                # NOTE: basis measurements are adjacent but not yet collapsed into a list
-                basis_coefficients = []
-                for state in message[1:]:
-                    basis_coefficients.append(complex(re.sub("[],[()]", "", state)))
-
-                # collapse adjacent basis coefficients into single basis state
-                basis_states = []
-                state = []
-                for i, c in enumerate(basis_coefficients):
-                    state.append(c)
-                    if i % 2:
-                        basis_states.append(state)
-                        state = []
-
-                # collapse adjacent basis_states into single basis
                 basis_list_alice = []
-                basis = []
-                for i, s in enumerate(basis_states):
-                    basis.append(s)
-                    if i % 2:
-                        basis_list_alice.append(basis)
-                        basis = []
+                for basis in message[1:]:
+                    basis_list_alice.append(int(re.sub("[],[]", "", basis)))
 
                 # compare own basis with basis message and create list of matching indices
                 indices = []
                 basis_list = self.basis_lists.pop(0)
                 bits = self.bit_lists.pop(0)
-                for i in range(len(basis_list_alice)):
+                for i, _ in enumerate(basis_list_alice):
                     if bits[i] != -1 and basis_list[i] == basis_list_alice[i]:
                         indices.append(i)
                         self.key_bits.append(bits[i])
@@ -282,6 +268,9 @@ class BB84(Entity):
 
     def start_protocol(self):
         if len(self.key_lengths) > 0:
+            # prevent truncating of message
+            numpy.set_printoptions(threshold=math.inf)
+
             # reset buffers for self and another
             self.basis_lists = []
             self.another.basis_lists = []
@@ -349,7 +338,7 @@ if __name__ == "__main__":
                               frequency=80e6, mean_photon_num=0.1, direct_receiver=qc)
     components = {"lightsource": ls, "cchannel": cc, "qchannel": qc}
 
-    alice = topology.Node("alice", tl, components=components)
+    alice = topology.Node("alice", tl, components=components, encoding_type=encoding.polarization)
     qc.set_sender(ls)
     cc.add_end(alice)
 
@@ -360,7 +349,7 @@ if __name__ == "__main__":
     qsd = topology.QSDetector("bob.qsdetector", tl, detectors=detectors, splitter=splitter)
     components = {"detector": qsd, "cchannel": cc, "qchannel": qc}
 
-    bob = topology.Node("bob", tl, components=components)
+    bob = topology.Node("bob", tl, components=components, encoding_type=encoding.polarization)
     qc.set_receiver(qsd)
     cc.add_end(bob)
 

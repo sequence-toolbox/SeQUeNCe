@@ -415,6 +415,7 @@ class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.components = kwargs.get("components", {})
+        self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
         self.message = None  # temporary storage for message received through classical channel
         self.protocol = None
 
@@ -428,6 +429,46 @@ class Node(Entity):
             state_list.append(basis_list[i][bit])
 
         self.components[source_name].emit(state_list)
+
+    def send_qubits(self, basis_list, bit_list, source_name):
+        state_list = []
+        for i, bit in enumerate(bit_list):
+            state = (self.encoding_type["bases"][basis_list[i]])[bit]
+            state_list.append(state)
+
+        self.components[source_name].emit(state_list)
+
+    def get_bits(self, light_time, start_time, frequency):
+        detection_times = self.components["detector"].get_photon_times()
+        bits = [-1] * int(round(light_time * frequency))  # -1 used for invalid bits
+
+        # determine indices from detection times and record bits
+        for time in detection_times[0]:  # detection times for |0> detector
+            index = int(round((time - start_time) * frequency * 1e-12))
+            if 0 <= index < len(bits):
+                bits[index] = 0
+
+        for time in detection_times[1]:  # detection times for |1> detector
+            index = int(round((time - start_time) * frequency * 1e-12))
+            if 0 <= index < len(bits):
+                if bits[index] == 0:
+                    bits[index] = -1
+                else:
+                    bits[index] = 1
+
+        return bits
+
+    def set_bases(self, basis_list, start_time, frequency):
+        # schedule changes for basis
+        basis_start_time = start_time - 1e12 / (2 * frequency)
+        splitter = self.components["detector"].splitter
+        splitter.start_time = basis_start_time
+        splitter.frequency = frequency
+
+        splitter_basis_list = []
+        for b in basis_list:
+            splitter_basis_list.append(self.encoding_type["bases"][b])
+        splitter.basis_list = splitter_basis_list
 
     def get_detector_count(self):
         detector = self.components['detector']  # QSDetector class
