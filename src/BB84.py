@@ -12,6 +12,9 @@ class BB84(Entity):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline)
         self.role = kwargs.get("role", -1)
+        self.source_name = kwargs.get("source_name", "lightsource")
+        self.detector_name = kwargs.get("detector_name", "detector")
+
         self.working = False
         self.ready = True  # (for Alice) not currently processing a generate_key request
         self.light_time = 0  # time to use laser (measured in s)
@@ -57,7 +60,7 @@ class BB84(Entity):
         num_pulses = int(round(self.light_time * self.qubit_frequency))
         basis_list = numpy.random.choice([0, 1], num_pulses)
         self.basis_lists.append(basis_list)
-        self.node.set_bases(basis_list, self.start_time, self.qubit_frequency)
+        self.node.set_bases(basis_list, self.start_time, self.qubit_frequency, self.detector_name)
 
     def begin_photon_pulse(self):
         if self.working and self.timeline.now() < self.end_run_times[0]:
@@ -67,7 +70,7 @@ class BB84(Entity):
             bit_list = numpy.random.choice([0, 1], num_pulses)
 
             # emit photons
-            self.node.send_qubits(basis_list, bit_list, "lightsource")
+            self.node.send_qubits(basis_list, bit_list, self.source_name)
 
             self.basis_lists.append(basis_list)
             self.bit_lists.append(bit_list)
@@ -97,10 +100,10 @@ class BB84(Entity):
     def end_photon_pulse(self):
         if self.working and self.timeline.now() < self.end_run_times[0]:
             # get bits
-            self.bit_lists.append(self.node.get_bits(self.light_time, self.start_time, self.qubit_frequency))
+            self.bit_lists.append(self.node.get_bits(self.light_time, self.start_time, self.qubit_frequency, self.detector_name))
 
             # clear detector photon times to restart measurement
-            self.node.components["detector"].clear_detectors()
+            self.node.components[self.detector_name].clear_detectors()
 
             # schedule another if necessary
             if self.timeline.now() + self.light_time * 1e12 < self.end_run_times[0]:
@@ -135,7 +138,7 @@ class BB84(Entity):
                 self.timeline.schedule(event)
 
                 # clear detector photon times to restart measurement
-                process = Process(self.node.components["detector"], "clear_detectors", [])
+                process = Process(self.node.components[self.detector_name], "clear_detectors", [])
                 event = Event(int(self.start_time), process)
                 self.timeline.schedule(event)
 
@@ -243,7 +246,7 @@ class BB84(Entity):
             self.working = True
             self.another.working = True
 
-            light_source = self.node.components["lightsource"]
+            light_source = self.node.components[self.source_name]
             self.qubit_frequency = light_source.frequency
 
             # calculate light time based on key length
@@ -269,6 +272,7 @@ class BB84(Entity):
         self.key = int("".join(str(x) for x in key_bits), 2)  # convert from binary list to int
 
 
+# For testing BB84 Protocol
 if __name__ == "__main__":
     import topology
     import timeline
@@ -287,6 +291,8 @@ if __name__ == "__main__":
             print("key for " + self.role + ":\t{:0{}b}".format(key, self.child.key_lengths[0]))
             self.key = key
 
+    print("Polarization:\n")
+
     tl = timeline.Timeline(1e11)  # stop time is 100 ms
 
     qc = topology.QuantumChannel("qc", tl, distance=10e3, polarization_fidelity=0.99)
@@ -297,7 +303,7 @@ if __name__ == "__main__":
                               frequency=80e6, mean_photon_num=0.1, direct_receiver=qc)
     components = {"lightsource": ls, "cchannel": cc, "qchannel": qc}
 
-    alice = topology.Node("alice", tl, components=components, encoding_type=encoding.polarization)
+    alice = topology.Node("alice", tl, components=components)
     qc.set_sender(ls)
     cc.add_end(alice)
 
@@ -308,7 +314,7 @@ if __name__ == "__main__":
     qsd = topology.QSDetector("bob.qsdetector", tl, detectors=detectors, splitter=splitter)
     components = {"detector": qsd, "cchannel": cc, "qchannel": qc}
 
-    bob = topology.Node("bob", tl, components=components, encoding_type=encoding.polarization)
+    bob = topology.Node("bob", tl, components=components)
     qc.set_receiver(qsd)
     cc.add_end(bob)
 
@@ -330,19 +336,16 @@ if __name__ == "__main__":
     bob.protocol = bbb
 
     # Parent
-    pa = Parent(10240, "alice")
-    pb = Parent(10240, "bob")
+    pa = Parent(512, "alice")
+    pb = Parent(512, "bob")
     pa.child = bba
     pb.child = bbb
     bba.add_parent(pa)
     bbb.add_parent(pb)
 
-    process1 = Process(bba, "generate_key", [512, 1])
-    # process2 = Process(pa, "run", [])
-    event1 = Event(0, process1)
-    # event2 = Event(1e3, process2)
-    tl.schedule(event1)
-    # tl.schedule(event2)
+    process = Process(pa, "run", [])
+    event = Event(0, process)
+    tl.schedule(event)
 
     tl.init()
     tl.run()
@@ -356,6 +359,7 @@ if __name__ == "__main__":
     """
     TIME BIN TESTING
     """
+    print("\nTime Bin:\n")
 
     tl = timeline.Timeline(1e11)  # stop time is 100 ms
 
@@ -365,9 +369,9 @@ if __name__ == "__main__":
     # Alice
     ls = topology.LightSource("alice.lightsource", tl,
                               frequency=80e6, mean_photon_num=0.1, direct_receiver=qc, encoding_type=encoding.time_bin)
-    components = {"lightsource": ls, "cchannel": cc, "qchannel": qc}
+    components = {"asource": ls, "cchannel": cc, "qchannel": qc}
 
-    alice = topology.Node("alice", tl, components=components, encoding_type=encoding.time_bin)
+    alice = topology.Node("alice", tl, components=components)
     qc.set_sender(ls)
     cc.add_end(alice)
 
@@ -379,9 +383,9 @@ if __name__ == "__main__":
     switch = {}
     qsd = topology.QSDetector("bob.qsdetector", tl,
                               encoding_type=encoding.time_bin, detectors=detectors, interferometer=interferometer, switch=switch)
-    components = {"detector": qsd, "cchannel": cc, "qchannel": qc}
+    components = {"bdetector": qsd, "cchannel": cc, "qchannel": qc}
 
-    bob = topology.Node("bob", tl, components=components, encoding_type=encoding.time_bin)
+    bob = topology.Node("bob", tl, components=components)
     qc.set_receiver(qsd)
     cc.add_end(bob)
 
@@ -393,8 +397,8 @@ if __name__ == "__main__":
         tl.entities.append(bob.components[key])
 
     # BB84
-    bba = BB84("bba", tl, role=0)
-    bbb = BB84("bbb", tl, role=1)
+    bba = BB84("bba", tl, role=0, source_name="asource")
+    bbb = BB84("bbb", tl, role=1, detector_name="bdetector")
     bba.assign_node(alice)
     bbb.assign_node(bob)
     bba.another = bbb
@@ -403,19 +407,16 @@ if __name__ == "__main__":
     bob.protocol = bbb
 
     # Parent
-    pa = Parent(10240, "alice")
-    pb = Parent(10240, "bob")
+    pa = Parent(512, "alice")
+    pb = Parent(512, "bob")
     pa.child = bba
     pb.child = bbb
     bba.add_parent(pa)
     bbb.add_parent(pb)
 
-    process1 = Process(bba, "generate_key", [512, 1])
-    # process2 = Process(pa, "run", [])
-    event1 = Event(0, process1)
-    # event2 = Event(1e3, process2)
-    tl.schedule(event1)
-    # tl.schedule(event2)
+    process = Process(pa, "run", [])
+    event = Event(0, process)
+    tl.schedule(event)
 
     tl.init()
     tl.run()
