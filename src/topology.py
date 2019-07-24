@@ -446,7 +446,6 @@ class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.components = kwargs.get("components", {})
-        self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
         self.message = None  # temporary storage for message received through classical channel
         self.protocol = None
 
@@ -454,18 +453,20 @@ class Node(Entity):
         pass
 
     def send_qubits(self, basis_list, bit_list, source_name):
+        encoding_type = self.components[source_name].encoding_type
         state_list = []
         for i, bit in enumerate(bit_list):
-            state = (self.encoding_type["bases"][basis_list[i]])[bit]
+            state = (encoding_type["bases"][basis_list[i]])[bit]
             state_list.append(state)
 
         self.components[source_name].emit(state_list)
 
-    def get_bits(self, light_time, start_time, frequency):
+    def get_bits(self, light_time, start_time, frequency, detector_name):
+        encoding_type = self.components[detector_name].encoding_type
         bits = [-1] * int(round(light_time * frequency))  # -1 used for invalid bits
 
-        if self.encoding_type["name"] == "polarization":
-            detection_times = self.components["detector"].get_photon_times()
+        if encoding_type["name"] == "polarization":
+            detection_times = self.components[detector_name].get_photon_times()
 
             # determine indices from detection times and record bits
             for time in detection_times[0]:  # detection times for |0> detector
@@ -483,9 +484,9 @@ class Node(Entity):
 
             return bits
 
-        elif self.encoding_type["name"] == "time_bin":
-            detection_times = self.components["detector"].get_photon_times()
-            bin_separation = self.encoding_type["bin_separation"]
+        elif encoding_type["name"] == "time_bin":
+            detection_times = self.components[detector_name].get_photon_times()
+            bin_separation = encoding_type["bin_separation"]
 
             # single detector (for early, late basis) times
             for time in detection_times[0]:
@@ -525,21 +526,22 @@ class Node(Entity):
         else:
             raise Exception("Invalid encoding type for node " + self.name)
 
-    def set_bases(self, basis_list, start_time, frequency):
+    def set_bases(self, basis_list, start_time, frequency, detector_name):
+        encoding_type = self.components[detector_name].encoding_type
         basis_start_time = start_time - 1e12 / (2 * frequency)
 
-        if self.encoding_type["name"] == "polarization":
-            splitter = self.components["detector"].splitter
+        if encoding_type["name"] == "polarization":
+            splitter = self.components[detector_name].splitter
             splitter.start_time = basis_start_time
             splitter.frequency = frequency
 
             splitter_basis_list = []
             for b in basis_list:
-                splitter_basis_list.append(self.encoding_type["bases"][b])
+                splitter_basis_list.append(encoding_type["bases"][b])
             splitter.basis_list = splitter_basis_list
 
-        elif self.encoding_type["name"] == "time_bin":
-            switch = self.components["detector"].switch
+        elif encoding_type["name"] == "time_bin":
+            switch = self.components[detector_name].switch
             switch.start_time = basis_start_time
             switch.frequency = frequency
             switch.state_list = basis_list
