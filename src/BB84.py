@@ -12,7 +12,6 @@ class BB84(Entity):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline)
         self.role = kwargs.get("role", -1)
-        self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
         self.working = False
         self.ready = True  # (for Alice) not currently processing a generate_key request
         self.light_time = 0  # time to use laser (measured in s)
@@ -36,12 +35,6 @@ class BB84(Entity):
         self.last_key_time = 0
         self.throughputs = []  # measured in bits/sec
         self.error_rates = []
-
-        self.bases = []
-        if self.encoding_type["name"] == "polarization":
-            self.bases = self.encoding_type["bases"]
-        else:
-            raise SyntaxError("encoding scheme not specified properly")
 
     def init(self):
         pass
@@ -68,21 +61,6 @@ class BB84(Entity):
 
     def begin_photon_pulse(self):
         if self.working and self.timeline.now() < self.end_run_times[0]:
-            # # generate basis list
-            # num_pulses = int(round(self.light_time * self.qubit_frequency))
-            # basis_list = [[]] * num_pulses
-            # for i in range(num_pulses):
-            #     basis_list[i] = self.bases[numpy.random.choice([0, 1])]
-            #
-            # # generate bit list
-            # bit_list = numpy.random.choice([0, 1], num_pulses)
-            #
-            # # emit photons
-            # self.node.send_photons(basis_list, bit_list, "lightsource")
-            #
-            # self.basis_lists.append(basis_list)
-            # self.bit_lists.append(bit_list)
-
             # generate basis/bit list
             num_pulses = int(round(self.light_time * self.qubit_frequency))
             basis_list = numpy.random.choice([0, 1], num_pulses)
@@ -118,25 +96,6 @@ class BB84(Entity):
 
     def end_photon_pulse(self):
         if self.working and self.timeline.now() < self.end_run_times[0]:
-            # detection_times = self.node.components["detector"].get_photon_times()
-            # bits = [-1] * int(round(self.light_time * self.qubit_frequency))  # -1 used for invalid bits
-            #
-            # # determine indices from detection times and record bits
-            # for time in detection_times[0]:  # detection times for |0> detector
-            #     index = int(round((time - self.start_time) * self.qubit_frequency * 1e-12))
-            #     if index < len(bits):
-            #         bits[index] = 0
-            #
-            # for time in detection_times[1]:  # detection times for |1> detector
-            #     index = int(round((time - self.start_time) * self.qubit_frequency * 1e-12))
-            #     if index < len(bits):
-            #         if bits[index] == 0:
-            #             bits[index] = -1
-            #         else:
-            #             bits[index] = 1
-            #
-            # self.bit_lists.append(bits)
-
             # get bits
             self.bit_lists.append(self.node.get_bits(self.light_time, self.start_time, self.qubit_frequency))
 

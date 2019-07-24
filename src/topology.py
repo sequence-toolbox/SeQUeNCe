@@ -391,12 +391,20 @@ class Interferometer(Entity):
         event = Event(self.timeline.now() + time, process)
         self.timeline.schedule(event)
 
+    def get_detection_times(self):
+        times = []
+        for d in self.detectors:
+            times.append(d.photon_times)
+        return times
+
 
 class Switch(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.receivers = []
-        self.state = 0
+        self.start_time = 0
+        self.frequency = 0
+        self.state_list = [0]
 
     def init(self):
         pass
@@ -405,10 +413,13 @@ class Switch(Entity):
         self.receivers.append(entity)
 
     def set_state(self, state):
-        self.state = state
+        self.state_list = [state]
 
     def get(self, photon):
-        self.receivers[self.state].get(photon)
+        index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
+        if index < 0 or index >= len(self.state_list):
+            index = 0
+        self.receivers[self.state_list[index]].get(photon)
 
 
 class Node(Entity):
@@ -422,14 +433,6 @@ class Node(Entity):
     def init(self):
         pass
 
-    def send_photons(self, basis_list, bit_list, source_name):
-        # use emitter to send photon over connected channel to node
-        state_list = []
-        for i, bit in enumerate(bit_list):
-            state_list.append(basis_list[i][bit])
-
-        self.components[source_name].emit(state_list)
-
     def send_qubits(self, basis_list, bit_list, source_name):
         state_list = []
         for i, bit in enumerate(bit_list):
@@ -439,42 +442,76 @@ class Node(Entity):
         self.components[source_name].emit(state_list)
 
     def get_bits(self, light_time, start_time, frequency):
-        detection_times = self.components["detector"].get_photon_times()
         bits = [-1] * int(round(light_time * frequency))  # -1 used for invalid bits
 
-        # determine indices from detection times and record bits
-        for time in detection_times[0]:  # detection times for |0> detector
-            index = int(round((time - start_time) * frequency * 1e-12))
-            if 0 <= index < len(bits):
-                bits[index] = 0
+        if self.encoding_type["name"] == "polarization":
+            detection_times = self.components["detector"].get_photon_times()
 
-        for time in detection_times[1]:  # detection times for |1> detector
-            index = int(round((time - start_time) * frequency * 1e-12))
-            if 0 <= index < len(bits):
-                if bits[index] == 0:
-                    bits[index] = -1
-                else:
-                    bits[index] = 1
+            # determine indices from detection times and record bits
+            for time in detection_times[0]:  # detection times for |0> detector
+                index = int(round((time - start_time) * frequency * 1e-12))
+                if 0 <= index < len(bits):
+                    bits[index] = 0
 
-        return bits
+            for time in detection_times[1]:  # detection times for |1> detector
+                index = int(round((time - start_time) * frequency * 1e-12))
+                if 0 <= index < len(bits):
+                    if bits[index] == 0:
+                        bits[index] = -1
+                    else:
+                        bits[index] = 1
+
+            return bits
+
+        elif self.encoding_type["name"] == "time_bin":
+            detection_times_phase = self.components["interferometer"].get_photon_times()
+            bin_separation = self.encoding_type["bin_separation"]
+
+            for time in detection_times_phase[0]:
+                time -= bin_separation
+                index = int(round((time - start_time) * frequency * 1e-12))
+                # check if index is in range and is in correct time bin
+                if 0 <= index < len(bits) and\
+                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                    bits[index] = 0
+
+            for time in detection_times_phase[1]:
+                time -= bin_separation
+                index = int(round((time - start_time) * frequency * 1e-12))
+                # check if index is in range and is in correct time bin
+                if 0 <= index < len(bits) and\
+                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                    if bits[index] == 0:
+                        bits[index] = -1
+                    else:
+                        bits[index] = 1
+
+            return bits
+
+        else:
+            raise Exception("Invalid encoding type for node " + self.name)
 
     def set_bases(self, basis_list, start_time, frequency):
-        # schedule changes for basis
         basis_start_time = start_time - 1e12 / (2 * frequency)
-        splitter = self.components["detector"].splitter
-        splitter.start_time = basis_start_time
-        splitter.frequency = frequency
 
-        splitter_basis_list = []
-        for b in basis_list:
-            splitter_basis_list.append(self.encoding_type["bases"][b])
-        splitter.basis_list = splitter_basis_list
+        if self.encoding_type["name"] == "polarization":
+            splitter = self.components["detector"].splitter
+            splitter.start_time = basis_start_time
+            splitter.frequency = frequency
 
-    def get_detector_count(self):
-        detector = self.components['detector']  # QSDetector class
+            splitter_basis_list = []
+            for b in basis_list:
+                splitter_basis_list.append(self.encoding_type["bases"][b])
+            splitter.basis_list = splitter_basis_list
 
-        # return length of photon time lists from two Detectors within QSDetector
-        return [len(detector.detectors[0].photon_times), len(detector.detectors[1].photon_times)]
+        elif self.encoding_type["name"] == "time_bin":
+            switch = self.components["switch"]
+            switch.start_time = basis_start_time
+            switch.frequency = frequency
+            switch.state_list = basis_list
+
+        else:
+            raise Exception("Invalid encoding type for node " + self.name)
 
     def get_source_count(self):
         source = self.components['lightsource']
