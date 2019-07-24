@@ -481,27 +481,41 @@ class Node(Entity):
             return bits
 
         elif self.encoding_type["name"] == "time_bin":
-            detection_times_phase = self.components["interferometer"].get_photon_times()
+            detection_times = self.components["detector"].get_photon_times()
             bin_separation = self.encoding_type["bin_separation"]
 
-            for time in detection_times_phase[0]:
-                time -= bin_separation
+            # single detector (for early, late basis) times
+            for time in detection_times[0]:
                 index = int(round((time - start_time) * frequency * 1e-12))
-                # check if index is in range and is in correct time bin
-                if 0 <= index < len(bits) and\
-                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
-                    bits[index] = 0
-
-            for time in detection_times_phase[1]:
-                time -= bin_separation
-                index = int(round((time - start_time) * frequency * 1e-12))
-                # check if index is in range and is in correct time bin
-                if 0 <= index < len(bits) and\
-                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
-                    if bits[index] == 0:
-                        bits[index] = -1
+                if 0 <= index < len(bits):
+                    if abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                        bits[index] = 0
                     else:
                         bits[index] = 1
+
+            # interferometer detector 0 times
+            for time in detection_times[1]:
+                time -= bin_separation
+                index = int(round((time - start_time) * frequency * 1e-12))
+                # check if index is in range and is in correct time bin
+                if 0 <= index < len(bits) and\
+                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                    if bits[index] != -1:
+                        bits[index] = 0
+                    else:
+                        bits[index] = -1
+
+            # interferometer detector 1 times
+            for time in detection_times[2]:
+                time -= bin_separation
+                index = int(round((time - start_time) * frequency * 1e-12))
+                # check if index is in range and is in correct time bin
+                if 0 <= index < len(bits) and\
+                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                    if bits[index] != -1:
+                        bits[index] = 1
+                    else:
+                        bits[index] = -1
 
             return bits
 
