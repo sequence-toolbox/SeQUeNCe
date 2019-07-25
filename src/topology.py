@@ -305,11 +305,6 @@ class Detector(Entity):
         self.photon_counter += 1
         now = self.timeline.now()
 
-        if photon and photon.encoding_type["name"] == "time_bin":
-            # check if photon is in "late" bin. If it is, detect at late time
-            if photon.measure(photon.encoding_type["bases"][0]):
-                now += photon.encoding_type["bin_separation"]
-
         if numpy.random.random_sample() < self.efficiency and now > self.next_detection_time:
             time = int(round(now / self.time_resolution)) * self.time_resolution
             self.photon_times.append(time)
@@ -411,12 +406,6 @@ class Interferometer(Entity):
         event = Event(self.timeline.now() + time, process)
         self.timeline.schedule(event)
 
-    def get_detection_times(self):
-        times = []
-        for d in self.detectors:
-            times.append(d.photon_times)
-        return times
-
 
 class Switch(Entity):
     def __init__(self, timeline, **kwargs):
@@ -439,7 +428,19 @@ class Switch(Entity):
         index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
         if index < 0 or index >= len(self.state_list):
             index = 0
-        self.receivers[self.state_list[index]].get(photon)
+
+        receiver = self.receivers[self.state_list[index]]
+        # check if receiver is detector, if we're using time bin, and if the photon is "late" to schedule measurement
+        if isinstance(receiver, Detector):
+            if photon.encoding_type["name"] == "time_bin" and photon.measure(photon.encoding_type["bases"][0]):
+                time = self.timeline.now() + photon.encoding_type["bin_separation"]
+                process = Process(receiver, "get", [])
+                event = Event(time, process)
+                self.timeline.schedule(event)
+            else:
+                receiver.get()
+        else:
+            receiver.get(photon)
 
 
 class Node(Entity):
