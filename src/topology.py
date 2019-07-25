@@ -5,6 +5,7 @@ import numpy
 import json5
 import pandas as pd
 
+import encoding
 from process import Process
 from entity import Entity
 from event import Event
@@ -32,7 +33,7 @@ class Photon(Entity):
         Entity.__init__(self, name, timeline)
         self.wavelength = kwargs.get("wavelength", 0)
         self.location = kwargs.get("location", None)
-        self.encoding_type = kwargs.get("encoding_type")
+        self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
         self.quantum_state = kwargs.get("quantum_state", [complex(1), complex(0)])
 
     def init(self):
@@ -95,21 +96,24 @@ class QuantumChannel(OpticalChannel):
     def set_receiver(self, receiver):
         self.receiver = receiver
 
-    def transmit(self, photon):
+    def get(self, photon):
         # generate chance to lose photon
         loss = self.distance * self.attenuation
         chance_photon_kept = 10 ** (loss / -10)
 
         # check if photon kept
         if numpy.random.random_sample() < chance_photon_kept:
-            self.photon_counter+=1
+            self.photon_counter += 1
+
             # check if random polarization noise applied
-            if numpy.random.random_sample() > self.polarization_fidelity:
+            if numpy.random.random_sample() > self.polarization_fidelity and\
+                    photon.encoding_type["name"] == "polarization":
                 photon.random_noise()
                 self.depo_counter+=1
+
             # schedule receiving node to receive photon at future time determined by light speed
             future_time = self.timeline.now() + int(self.distance / self.light_speed)
-            process = Process(self.receiver, "detect", [photon])
+            process = Process(self.receiver, "get", [photon])
 
             event = Event(future_time, process)
             self.timeline.schedule(event)
@@ -151,7 +155,7 @@ class LightSource(Entity):
         self.frequency = kwargs.get("frequency", 0)  # measured in Hz
         self.wavelength = kwargs.get("wavelength", 0)  # measured in nm
         self.mean_photon_num = kwargs.get("mean_photon_num", 0)
-        self.encoding_type = kwargs.get("encoding_type")
+        self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
         self.direct_receiver = kwargs.get("direct_receiver", None)
         self.photon_counter = 0
         # for BB84
@@ -182,7 +186,7 @@ class LightSource(Entity):
                                     location=self.direct_receiver,
                                     encoding_type=self.encoding_type,
                                     quantum_state=state)
-                self.direct_receiver.transmit(new_photon)
+                self.direct_receiver.get(new_photon)
 
                 self.photon_counter += 1
 
@@ -204,7 +208,7 @@ class LightSource(Entity):
                                     location=self.direct_receiver,
                                     encoding_type=self.encoding_type,
                                     quantum_state=state)
-                process = Process(self.direct_receiver, "transmit", [new_photon])
+                process = Process(self.direct_receiver, "get", [new_photon])
                 event = Event(int(round(time)), process)
                 self.timeline.schedule(event)
 
@@ -230,23 +234,44 @@ class LightSource(Entity):
 class QSDetector(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
+        self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
+
         detectors = kwargs.get("detectors", [])
+        if (self.encoding_type["name"] == "polarization" and len(detectors) != 2) or\
+                (self.encoding_type["name"] == "time_bin" and len(detectors) != 3):
+            raise Exception("invalid number of detectors specified")
         self.detectors = []
         for d in detectors:
             detector = Detector(timeline, **d)
             self.detectors.append(detector)
-        splitter = kwargs.get("splitter")
-        self.splitter = BeamSplitter(timeline, **splitter)
+
+        if self.encoding_type["name"] == "polarization":
+            splitter = kwargs.get("splitter")
+            self.splitter = BeamSplitter(timeline, **splitter)
+
+        elif self.encoding_type["name"] == "time_bin":
+            interferometer = kwargs.get("interferometer")
+            self.interferometer = Interferometer(timeline, **interferometer)
+            self.interferometer.detectors = self.detectors[1:]
+            switch = kwargs.get("switch")
+            self.switch = Switch(timeline, **switch)
+            self.switch.receivers = [self.detectors[0], self.interferometer]
+
+        else:
+            raise Exception("invalid encoding type for QSDetector " + self.name)
 
     def init(self):
         for d in self.detectors:
             d.init()
-        self.splitter.init()
 
-    def detect(self, photon):
-        detector = self.splitter.transmit(photon)
-        if detector == 0 or detector == 1:
-            self.detectors[self.splitter.transmit(photon)].detect()
+    def get(self, photon):
+        if self.encoding_type["name"] == "polarization":
+            detector = self.splitter.get(photon)
+            if detector == 0 or detector == 1:
+                self.detectors[self.splitter.get(photon)].get()
+
+        elif self.encoding_type["name"] == "time_bin":
+            self.switch.get(photon)
 
     def clear_detectors(self):
         for d in self.detectors:
@@ -276,19 +301,21 @@ class Detector(Entity):
     def init(self):
         self.add_dark_count()
 
-    def detect(self):
-        self.photon_counter+=1
-        if numpy.random.random_sample() < self.efficiency and self.timeline.now() > self.next_detection_time:
-            time = int(round(self.timeline.now() / self.time_resolution)) * self.time_resolution
+    def get(self, photon=None):
+        self.photon_counter += 1
+        now = self.timeline.now()
+
+        if numpy.random.random_sample() < self.efficiency and now > self.next_detection_time:
+            time = int(round(now / self.time_resolution)) * self.time_resolution
             self.photon_times.append(time)
-            self.next_detection_time = self.timeline.now() + (1e12 / self.count_rate)  # period in ps
+            self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self):
         time_to_next = int(numpy.random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
         time = time_to_next + self.timeline.now()  # time of next dark count
 
         process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
-        process2 = Process(self, "detect", [])
+        process2 = Process(self, "get", [])
         event1 = Event(time, process1)
         event2 = Event(time, process2)
         self.timeline.schedule(event1)
@@ -317,7 +344,7 @@ class BeamSplitter(Entity):
 
     # for BB84
     # TODO: determine if protocol is BB84
-    def transmit(self, photon):
+    def get(self, photon):
         if numpy.random.random_sample() < self.fidelity:
             index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
             if 0 <= index < len(self.basis_list):
@@ -331,6 +358,91 @@ class BeamSplitter(Entity):
         self.basis_list = [basis]
 
 
+class Interferometer(Entity):
+    def __init__(self, timeline, **kwargs):
+        Entity.__init__(self, "", timeline)
+        self.path_difference = kwargs.get("path_difference", 0)  # time difference in ps
+        self.detectors = []
+
+    def init(self):
+        pass
+
+    def get(self, photon):
+        detector_num = numpy.random.choice([0, 1])
+        quantum_state = photon.quantum_state
+        time = 0
+        random = numpy.random.random_sample()
+
+        if quantum_state == [complex(1), complex(0)]:  # Early
+            if random <= 0.5:
+                time = 0
+            else:
+                time = self.path_difference
+        if quantum_state == [complex(0), complex(1)]:  # Late
+            if random <= 0.5:
+                time = self.path_difference
+            else:
+                time = 2 * self.path_difference
+        if quantum_state == [complex(math.sqrt(2)), complex(math.sqrt(2))]:  # Early + Late
+            if random <= 0.25:
+                time = 0
+            elif random <= 0.5:
+                time = 2 * self.path_difference
+            elif detector_num == 0:
+                time = self.path_difference
+            else:
+                return
+        if quantum_state == [complex(math.sqrt(2)), complex(-math.sqrt(2))]:  # Early - Late
+            if random <= 0.25:
+                time = 0
+            elif random <= 0.5:
+                time = 2 * self.path_difference
+            elif detector_num == 1:
+                time = self.path_difference
+            else:
+                return
+
+        process = Process(self.detectors[detector_num], "get", [])
+        event = Event(self.timeline.now() + time, process)
+        self.timeline.schedule(event)
+
+
+class Switch(Entity):
+    def __init__(self, timeline, **kwargs):
+        Entity.__init__(self, "", timeline)
+        self.receivers = []
+        self.start_time = 0
+        self.frequency = 0
+        self.state_list = [0]
+
+    def init(self):
+        pass
+
+    def add_receiver(self, entity):
+        self.receivers.append(entity)
+
+    def set_state(self, state):
+        self.state_list = [state]
+
+    def get(self, photon):
+        index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
+        if index < 0 or index >= len(self.state_list):
+            index = 0
+
+        receiver = self.receivers[self.state_list[index]]
+        # check if receiver is detector, if we're using time bin, and if the photon is "late" to schedule measurement
+        if isinstance(receiver, Detector):
+            if photon.encoding_type["name"] == "time_bin" and photon.measure(photon.encoding_type["bases"][0]):
+                time = self.timeline.now() + photon.encoding_type["bin_separation"]
+                process = Process(receiver, "get", [])
+                event = Event(time, process)
+                self.timeline.schedule(event)
+            else:
+                receiver.get()
+        else:
+            receiver.get(photon)
+
+
 class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
@@ -341,19 +453,102 @@ class Node(Entity):
     def init(self):
         pass
 
-    def send_photons(self, basis_list, bit_list, source_name):
-        # use emitter to send photon over connected channel to node
+    def send_qubits(self, basis_list, bit_list, source_name):
+        encoding_type = self.components[source_name].encoding_type
         state_list = []
         for i, bit in enumerate(bit_list):
-            state_list.append(basis_list[i][bit])
+            state = (encoding_type["bases"][basis_list[i]])[bit]
+            state_list.append(state)
 
         self.components[source_name].emit(state_list)
 
-    def get_detector_count(self):
-        detector = self.components['detector']  # QSDetector class
+    def get_bits(self, light_time, start_time, frequency, detector_name):
+        encoding_type = self.components[detector_name].encoding_type
+        bits = [-1] * int(round(light_time * frequency))  # -1 used for invalid bits
 
-        # return length of photon time lists from two Detectors within QSDetector
-        return [len(detector.detectors[0].photon_times), len(detector.detectors[1].photon_times)]
+        if encoding_type["name"] == "polarization":
+            detection_times = self.components[detector_name].get_photon_times()
+
+            # determine indices from detection times and record bits
+            for time in detection_times[0]:  # detection times for |0> detector
+                index = int(round((time - start_time) * frequency * 1e-12))
+                if 0 <= index < len(bits):
+                    bits[index] = 0
+
+            for time in detection_times[1]:  # detection times for |1> detector
+                index = int(round((time - start_time) * frequency * 1e-12))
+                if 0 <= index < len(bits):
+                    if bits[index] == 0:
+                        bits[index] = -1
+                    else:
+                        bits[index] = 1
+
+            return bits
+
+        elif encoding_type["name"] == "time_bin":
+            detection_times = self.components[detector_name].get_photon_times()
+            bin_separation = encoding_type["bin_separation"]
+
+            # single detector (for early, late basis) times
+            for time in detection_times[0]:
+                index = int(round((time - start_time) * frequency * 1e-12))
+                if 0 <= index < len(bits):
+                    if abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                        bits[index] = 0
+                    else:
+                        bits[index] = 1
+
+            # interferometer detector 0 times
+            for time in detection_times[1]:
+                time -= bin_separation
+                index = int(round((time - start_time) * frequency * 1e-12))
+                # check if index is in range and is in correct time bin
+                if 0 <= index < len(bits) and\
+                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                    if bits[index] == -1:
+                        bits[index] = 0
+                    else:
+                        bits[index] = -1
+
+            # interferometer detector 1 times
+            for time in detection_times[2]:
+                time -= bin_separation
+                index = int(round((time - start_time) * frequency * 1e-12))
+                # check if index is in range and is in correct time bin
+                if 0 <= index < len(bits) and\
+                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                    if bits[index] == -1:
+                        bits[index] = 1
+                    else:
+                        bits[index] = -1
+
+            return bits
+
+        else:
+            raise Exception("Invalid encoding type for node " + self.name)
+
+    def set_bases(self, basis_list, start_time, frequency, detector_name):
+        encoding_type = self.components[detector_name].encoding_type
+        basis_start_time = start_time - 1e12 / (2 * frequency)
+
+        if encoding_type["name"] == "polarization":
+            splitter = self.components[detector_name].splitter
+            splitter.start_time = basis_start_time
+            splitter.frequency = frequency
+
+            splitter_basis_list = []
+            for b in basis_list:
+                splitter_basis_list.append(encoding_type["bases"][b])
+            splitter.basis_list = splitter_basis_list
+
+        elif encoding_type["name"] == "time_bin":
+            switch = self.components[detector_name].switch
+            switch.start_time = basis_start_time
+            switch.frequency = frequency
+            switch.state_list = basis_list
+
+        else:
+            raise Exception("Invalid encoding type for node " + self.name)
 
     def get_source_count(self):
         source = self.components['lightsource']
