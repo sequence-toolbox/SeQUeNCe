@@ -35,6 +35,16 @@ class Photon(Entity):
         self.location = kwargs.get("location", None)
         self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
         self.quantum_state = kwargs.get("quantum_state", [complex(1), complex(0)])
+        self.entangled_photons = [self]
+
+    def entangle(self, photon):
+        entangled_photons = self.entangled_photons + photon.entangled_photons
+        quantum_state = numpy.kron(self.quantum_state, photon.quantum_state)
+
+        self.entangled_photons = entangled_photons
+        self.quantum_state = quantum_state
+        photon.entangled_photons = entangled_photons
+        photon.quantum_state = quantum_state
 
     def init(self):
         pass
@@ -46,12 +56,29 @@ class Photon(Entity):
 
     def measure(self, basis):
         alpha = numpy.dot(self.quantum_state, basis[0])  # projection onto basis vector
-        # alpha = numpy.cos((self.quantum_state - basis[0])/180.0 * numpy.pi)
         if numpy.random.random_sample() < alpha ** 2:
             self.quantum_state = basis[0]
             return 0
         self.quantum_state = basis[1]
         return 1
+
+    @staticmethod
+    def measure_photon(basis, photon):
+        state = numpy.array(photon.quantum_state)
+        v = numpy.array(basis[0], dtype=complex)
+        # measurement operator
+        M = numpy.outer(v.conj(), v)
+
+        projector = [1]
+        for p in photon.entangled_photons:
+            if p == photon:
+                projector = numpy.kron(projector, M)
+            else:
+                projector = numpy.kron(projector, numpy.identity(2))
+
+        # probability that photon is measured as quantum state |0>
+        prob_0 = (state.conj().transpose() @ projector.conj().transpose() @ projector @ state).real
+        return prob_0
 
 
 class OpticalChannel(Entity):
