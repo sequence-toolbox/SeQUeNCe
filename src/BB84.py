@@ -156,8 +156,8 @@ class BB84(Entity):
                 indices = []
                 basis_list = self.basis_lists.pop(0)
                 bits = self.bit_lists.pop(0)
-                for i, _ in enumerate(basis_list_alice):
-                    if bits[i] != -1 and basis_list[i] == basis_list_alice[i]:
+                for i, b in enumerate(basis_list_alice):
+                    if bits[i] != -1 and basis_list[i] == b:
                         indices.append(i)
                         self.key_bits.append(bits[i])
 

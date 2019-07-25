@@ -504,7 +504,7 @@ class Node(Entity):
                 # check if index is in range and is in correct time bin
                 if 0 <= index < len(bits) and\
                         abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
-                    if bits[index] != -1:
+                    if bits[index] == -1:
                         bits[index] = 0
                     else:
                         bits[index] = -1
@@ -516,7 +516,7 @@ class Node(Entity):
                 # check if index is in range and is in correct time bin
                 if 0 <= index < len(bits) and\
                         abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
-                    if bits[index] != -1:
+                    if bits[index] == -1:
                         bits[index] = 1
                     else:
                         bits[index] = -1
