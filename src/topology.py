@@ -383,7 +383,7 @@ class Interferometer(Entity):
                 time = self.path_difference
             else:
                 time = 2 * self.path_difference
-        if quantum_state == [complex(math.sqrt(2)), complex(math.sqrt(2))]:  # Early + Late
+        if quantum_state == [complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]:  # Early + Late
             if random <= 0.25:
                 time = 0
             elif random <= 0.5:
@@ -392,7 +392,7 @@ class Interferometer(Entity):
                 time = self.path_difference
             else:
                 return
-        if quantum_state == [complex(math.sqrt(2)), complex(-math.sqrt(2))]:  # Early - Late
+        if quantum_state == [complex(math.sqrt(1/2)), complex(-math.sqrt(1/2))]:  # Early - Late
             if random <= 0.25:
                 time = 0
             elif random <= 0.5:
