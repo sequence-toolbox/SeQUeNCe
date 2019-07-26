@@ -4,6 +4,7 @@ from typing import List, Any
 import numpy
 import json5
 import pandas as pd
+import copy
 
 import encoding
 from process import Process
@@ -53,6 +54,10 @@ class Photon(Entity):
         angle = numpy.random.random() * 2 * numpy.pi
         self.quantum_state = [complex(numpy.cos(angle)), complex(numpy.sin(angle))]
         # self.quantum_state += numpy.random.random() * 360  # add random angle, use 360 instead of 2*pi
+
+    def set_state(self, state):
+        for photon in self.entangled_photons:
+            photon.quantum_state = state
 
     # def measure(self, basis):
     #     alpha = numpy.dot(self.quantum_state, basis[0])  # projection onto basis vector
@@ -477,6 +482,28 @@ class Switch(Entity):
                 receiver.get()
         else:
             receiver.get(photon)
+
+
+class SPDCLens(Entity):
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(name, timeline)
+        self.rate = kwargs.get("rate", 1)
+        self.direct_receiver = kwargs.get("direct_receiver", None)
+
+    def get(self, photon):
+        if numpy.random.random_sample() < self.rate:
+            state = photon.quantum_state
+            photon.wavelength /= 2
+            new_photon = copy.deepcopy(photon)
+
+            photon.entangle(new_photon)
+            photon.set_state([state[0], complex(0), complex(0), state[1]])
+
+            self.direct_receiver.get(photon)
+            self.direct_receiver.get(new_photon)
+
+    def assign_receiver(self, receiver):
+        self.direct_receiver = receiver
 
 
 class Node(Entity):
