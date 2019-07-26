@@ -301,7 +301,7 @@ if __name__ == "__main__":
 
     tl = timeline.Timeline(1e11)  # stop time is 100 ms
 
-    qc = topology.QuantumChannel("qc", tl, distance=10e3, polarization_fidelity=0.99)
+    qc = topology.QuantumChannel("qc", tl, distance=10e3, polarization_fidelity=0.99, attenuation=0.0002)
     cc = topology.ClassicalChannel("cc", tl, distance=10e3)
 
     # Alice
@@ -369,8 +369,8 @@ if __name__ == "__main__":
 
     tl = timeline.Timeline(1e11)  # stop time is 100 ms
 
-    qc = topology.QuantumChannel("qc", tl, distance=100e3, polarization_fidelity=0.99)
-    cc = topology.ClassicalChannel("cc", tl, distance=100e3)
+    qc = topology.QuantumChannel("qc", tl, distance=10e3, polarization_fidelity=0.99)
+    cc = topology.ClassicalChannel("cc", tl, distance=10e3)
 
     # Alice
     ls = topology.LightSource("alice.lightsource", tl,

@@ -58,7 +58,7 @@ class OpticalChannel(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.attenuation = kwargs.get("attenuation", 0)
-        self.distance = kwargs.get("distance", 0)
+        self.distance = kwargs.get("distance", 0)  # (measured in m)
         self.temperature = kwargs.get("temperature", 0)
         self.polarization_fidelity = kwargs.get("polarization_fidelity", 1)
         self.light_speed = kwargs.get("light_speed",
@@ -156,7 +156,7 @@ class LightSource(Entity):
         Entity.__init__(self, name, timeline)
         self.frequency = kwargs.get("frequency", 0)  # measured in Hz
         self.wavelength = kwargs.get("wavelength", 1550)  # measured in nm
-        self.linewidth = kwargs.get("linewidth", 1e9)  # st. dev. in photon frequency (Hz)
+        self.linewidth = kwargs.get("linewidth", 0)  # st. dev. in photon wavelength (nm)
         self.mean_photon_num = kwargs.get("mean_photon_num", 0)
         self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
         self.direct_receiver = kwargs.get("direct_receiver", None)
@@ -206,8 +206,9 @@ class LightSource(Entity):
             num_photons = numpy.random.poisson(self.mean_photon_num)
 
             for _ in range(num_photons):
-                frequency = self.linewidth * numpy.random.randn() + 3e8 / (self.wavelength * 1e-9)
-                wavelength = (3e8 / frequency) * 1e9
+                # frequency = self.linewidth * numpy.random.randn() + 3e8 / (self.wavelength * 1e-9)
+                # wavelength = (3e8 / frequency) * 1e9
+                wavelength = self.linewidth * numpy.random.randn() + self.wavelength
                 new_photon = Photon(None, self.timeline,
                                     wavelength=wavelength,
                                     location=self.direct_receiver,
