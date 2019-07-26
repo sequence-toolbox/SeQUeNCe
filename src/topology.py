@@ -54,16 +54,16 @@ class Photon(Entity):
         self.quantum_state = [complex(numpy.cos(angle)), complex(numpy.sin(angle))]
         # self.quantum_state += numpy.random.random() * 360  # add random angle, use 360 instead of 2*pi
 
-    def measure(self, basis):
-        alpha = numpy.dot(self.quantum_state, basis[0])  # projection onto basis vector
-        if numpy.random.random_sample() < alpha ** 2:
-            self.quantum_state = basis[0]
-            return 0
-        self.quantum_state = basis[1]
-        return 1
+    # def measure(self, basis):
+    #     alpha = numpy.dot(self.quantum_state, basis[0])  # projection onto basis vector
+    #     if numpy.random.random_sample() < alpha ** 2:
+    #         self.quantum_state = basis[0]
+    #         return 0
+    #     self.quantum_state = basis[1]
+    #     return 1
 
     @staticmethod
-    def measure_photon(basis, photon):
+    def measure(basis, photon):
         state = numpy.array(photon.quantum_state)
         u = numpy.array(basis[0], dtype=complex)
         v = numpy.array(basis[1], dtype=complex)
@@ -380,22 +380,13 @@ class BeamSplitter(Entity):
     def init(self):
         pass
 
-    # # for general use
-    # def transmit_general(self, photon):
-    #     if numpy.random.random_sample() < self.fidelity:
-    #         return photon.measure(self.basis)
-    #     else:
-    #         return -1
-
-    # for BB84
-    # TODO: determine if protocol is BB84
     def get(self, photon):
         if numpy.random.random_sample() < self.fidelity:
             index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
             if 0 <= index < len(self.basis_list):
-                return photon.measure(self.basis_list[index])
+                return Photon.measure(self.basis_list[index], photon)
             else:
-                return photon.measure(self.basis_list[0])
+                return Photon.measure(self.basis_list[0], photon)
         else:
             return -1
 
@@ -477,7 +468,7 @@ class Switch(Entity):
         receiver = self.receivers[self.state_list[index]]
         # check if receiver is detector, if we're using time bin, and if the photon is "late" to schedule measurement
         if isinstance(receiver, Detector):
-            if photon.encoding_type["name"] == "time_bin" and photon.measure(photon.encoding_type["bases"][0]):
+            if photon.encoding_type["name"] == "time_bin" and Photon.measure(photon.encoding_type["bases"][0], photon):
                 time = self.timeline.now() + photon.encoding_type["bin_separation"]
                 process = Process(receiver, "get", [])
                 event = Event(time, process)
