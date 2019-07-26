@@ -22,6 +22,7 @@ class BB84(Entity):
         self.start_time = 0  # start time of light pulse
         self.classical_delay = 0  # time delay of classical communication (ps)
         self.quantum_delay = 0  # time delay of quantum communication (ps)
+        self.photon_delay = 0  # time delay of photon (including dispersion) (ps)
         self.basis_lists = None
         self.bit_lists = None
         self.key = 0  # key as int
@@ -127,7 +128,12 @@ class BB84(Entity):
             if message[0] == "begin_photon_pulse":  # (current node is Bob): start to receive photons
                 self.qubit_frequency = float(message[1])
                 self.light_time = float(message[2])
-                self.start_time = int(message[3]) + self.quantum_delay
+
+                wavelength = int(message[4])
+                qchannel = self.node.components["qchannel"]
+                self.photon_delay = self.quantum_delay +\
+                                    int(round(qchannel.chromatic_dispersion * wavelength * qchannel.distance * 1e-3))
+                self.start_time = int(message[3]) + self.photon_delay
 
                 # generate basis list and set bases for measurement
                 self.set_bases()
@@ -254,8 +260,8 @@ class BB84(Entity):
 
             # send message that photon pulse is beginning, then send bits
             self.start_time = int(self.timeline.now()) + int(round(self.classical_delay))
-            self.node.send_message("begin_photon_pulse {} {} {}"
-                                   .format(self.qubit_frequency, self.light_time, self.start_time))
+            self.node.send_message("begin_photon_pulse {} {} {} {}"
+                                   .format(self.qubit_frequency, self.light_time, self.start_time, light_source.wavelength))
 
             process = Process(self, "begin_photon_pulse", [])
             event = Event(self.start_time, process)
@@ -363,8 +369,8 @@ if __name__ == "__main__":
 
     tl = timeline.Timeline(1e11)  # stop time is 100 ms
 
-    qc = topology.QuantumChannel("qc", tl, distance=10e3, polarization_fidelity=0.99)
-    cc = topology.ClassicalChannel("cc", tl, distance=10e3)
+    qc = topology.QuantumChannel("qc", tl, distance=100e3, polarization_fidelity=0.99)
+    cc = topology.ClassicalChannel("cc", tl, distance=100e3)
 
     # Alice
     ls = topology.LightSource("alice.lightsource", tl,
