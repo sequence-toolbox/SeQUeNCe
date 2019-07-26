@@ -65,20 +65,38 @@ class Photon(Entity):
     @staticmethod
     def measure_photon(basis, photon):
         state = numpy.array(photon.quantum_state)
-        v = numpy.array(basis[0], dtype=complex)
+        u = numpy.array(basis[0], dtype=complex)
+        v = numpy.array(basis[1], dtype=complex)
         # measurement operator
-        M = numpy.outer(v.conj(), v)
+        M0 = numpy.outer(u.conj(), u)
+        M1 = numpy.outer(v.conj(), v)
 
-        projector = [1]
+        projector0 = [1]
+        projector1 = [1]
         for p in photon.entangled_photons:
             if p == photon:
-                projector = numpy.kron(projector, M)
+                projector0 = numpy.kron(projector0, M0)
+                projector1 = numpy.kron(projector1, M1)
             else:
-                projector = numpy.kron(projector, numpy.identity(2))
+                projector0 = numpy.kron(projector0, numpy.identity(2))
+                projector1 = numpy.kron(projector1, numpy.identity(2))
 
-        # probability that photon is measured as quantum state |0>
-        prob_0 = (state.conj().transpose() @ projector.conj().transpose() @ projector @ state).real
-        return prob_0
+        # probability of measuring basis[0]
+        prob_0 = (state.conj().transpose() @ projector0.conj().transpose() @ projector0 @ state).real
+
+        result = 0
+        if numpy.random.random_sample() > prob_0:
+            result = 1
+
+        if result:
+            new_state = (projector1 @ state) / math.sqrt(1 - prob_0)
+        else:
+            new_state = (projector0 @ state) / math.sqrt(prob_0)
+
+        for p in photon.entangled_photons:
+            p.quantum_state = new_state
+
+        return result
 
 
 class OpticalChannel(Entity):
