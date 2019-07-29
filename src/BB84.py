@@ -129,11 +129,12 @@ class BB84(Entity):
                 self.qubit_frequency = float(message[1])
                 self.light_time = float(message[2])
 
-                wavelength = int(message[4])
-                qchannel = self.node.components["qchannel"]
-                self.photon_delay = self.quantum_delay +\
-                                    int(round(qchannel.chromatic_dispersion * wavelength * qchannel.distance * 1e-3))
-                self.start_time = int(message[3]) + self.photon_delay
+                # unused dispersion calculations
+                # wavelength = int(message[4])
+                # qchannel = self.node.components["qchannel"]
+                # self.photon_delay = self.quantum_delay +\
+                #                     int(round(qchannel.chromatic_dispersion * wavelength * qchannel.distance * 1e-3))
+                self.start_time = int(message[3]) + self.quantum_delay
 
                 # generate basis list and set bases for measurement
                 self.set_bases()

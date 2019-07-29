@@ -114,10 +114,10 @@ class QuantumChannel(OpticalChannel):
 
             # schedule receiving node to receive photon at future time determined by light speed and dispersion
             future_time = self.timeline.now() + int(self.distance / self.light_speed)
-            dispersion_time = int(round(self.chromatic_dispersion * photon.wavelength * self.distance * 1e-3))
+            # dispersion_time = int(round(self.chromatic_dispersion * photon.wavelength * self.distance * 1e-3))
 
             process = Process(self.receiver, "get", [photon])
-            event = Event(future_time + dispersion_time, process)
+            event = Event(future_time, process)
             self.timeline.schedule(event)
 
 
@@ -156,7 +156,7 @@ class LightSource(Entity):
         Entity.__init__(self, name, timeline)
         self.frequency = kwargs.get("frequency", 0)  # measured in Hz
         self.wavelength = kwargs.get("wavelength", 1550)  # measured in nm
-        self.linewidth = kwargs.get("linewidth", 0)  # st. dev. in photon wavelength (nm)
+        self.linewidth = kwargs.get("bandwidth", 0)  # st. dev. in photon wavelength (nm)
         self.mean_photon_num = kwargs.get("mean_photon_num", 0)
         self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
         self.direct_receiver = kwargs.get("direct_receiver", None)
@@ -172,32 +172,6 @@ class LightSource(Entity):
     def init(self):
         pass
 
-    # # for BB84
-    # def emit_photon(self):
-    #     if self.is_on:
-    #         bases = [[0, 90], [45, 135]]
-    #         basis = bases[numpy.random.choice([0, 1])]
-    #         self.basis_list.append(basis)
-    #         bit = numpy.random.choice([0, 1])
-    #         self.bit_list.append(bit)
-    #         state = basis[bit]
-    #
-    #         num_photons = numpy.random.poisson(self.mean_photon_num)
-    #         for _ in range(num_photons):
-    #             new_photon = Photon(self.pulse_id, self.timeline,
-    #                                 wavelength=self.wavelength,
-    #                                 location=self.direct_receiver,
-    #                                 encoding_type=self.encoding_type,
-    #                                 quantum_state=state)
-    #             self.direct_receiver.get(new_photon)
-    #
-    #             self.photon_counter += 1
-    #
-    #         self.pulse_id+=1
-    #         process = Process(self, "emit_photon", [])
-    #         event = Event(self.timeline.now() + 1e12 / self.frequency, process)
-    #         self.timeline.schedule(event)
-
     # for general use
     def emit(self, state_list):
         time = self.timeline.now()
@@ -206,8 +180,6 @@ class LightSource(Entity):
             num_photons = numpy.random.poisson(self.mean_photon_num)
 
             for _ in range(num_photons):
-                # frequency = self.linewidth * numpy.random.randn() + 3e8 / (self.wavelength * 1e-9)
-                # wavelength = (3e8 / frequency) * 1e9
                 wavelength = self.linewidth * numpy.random.randn() + self.wavelength
                 new_photon = Photon(None, self.timeline,
                                     wavelength=wavelength,
@@ -221,17 +193,6 @@ class LightSource(Entity):
                 self.photon_counter += 1
 
             time += 1e12 / self.frequency
-
-    def turn_on(self):
-        self.is_on = True
-        self.emit_photon()
-
-    def turn_off(self):
-        self.basis_lists.append(self.basis_list)
-        self.basis_list = []
-        self.bit_lists.append(self.bit_list)
-        self.bit_list = []
-        self.is_on = False
 
     def assign_receiver(self, receiver):
         self.direct_receiver = receiver
