@@ -189,7 +189,6 @@ class BB84(Entity):
                     throughput = self.key_lengths[0] * 1e12 / (self.timeline.now() - self.last_key_time)
 
                     while len(self.key_bits) >= self.key_lengths[0] and self.keys_left_list[0] > 0:
-                        print("got key")
                         self.set_key()  # convert from binary list to int
                         if self.parent is not None:
                             self.parent.get_key_from_BB84(self.key)  # call parent
