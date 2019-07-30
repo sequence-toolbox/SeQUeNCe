@@ -14,7 +14,7 @@ if __name__ == "__main__":
     random.seed(1)
 
     runtime = 30e12
-    dark_count = 91
+    dark_count = 432
     distances = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]  # distances in km
     errors = []  # store error rates
     throughputs = []  # store throughputs
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     for distance in distances:
         tl = Timeline(runtime)
         qc = topology.QuantumChannel("qc", tl,
-                                     distance=distance * 1e3, polarization_fidelity=0.99, attenuation=0.0002)
+                                     distance=distance * 1e3, attenuation=0.0002)
         cc = topology.ClassicalChannel("cc", tl,
                                        distance=distance * 1e3)
 
@@ -74,8 +74,7 @@ if __name__ == "__main__":
         tl.init()
         tl.run()
 
-        errors.append(statistics.mean(bba.error_rates))
+        error = statistics.mean(bba.error_rates)
+        errors.append(error)
+        print("{}km: {}".format(distance, error))
         throughputs.append(statistics.mean(bba.throughputs) * 1e-3)
-
-    print(errors)
-    print(throughputs)

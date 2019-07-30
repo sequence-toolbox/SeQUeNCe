@@ -260,7 +260,7 @@ class Detector(Entity):
         self.efficiency = kwargs.get("efficiency", 1)
         self.dark_count = kwargs.get("dark_count", 0)  # measured in Hz
         self.count_rate = kwargs.get("count_rate", math.inf)  # measured in Hz
-        self.time_resolution = kwargs.get("time_resolution", 0)  # measured in ps
+        self.time_resolution = kwargs.get("time_resolution", 1)  # measured in ps
         self.photon_times = []
         self.next_detection_time = 0
         self.photon_counter = 0
@@ -268,11 +268,11 @@ class Detector(Entity):
     def init(self):
         self.add_dark_count()
 
-    def get(self, photon=None):
+    def get(self, dark_get=False):
         self.photon_counter += 1
         now = self.timeline.now()
 
-        if numpy.random.random_sample() < self.efficiency and now > self.next_detection_time:
+        if (numpy.random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
             time = int(round(now / self.time_resolution)) * self.time_resolution
             self.photon_times.append(time)
             self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
@@ -282,7 +282,7 @@ class Detector(Entity):
         time = time_to_next + self.timeline.now()  # time of next dark count
 
         process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
-        process2 = Process(self, "get", [])
+        process2 = Process(self, "get", [True])
         event1 = Event(time, process1)
         event2 = Event(time, process2)
         self.timeline.schedule(event1)
