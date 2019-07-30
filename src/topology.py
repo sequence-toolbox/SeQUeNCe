@@ -462,7 +462,7 @@ class Node(Entity):
                 if 0 <= index < len(bits):
                     if abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
                         bits[index] = 0
-                    else:
+                    elif abs(((index * 1e12 / frequency) + start_time) - (time - bin_separation)) < bin_separation / 2:
                         bits[index] = 1
 
             # interferometer detector 0 times
