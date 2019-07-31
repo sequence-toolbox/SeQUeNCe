@@ -11,6 +11,7 @@ from event import Event
 
 from BB84 import BB84
 
+import copy
 
 """
 import pandas as pd
@@ -129,9 +130,9 @@ class OpticalChannel(Entity):
 
         return distance
 
-    def set_temerature_model(self, filename):
-        self.tModel = TemperatureModel()
-        self.tModel.read_temperature_file(filename)
+    # def set_temerature_model(self, filename):
+    #     self.tModel = TemperatureModel()
+    #     self.tModel.read_temperature_file(filename)
 
 
 class QuantumChannel(OpticalChannel):
