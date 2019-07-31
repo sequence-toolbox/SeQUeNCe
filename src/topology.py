@@ -497,7 +497,7 @@ class BSM(Entity):
             self.signal_photon = photon
             self.signal_arrive_time = self.timeline.now()
 
-        if not self.target_photon is None and not self.signal_photon is None:
+        if self.target_photon is not None and self.signal_photon is not None:
             if self.target_arrive_time == self.signal_arrive_time:
                 self.send_to_detectors()
 
@@ -590,18 +590,21 @@ class BSM(Entity):
             d0_times = self.detectors[0].photon_times
             d1_times = self.detectors[1].photon_times
             bin_separation = self.encoding_type["bin_separation"]
+            time_resoultion = self.detectors[0].time_resolution
             while d0_times and d1_times:
                 if abs(d0_times[0] - d1_times[0]) == bin_separation:
                     res = [min(d0_times[0], d1_times[0]), 0]
                     bsm_res.append(res)
                     d0_times.pop(0)
                     d1_times.pop(0)
-                elif len(d0_times)>1 and abs(d0_times[0] - d0_times[1]) == bin_separation:
+                elif len(d0_times) > 1 and\
+                        abs(d0_times[0] - d0_times[1]) == time_resoultion * round(bin_separation / time_resoultion):
                     res = [d0_times[0], 1]
                     bsm_res.append(res)
                     d0_times.pop(0)
                     d0_times.pop(0)
-                elif len(d1_times)>1 and abs(d1_times[0] - d1_times[1]) == bin_separation:
+                elif len(d1_times) > 1 and\
+                        abs(d1_times[0] - d1_times[1]) == time_resoultion * round(bin_separation / time_resoultion):
                     res = [d1_times[0], 1]
                     bsm_res.append(res)
                     d1_times.pop(0)
