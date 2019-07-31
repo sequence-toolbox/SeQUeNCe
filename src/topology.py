@@ -3,7 +3,6 @@ from typing import List, Any
 
 import numpy
 import json5
-import pandas as pd
 
 import encoding
 from process import Process
@@ -13,6 +12,8 @@ from event import Event
 from BB84 import BB84
 
 
+"""
+import pandas as pd
 class TemperatureModel():
     df = pd.DataFrame()
 
@@ -26,6 +27,7 @@ class TemperatureModel():
         ## interpolation of time
         temperature = 60
         return temperature
+"""
 
 
 class Photon(Entity):
@@ -408,6 +410,186 @@ class Switch(Entity):
                 receiver.get()
         else:
             receiver.get(photon)
+
+
+class BSM(Entity):
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(self, name, timeline)
+        self.encoding_type = kwargs.get("encoding_type", encoding.time_bin)
+
+        # two detectors for time-bin encoding
+        # four detectors for polarization encoding
+        self.detectors = kwargs.get("detectors",[])
+        if self.encoding_type["name"] == "polarization":
+            assert len(self.detectors) == 4
+        elif self.encoding_type["name"] == "time_bin":
+            assert len(self.detectors) == 2
+
+        # assume BSM is connected to two quantum channel
+        # self.target_end = None
+        # self.signal_end = None
+
+        self.target_photon = None
+        self.target_arrive_time = None
+        self.signal_photon = None
+        self.signal_arrive_time = None
+
+    '''
+    def assign_target_end(self, target_end):
+        self.target_end = target_end
+
+    def assign_signal_end(self, signal_end):
+        self.signal_end = signal_end
+    '''
+
+    def init(self):
+        pass
+
+    def get(self, photon, photon_type):
+        # record arrive time
+        # if target photon and signal photon arrive at the same time, do measurement
+        if photon_type == 0:
+            # target photon
+            self.target_photon = photon
+            self.target_arrive_time = self.timeline.now()
+        else:
+            # signal photon
+            self.signal_photon = photon
+            self.signal_arrive_time = self.timeline.now()
+
+        if not self.target_photon is None and not self.signal_photon is None:
+            if self.target_arrive_time == self.signal_arrive_time:
+                self.send_to_detectors()
+
+    def send_to_detectors(self):
+        # TODO: generalize function to any quantum entanglement state
+        def get_another_photon(photon):
+            for _photon in photon.entangled_photons:
+                if _photon != photon: return _photon
+            return
+
+        if self.encoding_type["name"] == "time_bin":
+            early_time = self.timeline.now()
+            late_time = early_time + self.encoding_type["bin_separation"]
+            random_num = numpy.random.random_sample()
+            if random_num < 0.125:
+                # project to |\phi_0> = |01> - |10>
+                # |\phi_1> ---> - \beta |0> + \alpha |1>
+                # |e> at d0, |l> at d1
+                # TODO: change photons quantum state
+                another_photon = get_another_photon(self.signal_photon)
+                another_photon.entangled_photons = [another_photon]
+                another_photon.quantum_state = [-target_photon.quantum_state[1], target_photon.quantum_state[0]]
+
+                process = Process(self.detectors[0], "get", [self.target_photon])
+                event = Event(int(round(early_time)), process)
+                self.timeline.schedule(event)
+                process = Process(self.detectors[1], "get", [self.signal_photon])
+                event = Event(int(round(late_time)), process)
+                self.timeline.schedule(event)
+
+            elif random_num < 0.25:
+                # project to |\phi_0> = |01> - |10>
+                # |\phi_1> ---> - \beta |0> + \alpha |1>
+                # |l> at d0, |e> at d1
+                another_photon = get_another_photon(self.signal_photon)
+                another_photon.entangled_photons = [another_photon]
+                another_photon.quantum_state = [-target_photon.quantum_state[1], target_photon.quantum_state[0]]
+
+                process = Process(self.detectors[0], "get", [self.target_photon])
+                event = Event(int(round(late_time)), process)
+                self.timeline.schedule(event)
+                process = Process(self.detectors[1], "get", [self.signal_photon])
+                event = Event(int(round(early_time)), process)
+                self.timeline.schedule(event)
+
+            elif random_num < 0.375:
+                # project to |\phi_1> = |01> + |10>
+                # |\phi_1> ---> \beta |0> + \alpha |1>
+                # |e>, |l> at d0
+                another_photon = get_another_photon(self.signal_photon)
+                another_photon.entangled_photons = [another_photon]
+                another_photon.quantum_state = [target_photon.quantum_state[1], target_photon.quantum_state[0]]
+
+                process = Process(self.detectors[0], "get", [self.target_photon])
+                event = Event(int(round(late_time)), process)
+                self.timeline.schedule(event)
+                process = Process(self.detectors[0], "get", [self.signal_photon])
+                event = Event(int(round(early_time)), process)
+                self.timeline.schedule(event)
+
+            elif random_num < 0.5:
+                # project to |\phi_1> = |01> + |10>
+                # |\phi_1> ---> \beta |0> + \alpha |1>
+                # |e>, |l> at d1
+                another_photon = get_another_photon(self.signal_photon)
+                another_photon.entangled_photons = [another_photon]
+                another_photon.quantum_state = [target_photon.quantum_state[1], target_photon.quantum_state[0]]
+
+                process = Process(self.detectors[1], "get", [self.target_photon])
+                event = Event(int(round(late_time)), process)
+                self.timeline.schedule(event)
+                process = Process(self.detectors[1], "get", [self.signal_photon])
+                event = Event(int(round(early_time)), process)
+                self.timeline.schedule(event)
+
+            else:
+                # discard photons
+                pass
+        else:
+            #TODO: polarization
+            pass
+
+        pass
+
+    def get_bsm_res(self):
+        # bsm_res = [ [timestamp of early photon, res] ]
+        # res: 0 -> \phi_0; 1 -> \phi_1
+        bsm_res = []
+        if self.encoding_type["name"] == "time_bin":
+            d0_times = self.detectors[0].photon_times
+            d1_times = self.detectors[1].photon_times
+            bin_separation = self.encoding_type["bin_separation"]
+            while d0_times and d1_times:
+                if abs(d0_times[0] - d1_times[0]) == bin_separation:
+                    res = [min(d0_times[0], d1_times[0]), 0]
+                    bsm_res.append(res)
+                    d0_times.pop(0)
+                    d1_times.pop(0)
+                elif len(d0_times)>1 and abs(d0_times[0] - d0_times[1]) == bin_separation:
+                    res = [d0_times[0], 1]
+                    bsm_res.append(res)
+                    d0_times.pop(0)
+                    d0_times.pop(0)
+                elif len(d1_times)>1 and abs(d1_times[0] - d1_times[1]) == bin_separation:
+                    res = [d1_times[0], 1]
+                    bsm_res.append(res)
+                    d1_times.pop(0)
+                    d1_times.pop(0)
+                else:
+                    if d0_times[0] < d1_times[0]:
+                        d0_times.pop(0)
+                    else:
+                        d1_times.pop(0)
+
+            while len(d0_times) > 1:
+                if d0_times[1] - d0_times[0] == bin_separation:
+                    res = [d0_times[0], 1]
+                    bsm_res.append(res)
+                    d0_times.pop(0)
+                d0_times.pop(0)
+
+            while len(d1_times) > 1:
+                if d1_times[1] - d1_times[0] == bin_separation:
+                    res = [d1_times[0], 1]
+                    bsm_res.append(res)
+                    d1_times.pop(0)
+                d1_times.pop(0)
+
+        else:
+            # TODO: polariation
+            pass
+        return bsm_res
 
 
 class Node(Entity):
