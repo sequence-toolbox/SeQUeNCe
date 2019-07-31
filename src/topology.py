@@ -486,7 +486,7 @@ class Switch(Entity):
 
 class SPDCLens(Entity):
     def __init__(self, name, timeline, **kwargs):
-        Entity.__init__(name, timeline)
+        Entity.__init__(self, name, timeline)
         self.rate = kwargs.get("rate", 1)
         self.direct_receiver = kwargs.get("direct_receiver", None)
 
@@ -512,6 +512,7 @@ class SPDCLens(Entity):
 class SPDCSource(LightSource):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline, **kwargs)
+        self.another_receiver = kwargs.get("another_receiver", None)
         self.wavelengths = kwargs.get("wavelengths", [])
 
     def emit(self, state_list):
@@ -534,7 +535,7 @@ class SPDCSource(LightSource):
                 new_photon0.set_state([state[0], complex(0), complex(0), state[1]])
 
                 process0 = Process(self.direct_receiver, "get", [new_photon0])
-                process1 = Process(self.direct_receiver, "get", [new_photon1])
+                process1 = Process(self.another_receiver, "get", [new_photon1])
                 event0 = Event(int(round(time)), process0)
                 event1 = Event(int(round(time)), process1)
                 self.timeline.schedule(event0)
@@ -543,6 +544,9 @@ class SPDCSource(LightSource):
                 self.photon_counter += 1
 
             time += 1e12 / self.frequency
+
+    def assign_another_receiver(self, receiver):
+        self.another_receiver = receiver
 
 
 class Node(Entity):
