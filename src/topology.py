@@ -37,6 +37,16 @@ class Photon(Entity):
         self.location = kwargs.get("location", None)
         self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
         self.quantum_state = kwargs.get("quantum_state", [complex(1), complex(0)])
+        self.entangled_photons = [self]
+
+    def entangle(self, photon):
+        entangled_photons = self.entangled_photons + photon.entangled_photons
+        quantum_state = numpy.kron(self.quantum_state, photon.quantum_state)
+
+        self.entangled_photons = entangled_photons
+        self.quantum_state = quantum_state
+        photon.entangled_photons = entangled_photons
+        photon.quantum_state = quantum_state
 
     def init(self):
         pass
@@ -46,14 +56,53 @@ class Photon(Entity):
         self.quantum_state = [complex(numpy.cos(angle)), complex(numpy.sin(angle))]
         # self.quantum_state += numpy.random.random() * 360  # add random angle, use 360 instead of 2*pi
 
-    def measure(self, basis):
-        alpha = numpy.dot(self.quantum_state, basis[0])  # projection onto basis vector
-        # alpha = numpy.cos((self.quantum_state - basis[0])/180.0 * numpy.pi)
-        if numpy.random.random_sample() < alpha ** 2:
-            self.quantum_state = basis[0]
-            return 0
-        self.quantum_state = basis[1]
-        return 1
+    def set_state(self, state):
+        for photon in self.entangled_photons:
+            photon.quantum_state = state
+
+    # def measure(self, basis):
+    #     alpha = numpy.dot(self.quantum_state, basis[0])  # projection onto basis vector
+    #     if numpy.random.random_sample() < alpha ** 2:
+    #         self.quantum_state = basis[0]
+    #         return 0
+    #     self.quantum_state = basis[1]
+    #     return 1
+
+    @staticmethod
+    def measure(basis, photon):
+        state = numpy.array(photon.quantum_state)
+        u = numpy.array(basis[0], dtype=complex)
+        v = numpy.array(basis[1], dtype=complex)
+        # measurement operator
+        M0 = numpy.outer(u.conj(), u)
+        M1 = numpy.outer(v.conj(), v)
+
+        projector0 = [1]
+        projector1 = [1]
+        for p in photon.entangled_photons:
+            if p == photon:
+                projector0 = numpy.kron(projector0, M0)
+                projector1 = numpy.kron(projector1, M1)
+            else:
+                projector0 = numpy.kron(projector0, numpy.identity(2))
+                projector1 = numpy.kron(projector1, numpy.identity(2))
+
+        # probability of measuring basis[0]
+        prob_0 = (state.conj().transpose() @ projector0.conj().transpose() @ projector0 @ state).real
+
+        result = 0
+        if numpy.random.random_sample() > prob_0:
+            result = 1
+
+        if result:
+            new_state = (projector1 @ state) / math.sqrt(1 - prob_0)
+        else:
+            new_state = (projector0 @ state) / math.sqrt(prob_0)
+
+        for p in photon.entangled_photons:
+            p.quantum_state = new_state
+
+        return result
 
 
 class OpticalChannel(Entity):
@@ -262,7 +311,7 @@ class Detector(Entity):
         self.efficiency = kwargs.get("efficiency", 1)
         self.dark_count = kwargs.get("dark_count", 0)  # measured in Hz
         self.count_rate = kwargs.get("count_rate", math.inf)  # measured in Hz
-        self.time_resolution = kwargs.get("time_resolution", 0)  # measured in ps
+        self.time_resolution = kwargs.get("time_resolution", 1)  # measured in ps
         self.photon_times = []
         self.next_detection_time = 0
         self.photon_counter = 0
@@ -270,11 +319,11 @@ class Detector(Entity):
     def init(self):
         self.add_dark_count()
 
-    def get(self, photon=None):
+    def get(self, dark_get=False):
         self.photon_counter += 1
         now = self.timeline.now()
 
-        if numpy.random.random_sample() < self.efficiency and now > self.next_detection_time:
+        if (numpy.random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
             time = int(round(now / self.time_resolution)) * self.time_resolution
             self.photon_times.append(time)
             self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
@@ -284,7 +333,7 @@ class Detector(Entity):
         time = time_to_next + self.timeline.now()  # time of next dark count
 
         process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
-        process2 = Process(self, "get", [])
+        process2 = Process(self, "get", [True])
         event1 = Event(time, process1)
         event2 = Event(time, process2)
         self.timeline.schedule(event1)
@@ -304,22 +353,13 @@ class BeamSplitter(Entity):
     def init(self):
         pass
 
-    # # for general use
-    # def transmit_general(self, photon):
-    #     if numpy.random.random_sample() < self.fidelity:
-    #         return photon.measure(self.basis)
-    #     else:
-    #         return -1
-
-    # for BB84
-    # TODO: determine if protocol is BB84
     def get(self, photon):
         if numpy.random.random_sample() < self.fidelity:
             index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
             if 0 <= index < len(self.basis_list):
-                return photon.measure(self.basis_list[index])
+                return Photon.measure(self.basis_list[index], photon)
             else:
-                return photon.measure(self.basis_list[0])
+                return Photon.measure(self.basis_list[0], photon)
         else:
             return -1
 
@@ -401,7 +441,7 @@ class Switch(Entity):
         receiver = self.receivers[self.state_list[index]]
         # check if receiver is detector, if we're using time bin, and if the photon is "late" to schedule measurement
         if isinstance(receiver, Detector):
-            if photon.encoding_type["name"] == "time_bin" and photon.measure(photon.encoding_type["bases"][0]):
+            if photon.encoding_type["name"] == "time_bin" and Photon.measure(photon.encoding_type["bases"][0], photon):
                 time = self.timeline.now() + photon.encoding_type["bin_separation"]
                 process = Process(receiver, "get", [])
                 event = Event(time, process)
@@ -474,32 +514,32 @@ class BSM(Entity):
             random_num = numpy.random.random_sample()
             if random_num < 0.125:
                 # project to |\phi_0> = |01> - |10>
-                # |\phi_1> ---> - \beta |0> + \alpha |1>
+                # |\phi_0> ---> - \beta |0> + \alpha |1>
                 # |e> at d0, |l> at d1
                 # TODO: change photons quantum state
                 another_photon = get_another_photon(self.signal_photon)
                 another_photon.entangled_photons = [another_photon]
-                another_photon.quantum_state = [-target_photon.quantum_state[1], target_photon.quantum_state[0]]
+                another_photon.quantum_state = [-self.target_photon.quantum_state[1], self.target_photon.quantum_state[0]]
 
-                process = Process(self.detectors[0], "get", [self.target_photon])
+                process = Process(self.detectors[0], "get", [])
                 event = Event(int(round(early_time)), process)
                 self.timeline.schedule(event)
-                process = Process(self.detectors[1], "get", [self.signal_photon])
+                process = Process(self.detectors[1], "get", [])
                 event = Event(int(round(late_time)), process)
                 self.timeline.schedule(event)
 
             elif random_num < 0.25:
                 # project to |\phi_0> = |01> - |10>
-                # |\phi_1> ---> - \beta |0> + \alpha |1>
+                # |\phi_0> ---> - \beta |0> + \alpha |1>
                 # |l> at d0, |e> at d1
                 another_photon = get_another_photon(self.signal_photon)
                 another_photon.entangled_photons = [another_photon]
-                another_photon.quantum_state = [-target_photon.quantum_state[1], target_photon.quantum_state[0]]
+                another_photon.quantum_state = [-self.target_photon.quantum_state[1], self.target_photon.quantum_state[0]]
 
-                process = Process(self.detectors[0], "get", [self.target_photon])
+                process = Process(self.detectors[0], "get", [])
                 event = Event(int(round(late_time)), process)
                 self.timeline.schedule(event)
-                process = Process(self.detectors[1], "get", [self.signal_photon])
+                process = Process(self.detectors[1], "get", [])
                 event = Event(int(round(early_time)), process)
                 self.timeline.schedule(event)
 
@@ -509,12 +549,12 @@ class BSM(Entity):
                 # |e>, |l> at d0
                 another_photon = get_another_photon(self.signal_photon)
                 another_photon.entangled_photons = [another_photon]
-                another_photon.quantum_state = [target_photon.quantum_state[1], target_photon.quantum_state[0]]
+                another_photon.quantum_state = [self.target_photon.quantum_state[1], self.target_photon.quantum_state[0]]
 
-                process = Process(self.detectors[0], "get", [self.target_photon])
+                process = Process(self.detectors[0], "get", [])
                 event = Event(int(round(late_time)), process)
                 self.timeline.schedule(event)
-                process = Process(self.detectors[0], "get", [self.signal_photon])
+                process = Process(self.detectors[0], "get", [])
                 event = Event(int(round(early_time)), process)
                 self.timeline.schedule(event)
 
@@ -524,12 +564,12 @@ class BSM(Entity):
                 # |e>, |l> at d1
                 another_photon = get_another_photon(self.signal_photon)
                 another_photon.entangled_photons = [another_photon]
-                another_photon.quantum_state = [target_photon.quantum_state[1], target_photon.quantum_state[0]]
+                another_photon.quantum_state = [self.target_photon.quantum_state[1], self.target_photon.quantum_state[0]]
 
-                process = Process(self.detectors[1], "get", [self.target_photon])
+                process = Process(self.detectors[1], "get", [])
                 event = Event(int(round(late_time)), process)
                 self.timeline.schedule(event)
-                process = Process(self.detectors[1], "get", [self.signal_photon])
+                process = Process(self.detectors[1], "get", [])
                 event = Event(int(round(early_time)), process)
                 self.timeline.schedule(event)
 
@@ -592,6 +632,71 @@ class BSM(Entity):
         return bsm_res
 
 
+class SPDCLens(Entity):
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(self, name, timeline)
+        self.rate = kwargs.get("rate", 1)
+        self.direct_receiver = kwargs.get("direct_receiver", None)
+
+    def init(self):
+        pass
+
+    def get(self, photon):
+        if numpy.random.random_sample() < self.rate:
+            state = photon.quantum_state
+            photon.wavelength /= 2
+            new_photon = copy.deepcopy(photon)
+
+            photon.entangle(new_photon)
+            photon.set_state([state[0], complex(0), complex(0), state[1]])
+
+            self.direct_receiver.get(photon)
+            self.direct_receiver.get(new_photon)
+
+    def assign_receiver(self, receiver):
+        self.direct_receiver = receiver
+
+
+class SPDCSource(LightSource):
+    def __init__(self, name, timeline, **kwargs):
+        super().__init__(name, timeline, **kwargs)
+        self.another_receiver = kwargs.get("another_receiver", None)
+        self.wavelengths = kwargs.get("wavelengths", [])
+
+    def emit(self, state_list):
+        time = self.timeline.now()
+
+        for state in state_list:
+            num_photon_pairs = numpy.random.poisson(self.mean_photon_num)
+
+            for _ in range(num_photon_pairs):
+                new_photon0 = Photon(None, self.timeline,
+                                     wavelength=self.wavelengths[0],
+                                     location=self.direct_receiver,
+                                     encoding_type=self.encoding_type)
+                new_photon1 = Photon(None, self.timeline,
+                                     wavelength=self.wavelengths[1],
+                                     location=self.direct_receiver,
+                                     encoding_type=self.encoding_type)
+
+                new_photon0.entangle(new_photon1)
+                new_photon0.set_state([state[0], complex(0), complex(0), state[1]])
+
+                process0 = Process(self.direct_receiver, "get", [new_photon0])
+                process1 = Process(self.another_receiver, "get", [new_photon1])
+                event0 = Event(int(round(time)), process0)
+                event1 = Event(int(round(time)), process1)
+                self.timeline.schedule(event0)
+                self.timeline.schedule(event1)
+
+                self.photon_counter += 1
+
+            time += 1e12 / self.frequency
+
+    def assign_another_receiver(self, receiver):
+        self.another_receiver = receiver
+
+
 class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
@@ -644,7 +749,7 @@ class Node(Entity):
                 if 0 <= index < len(bits):
                     if abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
                         bits[index] = 0
-                    else:
+                    elif abs(((index * 1e12 / frequency) + start_time) - (time - bin_separation)) < bin_separation / 2:
                         bits[index] = 1
 
             # interferometer detector 0 times
