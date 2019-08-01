@@ -148,7 +148,7 @@ if __name__ == "__main__":
 
     tl = Timeline(1e12)
 
-    alice_length = 1e3
+    alice_length = 2e3
     bob_length = 1e3
 
     qc_ac = topology.QuantumChannel("qc_ac", tl, distance=alice_length)

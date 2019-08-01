@@ -165,7 +165,7 @@ class QuantumChannel(OpticalChannel):
                 self.depo_counter+=1
 
             # schedule receiving node to receive photon at future time determined by light speed and dispersion
-            future_time = self.timeline.now() + int(self.distance / self.light_speed)
+            future_time = self.timeline.now() + round(self.distance / self.light_speed)
             # dispersion_time = int(round(self.chromatic_dispersion * photon.wavelength * self.distance * 1e-3))
 
             process = Process(self.receiver, "get", [photon])
