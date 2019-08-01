@@ -88,7 +88,7 @@ class Teleportation(Entity):
 
             # check matching bits between bsm/bits and append to self.bits
             for res in bsm_res:
-                index = int(round((res[0] - self.start_time - self.measurement_delay) * frequency * 1e-12))
+                index = int(round((res[0] - self.start_time - self.quantum_delay) * frequency * 1e-12))
                 if bits[index] != -1:
                     self.bits.append(1 - bits[index])  # flip bits since bsm measures psi+ or psi- states
 
@@ -148,8 +148,8 @@ if __name__ == "__main__":
 
     tl = Timeline(1e12)
 
-    alice_length = 2e3
-    bob_length = 1e3
+    alice_length = 5e3
+    bob_length = 10e3
 
     qc_ac = topology.QuantumChannel("qc_ac", tl, distance=alice_length)
     qc_bc = topology.QuantumChannel("qc_bc", tl, distance=bob_length)
@@ -168,7 +168,8 @@ if __name__ == "__main__":
     cc_ac.add_end(alice)
 
     # Bob
-    internal_cable = topology.QuantumChannel("bob.internal_cable", tl, distance=bob_length + 1)  # for adding delay to detector
+    internal_cable = topology.QuantumChannel("bob.internal_cable", tl,
+                                             distance=bob_length)
     spdc = topology.SPDCSource("bob.lightsource", tl,
                                frequency=80e6, mean_photon_num=0.1, encoding_type=encoding.time_bin,
                                direct_receiver=qc_bc, another_receiver=internal_cable, wavelengths=[1532, 795])
@@ -182,6 +183,7 @@ if __name__ == "__main__":
                               switch=switch)
     internal_cable.set_sender(spdc)
     internal_cable.set_receiver(qsd)
+    internal_cable.distance += 10
     components = {"lightsource": spdc, "detector": qsd, "qchannel": qc_bc, "cchannel": cc_bc}
 
     bob = topology.Node("bob", tl, components=components)
