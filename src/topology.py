@@ -261,7 +261,10 @@ class QSDetector(Entity):
             raise Exception("invalid number of detectors specified")
         self.detectors = []
         for d in detectors:
-            detector = Detector(timeline, **d)
+            if d is not None:
+                detector = Detector(timeline, **d)
+            else:
+                detector = None
             self.detectors.append(detector)
 
         if self.encoding_type["name"] == "polarization":
@@ -299,7 +302,10 @@ class QSDetector(Entity):
     def get_photon_times(self):
         times = []
         for d in self.detectors:
-            times.append(d.photon_times)
+            if d is not None:
+                times.append(d.photon_times)
+            else:
+                times.append([])
         return times
 
     def set_basis(self, basis):
@@ -460,11 +466,19 @@ class BSM(Entity):
 
         # two detectors for time-bin encoding
         # four detectors for polarization encoding
-        self.detectors = kwargs.get("detectors",[])
+        detectors = kwargs.get("detectors",[])
         if self.encoding_type["name"] == "polarization":
-            assert len(self.detectors) == 4
+            assert len(detectors) == 4
         elif self.encoding_type["name"] == "time_bin":
-            assert len(self.detectors) == 2
+            assert len(detectors) == 2
+
+        self.detectors = []
+        for d in detectors:
+            if d is not None:
+                detector = Detector(timeline, **d)
+            else:
+                detector = None
+            self.detectors.append(detector)
 
         # assume BSM is connected to two quantum channel
         # self.target_end = None

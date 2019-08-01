@@ -1,3 +1,8 @@
+import numpy
+import re
+import math
+
+import encoding
 import topology
 from timeline import Timeline
 from entity import Entity
@@ -12,10 +17,13 @@ class Teleportation(Entity):
 
         self.quantum_delay = 0
         self.classical_delay = 0
+        self.measurement_delay = 0
         self.light_time = 0
         self.start_time = 0
+        self.bits = []
         self.node = None
         self.parent = None
+        self.another_alice = None
         self.another_bob = None
         self.another_charlie = None
         self.quantum_state = [complex(1), complex(0)]
@@ -28,8 +36,10 @@ class Teleportation(Entity):
         self.node = node
         cchannel = node.components.get("cchannel")
         qchannel = node.components.get("qchannel")
-        self.classical_delay = cchannel.delay
-        self.quantum_delay = int(round(qchannel.distance / qchannel.light_speed))
+        if cchannel is not None:
+            self.classical_delay = cchannel.delay
+        if qchannel is not None:
+            self.quantum_delay = int(round(qchannel.distance / qchannel.light_speed))
 
     def add_parent(self, parent):
         self.parent = parent
@@ -59,20 +69,53 @@ class Teleportation(Entity):
 
         if message[0] == "bsm_res":  # (current node is Bob): get bits w/ bell state measure
             frequency = self.node.components["lightsource"].frequency
-            bsm_res = [-1] * int(round(self.light_time * frequency))
+
+            # parse bsm results
+            times_and_bits = []  # list of alternating time/bit
+            if message[1] != "[]":
+                for val in message[1:]:
+                    times_and_bits.append(int(re.sub("[],[]", "", val)))
+            bsm_res = []
+            bsm_single = []
+            for i, val in enumerate(times_and_bits):
+                bsm_single.append(val)
+                if i % 2:
+                    bsm_res.append(bsm_single)
+                    bsm_single = []
 
             # calculate bit values
-            # invert bits
-            # calculate error
+            bits = self.node.get_bits(self.light_time, self.start_time + self.measurement_delay, frequency, "detector")
+
+            # check matching bits between bsm/bits and append to self.bits
+            for res in bsm_res:
+                index = int(round((res[0] - self.start_time - self.measurement_delay) * frequency * 1e-12))
+                if bits[index] != -1:
+                    self.bits.append(1 - bits[index])  # flip bits since bsm measures psi+ or psi- states
+
+            # check if we have enough samples, if not run again
+            print("bit length: {}".format(len(self.bits)))
+            if len(self.bits) >= self.sample_size:
+                sample = self.bits[0:self.sample_size - 1]
+                del self.bits[0:self.sample_size - 1]
+                alpha = sample.count(0) / len(sample)
+                beta = sample.count(1) / len(sample)
+                print("% 0:\t{}".format(alpha * 100))
+                print("% 1:\t{}".format(beta * 100))
+                print("time (ms): {}".format(self.timeline.now() * 1e-9))
+            else:
+                self.another_alice.send_state(self.quantum_state, self.sample_size)
 
     def send_state(self, quantum_state, sample_size):
+        numpy.set_printoptions(threshold=math.inf)
+
         self.quantum_state = quantum_state
+        self.another_bob.quantum_state = quantum_state
         self.sample_size = sample_size
         self.another_bob.sample_size = sample_size
         lightsource = self.node.components["lightsource"]
 
-        start_time = max(0, self.another_bob.quantum_delay - self.quantum_delay)
-        bob_start_time = max(0, self.quantum_delay - self.another_bob.quantum_delay)
+        start_time = self.timeline.now() + max(0, self.another_bob.quantum_delay - self.quantum_delay)
+        bob_start_time = self.timeline.now() + max(0, self.quantum_delay - self.another_bob.quantum_delay)
 
         # schedule self to emit photons
         num_photons = round(self.sample_size / lightsource.mean_photon_num)
@@ -101,16 +144,23 @@ class BSMAdapter(Entity):
 
 
 if __name__ == "__main__":
+    numpy.random.seed(1)
+
     tl = Timeline(1e12)
 
-    qc_ac = topology.QuantumChannel("qc_ac", tl)
-    qc_bc = topology.QuantumChannel("qc_bc", tl)
-    cc_ac = topology.ClassicalChannel("cc_ac", tl)
-    cc_bc = topology.ClassicalChannel("cc_bc", tl)
+    alice_length = 1e3
+    bob_length = 1e3
+
+    qc_ac = topology.QuantumChannel("qc_ac", tl, distance=alice_length)
+    qc_bc = topology.QuantumChannel("qc_bc", tl, distance=bob_length)
+    cc_ac = topology.ClassicalChannel("cc_ac", tl, distance=alice_length)
+    cc_bc = topology.ClassicalChannel("cc_bc", tl, distance=bob_length)
 
     # Alice
-    ls = topology.LightSource("alice.lightsource", tl)
-    components = {"lightsource": ls, "qc": qc_ac, "cc": cc_ac}
+    ls = topology.LightSource("alice.lightsource", tl,
+                              frequency=80e6, mean_photon_num=0.1, encoding_type=encoding.time_bin,
+                              direct_receiver=qc_ac)
+    components = {"lightsource": ls, "qchannel": qc_ac, "cchannel": cc_ac}
 
     alice = topology.Node("alice", tl, components=components)
 
@@ -118,10 +168,21 @@ if __name__ == "__main__":
     cc_ac.add_end(alice)
 
     # Bob
-    internal_cable = topology.QuantumChannel("bob.internal_cable", tl)  # for adding delay to detector
-    spdc = topology.SPDCSource("bob.lightsource", tl)
-    detector = topology.Detector(tl)
-    components = {"lightsource": spdc, "detector": detector, "qc": qc_bc, "cc": cc_bc}
+    internal_cable = topology.QuantumChannel("bob.internal_cable", tl, distance=bob_length + 1)  # for adding delay to detector
+    spdc = topology.SPDCSource("bob.lightsource", tl,
+                               frequency=80e6, mean_photon_num=0.1, encoding_type=encoding.time_bin,
+                               direct_receiver=qc_bc, another_receiver=internal_cable, wavelengths=[1532, 795])
+    detectors = [{"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
+                 None,
+                 None]
+    interferometer = {}
+    switch = {}
+    qsd = topology.QSDetector("bob.qsdetector", tl,
+                              encoding_type=encoding.time_bin, detectors=detectors, interferometer=interferometer,
+                              switch=switch)
+    internal_cable.set_sender(spdc)
+    internal_cable.set_receiver(qsd)
+    components = {"lightsource": spdc, "detector": qsd, "qchannel": qc_bc, "cchannel": cc_bc}
 
     bob = topology.Node("bob", tl, components=components)
 
@@ -129,7 +190,10 @@ if __name__ == "__main__":
     cc_bc.add_end(bob)
 
     # Charlie
-    bsm = topology.BSM("charlie.bsm", tl)
+    detectors = [{"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
+                 {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10}]
+    bsm = topology.BSM("charlie.bsm", tl,
+                       encoding_type=encoding.time_bin, detectors=detectors)
     a0 = BSMAdapter(tl, photon_type=0, bsm=bsm)
     a1 = BSMAdapter(tl, photon_type=1, bsm=bsm)
     components = {"bsm": bsm, "qc_a": qc_ac, "qc_b": qc_bc, "cc_a": cc_ac, "cc_b": cc_bc}
@@ -139,4 +203,34 @@ if __name__ == "__main__":
     qc_bc.set_receiver(a1)
     cc_ac.add_end(charlie)
     cc_bc.add_end(charlie)
+
+    # Teleportation
+    ta = Teleportation("ta", tl, role=0)
+    tb = Teleportation("tb", tl, role=1)
+    tc = Teleportation("tc", tl, role=2)
+
+    ta.assign_node(alice)
+    tb.assign_node(bob)
+    tb.measurement_delay = int(round(internal_cable.distance / internal_cable.light_speed))
+    tc.assign_node(charlie)
+    tc.quantum_delay = int(round(qc_bc.distance / qc_bc.light_speed))
+
+    ta.another_bob = tb
+    ta.another_charlie = tc
+    tb.another_alice = ta
+    tb.another_charlie = tc
+    tc.another_alice = ta
+    tc.another_bob = tb
+
+    alice.protocol = ta
+    bob.protocol = tb
+    charlie.protocol = tc
+
+    # run
+    process = Process(ta, "send_state", [[complex(1), complex(0)], 100])
+    event = Event(0, process)
+    tl.schedule(event)
+
+    tl.init()
+    tl.run()
 
