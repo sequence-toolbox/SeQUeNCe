@@ -720,6 +720,10 @@ class Node(Entity):
 
         self.components[source_name].emit(state_list)
 
+    def send_photons(self, state, num, source_name):
+        state_list = [state] * num
+        self.components[source_name].emit(state_list)
+
     def get_bits(self, light_time, start_time, frequency, detector_name):
         encoding_type = self.components[detector_name].encoding_type
         bits = [-1] * int(round(light_time * frequency))  # -1 used for invalid bits
@@ -812,8 +816,8 @@ class Node(Entity):
         source = self.components['lightsource']
         return source.photon_counter
 
-    def send_message(self, msg):
-        self.components['cchannel'].transmit(msg, self)
+    def send_message(self, msg, channel="cchannel"):
+        self.components[channel].transmit(msg, self)
 
     def receive_message(self, msg):
         self.message = msg
