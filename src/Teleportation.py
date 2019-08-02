@@ -17,7 +17,7 @@ class Teleportation(Entity):
 
         self.quantum_delay = 0
         self.classical_delay = 0
-        self.measurement_delay = 0
+        self.measurement_delay = 0  # delay between photon source and detector within Bob
         self.light_time = 0
         self.start_time = 0
         self.bits = []
@@ -124,7 +124,7 @@ class Teleportation(Entity):
         self.timeline.schedule(event)
 
         # schedule bob to emit photons
-        process = Process(self.another_bob, "emit_photons", [self.quantum_state, num_photons])
+        process = Process(self.another_bob, "emit_photons", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))], num_photons])
         event = Event(bob_start_time, process)
         self.timeline.schedule(event)
 
@@ -173,7 +173,7 @@ if __name__ == "__main__":
     spdc = topology.SPDCSource("bob.lightsource", tl,
                                frequency=80e6, mean_photon_num=0.1, encoding_type=encoding.time_bin,
                                direct_receiver=qc_bc, another_receiver=internal_cable, wavelengths=[1532, 795])
-    detectors = [{"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
+    detectors = [{"efficiency": 0.8, "dark_count": 0, "time_resolution": 10},
                  None,
                  None]
     interferometer = {}
@@ -192,8 +192,8 @@ if __name__ == "__main__":
     cc_bc.add_end(bob)
 
     # Charlie
-    detectors = [{"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
-                 {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10}]
+    detectors = [{"efficiency": 0.8, "dark_count": 0, "time_resolution": 10},
+                 {"efficiency": 0.8, "dark_count": 0, "time_resolution": 10}]
     bsm = topology.BSM("charlie.bsm", tl,
                        encoding_type=encoding.time_bin, detectors=detectors)
     a0 = BSMAdapter(tl, photon_type=0, bsm=bsm)
@@ -229,7 +229,7 @@ if __name__ == "__main__":
     charlie.protocol = tc
 
     # run
-    process = Process(ta, "send_state", [[complex(1), complex(0)], 100])
+    process = Process(ta, "send_state", [[complex(1), complex(0)], int(1e3)])
     event = Event(0, process)
     tl.schedule(event)
 
