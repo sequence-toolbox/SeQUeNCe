@@ -14,9 +14,9 @@ import encoding
 if __name__ == "__main__":
     random.seed(1)
 
-    runtime = 30e12
+    runtime = math.inf
     dark_count = 425
-    distances = [10]  # distances in km
+    distances = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]  # distances in km
     errors = []  # store error rates
     throughputs = []  # store throughputs
     errors_cascade = []
@@ -91,7 +91,7 @@ if __name__ == "__main__":
         tl.run()
 
         error = statistics.mean(bba.error_rates)
-        throughput = (statistics.mean(bba.throughputs))
+        throughput = statistics.mean(bba.throughputs)
         error_cascade = cascade_a.error_bit_rate
         throughput_cascade = cascade_a.throughput
 

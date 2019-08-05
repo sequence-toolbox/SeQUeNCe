@@ -254,6 +254,9 @@ class BB84(Entity):
             self.working = True
             self.another.working = True
 
+            # turn on bob's detectors
+            self.another.node.components[self.another.detector_name].turn_on_detectors()
+
             light_source = self.node.components[self.source_name]
             self.qubit_frequency = light_source.frequency
 
@@ -272,6 +275,7 @@ class BB84(Entity):
             self.last_key_time = self.timeline.now()
 
         else:
+            self.another.node.components[self.another.detector_name].turn_off_detectors()
             self.ready = True
 
     def set_key(self):
