@@ -89,9 +89,10 @@ class Teleportation(Entity):
 
             # check matching bits between bsm/bits and append to self.bits
             for res in bsm_res:
-                index = int(round((res[0] - self.start_time - self.quantum_delay) * frequency * 1e-12))
-                if bits[index] != -1:
-                    self.bits.append(1 - bits[index])  # flip bits since bsm measures psi+ or psi- states
+                if res[1] == 0:
+                    index = int(round((res[0] - self.start_time - self.quantum_delay) * frequency * 1e-12))
+                    if bits[index] != -1:
+                        self.bits.append(1 - bits[index])  # flip bits since bsm measures psi+ or psi- states
 
             # check if we have enough samples, if not run again
             if len(self.bits) > self.prev_bit_length:
@@ -105,6 +106,7 @@ class Teleportation(Entity):
                 print("% 0:\t{}".format(alpha * 100))
                 print("% 1:\t{}".format(beta * 100))
                 print("time (ms): {}".format(self.timeline.now() * 1e-9))
+                print("fidelity: {}".format(fidelity([math.sqrt(alpha), math.sqrt(beta)], self.another_alice.quantum_state)))
             else:
                 self.another_alice.send_state(self.quantum_state, self.sample_size)
 
@@ -146,14 +148,21 @@ class BSMAdapter(Entity):
         self.receiver.get(photon, self.photon_type)
 
 
+def fidelity(state, expected_state):
+    state = numpy.array(state, dtype=complex)
+    expected_state = numpy.array(expected_state, dtype=complex)
+
+    return (expected_state.transpose() @ numpy.outer(state, state) @ expected_state).real
+
+
 if __name__ == "__main__":
     numpy.random.seed(1)
 
     alice_length = 30e3
     bob_length = 28.5e3
-    sample_size = 100
+    sample_size = 1000
 
-    tl = Timeline(30e12)
+    tl = Timeline(180e12)
 
     qc_ac = topology.QuantumChannel("qc_ac", tl, distance=alice_length, attenuation=0.0002)
     qc_bc = topology.QuantumChannel("qc_bc", tl, distance=bob_length)
@@ -243,7 +252,7 @@ if __name__ == "__main__":
     charlie.protocol = tc
 
     # run
-    process = Process(ta, "send_state", [[complex(1), complex(0)], int(sample_size)])
+    process = Process(ta, "send_state", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))], int(sample_size)])
     event = Event(0, process)
     tl.schedule(event)
 

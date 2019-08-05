@@ -11,5 +11,5 @@ time_bin =\
     {"name": "time_bin",
      "bases": [[[complex(1), complex(0)], [complex(0), complex(1)]],
                [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))], [complex(math.sqrt(1/2)), complex(-math.sqrt(1/2))]]],
-     "bin_separation": 1000  # measured in ps
+     "bin_separation": 1400  # measured in ps
      }
