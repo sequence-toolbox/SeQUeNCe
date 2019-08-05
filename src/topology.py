@@ -341,6 +341,7 @@ class Interferometer(Entity):
     def __init__(self, timeline, **kwargs):
         Entity.__init__(self, "", timeline)
         self.path_difference = kwargs.get("path_difference", 0)  # time difference in ps
+        self.phase_error = kwargs.get("phase_error", 0)  # chance of measurement error in phase
         self.detectors = []
 
     def init(self):
@@ -362,6 +363,10 @@ class Interferometer(Entity):
                 time = self.path_difference
             else:
                 time = 2 * self.path_difference
+
+        if numpy.random.random_sample() < self.phase_error:
+            quantum_state = list(numpy.multiply([1, -1], quantum_state))
+
         if quantum_state == [complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]:  # Early + Late
             if random <= 0.25:
                 time = 0
