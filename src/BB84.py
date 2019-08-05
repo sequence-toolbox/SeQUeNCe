@@ -93,7 +93,7 @@ class BB84(Entity):
             self.another.end_run_times.pop(0)
 
             # wait for quantum channel to clear of photons, then start protocol
-            time = self.timeline.now() + self.quantum_delay
+            time = self.timeline.now() + self.quantum_delay + 1
             process = Process(self, "start_protocol", [])
             event = Event(time, process)
             self.timeline.schedule(event)
