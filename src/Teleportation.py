@@ -21,6 +21,7 @@ class Teleportation(Entity):
         self.light_time = 0
         self.start_time = 0
         self.bits = []
+        self.prev_bit_length = 0
         self.node = None
         self.parent = None
         self.another_alice = None
@@ -47,7 +48,7 @@ class Teleportation(Entity):
     def emit_photons(self, state, num_photons):
         # current node bob: send photons
         self.node.send_photons(state, num_photons, "lightsource")
-        self.light_time = num_photons / self.node.components["lightsource"].frequency
+        self.light_time = (num_photons / self.node.components["lightsource"].frequency) * 100
         self.start_time = self.timeline.now()
 
         # tell charlie that we're sending photons
@@ -93,7 +94,9 @@ class Teleportation(Entity):
                     self.bits.append(1 - bits[index])  # flip bits since bsm measures psi+ or psi- states
 
             # check if we have enough samples, if not run again
-            print("bit length: {}".format(len(self.bits)))
+            if len(self.bits) > self.prev_bit_length:
+                print("bit length: {}".format(len(self.bits)))
+                self.prev_bit_length = len(self.bits)
             if len(self.bits) >= self.sample_size:
                 sample = self.bits[0:self.sample_size - 1]
                 del self.bits[0:self.sample_size - 1]
@@ -146,19 +149,20 @@ class BSMAdapter(Entity):
 if __name__ == "__main__":
     numpy.random.seed(1)
 
-    tl = Timeline(1e12)
+    alice_length = 30e3
+    bob_length = 28.5e3
+    sample_size = 100
 
-    alice_length = 5e3
-    bob_length = 10e3
+    tl = Timeline(30e12)
 
-    qc_ac = topology.QuantumChannel("qc_ac", tl, distance=alice_length)
+    qc_ac = topology.QuantumChannel("qc_ac", tl, distance=alice_length, attenuation=0.0002)
     qc_bc = topology.QuantumChannel("qc_bc", tl, distance=bob_length)
     cc_ac = topology.ClassicalChannel("cc_ac", tl, distance=alice_length)
-    cc_bc = topology.ClassicalChannel("cc_bc", tl, distance=bob_length)
+    cc_bc = topology.ClassicalChannel("cc_bc", tl, distance=bob_length, attenuation=0.0002)
 
     # Alice
     ls = topology.LightSource("alice.lightsource", tl,
-                              frequency=80e6, mean_photon_num=0.1, encoding_type=encoding.time_bin,
+                              frequency=80e6, mean_photon_num=0.014, encoding_type=encoding.time_bin,
                               direct_receiver=qc_ac)
     components = {"lightsource": ls, "qchannel": qc_ac, "cchannel": cc_ac}
 
@@ -171,9 +175,9 @@ if __name__ == "__main__":
     internal_cable = topology.QuantumChannel("bob.internal_cable", tl,
                                              distance=bob_length)
     spdc = topology.SPDCSource("bob.lightsource", tl,
-                               frequency=80e6, mean_photon_num=0.1, encoding_type=encoding.time_bin,
+                               frequency=80e6, mean_photon_num=0.045, encoding_type=encoding.time_bin,
                                direct_receiver=qc_bc, another_receiver=internal_cable, wavelengths=[1532, 795])
-    detectors = [{"efficiency": 0.8, "dark_count": 0, "time_resolution": 10},
+    detectors = [{"efficiency": 0.65, "dark_count": 1000, "time_resolution": 100},
                  None,
                  None]
     interferometer = {}
@@ -192,8 +196,8 @@ if __name__ == "__main__":
     cc_bc.add_end(bob)
 
     # Charlie
-    detectors = [{"efficiency": 0.8, "dark_count": 0, "time_resolution": 10},
-                 {"efficiency": 0.8, "dark_count": 0, "time_resolution": 10}]
+    detectors = [{"efficiency": 0.7, "dark_count": 1000, "time_resolution": 150, "count_rate": 25000000},
+                 {"efficiency": 0.7, "dark_count": 1000, "time_resolution": 150, "count_rate": 25000000}]
     bsm = topology.BSM("charlie.bsm", tl,
                        encoding_type=encoding.time_bin, detectors=detectors)
     a0 = BSMAdapter(tl, photon_type=0, bsm=bsm)
@@ -205,6 +209,16 @@ if __name__ == "__main__":
     qc_bc.set_receiver(a1)
     cc_ac.add_end(charlie)
     cc_bc.add_end(charlie)
+
+    tl.entities.append(alice)
+    tl.entities.append(bob)
+    tl.entities.append(charlie)
+    for key in alice.components:
+        tl.entities.append(alice.components[key])
+    for key in bob.components:
+        tl.entities.append(bob.components[key])
+    for key in charlie.components:
+        tl.entities.append(charlie.components[key])
 
     # Teleportation
     ta = Teleportation("ta", tl, role=0)
@@ -229,7 +243,7 @@ if __name__ == "__main__":
     charlie.protocol = tc
 
     # run
-    process = Process(ta, "send_state", [[complex(1), complex(0)], int(1e3)])
+    process = Process(ta, "send_state", [[complex(1), complex(0)], int(sample_size)])
     event = Event(0, process)
     tl.schedule(event)
 

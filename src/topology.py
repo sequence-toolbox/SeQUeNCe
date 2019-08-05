@@ -284,7 +284,8 @@ class QSDetector(Entity):
 
     def init(self):
         for d in self.detectors:
-            d.init()
+            if d is not None:
+                d.init()
 
     def get(self, photon):
         if self.encoding_type["name"] == "polarization":
@@ -607,7 +608,7 @@ class BSM(Entity):
             bin_separation = self.encoding_type["bin_separation"]
             time_resoultion = self.detectors[0].time_resolution
             while d0_times and d1_times:
-                if abs(d0_times[0] - d1_times[0]) == bin_separation:
+                if abs(d0_times[0] - d1_times[0]) == time_resoultion * round(bin_separation / time_resoultion):
                     res = [min(d0_times[0], d1_times[0]), 0]
                     bsm_res.append(res)
                     d0_times.pop(0)
@@ -631,14 +632,14 @@ class BSM(Entity):
                         d1_times.pop(0)
 
             while len(d0_times) > 1:
-                if d0_times[1] - d0_times[0] == bin_separation:
+                if d0_times[1] - d0_times[0] == time_resoultion * round(bin_separation / time_resoultion):
                     res = [d0_times[0], 1]
                     bsm_res.append(res)
                     d0_times.pop(0)
                 d0_times.pop(0)
 
             while len(d1_times) > 1:
-                if d1_times[1] - d1_times[0] == bin_separation:
+                if d1_times[1] - d1_times[0] == time_resoultion * round(bin_separation / time_resoultion):
                     res = [d1_times[0], 1]
                     bsm_res.append(res)
                     d1_times.pop(0)
