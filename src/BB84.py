@@ -279,8 +279,8 @@ class BB84(Entity):
             self.ready = True
 
     def set_key(self):
-        key_bits = self.key_bits[0:self.key_lengths[0] - 1]
-        del self.key_bits[0:self.key_lengths[0] - 1]
+        key_bits = self.key_bits[0:self.key_lengths[0]]
+        del self.key_bits[0:self.key_lengths[0]]
         self.key = int("".join(str(x) for x in key_bits), 2)  # convert from binary list to int
 
 
