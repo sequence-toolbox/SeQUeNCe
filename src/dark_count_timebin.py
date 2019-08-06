@@ -19,8 +19,9 @@ if __name__ == "__main__":
     distances = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]  # distances in km
     errors = []  # store error rates
     throughputs = []  # store throughputs
-    errors_cascade = []
     throughputs_cascade = []
+    throughputs_privacy = []
+    latencies_privacy = []
 
     filename = "results/timebin/distance_cascade.log"
     fh = open(filename, 'w')
@@ -83,7 +84,7 @@ if __name__ == "__main__":
         bba.add_parent(cascade_a)
         bbb.add_parent(cascade_b)
 
-        process = Process(cascade_a, "generate_key", [256, 1, math.inf])
+        process = Process(cascade_a, "generate_key", [10000, 10, math.inf])
         event = Event(0, process)
         tl.schedule(event)
 
@@ -92,19 +93,22 @@ if __name__ == "__main__":
 
         error = statistics.mean(bba.error_rates)
         throughput = statistics.mean(bba.throughputs)
-        error_cascade = cascade_a.error_bit_rate
         throughput_cascade = cascade_a.throughput
+        throughput_privacy = cascade_a.privacy_throughput
+        latency_privacy = cascade_a.latency
 
         print("{} km:".format(distance))
         print("\tbb84 error:\t\t\t{}".format(error))
         print("\tbb84 throughput:\t{}".format(throughput))
-        print("\tcascade error:\t\t{}".format(error_cascade))
         print("\tcascade throughput:\t{}".format(throughput_cascade))
+        print("\tprivacy throughput:\t{}".format(throughput_privacy))
+        print("\tprivacy latency:\t{}".format(latency_privacy))
 
         errors.append(error)
         throughputs.append(throughput)
-        errors_cascade.append(error_cascade)
         throughputs_cascade.append(throughput_cascade)
+        throughputs_privacy.append(throughput_privacy)
+        latencies_privacy.append(latency_privacy)
 
         fh.write(str(distance))
         fh.write(' ')
@@ -112,11 +116,15 @@ if __name__ == "__main__":
         fh.write(' ')
         fh.write(str(throughput))
         fh.write(' ')
-        fh.write(str(error_cascade))
-        fh.write(' ')
         fh.write(str(throughput_cascade))
+        fh.write(' ')
+        fh.write(str(throughput_privacy))
+        fh.write(' ')
+        fh.write(str(latency_privacy))
         fh.write('\n')
 
     print(errors)
     print(throughputs)
     print(throughputs_cascade)
+    print(throughputs_privacy)
+    print(latencies_privacy)
