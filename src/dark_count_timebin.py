@@ -84,7 +84,7 @@ if __name__ == "__main__":
         bba.add_parent(cascade_a)
         bbb.add_parent(cascade_b)
 
-        process = Process(cascade_a, "generate_key", [256, 400, math.inf])
+        process = Process(cascade_a, "generate_key", [256, 10, math.inf])
         event = Event(0, process)
         tl.schedule(event)
 
