@@ -16,6 +16,7 @@ class Cascade(Entity):
         self.bb84 = kwargs.get("bb84", None)
         # for sender role==0; for receiver role==1
         self.role = kwargs.get("role", None)
+        self.secure_params = kwargs.get("secure_params", 100)
         self.another = None
         self.state = 0
         self.keylen = None
@@ -37,11 +38,12 @@ class Cascade(Entity):
         self.setup_time = None
         self.start_time = None
         self.end_time = math.inf
-        self.throughput = None # bit/(timeline time unit)
+        self.throughput = None # bits/sec
         self.error_bit_rate = None
         self.latency = None # the average latency
+        self.disclosed_bits_counter = 0
+        self.privacy_throughput = None
 
-        self.counter = 0
         """
         state of protocol:
             0: initialization step of protocol
@@ -310,6 +312,7 @@ class Cascade(Entity):
             """
             flip one bit of integer val at pos (right bit with lower position)
             """
+            self.disclosed_bits_counter += 1
             return (((val >> pos) ^ 1) << pos) + (((1 << pos) - 1) & val)
 
         _checksum = 0
@@ -361,7 +364,6 @@ class Cascade(Entity):
         future_time = self.timeline.now() + self.cchanel.delay
         event = Event(future_time, process)
         self.timeline.schedule(event)
-        self.counter += 1
 
     def performance_measure(self):
         if self.role == 0:
@@ -377,6 +379,8 @@ class Cascade(Entity):
 
         if self.timeline.now() - self.start_time:
             self.throughput = 1e12 * len(self.valid_keys) * self.keylen / (self.timeline.now() - self.start_time)
+            self.privacy_throughput = 1e12 * len(self.valid_keys) * (self.keylen - self.secure_params - self.disclosed_bits_counter) / (self.timeline.now() - self.start_time)
+
         counter = 0
         for j in range(min(len(self.valid_keys), len(self.another.valid_keys))):
             i = 0
@@ -537,4 +541,6 @@ if __name__ == "__main__":
     print(cascade_1.latency)
     print(cascade_1.t1)
     print(cascade_1.t2)
+    print(cascade_1.throughput)
+    print(cascade_1.privacy_throughput)
 
