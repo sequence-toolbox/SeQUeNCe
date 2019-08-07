@@ -8,6 +8,7 @@ from timeline import Timeline
 from entity import Entity
 from process import Process
 from event import Event
+import sys
 
 
 class Teleportation(Entity):
@@ -94,10 +95,16 @@ class Teleportation(Entity):
                     if bits[index] != -1:
                         self.bits.append(1 - bits[index])  # flip bits since bsm measures psi+ or psi- states
 
-            # check if we have enough samples, if not run again
+            # check if we've increased our bit count, if so give update
             if len(self.bits) > self.prev_bit_length:
                 print("bit length: {}".format(len(self.bits)))
                 self.prev_bit_length = len(self.bits)
+                alpha = self.bits.count(0) / len(self.bits)
+                beta = self.bits.count(1) / len(self.bits)
+                print("\t% 0:\t{}".format(alpha * 100))
+                print("\t% 1:\t{}".format(beta * 100))
+
+            # check if we have enough samples, if not run again
             if len(self.bits) >= self.sample_size:
                 timeline_stop(self.timeline)
                 sample = self.bits[0:self.sample_size]
@@ -107,7 +114,6 @@ class Teleportation(Entity):
                 print("% 0:\t{}".format(alpha * 100))
                 print("% 1:\t{}".format(beta * 100))
                 print("time (ms): {}".format(self.timeline.now() * 1e-9))
-                print("fidelity: {}".format(fidelity([math.sqrt(alpha), math.sqrt(beta)], self.another_alice.quantum_state)))
             else:
                 self.another_alice.send_state(self.quantum_state, self.sample_size)
 
@@ -149,13 +155,7 @@ class BSMAdapter(Entity):
         self.receiver.get(photon, self.photon_type)
 
 
-def fidelity(state, expected_state):
-    state = numpy.array(state, dtype=complex)
-    expected_state = numpy.array(expected_state, dtype=complex)
-
-    return (expected_state.transpose() @ numpy.outer(state, state) @ expected_state).real
-
-
+# TODO: implement in timeline?
 def timeline_stop(timeline):
     timeline.events.data = []
 
@@ -163,10 +163,26 @@ def timeline_stop(timeline):
 if __name__ == "__main__":
     numpy.random.seed(1)
 
+    # user input for basis and Alice's state
+    bob_basis = int(sys.argv[1])
+    state = sys.argv[2]
+    alice_state = [None, None]
+    if state == "0":
+        alice_state = [complex(1), complex(0)]
+    elif state == "1":
+        alice_state = [complex(0), complex(1)]
+    elif state == "+":
+        alice_state = [complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]
+    elif state == "-":
+        alice_state = [complex(math.sqrt(1/2)), complex(-math.sqrt(1/2))]
+    else:
+        raise Exception("invalid state")
+    sample_size = int(sys.argv[3])
+
     alice_length = 6.2e3
     bob_length = 11.1e3
-    sample_size = 100
 
+    # initialize timeline and channels
     tl = Timeline(math.inf)
 
     qc_ac = topology.QuantumChannel("qc_ac", tl, distance=alice_length, attenuation=0.000986)
@@ -187,22 +203,29 @@ if __name__ == "__main__":
 
     # Bob
     internal_cable = topology.QuantumChannel("bob.internal_cable", tl,
-                                             distance=bob_length)
+                                             distance=bob_length+10, attenuation=0.0002)
     spdc = topology.SPDCSource("bob.lightsource", tl,
                                frequency=80e6, mean_photon_num=0.045, encoding_type=encoding.time_bin,
                                direct_receiver=qc_bc, another_receiver=internal_cable, wavelengths=[1532, 795],
                                phase_error=0)
-    detectors = [None,
-                 {"efficiency": 0.65, "dark_count": 1000, "time_resolution": 100},
-                 {"efficiency": 0.65, "dark_count": 1000, "time_resolution": 100}]
+    # (change this to change measurement basis)
+    if bob_basis == 0:
+        detectors = [{"efficiency": 0.65, "dark_count": 100, "time_resolution": 100},
+                     None,
+                     None]
+    elif bob_basis == 1:
+        detectors = [None,
+                     {"efficiency": 0.65, "dark_count": 100, "time_resolution": 100},
+                     {"efficiency": 0.65, "dark_count": 100, "time_resolution": 100}]
+    else:
+        raise Exception("incorrect basis for Bob")
     interferometer = {"path_difference": encoding.time_bin["bin_separation"]}
-    switch = {"state": 1}
+    switch = {"state": bob_basis}
     qsd = topology.QSDetector("bob.qsdetector", tl,
                               encoding_type=encoding.time_bin, detectors=detectors, interferometer=interferometer,
                               switch=switch)
     internal_cable.set_sender(spdc)
     internal_cable.set_receiver(qsd)
-    internal_cable.distance += 10
     components = {"lightsource": spdc, "detector": qsd, "qchannel": qc_bc, "cchannel": cc_bc}
 
     bob = topology.Node("bob", tl, components=components)
@@ -211,8 +234,8 @@ if __name__ == "__main__":
     cc_bc.add_end(bob)
 
     # Charlie
-    detectors = [{"efficiency": 0.7, "dark_count": 1000, "time_resolution": 150, "count_rate": 25000000},
-                 {"efficiency": 0.7, "dark_count": 1000, "time_resolution": 150, "count_rate": 25000000}]
+    detectors = [{"efficiency": 0.7, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000},
+                 {"efficiency": 0.7, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000}]
     bsm = topology.BSM("charlie.bsm", tl,
                        encoding_type=encoding.time_bin, detectors=detectors)
     a0 = BSMAdapter(tl, photon_type=0, bsm=bsm)
@@ -257,8 +280,8 @@ if __name__ == "__main__":
     bob.protocol = tb
     charlie.protocol = tc
 
-    # run
-    process = Process(ta, "send_state", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))], int(sample_size)])
+    # Run
+    process = Process(ta, "send_state", [alice_state, sample_size])
     event = Event(0, process)
     tl.schedule(event)
 
