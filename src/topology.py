@@ -212,6 +212,7 @@ class LightSource(Entity):
         self.mean_photon_num = kwargs.get("mean_photon_num", 0)
         self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
         self.direct_receiver = kwargs.get("direct_receiver", None)
+        self.phase_error = kwargs.get("phase_error", 0)
         self.photon_counter = 0
         # for BB84
         # self.basis_lists = []
@@ -230,6 +231,9 @@ class LightSource(Entity):
 
         for i, state in enumerate(state_list):
             num_photons = numpy.random.poisson(self.mean_photon_num)
+
+            if numpy.random.random_sample() < self.phase_error:
+                state = numpy.multiply([1, -1], state)
 
             for _ in range(num_photons):
                 wavelength = self.linewidth * numpy.random.randn() + self.wavelength
@@ -400,7 +404,8 @@ class Interferometer(Entity):
                 time = self.path_difference
             else:
                 time = 2 * self.path_difference
-        if quantum_state == [complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]:  # Early + Late
+        res = Photon.measure(encoding.time_bin["bases"][1], photon)
+        if res == 0:  # Early + Late
             if random <= 0.25:
                 time = 0
             elif random <= 0.5:
@@ -409,7 +414,7 @@ class Interferometer(Entity):
                 time = self.path_difference
             else:
                 return
-        if quantum_state == [complex(math.sqrt(1/2)), complex(-math.sqrt(1/2))]:  # Early - Late
+        if res == 1:  # Early - Late
             if random <= 0.25:
                 time = 0
             elif random <= 0.5:
@@ -430,7 +435,7 @@ class Switch(Entity):
         self.receivers = []
         self.start_time = 0
         self.frequency = 0
-        self.state_list = [0]
+        self.state_list = [kwargs.get("state", 0)]
 
     def init(self):
         pass
@@ -687,6 +692,9 @@ class SPDCSource(LightSource):
 
         for state in state_list:
             num_photon_pairs = numpy.random.poisson(self.mean_photon_num)
+
+            if numpy.random.random_sample() < self.phase_error:
+                state = numpy.multiply([1, -1], state)
 
             for _ in range(num_photon_pairs):
                 new_photon0 = Photon(None, self.timeline,

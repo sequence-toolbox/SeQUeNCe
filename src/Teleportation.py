@@ -99,8 +99,9 @@ class Teleportation(Entity):
                 print("bit length: {}".format(len(self.bits)))
                 self.prev_bit_length = len(self.bits)
             if len(self.bits) >= self.sample_size:
-                sample = self.bits[0:self.sample_size - 1]
-                del self.bits[0:self.sample_size - 1]
+                timeline_stop(self.timeline)
+                sample = self.bits[0:self.sample_size]
+                del self.bits[0:self.sample_size]
                 alpha = sample.count(0) / len(sample)
                 beta = sample.count(1) / len(sample)
                 print("% 0:\t{}".format(alpha * 100))
@@ -155,24 +156,28 @@ def fidelity(state, expected_state):
     return (expected_state.transpose() @ numpy.outer(state, state) @ expected_state).real
 
 
+def timeline_stop(timeline):
+    timeline.events.data = []
+
+
 if __name__ == "__main__":
     numpy.random.seed(1)
 
-    alice_length = 30e3
-    bob_length = 28.5e3
-    sample_size = 1000
+    alice_length = 6.2e3
+    bob_length = 11.1e3
+    sample_size = 100
 
-    tl = Timeline(180e12)
+    tl = Timeline(math.inf)
 
-    qc_ac = topology.QuantumChannel("qc_ac", tl, distance=alice_length, attenuation=0.0002)
-    qc_bc = topology.QuantumChannel("qc_bc", tl, distance=bob_length)
+    qc_ac = topology.QuantumChannel("qc_ac", tl, distance=alice_length, attenuation=0.000986)
+    qc_bc = topology.QuantumChannel("qc_bc", tl, distance=bob_length, attenuation=0.000513)
     cc_ac = topology.ClassicalChannel("cc_ac", tl, distance=alice_length)
-    cc_bc = topology.ClassicalChannel("cc_bc", tl, distance=bob_length, attenuation=0.0002)
+    cc_bc = topology.ClassicalChannel("cc_bc", tl, distance=bob_length)
 
     # Alice
     ls = topology.LightSource("alice.lightsource", tl,
                               frequency=80e6, mean_photon_num=0.014, encoding_type=encoding.time_bin,
-                              direct_receiver=qc_ac)
+                              direct_receiver=qc_ac, phase_error=0)
     components = {"lightsource": ls, "qchannel": qc_ac, "cchannel": cc_ac}
 
     alice = topology.Node("alice", tl, components=components)
@@ -185,12 +190,13 @@ if __name__ == "__main__":
                                              distance=bob_length)
     spdc = topology.SPDCSource("bob.lightsource", tl,
                                frequency=80e6, mean_photon_num=0.045, encoding_type=encoding.time_bin,
-                               direct_receiver=qc_bc, another_receiver=internal_cable, wavelengths=[1532, 795])
-    detectors = [{"efficiency": 0.65, "dark_count": 1000, "time_resolution": 100},
-                 None,
-                 None]
-    interferometer = {}
-    switch = {}
+                               direct_receiver=qc_bc, another_receiver=internal_cable, wavelengths=[1532, 795],
+                               phase_error=0)
+    detectors = [None,
+                 {"efficiency": 0.65, "dark_count": 1000, "time_resolution": 100},
+                 {"efficiency": 0.65, "dark_count": 1000, "time_resolution": 100}]
+    interferometer = {"path_difference": encoding.time_bin["bin_separation"]}
+    switch = {"state": 1}
     qsd = topology.QSDetector("bob.qsdetector", tl,
                               encoding_type=encoding.time_bin, detectors=detectors, interferometer=interferometer,
                               switch=switch)
