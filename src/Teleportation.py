@@ -178,6 +178,10 @@ if __name__ == "__main__":
     else:
         raise Exception("invalid state")
     sample_size = int(sys.argv[3])
+    if len(sys.argv) < 6:
+        phase_error = 0
+    else:
+        phase_error = float(sys.argv[5])
 
     alice_length = 6.2e3
     bob_length = 11.1e3
@@ -237,7 +241,7 @@ if __name__ == "__main__":
     detectors = [{"efficiency": 0.7, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000},
                  {"efficiency": 0.7, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000}]
     bsm = topology.BSM("charlie.bsm", tl,
-                       encoding_type=encoding.time_bin, detectors=detectors)
+                       encoding_type=encoding.time_bin, detectors=detectors, phase_error=phase_error)
     a0 = BSMAdapter(tl, photon_type=0, bsm=bsm)
     a1 = BSMAdapter(tl, photon_type=1, bsm=bsm)
     components = {"bsm": bsm, "qc_a": qc_ac, "qc_b": qc_bc, "cc_a": cc_ac, "cc_b": cc_bc}

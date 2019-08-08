@@ -469,6 +469,7 @@ class BSM(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.encoding_type = kwargs.get("encoding_type", encoding.time_bin)
+        self.phase_error = kwargs.get("phase_error", 0)
 
         # two detectors for time-bin encoding
         # four detectors for polarization encoding
@@ -528,6 +529,9 @@ class BSM(Entity):
             for _photon in photon.entangled_photons:
                 if _photon != photon: return _photon
             return
+
+        if numpy.random.random_sample() < self.phase_error:
+            self.target_photon.quantum_state = numpy.multiply(self.target_photon.quantum_state, [1, -1])
 
         if self.encoding_type["name"] == "time_bin":
             early_time = self.timeline.now()
