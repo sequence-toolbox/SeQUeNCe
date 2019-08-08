@@ -161,7 +161,7 @@ def timeline_stop(timeline):
 
 
 if __name__ == "__main__":
-    numpy.random.seed(sys.argv[4])
+    numpy.random.seed(int(sys.argv[4]))
 
     # user input for basis and Alice's state
     bob_basis = int(sys.argv[1])
