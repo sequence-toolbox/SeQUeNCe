@@ -99,10 +99,10 @@ class Teleportation(Entity):
             if len(self.bits) > self.prev_bit_length:
                 print("bit length: {}".format(len(self.bits)))
                 self.prev_bit_length = len(self.bits)
-                alpha = self.bits.count(0) / len(self.bits)
-                beta = self.bits.count(1) / len(self.bits)
-                print("\t% 0:\t{}".format(alpha * 100))
-                print("\t% 1:\t{}".format(beta * 100))
+                # alpha = self.bits.count(0) / len(self.bits)
+                # beta = self.bits.count(1) / len(self.bits)
+                # print("\t% 0:\t{}".format(alpha * 100))
+                # print("\t% 1:\t{}".format(beta * 100))
 
             # check if we have enough samples, if not run again
             if len(self.bits) >= self.sample_size:
@@ -291,4 +291,6 @@ if __name__ == "__main__":
 
     tl.init()
     tl.run()
+
+    print("seed: {}".format(int(sys.argv[4])))
 
