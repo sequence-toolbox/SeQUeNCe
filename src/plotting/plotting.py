@@ -98,47 +98,77 @@ if __name__ == "__main__":
     plt.savefig('plotting/QKD_latency.pdf')
 
     # measurement
-    x_pos = [i for i, _ in enumerate(measured_0)]
+    x_pos = numpy.array([i for i, _ in enumerate(measured_0)])
 
     plt.rcParams.update({'font.size': 16})
     fig = plt.figure()
     ax = fig.add_subplot()
 
-    ax.bar(x_pos, 100 * measured_0, yerr=(st_dev_0 * 100), align='center', ecolor='k', capsize=10, width=width, color='skyblue')
+    ax.bar(x_pos - width/2, 100 * measured_0, yerr=(st_dev_0 * 100),
+           align='center', ecolor='k', capsize=10, width=width, color='skyblue')
+    ax.bar(x_pos + width/2, 100 * (1 - measured_0), yerr=(st_dev_0 * 100),
+           align='center', ecolor='k', capsize=10, width=width, color='royalblue')
     ax.grid(axis='y', color='0.75', linestyle='-', linewidth=1)
     ax.set_axisbelow(True)
+
     for i, v in enumerate(measured_0):
         if 0 < (v + st_dev_0[i]) * 100 < 20:
-            ax.text(i - 0.04, (v + st_dev_0[i]) * 100 + 5, str(100 * v) + " $\\pm$ " + str(round(100 * st_dev_0[i], 2)),
+            ax.text(i - 0.28, (v + st_dev_0[i]) * 100 + 5, "{0:.2f}".format(100 * v) + " $\\pm$ " + str(round(100 * st_dev_0[i], 2)),
                     color='k', fontweight='bold', rotation='vertical')
         else:
-            ax.text(i - 0.04, 5, str(100 * v) + " $\\pm$ " + str(round(100 * st_dev_0[i], 2)),
+            ax.text(i - 0.28, 5, "{0:.2f}".format(100 * v) + " $\\pm$ " + str(round(100 * st_dev_0[i], 2)),
                     color='w', fontweight='bold', rotation='vertical')
+    for i, v in enumerate(1 - measured_0):
+        if 0 < (v + st_dev_0[i]) * 100 < 20:
+            ax.text(i + 0.12, (v + st_dev_0[i]) * 100 + 5, "{0:.2f}".format(100 * v) + " $\\pm$ " + str(round(100 * st_dev_0[i], 2)),
+                    color='k', fontweight='bold', rotation='vertical')
+        else:
+            ax.text(i + 0.12, 5, "{0:.2f}".format(100 * v) + " $\\pm$ " + str(round(100 * st_dev_0[i], 2)),
+                    color='w', fontweight='bold', rotation='vertical')
+
+    plt.rcParams.update({'font.size': 12})
+    plt.legend(["Measured $|e\\rangle$", "Measured $|l\\rangle$"])
 
     ax.set_xticks(x_pos)
     ax.set_xticklabels(labels)
-    ax.set_ylabel("% measured $|e\\rangle$")
+    ax.set_ylabel("% measured")
     ax.set_ylim(0, 100)
 
+    plt.tight_layout()
     plt.savefig('plotting/Teleportation_measurement_z.pdf')
 
+    plt.rcParams.update({'font.size': 16})
     fig = plt.figure()
     ax = fig.add_subplot()
 
-    ax.bar(x_pos, 100 * measured_plus, yerr=(st_dev_plus * 100), align='center', ecolor='k', capsize=10, width=width, color='indianred')
+    ax.bar(x_pos - width / 2, 100 * measured_plus, yerr=(st_dev_plus * 100),
+           align='center', ecolor='k', capsize=10, width=width, color='lightcoral')
+    ax.bar(x_pos + width / 2, 100 * (1 - measured_plus), yerr=(st_dev_plus * 100),
+           align='center', ecolor='k', capsize=10, width=width, color='firebrick')
     ax.grid(axis='y', color='0.75', linestyle='-', linewidth=1)
+
     ax.set_axisbelow(True)
     for i, v in enumerate(measured_plus):
         if 0 < (v + st_dev_plus[i]) * 100 < 20:
-            ax.text(i - 0.04, (v + st_dev_0[i]) * 100 + 5, str(100 * v) + " $\\pm$ " + str(round(100 * st_dev_plus[i], 2)),
+            ax.text(i - 0.28, (v + st_dev_0[i]) * 100 + 5, "{0:.2f}".format(100 * v) + " $\\pm$ " + str(round(100 * st_dev_plus[i], 2)),
                     color='k', fontweight='bold', rotation='vertical')
         else:
-            ax.text(i - 0.04, 5, str(100 * v) + " $\\pm$ " + str(round(100 * st_dev_plus[i], 2)),
+            ax.text(i - 0.28, 5, "{0:.2f}".format(100 * v) + " $\\pm$ " + str(round(100 * st_dev_plus[i], 2)),
                     color='w', fontweight='bold', rotation='vertical')
+    for i, v in enumerate(1 - measured_plus):
+        if 0 < (v + st_dev_plus[i]) * 100 < 20:
+            ax.text(i + 0.12, (v + st_dev_plus[i]) * 100 + 5, "{0:.2f}".format(100 * v) + " $\\pm$ " + str(round(100 * st_dev_plus[i], 2)),
+                    color='k', fontweight='bold', rotation='vertical')
+        else:
+            ax.text(i + 0.12, 5, "{0:.2f}".format(100 * v) + " $\\pm$ " + str(round(100 * st_dev_plus[i], 2)),
+                    color='w', fontweight='bold', rotation='vertical')
+
+    plt.rcParams.update({'font.size': 12})
+    plt.legend(["Measured $|+\\rangle$", "Measured $|-\\rangle$"])
 
     ax.set_xticks(x_pos)
     ax.set_xticklabels(labels)
-    ax.set_ylabel("% measured $|+\\rangle$")
+    ax.set_ylabel("% measured")
     ax.set_ylim(0, 100)
 
     fig.tight_layout()
@@ -151,12 +181,12 @@ if __name__ == "__main__":
     fig = plt.figure()
     ax = fig.add_subplot()
 
-    ax.bar(x_pos, fidelity, width=width, color='skyblue')
+    ax.bar(x_pos, fidelity, width=width, color='royalblue')
     ax.axhline(y=0.66, color='k', linestyle='--')
     ax.grid(axis='y', color='0.75', linestyle='-', linewidth=1)
     ax.set_axisbelow(True)
     for i, v in enumerate(fidelity):
-        ax.text(i - 0.02, 0.53, str(v), color='w', fontweight='bold', rotation='vertical')
+        ax.text(i - 0.05, 0.53, str(v), color='w', fontweight='bold', rotation='vertical')
 
     ax.set_ylabel("Fidelity")
     plt.xticks(x_pos, labels)
