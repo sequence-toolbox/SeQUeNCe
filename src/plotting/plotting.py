@@ -23,7 +23,8 @@ measured_plus = numpy.array([0.503, 0.503, 0.925, 0.063])
 st_dev_plus = numpy.array([0.011547005, 0.011547005, 0.035355339, 0.037859389])
 
 # fidelity graph
-fidelity = numpy.array([0.997, 0.970, 0.960, 0.960])
+fidelity = numpy.array([0.991, 0.974, 0.925, 0.9367])
+st_dev_fid = numpy.array([0.0074, 0.0184, 0.0354, 0.0379])
 threshold = numpy.array([0.66] * 4)
 labels = ["$|e\\rangle$", "$|l\\rangle$", "$|+\\rangle$", "$|-\\rangle$"]
 
@@ -146,8 +147,8 @@ if __name__ == "__main__":
     ax.bar(x_pos + width / 2, 100 * (1 - measured_plus), yerr=(st_dev_plus * 100),
            align='center', ecolor='k', capsize=10, width=width, color='firebrick')
     ax.grid(axis='y', color='0.75', linestyle='-', linewidth=1)
-
     ax.set_axisbelow(True)
+
     for i, v in enumerate(measured_plus):
         if 0 < (v + st_dev_plus[i]) * 100 < 20:
             ax.text(i - 0.28, (v + st_dev_0[i]) * 100 + 5, "{0:.2f}".format(100 * v) + " $\\pm$ " + str(round(100 * st_dev_plus[i], 2)),
@@ -181,12 +182,14 @@ if __name__ == "__main__":
     fig = plt.figure()
     ax = fig.add_subplot()
 
-    ax.bar(x_pos, fidelity, width=width, color='royalblue')
-    ax.axhline(y=0.66, color='k', linestyle='--')
+    ax.axhline(y=0.66, color='k', linestyle='--', zorder=0)
+    ax.bar(x_pos, fidelity, yerr=st_dev_fid,
+           align='center', ecolor='k', capsize=10, width=width, color='royalblue')
     ax.grid(axis='y', color='0.75', linestyle='-', linewidth=1)
     ax.set_axisbelow(True)
     for i, v in enumerate(fidelity):
-        ax.text(i - 0.05, 0.53, str(v), color='w', fontweight='bold', rotation='vertical')
+        ax.text(i - 0.05, 0.53, str(v) + " $\\pm$ " + str(st_dev_fid[i]),
+                color='w', fontweight='bold', rotation='vertical')
 
     ax.set_ylabel("Fidelity")
     plt.xticks(x_pos, labels)
