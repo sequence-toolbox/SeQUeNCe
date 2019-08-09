@@ -15,7 +15,9 @@ latency_privacy = numpy.array([0.060249333,0.087686667,0.142453333,0.26242,0.359
 # measurement graph
 width = 0.4
 measured_0 = numpy.array([0.99, 0.026, 0.503, 0.503])
-measured_1 = []
+measured_0_color = numpy.array(['w', 'k', 'w', 'w'])
+measured_plus = numpy.array([0.51, 0.51, 0.975, 0.03])
+measured_plus_color = numpy.array(['w', 'w', 'w', 'k'])
 
 # fidelity graph
 fidelity = numpy.array([0.997, 0.970, 0.960, 0.960])
@@ -87,6 +89,34 @@ if __name__ == "__main__":
 
     plt.show()
 
+    # measurement
+    x_pos = [i for i, _ in enumerate(measured_0)]
+
+    plt.rcParams.update({'font.size': 16})
+    fig, (ax1, ax2) = plt.subplots(2)
+
+    ax1.bar(x_pos, 100 * measured_0, width=width, color='royalblue')
+    ax1.grid(axis='y', color='0.75', linestyle='-', linewidth=1)
+    ax1.set_axisbelow(True)
+    for i, v in enumerate(measured_0):
+        ax1.text(i - 0.05, 10, str(100 * v), color=measured_0_color[i], fontweight='bold', rotation='vertical')
+
+    ax1.set_xticks(x_pos)
+    ax1.set_xticklabels(labels)
+    ax1.set_ylabel("% measured $|e\\rangle$")
+
+    ax2.bar(x_pos, 100 * measured_plus, width=width, color='indianred')
+    ax2.grid(axis='y', color='0.75', linestyle='-', linewidth=1)
+    ax2.set_axisbelow(True)
+    for i, v in enumerate(measured_plus):
+        ax2.text(i - 0.05, 10, str(100 * v), color=measured_plus_color[i], fontweight='bold', rotation='vertical')
+
+    ax2.set_xticks(x_pos)
+    ax2.set_xticklabels(labels)
+    ax2.set_ylabel("% measured $|+\\rangle$")
+
+    plt.show()
+
     # fidelity
     x_pos = [i for i, _ in enumerate(fidelity)]
 
@@ -94,10 +124,12 @@ if __name__ == "__main__":
     fig = plt.figure()
     ax = fig.add_subplot()
 
-    ax.bar(x_pos, fidelity, width=width)
+    ax.bar(x_pos, fidelity, width=width, color='royalblue')
     ax.axhline(y=0.66, color='k', linestyle='--')
     ax.grid(axis='y', color='0.75', linestyle='-', linewidth=1)
     ax.set_axisbelow(True)
+    for i, v in enumerate(fidelity):
+        ax.text(i - 0.05, 0.53, str(v), color='w', fontweight='bold', rotation='vertical')
 
     ax.set_ylabel("Fidelity")
     plt.xticks(x_pos, labels)
