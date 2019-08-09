@@ -9,17 +9,18 @@ error_exp = eval('(0.5 * 0.00000085) / (0.5 * 0.1 * 10 ** (-distances * 0.02) * 
 # throughput graph
 throughputs = numpy.array([4159.540362,2904.709117,1804.995574,1120.451627,713.1432965,440.8206739,282.5234221,180.5635713,115.8317203,74.03500717,47.7472782,32.02199084,18.60194303])
 throughputs_privacy = numpy.array([2191.282133,1449.536648,921.1564965,580.4188123,363.4383276,229.7218088,145.6966309,91.4210829,57.75562067,36.62583323,22.93101726,14.53338076,9.168929359])
-latency = numpy.array([0.060176667,0.087206667,0.136013333,0.24242,0.334746667,0.551233333,0.93924,1.323406667,2.622773333,3.69686,5.853826667,7.881513333,12.8647])
-latency_privacy = numpy.array([0.060249333,0.087686667,0.142453333,0.26242,0.35984,0.605533333,1.03248,1.48506,2.8832,4.14482,6.541826667,8.977333333,14.44462])
+
+# latency graph
+latency_2MHz = [2.406489333, 3.58464667, 5.63877333, 8.9805, 14.36176, 22.5319333, 36.29264, 56.58522, 90.06656, 139.76466, 223.256067, 338.556853, 524.89712]
+latency_40MHz = [0.120482, 0.18438667, 0.29337333, 0.46482, 0.75394667, 1.20368, 1.912, 3.00206, 4.72192, 7.49696, 11.43236, 17.93508, 25.5]
+latency_80MHz = [0.060226, 0.0941, 0.15125333, 0.2475, 0.39008, 0.63114667, 1.00808, 1.59176, 2.53712, 3.70986, 6.23492, 9.61848, 14.68408]
 
 # measurement graph
 width = 0.4
 measured_0 = numpy.array([0.99, 0.026, 0.51, 0.51])
 st_dev_0 = numpy.array([0.007378648, 0.018378732, 0.044969125, 0.044969125])
-measured_0_color = numpy.array(['w', 'k', 'w', 'w'])
 measured_plus = numpy.array([0.503, 0.503, 0.925, 0.063])
 st_dev_plus = numpy.array([0.011547005, 0.011547005, 0.035355339, 0.037859389])
-measured_plus_color = numpy.array(['w', 'w', 'w', 'k'])
 
 # fidelity graph
 fidelity = numpy.array([0.997, 0.970, 0.960, 0.960])
@@ -78,18 +79,19 @@ if __name__ == "__main__":
     fig = plt.figure()
     ax = fig.add_subplot()
 
-    ln1 = ax.plot(distances, latency, 'bs', label="Latency")
-    ln2 = ax.plot(distances, latency_privacy, 'rD', label="Privacy Latency")
+    ln1 = ax.plot(distances, latency_2MHz, 's', color='k', label="2MHz Source")
+    ln2 = ax.plot(distances, latency_40MHz, 'D', color='g', label="40 MHz Source")
+    ln3 = ax.plot(distances, latency_80MHz, '^', color='orange', label="80 MHz Source")
 
     plt.rcParams.update({'font.size': 12})
-    lns = ln1 + ln2
+    lns = ln1 + ln2 + ln3
     labs = [l.get_label() for l in lns]
     ax.legend(lns, labs, loc=0)
 
     ax.set_xlabel("Fiber Length (km)")
     ax.set_ylabel("Latency (s)")
-    # ax.set_yscale('log')
-    ax.set_ylim(0, 15)
+    ax.set_yscale('log')
+    ax.set_ylim(0.01, 1000)
     ax.grid(color='0.75', linestyle='-', linewidth=1)
 
     fig.tight_layout()
