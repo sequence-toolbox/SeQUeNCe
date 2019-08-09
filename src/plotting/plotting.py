@@ -14,7 +14,7 @@ latency_privacy = numpy.array([0.060249333,0.087686667,0.142453333,0.26242,0.359
 
 # measurement graph
 width = 0.4
-measured_0 = numpy.array([0.99, 0.026, 0.503, 0.503])
+measured_0 = numpy.array([0.99, 0.026, 0.51, 0.51])
 st_dev_0 = numpy.array([0.007378648, 0.018378732, 0.044969125, 0.044969125])
 measured_0_color = numpy.array(['w', 'k', 'w', 'w'])
 measured_plus = numpy.array([0.503, 0.503, 0.925, 0.063])
@@ -24,9 +24,10 @@ measured_plus_color = numpy.array(['w', 'w', 'w', 'k'])
 # fidelity graph
 fidelity = numpy.array([0.997, 0.970, 0.960, 0.960])
 threshold = numpy.array([0.66] * 4)
-labels = ["State $|e\\rangle$","State $|l\\rangle$","State $|+\\rangle$","State $|-\\rangle$"]
+labels = ["$|e\\rangle$", "$|l\\rangle$", "$|+\\rangle$", "$|-\\rangle$"]
 
 if __name__ == "__main__":
+
     # Error
     plt.rcParams.update({'font.size': 16})
     fig = plt.figure()
@@ -46,7 +47,8 @@ if __name__ == "__main__":
     ax.set_xlim(0, 120)
     ax.grid(color='0.75', linestyle='-', linewidth=1)
 
-    plt.show()
+    fig.tight_layout()
+    plt.savefig('plotting/QKD_error.pdf')
 
     # Throughput
     plt.rcParams.update({'font.size': 16})
@@ -68,7 +70,8 @@ if __name__ == "__main__":
     ax.set_ylim(1, 10e3)
     ax.grid(color='0.75', linestyle='-', linewidth=1)
 
-    plt.show()
+    fig.tight_layout()
+    plt.savefig('plotting/QKD_throughput.pdf')
 
     # Latency
     plt.rcParams.update({'font.size': 16})
@@ -89,35 +92,55 @@ if __name__ == "__main__":
     ax.set_ylim(0, 15)
     ax.grid(color='0.75', linestyle='-', linewidth=1)
 
-    plt.show()
+    fig.tight_layout()
+    plt.savefig('plotting/QKD_latency.pdf')
 
     # measurement
     x_pos = [i for i, _ in enumerate(measured_0)]
 
     plt.rcParams.update({'font.size': 16})
-    fig, (ax1, ax2) = plt.subplots(2)
+    fig = plt.figure()
+    ax = fig.add_subplot()
 
-    ax1.bar(x_pos, 100 * measured_0, yerr=(st_dev_0 * 100), align='center', ecolor='k', capsize=10, width=width, color='skyblue')
-    ax1.grid(axis='y', color='0.75', linestyle='-', linewidth=1)
-    ax1.set_axisbelow(True)
+    ax.bar(x_pos, 100 * measured_0, yerr=(st_dev_0 * 100), align='center', ecolor='k', capsize=10, width=width, color='skyblue')
+    ax.grid(axis='y', color='0.75', linestyle='-', linewidth=1)
+    ax.set_axisbelow(True)
     for i, v in enumerate(measured_0):
-        ax1.text(i - 0.05, 10, str(100 * v), color=measured_0_color[i], fontweight='bold', rotation='vertical')
+        if 0 < (v + st_dev_0[i]) * 100 < 20:
+            ax.text(i - 0.04, (v + st_dev_0[i]) * 100 + 5, str(100 * v) + " $\\pm$ " + str(round(100 * st_dev_0[i], 2)),
+                    color='k', fontweight='bold', rotation='vertical')
+        else:
+            ax.text(i - 0.04, 5, str(100 * v) + " $\\pm$ " + str(round(100 * st_dev_0[i], 2)),
+                    color='w', fontweight='bold', rotation='vertical')
 
-    ax1.set_xticks(x_pos)
-    ax1.set_xticklabels(labels)
-    ax1.set_ylabel("% measured $|e\\rangle$")
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(labels)
+    ax.set_ylabel("% measured $|e\\rangle$")
+    ax.set_ylim(0, 100)
 
-    ax2.bar(x_pos, 100 * measured_plus, yerr=(st_dev_plus * 100), align='center', ecolor='k', capsize=10, width=width, color='indianred')
-    ax2.grid(axis='y', color='0.75', linestyle='-', linewidth=1)
-    ax2.set_axisbelow(True)
+    plt.savefig('plotting/Teleportation_measurement_z.pdf')
+
+    fig = plt.figure()
+    ax = fig.add_subplot()
+
+    ax.bar(x_pos, 100 * measured_plus, yerr=(st_dev_plus * 100), align='center', ecolor='k', capsize=10, width=width, color='indianred')
+    ax.grid(axis='y', color='0.75', linestyle='-', linewidth=1)
+    ax.set_axisbelow(True)
     for i, v in enumerate(measured_plus):
-        ax2.text(i - 0.05, 10, str(100 * v), color=measured_plus_color[i], fontweight='bold', rotation='vertical')
+        if 0 < (v + st_dev_plus[i]) * 100 < 20:
+            ax.text(i - 0.04, (v + st_dev_0[i]) * 100 + 5, str(100 * v) + " $\\pm$ " + str(round(100 * st_dev_plus[i], 2)),
+                    color='k', fontweight='bold', rotation='vertical')
+        else:
+            ax.text(i - 0.04, 5, str(100 * v) + " $\\pm$ " + str(round(100 * st_dev_plus[i], 2)),
+                    color='w', fontweight='bold', rotation='vertical')
 
-    ax2.set_xticks(x_pos)
-    ax2.set_xticklabels(labels)
-    ax2.set_ylabel("% measured $|+\\rangle$")
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(labels)
+    ax.set_ylabel("% measured $|+\\rangle$")
+    ax.set_ylim(0, 100)
 
-    plt.show()
+    fig.tight_layout()
+    plt.savefig('plotting/Teleportation_measurement_x.pdf')
 
     # fidelity
     x_pos = [i for i, _ in enumerate(fidelity)]
@@ -131,10 +154,11 @@ if __name__ == "__main__":
     ax.grid(axis='y', color='0.75', linestyle='-', linewidth=1)
     ax.set_axisbelow(True)
     for i, v in enumerate(fidelity):
-        ax.text(i - 0.05, 0.53, str(v), color='w', fontweight='bold', rotation='vertical')
+        ax.text(i - 0.02, 0.53, str(v), color='w', fontweight='bold', rotation='vertical')
 
     ax.set_ylabel("Fidelity")
     plt.xticks(x_pos, labels)
     ax.set_ylim(0.5, 1)
 
-    plt.show()
+    fig.tight_layout()
+    plt.savefig('plotting/Teleportation_fidelity.pdf')
