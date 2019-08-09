@@ -15,8 +15,10 @@ latency_privacy = numpy.array([0.060249333,0.087686667,0.142453333,0.26242,0.359
 # measurement graph
 width = 0.4
 measured_0 = numpy.array([0.99, 0.026, 0.503, 0.503])
+st_dev_0 = numpy.array([0.007378648, 0.018378732, 0.044969125, 0.044969125])
 measured_0_color = numpy.array(['w', 'k', 'w', 'w'])
 measured_plus = numpy.array([0.51, 0.51, 0.975, 0.03])
+st_dev_plus = numpy.array([0, 0, 0.005773503, 0])
 measured_plus_color = numpy.array(['w', 'w', 'w', 'k'])
 
 # fidelity graph
@@ -95,7 +97,7 @@ if __name__ == "__main__":
     plt.rcParams.update({'font.size': 16})
     fig, (ax1, ax2) = plt.subplots(2)
 
-    ax1.bar(x_pos, 100 * measured_0, width=width, color='royalblue')
+    ax1.bar(x_pos, 100 * measured_0, yerr=(st_dev_0 * 100), align='center', ecolor='k', capsize=10, width=width, color='skyblue')
     ax1.grid(axis='y', color='0.75', linestyle='-', linewidth=1)
     ax1.set_axisbelow(True)
     for i, v in enumerate(measured_0):
@@ -105,7 +107,7 @@ if __name__ == "__main__":
     ax1.set_xticklabels(labels)
     ax1.set_ylabel("% measured $|e\\rangle$")
 
-    ax2.bar(x_pos, 100 * measured_plus, width=width, color='indianred')
+    ax2.bar(x_pos, 100 * measured_plus, yerr=(st_dev_plus * 100), align='center', ecolor='k', capsize=10, width=width, color='indianred')
     ax2.grid(axis='y', color='0.75', linestyle='-', linewidth=1)
     ax2.set_axisbelow(True)
     for i, v in enumerate(measured_plus):
@@ -124,7 +126,7 @@ if __name__ == "__main__":
     fig = plt.figure()
     ax = fig.add_subplot()
 
-    ax.bar(x_pos, fidelity, width=width, color='royalblue')
+    ax.bar(x_pos, fidelity, width=width, color='skyblue')
     ax.axhline(y=0.66, color='k', linestyle='--')
     ax.grid(axis='y', color='0.75', linestyle='-', linewidth=1)
     ax.set_axisbelow(True)
