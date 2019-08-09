@@ -17,8 +17,8 @@ width = 0.4
 measured_0 = numpy.array([0.99, 0.026, 0.503, 0.503])
 st_dev_0 = numpy.array([0.007378648, 0.018378732, 0.044969125, 0.044969125])
 measured_0_color = numpy.array(['w', 'k', 'w', 'w'])
-measured_plus = numpy.array([0.51, 0.51, 0.975, 0.03])
-st_dev_plus = numpy.array([0, 0, 0.005773503, 0])
+measured_plus = numpy.array([0.503, 0.503, 0.925, 0.063])
+st_dev_plus = numpy.array([0.011547005, 0.011547005, 0.035355339, 0.037859389])
 measured_plus_color = numpy.array(['w', 'w', 'w', 'k'])
 
 # fidelity graph
