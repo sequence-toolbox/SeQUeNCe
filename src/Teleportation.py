@@ -90,10 +90,12 @@ class Teleportation(Entity):
 
             # check matching bits between bsm/bits and append to self.bits
             for res in bsm_res:
-                if res[1] == 0:
-                    index = int(round((res[0] - self.start_time - self.quantum_delay) * frequency * 1e-12))
-                    if bits[index] != -1:
-                        self.bits.append(1 - bits[index])  # flip bits since bsm measures psi+ or psi- states
+                index = int(round((res[0] - self.start_time - self.quantum_delay) * frequency * 1e-12))
+                if bits[index] != -1:
+                    if res[1] == 0 or (res[1] == 1 and self.node.components["detector"].state_list[0] == 0):
+                        self.bits.append(1 - bits[index])  # flip bits since bsm measures psi- state or psi+ w/ single detector
+                    elif res[1] == 1:
+                        self.bits.append(bits[index])
 
             # check if we've increased our bit count, if so give update
             if len(self.bits) > self.prev_bit_length:
@@ -183,8 +185,8 @@ if __name__ == "__main__":
     else:
         phase_error = float(sys.argv[5])
 
-    alice_length = 6.2e3
-    bob_length = 11.1e3
+    alice_length = 1
+    bob_length = 2
 
     # initialize timeline and channels
     tl = Timeline(math.inf)
