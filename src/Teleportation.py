@@ -185,8 +185,8 @@ if __name__ == "__main__":
     else:
         phase_error = float(sys.argv[5])
 
-    alice_length = 1
-    bob_length = 2
+    alice_length = 6.2e3
+    bob_length = 11.1e3
 
     # initialize timeline and channels
     tl = Timeline(math.inf)
