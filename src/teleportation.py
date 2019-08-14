@@ -162,6 +162,7 @@ def timeline_stop(timeline):
     timeline.events.data = []
 
 
+# obsolete main function for running of individual teleportation test
 if __name__ == "__main__":
     numpy.random.seed(int(sys.argv[4]))
 
