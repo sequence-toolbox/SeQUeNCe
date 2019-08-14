@@ -91,8 +91,16 @@ if __name__ == "__main__":
         tl.init()
         tl.run()
 
-        error = statistics.mean(bba.error_rates)
-        throughput = statistics.mean(bba.throughputs)
+        if bba.error_rates:
+            error = statistics.mean(bba.error_rates)
+        else:
+            error = None
+
+        if bba.throughputs:
+            throughput = statistics.mean(bba.throughputs)
+        else:
+            throughput = None
+
         throughput_cascade = cascade_a.throughput
         throughput_privacy = cascade_a.privacy_throughput
         latency_privacy = cascade_a.latency
