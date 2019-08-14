@@ -314,6 +314,7 @@ class Cascade(Entity):
             flip one bit of integer val at pos (right bit with lower position)
             """
             self.disclosed_bits_counter += 1
+            self.another.disclosed_bits_counter += 1
             return (((val >> pos) ^ 1) << pos) + (((1 << pos) - 1) & val)
 
         _checksum = 0
