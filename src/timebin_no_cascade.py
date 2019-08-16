@@ -19,9 +19,7 @@ if __name__ == "__main__":
     distances = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]  # distances in km
     errors = []  # store error rates
     throughputs = []  # store throughputs
-    throughputs_cascade = []
-    throughputs_privacy = []
-    latencies_privacy = []
+    latencies = []  # store latencies
 
     filename = "results/timebin/distance_cascade.log"
     fh = open(filename, 'w')
@@ -46,7 +44,7 @@ if __name__ == "__main__":
         detectors = [{"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10},
                      {"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10},
                      {"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10}]
-        interferometer = {"path_difference": encoding.time_bin["bin_separation"]}
+        interferometer = {"path_difference": encoding.time_bin["bin_separation"], "phase_error": 0.033}
         switch = {}
         qsd = topology.QSDetector("bob.qsdetector", tl,
                                   encoding_type=encoding.time_bin, detectors=detectors, interferometer=interferometer,
@@ -74,49 +72,24 @@ if __name__ == "__main__":
         alice.protocol = bba
         bob.protocol = bbb
 
-        # # Cascade
-        cascade_a = Cascade("cascade_a", tl, bb84=bba, role=0)
-        cascade_b = Cascade("cascade_b", tl, bb84=bbb, role=1)
-        cascade_a.assign_cchannel(cc)
-        cascade_b.assign_cchannel(cc)
-        cascade_a.another = cascade_b
-        cascade_b.another = cascade_a
-        bba.add_parent(cascade_a)
-        bbb.add_parent(cascade_b)
-
-        process = Process(cascade_a, "generate_key", [256, 10, math.inf])
+        process = Process(bba, "generate_key", [256, 10, math.inf])
         event = Event(0, process)
         tl.schedule(event)
 
         tl.init()
         tl.run()
 
-        if bba.error_rates:
-            error = statistics.mean(bba.error_rates)
-        else:
-            error = None
-
-        if bba.throughputs:
-            throughput = statistics.mean(bba.throughputs)
-        else:
-            throughput = None
-
-        throughput_cascade = cascade_a.throughput
-        throughput_privacy = cascade_a.privacy_throughput
-        latency_privacy = cascade_a.latency
+        error = statistics.mean(bba.error_rates)
+        throughput = statistics.mean(bba.throughputs)
+        latency = bba.latency
 
         print("{} km:".format(distance))
         print("\tbb84 error:\t\t\t{}".format(error))
         print("\tbb84 throughput:\t{}".format(throughput))
-        print("\tcascade throughput:\t{}".format(throughput_cascade))
-        print("\tprivacy throughput:\t{}".format(throughput_privacy))
-        print("\tprivacy latency:\t{}".format(latency_privacy))
 
         errors.append(error)
         throughputs.append(throughput)
-        throughputs_cascade.append(throughput_cascade)
-        throughputs_privacy.append(throughput_privacy)
-        latencies_privacy.append(latency_privacy)
+        latencies.append(latency)
 
         fh.write(str(distance))
         fh.write(' ')
@@ -124,15 +97,9 @@ if __name__ == "__main__":
         fh.write(' ')
         fh.write(str(throughput))
         fh.write(' ')
-        fh.write(str(throughput_cascade))
-        fh.write(' ')
-        fh.write(str(throughput_privacy))
-        fh.write(' ')
-        fh.write(str(latency_privacy))
+        fh.write(str(latency))
         fh.write('\n')
 
     print(errors)
     print(throughputs)
-    print(throughputs_cascade)
-    print(throughputs_privacy)
-    print(latencies_privacy)
+    print(latencies)

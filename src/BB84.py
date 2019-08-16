@@ -93,7 +93,7 @@ class BB84(Entity):
             self.another.end_run_times.pop(0)
 
             # wait for quantum channel to clear of photons, then start protocol
-            time = self.timeline.now() + self.quantum_delay
+            time = self.timeline.now() + self.quantum_delay + 1
             process = Process(self, "start_protocol", [])
             event = Event(time, process)
             self.timeline.schedule(event)
@@ -189,6 +189,7 @@ class BB84(Entity):
                     throughput = self.key_lengths[0] * 1e12 / (self.timeline.now() - self.last_key_time)
 
                     while len(self.key_bits) >= self.key_lengths[0] and self.keys_left_list[0] > 0:
+                        print("got key")
                         self.set_key()  # convert from binary list to int
                         if self.parent is not None:
                             self.parent.get_key_from_BB84(self.key)  # call parent
@@ -253,6 +254,9 @@ class BB84(Entity):
             self.working = True
             self.another.working = True
 
+            # turn on bob's detectors
+            self.another.node.components[self.another.detector_name].turn_on_detectors()
+
             light_source = self.node.components[self.source_name]
             self.qubit_frequency = light_source.frequency
 
@@ -271,11 +275,12 @@ class BB84(Entity):
             self.last_key_time = self.timeline.now()
 
         else:
+            self.another.node.components[self.another.detector_name].turn_off_detectors()
             self.ready = True
 
     def set_key(self):
-        key_bits = self.key_bits[0:self.key_lengths[0] - 1]
-        del self.key_bits[0:self.key_lengths[0] - 1]
+        key_bits = self.key_bits[0:self.key_lengths[0]]
+        del self.key_bits[0:self.key_lengths[0]]
         self.key = int("".join(str(x) for x in key_bits), 2)  # convert from binary list to int
 
 

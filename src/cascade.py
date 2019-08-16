@@ -11,16 +11,18 @@ class Cascade(Entity):
             print(self.timeline.now(), self.name, self.state, info)
 
     def __init__(self, name, timeline, **kwargs):
+        #TODO: now we assume key length is 256 bits
         Entity.__init__(self, name, timeline)
         self.w = kwargs.get("w", 4)
         self.bb84 = kwargs.get("bb84", None)
         # for sender role==0; for receiver role==1
         self.role = kwargs.get("role", None)
+        self.secure_params = kwargs.get("secure_params", 100)
         self.another = None
         self.state = 0
         self.keylen = None
         self.frame_len = 10240
-        self.key_num = None
+        self.frame_num = None
         self.run_time = None
         self.bits = []
         self.valid_keys = []
@@ -37,11 +39,12 @@ class Cascade(Entity):
         self.setup_time = None
         self.start_time = None
         self.end_time = math.inf
-        self.throughput = None # bit/(timeline time unit)
+        self.throughput = None # bits/sec
         self.error_bit_rate = None
         self.latency = None # the average latency
+        self.disclosed_bits_counter = 0
+        self.privacy_throughput = None
 
-        self.counter = 0
         """
         state of protocol:
             0: initialization step of protocol
@@ -52,7 +55,7 @@ class Cascade(Entity):
     def assign_cchannel(self, cchanel):
         self.cchanel = cchanel
 
-    def generate_key(self, keylen, key_num=math.inf, run_time=math.inf):
+    def generate_key(self, keylen, frame_num=math.inf, run_time=math.inf):
         """
         Generate 10000 bits key to measure error rate at 0 pass
         Generate keylen bits key at 1st pass
@@ -66,14 +69,14 @@ class Cascade(Entity):
             self.log('generate_key with state 0')
             self.setup_time = self.timeline.now()
             self.keylen = keylen
-            self.key_num = key_num
+            self.frame_num = frame_num
             self.run_time = run_time
             self.bb84.generate_key(10000, key_num = 1)
         else:
             self.start_time = self.timeline.now()
             self.end_time = self.start_time + self.run_time
             self.log('generate_key with state ' + str(self.state))
-            self.bb84.generate_key(self.frame_len, self.key_num, self.run_time)
+            self.bb84.generate_key(self.frame_len, self.frame_num, self.run_time)
 
     def get_key_from_BB84(self, key):
         """
@@ -207,11 +210,11 @@ class Cascade(Entity):
         """
         Schedule a receive paramters event
         """
-        self.log('send_params'+str([self.k1, self.keylen, self.key_num, self.run_time]))
-        process = Process(self.another, "receive_params", [self.k1, self.keylen, self.key_num, self.run_time])
+        self.log('send_params'+str([self.k1, self.keylen, self.frame_num, self.run_time]))
+        process = Process(self.another, "receive_params", [self.k1, self.keylen, self.frame_num, self.run_time])
         self.send_by_cc(process)
 
-    def receive_params(self, k, keylen, key_num, run_time):
+    def receive_params(self, k, keylen, frame_num, run_time):
         """
         Receiver receive k, keylen from sender
         """
@@ -222,14 +225,14 @@ class Cascade(Entity):
 
         self.k1 = k
         self.keylen = keylen
-        self.key_num = key_num
+        self.frame_num = frame_num
         self.run_time = run_time
         self.start_time = self.timeline.now()
         self.end_time = self.start_time+self.run_time
         self.state = 1
 
         # Schedule a key generation event for Cascade sender
-        process = Process(self.another, "generate_key", [self.keylen, self.key_num, self.run_time])
+        process = Process(self.another, "generate_key", [self.keylen, self.frame_num, self.run_time])
         self.send_by_cc(process)
 
     def send_checksums(self):
@@ -310,6 +313,8 @@ class Cascade(Entity):
             """
             flip one bit of integer val at pos (right bit with lower position)
             """
+            self.disclosed_bits_counter += 1
+            self.another.disclosed_bits_counter += 1
             return (((val >> pos) ^ 1) << pos) + (((1 << pos) - 1) & val)
 
         _checksum = 0
@@ -361,7 +366,6 @@ class Cascade(Entity):
         future_time = self.timeline.now() + self.cchanel.delay
         event = Event(future_time, process)
         self.timeline.schedule(event)
-        self.counter += 1
 
     def performance_measure(self):
         if self.role == 0:
@@ -377,6 +381,8 @@ class Cascade(Entity):
 
         if self.timeline.now() - self.start_time:
             self.throughput = 1e12 * len(self.valid_keys) * self.keylen / (self.timeline.now() - self.start_time)
+            self.privacy_throughput = 1e12 * (len(self.valid_keys) * (self.keylen) - int(len(self.valid_keys)/40) * self.secure_params - self.disclosed_bits_counter) / (self.timeline.now() - self.start_time)
+
         counter = 0
         for j in range(min(len(self.valid_keys), len(self.another.valid_keys))):
             i = 0
@@ -528,13 +534,15 @@ if __name__ == "__main__":
     cascade_2.logflag = True
 
     random.seed(2)
-    p = Process(cascade_1, 'generate_key', [10000])
+    p = Process(cascade_1, 'generate_key', [256])
     t.schedule(Event(0, p))
-    p = Process(bb84_1, 'generate_key', [10000])
+    p = Process(bb84_1, 'generate_key', [256])
     t.schedule(Event(20, p))
     t.run()
     print(t.now())
     print(cascade_1.latency)
     print(cascade_1.t1)
     print(cascade_1.t2)
+    print(cascade_1.throughput)
+    print(cascade_1.privacy_throughput)
 

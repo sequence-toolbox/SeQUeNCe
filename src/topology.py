@@ -316,6 +316,16 @@ class QSDetector(Entity):
     def set_basis(self, basis):
         self.splitter.set_basis(basis)
 
+    def turn_off_detectors(self):
+        for d in self.detectors:
+            d.on = False
+
+    def turn_on_detectors(self):
+        for d in self.detectors:
+            if not d.on:
+                d.init()
+                d.on = True
+
 
 class Detector(Entity):
     def __init__(self, timeline, **kwargs):
@@ -327,6 +337,7 @@ class Detector(Entity):
         self.photon_times = []
         self.next_detection_time = 0
         self.photon_counter = 0
+        self.on = True
 
     def init(self):
         self.add_dark_count()
@@ -341,15 +352,16 @@ class Detector(Entity):
             self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self):
-        time_to_next = int(numpy.random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
-        time = time_to_next + self.timeline.now()  # time of next dark count
+        if self.on:
+            time_to_next = int(numpy.random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
+            time = time_to_next + self.timeline.now()  # time of next dark count
 
-        process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
-        process2 = Process(self, "get", [True])
-        event1 = Event(time, process1)
-        event2 = Event(time, process2)
-        self.timeline.schedule(event1)
-        self.timeline.schedule(event2)
+            process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
+            process2 = Process(self, "get", [True])
+            event1 = Event(time, process1)
+            event2 = Event(time, process2)
+            self.timeline.schedule(event1)
+            self.timeline.schedule(event2)
 
 
 class BeamSplitter(Entity):
@@ -383,6 +395,7 @@ class Interferometer(Entity):
     def __init__(self, timeline, **kwargs):
         Entity.__init__(self, "", timeline)
         self.path_difference = kwargs.get("path_difference", 0)  # time difference in ps
+        self.phase_error = kwargs.get("phase_error", 0)  # chance of measurement error in phase
         self.detectors = []
 
     def init(self):
@@ -404,8 +417,11 @@ class Interferometer(Entity):
                 time = self.path_difference
             else:
                 time = 2 * self.path_difference
-        res = Photon.measure(encoding.time_bin["bases"][1], photon)
-        if res == 0:  # Early + Late
+
+        if numpy.random.random_sample() < self.phase_error:
+            quantum_state = list(numpy.multiply([1, -1], quantum_state))
+
+        if quantum_state == [complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]:  # Early + Late
             if random <= 0.25:
                 time = 0
             elif random <= 0.5:
