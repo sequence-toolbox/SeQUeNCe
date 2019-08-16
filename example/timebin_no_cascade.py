@@ -2,13 +2,14 @@ from numpy import random
 import math
 import statistics
 
-from event import Event
-from timeline import Timeline
-from BB84 import BB84
-from cascade import Cascade
-import topology
-from process import Process
-import encoding
+import sequence
+from sequence import topology
+from sequence import encoding
+from sequence.event import Event
+from sequence.timeline import Timeline
+from sequence.BB84 import BB84
+from sequence.cascade import Cascade
+from sequence.process import Process
 
 
 if __name__ == "__main__":
