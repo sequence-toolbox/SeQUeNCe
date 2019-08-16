@@ -1,8 +1,10 @@
-from entity import Entity
-from process import Process
-from event import Event
 from numpy import random
 import math
+
+import sequence
+from sequence.entity import Entity
+from sequence.process import Process
+from sequence.event import Event
 
 
 class Cascade(Entity):

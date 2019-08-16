@@ -1,17 +1,18 @@
 import math
+import copy
 from typing import List, Any
 
 import numpy
 import json5
 
-import encoding
-from process import Process
-from entity import Entity
-from event import Event
+import sequence
+from sequence import encoding
+from sequence.process import Process
+from sequence.entity import Entity
+from sequence.event import Event
+from sequence.BB84 import BB84
 
-from BB84 import BB84
 
-import copy
 
 """
 import pandas as pd
@@ -430,7 +431,7 @@ class Interferometer(Entity):
                 time = self.path_difference
             else:
                 return
-        if res == 1:  # Early - Late
+        if quantum_state == [complex(math.sqrt(1/2)), complex(-math.sqrt(1/2))]:  # Early - Late
             if random <= 0.25:
                 time = 0
             elif random <= 0.5:

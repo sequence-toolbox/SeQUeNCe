@@ -2,13 +2,13 @@ import numpy
 import re
 import math
 
-import encoding
-import topology
-from timeline import Timeline
-from entity import Entity
-from process import Process
-from event import Event
-import sys
+import sequence
+from sequence import encoding
+from sequence import topology
+from sequence.timeline import Timeline
+from sequence.entity import Entity
+from sequence.process import Process
+from sequence.event import Event
 
 
 class Teleportation(Entity):
@@ -164,6 +164,7 @@ def timeline_stop(timeline):
 
 # obsolete main function for running of individual teleportation test
 if __name__ == "__main__":
+    import sys
     numpy.random.seed(int(sys.argv[4]))
 
     # user input for basis and Alice's state

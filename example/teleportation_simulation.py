@@ -2,11 +2,13 @@ import numpy as np
 import math
 
 from teleportation import Teleportation, BSMAdapter
-import topology
-from timeline import Timeline
-from process import Process
-from event import Event
-import encoding
+
+import sequence
+from sequence import encoding
+from sequence import topology
+from sequence.timeline import Timeline
+from sequence.process import Process
+from sequence.event import Event
 
 if __name__ == "__main__":
     states = ["0", "1", "+", "-"]

@@ -1,5 +1,7 @@
 import math
-from eventlist import EventList
+
+import sequence
+from sequence.eventlist import EventList
 
 class Timeline:
 
