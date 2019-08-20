@@ -745,6 +745,34 @@ class SPDCSource(LightSource):
         self.another_receiver = receiver
 
 
+class Memory(Entity):
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(self, name, timeline)
+        self.fidelity = kwargs.get("fidelity", 1)
+        self.efficiency = kwargs.get("efficiency", 1)
+        self.photons = []
+        self.arrival_times = []
+
+    def init(self):
+        pass
+
+    def get(self, photon):
+        photon.location = self
+        self.photons.append(photon)
+        self.arrival_times.append(self.timeline.now())
+
+    def retrieve_photon(self, time):
+        photon_list = []
+        for i, t in self.arrival_times:
+            if t == time:
+                photon_list.append([t, self.photons[i]])
+                del self.arrival_times[i]
+                del self.photons[i]
+            if t > time:
+                break
+        return photon_list
+
+
 class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
