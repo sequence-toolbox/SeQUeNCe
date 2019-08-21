@@ -38,3 +38,6 @@ class Timeline:
             event.process.run()
         print('number of event',self.event_counter)
         #print('log:',log)
+
+    def stop(self):
+        self.events.data = []

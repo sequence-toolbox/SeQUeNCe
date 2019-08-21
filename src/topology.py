@@ -482,6 +482,7 @@ class Switch(Entity):
             receiver.get(photon)
 
 
+# TODO: redo BSM to not require photon_type
 class BSM(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
@@ -677,6 +678,20 @@ class BSM(Entity):
         return bsm_res
 
 
+# TODO: find a better way to implement
+class BSMAdapter(Entity):
+    def __init__(self, timeline, **kwargs):
+        super().__init__("", timeline)
+        self.receiver = kwargs.get("bsm", None)
+        self.photon_type = kwargs.get("photon_type", -1)
+
+    def init(self):
+        pass
+
+    def get(self, photon):
+        self.receiver.get(photon, self.photon_type)
+
+
 class SPDCLens(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
@@ -750,8 +765,10 @@ class Memory(Entity):
         Entity.__init__(self, name, timeline)
         self.fidelity = kwargs.get("fidelity", 1)
         self.efficiency = kwargs.get("efficiency", 1)
+        self.start_time = 0
+        self.frequency = 0
         self.photons = []
-        self.arrival_times = []
+        self.arrival_indices = []
 
     def init(self):
         pass
@@ -759,7 +776,8 @@ class Memory(Entity):
     def get(self, photon):
         photon.location = self
         self.photons.append(photon)
-        self.arrival_times.append(self.timeline.now())
+        index = (self.timeline.now() - self.start_time) * (self.frequency * 1e-12)
+        self.arrival_indices.append(index)
 
     def retrieve_photon(self, time):
         photon_list = []

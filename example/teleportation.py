@@ -108,7 +108,7 @@ class Teleportation(Entity):
 
             # check if we have enough samples, if not run again
             if len(self.bits) >= self.sample_size:
-                timeline_stop(self.timeline)
+                self.timeline.stop()
                 sample = self.bits[0:self.sample_size]
                 del self.bits[0:self.sample_size]
                 alpha = sample.count(0) / len(sample)
@@ -141,25 +141,6 @@ class Teleportation(Entity):
         process = Process(self.another_bob, "emit_photons", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))], num_photons])
         event = Event(bob_start_time, process)
         self.timeline.schedule(event)
-
-
-# TODO: find a better way to implement
-class BSMAdapter(Entity):
-    def __init__(self, timeline, **kwargs):
-        super().__init__("", timeline)
-        self.receiver = kwargs.get("bsm", None)
-        self.photon_type = kwargs.get("photon_type", -1)
-
-    def init(self):
-        pass
-
-    def get(self, photon):
-        self.receiver.get(photon, self.photon_type)
-
-
-# TODO: implement in timeline?
-def timeline_stop(timeline):
-    timeline.events.data = []
 
 
 # obsolete main function for running of individual teleportation test
@@ -246,8 +227,8 @@ if __name__ == "__main__":
                  {"efficiency": 0.7, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000}]
     bsm = topology.BSM("charlie.bsm", tl,
                        encoding_type=encoding.time_bin, detectors=detectors, phase_error=phase_error)
-    a0 = BSMAdapter(tl, photon_type=0, bsm=bsm)
-    a1 = BSMAdapter(tl, photon_type=1, bsm=bsm)
+    a0 = topology.BSMAdapter(tl, photon_type=0, bsm=bsm)
+    a1 = topology.BSMAdapter(tl, photon_type=1, bsm=bsm)
     components = {"bsm": bsm, "qc_a": qc_ac, "qc_b": qc_bc, "cc_a": cc_ac, "cc_b": cc_bc}
     charlie = topology.Node("charlie", tl, components=components)
 
