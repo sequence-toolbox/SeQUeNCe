@@ -4,8 +4,6 @@ Network Topology:
 (ALICE)===(CHARLIE)===(BOB)
 
 ALICE:
-    SPDC Source
-    BSM
     Detector
 
 CHARLIE:
@@ -14,8 +12,6 @@ CHARLIE:
     2 Quantum Memories
 
 BOB:
-    SPDC Source
-    BSM
     Detector
 """
 
@@ -31,14 +27,15 @@ from sequence import topology
 class Swap(Entity):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline)
-        self.node = None
         self.classical_delay = 0
         self.quantum_delay = 0
+        self.start_time = 0
+        self.light_time = 0
+        self.node = None
         self.parent = None
         self.another_alice = None
         self.another_bob = None
         self.another_charlie = None
-        self.is_alice = False
         self.sample_size = 0
 
     def init(self):
@@ -57,10 +54,13 @@ class Swap(Entity):
         pass
 
     def start_protocol(self, sample_size):
-        assert self.is_alice
+        # assert that start_protocol is called from Charlie (middle node)
+        assert self.another_charlie is None
 
-        self.sample_size = sample_size
+        self.another_alice.sample_size = sample_size
         self.another_bob.sample_size = sample_size
+
+        # notify Alice and Bob that we are starting entanglement swap
 
 
 if __name__ == "__main__":
