@@ -31,6 +31,7 @@ class Swap(Entity):
         self.quantum_delay = 0
         self.start_time = 0
         self.light_time = 0
+        self.qubit_frequency = 0
         self.node = None
         self.parent = None
         self.another_alice = None
@@ -53,14 +54,34 @@ class Swap(Entity):
     def received_message(self):
         pass
 
-    def start_protocol(self, sample_size):
+    def start_protocol(self):
+        # set start time
+        self.start_time = self.timeline.now() + int(max(round(self.another_alice.classical_delay),
+                                                        round(self.another_bob.classical_delay)))
+
+        # notify Alice and Bob that we are starting entanglement swap
+        message = "begin_entanglement_swap {} {} {}".format(self.qubit_frequency, self.light_time, self.start_time)
+        self.node.send_message(message, "cc_ac")  # send to Alice
+        self.node.send_message(message, "cc_bc")  # send to Bob
+
+    def generate_pairs(self, sample_size):
         # assert that start_protocol is called from Charlie (middle node)
         assert self.another_charlie is None
 
         self.another_alice.sample_size = sample_size
         self.another_bob.sample_size = sample_size
 
-        # notify Alice and Bob that we are starting entanglement swap
+        # set qubit frequency
+        lightsource_a = self.node.components["la"]
+        lightsource_b = self.node.components["lb"]
+        assert lightsource_a.frequency == lightsource_b.frequency
+        self.qubit_frequency = lightsource_a.frequency
+
+        # set light_time
+        mean_photon_num = min(lightsource_a.mean_photon_num, lightsource_b.mean_photon_num)
+        self.light_time = sample_size / (self.qubit_frequency * mean_photon_num)
+
+        self.start_protocol()
 
 
 if __name__ == "__main__":

@@ -776,17 +776,17 @@ class Memory(Entity):
     def get(self, photon):
         photon.location = self
         self.photons.append(photon)
-        index = (self.timeline.now() - self.start_time) * (self.frequency * 1e-12)
+        index = int(round((self.timeline.now() - self.start_time) * (self.frequency * 1e-12)))
         self.arrival_indices.append(index)
 
-    def retrieve_photon(self, time):
+    def retrieve_photon(self, photon_num):
         photon_list = []
-        for i, t in self.arrival_times:
-            if t == time:
-                photon_list.append([t, self.photons[i]])
-                del self.arrival_times[i]
+        for i, num in self.arrival_indices:
+            if num == photon_num:
+                photon_list.append(self.photons[i])
+                del self.arrival_indices[i]
                 del self.photons[i]
-            if t > time:
+            if num > photon_num:
                 break
         return photon_list
 
