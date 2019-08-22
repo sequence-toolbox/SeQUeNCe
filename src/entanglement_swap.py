@@ -224,31 +224,94 @@ class Swap(Entity):
         self.start_protocol()
 
 
+# main function to test entanglement_swap protocol
 if __name__ == "__main__":
     tl = Timeline()
 
     # Channels
-    qc_alice_charlie = topology.QuantumChannel("qc_ac", tl)
-    qc_bob_charlie = topology.QuantumChannel("qc_bc", tl)
+    qc_alice_charlie = topology.QuantumChannel("qc_ac", tl, attenuation=0.0002)
+    qc_bob_charlie = topology.QuantumChannel("qc_bc", tl, attenuation=0.0002)
     cc_alice_charlie = topology.ClassicalChannel("cc_ac", tl)
     cc_bob_charlie = topology.ClassicalChannel("cc_bc", tl)
 
     # Alice
-    spdc_alice = topology.SPDCSource("alice.ls", tl)
-    bsm_alice = topology.BSM("alice.bsm", tl)
-    detector_alice = topology.QSDetector("alice.qsd", tl)
-    alice = topology.Node("alice", tl)
+    detectors = [{"efficiency": 0.8, "dark_count": 100, "time_resolution": 100},
+                 None,
+                 None]
+    interferometer = {}
+    switch = {"state": 0}
+    detector_alice = topology.QSDetector("alice.qsd", tl, encoding_type=encoding.time_bin, detectors=detectors,
+                                         interferometer=interferometer, switch=switch)
+    components = {"detector": detector_alice, "qchannel": qc_alice_charlie, "cchannel": cc_alice_charlie}
+
+    alice = topology.Node("alice", tl, components=components)
 
     # Bob
-    spdc_bob = topology.SPDCSource("bob.ls", tl)
-    bsm_bob = topology.BSM("bob.bsm", tl)
-    detector_bob = topology.QSDetector("bob.qsd", tl)
-    bob = topology.Node("bob", tl)
+    detectors = [{"efficiency": 0.8, "dark_count": 100, "time_resolution": 100},
+                 None,
+                 None]
+    interferometer = {}
+    switch = {"state": 0}
+    detector_bob = topology.QSDetector("bob.qsd", tl, encoding_type=encoding.time_bin, detectors=detectors,
+                                       interferometer=interferometer, switch=switch)
+    components = {"detector": detector_bob, "qchannel": qc_bob_charlie, "cchannel": cc_bob_charlie}
+
+    bob = topology.Node("bob", tl, components=components)
 
     # Charlie
-    spdc_charlie_1 = topology.SPDCSource("charlie.ls_1", tl)
-    spdc_charlie_2 = topology.SPDCSource("charlie.ls_2", tl)
-    bsm_charlie = topology.BSM("charlie.bsm", tl)
     mem_charlie_1 = topology.Memory("charlie.mem_1", tl)
     mem_charlie_2 = topology.Memory("charlie.mem_2", tl)
-    charlie = topology.Node("charlie", tl)
+    spdc_charlie_1 = topology.SPDCSource("charlie.ls_1", tl, frequency=80e6, mean_photon_num=0.045,
+                                         encoding_type=encoding.time_bin, direct_receiver=qc_alice_charlie,
+                                         another_receiver=mem_charlie_1, wavelengths=[1532, 795], phase_error=0)
+    spdc_charlie_2 = topology.SPDCSource("charlie.ls_2", tl, frequency=80e6, mean_photon_num=0.045,
+                                         encoding_type=encoding.time_bin, direct_receiver=qc_bob_charlie,
+                                         another_receiver=mem_charlie_2, wavelengths=[1532, 795], phase_error=0)
+    detectors = [{"efficiency": 0.8, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000},
+                 {"efficiency": 0.8, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000}]
+    bsm_charlie = topology.BSM("charlie.bsm", tl,
+                               encoding_type=encoding.time_bin, detectors=detectors, phase_error=0)
+    a0 = topology.BSMAdapter(tl, photon_type=0, bsm=bsm_charlie)
+    a1 = topology.BSMAdapter(tl, photon_type=1, bsm=bsm_charlie)
+    components = {"memory_a": mem_charlie_1, "memory_b": mem_charlie_2, "spdc_a": spdc_charlie_1,
+                  "spdc_b": spdc_charlie_2, "bsm": bsm_charlie, "cc_ac": cc_bob_charlie, "cc_bc": cc_bob_charlie}
+
+    charlie = topology.Node("charlie", tl, components=components)
+
+    # add entities to timeline
+    tl.entities.append(alice)
+    tl.entities.append(bob)
+    tl.entities.append(charlie)
+    for key in alice.components:
+        tl.entities.append(alice.components[key])
+    for key in bob.components:
+        tl.entities.append(bob.components[key])
+    for key in charlie.components:
+        tl.entities.append(charlie.components[key])
+
+    # entanglement_swap setup
+    es_a = Swap("es_a", tl, role=0)
+    es_b = Swap("es_b", tl, role=1)
+    es_c = Swap("es_c", tl, role=2)
+    es_a.assign_node(alice)
+    es_b.assign_node(bob)
+    es_c.assign_node(charlie)
+
+    es_a.another_bob = es_b
+    es_a.another_charlie = es_c
+    es_b.another_alice = es_a
+    es_b.another_charlie = es_c
+    es_c.another_alice = es_a
+    es_c.another_bob = es_b
+
+    alice.protocol = es_a
+    bob.protocol = es_b
+    charlie.protocol = es_c
+
+    # Run
+    process = Process(es_c, "generate_pairs", [100])
+    event = Event(0, process)
+    tl.schedule(event)
+
+    tl.init()
+    tl.run()
