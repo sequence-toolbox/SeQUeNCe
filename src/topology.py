@@ -58,6 +58,10 @@ class Photon(Entity):
         self.quantum_state = [complex(numpy.cos(angle)), complex(numpy.sin(angle))]
         # self.quantum_state += numpy.random.random() * 360  # add random angle, use 360 instead of 2*pi
 
+    def apply_phase_noise(self):
+        # TODO: apply Z gate
+        pass
+
     def set_state(self, state):
         for photon in self.entangled_photons:
             photon.quantum_state = state
@@ -562,6 +566,12 @@ class BSM(Entity):
         self.signal_photon = None
         self.signal_arrive_time = None
 
+        # define bell basis vectors
+        self.bell_basis = [[complex(math.sqrt(2)), complex(0), complex(0), complex(math.sqrt(2))],
+                           [complex(math.sqrt(2)), complex(0), complex(0), -complex(math.sqrt(2))],
+                           [complex(0), complex(math.sqrt(2)), complex(math.sqrt(2)), complex(0)],
+                           [complex(0), complex(math.sqrt(2)), -complex(math.sqrt(2)), complex(0)]]
+
     '''
     def assign_target_end(self, target_end):
         self.target_end = target_end
@@ -590,6 +600,56 @@ class BSM(Entity):
                 self.send_to_detectors()
 
     def send_to_detectors(self):
+        if numpy.random.random_sample() < self.phase_error:
+            self.target_photon.apply_phase_error()
+
+        # entangle photons to measure
+        self.target_photon.entangle(self.signal_photon)
+
+        # measure in bell basis
+        res = Photon.measure_multiple(self.bell_basis, [self.target_photon, self.signal_photon])
+
+        if self.encoding_type["name"] == "time_bin":
+            # check if we've measured as Phi+ or Phi-; these cannot be measured by the BSM
+            if res == 0 or res == 1:
+                pass
+
+            early_time = self.timeline.now()
+            late_time = early_time + self.encoding_type["bin_separation"]
+
+            # measured as Psi+
+            # send both photons to the same detector at the early and late time
+            if res == 2:
+                detector_num = numpy.random.choice([0, 1])
+
+                process = Process(self.detectors[detector_num], "get", [])
+                event = Event(int(round(early_time)), process)
+                self.timeline.schedule(event)
+                process = Process(self.detectors[detector_num], "get", [])
+                event = Event(int(round(late_time)), process)
+                self.timeline.schedule(event)
+
+            # measured as Psi-
+            # send photons to different detectors at the early and late time
+            elif res == 3:
+                detector_num = numpy.random.choice([0, 1])
+
+                process = Process(self.detectors[detector_num], "get", [])
+                event = Event(int(round(early_time)), process)
+                self.timeline.schedule(event)
+                process = Process(self.detectors[1 - detector_num], "get", [])
+                event = Event(int(round(late_time)), process)
+                self.timeline.schedule(event)
+
+            # invalid result from measurement
+            else:
+                raise Exception("Invalid result from photon.measure_multiple")
+        else:
+            # TODO: polarization
+            pass
+
+    # legace "send_to_detectors" method, not currently used
+    def old_send_to_detectors(self):
         # TODO: generalize function to any quantum entanglement state
         def get_another_photon(photon):
             for _photon in photon.entangled_photons:
@@ -670,8 +730,6 @@ class BSM(Entity):
         else:
             #TODO: polarization
             pass
-
-        pass
 
     def get_bsm_res(self):
         # bsm_res = [ [timestamp of early photon, res] ]
