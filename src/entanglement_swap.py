@@ -15,6 +15,7 @@ BOB:
     Detector
 """
 import math
+import re
 
 from sequence import encoding
 from sequence.process import Process
@@ -35,8 +36,8 @@ class Swap(Entity):
         self.start_time = 0
         self.light_time = 0
         self.qubit_frequency = 0
-        self.bit_list = []
-        self.node = None
+        self.raw_bit_list = []
+        self.indices = [None, None]
         self.parent = None
         self.another_alice = None
         self.another_bob = None
@@ -65,12 +66,40 @@ class Swap(Entity):
     def end_photon_pulse(self):
         # get indices of detection events
         bits = self.node.get_bits(self.light_time, self.start_time, self.qubit_frequency, "detector")
-        self.bit_list = bits
+        self.raw_bit_list = bits
         indices = [i for i, b in enumerate(bits) if b != -1]
 
         # send indices to Charlie
         message = "received_photons {} {}".format(self.role, indices)
         self.node.send_message(message)
+
+    def send_to_bsm(self):
+        if [] not in self.indices:
+            # get indices
+            index_alice = self.indices[0].pop(0)
+            index_bob = self.indices[1].pop(0)
+
+            # send corresponding photons to bsm
+            memory_alice = self.node.components["memory_a"]
+            memory_bob = self.node.components["memory_b"]
+            photons_alice = memory_alice.retrieve_photon(index_alice)
+            photons_bob = memory_bob.retrieve_photon(index_bob)
+            for photon in photons_alice:
+                self.node.components["bsm"].get(photon)
+            for photon in photons_bob:
+                self.node.components["bsm"].get(photon)
+
+            # schedule next send_to_bsm after 1/qubit_frequency
+            time = self.timeline.now() + int(1e12 / self.qubit_frequency)
+            process = Process(self, "send_to_bsm", [])
+            event = Event(time, process)
+            self.timeline.schedule(event)
+
+        else:
+            bsm_res = self.node.components["bsm"].get_bsm_res()
+            message = "bsm_result {}".format(bsm_res)
+            self.node.send_message(message, "cc_ac")  # send to Alice
+            self.node.send_message(message, "cc_bc")  # send to Bob
 
     def received_message(self):
         message = self.node.message.split(" ")
@@ -92,13 +121,22 @@ class Swap(Entity):
             self.timeline.schedule(event)
 
         if message[0] == "received_photons":
+            # parse indices
+            indices = []
+            if message[1] != "[]":  # no matching indices
+                for val in message[1:]:
+                    indices.append(int(re.sub("[],[]", "", val)))
+
             # determine if from Alice or Bob
             # store indices
-            # if received both, send photons to BSM and discard rest of memory
-            # get bsm result and send to Bob for correction
-            pass
+            sender = int(message[1])  # 0 for Alice and 1 for Bob
+            self.indices[sender] = indices
 
-        if message[0] == "bsm_results":
+            # see if we have both index lists and if so send to BSM
+            if None not in self.indices:
+                self.send_to_bsm()
+
+        if message[0] == "bsm_result":
             # correct results
             # compare with Alice?
             pass
