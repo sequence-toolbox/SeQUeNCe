@@ -37,6 +37,8 @@ class Swap(Entity):
         self.light_time = 0
         self.qubit_frequency = 0
         self.raw_bit_list = []
+        self.bit_list = []
+        self.bit_lengths = [None, None]
         self.indices = [None, None]
         self.parent = None
         self.another_alice = None
@@ -137,11 +139,60 @@ class Swap(Entity):
                 self.send_to_bsm()
 
         if message[0] == "bsm_result":
-            # correct results
-            # compare with Alice?
-            pass
+            # parse bsm results
+            times_and_bits = []  # list of alternating time/bit
+            if message[1] != "[]":
+                for val in message[1:]:
+                    times_and_bits.append(int(re.sub("[],[]", "", val)))
+            bsm_res = []
+            bsm_single = []
+            for i, val in enumerate(times_and_bits):
+                bsm_single.append(val)
+                if i % 2:
+                    bsm_res.append(bsm_single)
+                    bsm_single = []
+
+            # get and correct results
+            for _ in bsm_res:
+                bit = self.raw_bit_list.pop(0)
+                if self.role == 1:
+                    bit = 1 - bit
+                self.bit_list.append(bit)
+
+            # send finished message
+            message = "got_bits {} {}".format(self.role, len(self.bit_list))
+            self.node.send_message(message)
+
+        if message[0] == "got_bits":
+            sender = int(message[1])
+            self.bit_lengths[sender] = int(message(2))
+
+            # check if we have both
+            if self.bit_lengths[0] == self.bit_lengths[1] and self.bit_lengths[0] is not None:
+                if self.bit_lengths[0] < self.sample_size:
+                    self.start_protocol()
+                else:
+                    # finished protocol
+                    print("finished entanglement swap")
+
+                    alice_bits = int("".join(str(x) for x in self.another_alice.bit_list), 2)  # convert to int
+                    bob_bits = int("".join(str(x) for x in self.another_bob.bit_list), 2)  # convert to int
+
+                    print("Alice measured bits: \t{:0{}b}".format(alice_bits))
+                    print("Bob measured bits: \t{:0{}b}".format(bob_bits))
+
+                    bit_diff = alice_bits ^ bob_bits
+                    num_errors = 0
+                    while bit_diff:
+                        bit_diff &= bit_diff - 1
+                        num_errors += 1
+
+                    print("error percentage: {}".format(num_errors / self.sample_size))
 
     def start_protocol(self):
+        # reset params
+        self.indices = [None, None]
+
         # set start time
         self.start_time = self.timeline.now() + int(max(round(self.another_alice.classical_delay),
                                                         round(self.another_bob.classical_delay)))
@@ -157,8 +208,8 @@ class Swap(Entity):
         # assert that start_protocol is called from Charlie (middle node)
         assert self.role == 2
 
-        self.another_alice.sample_size = sample_size
-        self.another_bob.sample_size = sample_size
+        self.sample_size = sample_size
+        self.bit_lengths = [0, 0]
 
         # set qubit frequency
         lightsource_a = self.node.components["spdc_a"]
