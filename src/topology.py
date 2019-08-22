@@ -48,10 +48,9 @@ class Photon(Entity):
         entangled_photons = self.entangled_photons + photon.entangled_photons
         quantum_state = numpy.kron(self.quantum_state, photon.quantum_state)
 
-        self.entangled_photons = entangled_photons
-        self.quantum_state = quantum_state
-        photon.entangled_photons = entangled_photons
-        photon.quantum_state = quantum_state
+        for photon in entangled_photons:
+            photon.entangled_photons = entangled_photons
+            photon.quantum_state = quantum_state
 
     def random_noise(self):
         angle = numpy.random.random() * 2 * numpy.pi
@@ -125,16 +124,15 @@ class Photon(Entity):
         # move photons to beginning of entangled list and quantum state
         entangled_list = photons[0].entangled_photons
         state = photons[0].quantum_state
-        for i, photon in photons:
-            for j, entangled_photon in entangled_list[i:]:
+        for i, photon in enumerate(photons):
+            for j, entangled_photon in enumerate(entangled_list):
                 if entangled_photon == photon:
                     entangled_list[i], entangled_list[j] = entangled_list[j], entangled_list[i]
                     state[i], state[j] = state[j], state[i]
                     break
 
         # math for probability calculations
-        photon_state_dimension = 2 ** len(entangled_list)
-        dimension_difference = photon_state_dimension - basis_dimension
+        length_diff = len(entangled_list) - len(photons)
 
         # construct measurement operators, projectors, and probabilities of measurement
         projectors = [None] * basis_dimension
@@ -142,21 +140,19 @@ class Photon(Entity):
         for i, vector in enumerate(basis):
             vector = numpy.array(vector, dtype=complex)
             M = numpy.outer(vector.conj(), vector)  # measurement operator
-            projectors[i] = numpy.kron(M, numpy.identity(dimension_difference))  # projector
+            projectors[i] = numpy.kron(M, numpy.identity(2 ** length_diff))  # projector
             probabilities[i] = (state.conj().transpose() @ projectors[i].conj().transpose() @ projectors[i] @ state).real
 
-        assert numpy.sum(probabilities) == 1
-
-        possible_results = numpy.arange(0, basis_dimension - 1, 1)
+        possible_results = numpy.arange(0, basis_dimension, 1)
         # result gives index of the basis vector that will be projected to
-        result = numpy.random.choice(possible_results, probabilities)
+        res = numpy.random.choice(possible_results, p=probabilities)
         # project to new state, then reassign quantum state and entangled photons
-        new_state = (projectors[result] @ state) / math.sqrt(probabilities[result])
+        new_state = (projectors[res] @ state) / math.sqrt(probabilities[res])
         for photon in entangled_list:
             photon.quantum_state = new_state
             photon.entangled_photons = entangled_list
 
-        return result
+        return res
 
 
 class OpticalChannel(Entity):
@@ -567,10 +563,10 @@ class BSM(Entity):
         self.signal_arrive_time = None
 
         # define bell basis vectors
-        self.bell_basis = [[complex(math.sqrt(2)), complex(0), complex(0), complex(math.sqrt(2))],
-                           [complex(math.sqrt(2)), complex(0), complex(0), -complex(math.sqrt(2))],
-                           [complex(0), complex(math.sqrt(2)), complex(math.sqrt(2)), complex(0)],
-                           [complex(0), complex(math.sqrt(2)), -complex(math.sqrt(2)), complex(0)]]
+        self.bell_basis = [[complex(math.sqrt(1/2)), complex(0), complex(0), complex(math.sqrt(1/2))],
+                           [complex(math.sqrt(1/2)), complex(0), complex(0), -complex(math.sqrt(1/2))],
+                           [complex(0), complex(math.sqrt(1/2)), complex(math.sqrt(1/2)), complex(0)],
+                           [complex(0), complex(math.sqrt(1/2)), -complex(math.sqrt(1/2)), complex(0)]]
 
     '''
     def assign_target_end(self, target_end):
@@ -612,7 +608,7 @@ class BSM(Entity):
         if self.encoding_type["name"] == "time_bin":
             # check if we've measured as Phi+ or Phi-; these cannot be measured by the BSM
             if res == 0 or res == 1:
-                pass
+                return
 
             early_time = self.timeline.now()
             late_time = early_time + self.encoding_type["bin_separation"]
