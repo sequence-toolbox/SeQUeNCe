@@ -142,6 +142,8 @@ class Photon(Entity):
             M = numpy.outer(vector.conj(), vector)  # measurement operator
             projectors[i] = numpy.kron(M, numpy.identity(2 ** length_diff))  # projector
             probabilities[i] = (state.conj().transpose() @ projectors[i].conj().transpose() @ projectors[i] @ state).real
+            if probabilities[i] < 0:
+                probabilities[i] = 0
 
         possible_results = numpy.arange(0, basis_dimension, 1)
         # result gives index of the basis vector that will be projected to
@@ -351,7 +353,8 @@ class QSDetector(Entity):
 
     def clear_detectors(self):
         for d in self.detectors:
-            d.photon_times = []
+            if d is not None:
+                d.photon_times = []
 
     def get_photon_times(self):
         times = []
@@ -386,7 +389,7 @@ class Detector(Entity):
         self.photon_times = []
         self.next_detection_time = 0
         self.photon_counter = 0
-        self.on = False
+        self.on = True
 
     def init(self):
         self.add_dark_count()
@@ -883,7 +886,7 @@ class Memory(Entity):
 
     def retrieve_photon(self, photon_num):
         photon_list = []
-        for i, num in self.arrival_indices:
+        for i, num in enumerate(self.arrival_indices):
             if num == photon_num:
                 photon_list.append(self.photons[i])
                 del self.arrival_indices[i]

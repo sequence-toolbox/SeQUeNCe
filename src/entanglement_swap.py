@@ -59,9 +59,17 @@ class Swap(Entity):
             self.quantum_delay = int(round(qchannel.distance / qchannel.light_speed))
 
     def begin_photon_pulse(self):
+        # reset memories
+        memory_alice = self.node.components["memory_a"]
+        memory_bob = self.node.components["memory_b"]
+        memory_alice.clear_memory()
+        memory_bob.clear_memory()
+        memory_alice.start_time = self.timeline.now()
+        memory_bob.start_time = self.timeline.now()
+
         # emit photons at both sources
         state = [complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]
-        num_photons = self.light_time * self.qubit_frequency
+        num_photons = int(self.light_time * self.qubit_frequency)
         self.node.send_photons(state, num_photons, "spdc_a")
         self.node.send_photons(state, num_photons, "spdc_b")
 
@@ -87,9 +95,9 @@ class Swap(Entity):
             photons_alice = memory_alice.retrieve_photon(index_alice)
             photons_bob = memory_bob.retrieve_photon(index_bob)
             for photon in photons_alice:
-                self.node.components["bsm"].get(photon)
+                self.node.components["bsm_a"].get(photon)
             for photon in photons_bob:
-                self.node.components["bsm"].get(photon)
+                self.node.components["bsm_b"].get(photon)
 
             # schedule next send_to_bsm after 1/qubit_frequency
             time = self.timeline.now() + int(1e12 / self.qubit_frequency)
@@ -110,7 +118,7 @@ class Swap(Entity):
             # set params
             self.qubit_frequency = float(message[1])
             self.light_time = float(message[2])
-            self.start_time = int(message[3])
+            self.start_time = int(message[3]) + self.quantum_delay
 
             # schedule end_photon_pulse()
             process = Process(self, "end_photon_pulse", [])
@@ -125,8 +133,8 @@ class Swap(Entity):
         if message[0] == "received_photons":
             # parse indices
             indices = []
-            if message[1] != "[]":  # no matching indices
-                for val in message[1:]:
+            if message[2] != "[]":  # no matching indices
+                for val in message[2:]:
                     indices.append(int(re.sub("[],[]", "", val)))
 
             # determine if from Alice or Bob
@@ -165,7 +173,7 @@ class Swap(Entity):
 
         if message[0] == "got_bits":
             sender = int(message[1])
-            self.bit_lengths[sender] = int(message(2))
+            self.bit_lengths[sender] = int(message[2])
 
             # check if we have both
             if self.bit_lengths[0] == self.bit_lengths[1] and self.bit_lengths[0] is not None:
@@ -203,6 +211,9 @@ class Swap(Entity):
         self.node.send_message(message, "cc_bc")  # send to Bob
 
         # schedule start for begin_photon_pulse
+        process = Process(self, "begin_photon_pulse", [])
+        event = Event(self.start_time, process)
+        self.timeline.schedule(event)
 
     def generate_pairs(self, sample_size):
         # assert that start_protocol is called from Charlie (middle node)
@@ -216,6 +227,10 @@ class Swap(Entity):
         lightsource_b = self.node.components["spdc_b"]
         assert lightsource_a.frequency == lightsource_b.frequency
         self.qubit_frequency = lightsource_a.frequency
+        memory_alice = self.node.components["memory_a"]
+        memory_bob = self.node.components["memory_b"]
+        memory_alice.frequency = self.qubit_frequency
+        memory_bob.frequency = self.qubit_frequency
 
         # set light_time
         mean_photon_num = min(lightsource_a.mean_photon_num, lightsource_b.mean_photon_num)
@@ -229,10 +244,10 @@ if __name__ == "__main__":
     tl = Timeline()
 
     # Channels
-    qc_alice_charlie = topology.QuantumChannel("qc_ac", tl, attenuation=0.0002)
-    qc_bob_charlie = topology.QuantumChannel("qc_bc", tl, attenuation=0.0002)
-    cc_alice_charlie = topology.ClassicalChannel("cc_ac", tl)
-    cc_bob_charlie = topology.ClassicalChannel("cc_bc", tl)
+    qc_alice_charlie = topology.QuantumChannel("qc_ac", tl, distance=1e3, attenuation=.0002)
+    qc_bob_charlie = topology.QuantumChannel("qc_bc", tl, distance=1e3, attenuation=0.0002)
+    cc_alice_charlie = topology.ClassicalChannel("cc_ac", tl, distance=1e3)
+    cc_bob_charlie = topology.ClassicalChannel("cc_bc", tl, distance=1e3)
 
     # Alice
     detectors = [{"efficiency": 0.8, "dark_count": 100, "time_resolution": 100},
@@ -246,6 +261,9 @@ if __name__ == "__main__":
 
     alice = topology.Node("alice", tl, components=components)
 
+    qc_alice_charlie.set_receiver(detector_alice)
+    cc_alice_charlie.add_end(alice)
+
     # Bob
     detectors = [{"efficiency": 0.8, "dark_count": 100, "time_resolution": 100},
                  None,
@@ -258,6 +276,9 @@ if __name__ == "__main__":
 
     bob = topology.Node("bob", tl, components=components)
 
+    qc_bob_charlie.set_receiver(detector_bob)
+    cc_bob_charlie.add_end(bob)
+
     # Charlie
     mem_charlie_1 = topology.Memory("charlie.mem_1", tl)
     mem_charlie_2 = topology.Memory("charlie.mem_2", tl)
@@ -269,14 +290,20 @@ if __name__ == "__main__":
                                          another_receiver=mem_charlie_2, wavelengths=[1532, 795], phase_error=0)
     detectors = [{"efficiency": 0.8, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000},
                  {"efficiency": 0.8, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000}]
+    # TODO: define BSM adapters
     bsm_charlie = topology.BSM("charlie.bsm", tl,
                                encoding_type=encoding.time_bin, detectors=detectors, phase_error=0)
     a0 = topology.BSMAdapter(tl, photon_type=0, bsm=bsm_charlie)
     a1 = topology.BSMAdapter(tl, photon_type=1, bsm=bsm_charlie)
     components = {"memory_a": mem_charlie_1, "memory_b": mem_charlie_2, "spdc_a": spdc_charlie_1,
-                  "spdc_b": spdc_charlie_2, "bsm": bsm_charlie, "cc_ac": cc_bob_charlie, "cc_bc": cc_bob_charlie}
+                  "spdc_b": spdc_charlie_2, "bsm": bsm_charlie, "bsm_a": a0, "bsm_b": a1, "cc_ac": cc_alice_charlie, "cc_bc": cc_bob_charlie}
 
     charlie = topology.Node("charlie", tl, components=components)
+
+    qc_alice_charlie.set_sender(spdc_charlie_1)
+    qc_bob_charlie.set_sender(spdc_charlie_2)
+    cc_alice_charlie.add_end(charlie)
+    cc_bob_charlie.add_end(charlie)
 
     # add entities to timeline
     tl.entities.append(alice)
