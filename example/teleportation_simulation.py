@@ -13,9 +13,31 @@ from sequence.event import Event
 if __name__ == "__main__":
     states = ["0", "1", "+", "-"]
     phase_error = 0.033
-    sample_size = 100
-    random_seeds = np.linspace(1, 10, 10)
+    sample_size = 1
+    random_seeds = [1] #np.linspace(1, 10, 10)
     bases = [0, 1]
+
+    filename = "results/teleportation_simulation.log"
+    fh = open(filename, 'w')
+    fh.write("Format:\nstate basis random_seed sample_size %_measured_0 %_measured_1 time\n")
+
+    # Define parent protocol to write to file
+    class Parent:
+        def teleportation_result(self, alpha, beta, time):
+            fh.write(state)
+            fh.write(' ')
+            fh.write(bob_basis)
+            fh.write(' ')
+            fh.write(str(seed))
+            fh.write(' ')
+            fh.write(str(sample_size))
+            fh.write(' ')
+            fh.write(str(alpha * 100))
+            fh.write(' ')
+            fh.write(str(beta * 100))
+            fh.write(' ')
+            fh.write(str(time))
+            fh.write('\n')
 
     for state in states:
         for basis in bases:

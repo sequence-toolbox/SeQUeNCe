@@ -116,6 +116,8 @@ class Teleportation(Entity):
                 print("% 0:\t{}".format(alpha * 100))
                 print("% 1:\t{}".format(beta * 100))
                 print("time (ms): {}".format(self.timeline.now() * 1e-9))
+                if self.parent is not None:
+                    self.parent.teleportation_result(alpha, beta, self.timeline.now())
             else:
                 self.another_alice.send_state(self.quantum_state, self.sample_size)
 
