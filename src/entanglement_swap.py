@@ -84,10 +84,17 @@ class Swap(Entity):
         self.node.send_message(message)
 
     def send_to_bsm(self):
-        if [] not in self.indices:
-            # get indices
-            index_alice = self.indices[0].pop(0)
-            index_bob = self.indices[1].pop(0)
+        # if [] not in self.indices:
+        #     # get indices
+        #     index_alice = self.indices[0].pop(0)
+        #     index_bob = self.indices[1].pop(0)
+
+        # get index for BSM
+        index_bsm = int(round((self.timeline.now() - self.start_time) * self.qubit_frequency * 1e-12))
+
+        if index_bsm < len(self.indices[0]) and index_bsm < len(self.indices[1]):
+            index_alice = self.indices[0][index_bsm]
+            index_bob = self.indices[1][index_bsm]
 
             # send corresponding photons to bsm
             memory_alice = self.node.components["memory_a"]
@@ -107,9 +114,18 @@ class Swap(Entity):
 
         else:
             bsm_res = self.node.components["bsm"].get_bsm_res()
-            message = "bsm_result {}".format(bsm_res)
-            self.node.send_message(message, "cc_ac")  # send to Alice
-            self.node.send_message(message, "cc_bc")  # send to Bob
+            alice_indices_bsm = []
+            bob_indices_bsm = []
+            for res in bsm_res:
+                index_bsm = int(round((res[0] - self.start_time) * self.qubit_frequency * 1e-12))
+                alice_indices_bsm.append([self.indices[0][index_bsm], res[1]])
+                bob_indices_bsm.append([self.indices[1][index_bsm], res[1]])
+
+            message_alice = "bsm_result {}".format(alice_indices_bsm)
+            message_bob = "bsm_result {}".format(bob_indices_bsm)
+
+            self.node.send_message(message_alice, "cc_ac")  # send to Alice
+            self.node.send_message(message_bob, "cc_bc")  # send to Bob
 
     def received_message(self):
         message = self.node.message.split(" ")
@@ -144,25 +160,27 @@ class Swap(Entity):
 
             # see if we have both index lists and if so send to BSM
             if None not in self.indices:
+                # set start time (used to determine which bsm result we have in send_to_bsm
+                self.start_time = self.timeline.now()
                 self.send_to_bsm()
 
         if message[0] == "bsm_result":
             # parse bsm results
-            times_and_bits = []  # list of alternating time/bit
+            indices_and_bits = []  # list of alternating time/bit
             if message[1] != "[]":
                 for val in message[1:]:
-                    times_and_bits.append(int(re.sub("[],[]", "", val)))
+                    indices_and_bits.append(int(re.sub("[],[]", "", val)))
             bsm_res = []
             bsm_single = []
-            for i, val in enumerate(times_and_bits):
+            for i, val in enumerate(indices_and_bits):
                 bsm_single.append(val)
                 if i % 2:
                     bsm_res.append(bsm_single)
                     bsm_single = []
 
             # get and correct results
-            for _ in bsm_res:
-                bit = self.raw_bit_list.pop(0)
+            for res in bsm_res:
+                bit = self.raw_bit_list[res[0]]
                 if self.role == 1:
                     bit = 1 - bit
                 self.bit_list.append(bit)
@@ -183,19 +201,31 @@ class Swap(Entity):
                     # finished protocol
                     print("finished entanglement swap")
 
-                    alice_bits = int("".join(str(x) for x in self.another_alice.bit_list), 2)  # convert to int
-                    bob_bits = int("".join(str(x) for x in self.another_bob.bit_list), 2)  # convert to int
+                    alice_measured = 0
+                    alice_bits = self.another_alice.bit_list
+                    for x in alice_bits:
+                        if x == 0 or x == 1:
+                            alice_measured <<= 1
+                            alice_measured |= x
+                    bob_measured = 0
+                    bob_bits = self.another_bob.bit_list
+                    for x in bob_bits:
+                        if x == 0 or x == 1:
+                            bob_measured <<= 1
+                            bob_measured |= x
 
-                    print("Alice measured bits: \t{:0{}b}".format(alice_bits))
-                    print("Bob measured bits: \t{:0{}b}".format(bob_bits))
+                    print("Alice measured bits: \t{}".format(bin(alice_measured)))
+                    print("Bob measured bits: \t\t{}".format(bin(bob_measured)))
 
-                    bit_diff = alice_bits ^ bob_bits
+                    bit_diff = alice_measured ^ bob_measured
                     num_errors = 0
                     while bit_diff:
                         bit_diff &= bit_diff - 1
                         num_errors += 1
 
-                    print("error percentage: {}".format(num_errors / self.sample_size))
+                    print("error percentage: {}".format((num_errors / self.sample_size) * 100))
+
+                    self.timeline.stop()
 
     def start_protocol(self):
         # reset params
@@ -250,7 +280,7 @@ if __name__ == "__main__":
     cc_bob_charlie = topology.ClassicalChannel("cc_bc", tl, distance=1e3)
 
     # Alice
-    detectors = [{"efficiency": 0.8, "dark_count": 100, "time_resolution": 100},
+    detectors = [{"efficiency": 1, "dark_count": 100, "time_resolution": 100},
                  None,
                  None]
     interferometer = {}
@@ -265,7 +295,7 @@ if __name__ == "__main__":
     cc_alice_charlie.add_end(alice)
 
     # Bob
-    detectors = [{"efficiency": 0.8, "dark_count": 100, "time_resolution": 100},
+    detectors = [{"efficiency": 1, "dark_count": 100, "time_resolution": 100},
                  None,
                  None]
     interferometer = {}
@@ -288,8 +318,8 @@ if __name__ == "__main__":
     spdc_charlie_2 = topology.SPDCSource("charlie.ls_2", tl, frequency=80e6, mean_photon_num=0.045,
                                          encoding_type=encoding.time_bin, direct_receiver=qc_bob_charlie,
                                          another_receiver=mem_charlie_2, wavelengths=[1532, 795], phase_error=0)
-    detectors = [{"efficiency": 0.8, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000},
-                 {"efficiency": 0.8, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000}]
+    detectors = [{"efficiency": 1, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000},
+                 {"efficiency": 1, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000}]
     # TODO: define BSM adapters
     bsm_charlie = topology.BSM("charlie.bsm", tl,
                                encoding_type=encoding.time_bin, detectors=detectors, phase_error=0)

@@ -31,6 +31,14 @@ class TemperatureModel():
         return temperature
 """
 
+# used for photon.measure_multiple
+def swap_bits(num, pos1, pos2):
+    bit1 = (num >> pos1) & 1
+    bit2 = (num >> pos2) & 1
+    x = bit1 ^ bit2
+    x = (x << pos1) | (x << pos2)
+    return num ^ x
+
 
 class Photon(Entity):
     def __init__(self, name, timeline, **kwargs):
@@ -121,15 +129,20 @@ class Photon(Entity):
         for vector in basis:
             assert len(vector) == len(basis)
 
-        # move photons to beginning of entangled list and quantum state
         entangled_list = photons[0].entangled_photons
         state = photons[0].quantum_state
-        for i, photon in enumerate(photons):
-            for j, entangled_photon in enumerate(entangled_list):
-                if entangled_photon == photon:
-                    entangled_list[i], entangled_list[j] = entangled_list[j], entangled_list[i]
-                    state[i], state[j] = state[j], state[i]
-                    break
+
+        # move photons to beginning of entangled list and quantum state
+        pos_photon_0 = entangled_list.index(photons[0])
+        pos_photon_1 = entangled_list.index(photons[1])
+        entangled_list[0], entangled_list[pos_photon_0] = entangled_list[pos_photon_0], entangled_list[0]
+        entangled_list[1], entangled_list[pos_photon_1] = entangled_list[pos_photon_1], entangled_list[1]
+        switched_state = numpy.array([complex(0)] * len(state))
+        for i, coefficient in enumerate(state):
+            switched_i = swap_bits(i, pos_photon_0, pos_photon_1)
+            switched_state[switched_i] = coefficient
+
+        state = switched_state
 
         # math for probability calculations
         length_diff = len(entangled_list) - len(photons)
