@@ -202,13 +202,13 @@ class Swap(Entity):
                     print("finished entanglement swap")
 
                     alice_measured = 0
-                    alice_bits = self.another_alice.bit_list
+                    alice_bits = self.another_alice.bit_list[:100]
                     for x in alice_bits:
                         if x == 0 or x == 1:
                             alice_measured <<= 1
                             alice_measured |= x
                     bob_measured = 0
-                    bob_bits = self.another_bob.bit_list
+                    bob_bits = self.another_bob.bit_list[:100]
                     for x in bob_bits:
                         if x == 0 or x == 1:
                             bob_measured <<= 1
