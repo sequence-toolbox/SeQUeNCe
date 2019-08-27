@@ -900,7 +900,7 @@ class Memory(Entity):
     def retrieve_photon(self, photon_num):
         photon_list = []
         for i, num in enumerate(self.arrival_indices):
-            if num == photon_num:
+            if num == photon_num and numpy.random.random_sample() < self.efficiency:
                 photon_list.append(self.photons[i])
                 del self.arrival_indices[i]
                 del self.photons[i]
