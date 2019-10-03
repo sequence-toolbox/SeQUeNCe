@@ -39,7 +39,6 @@ class DLCZ(Entity):
         self.qubit_frequency = 0
         self.raw_bit_list = []
         self.bit_list = []
-        self.bit_lengths = [None, None]
         self.indices = [None, None]
         self.parent = None
         self.another_alice = None
@@ -59,12 +58,26 @@ class DLCZ(Entity):
         if qchannel is not None:
             self.quantum_delay = int(round(qchannel.distance / qchannel.light_speed))
 
+    def begin_photon_pulse(self):
+        pass
+
+    def end_photon_pulse(self):
+        pass
+
+    def received_message(self):
+        message = self.node.message.split(" ")
+
+        if message[0] == "begin_photon_pulse":
+            pass
+
+        if message[0] == "bsm_result":
+            pass
+
     def generate_pairs(self, sample_size):
         # assert that start_protocol is called from Alice (middle node)
         assert self.role == 0
 
         self.sample_size = sample_size
-        self.bit_lengths = [0, 0]
 
         lightsource = self.node.components["spdc"]
         lightsource_bob = self.another_bob.node.components["spdc"]
