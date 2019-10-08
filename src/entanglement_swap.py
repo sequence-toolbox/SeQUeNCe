@@ -310,8 +310,8 @@ if __name__ == "__main__":
     cc_bob_charlie.add_end(bob)
 
     # Charlie
-    mem_charlie_1 = topology.Memory("charlie.mem_1", tl)
-    mem_charlie_2 = topology.Memory("charlie.mem_2", tl)
+    mem_charlie_1 = topology.IndexedMemory("charlie.mem_1", tl)
+    mem_charlie_2 = topology.IndexedMemory("charlie.mem_2", tl)
     spdc_charlie_1 = topology.SPDCSource("charlie.ls_1", tl, frequency=80e6, mean_photon_num=0.045,
                                          encoding_type=encoding.time_bin, direct_receiver=qc_alice_charlie,
                                          another_receiver=mem_charlie_1, wavelengths=[1532, 795], phase_error=0)

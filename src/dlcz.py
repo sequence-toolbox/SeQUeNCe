@@ -33,18 +33,9 @@ class DLCZ(Entity):
         self.role = kwargs.get("role", -1)  # Alice, Bob, Charlie are 0, 1, 2, respectively
 
         self.classical_delay = 0
-        self.quantum_delay = 0
+        self.quantum_delay = 0 
+        self.received_first_pulse = False
         self.start_time = 0
-        self.light_time = 0
-        self.qubit_frequency = 0
-        self.raw_bit_list = []
-        self.bit_list = []
-        self.indices = [None, None]
-        self.parent = None
-        self.another_alice = None
-        self.another_bob = None
-        self.another_charlie = None
-        self.sample_size = 0
 
     def init(self):
         pass
@@ -58,38 +49,83 @@ class DLCZ(Entity):
         if qchannel is not None:
             self.quantum_delay = int(round(qchannel.distance / qchannel.light_speed))
 
-    def begin_photon_pulse(self):
-        pass
-
     def end_photon_pulse(self):
-        pass
+        if self.received_first_pulse:
+            photon_alice = self.node.components["memory_a"].retrieve_photon()
+            photon_bob = self.node.components["memory_b"].retrieve_photon()
+
+            # if we didn't get both photons, restart protocol
+            if photon_alice is None or photon_bob is None:
+                self.generate_pair()
+                return
+
+            #otherwise, send to BSM
+            self.start_time = self.timeline.now()
+            self.node.components["bsm_a"].get(photon_alice)
+            self.node.components["bsm_b"].get(photon_bob)
+            #schedule result measurement after 1 period
+            future_time = self.timeline.now() + int((1 / self.frequency) * 1e12)
+            process = Process(self, "get_bsm_res", [])
+            event = Event(future_time, process)
+            self.timeline.schedule(event)
+
+        else:
+            self.received_first_pulse = True
+
+    def get_bsm_res(self):
+        results = self.node.components["bsm"].get_bsm_res()
+        bsm_res = -1
+        for res in results:
+            if res[0] > self.start_time:
+                bsm_res = res[1]
+        
+        message = "bsm_result {}".format(bsm_res)
+        self.node.send_message(message, "cc_a")
+        self.node.send_message(message, "cc_b")
 
     def received_message(self):
         message = self.node.message.split(" ")
 
-        if message[0] == "begin_photon_pulse":
-            pass
+        if message[0] == "begin_protocol":
+            # current node: Alice or Bob
+            mean_photon_num = self.node.components["spdc"].mean_photon_num
+            frequency = self.node.components["spdc"].frequency
+            num_pulses = 1 / mean_photon_number
+            light_time = num_pulses / frequency
+
+            state = [complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]
+            self.node.send_photons(state, num_pulses, "spdc")
+
+            # send message that we're sending photons
+            self.node.send_message("sending_photons {} {}".format(self.timeline.now(), light_time))
+
+        if message[0] == "sending_photons":
+            # current node: Charlie
+
+            # schedule end_photon_pulse
+            end_photon_time = int(message[1]) + int(1e12 * float(message[2])) + self.quantum_delay
+            process = Process(self, "end_photon_pulse", [])
+            event = Event(end_photon_time, process)
+            self.timeline.schedule(event)
 
         if message[0] == "bsm_result":
             pass
 
-    def generate_pairs(self, sample_size):
-        # assert that start_protocol is called from Alice (middle node)
-        assert self.role == 0
+    def generate_pair(self):
+        # assert that start_protocol is called from Charlie (middle node)
+        assert self.role == 2
 
-        self.sample_size = sample_size
+        self.frequency = min(self.another_alice.node.components["spdc"].frequency, self.another_bob.node.components["spdc"].frequency)
 
-        lightsource = self.node.components["spdc"]
-        lightsource_bob = self.another_bob.node.components["spdc"]
-        assert lightsource.frequency == lightsource_bob.frequency
+        message = "begin_protocol"
+        # send start message to Alice
+        self.node.send_message(message, "cc_a")
+        # send start message to Bob
+        self.node.send_message(message, "cc_b")
 
-        self.qubit_frequency = lightsource.frequency
-        self.another_bob.qubit_frequency = lightsource.frequency
-	self.another_charlie.qubit_frequency = lightsource.frequency
 
-        # set light_time
-        mean_photon_num = min(lightsource.mean_photon_num, lightsource_bob.mean_photon_num)
-        self.light_time = sample_size / (self.qubit_frequency * mean_photon_num)
-
-        self.start_protocol()
+# main function for testing
+if __name__ == "__main__":
+    
+    test = DLCZ("test", None)
 

@@ -858,7 +858,7 @@ class SPDCSource(LightSource):
                 new_photon1 = Photon(None, self.timeline,
                                      wavelength=self.wavelengths[1],
                                      location=self.direct_receiver,
-                                     encoding_type=self.encoding_type)
+                                                             encoding_type=self.encoding_type)
 
                 new_photon0.entangle(new_photon1)
                 new_photon0.set_state([state[0], complex(0), complex(0), state[1]])
@@ -879,6 +879,26 @@ class SPDCSource(LightSource):
 
 
 class Memory(Entity):
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(self, name, timeline)
+        self.fidelity = kwargs.get("fidelity", 1)
+        self.efficiency = kwargs.get("efficiency", 1)
+        self.photon = None
+
+    def init(self):
+        pass
+
+    def get(self, photon):
+        photon.location = self
+        self.photon = photon
+
+    def retrieve_photon(self):
+        photon = self.photon
+        self.photon = None
+        return photon
+
+
+class IndexedMemory(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.fidelity = kwargs.get("fidelity", 1)
