@@ -320,7 +320,6 @@ if __name__ == "__main__":
                                          another_receiver=mem_charlie_2, wavelengths=[1532, 795], phase_error=0)
     detectors = [{"efficiency": 1, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000},
                  {"efficiency": 1, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000}]
-    # TODO: define BSM adapters
     bsm_charlie = topology.BSM("charlie.bsm", tl,
                                encoding_type=encoding.time_bin, detectors=detectors, phase_error=0)
     a0 = topology.BSMAdapter(tl, photon_type=0, bsm=bsm_charlie)

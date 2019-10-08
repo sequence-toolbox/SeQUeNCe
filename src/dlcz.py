@@ -109,7 +109,7 @@ class DLCZ(Entity):
             self.timeline.schedule(event)
 
         if message[0] == "bsm_result":
-            pass
+            print("Received bsm at node {}".format(self.role))
 
     def generate_pair(self):
         # assert that start_protocol is called from Charlie (middle node)
@@ -126,6 +126,27 @@ class DLCZ(Entity):
 
 # main function for testing
 if __name__ == "__main__":
+    tl = Timeline()
     
-    test = DLCZ("test", None)
+    # CHANGE THESE TO CHANGE DISTANCE TO NODE (measured in m)
+    alice_distance = 1
+    bob_distance = 1
+
+    qc_alice_charlie = topology.QuantumChannel("qc_ac", tl, distance=alice_distance, attenuation=0.0002)
+    qc_bob_charlie = topology.QuantumChannel("qc_bc", tl, distance=bob_distance, attenuation=0.0002)
+    cc_alice_charlie = topology.ClassicalChannel("cc_ac", tl, distance=alice_distance)
+    cc_bob_charlie = topology.ClassicalChannel("cc_bc", tl, distance=bob_distance)
+
+    # Alice
+
+    # Bob
+
+    # Charlie
+
+    # add entities to timeline
+
+    # dlcz setup
+
+    # run
+
 
