@@ -61,17 +61,17 @@ class DLCZ(Entity):
                 # send start message to Alice
                 self.node.send_message(message, "cc_a")
                 # send start message to Bob
-                self.node.send_message(message, "cc_b") 
-
+                self.node.send_message(message, "cc_b")
             #otherwise, send to BSM
-            self.start_time = self.timeline.now()
-            self.node.components["bsm_a"].get(photon_alice)
-            self.node.components["bsm_b"].get(photon_bob)
-            #schedule result measurement after 1 period
-            future_time = self.timeline.now() + int((1 / self.frequency) * 1e12)
-            process = Process(self, "get_bsm_res", [])
-            event = Event(future_time, process)
-            self.timeline.schedule(event)
+            else:
+                self.start_time = self.timeline.now()
+                self.node.components["bsm_a"].get(photon_alice)
+                self.node.components["bsm_b"].get(photon_bob)
+                #schedule result measurement after 1 period
+                future_time = self.timeline.now() + int((1 / self.frequency) * 1e12)
+                process = Process(self, "get_bsm_res", [])
+                event = Event(future_time, process)
+                self.timeline.schedule(event)
 
             self.received_first_pulse = False
 
@@ -111,18 +111,19 @@ class DLCZ(Entity):
             self.node.send_photons(state, num_pulses, "spdc")
 
             # send message that we're sending photons
-            self.node.send_message("sending_photons {} {}".format(self.timeline.now(), light_time))
+            self.node.send_message("sending_photons {} {} {}".format(self.timeline.now(), light_time, self.quantum_delay))
 
         elif message[0] == "sending_photons":
             # current node: Charlie
 
             # schedule end_photon_pulse
-            end_photon_time = int(message[1]) + int(1e12 * float(message[2])) + self.quantum_delay
+            end_photon_time = int(message[1]) + int(1e12 * float(message[2])) + int(message[3])
             process = Process(self, "end_photon_pulse", [])
             event = Event(end_photon_time, process)
             self.timeline.schedule(event)
 
         elif message[0] == "bsm_result":
+            # current node: Alice or Bob
             print("Received bsm result {} at node {}".format(message[1], self.role))
 
     def generate_pair(self):
@@ -145,8 +146,8 @@ if __name__ == "__main__":
     tl = Timeline(1e12)
     
     # CHANGE THESE TO CHANGE DISTANCE TO NODE (measured in m)
-    alice_distance = 1
-    bob_distance = 1
+    alice_distance = 100
+    bob_distance = 100
 
     qc_alice_charlie = topology.QuantumChannel("qc_ac", tl, distance=alice_distance, attenuation=0.0002)
     qc_bob_charlie = topology.QuantumChannel("qc_bc", tl, distance=bob_distance, attenuation=0.0002)
