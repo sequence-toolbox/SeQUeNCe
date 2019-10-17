@@ -38,6 +38,8 @@ class DLCZ(Entity):
         self.received_first_pulse = False
         self.start_time = 0
 
+        self.parent = None
+
     def init(self):
         pass
 
@@ -80,6 +82,7 @@ class DLCZ(Entity):
 
     def get_bsm_res(self):
         results = self.node.components["bsm"].get_bsm_res()
+        print("bsm result at node {}: {}".format(self.role, results))
         bsm_res = -1
         for res in results:
             if res[0] > self.start_time:
@@ -141,7 +144,7 @@ class DLCZ(Entity):
 
 # main function for testing
 if __name__ == "__main__":
-    numpy.random.seed(1)
+    # numpy.random.seed(1)
 
     tl = Timeline(1e12)
     
