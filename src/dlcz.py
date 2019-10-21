@@ -67,8 +67,8 @@ class DLCZ(Entity):
             #otherwise, send to BSM
             else:
                 self.start_time = self.timeline.now()
-                self.node.components["bsm_a"].get(photon_alice)
-                self.node.components["bsm_b"].get(photon_bob)
+                self.node.components["bsm"].get(photon_alice)
+                self.node.components["bsm"].get(photon_bob)
                 #schedule result measurement after 1 period
                 future_time = self.timeline.now() + int((1 / self.frequency) * 1e12)
                 process = Process(self, "get_bsm_res", [])
@@ -204,10 +204,8 @@ if __name__ == "__main__":
     detectors = [{"efficiency": 1, "dark_count": 100, "time_resolution": 150, "count_rate": 25e6},
                  {"efficiency": 1, "dark_count": 100, "time_resolution": 150, "count_rate": 25e6}]
     bsm_charlie = topology.BSM("charlie.bsm", tl, encoding_type=encoding.time_bin, detectors=detectors, phase_error=0)
-    a0 = topology.BSMAdapter(tl, photon_type=0, bsm=bsm_charlie)
-    a1 = topology.BSMAdapter(tl, photon_type=1, bsm=bsm_charlie)
 
-    components = {"memory_a": mem_charlie_1, "memory_b": mem_charlie_2, "bsm": bsm_charlie, "bsm_a": a0, "bsm_b": a1,
+    components = {"memory_a": mem_charlie_1, "memory_b": mem_charlie_2, "bsm": bsm_charlie,
                   "cc_a": cc_alice_charlie, "cc_b": cc_bob_charlie}
 
     charlie = topology.Node("charlie", tl, components=components)

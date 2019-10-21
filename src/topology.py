@@ -573,10 +573,8 @@ class BSM(Entity):
         # self.target_end = None
         # self.signal_end = None
 
-        self.target_photon = None
-        self.target_arrive_time = None
-        self.signal_photon = None
-        self.signal_arrive_time = None
+        self.photons = [None, None]
+        self.photon_arrival_time = -1
 
         # define bell basis vectors
         self.bell_basis = [[complex(math.sqrt(1/2)), complex(0), complex(0), complex(math.sqrt(1/2))],
@@ -595,31 +593,30 @@ class BSM(Entity):
     def init(self):
         pass
 
-    def get(self, photon, photon_type):
-        # record arrive time
-        # if target photon and signal photon arrive at the same time, do measurement
-        if photon_type == 0:
-            # target photon
-            self.target_photon = photon
-            self.target_arrive_time = self.timeline.now()
+    def get(self, photon):
+        if self.photon_arrival_time < self.timeline.now():
+            # clear photons
+            self.photons = [photon, None]
+            # set arrival time
+            self.photon_arrival_time = self.timeline.now()
+        
+        # if we have photons from same source, do nothing
+        # otherwise, we have different photons arriving at the same time and can proceed
+        if self.photons[0].location == photon.location:
+            return
         else:
-            # signal photon
-            self.signal_photon = photon
-            self.signal_arrive_time = self.timeline.now()
-
-        if self.target_photon is not None and self.signal_photon is not None:
-            if self.target_arrive_time == self.signal_arrive_time:
-                self.send_to_detectors()
+            self.photons[1] = photon
+            self.send_to_detectors()
 
     def send_to_detectors(self):
         if numpy.random.random_sample() < self.phase_error:
-            self.target_photon.apply_phase_error()
+            self.photons[1].apply_phase_error()
 
         # entangle photons to measure
-        self.target_photon.entangle(self.signal_photon)
+        self.photons[0].entangle(self.photons[1])
 
         # measure in bell basis
-        res = Photon.measure_multiple(self.bell_basis, [self.target_photon, self.signal_photon])
+        res = Photon.measure_multiple(self.bell_basis, self.photons)
 
         if self.encoding_type["name"] == "time_bin":
             # check if we've measured as Phi+ or Phi-; these cannot be measured by the BSM
