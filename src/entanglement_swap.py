@@ -102,9 +102,9 @@ class Swap(Entity):
             photons_alice = memory_alice.retrieve_photon(index_alice)
             photons_bob = memory_bob.retrieve_photon(index_bob)
             for photon in photons_alice:
-                self.node.components["bsm_a"].get(photon)
+                self.node.components["bsm"].get(photon)
             for photon in photons_bob:
-                self.node.components["bsm_b"].get(photon)
+                self.node.components["bsm"].get(photon)
 
             # schedule next send_to_bsm after 1/qubit_frequency
             time = self.timeline.now() + int(1e12 / self.qubit_frequency)
@@ -301,7 +301,7 @@ if __name__ == "__main__":
     interferometer = {}
     switch = {"state": 0}
     detector_bob = topology.QSDetector("bob.qsd", tl, encoding_type=encoding.time_bin, detectors=detectors,
-                                       interferometer=interferometer, switch=switch)
+                                               interferometer=interferometer, switch=switch)
     components = {"detector": detector_bob, "qchannel": qc_bob_charlie, "cchannel": cc_bob_charlie}
 
     bob = topology.Node("bob", tl, components=components)
@@ -322,10 +322,8 @@ if __name__ == "__main__":
                  {"efficiency": 1, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000}]
     bsm_charlie = topology.BSM("charlie.bsm", tl,
                                encoding_type=encoding.time_bin, detectors=detectors, phase_error=0)
-    a0 = topology.BSMAdapter(tl, photon_type=0, bsm=bsm_charlie)
-    a1 = topology.BSMAdapter(tl, photon_type=1, bsm=bsm_charlie)
     components = {"memory_a": mem_charlie_1, "memory_b": mem_charlie_2, "spdc_a": spdc_charlie_1,
-                  "spdc_b": spdc_charlie_2, "bsm": bsm_charlie, "bsm_a": a0, "bsm_b": a1, "cc_ac": cc_alice_charlie, "cc_bc": cc_bob_charlie}
+                  "spdc_b": spdc_charlie_2, "bsm": bsm_charlie, "cc_ac": cc_alice_charlie, "cc_bc": cc_bob_charlie}
 
     charlie = topology.Node("charlie", tl, components=components)
 
