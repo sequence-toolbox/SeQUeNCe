@@ -82,7 +82,6 @@ class DLCZ(Entity):
 
     def get_bsm_res(self):
         results = self.node.components["bsm"].get_bsm_res()
-        print("bsm result at node {}: {}".format(self.role, results))
         bsm_res = -1
         for res in results:
             if res[0] > self.start_time:
@@ -144,7 +143,7 @@ class DLCZ(Entity):
 
 # main function for testing
 if __name__ == "__main__":
-    # numpy.random.seed(1)
+    numpy.random.seed(2)
 
     tl = Timeline(1e12)
     
@@ -165,7 +164,7 @@ if __name__ == "__main__":
     switch = {"state": 0}
     detector_alice = topology.QSDetector("alice.qsd", tl, encoding_type=encoding.time_bin, detectors=detectors, interferometer=interferometer, switch=switch)
 
-    memory_alice = topology.Memory("alice.memory", tl)
+    memory_alice = topology.Memory_EIT("alice.memory", tl)
 
     spdc_alice = topology.SPDCSource("alice.ls", tl, frequency=80e6, mean_photon_num=0.045, encoding_type=encoding.time_bin, direct_receiver=qc_alice_charlie,
                                      another_receiver=memory_alice, wavelengths=[1532, 795], phase_error=0)
@@ -185,7 +184,7 @@ if __name__ == "__main__":
     switch = {"state": 0}
     detector_bob = topology.QSDetector("bob.qsd", tl, encoding_type=encoding.time_bin, detectors=detectors, interferometer=interferometer, switch=switch)
 
-    memory_bob = topology.Memory("bob.memory", tl)
+    memory_bob = topology.Memory_EIT("bob.memory", tl)
 
     spdc_bob = topology.SPDCSource("bob.ls", tl, frequency=80e6, mean_photon_num=0.045, encoding_type=encoding.time_bin, direct_receiver=qc_bob_charlie,
                                    another_receiver=memory_bob, wavelengths=[1523, 795], phase_error=0)
@@ -198,8 +197,8 @@ if __name__ == "__main__":
     cc_bob_charlie.add_end(bob)
 
     # Charlie
-    mem_charlie_1 = topology.Memory("charlie.mem_1", tl)
-    mem_charlie_2 = topology.Memory("charlie.mem_2", tl)
+    mem_charlie_1 = topology.Memory_EIT("charlie.mem_1", tl)
+    mem_charlie_2 = topology.Memory_EIT("charlie.mem_2", tl)
 
     detectors = [{"efficiency": 1, "dark_count": 100, "time_resolution": 150, "count_rate": 25e6},
                  {"efficiency": 1, "dark_count": 100, "time_resolution": 150, "count_rate": 25e6}]

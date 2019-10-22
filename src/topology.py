@@ -546,7 +546,6 @@ class Switch(Entity):
             receiver.get(photon)
 
 
-# TODO: redo BSM to not require photon_type
 class BSM(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
@@ -653,91 +652,9 @@ class BSM(Entity):
             # invalid result from measurement
             else:
                 raise Exception("Invalid result from photon.measure_multiple")
+
         else:
             # TODO: polarization
-            pass
-
-    # legace "send_to_detectors" method, not currently used
-    def old_send_to_detectors(self):
-        # TODO: generalize function to any quantum entanglement state
-        def get_another_photon(photon):
-            for _photon in photon.entangled_photons:
-                if _photon != photon: return _photon
-            return
-
-        if numpy.random.random_sample() < self.phase_error:
-            self.target_photon.quantum_state = numpy.multiply(self.target_photon.quantum_state, [1, -1])
-
-        if self.encoding_type["name"] == "time_bin":
-            early_time = self.timeline.now()
-            late_time = early_time + self.encoding_type["bin_separation"]
-            random_num = numpy.random.random_sample()
-            if random_num < 0.125:
-                # project to |\phi_0> = |01> - |10>
-                # |\phi_0> ---> - \beta |0> + \alpha |1>
-                # |e> at d0, |l> at d1
-                # TODO: change photons quantum state
-                another_photon = get_another_photon(self.signal_photon)
-                another_photon.entangled_photons = [another_photon]
-                another_photon.quantum_state = [-self.target_photon.quantum_state[1], self.target_photon.quantum_state[0]]
-
-                process = Process(self.detectors[0], "get", [])
-                event = Event(int(round(early_time)), process)
-                self.timeline.schedule(event)
-                process = Process(self.detectors[1], "get", [])
-                event = Event(int(round(late_time)), process)
-                self.timeline.schedule(event)
-
-            elif random_num < 0.25:
-                # project to |\phi_0> = |01> - |10>
-                # |\phi_0> ---> - \beta |0> + \alpha |1>
-                # |l> at d0, |e> at d1
-                another_photon = get_another_photon(self.signal_photon)
-                another_photon.entangled_photons = [another_photon]
-                another_photon.quantum_state = [-self.target_photon.quantum_state[1], self.target_photon.quantum_state[0]]
-
-                process = Process(self.detectors[0], "get", [])
-                event = Event(int(round(late_time)), process)
-                self.timeline.schedule(event)
-                process = Process(self.detectors[1], "get", [])
-                event = Event(int(round(early_time)), process)
-                self.timeline.schedule(event)
-
-            elif random_num < 0.375:
-                # project to |\phi_1> = |01> + |10>
-                # |\phi_1> ---> \beta |0> + \alpha |1>
-                # |e>, |l> at d0
-                another_photon = get_another_photon(self.signal_photon)
-                another_photon.entangled_photons = [another_photon]
-                another_photon.quantum_state = [self.target_photon.quantum_state[1], self.target_photon.quantum_state[0]]
-
-                process = Process(self.detectors[0], "get", [])
-                event = Event(int(round(late_time)), process)
-                self.timeline.schedule(event)
-                process = Process(self.detectors[0], "get", [])
-                event = Event(int(round(early_time)), process)
-                self.timeline.schedule(event)
-
-            elif random_num < 0.5:
-                # project to |\phi_1> = |01> + |10>
-                # |\phi_1> ---> \beta |0> + \alpha |1>
-                # |e>, |l> at d1
-                another_photon = get_another_photon(self.signal_photon)
-                another_photon.entangled_photons = [another_photon]
-                another_photon.quantum_state = [self.target_photon.quantum_state[1], self.target_photon.quantum_state[0]]
-
-                process = Process(self.detectors[1], "get", [])
-                event = Event(int(round(late_time)), process)
-                self.timeline.schedule(event)
-                process = Process(self.detectors[1], "get", [])
-                event = Event(int(round(early_time)), process)
-                self.timeline.schedule(event)
-
-            else:
-                # discard photons
-                pass
-        else:
-            #TODO: polarization
             pass
 
     def get_bsm_res(self):
@@ -791,21 +708,6 @@ class BSM(Entity):
             # TODO: polariation
             pass
         return bsm_res
-
-
-# TODO: find a better way to implement
-class BSMAdapter(Entity):
-    def __init__(self, timeline, **kwargs):
-        super().__init__("", timeline)
-        self.receiver = kwargs.get("bsm", None)
-        self.photon_type = kwargs.get("photon_type", -1)
-
-    def init(self):
-        pass
-
-    def get(self, photon):
-        self.receiver.get(photon, self.photon_type)
-
 
 class SPDCLens(Entity):
     def __init__(self, name, timeline, **kwargs):
@@ -874,8 +776,30 @@ class SPDCSource(LightSource):
     def assign_another_receiver(self, receiver):
         self.another_receiver = receiver
 
+class Memory(entity):
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(self, name, timeline)
+        self.fidelity = kwargs.get("fidelity", 1)
+        self.efficiency = kwargs.get("efficiency", 1)
+        self.direct_receiver = kwargs.get("direct_receiver", None)
+        self.state = 0
+        # keep track of entanglement?
 
-class Memory(Entity):
+    def init(self):
+        pass
+
+    def write(self):
+        if numpy.random.random_sample() < self.efficiency:
+            self.state = 1
+            # send photon in certain state to direct receiver
+
+    def read(self):
+        if numpy.random_random_sample() < self.fidelity:
+            self.state = 0
+            # send photon in certain state to direct receiver
+            
+
+class Memory_EIT(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.fidelity = kwargs.get("fidelity", 1)
