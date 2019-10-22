@@ -776,7 +776,7 @@ class SPDCSource(LightSource):
     def assign_another_receiver(self, receiver):
         self.another_receiver = receiver
 
-class Memory(entity):
+class Memory(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.fidelity = kwargs.get("fidelity", 1)
