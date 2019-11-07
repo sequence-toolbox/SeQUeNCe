@@ -65,10 +65,6 @@ class Photon(Entity):
         self.quantum_state = [complex(numpy.cos(angle)), complex(numpy.sin(angle))]
         # self.quantum_state += numpy.random.random() * 360  # add random angle, use 360 instead of 2*pi
 
-    def apply_phase_noise(self):
-        # TODO: apply Z gate
-        pass
-
     def set_state(self, state):
         for photon in self.entangled_photons:
             photon.quantum_state = state
@@ -783,20 +779,31 @@ class Memory(Entity):
         self.efficiency = kwargs.get("efficiency", 1)
         self.direct_receiver = kwargs.get("direct_receiver", None)
         self.state = 0
+        self.frequencies = kwargs.get("frequencies", [0, 0]) # first element is ground transition frequency, second is excited frequency
         # keep track of entanglement?
 
     def init(self):
         pass
 
     def write(self):
-        if numpy.random.random_sample() < self.efficiency:
+        if numpy.random.random_sample() < self.efficiency and self.state == 0:
             self.state = 1
             # send photon in certain state to direct receiver
+            # TODO: specify new encoding_type
+            photon = Photon("", self.timeline, wavelength=(1/self.frequencies[1]), location=self, encoding_type=None)
+            self.direct_receiver.get(photon)
+            # schedule decay based on frequency
+            decay_time = self.timeline.now() + int(numpy.random.exponential(fidelity) * 1e12)
+            process = Process(self, "read", [])
+            event = Event(decay_time, process)
+            self.timeline.schedule(event)
 
     def read(self):
-        if numpy.random_random_sample() < self.fidelity:
+        if numpy.random_random_sample() < self.fidelity and self.state == 1:
             self.state = 0
             # send photon in certain state to direct receiver
+            photon = Photon("", self.timeline, wavelength=(1/self.frequencies[0]), location=self, encoding_type=None)
+            self.direct_receiver.get(photon)
             
 
 class Memory_EIT(Entity):
