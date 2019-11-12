@@ -54,7 +54,8 @@ class QuantumState():
             photon.quantum_state = quantum_state
 
     def random_noise(self):
-        pass
+        angle = numpy.random.random() * 2 * numpy.pi
+        self.state = [complex(numpy.cos(angle)), complex(numpy.sin(angle))]
 
     def set_state(self, state):
         for qs in self.entangled_states:
