@@ -838,6 +838,7 @@ class MemoryArray(Entity):
         Entity.__init__(self, name, timeline)
         self.memories = kwargs.get("memories", [])
         self.frequency = kwargs.get("frequency", 1)
+        self.entangled_memories = [-1] * len(self.memories)
     
     def write(self):
         time = self.timeline.now()
