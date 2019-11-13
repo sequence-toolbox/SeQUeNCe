@@ -796,6 +796,8 @@ class SPDCSource(LightSource):
     def assign_another_receiver(self, receiver):
         self.another_receiver = receiver
 
+
+# atomic ensemble memory for DLCZ/entanglement swapping
 class Memory(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
@@ -828,8 +830,35 @@ class Memory(Entity):
             # send photon in certain state to direct receiver
             photon = Photon("", self.timeline, wavelength=(1/self.frequencies[0]), location=self, encoding_type=None)
             self.direct_receiver.get(photon)
+
+
+# array of atomic ensemble memories
+class MemoryArray(Entity):
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(self, name, timeline)
+        self.memories = kwargs.get("memories", [])
+        self.frequency = kwargs.get("frequency", 1)
+    
+    def write(self):
+        time = self.timeline.now()
+
+        for mem in self.memories:
+            process = Process(mem, "write", [])
+            event = Event(time, process)
+            self.timeline.schedule(event)
+            time += 1e12 / self.frequency
+
+    def read(self):
+        time = self.timeline.now()
+        
+        for mem in self.memories:
+            process = Process(mem, "read", [])
+            event = Event(time, process)
+            self.timeline.schedule(event)
+            time += 1e12 / frequency
             
 
+# class for photon memory
 class Memory_EIT(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
@@ -848,41 +877,6 @@ class Memory_EIT(Entity):
         photon = self.photon
         self.photon = None
         return photon
-
-
-class IndexedMemory(Entity):
-    def __init__(self, name, timeline, **kwargs):
-        Entity.__init__(self, name, timeline)
-        self.fidelity = kwargs.get("fidelity", 1)
-        self.efficiency = kwargs.get("efficiency", 1)
-        self.start_time = 0
-        self.frequency = 0
-        self.photons = []
-        self.arrival_indices = []
-
-    def init(self):
-        pass
-
-    def get(self, photon):
-        photon.location = self
-        self.photons.append(photon)
-        index = int(round((self.timeline.now() - self.start_time) * (self.frequency * 1e-12)))
-        self.arrival_indices.append(index)
-
-    def retrieve_photon(self, photon_num):
-        photon_list = []
-        for i, num in enumerate(self.arrival_indices):
-            if num == photon_num and numpy.random.random_sample() < self.efficiency:
-                photon_list.append(self.photons[i])
-                del self.arrival_indices[i]
-                del self.photons[i]
-            if num > photon_num:
-                break
-        return photon_list
-
-    def clear_memory(self):
-        self.photons = []
-        self.arrival_indices = []
 
 
 class Node(Entity):
