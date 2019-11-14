@@ -17,5 +17,6 @@ time_bin =\
 ensemble =\
     {"name": "ensemble",
      "bases": [[[complex(1), complex(0)], [complex(0), complex(1)]],
-               None]
+               None],
      "memory": None  # overwritten by photon
+     }
