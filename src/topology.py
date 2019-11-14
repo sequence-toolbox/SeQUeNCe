@@ -885,7 +885,7 @@ class Node(Entity):
         Entity.__init__(self, name, timeline)
         self.components = kwargs.get("components", {})
         self.message = None  # temporary storage for message received through classical channel
-        self.protocol = None
+        self.protocols = []
 
     def init(self):
         pass
@@ -1000,8 +1000,11 @@ class Node(Entity):
 
     def receive_message(self, msg):
         self.message = msg
+        msg_parsed = msg.split(" ")
         # signal to protocol that we've received a message
-        self.protocol.received_message()
+        for protocol in self.protocols:
+            if type(protocol).__name__ == msg_parsed[0]:
+                self.protocol.received_message()
 
 
 class Topology:
