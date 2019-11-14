@@ -108,7 +108,7 @@ class QuantumState():
         assert len(basis) == basis_dimension
         for vector in basis:
             assert len(vector) == len(basis)
-            
+
         state = states[0].state
 
         # move states to beginning of entangled list and quantum state
@@ -618,7 +618,7 @@ class BSM(Entity):
             self.photons = [photon, None]
             # set arrival time
             self.photon_arrival_time = self.timeline.now()
-        
+
         # if we have photons from same source, do nothing
         # otherwise, we have different photons arriving at the same time and can proceed
         if self.photons[0].location == photon.location:
@@ -839,7 +839,10 @@ class MemoryArray(Entity):
         self.memories = kwargs.get("memories", [])
         self.frequency = kwargs.get("frequency", 1)
         self.entangled_memories = [-1] * len(self.memories)
-    
+
+    def init(self):
+        pass
+
     def write(self):
         time = self.timeline.now()
 
@@ -851,13 +854,13 @@ class MemoryArray(Entity):
 
     def read(self):
         time = self.timeline.now()
-        
+
         for mem in self.memories:
             process = Process(mem, "read", [])
             event = Event(time, process)
             self.timeline.schedule(event)
             time += 1e12 / frequency
-            
+
 
 # class for photon memory
 class Memory_EIT(Entity):
