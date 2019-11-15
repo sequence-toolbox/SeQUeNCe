@@ -26,10 +26,34 @@ class EntanglementGeneration(Protocol):
     def __init__(self, own, parent_protocols=[], child_protocols=[]):
         Protocol.__init__(own, parent_protocols, child_protocols)
 
+        self.alice_name = ""
+        self.bob_name = ""
+        self.charlie_name = ""
+        self.is_charlie = False
+        self.node = None
+
+        self.start_time = 0
+        self.quantum_delay = [0, 0]  # Alice, Bob
+        self.classical_delay = [0, 0]  # Alice, Bob
+
     def pop(self):
         pass
 
     def push(self):
+        pass
+
+    def assign_node(self, node):
+        self.node = node
+        if self.is_charlie:
+            self.classical_delay[0] = node.cchannels.get(self.alice_name).delay
+            self.classical_delay[1] = node.cchannels.get(self.bob_name).delay
+            
+            qchannel_a = node.qchannels.get(self.alice_name)
+            qchannel_b = node.qchannels.get(self.bob_name)
+            self.quantum_delay[0] = int(round(qchannel_a.distance / qchannel_a.light_speed))
+            self.quantum_delay[1] = int(round(qchannel_b.distance / qchannel_b.light_speed))
+
+    def start(self):
         pass
 
 class BBPSSW(Protocol):
