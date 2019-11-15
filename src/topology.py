@@ -836,9 +836,18 @@ class Memory(Entity):
 class MemoryArray(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
-        self.memories = kwargs.get("memories", [])
         self.frequency = kwargs.get("frequency", 1)
         self.entangled_memories = [-1] * len(self.memories)
+
+        num_memories = kwargs.get("num_memories", 0)
+        memory_params = kwargs.get("memory_params", None)
+        memory = None
+        if memory_params is not None:
+            memory = Memory("", timeline, **d)
+        self.memories = [memory] * num_memories
+
+    def __getitem__(self, key):
+        return self.memories[key]
 
     def init(self):
         pass
