@@ -21,6 +21,17 @@ class Protocol(ABC):
         '''
         pass
 
+class EntanglementGeneration(Protocol):
+
+    def __init__(self, own, parent_protocols=[], child_protocols=[]):
+        Protocol.__init__(own, parent_protocols, child_protocols)
+
+    def pop(self):
+        pass
+
+    def push(self):
+        pass
+
 class BBPSSW(Protocol):
 
     def __init__(self, threshold, own, parent_protocols=[], child_protocols=[]):

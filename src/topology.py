@@ -896,6 +896,8 @@ class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.components = kwargs.get("components", {})
+        self.cchannels = kwargs.get("cchannels", {})  # mapping of destination node names to classical channels
+        self.qchannels = kwargs.get("qchannels", {})  # mapping of destination node names to quantum channels
         self.message = None  # temporary storage for message received through classical channel
         self.protocols = []
 
@@ -1009,7 +1011,7 @@ class Node(Entity):
 
     def send_message(self, dst, msg):
         # dst is the name of a node and also the key corresponding to the correct classical channel in node.components
-        self.components[dst].transmit(msg, self)
+        self.cchannels[dst].transmit(msg, self)
 
     def receive_message(self, src, msg):
         self.message = msg
