@@ -835,11 +835,11 @@ class MemoryArray(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.frequency = kwargs.get("frequency", 1)
-        self.memories = []
-        self.entangled_memories = [-1] * len(self.memories)
-
         num_memories = kwargs.get("num_memories", 0)
         sample_memory = kwargs.get("sample_memory", Memory("", timeline))
+        self.memories = []
+        self.entangled_memories = [-1] * num_memories
+
         for _ in range(num_memories):
             self.memories.append(copy.deepcopy(sample_memory))
 
@@ -1023,7 +1023,7 @@ class Node(Entity):
         # signal to protocol that we've received a message
         for protocol in self.protocols:
             if type(protocol).__name__ == msg_parsed[0]:
-                self.protocol.received_message(src, msg_parsed[1:])
+                protocol.received_message(src, msg_parsed[1:])
 
 
 class Topology:
