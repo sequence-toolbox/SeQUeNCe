@@ -1,17 +1,14 @@
 import math
 import copy
-from typing import List, Any
 
 import numpy
 import json5
 
-import sequence
 from sequence import encoding
 from sequence.process import Process
 from sequence.entity import Entity
 from sequence.event import Event
 from sequence.BB84 import BB84
-
 
 
 """
@@ -30,6 +27,7 @@ class TemperatureModel():
         temperature = 60
         return temperature
 """
+
 
 # used for photon.measure_multiple
 def swap_bits(num, pos1, pos2):
