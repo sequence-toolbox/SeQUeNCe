@@ -280,7 +280,7 @@ class ClassicalChannel(OpticalChannel):
                 receiver = e
 
         future_time = int(round(self.timeline.now() + self.delay))
-        process = Process(receiver, "receive_message", [message])
+        process = Process(receiver, "receive_message", [source.name, message])
         event = Event(future_time, process)
         self.timeline.schedule(event)
 
@@ -896,6 +896,9 @@ class Node(Entity):
         self.components = kwargs.get("components", {})
         self.message = None  # temporary storage for message received through classical channel
         self.protocols = []
+        # cchannels: use dictionary store classical channels
+        #  { another node name : ClassicalChannel }
+        self.cchannels = {}
 
     def init(self):
         pass
@@ -1005,16 +1008,23 @@ class Node(Entity):
         source = self.components['lightsource']
         return source.photon_counter
 
-    def send_message(self, msg, channel="cchannel"):
-        self.components[channel].transmit(msg, self)
+    def assign_cchannel(self, cchannel: ClassicalChannel):
+        another = ""
+        for end in cchannel.ends:
+            if end.name != self.name:
+                another = end.name
+        self.cchannels[another] = cchannel
 
-    def receive_message(self, msg):
+    def send_message(self, dst: str, msg: str):
+        self.cchannels[dst].transmit(msg, self)
+
+    def receive_message(self, src: str, msg: str):
         self.message = msg
         msg_parsed = msg.split(" ")
         # signal to protocol that we've received a message
         for protocol in self.protocols:
             if type(protocol).__name__ == msg_parsed[0]:
-                self.protocol.received_message()
+                self.protocol.received_message(src, msg_parsed[1:])
 
 
 class Topology:
