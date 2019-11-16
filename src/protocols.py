@@ -8,8 +8,8 @@ from topology import Node
 class Protocol(ABC):
 
     def __init__(self, own: Node):
-        self.parent_protocols = []
-        self.child_protocols = []
+        self.upper_protocols = []
+        self.lower_protocols = []
         self.own = own
 
     @abstractmethod
@@ -110,11 +110,11 @@ class BBPSSW(Protocol):
         pass
 
     def _push(self, **kwargs):
-        for child in self.child_protocols:
+        for child in self.lower_protocols:
             child.push(**kwargs)
 
     def _pop(self, **kwargs):
-        for parent in self.parent_protocols:
+        for parent in self.upper_protocols:
             parent.pop(**kwargs)
         return
 
@@ -271,7 +271,7 @@ if __name__ == "__main__":
             self.counter = 100
 
         def pop(self, memory_index, another):
-            for parent in self.parent_protocols:
+            for parent in self.upper_protocols:
                 parent.pop(memory_index, another)
 
         def push(self, **kwargs):
@@ -291,8 +291,8 @@ if __name__ == "__main__":
     dummyA = DummyParent(alice)
     dummyA.another = 'bob'
     bbpsswA = BBPSSW(alice, threshold=0.9)
-    dummyA.parent_protocols.append(bbpsswA)
-    bbpsswA.child_protocols.append(dummyA)
+    dummyA.upper_protocols.append(bbpsswA)
+    bbpsswA.lower_protocols.append(dummyA)
     alice.protocols.append(dummyA)
     alice.protocols.append(bbpsswA)
 
@@ -300,8 +300,8 @@ if __name__ == "__main__":
     dummyB = DummyParent(bob)
     dummyB.another = 'alice'
     bbpsswB = BBPSSW(bob, threshold=0.9)
-    dummyB.parent_protocols.append(bbpsswB)
-    bbpsswB.child_protocols.append(dummyB)
+    dummyB.upper_protocols.append(bbpsswB)
+    bbpsswB.lower_protocols.append(dummyB)
     bob.protocols.append(dummyB)
     bob.protocols.append(bbpsswB)
 
