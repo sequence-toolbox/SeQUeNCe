@@ -62,34 +62,38 @@ class BBPSSW(Protocol):
     def __init__(self, own, threshold):
         Protocol.__init__(self, own)
         self.threshold = threshold
-        # self.purified_list :
-        #   the index number present the number of operated purification
-        self.purified_list = []
+        # self.purified_lists :
+        # { node name : [ [index of memories after round i purificaiton] ]
+        self.purified_lists = {}
         # self.waiting_list:
         # { round of purification : [ set( [ kept memory, measured memory ] ) }
         self.waiting_list = {}
 
     def pop(self, memory_index: int, another_node: str):
-        if len(self.purified_list) == 0:
-            self.purified_list.append([])
+        if another_node not in self.purified_lists:
+            self.purified_lists[another_node] = []
+        purified_list = self.purified_lists[another_node]
+        if len(purified_list) == 0:
+            purified_list.append([])
 
         local_memory = self.own.components['MemoryArray']
         cur_fidelity = local_memory[memory_index].fidelity
 
         if cur_fidelity < self.threshold:
-            self.purified_list[0].append(memory_index)
+            purified_list[0].append(memory_index)
         else:
             self._pop(memory_index=memory_index, another_node=another_node)
 
-        if len(self.purified_list[0]) > 1 and self.own.name > another_node:
+        if len(purified_list[0]) > 1 and self.own.name > another_node:
             self.start_round(0, another_node)
 
     def start_round(self, round_id, another_node):
         local_memory = self.own.components['MemoryArray']
+        purified_list = self.purified_lists[another_node]
         if round_id not in self.waiting_list:
             self.waiting_list[round_id] = set()
-        kept_memo = self.purified_list[round_id].pop()
-        measured_memo = self.purified_list[round_id].pop()
+        kept_memo = purified_list[round_id].pop()
+        measured_memo = purified_list[round_id].pop()
         assert (local_memory[kept_memo].fidelity ==
                 local_memory[measured_memo].fidelity)
         assert (local_memory[kept_memo].fidelity > 0.5)
@@ -119,6 +123,7 @@ class BBPSSW(Protocol):
         return
 
     def received_message(self, src: str, msg: List[str]):
+        purified_list = self.purified_lists[src]
         # WARN: wait change of Node.receive_message
         # WARN: assume protocol name is discarded from msg list
         type_index = 0
@@ -127,7 +132,8 @@ class BBPSSW(Protocol):
             round_id = int(msg[type_index+1])
             kept_memo = int(msg[type_index+2])
             measured_memo = int(msg[type_index+3])
-            fidelity = self.purification(round_id, kept_memo, measured_memo)
+            fidelity = self.purification(round_id, kept_memo,
+                                         measured_memo, purified_list)
 
             reply = "BBPSSW PONG %d %f %s %s" % (round_id,
                                                  fidelity,
@@ -138,17 +144,17 @@ class BBPSSW(Protocol):
 
             if fidelity >= self.threshold:
                 self._pop(memory_index=kept_memo, another_node=src)
-                self.purified_list[round_id+1].remove(kept_memo)
+                purified_list[round_id+1].remove(kept_memo)
         elif msg_type == "PONG":
             round_id = int(msg[type_index+1])
             fidelity = float(msg[type_index+2])
             kept_memo = int(msg[type_index+3])
             measured_memo = int(msg[type_index+4])
-            self.update(round_id, fidelity, kept_memo, measured_memo)
+            self.update(round_id, fidelity, kept_memo, measured_memo, purified_list)
             if fidelity >= self.threshold:
                 self._pop(memory_index=kept_memo, another_node=src)
-            if (round_id+1 < len(self.purified_list) and
-                    len(self.purified_list[round_id+1]) > 1):
+            if (round_id+1 < len(purified_list) and
+                    len(purified_list[round_id+1]) > 1):
                 self.start_round(round_id+1, src)
         else:
             raise Exception("BBPSSW protocol receives"
@@ -157,14 +163,15 @@ class BBPSSW(Protocol):
     def purification(self,
                      round_id: int,
                      kept_memo: int,
-                     measured_memo: int) -> float:
+                     measured_memo: int,
+                     purified_list: List[List[int]]) -> float:
 
         local_memory = self.own.components['MemoryArray']
         assert (local_memory[kept_memo].fidelity ==
                 local_memory[measured_memo].fidelity)
         assert (local_memory[kept_memo].fidelity > 0.5)
-        self.purified_list[round_id].remove(kept_memo)
-        self.purified_list[round_id].remove(measured_memo)
+        purified_list[round_id].remove(kept_memo)
+        purified_list[round_id].remove(measured_memo)
 
         fidelity = local_memory[kept_memo].fidelity
         suc_prob = self.success_probability(fidelity)
@@ -172,9 +179,9 @@ class BBPSSW(Protocol):
             fidelity = round(self.improved_fidelity(fidelity), 6)
             local_memory[kept_memo].fidelity = fidelity
 
-            if len(self.purified_list) <= round_id + 1:
-                self.purified_list.append([])
-            self.purified_list[round_id+1].append(kept_memo)
+            if len(purified_list) <= round_id + 1:
+                purified_list.append([])
+            purified_list[round_id+1].append(kept_memo)
         else:
             fidelity = 0
             local_memory[kept_memo].fidelity = fidelity
@@ -186,11 +193,9 @@ class BBPSSW(Protocol):
         self._push(memory_index=measured_memo)
         return fidelity
 
-    def update(self,
-               round_id: int,
-               fidelity: float,
-               kept_memo: int,
-               measured_memo: int):
+    def update(self, round_id: int,
+               fidelity: float, kept_memo: int,
+               measured_memo: int, purified_list):
 
         local_memory = self.own.components['MemoryArray']
         self.waiting_list[round_id].remove((kept_memo, measured_memo))
@@ -200,9 +205,9 @@ class BBPSSW(Protocol):
             local_memory.entangled_memories[kept_memo] = -1
             self._push(memory_index=kept_memo)
         elif fidelity < self.threshold:
-            if len(self.purified_list) <= round_id + 1:
-                self.purified_list.append([])
-            self.purified_list[round_id+1].append(kept_memo)
+            if len(purified_list) <= round_id + 1:
+                purified_list.append([])
+            purified_list[round_id+1].append(kept_memo)
 
         local_memory[measured_memo].fidelity = 0
         local_memory.entangled_memories[measured_memo] = -1
@@ -236,32 +241,6 @@ if __name__ == "__main__":
     # multiple nodes case
     seed(1)
 
-    # create timeline
-    tl = timeline.Timeline()
-
-    # create nodes alice and bob
-    alice = topology.Node("alice", tl)
-    bob = topology.Node("bob", tl)
-
-    # create classical channel
-    cc = topology.ClassicalChannel("cc", tl, distance=1e3, delay=1e5)
-    cc.add_end(alice)
-    cc.add_end(bob)
-    alice.assign_cchannel(cc)
-    bob.assign_cchannel(cc)
-
-    # create memories on nodes
-    NUM_MEMORY = 20
-    sample_memory = topology.Memory("", tl, fidelity=0.6)
-    alice_memo_array = topology.MemoryArray("alice memory array",
-                                            tl, num_memories=NUM_MEMORY,
-                                            sample_memory=sample_memory)
-    bob_memo_array = topology.MemoryArray("bob memory array",
-                                          tl, num_memories=NUM_MEMORY,
-                                          sample_memory=sample_memory)
-    alice.components['MemoryArray'] = alice_memo_array
-    bob.components['MemoryArray'] = bob_memo_array
-
     # dummy protocol for distribution of direct transmission
     class DummyParent(Protocol):
 
@@ -269,6 +248,7 @@ if __name__ == "__main__":
             Protocol.__init__(self, own)
             self.another = ''
             self.counter = 100
+            self.multi_nodes = False
 
         def pop(self, memory_index, another):
             for parent in self.upper_protocols:
@@ -278,7 +258,15 @@ if __name__ == "__main__":
             memory_index = kwargs.get("memory_index")
             local_memory = self.own.components['MemoryArray']
             local_memory[memory_index].fidelity = 0.6
-            local_memory.entangled_memories[memory_index] = memory_index
+            if self.multi_nodes:
+                if self.own.name > self.another and memory_index<20:
+                    local_memory.entangled_memories[memory_index] = memory_index + 20
+                elif self.own.name < self.another and memory_index>=20:
+                    local_memory.entangled_memories[memory_index] = memory_index - 20
+                else:
+                    return
+            else:
+                local_memory.entangled_memories[memory_index] = memory_index
             process = Process(self, 'pop', [memory_index, self.another])
             event = Event(self.counter*1e9, process)
             self.own.timeline.schedule(event)
@@ -287,42 +275,155 @@ if __name__ == "__main__":
         def received_message(self, src, msg):
             pass
 
-    # create alice protocol stack
-    dummyA = DummyParent(alice)
-    dummyA.another = 'bob'
-    bbpsswA = BBPSSW(alice, threshold=0.9)
-    dummyA.upper_protocols.append(bbpsswA)
-    bbpsswA.lower_protocols.append(dummyA)
-    alice.protocols.append(dummyA)
-    alice.protocols.append(bbpsswA)
+    def two_nodes_test():
+        # create timeline
+        tl = timeline.Timeline()
 
-    # create bob protocol stack
-    dummyB = DummyParent(bob)
-    dummyB.another = 'alice'
-    bbpsswB = BBPSSW(bob, threshold=0.9)
-    dummyB.upper_protocols.append(bbpsswB)
-    bbpsswB.lower_protocols.append(dummyB)
-    bob.protocols.append(dummyB)
-    bob.protocols.append(bbpsswB)
+        # create nodes alice and bob
+        alice = topology.Node("alice", tl)
+        bob = topology.Node("bob", tl)
 
-    # schedule events
-    for i in range(NUM_MEMORY):
-        alice_memo_array.entangled_memories[i] = i
-        bob_memo_array.entangled_memories[i] = i
-        e = Event(i*(1e5), Process(dummyA, "pop", [i, "bob"]))
-        tl.schedule(e)
-        e = Event(i*(1e5), Process(dummyB, "pop", [i, "alice"]))
-        tl.schedule(e)
+        # create classical channel
+        cc = topology.ClassicalChannel("cc", tl, distance=1e3, delay=1e5)
+        cc.add_end(alice)
+        cc.add_end(bob)
+        alice.assign_cchannel(cc)
+        bob.assign_cchannel(cc)
 
-    # start simulation
-    tl.init()
-    tl.run()
+        # create memories on nodes
+        NUM_MEMORY = 20
+        sample_memory = topology.Memory("", tl, fidelity=0.6)
+        alice_memo_array = topology.MemoryArray("alice memory array",
+                                                tl, num_memories=NUM_MEMORY,
+                                                sample_memory=sample_memory)
+        bob_memo_array = topology.MemoryArray("bob memory array",
+                                              tl, num_memories=NUM_MEMORY,
+                                              sample_memory=sample_memory)
+        alice.components['MemoryArray'] = alice_memo_array
+        bob.components['MemoryArray'] = bob_memo_array
 
-    def print_memory(memoryArray):
-        for i, memory in enumerate(memoryArray):
-            print(i, memoryArray.entangled_memories[i], memory.fidelity)
+        # create alice protocol stack
+        dummyA = DummyParent(alice)
+        dummyA.another = 'bob'
+        bbpsswA = BBPSSW(alice, threshold=0.9)
+        dummyA.upper_protocols.append(bbpsswA)
+        bbpsswA.lower_protocols.append(dummyA)
+        alice.protocols.append(dummyA)
+        alice.protocols.append(bbpsswA)
 
-    print('alice memory')
-    print_memory(alice_memo_array)
-    print('bob memory')
-    print_memory(bob_memo_array)
+        # create bob protocol stack
+        dummyB = DummyParent(bob)
+        dummyB.another = 'alice'
+        bbpsswB = BBPSSW(bob, threshold=0.9)
+        dummyB.upper_protocols.append(bbpsswB)
+        bbpsswB.lower_protocols.append(dummyB)
+        bob.protocols.append(dummyB)
+        bob.protocols.append(bbpsswB)
+
+        # schedule events
+        for i in range(NUM_MEMORY):
+            alice_memo_array.entangled_memories[i] = i
+            bob_memo_array.entangled_memories[i] = i
+            e = Event(i*(1e5), Process(dummyA, "pop", [i, "bob"]))
+            tl.schedule(e)
+            e = Event(i*(1e5), Process(dummyB, "pop", [i, "alice"]))
+            tl.schedule(e)
+
+        # start simulation
+        tl.init()
+        tl.run()
+
+        def print_memory(memoryArray):
+            for i, memory in enumerate(memoryArray):
+                print(i, memoryArray.entangled_memories[i], memory.fidelity)
+
+        print('alice memory')
+        print_memory(alice_memo_array)
+        print('bob memory')
+        print_memory(bob_memo_array)
+
+    def multi_nodes_test(n: int):
+        # create timeline
+        tl = timeline.Timeline()
+
+        # create nodes
+        nodes = []
+        for i in range(n):
+            node = topology.Node("node %d" % i, tl)
+            nodes.append(node)
+
+        # create classical channel
+        for i in range(n-1):
+            cc = topology.ClassicalChannel("cc1", tl, distance=1e3, delay=1e5)
+            cc.add_end(nodes[i])
+            cc.add_end(nodes[i+1])
+            nodes[i].assign_cchannel(cc)
+            nodes[i+1].assign_cchannel(cc)
+
+        # create memories on nodes
+        NUM_MEMORY = 40
+        sample_memory = topology.Memory("", tl, fidelity=0.6)
+        for node in nodes:
+            memory = topology.MemoryArray("%s memory array" % node.name,
+                                          tl, num_memories=NUM_MEMORY,
+                                          sample_memory=sample_memory)
+            node.components['MemoryArray'] = memory
+
+        # create protocol stack
+        dummys = []
+        for i, node in enumerate(nodes):
+            bbpssw = BBPSSW(node, threshold=0.9)
+            if i > 0:
+                dummy = DummyParent(node)
+                dummy.multi_nodes = True
+                dummy.another = "node %d" % (i-1)
+                dummy.upper_protocols.append(bbpssw)
+                bbpssw.lower_protocols.append(dummy)
+                node.protocols.append(dummy)
+                dummys.append(dummy)
+            if i < len(nodes)-1:
+                dummy = DummyParent(node)
+                dummy.multi_nodes = True
+                dummy.another = "node %d" % (i+1)
+                dummy.upper_protocols.append(bbpssw)
+                bbpssw.lower_protocols.append(dummy)
+                node.protocols.append(dummy)
+                dummys.append(dummy)
+
+            node.protocols.append(bbpssw)
+
+        # create entanglement
+        for i in range(n-1):
+            memo1 = nodes[i].components['MemoryArray']
+            memo2 = nodes[i+1].components['MemoryArray']
+            for j in range(int(NUM_MEMORY/2)):
+                memo1.entangled_memories[j+int(NUM_MEMORY/2)] = j
+                memo2.entangled_memories[j] = j+int(NUM_MEMORY/2)
+
+        # schedule events
+        counter = 0
+        for i in range(0, len(dummys), 2):
+            dummy1 = dummys[i]
+            dummy2 = dummys[i+1]
+            for j in range(int(NUM_MEMORY/2)):
+                e = Event(counter*(1e5), Process(dummy1, "pop", [j+int(NUM_MEMORY/2), dummy2.own.name]))
+                tl.schedule(e)
+                e = Event(counter*(1e5), Process(dummy2, "pop", [j, dummy1.own.name]))
+                tl.schedule(e)
+                counter += 1
+
+        # start simulation
+        tl.init()
+        tl.run()
+
+        def print_memory(memoryArray):
+            for i, memory in enumerate(memoryArray):
+                print(i, memoryArray.entangled_memories[i], memory.fidelity)
+
+        for node in nodes:
+            memory = node.components['MemoryArray']
+            print(node.name)
+            print_memory(memory)
+
+    # two_nodes_test()
+    multi_nodes_test(2)
