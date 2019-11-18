@@ -326,13 +326,13 @@ if __name__ == "__main__":
 
         # create memories on nodes
         NUM_MEMORY = 20
-        sample_memory = topology.Memory("", tl, fidelity=0.6)
+        memory_params = {"name":"", "timeline":tl, "fidelity":0.6}
         alice_memo_array = topology.MemoryArray("alice memory array",
                                                 tl, num_memories=NUM_MEMORY,
-                                                sample_memory=sample_memory)
+                                                memory_params=memory_params)
         bob_memo_array = topology.MemoryArray("bob memory array",
                                               tl, num_memories=NUM_MEMORY,
-                                              sample_memory=sample_memory)
+                                              memory_params=memory_params)
         alice.components['MemoryArray'] = alice_memo_array
         bob.components['MemoryArray'] = bob_memo_array
 

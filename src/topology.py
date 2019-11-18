@@ -892,16 +892,20 @@ class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.components = kwargs.get("components", {})
-        self.cchannels = kwargs.get("cchannels", {})  # mapping of destination node names to classical channels
-        self.qchannels = kwargs.get("qchannels", {})  # mapping of destination node names to quantum channels
-        self.message = None  # temporary storage for message received through classical channel
+        self.cchannels = {}  # mapping of destination node names to classical channels
+        self.qchannels = {}  # mapping of destination node names to quantum channels
         self.protocols = []
-        # cchannels: use dictionary store classical channels
-        #  { another node name : ClassicalChannel }
-        self.cchannels = {}
 
     def init(self):
         pass
+
+    def assign_cchannel(self, cchannel: ClassicalChannel):
+        # Must have used ClassicalChannel.addend prior to using this method
+        another = ""
+        for end in cchannel.ends:
+            if end.name != self.name:
+                another = end.name
+        self.cchannels[another] = cchannel
 
     def send_qubits(self, basis_list, bit_list, source_name):
         encoding_type = self.components[source_name].encoding_type
@@ -1007,13 +1011,6 @@ class Node(Entity):
     def get_source_count(self):
         source = self.components['lightsource']
         return source.photon_counter
-
-    def assign_cchannel(self, cchannel: ClassicalChannel):
-        another = ""
-        for end in cchannel.ends:
-            if end.name != self.name:
-                another = end.name
-        self.cchannels[another] = cchannel
 
     def send_message(self, dst: str, msg: str):
         self.cchannels[dst].transmit(msg, self)
