@@ -836,12 +836,11 @@ class MemoryArray(Entity):
         Entity.__init__(self, name, timeline)
         self.frequency = kwargs.get("frequency", 1)
         num_memories = kwargs.get("num_memories", 0)
-        sample_memory = kwargs.get("sample_memory", Memory("", timeline))
+        memory_params = kwargs.get("memory_params", None)
         self.memories = []
-        self.entangled_memories = [-1] * num_memories
-
         for _ in range(num_memories):
-            self.memories.append(copy.deepcopy(sample_memory))
+            memory = Memory("", timeline, **memory_params)
+            self.memories.append(memory)
 
     def __getitem__(self, key):
         return self.memories[key]
@@ -893,6 +892,8 @@ class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.components = kwargs.get("components", {})
+        self.cchannels = kwargs.get("cchannels", {})  # mapping of destination node names to classical channels
+        self.qchannels = kwargs.get("qchannels", {})  # mapping of destination node names to quantum channels
         self.message = None  # temporary storage for message received through classical channel
         self.protocols = []
         # cchannels: use dictionary store classical channels
