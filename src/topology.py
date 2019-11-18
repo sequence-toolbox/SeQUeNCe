@@ -802,7 +802,7 @@ class Memory(Entity):
         self.fidelity = kwargs.get("fidelity", 1)
         self.efficiency = kwargs.get("efficiency", 1)
         self.direct_receiver = kwargs.get("direct_receiver", None)
-        self.state = 0
+        self.qstate = QuantumState()
         self.frequencies = kwargs.get("frequencies", [0, 0]) # first element is ground transition frequency, second is excited frequency
         # keep track of entanglement?
 
@@ -810,8 +810,8 @@ class Memory(Entity):
         pass
 
     def write(self):
-        if numpy.random.random_sample() < self.efficiency and self.state == 0:
-            self.state = 1
+        if numpy.random.random_sample() < self.efficiency:
+            self.qstate.state = [complex(0), complex(1)]
             # send photon in certain state to direct receiver
             # TODO: specify new encoding_type
             photon = Photon("", self.timeline, wavelength=(1/self.frequencies[1]), location=self, encoding_type=None)
@@ -823,11 +823,12 @@ class Memory(Entity):
             self.timeline.schedule(event)
 
     def read(self):
-        if numpy.random_random_sample() < self.fidelity and self.state == 1:
-            self.state = 0
-            # send photon in certain state to direct receiver
-            photon = Photon("", self.timeline, wavelength=(1/self.frequencies[0]), location=self, encoding_type=None)
-            self.direct_receiver.get(photon)
+        if numpy.random_random_sample() < self.efficiency:
+            state = self.qstate.measure(encoding.ensemble["bases"][0])
+            if state == 1:
+                # send photon in certain state to direct receiver
+                photon = Photon("", self.timeline, wavelength=(1/self.frequencies[0]), location=self, encoding_type=None)
+                self.direct_receiver.get(photon)
 
 
 # array of atomic ensemble memories
@@ -841,6 +842,7 @@ class MemoryArray(Entity):
         for _ in range(num_memories):
             memory = Memory("", timeline, **memory_params)
             self.memories.append(memory)
+        self.entangled_memories = [-1] * num_memories
 
     def __getitem__(self, key):
         return self.memories[key]
