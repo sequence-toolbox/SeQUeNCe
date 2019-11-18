@@ -1,17 +1,14 @@
 import math
 import copy
-from typing import List, Any
 
 import numpy
 import json5
 
-import sequence
 from sequence import encoding
 from sequence.process import Process
 from sequence.entity import Entity
 from sequence.event import Event
 from sequence.BB84 import BB84
-
 
 
 """
@@ -30,6 +27,7 @@ class TemperatureModel():
         temperature = 60
         return temperature
 """
+
 
 # used for photon.measure_multiple
 def swap_bits(num, pos1, pos2):
@@ -837,8 +835,6 @@ class MemoryArray(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.frequency = kwargs.get("frequency", 1)
-        self.entangled_memories = [-1] * len(self.memories)
-
         num_memories = kwargs.get("num_memories", 0)
         memory_params = kwargs.get("memory_params", None)
         self.memories = []
@@ -900,6 +896,9 @@ class Node(Entity):
         self.qchannels = kwargs.get("qchannels", {})  # mapping of destination node names to quantum channels
         self.message = None  # temporary storage for message received through classical channel
         self.protocols = []
+        # cchannels: use dictionary store classical channels
+        #  { another node name : ClassicalChannel }
+        self.cchannels = {}
 
     def init(self):
         pass
@@ -1009,17 +1008,23 @@ class Node(Entity):
         source = self.components['lightsource']
         return source.photon_counter
 
-    def send_message(self, dst, msg):
-        # dst is the name of a node and also the key corresponding to the correct classical channel in node.components
+    def assign_cchannel(self, cchannel: ClassicalChannel):
+        another = ""
+        for end in cchannel.ends:
+            if end.name != self.name:
+                another = end.name
+        self.cchannels[another] = cchannel
+
+    def send_message(self, dst: str, msg: str):
         self.cchannels[dst].transmit(msg, self)
 
-    def receive_message(self, src, msg):
+    def receive_message(self, src: str, msg: str):
         self.message = msg
         msg_parsed = msg.split(" ")
         # signal to protocol that we've received a message
         for protocol in self.protocols:
             if type(protocol).__name__ == msg_parsed[0]:
-                self.protocol.received_message(src, msg)
+                protocol.received_message(src, msg_parsed[1:])
 
 
 class Topology:

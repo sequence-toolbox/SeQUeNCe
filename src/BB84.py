@@ -290,7 +290,7 @@ if __name__ == "__main__":
     import topology
     import timeline
     # dummy parent class to test BB84 functionality
-    class Parent:
+    class Parent :
         def __init__(self, keysize, role):
             self.keysize = keysize
             self.role = role
