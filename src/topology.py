@@ -723,7 +723,7 @@ class BSM(Entity):
                 d1_times.pop(0)
 
         else:
-            # TODO: polariation
+            # TODO: polarization, memory
             pass
         return bsm_res
 
@@ -846,6 +846,9 @@ class MemoryArray(Entity):
 
     def __getitem__(self, key):
         return self.memories[key]
+
+    def __len__(self):
+        return len(self.memories)
 
     def init(self):
         pass
