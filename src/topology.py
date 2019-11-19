@@ -805,6 +805,7 @@ class Memory(Entity):
         self.state = 0
         self.frequencies = kwargs.get("frequencies", [0, 0]) # first element is ground transition frequency, second is excited frequency
         # keep track of entanglement?
+        self.entangled_memory = {'node_id': None, 'memo_id': None}
 
     def init(self):
         pass
@@ -838,7 +839,6 @@ class MemoryArray(Entity):
         num_memories = kwargs.get("num_memories", 0)
         sample_memory = kwargs.get("sample_memory", Memory("", timeline))
         self.memories = []
-        self.entangled_memories = [-1] * num_memories
 
         for _ in range(num_memories):
             self.memories.append(copy.deepcopy(sample_memory))
