@@ -94,9 +94,10 @@ class EntanglementGeneration(Protocol):
 
     def end_photons(self):
         bsm_res = self.own.components["BSM"].get_bsm_res[]
-        # process bms_res
-        # define entanglement relation in node
-        # pop entanglement relation to parent
+        message_0 = "EntanglementGeneration receive_bsm {} {}".format(self.end_nodes[1], bsm_res)
+        message_1 = "EntanglementGeneration receive_bsm {} {}".format(self.end_nodes[0], bsm_res)
+        self.own.send_message(self.end_nodes[0], message_0)
+        self.own.send_message(self.end_nodes[1], message_1)
 
     def received_message(self, src: str, msg: List[str]):
         msg_type = msg[0]
@@ -145,6 +146,14 @@ class EntanglementGeneration(Protocol):
             event = Event(start_time, process)
             self.timeline.schedule(event)
 
+        if msg_type == "receive_bsm":
+            other_node = msg[1]
+            msg = msg[1:]
+            for i, res in enumerate(msg):
+                if res is not -1:
+                    self.own.components["MemoryArray"][i].entangled_memory["node_id"] = other_node
+                    self.own.components["MemoryArray"][i].entangled_memory["memo_id"] = i
+            _push()
 
 
 class BBPSSW(Protocol):
