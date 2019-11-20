@@ -43,6 +43,20 @@ class Protocol(ABC):
         '''
         pass
 
+    def _push(self, **kwargs):
+        for child in self.lower_protocols:
+            child.push(**kwargs)
+
+    def _pop(self, **kwargs):
+        for parent in self.upper_protocols:
+            parent.pop(**kwargs)
+        return
+
+
+class EntanglementGeneration(Protocol):
+
+    def __init__(self, own, parent_protocols=[], child_protocols=[]):
+        Protocol.__init__(own, parent_protocols, child_protocols)
 
 class EntanglementGeneration(Protocol):
     '''
@@ -132,6 +146,7 @@ class EntanglementGeneration(Protocol):
             self.timeline.schedule(event)
 
 
+
 class BBPSSW(Protocol):
     '''
     BBPSSW use PING, PONG message to exchange classical information
@@ -194,8 +209,8 @@ class BBPSSW(Protocol):
                 local_memory[measured_memo].fidelity)
         assert (local_memory[kept_memo].fidelity > 0.5)
 
-        another_kept_memo = local_memory.entangled_memories[kept_memo]
-        another_measured_memo = local_memory.entangled_memories[measured_memo]
+        another_kept_memo = local_memory[kept_memo].entangled_memory['memo_id']
+        another_measured_memo = local_memory[measured_memo].entangled_memory['memo_id']
         self.waiting_list[round_id].add((kept_memo, measured_memo))
 
         msg = "BBPSSW PING %d %d %d %d %d" % (round_id,
@@ -237,7 +252,8 @@ class BBPSSW(Protocol):
             fidelity = float(msg[type_index+2])
             kept_memo = int(msg[type_index+3])
             measured_memo = int(msg[type_index+4])
-            self.update(round_id, fidelity, kept_memo, measured_memo, purified_list)
+            self.update(round_id, fidelity, kept_memo,
+                        measured_memo, purified_list)
             if fidelity >= self.threshold:
                 self._pop(memory_index=kept_memo, another_node=src)
             if (round_id+1 < len(purified_list) and
@@ -272,11 +288,13 @@ class BBPSSW(Protocol):
         else:
             fidelity = 0
             local_memory[kept_memo].fidelity = fidelity
-            local_memory.entangled_memories[kept_memo] = -1
+            local_memory[kept_memo].entangled_memory['node_id'] = None
+            local_memory[kept_memo].entangled_memory['memo_id'] = None
             self._push(memory_index=kept_memo)
 
         local_memory[measured_memo].fidelity = 0
-        local_memory.entangled_memories[measured_memo] = -1
+        local_memory[measured_memo].entangled_memory['node_id'] = None
+        local_memory[measured_memo].entangled_memory['memo_id'] = None
         self._push(memory_index=measured_memo)
         return fidelity
 
@@ -289,7 +307,8 @@ class BBPSSW(Protocol):
 
         local_memory[kept_memo].fidelity = fidelity
         if fidelity == 0:
-            local_memory.entangled_memories[kept_memo] = -1
+            local_memory[kept_memo].entangled_memory['node_id'] = None
+            local_memory[kept_memo].entangled_memory['memo_id'] = None
             self._push(memory_index=kept_memo)
         elif fidelity < self.threshold:
             if len(purified_list) <= round_id + 1:
@@ -297,7 +316,8 @@ class BBPSSW(Protocol):
             purified_list[round_id+1].append(kept_memo)
 
         local_memory[measured_memo].fidelity = 0
-        local_memory.entangled_memories[measured_memo] = -1
+        local_memory[measured_memo].entangled_memory['node_id'] = None
+        local_memory[measured_memo].entangled_memory['memo_id'] = None
         self._push(memory_index=measured_memo)
 
     @staticmethod
@@ -346,14 +366,15 @@ if __name__ == "__main__":
             local_memory = self.own.components['MemoryArray']
             local_memory[memory_index].fidelity = 0.6
             if self.multi_nodes:
-                if self.own.name > self.another and memory_index<20:
-                    local_memory.entangled_memories[memory_index] = memory_index + 20
-                elif self.own.name < self.another and memory_index>=20:
-                    local_memory.entangled_memories[memory_index] = memory_index - 20
+                if self.own.name > self.another and memory_index < 20:
+                    local_memory[memory_index].entangled_memory['memo_id'] = memory_index + 20
+                elif self.own.name < self.another and memory_index >= 20:
+                    local_memory[memory_index].entangled_memory['memo_id'] = memory_index - 20
                 else:
                     return
             else:
-                local_memory.entangled_memories[memory_index] = memory_index
+                local_memory[memory_index].entangled_memory['memo_id'] = memory_index
+            local_memory[memory_index].entangled_memory['node_id'] = self.another
             process = Process(self, 'pop', [memory_index, self.another])
             event = Event(self.counter*1e9, process)
             self.own.timeline.schedule(event)
@@ -409,8 +430,8 @@ if __name__ == "__main__":
 
         # schedule events
         for i in range(NUM_MEMORY):
-            alice_memo_array.entangled_memories[i] = i
-            bob_memo_array.entangled_memories[i] = i
+            alice_memo_array[i].entangled_memory = {'node_id': 'bob', 'memo_id': i}
+            bob_memo_array[i].entangled_memory = {'node_id': 'alice', 'memo_id': i}
             e = Event(i*(1e5), Process(dummyA, "pop", [i, "bob"]))
             tl.schedule(e)
             e = Event(i*(1e5), Process(dummyB, "pop", [i, "alice"]))
@@ -422,7 +443,7 @@ if __name__ == "__main__":
 
         def print_memory(memoryArray):
             for i, memory in enumerate(memoryArray):
-                print(i, memoryArray.entangled_memories[i], memory.fidelity)
+                print(i, memoryArray[i].entangled_memory, memory.fidelity)
 
         print('alice memory')
         print_memory(alice_memo_array)
@@ -449,11 +470,11 @@ if __name__ == "__main__":
 
         # create memories on nodes
         NUM_MEMORY = 40
-        sample_memory = topology.Memory("", tl, fidelity=0.6)
+        memory_params = {"fidelity": 0.6}
         for node in nodes:
             memory = topology.MemoryArray("%s memory array" % node.name,
                                           tl, num_memories=NUM_MEMORY,
-                                          sample_memory=sample_memory)
+                                          memory_params=memory_params)
             node.components['MemoryArray'] = memory
 
         # create protocol stack
@@ -484,8 +505,8 @@ if __name__ == "__main__":
             memo1 = nodes[i].components['MemoryArray']
             memo2 = nodes[i+1].components['MemoryArray']
             for j in range(int(NUM_MEMORY/2)):
-                memo1.entangled_memories[j+int(NUM_MEMORY/2)] = j
-                memo2.entangled_memories[j] = j+int(NUM_MEMORY/2)
+                memo1[j+int(NUM_MEMORY/2)].entangled_memory = {'node_id': 'node %d' % (i+1), 'memo_id': j}
+                memo2[j].entangled_memory = {'node_id': 'node %d' % i, 'memo_id': j+int(NUM_MEMORY/2)}
 
         # schedule events
         counter = 0
@@ -505,7 +526,7 @@ if __name__ == "__main__":
 
         def print_memory(memoryArray):
             for i, memory in enumerate(memoryArray):
-                print(i, memoryArray.entangled_memories[i], memory.fidelity)
+                print(i, memoryArray[i].entangled_memory, memory.fidelity)
 
         for node in nodes:
             memory = node.components['MemoryArray']
@@ -513,4 +534,4 @@ if __name__ == "__main__":
             print_memory(memory)
 
     # two_nodes_test()
-    multi_nodes_test(2)
+    multi_nodes_test(3)
