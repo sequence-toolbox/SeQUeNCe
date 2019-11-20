@@ -723,7 +723,7 @@ class BSM(Entity):
                 d1_times.pop(0)
 
         else:
-            # TODO: polariation
+            # TODO: polarization, memory
             pass
         return bsm_res
 
@@ -802,7 +802,7 @@ class Memory(Entity):
         self.fidelity = kwargs.get("fidelity", 1)
         self.efficiency = kwargs.get("efficiency", 1)
         self.direct_receiver = kwargs.get("direct_receiver", None)
-        self.state = 0
+        self.qstate = QuantumState()
         self.frequencies = kwargs.get("frequencies", [0, 0]) # first element is ground transition frequency, second is excited frequency
         # keep track of entanglement?
         self.entangled_memory = {'node_id': None, 'memo_id': None}
@@ -811,8 +811,8 @@ class Memory(Entity):
         pass
 
     def write(self):
-        if numpy.random.random_sample() < self.efficiency and self.state == 0:
-            self.state = 1
+        if numpy.random.random_sample() < self.efficiency:
+            self.qstate.state = [complex(0), complex(1)]
             # send photon in certain state to direct receiver
             # TODO: specify new encoding_type
             photon = Photon("", self.timeline, wavelength=(1/self.frequencies[1]), location=self, encoding_type=None)
@@ -824,11 +824,12 @@ class Memory(Entity):
             self.timeline.schedule(event)
 
     def read(self):
-        if numpy.random_random_sample() < self.fidelity and self.state == 1:
-            self.state = 0
-            # send photon in certain state to direct receiver
-            photon = Photon("", self.timeline, wavelength=(1/self.frequencies[0]), location=self, encoding_type=None)
-            self.direct_receiver.get(photon)
+        if numpy.random_random_sample() < self.efficiency:
+            state = self.qstate.measure(encoding.ensemble["bases"][0])
+            if state == 1:
+                # send photon in certain state to direct receiver
+                photon = Photon("", self.timeline, wavelength=(1/self.frequencies[0]), location=self, encoding_type=None)
+                self.direct_receiver.get(photon)
 
 
 # array of atomic ensemble memories
@@ -843,9 +844,13 @@ class MemoryArray(Entity):
         for _ in range(num_memories):
             memory = Memory("", timeline, **memory_params)
             self.memories.append(memory)
+        self.entangled_memories = [-1] * num_memories
 
     def __getitem__(self, key):
         return self.memories[key]
+
+    def __len__(self):
+        return len(self.memories)
 
     def init(self):
         pass
@@ -894,15 +899,20 @@ class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.components = kwargs.get("components", {})
-        # cchannels: use dictionary store classical channels
-        #  { another node name : ClassicalChannel }
-        self.cchannels = kwargs.get("cchannels", {})  # mapping of destination node names to classical channels
-        self.qchannels = kwargs.get("qchannels", {})  # mapping of destination node names to quantum channels
-        self.message = None  # temporary storage for message received through classical channel
+        self.cchannels = {}  # mapping of destination node names to classical channels
+        self.qchannels = {}  # mapping of destination node names to quantum channels
         self.protocols = []
 
     def init(self):
         pass
+
+    def assign_cchannel(self, cchannel: ClassicalChannel):
+        # Must have used ClassicalChannel.addend prior to using this method
+        another = ""
+        for end in cchannel.ends:
+            if end.name != self.name:
+                another = end.name
+        self.cchannels[another] = cchannel
 
     def send_qubits(self, basis_list, bit_list, source_name):
         encoding_type = self.components[source_name].encoding_type
@@ -1008,13 +1018,6 @@ class Node(Entity):
     def get_source_count(self):
         source = self.components['lightsource']
         return source.photon_counter
-
-    def assign_cchannel(self, cchannel: ClassicalChannel):
-        another = ""
-        for end in cchannel.ends:
-            if end.name != self.name:
-                another = end.name
-        self.cchannels[another] = cchannel
 
     def send_message(self, dst: str, msg: str):
         self.cchannels[dst].transmit(msg, self)

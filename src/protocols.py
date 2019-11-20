@@ -6,7 +6,6 @@ from topology import Node
 
 
 class Protocol(ABC):
-
     def __init__(self, own: Node):
         self.upper_protocols = []
         self.lower_protocols = []
@@ -15,7 +14,7 @@ class Protocol(ABC):
     @abstractmethod
     def pop(self):
         '''
-        information generated in current protocol is poped to
+        information generated in current protocol is popped to
         all its parents protocols
         '''
         pass
@@ -27,6 +26,15 @@ class Protocol(ABC):
         all its child protocols
         '''
         pass
+
+    def _push(self, **kwargs):
+        for child in self.lower_protocols:
+            child.push(**kwargs)
+
+    def _pop(self, **kwargs):
+        for parent in self.upper_protocols:
+            parent.pop(**kwargs)
+        return
 
     @abstractmethod
     def received_message(self, src: str, msg: List[str]):
@@ -50,15 +58,23 @@ class EntanglementGeneration(Protocol):
     def __init__(self, own, parent_protocols=[], child_protocols=[]):
         Protocol.__init__(own, parent_protocols, child_protocols)
 
-        self.alice_name = ""
-        self.bob_name = ""
-        self.charlie_name = ""
-        self.is_charlie = False
-        self.node = None
-
-        self.start_time = 0
-        self.quantum_delay = [0, 0]  # Alice, Bob
-        self.classical_delay = [0, 0]  # Alice, Bob
+class EntanglementGeneration(Protocol):
+    '''
+    Procedure:
+    1. Nodes that are not a middle (charlie) node send data to middle
+    2. Middle node uses data to schedule end nodes to send photons from memory
+    3. Middle node performs BSM when photons arrive
+    4. Middle node broadcasts results of entanglement to end node
+    5. End nodes store result and pop information to parent node
+    '''
+    def __init__(self, own, is_middle=False, **kwargs):
+        Protocol.__init__(own)
+        self.is_middle = is_middle
+        # properties below used for middle node
+        self.end_nodes = kwargs.get(end_nodes, [None, None])
+        self.classical_delays = [-1, -1]
+        self.quantum_delays = [-1, -1]
+        self.num_memories = [-1, -1]
 
     def pop(self):
         pass
@@ -66,19 +82,69 @@ class EntanglementGeneration(Protocol):
     def push(self):
         pass
 
-    def assign_node(self, node):
-        self.node = node
-        if self.is_charlie:
-            self.classical_delay[0] = node.cchannels.get(self.alice_name).delay
-            self.classical_delay[1] = node.cchannels.get(self.bob_name).delay
-
-            qchannel_a = node.qchannels.get(self.alice_name)
-            qchannel_b = node.qchannels.get(self.bob_name)
-            self.quantum_delay[0] = int(round(qchannel_a.distance / qchannel_a.light_speed))
-            self.quantum_delay[1] = int(round(qchannel_b.distance / qchannel_b.light_speed))
-
     def start(self):
-        pass
+        if self.is_middle:
+            self.classical_delays = [-1, -1]
+            self.quantum_delays = [-1, -1]
+            self.num_memories = [-1, -1]
+            self.frequencies = [-1, -1]
+            message = "EntanglementGeneration send_data"
+            for node in self.end_nodes:
+                self.own.send_message(node, message)
+
+    def end_photons(self):
+        bsm_res = self.own.components["BSM"].get_bsm_res[]
+        # process bms_res
+        # define entanglement relation in node
+        # pop entanglement relation to parent
+
+    def received_message(self, src: str, msg: List[str]):
+        msg_type = msg[0]
+
+        if msg_type == "send_data":
+            classical_delay = self.own.cchannels[src].delay
+            qchannel = self.own.qchannels[src]
+            quantum_delay = int(round(qchannel.distance / qchannel.light_speed))
+            num_memories = len(self.own.components["MemoryArray"])
+            frequency = self.own.components["MemoryArray"].frequency
+
+            message = "EntanglementGeneration receive_data {} {} {} {}".format(classical_delay, 
+                                                                               quantum_delay,
+                                                                               num_memories,
+                                                                               frequency)
+            self.own.send_message(src, message)
+
+        if msg_type == "receive_data":
+            index = self.end_nodes.index(src)
+            self.classical_delays[index] = int(msg[1])
+            self.quantum_delays[index] = int(msg[2])
+            self.num_memories[index] = int(msg[3])
+            self.frequencies[index] = int(msg[4])
+
+            # check if we have both sets of information
+            if -1 not in self.classical_delays:
+                assert self.frequencies[0] == self.frequencies[1]
+                start_time_0 = self.timeline.now() + max(self.classical_delays)\
+                                                   + max(self.quantum_delays[1] - self.quantum_delays[0], 0)
+                start_time_1 = self.timeline.now() + max(self.classical_delays)\
+                                                   + max(self.quantum_delays[0] - self.quantum_delays[1], 0)
+                message_0 = "EntanglementGeneration send_photons {}".format(start_time_0)
+                message_1 = "EntanglementGeneration send_photons {}".format(start_time_1)
+                self.own.send_message(end_nodes[0], message_0)
+                self.own.send_message(end_nodes[1], message_1)
+
+                light_time = int(round(min(self.num_memories) / self.frequencies[0] * 1e12))
+                process_time = self.timeline.now() + max(self.classical_delays) + max(self.quantum_delays) + light_time
+                process = Process(self, "end_photons", [])
+                event = Event(process_time, process)
+                self.timeline.schedule(event)
+
+        if msg_type == "send_photons":
+            start_time = int(msg[1])
+            process = Process(self.own.components["MemoryArray"], "write", [])
+            event = Event(start_time, process)
+            self.timeline.schedule(event)
+
 
 
 class BBPSSW(Protocol):
@@ -334,13 +400,13 @@ if __name__ == "__main__":
 
         # create memories on nodes
         NUM_MEMORY = 20
-        sample_memory = topology.Memory("", tl, fidelity=0.6)
+        memory_params = {"name":"", "timeline":tl, "fidelity":0.6}
         alice_memo_array = topology.MemoryArray("alice memory array",
                                                 tl, num_memories=NUM_MEMORY,
-                                                sample_memory=sample_memory)
+                                                memory_params=memory_params)
         bob_memo_array = topology.MemoryArray("bob memory array",
                                               tl, num_memories=NUM_MEMORY,
-                                              sample_memory=sample_memory)
+                                              memory_params=memory_params)
         alice.components['MemoryArray'] = alice_memo_array
         bob.components['MemoryArray'] = bob_memo_array
 
