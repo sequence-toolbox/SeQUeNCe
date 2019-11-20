@@ -569,14 +569,20 @@ class BSM(Entity):
         Entity.__init__(self, name, timeline)
         self.encoding_type = kwargs.get("encoding_type", encoding.time_bin)
         self.phase_error = kwargs.get("phase_error", 0)
+        self.photons = []
+        self.photon_arrival_time = -1
 
-        # two detectors for time-bin encoding
+        # two detectors for time-bin and ensemble encoding
         # four detectors for polarization encoding
         detectors = kwargs.get("detectors",[])
         if self.encoding_type["name"] == "polarization":
             assert len(detectors) == 4
         elif self.encoding_type["name"] == "time_bin":
             assert len(detectors) == 2
+        elif self.encoding_type["name"] == "ensemble":
+            assert len(detectors) == 2
+        else:
+            raise Exception("invalid encoding type")
 
         self.detectors = []
         for d in detectors:
@@ -584,14 +590,7 @@ class BSM(Entity):
                 detector = Detector(timeline, **d)
             else:
                 detector = None
-            self.detectors.append(detector)
-
-        # assume BSM is connected to two quantum channel
-        # self.target_end = None
-        # self.signal_end = None
-
-        self.photons = [None, None]
-        self.photon_arrival_time = -1
+            self.detectors.append(detector) 
 
         # define bell basis vectors
         self.bell_basis = [[complex(math.sqrt(1/2)), complex(0), complex(0), complex(math.sqrt(1/2))],
@@ -611,31 +610,38 @@ class BSM(Entity):
         pass
 
     def get(self, photon):
+        # check if photon arrived later than current photon
         if self.photon_arrival_time < self.timeline.now():
             # clear photons
-            self.photons = [photon, None]
+            self.photons = [photon]
             # set arrival time
             self.photon_arrival_time = self.timeline.now()
 
         # if we have photons from same source, do nothing
         # otherwise, we have different photons arriving at the same time and can proceed
-        if self.photons[0].location == photon.location:
-            return
-        else:
-            self.photons[1] = photon
-            self.send_to_detectors()
+        # if self.photons[0].location == photon.location:
+        #     return
+        # else:
+        #     self.photons.append(photon)
+        #     self.send_to_detectors()
+
+        # check if we have a photon from a new location
+        if not any([reference.location == photon.location for reference in self.photons]):
+            self.photons.append(photon)
+        self.send_to_detectors()
 
     def send_to_detectors(self):
-        if numpy.random.random_sample() < self.phase_error:
+        # perform different operation based on encoding type
+
+        if self.encoding_type["name"] == "time_bin" and len(self.photons) == 2:
+            if numpy.random.random_sample() < self.phase_error:
             self.photons[1].apply_phase_error()
+            # entangle photons to measure
+            self.photons[0].entangle(self.photons[1])
 
-        # entangle photons to measure
-        self.photons[0].entangle(self.photons[1])
+            # measure in bell basis
+            res = Photon.measure_multiple(self.bell_basis, self.photons)
 
-        # measure in bell basis
-        res = Photon.measure_multiple(self.bell_basis, self.photons)
-
-        if self.encoding_type["name"] == "time_bin":
             # check if we've measured as Phi+ or Phi-; these cannot be measured by the BSM
             if res == 0 or res == 1:
                 return
@@ -667,13 +673,18 @@ class BSM(Entity):
                 event = Event(int(round(late_time)), process)
                 self.timeline.schedule(event)
 
-            # invalid result from measurement
+            #invalid result from measurement
             else:
                 raise Exception("Invalid result from photon.measure_multiple")
 
-        else:
+        elif self.encoding_type["name"] == "polarization":
             # TODO: polarization
             pass
+
+        elif self.encoding_type["name"] == "ensemble":
+            # if we have 1 photon, generate entanglement
+            # if we have more than 1 photon, invalidate result
+            # send detect message to a random detector
 
     def get_bsm_res(self):
         # bsm_res = [ [timestamp of early photon, res] ]
