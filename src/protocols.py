@@ -80,7 +80,9 @@ class EntanglementGeneration(Protocol):
 
     def end_photons(self):
         bsm_res = self.own.components["BSM"].get_bsm_res[]
-        # process bms_res and pop to parent
+        # process bms_res
+        # define entanglement relation in node
+        # pop entanglement relation to parent
 
     def received_message(self, src: str, msg: List[str]):
         msg_type = msg[0]
@@ -125,7 +127,7 @@ class EntanglementGeneration(Protocol):
 
         if msg_type == "send_photons":
             start_time = int(msg[1])
-            process = Process(self.own.components["MemoryArray"], "read", [])
+            process = Process(self.own.components["MemoryArray"], "write", [])
             event = Event(start_time, process)
             self.timeline.schedule(event)
 
