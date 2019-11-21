@@ -461,7 +461,9 @@ if __name__ == "__main__":
         charlie.protocols.append(egC)
 
         # schedule events
-        
+        process = Process(egC, "pop", [True])
+        event = Event(0, process)
+        tl.schedule(event)
 
         # start simulation
         tl.init()
@@ -559,5 +561,5 @@ if __name__ == "__main__":
             print(node.name)
             print_memory(memory)
 
-    # two_nodes_test()
-    multi_nodes_test(3)
+    two_nodes_test()
+    # multi_nodes_test(3)
