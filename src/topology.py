@@ -47,9 +47,9 @@ class QuantumState():
         entangled_states = self.entangled_states + another_state.entangled_states
         quantum_state = numpy.kron(self.state, another_state.state)
 
-        for photon in entangled_photons:
-            photon.entangled_photons = entangled_photons
-            photon.quantum_state = quantum_state
+        for state in entangled_states:
+            state.entangled_statess = entangled_states
+            state.quantum_state = quantum_state
 
     def random_noise(self):
         angle = numpy.random.random() * 2 * numpy.pi
@@ -571,6 +571,8 @@ class BSM(Entity):
         self.phase_error = kwargs.get("phase_error", 0)
         self.photons = []
         self.photon_arrival_time = -1
+        # used for ensemble encoding
+        self.previous_state = None
 
         # two detectors for time-bin and ensemble encoding
         # four detectors for polarization encoding
@@ -683,13 +685,26 @@ class BSM(Entity):
 
         elif self.encoding_type["name"] == "ensemble":
             # if we have 1 photon, generate entanglement
+            if len(self.photons) == 1:
+                mem_0 = self.photons[0].endcoding["memory"]
+                mem_1 = mem_0.entanglement_partner
+                mem_0.quantum_state.entangle(mem_1.quantum_state)
+                #project to bell basis
+                _ = QuantumState.measure_multiple(self.bell_basis, [mem_0.quantum_state, mem_1.quantum_state])
+
             # if we have more than 1 photon, invalidate result
+            if len(self.photons) > 1:
+                self.photons[0].encoding["memory"].set_state(self.previous_state)
+
             # send detect message to a random detector
+            detector_num = numpy.random.choice([0, 1])
+            self.detectors[detector_num].get()
 
     def get_bsm_res(self):
         # bsm_res = [ [timestamp of early photon, res] ]
         # res: 0 -> \phi_0; 1 -> \phi_1
         bsm_res = []
+
         if self.encoding_type["name"] == "time_bin":
             d0_times = self.detectors[0].photon_times
             d1_times = self.detectors[1].photon_times
@@ -733,9 +748,18 @@ class BSM(Entity):
                     d1_times.pop(0)
                 d1_times.pop(0)
 
+        elif self.encoding_type["name"] = "ensemble":
+            d0_times = self.detectors[0].photon_times
+            d1_times = self.detectors[1].photon_times
+            for time in d0_times:
+                bsm_res.append([time, 0])
+            for time in d1_times:
+                bsm_res.append([time, 0])
+
         else:
-            # TODO: polarization, memory
+            # TODO: polarization
             pass
+
         return bsm_res
 
 class SPDCLens(Entity):
@@ -814,9 +838,16 @@ class Memory(Entity):
         self.efficiency = kwargs.get("efficiency", 1)
         self.direct_receiver = kwargs.get("direct_receiver", None)
         self.qstate = QuantumState()
-        self.frequencies = kwargs.get("frequencies", [0, 0]) # first element is ground transition frequency, second is excited frequency
-        # keep track of entanglement?
+        self.frequencies = kwargs.get("frequencies", [0, 0]) # first is ground transition frequency, second is excited frequency
+        
+        self.photon_encoding = encoding.ensemble.copy()
+        self.photon_encoding["memory"] = self
+        
+        # keep track of entanglement
         self.entangled_memory = {'node_id': None, 'memo_id': None}
+
+        # keep track of entanglement partner (for entanglement generation)
+        self.entanglement_parter = None
 
     def init(self):
         pass
@@ -826,7 +857,9 @@ class Memory(Entity):
             self.qstate.state = [complex(0), complex(1)]
             # send photon in certain state to direct receiver
             # TODO: specify new encoding_type
-            photon = Photon("", self.timeline, wavelength=(1/self.frequencies[1]), location=self, encoding_type=None)
+            encoding_type = encoding.
+            photon = Photon("", self.timeline, wavelength=(1/self.frequencies[1]), location=self,
+                            encoding_type=self.photon_encoding)
             self.direct_receiver.get(photon)
             # schedule decay based on frequency
             decay_time = self.timeline.now() + int(numpy.random.exponential(fidelity) * 1e12)
@@ -839,7 +872,8 @@ class Memory(Entity):
             state = self.qstate.measure(encoding.ensemble["bases"][0])
             if state == 1:
                 # send photon in certain state to direct receiver
-                photon = Photon("", self.timeline, wavelength=(1/self.frequencies[0]), location=self, encoding_type=None)
+                photon = Photon("", self.timeline, wavelength=(1/self.frequencies[0]), location=self,
+                                encoding_type=self.photon_encoding)
                 self.direct_receiver.get(photon)
 
 
@@ -855,7 +889,9 @@ class MemoryArray(Entity):
         for _ in range(num_memories):
             memory = Memory("", timeline, **memory_params)
             self.memories.append(memory)
-        self.entangled_memories = [-1] * num_memories
+
+        # for entanglement generation
+        self.entanglement_partner = None
 
     def __getitem__(self, key):
         return self.memories[key]
@@ -865,6 +901,11 @@ class MemoryArray(Entity):
 
     def init(self):
         pass
+
+    def set_entanglement_partner(self, mem_arr: MemoryArray)
+        self.entanglement_partner = mem_arr
+        for i, mem in self.memories:
+            mem.entanglement_partner = mem_arr[i]
 
     def write(self):
         time = self.timeline.now()

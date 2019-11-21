@@ -43,20 +43,6 @@ class Protocol(ABC):
         '''
         pass
 
-    def _push(self, **kwargs):
-        for child in self.lower_protocols:
-            child.push(**kwargs)
-
-    def _pop(self, **kwargs):
-        for parent in self.upper_protocols:
-            parent.pop(**kwargs)
-        return
-
-
-class EntanglementGeneration(Protocol):
-
-    def __init__(self, own, parent_protocols=[], child_protocols=[]):
-        Protocol.__init__(own, parent_protocols, child_protocols)
 
 class EntanglementGeneration(Protocol):
     '''
@@ -71,19 +57,25 @@ class EntanglementGeneration(Protocol):
         Protocol.__init__(own)
         self.is_middle = is_middle
         # properties below used for middle node
-        self.end_nodes = kwargs.get(end_nodes, [None, None])
+        self.end_nodes = kwargs.get(end_nodes, [])
         self.classical_delays = [-1, -1]
         self.quantum_delays = [-1, -1]
         self.num_memories = [-1, -1]
+        self.start_time = -1
+
+        # keep track of which memory arrays we're trying to entangle
+        if len(self.end_nodes == 2):
+            mem_0 = self.end_nodes[0].components["MemoryArray"]
+            mem_1 = self.end_nodes[1].components["MemoryArray"]
+            mem_0.entangled_array = mem_1
+            mem_1.entangled_array = mem_0
 
     def pop(self):
         pass
 
-    def push(self):
-        pass
-
-    def start(self):
-        if self.is_middle:
+    def push(self, start=False):
+        # used to start protocol
+        if self.is_middle and start:
             self.classical_delays = [-1, -1]
             self.quantum_delays = [-1, -1]
             self.num_memories = [-1, -1]
@@ -94,10 +86,10 @@ class EntanglementGeneration(Protocol):
 
     def end_photons(self):
         bsm_res = self.own.components["BSM"].get_bsm_res[]
-        message_0 = "EntanglementGeneration receive_bsm {} {}".format(self.end_nodes[1], bsm_res)
-        message_1 = "EntanglementGeneration receive_bsm {} {}".format(self.end_nodes[0], bsm_res)
-        self.own.send_message(self.end_nodes[0], message_0)
-        self.own.send_message(self.end_nodes[1], message_1)
+        message_0 = "EntanglementGeneration receive_bsm {} {}".format(self.end_nodes[1].name, bsm_res)
+        message_1 = "EntanglementGeneration receive_bsm {} {}".format(self.end_nodes[0].name, bsm_res)
+        self.own.send_message(self.end_nodes[0].name, message_0)
+        self.own.send_message(self.end_nodes[1].name, message_1)
 
     def received_message(self, src: str, msg: List[str]):
         msg_type = msg[0]
@@ -135,7 +127,8 @@ class EntanglementGeneration(Protocol):
                 self.own.send_message(end_nodes[1], message_1)
 
                 light_time = int(round(min(self.num_memories) / self.frequencies[0] * 1e12))
-                process_time = self.timeline.now() + max(self.classical_delays) + max(self.quantum_delays) + light_time
+                self.start_time = self.timeline.now() + max(self.classical_delays) + max(self.quantum_delays)
+                process_time = self.start_time + light_time
                 process = Process(self, "end_photons", [])
                 event = Event(process_time, process)
                 self.timeline.schedule(event)
@@ -149,11 +142,34 @@ class EntanglementGeneration(Protocol):
         if msg_type == "receive_bsm":
             other_node = msg[1]
             msg = msg[1:]
-            for i, res in enumerate(msg):
-                if res is not -1:
-                    self.own.components["MemoryArray"][i].entangled_memory["node_id"] = other_node
-                    self.own.components["MemoryArray"][i].entangled_memory["memo_id"] = i
-            _push()
+
+            # parse bsm result
+            times_and_bits = []
+            if msg[0] != "[]":
+                for val in msg:
+                    times_and_bits.append(int(re.sub("[],[]", "", val)))
+            bsm_res = []
+            bsm_single = []
+            for i, val in enumerate(times_and_bits):
+                bsm_single.append(val)
+                if i % 2:
+                    bsm_res.append(bsm_single)
+                    bsm_single = []
+
+            for res in bsm_res:
+                # calculate index
+                i = int(round((res[0] - self.start_time) * frequency * 1e-12))
+
+                # record entanglement
+                self.own.components["MemoryArray"][i].entangled_memory["node_id"] = other_node
+                self.own.components["MemoryArray"][i].entangled_memory["memo_id"] = i
+
+                # send to entanglement purification
+                _pop(i, other_node)
+
+        else:
+            raise Exception("unknown message of type {} received by EntanglementGeneration on node '{}'"
+                            .format(msg[0]), self.own.name)
 
 
 class BBPSSW(Protocol):
@@ -396,9 +412,10 @@ if __name__ == "__main__":
         # create timeline
         tl = timeline.Timeline()
 
-        # create nodes alice and bob
+        # create nodes alice, bob, charlie
         alice = topology.Node("alice", tl)
         bob = topology.Node("bob", tl)
+        charlie = topology.Node("charlie", tl)
 
         # create classical channel
         cc = topology.ClassicalChannel("cc", tl, distance=1e3, delay=1e5)
@@ -408,7 +425,7 @@ if __name__ == "__main__":
         bob.assign_cchannel(cc)
 
         # create memories on nodes
-        NUM_MEMORY = 20
+        NUM_MEMORY = 100
         memory_params = {"name":"", "timeline":tl, "fidelity":0.6}
         alice_memo_array = topology.MemoryArray("alice memory array",
                                                 tl, num_memories=NUM_MEMORY,
@@ -419,32 +436,32 @@ if __name__ == "__main__":
         alice.components['MemoryArray'] = alice_memo_array
         bob.components['MemoryArray'] = bob_memo_array
 
+        # create BSM
+        bsm = topology.BSM("charlie bsm", tl)
+        charlie.components['BSM'] = bsm
+
         # create alice protocol stack
-        dummyA = DummyParent(alice)
-        dummyA.another = 'bob'
+        egA = EntanglementGeneration(alice)
         bbpsswA = BBPSSW(alice, threshold=0.9)
-        dummyA.upper_protocols.append(bbpsswA)
-        bbpsswA.lower_protocols.append(dummyA)
-        alice.protocols.append(dummyA)
+        egA.upper_protocols.append(bbpsswA)
+        bbpsswA.lower_protocols.append(egA)
+        alice.protocols.append(egA)
         alice.protocols.append(bbpsswA)
 
         # create bob protocol stack
-        dummyB = DummyParent(bob)
-        dummyB.another = 'alice'
+        egB = EntanglementGeneration(bob)
         bbpsswB = BBPSSW(bob, threshold=0.9)
-        dummyB.upper_protocols.append(bbpsswB)
-        bbpsswB.lower_protocols.append(dummyB)
-        bob.protocols.append(dummyB)
+        egB.upper_protocols.append(bbpsswB)
+        bbpsswB.lower_protocols.append(egB)
+        bob.protocols.append(egB)
         bob.protocols.append(bbpsswB)
 
+        # create charlie protocol stack
+        egC = EntanglementGeneration(charlie, is_middle=True, end_nodes=[alice, bob])
+        charlie.protocols.append(egC)
+
         # schedule events
-        for i in range(NUM_MEMORY):
-            alice_memo_array[i].entangled_memory = {'node_id': 'bob', 'memo_id': i}
-            bob_memo_array[i].entangled_memory = {'node_id': 'alice', 'memo_id': i}
-            e = Event(i*(1e5), Process(dummyA, "pop", [i, "bob"]))
-            tl.schedule(e)
-            e = Event(i*(1e5), Process(dummyB, "pop", [i, "alice"]))
-            tl.schedule(e)
+        
 
         # start simulation
         tl.init()
