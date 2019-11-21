@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import List
 from random import random
+import re
 
+from sequence import encoding
 from topology import Node
 
 
@@ -12,7 +14,7 @@ class Protocol(ABC):
         self.own = own
 
     @abstractmethod
-    def pop(self):
+    def pop(self, *args):
         '''
         information generated in current protocol is popped to
         all its parents protocols
@@ -20,20 +22,20 @@ class Protocol(ABC):
         pass
 
     @abstractmethod
-    def push(self):
+    def push(self, *args):
         '''
         information generated in current protocol is pushed to
         all its child protocols
         '''
         pass
 
-    def _push(self, **kwargs):
+    def _push(self, *args):
         for child in self.lower_protocols:
-            child.push(**kwargs)
+            child.push(*args)
 
-    def _pop(self, **kwargs):
+    def _pop(self, *args):
         for parent in self.upper_protocols:
-            parent.pop(**kwargs)
+            parent.pop(*args)
         return
 
     @abstractmethod
@@ -54,26 +56,24 @@ class EntanglementGeneration(Protocol):
     5. End nodes store result and pop information to parent node
     '''
     def __init__(self, own, is_middle=False, **kwargs):
-        Protocol.__init__(own)
+        Protocol.__init__(self, own)
         self.is_middle = is_middle
         # properties below used for middle node
-        self.end_nodes = kwargs.get(end_nodes, [])
+        self.end_nodes = kwargs.get("end_nodes", [])
         self.classical_delays = [-1, -1]
         self.quantum_delays = [-1, -1]
         self.num_memories = [-1, -1]
+        self.frequencies = [-1, -1]
         self.start_time = -1
 
         # keep track of which memory arrays we're trying to entangle
-        if len(self.end_nodes == 2):
+        if len(self.end_nodes) == 2:
             mem_0 = self.end_nodes[0].components["MemoryArray"]
             mem_1 = self.end_nodes[1].components["MemoryArray"]
-            mem_0.entangled_array = mem_1
-            mem_1.entangled_array = mem_0
+            mem_0.set_entanglement_partner(mem_1)
+            mem_1.set_entanglement_partner(mem_0)
 
-    def pop(self):
-        pass
-
-    def push(self, start=False):
+    def pop(self, start=False):
         # used to start protocol
         if self.is_middle and start:
             self.classical_delays = [-1, -1]
@@ -82,10 +82,13 @@ class EntanglementGeneration(Protocol):
             self.frequencies = [-1, -1]
             message = "EntanglementGeneration send_data"
             for node in self.end_nodes:
-                self.own.send_message(node, message)
+                self.own.send_message(node.name, message)
+
+    def push(self, _):
+        pass
 
     def end_photons(self):
-        bsm_res = self.own.components["BSM"].get_bsm_res[]
+        bsm_res = self.own.components["BSM"].get_bsm_res()
         message_0 = "EntanglementGeneration receive_bsm {} {}".format(self.end_nodes[1].name, bsm_res)
         message_1 = "EntanglementGeneration receive_bsm {} {}".format(self.end_nodes[0].name, bsm_res)
         self.own.send_message(self.end_nodes[0].name, message_0)
@@ -95,7 +98,7 @@ class EntanglementGeneration(Protocol):
         msg_type = msg[0]
 
         if msg_type == "send_data":
-            classical_delay = self.own.cchannels[src].delay
+            classical_delay = int(round(self.own.cchannels[src].delay))
             qchannel = self.own.qchannels[src]
             quantum_delay = int(round(qchannel.distance / qchannel.light_speed))
             num_memories = len(self.own.components["MemoryArray"])
@@ -107,8 +110,12 @@ class EntanglementGeneration(Protocol):
                                                                                frequency)
             self.own.send_message(src, message)
 
-        if msg_type == "receive_data":
-            index = self.end_nodes.index(src)
+        elif msg_type == "receive_data":
+            if self.end_nodes[0].name == src:
+                index = 0
+            else:
+                index = 1
+
             self.classical_delays[index] = int(msg[1])
             self.quantum_delays[index] = int(msg[2])
             self.num_memories[index] = int(msg[3])
@@ -117,31 +124,31 @@ class EntanglementGeneration(Protocol):
             # check if we have both sets of information
             if -1 not in self.classical_delays:
                 assert self.frequencies[0] == self.frequencies[1]
-                start_time_0 = self.timeline.now() + max(self.classical_delays)\
-                                                   + max(self.quantum_delays[1] - self.quantum_delays[0], 0)
-                start_time_1 = self.timeline.now() + max(self.classical_delays)\
-                                                   + max(self.quantum_delays[0] - self.quantum_delays[1], 0)
+                start_time_0 = self.own.timeline.now() + max(self.classical_delays)\
+                                                       + max(self.quantum_delays[1] - self.quantum_delays[0], 0)
+                start_time_1 = self.own.timeline.now() + max(self.classical_delays)\
+                                                       + max(self.quantum_delays[0] - self.quantum_delays[1], 0)
                 message_0 = "EntanglementGeneration send_photons {}".format(start_time_0)
                 message_1 = "EntanglementGeneration send_photons {}".format(start_time_1)
-                self.own.send_message(end_nodes[0], message_0)
-                self.own.send_message(end_nodes[1], message_1)
+                self.own.send_message(self.end_nodes[0].name, message_0)
+                self.own.send_message(self.end_nodes[1].name, message_1)
 
                 light_time = int(round(min(self.num_memories) / self.frequencies[0] * 1e12))
-                self.start_time = self.timeline.now() + max(self.classical_delays) + max(self.quantum_delays)
+                self.start_time = self.own.timeline.now() + max(self.classical_delays) + max(self.quantum_delays)
                 process_time = self.start_time + light_time
                 process = Process(self, "end_photons", [])
                 event = Event(process_time, process)
-                self.timeline.schedule(event)
+                self.own.timeline.schedule(event)
 
-        if msg_type == "send_photons":
+        elif msg_type == "send_photons":
             start_time = int(msg[1])
             process = Process(self.own.components["MemoryArray"], "write", [])
             event = Event(start_time, process)
-            self.timeline.schedule(event)
+            self.own.timeline.schedule(event)
 
-        if msg_type == "receive_bsm":
+        elif msg_type == "receive_bsm":
             other_node = msg[1]
-            msg = msg[1:]
+            msg = msg[2:]
 
             # parse bsm result
             times_and_bits = []
@@ -158,18 +165,18 @@ class EntanglementGeneration(Protocol):
 
             for res in bsm_res:
                 # calculate index
-                i = int(round((res[0] - self.start_time) * frequency * 1e-12))
+                i = int(round((res[0] - self.start_time) * self.frequencies[0] * 1e-12))
 
                 # record entanglement
                 self.own.components["MemoryArray"][i].entangled_memory["node_id"] = other_node
                 self.own.components["MemoryArray"][i].entangled_memory["memo_id"] = i
 
                 # send to entanglement purification
-                _pop(i, other_node)
+                self._pop(i, other_node)
 
         else:
-            raise Exception("unknown message of type {} received by EntanglementGeneration on node '{}'"
-                            .format(msg[0]), self.own.name)
+            raise Exception("unknown message of type '{}' received by EntanglementGeneration on node '{}'"
+                            .format(msg_type, self.own.name))
 
 
 class BBPSSW(Protocol):
@@ -205,7 +212,7 @@ class BBPSSW(Protocol):
         # { round of purification : [ set( [ kept memory, measured memory ] ) }
         self.waiting_list = {}
 
-    def pop(self, memory_index: int, another_node: str):
+    def pop(self, memory_index=0, another_node=""):
         if another_node not in self.purified_lists:
             self.purified_lists[another_node] = []
         purified_list = self.purified_lists[another_node]
@@ -295,6 +302,8 @@ class BBPSSW(Protocol):
                      purified_list: List[List[int]]) -> float:
 
         local_memory = self.own.components['MemoryArray']
+        print("{}: {}".format(kept_memo, local_memory[kept_memo].fidelity))
+        print("{}: {}".format(measured_memo, local_memory[measured_memo].fidelity))
         assert (local_memory[kept_memo].fidelity ==
                 local_memory[measured_memo].fidelity)
         assert (local_memory[kept_memo].fidelity > 0.5)
@@ -315,12 +324,12 @@ class BBPSSW(Protocol):
             local_memory[kept_memo].fidelity = fidelity
             local_memory[kept_memo].entangled_memory['node_id'] = None
             local_memory[kept_memo].entangled_memory['memo_id'] = None
-            self._push(memory_index=kept_memo)
+            self._push(kept_memo)
 
         local_memory[measured_memo].fidelity = 0
         local_memory[measured_memo].entangled_memory['node_id'] = None
         local_memory[measured_memo].entangled_memory['memo_id'] = None
-        self._push(memory_index=measured_memo)
+        self._push(measured_memo)
         return fidelity
 
     def update(self, round_id: int,
@@ -343,7 +352,7 @@ class BBPSSW(Protocol):
         local_memory[measured_memo].fidelity = 0
         local_memory[measured_memo].entangled_memory['node_id'] = None
         local_memory[measured_memo].entangled_memory['memo_id'] = None
-        self._push(memory_index=measured_memo)
+        self._push(measured_memo)
 
     @staticmethod
     def success_probability(F: float) -> float:
@@ -408,7 +417,7 @@ if __name__ == "__main__":
         def received_message(self, src, msg):
             pass
 
-    def two_nodes_test():
+    def three_nodes_test():
         # create timeline
         tl = timeline.Timeline()
 
@@ -417,28 +426,50 @@ if __name__ == "__main__":
         bob = topology.Node("bob", tl)
         charlie = topology.Node("charlie", tl)
 
-        # create classical channel
-        cc = topology.ClassicalChannel("cc", tl, distance=1e3, delay=1e5)
-        cc.add_end(alice)
-        cc.add_end(bob)
-        alice.assign_cchannel(cc)
-        bob.assign_cchannel(cc)
+        # create classical channels
+        cc1 = topology.ClassicalChannel("cc1", tl, distance=1e3, delay=1e5)
+        cc2 = topology.ClassicalChannel("cc2", tl, distance=1e3, delay=1e5)
+        cc3 = topology.ClassicalChannel("cc3", tl, distance=1e3, delay=1e5)
+        cc1.add_end(alice)
+        cc1.add_end(charlie)
+        cc2.add_end(bob)
+        cc2.add_end(charlie)
+        cc3.add_end(alice)
+        cc3.add_end(bob)
+        alice.assign_cchannel(cc1)
+        charlie.assign_cchannel(cc1)
+        bob.assign_cchannel(cc2)
+        charlie.assign_cchannel(cc2)
+        alice.assign_cchannel(cc3)
+        bob.assign_cchannel(cc3)
+
+        # create quantum channels
+        qc1 = topology.QuantumChannel("qc1", tl, distance=1e3)
+        qc2 = topology.QuantumChannel("qc2", tl, distance=1e3)
+        alice.qchannels = {"charlie": qc1}
+        bob.qchannels = {"charlie": qc2}
 
         # create memories on nodes
         NUM_MEMORY = 100
-        memory_params = {"name":"", "timeline":tl, "fidelity":0.6}
+        memory_params_alice = {"fidelity": 0.6, "direct_receiver": qc1}
+        memory_params_bob = {"fidelity": 0.6, "direct_receiver": qc2}
         alice_memo_array = topology.MemoryArray("alice memory array",
                                                 tl, num_memories=NUM_MEMORY,
-                                                memory_params=memory_params)
+                                                memory_params=memory_params_alice)
         bob_memo_array = topology.MemoryArray("bob memory array",
                                               tl, num_memories=NUM_MEMORY,
-                                              memory_params=memory_params)
+                                              memory_params=memory_params_bob)
         alice.components['MemoryArray'] = alice_memo_array
         bob.components['MemoryArray'] = bob_memo_array
+        qc1.set_sender(alice_memo_array)
+        qc2.set_sender(bob_memo_array)
 
         # create BSM
-        bsm = topology.BSM("charlie bsm", tl)
+        detectors = [{"efficiency": 0.7, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000}] * 2
+        bsm = topology.BSM("charlie bsm", tl, encoding_type=encoding.ensemble, detectors=detectors)
         charlie.components['BSM'] = bsm
+        qc1.set_receiver(bsm)
+        qc2.set_receiver(bsm)
 
         # create alice protocol stack
         egA = EntanglementGeneration(alice)
@@ -561,5 +592,5 @@ if __name__ == "__main__":
             print(node.name)
             print_memory(memory)
 
-    two_nodes_test()
+    three_nodes_test()
     # multi_nodes_test(3)
