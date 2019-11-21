@@ -269,6 +269,12 @@ class ClassicalChannel(OpticalChannel):
 
         self.ends.append(node)
 
+    def set_ends(self, node_list):
+        for node in node_list:
+            self.add_end(node)
+        for node in node_list:
+            node.assign_cchannel(self)
+
     def transmit(self, message, source):
         # get node that's not equal to source
         if source not in self.ends:

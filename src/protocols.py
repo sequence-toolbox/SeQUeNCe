@@ -3,8 +3,12 @@ from typing import List
 from random import random
 import re
 
+from sequence import topology
+from sequence import timeline
 from sequence import encoding
-from topology import Node
+from sequence.topology import Node
+from sequence.process import Process
+from sequence.event import Event
 
 
 class Protocol(ABC):
@@ -85,6 +89,7 @@ class EntanglementGeneration(Protocol):
                 self.own.send_message(node.name, message)
 
     def push(self, _):
+        # redo entanglement with this memory
         pass
 
     def end_photons(self):
@@ -123,11 +128,13 @@ class EntanglementGeneration(Protocol):
 
             # check if we have both sets of information
             if -1 not in self.classical_delays:
+                # use frequency to determine read rate
                 assert self.frequencies[0] == self.frequencies[1]
                 start_time_0 = self.own.timeline.now() + max(self.classical_delays)\
                                                        + max(self.quantum_delays[1] - self.quantum_delays[0], 0)
                 start_time_1 = self.own.timeline.now() + max(self.classical_delays)\
                                                        + max(self.quantum_delays[0] - self.quantum_delays[1], 0)
+                # add some extra delay to the start time for jitter
                 message_0 = "EntanglementGeneration send_photons {}".format(start_time_0)
                 message_1 = "EntanglementGeneration send_photons {}".format(start_time_1)
                 self.own.send_message(self.end_nodes[0].name, message_0)
@@ -372,10 +379,6 @@ class BBPSSW(Protocol):
 
 
 if __name__ == "__main__":
-    import topology
-    import timeline
-    from sequence.process import Process
-    from sequence.event import Event
     from random import seed
 
     # two nodes case
