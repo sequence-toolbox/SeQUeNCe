@@ -598,7 +598,7 @@ class BSM(Entity):
                 detector = Detector(timeline, **d)
             else:
                 detector = None
-            self.detectors.append(detector) 
+            self.detectors.append(detector)
 
         # define bell basis vectors
         self.bell_basis = [[complex(math.sqrt(1/2)), complex(0), complex(0), complex(math.sqrt(1/2))],
@@ -846,10 +846,10 @@ class Memory(Entity):
         self.direct_receiver = kwargs.get("direct_receiver", None)
         self.qstate = QuantumState()
         self.frequencies = kwargs.get("frequencies", [1, 1]) # first is ground transition frequency, second is excited frequency
-        
+
         self.photon_encoding = encoding.ensemble.copy()
         self.photon_encoding["memory"] = self
-        
+
         # keep track of entanglement
         self.entangled_memory = {'node_id': None, 'memo_id': None}
 
@@ -881,6 +881,14 @@ class Memory(Entity):
                 photon = Photon("", self.timeline, wavelength=(1/self.frequencies[0]), location=self,
                                 encoding_type=self.photon_encoding)
                 self.direct_receiver.get(photon)
+
+    def clean(self):
+        '''
+        reset memory after failure occurs
+        '''
+        self.fidelity = 0
+        self.entangled_memory['node_id'] = None
+        self.entangled_memory['memo_id'] = None
 
 
 # array of atomic ensemble memories
@@ -955,6 +963,7 @@ class Memory_EIT(Entity):
 
 class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
+        assert(' ' not in name)
         Entity.__init__(self, name, timeline)
         self.components = kwargs.get("components", {})
         self.cchannels = {}  # mapping of destination node names to classical channels
@@ -1089,6 +1098,8 @@ class Node(Entity):
         for protocol in self.protocols:
             if type(protocol).__name__ == msg_parsed[0]:
                 protocol.received_message(src, msg_parsed[1:])
+                return
+        raise Exception("Unkown protocol")
 
 
 class Topology:
