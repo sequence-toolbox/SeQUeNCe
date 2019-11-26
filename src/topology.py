@@ -991,7 +991,7 @@ class Node(Entity):
         self.protocols = []
 
     def init(self):
-        for component in self.components:
+        for key, component in self.components.items():
             component.parents.append(self)
 
     def assign_cchannel(self, cchannel: ClassicalChannel):
@@ -1117,7 +1117,8 @@ class Node(Entity):
     # new method
     def pop(self, **kwargs):
         entity = kwargs.get("entity")
-        encoding_type = self.components[detector_name].encoding_type
+        # TODO: figure out how to get encoding_type
+        # encoding_type = self.components[entity].encoding_type
 
         if entity == "QSDetector":
             raise Exception("unimplemented method for handling QSDetector result in node '{}'".format(self.name))
@@ -1135,9 +1136,7 @@ class Node(Entity):
                 # TODO: need early and late arrival time to calculate bit value
             
         elif entity == "BSM":
-            if encoding_type.name == "ensemble":
-                self._pop(info_type="BSM_res", res=kwargs.get("res"))
-
+            self._pop(info_type="BSM_res", res=kwargs.get("res"))
 
     def send_message(self, dst: str, msg: str):
         self.cchannels[dst].transmit(msg, self)

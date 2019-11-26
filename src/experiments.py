@@ -19,6 +19,9 @@ def three_node_test():
     alice = topology.Node("alice", tl)
     bob = topology.Node("bob", tl)
     charlie = topology.Node("charlie", tl)
+    tl.entities.append(alice)
+    tl.entities.append(bob)
+    tl.entities.append(charlie)
 
     # create classical channels
     cc_ab = topology.ClassicalChannel("cc_ab", tl, distance=2e3, delay=2e5)
@@ -42,10 +45,10 @@ def three_node_test():
     memory_param_bob = {"fidelity": 0.6, "direct_receiver": qc_bc}
     alice_memo_array = topology.MemoryArray("alice_memory_array", tl,
                                             num_memories=NUM_MEMORIES,
-                                            memory_params = memory_param_alice)
+                                            memory_params=memory_param_alice)
     bob_memo_array = topology.MemoryArray("bob_memory_array", tl,
                                           num_memories=NUM_MEMORIES,
-                                          memory_params = memory_param_bob)
+                                          memory_params=memory_param_bob)
     alice.components['MemoryArray'] = alice_memo_array
     bob.components['MemoryArray'] = bob_memo_array
     qc_ac.set_sender(alice_memo_array)
@@ -79,7 +82,7 @@ def three_node_test():
     charlie.protocols.append(egC)
 
     # schedule events
-    process = Process(egC, "pop", [True])
+    process = Process(egC, "start", [])
     event = Event(0, process)
     tl.schedule(event)
 

@@ -18,7 +18,7 @@ class Protocol(ABC):
         self.own = own
 
     @abstractmethod
-    def pop(self, *kwargs):
+    def pop(self, **kwargs):
         '''
         information generated in current protocol is popped to
         all its parents protocols
@@ -26,20 +26,20 @@ class Protocol(ABC):
         pass
 
     @abstractmethod
-    def push(self, *kwargs):
+    def push(self, **kwargs):
         '''
         information generated in current protocol is pushed to
         all its child protocols
         '''
         pass
 
-    def _push(self, *kwargs):
+    def _push(self, **kwargs):
         for child in self.lower_protocols:
-            child.push(*args)
+            child.push(**kwargs)
 
-    def _pop(self, *kwargs):
+    def _pop(self, **kwargs):
         for parent in self.upper_protocols:
-            parent.pop(*args)
+            parent.pop(**kwargs)
         return
 
     @abstractmethod
@@ -77,30 +77,28 @@ class EntanglementGeneration(Protocol):
             mem_0.set_entanglement_partner(mem_1)
             mem_1.set_entanglement_partner(mem_0)
 
+    def start(self):
+        self.classical_delays = [-1, -1]
+        self.quantum_delays = [-1, -1]
+        self.num_memories = [-1, -1]
+        self.frequencies = [-1, -1]
+        message = "EntanglementGeneration send_data"
+        for node in self.end_nodes:
+            self.own.send_message(node.name, message)
+
     def pop(self, **kwargs):
-        start = kwargs.get("start", False)
         info_type = kwargs.get("info_type", "")
 
-        # used to start protocol
-        if self.is_middle and start:
-            self.classical_delays = [-1, -1]
-            self.quantum_delays = [-1, -1]
-            self.num_memories = [-1, -1]
-            self.frequencies = [-1, -1]
-            message = "EntanglementGeneration send_data"
-            for node in self.end_nodes:
-                self.own.send_message(node.name, message)
-
-        elif info_type == "BSM_res":
+        if info_type == "BSM_res":
             res = kwargs.get("res")
-            index = int(round((self.timeline.now() - self.start_time) * self.frequencies[0] * 1e-12))
+            index = int(round((self.own.timeline.now() - self.start_time) * self.frequencies[0] * 1e-12))
 
             message_0 = "EntanglementGeneration meas_res {} {} {}".format(self.end_nodes[1].name, index, res)
             message_1 = "EntanglementGeneration meas_res {} {} {}".format(self.end_nodes[0].name, index, res)
             self.own.send_message(self.end_nodes[0].name, message_0)
             self.own.send_message(self.end_nodes[1].name, message_1)
 
-    def push(self, _):
+    def push(self, **kwargs):
         # redo entanglement with this memory
         pass
 
@@ -157,11 +155,11 @@ class EntanglementGeneration(Protocol):
 
         elif msg_type == "meas_res":
             other_node = msg[1]
-            index = msg[2]
+            index = int(msg[2])
 
             # record entanglement
-            self.own.components["memoryArray"][i].entangled_memory["node_id"] = other_node
-            self.own.components["MemoryArray"][i].entangled_memory["memo_id"] = index
+            self.own.components["MemoryArray"][index].entangled_memory["node_id"] = other_node
+            self.own.components["MemoryArray"][index].entangled_memory["memo_id"] = index
 
             # send to entanglement purification
             self._pop(memory_index=index, another_node=other_node)
@@ -318,12 +316,12 @@ class BBPSSW(Protocol):
             local_memory[kept_memo].fidelity = fidelity
             local_memory[kept_memo].entangled_memory['node_id'] = None
             local_memory[kept_memo].entangled_memory['memo_id'] = None
-            self._push(kept_memo)
+            self._push(kept_memo=kept_memo)
 
         local_memory[measured_memo].fidelity = 0
         local_memory[measured_memo].entangled_memory['node_id'] = None
         local_memory[measured_memo].entangled_memory['memo_id'] = None
-        self._push(measured_memo)
+        self._push(measured_memo=measured_memo)
         return fidelity
 
     def update(self, round_id: int,
@@ -346,7 +344,7 @@ class BBPSSW(Protocol):
         local_memory[measured_memo].fidelity = 0
         local_memory[measured_memo].entangled_memory['node_id'] = None
         local_memory[measured_memo].entangled_memory['memo_id'] = None
-        self._push(measured_memo)
+        self._push(measured_memo=measured_memo)
 
     @staticmethod
     def success_probability(F: float) -> float:
