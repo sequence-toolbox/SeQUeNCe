@@ -147,7 +147,6 @@ class QuantumState():
         return res
 
 
-
 class Photon(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
@@ -388,11 +387,13 @@ class QSDetector(Entity):
         elif self.encoding_type["name"] == "time_bin":
             self.switch.get(photon)
 
+    # old method
     def clear_detectors(self):
         for d in self.detectors:
             if d is not None:
                 d.photon_times = []
 
+    # old method
     def get_photon_times(self):
         times = []
         for d in self.detectors:
@@ -401,6 +402,11 @@ class QSDetector(Entity):
             else:
                 times.append([])
         return times
+
+    # new method
+    def pop(self, **kwargs):
+        detector = kwargs.get("detector")
+        self._pop(entity="QSDetector", detector_num=self.detectors.index(detector))
 
     def set_basis(self, basis):
         self.splitter.set_basis(basis)
@@ -436,10 +442,15 @@ class Detector(Entity):
         now = self.timeline.now()
 
         if (numpy.random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
+            # old method
             time = int(round(now / self.time_resolution)) * self.time_resolution
             self.photon_times.append(time)
-            self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
+            # new method
+            self._pop(detector=self)
+
+            self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
+            
     def add_dark_count(self):
         if self.on:
             time_to_next = int(numpy.random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
@@ -577,8 +588,10 @@ class BSM(Entity):
         self.phase_error = kwargs.get("phase_error", 0)
         self.photons = []
         self.photon_arrival_time = -1
+
         # used for ensemble encoding
         self.previous_state = None
+        self.last_res_time = -1
 
         # two detectors for time-bin and ensemble encoding
         # four detectors for polarization encoding
@@ -596,6 +609,7 @@ class BSM(Entity):
         for d in detectors:
             if d is not None:
                 detector = Detector(timeline, **d)
+                detector.parents.append(self)
             else:
                 detector = None
             self.detectors.append(detector) 
@@ -606,17 +620,10 @@ class BSM(Entity):
                            [complex(0), complex(math.sqrt(1/2)), complex(math.sqrt(1/2)), complex(0)],
                            [complex(0), complex(math.sqrt(1/2)), -complex(math.sqrt(1/2)), complex(0)]]
 
-    '''
-    def assign_target_end(self, target_end):
-        self.target_end = target_end
-
-    def assign_signal_end(self, signal_end):
-        self.signal_end = signal_end
-    '''
-
     def init(self):
         pass
 
+    # might need to change with new method
     def get(self, photon):
         # check if photon arrived later than current photon
         if self.photon_arrival_time < self.timeline.now():
@@ -707,6 +714,7 @@ class BSM(Entity):
             detector_num = numpy.random.choice([0, 1])
             self.detectors[detector_num].get()
 
+    # old method
     def get_bsm_res(self):
         # bsm_res = [ [timestamp of early photon, res] ]
         # res: 0 -> \phi_0; 1 -> \phi_1
@@ -768,6 +776,27 @@ class BSM(Entity):
             pass
 
         return bsm_res
+
+    # new method
+    def pop(self, **kwargs):
+        # calculate bsm based on detector num
+        detector = kwargs.get("detector")
+        detector_num = self.detectors.index(detector)
+
+        if self.encoding_type["name"] == "ensemble":
+            res = 0
+            # test if result invalid
+            if self.last_res_time == self.timeline.now():
+                res = -1
+                # TODO: how to invalidate result in protocol?
+            else:
+                self.last_res_time == self.timeline.now()
+                self._pop(entity="BSM", result=res)
+
+        else:
+            # TODO: polarization, time_bin
+            pass
+
 
 class SPDCLens(Entity):
     def __init__(self, name, timeline, **kwargs):
@@ -962,7 +991,8 @@ class Node(Entity):
         self.protocols = []
 
     def init(self):
-        pass
+        for component in self.components:
+            component.parents.append(self)
 
     def assign_cchannel(self, cchannel: ClassicalChannel):
         # Must have used ClassicalChannel.addend prior to using this method
@@ -972,7 +1002,7 @@ class Node(Entity):
                 another = end.name
         self.cchannels[another] = cchannel
 
-    ## TODO: define assign_qchannel
+    # TODO: define assign_qchannel
 
     def send_qubits(self, basis_list, bit_list, source_name):
         encoding_type = self.components[source_name].encoding_type
@@ -987,6 +1017,7 @@ class Node(Entity):
         state_list = [state] * num
         self.components[source_name].emit(state_list)
 
+    # old method
     def get_bits(self, light_time, start_time, frequency, detector_name):
         encoding_type = self.components[detector_name].encoding_type
         bits = [-1] * int(round(light_time * frequency))  # -1 used for invalid bits
@@ -1078,6 +1109,35 @@ class Node(Entity):
     def get_source_count(self):
         source = self.components['lightsource']
         return source.photon_counter
+
+    # new method
+    def _pop(self, **kwargs):
+        self.protocols[0].pop(**kwargs)
+
+    # new method
+    def pop(self, **kwargs):
+        entity = kwargs.get("entity")
+        encoding_type = self.components[detector_name].encoding_type
+
+        if entity == "QSDetector":
+            raise Exception("unimplemented method for handling QSDetector result in node '{}'".format(self.name))
+
+            # calculate bit and then pop to protocols
+            detector_index = kwargs.get("detector_num")
+            bit = -1
+
+            if encoding_type.name == "polarization":
+                bit = detector_index
+                # TODO: pop to protocol
+
+            elif encoding_type.name == "time_bin":
+                bin_separation = encoding_type.bin_separation
+                # TODO: need early and late arrival time to calculate bit value
+            
+        elif entity == "BSM":
+            if encoding_type.name == "ensemble":
+                self._pop(info_type="BSM_res", res=kwargs.get("res"))
+
 
     def send_message(self, dst: str, msg: str):
         self.cchannels[dst].transmit(msg, self)

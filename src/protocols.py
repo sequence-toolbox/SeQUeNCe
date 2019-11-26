@@ -18,7 +18,7 @@ class Protocol(ABC):
         self.own = own
 
     @abstractmethod
-    def pop(self, *args):
+    def pop(self, *kwargs):
         '''
         information generated in current protocol is popped to
         all its parents protocols
@@ -26,18 +26,18 @@ class Protocol(ABC):
         pass
 
     @abstractmethod
-    def push(self, *args):
+    def push(self, *kwargs):
         '''
         information generated in current protocol is pushed to
         all its child protocols
         '''
         pass
 
-    def _push(self, *args):
+    def _push(self, *kwargs):
         for child in self.lower_protocols:
             child.push(*args)
 
-    def _pop(self, *args):
+    def _pop(self, *kwargs):
         for parent in self.upper_protocols:
             parent.pop(*args)
         return
@@ -77,7 +77,10 @@ class EntanglementGeneration(Protocol):
             mem_0.set_entanglement_partner(mem_1)
             mem_1.set_entanglement_partner(mem_0)
 
-    def pop(self, start=False):
+    def pop(self, **kwargs):
+        start = kwargs.get("start", False)
+        info_type = kwargs.get("info_type", "")
+
         # used to start protocol
         if self.is_middle and start:
             self.classical_delays = [-1, -1]
@@ -88,16 +91,18 @@ class EntanglementGeneration(Protocol):
             for node in self.end_nodes:
                 self.own.send_message(node.name, message)
 
+        elif info_type == "BSM_res":
+            res = kwargs.get("res")
+            index = int(round((self.timeline.now() - self.start_time) * self.frequencies[0] * 1e-12))
+
+            message_0 = "EntanglementGeneration meas_res {} {} {}".format(self.end_nodes[1].name, index, res)
+            message_1 = "EntanglementGeneration meas_res {} {} {}".format(self.end_nodes[0].name, index, res)
+            self.own.send_message(self.end_nodes[0].name, message_0)
+            self.own.send_message(self.end_nodes[1].name, message_1)
+
     def push(self, _):
         # redo entanglement with this memory
         pass
-
-    def end_photons(self):
-        bsm_res = self.own.components["BSM"].get_bsm_res()
-        message_0 = "EntanglementGeneration receive_bsm {} {}".format(self.end_nodes[1].name, bsm_res)
-        message_1 = "EntanglementGeneration receive_bsm {} {}".format(self.end_nodes[0].name, bsm_res)
-        self.own.send_message(self.end_nodes[0].name, message_0)
-        self.own.send_message(self.end_nodes[1].name, message_1)
 
     def received_message(self, src: str, msg: List[str]):
         msg_type = msg[0]
@@ -129,23 +134,20 @@ class EntanglementGeneration(Protocol):
             # check if we have both sets of information
             if -1 not in self.classical_delays:
                 # use frequency to determine read rate
+                # TODO: determine maximum frequency based on those given
                 assert self.frequencies[0] == self.frequencies[1]
                 start_time_0 = self.own.timeline.now() + max(self.classical_delays)\
                                                        + max(self.quantum_delays[1] - self.quantum_delays[0], 0)
                 start_time_1 = self.own.timeline.now() + max(self.classical_delays)\
                                                        + max(self.quantum_delays[0] - self.quantum_delays[1], 0)
-                # add some extra delay to the start time for jitter
+                # TODO: add some extra delay to the start time for jitter
+
                 message_0 = "EntanglementGeneration send_photons {}".format(start_time_0)
                 message_1 = "EntanglementGeneration send_photons {}".format(start_time_1)
                 self.own.send_message(self.end_nodes[0].name, message_0)
                 self.own.send_message(self.end_nodes[1].name, message_1)
 
-                light_time = int(round(min(self.num_memories) / self.frequencies[0] * 1e12))
                 self.start_time = self.own.timeline.now() + max(self.classical_delays) + max(self.quantum_delays)
-                process_time = self.start_time + light_time
-                process = Process(self, "end_photons", [])
-                event = Event(process_time, process)
-                self.own.timeline.schedule(event)
 
         elif msg_type == "send_photons":
             start_time = int(msg[1])
@@ -153,33 +155,16 @@ class EntanglementGeneration(Protocol):
             event = Event(start_time, process)
             self.own.timeline.schedule(event)
 
-        elif msg_type == "receive_bsm":
+        elif msg_type == "meas_res":
             other_node = msg[1]
-            msg = msg[2:]
+            index = msg[2]
 
-            # parse bsm result
-            times_and_bits = []
-            if msg[0] != "[]":
-                for val in msg:
-                    times_and_bits.append(int(re.sub("[],[]", "", val)))
-            bsm_res = []
-            bsm_single = []
-            for i, val in enumerate(times_and_bits):
-                bsm_single.append(val)
-                if i % 2:
-                    bsm_res.append(bsm_single)
-                    bsm_single = []
+            # record entanglement
+            self.own.components["memoryArray"][i].entangled_memory["node_id"] = other_node
+            self.own.components["MemoryArray"][i].entangled_memory["memo_id"] = index
 
-            for res in bsm_res:
-                # calculate index
-                i = int(round((res[0] - self.start_time) * self.frequencies[0] * 1e-12))
-
-                # record entanglement
-                self.own.components["MemoryArray"][i].entangled_memory["node_id"] = other_node
-                self.own.components["MemoryArray"][i].entangled_memory["memo_id"] = i
-
-                # send to entanglement purification
-                self._pop(i, other_node)
+            # send to entanglement purification
+            self._pop(memory_index=index, another_node=other_node)
 
         else:
             raise Exception("unknown message of type '{}' received by EntanglementGeneration on node '{}'"
@@ -219,7 +204,9 @@ class BBPSSW(Protocol):
         # { round of purification : [ set( [ kept memory, measured memory ] ) }
         self.waiting_list = {}
 
-    def pop(self, memory_index=0, another_node=""):
+    def pop(self, **kwargs):
+        memory_index = kwargs.get("memory_index", 0)
+        another_node = kwargs.get("another_node", "")
         if another_node not in self.purified_lists:
             self.purified_lists[another_node] = []
         purified_list = self.purified_lists[another_node]
@@ -260,7 +247,7 @@ class BBPSSW(Protocol):
         # WARN: wait change of Node.send_message function
         self.own.send_message(dst=another_node, msg=msg)
 
-    def push(self):
+    def push(self, **kwargs):
         pass
 
     def received_message(self, src: str, msg: List[str]):
