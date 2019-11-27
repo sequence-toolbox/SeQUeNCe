@@ -59,16 +59,21 @@ class EntanglementGeneration(Protocol):
     4. Middle node broadcasts results of entanglement to end node
     5. End nodes store result and pop information to parent node
     '''
-    def __init__(self, own, is_middle=False, **kwargs):
+    def __init__(self, own, **kwargs):
         Protocol.__init__(self, own)
-        self.is_middle = is_middle
+        self.middle_node = None
         # properties below used for middle node
+        self.single_scheduled = False
+        self.single_operation = False
         self.end_nodes = kwargs.get("end_nodes", [])
         self.classical_delays = [-1, -1]
         self.quantum_delays = [-1, -1]
         self.num_memories = [-1, -1]
         self.frequencies = [-1, -1]
+        self.redo_indices = [[], []]
         self.start_time = -1
+        self.end_time = -1  # time at which protocol is no longer operating
+
 
         # keep track of which memory arrays we're trying to entangle
         if len(self.end_nodes) == 2:
@@ -78,39 +83,78 @@ class EntanglementGeneration(Protocol):
             mem_1.set_entanglement_partner(mem_0)
 
     def start(self):
+        # check if ready
+        if self.own.timeline.now() < self.end_time:
+            process = Process(self, "start", [])
+            event = Event(self.end_time, process)
+            self.own.timeline.schedule(event)
+            return
+
         self.classical_delays = [-1, -1]
         self.quantum_delays = [-1, -1]
         self.num_memories = [-1, -1]
         self.frequencies = [-1, -1]
+        self.redo_indices = [[], []]
         message = "EntanglementGeneration send_data"
         for node in self.end_nodes:
             self.own.send_message(node.name, message)
+
+    def redo_single(self):
+        self.single_operation = False
+        if [] in self.redo_indices:
+            self.single_operation = False
+
+        else:
+            print("got here")
+            start_time_0 = self.own.timeline.now() + max(self.classical_delays)\
+                                                   + max(self.quantum_delays[1] - self.quantum_delays[0], 0)
+            start_time_1 = self.own.timeline.now() + max(self.classical_delays)\
+                                                   + max(self.quantum_delays[0] - self.quantum_delays[1], 0)
+            
+            message_0 = "EntanglementGeneration send_photon {} {}".format(start_time_0, self.redo_indices[0][0])
+            message_1 = "EntanglementGeneration send_photon {} {}".format(start_time_1, self.redo_indices[1][0])
+            self.own.send_message(self.end_nodes[0].name, message_0)
+            self.own.send_message(self.end_nodes[1].name, message_1)
+
+            end_time = self.own.timeline.now() + max(self.classical_delays) + max(self.quantum_delays)\
+                       + int(round(1e12 / self.frequencies))
+            process = Process(self, "redo_single", [])
+            event = Event(end_time, process)
+            self.own.timeline.schedule(event)
 
     def pop(self, **kwargs):
         info_type = kwargs.get("info_type", "")
 
         if info_type == "BSM_res":
             res = kwargs.get("res")
-            index = int(round((self.own.timeline.now() - self.start_time) * self.frequencies[0] * 1e-12))
+            if not self.single_operation:
+                index0 = int(round((self.own.timeline.now() - self.start_time) * self.frequencies[0] * 1e-12))
+                index1 = index0
+            else:
+                index0 = self.redo_indices[0].pop()
+                index1 = self.redo_indices[1].pop()
 
-            message_0 = "EntanglementGeneration meas_res {} {} {}".format(self.end_nodes[1].name, index, res)
-            message_1 = "EntanglementGeneration meas_res {} {} {}".format(self.end_nodes[0].name, index, res)
+            message_0 = "EntanglementGeneration meas_res {} {} {}".format(self.end_nodes[1].name, index0, res)
+            message_1 = "EntanglementGeneration meas_res {} {} {}".format(self.end_nodes[0].name, index1, res)
             self.own.send_message(self.end_nodes[0].name, message_0)
             self.own.send_message(self.end_nodes[1].name, message_1)
 
     def push(self, **kwargs):
         # redo entanglement with this memory
-        pass
+        index = kwargs.get("index")
+        message = "EntanglementGeneration redo {}".format(index)
+        self.own.send_message(self.middle_node, message)
 
     def received_message(self, src: str, msg: List[str]):
         msg_type = msg[0]
 
         if msg_type == "send_data":
+            self.middle_node = src
             classical_delay = int(round(self.own.cchannels[src].delay))
             qchannel = self.own.qchannels[src]
             quantum_delay = int(round(qchannel.distance / qchannel.light_speed))
             num_memories = len(self.own.components["MemoryArray"])
-            frequency = self.own.components["MemoryArray"].frequency
+            frequency = self.own.components["MemoryArray"].max_frequency
 
             message = "EntanglementGeneration receive_data {} {} {} {}".format(classical_delay, 
                                                                                quantum_delay,
@@ -132,24 +176,34 @@ class EntanglementGeneration(Protocol):
             # check if we have both sets of information
             if -1 not in self.classical_delays:
                 # use frequency to determine read rate
-                # TODO: determine maximum frequency based on those given
-                assert self.frequencies[0] == self.frequencies[1]
+                self.frequencies[0] = min(self.frequencies)
                 start_time_0 = self.own.timeline.now() + max(self.classical_delays)\
                                                        + max(self.quantum_delays[1] - self.quantum_delays[0], 0)
                 start_time_1 = self.own.timeline.now() + max(self.classical_delays)\
                                                        + max(self.quantum_delays[0] - self.quantum_delays[1], 0)
                 # TODO: add some extra delay to the start time for jitter
 
-                message_0 = "EntanglementGeneration send_photons {}".format(start_time_0)
-                message_1 = "EntanglementGeneration send_photons {}".format(start_time_1)
+                message_0 = "EntanglementGeneration send_photons {} {}".format(start_time_0, self.frequencies[0])
+                message_1 = "EntanglementGeneration send_photons {} {}".format(start_time_1, self.frequencies[0])
                 self.own.send_message(self.end_nodes[0].name, message_0)
                 self.own.send_message(self.end_nodes[1].name, message_1)
 
+                # keep track of the time in which entanglement generation is occuring
                 self.start_time = self.own.timeline.now() + max(self.classical_delays) + max(self.quantum_delays)
+                self.end_time = self.start_time + int(round(1e12 * max(self.num_memories) / self.frequencies[0]))
 
         elif msg_type == "send_photons":
             start_time = int(msg[1])
+            frequency = float(msg[2])
+            self.own.components["MemoryArray"].frequency = frequency
             process = Process(self.own.components["MemoryArray"], "write", [])
+            event = Event(start_time, process)
+            self.own.timeline.schedule(event)
+
+        elif msg_type == "send_photon":
+            start_time = int(msg[1])
+            index = int(msg[2])
+            process = Process(self.own.components["MemoryArray"][index], "write", [])
             event = Event(start_time, process)
             self.own.timeline.schedule(event)
 
@@ -163,6 +217,22 @@ class EntanglementGeneration(Protocol):
 
             # send to entanglement purification
             self._pop(memory_index=index, another_node=other_node)
+
+        elif msg_type == "redo":
+            if self.end_nodes[0].name == src:
+                node = 0
+            else:
+                node = 1
+            index = int(msg[1])
+            self.redo_indices[node].append(index)
+
+            # check if we have indices from both nodes and we're not currently doing a single entanglement operation
+            if not self.single_scheduled and [] not in self.redo_indices:
+                self.single_scheduled = True
+                new_start_time = max(self.own.timeline.now(), self.end_time)
+                process = Process(self, "redo_single", [])
+                event = Event(new_start_time, process)
+                self.own.timeline.schedule(event)
 
         else:
             raise Exception("unknown message of type '{}' received by EntanglementGeneration on node '{}'"
@@ -316,12 +386,12 @@ class BBPSSW(Protocol):
             local_memory[kept_memo].fidelity = fidelity
             local_memory[kept_memo].entangled_memory['node_id'] = None
             local_memory[kept_memo].entangled_memory['memo_id'] = None
-            self._push(kept_memo=kept_memo)
+            self._push(index=kept_memo)
 
         local_memory[measured_memo].fidelity = 0
         local_memory[measured_memo].entangled_memory['node_id'] = None
         local_memory[measured_memo].entangled_memory['memo_id'] = None
-        self._push(measured_memo=measured_memo)
+        self._push(index=measured_memo)
         return fidelity
 
     def update(self, round_id: int,
@@ -335,7 +405,7 @@ class BBPSSW(Protocol):
         if fidelity == 0:
             local_memory[kept_memo].entangled_memory['node_id'] = None
             local_memory[kept_memo].entangled_memory['memo_id'] = None
-            self._push(memory_index=kept_memo)
+            self._push(index=kept_memo)
         elif fidelity < self.threshold:
             if len(purified_list) <= round_id + 1:
                 purified_list.append([])
@@ -344,7 +414,7 @@ class BBPSSW(Protocol):
         local_memory[measured_memo].fidelity = 0
         local_memory[measured_memo].entangled_memory['node_id'] = None
         local_memory[measured_memo].entangled_memory['memo_id'] = None
-        self._push(measured_memo=measured_memo)
+        self._push(index=measured_memo)
 
     @staticmethod
     def success_probability(F: float) -> float:
@@ -476,7 +546,7 @@ if __name__ == "__main__":
         bob.protocols.append(bbpsswB)
 
         # create charlie protocol stack
-        egC = EntanglementGeneration(charlie, is_middle=True, end_nodes=[alice, bob])
+        egC = EntanglementGeneration(charlie, end_nodes=[alice, bob])
         charlie.protocols.append(egC)
 
         # schedule events

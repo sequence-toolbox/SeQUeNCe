@@ -78,7 +78,7 @@ def three_node_test():
     bob.protocols.append(bbpsswB)
 
     # create charlie protocol stack
-    egC = EntanglementGeneration(charlie, is_middle=True, end_nodes=[alice, bob])
+    egC = EntanglementGeneration(charlie, end_nodes=[alice, bob])
     charlie.protocols.append(egC)
 
     # schedule events

@@ -916,10 +916,11 @@ class Memory(Entity):
 class MemoryArray(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
-        self.frequency = kwargs.get("frequency", 1)
+        self.max_frequency = kwargs.get("frequency", 1)
         num_memories = kwargs.get("num_memories", 0)
         memory_params = kwargs.get("memory_params", None)
         self.memories = []
+        self.frequency = self.max_frequency
 
         for _ in range(num_memories):
             memory = Memory("", timeline, **memory_params)
@@ -945,11 +946,13 @@ class MemoryArray(Entity):
     def write(self):
         time = self.timeline.now()
 
+        period = 1e12 / min(self.frequency, self.max_frequency)
+
         for mem in self.memories:
             process = Process(mem, "write", [])
             event = Event(time, process)
             self.timeline.schedule(event)
-            time += 1e12 / self.frequency
+            time += period
 
     def read(self):
         time = self.timeline.now()
