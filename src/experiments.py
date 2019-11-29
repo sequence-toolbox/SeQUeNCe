@@ -1,4 +1,4 @@
-from random import seed
+from numpy.random import seed
 
 from protocols import EntanglementGeneration
 from protocols import BBPSSW
