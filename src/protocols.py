@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
-from random import random
+from numpy.random import random
+from math import ceil
 import re
 
 from sequence import topology
@@ -73,6 +74,7 @@ class EntanglementGeneration(Protocol):
         self.redo_indices = [[], []]
         self.start_time = -1
         self.end_time = -1  # time at which protocol is no longer operating
+        self.fidelity = 0 # fidelity after success try
 
 
         # keep track of which memory arrays we're trying to entangle
@@ -100,24 +102,22 @@ class EntanglementGeneration(Protocol):
             self.own.send_message(node.name, message)
 
     def redo_single(self):
-        self.single_operation = False
+        self.single_operation = True
         if [] in self.redo_indices:
             self.single_operation = False
-
         else:
-            print("got here")
             start_time_0 = self.own.timeline.now() + max(self.classical_delays)\
                                                    + max(self.quantum_delays[1] - self.quantum_delays[0], 0)
             start_time_1 = self.own.timeline.now() + max(self.classical_delays)\
                                                    + max(self.quantum_delays[0] - self.quantum_delays[1], 0)
-            
+
             message_0 = "EntanglementGeneration send_photon {} {}".format(start_time_0, self.redo_indices[0][0])
             message_1 = "EntanglementGeneration send_photon {} {}".format(start_time_1, self.redo_indices[1][0])
             self.own.send_message(self.end_nodes[0].name, message_0)
             self.own.send_message(self.end_nodes[1].name, message_1)
 
             end_time = self.own.timeline.now() + max(self.classical_delays) + max(self.quantum_delays)\
-                       + int(round(1e12 / self.frequencies))
+                       + int(ceil(1e12 / min(self.frequencies)))
             process = Process(self, "redo_single", [])
             event = Event(end_time, process)
             self.own.timeline.schedule(event)
@@ -145,6 +145,10 @@ class EntanglementGeneration(Protocol):
         message = "EntanglementGeneration redo {}".format(index)
         self.own.send_message(self.middle_node, message)
 
+    def is_expired(self, memory_index):
+        if self.own.components["MemoryArray"][memory_index].expired:
+            self.push(index=memory_index)
+
     def received_message(self, src: str, msg: List[str]):
         msg_type = msg[0]
 
@@ -156,7 +160,7 @@ class EntanglementGeneration(Protocol):
             num_memories = len(self.own.components["MemoryArray"])
             frequency = self.own.components["MemoryArray"].max_frequency
 
-            message = "EntanglementGeneration receive_data {} {} {} {}".format(classical_delay, 
+            message = "EntanglementGeneration receive_data {} {} {} {}".format(classical_delay,
                                                                                quantum_delay,
                                                                                num_memories,
                                                                                frequency)
@@ -190,15 +194,30 @@ class EntanglementGeneration(Protocol):
 
                 # keep track of the time in which entanglement generation is occuring
                 self.start_time = self.own.timeline.now() + max(self.classical_delays) + max(self.quantum_delays)
-                self.end_time = self.start_time + int(round(1e12 * max(self.num_memories) / self.frequencies[0]))
+                self.end_time = self.start_time + int(ceil(1e12 * max(self.num_memories) / self.frequencies[0]))
 
         elif msg_type == "send_photons":
             start_time = int(msg[1])
             frequency = float(msg[2])
-            self.own.components["MemoryArray"].frequency = frequency
-            process = Process(self.own.components["MemoryArray"], "write", [])
-            event = Event(start_time, process)
-            self.own.timeline.schedule(event)
+            time = start_time
+
+            period = int(1e12 / frequency)
+
+            memory_array = self.own.components["MemoryArray"]
+
+            classical_delay = int(round(self.own.cchannels[src].delay))
+            qchannel = self.own.qchannels[src]
+            quantum_delay = int(round(qchannel.distance / qchannel.light_speed))
+            offset = 2 + classical_delay + quantum_delay
+            for i, mem in enumerate(memory_array.memories):
+                process = Process(mem, "write", [])
+                event = Event(time, process)
+                self.own.timeline.schedule(event)
+
+                process = Process(self, "is_expired", [i])
+                event = Event(time + offset, process)
+                self.own.timeline.schedule(event)
+                time += period
 
         elif msg_type == "send_photon":
             start_time = int(msg[1])
@@ -214,6 +233,8 @@ class EntanglementGeneration(Protocol):
             # record entanglement
             self.own.components["MemoryArray"][index].entangled_memory["node_id"] = other_node
             self.own.components["MemoryArray"][index].entangled_memory["memo_id"] = index
+            self.own.components["MemoryArray"][index].fidelity = self.fidelity
+            self.own.components["MemoryArray"][index].expired = False
 
             # send to entanglement purification
             self._pop(memory_index=index, another_node=other_node)
@@ -364,8 +385,6 @@ class BBPSSW(Protocol):
                      purified_list: List[List[int]]) -> float:
 
         local_memory = self.own.components['MemoryArray']
-        print("{}: {}".format(kept_memo, local_memory[kept_memo].fidelity))
-        print("{}: {}".format(measured_memo, local_memory[measured_memo].fidelity))
         assert (local_memory[kept_memo].fidelity ==
                 local_memory[measured_memo].fidelity)
         assert (local_memory[kept_memo].fidelity > 0.5)
@@ -434,7 +453,7 @@ class BBPSSW(Protocol):
 
 
 if __name__ == "__main__":
-    from random import seed
+    from numpy.random import seed
 
     # two nodes case
     # multiple nodes case

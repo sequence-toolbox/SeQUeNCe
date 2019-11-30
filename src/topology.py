@@ -284,7 +284,7 @@ class ClassicalChannel(OpticalChannel):
             if e != source:
                 receiver = e
 
-        future_time = int(round(self.timeline.now() + self.delay))
+        future_time = int(round(self.timeline.now() + int(self.delay)))
         process = Process(receiver, "receive_message", [source.name, message])
         event = Event(future_time, process)
         self.timeline.schedule(event)
@@ -450,7 +450,7 @@ class Detector(Entity):
             self._pop(detector=self)
 
             self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
-            
+
     def add_dark_count(self):
         if self.on:
             time_to_next = int(numpy.random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
@@ -612,7 +612,7 @@ class BSM(Entity):
                 detector.parents.append(self)
             else:
                 detector = None
-            self.detectors.append(detector) 
+            self.detectors.append(detector)
 
         # define bell basis vectors
         self.bell_basis = [[complex(math.sqrt(1/2)), complex(0), complex(0), complex(math.sqrt(1/2))],
@@ -631,19 +631,19 @@ class BSM(Entity):
             self.photons = [photon]
             # set arrival time
             self.photon_arrival_time = self.timeline.now()
+        else:
+            # if we have photons from same source, do nothing
+            # otherwise, we have different photons arriving at the same time and can proceed
+            # if self.photons[0].location == photon.location:
+            #     return
+            # else:
+            #     self.photons.append(photon)
+            #     self.send_to_detectors()
 
-        # if we have photons from same source, do nothing
-        # otherwise, we have different photons arriving at the same time and can proceed
-        # if self.photons[0].location == photon.location:
-        #     return
-        # else:
-        #     self.photons.append(photon)
-        #     self.send_to_detectors()
-
-        # check if we have a photon from a new location
-        if not any([reference.location == photon.location for reference in self.photons]):
-            self.photons.append(photon)
-        self.send_to_detectors()
+            # check if we have a photon from a new location
+            if not any([reference.location == photon.location for reference in self.photons]):
+                self.photons.append(photon)
+            self.send_to_detectors()
 
     def send_to_detectors(self):
         # perform different operation based on encoding type
@@ -875,15 +875,17 @@ class Memory(Entity):
         self.direct_receiver = kwargs.get("direct_receiver", None)
         self.qstate = QuantumState()
         self.frequencies = kwargs.get("frequencies", [1, 1]) # first is ground transition frequency, second is excited frequency
-        
+
         self.photon_encoding = encoding.ensemble.copy()
         self.photon_encoding["memory"] = self
-        
+
         # keep track of entanglement
         self.entangled_memory = {'node_id': None, 'memo_id': None}
 
         # keep track of entanglement partner (for entanglement generation)
         self.entanglement_parter = None
+
+        self.expired = True
 
     def init(self):
         pass
@@ -1137,7 +1139,7 @@ class Node(Entity):
             elif encoding_type.name == "time_bin":
                 bin_separation = encoding_type.bin_separation
                 # TODO: need early and late arrival time to calculate bit value
-            
+
         elif entity == "BSM":
             self._pop(info_type="BSM_res", res=kwargs.get("res"))
 

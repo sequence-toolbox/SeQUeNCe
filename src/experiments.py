@@ -22,6 +22,7 @@ def three_node_test():
     tl.entities.append(alice)
     tl.entities.append(bob)
     tl.entities.append(charlie)
+    nodes = [alice,bob]
 
     # create classical channels
     cc_ab = topology.ClassicalChannel("cc_ab", tl, distance=2e3, delay=2e5)
@@ -41,8 +42,9 @@ def three_node_test():
 
     # create memories
     NUM_MEMORIES = 100
-    memory_param_alice = {"fidelity": 0.6, "direct_receiver": qc_ac}
-    memory_param_bob = {"fidelity": 0.6, "direct_receiver": qc_bc}
+    FIDELITY = 0.6
+    memory_param_alice = {"fidelity": FIDELITY, "direct_receiver": qc_ac}
+    memory_param_bob = {"fidelity": FIDELITY, "direct_receiver": qc_bc}
     alice_memo_array = topology.MemoryArray("alice_memory_array", tl,
                                             num_memories=NUM_MEMORIES,
                                             memory_params=memory_param_alice)
@@ -63,6 +65,7 @@ def three_node_test():
 
     # create alice protocol stack
     egA = EntanglementGeneration(alice)
+    egA.fidelity = FIDELITY
     bbpsswA = BBPSSW(alice, threshold=0.9)
     egA.upper_protocols.append(bbpsswA)
     bbpsswA.lower_protocols.append(egA)
@@ -71,6 +74,7 @@ def three_node_test():
 
     # create bob protocol stack
     egB = EntanglementGeneration(bob)
+    egB.fidelity = FIDELITY
     bbpsswB = BBPSSW(bob, threshold=0.9)
     egB.upper_protocols.append(bbpsswB)
     bbpsswB.lower_protocols.append(egB)
@@ -90,6 +94,14 @@ def three_node_test():
     tl.init()
     tl.run()
 
+    def print_memory(memoryArray):
+        for i, memory in enumerate(memoryArray):
+            print(i, memoryArray[i].entangled_memory, memory.fidelity)
+
+    for node in nodes:
+        memory = node.components['MemoryArray']
+        print(node.name)
+        print_memory(memory)
 
 if __name__ == "__main__":
     seed(1)
