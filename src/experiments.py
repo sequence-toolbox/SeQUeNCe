@@ -43,13 +43,16 @@ def three_node_test():
     # create memories
     NUM_MEMORIES = 100
     FIDELITY = 0.6
+    MEMO_FREQ = int(1e6)
     memory_param_alice = {"fidelity": FIDELITY, "direct_receiver": qc_ac}
     memory_param_bob = {"fidelity": FIDELITY, "direct_receiver": qc_bc}
     alice_memo_array = topology.MemoryArray("alice_memory_array", tl,
                                             num_memories=NUM_MEMORIES,
+                                            frequency=MEMO_FREQ,
                                             memory_params=memory_param_alice)
     bob_memo_array = topology.MemoryArray("bob_memory_array", tl,
                                           num_memories=NUM_MEMORIES,
+                                            frequency=MEMO_FREQ,
                                           memory_params=memory_param_bob)
     alice.components['MemoryArray'] = alice_memo_array
     bob.components['MemoryArray'] = bob_memo_array

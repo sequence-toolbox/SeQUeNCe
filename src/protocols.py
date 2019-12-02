@@ -134,8 +134,8 @@ class EntanglementGeneration(Protocol):
                 index0 = self.redo_indices[0].pop()
                 index1 = self.redo_indices[1].pop()
 
-            message_0 = "EntanglementGeneration meas_res {} {} {}".format(self.end_nodes[1].name, index0, res)
-            message_1 = "EntanglementGeneration meas_res {} {} {}".format(self.end_nodes[0].name, index1, res)
+            message_0 = "EntanglementGeneration meas_res {} {} {} {}".format(self.end_nodes[1].name, index0, index1, res)
+            message_1 = "EntanglementGeneration meas_res {} {} {} {}".format(self.end_nodes[0].name, index1, index0, res)
             self.own.send_message(self.end_nodes[0].name, message_0)
             self.own.send_message(self.end_nodes[1].name, message_1)
 
@@ -228,16 +228,17 @@ class EntanglementGeneration(Protocol):
 
         elif msg_type == "meas_res":
             other_node = msg[1]
-            index = int(msg[2])
+            local_index = int(msg[2])
+            remote_index = int(msg[3])
 
             # record entanglement
-            self.own.components["MemoryArray"][index].entangled_memory["node_id"] = other_node
-            self.own.components["MemoryArray"][index].entangled_memory["memo_id"] = index
-            self.own.components["MemoryArray"][index].fidelity = self.fidelity
-            self.own.components["MemoryArray"][index].expired = False
+            self.own.components["MemoryArray"][local_index].entangled_memory["node_id"] = other_node
+            self.own.components["MemoryArray"][local_index].entangled_memory["memo_id"] = remote_index
+            self.own.components["MemoryArray"][local_index].fidelity = self.fidelity
+            self.own.components["MemoryArray"][local_index].expired = False
 
             # send to entanglement purification
-            self._pop(memory_index=index, another_node=other_node)
+            self._pop(memory_index=local_index, another_node=other_node)
 
         elif msg_type == "redo":
             if self.end_nodes[0].name == src:
