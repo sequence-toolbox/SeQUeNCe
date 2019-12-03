@@ -101,7 +101,6 @@ class EntanglementGeneration(Protocol):
             self.own.send_message(node.name, message)
 
     def redo_single(self):
-        print("-----GOT TO REDO SINGLE-----")
         self.single_operation = True
         if [] in self.redo_indices:
             self.single_operation = False

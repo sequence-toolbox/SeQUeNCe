@@ -695,18 +695,20 @@ class BSM(Entity):
             pass
 
         elif self.encoding_type["name"] == "ensemble":
+            mem_0 = self.photons[0].encoding_type["memory"]
+            mem_1 = mem_0.entanglement_partner
+
             # if we have 1 photon, generate entanglement
             if len(self.photons) == 1:
-                mem_0 = self.photons[0].encoding_type["memory"]
-                mem_1 = mem_0.entanglement_partner
-                mem_0.qstate.entangle(mem_1.qstate)
+                if mem_1 not in mem_0.qstate.entangled_states:
+                    mem_0.qstate.entangle(mem_1.qstate)
                 self.previous_state =  mem_0.qstate.state
                 # project to bell basis
                 _ = QuantumState.measure_multiple(self.bell_basis, [mem_0.qstate, mem_1.qstate])
 
             # if we have more than 1 photon, invalidate result
             elif len(self.photons) > 1:
-                self.photons[0].encoding_type["memory"].qstate.set_state(self.previous_state)
+                mem_0.qstate.set_state(self.previous_state)
 
             # send detect message to a random detector
             detector_num = numpy.random.choice([0, 1])
@@ -891,7 +893,9 @@ class Memory(Entity):
 
     def write(self):
         if numpy.random.random_sample() < self.efficiency:
-            self.qstate.state = [complex(0), complex(1)]
+            # unentangle
+            # set new state
+            self.qstate.set_state([complex(0), complex(1)])
             # send photon in certain state to direct receiver
             # TODO: specify new encoding_type
             photon = Photon("", self.timeline, wavelength=(1/self.frequencies[1]), location=self,
