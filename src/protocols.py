@@ -102,6 +102,7 @@ class EntanglementGeneration(Protocol):
             self.own.send_message(node.name, message)
 
     def redo_single(self):
+        print("-----GOT TO REDO SINGLE-----")
         self.single_operation = True
         if [] in self.redo_indices:
             self.single_operation = False
@@ -139,15 +140,14 @@ class EntanglementGeneration(Protocol):
             self.own.send_message(self.end_nodes[0].name, message_0)
             self.own.send_message(self.end_nodes[1].name, message_1)
 
+        elif info_type == "expired_memory":
+            self.push(index=kwargs.get("index"))
+
     def push(self, **kwargs):
         # redo entanglement with this memory
         index = kwargs.get("index")
         message = "EntanglementGeneration redo {}".format(index)
         self.own.send_message(self.middle_node, message)
-
-    def is_expired(self, memory_index):
-        if self.own.components["MemoryArray"][memory_index].expired:
-            self.push(index=memory_index)
 
     def received_message(self, src: str, msg: List[str]):
         msg_type = msg[0]
@@ -199,25 +199,12 @@ class EntanglementGeneration(Protocol):
         elif msg_type == "send_photons":
             start_time = int(msg[1])
             frequency = float(msg[2])
-            time = start_time
-
-            period = int(1e12 / frequency)
-
             memory_array = self.own.components["MemoryArray"]
 
-            classical_delay = int(round(self.own.cchannels[src].delay))
-            qchannel = self.own.qchannels[src]
-            quantum_delay = int(round(qchannel.distance / qchannel.light_speed))
-            offset = 2 + classical_delay + quantum_delay
-            for i, mem in enumerate(memory_array.memories):
-                process = Process(mem, "write", [])
-                event = Event(time, process)
-                self.own.timeline.schedule(event)
-
-                process = Process(self, "is_expired", [i])
-                event = Event(time + offset, process)
-                self.own.timeline.schedule(event)
-                time += period
+            memory_array.frequency = frequency
+            process = Process(memory_array, "write", [])
+            event = Event(start_time, process)
+            self.own.timeline.schedule(event)
 
         elif msg_type == "send_photon":
             start_time = int(msg[1])

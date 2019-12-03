@@ -13,7 +13,7 @@ from sequence.event import Event
 
 
 def three_node_test():
-    tl = timeline.Timeline()
+    tl = timeline.Timeline(1e12)
 
     # create nodes
     alice = topology.Node("alice", tl)
