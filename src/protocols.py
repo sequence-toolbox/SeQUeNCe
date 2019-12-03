@@ -64,7 +64,6 @@ class EntanglementGeneration(Protocol):
         Protocol.__init__(self, own)
         self.middle_node = None
         # properties below used for middle node
-        self.single_scheduled = False
         self.single_operation = False
         self.end_nodes = kwargs.get("end_nodes", [])
         self.classical_delays = [-1, -1]
@@ -131,8 +130,8 @@ class EntanglementGeneration(Protocol):
                 index0 = int(round((self.own.timeline.now() - self.start_time) * self.frequencies[0] * 1e-12))
                 index1 = index0
             else:
-                index0 = self.redo_indices[0].pop()
-                index1 = self.redo_indices[1].pop()
+                index0 = self.redo_indices[0].pop(0)
+                index1 = self.redo_indices[1].pop(0)
 
             message_0 = "EntanglementGeneration meas_res {} {} {} {}".format(self.end_nodes[1].name, index0, index1, res)
             message_1 = "EntanglementGeneration meas_res {} {} {} {}".format(self.end_nodes[0].name, index1, index0, res)
@@ -226,6 +225,14 @@ class EntanglementGeneration(Protocol):
             event = Event(start_time, process)
             self.own.timeline.schedule(event)
 
+            classical_delay = int(round(self.own.cchannels[src].delay))
+            qchannel = self.own.qchannels[src]
+            quantum_delay = int(round(qchannel.distance / qchannel.light_speed))
+            offset = 2 + classical_delay + quantum_delay
+            process = Process(self, "is_expired", [index])
+            event = Event(start_time + offset, process)
+            self.own.timeline.schedule(event)
+
         elif msg_type == "meas_res":
             other_node = msg[1]
             local_index = int(msg[2])
@@ -246,11 +253,12 @@ class EntanglementGeneration(Protocol):
             else:
                 node = 1
             index = int(msg[1])
+            if index in self.redo_indices:
+                self.redo_indices.remove(index)
             self.redo_indices[node].append(index)
 
             # check if we have indices from both nodes and we're not currently doing a single entanglement operation
-            if not self.single_scheduled and [] not in self.redo_indices:
-                self.single_scheduled = True
+            if not self.single_operation and [] not in self.redo_indices:
                 new_start_time = max(self.own.timeline.now(), self.end_time)
                 process = Process(self, "redo_single", [])
                 event = Event(new_start_time, process)
