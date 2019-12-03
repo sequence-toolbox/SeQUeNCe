@@ -254,7 +254,7 @@ class EntanglementGeneration(Protocol):
                 node = 1
             index = int(msg[1])
             if index in self.redo_indices:
-                self.redo_indices.remove(index)
+                self.redo_indices[node].remove(index)
             self.redo_indices[node].append(index)
 
             # check if we have indices from both nodes and we're not currently doing a single entanglement operation
