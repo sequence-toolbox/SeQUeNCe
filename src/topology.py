@@ -631,22 +631,20 @@ class BSM(Entity):
             self.photons = [photon]
             # set arrival time
             self.photon_arrival_time = self.timeline.now()
-        else:
-            # if we have photons from same source, do nothing
-            # otherwise, we have different photons arriving at the same time and can proceed
-            # if self.photons[0].location == photon.location:
-            #     return
-            # else:
-            #     self.photons.append(photon)
-            #     self.send_to_detectors()
 
-            # check if we have a photon from a new location
-            if not any([reference.location == photon.location for reference in self.photons]):
-                self.photons.append(photon)
-            self.send_to_detectors()
+        # if we have photons from same source, do nothing
+        # otherwise, we have different photons arriving at the same time and can proceed
+        # if self.photons[0].location == photon.location:
+        #     return
+        # else:
+        #     self.photons.append(photon)
+        #     self.send_to_detectors()
 
-    def send_to_detectors(self):
-        # perform different operation based on encoding type
+        # check if we have a photon from a new location
+        if not any([reference.location == photon.location for reference in self.photons]):
+            self.photons.append(photon)
+
+        ## perform different operation based on encoding type
 
         if self.encoding_type["name"] == "time_bin" and len(self.photons) == 2:
             if numpy.random.random_sample() < self.phase_error:
@@ -707,7 +705,7 @@ class BSM(Entity):
                 _ = QuantumState.measure_multiple(self.bell_basis, [mem_0.qstate, mem_1.qstate])
 
             # if we have more than 1 photon, invalidate result
-            if len(self.photons) > 1:
+            elif len(self.photons) > 1:
                 self.photons[0].encoding_type["memory"].qstate.set_state(self.previous_state)
 
             # send detect message to a random detector
@@ -790,7 +788,7 @@ class BSM(Entity):
                 res = -1
                 # TODO: how to invalidate result in protocol?
             else:
-                self.last_res_time == self.timeline.now()
+                self.last_res_time = self.timeline.now()
                 self._pop(entity="BSM", result=res)
 
         else:
@@ -872,6 +870,7 @@ class Memory(Entity):
         Entity.__init__(self, name, timeline)
         self.fidelity = kwargs.get("fidelity", 1)
         self.efficiency = kwargs.get("efficiency", 1)
+        self.coherence_time = kwargs.get("coherence_time", 1) # average coherence time in seconds
         self.direct_receiver = kwargs.get("direct_receiver", None)
         self.qstate = QuantumState()
         self.frequencies = kwargs.get("frequencies", [1, 1]) # first is ground transition frequency, second is excited frequency
@@ -898,11 +897,13 @@ class Memory(Entity):
             photon = Photon("", self.timeline, wavelength=(1/self.frequencies[1]), location=self,
                             encoding_type=self.photon_encoding)
             self.direct_receiver.get(photon)
-            # schedule decay based on frequency
-            # decay_time = self.timeline.now() + int(numpy.random.exponential(self.fidelity) * 1e12)
-            # process = Process(self, "read", [])
-            # event = Event(decay_time, process)
-            # self.timeline.schedule(event)
+            
+        self.expired = False
+        # schedule decay based on coherence time
+        decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
+        process = Process(self, "expire", [])
+        event = Event(decay_time, process)
+        self.timeline.schedule(event)
 
     def read(self):
         if numpy.random_random_sample() < self.efficiency:
@@ -912,6 +913,21 @@ class Memory(Entity):
                 photon = Photon("", self.timeline, wavelength=(1/self.frequencies[0]), location=self,
                                 encoding_type=self.photon_encoding)
                 self.direct_receiver.get(photon)
+
+    def expire(self):
+        if not self.expired:
+            self.expired = True
+            state = self.qstate.measure(encoding.ensemble["bases"][0])
+            if state == 1:
+                # send photon in certain state to direct receiver
+                photon = Photon("", self.timeline, wavelength=(1/self.frequencies[0]), location=self,
+                                encoding_type=self.photon_encoding)
+                self.direct_receiver.get(photon)
+
+            self.entangled_partner.expire()
+
+            # pop expired message to parent
+            self._pop(memory=self)
 
 
 # array of atomic ensemble memories
@@ -926,6 +942,7 @@ class MemoryArray(Entity):
 
         for _ in range(num_memories):
             memory = Memory("", timeline, **memory_params)
+            memory.parents.append(self)
             self.memories.append(memory)
 
         # for entanglement generation
@@ -959,11 +976,19 @@ class MemoryArray(Entity):
     def read(self):
         time = self.timeline.now()
 
+        period = 1e12 / min(self.frequency, self.max_frequency)
+
         for mem in self.memories:
             process = Process(mem, "read", [])
             event = Event(time, process)
             self.timeline.schedule(event)
-            time += 1e12 / frequency
+            time += period
+
+    def pop(self, **kwargs):
+        memory = kwargs.get("memory")
+        index = self.memories.index(memory)
+        # notify node
+        self._pop(entity="MemoryArray", index=index)
 
 
 # class for photon memory
@@ -1142,6 +1167,9 @@ class Node(Entity):
 
         elif entity == "BSM":
             self._pop(info_type="BSM_res", res=kwargs.get("res"))
+
+        elif entity == "MemoryArray":
+            self._pop(info_type="expired_memory", index=kwargs.get("index"))
 
     def send_message(self, dst: str, msg: str):
         self.cchannels[dst].transmit(msg, self)
