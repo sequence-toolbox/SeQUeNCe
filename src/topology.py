@@ -157,6 +157,7 @@ class Photon(Entity):
         self.quantum_state = QuantumState()
         self.quantum_state.state = quantum_state
         self.entangled_photons = [self]
+        self.is_null = False
 
     def init(self):
         pass
@@ -432,7 +433,7 @@ class Detector(Entity):
         self.photon_times = []
         self.next_detection_time = 0
         self.photon_counter = 0
-        self.on = True
+        self.on = False
 
     def init(self):
         self.add_dark_count()
@@ -591,7 +592,6 @@ class BSM(Entity):
 
         # used for ensemble encoding
         self.previous_state = None
-        self.last_res_time = -1
 
         # two detectors for time-bin and ensemble encoding
         # four detectors for polarization encoding
@@ -621,7 +621,8 @@ class BSM(Entity):
                            [complex(0), complex(math.sqrt(1/2)), -complex(math.sqrt(1/2)), complex(0)]]
 
     def init(self):
-        pass
+        for detector in self.detectors:
+            detector.init()
 
     # might need to change with new method
     def get(self, photon):
@@ -695,24 +696,29 @@ class BSM(Entity):
             pass
 
         elif self.encoding_type["name"] == "ensemble":
-            mem_0 = self.photons[0].encoding_type["memory"]
-            mem_1 = mem_0.entanglement_partner
-
-            # if we have 1 photon, generate entanglement
+            # TODO: what if photon lose in channel
             if len(self.photons) == 1:
-                if mem_1 not in mem_0.qstate.entangled_states:
-                    mem_0.qstate.entangle(mem_1.qstate)
-                self.previous_state =  mem_0.qstate.state
-                # project to bell basis
-                _ = QuantumState.measure_multiple(self.bell_basis, [mem_0.qstate, mem_1.qstate])
+                return
+            elif len(self.photons) == 2:
+                mem_0 = self.photons[0].encoding_type["memory"]
+                mem_1 = self.photons[1].encoding_type["memory"]
 
-            # if we have more than 1 photon, invalidate result
-            elif len(self.photons) > 1:
-                mem_0.qstate.set_state(self.previous_state)
+                is_valid = self.photons[0].is_null ^ self.photons[1].is_null
+                # if we have 1 photon, generate entanglement
+                if is_valid:
+                    # TODO wu: cannot pass this function
+                    # if mem_1 not in mem_0.qstate.entangled_states:
+                    #     mem_0.qstate.entangle(mem_1.qstate)
+                    # self.previous_state = mem_0.qstate.state
+                    # project to bell basis
+                    # _ = QuantumState.measure_multiple(self.bell_basis, [mem_0.qstate, mem_1.qstate])
 
-            # send detect message to a random detector
-            detector_num = numpy.random.choice([0, 1])
-            self.detectors[detector_num].get()
+                    # send detect message to a random detector
+                    detector_num = numpy.random.choice([0, 1])
+                    self.detectors[detector_num].get()
+                else:
+                    self.detectors[0].get()
+                    self.detectors[1].get()
 
     # old method
     def get_bsm_res(self):
@@ -784,15 +790,8 @@ class BSM(Entity):
         detector_num = self.detectors.index(detector)
 
         if self.encoding_type["name"] == "ensemble":
-            res = 0
-            # test if result invalid
-            if self.last_res_time == self.timeline.now():
-                res = -1
-                # TODO: how to invalidate result in protocol?
-            else:
-                self.last_res_time = self.timeline.now()
-                self._pop(entity="BSM", result=res)
-
+            res = detector_num
+            self._pop(entity="BSM", res=res)
         else:
             # TODO: polarization, time_bin
             pass
@@ -892,6 +891,7 @@ class Memory(Entity):
         pass
 
     def write(self):
+        # TODO wu: emit multiple photons
         if numpy.random.random_sample() < self.efficiency:
             # unentangle
             # set new state
@@ -901,13 +901,19 @@ class Memory(Entity):
             photon = Photon("", self.timeline, wavelength=(1/self.frequencies[1]), location=self,
                             encoding_type=self.photon_encoding)
             self.direct_receiver.get(photon)
-            
+        else:
+            photon = Photon("", self.timeline, location=self, encoding_type=self.photon_encoding)
+            photon.is_null = True
+            self.direct_receiver.get(photon)
+
+        """
         self.expired = False
         # schedule decay based on coherence time
         decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
         process = Process(self, "expire", [])
         event = Event(decay_time, process)
         self.timeline.schedule(event)
+        """
 
     def read(self):
         if numpy.random_random_sample() < self.efficiency:
@@ -944,8 +950,8 @@ class MemoryArray(Entity):
         self.memories = []
         self.frequency = self.max_frequency
 
-        for _ in range(num_memories):
-            memory = Memory("", timeline, **memory_params)
+        for i in range(num_memories):
+            memory = Memory(self.name + "%d" % i, timeline, **memory_params)
             memory.parents.append(self)
             self.memories.append(memory)
 
@@ -1027,6 +1033,10 @@ class Node(Entity):
     def init(self):
         for key, component in self.components.items():
             component.parents.append(self)
+            component.init()
+
+        for protocol in self.protocols:
+            protocol.init()
 
     def assign_cchannel(self, cchannel: ClassicalChannel):
         # Must have used ClassicalChannel.addend prior to using this method
