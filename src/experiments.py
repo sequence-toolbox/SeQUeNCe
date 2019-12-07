@@ -13,7 +13,7 @@ from sequence.event import Event
 
 
 def three_node_test():
-    tl = timeline.Timeline(1e12)
+    tl = timeline.Timeline()
 
     # create nodes
     alice = topology.Node("alice", tl)
@@ -67,8 +67,7 @@ def three_node_test():
     qc_bc.set_receiver(bsm)
 
     # create alice protocol stack
-    egA = EntanglementGeneration(alice)
-    egA.fidelity = FIDELITY
+    egA = EntanglementGeneration(alice, middle="charlie", others=["bob"], fidelity=FIDELITY)
     bbpsswA = BBPSSW(alice, threshold=0.9)
     egA.upper_protocols.append(bbpsswA)
     bbpsswA.lower_protocols.append(egA)
@@ -76,8 +75,7 @@ def three_node_test():
     alice.protocols.append(bbpsswA)
 
     # create bob protocol stack
-    egB = EntanglementGeneration(bob)
-    egB.fidelity = FIDELITY
+    egB = EntanglementGeneration(bob, middle="charlie", others=["alice"], fidelity=FIDELITY)
     bbpsswB = BBPSSW(bob, threshold=0.9)
     egB.upper_protocols.append(bbpsswB)
     bbpsswB.lower_protocols.append(egB)
@@ -85,11 +83,11 @@ def three_node_test():
     bob.protocols.append(bbpsswB)
 
     # create charlie protocol stack
-    egC = EntanglementGeneration(charlie, end_nodes=[alice, bob])
+    egC = EntanglementGeneration(charlie, others=["alice", "bob"])
     charlie.protocols.append(egC)
 
     # schedule events
-    process = Process(egC, "start", [])
+    process = Process(egA, "start", [])
     event = Event(0, process)
     tl.schedule(event)
 
@@ -105,6 +103,10 @@ def three_node_test():
         memory = node.components['MemoryArray']
         print(node.name)
         print_memory(memory)
+    print(egA.memories)
+    print(egA.waiting_bsm)
+    print(egB.memories)
+    print(egB.waiting_bsm)
 
 if __name__ == "__main__":
     seed(1)
