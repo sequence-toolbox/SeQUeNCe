@@ -12,8 +12,8 @@ from sequence.entity import Entity
 from sequence.event import Event
 
 
-def three_node_test():
-    tl = timeline.Timeline(1e12)
+def three_node_test(runtime=1e12):
+    tl = timeline.Timeline(runtime)
 
     # create nodes
     alice = topology.Node("alice", tl)
@@ -105,6 +105,34 @@ def three_node_test():
         memory = node.components['MemoryArray']
         print(node.name)
         print_memory(memory)
+
+
+def multiple_node_test(n: int, runtime=1e12):
+    # assert that we have an odd number of nodes
+    assert n % 2 == 1, "number of nodes must be odd"
+
+    tl = timeline.Timeline(runtime)
+
+    # create nodes
+    nodes = [None] * n
+    for i in range(n):
+        node = topology.Node("node_{}".format(i), tl)
+        tl.entities.append(node)
+
+        # end nodes
+        if i % 2 == 1: 
+            pass
+
+        # middle nodes
+        else:
+            pass
+
+    # schedule events
+
+    # start simulation
+    tl.init()
+    tl.run()
+
 
 if __name__ == "__main__":
     seed(1)

@@ -52,10 +52,12 @@ class QuantumState():
             quantum_state.state = new_state
 
     def random_noise(self):
+        # TODO: rewrite for entangled states
         angle = numpy.random.random() * 2 * numpy.pi
         self.state = [complex(numpy.cos(angle)), complex(numpy.sin(angle))]
 
     def set_state(self, state):
+        # TODO: rewrite for entangled states
         for qs in self.entangled_states:
             qs.state = state
 
@@ -166,17 +168,9 @@ class Photon(Entity):
 
     def random_noise(self):
         self.quantum_state.random_noise()
-        # self.quantum_state += numpy.random.random() * 360  # add random angle, use 360 instead of 2*pi
 
     def set_state(self, state):
         self.quantum_state.set_state(state)
-    # def measure(self, basis):
-    #     alpha = numpy.dot(self.quantum_state, basis[0])  # projection onto basis vector
-    #     if numpy.random.random_sample() < alpha ** 2:
-    #         self.quantum_state = basis[0]
-    #         return 0
-    #     self.quantum_state = basis[1]
-    #     return 1
 
     @staticmethod
     def measure(basis, photon):
@@ -315,6 +309,7 @@ class LightSource(Entity):
     # for general use
     def emit(self, state_list):
         time = self.timeline.now()
+        period = int(round(1e12 / self.frequency))
 
         for i, state in enumerate(state_list):
             num_photons = numpy.random.poisson(self.mean_photon_num)
@@ -330,12 +325,12 @@ class LightSource(Entity):
                                     encoding_type=self.encoding_type,
                                     quantum_state=state)
                 process = Process(self.direct_receiver, "get", [new_photon])
-                event = Event(int(round(time)), process)
+                event = Event(time, process)
                 self.timeline.schedule(event)
 
                 self.photon_counter += 1
 
-            time += 1e12 / self.frequency
+            time += period
 
     def assign_receiver(self, receiver):
         self.direct_receiver = receiver
