@@ -353,11 +353,16 @@ class QSDetector(Entity):
                 detector = None
             self.detectors.append(detector)
 
+        # protocol unique initialization
+
         if self.encoding_type["name"] == "polarization":
+            # set up beamsplitter
             splitter = kwargs.get("splitter")
             self.splitter = BeamSplitter(timeline, **splitter)
+            self.splitter.receivers = self.detectors[]
 
         elif self.encoding_type["name"] == "time_bin":
+            # set up switch and interferometer
             interferometer = kwargs.get("interferometer")
             self.interferometer = Interferometer(timeline, **interferometer)
             self.interferometer.detectors = self.detectors[1:]
@@ -369,36 +374,15 @@ class QSDetector(Entity):
             raise Exception("invalid encoding type for QSDetector " + self.name)
 
     def init(self):
-        for d in self.detectors:
-            if d is not None:
-                d.init()
+        pass
 
     def get(self, photon):
         if self.encoding_type["name"] == "polarization":
-            detector = self.splitter.get(photon)
-            if detector == 0 or detector == 1:
-                self.detectors[self.splitter.get(photon)].get()
+            self.splitter.get(photon)
 
         elif self.encoding_type["name"] == "time_bin":
             self.switch.get(photon)
 
-    # old method
-    def clear_detectors(self):
-        for d in self.detectors:
-            if d is not None:
-                d.photon_times = []
-
-    # old method
-    def get_photon_times(self):
-        times = []
-        for d in self.detectors:
-            if d is not None:
-                times.append(d.photon_times)
-            else:
-                times.append([])
-        return times
-
-    # new method
     def pop(self, **kwargs):
         detector = kwargs.get("detector")
         self._pop(entity="QSDetector", detector_num=self.detectors.index(detector))
@@ -408,13 +392,11 @@ class QSDetector(Entity):
 
     def turn_off_detectors(self):
         for d in self.detectors:
-            d.on = False
+            d.turn_off
 
     def turn_on_detectors(self):
         for d in self.detectors:
-            if not d.on:
-                d.init()
-                d.on = True
+            d.turn_on
 
 
 class Detector(Entity):
@@ -424,7 +406,6 @@ class Detector(Entity):
         self.dark_count = kwargs.get("dark_count", 0)  # measured in Hz
         self.count_rate = kwargs.get("count_rate", math.inf)  # measured in Hz
         self.time_resolution = kwargs.get("time_resolution", 1)  # measured in ps
-        self.photon_times = []
         self.next_detection_time = 0
         self.photon_counter = 0
         self.on = True
@@ -432,19 +413,21 @@ class Detector(Entity):
     def init(self):
         self.add_dark_count()
 
+    def turn_on(self):
+        self.on = True
+        self.init()
+
+    def turn_off(self):
+        self.on = False
+
     def get(self, dark_get=False):
-        self.photon_counter += 1
-        now = self.timeline.now()
+        if self.on:
+            self.photon_counter += 1
+            now = self.timeline.now()
 
-        if (numpy.random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
-            # old method
-            time = int(round(now / self.time_resolution)) * self.time_resolution
-            self.photon_times.append(time)
-
-            # new method
-            self._pop(detector=self)
-
-            self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
+            if (numpy.random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
+                self._pop(detector=self)
+                self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self):
         if self.on:
@@ -464,6 +447,7 @@ class BeamSplitter(Entity):
         Entity.__init__(self, "", timeline)  # Splitter is part of the QSDetector, and does not have its own name
         basis = kwargs.get("basis", [[complex(1), complex(0)], [complex(0), complex(1)]])
         self.fidelity = kwargs.get("fidelity", 1)
+        self.receivers = []
         # for BB84
         self.start_time = 0
         self.frequency = 0
@@ -476,11 +460,9 @@ class BeamSplitter(Entity):
         if numpy.random.random_sample() < self.fidelity:
             index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
             if 0 <= index < len(self.basis_list):
-                return Photon.measure(self.basis_list[index], photon)
-            else:
-                return Photon.measure(self.basis_list[0], photon)
-        else:
-            return -1
+                index = 0
+            res = Photon.measure(self.basis_list[index], photon)
+            self.receivers[res].get()
 
     def set_basis(self, basis):
         self.basis_list = [basis]
@@ -563,6 +545,7 @@ class Switch(Entity):
             index = 0
 
         receiver = self.receivers[self.state_list[index]]
+
         # check if receiver is detector, if we're using time bin, and if the photon is "late" to schedule measurement
         if isinstance(receiver, Detector):
             if photon.encoding_type["name"] == "time_bin" and Photon.measure(photon.encoding_type["bases"][0], photon):
