@@ -19,9 +19,6 @@ def three_node_test():
     alice = topology.Node("alice", tl)
     bob = topology.Node("bob", tl)
     charlie = topology.Node("charlie", tl)
-    tl.entities.append(alice)
-    tl.entities.append(bob)
-    tl.entities.append(charlie)
     nodes = [alice,bob]
 
     # create classical channels
