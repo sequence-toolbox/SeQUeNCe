@@ -444,7 +444,7 @@ class Detector(Entity):
 
         if (numpy.random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
             # old method
-            time = int(round(now / self.time_resolution)) * self.time_resolution
+            time = round(now / self.time_resolution) * self.time_resolution
             self.photon_times.append(time)
 
             # new method
@@ -730,21 +730,21 @@ class BSM(Entity):
             d0_times = self.detectors[0].photon_times
             d1_times = self.detectors[1].photon_times
             bin_separation = self.encoding_type["bin_separation"]
-            time_resoultion = self.detectors[0].time_resolution
+            time_resolution = self.detectors[0].time_resolution
             while d0_times and d1_times:
-                if abs(d0_times[0] - d1_times[0]) == time_resoultion * round(bin_separation / time_resoultion):
+                if abs(d0_times[0] - d1_times[0]) == time_resolution * round(bin_separation / time_resolution):
                     res = [min(d0_times[0], d1_times[0]), 0]
                     bsm_res.append(res)
                     d0_times.pop(0)
                     d1_times.pop(0)
                 elif len(d0_times) > 1 and\
-                        abs(d0_times[0] - d0_times[1]) == time_resoultion * round(bin_separation / time_resoultion):
+                        abs(d0_times[0] - d0_times[1]) == time_resolution * round(bin_separation / time_resolution):
                     res = [d0_times[0], 1]
                     bsm_res.append(res)
                     d0_times.pop(0)
                     d0_times.pop(0)
                 elif len(d1_times) > 1 and\
-                        abs(d1_times[0] - d1_times[1]) == time_resoultion * round(bin_separation / time_resoultion):
+                        abs(d1_times[0] - d1_times[1]) == time_resolution * round(bin_separation / time_resolution):
                     res = [d1_times[0], 1]
                     bsm_res.append(res)
                     d1_times.pop(0)
@@ -756,14 +756,14 @@ class BSM(Entity):
                         d1_times.pop(0)
 
             while len(d0_times) > 1:
-                if d0_times[1] - d0_times[0] == time_resoultion * round(bin_separation / time_resoultion):
+                if d0_times[1] - d0_times[0] == time_resolution * round(bin_separation / time_resolution):
                     res = [d0_times[0], 1]
                     bsm_res.append(res)
                     d0_times.pop(0)
                 d0_times.pop(0)
 
             while len(d1_times) > 1:
-                if d1_times[1] - d1_times[0] == time_resoultion * round(bin_separation / time_resoultion):
+                if d1_times[1] - d1_times[0] == time_resolution * round(bin_separation / time_resolution):
                     res = [d1_times[0], 1]
                     bsm_res.append(res)
                     d1_times.pop(0)
@@ -791,7 +791,13 @@ class BSM(Entity):
 
         if self.encoding_type["name"] == "ensemble":
             res = detector_num
-            self._pop(entity="BSM", res=res)
+            resolution = int(detector.time_resolution)
+            # customized round for Python3
+            if (self.timeline.now() / resolution) % 1 < 0.5:
+                cur_time = (self.timeline.now() // resolution) * resolution
+            else:
+                cur_time = (self.timeline.now() // resolution + 1) * resolution
+            self._pop(entity="BSM", res=res, time=cur_time)
         else:
             # TODO: polarization, time_bin
             pass
@@ -1180,7 +1186,7 @@ class Node(Entity):
                 # TODO: need early and late arrival time to calculate bit value
 
         elif entity == "BSM":
-            self._pop(info_type="BSM_res", res=kwargs.get("res"))
+            self._pop(info_type="BSM_res", **kwargs)
 
         elif entity == "MemoryArray":
             self._pop(info_type="expired_memory", index=kwargs.get("index"))
