@@ -360,7 +360,7 @@ class QSDetector(Entity):
             # set up beamsplitter
             splitter = kwargs.get("splitter")
             self.splitter = BeamSplitter(timeline, **splitter)
-            self.splitter.receivers = self.detectors[]
+            self.splitter.receivers = self.detectors
 
         elif self.encoding_type["name"] == "time_bin":
             # set up switch and interferometer
@@ -409,17 +409,10 @@ class Detector(Entity):
         self.time_resolution = kwargs.get("time_resolution", 1)  # measured in ps
         self.next_detection_time = 0
         self.photon_counter = 0
-        self.on = False
+        self.on = True
 
     def init(self):
         self.add_dark_count()
-
-    def turn_on(self):
-        self.on = True
-        self.init()
-
-    def turn_off(self):
-        self.on = False
 
     def get(self, dark_get=False):
         if self.on:
@@ -431,7 +424,7 @@ class Detector(Entity):
                 self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self):
-        if self.on:
+        if self.on and self.dark_count > 0:
             time_to_next = int(numpy.random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
             time = time_to_next + self.timeline.now()  # time of next dark count
 
