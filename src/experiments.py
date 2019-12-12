@@ -108,6 +108,34 @@ def three_node_test():
     print(egB.memories)
     print(egB.waiting_bsm)
 
+
+def multiple_node_test(n: int, runtime=1e12):
+    # assert that we have an odd number of nodes
+    assert n % 2 == 1, "number of nodes must be odd"
+
+    tl = timeline.Timeline(runtime)
+
+    # create nodes
+    nodes = [None] * n
+    for i in range(n):
+        node = topology.Node("node_{}".format(i), tl)
+        tl.entities.append(node)
+
+        # end nodes
+        if i % 2 == 1: 
+            pass
+
+        # middle nodes
+        else:
+            pass
+
+    # schedule events
+
+    # start simulation
+    tl.init()
+    tl.run()
+
+
 if __name__ == "__main__":
     seed(1)
     three_node_test()
