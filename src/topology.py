@@ -675,86 +675,26 @@ class BSM(Entity):
                 mem_1 = self.photons[1].encoding_type["memory"]
 
                 is_valid = self.photons[0].is_null ^ self.photons[1].is_null
+
                 # if we have 1 photon, generate entanglement
                 if is_valid:
-                    # TODO wu: cannot pass this function
-                    # if mem_1 not in mem_0.qstate.entangled_states:
-                    #     mem_0.qstate.entangle(mem_1.qstate)
-                    # self.previous_state = mem_0.qstate.state
+                    qstate_0 = mem_0.qstate
+                    qstate_1 = mem_1.qstate
+                    # if unentangled, entangle
+                    if qstate_0 not in qstate_1.entangled_states:
+                        qstate_0.entangle(qstate_1)
+                    self.previous_state = mem_0.qstate.state
                     # project to bell basis
-                    # _ = QuantumState.measure_multiple(self.bell_basis, [mem_0.qstate, mem_1.qstate])
-
+                    _ = QuantumState.measure_multiple(self.bell_basis, [mem_0.qstate, mem_1.qstate])
                     # send detect message to a random detector
                     detector_num = numpy.random.choice([0, 1])
                     self.detectors[detector_num].get()
-                else:
+
+                # if we have 2 photons, have both detectors get
+                elif not self.photons[0].is_null:
                     self.detectors[0].get()
                     self.detectors[1].get()
 
-    # old method
-    def get_bsm_res(self):
-        # bsm_res = [ [timestamp of early photon, res] ]
-        # res: 0 -> \phi_0; 1 -> \phi_1
-        bsm_res = []
-
-        if self.encoding_type["name"] == "time_bin":
-            d0_times = self.detectors[0].photon_times
-            d1_times = self.detectors[1].photon_times
-            bin_separation = self.encoding_type["bin_separation"]
-            time_resolution = self.detectors[0].time_resolution
-            while d0_times and d1_times:
-                if abs(d0_times[0] - d1_times[0]) == time_resolution * round(bin_separation / time_resolution):
-                    res = [min(d0_times[0], d1_times[0]), 0]
-                    bsm_res.append(res)
-                    d0_times.pop(0)
-                    d1_times.pop(0)
-                elif len(d0_times) > 1 and\
-                        abs(d0_times[0] - d0_times[1]) == time_resolution * round(bin_separation / time_resolution):
-                    res = [d0_times[0], 1]
-                    bsm_res.append(res)
-                    d0_times.pop(0)
-                    d0_times.pop(0)
-                elif len(d1_times) > 1 and\
-                        abs(d1_times[0] - d1_times[1]) == time_resolution * round(bin_separation / time_resolution):
-                    res = [d1_times[0], 1]
-                    bsm_res.append(res)
-                    d1_times.pop(0)
-                    d1_times.pop(0)
-                else:
-                    if d0_times[0] < d1_times[0]:
-                        d0_times.pop(0)
-                    else:
-                        d1_times.pop(0)
-
-            while len(d0_times) > 1:
-                if d0_times[1] - d0_times[0] == time_resolution * round(bin_separation / time_resolution):
-                    res = [d0_times[0], 1]
-                    bsm_res.append(res)
-                    d0_times.pop(0)
-                d0_times.pop(0)
-
-            while len(d1_times) > 1:
-                if d1_times[1] - d1_times[0] == time_resolution * round(bin_separation / time_resolution):
-                    res = [d1_times[0], 1]
-                    bsm_res.append(res)
-                    d1_times.pop(0)
-                d1_times.pop(0)
-
-        elif self.encoding_type["name"] == "ensemble":
-            d0_times = self.detectors[0].photon_times
-            d1_times = self.detectors[1].photon_times
-            for time in d0_times:
-                bsm_res.append([time, 0])
-            for time in d1_times:
-                bsm_res.append([time, 0])
-
-        else:
-            # TODO: polarization
-            pass
-
-        return bsm_res
-
-    # new method
     def pop(self, **kwargs):
         # calculate bsm based on detector num
         detector = kwargs.get("detector")
@@ -859,9 +799,6 @@ class Memory(Entity):
         # keep track of entanglement
         self.entangled_memory = {'node_id': None, 'memo_id': None}
 
-        # keep track of entanglement partner (for entanglement generation)
-        self.entanglement_parter = None
-
         self.expired = True
 
     def init(self):
@@ -874,7 +811,6 @@ class Memory(Entity):
             # set new state
             self.qstate.set_state([complex(0), complex(1)])
             # send photon in certain state to direct receiver
-            # TODO: specify new encoding_type
             photon = Photon("", self.timeline, wavelength=(1/self.frequencies[1]), location=self,
                             encoding_type=self.photon_encoding)
             self.direct_receiver.get(photon)
@@ -932,9 +868,6 @@ class MemoryArray(Entity):
             memory.parents.append(self)
             self.memories.append(memory)
 
-        # for entanglement generation
-        self.entanglement_partner = None
-
     def __getitem__(self, key):
         return self.memories[key]
 
@@ -943,11 +876,6 @@ class MemoryArray(Entity):
 
     def init(self):
         pass
-
-    def set_entanglement_partner(self, mem_arr):
-        self.entanglement_partner = mem_arr
-        for i, mem in enumerate(self.memories):
-            mem.entanglement_partner = mem_arr[i]
 
     def write(self):
         time = self.timeline.now()
@@ -1008,10 +936,6 @@ class Node(Entity):
         self.protocols = []
 
     def init(self):
-        for key, component in self.components.items():
-            component.parents.append(self)
-            component.init()
-
         for protocol in self.protocols:
             protocol.init()
 
@@ -1023,7 +947,24 @@ class Node(Entity):
                 another = end.name
         self.cchannels[another] = cchannel
 
-    # TODO: define assign_qchannel
+    def assign_qchannel(self, qchannel: QuantumChannel):
+        sender = [component for component in self.components if qchannel.sender == component]
+        receiver = [component for component in self.components if qchannel.receiver == component]
+        assert (len(sender) == 1 and len(receiver) == 1), "node must be explicitly 1 end of quantum channel"
+
+        if len(sender) == 1:
+            device = sender[0]
+        else:
+            device = receiver[0]
+
+        # find parent node
+        parents = device.parent[0]
+        while not isinstance(parent, Node):
+            parent = parent.parent[0]
+            if parent is None:
+                Exception("could not find parent of component {} in '{}'.assign_qchannel".format(device.name, self.name))
+
+        self.qchannels[parent.name] = qchannel
 
     def send_qubits(self, basis_list, bit_list, source_name):
         encoding_type = self.components[source_name].encoding_type
@@ -1037,72 +978,6 @@ class Node(Entity):
     def send_photons(self, state, num, source_name):
         state_list = [state] * num
         self.components[source_name].emit(state_list)
-
-    # old method
-    def get_bits(self, light_time, start_time, frequency, detector_name):
-        encoding_type = self.components[detector_name].encoding_type
-        bits = [-1] * int(round(light_time * frequency))  # -1 used for invalid bits
-
-        if encoding_type["name"] == "polarization":
-            detection_times = self.components[detector_name].get_photon_times()
-
-            # determine indices from detection times and record bits
-            for time in detection_times[0]:  # detection times for |0> detector
-                index = int(round((time - start_time) * frequency * 1e-12))
-                if 0 <= index < len(bits):
-                    bits[index] = 0
-
-            for time in detection_times[1]:  # detection times for |1> detector
-                index = int(round((time - start_time) * frequency * 1e-12))
-                if 0 <= index < len(bits):
-                    if bits[index] == 0:
-                        bits[index] = -1
-                    else:
-                        bits[index] = 1
-
-            return bits
-
-        elif encoding_type["name"] == "time_bin":
-            detection_times = self.components[detector_name].get_photon_times()
-            bin_separation = encoding_type["bin_separation"]
-
-            # single detector (for early, late basis) times
-            for time in detection_times[0]:
-                index = int(round((time - start_time) * frequency * 1e-12))
-                if 0 <= index < len(bits):
-                    if abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
-                        bits[index] = 0
-                    elif abs(((index * 1e12 / frequency) + start_time) - (time - bin_separation)) < bin_separation / 2:
-                        bits[index] = 1
-
-            # interferometer detector 0 times
-            for time in detection_times[1]:
-                time -= bin_separation
-                index = int(round((time - start_time) * frequency * 1e-12))
-                # check if index is in range and is in correct time bin
-                if 0 <= index < len(bits) and\
-                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
-                    if bits[index] == -1:
-                        bits[index] = 0
-                    else:
-                        bits[index] = -1
-
-            # interferometer detector 1 times
-            for time in detection_times[2]:
-                time -= bin_separation
-                index = int(round((time - start_time) * frequency * 1e-12))
-                # check if index is in range and is in correct time bin
-                if 0 <= index < len(bits) and\
-                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
-                    if bits[index] == -1:
-                        bits[index] = 1
-                    else:
-                        bits[index] = -1
-
-            return bits
-
-        else:
-            raise Exception("Invalid encoding type for node " + self.name)
 
     def set_bases(self, basis_list, start_time, frequency, detector_name):
         encoding_type = self.components[detector_name].encoding_type
@@ -1131,11 +1006,9 @@ class Node(Entity):
         source = self.components['lightsource']
         return source.photon_counter
 
-    # new method
     def _pop(self, **kwargs):
         self.protocols[0].pop(**kwargs)
 
-    # new method
     def pop(self, **kwargs):
         entity = kwargs.get("entity")
         # TODO: figure out how to get encoding_type

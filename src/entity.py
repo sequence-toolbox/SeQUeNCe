@@ -9,6 +9,7 @@ class Entity(ABC):
         else:
             self.name = name
         self.timeline = timeline
+        timeline.entities.append(self)
 
         self.parents = []
         self.children = []
