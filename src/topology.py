@@ -391,14 +391,6 @@ class QSDetector(Entity):
     def set_basis(self, basis):
         self.splitter.set_basis(basis)
 
-    def turn_off_detectors(self):
-        for d in self.detectors:
-            d.turn_off
-
-    def turn_on_detectors(self):
-        for d in self.detectors:
-            d.turn_on
-
 
 class Detector(Entity):
     def __init__(self, timeline, **kwargs):
@@ -409,22 +401,20 @@ class Detector(Entity):
         self.time_resolution = kwargs.get("time_resolution", 1)  # measured in ps
         self.next_detection_time = 0
         self.photon_counter = 0
-        self.on = True
 
     def init(self):
         self.add_dark_count()
 
     def get(self, dark_get=False):
-        if self.on:
-            self.photon_counter += 1
-            now = self.timeline.now()
+        self<.photon_counter += 1
+        now = self.timeline.now()
 
-            if (numpy.random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
-                self._pop(detector=self)
-                self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
+        if (numpy.random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
+            self._pop(detector=self)
+            self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self):
-        if self.on and self.dark_count > 0:
+        if self.dark_count > 0:
             time_to_next = int(numpy.random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
             time = time_to_next + self.timeline.now()  # time of next dark count
 
