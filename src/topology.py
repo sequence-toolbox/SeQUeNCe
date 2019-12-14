@@ -414,13 +414,6 @@ class Detector(Entity):
     def init(self):
         self.add_dark_count()
 
-    def turn_on(self):
-        self.on = True
-        self.init()
-
-    def turn_off(self):
-        self.on = False
-
     def get(self, dark_get=False):
         if self.on:
             self.photon_counter += 1
@@ -431,7 +424,7 @@ class Detector(Entity):
                 self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self):
-        if self.on and self.dark_count != 0:
+        if self.on and self.dark_count > 0:
             time_to_next = int(numpy.random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
             time = time_to_next + self.timeline.now()  # time of next dark count
 
@@ -709,7 +702,13 @@ class BSM(Entity):
 
         if self.encoding_type["name"] == "ensemble":
             res = detector_num
-            self._pop(entity="BSM", res=res)
+            resolution = int(detector.time_resolution)
+            # customized round for Python3
+            if (self.timeline.now() / resolution) % 1 < 0.5:
+                cur_time = (self.timeline.now() // resolution) * resolution
+            else:
+                cur_time = (self.timeline.now() // resolution + 1) * resolution
+            self._pop(entity="BSM", res=res, time=cur_time)
         else:
             # TODO: polarization, time_bin
             pass
@@ -1031,7 +1030,7 @@ class Node(Entity):
                 # TODO: need early and late arrival time to calculate bit value
 
         elif entity == "BSM":
-            self._pop(info_type="BSM_res", res=kwargs.get("res"))
+            self._pop(info_type="BSM_res", **kwargs)
 
         elif entity == "MemoryArray":
             self._pop(info_type="expired_memory", index=kwargs.get("index"))

@@ -129,17 +129,21 @@ class EntanglementGeneration(Protocol):
     def pop(self, info_type, **kwargs):
         if info_type == "BSM_res":
             res = kwargs.get("res")
-            cur_time = self.own.timeline.now()
+            cur_time = kwargs.get("time")
             assert all(cur_time == result[0] for result in self.results)
             self.results.append([cur_time, res])
             if len(self.results) == 1:
                 process = Process(self, "pop", ["SEND_TRIGGER"])
-                event = Event(cur_time + 1, process)
+                event = Event(self.own.timeline.now() + 1, process)
                 self.own.timeline.schedule(event)
+
         elif info_type == "SEND_TRIGGER":
             if len(self.results) == 1:
-                msg = "EntanglementGeneration MEAS_RES {} {}".format(self.results[0][0],
-                                                                     self.results[0][1])
+                resolution = self.own.components["BSM"].detectors[0].time_resolution
+                assert resolution > 0
+                msg = "EntanglementGeneration MEAS_RES {} {} {}".format(self.results[0][0],
+                                                                        self.results[0][1],
+                                                                        resolution)
                 self.own.send_message(self.others[0], msg)
                 self.own.send_message(self.others[1], msg)
             elif len(self.results) == 2:
@@ -243,11 +247,12 @@ class EntanglementGeneration(Protocol):
                 self.start()
         elif msg_type == "MEAS_RES":
             trigger_time = int(msg[1])
+            resolution = int(msg[3])
 
             def binary_search(waiting_list, time):
                 left, right = 0, len(waiting_list) - 1
                 while left <= right:
-                    mid = int((left + right) / 2)
+                    mid = (left + right) // 2
                     if waiting_list[mid][0] == time:
                         return mid
                     elif waiting_list[mid][0] > time:
@@ -256,14 +261,31 @@ class EntanglementGeneration(Protocol):
                         left = mid + 1
                 return left
 
+            def valid_trigger_time(trigger_time, target_time, resolution):
+                upper = target_time + resolution
+                lower = 0
+                if resolution % 2 == 0:
+                    upper = min(upper, target_time + resolution // 2)
+                    lower = max(lower, target_time - resolution // 2)
+                else:
+                    upper = min(upper, target_time + resolution // 2 + 1)
+                    lower = max(lower, target_time - resolution // 2 + 1)
+                if (upper / resolution) % 1 >= 0.5:
+                    upper -= 1
+                if (lower / resolution) % 1 < 0.5:
+                    lower += 1
+                return lower <= trigger_time <= upper
+
             index = binary_search(self.waiting_bsm, trigger_time)
-            if self.waiting_bsm and self.waiting_bsm[index][0] == trigger_time:
+            if index < len(self.waiting_bsm) and valid_trigger_time(trigger_time, self.waiting_bsm[index][0], resolution):
+                self.send_entangled_memory_id(trigger_time, self.waiting_bsm[index][1])
+                self.waiting_remote[trigger_time] = self.waiting_bsm.pop(index)[1]
+            elif 0 <= index-1 < len(self.waiting_bsm) and valid_trigger_time(trigger_time, self.waiting_bsm[index-1][0], resolution):
+                index = index - 1
                 self.send_entangled_memory_id(trigger_time, self.waiting_bsm[index][1])
                 self.waiting_remote[trigger_time] = self.waiting_bsm.pop(index)[1]
             else:
-                # Dark count or jitter in quantum channel
-                print(self.own.timeline.now(), "unkown trigger")
-                pass
+                print(self.own.timeline.now(), "unkown trigger", self.own.name, trigger_time, self.waiting_bsm)
 
             for _ in range(index):
                 waiting = self.waiting_bsm.pop(0)
