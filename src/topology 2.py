@@ -554,9 +554,6 @@ class BSM(Entity):
         # used for ensemble encoding
         self.previous_state = None
 
-        # used for single_atom encoding
-        self.second_round = False
-
         # two detectors for time-bin and ensemble encoding
         # four detectors for polarization encoding
         detectors = kwargs.get("detectors",[])
@@ -565,8 +562,6 @@ class BSM(Entity):
         elif self.encoding_type["name"] == "time_bin":
             assert len(detectors) == 2
         elif self.encoding_type["name"] == "ensemble":
-            assert len(detectors) == 2
-        elif self.encoding_type["name"] == "single_atom":
             assert len(detectors) == 2
         else:
             raise Exception("invalid encoding type")
@@ -690,21 +685,6 @@ class BSM(Entity):
                     self.detectors[0].get()
                     self.detectors[1].get()
 
-        elif self.encoding_type["name"] == "single_atom":
-            detector_num = numpy.random.choice([0,1])
-            if not photon.is_null:
-                self.detectors[detector_num].get()
-
-            # if on second round and have both photons, entangle if necessary
-            if self.second_round and len(self.photons) == 2:
-                is_valid = self.photons[0].is_null ^ self.photons[1].is_null
-                if is_valid:
-                    qstate_0 = self.photons[0].encoding_type["memory"].qstate
-                    qstate_1 = self.photons[1].encoding_type["memory"].qstate
-                    qstate_0.entangle(qstate_1)
-                    _ = QuantumState.measure_multiple(self.bell_basis, [qstate_0, qstate_1])
-
-
     def pop(self, **kwargs):
         # calculate bsm based on detector num
         detector = kwargs.get("detector")
@@ -791,27 +771,6 @@ class SPDCSource(LightSource):
     def assign_another_receiver(self, receiver):
         self.another_receiver = receiver
 
-
-# single-atom memory
-class AtomMemory(Entity):
-    def __init__(self, name, timeline, **kwargs):
-        Entity.__init__(self, name, timeline)
-        self.frequency = kwargs.get("frequency", 0)
-        self.coherence_time = kwargs.get("coherence_time", 0)
-        self.direct_receiver = kwargs.get("direct_receiver", None)
-        self.qstate = QuantumState()
-
-        self.photon_encoding = single_atom.ensemble.copy()
-        self.photon_encoding["memory"] = self
-
-    def excite(self):
-        state = self.qstate.measure(encoding.ensemble["bases"][0])
-        # send photon in certain state to direct receiver
-        photon = Photon("", self.timeline, wavelength=(1/self.frequency), location=self,
-                            encoding_type=self.photon_encoding)
-        if state == 0:
-            photon.is_null = True
-        self.direct_receiver.get(photon)
 
 # atomic ensemble memory for DLCZ/entanglement swapping
 class Memory(Entity):
