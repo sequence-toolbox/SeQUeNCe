@@ -685,6 +685,7 @@ class BSM(Entity):
                     self.detectors[0].get()
                     self.detectors[1].get()
 
+
     def pop(self, **kwargs):
         # calculate bsm based on detector num
         detector = kwargs.get("detector")
@@ -809,6 +810,7 @@ class Memory(Entity):
             photon.is_null = True
             self.direct_receiver.get(photon)
 
+
         """
         self.expired = False
         # schedule decay based on coherence time
@@ -926,6 +928,10 @@ class Node(Entity):
         self.protocols = []
 
     def init(self):
+        for key, component in self.components.items():
+            component.parents.append(self)
+            component.init()
+
         for protocol in self.protocols:
             protocol.init()
 

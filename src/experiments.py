@@ -57,7 +57,7 @@ def three_node_test():
     qc_bc.set_sender(bob_memo_array)
 
     # create BSM
-    detectors = [{"efficiency": 0.7, "dark_count": 100, "time_resolution": 150, "count_rate": 25000000}] * 2
+    detectors = [{"efficiency": 0.7, "dark_count": 0, "time_resolution": 150, "count_rate": 25000000}] * 2
     bsm = topology.BSM("charlie_bsm", tl, encoding_type=encoding.ensemble, detectors=detectors)
     charlie.components['BSM'] = bsm
     qc_ac.set_receiver(bsm)
@@ -119,7 +119,7 @@ def multiple_node_test(n: int, runtime=1e12):
         tl.entities.append(node)
 
         # end nodes
-        if i % 2 == 1: 
+        if i % 2 == 1:
             pass
 
         # middle nodes
