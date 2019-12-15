@@ -406,7 +406,7 @@ class Detector(Entity):
         self.add_dark_count()
 
     def get(self, dark_get=False):
-        self<.photon_counter += 1
+        self.photon_counter += 1
         now = self.timeline.now()
 
         if (numpy.random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
