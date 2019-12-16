@@ -546,6 +546,7 @@ class Switch(Entity):
 class BSM(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
+        self.owner = None
         self.encoding_type = kwargs.get("encoding_type", encoding.time_bin)
         self.phase_error = kwargs.get("phase_error", 0)
         self.photons = []
@@ -854,6 +855,7 @@ class MemoryArray(Entity):
         memory_params = kwargs.get("memory_params", None)
         self.memories = []
         self.frequency = self.max_frequency
+        self.owner = None
 
         for i in range(num_memories):
             memory = Memory(self.name + "%d" % i, timeline, **memory_params)
@@ -935,6 +937,14 @@ class Node(Entity):
         for protocol in self.protocols:
             protocol.init()
 
+    def assign_memory_array(self, memory_array: MemoryArray):
+        self.components["MemoryArray"] = memory_array
+        memory_array.owner = self
+
+    def assign_bsm(self, bsm: BSM):
+        self.components["BSM"] = bsm
+        bsm.owner = self
+
     def assign_cchannel(self, cchannel: ClassicalChannel):
         # Must have used ClassicalChannel.addend prior to using this method
         another = ""
@@ -944,23 +954,21 @@ class Node(Entity):
         self.cchannels[another] = cchannel
 
     def assign_qchannel(self, qchannel: QuantumChannel):
-        sender = [component for component in self.components if qchannel.sender == component]
-        receiver = [component for component in self.components if qchannel.receiver == component]
-        assert (len(sender) == 1 and len(receiver) == 1), "node must be explicitly 1 end of quantum channel"
+        sender = [self.components[component] for component in self.components if qchannel.sender == self.components[component]]
+        receiver = [self.components[component] for component in self.components if qchannel.receiver == self.components[component]]
+        assert (len(sender) ^ len(receiver)), "node must be explicitly 1 end of quantum channel"
 
         if len(sender) == 1:
             device = sender[0]
+            another = qchannel.receiver
         else:
             device = receiver[0]
+            another = qchannel.sender
 
         # find parent node
-        parents = device.parent[0]
-        while not isinstance(parent, Node):
-            parent = parent.parent[0]
-            if parent is None:
-                Exception("could not find parent of component {} in '{}'.assign_qchannel".format(device.name, self.name))
-
-        self.qchannels[parent.name] = qchannel
+        assert another.owner is not None
+        assert another.owner.name not in self.qchannels
+        self.qchannels[another.owner.name] = qchannel
 
     def send_qubits(self, basis_list, bit_list, source_name):
         encoding_type = self.components[source_name].encoding_type

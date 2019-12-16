@@ -16,6 +16,7 @@ class Protocol(ABC):
         self.upper_protocols = []
         self.lower_protocols = []
         self.own = own
+        self.own.protocols.append(self)
 
     @abstractmethod
     def pop(self, **kwargs):
@@ -89,7 +90,6 @@ class EntanglementGeneration(Protocol):
         self.emit_num = None
 
     def init(self):
-        print("EG protocol init")
         assert ((self.middle == self.own.name and len(self.others) == 2) or
                 (self.middle != self.own.name and len(self.others) == 1))
         if self.middle != self.own.name:
