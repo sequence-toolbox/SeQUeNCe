@@ -923,6 +923,7 @@ class Memory_EIT(Entity):
 
 class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
+        assert(' ' not in name)
         Entity.__init__(self, name, timeline)
         self.components = kwargs.get("components", {})
         self.cchannels = {}  # mapping of destination node names to classical channels
@@ -1049,6 +1050,8 @@ class Node(Entity):
         for protocol in self.protocols:
             if type(protocol).__name__ == msg_parsed[0]:
                 protocol.received_message(src, msg_parsed[1:])
+                return
+        raise Exception("Unkown protocol")
 
 
 class Topology:

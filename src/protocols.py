@@ -373,8 +373,7 @@ class BBPSSW(Protocol):
             self.waiting_list[round_id] = set()
         kept_memo = purified_list[round_id].pop()
         measured_memo = purified_list[round_id].pop()
-        assert (local_memory[kept_memo].fidelity ==
-                local_memory[measured_memo].fidelity)
+        assert (local_memory[kept_memo].fidelity == local_memory[measured_memo].fidelity)
         assert (local_memory[kept_memo].fidelity > 0.5)
 
         another_kept_memo = local_memory[kept_memo].entangled_memory['memo_id']
@@ -399,34 +398,33 @@ class BBPSSW(Protocol):
         type_index = 0
         msg_type = msg[type_index]
         if msg_type == "PING":
-            round_id = int(msg[type_index+1])
-            kept_memo = int(msg[type_index+2])
-            measured_memo = int(msg[type_index+3])
+            round_id = int(msg[type_index + 1])
+            kept_memo = int(msg[type_index + 2])
+            measured_memo = int(msg[type_index + 3])
             fidelity = self.purification(round_id, kept_memo,
                                          measured_memo, purified_list)
 
             reply = "BBPSSW PONG %d %f %s %s" % (round_id,
                                                  fidelity,
-                                                 msg[type_index+4],
-                                                 msg[type_index+5])
+                                                 msg[type_index + 4],
+                                                 msg[type_index + 5])
             # WARN: wait change of Node.send_message function
             self.own.send_message(dst=src, msg=reply)
 
             if fidelity >= self.threshold:
                 self._pop(memory_index=kept_memo, another_node=src)
-                purified_list[round_id+1].remove(kept_memo)
+                purified_list[round_id + 1].remove(kept_memo)
         elif msg_type == "PONG":
-            round_id = int(msg[type_index+1])
-            fidelity = float(msg[type_index+2])
-            kept_memo = int(msg[type_index+3])
-            measured_memo = int(msg[type_index+4])
+            round_id = int(msg[type_index + 1])
+            fidelity = float(msg[type_index + 2])
+            kept_memo = int(msg[type_index + 3])
+            measured_memo = int(msg[type_index + 4])
             self.update(round_id, fidelity, kept_memo,
                         measured_memo, purified_list)
             if fidelity >= self.threshold:
                 self._pop(memory_index=kept_memo, another_node=src)
-            if (round_id+1 < len(purified_list) and
-                    len(purified_list[round_id+1]) > 1):
-                self.start_round(round_id+1, src)
+            if (round_id + 1 < len(purified_list) and len(purified_list[round_id + 1]) > 1):
+                self.start_round(round_id + 1, src)
         else:
             raise Exception("BBPSSW protocol receives"
                             "unkown type of message: %s" % str(msg))
@@ -452,7 +450,7 @@ class BBPSSW(Protocol):
 
             if len(purified_list) <= round_id + 1:
                 purified_list.append([])
-            purified_list[round_id+1].append(kept_memo)
+            purified_list[round_id + 1].append(kept_memo)
         else:
             fidelity = 0
             local_memory[kept_memo].fidelity = fidelity
@@ -481,7 +479,7 @@ class BBPSSW(Protocol):
         elif fidelity < self.threshold:
             if len(purified_list) <= round_id + 1:
                 purified_list.append([])
-            purified_list[round_id+1].append(kept_memo)
+            purified_list[round_id + 1].append(kept_memo)
 
         local_memory[measured_memo].fidelity = 0
         local_memory[measured_memo].entangled_memory['node_id'] = None
@@ -494,7 +492,7 @@ class BBPSSW(Protocol):
         F is the fidelity of entanglement
         Formula comes from Dur and Briegel (2007) page 14
         '''
-        return F**2 + 2*F*(1-F)/3 + 5*((1-F)/3)**2
+        return F**2 + 2 * F * (1 - F) / 3 + 5 * ((1 - F) / 3)**2
 
     @staticmethod
     def improved_fidelity(F: float) -> float:
@@ -502,7 +500,111 @@ class BBPSSW(Protocol):
         F is the fidelity of entanglement
         Formula comes from Dur and Briegel (2007) formula (18) page 14
         '''
-        return (F**2 + ((1-F)/3)**2) / (F**2 + 2*F*(1-F)/3 + 5*((1-F)/3)**2)
+        return (F**2 + ((1 - F) / 3)**2) / (F**2 + 2 * F * (1 - F) / 3 + 5 * ((1 - F) / 3)**2)
+
+
+class EntanglementSwapping(Protocol):
+    '''
+    Node will execute entanglement swapping protocol will when there are
+    memories that are entangled with memories on node remote1 and remote2
+    SWAP_RES message is composed by:
+        1. Type of message: SWAP_RES
+        2. Influenced memory of receiver: integer
+        3. Fidelity after entanglement swap : float
+        4. Entangled node after entanglement swap : str
+        5. Entangled memory after entanglement swap: integer
+    ASSUMPTION:
+        1. The name of node is not null string
+    '''
+    def __init__(self, own: Node, remote1: str, remote2: str):
+        Protocol.__init__(self, own)
+        self.remote1 = remote1
+        self.remote2 = remote2
+        # self.waiting_memo1(2) stores memories that entangled with remote1(2)
+        self.waiting_memo1 = []
+        self.waiting_memo2 = []
+
+    def push(self, **kwargs):
+        self._push(**kwargs)
+
+    def pop(self, memory_id: int, another_node: str):
+        if another_node == self.remote1:
+            self.waiting_memo1.append(memory_id)
+        elif another_node == self.remote2:
+            self.waiting_memo2.append(memory_id)
+        else:
+            return
+
+        while self.waiting_memo1 and self.waiting_memo2:
+            memo1 = self.waiting_memo1.pop()
+            memo2 = self.waiting_memo2.pop()
+            self.swap(memo1, memo2)
+            self._push(memory_index=memo1)
+            self._push(memory_index=memo2)
+
+    def swap(self, memo_id1: int, memo_id2: int):
+        memo1 = self.own.components["MemoryArray"][memo_id1]
+        memo2 = self.own.components["MemoryArray"][memo_id2]
+
+        suc_prob = self.success_probability()
+        fidelity = 0
+        if random() < suc_prob:
+            fidelity = self.updated_fidelity(memo1.fidelity, memo2.fidelity)
+
+        another_node_id1 = memo1.entangled_memory['node_id']
+        another_memo_id1 = memo1.entangled_memory['memo_id']
+        another_node_id2 = memo2.entangled_memory['node_id']
+        another_memo_id2 = memo2.entangled_memory['memo_id']
+        msg = "EntanglementSwapping SWAP_RES %d %f %s %d" % (another_memo_id1,
+                                                             fidelity,
+                                                             another_node_id2,
+                                                             another_memo_id2)
+        self.own.send_message(dst=another_node_id1, msg=msg)
+        msg = "EntanglementSwapping SWAP_RES %d %f %s %d" % (another_memo_id2,
+                                                             fidelity,
+                                                             another_node_id1,
+                                                             another_memo_id1)
+        self.own.send_message(dst=another_node_id2, msg=msg)
+
+        memo1.clean()
+        memo2.clean()
+
+    def received_message(self, src: str, msg: List[str]):
+        type_index = 0
+        msg_type = msg[type_index]
+        if msg_type == "SWAP_RES":
+            memo_id = int(msg[type_index + 1])
+            fidelity = float(msg[type_index + 2])
+            another_node = msg[type_index + 3]
+            another_memo = int(msg[type_index + 4])
+
+            memory = self.own.components["MemoryArray"][memo_id]
+            if fidelity == 0:
+                memory.clean()
+                self._push(memory_index=memo_id)
+            else:
+                memory.fidelity = fidelity
+                memory.entangled_memory['node_id'] = another_node
+                memory.entangled_memory['memo_id'] = another_memo
+                self._pop(memory_index=memo_id, another_node=another_node)
+        else:
+            raise Exception("Entanglement swapping protocol "
+                            "receives unkown type of message: "
+                            "%s" % str(msg))
+
+    @staticmethod
+    def success_probability() -> float:
+        '''
+        A simple model for BSM success probability
+        '''
+        return 0.9
+
+    @staticmethod
+    def updated_fidelity(f1: float, f2: float) -> float:
+        '''
+        A simple model updating fidelity of entanglement
+        '''
+        return (f1 + f2) / 2 * 0.9
 
 
 if __name__ == "__main__":
@@ -540,7 +642,7 @@ if __name__ == "__main__":
                 local_memory[memory_index].entangled_memory['memo_id'] = memory_index
             local_memory[memory_index].entangled_memory['node_id'] = self.another
             process = Process(self, 'pop', [memory_index, self.another])
-            event = Event(self.counter*1e9, process)
+            event = Event(self.counter * 1e9, process)
             self.own.timeline.schedule(event)
             self.counter += 1
 
@@ -664,12 +766,12 @@ if __name__ == "__main__":
             nodes.append(node)
 
         # create classical channel
-        for i in range(n-1):
+        for i in range(n - 1):
             cc = topology.ClassicalChannel("cc1", tl, distance=1e3, delay=1e5)
             cc.add_end(nodes[i])
-            cc.add_end(nodes[i+1])
+            cc.add_end(nodes[i + 1])
             nodes[i].assign_cchannel(cc)
-            nodes[i+1].assign_cchannel(cc)
+            nodes[i + 1].assign_cchannel(cc)
 
         # create memories on nodes
         NUM_MEMORY = 40
@@ -687,15 +789,15 @@ if __name__ == "__main__":
             if i > 0:
                 dummy = DummyParent(node)
                 dummy.multi_nodes = True
-                dummy.another = "node %d" % (i-1)
+                dummy.another = "node %d" % (i - 1)
                 dummy.upper_protocols.append(bbpssw)
                 bbpssw.lower_protocols.append(dummy)
                 node.protocols.append(dummy)
                 dummys.append(dummy)
-            if i < len(nodes)-1:
+            if i < len(nodes) - 1:
                 dummy = DummyParent(node)
                 dummy.multi_nodes = True
-                dummy.another = "node %d" % (i+1)
+                dummy.another = "node %d" % (i + 1)
                 dummy.upper_protocols.append(bbpssw)
                 bbpssw.lower_protocols.append(dummy)
                 node.protocols.append(dummy)
@@ -704,22 +806,22 @@ if __name__ == "__main__":
             node.protocols.append(bbpssw)
 
         # create entanglement
-        for i in range(n-1):
+        for i in range(n - 1):
             memo1 = nodes[i].components['MemoryArray']
-            memo2 = nodes[i+1].components['MemoryArray']
-            for j in range(int(NUM_MEMORY/2)):
-                memo1[j+int(NUM_MEMORY/2)].entangled_memory = {'node_id': 'node %d' % (i+1), 'memo_id': j}
-                memo2[j].entangled_memory = {'node_id': 'node %d' % i, 'memo_id': j+int(NUM_MEMORY/2)}
+            memo2 = nodes[i + 1].components['MemoryArray']
+            for j in range(int(NUM_MEMORY / 2)):
+                memo1[j + int(NUM_MEMORY / 2)].entangled_memory = {'node_id': 'node %d' % (i + 1), 'memo_id': j}
+                memo2[j].entangled_memory = {'node_id': 'node %d' % i, 'memo_id': j + int(NUM_MEMORY / 2)}
 
         # schedule events
         counter = 0
         for i in range(0, len(dummys), 2):
             dummy1 = dummys[i]
-            dummy2 = dummys[i+1]
-            for j in range(int(NUM_MEMORY/2)):
-                e = Event(counter*(1e5), Process(dummy1, "pop", [j+int(NUM_MEMORY/2), dummy2.own.name]))
+            dummy2 = dummys[i + 1]
+            for j in range(int(NUM_MEMORY / 2)):
+                e = Event(counter * (1e5), Process(dummy1, "pop", [j + int(NUM_MEMORY / 2), dummy2.own.name]))
                 tl.schedule(e)
-                e = Event(counter*(1e5), Process(dummy2, "pop", [j, dummy1.own.name]))
+                e = Event(counter * (1e5), Process(dummy2, "pop", [j, dummy1.own.name]))
                 tl.schedule(e)
                 counter += 1
 
@@ -736,5 +838,78 @@ if __name__ == "__main__":
             print(node.name)
             print_memory(memory)
 
-    three_nodes_test()
+    def es_test():
+        # create timeline
+        tl = timeline.Timeline()
+        n = 3
+
+        # create nodes
+        nodes = []
+        for i in range(n):
+            node = topology.Node("node_%d" % i, tl)
+            nodes.append(node)
+
+        # create classical channel
+        for i in range(n):
+            for j in range(n):
+                if i >= j:
+                    continue
+                cc = topology.ClassicalChannel("cc_%d_%d" % (i, j), tl, distance=1e3, delay=1e5)
+                cc.add_end(nodes[i])
+                cc.add_end(nodes[j])
+                nodes[i].assign_cchannel(cc)
+                nodes[j].assign_cchannel(cc)
+
+        # create memories on nodes
+        NUM_MEMORY = 40
+        memory_params = {"fidelity": 0.9}
+        for node in nodes:
+            memory = topology.MemoryArray("%s memory array" % node.name,
+                                          tl, num_memories=NUM_MEMORY,
+                                          memory_params=memory_params)
+            node.components['MemoryArray'] = memory
+
+        # create protocol stack
+        esps = []
+        esp = EntanglementSwapping(nodes[0], '', '')
+        nodes[0].protocols.append(esp)
+        esps.append(esp)
+        esp = EntanglementSwapping(nodes[1], 'node_0', 'node_2')
+        nodes[1].protocols.append(esp)
+        esps.append(esp)
+        esp = EntanglementSwapping(nodes[2], '', '')
+        nodes[2].protocols.append(esp)
+        esps.append(esp)
+
+        # create entanglement
+        counter = 0
+        for i in range(n - 1):
+            memo1 = nodes[i].components['MemoryArray']
+            memo2 = nodes[i + 1].components['MemoryArray']
+            for j in range(int(NUM_MEMORY / 2)):
+                memo1[j + int(NUM_MEMORY / 2)].entangled_memory = {'node_id': 'node_%d' % (i + 1), 'memo_id': j}
+                memo2[j].entangled_memory = {'node_id': 'node_%d' % i, 'memo_id': j + int(NUM_MEMORY / 2)}
+
+                # schedule events
+                e = Event(counter * (1e6), Process(esps[i], "pop", [j + int(NUM_MEMORY / 2), esps[i + 1].own.name]))
+                tl.schedule(e)
+                e = Event(counter * (1e6), Process(esps[i + 1], "pop", [j, esps[i].own.name]))
+                tl.schedule(e)
+                counter += 1
+
+        # start simulation
+        tl.init()
+        tl.run()
+
+        def print_memory(memoryArray):
+            for i, memory in enumerate(memoryArray):
+                print(i, memoryArray[i].entangled_memory, memory.fidelity)
+
+        for node in nodes:
+            memory = node.components['MemoryArray']
+            print(node.name)
+            print_memory(memory)
+
+    # three_nodes_test()
     # multi_nodes_test(3)
+    es_test()
