@@ -408,9 +408,10 @@ class Detector(Entity):
     def get(self, dark_get=False):
         self.photon_counter += 1
         now = self.timeline.now()
+        time = int(round(now / self.time_resolution) * self.time_resolution)
 
         if (numpy.random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
-            self._pop(detector=self)
+            self._pop(detector=self, time=time)
             self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self):
@@ -709,16 +710,11 @@ class BSM(Entity):
         # calculate bsm based on detector num
         detector = kwargs.get("detector")
         detector_num = self.detectors.index(detector)
+        time = kwargs.get("time")
 
         if self.encoding_type["name"] == "ensemble":
             res = detector_num
-            resolution = int(detector.time_resolution)
-            # customized round for Python3
-            if (self.timeline.now() / resolution) % 1 < 0.5:
-                cur_time = (self.timeline.now() // resolution) * resolution
-            else:
-                cur_time = (self.timeline.now() // resolution + 1) * resolution
-            self._pop(entity="BSM", res=res, time=cur_time)
+            self._pop(entity="BSM", res=res, time=time)
         else:
             # TODO: polarization, time_bin
             pass
@@ -812,6 +808,38 @@ class AtomMemory(Entity):
         if state == 0:
             photon.is_null = True
         self.direct_receiver.get(photon)
+
+
+# single-atom memory array
+class AtomMemoryArray(Entity):
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(self, name, timeline)
+        self.max_frequency = kwargs.get("frequency", 1)
+        num_memories = kwargs.get("num_memories", 0)
+        memory_params = kwargs.get("memory_params", None)
+        self.memories = []
+        self.frequency = self.max_frequency
+
+        for i in range(num_memories):
+            memory = AtomicMemory(self.name + "%d" % i, timeline, **memory_params)
+            memory.parents.append(self)
+            self.memories.append(memory)
+
+    def __getitem__(self, key):
+        return self.memories[key]
+
+    def __len__(self):
+        return len(self.memories)
+
+    def init():
+        pass
+
+    def pop(self, **kwargs):
+        memory = kwargs.get("memory")
+        index = self.memories.index(memory)
+        # notify node
+        self._pop(entity="AtomMemoryArray", index=index)
+
 
 # atomic ensemble memory for DLCZ/entanglement swapping
 class Memory(Entity):
@@ -967,6 +995,9 @@ class Node(Entity):
         self.protocols = []
 
     def init(self):
+        for key, component in self.components.items():
+            component.parents.append(self)
+
         for protocol in self.protocols:
             protocol.init()
 
@@ -981,7 +1012,7 @@ class Node(Entity):
     def assign_qchannel(self, qchannel: QuantumChannel):
         sender = [component for component in self.components if qchannel.sender == component]
         receiver = [component for component in self.components if qchannel.receiver == component]
-        assert (len(sender) == 1 and len(receiver) == 1), "node must be explicitly 1 end of quantum channel"
+        assert (len(sender) == 1 or len(receiver) == 1), "node must be explicitly 1 end of quantum channel"
 
         if len(sender) == 1:
             device = sender[0]
