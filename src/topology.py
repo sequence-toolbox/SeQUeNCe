@@ -231,7 +231,7 @@ class QuantumChannel(OpticalChannel):
         chance_photon_kept = 10 ** (loss / -10)
 
         # check if photon kept
-        if numpy.random.random_sample() < chance_photon_kept:
+        if not photon.is_null or numpy.random.random_sample() < chance_photon_kept:
             self.photon_counter += 1
 
             # check if random polarization noise applied
@@ -696,7 +696,7 @@ class BSM(Entity):
             if not photon.is_null:
                 self.detectors[detector_num].get()
 
-            # if on second round and have both photons, entangle if necessary
+            # if on second round and have both photons (including null), entangle if necessary
             if self.second_round and len(self.photons) == 2:
                 is_valid = self.photons[0].is_null ^ self.photons[1].is_null
                 if is_valid:
@@ -713,6 +713,9 @@ class BSM(Entity):
         time = kwargs.get("time")
 
         if self.encoding_type["name"] == "ensemble":
+            res = detector_num
+            self._pop(entity="BSM", res=res, time=time)
+        elif self.encoding_type["name"] == "single_atom":
             res = detector_num
             self._pop(entity="BSM", res=res, time=time)
         else:
@@ -808,6 +811,9 @@ class AtomMemory(Entity):
         if state == 0:
             photon.is_null = True
         self.direct_receiver.get(photon)
+
+    def flip_state(self):
+        raise Exception("Unimplemented method 'flip_state' in AtomMemory")
 
 
 # single-atom memory array

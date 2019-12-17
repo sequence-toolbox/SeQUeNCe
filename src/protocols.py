@@ -50,7 +50,240 @@ class Protocol(ABC):
         pass
 
 
-class EntanglementGeneration(Protocol):
+class EntanglementGeneration(protocol):
+    '''
+    PROCEDURE:
+
+    FIRST STAGE
+    1. Preparation
+        starting node sets memories to + state
+        starting node sends NEGOTIATE message
+            1. message type (string)
+            2. quantum delay (int)
+            3. memory max frequency (float)
+            4. number of memories (int)
+        other end node sets memories to + state
+        other end node schedules second stage time
+        other end node sends NEGOTIATE_ACK message
+            1. message type (string)
+            2. frequency to use (float)
+            3. number of memories to use (int)
+            4. start time (int)
+            5. quantum delay to schedule second stage
+        starting node schedules second stage time
+    2. excite memories
+        starting and other end node excite memories at start time
+        middle node send MEAS_RES message when BSM excited
+            1. message type (string)
+            2. triggered time (int)
+        confirmed bell state measurements collected for second stage
+
+    SECOND STAGE
+    3. flip states
+        starting and other end node flip memory state
+        new start time is set as current time
+    4. excite memories again
+        starting and other end node excite memories at new start time
+        middle node sends MEAS_RES message (with same format)
+    5. record successfull bell state measurement
+        successfull BSM results are popped to entanglement swapping
+
+    UNSCHEDULED:
+    memories pushed from entanglement_swapping are added to first stage memory indices
+    '''
+    def __init__(self, own, **kwargs):
+        super().__init__(self, own)
+        self.middle = kwargs.get("middle_node", self.own.name)
+        self.others = []
+        self.memory_array = None
+
+        self.qc_delay = 0
+        self.frequency = 0
+        self.start_time = -1
+        self.quantum_delay = 0
+
+        # first stage
+        self.memory_indices_1 = []
+
+        # second stage
+        self.memory_indices_2 = []
+
+        self.stage = 1
+        self.running = False
+
+    def init(self):
+        print("EG protocol init on node {}".format(self.own.name))
+        assert ((self.middle == self.own.name and len(self.others) == 2) or
+                (self.middle != self.own.name and len(self.others) == 1))
+        if self.own.name != self.middle:
+            memory_array_name = "AtomMemoryArray" + self.middle
+            self.memory_array = self.own.components[memory_array_name]
+            self.frequency = self.memory_array.max_frequency
+            self.memory_indices_1 = range(self.memory_array.num_memories)
+
+    def push(self, info_type, **kwargs):
+        index = kwargs.get("index")
+        self.memory_indices_1.append(index)
+        if not self.running:
+            self.start()
+
+    def pop(self, info_type, **kwargs):
+        if info_type == "BSM_res":
+            res = kwargs.get("res")
+            time = kwargs.get("time")
+            message = "EntanglementGeneration MEAS_RES {} {}".format(res, time)
+            self.own.send_message(self.others[0], message)
+
+        else:
+            raise Exception("invalid info type {} popped to EntanglementGeneration on node {}".format(info_type, self.own.name))
+
+    def start(self):
+        assert self.own.name != self.middle, "EntanglementGeneration.start() called on middle node"
+        self.stage = 1
+        self.running = True
+        
+        # set all memories to + state
+        state = [complex(1/sqrt(2)), complex(1/sqrt(2))]
+        for index in self.memory_indices_1:
+            self.memory_array[index].qstate.set_state(state)
+
+        # send NEGOTIATE message
+        qchannel = self.own.qchannels[self.middle]
+        self.qc_delay = int(round(qchannel.distance / qchannel.light_speed))
+        self.frequency = self.memory_array.max_frequency
+        message = "EntanglementGeneration NEGOTIATE {} {} {}".format(self.qc_delay,
+                                                                     self.frequency,
+                                                                     len(self.memory_indices_1))
+        self.own.send_message(self.others[0], message)
+
+    def start_stage_2(self):
+        self.stage = 2
+        self.start_time = self.own.timeline.now()
+
+        # flip state of all memories
+        for index in self.memory_indices_2:
+            self.memory_array[index].flip_state()
+
+        # excite memories
+        self.memory_excite()
+
+        # schedule end
+        time_delay = int(1e12 * (len(self.memory_indices_2) + 1) / self.frequency) + self.quantum_delay
+        process = Process(self, "end", [])
+        event = Event(self.start_time + time_delay, process)
+        self.own.timeline.schedule(event)
+
+    def end(self):
+        while len(self.memory_indices_2) > 0:
+            index = self.memory_indices_2.pop()
+            if index != -1: self.memory_indices_1.append(index)
+
+        if len(self.memory_indices_1) > 0:
+            self.start()
+        else:
+            self.running = False
+
+    def received_message(self, src: str, msg: List[str]):
+        msg_type = msg[0]
+
+        if msg_type == "NEGOTIATE":
+            another_delay = int(msg[1])
+            another_frequency = float(msg[2])
+            another_mem_num = int(msg[3])
+
+            # calculate start times based on delay
+            qchannel = self.own.qchannels[self.middle]
+            self.qc_delay = int(round(qchannel.distance / qchannel.light_speed))
+            cc_delay = int(self.own.cchannels[self.others[0]].delay)
+            
+            start_delay_other = max(self.qc_delay, another_delay) - another_delay
+            start_delay_self = max(self.qc_delay, another_delay) - self.qc_delay
+            another_start_time = self.own.timeline.now() + cc_delay + start_delay_other
+            self.start_time = self.own.timeline.now() + cc_delay + start_delay_self
+
+            # calculate frequency based on min
+            self.frequency = min(self.memory_array.max_frequency, another_frequency)
+            self.memory_array.frequency = self.frequency
+
+            # calculate number of memories to use
+            num_memories = min(len(self.memory_indices_1), another_mem_num)
+            self.memory_indices_1 = self.memory_indices_1[:num_memories]
+
+            # call memory_excite (with updated parameters)
+            self.memory_excite()
+
+            # schedule start time for second stage
+            self.quantum_delay = max(self.qc_delay, another_delay)
+            time_delay = int(1e12 * (num_memories + 1) / self.frequency) + self.quantum_delay
+            process = Process(self, "start_stage_2", [])
+            event = Event(self.start_time + time_delay, process)
+            self.own.timeline.schedule(event)
+
+            # send message to other node
+            message = "EntanglementGeneration NEGOTIATE_ACK {} {} {} {}".format(self.frequency,
+                                                                                num_memories,
+                                                                                another_start_time,
+                                                                                quantum_delay)
+            self.own.send_message(self.others[0], message)
+
+        elif msg_type == "NEGOTIATE_ACK":
+            # update parameters
+            self.frequency = float(msg[1])
+            num_memories = int(msg[2])
+            self.start_time = int(msg[3])
+            self.quantun_delay = int(msg[4])
+            self.memory_indices_1 = self.memory_indices_1[:num_memories]
+
+            # call memory_excite (with updated parameters)
+            self.memory_excite()
+
+            # schedule start time for second stage
+            time_delay = int(1e12 * (num_memories + 1) / self.frequency) + self.quantum_delay
+            process = Process(self, "start_stage_2", [])
+            event = Event(self.start_time + time_delay, process)
+            self.own.timeline.schedule(event)
+
+        elif msg_type == "MEAS_RES":
+            res = int(msg[1])
+            time = int(msg[2])
+            index = int(round((time - self.start_time - self.qc_delay) * self.frequency * 1e-12))
+
+            if self.stage == 1:
+                # if we haven't received a measurement result yet, add to second stage queue
+                if self.memory_indices_1[index] != -1:
+                    self.memory_indices_2.append(self.memory_indices_1[index])
+                    self.memory_indices_1[index] = -1
+                # if we've already received a measurement, remove from second stage
+                else:
+                    self.memory_indices_1[index] = self.memory_indices_2.pop()
+
+            else:
+                if self.memory_indices_2[index] != -1:
+                    self._pop(memory_index=self.memory_indices_2[index], another_node=self.others[0])
+                    self.memory_indices_2[index] = -1
+                else:
+                    # TODO: invalidate result sent to entanglement purification
+                    pass
+
+        else:
+            raise Exception("Invalid message {} received by EntanglementGeneration on node {}".format(msg_type, self.own.name))
+
+    def memory_excite(self):
+        period = int(round(1e12 / self.frequency))
+        time = self.start_time
+        if self.stage == 1:
+            indices = self.memory_indices_1
+        else:
+            indices = self.memory_indices_2
+
+        for i in indices:
+            process = Process(self.memory_array[i], "excite", [])
+            event = Event(time, process)
+            self.own.timeline.schedule(event)
+            time += period
+
+
+class EntanglementGenerationOld(Protocol):
     '''
     NEGOTIATE message is composed by:
         1. Type of message: NEGOTIATE
