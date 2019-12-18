@@ -60,6 +60,9 @@ class QuantumState():
         # TODO: rewrite for entangled states
         for qs in self.entangled_states:
             qs.state = state
+        if len(state) == 2:
+            for qs in self.entangled_states:
+                qs.entangled_states = [qs]
 
     def measure(self, basis):
         state = numpy.array(self.state)
@@ -692,6 +695,7 @@ class BSM(Entity):
                     self.detectors[1].get()
 
         elif self.encoding_type["name"] == "single_atom":
+            # TODO: remove second round
             detector_num = numpy.random.choice([0,1])
             if not photon.is_null:
                 self.detectors[detector_num].get()
@@ -813,39 +817,10 @@ class AtomMemory(Entity):
         self.direct_receiver.get(photon)
 
     def flip_state(self):
-        raise Exception("Unimplemented method 'flip_state' in AtomMemory")
-
-
-# single-atom memory array
-class AtomMemoryArray(Entity):
-    def __init__(self, name, timeline, **kwargs):
-        Entity.__init__(self, name, timeline)
-        self.max_frequency = kwargs.get("frequency", 1)
-        num_memories = kwargs.get("num_memories", 0)
-        memory_params = kwargs.get("memory_params", None)
-        self.memories = []
-        self.frequency = self.max_frequency
-
-        for i in range(num_memories):
-            memory = AtomicMemory(self.name + "%d" % i, timeline, **memory_params)
-            memory.parents.append(self)
-            self.memories.append(memory)
-
-    def __getitem__(self, key):
-        return self.memories[key]
-
-    def __len__(self):
-        return len(self.memories)
-
-    def init():
-        pass
-
-    def pop(self, **kwargs):
-        memory = kwargs.get("memory")
-        index = self.memories.index(memory)
-        # notify node
-        self._pop(entity="AtomMemoryArray", index=index)
-
+        # flip coefficients of state
+        new_state = self.qstate.state
+        new_state[0], new_state[1] = new_state[1], new_state[0]
+        self.qstate.assign_state(new_state)
 
 # atomic ensemble memory for DLCZ/entanglement swapping
 class Memory(Entity):
@@ -922,16 +897,27 @@ class Memory(Entity):
 class MemoryArray(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
+        self.memory_type = kwargs.get("memory_type", "atom")
         self.max_frequency = kwargs.get("frequency", 1)
         num_memories = kwargs.get("num_memories", 0)
         memory_params = kwargs.get("memory_params", None)
         self.memories = []
         self.frequency = self.max_frequency
 
-        for i in range(num_memories):
-            memory = Memory(self.name + "%d" % i, timeline, **memory_params)
-            memory.parents.append(self)
-            self.memories.append(memory)
+        if self.memory_type == "atom":
+            for i in range(num_memories):
+                memory = AtomMemory(self.name + "%d" % i, timeline, **memory_params)
+                memory.parents.append(self)
+                self.memories.append(memory)
+
+        elif self.memory_type == "ensemble":
+            for i in range(num_memories):
+                memory = Memory(self.name + "%d" % i, timeline, **memory_params)
+                memory.parents.append(self)
+                self.memories.append(memory)
+
+        else:
+            raise Exception("invalid memory type {}".format(self.memory_type))
 
     def __getitem__(self, key):
         return self.memories[key]
@@ -943,6 +929,8 @@ class MemoryArray(Entity):
         pass
 
     def write(self):
+        assert self.memory_type == "ensemble"
+
         time = self.timeline.now()
 
         period = 1e12 / min(self.frequency, self.max_frequency)
@@ -954,6 +942,8 @@ class MemoryArray(Entity):
             time += period
 
     def read(self):
+        assert self.memory_type == "ensemble"
+
         time = self.timeline.now()
 
         period = 1e12 / min(self.frequency, self.max_frequency)
