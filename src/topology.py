@@ -56,13 +56,16 @@ class QuantumState():
         angle = numpy.random.random() * 2 * numpy.pi
         self.state = [complex(numpy.cos(angle)), complex(numpy.sin(angle))]
 
+    # only for use with entangled state
     def set_state(self, state):
-        # TODO: rewrite for entangled states
         for qs in self.entangled_states:
             qs.state = state
-        if len(state) == 2:
-            for qs in self.entangled_states:
-                qs.entangled_states = [qs]
+
+    # for use with single, unentangled state
+    def set_state_single(self, state):
+        for qs in self.entangled_states:
+            qs.entangled_states = [qs]
+        self.state = state
 
     def measure(self, basis):
         state = numpy.array(self.state)
@@ -695,20 +698,36 @@ class BSM(Entity):
                     self.detectors[1].get()
 
         elif self.encoding_type["name"] == "single_atom":
-            # TODO: remove second round
-            detector_num = numpy.random.choice([0,1])
-            if not photon.is_null:
+            memory = photon.encoding_type["memory"]
+
+            # check if we're in first stage. If we are and not null, send photon to random detector
+            if memory.previous_bsm == -1 and not photon.is_null:
+                detector_num = numpy.random.choice([0,1])
+                memory.previous_bsm = detector_num
                 self.detectors[detector_num].get()
 
-            # if on second round and have both photons (including null), entangle if necessary
-            if self.second_round and len(self.photons) == 2:
-                is_valid = self.photons[0].is_null ^ self.photons[1].is_null
+            if len(self.photons) == 2:
+                null_0 = self.photons[0].is_null
+                null_1 = self.photons[1].is_null
+                is_valid = null_0 ^ null_1
                 if is_valid:
-                    qstate_0 = self.photons[0].encoding_type["memory"].qstate
-                    qstate_1 = self.photons[1].encoding_type["memory"].qstate
-                    qstate_0.entangle(qstate_1)
-                    _ = QuantumState.measure_multiple(self.bell_basis, [qstate_0, qstate_1])
-
+                    memory_0 = self.photons[0].encoding_type["memory"]
+                    memory_1 = self.photons[1].encoding_type["memory"]
+                    # if we're in stage 1: null photon will need bsm assigned
+                    if null_0 and memory_0.previous_bsm == -1:
+                        memory_0.previous_bsm = memory_1.previous_bsm
+                    elif null_1 and memory_1.previous_bsm == -1:
+                        memory_1.previous_bsm = memory_0.previous_bsm
+                    # if we're in stage 2: send photon to same (opposite) detector for psi+ (psi-)
+                    else:
+                        res = QuantumState.measure_multiple(self.bell_basis, [memory_0.qstate, memory_1.qstate])
+                        if res == 2: # Psi+
+                            detector_num = memory_0.previous_bsm
+                        elif res == 3: # Psi-
+                            detector_num = 1 - memory_0.previous_bsm
+                        else:
+                            raise Exception("invalid bell state result {}".format(res))
+                        self.detectors[detector_num].get()
 
     def pop(self, **kwargs):
         # calculate bsm based on detector num
@@ -807,6 +826,13 @@ class AtomMemory(Entity):
         self.photon_encoding = single_atom.ensemble.copy()
         self.photon_encoding["memory"] = self
 
+        # keep track of previous BSM result (for entanglement generation)
+        # -1 = no result, 0/1 give detector number
+        self.previous_bsm = -1
+
+    def init(self):
+        pass
+
     def excite(self):
         state = self.qstate.measure(encoding.ensemble["bases"][0])
         # send photon in certain state to direct receiver
@@ -818,9 +844,10 @@ class AtomMemory(Entity):
 
     def flip_state(self):
         # flip coefficients of state
+        assert len(self.qstate.state) == 2
         new_state = self.qstate.state
         new_state[0], new_state[1] = new_state[1], new_state[0]
-        self.qstate.assign_state(new_state)
+        self.qstate.set_single_state(new_state)
 
 # atomic ensemble memory for DLCZ/entanglement swapping
 class Memory(Entity):
