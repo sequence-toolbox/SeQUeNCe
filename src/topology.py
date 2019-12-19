@@ -821,6 +821,7 @@ class SPDCSource(LightSource):
 class AtomMemory(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
+        self.fidelity = kwargs.get("fidelity", 1)
         self.frequency = kwargs.get("frequency", 0)
         self.coherence_time = kwargs.get("coherence_time", 0)
         self.direct_receiver = kwargs.get("direct_receiver", None)
@@ -828,6 +829,9 @@ class AtomMemory(Entity):
 
         self.photon_encoding = single_atom.ensemble.copy()
         self.photon_encoding["memory"] = self
+
+        # keep track of entanglement
+        self.entangled_memory = {'node_id': None, 'memo_id': None}
 
         # keep track of previous BSM result (for entanglement generation)
         # -1 = no result, 0/1 give detector number
