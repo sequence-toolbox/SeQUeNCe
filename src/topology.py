@@ -587,6 +587,9 @@ class BSM(Entity):
                 detector = None
             self.detectors.append(detector)
 
+        # get resolution
+        self.resolution = max(d.time_resolution for d in self.detectors)
+
         # define bell basis vectors
         self.bell_basis = [[complex(math.sqrt(1/2)), complex(0), complex(0), complex(math.sqrt(1/2))],
                            [complex(math.sqrt(1/2)), complex(0), complex(0), -complex(math.sqrt(1/2))],
