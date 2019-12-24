@@ -690,7 +690,7 @@ class BSM(Entity):
                         qstate_0.entangle(qstate_1)
                     self.previous_state = mem_0.qstate.state
                     # project to bell basis
-                    _ = QuantumState.measure_multiple(self.bell_basis, [mem_0.qstate, mem_1.qstate])
+                    _ = QuantumState.measure_multiple(self.bell_basis, [qstate_0, qstate_1])
                     # send detect message to a random detector
                     detector_num = numpy.random.choice([0, 1])
                     self.detectors[detector_num].get()
@@ -723,6 +723,8 @@ class BSM(Entity):
                         memory_1.previous_bsm = memory_0.previous_bsm
                     # if we're in stage 2: send photon to same (opposite) detector for psi+ (psi-)
                     else:
+                        if memory_0.qstate not in memory_1.qstate.entangled_states:
+                            memory_0.qstate.entangle(memory_1.qstate)
                         res = QuantumState.measure_multiple(self.bell_basis, [memory_0.qstate, memory_1.qstate])
                         if res == 2: # Psi+
                             detector_num = memory_0.previous_bsm
@@ -822,12 +824,12 @@ class AtomMemory(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.fidelity = kwargs.get("fidelity", 1)
-        self.frequency = kwargs.get("frequency", 0)
+        self.frequency = kwargs.get("frequency", 1)
         self.coherence_time = kwargs.get("coherence_time", 0)
         self.direct_receiver = kwargs.get("direct_receiver", None)
         self.qstate = QuantumState()
 
-        self.photon_encoding = single_atom.ensemble.copy()
+        self.photon_encoding = encoding.single_atom.copy()
         self.photon_encoding["memory"] = self
 
         # keep track of entanglement
@@ -851,10 +853,10 @@ class AtomMemory(Entity):
 
     def flip_state(self):
         # flip coefficients of state
-        assert len(self.qstate.state) == 2
+        assert len(self.qstate.state) == 2, "qstate length error in memory {}".format(self.name)
         new_state = self.qstate.state
         new_state[0], new_state[1] = new_state[1], new_state[0]
-        self.qstate.set_single_state(new_state)
+        self.qstate.set_state_single(new_state)
 
 # atomic ensemble memory for DLCZ/entanglement swapping
 class Memory(Entity):
