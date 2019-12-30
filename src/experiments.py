@@ -1,7 +1,9 @@
+import math
 from numpy.random import seed
 
 from protocols import EntanglementGeneration
 from protocols import BBPSSW
+from protocols import EntanglementSwapping
 
 import sequence
 from sequence import topology
@@ -33,13 +35,10 @@ def three_node_test():
     # create quantum channels
     qc_ac = topology.QuantumChannel("qc_ac", tl, distance=1e3)
     qc_bc = topology.QuantumChannel("qc_bc", tl, distance=1e3)
-    # store in nodes
-    alice.qchannels = {"charlie": qc_ac}
-    bob.qchannels = {"charlie": qc_bc}
 
     # create memories
     NUM_MEMORIES = 100
-    FIDELITY = 0.8
+    FIDELITY = 0.6
     MEMO_FREQ = int(1e6)
     memory_param_alice = {"fidelity": FIDELITY, "direct_receiver": qc_ac}
     memory_param_bob = {"fidelity": FIDELITY, "direct_receiver": qc_bc}
@@ -51,17 +50,22 @@ def three_node_test():
                                           num_memories=NUM_MEMORIES,
                                             frequency=MEMO_FREQ,
                                           memory_params=memory_param_bob)
-    alice.components['MemoryArray'] = alice_memo_array
-    bob.components['MemoryArray'] = bob_memo_array
+    alice.assign_memory_array(alice_memo_array)
+    bob.assign_memory_array(bob_memo_array)
     qc_ac.set_sender(alice_memo_array)
     qc_bc.set_sender(bob_memo_array)
 
     # create BSM
     detectors = [{"efficiency": 0.7, "dark_count": 0, "time_resolution": 150, "count_rate": 25000000}] * 2
     bsm = topology.BSM("charlie_bsm", tl, encoding_type=encoding.ensemble, detectors=detectors)
-    charlie.components['BSM'] = bsm
+    charlie.assign_bsm(bsm)
     qc_ac.set_receiver(bsm)
     qc_bc.set_receiver(bsm)
+
+    alice.assign_qchannel(qc_ac)
+    charlie.assign_qchannel(qc_ac)
+    bob.assign_qchannel(qc_bc)
+    charlie.assign_qchannel(qc_bc)
 
     # create alice protocol stack
     egA = EntanglementGeneration(alice, middle="charlie", others=["bob"], fidelity=FIDELITY)
@@ -111,7 +115,7 @@ def linear_topo(n: int, runtime=1e12):
     DETECTOR_EFFICIENCY = 0.7
     DETECTOR_TIME_RESOLUTION = 150
     DETECTOR_COUNT_RATE = 25000000
-    MEMO_FIDELITY = 0.6
+    MEMO_FIDELITY = 0.8
     MEMO_EFFICIENCY = 0.5
     MEMO_ARR_SIZE = 100
     MEMO_ARR_FREQ = int(1e6)
@@ -208,7 +212,7 @@ def linear_topo(n: int, runtime=1e12):
             memory_array = node.components['MemoryArray']
             for j, memory in enumerate(memory_array):
                 # first half of memory
-                if j > len(memory_array) / 2:
+                if j >= len(memory_array) / 2:
                     continue
                 memory.direct_receiver=qc
 
@@ -226,7 +230,7 @@ def linear_topo(n: int, runtime=1e12):
             memory_array = node.components['MemoryArray']
             for j, memory in enumerate(memory_array):
                 # last half of memory
-                if j <= len(memory_array) / 2:
+                if j < len(memory_array) / 2:
                     continue
                 memory.direct_receiver=qc
             qc.set_sender(memory_array)
@@ -256,7 +260,7 @@ def linear_topo(n: int, runtime=1e12):
             print("    ", protocol)
     '''
 
-    # create end nodes protocol stack
+    # create end nodes purification protocols
     for i, node in enumerate(end_nodes):
         bbpssw = BBPSSW(node, threshold=PURIFICATIOIN_THRED)
 
@@ -274,20 +278,101 @@ def linear_topo(n: int, runtime=1e12):
             eg.upper_protocols.append(bbpssw)
             bbpssw.lower_protocols.append(eg)
 
+        node.protocols.append(node.protocols.pop(0))
+
+    def add_protocols(node, name1, name2):
+        top_protocol = node.protocols[-1]
+        es = EntanglementSwapping(node, name1, name2, [])
+        top_protocol.upper_protocols.append(es)
+        es.lower_protocols.append(top_protocol)
+        ep = BBPSSW(node, threshold=PURIFICATIOIN_THRED)
+        ep.lower_protocols.append(es)
+        es.upper_protocols.append(ep)
+
+    def create_stack(left, right, end_nodes):
+        assert int(math.log2(right - left)) == math.log2(right - left)
+        k = 1
+        while k <= (right - left) / 2:
+            m = 0
+            pos = k * (2 * m + 1) + left
+            while pos + k <= right:
+                remote1, remote2 = pos - k, pos + k
+                if remote1 == 0:
+                    node = end_nodes[remote1]
+                    add_protocols(node, '', '')
+
+                node = end_nodes[pos]
+                add_protocols(node, end_nodes[remote1].name, end_nodes[remote2].name)
+
+                node = end_nodes[remote2]
+                add_protocols(node, '', '')
+
+                m += 1
+                pos = k * (2 * m + 1) + left
+            k *= 2
+
+    # create end nodes purification and swapping protocols
+    left, right = 0, n - 1
+    while right - left > 1:
+        length = 2 ** int(math.log2(right - left))
+        create_stack(left, left + length, end_nodes)
+        left = left + length
+        if left != right:
+            next_length = 2 ** int(math.log2(right - left))
+            add_protocols(end_nodes[left], end_nodes[0].name, end_nodes[left + next_length].name)
+            add_protocols(end_nodes[0], '', '')
+            add_protocols(end_nodes[left + next_length], '', '')
+
+    # update known_nodes for EntanglementSwapping protocols
+    for i, node in enumerate(end_nodes):
+        ess = [protocol for protocol in node.protocols if type(protocol).__name__ == "EntanglementSwapping"]
+        counter = 0
+        for j in range(i-1, -1, -1):
+            node2 = end_nodes[j]
+            ess2 = [protocol for protocol in node2.protocols if type(protocol).__name__ == "EntanglementSwapping"]
+            for es in ess2:
+                if es.remote2 == node.name:
+                    ess[counter].known_nodes.append(node2.name)
+                    counter += 1
+        counter = 0
+        for j in range(i+1, len(end_nodes)):
+            node2 = end_nodes[j]
+            ess2 = [protocol for protocol in node2.protocols if type(protocol).__name__ == "EntanglementSwapping"]
+            for es in ess2:
+                if es.remote1 == node.name:
+                    ess[counter].known_nodes.append(node2.name)
+                    counter += 1
+
     for node in end_nodes:
         print(node.name)
         for protocol in node.protocols:
             print("    ", protocol)
-
+            print(" "*8, "upper protocols", protocol.upper_protocols)
+            print(" "*8, "lower protocols", protocol.lower_protocols)
 
     # schedule events
+    for node in end_nodes:
+        for protocol in node.protocols:
+            if type(protocol).__name__ == "EntanglementGeneration":
+                process = Process(protocol, "start", [])
+                event = Event(0, process)
+                tl.schedule(event)
 
     # start simulation
     tl.init()
     tl.run()
 
+    def print_memory(memoryArray):
+        for i, memory in enumerate(memoryArray):
+            print("    memory",  i, memoryArray[i].entangled_memory, memory.fidelity)
+
+    for node in end_nodes:
+        memory = node.components['MemoryArray']
+        print(node.name)
+        print_memory(memory)
+
 
 if __name__ == "__main__":
     seed(1)
     # three_node_test()
-    linear_topo(3)
+    linear_topo(3, 1e10)

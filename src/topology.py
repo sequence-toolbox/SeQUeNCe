@@ -269,7 +269,7 @@ class ClassicalChannel(OpticalChannel):
         for node in node_list:
             node.assign_cchannel(self)
 
-    def transmit(self, message, source):
+    def transmit(self, message, source, priority):
         # get node that's not equal to source
         if source not in self.ends:
             Exception("no endpoint", source)
@@ -281,7 +281,7 @@ class ClassicalChannel(OpticalChannel):
 
         future_time = int(round(self.timeline.now() + int(self.delay)))
         process = Process(receiver, "receive_message", [source.name, message])
-        event = Event(future_time, process)
+        event = Event(future_time, process, priority)
         self.timeline.schedule(event)
 
 
@@ -797,7 +797,8 @@ class Memory(Entity):
         pass
 
     def write(self):
-        # TODO wu: emit multiple photons
+        self.qstate = QuantumState()
+        self.entangled_memory = {'node_id': None, 'memo_id': None}
         if numpy.random.random_sample() < self.efficiency:
             # unentangle
             # set new state
@@ -807,6 +808,7 @@ class Memory(Entity):
                             encoding_type=self.photon_encoding)
             self.direct_receiver.get(photon)
         else:
+            self.qstate.set_state([complex(0), complex(1)])
             photon = Photon("", self.timeline, location=self, encoding_type=self.photon_encoding)
             photon.is_null = True
             self.direct_receiver.get(photon)
@@ -858,7 +860,7 @@ class MemoryArray(Entity):
         self.owner = None
 
         for i in range(num_memories):
-            memory = Memory(self.name + "%d" % i, timeline, **memory_params)
+            memory = Memory(self.name + "_%d" % i, timeline, **memory_params)
             memory.parents.append(self)
             self.memories.append(memory)
 
@@ -966,7 +968,6 @@ class Node(Entity):
             device = receiver[0]
             another = qchannel.sender
 
-        # find parent node
         assert another.owner is not None
         assert another.owner.name not in self.qchannels
         self.qchannels[another.owner.name] = qchannel
@@ -1040,18 +1041,22 @@ class Node(Entity):
         elif entity == "MemoryArray":
             self._pop(info_type="expired_memory", index=kwargs.get("index"))
 
-    def send_message(self, dst: str, msg: str):
-        self.cchannels[dst].transmit(msg, self)
+    def send_message(self, dst: str, msg: str, priority=math.inf):
+        self.cchannels[dst].transmit(msg, self, priority)
 
     def receive_message(self, src: str, msg: str):
         self.message = msg
         msg_parsed = msg.split(" ")
         # signal to protocol that we've received a message
+        flag = True
         for protocol in self.protocols:
             if type(protocol).__name__ == msg_parsed[0]:
-                protocol.received_message(src, msg_parsed[1:])
-                return
-        raise Exception("Unkown protocol")
+                if protocol.received_message(src, msg_parsed[1:]):
+                    flag = False
+                    break
+        if flag:
+            print(src, msg)
+            raise Exception("Unkown protocol")
 
 
 class Topology:
