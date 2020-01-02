@@ -33,9 +33,6 @@ def three_node_test():
     # create quantum channels
     qc_ac = topology.QuantumChannel("qc_ac", tl, distance=1e3)
     qc_bc = topology.QuantumChannel("qc_bc", tl, distance=1e3)
-    # store in nodes
-    alice.qchannels = {"charlie": qc_ac}
-    bob.qchannels = {"charlie": qc_bc}
 
     # create memories
     NUM_MEMORIES = 10
@@ -62,6 +59,10 @@ def three_node_test():
     charlie.components['BSM'] = bsm
     qc_ac.set_receiver(bsm)
     qc_bc.set_receiver(bsm)
+
+    # assign quantum channels
+    alice.assign_qchannel(qc_ac)
+    bob.assign_qchannel(qc_bc)
 
     # create alice protocol stack
     egA = EntanglementGeneration(alice, middles=["charlie"], others=["bob"], fidelity=FIDELITY)

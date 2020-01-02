@@ -95,7 +95,7 @@ class EntanglementGeneration(Protocol):
         super().__init__(own)
         self.middles = kwargs.get("middles", [self.own.name])
         self.others = kwargs.get("others", []) # other node corresponding to each middle node
-        self.memory_arrays = [None] * len(self.others)
+        self.memory_array = None
 
         self.qc_delays = [0] * len(self.others)
         self.frequencies = [0] * len(self.others)
@@ -117,16 +117,31 @@ class EntanglementGeneration(Protocol):
         assert ((self.middles[0] == self.own.name and len(self.others) == 2) or
                 (self.middles[0] != self.own.name and len(self.others) == len(self.middles)))
         if self.own.name != self.middles[0]:
-            for index, middle in enumerate(self.middles):
-                memory_array_name = "MemoryArray" + middle
-                memory_array = self.own.components[memory_array_name]
-                self.memory_arrays[index] = memory_array
-                self.frequencies[index] = memory_array.max_frequency
+            print("\tEG protocol end node init")
+            self.memory_array = self.own.components['MemoryArray']
+            self.frequencies = [self.memory_array.max_frequency] * len(self.others)
 
-                self.memory_indices[index] = range(len(memory_array))
-                self.memory_stage[index] = [0] * len(memory_array)
-                self.bsm_wait_time[index] = [-1] * len(memory_array)
-                self.bsm_res[index] = [-1] * len(memory_array)
+            # put memories in correct memory index list based on direct receiver
+            self.invert_map = {value: key for key, value in self.own.qchannels.items()}
+            for memory_index in range(len(self.memory_array)):
+                qchannel = memory_array[memory_index].direct_receiver
+                another_index = self.others.index(invert_map[qchannel])
+
+                self.memory_indices[another_index].append(memory_index)
+                self.memory_stage[another_index].append(0)
+                self.bsm_wait_time[another_index].append(-1)
+                self.bsm_res[another_index].append(-1)
+
+            # for index, middle in enumerate(self.middles):
+            #     memory_array_name = "MemoryArray" + middle
+            #     memory_array = self.own.components[memory_array_name]
+            #     self.memory_arrays[index] = memory_array
+            #     self.frequencies[index] = memory_array.max_frequency
+
+            #     self.memory_indices[index] = range(len(memory_array))
+            #     self.memory_stage[index] = [0] * len(memory_array)
+            #     self.bsm_wait_time[index] = [-1] * len(memory_array)
+            #     self.bsm_res[index] = [-1] * len(memory_array)
 
     def push(self, info_type, **kwargs):
         # TODO: get other node from upper protocol?
@@ -165,7 +180,6 @@ class EntanglementGeneration(Protocol):
             # send NEGOTIATE message
             qchannel = self.own.qchannels[self.middles[another_index]]
             self.qc_delays[another_index] = int(round(qchannel.distance / qchannel.light_speed))
-            self.frequencies[another_index] = self.memory_arrays[another_index].max_frequency
             message = "EntanglementGeneration NEGOTIATE {} {} {}".format(self.qc_delays[another_index],
                                                                          self.frequencies[another_index],
                                                                          len(self.memory_indices[another_index]))
@@ -193,7 +207,7 @@ class EntanglementGeneration(Protocol):
         for i in finished_1:
             memory_index = self.memory_indices[another_index][i]
             self.memory_stage[another_index][i] = 1
-            self.memory_arrays[another_index][memory_index].flip_state()
+            self.memory_array[memory_index].flip_state()
 
         # set each memory in stage 1 to + state (and reset bsm)
         starting = [i for i in range(len(self.bsm_res[another_index])) if i not in finished_1]
@@ -202,8 +216,8 @@ class EntanglementGeneration(Protocol):
         state = [complex(1/sqrt(2)), complex(1/sqrt(2))]
         for i in starting:
             memory_index = self.memory_indices[another_index][i]
-            self.memory_arrays[another_index][memory_index].qstate.set_state_single(state)
-            self.memory_arrays[another_index][memory_index].previous_bsm = -1
+            self.memory_arrays[memory_index].qstate.set_state_single(state)
+            self.memory_arrays[memory_index].previous_bsm = -1
 
     def received_message(self, src: str, msg: List[str]):
         msg_type = msg[0]
@@ -230,8 +244,8 @@ class EntanglementGeneration(Protocol):
             self.start_times[another_index] = self.own.timeline.now() + cc_delay + start_delay_self
 
             # calculate frequency based on min
-            self.frequencies[another_index] = min(self.memory_arrays[another_index].max_frequency, another_frequency)
-            self.memory_arrays[another_index].frequency = self.frequencies[another_index]
+            self.frequencies[another_index] = min(self.frequencies[another_index], another_frequency)
+            ## self.memory_arrays[another_index].frequency = self.frequencies[another_index]
 
             # calculate number of memories to use
             num_memories = min(len(self.memory_indices[another_index]), another_mem_num)
@@ -332,12 +346,12 @@ class EntanglementGeneration(Protocol):
             another_index = self.others.index(src)
 
             local_id = self.wait_remote[another_index].pop(0)
-            local_memory = self.memory_arrays[another_index][local_id]
+            local_memory = self.memory_array[local_id]
             local_memory.entangled_memory["node_id"] = src
             local_memory.entangled_memory["memo_id"] = remote_id
             local_memory.fidelity = self.fidelity
 
-            # self._pop(memory_index=local_id, another_node=src)
+            self._pop(memory_index=local_id, another_node=src)
             print("popping memory", local_id)
 
         else:
@@ -350,7 +364,7 @@ class EntanglementGeneration(Protocol):
 
         for i in range(self.emit_nums[another_index]):
             memory_index = self.memory_indices[another_index][i]
-            process = Process(self.memory_arrays[another_index][memory_index], "excite", [])
+            process = Process(self.memory_array[memory_index], "excite", [])
             event = Event(time, process)
             self.own.timeline.schedule(event)
 

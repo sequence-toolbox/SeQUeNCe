@@ -1042,8 +1042,11 @@ class Node(Entity):
         self.cchannels[another] = cchannel
 
     def assign_qchannel(self, qchannel: QuantumChannel):
+        print(qchannel.sender)
         sender = [component for component in self.components if qchannel.sender == component]
+        print(sender)
         receiver = [component for component in self.components if qchannel.receiver == component]
+        print(receiver)
         assert (len(sender) == 1 or len(receiver) == 1), "node must be explicitly 1 end of quantum channel"
 
         if len(sender) == 1:
