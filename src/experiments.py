@@ -48,15 +48,15 @@ def three_node_test():
                                           num_memories=NUM_MEMORIES,
                                           frequency=MEMO_FREQ,
                                           memory_params=memory_param_bob)
-    alice.components['MemoryArraycharlie'] = alice_memo_array
-    bob.components['MemoryArraycharlie'] = bob_memo_array
+    alice.assign_component(alice_memo_array, "MemoryArray")
+    bob.assign_component(bob_memo_array, "MemoryArray")
     qc_ac.set_sender(alice_memo_array)
     qc_bc.set_sender(bob_memo_array)
 
     # create BSM
     detectors = [{"efficiency": 1, "dark_count": 0, "time_resolution": 150, "count_rate": 25000000}] * 2
     bsm = topology.BSM("charlie_bsm", tl, encoding_type=encoding.single_atom, detectors=detectors)
-    charlie.components['BSM'] = bsm
+    charlie.assign_component(bsm, "BSM")
     qc_ac.set_receiver(bsm)
     qc_bc.set_receiver(bsm)
 
@@ -98,7 +98,7 @@ def three_node_test():
             print(i, memoryArray[i].entangled_memory, memory.fidelity)
 
     for node in nodes:
-        memory = node.components['MemoryArraycharlie']
+        memory = node.components['MemoryArray']
         print(node.name)
         print_memory(memory)
 

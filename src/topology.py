@@ -1027,11 +1027,12 @@ class Node(Entity):
         self.protocols = []
 
     def init(self):
-        for key, component in self.components.items():
-            component.parents.append(self)
-
         for protocol in self.protocols:
             protocol.init()
+
+    def assign_component(self, component: Entity, label: str):
+        component.parents.append(self)
+        self.components[label] = component
 
     def assign_cchannel(self, cchannel: ClassicalChannel):
         # Must have used ClassicalChannel.addend prior to using this method
@@ -1042,22 +1043,20 @@ class Node(Entity):
         self.cchannels[another] = cchannel
 
     def assign_qchannel(self, qchannel: QuantumChannel):
-        print(qchannel.sender)
-        sender = [component for component in self.components if qchannel.sender == component]
-        print(sender)
-        receiver = [component for component in self.components if qchannel.receiver == component]
-        print(receiver)
-        assert (len(sender) == 1 or len(receiver) == 1), "node must be explicitly 1 end of quantum channel"
+        components = self.components.values()
+        is_sender = qchannel.sender in components
+        is_receiver = qchannel.receiver in components
+        assert is_sender ^ is_receiver, "node must be explicitly 1 end of quantum channel"
 
-        if len(sender) == 1:
-            device = sender[0]
+        if is_sender:
+            device = qchannel.receiver
         else:
-            device = receiver[0]
+            device = qchannel.sender
 
         # find parent node
-        parents = device.parent[0]
+        parent = device.parents[0]
         while not isinstance(parent, Node):
-            parent = parent.parent[0]
+            parent = parent.parents[0]
             if parent is None:
                 Exception("could not find parent of component {} in '{}'.assign_qchannel".format(device.name, self.name))
 
