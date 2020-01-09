@@ -56,10 +56,16 @@ class QuantumState():
         angle = numpy.random.random() * 2 * numpy.pi
         self.state = [complex(numpy.cos(angle)), complex(numpy.sin(angle))]
 
+    # only for use with entangled state
     def set_state(self, state):
-        # TODO: rewrite for entangled states
         for qs in self.entangled_states:
             qs.state = state
+
+    # for use with single, unentangled state
+    def set_state_single(self, state):
+        for qs in self.entangled_states:
+            qs.entangled_states = [qs]
+        self.state = state
 
     def measure(self, basis):
         state = numpy.array(self.state)
@@ -231,7 +237,7 @@ class QuantumChannel(OpticalChannel):
         chance_photon_kept = 10 ** (loss / -10)
 
         # check if photon kept
-        if numpy.random.random_sample() < chance_photon_kept:
+        if not photon.is_null or numpy.random.random_sample() < chance_photon_kept:
             self.photon_counter += 1
 
             # check if random polarization noise applied
@@ -408,9 +414,10 @@ class Detector(Entity):
     def get(self, dark_get=False):
         self.photon_counter += 1
         now = self.timeline.now()
+        time = int(round(now / self.time_resolution) * self.time_resolution)
 
         if (numpy.random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
-            self._pop(detector=self)
+            self._pop(detector=self, time=time)
             self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self):
@@ -555,6 +562,9 @@ class BSM(Entity):
         # used for ensemble encoding
         self.previous_state = None
 
+        # used for single_atom encoding
+        self.second_round = False
+
         # two detectors for time-bin and ensemble encoding
         # four detectors for polarization encoding
         detectors = kwargs.get("detectors",[])
@@ -563,6 +573,8 @@ class BSM(Entity):
         elif self.encoding_type["name"] == "time_bin":
             assert len(detectors) == 2
         elif self.encoding_type["name"] == "ensemble":
+            assert len(detectors) == 2
+        elif self.encoding_type["name"] == "single_atom":
             assert len(detectors) == 2
         else:
             raise Exception("invalid encoding type")
@@ -575,6 +587,9 @@ class BSM(Entity):
             else:
                 detector = None
             self.detectors.append(detector)
+
+        # get resolution
+        self.resolution = max(d.time_resolution for d in self.detectors)
 
         # define bell basis vectors
         self.bell_basis = [[complex(math.sqrt(1/2)), complex(0), complex(0), complex(math.sqrt(1/2))],
@@ -676,7 +691,7 @@ class BSM(Entity):
                         qstate_0.entangle(qstate_1)
                     self.previous_state = mem_0.qstate.state
                     # project to bell basis
-                    _ = QuantumState.measure_multiple(self.bell_basis, [mem_0.qstate, mem_1.qstate])
+                    _ = QuantumState.measure_multiple(self.bell_basis, [qstate_0, qstate_1])
                     # send detect message to a random detector
                     detector_num = numpy.random.choice([0, 1])
                     self.detectors[detector_num].get()
@@ -686,21 +701,52 @@ class BSM(Entity):
                     self.detectors[0].get()
                     self.detectors[1].get()
 
+        elif self.encoding_type["name"] == "single_atom":
+            memory = photon.encoding_type["memory"]
+
+            # check if we're in first stage. If we are and not null, send photon to random detector
+            if memory.previous_bsm == -1 and not photon.is_null:
+                detector_num = numpy.random.choice([0,1])
+                memory.previous_bsm = detector_num
+                self.detectors[detector_num].get()
+
+            if len(self.photons) == 2:
+                null_0 = self.photons[0].is_null
+                null_1 = self.photons[1].is_null
+                is_valid = null_0 ^ null_1
+                if is_valid:
+                    memory_0 = self.photons[0].encoding_type["memory"]
+                    memory_1 = self.photons[1].encoding_type["memory"]
+                    # if we're in stage 1: null photon will need bsm assigned
+                    if null_0 and memory_0.previous_bsm == -1:
+                        memory_0.previous_bsm = memory_1.previous_bsm
+                    elif null_1 and memory_1.previous_bsm == -1:
+                        memory_1.previous_bsm = memory_0.previous_bsm
+                    # if we're in stage 2: send photon to same (opposite) detector for psi+ (psi-)
+                    else:
+                        if memory_0.qstate not in memory_1.qstate.entangled_states:
+                            memory_0.qstate.entangle(memory_1.qstate)
+                        res = QuantumState.measure_multiple(self.bell_basis, [memory_0.qstate, memory_1.qstate])
+                        if res == 2: # Psi+
+                            detector_num = memory_0.previous_bsm
+                        elif res == 3: # Psi-
+                            detector_num = 1 - memory_0.previous_bsm
+                        else:
+                            raise Exception("invalid bell state result {}".format(res))
+                        self.detectors[detector_num].get()
 
     def pop(self, **kwargs):
         # calculate bsm based on detector num
         detector = kwargs.get("detector")
         detector_num = self.detectors.index(detector)
+        time = kwargs.get("time")
 
         if self.encoding_type["name"] == "ensemble":
             res = detector_num
-            resolution = int(detector.time_resolution)
-            # customized round for Python3
-            if (self.timeline.now() / resolution) % 1 < 0.5:
-                cur_time = (self.timeline.now() // resolution) * resolution
-            else:
-                cur_time = (self.timeline.now() // resolution + 1) * resolution
-            self._pop(entity="BSM", res=res, time=cur_time)
+            self._pop(entity="BSM", res=res, time=time)
+        elif self.encoding_type["name"] == "single_atom":
+            res = detector_num
+            self._pop(entity="BSM", res=res, time=time)
         else:
             # TODO: polarization, time_bin
             pass
@@ -773,6 +819,49 @@ class SPDCSource(LightSource):
     def assign_another_receiver(self, receiver):
         self.another_receiver = receiver
 
+
+# single-atom memory
+class AtomMemory(Entity):
+    def __init__(self, name, timeline, **kwargs):
+        Entity.__init__(self, name, timeline)
+        self.fidelity = kwargs.get("fidelity", 1)
+        self.frequency = kwargs.get("frequency", 1)
+        self.coherence_time = kwargs.get("coherence_time", -1)
+        self.direct_receiver = kwargs.get("direct_receiver", None)
+        self.qstate = QuantumState()
+
+        self.photon_encoding = encoding.single_atom.copy()
+        self.photon_encoding["memory"] = self
+
+        # keep track of entanglement
+        self.entangled_memory = {'node_id': None, 'memo_id': None}
+
+        # keep track of previous BSM result (for entanglement generation)
+        # -1 = no result, 0/1 give detector number
+        self.previous_bsm = -1
+
+    def init(self):
+        pass
+
+    def excite(self):
+        state = self.qstate.measure(encoding.ensemble["bases"][0])
+        # send photon in certain state to direct receiver
+        photon = Photon("", self.timeline, wavelength=(1/self.frequency), location=self,
+                            encoding_type=self.photon_encoding)
+        if state == 0:
+            photon.is_null = True
+        self.direct_receiver.get(photon)
+
+    def flip_state(self):
+        # flip coefficients of state
+        assert len(self.qstate.state) == 2, "qstate length error in memory {}".format(self.name)
+        new_state = self.qstate.state
+        new_state[0], new_state[1] = new_state[1], new_state[0]
+        self.qstate.set_state_single(new_state)
+
+    def reset(self):
+        self.qstate.set_state_single([complex(1/math.sqrt(2)), complex(1/math.sqrt(2))])
+        self.previous_bsm = -1
 
 # atomic ensemble memory for DLCZ/entanglement swapping
 class Memory(Entity):
@@ -852,6 +941,7 @@ class Memory(Entity):
 class MemoryArray(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
+        self.memory_type = kwargs.get("memory_type", "atom")
         self.max_frequency = kwargs.get("frequency", 1)
         num_memories = kwargs.get("num_memories", 0)
         memory_params = kwargs.get("memory_params", None)
@@ -859,10 +949,20 @@ class MemoryArray(Entity):
         self.frequency = self.max_frequency
         self.owner = None
 
-        for i in range(num_memories):
-            memory = Memory(self.name + "_%d" % i, timeline, **memory_params)
-            memory.parents.append(self)
-            self.memories.append(memory)
+        if self.memory_type == "atom":
+            for i in range(num_memories):
+                memory = AtomMemory(self.name + "%d" % i, timeline, **memory_params)
+                memory.parents.append(self)
+                self.memories.append(memory)
+
+        elif self.memory_type == "ensemble":
+            for i in range(num_memories):
+                memory = Memory(self.name + "%d" % i, timeline, **memory_params)
+                memory.parents.append(self)
+                self.memories.append(memory)
+
+        else:
+            raise Exception("invalid memory type {}".format(self.memory_type))
 
     def __getitem__(self, key):
         return self.memories[key]
@@ -874,6 +974,8 @@ class MemoryArray(Entity):
         pass
 
     def write(self):
+        assert self.memory_type == "ensemble"
+
         time = self.timeline.now()
 
         period = 1e12 / min(self.frequency, self.max_frequency)
@@ -885,6 +987,8 @@ class MemoryArray(Entity):
             time += period
 
     def read(self):
+        assert self.memory_type == "ensemble"
+
         time = self.timeline.now()
 
         period = 1e12 / min(self.frequency, self.max_frequency)
@@ -940,13 +1044,9 @@ class Node(Entity):
         for protocol in self.protocols:
             protocol.init()
 
-    def assign_memory_array(self, memory_array: MemoryArray):
-        self.components["MemoryArray"] = memory_array
-        memory_array.owner = self
-
-    def assign_bsm(self, bsm: BSM):
-        self.components["BSM"] = bsm
-        bsm.owner = self
+    def assign_component(self, component: Entity, label: str):
+        component.parents.append(self)
+        self.components[label] = component
 
     def assign_cchannel(self, cchannel: ClassicalChannel):
         # Must have used ClassicalChannel.addend prior to using this method
@@ -957,20 +1057,24 @@ class Node(Entity):
         self.cchannels[another] = cchannel
 
     def assign_qchannel(self, qchannel: QuantumChannel):
-        sender = [self.components[component] for component in self.components if qchannel.sender == self.components[component]]
-        receiver = [self.components[component] for component in self.components if qchannel.receiver == self.components[component]]
-        assert (len(sender) ^ len(receiver)), "node must be explicitly 1 end of quantum channel"
+        components = self.components.values()
+        is_sender = qchannel.sender in components
+        is_receiver = qchannel.receiver in components
+        assert is_sender ^ is_receiver, "node must be explicitly 1 end of quantum channel"
 
-        if len(sender) == 1:
-            device = sender[0]
-            another = qchannel.receiver
+        if is_sender:
+            device = qchannel.receiver
         else:
-            device = receiver[0]
-            another = qchannel.sender
+            device = qchannel.sender
 
-        assert another.owner is not None
-        assert another.owner.name not in self.qchannels
-        self.qchannels[another.owner.name] = qchannel
+        # find parent node
+        parent = device.parents[0]
+        while not isinstance(parent, Node):
+            parent = parent.parents[0]
+            if parent is None:
+                Exception("could not find parent of component {} in '{}'.assign_qchannel".format(device.name, self.name))
+
+        self.qchannels[parent.name] = qchannel
 
     def send_qubits(self, basis_list, bit_list, source_name):
         encoding_type = self.components[source_name].encoding_type

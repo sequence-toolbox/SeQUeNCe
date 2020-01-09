@@ -37,7 +37,7 @@ def three_node_test():
     qc_bc = topology.QuantumChannel("qc_bc", tl, distance=1e3)
 
     # create memories
-    NUM_MEMORIES = 100
+    NUM_MEMORIES = 10
     FIDELITY = 0.6
     MEMO_FREQ = int(1e6)
     memory_param_alice = {"fidelity": FIDELITY, "direct_receiver": qc_ac}
@@ -48,33 +48,32 @@ def three_node_test():
                                             memory_params=memory_param_alice)
     bob_memo_array = topology.MemoryArray("bob_memory_array", tl,
                                           num_memories=NUM_MEMORIES,
-                                            frequency=MEMO_FREQ,
+                                          frequency=MEMO_FREQ,
                                           memory_params=memory_param_bob)
-    alice.assign_memory_array(alice_memo_array)
-    bob.assign_memory_array(bob_memo_array)
+    alice.assign_component(alice_memo_array, "MemoryArray")
+    bob.assign_component(bob_memo_array, "MemoryArray")
     qc_ac.set_sender(alice_memo_array)
     qc_bc.set_sender(bob_memo_array)
 
     # create BSM
-    detectors = [{"efficiency": 0.7, "dark_count": 0, "time_resolution": 150, "count_rate": 25000000}] * 2
-    bsm = topology.BSM("charlie_bsm", tl, encoding_type=encoding.ensemble, detectors=detectors)
-    charlie.assign_bsm(bsm)
+    detectors = [{"efficiency": 1, "dark_count": 0, "time_resolution": 150, "count_rate": 25000000}] * 2
+    bsm = topology.BSM("charlie_bsm", tl, encoding_type=encoding.single_atom, detectors=detectors)
+    charlie.assign_component(bsm, "BSM")
     qc_ac.set_receiver(bsm)
     qc_bc.set_receiver(bsm)
 
+    # assign quantum channels
     alice.assign_qchannel(qc_ac)
-    charlie.assign_qchannel(qc_ac)
     bob.assign_qchannel(qc_bc)
-    charlie.assign_qchannel(qc_bc)
 
     # create alice protocol stack
-    egA = EntanglementGeneration(alice, middle="charlie", others=["bob"], fidelity=FIDELITY)
+    egA = EntanglementGeneration(alice, middles=["charlie"], others=["bob"], fidelity=FIDELITY)
     bbpsswA = BBPSSW(alice, threshold=0.9)
     egA.upper_protocols.append(bbpsswA)
     bbpsswA.lower_protocols.append(egA)
 
     # create bob protocol stack
-    egB = EntanglementGeneration(bob, middle="charlie", others=["alice"], fidelity=FIDELITY)
+    egB = EntanglementGeneration(bob, middles=["charlie"], others=["alice"], fidelity=FIDELITY)
     bbpsswB = BBPSSW(bob, threshold=0.9)
     egB.upper_protocols.append(bbpsswB)
     bbpsswB.lower_protocols.append(egB)
@@ -99,10 +98,6 @@ def three_node_test():
         memory = node.components['MemoryArray']
         print(node.name)
         print_memory(memory)
-    print(egA.memories)
-    print(egA.waiting_bsm)
-    print(egB.memories)
-    print(egB.waiting_bsm)
 
 
 def linear_topo(n: int, runtime=1e12):
