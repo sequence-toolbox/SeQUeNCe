@@ -275,7 +275,7 @@ class ClassicalChannel(OpticalChannel):
         for node in node_list:
             node.assign_cchannel(self)
 
-    def transmit(self, message, source):
+    def transmit(self, message, source, priority):
         # get node that's not equal to source
         if source not in self.ends:
             Exception("no endpoint", source)
@@ -287,7 +287,7 @@ class ClassicalChannel(OpticalChannel):
 
         future_time = int(round(self.timeline.now() + int(self.delay)))
         process = Process(receiver, "receive_message", [source.name, message])
-        event = Event(future_time, process)
+        event = Event(future_time, process, priority)
         self.timeline.schedule(event)
 
 
@@ -553,6 +553,7 @@ class Switch(Entity):
 class BSM(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
+        self.owner = None
         self.encoding_type = kwargs.get("encoding_type", encoding.time_bin)
         self.phase_error = kwargs.get("phase_error", 0)
         self.photons = []
@@ -885,7 +886,8 @@ class Memory(Entity):
         pass
 
     def write(self):
-        # TODO wu: emit multiple photons
+        self.qstate = QuantumState()
+        self.entangled_memory = {'node_id': None, 'memo_id': None}
         if numpy.random.random_sample() < self.efficiency:
             # unentangle
             # set new state
@@ -895,9 +897,11 @@ class Memory(Entity):
                             encoding_type=self.photon_encoding)
             self.direct_receiver.get(photon)
         else:
+            self.qstate.set_state([complex(0), complex(1)])
             photon = Photon("", self.timeline, location=self, encoding_type=self.photon_encoding)
             photon.is_null = True
             self.direct_receiver.get(photon)
+
 
         """
         self.expired = False
@@ -943,6 +947,7 @@ class MemoryArray(Entity):
         memory_params = kwargs.get("memory_params", None)
         self.memories = []
         self.frequency = self.max_frequency
+        self.owner = None
 
         if self.memory_type == "atom":
             for i in range(num_memories):
@@ -1024,6 +1029,7 @@ class Memory_EIT(Entity):
 
 class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
+        assert(' ' not in name)
         Entity.__init__(self, name, timeline)
         self.components = kwargs.get("components", {})
         self.cchannels = {}  # mapping of destination node names to classical channels
@@ -1031,6 +1037,10 @@ class Node(Entity):
         self.protocols = []
 
     def init(self):
+        for key, component in self.components.items():
+            component.parents.append(self)
+            component.init()
+
         for protocol in self.protocols:
             protocol.init()
 
@@ -1135,16 +1145,22 @@ class Node(Entity):
         elif entity == "MemoryArray":
             self._pop(info_type="expired_memory", index=kwargs.get("index"))
 
-    def send_message(self, dst: str, msg: str):
-        self.cchannels[dst].transmit(msg, self)
+    def send_message(self, dst: str, msg: str, priority=math.inf):
+        self.cchannels[dst].transmit(msg, self, priority)
 
     def receive_message(self, src: str, msg: str):
         self.message = msg
         msg_parsed = msg.split(" ")
         # signal to protocol that we've received a message
+        flag = True
         for protocol in self.protocols:
             if type(protocol).__name__ == msg_parsed[0]:
-                protocol.received_message(src, msg_parsed[1:])
+                if protocol.received_message(src, msg_parsed[1:]):
+                    flag = False
+                    break
+        if flag:
+            print(src, msg)
+            raise Exception("Unkown protocol")
 
 
 class Topology:
