@@ -172,7 +172,7 @@ def linear_topo(n: int, runtime=1e12):
         detectors = [{"efficiency":DETECTOR_EFFICIENCY, "dark_count":DETECTOR_DARK, "time_resolution":DETECTOR_TIME_RESOLUTION, "count_rate":DETECTOR_COUNT_RATE}] * 2
         name = "bsm_%s" % node.name
         bsm = topology.BSM("bsm_%s" % node.name, tl, encoding_type=encoding.ensemble, detectors=detectors)
-        node.assign_bsm(bsm)
+        node.assign_component(bsm, "BSM")
         print('add', name, 'to', node.name)
 
     '''
@@ -187,7 +187,7 @@ def linear_topo(n: int, runtime=1e12):
         memory_array = topology.MemoryArray(name, tl, num_memories=MEMO_ARR_SIZE,
                                             frequency=MEMO_ARR_FREQ,
                                             memory_params=memory_params)
-        node.assign_memory_array(memory_array)
+        node.assign_component(memory_array, "MemoryArray")
         print('add', name, 'to', node.name)
 
     '''
@@ -259,19 +259,18 @@ def linear_topo(n: int, runtime=1e12):
     for i, node in enumerate(end_nodes):
         bbpssw = BBPSSW(node, threshold=PURIFICATIOIN_THRED)
 
+        middles = []
+        others = []
         if i > 0:
-            mid_node = mid_nodes[i-1]
-            neighbor = end_nodes[i-1]
-            eg = EntanglementGeneration(node, middle=mid_node.name, others=[neighbor.name], fidelity=MEMO_FIDELITY)
-            eg.upper_protocols.append(bbpssw)
-            bbpssw.lower_protocols.append(eg)
-
+            middles.append(mid_nodes[i-1])
+            others.append(end_nodes[i-1])
         if i + 1 < len(end_nodes):
-            mid_node = mid_nodes[i]
-            neighbor = end_nodes[i+1]
-            eg = EntanglementGeneration(node, middle=mid_node.name, others=[neighbor.name], fidelity=MEMO_FIDELITY)
-            eg.upper_protocols.append(bbpssw)
-            bbpssw.lower_protocols.append(eg)
+            middles.append(mid_nodes[i])
+            others.append(end_nodes[i+1])
+
+        eg = EntanglementGeneration(node, middles=middles, others=others, fidelity=MEMO_FIDELITY)
+        eg.upper_protocols.append(bbpssw)
+        bbpssw.lower_protocols.append(eg)
 
         node.protocols.append(node.protocols.pop(0))
 

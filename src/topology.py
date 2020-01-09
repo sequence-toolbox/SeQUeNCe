@@ -553,7 +553,6 @@ class Switch(Entity):
 class BSM(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
-        self.owner = None
         self.encoding_type = kwargs.get("encoding_type", encoding.time_bin)
         self.phase_error = kwargs.get("phase_error", 0)
         self.photons = []
@@ -947,7 +946,6 @@ class MemoryArray(Entity):
         memory_params = kwargs.get("memory_params", None)
         self.memories = []
         self.frequency = self.max_frequency
-        self.owner = None
 
         if self.memory_type == "atom":
             for i in range(num_memories):
@@ -1037,10 +1035,6 @@ class Node(Entity):
         self.protocols = []
 
     def init(self):
-        for key, component in self.components.items():
-            component.parents.append(self)
-            component.init()
-
         for protocol in self.protocols:
             protocol.init()
 
