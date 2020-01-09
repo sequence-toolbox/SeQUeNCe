@@ -825,7 +825,7 @@ class AtomMemory(Entity):
         Entity.__init__(self, name, timeline)
         self.fidelity = kwargs.get("fidelity", 1)
         self.frequency = kwargs.get("frequency", 1)
-        self.coherence_time = kwargs.get("coherence_time", 0)
+        self.coherence_time = kwargs.get("coherence_time", -1)
         self.direct_receiver = kwargs.get("direct_receiver", None)
         self.qstate = QuantumState()
 
@@ -857,6 +857,10 @@ class AtomMemory(Entity):
         new_state = self.qstate.state
         new_state[0], new_state[1] = new_state[1], new_state[0]
         self.qstate.set_state_single(new_state)
+
+    def reset(self):
+        self.qstate.set_state_single([complex(1/math.sqrt(2)), complex(1/math.sqrt(2))])
+        self.previous_bsm = -1
 
 # atomic ensemble memory for DLCZ/entanglement swapping
 class Memory(Entity):
