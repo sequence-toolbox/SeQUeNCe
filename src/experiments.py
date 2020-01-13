@@ -112,7 +112,7 @@ def linear_topo(n: int, runtime=1e12):
     DETECTOR_COUNT_RATE = 25000000
     MEMO_FIDELITY = 0.8
     MEMO_EFFICIENCY = 0.5
-    MEMO_ARR_SIZE = 100
+    MEMO_ARR_SIZE = 10
     MEMO_ARR_FREQ = int(1e6)
     PURIFICATIOIN_THRED = 0.9
 
@@ -216,6 +216,10 @@ def linear_topo(n: int, runtime=1e12):
             node.assign_qchannel(qc)
             mid_node.assign_qchannel(qc)
 
+            print(qc)
+            for memory in qc.sender:
+                print("\tmemory {}: {}".format(memory, memory.direct_receiver))
+
         if i < len(mid_nodes):
             mid_node = mid_nodes[i]
             name = "qc_%s_%s" % (mid_node.name, node.name)
@@ -232,6 +236,10 @@ def linear_topo(n: int, runtime=1e12):
             qc.set_receiver(mid_node.components["BSM"])
             node.assign_qchannel(qc)
             mid_node.assign_qchannel(qc)
+
+            print(qc)
+            for memory in qc.sender:
+                print("\tmemory {}: {}".format(memory, memory.direct_receiver))
 
     '''
     for node in end_nodes:
@@ -262,11 +270,11 @@ def linear_topo(n: int, runtime=1e12):
         middles = []
         others = []
         if i > 0:
-            middles.append(mid_nodes[i-1])
-            others.append(end_nodes[i-1])
+            middles.append(mid_nodes[i-1].name)
+            others.append(end_nodes[i-1].name)
         if i + 1 < len(end_nodes):
-            middles.append(mid_nodes[i])
-            others.append(end_nodes[i+1])
+            middles.append(mid_nodes[i].name)
+            others.append(end_nodes[i+1].name)
 
         eg = EntanglementGeneration(node, middles=middles, others=others, fidelity=MEMO_FIDELITY)
         eg.upper_protocols.append(bbpssw)

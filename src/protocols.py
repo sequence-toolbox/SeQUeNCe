@@ -132,12 +132,11 @@ class EntanglementGeneration(Protocol):
             # put memories in correct memory index list based on direct receiver
             # also build memory stage, bsm wait time, and bsm result lists
             self.invert_map = {value: key for key, value in self.own.qchannels.items()}
-            print(self.invert_map)
             for memory_index in range(len(self.memory_array)):
                 qchannel = self.memory_array[memory_index].direct_receiver
-                another_index = self.middles.index(self.invert_map[qchannel])
-
-                self.add_memory_index(another_index, memory_index)
+                if qchannel is not None:
+                    another_index = self.middles.index(self.invert_map[qchannel])
+                    self.add_memory_index(another_index, memory_index)
 
     # used by init() and when memory pushed down
     def add_memory_index(self, another_index, memory_index):
