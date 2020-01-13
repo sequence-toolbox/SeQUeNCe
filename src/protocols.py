@@ -103,7 +103,6 @@ class EntanglementGeneration(Protocol):
                 if self.memory_belong_protocol(memory):
                     self.memories.append(i)
 
-
     def remove_expired_memory(self):
         while self.waiting_bsm and self.waiting_bsm[0][0] < self.own.timeline.now() - self.own.cchannels[self.middle].delay * 2:
             waiting = self.waiting_bsm.pop(0)
@@ -299,7 +298,7 @@ class EntanglementGeneration(Protocol):
             if index < len(self.waiting_bsm) and valid_trigger_time(trigger_time, self.waiting_bsm[index][0], resolution):
                 self.send_entangled_memory_id(trigger_time, self.waiting_bsm[index][1])
                 self.waiting_remote[trigger_time] = self.waiting_bsm.pop(index)[1]
-            elif 0 <= index-1 < len(self.waiting_bsm) and valid_trigger_time(trigger_time, self.waiting_bsm[index-1][0], resolution):
+            elif 0 <= index - 1 < len(self.waiting_bsm) and valid_trigger_time(trigger_time, self.waiting_bsm[index - 1][0], resolution):
                 index = index - 1
                 self.send_entangled_memory_id(trigger_time, self.waiting_bsm[index][1])
                 self.waiting_remote[trigger_time] = self.waiting_bsm.pop(index)[1]
@@ -416,7 +415,7 @@ class BBPSSW(Protocol):
         self._push(**kwargs)
 
     def received_message(self, src: str, msg: List[str]):
-        if not src in self.purified_lists:
+        if src not in self.purified_lists:
             return
         purified_list = self.purified_lists[src]
         # WARN: wait change of Node.receive_message
