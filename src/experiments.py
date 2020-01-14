@@ -277,6 +277,8 @@ def linear_topo(n: int, runtime=1e12):
             others.append(end_nodes[i+1].name)
 
         eg = EntanglementGeneration(node, middles=middles, others=others, fidelity=MEMO_FIDELITY)
+        if i % 2 == 1:
+            eg.is_start = True  # set "is_start" to true on every other node
         eg.upper_protocols.append(bbpssw)
         bbpssw.lower_protocols.append(eg)
 
@@ -353,9 +355,7 @@ def linear_topo(n: int, runtime=1e12):
             print(" "*8, "lower protocols", protocol.lower_protocols)
 
     # schedule events
-    # TODO: only 1 entanglement generation protocol should be called per pair
-    # should we change this or is this behavior allowable?
-    for node in end_nodes[::2]:
+    for node in end_nodes:
         for protocol in node.protocols:
             if type(protocol).__name__ == "EntanglementGeneration":
                 process = Process(protocol, "start", [])
@@ -379,4 +379,4 @@ def linear_topo(n: int, runtime=1e12):
 if __name__ == "__main__":
     seed(1)
     # three_node_test()
-    linear_topo(3, 1e10)
+    linear_topo(3, 1e12)

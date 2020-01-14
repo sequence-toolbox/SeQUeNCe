@@ -11,7 +11,7 @@ from sequence.process import Process
 from sequence.event import Event
 
 
-DEBUG = True
+DEBUG = False
 
 
 class Protocol(ABC):
@@ -170,7 +170,7 @@ class EntanglementGeneration(Protocol):
 
         self.add_memory_index(another_index, index)
         
-        if not self.running and self.is_start:
+        if not self.running:
             self.start()
 
     def pop(self, info_type, **kwargs):
@@ -187,9 +187,9 @@ class EntanglementGeneration(Protocol):
 
     def start(self):
         assert self.own.name != self.middles[0], "EntanglementGeneration.start() called on middle node"
-        self.is_start = True
-        for i in range(len(self.others)):
-            self.start_individual(i)
+        if self.is_start:
+            for i in range(len(self.others)):
+                self.start_individual(i)
 
     def start_individual(self, another_index):
         if DEBUG:
@@ -354,7 +354,7 @@ class EntanglementGeneration(Protocol):
                 else:
                     self.bsm_res[another_index][index] = -1
 
-            else:
+            elif DEBUG:
                 print("WARNING: invalid trigger received by EG on node {}".format(self.own.name))
                 print("\ttrigger time: {}\texpected: {}".format(time, self.bsm_wait_time[another_index][index]))
 
@@ -371,7 +371,8 @@ class EntanglementGeneration(Protocol):
             self._pop(memory_index=local_id, another_node=src)
 
             if DEBUG:
-                print("EG protocol popping memory", local_id)
+                print("EG protocol popping on node", self.own.name)
+                print("\tmemory_index: {}\tanother_node: {}".format(local_id, src))
 
         else:
             raise Exception("WARNING: Invalid message {} received by EG on node {}".format(msg_type, self.own.name))
