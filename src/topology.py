@@ -949,7 +949,7 @@ class MemoryArray(Entity):
 
         if self.memory_type == "atom":
             for i in range(num_memories):
-                memory = AtomMemory(self.name + "%d" % i, timeline, **memory_params)
+                memory = AtomMemory(self.name + "[%d]" % i, timeline, **memory_params)
                 memory.parents.append(self)
                 self.memories.append(memory)
 
@@ -1145,16 +1145,16 @@ class Node(Entity):
     def receive_message(self, src: str, msg: str):
         self.message = msg
         msg_parsed = msg.split(" ")
+
         # signal to protocol that we've received a message
-        flag = True
         for protocol in self.protocols:
             if type(protocol).__name__ == msg_parsed[0]:
                 if protocol.received_message(src, msg_parsed[1:]):
-                    flag = False
-                    break
-        if flag:
-            print(src, msg)
-            raise Exception("Unkown protocol")
+                    return
+
+        # if we reach here, we didn't successfully receive the message in any protocol
+        print(src, msg)
+        raise Exception("Unkown protocol")
 
 
 class Topology:

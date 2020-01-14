@@ -206,14 +206,14 @@ class EntanglementGeneration(Protocol):
 
     def update_memory_indices(self, another_index):
         print("EG protocol update_memories on node {}".format(self.own.name))
-        print("\tmemory_indices:", self.memory_indices[another_index])
-        print("\tmemory_stage:", self.memory_stage[another_index])
-        print("\tbsm_res:", self.bsm_res[another_index])
+        print("\t\tmemory_indices:", self.memory_indices[another_index])
+        print("\t\tmemory_stage:", self.memory_stage[another_index])
+        print("\t\tbsm_res:", self.bsm_res[another_index])
 
         # update memories that have finished stage 1 and flip state
         finished_1 = [i for i, val in enumerate(self.bsm_res[another_index]) if val != -1 and self.memory_stage[another_index][i] == 0]
-        print("finished_1:", finished_1)
-        print("\tmemory indices:", [self.memory_indices[another_index][i] for i in finished_1])
+        print("\tfinished_1:", finished_1)
+        print("\t\tmemory indices:", [self.memory_indices[another_index][i] for i in finished_1])
         for i in finished_1:
             memory_index = self.memory_indices[another_index][i]
             self.memory_stage[another_index][i] = 1
@@ -221,8 +221,8 @@ class EntanglementGeneration(Protocol):
 
         # set each memory in stage 1 to + state (and reset bsm)
         starting = [i for i in range(len(self.bsm_res[another_index])) if i not in finished_1]
-        print("starting:", starting)
-        print("\tmemory indices:", [self.memory_indices[another_index][i] for i in starting])
+        print("\tstarting:", starting)
+        print("\t\tmemory indices:", [self.memory_indices[another_index][i] for i in starting])
         for i in starting:
             memory_index = self.memory_indices[another_index][i]
             self.memory_stage[another_index][i] = 0
@@ -232,7 +232,7 @@ class EntanglementGeneration(Protocol):
     def received_message(self, src: str, msg: List[str]):
         # print(self.own.timeline.now(), self.own.name, src, msg)
         # TEMPORARY: ignore unkown src
-        if not (src in self.others or src == self.middle):
+        if not (src in self.others or src in self.middles):
             return False
 
         msg_type = msg[0]
@@ -360,6 +360,8 @@ class EntanglementGeneration(Protocol):
 
         else:
             raise Exception("Invalid message {} received by EntanglementGeneration on node {}".format(msg_type, self.own.name))
+
+        return True
 
     def memory_excite(self, another_index):
         print("memory_excite called on node", self.own.name)

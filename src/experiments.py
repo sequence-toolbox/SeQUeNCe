@@ -112,7 +112,7 @@ def linear_topo(n: int, runtime=1e12):
     DETECTOR_COUNT_RATE = 25000000
     MEMO_FIDELITY = 0.8
     MEMO_EFFICIENCY = 0.5
-    MEMO_ARR_SIZE = 10
+    MEMO_ARR_SIZE = 100
     MEMO_ARR_FREQ = int(1e6)
     PURIFICATIOIN_THRED = 0.9
 
@@ -171,7 +171,7 @@ def linear_topo(n: int, runtime=1e12):
     for node in mid_nodes:
         detectors = [{"efficiency":DETECTOR_EFFICIENCY, "dark_count":DETECTOR_DARK, "time_resolution":DETECTOR_TIME_RESOLUTION, "count_rate":DETECTOR_COUNT_RATE}] * 2
         name = "bsm_%s" % node.name
-        bsm = topology.BSM("bsm_%s" % node.name, tl, encoding_type=encoding.ensemble, detectors=detectors)
+        bsm = topology.BSM("bsm_%s" % node.name, tl, encoding_type=encoding.single_atom, detectors=detectors)
         node.assign_component(bsm, "BSM")
         print('add', name, 'to', node.name)
 
@@ -353,7 +353,9 @@ def linear_topo(n: int, runtime=1e12):
             print(" "*8, "lower protocols", protocol.lower_protocols)
 
     # schedule events
-    for node in end_nodes:
+    # TODO: only 1 entanglement generation protocol should be called per pair
+    # should we change this or is this behavior allowable?
+    for node in end_nodes[::2]:
         for protocol in node.protocols:
             if type(protocol).__name__ == "EntanglementGeneration":
                 process = Process(protocol, "start", [])
