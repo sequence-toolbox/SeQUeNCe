@@ -32,6 +32,10 @@ class RoutingProtocol(Protocol):
         Protocol.__init__(self, own)
         self.forwarding_table = forwarding_table
 
+    def add_forwarding_rule(self, dst, next_node):
+        assert dst not in self.forwarding_table
+        self.forwarding_table[dst] = next_node
+
     def push(self, msg: Message, dst: str):
         assert dst in self.forwarding_table
 
@@ -43,7 +47,7 @@ class RoutingProtocol(Protocol):
         pass
 
     def received_message(self, src: str, msg: RoutingMessage):
-        print(self.own.timeline.now(), ':', self.own.name, "received_message from", src, "; msg is (", msg, ")")
+        # print(self.own.timeline.now(), ':', self.own.name, "received_message from", src, "; msg is (", msg, ")")
         self._pop(msg=msg.payload, src=src)
 
     def init(self):
@@ -96,7 +100,7 @@ class ResourceReservationProtocol(Protocol):
         msg.start_time = start_time
         msg.end_time = end_time
         msg.qcaps.append(self.qcap)
-        print(self.own.timeline.now(), self.own.name, "RSVP request", msg)
+        print(self.own.timeline.now() / 1e12, self.own.name, "RSVP request", msg)
         if self.handle_request(msg):
             self._push(msg=msg, dst=responder)
 
@@ -104,7 +108,7 @@ class ResourceReservationProtocol(Protocol):
         pass
 
     def pop(self, msg: ResourceReservationMessage, src: str):
-        print("   RSVP pop is called, src: ", src, "msg:", msg)
+        # print("   RSVP pop is called, src: ", src, "msg:", msg)
         if msg.msg_type == "REQUEST":
             assert msg.start_time > self.own.timeline.now()
             if self.handle_request(msg):
@@ -112,6 +116,7 @@ class ResourceReservationProtocol(Protocol):
                 if self.own.name != msg.responder:
                     self._push(msg=msg, dst=msg.responder)
                 else:
+                    self._pop(msg=msg)
                     resp_msg = ResourceReservationMessage("RESPONSE")
                     resp_msg.initiator = msg.initiator
                     resp_msg.responder = msg.responder
@@ -119,7 +124,7 @@ class ResourceReservationProtocol(Protocol):
                     resp_msg.end_time = msg.end_time
                     resp_msg.rulesets = self.create_rulesets(msg)
                     self._push(msg=resp_msg, dst=msg.initiator)
-                    print("   msg arrives dst", self.own.name, "; msg is ", msg)
+                    # print("   msg arrives dst", self.own.name, "; msg is ", msg)
             else:
                 rej_msg = ResourceReservationMessage("REJECT")
                 rej_msg.initiator = msg.initiator
@@ -134,12 +139,14 @@ class ResourceReservationProtocol(Protocol):
                 self._push(msg=msg, dst=msg.initiator)
             else:
                 print("   REJECT: msg arrives src", self.own.name, "; request is ", msg)
+                self._pop(msg=msg)
         elif msg.msg_type == "RESPONSE":
             ruleset = msg.rulesets.pop()
             self.load_ruleset(ruleset)
             if self.own.name != msg.initiator:
                 self._push(msg=msg, dst=msg.initiator)
             else:
+                self._pop(msg=msg)
                 print("   RESPONSE: msg arrives src", self.own.name, "; response is ", msg)
 
     def handle_request(self, msg) -> int:
@@ -155,11 +162,7 @@ class ResourceReservationProtocol(Protocol):
                     end = mid - 1
                 elif reservations[mid].end_time < resv.start_time:
                     start = mid + 1
-                elif reservations[mid].start_time < resv.start_time < reservations[mid].end_time:
-                    return -1
-                elif reservations[mid].start_time < resv.end_time < reservations[mid].end_time:
-                    return -1
-                elif reservations[mid].start_time == resv.start_time or reservations[mid].start_time == resv.end_time or reservations[mid].end_time == resv.start_time or reservations[mid].end_time == resv.end_time:
+                elif max(reservations[mid].start_time, resv.start_time) < min(reservations[mid].end_time, resv.end_time):
                     return -1
                 else:
                     print(resv)
@@ -169,7 +172,7 @@ class ResourceReservationProtocol(Protocol):
             return start
 
         resv = Reservation(msg.initiator, msg.responder, msg.start_time, msg.end_time)
-        counter = msg.memory_size
+        counter = msg.memory_size * 2
         memories = []
 
         for i, reservations in enumerate(self.reservation):
