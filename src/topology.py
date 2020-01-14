@@ -825,7 +825,7 @@ class AtomMemory(Entity):
         Entity.__init__(self, name, timeline)
         self.fidelity = kwargs.get("fidelity", 1)
         self.frequency = kwargs.get("frequency", 1)
-        self.coherence_time = kwargs.get("coherence_time", -1)
+        self.coherence_time = kwargs.get("coherence_time", -1) # average coherence time in seconds
         self.direct_receiver = kwargs.get("direct_receiver", None)
         self.qstate = QuantumState()
 
@@ -849,7 +849,20 @@ class AtomMemory(Entity):
                             encoding_type=self.photon_encoding)
         if state == 0:
             photon.is_null = True
+        elif self.coherence_time > 0:
+            # set expiration
+            decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
+            process = Process(self, "expire", [])
+            event = Event(decay_time, process)
+            self.timeline.schedule(event)
+ 
         self.direct_receiver.get(photon)
+
+    def expire(self):
+        # TODO: change state?
+        #   curently just send to upper protocols and handle changes there
+        # pop expiration message
+        self._pop(memory=self)
 
     def flip_state(self):
         # flip coefficients of state
@@ -1111,7 +1124,8 @@ class Node(Entity):
         return source.photon_counter
 
     def _pop(self, **kwargs):
-        self.protocols[0].pop(**kwargs)
+        for protocol in self.protocols:
+            protocol.pop(**kwargs)
 
     def pop(self, **kwargs):
         entity = kwargs.get("entity")

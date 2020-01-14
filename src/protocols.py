@@ -182,6 +182,20 @@ class EntanglementGeneration(Protocol):
             for node in self.others:
                 self.own.send_message(node, message)
 
+        elif info_type == "expired_memory":
+            # TODO: notify other protocols of expired memory
+            print("ERROR: memory expiration on node", self.own.name)
+            print("\tmemory expiration is currently unsupported by protocol implementation. This may cause errors.")
+
+            index = kwargs.get("index")
+
+            another_name = self.invert_map[self.memory_array[index].direct_receiver]
+            another_index = self.middles.index(another_name)
+            self.add_memory_index(another_index, index)
+
+            if not self.running:
+                self.start()
+
         else:
             raise Exception("invalid info type {} popped to EntanglementGeneration on node {}".format(info_type, self.own.name))
 
@@ -446,6 +460,9 @@ class BBPSSW(Protocol):
         super()._pop(**kwargs)
 
     def pop(self, **kwargs):
+        if "info_type" in kwargs:
+            return
+
         memory_index = kwargs["memory_index"]
         another_node = kwargs["another_node"]
         if another_node not in self.purified_lists:
@@ -646,7 +663,13 @@ class EntanglementSwapping(Protocol):
     def _pop(self, **kwargs):
         super()._pop(**kwargs)
 
-    def pop(self, memory_index: int, another_node: str):
+    def pop(self, **kwargs): # memory_index: int, another_node: str):
+        if "info_type" in kwargs:
+            pass
+
+        memory_index = kwargs["memory_index"]
+        another_node = kwargs["another_node"]
+
         if another_node == self.remote1:
             self.waiting_memo1.append(memory_index)
         elif another_node == self.remote2:
