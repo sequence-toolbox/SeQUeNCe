@@ -21,3 +21,10 @@ ensemble =\
                None],
      "memory": None  # overwritten by photon
      }
+
+single_atom =\
+    {"name": "single_atom",
+     "bases": [[[complex(1), complex(0)], [complex(0), complex(1)]],
+               None],
+     "memory": None  # overwritten by photon
+     }

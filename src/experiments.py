@@ -37,7 +37,7 @@ def three_node_test():
     qc_bc = topology.QuantumChannel("qc_bc", tl, distance=1e3)
 
     # create memories
-    NUM_MEMORIES = 100
+    NUM_MEMORIES = 10
     FIDELITY = 0.6
     MEMO_FREQ = int(1e6)
     memory_param_alice = {"fidelity": FIDELITY, "direct_receiver": qc_ac}
@@ -48,33 +48,32 @@ def three_node_test():
                                             memory_params=memory_param_alice)
     bob_memo_array = topology.MemoryArray("bob_memory_array", tl,
                                           num_memories=NUM_MEMORIES,
-                                            frequency=MEMO_FREQ,
+                                          frequency=MEMO_FREQ,
                                           memory_params=memory_param_bob)
-    alice.assign_memory_array(alice_memo_array)
-    bob.assign_memory_array(bob_memo_array)
+    alice.assign_component(alice_memo_array, "MemoryArray")
+    bob.assign_component(bob_memo_array, "MemoryArray")
     qc_ac.set_sender(alice_memo_array)
     qc_bc.set_sender(bob_memo_array)
 
     # create BSM
-    detectors = [{"efficiency": 0.7, "dark_count": 0, "time_resolution": 150, "count_rate": 25000000}] * 2
-    bsm = topology.BSM("charlie_bsm", tl, encoding_type=encoding.ensemble, detectors=detectors)
-    charlie.assign_bsm(bsm)
+    detectors = [{"efficiency": 1, "dark_count": 0, "time_resolution": 150, "count_rate": 25000000}] * 2
+    bsm = topology.BSM("charlie_bsm", tl, encoding_type=encoding.single_atom, detectors=detectors)
+    charlie.assign_component(bsm, "BSM")
     qc_ac.set_receiver(bsm)
     qc_bc.set_receiver(bsm)
 
+    # assign quantum channels
     alice.assign_qchannel(qc_ac)
-    charlie.assign_qchannel(qc_ac)
     bob.assign_qchannel(qc_bc)
-    charlie.assign_qchannel(qc_bc)
 
     # create alice protocol stack
-    egA = EntanglementGeneration(alice, middle="charlie", others=["bob"], fidelity=FIDELITY)
+    egA = EntanglementGeneration(alice, middles=["charlie"], others=["bob"], fidelity=FIDELITY)
     bbpsswA = BBPSSW(alice, threshold=0.9)
     egA.upper_protocols.append(bbpsswA)
     bbpsswA.lower_protocols.append(egA)
 
     # create bob protocol stack
-    egB = EntanglementGeneration(bob, middle="charlie", others=["alice"], fidelity=FIDELITY)
+    egB = EntanglementGeneration(bob, middles=["charlie"], others=["alice"], fidelity=FIDELITY)
     bbpsswB = BBPSSW(bob, threshold=0.9)
     egB.upper_protocols.append(bbpsswB)
     bbpsswB.lower_protocols.append(egB)
@@ -99,10 +98,6 @@ def three_node_test():
         memory = node.components['MemoryArray']
         print(node.name)
         print_memory(memory)
-    print(egA.memories)
-    print(egA.waiting_bsm)
-    print(egB.memories)
-    print(egB.waiting_bsm)
 
 
 def linear_topo(n: int, runtime=1e12):
@@ -176,8 +171,8 @@ def linear_topo(n: int, runtime=1e12):
     for node in mid_nodes:
         detectors = [{"efficiency":DETECTOR_EFFICIENCY, "dark_count":DETECTOR_DARK, "time_resolution":DETECTOR_TIME_RESOLUTION, "count_rate":DETECTOR_COUNT_RATE}] * 2
         name = "bsm_%s" % node.name
-        bsm = topology.BSM("bsm_%s" % node.name, tl, encoding_type=encoding.ensemble, detectors=detectors)
-        node.assign_bsm(bsm)
+        bsm = topology.BSM("bsm_%s" % node.name, tl, encoding_type=encoding.single_atom, detectors=detectors)
+        node.assign_component(bsm, "BSM")
         print('add', name, 'to', node.name)
 
     '''
@@ -192,7 +187,7 @@ def linear_topo(n: int, runtime=1e12):
         memory_array = topology.MemoryArray(name, tl, num_memories=MEMO_ARR_SIZE,
                                             frequency=MEMO_ARR_FREQ,
                                             memory_params=memory_params)
-        node.assign_memory_array(memory_array)
+        node.assign_component(memory_array, "MemoryArray")
         print('add', name, 'to', node.name)
 
     '''
@@ -221,6 +216,10 @@ def linear_topo(n: int, runtime=1e12):
             node.assign_qchannel(qc)
             mid_node.assign_qchannel(qc)
 
+            print(qc)
+            for memory in qc.sender:
+                print("\tmemory {}: {}".format(memory, memory.direct_receiver))
+
         if i < len(mid_nodes):
             mid_node = mid_nodes[i]
             name = "qc_%s_%s" % (mid_node.name, node.name)
@@ -237,6 +236,10 @@ def linear_topo(n: int, runtime=1e12):
             qc.set_receiver(mid_node.components["BSM"])
             node.assign_qchannel(qc)
             mid_node.assign_qchannel(qc)
+
+            print(qc)
+            for memory in qc.sender:
+                print("\tmemory {}: {}".format(memory, memory.direct_receiver))
 
     '''
     for node in end_nodes:
@@ -264,19 +267,20 @@ def linear_topo(n: int, runtime=1e12):
     for i, node in enumerate(end_nodes):
         bbpssw = BBPSSW(node, threshold=PURIFICATIOIN_THRED)
 
+        middles = []
+        others = []
         if i > 0:
-            mid_node = mid_nodes[i-1]
-            neighbor = end_nodes[i-1]
-            eg = EntanglementGeneration(node, middle=mid_node.name, others=[neighbor.name], fidelity=MEMO_FIDELITY)
-            eg.upper_protocols.append(bbpssw)
-            bbpssw.lower_protocols.append(eg)
-
+            middles.append(mid_nodes[i-1].name)
+            others.append(end_nodes[i-1].name)
         if i + 1 < len(end_nodes):
-            mid_node = mid_nodes[i]
-            neighbor = end_nodes[i+1]
-            eg = EntanglementGeneration(node, middle=mid_node.name, others=[neighbor.name], fidelity=MEMO_FIDELITY)
-            eg.upper_protocols.append(bbpssw)
-            bbpssw.lower_protocols.append(eg)
+            middles.append(mid_nodes[i].name)
+            others.append(end_nodes[i+1].name)
+
+        eg = EntanglementGeneration(node, middles=middles, others=others, fidelity=MEMO_FIDELITY)
+        if i % 2 == 1:
+            eg.is_start = True  # set "is_start" to true on every other node
+        eg.upper_protocols.append(bbpssw)
+        bbpssw.lower_protocols.append(eg)
 
         node.protocols.append(node.protocols.pop(0))
 
@@ -375,4 +379,4 @@ def linear_topo(n: int, runtime=1e12):
 if __name__ == "__main__":
     seed(1)
     # three_node_test()
-    linear_topo(3, 1e10)
+    linear_topo(3, 1e15)

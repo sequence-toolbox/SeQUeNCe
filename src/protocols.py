@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
 from numpy.random import random
-from math import ceil
+from math import ceil, sqrt
 
 from sequence import topology
 from sequence import timeline
@@ -9,6 +9,9 @@ from sequence import encoding
 from sequence.topology import Node
 from sequence.process import Process
 from sequence.event import Event
+
+
+DEBUG = False
 
 
 class Protocol(ABC):
@@ -53,231 +56,314 @@ class Protocol(ABC):
 
 class EntanglementGeneration(Protocol):
     '''
-    NEGOTIATE message is composed by:
-        1. Type of message: NEGOTIATE
-        2. Delay of quantum channel: int
-        3. Frequency of memory: int
-        4. The number of emit in this round: int
-        5. Sender's time to emit
-    NEGOTIATE_ACK message is composed by:
-        1. Type of message: NEGOTIATE_ACK
-        2. Delay of quantum channel: int
-        3. Frequency of memory: int
-        4. The number of emit in this round: int
-        5. Sender's time to emit
-    MEAS_RES message is composed by:
-        1. Type of message: MEAS_RES
-        2. Trigger time: int
-        3. Triggered detector: int
-    ENT_MEMO message is composed by:
-        1. Type of message: ENT_MEMO
-        2. Trigger time: int
-        3. Index number of entangled memory: int
+    PROCEDURE:
+
+    FIRST STAGE
+    1. Preparation
+        starting node sets memories to + state
+        starting node sends NEGOTIATE message
+            1. message type (string)
+            2. quantum delay (int)
+            3. memory max frequency (float)
+            4. number of memories (int)
+        other end node sets memories to + state
+        other end node schedules second stage time
+        other end node sends NEGOTIATE_ACK message
+            1. message type (string)
+            2. frequency to use (float)
+            3. number of memories to use (int)
+            4. start time (int)
+            5. quantum delay to schedule second stage
+        starting node schedules second stage time
+    2. excite memories
+        starting and other end node excite memories at start time
+        middle node send MEAS_RES message when BSM excited
+            1. message type (string)
+            2. triggered time (int)
+        confirmed bell state measurements collected for second stage
+
+    SECOND STAGE
+    3. flip states
+        starting and other end node flip memory state
+        new start time is set as current time
+    4. excite memories again
+        starting and other end node excite memories at new start time
+        middle node sends MEAS_RES message (with same format)
+    5. record successfull bell state measurement
+        successfull BSM results are popped to entanglement swapping
+
+    UNSCHEDULED:
+    memories pushed from entanglement_swapping are added to first stage memory indices
     '''
     def __init__(self, own, **kwargs):
-        Protocol.__init__(self, own)
-        self.middle = kwargs.get("middle", self.own.name)
-        self.others = kwargs.get("others", [])
-        self.memories = []
-        self.waiting_bsm = []
-        self.waiting_remote = {}
-        self.memo_frequency = -1
-        self.offset = 1
-        self.results = []
-        self.fidelity = kwargs.get("fidelity", 0)
-        self.wait_start = True
-        self.end_time = 0
-        self.emit_num = None
+        super().__init__(own)
+        self.middles = kwargs.get("middles", [self.own.name])
+        self.others = kwargs.get("others", []) # other node corresponding to each middle node
+        self.memory_array = None
+        self.rsvp_name = 'EG'
 
-    def memory_belong_protocol(self, memory):
-        return memory.direct_receiver and memory.direct_receiver.receiver.owner.name == self.middle
+        self.qc_delays = [0] * len(self.others)
+        self.frequencies = [0] * len(self.others)
+        self.start_times = [-1] * len(self.others)
+        self.emit_nums = [0] * len(self.others)
+        self.fidelity = kwargs.get("fidelity", 0)
+        self.stage_delays = kwargs.get("stage_delays", [0] * len(self.others))
+
+        self.memory_indices = [[] for _ in range(len(self.others))] # keep track of indices to work on
+        self.memory_stage = [[] for _ in range(len(self.others))] # keep track of stages completed by each memory
+        self.bsm_wait_time = [[] for _ in range(len(self.others))] # keep track of expected arrival time for bsm results
+        self.bsm_res = [[] for _ in range(len(self.others))]
+        self.wait_remote = [[] for _ in range(len(self.others))] # keep track of memories waiting for ent_memo
+        self.memory_stop_time = {}
+
+        # misc
+        self.invert_map = {} # keep track of mapping from connected qchannels to adjacent nodes
+        self.running = [False] * len(self.others) # True if protocol currently processing at least 1 memory
+        self.is_start = False
 
     def init(self):
-        # Node is either middle node or end node
-        assert ((self.middle == self.own.name and len(self.others) == 2) or
-                (self.middle != self.own.name and len(self.others) == 1))
-        if self.middle != self.own.name:
-            self.frequency = self.own.components["MemoryArray"].max_frequency
-            # TEMPORARY: set all memories for entanglement generation
-            for i, memory in enumerate(self.own.components["MemoryArray"]):
-                if self.memory_belong_protocol(memory):
-                    self.memories.append(i)
+        if DEBUG:
+            print("EG protocol init on node", self.own.name)
 
-    def remove_expired_memory(self):
-        while self.waiting_bsm and self.waiting_bsm[0][0] < self.own.timeline.now() - self.own.cchannels[self.middle].delay * 2:
-            waiting = self.waiting_bsm.pop(0)
-            self.memories.append(waiting[1])
+        assert ((self.middles[0] == self.own.name and len(self.others) == 2) or
+                (self.middles[0] != self.own.name and len(self.others) == len(self.middles)))
+        self.refresh_params_after_update_others()
+        if self.own.name != self.middles[0]:
+            if DEBUG:
+                print("\tEG protocol end node init")
 
-        if self.emit_num == 0 and self.own.name < self.others[0] and not self.wait_start and self.memories:
-            self.wait_start = True
+            self.memory_array = self.own.components['MemoryArray']
+            self.frequencies = [self.memory_array.max_frequency for _ in range(len(self.others))]
+
+            # put memories in correct memory index list based on direct receiver
+            # also build memory stage, bsm wait time, and bsm result lists
+            self.invert_map = {value: key for key, value in self.own.qchannels.items()}
+            for memory_index in range(len(self.memory_array)):
+                qchannel = self.memory_array[memory_index].direct_receiver
+                if qchannel is not None:
+                    another_index = self.middles.index(self.invert_map[qchannel])
+                    self.add_memory_index(another_index, memory_index)
+
+    def refresh_params_after_update_others(self):
+        self.qc_delays = [0] * len(self.others)
+        self.frequencies = [0] * len(self.others)
+        self.start_times = [-1] * len(self.others)
+        self.emit_nums = [0] * len(self.others)
+        if len(self.stage_delays) == 0:
+            self.stage_delays = [0] * len(self.others)
+        self.memory_indices = [[] for _ in range(len(self.others))] # keep track of indices to work on
+        self.memory_stage = [[] for _ in range(len(self.others))] # keep track of stages completed by each memory
+        self.bsm_wait_time = [[] for _ in range(len(self.others))] # keep track of expected arrival time for bsm results
+        self.bsm_res = [[] for _ in range(len(self.others))]
+        self.wait_remote = [[] for _ in range(len(self.others))] # keep track of memories waiting for ent_memo
+        self.running = [False] * len(self.others) # True if protocol currently processing at least 1 memory
+
+    # used by init() and when memory pushed down
+    def add_memory_index(self, another_index, memory_index):
+        self.memory_indices[another_index].append(memory_index)
+        self.memory_stage[another_index].append(0)
+        self.bsm_wait_time[another_index].append(-1)
+        self.bsm_res[another_index].append(-1)
+
+    # used when memory popped to upper protocol
+    def remove_memory_index(self, another_index, memory_index):
+        del self.memory_stage[another_index][memory_index]
+        del self.bsm_wait_time[another_index][memory_index]
+        del self.bsm_res[another_index][memory_index]
+        return self.memory_indices[another_index].pop(memory_index)
+
+    # used after change direct_receiver of memory
+    def remove_memories(self, memories):
+        for memory_index in memories:
+            another_index, pos = None, None
+            for i, index in enumerate(self.memory_indices):
+                for j, memory in enumerate(index):
+                    if memory == memory_index:
+                        another_index, pos = i, j
+                        break
+                if another_index is not None:
+                    break
+            if another_index is not None:
+                self.remove_memory_index(another_index, pos)
+
+    # used after change direct_receiver of memory
+    def add_memories(self, memories, qchannel, stop_time):
+        for memory_index in memories:
+            another_index = self.middles.index(self.invert_map[qchannel])
+            self.add_memory_index(another_index, memory_index)
+            self.memory_stop_time[memory_index] = stop_time
+
+    def push(self, **kwargs):
+        index = kwargs.get("index")
+
+        if DEBUG:
+            print("EG protocol push on node", self.own.name)
+            print("\tmemory index:", index)
+
+        another_name = self.invert_map[self.memory_array[index].direct_receiver]
+        another_index = self.middles.index(another_name)
+
+        self.add_memory_index(another_index, index)
+
+        if not self.running[another_index]:
             self.start()
-
-    def start(self):
-        if self.middle == self.own.name or self.own.name >= self.others[0]:
-            return
-        self.wait_start = True
-        assert self.middle != self.own.name
-        assert len(self.memories) > 0
-        self.cc_delay = round(self.own.cchannels[self.others[0]].delay)
-        qchannel = self.own.qchannels[self.middle]
-        self.qc_delay = round(qchannel.distance / qchannel.light_speed)
-
-        self.remove_expired_memory()
-        self.emit_num = len(self.memories)
-
-        msg_type = "NEGOTIATE"
-        self.start_time = int(max(self.end_time, self.own.timeline.now()) + self.cc_delay * 2 + self.offset)
-        msg = "EntanglementGeneration {} {} {} {} {}".format(msg_type,
-                                                             self.qc_delay,
-                                                             self.frequency,
-                                                             self.emit_num,
-                                                             self.start_time)
-        self.own.send_message(self.others[0], msg, 1)
 
     def pop(self, info_type, **kwargs):
         if info_type == "BSM_res":
             res = kwargs.get("res")
-            cur_time = kwargs.get("time")
-            assert all(cur_time == result[0] for result in self.results)
-            self.results.append([cur_time, res])
-            if len(self.results) == 1:
-                process = Process(self, "pop", ["SEND_TRIGGER"])
-                event = Event(self.own.timeline.now() + 1, process)
-                self.own.timeline.schedule(event)
+            time = kwargs.get("time")
+            resolution = self.own.components["BSM"].resolution
+            message = self.rsvp_name + " EntanglementGeneration MEAS_RES {} {} {}".format(res, time, resolution)
+            for node in self.others:
+                self.own.send_message(node, message)
 
-        elif info_type == "SEND_TRIGGER":
-            if len(self.results) == 1:
-                resolution = self.own.components["BSM"].detectors[0].time_resolution
-                assert resolution > 0
-                msg = "EntanglementGeneration MEAS_RES {} {} {}".format(self.results[0][0],
-                                                                        self.results[0][1],
-                                                                        resolution)
-                self.own.send_message(self.others[0], msg, 1)
-                self.own.send_message(self.others[1], msg, 1)
-            elif len(self.results) == 2:
-                pass
-            else:
-                raise Exception("receive more than two BSM result at the same time")
-            self.results = []
+        elif info_type == "expired_memory":
+            # TODO: notify other protocols of expired memory
+            print("ERROR: memory expiration on node", self.own.name)
+            print("\tmemory expiration is currently unsupported by protocol implementation. This may cause errors.")
+
+            index = kwargs.get("index")
+
+            another_name = self.invert_map[self.memory_array[index].direct_receiver]
+            another_index = self.middles.index(another_name)
+            self.add_memory_index(another_index, index)
+
+            if not self.running[another_index]:
+                self.start()
+
         else:
-            raise Exception("EntanglementGeneration protocol gets unknown type of message: ", info_type, kwargs)
+            raise Exception("invalid info type {} popped to EntanglementGeneration on node {}".format(info_type, self.own.name))
 
-    def push(self, **kwargs):
-        index = kwargs["index"]
-        memory = self.own.components["MemoryArray"][index]
-        if not self.memory_belong_protocol(memory):
-            return
+    def start(self):
+        assert self.own.name != self.middles[0], "EntanglementGeneration.start() called on middle node"
+        assert self.rsvp_name != ''
+        if self.is_start:
+            for i in range(len(self.others)):
+                self.start_individual(i)
 
-        assert index not in self.memories
-        self.memories.append(index)
-        if self.emit_num == 0 and self.own.name < self.others[0] and not self.wait_start:
-            self.wait_start = True
-            self.start()
+    def start_individual(self, another_index):
+        if DEBUG:
+            print("EG protocol start on node {} with partner {}".format(self.own.name, self.others[another_index]))
 
-    def schedule_write(self, time):
-        assert self.emit_num > 0
-        assert len(self.memories) > 0
-        assert time >= self.end_time
-        self.end_time = time
-        index = self.memories.pop(0)
-        self.emit_num -= 1
-        process = Process(self.own.components["MemoryArray"][index], "write", [])
-        event = Event(time, process)
-        self.own.timeline.schedule(event)
-        self.waiting_bsm.append([time + self.qc_delay, index])
+        self.running[another_index] = True
 
-        # schedule expiration
-        process = Process(self, "remove_expired_memory", [])
-        cc_delay = self.own.cchannels[self.middle].delay
-        event = Event(time + self.qc_delay + cc_delay * 2 + self.offset, process)
-        self.own.timeline.schedule(event)
+        if len(self.memory_indices[another_index]) > 0:
+            # update memories
+            self.update_memory_indices(another_index)
 
-        if self.emit_num > 0:
-            next_time = time + ceil(1e9 / self.frequency)
-            process = Process(self, "schedule_write", [next_time])
-            event = Event(time, process)
-            self.own.timeline.schedule(event)
-        elif self.own.name < self.others[0] and len(self.memories) > 0:
-            self.wait_start = True
-            process = Process(self, "start", [])
-            event = Event(time, process)
-            self.own.timeline.schedule(event)
+            # send NEGOTIATE message
+            qchannel = self.own.qchannels[self.middles[another_index]]
+            self.qc_delays[another_index] = int(round(qchannel.distance / qchannel.light_speed))
+            message = self.rsvp_name + " EntanglementGeneration NEGOTIATE {} {} {}".format(self.qc_delays[another_index],
+                                                                         self.frequencies[another_index],
+                                                                         len(self.memory_indices[another_index]))
+            self.own.send_message(self.others[another_index], message)
 
-    def send_entangled_memory_id(self, time, memory_id):
-        msg = "EntanglementGeneration ENT_MEMO {} {}".format(time, memory_id)
-        self.own.send_message(self.others[0], msg, priority=1)
+        else:
+            if DEBUG:
+                print("EG protocol end on node", self.own.name)
+            self.running[another_index] = False
+
+    def update_memory_indices(self, another_index):
+        if DEBUG:
+            print("EG protocol update_memories on node {}".format(self.own.name))
+            print("\t\tmemory_indices:", self.memory_indices[another_index])
+            print("\t\tmemory_stage:", self.memory_stage[another_index])
+            print("\t\tbsm_res:", self.bsm_res[another_index])
+
+        # update memories that have finished stage 1 and flip state
+        finished_1 = [i for i, val in enumerate(self.bsm_res[another_index]) if val != -1 and self.memory_stage[another_index][i] == 0]
+        if DEBUG:
+            print("\tfinished_1:", finished_1)
+            print("\t\tmemory indices:", [self.memory_indices[another_index][i] for i in finished_1])
+        for i in finished_1:
+            memory_index = self.memory_indices[another_index][i]
+            self.memory_stage[another_index][i] = 1
+            self.memory_array[memory_index].flip_state()
+
+        # set each memory in stage 1 to + state (and reset bsm)
+        starting = [i for i in range(len(self.bsm_res[another_index])) if i not in finished_1]
+        if DEBUG:
+            print("\tstarting:", starting)
+            print("\t\tmemory indices:", [self.memory_indices[another_index][i] for i in starting])
+        for i in starting:
+            memory_index = self.memory_indices[another_index][i]
+            self.memory_stage[another_index][i] = 0
+            self.bsm_res[another_index][i] = -1
+            self.memory_array[memory_index].reset()
 
     def received_message(self, src: str, msg: List[str]):
         # print(self.own.timeline.now(), self.own.name, src, msg)
         # TEMPORARY: ignore unkown src
-        if not (src in self.others or src == self.middle):
+        if not (src in self.others or src in self.middles):
             return False
 
         msg_type = msg[0]
 
         if msg_type == "NEGOTIATE":
-            another_qc_delay = int(msg[1])
-            another_frequency = int(msg[2])
-            another_emit_num = int(msg[3])
-            another_start_time = int(msg[4])
+            another_delay = int(msg[1])
+            another_frequency = float(msg[2])
+            another_mem_num = int(msg[3])
 
-            qchannel = self.own.qchannels[self.middle]
-            self.qc_delay = round(qchannel.distance / qchannel.light_speed)
-            self.start_time = another_start_time + another_qc_delay - self.qc_delay
-            assert self.start_time >= self.own.timeline.now()
+            another_index = self.others.index(src)
 
-            self.another_qc_delay = another_qc_delay
-            self.frequency = min(self.frequency, another_frequency)
+            # update memories
+            self.update_memory_indices(another_index)
 
-            self.remove_expired_memory()
-            self.emit_num = min(len(self.memories), another_emit_num)
+            # calculate start times based on delay
+            qchannel = self.own.qchannels[self.middles[another_index]]
+            self.qc_delays[another_index] = int(round(qchannel.distance / qchannel.light_speed))
+            cc_delay = int(self.own.cchannels[src].delay)
 
-            # response message
-            msg_type = "NEGOTIATE_ACK"
-            msg = "EntanglementGeneration {} {} {} {} {}".format(msg_type,
-                                                                 self.qc_delay,
-                                                                 self.frequency,
-                                                                 self.emit_num,
-                                                                 self.start_time)
-            self.own.send_message(self.others[0], msg, priority=1)
+            quantum_delay = max(self.qc_delays[another_index], another_delay)
+            start_delay_other = quantum_delay - another_delay
+            start_delay_self = quantum_delay - self.qc_delays[another_index]
+            another_start_time = self.own.timeline.now() + cc_delay + start_delay_other
+            self.start_times[another_index] = self.own.timeline.now() + cc_delay + start_delay_self
 
-            # schedule write operation
-            if self.emit_num > 0:
-                self.schedule_write(self.start_time)
+            # calculate frequency based on min
+            self.frequencies[another_index] = min(self.frequencies[another_index], another_frequency)
+            ## self.memory_arrays[another_index].frequency = self.frequencies[another_index]
+
+            # calculate number of memories to use
+            num_memories = min(len(self.memory_indices[another_index]), another_mem_num)
+            self.emit_nums[another_index] = num_memories
+
+            # call memory_excite (with updated parameters)
+            self.memory_excite(another_index)
+
+            # send message to other node
+            message = self.rsvp_name + " EntanglementGeneration NEGOTIATE_ACK {} {} {} {}".format(self.frequencies[another_index],
+                                                                                num_memories,
+                                                                                another_start_time,
+                                                                                quantum_delay)
+            self.own.send_message(src, message)
 
         elif msg_type == "NEGOTIATE_ACK":
-            self.wait_start = False
-            another_qc_delay = int(msg[1])
-            another_frequency = int(msg[2])
-            another_emit_num = int(msg[3])
-            another_start_time = int(msg[4])
+            another_index = self.others.index(src)
 
-            assert self.start_time == another_start_time + another_qc_delay - self.qc_delay
-            self.another_qc_delay = another_qc_delay
-            self.frequency = min(self.frequency, another_frequency)
-            self.emit_num = min(self.emit_num, another_emit_num)
+            # update parameters
+            self.frequencies[another_index] = float(msg[1])
+            self.emit_nums[another_index] = int(msg[2])
+            self.start_times[another_index] = int(msg[3])
+            quantum_delay = int(msg[4])
 
-            # schedule write operation
-            if self.emit_num > 0:
-                self.schedule_write(self.start_time)
-            elif len(self.waiting_bsm) == 0:
-                self.wait_start = True
-                self.start()
+            # call memory_excite (with updated parameters)
+            self.memory_excite(another_index)
+
+            # schedule start time for another start
+            time_delay = int(1e12 * (self.emit_nums[another_index] + 1) / self.frequencies[another_index])
+            time_delay += quantum_delay + int(self.own.cchannels[src].delay)
+            time_delay += self.stage_delays[another_index]
+            process = Process(self, "start_individual", [another_index])
+            event = Event(self.start_times[another_index] + time_delay, process)
+            self.own.timeline.schedule(event)
+
         elif msg_type == "MEAS_RES":
-            trigger_time = int(msg[1])
+            res = int(msg[1])
+            time = int(msg[2])
             resolution = int(msg[3])
-
-            def binary_search(waiting_list, time):
-                left, right = 0, len(waiting_list) - 1
-                while left <= right:
-                    mid = (left + right) // 2
-                    if waiting_list[mid][0] == time:
-                        return mid
-                    elif waiting_list[mid][0] > time:
-                        right = mid - 1
-                    else:
-                        left = mid + 1
-                return left
+            another_index = self.middles.index(src)
 
             def valid_trigger_time(trigger_time, target_time, resolution):
                 upper = target_time + resolution
@@ -294,35 +380,80 @@ class EntanglementGeneration(Protocol):
                     lower += 1
                 return lower <= trigger_time <= upper
 
-            index = binary_search(self.waiting_bsm, trigger_time)
-            if index < len(self.waiting_bsm) and valid_trigger_time(trigger_time, self.waiting_bsm[index][0], resolution):
-                self.send_entangled_memory_id(trigger_time, self.waiting_bsm[index][1])
-                self.waiting_remote[trigger_time] = self.waiting_bsm.pop(index)[1]
-            elif 0 <= index - 1 < len(self.waiting_bsm) and valid_trigger_time(trigger_time, self.waiting_bsm[index - 1][0], resolution):
-                index = index - 1
-                self.send_entangled_memory_id(trigger_time, self.waiting_bsm[index][1])
-                self.waiting_remote[trigger_time] = self.waiting_bsm.pop(index)[1]
-            else:
-                print(self.own.timeline.now(), "unkown trigger", self.own.name, trigger_time, self.waiting_bsm)
+            index = min(range(len(self.bsm_wait_time[another_index])), key=lambda i: abs(self.bsm_wait_time[another_index][i] - time))
+            length = len(self.bsm_wait_time[another_index])
+            if not index < length and 1 <= index <= length:
+                index -= 1
 
-            for _ in range(index):
-                waiting = self.waiting_bsm.pop(0)
-                i = waiting[1]
-                self.memories.append(i)
+            if valid_trigger_time(time, self.bsm_wait_time[another_index][index], resolution):
+                if DEBUG:
+                    print("EG protocol valid trigger on node", self.own.name)
+                    print("\ttrigger time: {}\tindex: {}".format(time, index))
+
+                if self.bsm_res[another_index][index] == -1:
+                    self.bsm_res[another_index][index] = res
+
+                elif self.memory_stage[another_index][index] == 1:
+                    # TODO: notify upper protocol of +/- state
+                    # remove index
+                    memory_id = self.remove_memory_index(another_index, index)
+                    self.wait_remote[another_index].append(memory_id)
+                    # send message to other node
+                    message = self.rsvp_name + " EntanglementGeneration ENT_MEMO {}".format(memory_id)
+                    self.own.send_message(self.others[another_index], message)
+
+                else:
+                    self.bsm_res[another_index][index] = -1
+
+            else:
+                if DEBUG:
+                    print("WARNING: invalid trigger received by EG on node {}".format(self.own.name))
+                    print("\ttrigger time: {}\texpected: {}".format(time, self.bsm_wait_time[another_index][index]))
+                return False
 
         elif msg_type == "ENT_MEMO":
-            trigger_time = int(msg[1])
-            remote_memory_index = int(msg[2])
-            local_memory_index = self.waiting_remote[trigger_time]
-            local_memory = self.own.components["MemoryArray"][local_memory_index]
-            local_memory.entangled_memory["node_id"] = self.others[0]
-            local_memory.entangled_memory["memo_id"] = remote_memory_index
+            remote_id = int(msg[1])
+            another_index = self.others.index(src)
+
+            local_id = self.wait_remote[another_index].pop(0)
+            local_memory = self.memory_array[local_id]
+            local_memory.entangled_memory["node_id"] = src
+            local_memory.entangled_memory["memo_id"] = remote_id
             local_memory.fidelity = self.fidelity
-            self.waiting_remote.pop(trigger_time)
-            self._pop(memory_index=local_memory_index, another_node=self.others[0])
+
+            self._pop(memory_index=local_id, another_node=src)
+
+            if DEBUG:
+                print("EG protocol popping on node", self.own.name)
+                print("\tmemory_index: {}\tanother_node: {}".format(local_id, src))
+
         else:
-            raise Exception("unknown message of type '{}' received by EntanglementGeneration on node '{}'"
-                            .format(msg_type, self.own.name))
+            raise Exception("WARNING: Invalid message {} received by EG on node {}".format(msg_type, self.own.name))
+
+        return True
+
+    def memory_excite(self, another_index):
+        if DEBUG:
+            print("EG protocol memory_excite on node", self.own.name)
+
+        period = int(round(1e12 / self.frequencies[another_index]))
+        time = self.start_times[another_index]
+        self.bsm_wait_time[another_index] = [-1] * self.emit_nums[another_index]
+
+        for i in range(self.emit_nums[another_index]):
+            memory_index = self.memory_indices[another_index][i]
+            if self.memory_stop_time[memory_index] < time + self.qc_delays[another_index]:
+                continue
+            process = Process(self.memory_array[memory_index], "excite", [])
+            event = Event(time, process)
+            self.own.timeline.schedule(event)
+
+            self.bsm_wait_time[another_index][i] = time + self.qc_delays[another_index]
+
+            time += period
+
+        if DEBUG:
+            print("\tbsm_wait_time:", self.bsm_wait_time[another_index])
 
         return True
 
@@ -359,19 +490,27 @@ class BBPSSW(Protocol):
         # self.waiting_list:
         # { round of purification : [ set( [ kept memory, measured memory ] ) }
         self.waiting_list = {}
+        self.rsvp_name = ''
+        self.valid_memories = set()
 
     def init(self):
         pass
 
+    def set_valid_memories(self, memories):
+        self.valid_memories = memories
+
     def _pop(self, **kwargs):
         # print(self.own.timeline.now(), self.own.name, kwargs, "qualified")
-        if len(self.upper_protocols) == 0 and self.own.name == 'e0':
-            print(self.own.timeline.now(), self.own.name, kwargs, "qualified")
         super()._pop(**kwargs)
 
     def pop(self, **kwargs):
+        if "info_type" in kwargs:
+            return
         memory_index = kwargs["memory_index"]
         another_node = kwargs["another_node"]
+        if memory_index not in self.valid_memories:
+            return False
+
         if another_node not in self.purified_lists:
             self.purified_lists[another_node] = []
         purified_list = self.purified_lists[another_node]
@@ -403,7 +542,7 @@ class BBPSSW(Protocol):
         another_measured_memo = local_memory[measured_memo].entangled_memory['memo_id']
         self.waiting_list[round_id].add((kept_memo, measured_memo))
 
-        msg = "BBPSSW PING %d %d %d %d %d" % (round_id,
+        msg = self.rsvp_name + " BBPSSW PING %d %d %d %d %d" % (round_id,
                                               another_kept_memo,
                                               another_measured_memo,
                                               kept_memo,
@@ -433,7 +572,7 @@ class BBPSSW(Protocol):
             fidelity = self.purification(round_id, kept_memo,
                                          measured_memo, purified_list)
 
-            reply = "BBPSSW PONG %d %f %s %s" % (round_id,
+            reply = self.rsvp_name + " BBPSSW PONG %d %f %s %s" % (round_id,
                                                  fidelity,
                                                  msg[type_index + 4],
                                                  msg[type_index + 5])
@@ -560,9 +699,14 @@ class EntanglementSwapping(Protocol):
         self.waiting_memo2 = []
         self.waiting_swap_res = {}
         self.known_nodes = known_nodes
+        self.rsvp_name = ''
+        self.valid_memories = set()
 
     def init(self):
         pass
+
+    def set_valid_memories(self, memories):
+        self.valid_memories = memories
 
     def push(self, **kwargs):
         self._push(**kwargs)
@@ -570,7 +714,15 @@ class EntanglementSwapping(Protocol):
     def _pop(self, **kwargs):
         super()._pop(**kwargs)
 
-    def pop(self, memory_index: int, another_node: str):
+    def pop(self, **kwargs): # memory_index: int, another_node: str:
+        if "info_type" in kwargs:
+            pass
+
+        memory_index = kwargs["memory_index"]
+        another_node = kwargs["another_node"]
+        if memory_index not in self.valid_memories:
+            return False
+
         if another_node == self.remote1:
             self.waiting_memo1.append(memory_index)
         elif another_node == self.remote2:
@@ -600,12 +752,12 @@ class EntanglementSwapping(Protocol):
         another_memo_id1 = memo1.entangled_memory['memo_id']
         another_node_id2 = memo2.entangled_memory['node_id']
         another_memo_id2 = memo2.entangled_memory['memo_id']
-        msg = "EntanglementSwapping SWAP_RES %d %f %s %d" % (another_memo_id1,
+        msg = self.rsvp_name + " EntanglementSwapping SWAP_RES %d %f %s %d" % (another_memo_id1,
                                                              fidelity,
                                                              another_node_id2,
                                                              another_memo_id2)
         self.own.send_message(dst=another_node_id1, msg=msg, priority=3)
-        msg = "EntanglementSwapping SWAP_RES %d %f %s %d" % (another_memo_id2,
+        msg = self.rsvp_name + " EntanglementSwapping SWAP_RES %d %f %s %d" % (another_memo_id2,
                                                              fidelity,
                                                              another_node_id1,
                                                              another_memo_id1)
@@ -647,14 +799,38 @@ class EntanglementSwapping(Protocol):
         '''
         A simple model for BSM success probability
         '''
-        return 0.9
+        return 0.93
 
     @staticmethod
     def updated_fidelity(f1: float, f2: float) -> float:
         '''
         A simple model updating fidelity of entanglement
         '''
-        return (f1 + f2) / 2 * 0.9
+        return (f1 + f2) / 2 * 0.95
+
+
+class EndProtocol(Protocol):
+    '''
+    This protocol is used to measure the number of success entanglement distribution
+    '''
+    def __init__(self, own):
+        Protocol.__init__(self, own)
+        self.dist_counter = 0
+
+    def init(self):
+        pass
+
+    def pop(self, **kwargs):
+        self.dist_counter += 1
+        memory_index = kwargs["memory_index"]
+        another_node = kwargs["another_node"]
+        self._push(index=memory_index)
+
+    def push(self, **kwargs):
+        raise Exception("No upper protocol is allowed")
+
+    def received_message(self, src, msg):
+        return
 
 
 if __name__ == "__main__":
