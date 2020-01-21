@@ -343,34 +343,39 @@ class EntanglementGeneration(Protocol):
                     lower += 1
                 return lower <= trigger_time <= upper
 
-            index = min(range(len(self.bsm_wait_time[another_index])), key=lambda i: abs(self.bsm_wait_time[another_index][i] - time))
-            length = len(self.bsm_wait_time[another_index])
-            if not index < length and 1 <= index <= length:
-                index -= 1
+            if len(self.bsm_wait_time[another_index]) > 0:
+                index = min(range(len(self.bsm_wait_time[another_index])), key=lambda i: abs(self.bsm_wait_time[another_index][i] - time))
+                length = len(self.bsm_wait_time[another_index])
+                if not index < length and 1 <= index <= length:
+                    index -= 1
 
-            if valid_trigger_time(time, self.bsm_wait_time[another_index][index], resolution):
-                if DEBUG:
-                    print("EG protocol valid trigger on node", self.own.name)
-                    print("\ttrigger time: {}\tindex: {}".format(time, index))
+                if valid_trigger_time(time, self.bsm_wait_time[another_index][index], resolution):
+                    if DEBUG:
+                        print("EG protocol valid trigger on node", self.own.name)
+                        print("\ttrigger time: {}\tindex: {}".format(time, index))
 
-                if self.bsm_res[another_index][index] == -1:
-                    self.bsm_res[another_index][index] = res
+                    if self.bsm_res[another_index][index] == -1:
+                        self.bsm_res[another_index][index] = res
 
-                elif self.memory_stage[another_index][index] == 1:
-                    # TODO: notify upper protocol of +/- state
-                    # remove index
-                    memory_id = self.remove_memory_index(another_index, index)
-                    self.wait_remote[another_index].append(memory_id)
-                    # send message to other node
-                    message = "EntanglementGeneration ENT_MEMO {}".format(memory_id)
-                    self.own.send_message(self.others[another_index], message)
+                    elif self.memory_stage[another_index][index] == 1:
+                        # TODO: notify upper protocol of +/- state
+                        # remove index
+                        memory_id = self.remove_memory_index(another_index, index)
+                        self.wait_remote[another_index].append(memory_id)
+                        # send message to other node
+                        message = "EntanglementGeneration ENT_MEMO {}".format(memory_id)
+                        self.own.send_message(self.others[another_index], message)
 
-                else:
-                    self.bsm_res[another_index][index] = -1
+                    else:
+                        self.bsm_res[another_index][index] = -1
+
+                elif DEBUG:
+                    print("WARNING: invalid trigger received by EG on node {}".format(self.own.name))
+                    print("\ttrigger time: {}\texpected: {}".format(time, self.bsm_wait_time[another_index][index]))
 
             elif DEBUG:
                 print("WARNING: invalid trigger received by EG on node {}".format(self.own.name))
-                print("\ttrigger time: {}\texpected: {}".format(time, self.bsm_wait_time[another_index][index]))
+                print("\ttrigger time: {}".format(time))   
 
         elif msg_type == "ENT_MEMO":
             remote_id = int(msg[1])
