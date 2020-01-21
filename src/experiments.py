@@ -101,10 +101,13 @@ def three_node_test():
         print_memory(memory)
 
 
-def linear_topo(n: int, runtime=1e12):
+def linear_topo(distances, runtime=1e12):
     '''
+    distances: list of distances (in meters) between end nodes
     n: the number of end nodes
     '''
+    n = len(distances) + 1
+    
     UNIT_DELAY = 1e5
     UNIT_DISTANCE = 1e3
     DETECTOR_DARK = 0
@@ -136,7 +139,7 @@ def linear_topo(n: int, runtime=1e12):
         end_node = end_nodes[i]
         # classical channel 1
         name = "cc_%s_%s" % (node.name, end_node.name)
-        cc = topology.ClassicalChannel(name, tl, distance=UNIT_DISTANCE, delay=UNIT_DELAY)
+        cc = topology.ClassicalChannel(name, tl, distance=distances[i]/2, delay=UNIT_DELAY)
         cc.set_ends([end_node, node])
         print('add', name, 'to', end_node.name)
         print('add', name, 'to', node.name)
@@ -144,7 +147,7 @@ def linear_topo(n: int, runtime=1e12):
         end_node = end_nodes[i+1]
         # classical channel 2
         name = "cc_%s_%s" % (node.name, end_node.name)
-        cc = topology.ClassicalChannel(name, tl, distance=UNIT_DISTANCE, delay=UNIT_DELAY)
+        cc = topology.ClassicalChannel(name, tl, distance=distances[i]/2, delay=UNIT_DELAY)
         cc.set_ends([end_node, node])
         print('add', name, 'to', node.name)
         print('add', name, 'to', end_node.name)
@@ -156,7 +159,7 @@ def linear_topo(n: int, runtime=1e12):
                 continue
             delay = (j - i) * 2 * UNIT_DELAY
             name = "cc_%s_%s" % (node1.name, node2.name)
-            distance = (j - i) * 2 * UNIT_DISTANCE
+            distance = sum(distances[i:j])
             cc = topology.ClassicalChannel(name, tl, distance=distance, delay=delay)
             cc.set_ends([node1, node2])
             print('add', name, 'to', node1.name)
@@ -203,7 +206,7 @@ def linear_topo(n: int, runtime=1e12):
             mid_node = mid_nodes[i-1]
             name = "qc_%s_%s" % (mid_node.name, node.name)
             print("add", name)
-            qc = topology.QuantumChannel(name, tl, distance=UNIT_DISTANCE)
+            qc = topology.QuantumChannel(name, tl, distance=distances[i-1]/2)
 
             memory_array = node.components['MemoryArray']
             for j, memory in enumerate(memory_array):
@@ -225,7 +228,7 @@ def linear_topo(n: int, runtime=1e12):
             mid_node = mid_nodes[i]
             name = "qc_%s_%s" % (mid_node.name, node.name)
             print("add", name)
-            qc = topology.QuantumChannel(name, tl, distance=UNIT_DISTANCE)
+            qc = topology.QuantumChannel(name, tl, distance=distances[i]/2)
 
             memory_array = node.components['MemoryArray']
             for j, memory in enumerate(memory_array):
@@ -357,16 +360,14 @@ def linear_topo(n: int, runtime=1e12):
 
     # add EndProtocol to end nodes
     curr = end_nodes[0]
-    print(curr)
     curr_last = curr.protocols[-1]
-    print(curr_last)
     end_protocol = EndNodeProtocol(curr)
-    print(end_protocol)
     end_protocol.lower_protocols.append(curr_last)
     curr_last.upper_protocols.append(end_protocol)
 
-    curr_last = end_nodes[-1].protocols[-1]
-    end_protocol = EndNodeProtocol(end_nodes[-1])
+    curr = end_nodes[-1]
+    curr_last = curr.protocols[-1]
+    end_protocol = EndNodeProtocol(curr)
     end_protocol.lower_protocols.append(curr_last)
     curr_last.upper_protocols.append(end_protocol)
 
@@ -391,8 +392,15 @@ def linear_topo(n: int, runtime=1e12):
         print(node.name)
         print_memory(memory)
 
+    pairs0 = end_nodes[0].protocols[-1].dist_counter
+    pairs1 = end_nodes[-1].protocols[-1].dist_counter
+    print("END 1 PAIRS:", pairs0)
+    print("\tThroughput:", pairs0 / (runtime * 1e-12))
+    print("END 2 PAIRS:", pairs1)
+    print("\tThroughput:", pairs1 / (runtime * 1e-12))
+
 
 if __name__ == "__main__":
     seed(1)
     # three_node_test()
-    linear_topo(3, 1e12)
+    linear_topo([2e3,2e3], 1e11)
