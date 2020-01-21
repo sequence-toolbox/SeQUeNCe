@@ -4,6 +4,7 @@ from numpy.random import seed
 from protocols import EntanglementGeneration
 from protocols import BBPSSW
 from protocols import EntanglementSwapping
+from protocols import EndNodeProtocol
 
 import sequence
 from sequence import topology
@@ -112,7 +113,7 @@ def linear_topo(n: int, runtime=1e12):
     DETECTOR_COUNT_RATE = 25000000
     MEMO_FIDELITY = 0.8
     MEMO_EFFICIENCY = 0.5
-    MEMO_ARR_SIZE = 100
+    MEMO_ARR_SIZE = 16
     MEMO_ARR_FREQ = int(1e6)
     PURIFICATIOIN_THRED = 0.9
 
@@ -353,6 +354,21 @@ def linear_topo(n: int, runtime=1e12):
             print("    ", protocol)
             print(" "*8, "upper protocols", protocol.upper_protocols)
             print(" "*8, "lower protocols", protocol.lower_protocols)
+
+    # add EndProtocol to end nodes
+    curr = end_nodes[0]
+    print(curr)
+    curr_last = curr.protocols[-1]
+    print(curr_last)
+    end_protocol = EndNodeProtocol(curr)
+    print(end_protocol)
+    end_protocol.lower_protocols.append(curr_last)
+    curr_last.upper_protocols.append(end_protocol)
+
+    curr_last = end_nodes[-1].protocols[-1]
+    end_protocol = EndNodeProtocol(end_nodes[-1])
+    end_protocol.lower_protocols.append(curr_last)
+    curr_last.upper_protocols.append(end_protocol)
 
     # schedule events
     for node in end_nodes:

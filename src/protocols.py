@@ -116,7 +116,7 @@ class EntanglementGeneration(Protocol):
 
         # misc
         self.invert_map = {} # keep track of mapping from connected qchannels to adjacent nodes
-        self.running = False # True if protocol currently processing at least 1 memory
+        self.running = [False] * len(self.others) # True if protocol currently processing at least 1 memory
         self.is_start = False
 
     def memory_belong_protocol(self, memory):
@@ -170,7 +170,7 @@ class EntanglementGeneration(Protocol):
 
         self.add_memory_index(another_index, index)
         
-        if not self.running:
+        if not self.running[another_index]:
             self.start()
 
     def pop(self, info_type, **kwargs):
@@ -193,7 +193,7 @@ class EntanglementGeneration(Protocol):
             another_index = self.middles.index(another_name)
             self.add_memory_index(another_index, index)
 
-            if not self.running:
+            if not self.running[another_index]:
                 self.start()
 
         else:
@@ -209,7 +209,7 @@ class EntanglementGeneration(Protocol):
         if DEBUG:
             print("EG protocol start on node {} with partner {}".format(self.own.name, self.others[another_index]))
 
-        self.running = True
+        self.running[another_index] = True
 
         if len(self.memory_indices[another_index]) > 0:
             # update memories
@@ -225,7 +225,7 @@ class EntanglementGeneration(Protocol):
 
         else:
             print("EG protocol end on node", self.own.name)
-            self.running = False
+            self.running[another_index] = False
 
     def update_memory_indices(self, another_index):
         if DEBUG:
@@ -746,14 +746,39 @@ class EntanglementSwapping(Protocol):
         '''
         A simple model for BSM success probability
         '''
-        return 0.9
+        return 0.93
 
     @staticmethod
     def updated_fidelity(f1: float, f2: float) -> float:
         '''
         A simple model updating fidelity of entanglement
         '''
-        return (f1 + f2) / 2 * 0.9
+        return (f1 + f2) / 2 * 0.95
+
+
+class EndNodeProtocol(Protocol):
+    '''
+    used to keep track of throughput
+    '''
+    def __init__(self, own):
+        Protocol.__init__(self, own)
+        self.dist_counter = 0
+
+    def init(self):
+        pass
+
+    def pop(self, **kwargs):
+        self.dist_counter += 1
+        memory_index = kwargs.get("memory_index")
+        another_node = kwargs.get("another_node")
+        print("EndProtocol received memory index {} on node {} entangled with {}".format(memory_index, self.own.name, another_node))
+        self._push(index=memory_index)
+
+    def push(self, **kwargs):
+        pass
+
+    def received_message(self, src, msg):
+        return
 
 
 if __name__ == "__main__":

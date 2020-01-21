@@ -825,6 +825,7 @@ class AtomMemory(Entity):
         Entity.__init__(self, name, timeline)
         self.fidelity = kwargs.get("fidelity", 1)
         self.frequency = kwargs.get("frequency", 1)
+        self.efficiency = kwargs.get("efficiency", 1)
         self.coherence_time = kwargs.get("coherence_time", -1) # average coherence time in seconds
         self.direct_receiver = kwargs.get("direct_receiver", None)
         self.qstate = QuantumState()
@@ -843,20 +844,21 @@ class AtomMemory(Entity):
         pass
 
     def excite(self):
-        state = self.qstate.measure(encoding.ensemble["bases"][0])
-        # send photon in certain state to direct receiver
-        photon = Photon("", self.timeline, wavelength=(1/self.frequency), location=self,
-                            encoding_type=self.photon_encoding)
-        if state == 0:
-            photon.is_null = True
-        elif self.coherence_time > 0:
-            # set expiration
-            decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
-            process = Process(self, "expire", [])
-            event = Event(decay_time, process)
-            self.timeline.schedule(event)
+        if numpy.random.random_sample() < self.efficiency:
+            state = self.qstate.measure(encoding.ensemble["bases"][0])
+            # send photon in certain state to direct receiver
+            photon = Photon("", self.timeline, wavelength=(1/self.frequency), location=self,
+                               encoding_type=self.photon_encoding)
+            if state == 0:
+                photon.is_null = True
+            elif self.coherence_time > 0:
+                # set expiration
+                decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
+                process = Process(self, "expire", [])
+                event = Event(decay_time, process)
+                self.timeline.schedule(event)
  
-        self.direct_receiver.get(photon)
+            self.direct_receiver.get(photon)
 
     def expire(self):
         # TODO: change state?
