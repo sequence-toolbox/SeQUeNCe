@@ -400,7 +400,26 @@ def linear_topo(distances, runtime=1e12, **kwargs):
     print("\tThroughput:", pairs1 / (runtime * 1e-12))
 
 
+def experiment(number, param): 
+    if number == 0:
+        print("test")
+
+    elif number == 1:
+        wis_fermi = [40e3, 40e3, 40e3, 40e3, 40e3, 2e3]
+        fermi_arg = [40e3, 8e3]
+        arg_uiuc = [40e3, 40e3, 40e3, 40e3, 40e3, 6e3]
+        total_distances = wis_fermi + fermi_arg + arg_uiuc
+
+        linear_topo(total_distances, 1e15, memo_arr_size=param)
+
+
 if __name__ == "__main__":
+    import sys
     seed(1)
     # three_node_test()
-    linear_topo([2e3,2e3], 1e13)
+    # linear_topo([2e3,2e3], 1e13)
+    num = int(sys.argv[1])
+    param = int(sys.argv[2])
+    experiment(num, param)
+
+
