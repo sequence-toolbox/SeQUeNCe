@@ -101,24 +101,24 @@ def three_node_test():
         print_memory(memory)
 
 
-def linear_topo(distances, runtime=1e12):
+def linear_topo(distances, runtime=1e12, **kwargs):
     '''
     distances: list of distances (in meters) between end nodes
     n: the number of end nodes
     '''
     n = len(distances) + 1
     
-    UNIT_DELAY = 1e5
-    UNIT_DISTANCE = 1e3
-    DETECTOR_DARK = 0
-    DETECTOR_EFFICIENCY = 0.7
-    DETECTOR_TIME_RESOLUTION = 150
-    DETECTOR_COUNT_RATE = 25000000
-    MEMO_FIDELITY = 0.8
-    MEMO_EFFICIENCY = 0.5
-    MEMO_ARR_SIZE = 16
-    MEMO_ARR_FREQ = int(1e6)
-    PURIFICATIOIN_THRED = 0.9
+    UNIT_DELAY = kwargs.get("unit_delay", 1e5)
+    UNIT_DISTANCE = kwargs.get("unit_distance", 1e3)
+    DETECTOR_DARK = kwargs.get("detector_dark", 0)
+    DETECTOR_EFFICIENCY = kwargs.get("detector_efficiency", 0.7)
+    DETECTOR_TIME_RESOLUTION = kwargs.get("detector_time_resolution", 150)
+    DETECTOR_COUNT_RATE = kwargs.get("detector_count_rate", 25000000)
+    MEMO_FIDELITY = kwargs.get("memo_fidelity", 0.8)
+    MEMO_EFFICIENCY = kwargs.get("memo_efficiency", 0.5)
+    MEMO_ARR_SIZE = kwargs.get("memo_arr_size", 100)
+    MEMO_ARR_FREQ = kwargs.get("memo_arr_freq", int(1e6))
+    PURIFICATIOIN_THRED = kwargs.get("purification_thred", 0.9)
 
     tl = timeline.Timeline(runtime)
 
