@@ -403,4 +403,4 @@ def linear_topo(distances, runtime=1e12):
 if __name__ == "__main__":
     seed(1)
     # three_node_test()
-    linear_topo([2e3,2e3], 1e11)
+    linear_topo([2e3,2e3], 1e13)
