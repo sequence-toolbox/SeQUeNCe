@@ -844,21 +844,22 @@ class AtomMemory(Entity):
         pass
 
     def excite(self):
-        if numpy.random.random_sample() < self.efficiency:
-            state = self.qstate.measure(encoding.ensemble["bases"][0])
-            # send photon in certain state to direct receiver
-            photon = Photon("", self.timeline, wavelength=(1/self.frequency), location=self,
-                               encoding_type=self.photon_encoding)
-            if state == 0:
-                photon.is_null = True
-            elif self.coherence_time > 0:
+        state = self.qstate.measure(encoding.ensemble["bases"][0])
+        # send photon in certain state to direct receiver
+        photon = Photon("", self.timeline, wavelength=(1/self.frequency), location=self,
+                           encoding_type=self.photon_encoding)
+        if state == 0:
+            photon.is_null = True
+            self.direct_receiver.get(photon)
+        else:
+            if numpy.random.random_sample() < self.efficiency:
+                self.direct_receiver.get(photon)
+            if self.coherence_time > 0:
                 # set expiration
                 decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
                 process = Process(self, "expire", [])
                 event = Event(decay_time, process)
                 self.timeline.schedule(event)
- 
-            self.direct_receiver.get(photon)
 
     def expire(self):
         # TODO: change state?
@@ -868,6 +869,7 @@ class AtomMemory(Entity):
 
     def flip_state(self):
         # flip coefficients of state
+        # print(self.qstate.state)
         assert len(self.qstate.state) == 2, "qstate length error in memory {}".format(self.name)
         new_state = self.qstate.state
         new_state[0], new_state[1] = new_state[1], new_state[0]

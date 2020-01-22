@@ -118,18 +118,19 @@ class EntanglementGeneration(Protocol):
         self.invert_map = {} # keep track of mapping from connected qchannels to adjacent nodes
         self.running = [False] * len(self.others) # True if protocol currently processing at least 1 memory
         self.is_start = False
+        self.debug = DEBUG
 
     def memory_belong_protocol(self, memory):
         return memory.direct_receiver and memory.direct_receiver.receiver.owner.name == self.middle
 
     def init(self):
-        if DEBUG:
+        if self.debug:
             print("EG protocol init on node", self.own.name)
 
         assert ((self.middles[0] == self.own.name and len(self.others) == 2) or
                 (self.middles[0] != self.own.name and len(self.others) == len(self.middles)))
         if self.own.name != self.middles[0]:
-            if DEBUG:
+            if self.debug:
                 print("\tEG protocol end node init")
 
             self.memory_array = self.own.components['MemoryArray']
@@ -161,7 +162,7 @@ class EntanglementGeneration(Protocol):
     def push(self, **kwargs):
         index = kwargs.get("index")
 
-        if DEBUG:
+        if self.debug:
             print("EG protocol push on node", self.own.name)
             print("\tmemory index:", index)
 
@@ -206,7 +207,7 @@ class EntanglementGeneration(Protocol):
                 self.start_individual(i)
 
     def start_individual(self, another_index):
-        if DEBUG:
+        if self.debug:
             print("EG protocol start on node {} with partner {}".format(self.own.name, self.others[another_index]))
 
         self.running[another_index] = True
@@ -228,7 +229,7 @@ class EntanglementGeneration(Protocol):
             self.running[another_index] = False
 
     def update_memory_indices(self, another_index):
-        if DEBUG:
+        if self.debug:
             print("EG protocol update_memories on node {}".format(self.own.name))
             print("\t\tmemory_indices:", self.memory_indices[another_index])
             print("\t\tmemory_stage:", self.memory_stage[another_index])
@@ -236,7 +237,7 @@ class EntanglementGeneration(Protocol):
 
         # update memories that have finished stage 1 and flip state
         finished_1 = [i for i, val in enumerate(self.bsm_res[another_index]) if val != -1 and self.memory_stage[another_index][i] == 0]
-        if DEBUG:
+        if self.debug:
             print("\tfinished_1:", finished_1)
             print("\t\tmemory indices:", [self.memory_indices[another_index][i] for i in finished_1])
         for i in finished_1:
@@ -246,7 +247,7 @@ class EntanglementGeneration(Protocol):
 
         # set each memory in stage 1 to + state (and reset bsm)
         starting = [i for i in range(len(self.bsm_res[another_index])) if i not in finished_1]
-        if DEBUG:
+        if self.debug:
             print("\tstarting:", starting)
             print("\t\tmemory indices:", [self.memory_indices[another_index][i] for i in starting])
         for i in starting:
@@ -350,7 +351,7 @@ class EntanglementGeneration(Protocol):
                     index -= 1
 
                 if valid_trigger_time(time, self.bsm_wait_time[another_index][index], resolution):
-                    if DEBUG:
+                    if self.debug:
                         print("EG protocol valid trigger on node", self.own.name)
                         print("\ttrigger time: {}\tindex: {}".format(time, index))
 
@@ -369,11 +370,11 @@ class EntanglementGeneration(Protocol):
                     else:
                         self.bsm_res[another_index][index] = -1
 
-                elif DEBUG:
+                elif self.debug:
                     print("WARNING: invalid trigger received by EG on node {}".format(self.own.name))
                     print("\ttrigger time: {}\texpected: {}".format(time, self.bsm_wait_time[another_index][index]))
 
-            elif DEBUG:
+            elif self.debug:
                 print("WARNING: invalid trigger received by EG on node {}".format(self.own.name))
                 print("\ttrigger time: {}".format(time))   
 
@@ -389,7 +390,7 @@ class EntanglementGeneration(Protocol):
 
             self._pop(memory_index=local_id, another_node=src)
 
-            if DEBUG:
+            if self.debug:
                 print("EG protocol popping on node", self.own.name)
                 print("\tmemory_index: {}\tanother_node: {}".format(local_id, src))
 
@@ -399,7 +400,7 @@ class EntanglementGeneration(Protocol):
         return True
 
     def memory_excite(self, another_index):
-        if DEBUG:
+        if self.debug:
             print("EG protocol memory_excite on node", self.own.name)
 
         period = int(round(1e12 / self.frequencies[another_index]))
@@ -416,7 +417,7 @@ class EntanglementGeneration(Protocol):
 
             time += period
 
-        if DEBUG:
+        if self.debug:
             print("\tbsm_wait_time:", self.bsm_wait_time[another_index])
 
         return True
@@ -670,7 +671,7 @@ class EntanglementSwapping(Protocol):
 
     def pop(self, **kwargs): # memory_index: int, another_node: str):
         if "info_type" in kwargs:
-            pass
+            return
 
         memory_index = kwargs["memory_index"]
         another_node = kwargs["another_node"]
@@ -773,10 +774,14 @@ class EndNodeProtocol(Protocol):
         pass
 
     def pop(self, **kwargs):
+        if "info_type" in kwargs:
+            return
+        
         self.dist_counter += 1
         memory_index = kwargs.get("memory_index")
         another_node = kwargs.get("another_node")
         print("EndProtocol received memory index {} on node {} entangled with {}".format(memory_index, self.own.name, another_node))
+        print("\tcurrent time:", self.own.timeline.now()/1e12)
         self._push(index=memory_index)
 
     def push(self, **kwargs):
