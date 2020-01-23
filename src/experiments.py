@@ -400,7 +400,7 @@ def linear_topo(distances, runtime=1e12, **kwargs):
     print("\tThroughput:", pairs1 / (runtime * 1e-12))
 
 
-def experiment(number, param, runtime=1e12): 
+def experiment(number, param, runtime=1e15): 
     if number == 0:
         distances = [40e3] * 14
         linear_topo(distances, runtime, memo_arr_size=param)

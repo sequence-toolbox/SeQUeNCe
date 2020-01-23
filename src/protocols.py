@@ -171,8 +171,10 @@ class EntanglementGeneration(Protocol):
 
         self.add_memory_index(another_index, index)
         
-        if not self.running[another_index]:
-            self.start()
+        if not self.running[another_index] and self.is_start:
+            if self.debug:
+                print("\trestarting protocol")
+            self.start_individual(another_index)
 
     def pop(self, info_type, **kwargs):
         if info_type == "BSM_res":
