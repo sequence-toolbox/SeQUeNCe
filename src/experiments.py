@@ -400,7 +400,7 @@ def linear_topo(distances, runtime=1e12, **kwargs):
     print("\tThroughput:", pairs1 / (runtime * 1e-12))
 
 
-def experiment(number, param, runtime=1e12): 
+def experiment(number, param, runtime=1e15): 
     if number == 0:
         distances = [40e3] * 14
         linear_topo(distances, runtime, memo_arr_size=param)
@@ -416,22 +416,14 @@ def experiment(number, param, runtime=1e12):
 
 if __name__ == "__main__":
     import sys
-    import gc
-    import inspect
     seed(1)
 
     # three_node_test()
     # linear_topo([2e3,2e3], 1e13)
 
-    def by_type(typename):
-        return [o for o in gc.get_objects() if type(o).__name__ == typename]
-    def count(typename):
-        return len(by_type(typename))
-
     num = int(sys.argv[1])
     param = int(sys.argv[2])
     
     experiment(num, param)
-    breakpoint()
 
 
