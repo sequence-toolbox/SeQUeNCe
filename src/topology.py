@@ -237,7 +237,7 @@ class QuantumChannel(OpticalChannel):
         chance_photon_kept = 10 ** (loss / -10)
 
         # check if photon kept
-        if not photon.is_null or numpy.random.random_sample() < chance_photon_kept:
+        if photon.is_null or numpy.random.random_sample() < chance_photon_kept:
             self.photon_counter += 1
 
             # check if random polarization noise applied
@@ -253,6 +253,8 @@ class QuantumChannel(OpticalChannel):
             process = Process(self.receiver, "get", [photon])
             event = Event(future_time, process)
             self.timeline.schedule(event)
+        else:
+            photon.remove_from_timeline()
 
 
 class ClassicalChannel(OpticalChannel):
@@ -605,6 +607,8 @@ class BSM(Entity):
         # check if photon arrived later than current photon
         if self.photon_arrival_time < self.timeline.now():
             # clear photons
+            for old_photon in self.photons:
+                old_photon.remove_from_timeline()
             self.photons = [photon]
             # set arrival time
             self.photon_arrival_time = self.timeline.now()
@@ -854,6 +858,8 @@ class AtomMemory(Entity):
         else:
             if numpy.random.random_sample() < self.efficiency:
                 self.direct_receiver.get(photon)
+            else:
+                photon.remove_from_timeline()
             if self.coherence_time > 0:
                 # set expiration
                 decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)

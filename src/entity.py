@@ -32,4 +32,7 @@ class Entity(ABC):
         for entity in self.parents:
             entity.pop(**kwargs)
 
+    def remove_from_timeline(self):
+        self.timeline.entities.remove(self)
+
 
