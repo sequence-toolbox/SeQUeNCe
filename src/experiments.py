@@ -400,18 +400,57 @@ def linear_topo(distances, runtime=1e12, **kwargs):
     print("\tThroughput:", pairs1 / (runtime * 1e-12))
 
 
-def experiment(number, param, runtime=1e15): 
+def experiment(number, param, runtime=1e14):
+    wis_fermi = [40e3, 40e3, 40e3, 40e3, 40e3, 2e3]
+    fermi_arg = [40e3, 8e3]
+    arg_uiuc = [40e3, 40e3, 40e3, 40e3, 40e3, 6e3]
+    total_distances = wis_fermi + fermi_arg + arg_uiuc
+
     if number == 0:
         distances = [40e3] * 14
         linear_topo(distances, runtime, memo_arr_size=param)
 
     elif number == 1:
-        wis_fermi = [40e3, 40e3, 40e3, 40e3, 40e3, 2e3]
-        fermi_arg = [40e3, 8e3]
-        arg_uiuc = [40e3, 40e3, 40e3, 40e3, 40e3, 6e3]
-        total_distances = wis_fermi + fermi_arg + arg_uiuc
+        # param: distance between repeater nodes (in km)
+        param = param * 1e3
+        wis_fermi_length = 202e3
+        fermi_arg_length = 48e3
+        arg_uiuc_length = 206e3
+        
+        wis_fermi = [param] * math.floor(wis_fermi_length / param)
+        if sum(wis_fermi) < wis_fermi_length:
+            wis_fermi.append(wis_fermi_length - sum(wis_fermi))
+        fermi_arg = [param] * math.floor(fermi_arg_length / param)
+        if sum(fermi_arg) < fermi_arg_length:
+            fermi_arg.append(fermi_arg_length - sum(fermi_arg))
+        arg_uiuc = [param] * math.floor(arg_uiuc_length / param)
+        if sum(arg_uiuc) < arg_uiuc_length:
+            arg_uiuc.append(arg_uiuc_length - sum(arg_uiuc))
 
+        print(wis_fermi)
+        print(fermi_arg)
+        print(arg_uiuc)
+        total_distances = wis_fermi + fermi_arg + arg_uiuc
+        linear_topo(total_distances, runtime)
+
+    elif number == 2:
+        # param: maximum frequency for memory array (in MHz)
+        param = param * 1e6
+        linear_topo(total_distances, runtime, memo_arr_freq=param)
+
+    elif number == 3:
+        # param: memory array size
+        param = int(param)
         linear_topo(total_distances, runtime, memo_arr_size=param)
+
+    elif number == 4:
+        # param: delay in classical channel (in ms)
+        param = param * 1e9
+        linear_topo(total_distances, runtime, unit_delay=param)
+
+    elif number == 5:
+        # param: fidelity 
+        linear_topo(total_distances, runtime, memo_fidelity=param)
 
 
 if __name__ == "__main__":
@@ -422,7 +461,7 @@ if __name__ == "__main__":
     # linear_topo([2e3,2e3], 1e13)
 
     num = int(sys.argv[1])
-    param = int(sys.argv[2])
+    param = float(sys.argv[2])
     
     experiment(num, param)
 
