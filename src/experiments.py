@@ -108,7 +108,7 @@ def linear_topo(distances, runtime=1e12, **kwargs):
     '''
     n = len(distances) + 1
     
-    UNIT_DELAY = kwargs.get("unit_delay", 1e5)
+    UNIT_DELAY = kwargs.get("unit_delay", 1e9)
     UNIT_DISTANCE = kwargs.get("unit_distance", 1e3)
     DETECTOR_DARK = kwargs.get("detector_dark", 0)
     DETECTOR_EFFICIENCY = kwargs.get("detector_efficiency", 0.7)
@@ -116,6 +116,7 @@ def linear_topo(distances, runtime=1e12, **kwargs):
     DETECTOR_COUNT_RATE = kwargs.get("detector_count_rate", 25000000)
     MEMO_FIDELITY = kwargs.get("memo_fidelity", 0.8)
     MEMO_EFFICIENCY = kwargs.get("memo_efficiency", 0.5)
+    MEMO_COHERENCE = kwargs.get("memo_coherence", -1)
     MEMO_ARR_SIZE = kwargs.get("memo_arr_size", 100)
     MEMO_ARR_FREQ = kwargs.get("memo_arr_freq", int(1e6))
     PURIFICATIOIN_THRED = kwargs.get("purification_thred", 0.9)
@@ -186,7 +187,7 @@ def linear_topo(distances, runtime=1e12, **kwargs):
 
     # create quantum memories
     for i, node in enumerate(end_nodes):
-        memory_params = {"fidelity":MEMO_FIDELITY, "efficiency":MEMO_EFFICIENCY}
+        memory_params = {"fidelity":MEMO_FIDELITY, "efficiency":MEMO_EFFICIENCY, "coherence_time":MEMO_COHERENCE}
         name = "memory_array_%s" % node.name
         memory_array = topology.MemoryArray(name, tl, num_memories=MEMO_ARR_SIZE,
                                             frequency=MEMO_ARR_FREQ,
@@ -400,15 +401,15 @@ def linear_topo(distances, runtime=1e12, **kwargs):
     print("\tThroughput:", pairs1 / (runtime * 1e-12))
 
 
-def experiment(number, param, runtime=1e14):
+def experiment(number, param, runtime=1e18):
     wis_fermi = [40e3, 40e3, 40e3, 40e3, 40e3, 2e3]
     fermi_arg = [40e3, 8e3]
     arg_uiuc = [40e3, 40e3, 40e3, 40e3, 40e3, 6e3]
     total_distances = wis_fermi + fermi_arg + arg_uiuc
 
     if number == 0:
-        distances = [40e3] * 14
-        linear_topo(distances, runtime, memo_arr_size=param)
+        distances = [40e3]
+        linear_topo(distances, runtime, memo_arr_size=10, memo_coherence=param)
 
     elif number == 1:
         # param: distance between repeater nodes (in km)
@@ -451,6 +452,10 @@ def experiment(number, param, runtime=1e14):
     elif number == 5:
         # param: fidelity 
         linear_topo(total_distances, runtime, memo_fidelity=param)
+
+    elif number == 6:
+        # param: memo coherence
+        linear_topo(total_distances, runtime, memo_coherence=param)
 
 
 if __name__ == "__main__":

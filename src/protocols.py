@@ -11,7 +11,7 @@ from sequence.process import Process
 from sequence.event import Event
 
 
-DEBUG = False
+DEBUG = True
 
 
 class Protocol(ABC):
@@ -151,6 +151,7 @@ class EntanglementGeneration(Protocol):
         self.memory_stage[another_index].append(0)
         self.bsm_wait_time[another_index].append(-1)
         self.bsm_res[another_index].append(-1)
+        self.memory_array[memory_index].previous_bsm = -1
 
     # used when memory popped to upper protocol
     def remove_memory_index(self, another_index, memory_index):
@@ -187,17 +188,25 @@ class EntanglementGeneration(Protocol):
 
         elif info_type == "expired_memory":
             # TODO: notify other protocols of expired memory
-            print("ERROR: memory expiration on node", self.own.name)
-            print("\tmemory expiration is currently unsupported by protocol implementation. This may cause errors.")
 
             index = kwargs.get("index")
-
             another_name = self.invert_map[self.memory_array[index].direct_receiver]
             another_index = self.middles.index(another_name)
+
+            if self.debug:
+                print("memory {} expired on node {}".format(index, self.own.name))
+
+            if index in self.memory_indices[another_index]:
+                memory_index = self.memory_indices[another_index].index(index)
+                self.remove_memory_index(another_index, memory_index)
             self.add_memory_index(another_index, index)
 
-            if not self.running[another_index]:
-                self.start()
+            # restart if necessary
+            if not self.running[another_index] and self.is_start:
+                self.start_individual(another_index)
+
+            message = "EntanglementGeneration EXPIRE {}".format(index)
+            self.own.send_message(self.others[another_index], message)
 
         else:
             raise Exception("invalid info type {} popped to EntanglementGeneration on node {}".format(info_type, self.own.name))
@@ -266,7 +275,23 @@ class EntanglementGeneration(Protocol):
 
         msg_type = msg[0]
 
-        if msg_type == "NEGOTIATE":
+        if msg_type == "EXPIRE":
+            remote_mem_num = int(msg[1])
+            another_index = self.others.index(src)
+
+            entangled_mems = [i for i in range(len(self.memory_array)) if self.memory_array[i].entangled_memory['node_id'] == src and self.memory_array[i].entangled_memory['memo_id'] == remote_mem_num]
+            if len(entangled_mems) == 1:
+                index = entangled_mems[0]
+                if index in self.memory_indices[another_index]:
+                    memory_index = self.memory_indices[another_index].index(index)
+                    self.remove_memory_index(another_index, memory_index)
+                self.add_memory_index(another_index, index)
+
+                # restart if necessary
+                if not self.running[another_index] and self.is_start:
+                    self.start_individual(another_index)
+
+        elif msg_type == "NEGOTIATE":
             another_delay = int(msg[1])
             another_frequency = float(msg[2])
             another_mem_num = int(msg[3])
