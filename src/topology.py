@@ -848,6 +848,7 @@ class AtomMemory(Entity):
         pass
 
     def excite(self):
+        print(self.qstate.state, self.name)
         state = self.qstate.measure(encoding.ensemble["bases"][0])
         # send photon in certain state to direct receiver
         photon = Photon("", self.timeline, wavelength=(1/self.frequency), location=self,
