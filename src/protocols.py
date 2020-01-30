@@ -409,6 +409,10 @@ class EntanglementGeneration(Protocol):
             remote_id = int(msg[1])
             another_index = self.others.index(src)
 
+            if self.debug:
+                print("EG protocol received ENT_MEMO for memory {} at node {}".format(remote_id, src))
+                print("\twait_remote:", self.wait_remote[another_index])
+
             local_id = self.wait_remote[another_index].pop(0)
             local_memory = self.memory_array[local_id]
             local_memory.entangled_memory["node_id"] = src
