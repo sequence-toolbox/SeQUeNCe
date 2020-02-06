@@ -233,6 +233,7 @@ class EntanglementGeneration(Protocol):
         if len(self.memory_indices[another_index]) > 0:
             # update memories
             self.update_memory_indices(another_index)
+            # TODO: get expired memories, add to NEGOTIATE message
 
             # send NEGOTIATE message
             qchannel = self.own.qchannels[self.middles[another_index]]
@@ -254,12 +255,16 @@ class EntanglementGeneration(Protocol):
             print("\t\tbsm_res:", self.bsm_res[another_index])
 
         # delete memories
-        finished = [i for i in range(len(self.memory_stage[another_index])) if memory_stage[another_index][i] == -2]
-        if self.debug:
-            print("\tfinished:", finished)
-            print("\t\tmemory_indices:", [self.memory_indices[another_index][i] for i in finished])
-        for i in finished:
-            self.remove_memory_index(another_index, i)
+        # finished = [i for i in range(len(self.memory_stage[another_index])) if self.memory_stage[another_index][i] == -2]
+        # if self.debug:
+        #     print("\tfinished:", finished)
+        #     print("\t\tmemory_indices:", [self.memory_indices[another_index][i] for i in finished])
+        # for i in finished:
+        #     self.remove_memory_index(another_index, i)
+
+        # compile expired memories
+        expired = [i for i in range(len(self.memory_stage[another_index])) if self.memory_stage[another_index][i] == -1]
+        # TODO: return
 
         # update memories that have finished stage 1 and flip state
         finished_1 = [i for i, val in enumerate(self.bsm_res[another_index]) if val != -1 and self.memory_stage[another_index][i] == 0]
@@ -291,6 +296,7 @@ class EntanglementGeneration(Protocol):
         msg_type = msg[0]
 
         if msg_type == "EXPIRE":
+            # TODO: fix
             remote_mem_num = int(msg[1])
             another_index = self.others.index(src)
 
@@ -315,6 +321,8 @@ class EntanglementGeneration(Protocol):
 
             # update memories
             self.update_memory_indices(another_index)
+            # TODO: get matching expired memories and remove them
+            #   also send list to other node
 
             # calculate start times based on delay
             qchannel = self.own.qchannels[self.middles[another_index]]
@@ -329,7 +337,6 @@ class EntanglementGeneration(Protocol):
 
             # calculate frequency based on min
             self.frequencies[another_index] = min(self.frequencies[another_index], another_frequency)
-            ## self.memory_arrays[another_index].frequency = self.frequencies[another_index]
 
             # calculate number of memories to use
             num_memories = min(len(self.memory_indices[another_index]), another_mem_num)
@@ -353,6 +360,7 @@ class EntanglementGeneration(Protocol):
             self.emit_nums[another_index] = int(msg[2])
             self.start_times[another_index] = int(msg[3])
             quantum_delay = int(msg[4])
+            # TODO: include removing matching indices
 
             # call memory_excite (with updated parameters)
             self.memory_excite(another_index)
