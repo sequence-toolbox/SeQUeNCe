@@ -120,7 +120,7 @@ def linear_topo(distances, runtime=1e12, **kwargs):
     MEMO_ARR_SIZE = kwargs.get("memo_arr_size", 100)
     MEMO_ARR_FREQ = kwargs.get("memo_arr_freq", int(1e6))
     PURIFICATIOIN_THRED = kwargs.get("purification_thred", 0.9)
-    ATTENUATION = kwargs.get("attenuation", 0.002)
+    ATTENUATION = kwargs.get("attenuation", 0.0002)
 
     tl = timeline.Timeline(runtime)
 
