@@ -11,7 +11,7 @@ from sequence.process import Process
 from sequence.event import Event
 
 
-DEBUG = True
+DEBUG = False
 
 
 class Protocol(ABC):
@@ -205,20 +205,29 @@ class EntanglementGeneration(Protocol):
             index = kwargs.get("index")
             another_name = self.invert_map[self.memory_array[index].direct_receiver]
             another_index = self.middles.index(another_name)
+            memory_index = -1
+            another_memory = -1
 
             if self.debug:
                 print("memory {} \033[1;31;40mexpired\033[0m on node {}".format(index, self.own.name))
 
+            # if index in self.memory_indices[another_index]:
+            #     memory_index = self.memory_indices[another_index].index(index)
+            #     self.remove_memory_index(another_index, memory_index)
+            # self.add_memory_index(another_index, index)
+
             if index in self.memory_indices[another_index]:
                 memory_index = self.memory_indices[another_index].index(index)
-                self.remove_memory_index(another_index, memory_index)
-            self.add_memory_index(another_index, index)
+                self.memory_stage[another_index][memory_index] = -1
+            else:
+                another_memory = self.memory_array[index].entangled_memory["memo_id"]
+                self.add_memory_index(another_index, index)
 
             # restart if necessary
             if not self.running[another_index] and self.is_start:
                 self.start_individual(another_index)
 
-            message = "EntanglementGeneration EXPIRE {}".format(index)
+            message = "EntanglementGeneration EXPIRE {} {}".format(memory_index, another_memory)
             self.own.send_message(self.others[another_index], message)
 
         else:
@@ -297,7 +306,12 @@ class EntanglementGeneration(Protocol):
         return expired
 
     def received_message(self, src: str, msg: List[str]):
-        # print(self.own.timeline.now(), self.own.name, src, msg)
+        if self.debug:
+            print("EG protocol \033[1;36;40mreceived_message\033[0m on node {}".format(self.own.name))
+            print("\tsource:", src)
+            print("\t\033[1;32;40mtype\033[0m:", msg[0])
+            print("\tcontent:", msg[1:])
+
         # TEMPORARY: ignore unkown src
         if not (src in self.others or src in self.middles):
             return False
@@ -306,20 +320,18 @@ class EntanglementGeneration(Protocol):
 
         if msg_type == "EXPIRE":
             # TODO: REWRITE
-            remote_mem_num = int(msg[1])
+            remote_mem_index = int(msg[1])
+            self_mem_num = int(msg[2])
             another_index = self.others.index(src)
 
-            entangled_mems = [i for i in range(len(self.memory_array)) if self.memory_array[i].entangled_memory['node_id'] == src and self.memory_array[i].entangled_memory['memo_id'] == remote_mem_num]
-            if len(entangled_mems) == 1:
-                index = entangled_mems[0]
-                if index in self.memory_indices[another_index]:
-                    memory_index = self.memory_indices[another_index].index(index)
-                    self.remove_memory_index(another_index, memory_index)
-                self.add_memory_index(another_index, index)
+            if self_mem_num == -1:
+                self.memory_stage[another_index][remote_mem_index] = -1
+            else:
+                self.add_memory_index(another_index, self_mem_num)
 
-                # restart if necessary
-                if not self.running[another_index] and self.is_start:
-                    self.start_individual(another_index)
+            # restart if necessary
+            if not self.running[another_index] and self.is_start:
+                self.start_individual(another_index)
 
         elif msg_type == "NEGOTIATE":
             another_delay = int(msg[1])
