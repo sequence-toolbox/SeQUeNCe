@@ -94,6 +94,12 @@ class EntanglementGeneration(Protocol):
 
     UNSCHEDULED:
     memories pushed from entanglement_swapping are added to first stage memory indices
+
+    MEMORY STAGE:
+     0: starting protocol
+     1: finished stage 1
+     2: awaiting entanglement result
+    -1: expired, awaiting recycling
     '''
     def __init__(self, own, **kwargs):
         super().__init__(own)
@@ -152,7 +158,7 @@ class EntanglementGeneration(Protocol):
         self.memory_stage[another_index].append(0)
         self.bsm_wait_time[another_index].append(-1)
         self.bsm_res[another_index].append(-1)
-        self.memory_array[memory_index].previous_bsm = -1
+        self.memory_array[memory_index].reset()
 
     # used when memory popped to upper protocol and by expiration
     def remove_memory_index(self, another_index, memory_internal_index):
@@ -232,8 +238,7 @@ class EntanglementGeneration(Protocol):
 
         if len(self.memory_indices[another_index]) > 0:
             # update memories
-            self.update_memory_indices(another_index)
-            # TODO: get expired memories, add to NEGOTIATE message
+            expired = self.update_memory_indices(another_index)
 
             # send NEGOTIATE message
             qchannel = self.own.qchannels[self.middles[another_index]]
@@ -241,6 +246,8 @@ class EntanglementGeneration(Protocol):
             message = "EntanglementGeneration NEGOTIATE {} {} {}".format(self.qc_delays[another_index],
                                                                          self.frequencies[another_index],
                                                                          len(self.memory_indices[another_index]))
+            if len(expired) > 0:
+                message += " " + " ".join(str(i) for i in expired)
             self.own.send_message(self.others[another_index], message)
 
         else:
@@ -263,8 +270,7 @@ class EntanglementGeneration(Protocol):
         #     self.remove_memory_index(another_index, i)
 
         # compile expired memories
-        expired = [i for i in range(len(self.memory_stage[another_index])) if self.memory_stage[another_index][i] == -1]
-        # TODO: return
+        expired = [i for i, val in enumerate(self.memory_stage[another_index]) if val == -1]
 
         # update memories that have finished stage 1 and flip state
         finished_1 = [i for i, val in enumerate(self.bsm_res[another_index]) if val != -1 and self.memory_stage[another_index][i] == 0]
@@ -277,7 +283,8 @@ class EntanglementGeneration(Protocol):
             self.memory_array[memory_index].flip_state()
 
         # set each memory in stage 1 to + state (and reset bsm)
-        starting = [i for i in range(len(self.bsm_res[another_index])) if i not in finished_1 and self.memory_stage[another_index][i] != -1]
+        # starting = [i for i in range(len(self.bsm_res[another_index])) if i not in finished_1 and self.memory_stage[another_index][i] != -1]
+        starting = [i for i, val in enumerate(self.memory_stage[another_index]) if val == 0]
         if self.debug:
             print("\tstarting:", starting)
             print("\t\tmemory indices:", [self.memory_indices[another_index][i] for i in starting])
@@ -286,6 +293,8 @@ class EntanglementGeneration(Protocol):
             self.memory_stage[another_index][i] = 0
             self.bsm_res[another_index][i] = -1
             self.memory_array[memory_index].reset()
+
+        return expired
 
     def received_message(self, src: str, msg: List[str]):
         # print(self.own.timeline.now(), self.own.name, src, msg)
@@ -296,7 +305,7 @@ class EntanglementGeneration(Protocol):
         msg_type = msg[0]
 
         if msg_type == "EXPIRE":
-            # TODO: fix
+            # TODO: REWRITE
             remote_mem_num = int(msg[1])
             another_index = self.others.index(src)
 
@@ -316,13 +325,15 @@ class EntanglementGeneration(Protocol):
             another_delay = int(msg[1])
             another_frequency = float(msg[2])
             another_mem_num = int(msg[3])
+            another_expired = [int(i) for i in msg[4:]]
 
             another_index = self.others.index(src)
 
             # update memories
-            self.update_memory_indices(another_index)
-            # TODO: get matching expired memories and remove them
-            #   also send list to other node
+            expired = self.update_memory_indices(another_index)
+            matching = [i for i in expired if i in another_expired]
+            for i in matching:
+                self.recycle_memory_index(another_index, self.memory_indices[another_index][i])
 
             # calculate start times based on delay
             qchannel = self.own.qchannels[self.middles[another_index]]
@@ -350,6 +361,8 @@ class EntanglementGeneration(Protocol):
                                                                                 num_memories,
                                                                                 another_start_time,
                                                                                 quantum_delay)
+            if len(matching) > 0:
+                message += " " + " ".join(str(i) for i in matching)
             self.own.send_message(src, message)
 
         elif msg_type == "NEGOTIATE_ACK":
@@ -360,7 +373,10 @@ class EntanglementGeneration(Protocol):
             self.emit_nums[another_index] = int(msg[2])
             self.start_times[another_index] = int(msg[3])
             quantum_delay = int(msg[4])
-            # TODO: include removing matching indices
+
+            another_matching = [int(i) for i in msg[5:]]
+            for i in another_matching:
+                self.recycle_memory_index(another_index, self.memory_indices[another_index][i])
 
             # call memory_excite (with updated parameters)
             self.memory_excite(another_index)
@@ -412,7 +428,7 @@ class EntanglementGeneration(Protocol):
                         # TODO: notify upper protocol of +/- state
                         # remove index
                         # memory_id = self.remove_memory_index(another_index, index)
-                        self.memory_stage[another_index][index] = -1
+                        self.memory_stage[another_index][index] = 2
                         memory_id = self.memory_indices[another_index][index]
                         self.wait_remote[another_index].append(memory_id)
                         self.wait_remote_times[another_index].append(time)
@@ -450,9 +466,9 @@ class EntanglementGeneration(Protocol):
                 local_id = self.wait_remote[another_index].pop(wait_remote_index)
                 del self.wait_remote_times[another_index][wait_remote_index]
 
-                # mark memory for deletion
+                # delete memory
                 local_id_index = self.memory_indices[another_index].index(local_id)
-                self.memory_stage[another_index][local_id_index] = -2
+                self.remove_memory_index(another_index, local_id_index)
 
                 local_memory = self.memory_array[local_id]
                 local_memory.entangled_memory["node_id"] = src
@@ -485,7 +501,8 @@ class EntanglementGeneration(Protocol):
         self.bsm_wait_time[another_index] = [-1] * self.emit_nums[another_index]
 
         for i in range(self.emit_nums[another_index]):
-            if self.memory_stage[another_index][i] != -1:
+            # TODO: write condition more succinctly?
+            if self.memory_stage[another_index][i] != -1 and self.memory_stage[another_index][i] != 2:
                 memory_index = self.memory_indices[another_index][i]
                 process = Process(self.memory_array[memory_index], "excite", [])
                 event = Event(time, process)
