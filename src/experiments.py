@@ -402,7 +402,7 @@ def linear_topo(distances, runtime=1e12, **kwargs):
     print("\tThroughput:", pairs1 / (runtime * 1e-12))
 
 
-def experiment(number, param, runtime=1e16):
+def experiment(number, param, runtime=1e18):
     wis_fermi = [40e3, 40e3, 40e3, 40e3, 40e3, 2e3]
     fermi_arg = [40e3, 8e3]
     arg_uiuc = [40e3, 40e3, 40e3, 40e3, 40e3, 6e3]
