@@ -11,7 +11,7 @@ from sequence.process import Process
 from sequence.event import Event
 
 
-DEBUG = True
+DEBUG = False
 
 
 class Protocol(ABC):
