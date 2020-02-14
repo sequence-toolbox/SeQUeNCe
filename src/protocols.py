@@ -11,7 +11,7 @@ from sequence.process import Process
 from sequence.event import Event
 
 
-DEBUG = False
+DEBUG = True
 
 
 class Protocol(ABC):
@@ -184,7 +184,7 @@ class EntanglementGeneration(Protocol):
         another_index = self.middles.index(another_name)
 
         self.add_memory_index(another_index, index)
-        
+
         if not self.running[another_index] and self.is_start:
             if self.debug:
                 print("\trestarting protocol")
@@ -293,7 +293,7 @@ class EntanglementGeneration(Protocol):
 
         # set each memory in stage 1 to + state (and reset bsm)
         # starting = [i for i in range(len(self.bsm_res[another_index])) if i not in finished_1 and self.memory_stage[another_index][i] != -1]
-        starting = [i for i, val in enumerate(self.memory_stage[another_index]) if val == 0]
+        starting = [i for i, val in enumerate(self.memory_stage[another_index]) if i not in expired and i not in finished_1]
         if self.debug:
             print("\tstarting:", starting)
             print("\t\tmemory indices:", [self.memory_indices[another_index][i] for i in starting])
