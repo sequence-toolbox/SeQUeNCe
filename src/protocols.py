@@ -201,35 +201,27 @@ class EntanglementGeneration(Protocol):
                 self.own.send_message(node, message)
 
         elif info_type == "expired_memory":
-            # TODO: notify other protocols of expired memory
-
             index = kwargs.get("index")
             another_name = self.invert_map[self.memory_array[index].direct_receiver]
             another_index = self.middles.index(another_name)
-            memory_index = -1
-            another_memory = -1
 
             if self.debug:
                 print("memory {} \033[1;31;40mexpired\033[0m on node {}".format(index, self.own.name))
 
-            # if index in self.memory_indices[another_index]:
-            #     memory_index = self.memory_indices[another_index].index(index)
-            #     self.remove_memory_index(another_index, memory_index)
-            # self.add_memory_index(another_index, index)
-
             if index in self.memory_indices[another_index]:
                 memory_index = self.memory_indices[another_index].index(index)
                 self.memory_stage[another_index][memory_index] = -1
+
             else:
                 another_memory = self.memory_array[index].entangled_memory["memo_id"]
                 self.add_memory_index(another_index, index)
 
+                message = "EntanglementGeneration EXPIRE {}".format(another_memory)
+                self.own.send_message(self.others[another_index], message)
+
             # restart if necessary
             if not self.running[another_index] and self.is_start:
                 self.start_individual(another_index)
-
-            message = "EntanglementGeneration EXPIRE {} {}".format(memory_index, another_memory)
-            self.own.send_message(self.others[another_index], message)
 
         else:
             raise Exception("invalid info type {} popped to EntanglementGeneration on node {}".format(info_type, self.own.name))
@@ -248,7 +240,11 @@ class EntanglementGeneration(Protocol):
 
         if len(self.memory_indices[another_index]) > 0:
             # update memories
-            expired = self.update_memory_indices(another_index)
+            self.update_memory_indices(another_index)
+
+            # compile lists
+            expired = [i for i, val in enumerate(self.memory_stage[another_index]) if val == -1]
+            finished = [i for i, val in enumerate(self.memory_stage[another_index]) if val == -2]
 
             # send NEGOTIATE message
             qchannel = self.own.qchannels[self.middles[another_index]]
@@ -258,6 +254,9 @@ class EntanglementGeneration(Protocol):
                                                                          len(self.memory_indices[another_index]))
             if len(expired) > 0:
                 message += " " + " ".join(str(i) for i in expired)
+            if len(finished) > 0:
+                message += " -1 " + " ".join(str(i) for i in finished)
+
             self.own.send_message(self.others[another_index], message)
 
         else:
@@ -270,21 +269,6 @@ class EntanglementGeneration(Protocol):
             print("\t\tmemory_indices:", self.memory_indices[another_index])
             print("\t\tmemory_stage:", self.memory_stage[another_index])
             print("\t\tbsm_res:", self.bsm_res[another_index])
-
-        # delete memories
-        # finished = [i for i in range(len(self.memory_stage[another_index])) if self.memory_stage[another_index][i] == -2]
-        # if self.debug:
-        #     print("\tfinished:", finished)
-        #     print("\t\tmemory_indices:", [self.memory_indices[another_index][i] for i in finished])
-        # for i in finished:
-        #     self.remove_memory_index(another_index, i)
-
-        # compile expired memories
-        expired = [i for i, val in enumerate(self.memory_stage[another_index]) if val == -1 or val == -2]
-        if self.debug:
-            print("\texpired:", expired)
-            print("\t\tmemory indices:", [self.memory_indices[another_index][i] for i in expired])
-            print("\t\tstages:", [self.memory_stage[another_index][i] for i in expired])
 
         # update memories that have finished stage 1 and flip state
         finished_1 = [i for i, val in enumerate(self.bsm_res[another_index]) if val != -1 and self.memory_stage[another_index][i] == 0]
@@ -300,7 +284,7 @@ class EntanglementGeneration(Protocol):
 
         # set each memory in stage 1 to + state (and reset bsm)
         # starting = [i for i in range(len(self.bsm_res[another_index])) if i not in finished_1 and self.memory_stage[another_index][i] != -1]
-        starting = [i for i, val in enumerate(self.memory_stage[another_index]) if i not in expired and i not in finished_1]
+        starting = [i for i, val in enumerate(self.memory_stage[another_index]) if i not in finished_1 and (val == 0 or val == 1)]
         if self.debug:
             print("\tstarting:", starting)
             print("\t\tmemory indices:", [self.memory_indices[another_index][i] for i in starting])
@@ -309,8 +293,6 @@ class EntanglementGeneration(Protocol):
             self.memory_stage[another_index][i] = 0
             self.bsm_res[another_index][i] = -1
             self.memory_array[memory_index].reset()
-
-        return expired
 
     def received_message(self, src: str, msg: List[str]):
         if self.debug:
@@ -326,15 +308,10 @@ class EntanglementGeneration(Protocol):
         msg_type = msg[0]
 
         if msg_type == "EXPIRE":
-            # TODO: REWRITE
-            remote_mem_index = int(msg[1])
-            self_mem_num = int(msg[2])
+            self_mem_num = int(msg[1])
             another_index = self.others.index(src)
 
-            if self_mem_num == -1:
-                self.memory_stage[another_index][remote_mem_index] = -1
-            else:
-                self.add_memory_index(another_index, self_mem_num)
+            self.add_memory_index(another_index, self_mem_num)
 
             # restart if necessary
             if not self.running[another_index] and self.is_start:
@@ -344,22 +321,50 @@ class EntanglementGeneration(Protocol):
             another_delay = int(msg[1])
             another_frequency = float(msg[2])
             another_mem_num = int(msg[3])
-            another_expired = [int(i) for i in msg[4:]]
+
+            # get expired and finished lists
+            msg = msg[4:]
+            another_expired = []
+            another_finished = []
+            if "-1" in msg:
+                index = msg.index("-1")
+                another_expired = [int(i) for i in msg[:index]]
+                another_finished = [int(i) for i in msg[index+1:]]
+            else:
+                another_expired = [int(i) for i in msg]
 
             another_index = self.others.index(src)
 
             # update necessary memories
-            expired = self.update_memory_indices(another_index)
-            matching = [i for i in expired if i in another_expired]
-            matching.reverse()
-            for i in matching:
-                # check if memory is expired, then recycle
-                if self.memory_stage[another_index][i] == -1:
-                    self.recycle_memory_index(another_index, self.memory_indices[another_index][i])
-                # otherwise, awaiting deletion
-                else:
-                    self.remove_memory_index(another_index, i)
-                    another_mem_num -= 1
+            self.update_memory_indices(another_index)
+
+            expired = [i for i, val in enumerate(self.memory_stage[another_index]) if val == -1]
+            finished = [i for i, val in enumerate(self.memory_stage[another_index]) if val == -2]
+            combined = list(set(expired + finished + another_expired + another_finished))
+            combined.sort(reverse=True)
+            expired_total = []
+            finished_total = []
+
+            if combined:
+                for i in combined:
+                    if i in expired or i in another_expired:
+                        self.recycle_memory_index(another_index, self.memory_indices[another_index][i])
+                        expired_total.append(i)
+                    else:
+                        self.remove_memory_index(another_index, i)
+                        another_mem_num -= 1
+                        finished_total.append(i)
+
+            # matching = [i for i in expired if i in another_expired]
+            # matching.reverse()
+            # for i in matching:
+            #     # check if memory is expired, then recycle
+            #     if self.memory_stage[another_index][i] == -1:
+            #         self.recycle_memory_index(another_index, self.memory_indices[another_index][i])
+            #     # otherwise, awaiting deletion
+            #     else:
+            #         self.remove_memory_index(another_index, i)
+            #         another_mem_num -= 1
 
             # calculate start times based on delay
             qchannel = self.own.qchannels[self.middles[another_index]]
@@ -387,8 +392,10 @@ class EntanglementGeneration(Protocol):
                                                                                 num_memories,
                                                                                 another_start_time,
                                                                                 quantum_delay)
-            if len(matching) > 0:
-                message += " " + " ".join(str(i) for i in matching)
+            if len(expired_total) > 0:
+                message += " " + " ".join(str(i) for i in expired_total)
+            if len(finished_total) > 0:
+                message += " -1 " + " ".join(str(i) for i in finished_total)
             self.own.send_message(src, message)
 
         elif msg_type == "NEGOTIATE_ACK":
@@ -400,15 +407,25 @@ class EntanglementGeneration(Protocol):
             self.start_times[another_index] = int(msg[3])
             quantum_delay = int(msg[4])
 
-            # update necessary memories
-            another_matching = [int(i) for i in msg[5:]]
-            for i in another_matching:
-                # check if memory is expired, then recycle
-                if self.memory_stage[another_index][i] == -1:
-                    self.recycle_memory_index(another_index, self.memory_indices[another_index][i])
-                # otherwise, awaiting deletion
-                else:
-                    self.remove_memory_index(another_index, i)
+            # get expired and finished lists
+            msg = msg[5:]
+            expired_total = []
+            finished_total = []
+            if "-1" in msg:
+                index = msg.index("-1")
+                expired_total = [int(i) for i in msg[:index]]
+                finished_total = [int(i) for i in msg[index+1:]]
+            else:
+                expired_total = [int(i) for i in msg]
+
+            combined = list(set(expired_total + finished_total))
+            combined.sort(reverse=True)
+            if combined:
+                for i in combined:
+                    if i in expired_total:
+                        self.recycle_memory_index(another_index, self.memory_indices[another_index][i])
+                    else:
+                        self.remove_memory_index(another_index, i)
 
             # call memory_excite (with updated parameters)
             self.memory_excite(another_index)

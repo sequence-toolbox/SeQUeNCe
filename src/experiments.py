@@ -410,7 +410,7 @@ def experiment(number, param, runtime=1e16):
 
     if number == 0:
         distances = [0.5e3]
-        linear_topo(distances, runtime, memo_arr_size=100, memo_coherence=param)
+        linear_topo(distances, runtime, memo_arr_size=10, memo_coherence=param)
 
     elif number == 1:
         # param: distance between repeater nodes (in km)
