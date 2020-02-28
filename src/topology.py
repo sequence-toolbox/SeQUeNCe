@@ -237,7 +237,7 @@ class QuantumChannel(OpticalChannel):
         chance_photon_kept = 10 ** (loss / -10)
 
         # check if photon kept
-        if not photon.is_null or numpy.random.random_sample() < chance_photon_kept:
+        if photon.is_null or numpy.random.random_sample() < chance_photon_kept:
             self.photon_counter += 1
 
             # check if random polarization noise applied
@@ -253,6 +253,8 @@ class QuantumChannel(OpticalChannel):
             process = Process(self.receiver, "get", [photon])
             event = Event(future_time, process)
             self.timeline.schedule(event)
+        else:
+            photon.remove_from_timeline()
 
 
 class ClassicalChannel(OpticalChannel):
@@ -605,6 +607,8 @@ class BSM(Entity):
         # check if photon arrived later than current photon
         if self.photon_arrival_time < self.timeline.now():
             # clear photons
+            for old_photon in self.photons:
+                old_photon.remove_from_timeline()
             self.photons = [photon]
             # set arrival time
             self.photon_arrival_time = self.timeline.now()
@@ -825,6 +829,7 @@ class AtomMemory(Entity):
         Entity.__init__(self, name, timeline)
         self.fidelity = kwargs.get("fidelity", 1)
         self.frequency = kwargs.get("frequency", 1)
+        self.efficiency = kwargs.get("efficiency", 1)
         self.coherence_time = kwargs.get("coherence_time", -1) # average coherence time in seconds
         self.direct_receiver = kwargs.get("direct_receiver", None)
         self.qstate = QuantumState()
@@ -846,17 +851,21 @@ class AtomMemory(Entity):
         state = self.qstate.measure(encoding.ensemble["bases"][0])
         # send photon in certain state to direct receiver
         photon = Photon("", self.timeline, wavelength=(1/self.frequency), location=self,
-                            encoding_type=self.photon_encoding)
+                           encoding_type=self.photon_encoding)
         if state == 0:
             photon.is_null = True
-        elif self.coherence_time > 0:
-            # set expiration
-            decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
-            process = Process(self, "expire", [])
-            event = Event(decay_time, process)
-            self.timeline.schedule(event)
-
-        self.direct_receiver.get(photon)
+            self.direct_receiver.get(photon)
+        else:
+            if numpy.random.random_sample() < self.efficiency:
+                self.direct_receiver.get(photon)
+            else:
+                photon.remove_from_timeline()
+            if self.coherence_time > 0:
+                # set expiration
+                decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
+                process = Process(self, "expire", [])
+                event = Event(decay_time, process)
+                self.timeline.schedule(event)
 
     def expire(self):
         # TODO: change state?
@@ -866,7 +875,8 @@ class AtomMemory(Entity):
 
     def flip_state(self):
         # flip coefficients of state
-        assert len(self.qstate.state) == 2, "qstate length error in memory {} {} {}".format(self.name, len(self.qstate.state), self.qstate.state)
+        # print(self.qstate.state)
+        assert len(self.qstate.state) == 2, "qstate length error in memory {}".format(self.name)
         new_state = self.qstate.state
         new_state[0], new_state[1] = new_state[1], new_state[0]
         self.qstate.set_state_single(new_state)

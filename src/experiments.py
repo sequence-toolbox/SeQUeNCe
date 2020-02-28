@@ -4,6 +4,7 @@ from numpy.random import seed
 from protocols import EntanglementGeneration
 from protocols import BBPSSW
 from protocols import EntanglementSwapping
+from protocols import EndNodeProtocol
 
 import sequence
 from sequence import topology
@@ -100,21 +101,26 @@ def three_node_test():
         print_memory(memory)
 
 
-def linear_topo(n: int, runtime=1e12):
+def linear_topo(distances, runtime=1e12, **kwargs):
     '''
+    distances: list of distances (in meters) between end nodes
     n: the number of end nodes
     '''
-    UNIT_DELAY = 1e5
-    UNIT_DISTANCE = 1e3
-    DETECTOR_DARK = 0
-    DETECTOR_EFFICIENCY = 0.7
-    DETECTOR_TIME_RESOLUTION = 150
-    DETECTOR_COUNT_RATE = 25000000
-    MEMO_FIDELITY = 0.8
-    MEMO_EFFICIENCY = 0.5
-    MEMO_ARR_SIZE = 100
-    MEMO_ARR_FREQ = int(1e6)
-    PURIFICATIOIN_THRED = 0.9
+    n = len(distances) + 1
+    
+    UNIT_DELAY = kwargs.get("unit_delay", 1e9)
+    UNIT_DISTANCE = kwargs.get("unit_distance", 1e3)
+    DETECTOR_DARK = kwargs.get("detector_dark", 0)
+    DETECTOR_EFFICIENCY = kwargs.get("detector_efficiency", 0.7)
+    DETECTOR_TIME_RESOLUTION = kwargs.get("detector_time_resolution", 150)
+    DETECTOR_COUNT_RATE = kwargs.get("detector_count_rate", 25000000)
+    MEMO_FIDELITY = kwargs.get("memo_fidelity", 0.8)
+    MEMO_EFFICIENCY = kwargs.get("memo_efficiency", 0.5)
+    MEMO_COHERENCE = kwargs.get("memo_coherence", -1)
+    MEMO_ARR_SIZE = kwargs.get("memo_arr_size", 100)
+    MEMO_ARR_FREQ = kwargs.get("memo_arr_freq", int(1e6))
+    PURIFICATIOIN_THRED = kwargs.get("purification_thred", 0.9)
+    ATTENUATION = kwargs.get("attenuation", 0.0002)
 
     tl = timeline.Timeline(runtime)
 
@@ -135,7 +141,7 @@ def linear_topo(n: int, runtime=1e12):
         end_node = end_nodes[i]
         # classical channel 1
         name = "cc_%s_%s" % (node.name, end_node.name)
-        cc = topology.ClassicalChannel(name, tl, distance=UNIT_DISTANCE, delay=UNIT_DELAY)
+        cc = topology.ClassicalChannel(name, tl, distance=distances[i]/2, delay=UNIT_DELAY)
         cc.set_ends([end_node, node])
         print('add', name, 'to', end_node.name)
         print('add', name, 'to', node.name)
@@ -143,7 +149,7 @@ def linear_topo(n: int, runtime=1e12):
         end_node = end_nodes[i+1]
         # classical channel 2
         name = "cc_%s_%s" % (node.name, end_node.name)
-        cc = topology.ClassicalChannel(name, tl, distance=UNIT_DISTANCE, delay=UNIT_DELAY)
+        cc = topology.ClassicalChannel(name, tl, distance=distances[i]/2, delay=UNIT_DELAY)
         cc.set_ends([end_node, node])
         print('add', name, 'to', node.name)
         print('add', name, 'to', end_node.name)
@@ -155,7 +161,7 @@ def linear_topo(n: int, runtime=1e12):
                 continue
             delay = (j - i) * 2 * UNIT_DELAY
             name = "cc_%s_%s" % (node1.name, node2.name)
-            distance = (j - i) * 2 * UNIT_DISTANCE
+            distance = sum(distances[i:j])
             cc = topology.ClassicalChannel(name, tl, distance=distance, delay=delay)
             cc.set_ends([node1, node2])
             print('add', name, 'to', node1.name)
@@ -182,7 +188,7 @@ def linear_topo(n: int, runtime=1e12):
 
     # create quantum memories
     for i, node in enumerate(end_nodes):
-        memory_params = {"fidelity":MEMO_FIDELITY, "efficiency":MEMO_EFFICIENCY}
+        memory_params = {"fidelity":MEMO_FIDELITY, "efficiency":MEMO_EFFICIENCY, "coherence_time":MEMO_COHERENCE}
         name = "memory_array_%s" % node.name
         memory_array = topology.MemoryArray(name, tl, num_memories=MEMO_ARR_SIZE,
                                             frequency=MEMO_ARR_FREQ,
@@ -202,7 +208,7 @@ def linear_topo(n: int, runtime=1e12):
             mid_node = mid_nodes[i-1]
             name = "qc_%s_%s" % (mid_node.name, node.name)
             print("add", name)
-            qc = topology.QuantumChannel(name, tl, distance=UNIT_DISTANCE)
+            qc = topology.QuantumChannel(name, tl, distance=distances[i-1]/2, attenuation=ATTENUATION)
 
             memory_array = node.components['MemoryArray']
             for j, memory in enumerate(memory_array):
@@ -224,7 +230,7 @@ def linear_topo(n: int, runtime=1e12):
             mid_node = mid_nodes[i]
             name = "qc_%s_%s" % (mid_node.name, node.name)
             print("add", name)
-            qc = topology.QuantumChannel(name, tl, distance=UNIT_DISTANCE)
+            qc = topology.QuantumChannel(name, tl, distance=distances[i]/2, attenuation=ATTENUATION)
 
             memory_array = node.components['MemoryArray']
             for j, memory in enumerate(memory_array):
@@ -354,6 +360,19 @@ def linear_topo(n: int, runtime=1e12):
             print(" "*8, "upper protocols", protocol.upper_protocols)
             print(" "*8, "lower protocols", protocol.lower_protocols)
 
+    # add EndProtocol to end nodes
+    curr = end_nodes[0]
+    curr_last = curr.protocols[-1]
+    end_protocol = EndNodeProtocol(curr)
+    end_protocol.lower_protocols.append(curr_last)
+    curr_last.upper_protocols.append(end_protocol)
+
+    curr = end_nodes[-1]
+    curr_last = curr.protocols[-1]
+    end_protocol = EndNodeProtocol(curr)
+    end_protocol.lower_protocols.append(curr_last)
+    curr_last.upper_protocols.append(end_protocol)
+
     # schedule events
     for node in end_nodes:
         for protocol in node.protocols:
@@ -375,8 +394,81 @@ def linear_topo(n: int, runtime=1e12):
         print(node.name)
         print_memory(memory)
 
+    pairs0 = end_nodes[0].protocols[-1].dist_counter
+    pairs1 = end_nodes[-1].protocols[-1].dist_counter
+    print("END 1 PAIRS:", pairs0)
+    print("\tThroughput:", pairs0 / (runtime * 1e-12))
+    print("END 2 PAIRS:", pairs1)
+    print("\tThroughput:", pairs1 / (runtime * 1e-12))
+
+
+def experiment(number, param, runtime=1e16):
+    wis_fermi = [40e3, 40e3, 40e3, 40e3, 40e3, 2e3]
+    fermi_arg = [40e3, 8e3]
+    arg_uiuc = [40e3, 40e3, 40e3, 40e3, 40e3, 6e3]
+    total_distances = wis_fermi + fermi_arg + arg_uiuc
+
+    if number == 0:
+        distances = [0.5e3]
+        linear_topo(distances, runtime, memo_arr_size=10, memo_coherence=param)
+
+    elif number == 1:
+        # param: distance between repeater nodes (in km)
+        param = param * 1e3
+        wis_fermi_length = 202e3
+        fermi_arg_length = 48e3
+        arg_uiuc_length = 206e3
+        
+        wis_fermi = [param] * math.floor(wis_fermi_length / param)
+        if sum(wis_fermi) < wis_fermi_length:
+            wis_fermi.append(wis_fermi_length - sum(wis_fermi))
+        fermi_arg = [param] * math.floor(fermi_arg_length / param)
+        if sum(fermi_arg) < fermi_arg_length:
+            fermi_arg.append(fermi_arg_length - sum(fermi_arg))
+        arg_uiuc = [param] * math.floor(arg_uiuc_length / param)
+        if sum(arg_uiuc) < arg_uiuc_length:
+            arg_uiuc.append(arg_uiuc_length - sum(arg_uiuc))
+
+        print(wis_fermi)
+        print(fermi_arg)
+        print(arg_uiuc)
+        total_distances = wis_fermi + fermi_arg + arg_uiuc
+        linear_topo(total_distances, runtime)
+
+    elif number == 2:
+        # param: maximum frequency for memory array (in MHz)
+        param = param * 1e6
+        linear_topo(total_distances, runtime, memo_arr_freq=param)
+
+    elif number == 3:
+        # param: memory array size
+        param = int(param)
+        linear_topo(total_distances, runtime, memo_arr_size=param)
+
+    elif number == 4:
+        # param: delay in classical channel (in ms)
+        param = param * 1e9
+        linear_topo(total_distances, runtime, unit_delay=param)
+
+    elif number == 5:
+        # param: fidelity 
+        linear_topo(total_distances, runtime, memo_fidelity=param)
+
+    elif number == 6:
+        # param: memo coherence
+        linear_topo(total_distances, runtime, memo_coherence=param)
+
 
 if __name__ == "__main__":
+    import sys
     seed(1)
+
     # three_node_test()
-    linear_topo(3, 1e15)
+    # linear_topo([2e3,2e3], 1e13)
+
+    num = int(sys.argv[1])
+    param = float(sys.argv[2])
+    
+    experiment(num, param)
+
+
