@@ -121,12 +121,15 @@ class EntanglementGeneration(Protocol):
         self.bsm_res = [[] for _ in range(len(self.others))]
         self.wait_remote = [[] for _ in range(len(self.others))] # keep track of memories waiting for ent_memo
         self.wait_remote_times = [[] for _ in range(len(self.others))] # keep track of time for said memories
+        self.add_list = [[] for _ in range(len(self.others))] # keep track of memories to be added
 
         # misc
         self.invert_map = {} # keep track of mapping from connected qchannels to adjacent nodes
         self.running = [False] * len(self.others) # True if protocol currently processing at least 1 memory
         self.is_start = False
         self.debug = DEBUG
+        if self.own.name == "e13" or self.own.name == "e14":
+            self.debug = True
 
     def memory_belong_protocol(self, memory):
         return memory.direct_receiver and memory.direct_receiver.receiver.owner.name == self.middle
@@ -157,14 +160,12 @@ class EntanglementGeneration(Protocol):
     def add_memory_index(self, another_index, memory_index):
         self.memory_indices[another_index].append(memory_index)
         self.memory_stage[another_index].append(0)
-        self.bsm_wait_time[another_index].append(-1)
         self.bsm_res[another_index].append(-1)
         self.memory_array[memory_index].reset()
 
     # used when memory popped to upper protocol and by expiration
     def remove_memory_index(self, another_index, memory_internal_index):
         del self.memory_stage[another_index][memory_internal_index]
-        del self.bsm_wait_time[another_index][memory_internal_index]
         del self.bsm_res[another_index][memory_internal_index]
         del self.memory_indices[another_index][memory_internal_index]
 
@@ -184,7 +185,18 @@ class EntanglementGeneration(Protocol):
         another_name = self.invert_map[self.memory_array[index].direct_receiver]
         another_index = self.middles.index(another_name)
 
-        self.add_memory_index(another_index, index)
+        # if index not in self.memory_indices[another_index]:
+        #     self.add_memory_index(another_index, index)
+        # else:
+        #     internal_index = self.memory_indices[another_index].index(index)
+        #     if self.memory_stage[another_index][internal_index] == -2:
+        #         self.add_memory_index(another_index, index)
+        #     else:
+        #         self.memory_stage[another_index][internal_index] = 0
+
+        self.add_list[another_index].append(index)
+
+        # self.add_memory_index(another_index, index)
 
         if not self.running[another_index] and self.is_start:
             if self.debug:
@@ -212,9 +224,10 @@ class EntanglementGeneration(Protocol):
                 memory_index = self.memory_indices[another_index].index(index)
                 self.memory_stage[another_index][memory_index] = -1
 
-            else:
+            elif index not in self.add_list[another_index]:
                 another_memory = self.memory_array[index].entangled_memory["memo_id"]
-                self.add_memory_index(another_index, index)
+                print("another_memory:", another_memory)
+                self.add_list[another_index].append(index)
 
                 message = "EntanglementGeneration EXPIRE {}".format(another_memory)
                 self.own.send_message(self.others[another_index], message)
@@ -235,6 +248,11 @@ class EntanglementGeneration(Protocol):
     def start_individual(self, another_index):
         if self.debug:
             print("EG protocol \033[1;36;40mstart\033[0m on node {} with partner {}".format(self.own.name, self.others[another_index]))
+
+        # TODO: delete
+            if self.debug:
+                print("lengths:", len(self.memory_indices[another_index]), len(self.memory_stage[another_index]), len(self.bsm_res[another_index]), len(self.bsm_wait_time[another_index]))
+
 
         self.running[another_index] = True
 
@@ -311,7 +329,9 @@ class EntanglementGeneration(Protocol):
             self_mem_num = int(msg[1])
             another_index = self.others.index(src)
 
-            self.add_memory_index(another_index, self_mem_num)
+            if self_mem_num not in self.add_list[another_index]:
+                # self.add_memory_index(another_index, self_mem_num)
+                self.add_list[another_index].append(self_mem_num)
 
             # restart if necessary
             if not self.running[another_index] and self.is_start:
@@ -335,6 +355,10 @@ class EntanglementGeneration(Protocol):
 
             another_index = self.others.index(src)
 
+            # TODO: delete
+            if self.debug:
+                print("lengths:", len(self.memory_indices[another_index]), len(self.memory_stage[another_index]), len(self.bsm_res[another_index]), len(self.bsm_wait_time[another_index]))
+
             # update necessary memories
             self.update_memory_indices(another_index)
 
@@ -354,6 +378,15 @@ class EntanglementGeneration(Protocol):
                         self.remove_memory_index(another_index, i)
                         another_mem_num -= 1
                         finished_total.append(i)
+
+            while len(self.add_list[another_index]) > 0:
+                index = self.add_list[another_index].pop(0)
+                if index not in self.memory_indices[another_index]:
+                    self.add_memory_index(another_index, index)
+
+            # TODO: delete
+            if self.debug:
+                print("lengths:", len(self.memory_indices[another_index]), len(self.memory_stage[another_index]), len(self.bsm_res[another_index]), len(self.bsm_wait_time[another_index]))
 
             # matching = [i for i in expired if i in another_expired]
             # matching.reverse()
@@ -400,6 +433,9 @@ class EntanglementGeneration(Protocol):
 
         elif msg_type == "NEGOTIATE_ACK":
             another_index = self.others.index(src)
+            # TODO: delete
+            if self.debug:
+                print("lengths:", len(self.memory_indices[another_index]), len(self.memory_stage[another_index]), len(self.bsm_res[another_index]), len(self.bsm_wait_time[another_index]))
 
             # update parameters
             self.frequencies[another_index] = float(msg[1])
@@ -426,6 +462,15 @@ class EntanglementGeneration(Protocol):
                         self.recycle_memory_index(another_index, self.memory_indices[another_index][i])
                     else:
                         self.remove_memory_index(another_index, i)
+
+            while len(self.add_list[another_index]) > 0:
+                index = self.add_list[another_index].pop(0)
+                if index not in self.memory_indices[another_index]:
+                    self.add_memory_index(another_index, index)
+
+            # TODO: delete
+            if self.debug:
+                print("lengths:", len(self.memory_indices[another_index]), len(self.memory_stage[another_index]), len(self.bsm_res[another_index]), len(self.bsm_wait_time[another_index]))
 
             # call memory_excite (with updated parameters)
             self.memory_excite(another_index)
