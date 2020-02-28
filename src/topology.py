@@ -1026,6 +1026,10 @@ class MemoryArray(Entity):
         # notify node
         self._pop(entity="MemoryArray", index=index)
 
+    def set_direct_receiver(self, indices, direct_receiver):
+        for memo_index in indices:
+            self.memories[memo_index].direct_receiver = direct_receiver
+
 
 # class for photon memory
 class Memory_EIT(Entity):
