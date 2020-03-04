@@ -1,11 +1,8 @@
-import math
 import copy
+
 import numpy
 
-from sequence import encoding
-from sequence.process import Process
-from sequence.entity import Entity
-from sequence.event import Event
+from ..kernel.entity import Entity
 
 
 class SPDCLens(Entity):
@@ -31,5 +28,3 @@ class SPDCLens(Entity):
 
     def assign_receiver(self, receiver):
         self.direct_receiver = receiver
-
-

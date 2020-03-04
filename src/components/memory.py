@@ -1,11 +1,13 @@
 import math
-import copy
+
 import numpy
 
-from sequence import encoding
-from sequence.process import Process
-from sequence.entity import Entity
-from sequence.event import Event
+from .photon import Photon
+from ..kernel.entity import Entity
+from ..kernel.event import Event
+from ..kernel.process import Process
+from ..utils.encoding import single_atom, ensemble
+from ..utils.quantum_state import QuantumState
 
 
 # array of atomic ensemble memories
@@ -91,7 +93,7 @@ class AtomMemory(Entity):
         self.direct_receiver = kwargs.get("direct_receiver", None)
         self.qstate = QuantumState()
 
-        self.photon_encoding = encoding.single_atom.copy()
+        self.photon_encoding = single_atom.copy()
         self.photon_encoding["memory"] = self
 
         # keep track of entanglement
@@ -105,7 +107,7 @@ class AtomMemory(Entity):
         pass
 
     def excite(self):
-        state = self.qstate.measure(encoding.ensemble["bases"][0])
+        state = self.qstate.measure(ensemble["bases"][0])
         # send photon in certain state to direct receiver
         photon = Photon("", self.timeline, wavelength=(1/self.frequency), location=self,
                            encoding_type=self.photon_encoding)
@@ -154,7 +156,7 @@ class Memory(Entity):
         self.qstate = QuantumState()
         self.frequencies = kwargs.get("frequencies", [1, 1]) # first is ground transition frequency, second is excited frequency
 
-        self.photon_encoding = encoding.ensemble.copy()
+        self.photon_encoding = ensemble.copy()
         self.photon_encoding["memory"] = self
 
         # keep track of entanglement
@@ -194,7 +196,7 @@ class Memory(Entity):
 
     def read(self):
         if numpy.random_random_sample() < self.efficiency:
-            state = self.qstate.measure(encoding.ensemble["bases"][0])
+            state = self.qstate.measure(ensemble["bases"][0])
             if state == 1:
                 # send photon in certain state to direct receiver
                 photon = Photon("", self.timeline, wavelength=(1/self.frequencies[0]), location=self,
@@ -204,7 +206,7 @@ class Memory(Entity):
     def expire(self):
         if not self.expired:
             self.expired = True
-            state = self.qstate.measure(encoding.ensemble["bases"][0])
+            state = self.qstate.measure(ensemble["bases"][0])
             if state == 1:
                 # send photon in certain state to direct receiver
                 photon = Photon("", self.timeline, wavelength=(1/self.frequencies[0]), location=self,
@@ -236,4 +238,3 @@ class Memory_EIT(Entity):
         photon = self.photon
         self.photon = None
         return photon
-

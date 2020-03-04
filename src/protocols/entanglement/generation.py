@@ -1,14 +1,8 @@
-from abc import ABC, abstractmethod
 from typing import List
-from numpy.random import random
-from math import ceil, sqrt
 
-from sequence import topology
-from sequence import timeline
-from sequence import encoding
-from sequence.topology import Node
-from sequence.process import Process
-from sequence.event import Event
+from ..protocol import Protocol
+from ...kernel.event import Event
+from ...kernel.process import Process
 
 
 class EntanglementGeneration(Protocol):
@@ -87,7 +81,7 @@ class EntanglementGeneration(Protocol):
         self.invert_map = {} # keep track of mapping from connected qchannels to adjacent nodes
         self.running = [False] * len(self.others) # True if protocol currently processing at least 1 memory
         self.is_start = False
-        self.debug = DEBUG
+        self.debug = False
 
     def init(self):
         if self.debug:

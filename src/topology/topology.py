@@ -1,15 +1,10 @@
-import math
-import copy
-
-import numpy
 import json5
 
-from sequence import encoding
-from sequence.process import Process
-from sequence.entity import Entity
-from sequence.event import Event
-from sequence.BB84 import BB84
-
+from ..components.detector import QSDetector
+from ..components.light_source import LightSource
+from ..components.optical_channel import *
+from ..protocols.qkd.BB84 import BB84
+from ..topology.node import Node
 
 """
 import pandas as pd

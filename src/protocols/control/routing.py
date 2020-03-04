@@ -1,13 +1,14 @@
-import math
-from abc import ABC
-from typing import List, Dict
+from typing import Dict
 
-from protocols import Protocol
+from ..message import Message
+from ..protocol import Protocol
 
-from sequence import topology
-from sequence.process import Process
-from sequence.event import Event
-from protocols import EntanglementGeneration, BBPSSW, EntanglementSwapping, EndProtocol, Protocol
+
+class RoutingMessage(Message):
+    def __init__(self, msg_type, payload):
+        Message.__init__(self, msg_type)
+        self.owner_type = type(RoutingProtocol(None, None))
+        self.payload = payload
 
 
 class RoutingProtocol(Protocol):
@@ -41,4 +42,3 @@ class RoutingProtocol(Protocol):
 
     def init(self):
         pass
-

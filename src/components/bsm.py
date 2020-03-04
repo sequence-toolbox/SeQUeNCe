@@ -1,17 +1,19 @@
 import math
-import copy
+
 import numpy
 
-from sequence import encoding
-from sequence.process import Process
-from sequence.entity import Entity
-from sequence.event import Event
+from .photon import Photon
+from ..kernel.entity import Entity
+from ..kernel.event import Event
+from ..kernel.process import Process
+from ..utils.encoding import time_bin
+from ..utils.quantum_state import QuantumState
 
 
 class BSM(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
-        self.encoding_type = kwargs.get("encoding_type", encoding.time_bin)
+        self.encoding_type = kwargs.get("encoding_type", time_bin)
         self.phase_error = kwargs.get("phase_error", 0)
         self.photons = []
         self.photon_arrival_time = -1
@@ -24,7 +26,7 @@ class BSM(Entity):
 
         # two detectors for time-bin and ensemble encoding
         # four detectors for polarization encoding
-        detectors = kwargs.get("detectors",[])
+        detectors = kwargs.get("detectors", [])
         if self.encoding_type["name"] == "polarization":
             assert len(detectors) == 4
         elif self.encoding_type["name"] == "time_bin":
@@ -49,10 +51,10 @@ class BSM(Entity):
         self.resolution = max(d.time_resolution for d in self.detectors)
 
         # define bell basis vectors
-        self.bell_basis = [[complex(math.sqrt(1/2)), complex(0), complex(0), complex(math.sqrt(1/2))],
-                           [complex(math.sqrt(1/2)), complex(0), complex(0), -complex(math.sqrt(1/2))],
-                           [complex(0), complex(math.sqrt(1/2)), complex(math.sqrt(1/2)), complex(0)],
-                           [complex(0), complex(math.sqrt(1/2)), -complex(math.sqrt(1/2)), complex(0)]]
+        self.bell_basis = [[complex(math.sqrt(1 / 2)), complex(0), complex(0), complex(math.sqrt(1 / 2))],
+                           [complex(math.sqrt(1 / 2)), complex(0), complex(0), -complex(math.sqrt(1 / 2))],
+                           [complex(0), complex(math.sqrt(1 / 2)), complex(math.sqrt(1 / 2)), complex(0)],
+                           [complex(0), complex(math.sqrt(1 / 2)), -complex(math.sqrt(1 / 2)), complex(0)]]
 
     def init(self):
         for detector in self.detectors:
@@ -123,7 +125,7 @@ class BSM(Entity):
                 event = Event(int(round(late_time)), process)
                 self.timeline.schedule(event)
 
-            #invalid result from measurement
+            # invalid result from measurement
             else:
                 raise Exception("Invalid result from photon.measure_multiple")
 
@@ -165,7 +167,7 @@ class BSM(Entity):
 
             # check if we're in first stage. If we are and not null, send photon to random detector
             if memory.previous_bsm == -1 and not photon.is_null:
-                detector_num = numpy.random.choice([0,1])
+                detector_num = numpy.random.choice([0, 1])
                 memory.previous_bsm = detector_num
                 self.detectors[detector_num].get()
 
@@ -186,9 +188,9 @@ class BSM(Entity):
                         if memory_0.qstate not in memory_1.qstate.entangled_states:
                             memory_0.qstate.entangle(memory_1.qstate)
                         res = QuantumState.measure_multiple(self.bell_basis, [memory_0.qstate, memory_1.qstate])
-                        if res == 2: # Psi+
+                        if res == 2:  # Psi+
                             detector_num = memory_0.previous_bsm
-                        elif res == 3: # Psi-
+                        elif res == 3:  # Psi-
                             detector_num = 1 - memory_0.previous_bsm
                         else:
                             raise Exception("invalid bell state result {}".format(res))
@@ -209,4 +211,3 @@ class BSM(Entity):
         else:
             # TODO: polarization, time_bin
             pass
-

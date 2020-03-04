@@ -1,7 +1,7 @@
 import math
 
-import sequence
-from sequence.eventlist import EventList
+from .eventlist import EventList
+
 
 class Timeline:
 
@@ -10,7 +10,7 @@ class Timeline:
         self.entities = []
         self.time = 0
         self.stop_time = stop_time
-        self.event_counter=0
+        self.event_counter = 0
 
     def now(self):
         return self.time

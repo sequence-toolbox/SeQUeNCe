@@ -1,11 +1,6 @@
-import math
-import copy
-import numpy
-
-from sequence import encoding
-from sequence.process import Process
-from sequence.entity import Entity
-from sequence.event import Event
+from ..kernel.entity import Entity
+from ..utils.encoding import polarization
+from ..utils.quantum_state import QuantumState
 
 
 class Photon(Entity):
@@ -13,7 +8,7 @@ class Photon(Entity):
         Entity.__init__(self, name, timeline)
         self.wavelength = kwargs.get("wavelength", 0)
         self.location = kwargs.get("location", None)
-        self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
+        self.encoding_type = kwargs.get("encoding_type", polarization)
         quantum_state = kwargs.get("quantum_state", [complex(1), complex(0)])
         self.quantum_state = QuantumState()
         self.quantum_state.state = quantum_state
@@ -38,6 +33,4 @@ class Photon(Entity):
 
     @staticmethod
     def measure_multiple(basis, photons):
-        return QuantumState.measure_multiple(basis, [photon[0].quantum_state, photon[1].quantum_state])
-
-    
+        return QuantumState.measure_multiple(basis, [photons[0].quantum_state, photons[1].quantum_state])

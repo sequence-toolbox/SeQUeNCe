@@ -1,12 +1,12 @@
-import numpy
-import re
 import math
+import re
 
-import sequence
-from sequence import encoding
-from sequence.process import Process
-from sequence.entity import Entity
-from sequence.event import Event
+import numpy
+
+from ...kernel.entity import Entity
+from ...kernel.event import Event
+from ...kernel.process import Process
+from ...utils import encoding
 
 
 class BB84(Entity):

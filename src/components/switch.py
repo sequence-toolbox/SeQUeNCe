@@ -1,11 +1,8 @@
-import math
-import copy
-import numpy
-
-from sequence import encoding
-from sequence.process import Process
-from sequence.entity import Entity
-from sequence.event import Event
+from .detector import Detector
+from .photon import Photon
+from ..kernel.entity import Entity
+from ..kernel.event import Event
+from ..kernel.process import Process
 
 
 class Switch(Entity):
@@ -43,4 +40,3 @@ class Switch(Entity):
                 receiver.get()
         else:
             receiver.get(photon)
-

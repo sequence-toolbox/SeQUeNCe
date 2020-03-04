@@ -1,11 +1,6 @@
 import math
-import copy
-import numpy
 
-from sequence import encoding
-from sequence.process import Process
-from sequence.entity import Entity
-from sequence.event import Event
+from ..components.optical_channel import *
 
 
 class Node(Entity):

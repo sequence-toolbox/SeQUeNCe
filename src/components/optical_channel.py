@@ -1,11 +1,8 @@
-import math
-import copy
 import numpy
 
-from sequence import encoding
-from sequence.process import Process
-from sequence.entity import Entity
-from sequence.event import Event
+from ..kernel.entity import Entity
+from ..kernel.event import Event
+from ..kernel.process import Process
 
 
 class OpticalChannel(Entity):
@@ -61,10 +58,10 @@ class QuantumChannel(OpticalChannel):
             self.photon_counter += 1
 
             # check if random polarization noise applied
-            if numpy.random.random_sample() > self.polarization_fidelity and\
+            if numpy.random.random_sample() > self.polarization_fidelity and \
                     photon.encoding_type["name"] == "polarization":
                 photon.random_noise()
-                self.depo_counter+=1
+                self.depo_counter += 1
 
             # schedule receiving node to receive photon at future time determined by light speed and dispersion
             future_time = self.timeline.now() + round(self.distance / self.light_speed)
@@ -111,5 +108,3 @@ class ClassicalChannel(OpticalChannel):
         process = Process(receiver, "receive_message", [source.name, message])
         event = Event(future_time, process, priority)
         self.timeline.schedule(event)
-
-        

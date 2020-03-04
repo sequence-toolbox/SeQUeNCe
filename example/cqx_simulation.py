@@ -1,15 +1,12 @@
 from numpy import random
-
 from sequence import topology
-from sequence import timeline
-from sequence import encoding
-from sequence.topology import Node
-from sequence.process import Process
-from sequence.event import Event
-
-from protocols import EntanglementGeneration, BBPSSW, EntanglementSwapping, Protocol, EndProtocol
-
-from control_protocols import Message, RoutingProtocol, ResourceReservationProtocol
+from sequence.kernel import timeline
+from sequence.protocols.control.routing import *
+from sequence.protocols.control.rsvp import *
+from sequence.protocols.entanglement.generation import EntanglementGeneration
+from sequence.protocols.entanglement.utils import EndProtocol
+from sequence.topology.node import Node
+from sequence.utils import encoding
 
 # Memory parameters
 MEMO_ARR_SIZE = 100
@@ -30,6 +27,7 @@ HOP_DELAY = 25e8
 SEED_NUM = 0
 
 random.seed(SEED_NUM)
+
 
 class QuantumRouter(Node):
     def __init__(self, name, timeline, **kwargs):
@@ -95,10 +93,10 @@ class QuantumRouter(Node):
 class MiddleNode(Node):
     def __init__(self, name, timeline, **kwargs):
         Node.__init__(self, name, timeline, **kwargs)
-        detectors = [{"efficiency":DETECTOR_EFFICIENCY,
-                      "dark_count":DETECTOR_DARK,
-                      "time_resolution":DETECTOR_TIME_RESOLUTION,
-                      "count_rate":DETECTOR_COUNT_RATE}] * 2
+        detectors = [{"efficiency": DETECTOR_EFFICIENCY,
+                      "dark_count": DETECTOR_DARK,
+                      "time_resolution": DETECTOR_TIME_RESOLUTION,
+                      "count_rate": DETECTOR_COUNT_RATE}] * 2
         bsm = topology.BSM("bsm_%s" % name, timeline, encoding_type=encoding.single_atom, detectors=detectors)
         self.assign_component(bsm, "BSM")
         # print('add', bsm.name, 'to', self.name)
@@ -169,13 +167,14 @@ def create_nodes(topo, tl):
 
     return routers, repeater_links
 
+
 cqx_topo = {'WM': {'SL': 241000, 'FNL': 202000},
             'SL': {'WM': 241000, 'FNL': 66000, 'ANL': 42000, 'UIUC': 222000, 'UC': 15000, 'NU': 20000},
             'NU': {'SL': 20000, 'UC': 33000},
             'UC': {'SL': 15000, 'NU': 33000},
             'FNL': {'WM': 202000, 'SL': 66000, 'ANL': 48000},
             'ANL': {'FNL': 48000, 'UIUC': 206000, 'SL': 42000},
-            'UIUC': {'ANL': 206000, 'SL': 222000} }
+            'UIUC': {'ANL': 206000, 'SL': 222000}}
 
 
 # next router by shortest path algorithm
@@ -205,6 +204,7 @@ def next_router(node):
     else:
         raise Exception('Unknown node')
 
+
 def throughput_test(initiator, responder, return_dic, key):
     # create timeline
     tl = timeline.Timeline(3600e12)
@@ -218,7 +218,7 @@ def throughput_test(initiator, responder, return_dic, key):
 
     # create quantum memories
     for node in nodes:
-        memory_params = {"fidelity":MEMO_FIDELITY, "efficiency":MEMO_EFFICIENCY}
+        memory_params = {"fidelity": MEMO_FIDELITY, "efficiency": MEMO_EFFICIENCY}
         name = "memory_array_%s" % node.name
         memory_array = topology.MemoryArray(name, tl, num_memories=MEMO_ARR_SIZE,
                                             frequency=MEMO_ARR_FREQ,
@@ -238,9 +238,9 @@ def throughput_test(initiator, responder, return_dic, key):
         # print("---- create classical channels ----")
         for i, node in enumerate(link):
             if i > 0:
-                cc_name = "CC_(%s)_(%s)" % (link[i-1].name, node.name)
+                cc_name = "CC_(%s)_(%s)" % (link[i - 1].name, node.name)
                 cc = topology.ClassicalChannel(cc_name, tl, distance=REPEATER_GAP, delay=HOP_DELAY)
-                cc.set_ends([link[i-1], node])
+                cc.set_ends([link[i - 1], node])
                 # print('   ', cc_name, ':', node.name, '<->', link[i-1].name)
 
         # create middle nodes and quantum channels
@@ -249,47 +249,46 @@ def throughput_test(initiator, responder, return_dic, key):
         for i, node in enumerate(link):
             if i > 0:
                 # previous node <-> middle node <-> last node
-                mid_node = MiddleNode('M_%s_%s' % (link[i-1].name, node.name), tl)
+                mid_node = MiddleNode('M_%s_%s' % (link[i - 1].name, node.name), tl)
                 # print("    create middle node", mid_node.name)
                 distance = min(i * REPEATER_GAP, total_len) - (i - 1) * REPEATER_GAP
 
                 # create quantum channel betwee middle node and previous node
-                node.middles[link[i-1].name] = mid_node
+                node.middles[link[i - 1].name] = mid_node
                 qc_name = "QC_(%s)_(%s)" % (mid_node.name, node.name)
-                qc = topology.QuantumChannel(qc_name, tl, distance=distance/2)
+                qc = topology.QuantumChannel(qc_name, tl, distance=distance / 2)
                 qc.set_sender(node.components['MemoryArray'])
                 qc.set_receiver(mid_node.components["BSM"])
                 node.assign_qchannel(qc)
                 mid_node.assign_qchannel(qc)
                 node.eg_protocol.middles.append(mid_node.name)
-                node.eg_protocol.others.append(link[i-1].name)
+                node.eg_protocol.others.append(link[i - 1].name)
                 # print("    create qc", qc_name, "distance",  distance / 2)
 
                 # create  classical channel
                 cc_name = "CC_(%s)_(%s)" % (mid_node.name, node.name)
-                cc = topology.ClassicalChannel(cc_name, tl, distance=distance/2, delay=HOP_DELAY/2)
+                cc = topology.ClassicalChannel(cc_name, tl, distance=distance / 2, delay=HOP_DELAY / 2)
                 cc.set_ends([mid_node, node])
 
                 # create quantum channel betwee middle node and last node
-                link[i-1].middles[node.name] = mid_node
-                qc_name = "QC_(%s)_(%s)" % (mid_node.name, link[i-1].name)
-                qc = topology.QuantumChannel(qc_name, tl, distance=distance/2)
-                qc.set_sender(link[i-1].components['MemoryArray'])
+                link[i - 1].middles[node.name] = mid_node
+                qc_name = "QC_(%s)_(%s)" % (mid_node.name, link[i - 1].name)
+                qc = topology.QuantumChannel(qc_name, tl, distance=distance / 2)
+                qc.set_sender(link[i - 1].components['MemoryArray'])
                 qc.set_receiver(mid_node.components["BSM"])
-                link[i-1].assign_qchannel(qc)
+                link[i - 1].assign_qchannel(qc)
                 mid_node.assign_qchannel(qc)
-                link[i-1].eg_protocol.middles.append(mid_node.name)
-                link[i-1].eg_protocol.others.append(node.name)
+                link[i - 1].eg_protocol.middles.append(mid_node.name)
+                link[i - 1].eg_protocol.others.append(node.name)
                 # print("    create qc", qc_name, "distance", distance / 2)
 
                 # create  classical channel
-                cc_name = "CC_(%s)_(%s)" % (mid_node.name, link[i-1].name)
-                cc = topology.ClassicalChannel(cc_name, tl, distance=distance/2, delay=HOP_DELAY/2)
-                cc.set_ends([mid_node, link[i-1]])
-
+                cc_name = "CC_(%s)_(%s)" % (mid_node.name, link[i - 1].name)
+                cc = topology.ClassicalChannel(cc_name, tl, distance=distance / 2, delay=HOP_DELAY / 2)
+                cc.set_ends([mid_node, link[i - 1]])
 
                 # create protocol stack of middle node
-                mid_node.create_protocol(node.name, link[i-1].name)
+                mid_node.create_protocol(node.name, link[i - 1].name)
 
     # create routing table for routing protocol
     for node in nodes:
@@ -306,13 +305,13 @@ def throughput_test(initiator, responder, return_dic, key):
                 link = [routers[r1_name]] + repeater_links[link_name] + [routers[r2_name]]
                 for i, node in enumerate(link):
                     if i < len(link) - 1 and dst != node.name:
-                        node.control_protocols[0].add_forwarding_rule(dst, link[i+1].name)
+                        node.control_protocols[0].add_forwarding_rule(dst, link[i + 1].name)
             elif r2_name + '-' + r1_name in repeater_links:
                 link_name = r2_name + '-' + r1_name
                 link = [routers[r1_name]] + repeater_links[link_name][::-1] + [routers[r2_name]]
                 for i, node in enumerate(link):
                     if i < len(link) - 1 and dst != node.name:
-                        node.control_protocols[0].add_forwarding_rule(dst, link[i+1].name)
+                        node.control_protocols[0].add_forwarding_rule(dst, link[i + 1].name)
             else:
                 raise Exception("Unkown path, r1_name:", r1_name, "r2_name:", r2_name)
 
@@ -350,6 +349,7 @@ def throughput_test(initiator, responder, return_dic, key):
 
     return_dic[key] = routers[initiator].throughputs
 
+
 def rsvp_test(return_dic, key):
     # create timeline
     tl = timeline.Timeline(3600e12)
@@ -363,7 +363,7 @@ def rsvp_test(return_dic, key):
 
     # create quantum memories
     for node in nodes:
-        memory_params = {"fidelity":MEMO_FIDELITY, "efficiency":MEMO_EFFICIENCY}
+        memory_params = {"fidelity": MEMO_FIDELITY, "efficiency": MEMO_EFFICIENCY}
         name = "memory_array_%s" % node.name
         memory_array = topology.MemoryArray(name, tl, num_memories=MEMO_ARR_SIZE,
                                             frequency=MEMO_ARR_FREQ,
@@ -383,9 +383,9 @@ def rsvp_test(return_dic, key):
         # print("---- create classical channels ----")
         for i, node in enumerate(link):
             if i > 0:
-                cc_name = "CC_(%s)_(%s)" % (link[i-1].name, node.name)
+                cc_name = "CC_(%s)_(%s)" % (link[i - 1].name, node.name)
                 cc = topology.ClassicalChannel(cc_name, tl, distance=REPEATER_GAP, delay=HOP_DELAY)
-                cc.set_ends([link[i-1], node])
+                cc.set_ends([link[i - 1], node])
                 # print('   ', cc_name, ':', node.name, '<->', link[i-1].name)
 
         # create middle nodes and quantum channels
@@ -394,47 +394,46 @@ def rsvp_test(return_dic, key):
         for i, node in enumerate(link):
             if i > 0:
                 # previous node <-> middle node <-> last node
-                mid_node = MiddleNode('M_%s_%s' % (link[i-1].name, node.name), tl)
+                mid_node = MiddleNode('M_%s_%s' % (link[i - 1].name, node.name), tl)
                 # print("    create middle node", mid_node.name)
                 distance = min(i * REPEATER_GAP, total_len) - (i - 1) * REPEATER_GAP
 
                 # create quantum channel betwee middle node and previous node
-                node.middles[link[i-1].name] = mid_node
+                node.middles[link[i - 1].name] = mid_node
                 qc_name = "QC_(%s)_(%s)" % (mid_node.name, node.name)
-                qc = topology.QuantumChannel(qc_name, tl, distance=distance/2)
+                qc = topology.QuantumChannel(qc_name, tl, distance=distance / 2)
                 qc.set_sender(node.components['MemoryArray'])
                 qc.set_receiver(mid_node.components["BSM"])
                 node.assign_qchannel(qc)
                 mid_node.assign_qchannel(qc)
                 node.eg_protocol.middles.append(mid_node.name)
-                node.eg_protocol.others.append(link[i-1].name)
+                node.eg_protocol.others.append(link[i - 1].name)
                 # print("    create qc", qc_name, "distance",  distance / 2)
 
                 # create  classical channel
                 cc_name = "CC_(%s)_(%s)" % (mid_node.name, node.name)
-                cc = topology.ClassicalChannel(cc_name, tl, distance=distance/2, delay=HOP_DELAY/2)
+                cc = topology.ClassicalChannel(cc_name, tl, distance=distance / 2, delay=HOP_DELAY / 2)
                 cc.set_ends([mid_node, node])
 
                 # create quantum channel betwee middle node and last node
-                link[i-1].middles[node.name] = mid_node
-                qc_name = "QC_(%s)_(%s)" % (mid_node.name, link[i-1].name)
-                qc = topology.QuantumChannel(qc_name, tl, distance=distance/2)
-                qc.set_sender(link[i-1].components['MemoryArray'])
+                link[i - 1].middles[node.name] = mid_node
+                qc_name = "QC_(%s)_(%s)" % (mid_node.name, link[i - 1].name)
+                qc = topology.QuantumChannel(qc_name, tl, distance=distance / 2)
+                qc.set_sender(link[i - 1].components['MemoryArray'])
                 qc.set_receiver(mid_node.components["BSM"])
-                link[i-1].assign_qchannel(qc)
+                link[i - 1].assign_qchannel(qc)
                 mid_node.assign_qchannel(qc)
-                link[i-1].eg_protocol.middles.append(mid_node.name)
-                link[i-1].eg_protocol.others.append(node.name)
+                link[i - 1].eg_protocol.middles.append(mid_node.name)
+                link[i - 1].eg_protocol.others.append(node.name)
                 # print("    create qc", qc_name, "distance", distance / 2)
 
                 # create  classical channel
-                cc_name = "CC_(%s)_(%s)" % (mid_node.name, link[i-1].name)
-                cc = topology.ClassicalChannel(cc_name, tl, distance=distance/2, delay=HOP_DELAY/2)
-                cc.set_ends([mid_node, link[i-1]])
-
+                cc_name = "CC_(%s)_(%s)" % (mid_node.name, link[i - 1].name)
+                cc = topology.ClassicalChannel(cc_name, tl, distance=distance / 2, delay=HOP_DELAY / 2)
+                cc.set_ends([mid_node, link[i - 1]])
 
                 # create protocol stack of middle node
-                mid_node.create_protocol(node.name, link[i-1].name)
+                mid_node.create_protocol(node.name, link[i - 1].name)
 
     # create routing table for routing protocol
     for node in nodes:
@@ -451,13 +450,13 @@ def rsvp_test(return_dic, key):
                 link = [routers[r1_name]] + repeater_links[link_name] + [routers[r2_name]]
                 for i, node in enumerate(link):
                     if i < len(link) - 1 and dst != node.name:
-                        node.control_protocols[0].add_forwarding_rule(dst, link[i+1].name)
+                        node.control_protocols[0].add_forwarding_rule(dst, link[i + 1].name)
             elif r2_name + '-' + r1_name in repeater_links:
                 link_name = r2_name + '-' + r1_name
                 link = [routers[r1_name]] + repeater_links[link_name][::-1] + [routers[r2_name]]
                 for i, node in enumerate(link):
                     if i < len(link) - 1 and dst != node.name:
-                        node.control_protocols[0].add_forwarding_rule(dst, link[i+1].name)
+                        node.control_protocols[0].add_forwarding_rule(dst, link[i + 1].name)
             else:
                 raise Exception("Unkown path, r1_name:", r1_name, "r2_name:", r2_name)
 
@@ -524,6 +523,7 @@ def rsvp_test(return_dic, key):
     print(total, success, success / total)
     '''
 
+
 if __name__ == "__main__":
     node = ['WM', 'SL', 'NU', 'UC', 'FNL', 'ANL', 'UIUC']
     import multiprocessing
@@ -532,9 +532,8 @@ if __name__ == "__main__":
     for n1 in node:
         for n2 in node:
             if n1 != n2:
-                key = n1+'_'+n2
+                key = n1 + '_' + n2
                 p = multiprocessing.Process(target=throughput_test, args=(n1, n2, return_dic, key))
                 p.start()
         print('return ', return_dic)
         p.join()
-

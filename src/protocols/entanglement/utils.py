@@ -1,14 +1,4 @@
-from abc import ABC, abstractmethod
-from typing import List
-from numpy.random import random
-from math import ceil, sqrt
-
-from sequence import topology
-from sequence import timeline
-from sequence import encoding
-from sequence.topology import Node
-from sequence.process import Process
-from sequence.event import Event
+from ..protocol import Protocol
 
 
 class EndProtocol(Protocol):

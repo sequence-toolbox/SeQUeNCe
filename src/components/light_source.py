@@ -1,11 +1,10 @@
-import math
-import copy
 import numpy
 
-from sequence import encoding
-from sequence.process import Process
-from sequence.entity import Entity
-from sequence.event import Event
+from .photon import Photon
+from ..kernel.entity import Entity
+from ..kernel.event import Event
+from ..kernel.process import Process
+from ..utils.encoding import polarization
 
 
 class LightSource(Entity):
@@ -15,7 +14,7 @@ class LightSource(Entity):
         self.wavelength = kwargs.get("wavelength", 1550)  # measured in nm
         self.linewidth = kwargs.get("bandwidth", 0)  # st. dev. in photon wavelength (nm)
         self.mean_photon_num = kwargs.get("mean_photon_num", 0)
-        self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
+        self.encoding_type = kwargs.get("encoding_type", polarization)
         self.direct_receiver = kwargs.get("direct_receiver", None)
         self.phase_error = kwargs.get("phase_error", 0)
         self.photon_counter = 0
@@ -104,4 +103,3 @@ class SPDCSource(LightSource):
 
     def assign_another_receiver(self, receiver):
         self.another_receiver = receiver
-

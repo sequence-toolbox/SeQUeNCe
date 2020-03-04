@@ -1,10 +1,10 @@
-from numpy import random
 import math
 
-import sequence
-from sequence.entity import Entity
-from sequence.process import Process
-from sequence.event import Event
+from numpy import random
+
+from ...kernel.entity import Entity
+from ...kernel.event import Event
+from ...kernel.process import Process
 
 
 class Cascade(Entity):
@@ -13,7 +13,7 @@ class Cascade(Entity):
             print(self.timeline.now(), self.name, self.state, info)
 
     def __init__(self, name, timeline, **kwargs):
-        #TODO: now we assume key length is 256 bits
+        # TODO: now we assume key length is 256 bits
         Entity.__init__(self, name, timeline)
         self.w = kwargs.get("w", 4)
         self.bb84 = kwargs.get("bb84", None)
@@ -406,7 +406,7 @@ class Cascade(Entity):
 
 if __name__ == "__main__":
     from timeline import Timeline
-    import topology
+
     '''
     from BB84 import BB84
 

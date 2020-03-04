@@ -1,11 +1,13 @@
 import math
-import copy
+
 import numpy
 
-from sequence import encoding
-from sequence.process import Process
-from sequence.entity import Entity
-from sequence.event import Event
+from ..components.beam_splitter import BeamSplitter
+from ..components.interferometer import Interferometer
+from ..kernel.entity import Entity
+from ..kernel.event import Event
+from ..kernel.process import Process
+from ..utils.encoding import polarization
 
 
 class Detector(Entity):
@@ -46,10 +48,10 @@ class Detector(Entity):
 class QSDetector(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
-        self.encoding_type = kwargs.get("encoding_type", encoding.polarization)
+        self.encoding_type = kwargs.get("encoding_type", polarization)
 
         detectors = kwargs.get("detectors", [])
-        if (self.encoding_type["name"] == "polarization" and len(detectors) != 2) or\
+        if (self.encoding_type["name"] == "polarization" and len(detectors) != 2) or \
                 (self.encoding_type["name"] == "time_bin" and len(detectors) != 3):
             raise Exception("invalid number of detectors specified")
         self.detectors = []
@@ -69,6 +71,7 @@ class QSDetector(Entity):
             self.splitter.receivers = self.detectors
 
         elif self.encoding_type["name"] == "time_bin":
+            from sequence.components.switch import Switch
             # set up switch and interferometer
             interferometer = kwargs.get("interferometer")
             self.interferometer = Interferometer(timeline, **interferometer)
@@ -96,4 +99,3 @@ class QSDetector(Entity):
 
     def set_basis(self, basis):
         self.splitter.set_basis(basis)
-
