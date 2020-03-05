@@ -119,7 +119,7 @@ class Node(Entity):
         elif entity == "MemoryArray":
             self._pop(info_type="expired_memory", index=kwargs.get("index"))
 
-    def send_message(self, dst: str, msg: str, priority=math.inf):
+    def send_message(self, dst: str, msg: Message, priority=math.inf):
         self.cchannels[dst].transmit(msg, self, priority)
 
     def receive_message(self, src: str, msg: Message):

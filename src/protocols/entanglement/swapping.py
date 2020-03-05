@@ -1,9 +1,28 @@
-from typing import List
+from typing import Set
 
 from numpy.random import random
 
+from ..message import Message
 from ..protocol import Protocol
 from ...topology.node import Node
+
+
+class EntanglementSwappingMessage(Message):
+    def __init__(self, msg_type: str, **kwargs):
+        self.msg_type = msg_type
+        self.owner_type = type(EntanglementSwapping(None, None, None, None))
+        if self.msg_type == "SWAP_RES":
+            self.local_memo = kwargs.get("local_memo")
+            self.fidelity = kwargs.get("fidelity")
+            self.remote_node = kwargs.get("remote_node")
+            self.remote_memo = kwargs.get("remote_memo")
+        else:
+            raise Exception("Entanglement swapping protocol create unkown type of message: %s" % str(msg_type))
+
+    def __str__(self):
+        if self.msg_type == "SWAP_RES":
+            return "EntanglementSwappingMessage: msg_type: %s; local_memo: %d; fidelity: %.2f; remote_node: %s; remote_memo: %d; " % (
+                self.msg_type, self.local_memo, self.fidelity, self.remote_node, self.remote_memo)
 
 
 class EntanglementSwapping(Protocol):
@@ -19,7 +38,11 @@ class EntanglementSwapping(Protocol):
     ASSUMPTION:
         1. The name of node is not null string
     '''
+
     def __init__(self, own: Node, remote1: str, remote2: str, known_nodes):
+        if own is None:
+            # to create dummy object with none parameters
+            return
         Protocol.__init__(self, own)
         self.remote1 = remote1
         self.remote2 = remote2
@@ -34,16 +57,13 @@ class EntanglementSwapping(Protocol):
     def init(self):
         pass
 
-    def set_valid_memories(self, memories):
+    def set_valid_memories(self, memories: Set):
         self.valid_memories = memories
 
     def push(self, **kwargs):
         self._push(**kwargs)
 
-    def _pop(self, **kwargs):
-        super()._pop(**kwargs)
-
-    def pop(self, **kwargs): # memory_index: int, another_node: str:
+    def pop(self, **kwargs):  # memory_index: int, another_node: str:
         if "info_type" in kwargs:
             return
 
@@ -68,6 +88,8 @@ class EntanglementSwapping(Protocol):
             self._push(index=memo1)
             self._push(index=memo2)
 
+        return True
+
     def swap(self, memo_id1: int, memo_id2: int):
         memo1 = self.own.components["MemoryArray"][memo_id1]
         memo2 = self.own.components["MemoryArray"][memo_id2]
@@ -81,27 +103,29 @@ class EntanglementSwapping(Protocol):
         another_memo_id1 = memo1.entangled_memory['memo_id']
         another_node_id2 = memo2.entangled_memory['node_id']
         another_memo_id2 = memo2.entangled_memory['memo_id']
-        msg = self.rsvp_name + " EntanglementSwapping SWAP_RES %d %f %s %d" % (another_memo_id1,
-                                                             fidelity,
-                                                             another_node_id2,
-                                                             another_memo_id2)
+        msg = EntanglementSwappingMessage("SWAP_RES", local_memo=another_memo_id1, fidelity=fidelity,
+                                          remote_node=another_node_id2, remote_memo=another_memo_id2)
+        # msg = self.rsvp_name + " EntanglementSwapping SWAP_RES %d %f %s %d" % (another_memo_id1,
+        #                                                                        fidelity,
+        #                                                                        another_node_id2,
+        #                                                                        another_memo_id2)
         self.own.send_message(dst=another_node_id1, msg=msg, priority=3)
-        msg = self.rsvp_name + " EntanglementSwapping SWAP_RES %d %f %s %d" % (another_memo_id2,
-                                                             fidelity,
-                                                             another_node_id1,
-                                                             another_memo_id1)
+        # msg = self.rsvp_name + " EntanglementSwapping SWAP_RES %d %f %s %d" % (another_memo_id2,
+        #                                                                        fidelity,
+        #                                                                        another_node_id1,
+        #                                                                        another_memo_id1)
+        msg = EntanglementSwappingMessage("SWAP_RES", local_memo=another_memo_id2, fidelity=fidelity,
+                                          remote_node=another_node_id1, remote_memo=another_memo_id1)
         self.own.send_message(dst=another_node_id2, msg=msg, priority=3)
 
-    def received_message(self, src: str, msg: List[str]):
+    def received_message(self, src: str, msg: EntanglementSwappingMessage):
         if src not in self.known_nodes:
             return False
-        type_index = 0
-        msg_type = msg[type_index]
-        if msg_type == "SWAP_RES":
-            memo_id = int(msg[type_index + 1])
-            fidelity = float(msg[type_index + 2])
-            another_node = msg[type_index + 3]
-            another_memo = int(msg[type_index + 4])
+        if msg.msg_type == "SWAP_RES":
+            memo_id = msg.local_memo
+            fidelity = msg.fidelity
+            another_node = msg.remote_node
+            another_memo = msg.remote_memo
 
             self.waiting_swap_res.pop(memo_id)
 
@@ -121,7 +145,8 @@ class EntanglementSwapping(Protocol):
         return True
 
     def __str__(self):
-        return "EntanglementSwapping: remote1: %s;  remote2: %s; known_nodes: %s" % (self.remote1, self.remote2, self.known_nodes)
+        return "EntanglementSwapping: remote1: %s;  remote2: %s; known_nodes: %s" % (
+            self.remote1, self.remote2, self.known_nodes)
 
     @staticmethod
     def success_probability() -> float:
@@ -136,4 +161,3 @@ class EntanglementSwapping(Protocol):
         A simple model updating fidelity of entanglement
         '''
         return (f1 + f2) / 2 * 0.95
-
