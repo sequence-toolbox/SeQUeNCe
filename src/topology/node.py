@@ -27,6 +27,8 @@ class Node(Entity):
         for end in cchannel.ends:
             if end.name != self.name:
                 another = end.name
+        if another in self.cchannels:
+            print("warn: overwrite classical channel from %s to %s" % (self.name, another))
         self.cchannels[another] = cchannel
 
     def assign_qchannel(self, qchannel: QuantumChannel):

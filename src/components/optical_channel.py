@@ -6,14 +6,13 @@ from ..kernel.process import Process
 
 
 class OpticalChannel(Entity):
-    def __init__(self, name, timeline, **kwargs):
+    def __init__(self, name, timeline, attenuation, distance, **kwargs):
         Entity.__init__(self, name, timeline)
-        self.attenuation = kwargs.get("attenuation", 0)
-        self.distance = kwargs.get("distance", 0)  # (measured in m)
-        self.temperature = kwargs.get("temperature", 0)
+        self.attenuation = attenuation
+        self.distance = distance  # (measured in m)
         self.polarization_fidelity = kwargs.get("polarization_fidelity", 1)
         self.light_speed = kwargs.get("light_speed",
-                                      3 * 10 ** -4)  # used for photon timing calculations (measured in m/ps)
+                                      2 * 10 ** -4)  # used for photon timing calculations (measured in m/ps)
         self.chromatic_dispersion = kwargs.get("cd", 17)  # measured in ps / (nm * km)
 
     def init(self):
@@ -22,21 +21,10 @@ class OpticalChannel(Entity):
     def set_distance(self, distance):
         self.distance = distance
 
-    def distance_from_time(self, time):
-        distance = self.distance
-        ## TODO: distance as a function of temperature
-        temperature = self.tModel.temperature_from_time(time)
-
-        return distance
-
-    # def set_temerature_model(self, filename):
-    #     self.tModel = TemperatureModel()
-    #     self.tModel.read_temperature_file(filename)
-
 
 class QuantumChannel(OpticalChannel):
-    def __init__(self, name, timeline, **kwargs):
-        super().__init__(name, timeline, **kwargs)
+    def __init__(self, name, timeline, attenuation, distance, **kwargs):
+        super().__init__(name, timeline, attenuation, distance, **kwargs)
         self.sender = None
         self.receiver = None
         self.depo_counter = 0
@@ -75,16 +63,16 @@ class QuantumChannel(OpticalChannel):
 
 
 class ClassicalChannel(OpticalChannel):
-    def __init__(self, name, timeline, **kwargs):
-        super().__init__(name, timeline, **kwargs)
+    def __init__(self, name, timeline, attenuation, distance, **kwargs):
+        super().__init__(name, timeline, attenuation, distance, **kwargs)
         self.ends = []
         self.delay = kwargs.get("delay", (self.distance / self.light_speed))
 
     def add_end(self, node):
-        if node in self.ends:
-            Exception("already have endpoint", node)
+        if (node in self.ends):
+            raise Exception("already have endpoint", node)
         if len(self.ends) == 2:
-            Exception("channel already has 2 endpoints")
+            raise Exception("channel already has 2 endpoints")
 
         self.ends.append(node)
 
@@ -94,10 +82,10 @@ class ClassicalChannel(OpticalChannel):
         for node in node_list:
             node.assign_cchannel(self)
 
-    def transmit(self, message, source, priority):
+    def transmit(self, message, source, priority: int):
         # get node that's not equal to source
         if source not in self.ends:
-            Exception("no endpoint", source)
+            raise Exception("no endpoint", source)
 
         receiver = None
         for e in self.ends:
