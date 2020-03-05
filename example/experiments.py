@@ -1,27 +1,28 @@
 import math
 from numpy.random import seed
 
-from protocols import EntanglementGeneration
-from protocols import BBPSSW
-from protocols import EntanglementSwapping
-from protocols import EndNodeProtocol
+from sequence.protocols.entanglement.generation import EntanglementGeneration
+from sequence.protocols.entanglement.purification import BBPSSW
+from sequence.protocols.entanglement.swapping import EntanglementSwapping
+from sequence.protocols.entanglement.utils import EndProtocol
 
-import sequence
-from sequence import topology
-from sequence import timeline
-from sequence import encoding
-from sequence.process import Process
-from sequence.entity import Entity
-from sequence.event import Event
+from sequence.components import *
+from sequence.components.bsm import BSM
+from sequence.topology.node import Node
+from sequence.kernel import timeline
+from sequence.utils import encoding
+from sequence.kernel.process import Process
+from sequence.kernel.entity import Entity
+from sequence.kernel.event import Event
 
 
 def three_node_test():
     tl = timeline.Timeline()
 
     # create nodes
-    alice = topology.Node("alice", tl)
-    bob = topology.Node("bob", tl)
-    charlie = topology.Node("charlie", tl)
+    alice = Node("alice", tl)
+    bob = Node("bob", tl)
+    charlie = Node("charlie", tl)
     nodes = [alice,bob]
 
     # create classical channels
@@ -127,13 +128,13 @@ def linear_topo(distances, runtime=1e12, **kwargs):
     # create end nodes
     end_nodes = []
     for i in range(n):
-        node = topology.Node("e%d"%i, tl)
+        node = Node("e%d"%i, tl)
         end_nodes.append(node)
 
     # create middle nodes
     mid_nodes = []
     for i in range(n-1):
-        node = topology.Node("m%d"%i, tl)
+        node = Node("m%d"%i, tl)
         mid_nodes.append(node)
 
     # create classical channels between middle nodes and end nodes
@@ -141,7 +142,7 @@ def linear_topo(distances, runtime=1e12, **kwargs):
         end_node = end_nodes[i]
         # classical channel 1
         name = "cc_%s_%s" % (node.name, end_node.name)
-        cc = topology.ClassicalChannel(name, tl, distance=distances[i]/2, delay=UNIT_DELAY)
+        cc = optical_channel.ClassicalChannel(name, tl, distance=distances[i]/2, delay=UNIT_DELAY)
         cc.set_ends([end_node, node])
         print('add', name, 'to', end_node.name)
         print('add', name, 'to', node.name)
@@ -149,7 +150,7 @@ def linear_topo(distances, runtime=1e12, **kwargs):
         end_node = end_nodes[i+1]
         # classical channel 2
         name = "cc_%s_%s" % (node.name, end_node.name)
-        cc = topology.ClassicalChannel(name, tl, distance=distances[i]/2, delay=UNIT_DELAY)
+        cc = optical_channel.ClassicalChannel(name, tl, distance=distances[i]/2, delay=UNIT_DELAY)
         cc.set_ends([end_node, node])
         print('add', name, 'to', node.name)
         print('add', name, 'to', end_node.name)
@@ -162,7 +163,7 @@ def linear_topo(distances, runtime=1e12, **kwargs):
             delay = (j - i) * 2 * UNIT_DELAY
             name = "cc_%s_%s" % (node1.name, node2.name)
             distance = sum(distances[i:j])
-            cc = topology.ClassicalChannel(name, tl, distance=distance, delay=delay)
+            cc = optical_channel.ClassicalChannel(name, tl, distance=distance, delay=delay)
             cc.set_ends([node1, node2])
             print('add', name, 'to', node1.name)
             print('add', name, 'to', node2.name)
@@ -177,8 +178,8 @@ def linear_topo(distances, runtime=1e12, **kwargs):
     for node in mid_nodes:
         detectors = [{"efficiency":DETECTOR_EFFICIENCY, "dark_count":DETECTOR_DARK, "time_resolution":DETECTOR_TIME_RESOLUTION, "count_rate":DETECTOR_COUNT_RATE}] * 2
         name = "bsm_%s" % node.name
-        bsm = topology.BSM("bsm_%s" % node.name, tl, encoding_type=encoding.single_atom, detectors=detectors)
-        node.assign_component(bsm, "BSM")
+        bsmeasure = BSM("bsm_%s" % node.name, tl, encoding_type=encoding.single_atom, detectors=detectors)
+        node.assign_component(bsmeasure, "BSM")
         print('add', name, 'to', node.name)
 
     '''
@@ -190,7 +191,7 @@ def linear_topo(distances, runtime=1e12, **kwargs):
     for i, node in enumerate(end_nodes):
         memory_params = {"fidelity":MEMO_FIDELITY, "efficiency":MEMO_EFFICIENCY, "coherence_time":MEMO_COHERENCE}
         name = "memory_array_%s" % node.name
-        memory_array = topology.MemoryArray(name, tl, num_memories=MEMO_ARR_SIZE,
+        memory_array = memory.MemoryArray(name, tl, num_memories=MEMO_ARR_SIZE,
                                             frequency=MEMO_ARR_FREQ,
                                             memory_params=memory_params)
         node.assign_component(memory_array, "MemoryArray")
@@ -208,7 +209,7 @@ def linear_topo(distances, runtime=1e12, **kwargs):
             mid_node = mid_nodes[i-1]
             name = "qc_%s_%s" % (mid_node.name, node.name)
             print("add", name)
-            qc = topology.QuantumChannel(name, tl, distance=distances[i-1]/2, attenuation=ATTENUATION)
+            qc = optical_channel.QuantumChannel(name, tl, distance=distances[i-1]/2, attenuation=ATTENUATION)
 
             memory_array = node.components['MemoryArray']
             for j, memory in enumerate(memory_array):
@@ -230,7 +231,7 @@ def linear_topo(distances, runtime=1e12, **kwargs):
             mid_node = mid_nodes[i]
             name = "qc_%s_%s" % (mid_node.name, node.name)
             print("add", name)
-            qc = topology.QuantumChannel(name, tl, distance=distances[i]/2, attenuation=ATTENUATION)
+            qc = optical_channel.QuantumChannel(name, tl, distance=distances[i]/2, attenuation=ATTENUATION)
 
             memory_array = node.components['MemoryArray']
             for j, memory in enumerate(memory_array):
@@ -363,13 +364,13 @@ def linear_topo(distances, runtime=1e12, **kwargs):
     # add EndProtocol to end nodes
     curr = end_nodes[0]
     curr_last = curr.protocols[-1]
-    end_protocol = EndNodeProtocol(curr)
+    end_protocol = EndProtocol(curr)
     end_protocol.lower_protocols.append(curr_last)
     curr_last.upper_protocols.append(end_protocol)
 
     curr = end_nodes[-1]
     curr_last = curr.protocols[-1]
-    end_protocol = EndNodeProtocol(curr)
+    end_protocol = EndProtocol(curr)
     end_protocol.lower_protocols.append(curr_last)
     curr_last.upper_protocols.append(end_protocol)
 

@@ -1,8 +1,45 @@
 from typing import List
 
+from ..message import Message
 from ..protocol import Protocol
 from ...kernel.event import Event
 from ...kernel.process import Process
+
+
+class EntanglementGenerationMessage(Message):
+    def __init__(self, msg_type, **kwargs):
+        self.msg_type = msg_type
+        self.owner_type = type(EntanglementGeneration(None))
+
+        if msg_type == "EXPIRE":
+            self.mem_num = kwargs.get("mem_num")
+
+        elif msg_type == "NEGOTIATE":
+            self.qc_delay = kwargs.get("qc_delay")
+            self.frequency = kwargs.get("frequency")
+            self.num_memories = kwargs.get("num_memories")
+            self.expired = kwargs.get("expired")
+            self.finished = kwargs.get("finished")
+
+        elif msg_type == "NEGOTIATE_ACK":
+            self.frequency = kwargs.get("frequency")
+            self.num_memories = kwargs.get("num_memories")
+            self.start_time = kwargs.get("start_time")
+            self.quantum_delay = kwargs.get("quantum_delay")
+            self.expired = kwargs.get("expired")
+            self.finished = kwargs.get("finished")
+
+        elif msg_type == "MEAS_RES":
+            self.res = kwargs.get("res")
+            self.time = kwargs.get("time")
+            self.resolution = kwargs.get("resolution")
+
+        elif msg_type == "ENT_MEMO":
+            self.id = kwargs.get("memory_id")
+            self.time = kwargs.get("time")
+
+        else:
+            raise Exception("EntanglementGeneration generated invalid message type {}".format(msg_type))
 
 
 class EntanglementGeneration(Protocol):
@@ -184,7 +221,9 @@ class EntanglementGeneration(Protocol):
             res = kwargs.get("res")
             time = kwargs.get("time")
             resolution = self.own.components["BSM"].resolution
-            message = self.rsvp_name + " EntanglementGeneration MEAS_RES {} {} {}".format(res, time, resolution)
+            
+            # message = self.rsvp_name + " EntanglementGeneration MEAS_RES {} {} {}".format(res, time, resolution)
+            message = EntanglementGenerationMessage("MEAS_RES", res=res, time=time, resolution=resolution)
             for node in self.others:
                 self.own.send_message(node, message)
 
@@ -206,7 +245,8 @@ class EntanglementGeneration(Protocol):
                 another_memory = self.memory_array[index].entangled_memory["memo_id"]
                 self.add_list[another_index].append(index)
 
-                message = "EntanglementGeneration EXPIRE {}".format(another_memory)
+                # message = "EntanglementGeneration EXPIRE {}".format(another_memory)
+                message = EntanglementGenerationMessage("EXPIRE", mem_num=another_memory)
                 self.own.send_message(self.others[another_index], message)
 
                 if self.debug:
@@ -243,13 +283,15 @@ class EntanglementGeneration(Protocol):
             # send NEGOTIATE message
             qchannel = self.own.qchannels[self.middles[another_index]]
             self.qc_delays[another_index] = int(round(qchannel.distance / qchannel.light_speed))
-            message = self.rsvp_name + " EntanglementGeneration NEGOTIATE {} {} {}".format(self.qc_delays[another_index],
-                                                                         self.frequencies[another_index],
-                                                                         len(self.memory_indices[another_index]))
-            if len(expired) > 0:
-                message += " " + " ".join(str(i) for i in expired)
-            if len(finished) > 0:
-                message += " -1 " + " ".join(str(i) for i in finished)
+            # message = self.rsvp_name + " EntanglementGeneration NEGOTIATE {} {} {}".format(self.qc_delays[another_index],
+            #                                                              self.frequencies[another_index],
+            #                                                              len(self.memory_indices[another_index]))
+            # if len(expired) > 0:
+            #     message += " " + " ".join(str(i) for i in expired)
+            # if len(finished) > 0:
+            #     message += " -1 " + " ".join(str(i) for i in finished)
+            message = EntanglementGenerationMessage("NEGOTIATE", qc_delay=qc_delays[another_index], frequency=self.frequencies[another_index],
+                                                    num_memories=len(self.memory_indices[another_index]), expired=expired, finished=finished)
 
             self.own.send_message(self.others[another_index], message)
 
@@ -292,17 +334,17 @@ class EntanglementGeneration(Protocol):
         if self.debug:
             print("EG protocol \033[1;36;40mreceived_message\033[0m on node {}".format(self.own.name))
             print("\tsource:", src)
-            print("\t\033[1;32;40mtype\033[0m:", msg[0])
-            print("\tcontent:", msg[1:])
+            print("\t\033[1;32;40mtype\033[0m:", msg.msg_type)
+            # print("\tcontent:", msg[1:])
 
         # TEMPORARY: ignore unkown src
         if not (src in self.others or src in self.middles):
             return False
 
-        msg_type = msg[0]
+        msg_type = msg.msg_type
 
         if msg_type == "EXPIRE":
-            self_mem_num = int(msg[1])
+            self_mem_num = msg.mem_num
             another_index = self.others.index(src)
 
             # if not working, add to queue
@@ -314,20 +356,22 @@ class EntanglementGeneration(Protocol):
                 self.start_individual(another_index)
 
         elif msg_type == "NEGOTIATE":
-            another_delay = int(msg[1])
-            another_frequency = float(msg[2])
-            another_mem_num = int(msg[3])
+            another_delay = msg.qc_delay
+            another_frequency = msg.frequency
+            another_mem_num = msg.mem_num
 
             # get expired and finished lists
-            msg = msg[4:]
-            another_expired = []
-            another_finished = []
-            if "-1" in msg:
-                index = msg.index("-1")
-                another_expired = [int(i) for i in msg[:index]]
-                another_finished = [int(i) for i in msg[index+1:]]
-            else:
-                another_expired = [int(i) for i in msg]
+            # msg = msg[4:]
+            # another_expired = []
+            # another_finished = []
+            # if "-1" in msg:
+            #     index = msg.index("-1")
+            #     another_expired = [int(i) for i in msg[:index]]
+            #     another_finished = [int(i) for i in msg[index+1:]]
+            # else:
+            #     another_expired = [int(i) for i in msg]
+            another_expired = msg.expired
+            another_finished = msg.finished
 
             another_index = self.others.index(src)
 
@@ -378,35 +422,39 @@ class EntanglementGeneration(Protocol):
             self.memory_excite(another_index)
 
             # send message to other node
-            message = self.rsvp_name + " EntanglementGeneration NEGOTIATE_ACK {} {} {} {}".format(self.frequencies[another_index],
-                                                                                num_memories,
-                                                                                another_start_time,
-                                                                                quantum_delay)
-            if len(expired_total) > 0:
-                message += " " + " ".join(str(i) for i in expired_total)
-            if len(finished_total) > 0:
-                message += " -1 " + " ".join(str(i) for i in finished_total)
+            # message = self.rsvp_name + " EntanglementGeneration NEGOTIATE_ACK {} {} {} {}".format(self.frequencies[another_index],
+            #                                                                     num_memories,
+            #                                                                     another_start_time,
+            #                                                                     quantum_delay)
+            # if len(expired_total) > 0:
+            #     message += " " + " ".join(str(i) for i in expired_total)
+            # if len(finished_total) > 0:
+            #     message += " -1 " + " ".join(str(i) for i in finished_total)
+            message = EntanglementGenerationMessage("NEGOTIATE_ACK", frequency=self.frequencies[another_index], num_memories=num_memories,
+                                                    start_time=another_start_time, quantum_delay=quantum_delay, expired=expired_total, finished=finished_total)
             self.own.send_message(src, message)
 
         elif msg_type == "NEGOTIATE_ACK":
             another_index = self.others.index(src)
 
             # update parameters
-            self.frequencies[another_index] = float(msg[1])
-            self.emit_nums[another_index] = int(msg[2])
-            self.start_times[another_index] = int(msg[3])
-            quantum_delay = int(msg[4])
+            self.frequencies[another_index] = msg.frequency
+            self.emit_nums[another_index] = msg.num_memories
+            self.start_times[another_index] = msg.start_time
+            quantum_delay = msg.quantum_delay
 
             # get expired and finished lists
-            msg = msg[5:]
-            expired_total = []
-            finished_total = []
-            if "-1" in msg:
-                index = msg.index("-1")
-                expired_total = [int(i) for i in msg[:index]]
-                finished_total = [int(i) for i in msg[index+1:]]
-            else:
-                expired_total = [int(i) for i in msg]
+            # msg = msg[5:]
+            # expired_total = []
+            # finished_total = []
+            # if "-1" in msg:
+            #     index = msg.index("-1")
+            #     expired_total = [int(i) for i in msg[:index]]
+            #     finished_total = [int(i) for i in msg[index+1:]]
+            # else:
+            #     expired_total = [int(i) for i in msg]
+            expired_total = msg.expired
+            finished_total = msg.finished
 
             combined = list(set(expired_total + finished_total))
             combined.sort(reverse=True)
@@ -434,9 +482,9 @@ class EntanglementGeneration(Protocol):
             self.own.timeline.schedule(event)
 
         elif msg_type == "MEAS_RES":
-            res = int(msg[1])
-            time = int(msg[2])
-            resolution = int(msg[3])
+            res = msg.res
+            time = msg.time
+            resolution = msg.resolution
             another_index = self.middles.index(src)
 
             def valid_trigger_time(trigger_time, target_time, resolution):
@@ -475,7 +523,8 @@ class EntanglementGeneration(Protocol):
                         self.wait_remote[another_index].append(memory_id)
                         self.wait_remote_times[another_index].append(time)
                         # send message to other node
-                        message = "EntanglementGeneration ENT_MEMO {} {}".format(memory_id, time)
+                        # message = "EntanglementGeneration ENT_MEMO {} {}".format(memory_id, time)
+                        message = EntanglementGenerationMessage("ENT_MEMO", memory_id=memory_id, time=time)
                         self.own.send_message(self.others[another_index], message)
                         
                         if self.debug:
@@ -494,8 +543,8 @@ class EntanglementGeneration(Protocol):
                 print("\ttrigger time: {}".format(time))   
 
         elif msg_type == "ENT_MEMO":
-            remote_id = int(msg[1])
-            remote_time = int(msg[2])
+            remote_id = msg.memory_id
+            remote_time = msg.time
             another_index = self.others.index(src)
 
             if self.debug:
