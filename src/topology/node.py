@@ -1,6 +1,7 @@
 import math
 
 from ..components.optical_channel import *
+from ..protocols.message import Message
 
 
 class Node(Entity):
@@ -121,17 +122,13 @@ class Node(Entity):
     def send_message(self, dst: str, msg: str, priority=math.inf):
         self.cchannels[dst].transmit(msg, self, priority)
 
-    def receive_message(self, src: str, msg: str):
-        self.message = msg
-        msg_parsed = msg.split(" ")
-
+    def receive_message(self, src: str, msg: Message):
         # signal to protocol that we've received a message
         for protocol in self.protocols:
-            if type(protocol).__name__ == msg_parsed[0]:
-                if protocol.received_message(src, msg_parsed[1:]):
+            if type(protocol) == msg.owner_type:
+                if protocol.received_message(src, msg):
                     return
 
         # if we reach here, we didn't successfully receive the message in any protocol
         print(src, msg)
         raise Exception("Unkown protocol")
-
