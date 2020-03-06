@@ -91,6 +91,9 @@ class EntanglementGeneration(Protocol):
     -2: popped, awaiting removal
     '''
     def __init__(self, own, **kwargs):
+        if own is None:
+            return
+
         super().__init__(own)
         self.middles = kwargs.get("middles", [self.own.name])
         self.others = kwargs.get("others", []) # other node corresponding to each middle node
