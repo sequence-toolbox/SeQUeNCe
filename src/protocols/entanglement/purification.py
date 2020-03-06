@@ -2,7 +2,37 @@ from typing import List
 
 from numpy.random import random
 
+from ..message import Message
 from ..protocol import Protocol
+
+
+class BBPSSWMessage(Message):
+    def __init__(self, msg_type, **kwargs):
+        self.msg_type = msg_type
+        self.owner_type = type(BBPSSW(None, 0))
+        if self.msg_type == "PING":
+            self.index = kwargs["index"]
+            self.kept_memo_r = kwargs["kept_memo_r"]
+            self.meas_memo_r = kwargs["meas_memo_r"]
+            self.kept_memo_s = kwargs["kept_memo_s"]
+            self.meas_memo_s = kwargs["meas_memo_s"]
+        elif self.msg_type == "PONG":
+            self.index = kwargs["index"]
+            self.fidelity = kwargs["fidelity"]
+            self.kept_memo_r = kwargs["kept_memo_r"]
+            self.meas_memo_r = kwargs["meas_memo_r"]
+        else:
+            raise Exception("BBPSSW protocol create unkown type of message: %s" % str(msg_type))
+
+    def __str__(self):
+        if self.msg_type == "PING":
+            return "BBPSSW Message: msg_type: %s; round #: %d; kept memo id (receiver): %d; " \
+                   "measured memo id (receiver): %d; kept memo id (sender): %d; measured memo id (sender): %d;" \
+                   % (self.msg_type, self.index, self.kept_memo_r, self.meas_memo_r, self.kept_memo_s, self.meas_memo_s)
+        elif self.msg_type == "PONG":
+            return "BBPSSW Message: msg_type: %s; round #: %d; kept memo id (receiver): %d; " \
+                   "measured memo id (receiver): %d; fidelity: %.2f" \
+                   % (self.msg_type, self.index, self.kept_memo_r, self.meas_memo_r, self.fidelity)
 
 
 class BBPSSW(Protocol):
@@ -29,6 +59,9 @@ class BBPSSW(Protocol):
     '''
 
     def __init__(self, own, threshold):
+        if own is None:
+            # to create dummy object with none parameters
+            return
         Protocol.__init__(self, own)
         self.threshold = threshold
         # self.purified_lists :
@@ -45,10 +78,6 @@ class BBPSSW(Protocol):
 
     def set_valid_memories(self, memories):
         self.valid_memories = memories
-
-    def _pop(self, **kwargs):
-        # print(self.own.timeline.now(), self.own.name, kwargs, "qualified")
-        super()._pop(**kwargs)
 
     def pop(self, **kwargs):
         if "info_type" in kwargs:
@@ -75,6 +104,8 @@ class BBPSSW(Protocol):
         if len(purified_list[0]) > 1 and self.own.name > another_node:
             self.start_round(0, another_node)
 
+        return True
+
     def start_round(self, round_id, another_node):
         local_memory = self.own.components['MemoryArray']
         purified_list = self.purified_lists[another_node]
@@ -89,29 +120,25 @@ class BBPSSW(Protocol):
         another_measured_memo = local_memory[measured_memo].entangled_memory['memo_id']
         self.waiting_list[round_id].add((kept_memo, measured_memo))
 
-        msg = self.rsvp_name + " BBPSSW PING %d %d %d %d %d" % (round_id,
-                                              another_kept_memo,
-                                              another_measured_memo,
-                                              kept_memo,
-                                              measured_memo)
+        msg = BBPSSWMessage("PING", index=round_id, kept_memo_r=another_kept_memo,
+                            meas_memo_r=another_measured_memo, kept_memo_s=kept_memo,
+                            meas_memo_s=measured_memo)
+
         # WARN: wait change of Node.send_message function
         self.own.send_message(dst=another_node, msg=msg, priority=2)
 
     def push(self, **kwargs):
         self._push(**kwargs)
 
-    def received_message(self, src: str, msg: List[str]):
+    def received_message(self, src: str, msg: Message):
         if src not in self.purified_lists:
-            return
+            return False
         purified_list = self.purified_lists[src]
         # WARN: wait change of Node.receive_message
-        # WARN: assume protocol name is discarded from msg list
-        type_index = 0
-        msg_type = msg[type_index]
-        if msg_type == "PING":
-            round_id = int(msg[type_index + 1])
-            kept_memo = int(msg[type_index + 2])
-            measured_memo = int(msg[type_index + 3])
+        if msg.msg_type == "PING":
+            round_id = msg.index
+            kept_memo = msg.kept_memo_r
+            measured_memo = msg.meas_memo_r
             if not (len(purified_list) > round_id and
                     kept_memo in purified_list[round_id] and
                     measured_memo in purified_list[round_id]):
@@ -119,21 +146,20 @@ class BBPSSW(Protocol):
             fidelity = self.purification(round_id, kept_memo,
                                          measured_memo, purified_list)
 
-            reply = self.rsvp_name + " BBPSSW PONG %d %f %s %s" % (round_id,
-                                                 fidelity,
-                                                 msg[type_index + 4],
-                                                 msg[type_index + 5])
+            reply = BBPSSWMessage("PONG", index=round_id, fidelity=fidelity,
+                                  kept_memo_r=msg.kept_memo_s, meas_memo_r=msg.meas_memo_s)
+
             # WARN: wait change of Node.send_message function
             self.own.send_message(dst=src, msg=reply, priority=2)
 
             if fidelity >= self.threshold:
                 self._pop(memory_index=kept_memo, another_node=src)
                 purified_list[round_id + 1].remove(kept_memo)
-        elif msg_type == "PONG":
-            round_id = int(msg[type_index + 1])
-            fidelity = float(msg[type_index + 2])
-            kept_memo = int(msg[type_index + 3])
-            measured_memo = int(msg[type_index + 4])
+        elif msg.msg_type == "PONG":
+            round_id = msg.index
+            fidelity = msg.fidelity
+            kept_memo = msg.kept_memo_r
+            measured_memo = msg.meas_memo_r
             if round_id not in self.waiting_list or (kept_memo, measured_memo) not in self.waiting_list[round_id]:
                 return False
 
