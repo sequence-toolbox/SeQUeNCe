@@ -17,7 +17,7 @@ class Detector(Entity):
         self.dark_count = kwargs.get("dark_count", 0)  # measured in Hz
         self.count_rate = kwargs.get("count_rate", math.inf)  # measured in Hz
         self.time_resolution = kwargs.get("time_resolution", 1)  # measured in ps
-        self.next_detection_time = 0
+        self.next_detection_time = -1
         self.photon_counter = 0
 
     def init(self):
