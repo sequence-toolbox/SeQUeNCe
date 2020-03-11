@@ -3,15 +3,16 @@ import numpy
 from abc import abstractmethod
 
 from .photon import Photon
+from .detector import Detector
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
-from ..utils.encoding import time_bin
+from ..utils.encoding import *
 from ..utils.quantum_state import QuantumState
 
 
 def make_bsm(name, timeline, **kwargs):
-    encoding_type == kwargs.get("encoding_type", "time_bin")
+    encoding_type = kwargs.pop("encoding_type", "time_bin")
 
     if encoding_type == "polarization":
         return PolarizationBSM(name, timeline, **kwargs)
@@ -29,7 +30,6 @@ def make_bsm(name, timeline, **kwargs):
 class BSM(Entity):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline)
-        self.encoding_type = kwargs.get("encoding_type", time_bin)
         self.phase_error = kwargs.get("phase_error", 0)
         self.photons = []
         self.photon_arrival_time = -1
@@ -88,15 +88,17 @@ class PolarizationBSM(BSM):
     def get(self, photon):
         super().get(self, photon)
         # TODO
+        raise NotImplementedError()
 
     def pop(self, **kwargs):
         # TODO
-        pass
+        raise NotImplementedError()
 
 
-def TimeBinBSM(BSM):
+class TimeBinBSM(BSM):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline, **kwargs)
+        self.encoding_type = time_bin
         assert len(self.detectors) == 2
 
     def get(self, photon):
@@ -150,10 +152,10 @@ def TimeBinBSM(BSM):
 
     def pop(self, **kwargs):
         # TODO
-        pass
+        raise NotImplementedError()
 
 
-def EnsembleBSM(BSM):
+class EnsembleBSM(BSM):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline, **kwargs)
         self.previous_state = None
@@ -204,7 +206,7 @@ class SingleAtomBSM(BSM):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline, **kwargs)
         self.second_round = False
-        assert len(self.detectors) == 4
+        assert len(self.detectors) == 2
 
     def get(self, photon):
         super().get(photon)
