@@ -1,7 +1,10 @@
 import pytest
+from numpy import random
 from sequence.components.optical_channel import *
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
+
+random.seed(1)
 
 
 def test_ClassicalChannel_add_end():
@@ -82,3 +85,52 @@ def test_ClassicalChannel_transmit():
     for msg, res in zip(n2.msgs, results):
         assert msg == res
     n1.msgs = []
+
+
+def test_QuantumChannel_init():
+    tl = Timeline()
+    qc = QuantumChannel("qc", tl, attenuation=0.0002, distance=1e4)
+    tl.init()
+    assert qc.loss - 0.3690426555 > 1e-11 and qc.delay == 50000000
+
+
+def test_QuantumChannel_set_sender():
+    tl = Timeline()
+    qc = QuantumChannel("qc", tl, attenuation=0.0002, distance=1e4)
+    node = Node("sender", tl)
+    qc.set_sender(node)
+    tl.init()
+    assert qc.sender == node
+
+
+def test_QuantumChannel_set_receiver():
+    tl = Timeline()
+    qc = QuantumChannel("qc", tl, attenuation=0.0002, distance=1e4)
+    node = Node("receiver", tl)
+    qc.set_receiver(node)
+    tl.init()
+    assert qc.receiver == node
+
+
+def test_QuantumChannel_get():
+    from sequence.components.photon import Photon
+    class Receiver():
+        def __init__(self, tl):
+            self.timeline = tl
+            self.log = []
+
+        def get(self, photon):
+            self.log.append([self.timeline.now(), photon.name])
+
+    tl = Timeline()
+    qc = QuantumChannel("qc", tl, attenuation=0.0002, distance=1e4)
+    receiver = Receiver(tl)
+    qc.set_receiver(receiver)
+    tl.init()
+
+    for i in range(10):
+        photon = Photon(str(i), tl)
+        qc.get(photon)
+        tl.time = i + 1
+    tl.run()
+    assert receiver.log == [[50000000, '0'], [50000007, '7'], [50000008, '8']]

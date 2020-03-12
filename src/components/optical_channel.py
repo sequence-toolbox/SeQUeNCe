@@ -29,6 +29,12 @@ class QuantumChannel(OpticalChannel):
         self.receiver = None
         self.depo_counter = 0
         self.photon_counter = 0
+        self.delay = 0
+        self.loss = 1
+
+    def init(self):
+        self.delay = round(self.distance / self.light_speed)
+        self.loss = 1 - 10 ** (self.distance * self.attenuation / -10)
 
     def set_sender(self, sender):
         self.sender = sender
@@ -37,12 +43,9 @@ class QuantumChannel(OpticalChannel):
         self.receiver = receiver
 
     def get(self, photon):
-        # generate chance to lose photon
-        loss = self.distance * self.attenuation
-        chance_photon_kept = 10 ** (loss / -10)
-
+        assert self.delay != 0 and self.loss != 1, "QuantumChannel forgets to run init() function"
         # check if photon kept
-        if photon.is_null or numpy.random.random_sample() < chance_photon_kept:
+        if photon.is_null or numpy.random.random_sample() > self.loss:
             self.photon_counter += 1
 
             # check if random polarization noise applied
@@ -52,14 +55,14 @@ class QuantumChannel(OpticalChannel):
                 self.depo_counter += 1
 
             # schedule receiving node to receive photon at future time determined by light speed and dispersion
-            future_time = self.timeline.now() + round(self.distance / self.light_speed)
+            future_time = self.timeline.now() + self.delay
             # dispersion_time = int(round(self.chromatic_dispersion * photon.wavelength * self.distance * 1e-3))
 
             process = Process(self.receiver, "get", [photon])
             event = Event(future_time, process)
             self.timeline.schedule(event)
         else:
-            photon.remove_from_timeline()
+            pass
 
 
 class ClassicalChannel(OpticalChannel):
