@@ -87,7 +87,7 @@ class PolarizationBSM(BSM):
         assert len(self.detectors) == 4
 
     def get(self, photon):
-        super().get(self, photon)
+        super().get(photon)
 
         if len(self.photons) != 2:
             return
@@ -121,21 +121,21 @@ class PolarizationBSM(BSM):
         
     def pop(self, **kwargs):
         detector = kwargs.get("detector")
+        detector_num = self.detectors.index(detector)
         time = kwargs.get("time")
 
         # check if matching time
         if abs(time - self.last_res[0]) < self.resolution:
-            detector -= 2
-            detector_last = self.last_res[1] - 2
+            detector_last = self.last_res[1]
 
-            # Psi+
-            if (detector < 0 and detector_last < 0) or (detector > 0 and detector_last > 0):
-                self._pop(entity="BSM", res=0, time=time)
             # Psi-
-            else:
+            if detector_last + detector_num == 3:
                 self._pop(entity="BSM", res=1, time=time)
+            # Psi+
+            elif abs(detector_last - detector_num) == 1:
+                self._pop(entity="BSM", res=0, time=time)
 
-        self.last_res = [time, detector]
+        self.last_res = [time, detector_num]
 
 
 class TimeBinBSM(BSM):
@@ -196,19 +196,21 @@ class TimeBinBSM(BSM):
 
     def pop(self, **kwargs):
         detector = kwargs.get("detector")
+        detector_num = self.detectors.index(detector)
         time = kwargs.get("time")
 
         # check if valid time
-        if time - self.last_res[0] < self.resolution + self.encoding_type["bin_separation"}:
+        if round((time - self.last_res[0]) / self.encoding_type["bin_separation"]) == 1:
+        # if time - self.last_res[0] < self.resolution + self.encoding_type["bin_separation"]:
             # pop result message
             # Psi+
-            if detector == self.last_res[1]:
+            if detector_num == self.last_res[1]:
                 self._pop(entity="BSM", res=0, time=time)
             # Psi-
             else:
                 self._pop(entity="BSM", res=1, time=time)
 
-        self.last_res = [time, detector]
+        self.last_res = [time, detector_num]
 
 
 class EnsembleBSM(BSM):
