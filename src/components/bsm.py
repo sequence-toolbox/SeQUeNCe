@@ -83,22 +83,66 @@ class BSM(Entity):
 class PolarizationBSM(BSM):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline, **kwargs)
+        self.last_res = [-1, -1]
         assert len(self.detectors) == 4
 
     def get(self, photon):
         super().get(self, photon)
-        # TODO
-        raise NotImplementedError()
 
+        if len(self.photons) != 2:
+            return
+
+        # entangle photons to measure
+        self.photons[0].entangle(self.photons[1])
+
+        # measure in bell basis
+        res = Photon.measure_multiple(self.bell_basis, self.photons)
+
+        # check if we've measured as Phi+ or Phi-; these cannot be measured by the BSM
+        if res == 0 or res == 1:
+            return
+
+        # measured as Psi+
+        # photon detected in corresponding detectors
+        if res == 2:
+            detector_num = numpy.random.choice([0, 2])
+            self.detectors[detector_num].get()
+            self.detectors[detector_num + 1].get()
+
+        # measured as Psi-
+        # photon detected in opposite detectors
+        elif res == 3:
+            detector_num = numpy.random.choice([0, 2])
+            self.detectors[detector_num].get()
+            self.detectors[3 - detector_num].get()
+
+        else:
+            raise Exception("Invalid result from photon.measure_multiple")
+        
     def pop(self, **kwargs):
-        # TODO
-        raise NotImplementedError()
+        detector = kwargs.get("detector")
+        time = kwargs.get("time")
+
+        # check if matching time
+        if abs(time - self.last_res[0]) < self.resolution:
+            detector -= 2
+            detector_last = self.last_res[1] - 2
+
+            # Psi+
+            if (detector < 0 and detector_last < 0) or (detector > 0 and detector_last > 0):
+                self._pop(entity="BSM", res=0, time=time)
+            # Psi-
+            else:
+                self._pop(entity="BSM", res=1, time=time)
+
+        self.last_res = [time, detector]
 
 
 class TimeBinBSM(BSM):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline, **kwargs)
         self.encoding_type = time_bin
+        self.last_res = [-1, -1]
         assert len(self.detectors) == 2
 
     def get(self, photon):
@@ -151,8 +195,20 @@ class TimeBinBSM(BSM):
             raise Exception("Invalid result from photon.measure_multiple")
 
     def pop(self, **kwargs):
-        # TODO
-        raise NotImplementedError()
+        detector = kwargs.get("detector")
+        time = kwargs.get("time")
+
+        # check if valid time
+        if time - self.last_res[0] < self.resolution + self.encoding_type["bin_separation"}:
+            # pop result message
+            # Psi+
+            if detector == self.last_res[1]:
+                self._pop(entity="BSM", res=0, time=time)
+            # Psi-
+            else:
+                self._pop(entity="BSM", res=1, time=time)
+
+        self.last_res = [time, detector]
 
 
 class EnsembleBSM(BSM):
