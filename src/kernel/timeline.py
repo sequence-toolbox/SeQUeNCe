@@ -23,22 +23,19 @@ class Timeline:
         for entity in self.entities:
             entity.init()
 
-    def assign_entity(self, entities):
-        self.entities = entities
-
     def run(self):
-        log = {}
+        # log = {}
         while len(self.events)>0:
             event = self.events.pop()
             if event.time > self.stop_time: break
             assert self.time <= event.time
             self.time = event.time
-            if not event.process.activation in log:
-                log[event.process.activation] = 0
-            log[event.process.activation]+=1
+            # if not event.process.activation in log:
+            #     log[event.process.activation] = 0
+            # log[event.process.activation]+=1
             event.process.run()
         print('number of event',self.event_counter)
         #print('log:',log)
 
     def stop(self):
-        self.events.data = []
+        self.stop_time = self.now()
