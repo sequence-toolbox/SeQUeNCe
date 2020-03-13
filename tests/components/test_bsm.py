@@ -1,7 +1,12 @@
+import numpy
 import pytest
-from sequence.components.bsm import *
+
 from sequence.kernel.timeline import Timeline
+from sequence.components.photon import *
+from sequence.components.bsm import *
+from sequence.components.memory import *
 from sequence.utils.encoding import *
+
 
 numpy.random.seed(0)
 
@@ -38,6 +43,14 @@ def test_construct_func():
     assert type(time_bin_bsm) == TimeBinBSM
     assert type(ensemble_bsm) == EnsembleBSM
     assert type(atom_bsm) == SingleAtomBSM
+
+def test_init():
+    tl = Timeline()
+    detectors = [{"dark_count": 1}] * 2
+    bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors)
+    tl.init()
+
+    assert len(tl.events) == len(detectors) * 2
 
 def test_base_get():
     tl = Timeline()
@@ -123,7 +136,6 @@ def test_polarization_pop():
     assert len(parent.results) == 2
 
 def test_time_bin_get():
-    # TODO
     tl = Timeline()
     detectors = [{}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors)
@@ -134,17 +146,26 @@ def test_time_bin_get():
     # get 2 photons in orthogonal states (map to Psi+)
     p1 = Photon("p1", encoding_type=time_bin, location=1, quantum_state=[complex(1), complex(0)])
     p2 = Photon("p2", encoding_type=time_bin, location=2, quantum_state=[complex(0), complex(1)])
-    bsm.get(p1)
-    bsm.get(p2)
+    process = Process(bsm, "get", [p1])
+    event = Event(0, process)
+    tl.schedule(event)
+    process = Process(bsm, "get", [p2])
+    event = Event(0, process)
+    tl.schedule(event)
+    tl.run()
 
     assert len(parent.results) == 1
 
     # get 2 photons in same state (map to Phi+ / can't measure)
-    tl.time = 1e6
     p3 = Photon("p3", encoding_type=time_bin, location=1, quantum_state=[complex(1), complex(0)])
     p4 = Photon("p4", encoding_type=time_bin, location=2, quantum_state=[complex(1), complex(0)])
-    bsm.get(p3)
-    bsm.get(p4)
+    process = Process(bsm, "get", [p3])
+    event = Event(1e6, process)
+    tl.schedule(event)
+    process = Process(bsm, "get", [p4])
+    event = Event(1e6, process)
+    tl.schedule(event)
+    tl.run()
 
     assert len(parent.results) == 1
 
@@ -192,5 +213,29 @@ def test_single_atom_get():
     tl = Timeline()
     detectors = [{}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="single_atom", detectors=detectors)
+    parent = Parent()
+    bsm.parents.append(parent)
+    mem_1 = AtomMemory("mem_1", tl, direct_receiver=bsm)
+    mem_2 = AtomMemory("mem_2", tl, direct_receiver=bsm)
+
+    # initially opposite states
+    tl.time = 0
+    mem_1.qstate.set_state_single([complex(1), complex(0)])
+    mem_2.qstate.set_state_single([complex(0), complex(1)])
+    mem_1.excite()
+    mem_2.excite()
+
+    assert len(parent.results) == 1
+
+    # flip state and resend
+    tl.time = 1e6
+    mem_1.flip_state()
+    mem_2.flip_state()
+    mem_1.excite()
+    mem_2.excite()
+
+    assert len(parent.results) == 2
+    # check that we've entangled
+    assert len(mem_1.qstate.state) == 4
 
 

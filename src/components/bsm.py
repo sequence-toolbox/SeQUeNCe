@@ -54,8 +54,7 @@ class BSM(Entity):
                            [complex(0), complex(math.sqrt(1 / 2)), -complex(math.sqrt(1 / 2)), complex(0)]]
 
     def init(self):
-        for detector in self.detectors:
-            detector.init()
+        pass
 
     @abstractmethod
     def get(self, photon):
@@ -261,7 +260,6 @@ class EnsembleBSM(BSM):
 class SingleAtomBSM(BSM):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline, **kwargs)
-        self.second_round = False
         assert len(self.detectors) == 2
 
     def get(self, photon):
