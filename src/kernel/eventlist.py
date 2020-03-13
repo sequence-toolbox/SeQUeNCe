@@ -18,4 +18,4 @@ class EventList:
         return heapq.heappop(self.data)
 
     def isempty(self):
-        return len(self.__data) == 0
+        return len(self.data) == 0
