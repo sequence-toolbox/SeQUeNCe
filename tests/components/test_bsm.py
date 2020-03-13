@@ -1,11 +1,7 @@
-import numpy
 import pytest
-
-from sequence.kernel.timeline import Timeline
-from sequence.components.photon import *
 from sequence.components.bsm import *
+from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import *
-
 
 numpy.random.seed(0)
 
@@ -45,10 +41,10 @@ def test_construct_func():
 
 def test_base_get():
     tl = Timeline()
-    photon1 = Photon("", tl, location=1)
-    photon2 = Photon("", tl, location=2)
-    photon3 = Photon("", tl, location=3)
-    photon1_2 = Photon("", tl, location=1)
+    photon1 = Photon("", location=1)
+    photon2 = Photon("", location=2)
+    photon3 = Photon("", location=3)
+    photon1_2 = Photon("", location=1)
     detectors = [{}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors)
 
@@ -76,8 +72,8 @@ def test_polarization_get():
     bsm.parents.append(parent)
 
     # get 2 photons in orthogonal states (map to Psi+)
-    p1 = Photon("p1", tl, location=1, quantum_state=[complex(1), complex(0)])
-    p2 = Photon("p2", tl, location=2, quantum_state=[complex(0), complex(1)])
+    p1 = Photon("p1", location=1, quantum_state=[complex(1), complex(0)])
+    p2 = Photon("p2", location=2, quantum_state=[complex(0), complex(1)])
     bsm.get(p1)
     bsm.get(p2)
 
@@ -85,8 +81,8 @@ def test_polarization_get():
 
     # get 2 photons in same state (map to Phi+ / can't measure)
     tl.time = 1e6
-    p3 = Photon("p3", tl, location=1, quantum_state=[complex(1), complex(0)])
-    p4 = Photon("p4", tl, location=2, quantum_state=[complex(1), complex(0)])
+    p3 = Photon("p3", location=1, quantum_state=[complex(1), complex(0)])
+    p4 = Photon("p4", location=2, quantum_state=[complex(1), complex(0)])
     bsm.get(p3)
     bsm.get(p4)
 
@@ -136,8 +132,8 @@ def test_time_bin_get():
     detector_list = bsm.detectors
 
     # get 2 photons in orthogonal states (map to Psi+)
-    p1 = Photon("p1", tl, encoding_type=time_bin, location=1, quantum_state=[complex(1), complex(0)])
-    p2 = Photon("p2", tl, encoding_type=time_bin, location=2, quantum_state=[complex(0), complex(1)])
+    p1 = Photon("p1", encoding_type=time_bin, location=1, quantum_state=[complex(1), complex(0)])
+    p2 = Photon("p2", encoding_type=time_bin, location=2, quantum_state=[complex(0), complex(1)])
     bsm.get(p1)
     bsm.get(p2)
 
@@ -145,8 +141,8 @@ def test_time_bin_get():
 
     # get 2 photons in same state (map to Phi+ / can't measure)
     tl.time = 1e6
-    p3 = Photon("p3", tl, encoding_type=time_bin, location=1, quantum_state=[complex(1), complex(0)])
-    p4 = Photon("p4", tl, encoding_type=time_bin, location=2, quantum_state=[complex(1), complex(0)])
+    p3 = Photon("p3", encoding_type=time_bin, location=1, quantum_state=[complex(1), complex(0)])
+    p4 = Photon("p4", encoding_type=time_bin, location=2, quantum_state=[complex(1), complex(0)])
     bsm.get(p3)
     bsm.get(p4)
 

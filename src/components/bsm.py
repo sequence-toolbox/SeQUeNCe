@@ -1,9 +1,9 @@
-import math
-import numpy
 from abc import abstractmethod
 
-from .photon import Photon
+import numpy
+
 from .detector import Detector
+from .photon import Photon
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
@@ -62,8 +62,6 @@ class BSM(Entity):
         # check if photon arrived later than current photon
         if self.photon_arrival_time < self.timeline.now():
             # clear photons
-            for old_photon in self.photons:
-                old_photon.remove_from_timeline()
             self.photons = [photon]
             # set arrival time
             self.photon_arrival_time = self.timeline.now()

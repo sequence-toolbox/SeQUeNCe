@@ -1,11 +1,10 @@
-from ..kernel.entity import Entity
 from ..utils.encoding import polarization
 from ..utils.quantum_state import QuantumState
 
 
-class Photon(Entity):
-    def __init__(self, name, timeline, **kwargs):
-        Entity.__init__(self, name, timeline)
+class Photon():
+    def __init__(self, name, **kwargs):
+        self.name = name
         self.wavelength = kwargs.get("wavelength", 0)
         self.location = kwargs.get("location", None)
         self.encoding_type = kwargs.get("encoding_type", polarization)
@@ -14,9 +13,6 @@ class Photon(Entity):
         self.quantum_state.state = quantum_state
         self.entangled_photons = [self]
         self.is_null = False
-
-    def init(self):
-        pass
 
     def entangle(self, photon):
         self.quantum_state.entangle(photon.quantum_state)

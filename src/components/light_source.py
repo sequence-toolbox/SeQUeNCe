@@ -42,7 +42,7 @@ class LightSource(Entity):
 
             for _ in range(num_photons):
                 wavelength = self.linewidth * numpy.random.randn() + self.wavelength
-                new_photon = Photon(None, self.timeline,
+                new_photon = Photon(None,
                                     wavelength=wavelength,
                                     location=self.direct_receiver,
                                     encoding_type=self.encoding_type,
@@ -78,14 +78,14 @@ class SPDCSource(LightSource):
                 state = numpy.multiply([1, -1], state)
 
             for _ in range(num_photon_pairs):
-                new_photon0 = Photon(None, self.timeline,
+                new_photon0 = Photon(None,
                                      wavelength=self.wavelengths[0],
                                      location=self.direct_receiver,
                                      encoding_type=self.encoding_type)
-                new_photon1 = Photon(None, self.timeline,
+                new_photon1 = Photon(None,
                                      wavelength=self.wavelengths[1],
                                      location=self.direct_receiver,
-                                                             encoding_type=self.encoding_type)
+                                     encoding_type=self.encoding_type)
 
                 new_photon0.entangle(new_photon1)
                 new_photon0.set_state([state[0], complex(0), complex(0), state[1]])

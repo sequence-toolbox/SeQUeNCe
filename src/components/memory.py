@@ -109,8 +109,8 @@ class AtomMemory(Entity):
     def excite(self):
         state = self.qstate.measure(ensemble["bases"][0])
         # send photon in certain state to direct receiver
-        photon = Photon("", self.timeline, wavelength=(1/self.frequency), location=self,
-                           encoding_type=self.photon_encoding)
+        photon = Photon("", wavelength=(1 / self.frequency), location=self,
+                        encoding_type=self.photon_encoding)
         if state == 0:
             photon.is_null = True
             self.direct_receiver.get(photon)
@@ -175,12 +175,12 @@ class Memory(Entity):
             # set new state
             self.qstate.set_state([complex(0), complex(1)])
             # send photon in certain state to direct receiver
-            photon = Photon("", self.timeline, wavelength=(1/self.frequencies[1]), location=self,
+            photon = Photon("", wavelength=(1 / self.frequencies[1]), location=self,
                             encoding_type=self.photon_encoding)
             self.direct_receiver.get(photon)
         else:
             self.qstate.set_state([complex(0), complex(1)])
-            photon = Photon("", self.timeline, location=self, encoding_type=self.photon_encoding)
+            photon = Photon("", location=self, encoding_type=self.photon_encoding)
             photon.is_null = True
             self.direct_receiver.get(photon)
 
@@ -199,7 +199,7 @@ class Memory(Entity):
             state = self.qstate.measure(ensemble["bases"][0])
             if state == 1:
                 # send photon in certain state to direct receiver
-                photon = Photon("", self.timeline, wavelength=(1/self.frequencies[0]), location=self,
+                photon = Photon("", wavelength=(1 / self.frequencies[0]), location=self,
                                 encoding_type=self.photon_encoding)
                 self.direct_receiver.get(photon)
 
@@ -209,7 +209,7 @@ class Memory(Entity):
             state = self.qstate.measure(ensemble["bases"][0])
             if state == 1:
                 # send photon in certain state to direct receiver
-                photon = Photon("", self.timeline, wavelength=(1/self.frequencies[0]), location=self,
+                photon = Photon("", wavelength=(1 / self.frequencies[0]), location=self,
                                 encoding_type=self.photon_encoding)
                 self.direct_receiver.get(photon)
 

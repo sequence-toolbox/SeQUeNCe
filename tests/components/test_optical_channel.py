@@ -114,6 +114,7 @@ def test_QuantumChannel_set_receiver():
 
 def test_QuantumChannel_get():
     from sequence.components.photon import Photon
+    random.seed(1)
     class Receiver():
         def __init__(self, tl):
             self.timeline = tl
@@ -129,7 +130,7 @@ def test_QuantumChannel_get():
     tl.init()
 
     for i in range(10):
-        photon = Photon(str(i), tl)
+        photon = Photon(str(i))
         qc.get(photon)
         tl.time = i + 1
     tl.run()
