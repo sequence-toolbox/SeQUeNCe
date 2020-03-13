@@ -6,7 +6,58 @@ from ..protocols.message import Message
 
 class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
-        assert(' ' not in name)
+        Entity.__init__(self, name, timeline)
+        self.owner = self
+        self.components = {}
+        self.cchannels = {}  # mapping of destination node names to classical channels
+        self.qchannels = {}  # mapping of destination node names to quantum channels
+        self.protocols = []
+
+    def init(self):
+        for protocol in self.protocols:
+            protocol.init()
+
+    def assign_component(self, component: Entity, label: str):
+        component.parents.append(self)
+        self.components[label] = component
+        component.owner = self
+
+    def assign_cchannel(self, cchannel: ClassicalChannel):
+        another = ""
+        for end in cchannel.ends:
+            if end.name != self.name:
+                another = end.name
+        if another in self.cchannels:
+            print("warn: overwrite classical channel from %s to %s" % (self.name, another))
+        assert another != "", "cannot find name of another node. Please check if ends in ClassicalChannel are setted"
+        self.cchannels[another] = cchannel
+
+    def assign_qchannel(self, qchannel: QuantumChannel):
+        if self.name == qchannel.sender.owner:
+            self.qchannels[qchannel.receiver.owner.name] = qchannel
+        elif self.name == qchannel.receiver.owner:
+            self.qchannels[qchannel.sender.owner.name] = qchannel
+        else:
+            raise Exception("sender or receiver of QuantumChannel is not set.")
+
+    def send_message(self, dst: str, msg: Message, priority=math.inf):
+        self.cchannels[dst].transmit(msg, self, priority)
+
+    def receive_message(self, src: str, msg: Message):
+        # signal to protocol that we've received a message
+        for protocol in self.protocols:
+            if type(protocol) == msg.owner_type:
+                if protocol.received_message(src, msg):
+                    return
+
+        # if we reach here, we didn't successfully receive the message in any protocol
+        print(src, msg)
+        raise Exception("Unkown protocol")
+
+
+class _Node(Entity):
+    def __init__(self, name, timeline, **kwargs):
+        assert (' ' not in name)
         Entity.__init__(self, name, timeline)
         self.components = kwargs.get("components", {})
         self.cchannels = {}  # mapping of destination node names to classical channels
