@@ -35,14 +35,11 @@ def test_ClassicalChannel_set_ends():
 
     n1 = Node('n1', tl)
     n2 = Node('n2', tl)
-    n3 = Node('n3', tl)
-    assert len(n1.cchannels) == 0 and len(n2.cchannels) == 0 and len(n3.cchannels) == 0
+    assert len(n1.cchannels) == 0 and len(n2.cchannels) == 0
 
-    cc.set_ends([n1, n2])
-    assert 'n1' in n2.cchannels and 'n2' in n1.cchannels and len(n3.cchannels) == 0
-
-    with pytest.raises(Exception):
-        cc.set_ends([n1, n3])
+    cc.set_ends(n1, n2)
+    assert 'n1' in n2.cchannels and 'n2' in n1.cchannels
+    assert n1.cchannels["n2"] == n2.cchannels["n1"] == cc
 
 
 def test_ClassicalChannel_transmit():
@@ -59,7 +56,7 @@ def test_ClassicalChannel_transmit():
 
     n1 = FakeNode('n1', tl)
     n2 = FakeNode('n2', tl)
-    cc.set_ends([n1, n2])
+    cc.set_ends(n1, n2)
 
     args = [['1-1', n1, 5], ['1-2', n1, 5]]
     results = [[cc.delay, 'n1', '1-1'], [1 + cc.delay, 'n1', '1-2']]

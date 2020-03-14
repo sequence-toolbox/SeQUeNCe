@@ -242,7 +242,7 @@ def create_action(end_nodes, mid_nodes, memories, fidelity, reservation, flag=Tr
             name = "cc_%s_%s" % (node1.name, node2.name)
             distance = (j - i) * 2 * UNIT_DISTANCE
             cc = ClassicalChannel(name, node1.timeline, distance=distance, delay=delay)
-            cc.set_ends([node1, node2])
+            cc.set_ends(node1, node2)
             # print('add', name, 'to', node1.name)
             # print('add', name, 'to', node2.name)
 

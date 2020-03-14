@@ -1,19 +1,16 @@
 import math
-from numpy.random import seed
 
+from numpy.random import seed
+from sequence.components.bsm import BSM
+from sequence.kernel import timeline
+from sequence.kernel.event import Event
+from sequence.kernel.process import Process
 from sequence.protocols.entanglement.generation import EntanglementGeneration
 from sequence.protocols.entanglement.purification import BBPSSW
 from sequence.protocols.entanglement.swapping import EntanglementSwapping
 from sequence.protocols.entanglement.utils import EndProtocol
-
-from sequence.components import *
-from sequence.components.bsm import BSM
 from sequence.topology.node import Node
-from sequence.kernel import timeline
 from sequence.utils import encoding
-from sequence.kernel.process import Process
-from sequence.kernel.entity import Entity
-from sequence.kernel.event import Event
 
 
 def three_node_test():
@@ -23,16 +20,16 @@ def three_node_test():
     alice = Node("alice", tl)
     bob = Node("bob", tl)
     charlie = Node("charlie", tl)
-    nodes = [alice,bob]
+    nodes = [alice, bob]
 
     # create classical channels
     cc_ab = topology.ClassicalChannel("cc_ab", tl, distance=2e3, delay=2e5)
     cc_ac = topology.ClassicalChannel("cc_ac", tl, distance=1e3, delay=1e5)
     cc_bc = topology.ClassicalChannel("cc_bc", tl, distance=1e3, delay=1e5)
     # add ends
-    cc_ab.set_ends([alice, bob])
-    cc_ac.set_ends([alice, charlie])
-    cc_bc.set_ends([bob, charlie])
+    cc_ab.set_ends(alice, bob)
+    cc_ac.set_ends(alice, charlie)
+    cc_bc.set_ends(bob, charlie)
 
     # create quantum channels
     qc_ac = topology.QuantumChannel("qc_ac", tl, distance=1e3)
@@ -143,7 +140,7 @@ def linear_topo(distances, runtime=1e12, **kwargs):
         # classical channel 1
         name = "cc_%s_%s" % (node.name, end_node.name)
         cc = optical_channel.ClassicalChannel(name, tl, distance=distances[i]/2, delay=UNIT_DELAY)
-        cc.set_ends([end_node, node])
+        cc.set_ends(end_node, node)
         print('add', name, 'to', end_node.name)
         print('add', name, 'to', node.name)
 
@@ -151,7 +148,7 @@ def linear_topo(distances, runtime=1e12, **kwargs):
         # classical channel 2
         name = "cc_%s_%s" % (node.name, end_node.name)
         cc = optical_channel.ClassicalChannel(name, tl, distance=distances[i]/2, delay=UNIT_DELAY)
-        cc.set_ends([end_node, node])
+        cc.set_ends(end_node, node)
         print('add', name, 'to', node.name)
         print('add', name, 'to', end_node.name)
 
@@ -164,7 +161,7 @@ def linear_topo(distances, runtime=1e12, **kwargs):
             name = "cc_%s_%s" % (node1.name, node2.name)
             distance = sum(distances[i:j])
             cc = optical_channel.ClassicalChannel(name, tl, distance=distance, delay=delay)
-            cc.set_ends([node1, node2])
+            cc.set_ends(node1, node2)
             print('add', name, 'to', node1.name)
             print('add', name, 'to', node2.name)
 

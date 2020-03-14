@@ -97,10 +97,10 @@ def test_EntanglementSwapping_pop():
     ma = MemoryArray("ma", tl, num_memories=10, memory_params={})
     a1.assign_component(ma, "MemoryArray")
     cc1 = ClassicalChannel("a0-a1", tl, 2e-4, 1e3)
-    cc1.set_ends([a0, a1])
+    cc1.set_ends(a0, a1)
 
     cc2 = ClassicalChannel("a1-a2", tl, 2e4, 1e3)
-    cc2.set_ends([a1, a2])
+    cc2.set_ends(a1, a2)
 
     parent = Parent()
     child = Child2()

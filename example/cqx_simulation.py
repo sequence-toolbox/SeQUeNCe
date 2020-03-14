@@ -240,7 +240,7 @@ def throughput_test(initiator, responder, return_dic, key):
             if i > 0:
                 cc_name = "CC_(%s)_(%s)" % (link[i - 1].name, node.name)
                 cc = topology.ClassicalChannel(cc_name, tl, distance=REPEATER_GAP, delay=HOP_DELAY)
-                cc.set_ends([link[i - 1], node])
+                cc.set_ends(link[i - 1], node)
                 # print('   ', cc_name, ':', node.name, '<->', link[i-1].name)
 
         # create middle nodes and quantum channels
@@ -268,7 +268,7 @@ def throughput_test(initiator, responder, return_dic, key):
                 # create  classical channel
                 cc_name = "CC_(%s)_(%s)" % (mid_node.name, node.name)
                 cc = topology.ClassicalChannel(cc_name, tl, distance=distance / 2, delay=HOP_DELAY / 2)
-                cc.set_ends([mid_node, node])
+                cc.set_ends(mid_node, node)
 
                 # create quantum channel betwee middle node and last node
                 link[i - 1].middles[node.name] = mid_node
@@ -285,7 +285,7 @@ def throughput_test(initiator, responder, return_dic, key):
                 # create  classical channel
                 cc_name = "CC_(%s)_(%s)" % (mid_node.name, link[i - 1].name)
                 cc = topology.ClassicalChannel(cc_name, tl, distance=distance / 2, delay=HOP_DELAY / 2)
-                cc.set_ends([mid_node, link[i - 1]])
+                cc.set_ends(mid_node, link[i - 1])
 
                 # create protocol stack of middle node
                 mid_node.create_protocol(node.name, link[i - 1].name)
@@ -385,7 +385,7 @@ def rsvp_test(return_dic, key):
             if i > 0:
                 cc_name = "CC_(%s)_(%s)" % (link[i - 1].name, node.name)
                 cc = topology.ClassicalChannel(cc_name, tl, distance=REPEATER_GAP, delay=HOP_DELAY)
-                cc.set_ends([link[i - 1], node])
+                cc.set_ends(link[i - 1], node)
                 # print('   ', cc_name, ':', node.name, '<->', link[i-1].name)
 
         # create middle nodes and quantum channels
@@ -413,7 +413,7 @@ def rsvp_test(return_dic, key):
                 # create  classical channel
                 cc_name = "CC_(%s)_(%s)" % (mid_node.name, node.name)
                 cc = topology.ClassicalChannel(cc_name, tl, distance=distance / 2, delay=HOP_DELAY / 2)
-                cc.set_ends([mid_node, node])
+                cc.set_ends(mid_node, node)
 
                 # create quantum channel betwee middle node and last node
                 link[i - 1].middles[node.name] = mid_node
@@ -430,7 +430,7 @@ def rsvp_test(return_dic, key):
                 # create  classical channel
                 cc_name = "CC_(%s)_(%s)" % (mid_node.name, link[i - 1].name)
                 cc = topology.ClassicalChannel(cc_name, tl, distance=distance / 2, delay=HOP_DELAY / 2)
-                cc.set_ends([mid_node, link[i - 1]])
+                cc.set_ends(mid_node, link[i - 1])
 
                 # create protocol stack of middle node
                 mid_node.create_protocol(node.name, link[i - 1].name)

@@ -22,14 +22,7 @@ class Node(Entity):
         self.components[label] = component
         component.owner = self
 
-    def assign_cchannel(self, cchannel: ClassicalChannel):
-        another = ""
-        for end in cchannel.ends:
-            if end.name != self.name:
-                another = end.name
-        if another in self.cchannels:
-            print("warn: overwrite classical channel from %s to %s" % (self.name, another))
-        assert another != "", "cannot find name of another node. Please check if ends in ClassicalChannel are setted"
+    def assign_cchannel(self, cchannel: ClassicalChannel, another: str):
         self.cchannels[another] = cchannel
 
     def assign_qchannel(self, qchannel: QuantumChannel):

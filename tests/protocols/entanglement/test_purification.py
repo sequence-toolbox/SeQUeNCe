@@ -96,7 +96,7 @@ def test_BBPSSW_start_round():
 
     a2 = FakeNode("a2", tl)
     cc = ClassicalChannel("cc", tl, 2e-4, 1e3)
-    cc.set_ends([a1, a2])
+    cc.set_ends(a1, a2)
 
     ep.start_round(0, "a2")
     res = set()
@@ -123,7 +123,7 @@ def test_BBPSSW_received_message():
 
     a2 = FakeNode("a2", tl)
     cc = ClassicalChannel("cc", tl, 2e-4, 1e3)
-    cc.set_ends([a1, a2])
+    cc.set_ends(a1, a2)
 
     # message from unknown node
     assert ep.received_message("unknown", BBPSSWMessage("PING", index=None, kept_memo_r=None,
@@ -157,7 +157,7 @@ def test_BBPSSW_received_message():
 
     a2 = FakeNode("a2", tl)
     cc = ClassicalChannel("cc", tl, 2e-4, 1e3)
-    cc.set_ends([a1, a2])
+    cc.set_ends(a1, a2)
 
     msg = BBPSSWMessage("PONG", index=0, fidelity=0.88, kept_memo_r=0, meas_memo_r=1)
     ep.received_message("a2", msg)

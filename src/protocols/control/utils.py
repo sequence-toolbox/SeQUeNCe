@@ -105,7 +105,7 @@ if __name__ == "__main__":
 
             name = "cc_%s_%s" % (node1.name, node2.name)
             cc = ClassicalChannel(name, tl, distance=10, delay=DELAY)
-            cc.set_ends([node1, node2])
+            cc.set_ends(node1, node2)
 
     # schedule events
     process = Process(node_wm.control_protocols[1], "request", ['UIUC', 0.9, 10, 1000, 5000])
