@@ -117,8 +117,6 @@ class AtomMemory(Entity):
         else:
             if numpy.random.random_sample() < self.efficiency:
                 self.direct_receiver.get(photon)
-            else:
-                photon.remove_from_timeline()
             if self.coherence_time > 0:
                 # set expiration
                 decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
