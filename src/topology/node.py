@@ -20,18 +20,12 @@ class Node(Entity):
     def assign_component(self, component: Entity, label: str):
         component.parents.append(self)
         self.components[label] = component
-        component.owner = self
 
     def assign_cchannel(self, cchannel: ClassicalChannel, another: str):
         self.cchannels[another] = cchannel
 
-    def assign_qchannel(self, qchannel: QuantumChannel):
-        if self.name == qchannel.sender.owner:
-            self.qchannels[qchannel.receiver.owner.name] = qchannel
-        elif self.name == qchannel.receiver.owner:
-            self.qchannels[qchannel.sender.owner.name] = qchannel
-        else:
-            raise Exception("sender or receiver of QuantumChannel is not set.")
+    def assign_qchannel(self, qchannel: QuantumChannel, another: str):
+        self.qchannels[another] = qchannel
 
     def send_message(self, dst: str, msg: Message, priority=math.inf):
         self.cchannels[dst].transmit(msg, self, priority)
@@ -46,6 +40,12 @@ class Node(Entity):
         # if we reach here, we didn't successfully receive the message in any protocol
         print(src, msg)
         raise Exception("Unkown protocol")
+
+    def send_qubit(self, dst: str, qubit):
+        pass
+
+    def receive_qubit(self, src: str, qubit):
+        pass
 
 
 class _Node(Entity):

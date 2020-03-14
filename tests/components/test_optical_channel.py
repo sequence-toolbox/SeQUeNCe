@@ -91,44 +91,55 @@ def test_QuantumChannel_init():
     assert qc.loss - 0.3690426555 > 1e-11 and qc.delay == 50000000
 
 
-def test_QuantumChannel_set_sender():
+def test_QuantumChannel_set_ends():
     tl = Timeline()
     qc = QuantumChannel("qc", tl, attenuation=0.0002, distance=1e4)
-    node = Node("sender", tl)
-    qc.set_sender(node)
-    tl.init()
-    assert qc.sender == node
+    end1 = Node("end1", tl)
+    end2 = Node("end2", tl)
+    assert len(end1.qchannels) == len(end2.qchannels) == 0
+    qc.set_ends(end1, end2)
+
+    assert len(end1.qchannels) == len(end2.qchannels) == 1
+    assert end1 in qc.ends and end2 in qc.ends
+    assert end1.name in end2.qchannels and end2.name in end1.qchannels
 
 
-def test_QuantumChannel_set_receiver():
-    tl = Timeline()
-    qc = QuantumChannel("qc", tl, attenuation=0.0002, distance=1e4)
-    node = Node("receiver", tl)
-    qc.set_receiver(node)
-    tl.init()
-    assert qc.receiver == node
-
-
-def test_QuantumChannel_get():
+def test_QuantumChannel_transmit():
     from sequence.components.photon import Photon
     random.seed(1)
-    class Receiver():
-        def __init__(self, tl):
-            self.timeline = tl
+
+    class FakeNode(Node):
+        def __init__(self, name, tl):
+            Node.__init__(self, name, tl)
             self.log = []
 
-        def get(self, photon):
-            self.log.append([self.timeline.now(), photon.name])
+        def receive_qubit(self, src, photon):
+            self.log.append((src, self.timeline.now(), photon.name))
 
     tl = Timeline()
     qc = QuantumChannel("qc", tl, attenuation=0.0002, distance=1e4)
-    receiver = Receiver(tl)
-    qc.set_receiver(receiver)
+    sender = FakeNode("sender", tl)
+    receiver = FakeNode("receiver", tl)
+    qc.set_ends(sender, receiver)
     tl.init()
 
     for i in range(10):
         photon = Photon(str(i))
-        qc.get(photon)
-        tl.time = i + 1
+        qc.transmit(photon, sender)
+        tl.time = tl.time + 1
+
+    for i in range(10):
+        photon = Photon(str(i))
+        qc.transmit(photon, receiver)
+        tl.time = tl.time + 1
+
+    assert len(sender.log) == len(receiver.log) == 0
     tl.run()
-    assert receiver.log == [[50000000, '0'], [50000007, '7'], [50000008, '8']]
+    res = [('sender', 50000000, '0'), ('sender', 50000001, '1'), ('sender', 50000008, '8'), ('sender', 50000009, '9')]
+    for real, expect in zip(receiver.log, res):
+        assert real == expect
+
+    res = [('receiver', 50000010, '0'), ('receiver', 50000011, '1'), ('receiver', 50000013, '3'),
+           ('receiver', 50000015, '5'), ('receiver', 50000016, '6'), ('receiver', 50000017, '7')]
+    for real, expect in zip(sender.log, res):
+        assert real == expect
