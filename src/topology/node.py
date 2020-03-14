@@ -8,7 +8,6 @@ class Node(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.owner = self
-        self.components = {}
         self.cchannels = {}  # mapping of destination node names to classical channels
         self.qchannels = {}  # mapping of destination node names to quantum channels
         self.protocols = []
@@ -16,10 +15,6 @@ class Node(Entity):
     def init(self):
         for protocol in self.protocols:
             protocol.init()
-
-    def assign_component(self, component: Entity, label: str):
-        component.parents.append(self)
-        self.components[label] = component
 
     def assign_cchannel(self, cchannel: ClassicalChannel, another: str):
         self.cchannels[another] = cchannel
@@ -31,18 +26,10 @@ class Node(Entity):
         self.cchannels[dst].transmit(msg, self, priority)
 
     def receive_message(self, src: str, msg: Message):
-        # signal to protocol that we've received a message
-        for protocol in self.protocols:
-            if type(protocol) == msg.owner_type:
-                if protocol.received_message(src, msg):
-                    return
-
-        # if we reach here, we didn't successfully receive the message in any protocol
-        print(src, msg)
-        raise Exception("Unkown protocol")
+        pass
 
     def send_qubit(self, dst: str, qubit):
-        pass
+        self.qchannels[dst].transmit(qubit, self)
 
     def receive_qubit(self, src: str, qubit):
         pass
