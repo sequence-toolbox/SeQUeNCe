@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, TYPE_CHECKING
 
-from ..topology.node import Node
+if TYPE_CHECKING:
+    from ..topology.node import Node
 
 
 class Protocol(ABC):
-    def __init__(self, own: Node):
+    def __init__(self, own: "Node"):
         self.upper_protocols = []
         self.lower_protocols = []
         self.own = own

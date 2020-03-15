@@ -15,9 +15,9 @@ class MemoryArray(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.memory_type = kwargs.get("memory_type", "atom")
-        self.max_frequency = kwargs.get("frequency", 1)
-        num_memories = kwargs.get("num_memories", 0)
-        memory_params = kwargs.get("memory_params", None)
+        self.max_frequency = kwargs.get("frequency", 8e7)
+        num_memories = kwargs.get("num_memories", 10)
+        memory_params = kwargs.get("memory_params", {})
         self.memories = []
         self.frequency = self.max_frequency
 

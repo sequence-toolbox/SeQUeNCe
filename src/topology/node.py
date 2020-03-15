@@ -1,38 +1,120 @@
 import math
+from typing import TYPE_CHECKING
 
-from ..components.optical_channel import *
-from ..protocols.message import Message
+if TYPE_CHECKING:
+    from ..kernel.timeline import Timeline
+    from ..protocols.message import Message
+    from ..components.optical_channel import QuantumChannel, ClassicalChannel
+
+from ..kernel.entity import Entity
+from ..kernel.process import Process
+from ..kernel.event import Event
+from ..components.memory import MemoryArray
+from ..components.bsm import SingleAtomBSM
+from ..protocols.entanglement.generation import EntanglementGeneration
 
 
 class Node(Entity):
-    def __init__(self, name, timeline, **kwargs):
+    def __init__(self, name: str, timeline: "Timeline", **kwargs):
         Entity.__init__(self, name, timeline)
         self.owner = self
         self.cchannels = {}  # mapping of destination node names to classical channels
         self.qchannels = {}  # mapping of destination node names to quantum channels
         self.protocols = []
 
-    def init(self):
+    def init(self) -> None:
         for protocol in self.protocols:
             protocol.init()
 
-    def assign_cchannel(self, cchannel: ClassicalChannel, another: str):
+    def assign_cchannel(self, cchannel: "ClassicalChannel", another: str) -> None:
         self.cchannels[another] = cchannel
 
-    def assign_qchannel(self, qchannel: QuantumChannel, another: str):
+    def assign_qchannel(self, qchannel: "QuantumChannel", another: str) -> None:
         self.qchannels[another] = qchannel
 
-    def send_message(self, dst: str, msg: Message, priority=math.inf):
+    def send_message(self, dst: str, msg: "Message", priority=math.inf) -> None:
         self.cchannels[dst].transmit(msg, self, priority)
 
-    def receive_message(self, src: str, msg: Message):
+    def receive_message(self, src: str, msg: "Message") -> None:
         pass
 
-    def send_qubit(self, dst: str, qubit):
+    def send_qubit(self, dst: str, qubit) -> None:
         self.qchannels[dst].transmit(qubit, self)
 
-    def receive_qubit(self, src: str, qubit):
+    def receive_qubit(self, src: str, qubit) -> None:
         pass
+
+
+class QuantumRepeater(Node):
+    def __init__(self, name: str, timeline: "Timeline", **kwargs) -> None:
+        Node.__init__(self, name, timeline, **kwargs)
+        self.memory_array = kwargs.get("memory_array", MemoryArray("%s_memory" % name, timeline))
+        self.eg = EntanglementGeneration(self)
+        self.eg.middles = []
+        self.protocols.append(self.eg)
+
+    def receive_message(self, src: str, msg: "Message") -> None:
+        # signal to protocol that we've received a message
+        for protocol in self.protocols:
+            if type(protocol) == msg.owner_type:
+                if protocol.received_message(src, msg):
+                    return
+
+        # if we reach here, we didn't successfully receive the message in any protocol
+        print(src, msg)
+        raise Exception("Unkown protocol")
+
+    def eg_add_middle(self, middle):
+        self.eg.middles.append(middle.name)
+
+    def eg_add_others(self, other):
+        self.eg.others.append(other.name)
+
+    def load_events(self):
+        self.eg.is_start = True
+        process = Process(self.eg, "start", [])
+        event = Event(self.timeline.now(), process)
+        self.timeline.schedule(event)
+
+
+class MiddleNode(Node):
+    def __init__(self, name: str, timeline: "Timeline", **kwargs) -> None:
+        Node.__init__(self, name, timeline, **kwargs)
+        self.bsm = SingleAtomBSM("%s_bsm" % name, timeline)
+        self.eg = EntanglementGeneration(self)
+        self.protocols.append(self.eg)
+        self.bsm.upper_protocols.append(self.eg)
+
+    def receive_message(self, src: str, msg: "Message") -> None:
+        # signal to protocol that we've received a message
+        for protocol in self.protocols:
+            if type(protocol) == msg.owner_type:
+                if protocol.received_message(src, msg):
+                    return
+
+        # if we reach here, we didn't successfully receive the message in any protocol
+        print(src, msg)
+        raise Exception("Unkown protocol")
+
+    def receive_qubit(self, src: str, qubit):
+        self.bsm.get(qubit)
+
+    def eg_add_others(self, other):
+        self.eg.others.append(other.name)
+
+
+# class QuantumRouter(Node):
+#     def __init__(self, name, timeline, **kwargs):
+#         Node.__init__(self, name, timeline, **kwargs)
+#         self.bsm = kwargs.get("bsm", BSM())
+#         self.memo_array = kwargs.get("memo_array", MemoryArray())
+#         self.control_protocol = [ResourceReservationProtocol(), RoutingProtocol()]
+#
+#     def receive_message(self, src: str, msg: Message):
+#         pass
+#
+#     def receive_qubit(self, src: str, qubit):
+#         pass
 
 
 class _Node(Entity):
@@ -52,7 +134,7 @@ class _Node(Entity):
         component.parents.append(self)
         self.components[label] = component
 
-    def assign_cchannel(self, cchannel: ClassicalChannel):
+    def assign_cchannel(self, cchannel: "ClassicalChannel"):
         # Must have used ClassicalChannel.addend prior to using this method
         another = ""
         for end in cchannel.ends:
@@ -62,7 +144,7 @@ class _Node(Entity):
             print("warn: overwrite classical channel from %s to %s" % (self.name, another))
         self.cchannels[another] = cchannel
 
-    def assign_qchannel(self, qchannel: QuantumChannel):
+    def assign_qchannel(self, qchannel: "QuantumChannel"):
         components = self.components.values()
         is_sender = qchannel.sender in components
         is_receiver = qchannel.receiver in components
@@ -152,10 +234,10 @@ class _Node(Entity):
         elif entity == "MemoryArray":
             self._pop(info_type="expired_memory", index=kwargs.get("index"))
 
-    def send_message(self, dst: str, msg: Message, priority=math.inf):
+    def send_message(self, dst: str, msg: "Message", priority=math.inf):
         self.cchannels[dst].transmit(msg, self, priority)
 
-    def receive_message(self, src: str, msg: Message):
+    def receive_message(self, src: str, msg: "Message"):
         # signal to protocol that we've received a message
         for protocol in self.protocols:
             if type(protocol) == msg.owner_type:

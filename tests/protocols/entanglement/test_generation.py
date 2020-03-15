@@ -1,11 +1,9 @@
-import numpy
-import pytest
-
-from sequence.protocols.entanglement.generation import *
-from sequence.kernel.timeline import Timeline
-from sequence.components.optical_channel import *
 from sequence.components.memory import MemoryArray
+from sequence.components.optical_channel import QuantumChannel
+from sequence.kernel.timeline import Timeline
+from sequence.protocols.entanglement.generation import EntanglementGeneration, EntanglementGenerationMessage
 from sequence.topology.node import Node
+
 
 def test_message():
     msg = EntanglementGenerationMessage("EXPIRE", mem_num=10)

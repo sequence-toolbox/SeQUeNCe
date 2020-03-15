@@ -105,7 +105,7 @@ class EntanglementGeneration(Protocol):
         self.frequencies = [0] * len(self.others)
         self.start_times = [-1] * len(self.others)
         self.emit_nums = [0] * len(self.others)
-        self.fidelity = kwargs.get("fidelity", 0)
+        self.fidelity = kwargs.get("fidelity", 0.9)
         self.stage_delays = kwargs.get("stage_delays", [0] * len(self.others))
 
         # memory internal info
@@ -134,7 +134,7 @@ class EntanglementGeneration(Protocol):
             if self.debug:
                 print("\tEG protocol end node init")
 
-            self.memory_array = self.own.components['MemoryArray']
+            self.memory_array = self.own.memory_array
             self.frequencies = [self.memory_array.max_frequency for _ in range(len(self.others))]
 
             # put memories in correct memory index list based on direct receiver
@@ -223,7 +223,7 @@ class EntanglementGeneration(Protocol):
         if info_type == "BSM_res":
             res = kwargs.get("res")
             time = kwargs.get("time")
-            resolution = self.own.components["BSM"].resolution
+            resolution = self.own.bsm
             
             # message = self.rsvp_name + " EntanglementGeneration MEAS_RES {} {} {}".format(res, time, resolution)
             message = EntanglementGenerationMessage("MEAS_RES", res=res, time=time, resolution=resolution)

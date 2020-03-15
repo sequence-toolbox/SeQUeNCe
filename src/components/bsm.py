@@ -33,6 +33,7 @@ class BSM(Entity):
         self.phase_error = kwargs.get("phase_error", 0)
         self.photons = []
         self.photon_arrival_time = -1
+        self.upper_protocols = []
         detectors = kwargs.get("detectors", [])
 
         self.detectors = []
@@ -259,6 +260,11 @@ class EnsembleBSM(BSM):
 
 class SingleAtomBSM(BSM):
     def __init__(self, name, timeline, **kwargs):
+        if not "detectors" in kwargs:
+            kwargs["detectors"] = [{"efficiency": 0.9,
+                                    "dark_count": 0,
+                                    "time_resolution": 150,
+                                    "count_rate": 25000000}] * 2
         super().__init__(name, timeline, **kwargs)
         assert len(self.detectors) == 2
 
