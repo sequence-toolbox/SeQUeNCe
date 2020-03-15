@@ -11,7 +11,7 @@ class Photon():
         quantum_state = kwargs.get("quantum_state", [complex(1), complex(0)])
         self.quantum_state = QuantumState()
         self.quantum_state.state = quantum_state
-        self.entangled_photons = [self]
+        # self.entangled_photons = [self]
         self.is_null = False
 
     def entangle(self, photon):
