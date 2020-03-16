@@ -129,7 +129,7 @@ class AtomMemory(Entity):
                 if self.direct_receiver:
                     self.direct_receiver.get(photon)
                 else:
-                    self.parents[0].send_qubit(photon)
+                    self.parents[0].send_qubit(photon, self)
             if self.coherence_time > 0:
                 # set expiration
                 decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)

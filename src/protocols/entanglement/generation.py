@@ -103,6 +103,7 @@ class EntanglementGeneration(Protocol):
         # network info
         self.fidelity = kwargs.get("fidelity", 0.9)
         self.stage_delays = kwargs.get("stage_delays", [])
+        self.memory_destinations = None
         
         # misc
         self.is_start = False
@@ -124,13 +125,23 @@ class EntanglementGeneration(Protocol):
             self.memory_array = self.own.memory_array
             self.frequencies = [self.memory_array.max_frequency for _ in range(len(self.others))]
 
+            if not self.memory_destinations:
+                self.memory_destinations = [self.middles[0]] * len(self.memory_array)
+            else:
+                assert len(self.memory_destinations) == len(self.memory_array)
+
             # put memories in correct memory index list based on direct receiver
             # also build memory stage, bsm wait time, and bsm result lists
-            self.invert_map = {value: key for key, value in self.own.qchannels.items()}
+            # self.invert_map = {value: key for key, value in self.own.qchannels.items()}
+            # for memory_index in range(len(self.memory_array)):
+            #     qchannel = self.memory_array[memory_index].direct_receiver
+            #     if qchannel is not None:
+            #         another_index = self.middles.index(self.invert_map[qchannel])
+            #         self.add_memory_index(another_index, memory_index)
             for memory_index in range(len(self.memory_array)):
-                qchannel = self.memory_array[memory_index].direct_receiver
-                if qchannel is not None:
-                    another_index = self.middles.index(self.invert_map[qchannel])
+                destination = self.memory_destinations[memory_index]
+                if destination:
+                    another_index = self.middles.index(destination)
                     self.add_memory_index(another_index, memory_index)
 
     def set_params(self):
@@ -281,7 +292,7 @@ class EntanglementGeneration(Protocol):
             # send NEGOTIATE message
             qchannel = self.own.qchannels[self.middles[another_index]]
             self.qc_delays[another_index] = int(round(qchannel.distance / qchannel.light_speed))
-            message = EntanglementGenerationMessage("NEGOTIATE", qc_delay=qc_delays[another_index], frequency=self.frequencies[another_index],
+            message = EntanglementGenerationMessage("NEGOTIATE", qc_delay=self.qc_delays[another_index], frequency=self.frequencies[another_index],
                                                     num_memories=len(self.memory_indices[another_index]), expired=expired, finished=finished)
 
             self.own.send_message(self.others[another_index], message)
@@ -348,7 +359,8 @@ class EntanglementGeneration(Protocol):
         return True
 
     def send_qubit(self, qubit, index):
-        raise NotImplementedError()
+        destination = self.memory_destinations[index]
+        self.own.send_qubit(destination, qubit)
 
     def received_message(self, src: str, msg: List[str]):
         if self.debug:
@@ -378,7 +390,7 @@ class EntanglementGeneration(Protocol):
         elif msg_type == "NEGOTIATE":
             another_delay = msg.qc_delay
             another_frequency = msg.frequency
-            another_mem_num = msg.mem_num
+            another_mem_num = msg.num_memories
 
             # get expired and finished lists
             another_expired = msg.expired
@@ -537,7 +549,7 @@ class EntanglementGeneration(Protocol):
                 print("\ttrigger time: {}".format(time))   
 
         elif msg_type == "ENT_MEMO":
-            remote_id = msg.memory_id
+            remote_id = msg.id
             remote_time = msg.time
             another_index = self.others.index(src)
 
