@@ -51,7 +51,7 @@ class QuantumRepeater(Node):
         self.memory_array = kwargs.get("memory_array", MemoryArray("%s_memory" % name, timeline))
         self.eg = EntanglementGeneration(self)
         self.eg.middles = []
-        self.protocols.append(self.eg)
+        self.memory_array.upper_protocols.append(self.eg)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         # signal to protocol that we've received a message
@@ -82,7 +82,6 @@ class MiddleNode(Node):
         Node.__init__(self, name, timeline, **kwargs)
         self.bsm = SingleAtomBSM("%s_bsm" % name, timeline)
         self.eg = EntanglementGeneration(self)
-        self.protocols.append(self.eg)
         self.bsm.upper_protocols.append(self.eg)
 
     def receive_message(self, src: str, msg: "Message") -> None:

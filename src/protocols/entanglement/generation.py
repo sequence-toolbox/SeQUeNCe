@@ -101,27 +101,12 @@ class EntanglementGeneration(Protocol):
         self.rsvp_name = 'EG'
 
         # network info
-        self.qc_delays = [0] * len(self.others)
-        self.frequencies = [0] * len(self.others)
-        self.start_times = [-1] * len(self.others)
-        self.emit_nums = [0] * len(self.others)
         self.fidelity = kwargs.get("fidelity", 0.9)
-        self.stage_delays = kwargs.get("stage_delays", [0] * len(self.others))
-
-        # memory internal info
-        self.memory_indices = [[] for _ in range(len(self.others))] # keep track of indices to work on
-        self.memory_stage = [[] for _ in range(len(self.others))] # keep track of stages completed by each memory
-        self.bsm_wait_time = [[] for _ in range(len(self.others))] # keep track of expected arrival time for bsm results
-        self.bsm_res = [[] for _ in range(len(self.others))]
-        self.wait_remote = [[] for _ in range(len(self.others))] # keep track of memories waiting for ent_memo
-        self.wait_remote_times = [[] for _ in range(len(self.others))] # keep track of time for said memories
-        self.add_list = [[] for _ in range(len(self.others))] # keep track of memories to be added
-
+        self.stage_delays = kwargs.get("stage_delays", [])
+        
         # misc
-        self.invert_map = {} # keep track of mapping from connected qchannels to adjacent nodes
-        self.running = [False] * len(self.others) # True if protocol currently processing at least 1 memory
         self.is_start = False
-        self.debug = False
+        self.debug = True
 
     def init(self):
         if self.debug:
@@ -129,7 +114,9 @@ class EntanglementGeneration(Protocol):
 
         assert ((self.middles[0] == self.own.name and len(self.others) == 2) or
                 (self.middles[0] != self.own.name and len(self.others) == len(self.middles)))
-        self.refresh_params_after_update_others()
+
+        self.set_params()
+
         if self.own.name != self.middles[0]:
             if self.debug:
                 print("\tEG protocol end node init")
@@ -146,19 +133,28 @@ class EntanglementGeneration(Protocol):
                     another_index = self.middles.index(self.invert_map[qchannel])
                     self.add_memory_index(another_index, memory_index)
 
-    def refresh_params_after_update_others(self):
+    def set_params(self):
+        # network info
         self.qc_delays = [0] * len(self.others)
         self.frequencies = [0] * len(self.others)
         self.start_times = [-1] * len(self.others)
         self.emit_nums = [0] * len(self.others)
-        if len(self.stage_delays) == 0:
-            self.stage_delays = [0] * len(self.others)
+        self.stage_delays = [0] * len(self.others)
+
+        # memory internal info
         self.memory_indices = [[] for _ in range(len(self.others))] # keep track of indices to work on
         self.memory_stage = [[] for _ in range(len(self.others))] # keep track of stages completed by each memory
         self.bsm_wait_time = [[] for _ in range(len(self.others))] # keep track of expected arrival time for bsm results
         self.bsm_res = [[] for _ in range(len(self.others))]
         self.wait_remote = [[] for _ in range(len(self.others))] # keep track of memories waiting for ent_memo
+        self.wait_remote_times = [[] for _ in range(len(self.others))] # keep track of time for said memories
+        self.add_list = [[] for _ in range(len(self.others))] # keep track of memories to be added
+
+        # misc
+        self.invert_map = {} # keep track of mapping from connected qchannels to adjacent nodes
         self.running = [False] * len(self.others) # True if protocol currently processing at least 1 memory
+        self.is_start = False
+        self.debug = True
 
     # used by init() and when memory pushed down
     def add_memory_index(self, another_index, memory_index):
@@ -223,9 +219,8 @@ class EntanglementGeneration(Protocol):
         if info_type == "BSM_res":
             res = kwargs.get("res")
             time = kwargs.get("time")
-            resolution = self.own.bsm
+            resolution = self.own.bsm.resolution
             
-            # message = self.rsvp_name + " EntanglementGeneration MEAS_RES {} {} {}".format(res, time, resolution)
             message = EntanglementGenerationMessage("MEAS_RES", res=res, time=time, resolution=resolution)
             for node in self.others:
                 self.own.send_message(node, message)
@@ -286,13 +281,6 @@ class EntanglementGeneration(Protocol):
             # send NEGOTIATE message
             qchannel = self.own.qchannels[self.middles[another_index]]
             self.qc_delays[another_index] = int(round(qchannel.distance / qchannel.light_speed))
-            # message = self.rsvp_name + " EntanglementGeneration NEGOTIATE {} {} {}".format(self.qc_delays[another_index],
-            #                                                              self.frequencies[another_index],
-            #                                                              len(self.memory_indices[another_index]))
-            # if len(expired) > 0:
-            #     message += " " + " ".join(str(i) for i in expired)
-            # if len(finished) > 0:
-            #     message += " -1 " + " ".join(str(i) for i in finished)
             message = EntanglementGenerationMessage("NEGOTIATE", qc_delay=qc_delays[another_index], frequency=self.frequencies[another_index],
                                                     num_memories=len(self.memory_indices[another_index]), expired=expired, finished=finished)
 
@@ -322,7 +310,6 @@ class EntanglementGeneration(Protocol):
             self.memory_array[memory_index].flip_state()
 
         # set each memory in stage 1 to + state (and reset bsm)
-        # starting = [i for i in range(len(self.bsm_res[another_index])) if i not in finished_1 and self.memory_stage[another_index][i] != -1]
         starting = [i for i, val in enumerate(self.memory_stage[another_index]) if i not in finished_1 and (val == 0 or val == 1)]
         if self.debug:
             print("\tstarting:", starting)
@@ -332,6 +319,36 @@ class EntanglementGeneration(Protocol):
             self.memory_stage[another_index][i] = 0
             self.bsm_res[another_index][i] = -1
             self.memory_array[memory_index].reset()
+
+    def memory_excite(self, another_index):
+        if self.debug:
+            print("EG protocol \033[1;36;40mmemory_excite\033[0m on node", self.own.name)
+            print("\tmemories:", self.memory_indices[another_index])
+            print("\tstages:", self.memory_stage[another_index])
+
+        period = int(round(1e12 / self.frequencies[another_index]))
+        time = self.start_times[another_index]
+        self.bsm_wait_time[another_index] = [-1] * self.emit_nums[another_index]
+
+        for i in range(self.emit_nums[another_index]):
+            # TODO: write condition more succinctly?
+            if self.memory_stage[another_index][i] >= 0 and self.memory_stage[another_index][i] != 2:
+                memory_index = self.memory_indices[another_index][i]
+                process = Process(self.memory_array[memory_index], "excite", [])
+                event = Event(time, process)
+                self.own.timeline.schedule(event)
+
+                self.bsm_wait_time[another_index][i] = time + self.qc_delays[another_index]
+
+            time += period
+
+        if self.debug:
+            print("\tbsm_wait_time:", self.bsm_wait_time[another_index])
+
+        return True
+
+    def send_qubit(self, qubit, index):
+        raise NotImplementedError()
 
     def received_message(self, src: str, msg: List[str]):
         if self.debug:
@@ -364,15 +381,6 @@ class EntanglementGeneration(Protocol):
             another_mem_num = msg.mem_num
 
             # get expired and finished lists
-            # msg = msg[4:]
-            # another_expired = []
-            # another_finished = []
-            # if "-1" in msg:
-            #     index = msg.index("-1")
-            #     another_expired = [int(i) for i in msg[:index]]
-            #     another_finished = [int(i) for i in msg[index+1:]]
-            # else:
-            #     another_expired = [int(i) for i in msg]
             another_expired = msg.expired
             another_finished = msg.finished
 
@@ -425,14 +433,6 @@ class EntanglementGeneration(Protocol):
             self.memory_excite(another_index)
 
             # send message to other node
-            # message = self.rsvp_name + " EntanglementGeneration NEGOTIATE_ACK {} {} {} {}".format(self.frequencies[another_index],
-            #                                                                     num_memories,
-            #                                                                     another_start_time,
-            #                                                                     quantum_delay)
-            # if len(expired_total) > 0:
-            #     message += " " + " ".join(str(i) for i in expired_total)
-            # if len(finished_total) > 0:
-            #     message += " -1 " + " ".join(str(i) for i in finished_total)
             message = EntanglementGenerationMessage("NEGOTIATE_ACK", frequency=self.frequencies[another_index], num_memories=num_memories,
                                                     start_time=another_start_time, quantum_delay=quantum_delay, expired=expired_total, finished=finished_total)
             self.own.send_message(src, message)
@@ -447,15 +447,6 @@ class EntanglementGeneration(Protocol):
             quantum_delay = msg.quantum_delay
 
             # get expired and finished lists
-            # msg = msg[5:]
-            # expired_total = []
-            # finished_total = []
-            # if "-1" in msg:
-            #     index = msg.index("-1")
-            #     expired_total = [int(i) for i in msg[:index]]
-            #     finished_total = [int(i) for i in msg[index+1:]]
-            # else:
-            #     expired_total = [int(i) for i in msg]
             expired_total = msg.expired
             finished_total = msg.finished
 
@@ -581,30 +572,4 @@ class EntanglementGeneration(Protocol):
 
         return True
 
-    def memory_excite(self, another_index):
-        if self.debug:
-            print("EG protocol \033[1;36;40mmemory_excite\033[0m on node", self.own.name)
-            print("\tmemories:", self.memory_indices[another_index])
-            print("\tstages:", self.memory_stage[another_index])
-
-        period = int(round(1e12 / self.frequencies[another_index]))
-        time = self.start_times[another_index]
-        self.bsm_wait_time[another_index] = [-1] * self.emit_nums[another_index]
-
-        for i in range(self.emit_nums[another_index]):
-            # TODO: write condition more succinctly?
-            if self.memory_stage[another_index][i] >= 0 and self.memory_stage[another_index][i] != 2:
-                memory_index = self.memory_indices[another_index][i]
-                process = Process(self.memory_array[memory_index], "excite", [])
-                event = Event(time, process)
-                self.own.timeline.schedule(event)
-
-                self.bsm_wait_time[another_index][i] = time + self.qc_delays[another_index]
-
-            time += period
-
-        if self.debug:
-            print("\tbsm_wait_time:", self.bsm_wait_time[another_index])
-
-        return True
 

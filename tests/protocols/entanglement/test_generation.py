@@ -2,7 +2,7 @@ from sequence.components.memory import MemoryArray
 from sequence.components.optical_channel import QuantumChannel
 from sequence.kernel.timeline import Timeline
 from sequence.protocols.entanglement.generation import EntanglementGeneration, EntanglementGenerationMessage
-from sequence.topology.node import Node
+from sequence.topology.node import *
 
 
 def test_message():
@@ -12,46 +12,44 @@ def test_message():
     assert msg.owner_type == type(EntanglementGeneration(None))
     assert msg.mem_num == 10
 
-def test_generation_init():
-    tl = Timeline()
-    node = Node("e1", tl)
-
-    generation = EntanglementGeneration(node, others=["e0","e2"], middles=["m0","m1"])
-
-    assert len(generation.qc_delays) == 2
-    assert len(generation.memory_indices) == 2
+# def test_generation_init():
+#     tl = Timeline()
+#     node = Node("e1", tl)
+#
+#     generation = EntanglementGeneration(node, others=["e0","e2"], middles=["m0","m1"])
+#
+#     assert len(generation.qc_delays) == 2
+#     assert len(generation.memory_indices) == 2
 
 def test_generation_init_func():
     # TODO: add BSM, quantum channels
     tl = Timeline()
-    node = Node("e1", tl)
-    memo_array = MemoryArray("array", tl)
-    node.assign_component(memo_array, "MemoryArray")
+    node = QuantumRepeater("e1", tl)
+    node.eg.middles = ["m0", "m1"]
+    node.eg.others = ["e0", "e2"]
 
-    generation = EntanglementGeneration(node, others=["e0","e2"], middles=["m0","m1"])
-    generation.debug = True
-    generation.init()
+    node.init()
 
-    assert generation.frequencies == [1, 1]
+    assert len(node.eg.memory_indices) == 2
 
 def test_message():
     tl = Timeline()
+    node = QuantumRepeater("e1", tl)
+    node.eg.middles = ["m0", "m1"]
+    node.eg.others = ["e0", "e2"]
 
-    node = Node("e1", tl)
-    
-    generation = EntanglementGeneration(node, others=["e0","e2"], middles=["m0","m1"])
-    generation.debug = True
+    node.init()
 
     # unknown message
 
     # unknown node
     msg = EntanglementGenerationMessage("EXPIRE", mem_num=10)
-    assert generation.received_message("e3", msg) is False
+    assert node.eg.received_message("e3", msg) is False
 
     # expire message
     msg = EntanglementGenerationMessage("EXPIRE", mem_num=10)
-    assert generation.received_message("e0", msg) is True
-    assert generation.add_list[0] == [10]
+    assert node.eg.received_message("e0", msg) is True
+    assert node.eg.add_list[0] == [10]
 
 def test_push():
     tl = Timeline()

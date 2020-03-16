@@ -20,6 +20,7 @@ class MemoryArray(Entity):
         memory_params = kwargs.get("memory_params", {})
         self.memories = []
         self.frequency = self.max_frequency
+        self.upper_protocols = []
 
         if self.memory_type == "atom":
             for i in range(num_memories):
@@ -81,6 +82,11 @@ class MemoryArray(Entity):
         for memo_index in indices:
             self.memories[memo_index].direct_receiver = direct_receiver
 
+    def send_qubit(self, qubit, memory):
+        index = self.memories.index(memory)
+        for protocol in self.upper_protocols:
+            protocol.send_qubit(qubit, index)
+
 
 # single-atom memory
 class AtomMemory(Entity):
@@ -113,10 +119,17 @@ class AtomMemory(Entity):
                         encoding_type=self.photon_encoding)
         if state == 0:
             photon.is_null = True
-            self.direct_receiver.get(photon)
+
+            if self.direct_receiver:
+                self.direct_receiver.get(photon)
+            else:
+                self.parents[0].send_qubit(photon, self)
         else:
             if numpy.random.random_sample() < self.efficiency:
-                self.direct_receiver.get(photon)
+                if self.direct_receiver:
+                    self.direct_receiver.get(photon)
+                else:
+                    self.parents[0].send_qubit(photon)
             if self.coherence_time > 0:
                 # set expiration
                 decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)

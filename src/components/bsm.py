@@ -77,6 +77,11 @@ class BSM(Entity):
         detector_num = self.detectors.index(detector)
         time = kwargs.get("time")
 
+    def _pop(self, **kwargs):
+        kwargs["info_type"] = "BSM_res"
+        for protocol in self.upper_protocols:
+            protocol.pop(**kwargs)
+
 
 class PolarizationBSM(BSM):
     def __init__(self, name, timeline, **kwargs):
@@ -261,10 +266,7 @@ class EnsembleBSM(BSM):
 class SingleAtomBSM(BSM):
     def __init__(self, name, timeline, **kwargs):
         if not "detectors" in kwargs:
-            kwargs["detectors"] = [{"efficiency": 0.9,
-                                    "dark_count": 0,
-                                    "time_resolution": 150,
-                                    "count_rate": 25000000}] * 2
+            kwargs["detectors"] = [{}] * 2
         super().__init__(name, timeline, **kwargs)
         assert len(self.detectors) == 2
 
