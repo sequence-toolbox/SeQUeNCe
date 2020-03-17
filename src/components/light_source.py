@@ -10,12 +10,12 @@ from ..utils.encoding import polarization
 class LightSource(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
-        self.frequency = kwargs.get("frequency", 0)  # measured in Hz
+        self.owner = None
+        self.frequency = kwargs.get("frequency", 8e7)  # measured in Hz
         self.wavelength = kwargs.get("wavelength", 1550)  # measured in nm
         self.linewidth = kwargs.get("bandwidth", 0)  # st. dev. in photon wavelength (nm)
-        self.mean_photon_num = kwargs.get("mean_photon_num", 0)
+        self.mean_photon_num = kwargs.get("mean_photon_num", 0.1)
         self.encoding_type = kwargs.get("encoding_type", polarization)
-        self.direct_receiver = kwargs.get("direct_receiver", None)
         self.phase_error = kwargs.get("phase_error", 0)
         self.photon_counter = 0
         # for BB84
@@ -30,7 +30,7 @@ class LightSource(Entity):
         pass
 
     # for general use
-    def emit(self, state_list):
+    def emit(self, state_list, dst: str) -> None:
         time = self.timeline.now()
         period = int(round(1e12 / self.frequency))
 
@@ -42,24 +42,16 @@ class LightSource(Entity):
 
             for _ in range(num_photons):
                 wavelength = self.linewidth * numpy.random.randn() + self.wavelength
-                new_photon = Photon(None,
+                new_photon = Photon(str(i),
                                     wavelength=wavelength,
-                                    location=self.direct_receiver,
+                                    location=self.owner,
                                     encoding_type=self.encoding_type,
                                     quantum_state=state)
-                process = Process(self.direct_receiver, "get", [new_photon])
+                process = Process(self.owner, "send_qubit", [dst, new_photon])
                 event = Event(time, process)
-                self.timeline.schedule(event)
-
+                self.owner.timeline.schedule(event)
                 self.photon_counter += 1
-
-
-
-
             time += period
-
-    def assign_receiver(self, receiver):
-        self.direct_receiver = receiver
 
 
 class SPDCSource(LightSource):

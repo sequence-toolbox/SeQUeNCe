@@ -116,52 +116,19 @@ class MiddleNode(Node):
 #         pass
 
 
-class _Node(Entity):
-    def __init__(self, name, timeline, **kwargs):
-        assert (' ' not in name)
-        Entity.__init__(self, name, timeline)
-        self.components = kwargs.get("components", {})
-        self.cchannels = {}  # mapping of destination node names to classical channels
-        self.qchannels = {}  # mapping of destination node names to quantum channels
-        self.protocols = []
+class QKDNode(Node):
+    def __init__(self, name: str, timeline: "timeline"):
+        Node.__init__(self, name, timeline)
+        self.lightsource = None
+        self.qsdetector = None
 
-    def init(self):
-        for protocol in self.protocols:
-            protocol.init()
+    def set_lightsource(self, lightsource):
+        self.lightsource = lightsource
+        self.lightsource.owner = self
 
-    def assign_component(self, component: Entity, label: str):
-        component.parents.append(self)
-        self.components[label] = component
-
-    def assign_cchannel(self, cchannel: "ClassicalChannel"):
-        # Must have used ClassicalChannel.addend prior to using this method
-        another = ""
-        for end in cchannel.ends:
-            if end.name != self.name:
-                another = end.name
-        if another in self.cchannels:
-            print("warn: overwrite classical channel from %s to %s" % (self.name, another))
-        self.cchannels[another] = cchannel
-
-    def assign_qchannel(self, qchannel: "QuantumChannel"):
-        components = self.components.values()
-        is_sender = qchannel.sender in components
-        is_receiver = qchannel.receiver in components
-        assert is_sender ^ is_receiver, "node must be explicitly 1 end of quantum channel"
-
-        if is_sender:
-            device = qchannel.receiver
-        else:
-            device = qchannel.sender
-
-        # find parent node
-        parent = device.parents[0]
-        while not isinstance(parent, Node):
-            parent = parent.parents[0]
-            if parent is None:
-                Exception("could not find parent of component {} in '{}'.assign_qchannel".format(device.name, self.name))
-
-        self.qchannels[parent.name] = qchannel
+    def set_qsdetector(self, qsdetector):
+        self.qsdetector = qsdetector
+        self.qsdetector.owner = self
 
     def send_qubits(self, basis_list, bit_list, source_name):
         encoding_type = self.components[source_name].encoding_type
@@ -175,6 +142,71 @@ class _Node(Entity):
     def send_photons(self, state, num, source_name):
         state_list = [state] * num
         self.components[source_name].emit(state_list)
+
+    def get_bits(self, light_time, start_time, frequency, detector_name):
+        encoding_type = self.components[detector_name].encoding_type
+        bits = [-1] * int(round(light_time * frequency))  # -1 used for invalid bits
+
+        if encoding_type["name"] == "polarization":
+            detection_times = self.components[detector_name].get_photon_times()
+
+            # determine indices from detection times and record bits
+            for time in detection_times[0]:  # detection times for |0> detector
+                index = int(round((time - start_time) * frequency * 1e-12))
+                if 0 <= index < len(bits):
+                    bits[index] = 0
+
+            for time in detection_times[1]:  # detection times for |1> detector
+                index = int(round((time - start_time) * frequency * 1e-12))
+                if 0 <= index < len(bits):
+                    if bits[index] == 0:
+                        bits[index] = -1
+                    else:
+                        bits[index] = 1
+
+            return bits
+
+        elif encoding_type["name"] == "time_bin":
+            detection_times = self.components[detector_name].get_photon_times()
+            bin_separation = encoding_type["bin_separation"]
+
+            # single detector (for early, late basis) times
+            for time in detection_times[0]:
+                index = int(round((time - start_time) * frequency * 1e-12))
+                if 0 <= index < len(bits):
+                    if abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                        bits[index] = 0
+                    elif abs(((index * 1e12 / frequency) + start_time) - (time - bin_separation)) < bin_separation / 2:
+                        bits[index] = 1
+
+            # interferometer detector 0 times
+            for time in detection_times[1]:
+                time -= bin_separation
+                index = int(round((time - start_time) * frequency * 1e-12))
+                # check if index is in range and is in correct time bin
+                if 0 <= index < len(bits) and \
+                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                    if bits[index] == -1:
+                        bits[index] = 0
+                    else:
+                        bits[index] = -1
+
+            # interferometer detector 1 times
+            for time in detection_times[2]:
+                time -= bin_separation
+                index = int(round((time - start_time) * frequency * 1e-12))
+                # check if index is in range and is in correct time bin
+                if 0 <= index < len(bits) and \
+                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                    if bits[index] == -1:
+                        bits[index] = 1
+                    else:
+                        bits[index] = -1
+
+            return bits
+
+        else:
+            raise Exception("Invalid encoding type for node " + self.name)
 
     def set_bases(self, basis_list, start_time, frequency, detector_name):
         encoding_type = self.components[detector_name].encoding_type
@@ -198,51 +230,3 @@ class _Node(Entity):
 
         else:
             raise Exception("Invalid encoding type for node " + self.name)
-
-    def get_source_count(self):
-        source = self.components['lightsource']
-        return source.photon_counter
-
-    def _pop(self, **kwargs):
-        for protocol in self.protocols:
-            protocol.pop(**kwargs)
-
-    def pop(self, **kwargs):
-        entity = kwargs.get("entity")
-        # TODO: figure out how to get encoding_type
-        # encoding_type = self.components[entity].encoding_type
-
-        if entity == "QSDetector":
-            raise Exception("unimplemented method for handling QSDetector result in node '{}'".format(self.name))
-
-            # calculate bit and then pop to protocols
-            detector_index = kwargs.get("detector_num")
-            bit = -1
-
-            if encoding_type.name == "polarization":
-                bit = detector_index
-                # TODO: pop to protocol
-
-            elif encoding_type.name == "time_bin":
-                bin_separation = encoding_type.bin_separation
-                # TODO: need early and late arrival time to calculate bit value
-
-        elif entity == "BSM":
-            self._pop(info_type="BSM_res", **kwargs)
-
-        elif entity == "MemoryArray":
-            self._pop(info_type="expired_memory", index=kwargs.get("index"))
-
-    def send_message(self, dst: str, msg: "Message", priority=math.inf):
-        self.cchannels[dst].transmit(msg, self, priority)
-
-    def receive_message(self, src: str, msg: "Message"):
-        # signal to protocol that we've received a message
-        for protocol in self.protocols:
-            if type(protocol) == msg.owner_type:
-                if protocol.received_message(src, msg):
-                    return
-
-        # if we reach here, we didn't successfully receive the message in any protocol
-        print(src, msg)
-        raise Exception("Unkown protocol")
