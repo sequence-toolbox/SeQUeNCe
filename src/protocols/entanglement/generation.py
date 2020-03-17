@@ -107,7 +107,7 @@ class EntanglementGeneration(Protocol):
         
         # misc
         self.is_start = False
-        self.debug = True
+        self.debug = False
 
     def init(self):
         if self.debug:
@@ -162,10 +162,7 @@ class EntanglementGeneration(Protocol):
         self.add_list = [[] for _ in range(len(self.others))] # keep track of memories to be added
 
         # misc
-        self.invert_map = {} # keep track of mapping from connected qchannels to adjacent nodes
         self.running = [False] * len(self.others) # True if protocol currently processing at least 1 memory
-        self.is_start = False
-        self.debug = True
 
     # used by init() and when memory pushed down
     def add_memory_index(self, another_index, memory_index):
