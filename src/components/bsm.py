@@ -39,7 +39,7 @@ class BSM(Entity):
         self.detectors = []
         for d in detectors:
             if d is not None:
-                detector = Detector(timeline, **d)
+                detector = Detector("", timeline, **d)
                 detector.parents.append(self)
             else:
                 detector = None

@@ -1,6 +1,8 @@
 from numpy import random
 
 from sequence.components.detector import *
+from sequence.components.photon import Photon
+from sequence.utils.encoding import polarization
 
 random.seed(1)
 
@@ -40,12 +42,12 @@ def test_Detector_get():
 
     # dark count
     dark_count = 100
-    stop_time = 1e13
+    stop_time = 1e14
     detector, parent, tl = create_detector(dark_count=dark_count)
     tl.init()
     tl.stop_time = stop_time
     tl.run()
-    assert len(parent.log) - stop_time / 1e12 * dark_count < 10
+    assert (len(parent.log) - stop_time / 1e12 * dark_count) / (stop_time / 1e12 * dark_count) < 0.1
 
     # count rate
     count_rate = 1e11
@@ -70,24 +72,76 @@ def test_Detector_get():
 
 
 def test_QSDetectorPolarization_init():
-    assert False
+    tl = Timeline()
+    qsdetector = QSDetectorPolarization("qsd", tl)
+    tl.init()
 
 
-def test_QSDetectorPolarization_get():
-    assert False
-
-
-def test_QSDetectorPolarization_set_basis():
-    assert False
+def test_QSDetectorPolarization_set_basis_list():
+    tl = Timeline()
+    qsdetector = QSDetectorPolarization("qsd", tl)
+    basis_list = []
+    start_time = 0
+    frequency = 1e6
+    qsdetector.set_basis_list(basis_list, start_time, frequency)
+    assert qsdetector.splitter.basis_list == basis_list and \
+           qsdetector.splitter.start_time == start_time and \
+           qsdetector.splitter.frequency == frequency
 
 
 def test_QSDetectorPolarization_update_splitter_params():
-    assert False
+    fidelity = 0.9
+    tl = Timeline()
+    qsdetector = QSDetectorPolarization("qsd", tl)
+    qsdetector.update_splitter_params("fidelity", fidelity)
+
+    assert qsdetector.splitter.fidelity == fidelity
 
 
 def test_QSDetectorPolarization_update_detector_params():
-    assert False
+    tl = Timeline()
+    qsdetector = QSDetectorPolarization("qsd", tl)
+    qsdetector.update_detector_params(0, "dark_count", 99)
+    assert qsdetector.detectors[0].dark_count == 99 and qsdetector.detectors[1].dark_count != 99
+
+
+class Protocol():
+    def __init__(self, tl):
+        self.timeline = tl
+        self.log = []
+
+    def pop(self, detector_index, timestamp):
+        self.log.append((self.timeline.now(), detector_index, timestamp))
 
 
 def test_QSDetectorPolarization_pop():
-    assert False
+    tl = Timeline()
+    qsdetector = QSDetectorPolarization("qsd", tl)
+    protocol = Protocol(tl)
+    qsdetector.protocols.append(protocol)
+
+    args = [[0, 10], [1, 20], [1, 40]]
+    for arg in args:
+        qsdetector.pop(qsdetector.detectors[arg[0]], arg[1])
+        assert protocol.log[-1][1] == arg[0] and protocol.log[-1][2] == arg[1]
+
+
+def test_QSDetectorPolarization():
+    tl = Timeline()
+    qsdetector = QSDetectorPolarization("qsd", tl)
+    protocol = Protocol(tl)
+    qsdetector.protocols.append(protocol)
+    qsdetector.update_detector_params(0, "efficiency", 1)
+    qsdetector.update_detector_params(1, "efficiency", 1)
+    frequency = 1e5
+    start_time = 0
+    basis_list = [polarization["bases"][random.randint(2)] for _ in range(1000)]
+    qsdetector.set_basis_list(basis_list, start_time, frequency)
+
+    for i in range(1000):
+        tl.time = i * 1e12 / frequency
+        basis = basis_list[i]
+        bit = random.randint(2)
+        photon = Photon(str(i), quantum_state=basis[bit])
+        qsdetector.get(photon)
+        assert protocol.log[-1][0] == tl.time and protocol.log[-1][1] == bit

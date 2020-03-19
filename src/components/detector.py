@@ -4,6 +4,7 @@ import numpy
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
+    from typing import List
 
 from ..components.beam_splitter import BeamSplitter
 from ..components.interferometer import Interferometer
@@ -47,32 +48,63 @@ class Detector(Entity):
             self.timeline.schedule(event2)
 
 
-class QSDetector(Entity):
+class QSDetectorPolarization(Entity):
+    def __init__(self, name: str, timeline: "Timeline"):
+        Entity.__init__(self, name, timeline)
+        self.protocols = []
+        self.splitter = BeamSplitter(name + ".splitter", timeline)
+        self.detectors = [Detector(name + ".detector" + str(i), timeline) for i in range(2)]
+        self.splitter.set_receiver(0, self.detectors[0])
+        self.splitter.set_receiver(1, self.detectors[1])
+        self.children += [self.splitter, self.detectors[0], self.detectors[1]]
+        [component.parents.append(self) for component in self.children]
+
+    def init(self):
+        assert len(self.detectors) == 2
+
+    def set_basis_list(self, basis_list: "List", start_time: int, frequency: int):
+        self.splitter.set_basis_list(basis_list, start_time, frequency)
+
+    def update_splitter_params(self, arg_name, value):
+        self.splitter.__setattr__(arg_name, value)
+
+    def update_detector_params(self, detector_id, arg_name, value):
+        self.splitter.receivers[detector_id].__setattr__(arg_name, value)
+
+    def get(self, photon):
+        self.splitter.get(photon)
+
+    def pop(self, detector: "Detector", time: int):
+        detector_index = self.detectors.index(detector)
+        for protocol in self.protocols:
+            protocol.pop(detector_index, time)
+
+    def get_photon_times(self):
+        times = []
+        for d in self.detectors:
+            times.append(d.photon_times)
+
+        return times
+
+
+class QSDetectorTimeBin(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
-        self.encoding_type = kwargs.get("encoding_type", polarization)
 
         detectors = kwargs.get("detectors", [])
-        if (self.encoding_type["name"] == "polarization" and len(detectors) != 2) or \
-                (self.encoding_type["name"] == "time_bin" and len(detectors) != 3):
+        if (self.encoding_type["name"] == "time_bin" and len(detectors) != 3):
             raise Exception("invalid number of detectors specified")
         self.detectors = []
         for d in detectors:
             if d is not None:
-                detector = Detector(timeline, **d)
+                detector = Detector("", timeline, **d)
             else:
                 detector = None
             self.detectors.append(detector)
 
         # protocol unique initialization
 
-        if self.encoding_type["name"] == "polarization":
-            # set up beamsplitter
-            splitter = kwargs.get("splitter")
-            self.splitter = BeamSplitter(timeline, **splitter)
-            self.splitter.receivers = self.detectors
-
-        elif self.encoding_type["name"] == "time_bin":
+        if self.encoding_type["name"] == "time_bin":
             from sequence.components.switch import Switch
             # set up switch and interferometer
             interferometer = kwargs.get("interferometer")
@@ -82,22 +114,17 @@ class QSDetector(Entity):
             self.switch = Switch(timeline, **switch)
             self.switch.receivers = [self.detectors[0], self.interferometer]
 
-        else:
-            raise Exception("invalid encoding type for QSDetector " + self.name)
-
     def init(self):
         pass
 
     def get(self, photon):
-        if self.encoding_type["name"] == "polarization":
-            self.splitter.get(photon)
+        self.switch.get(photon)
 
-        elif self.encoding_type["name"] == "time_bin":
-            self.switch.get(photon)
-
-    def pop(self, **kwargs):
-        detector = kwargs.get("detector")
-        self._pop(entity="QSDetector", detector_num=self.detectors.index(detector))
-
-    def set_basis(self, basis):
-        self.splitter.set_basis(basis)
+    def get_photon_times(self):
+        times = []
+        for d in self.detectors:
+            if d is not None:
+                times.append(d.photon_times)
+            else:
+                times.append([])
+        return times
