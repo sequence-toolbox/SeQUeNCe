@@ -27,21 +27,21 @@ def test_BeamSplitter_set_receiver():
     tl = Timeline()
     bs = BeamSplitter("bs", tl)
     receiver = Receiver(tl)
-    bs.set_receiver(receiver, 0)
+    bs.set_receiver(0, receiver)
     receiver = Receiver(tl)
-    bs.set_receiver(receiver, 1)
+    bs.set_receiver(1, receiver)
     receiver = Receiver(tl)
     with pytest.raises(Exception):
-        bs.set_receiver(receiver, 5)
+        bs.set_receiver(5, receiver)
 
 
 def test_BeamSplitter_get():
     tl = Timeline()
     bs = BeamSplitter("bs", tl)
     receiver0 = Receiver(tl)
-    bs.set_receiver(receiver0, 0)
+    bs.set_receiver(0, receiver0)
     receiver1 = Receiver(tl)
-    bs.set_receiver(receiver1, 1)
+    bs.set_receiver(1, receiver1)
 
     frequency = 8e7
     start_time = 0

@@ -40,7 +40,7 @@ class BeamSplitter(Entity):
         self.start_time = start_time
         self.frequency = frequency
 
-    def set_receiver(self, receiver: "Entity", index: int) -> None:
+    def set_receiver(self, index: int, receiver: "Entity") -> None:
         if index > len(self.receivers):
             raise Exception("index is larger than the lenght of receivers")
         self.receivers.insert(index, receiver)

@@ -1,18 +1,20 @@
-import math
+from typing import TYPE_CHECKING
 
 import numpy
+
+if TYPE_CHECKING:
+    from ..kernel.timeline import Timeline
 
 from ..components.beam_splitter import BeamSplitter
 from ..components.interferometer import Interferometer
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
-from ..utils.encoding import polarization
 
 
 class Detector(Entity):
-    def __init__(self, timeline, **kwargs):
-        Entity.__init__(self, "", timeline)  # Detector is part of the QSDetector, and does not have its own name
+    def __init__(self, name: str, timeline: "Timeline", **kwargs):
+        Entity.__init__(self, name, timeline)  # Detector is part of the QSDetector, and does not have its own name
         self.efficiency = kwargs.get("efficiency", 0.9)
         self.dark_count = kwargs.get("dark_count", 0)  # measured in Hz
         self.count_rate = kwargs.get("count_rate", int(25e6))  # measured in Hz
