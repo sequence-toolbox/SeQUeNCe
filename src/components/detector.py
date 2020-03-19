@@ -1,9 +1,10 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
+    from ..components.photon import Photon
     from typing import List
 
 from ..components.beam_splitter import BeamSplitter
@@ -26,7 +27,7 @@ class Detector(Entity):
     def init(self):
         self.add_dark_count()
 
-    def get(self, dark_get=False):
+    def get(self, dark_get=False) -> None:
         self.photon_counter += 1
         now = self.timeline.now()
         time = int(round(now / self.time_resolution) * self.time_resolution)
@@ -35,7 +36,7 @@ class Detector(Entity):
             self._pop(detector=self, time=time)
             self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
-    def add_dark_count(self):
+    def add_dark_count(self) -> None:
         if self.dark_count > 0:
             time_to_next = int(numpy.random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
             time = time_to_next + self.timeline.now()  # time of next dark count
@@ -59,32 +60,25 @@ class QSDetectorPolarization(Entity):
         self.children += [self.splitter, self.detectors[0], self.detectors[1]]
         [component.parents.append(self) for component in self.children]
 
-    def init(self):
+    def init(self) -> None:
         assert len(self.detectors) == 2
 
-    def set_basis_list(self, basis_list: "List", start_time: int, frequency: int):
+    def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
         self.splitter.set_basis_list(basis_list, start_time, frequency)
 
-    def update_splitter_params(self, arg_name, value):
+    def update_splitter_params(self, arg_name: str, value: Any) -> None:
         self.splitter.__setattr__(arg_name, value)
 
-    def update_detector_params(self, detector_id, arg_name, value):
+    def update_detector_params(self, detector_id: int, arg_name: str, value: Any) -> None:
         self.splitter.receivers[detector_id].__setattr__(arg_name, value)
 
-    def get(self, photon):
+    def get(self, photon: "Photon") -> None:
         self.splitter.get(photon)
 
-    def pop(self, detector: "Detector", time: int):
+    def pop(self, detector: "Detector", time: int) -> None:
         detector_index = self.detectors.index(detector)
         for protocol in self.protocols:
             protocol.pop(detector_index, time)
-
-    def get_photon_times(self):
-        times = []
-        for d in self.detectors:
-            times.append(d.photon_times)
-
-        return times
 
 
 class QSDetectorTimeBin(Entity):

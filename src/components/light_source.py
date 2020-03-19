@@ -10,7 +10,6 @@ from ..utils.encoding import polarization
 class LightSource(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
-        self.owner = None
         self.frequency = kwargs.get("frequency", 8e7)  # measured in Hz
         self.wavelength = kwargs.get("wavelength", 1550)  # measured in nm
         self.linewidth = kwargs.get("bandwidth", 0)  # st. dev. in photon wavelength (nm)

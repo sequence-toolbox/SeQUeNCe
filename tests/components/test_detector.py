@@ -1,7 +1,7 @@
 from numpy import random
-
 from sequence.components.detector import *
 from sequence.components.photon import Photon
+from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import polarization
 
 random.seed(1)
