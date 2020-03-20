@@ -342,7 +342,7 @@ class EntanglementGeneration(Protocol):
             # TODO: write condition more succinctly?
             if self.memory_stage[another_index][i] >= 0 and self.memory_stage[another_index][i] != 2:
                 memory_index = self.memory_indices[another_index][i]
-                process = Process(self.memory_array[memory_index], "excite", [])
+                process = Process(self.memory_array[memory_index], "excite", [self.memory_destinations[memory_index]])
                 event = Event(time, process)
                 self.own.timeline.schedule(event)
 
@@ -354,10 +354,6 @@ class EntanglementGeneration(Protocol):
             print("\tbsm_wait_time:", self.bsm_wait_time[another_index])
 
         return True
-
-    def send_qubit(self, qubit, index):
-        destination = self.memory_destinations[index]
-        self.own.send_qubit(destination, qubit)
 
     def received_message(self, src: str, msg: List[str]):
         if self.debug:

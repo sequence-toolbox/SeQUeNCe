@@ -9,7 +9,7 @@ class Entity(ABC):
         else:
             self.name = name
         self.timeline = timeline
-        self.onwer = None
+        self.owner = None
         timeline.entities.append(self)
 
         self.parents = []

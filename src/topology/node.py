@@ -52,6 +52,7 @@ class QuantumRepeater(Node):
     def __init__(self, name: str, timeline: "Timeline", **kwargs) -> None:
         Node.__init__(self, name, timeline, **kwargs)
         self.memory_array = kwargs.get("memory_array", MemoryArray("%s_memory" % name, timeline))
+        self.memory_array.owner = self
         self.eg = EntanglementGeneration(self)
         self.eg.middles = []
         self.memory_array.upper_protocols.append(self.eg)

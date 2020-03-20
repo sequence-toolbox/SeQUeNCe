@@ -44,7 +44,8 @@ class MemoryArray(Entity):
         return len(self.memories)
 
     def init(self):
-        pass
+        for mem in self.memories:
+            mem.owner = self.owner
 
     def write(self):
         assert self.memory_type == "ensemble"
@@ -82,11 +83,6 @@ class MemoryArray(Entity):
         for memo_index in indices:
             self.memories[memo_index].direct_receiver = direct_receiver
 
-    def send_qubit(self, qubit, memory):
-        index = self.memories.index(memory)
-        for protocol in self.upper_protocols:
-            protocol.send_qubit(qubit, index)
-
 
 # single-atom memory
 class AtomMemory(Entity):
@@ -97,6 +93,7 @@ class AtomMemory(Entity):
         self.efficiency = kwargs.get("efficiency", 1)
         self.coherence_time = kwargs.get("coherence_time", -1) # average coherence time in seconds
         self.direct_receiver = kwargs.get("direct_receiver", None)
+        self.destination = kwargs.get("destination", "")
         self.qstate = QuantumState()
 
         self.photon_encoding = single_atom.copy()
@@ -112,7 +109,7 @@ class AtomMemory(Entity):
     def init(self):
         pass
 
-    def excite(self):
+    def excite(self, dst: str):
         state = self.qstate.measure(ensemble["bases"][0])
         # send photon in certain state to direct receiver
         photon = Photon("", wavelength=(1 / self.frequency), location=self,
@@ -123,13 +120,13 @@ class AtomMemory(Entity):
             if self.direct_receiver:
                 self.direct_receiver.get(photon)
             else:
-                self.parents[0].send_qubit(photon, self)
+                self.owner.send_qubit(dst, photon)
         else:
             if numpy.random.random_sample() < self.efficiency:
                 if self.direct_receiver:
                     self.direct_receiver.get(photon)
                 else:
-                    self.parents[0].send_qubit(photon, self)
+                    self.owner.send_qubit(dst, photon)
             if self.coherence_time > 0:
                 # set expiration
                 decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
