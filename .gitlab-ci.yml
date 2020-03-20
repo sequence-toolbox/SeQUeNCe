@@ -11,4 +11,4 @@ build:
 test:
     stage: test
     script:
-    - find ./tests -name test_*.py -exec python3 -m pytest $file \;
+    - python3 -m pytest ./tests
