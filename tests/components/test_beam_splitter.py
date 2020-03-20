@@ -50,8 +50,7 @@ def test_BeamSplitter_get():
 
     # z-basis states, measurement
     for i in range(basis_len):
-        basis = polarization["bases"][0]
-        basis_list.append(basis)
+        basis_list.append(0)
 
     bs.set_basis_list(basis_list, start_time, frequency)
 
@@ -74,8 +73,8 @@ def test_BeamSplitter_get():
     receiver1.log = []
     basis_list = []
     for i in range(basis_len):
-        basis = polarization["bases"][1]
-        basis_list.append(basis)
+        basis_list.append(1)
+
     bs.set_basis_list(basis_list, start_time, frequency)
 
     bits2 = []
@@ -97,8 +96,7 @@ def test_BeamSplitter_get():
     receiver1.log = []
     basis_list = []
     for i in range(basis_len):
-        basis = polarization["bases"][1]
-        basis_list.append(basis)
+        basis_list.append(1)
 
     bs.set_basis_list(basis_list, start_time, frequency)
 

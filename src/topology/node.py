@@ -1,5 +1,5 @@
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -11,11 +11,14 @@ from ..kernel.process import Process
 from ..kernel.event import Event
 from ..components.memory import MemoryArray
 from ..components.bsm import SingleAtomBSM
+from ..components.light_source import LightSource
+from ..components.detector import QSDetectorPolarization
 from ..protocols.entanglement.generation import EntanglementGeneration
+from ..protocols.qkd.BB84 import BB84
 
 
 class Node(Entity):
-    def __init__(self, name: str, timeline: "Timeline", **kwargs):
+    def __init__(self, name: str, timeline: "Timeline"):
         Entity.__init__(self, name, timeline)
         self.owner = self
         self.cchannels = {}  # mapping of destination node names to classical channels
@@ -117,103 +120,101 @@ class MiddleNode(Node):
 
 
 class QKDNode(Node):
+    """
+    Protocol stack of QKDNode follows "BBN QKD Protocol Suite" introduced in the DARPA quantum network.
+    (https://arxiv.org/pdf/quant-ph/0412029.pdf) page 24
+    The protocol stack is :
+
+    |      Authentication     |  <= No implementation
+    |  Privacy Amplification  |  <= No implementation
+    |    Entropy Estimation   |  <= No implementation
+    |     Error Correction    |  <= implemented by cascade
+    |         Sifting         |  <= implemented by BB84
+    """
+
     def __init__(self, name: str, timeline: "timeline"):
         Node.__init__(self, name, timeline)
-        self.lightsource = None
-        self.qsdetector = None
-
-    def set_lightsource(self, lightsource):
-        self.lightsource = lightsource
+        self.lightsource = LightSource(name + ".lightsource", timeline)
         self.lightsource.owner = self
-
-    def set_qsdetector(self, qsdetector):
-        self.qsdetector = qsdetector
+        self.qsdetector = QSDetectorPolarization(name + ".qsdetector", timeline)
         self.qsdetector.owner = self
+        self.sifting_protocol = BB84(self)
+        self.protocols.append(self.sifting_protocol)
+        self.qsdetector.protocols.append(self.sifting_protocol)
 
-    def send_qubits(self, basis_list, bit_list, source_name):
-        encoding_type = self.components[source_name].encoding_type
-        state_list = []
-        for i, bit in enumerate(bit_list):
-            state = (encoding_type["bases"][basis_list[i]])[bit]
-            state_list.append(state)
+    def init(self) -> None:
+        Node.init(self)
+        assert self.sifting_protocol.role != -1
 
-        self.components[source_name].emit(state_list)
+    def update_lightsource_params(self, arg_name: str, value: Any) -> None:
+        self.lightsource.__setattr__(arg_name, value)
 
-    def send_photons(self, state, num, source_name):
-        state_list = [state] * num
-        self.components[source_name].emit(state_list)
-
-    def get_bits(self, light_time, start_time, frequency, detector_name):
-        encoding_type = self.components[detector_name].encoding_type
+    def get_bits(self, light_time, start_time, frequency):
         bits = [-1] * int(round(light_time * frequency))  # -1 used for invalid bits
 
-        if encoding_type["name"] == "polarization":
-            detection_times = self.components[detector_name].get_photon_times()
+        detection_times = self.qsdetector.get_photon_times()
 
-            # determine indices from detection times and record bits
-            for time in detection_times[0]:  # detection times for |0> detector
-                index = int(round((time - start_time) * frequency * 1e-12))
-                if 0 <= index < len(bits):
-                    bits[index] = 0
+        # determine indices from detection times and record bits
+        for time in detection_times[0]:  # detection times for |0> detector
+            index = round((time - start_time) * frequency * 1e-12)
+            if 0 <= index < len(bits):
+                bits[index] = 0
 
-            for time in detection_times[1]:  # detection times for |1> detector
-                index = int(round((time - start_time) * frequency * 1e-12))
-                if 0 <= index < len(bits):
-                    if bits[index] == 0:
-                        bits[index] = -1
-                    else:
-                        bits[index] = 1
+        for time in detection_times[1]:  # detection times for |1> detector
+            index = round((time - start_time) * frequency * 1e-12)
+            if 0 <= index < len(bits):
+                if bits[index] == 0:
+                    bits[index] = -1
+                else:
+                    bits[index] = 1
 
-            return bits
+        return bits
 
-        elif encoding_type["name"] == "time_bin":
-            detection_times = self.components[detector_name].get_photon_times()
-            bin_separation = encoding_type["bin_separation"]
+        # elif encoding_type["name"] == "time_bin":
+        #     detection_times = self.components[detector_name].get_photon_times()
+        #     bin_separation = encoding_type["bin_separation"]
+        #
+        #     # single detector (for early, late basis) times
+        #     for time in detection_times[0]:
+        #         index = int(round((time - start_time) * frequency * 1e-12))
+        #         if 0 <= index < len(bits):
+        #             if abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+        #                 bits[index] = 0
+        #             elif abs(((index * 1e12 / frequency) + start_time) - (time - bin_separation)) < bin_separation / 2:
+        #                 bits[index] = 1
+        #
+        #     # interferometer detector 0 times
+        #     for time in detection_times[1]:
+        #         time -= bin_separation
+        #         index = int(round((time - start_time) * frequency * 1e-12))
+        #         # check if index is in range and is in correct time bin
+        #         if 0 <= index < len(bits) and \
+        #                 abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+        #             if bits[index] == -1:
+        #                 bits[index] = 0
+        #             else:
+        #                 bits[index] = -1
+        #
+        #     # interferometer detector 1 times
+        #     for time in detection_times[2]:
+        #         time -= bin_separation
+        #         index = int(round((time - start_time) * frequency * 1e-12))
+        #         # check if index is in range and is in correct time bin
+        #         if 0 <= index < len(bits) and \
+        #                 abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+        #             if bits[index] == -1:
+        #                 bits[index] = 1
+        #             else:
+        #                 bits[index] = -1
+        #
+        #     return bits
 
-            # single detector (for early, late basis) times
-            for time in detection_times[0]:
-                index = int(round((time - start_time) * frequency * 1e-12))
-                if 0 <= index < len(bits):
-                    if abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
-                        bits[index] = 0
-                    elif abs(((index * 1e12 / frequency) + start_time) - (time - bin_separation)) < bin_separation / 2:
-                        bits[index] = 1
-
-            # interferometer detector 0 times
-            for time in detection_times[1]:
-                time -= bin_separation
-                index = int(round((time - start_time) * frequency * 1e-12))
-                # check if index is in range and is in correct time bin
-                if 0 <= index < len(bits) and \
-                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
-                    if bits[index] == -1:
-                        bits[index] = 0
-                    else:
-                        bits[index] = -1
-
-            # interferometer detector 1 times
-            for time in detection_times[2]:
-                time -= bin_separation
-                index = int(round((time - start_time) * frequency * 1e-12))
-                # check if index is in range and is in correct time bin
-                if 0 <= index < len(bits) and \
-                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
-                    if bits[index] == -1:
-                        bits[index] = 1
-                    else:
-                        bits[index] = -1
-
-            return bits
-
-        else:
-            raise Exception("Invalid encoding type for node " + self.name)
-
-    def set_bases(self, basis_list, start_time, frequency, detector_name):
-        encoding_type = self.components[detector_name].encoding_type
+    def set_bases(self, basis_list, start_time, frequency, component):
+        encoding_type = component.encoding_type
         basis_start_time = start_time - 1e12 / (2 * frequency)
 
         if encoding_type["name"] == "polarization":
-            splitter = self.components[detector_name].splitter
+            splitter = component.splitter
             splitter.start_time = basis_start_time
             splitter.frequency = frequency
 
@@ -223,10 +224,24 @@ class QKDNode(Node):
             splitter.basis_list = splitter_basis_list
 
         elif encoding_type["name"] == "time_bin":
-            switch = self.components[detector_name].switch
+            switch = component.switch
             switch.start_time = basis_start_time
             switch.frequency = frequency
             switch.state_list = basis_list
 
         else:
             raise Exception("Invalid encoding type for node " + self.name)
+
+    def receive_message(self, src: str, msg: "Message") -> None:
+        # signal to protocol that we've received a message
+        for protocol in self.protocols:
+            if type(protocol) == msg.owner_type:
+                protocol.received_message(src, msg)
+                return
+
+        # if we reach here, we didn't successfully receive the message in any protocol
+        print(src, msg)
+        raise Exception("Unkown protocol")
+
+    def receive_qubit(self, src: str, qubit) -> None:
+        self.qsdetector.get(qubit)

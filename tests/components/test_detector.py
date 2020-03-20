@@ -105,43 +105,33 @@ def test_QSDetectorPolarization_update_detector_params():
     assert qsdetector.detectors[0].dark_count == 99 and qsdetector.detectors[1].dark_count != 99
 
 
-class Protocol():
-    def __init__(self, tl):
-        self.timeline = tl
-        self.log = []
-
-    def pop(self, detector_index, timestamp):
-        self.log.append((self.timeline.now(), detector_index, timestamp))
-
-
 def test_QSDetectorPolarization_pop():
     tl = Timeline()
     qsdetector = QSDetectorPolarization("qsd", tl)
-    protocol = Protocol(tl)
-    qsdetector.protocols.append(protocol)
 
     args = [[0, 10], [1, 20], [1, 40]]
     for arg in args:
         qsdetector.pop(qsdetector.detectors[arg[0]], arg[1])
-        assert protocol.log[-1][1] == arg[0] and protocol.log[-1][2] == arg[1]
+        trigger_times = qsdetector.trigger_times
+        assert trigger_times[arg[0]][-1] == arg[1]
 
 
 def test_QSDetectorPolarization():
     tl = Timeline()
     qsdetector = QSDetectorPolarization("qsd", tl)
-    protocol = Protocol(tl)
-    qsdetector.protocols.append(protocol)
     qsdetector.update_detector_params(0, "efficiency", 1)
     qsdetector.update_detector_params(1, "efficiency", 1)
     frequency = 1e5
     start_time = 0
-    basis_list = [polarization["bases"][random.randint(2)] for _ in range(1000)]
+    basis_list = [random.randint(2) for _ in range(1000)]
     qsdetector.set_basis_list(basis_list, start_time, frequency)
 
     for i in range(1000):
         tl.time = i * 1e12 / frequency
         basis = basis_list[i]
         bit = random.randint(2)
-        photon = Photon(str(i), quantum_state=basis[bit])
+        photon = Photon(str(i), quantum_state=polarization["bases"][basis][bit])
         qsdetector.get(photon)
-        assert protocol.log[-1][0] == tl.time and protocol.log[-1][1] == bit
+
+    length = len(qsdetector.get_photon_times()[0] + qsdetector.get_photon_times()[1])
+    assert length == 1000

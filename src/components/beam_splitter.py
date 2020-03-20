@@ -5,6 +5,7 @@ import numpy
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
 from .photon import Photon
+from ..utils.encoding import polarization
 from ..kernel.entity import Entity
 
 
@@ -29,10 +30,9 @@ class BeamSplitter(Entity):
             index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
 
             if 0 > index or index >= len(self.basis_list):
-                raise Exception("Receive photon but cannot find basis for measurement, index=%d, basis_list length=%d"
-                                % (index, len(self.basis_list)))
+                return
 
-            res = Photon.measure(self.basis_list[index], photon)
+            res = Photon.measure(polarization["bases"][self.basis_list[index]], photon)
             self.receivers[res].get()
 
     def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:

@@ -8,7 +8,6 @@ if TYPE_CHECKING:
     from typing import List
 
 from ..components.beam_splitter import BeamSplitter
-from ..components.interferometer import Interferometer
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
@@ -59,6 +58,7 @@ class QSDetectorPolarization(Entity):
         self.splitter.set_receiver(1, self.detectors[1])
         self.children += [self.splitter, self.detectors[0], self.detectors[1]]
         [component.parents.append(self) for component in self.children]
+        self.trigger_times = [[], []]
 
     def init(self) -> None:
         assert len(self.detectors) == 2
@@ -77,48 +77,50 @@ class QSDetectorPolarization(Entity):
 
     def pop(self, detector: "Detector", time: int) -> None:
         detector_index = self.detectors.index(detector)
-        for protocol in self.protocols:
-            protocol.pop(detector_index, time)
-
-
-class QSDetectorTimeBin(Entity):
-    def __init__(self, name, timeline, **kwargs):
-        Entity.__init__(self, name, timeline)
-
-        detectors = kwargs.get("detectors", [])
-        if (self.encoding_type["name"] == "time_bin" and len(detectors) != 3):
-            raise Exception("invalid number of detectors specified")
-        self.detectors = []
-        for d in detectors:
-            if d is not None:
-                detector = Detector("", timeline, **d)
-            else:
-                detector = None
-            self.detectors.append(detector)
-
-        # protocol unique initialization
-
-        if self.encoding_type["name"] == "time_bin":
-            from sequence.components.switch import Switch
-            # set up switch and interferometer
-            interferometer = kwargs.get("interferometer")
-            self.interferometer = Interferometer(timeline, **interferometer)
-            self.interferometer.detectors = self.detectors[1:]
-            switch = kwargs.get("switch")
-            self.switch = Switch(timeline, **switch)
-            self.switch.receivers = [self.detectors[0], self.interferometer]
-
-    def init(self):
-        pass
-
-    def get(self, photon):
-        self.switch.get(photon)
+        self.trigger_times[detector_index].append(time)
 
     def get_photon_times(self):
-        times = []
-        for d in self.detectors:
-            if d is not None:
-                times.append(d.photon_times)
-            else:
-                times.append([])
-        return times
+        return self.trigger_times
+
+#
+# class QSDetectorTimeBin(Entity):
+#     def __init__(self, name, timeline, **kwargs):
+#         Entity.__init__(self, name, timeline)
+#
+#         detectors = kwargs.get("detectors", [])
+#         if (self.encoding_type["name"] == "time_bin" and len(detectors) != 3):
+#             raise Exception("invalid number of detectors specified")
+#         self.detectors = []
+#         for d in detectors:
+#             if d is not None:
+#                 detector = Detector("", timeline, **d)
+#             else:
+#                 detector = None
+#             self.detectors.append(detector)
+#
+#         # protocol unique initialization
+#
+#         if self.encoding_type["name"] == "time_bin":
+#             from sequence.components.switch import Switch
+#             # set up switch and interferometer
+#             interferometer = kwargs.get("interferometer")
+#             self.interferometer = Interferometer(timeline, **interferometer)
+#             self.interferometer.detectors = self.detectors[1:]
+#             switch = kwargs.get("switch")
+#             self.switch = Switch(timeline, **switch)
+#             self.switch.receivers = [self.detectors[0], self.interferometer]
+#
+#     def init(self):
+#         pass
+#
+#     def get(self, photon):
+#         self.switch.get(photon)
+#
+#     def get_photon_times(self):
+#         times = []
+#         for d in self.detectors:
+#             if d is not None:
+#                 times.append(d.photon_times)
+#             else:
+#                 times.append([])
+#         return times
