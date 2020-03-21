@@ -76,8 +76,10 @@ class MemoryArray(Entity):
     def pop(self, **kwargs):
         memory = kwargs.get("memory")
         index = self.memories.index(memory)
-        # notify node
-        self._pop(entity="MemoryArray", index=index)
+        # notify protocol
+        # self._pop(entity="MemoryArray", index=index)
+        for protocol in self.upper_protocols:
+            protoco.pop(info_type="expired_memory", index=index) 
 
     def set_direct_receiver(self, indices, direct_receiver):
         for memo_index in indices:
