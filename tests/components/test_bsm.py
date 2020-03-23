@@ -79,10 +79,10 @@ def test_base_get():
 
 def test_polarization_get():
     tl = Timeline()
-    detectors = [{}] * 4
+    detectors = [{"efficiency": 1}] * 4
     bsm = make_bsm("bsm", tl, encoding_type="polarization", detectors=detectors)
     parent = Parent()
-    bsm.parents.append(parent)
+    bsm.upper_protocols.append(parent)
 
     # get 2 photons in orthogonal states (map to Psi+)
     p1 = Photon("p1", location=1, quantum_state=[complex(1), complex(0)])
@@ -103,10 +103,10 @@ def test_polarization_get():
 
 def test_polarization_pop():
     tl = Timeline()
-    detectors = [{}] * 4
+    detectors = [{"time_resolution": 1}] * 4
     bsm = make_bsm("bsm", tl, encoding_type="polarization", detectors=detectors)
     parent = Parent()
-    bsm.parents.append(parent)
+    bsm.upper_protocols.append(parent)
     detector_list = bsm.detectors
 
     # test Psi+
@@ -137,10 +137,10 @@ def test_polarization_pop():
 
 def test_time_bin_get():
     tl = Timeline()
-    detectors = [{}] * 2
+    detectors = [{"efficiency": 1, "count_rate": 1e9}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors)
     parent = Parent()
-    bsm.parents.append(parent)
+    bsm.upper_protocols.append(parent)
     detector_list = bsm.detectors
 
     # get 2 photons in orthogonal states (map to Psi+)
@@ -174,7 +174,7 @@ def test_time_bin_pop():
     detectors = [{}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors)
     parent = Parent()
-    bsm.parents.append(parent)
+    bsm.upper_protocols.append(parent)
     detector_list = bsm.detectors
 
     # test Psi+
@@ -211,10 +211,10 @@ def test_ensemble_get():
 def test_single_atom_get():
     # TODO
     tl = Timeline()
-    detectors = [{}] * 2
+    detectors = [{"efficiency": 1}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="single_atom", detectors=detectors)
     parent = Parent()
-    bsm.parents.append(parent)
+    bsm.upper_protocols.append(parent)
     mem_1 = AtomMemory("mem_1", tl, direct_receiver=bsm)
     mem_2 = AtomMemory("mem_2", tl, direct_receiver=bsm)
 
@@ -222,7 +222,7 @@ def test_single_atom_get():
     tl.time = 0
     mem_1.qstate.set_state_single([complex(1), complex(0)])
     mem_2.qstate.set_state_single([complex(0), complex(1)])
-    mem_1.excite()
+    mem_1.excite() # send w/o destination as have direct_receiver set
     mem_2.excite()
 
     assert len(parent.results) == 1

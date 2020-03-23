@@ -86,7 +86,7 @@ class BSM(Entity):
 class PolarizationBSM(BSM):
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline, **kwargs)
-        self.last_res = [-1, -1]
+        self.last_res = [-2 * self.resolution, -1]
         assert len(self.detectors) == 4
 
     def get(self, photon):

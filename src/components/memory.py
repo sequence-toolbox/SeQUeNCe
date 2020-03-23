@@ -111,7 +111,7 @@ class AtomMemory(Entity):
     def init(self):
         pass
 
-    def excite(self, dst: str):
+    def excite(self, dst=""):
         state = self.qstate.measure(ensemble["bases"][0])
         # send photon in certain state to direct receiver
         photon = Photon("", wavelength=(1 / self.frequency), location=self,
