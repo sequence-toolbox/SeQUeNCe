@@ -109,14 +109,6 @@ class ClassicalChannel(OpticalChannel):
         self.ends = []
         self.delay = kwargs.get("delay", (self.distance / self.light_speed))
 
-    def add_end(self, node):
-        if (node in self.ends):
-            raise Exception("already have endpoint", node)
-        if len(self.ends) == 2:
-            raise Exception("channel already has 2 endpoints")
-
-        self.ends.append(node)
-
     def set_ends(self, end1, end2):
         self.ends.append(end1)
         self.ends.append(end2)

@@ -1,3 +1,4 @@
+from abc import ABC
 from typing import TYPE_CHECKING, Any
 
 import numpy
@@ -48,12 +49,32 @@ class Detector(Entity):
             self.timeline.schedule(event2)
 
 
-class QSDetectorPolarization(Entity):
+class QSDetector(Entity, ABC):
     def __init__(self, name: str, timeline: "Timeline"):
         Entity.__init__(self, name, timeline)
         self.protocols = []
-        self.splitter = BeamSplitter(name + ".splitter", timeline)
+        self.detectors = []
+        self.trigger_times = []
+
+    def update_detector_params(self, detector_id: int, arg_name: str, value: Any) -> None:
+        self.splitter.receivers[detector_id].__setattr__(arg_name, value)
+
+    def get(self, photon: "Photon") -> None:
+        self.splitter.get(photon)
+
+    def pop(self, detector: "Detector", time: int) -> None:
+        detector_index = self.detectors.index(detector)
+        self.trigger_times[detector_index].append(time)
+
+    def get_photon_times(self):
+        return self.trigger_times
+
+
+class QSDetectorPolarization(QSDetector):
+    def __init__(self, name: str, timeline: "Timeline"):
+        QSDetector.__init__(self, name, timeline)
         self.detectors = [Detector(name + ".detector" + str(i), timeline) for i in range(2)]
+        self.splitter = BeamSplitter(name + ".splitter", timeline)
         self.splitter.set_receiver(0, self.detectors[0])
         self.splitter.set_receiver(1, self.detectors[1])
         self.children += [self.splitter, self.detectors[0], self.detectors[1]]
