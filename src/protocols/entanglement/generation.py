@@ -194,7 +194,7 @@ class EntanglementGeneration(Protocol):
             print("EG protocol \033[1;36;40mpush\033[0m on node", self.own.name)
             print("\tmemory index:", index)
 
-        another_name = self.invert_map[self.memory_array[index].direct_receiver]
+        another_name = self.memory_destinations[index]
         another_index = self.middles.index(another_name)
 
         # queue memory to be added to active memories
@@ -218,7 +218,7 @@ class EntanglementGeneration(Protocol):
 
         elif info_type == "expired_memory":
             index = kwargs.get("index")
-            another_name = self.invert_map[self.memory_array[index].direct_receiver]
+            another_name = self.memory_destinations[index]
             another_index = self.middles.index(another_name)
 
             if self.debug:
