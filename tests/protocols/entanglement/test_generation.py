@@ -5,21 +5,12 @@ from sequence.protocols.entanglement.generation import EntanglementGeneration, E
 from sequence.topology.node import *
 
 
-def test_message():
+def test_generation_message():
     msg = EntanglementGenerationMessage("EXPIRE", mem_num=10)
 
     assert msg.msg_type == "EXPIRE"
     assert msg.owner_type == type(EntanglementGeneration(None))
     assert msg.mem_num == 10
-
-# def test_generation_init():
-#     tl = Timeline()
-#     node = Node("e1", tl)
-#
-#     generation = EntanglementGeneration(node, others=["e0","e2"], middles=["m0","m1"])
-#
-#     assert len(generation.qc_delays) == 2
-#     assert len(generation.memory_indices) == 2
 
 def test_generation_init_func():
     # TODO: add BSM, quantum channels
@@ -30,9 +21,15 @@ def test_generation_init_func():
 
     node.init()
 
+    # test set_params
     assert len(node.eg.memory_indices) == 2
+    # test automatic generation of memory destinations
+    assert len(node.eg.memory_destinations) == 10
+    # test internal memory management construction
+    assert len(node.eg.memory_indices[0]) == 10
+    assert len(node.eg.memory_indices[1]) == 0
 
-def test_message():
+def test_generation_receive_message():
     tl = Timeline()
     node = QuantumRepeater("e1", tl)
     node.eg.middles = ["m0", "m1"]
@@ -51,54 +48,45 @@ def test_message():
     assert node.eg.received_message("e0", msg) is True
     assert node.eg.add_list[0] == [10]
 
-def test_push():
+def test_generation_push():
     tl = Timeline()
 
-    node = Node("e1", tl)
-    qc = QuantumChannel("dummy_qc", tl, attenuation=0, distance=1)
-    memo_array = MemoryArray("array", tl, num_memories=10, memory_params={})
-    memo_array[0].direct_receiver = qc
+    node = QuantumRepeater("e0", tl)
+    node.eg.middles = ["m0"]
+    node.eg.others = ["e1"]
 
-    generation = EntanglementGeneration(node, others=["e0","e2"], middles=["m0","m1"])
-    generation.debug = True
-    generation.invert_map = {qc: "m0"}
-    generation.memory_array = memo_array
+    node.init()
 
-    generation.push(index=0)
+    node.eg.push(index=0)
 
-    assert generation.add_list[0] == [0]
+    assert node.eg.add_list[0] == [0]
 
-def test_pop():
-    class DumbNode():
+def test_generation_pop():
+    class DumbMemory():
         def __init__(self):
-            self.name = "none"
-            self.protocols = []
-            self.messages = []
-            self.components = {}
-
-        def send_message(self, destination, message):
-            self.messages.append([destination, message])
+            self.entangled_memory = {"memo_id": 0}
 
     class DumbBSM():
         def __init__(self):
             self.resolution = 1
 
-    tl = Timeline()
+    class DumbNode():
+        def __init__(self):
+            self.name = "none"
+            self.protocols = []
+            self.messages = []
+            self.bsm = DumbBSM()
 
-    e1 = DumbNode()
+        def send_message(self, destination, message):
+            self.messages.append([destination, message])
+
+    e0 = DumbNode()
     m0 = DumbNode()
 
-    qc = QuantumChannel("dummy_qc", tl, attenuation=0, distance=1)
-    memo_array = MemoryArray("array", tl, num_memories=10, memory_params={})
-    memo_array[0].direct_receiver = qc
-    bsm = DumbBSM()
-    m0.components = {"BSM": bsm}
-
-    generation = EntanglementGeneration(e1, others=["e0","e2"], middles=["m0","m1"])
-    generation.debug = True
-    generation.invert_map = {qc: "m0"}
-    generation.memory_array = memo_array
-
+    end = EntanglementGeneration(e0, others=["e0"], middles=["m0"])
+    end.set_params()
+    end.memory_destinations = ["m0"]
+    end.memory_array = [DumbMemory()]
     middle = EntanglementGeneration(m0, others=["e0","e1"])
 
     # BSM result
@@ -110,20 +98,20 @@ def test_pop():
     assert m0.messages[0][1].msg_type == m0.messages[1][1].msg_type == "MEAS_RES"
 
     # expire with memory index
-    generation.memory_indices[0] = [0]
-    generation.memory_stage[0] = [0]
-    generation.pop("expired_memory", index=0)
+    end.memory_indices[0] = [0]
+    end.memory_stage[0] = [0]
+    end.pop("expired_memory", index=0)
     
-    assert generation.memory_stage[0][0] == -1
+    assert end.memory_stage[0][0] == -1
 
     # expire without memory index
-    generation.memory_indices[0] = []
-    generation.memory_stage[0] = []
-    generation.pop("expired_memory", index=0)
+    end.memory_indices[0] = []
+    end.memory_stage[0] = []
+    end.pop("expired_memory", index=0)
 
-    assert generation.add_list[0][0] == 0
-    assert len(e1.messages) == 1
-    assert e1.messages[0][0] == "e0"
-    assert e1.messages[0][1].msg_type == "EXPIRE"
+    assert end.add_list[0][0] == 0
+    assert len(e0.messages) == 1
+    assert e0.messages[0][0] == "e0"
+    assert e0.messages[0][1].msg_type == "EXPIRE"
 
 
