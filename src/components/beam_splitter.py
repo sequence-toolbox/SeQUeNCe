@@ -35,7 +35,7 @@ class BeamSplitter(Entity):
             res = Photon.measure(polarization["bases"][self.basis_list[index]], photon)
             self.receivers[res].get()
 
-    def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
+    def set_basis_list(self, basis_list: "List[int]", start_time: int, frequency: int) -> None:
         self.basis_list = basis_list
         self.start_time = start_time
         self.frequency = frequency
