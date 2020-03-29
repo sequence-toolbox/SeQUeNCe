@@ -2,11 +2,8 @@ from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
-    from ..kernel.entity import Entity
-    from ..components.photon import Photon
     from ..components.interferometer import Interferometer
 
-from .detector import Detector
 from .photon import Photon
 from ..kernel.entity import Entity
 from ..kernel.event import Event
@@ -51,7 +48,13 @@ class Switch(Entity):
                 event = Event(time, process)
                 self.timeline.schedule(event)
             else:
-                receiver.get()
+                time = self.timeline.now()
+                process = Process(receiver, "get", [])
+                event = Event(time, process)
+                self.timeline.schedule(event)
         else:
             receiver = self.interferometer
-            receiver.get(photon)
+            time = self.timeline.now()
+            process = Process(receiver, "get", [photon])
+            event = Event(time, process)
+            self.timeline.schedule(event)

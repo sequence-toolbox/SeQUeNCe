@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 import numpy
@@ -9,9 +9,12 @@ if TYPE_CHECKING:
     from typing import List
 
 from ..components.beam_splitter import BeamSplitter
+from ..components.switch import Switch
+from ..components.interferometer import Interferometer
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
+from ..utils.encoding import time_bin
 
 
 class Detector(Entity):
@@ -57,10 +60,11 @@ class QSDetector(Entity, ABC):
         self.trigger_times = []
 
     def update_detector_params(self, detector_id: int, arg_name: str, value: Any) -> None:
-        self.splitter.receivers[detector_id].__setattr__(arg_name, value)
+        self.detectors[detector_id].__setattr__(arg_name, value)
 
+    @abstractmethod
     def get(self, photon: "Photon") -> None:
-        self.splitter.get(photon)
+        pass
 
     def pop(self, detector: "Detector", time: int) -> None:
         detector_index = self.detectors.index(detector)
@@ -69,8 +73,19 @@ class QSDetector(Entity, ABC):
     def get_photon_times(self):
         return self.trigger_times
 
+    @abstractmethod
+    def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
+        pass
+
 
 class QSDetectorPolarization(QSDetector):
+    """
+       There are two detectors. Their connections are shown below.
+
+       polarization splitter ---- detectors[0]
+                         |------- detectors[1]
+    """
+
     def __init__(self, name: str, timeline: "Timeline"):
         QSDetector.__init__(self, name, timeline)
         self.detectors = [Detector(name + ".detector" + str(i), timeline) for i in range(2)]
@@ -84,64 +99,48 @@ class QSDetectorPolarization(QSDetector):
     def init(self) -> None:
         assert len(self.detectors) == 2
 
+    def get(self, photon: "Photon") -> None:
+        self.splitter.get(photon)
+
     def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
         self.splitter.set_basis_list(basis_list, start_time, frequency)
 
     def update_splitter_params(self, arg_name: str, value: Any) -> None:
         self.splitter.__setattr__(arg_name, value)
 
-    def update_detector_params(self, detector_id: int, arg_name: str, value: Any) -> None:
-        self.splitter.receivers[detector_id].__setattr__(arg_name, value)
 
-    def get(self, photon: "Photon") -> None:
-        self.splitter.get(photon)
+class QSDetectorTimeBin(QSDetector):
+    """
+    There are three detectors. Their connections are shown below.
 
-    def pop(self, detector: "Detector", time: int) -> None:
-        detector_index = self.detectors.index(detector)
-        self.trigger_times[detector_index].append(time)
+    switch ---- detectors[0]
+        |------ interferometer ---- detectors[1]
+                            |------ detectors[2]
+    """
 
-    def get_photon_times(self):
-        return self.trigger_times
+    def __init__(self, name: str, timeline: "Timeline"):
+        QSDetector.__init__(self, name, timeline)
+        self.switch = Switch(name + ".switch", timeline)
+        self.detectors = [Detector(name + ".detector" + str(i), timeline) for i in range(3)]
+        self.switch.set_detector(self.detectors[0])
+        self.interferometer = Interferometer(name + ".interferometer", timeline, time_bin["bin_separation"])
+        self.interferometer.set_receiver(0, self.detectors[1])
+        self.interferometer.set_receiver(1, self.detectors[2])
+        self.switch.set_interferometer(self.interferometer)
 
-#
-# class QSDetectorTimeBin(Entity):
-#     def __init__(self, name, timeline, **kwargs):
-#         Entity.__init__(self, name, timeline)
-#
-#         detectors = kwargs.get("detectors", [])
-#         if (self.encoding_type["name"] == "time_bin" and len(detectors) != 3):
-#             raise Exception("invalid number of detectors specified")
-#         self.detectors = []
-#         for d in detectors:
-#             if d is not None:
-#                 detector = Detector("", timeline, **d)
-#             else:
-#                 detector = None
-#             self.detectors.append(detector)
-#
-#         # protocol unique initialization
-#
-#         if self.encoding_type["name"] == "time_bin":
-#             from sequence.components.switch import Switch
-#             # set up switch and interferometer
-#             interferometer = kwargs.get("interferometer")
-#             self.interferometer = Interferometer(timeline, **interferometer)
-#             self.interferometer.detectors = self.detectors[1:]
-#             switch = kwargs.get("switch")
-#             self.switch = Switch(timeline, **switch)
-#             self.switch.receivers = [self.detectors[0], self.interferometer]
-#
-#     def init(self):
-#         pass
-#
-#     def get(self, photon):
-#         self.switch.get(photon)
-#
-#     def get_photon_times(self):
-#         times = []
-#         for d in self.detectors:
-#             if d is not None:
-#                 times.append(d.photon_times)
-#             else:
-#                 times.append([])
-#         return times
+        self.children += [self.switch, self.interferometer]
+        self.children += self.detectors
+        [component.parents.append(self) for component in self.children]
+        self.trigger_times = [[], [], []]
+
+    def init(self):
+        pass
+
+    def get(self, photon):
+        self.switch.get(photon)
+
+    def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
+        self.switch.set_basis_list(basis_list, start_time, frequency)
+
+    def update_interferometer_params(self, arg_name: str, value: Any) -> None:
+        self.interferometer.__setattr__(arg_name, value)

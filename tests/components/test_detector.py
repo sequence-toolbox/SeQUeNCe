@@ -2,7 +2,7 @@ from numpy import random
 from sequence.components.detector import *
 from sequence.components.photon import Photon
 from sequence.kernel.timeline import Timeline
-from sequence.utils.encoding import polarization
+from sequence.utils.encoding import polarization, time_bin
 
 random.seed(1)
 
@@ -135,3 +135,26 @@ def test_QSDetectorPolarization():
 
     length = len(qsdetector.get_photon_times()[0] + qsdetector.get_photon_times()[1])
     assert length == 1000
+
+
+def test_QSDetectorTimeBin():
+    tl = Timeline()
+    qsdetector = QSDetectorTimeBin("qsd", tl)
+    [qsdetector.update_detector_params(i, "efficiency", 1) for i in range(3)]
+    frequency = 1e5
+    start_time = 0
+    basis_list = [random.randint(2) for _ in range(1000)]
+    qsdetector.set_basis_list(basis_list, start_time, frequency)
+
+    for i in range(1000):
+        tl.time = i * 1e12 / frequency
+        basis = basis_list[i]
+        bit = random.randint(2)
+        photon = Photon(str(i), encoding_type=time_bin, quantum_state=time_bin["bases"][basis][bit])
+        qsdetector.get(photon)
+
+    tl.time = 0
+    tl.run()
+
+    length = len(qsdetector.get_photon_times()[0] + qsdetector.get_photon_times()[1] + qsdetector.get_photon_times()[2])
+    assert abs(length / 1000 - 7 / 8) < 0.1
