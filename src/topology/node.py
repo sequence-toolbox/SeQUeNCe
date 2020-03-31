@@ -57,16 +57,28 @@ class QuantumRepeater(Node):
         self.eg.middles = []
         self.memory_array.upper_protocols.append(self.eg)
 
+        # hardware management for entanglement
+        self.next_send_time = 0
+
     def receive_message(self, src: str, msg: "Message") -> None:
-        # signal to protocol that we've received a message
-        for protocol in self.protocols:
-            if type(protocol) == msg.owner_type:
-                if protocol.received_message(src, msg):
-                    return
+        protocol_list = [p for p in self.protocols if type(protocol) == msg.owner_type]
+
+        if len(protocol_list) == 0:
+            raise Exception("Received msg on node {} for unknown protocol {}".format(self.name, msg.owner_type))
+
+        for protocol in protocol_list:
+            if not protocol.received_message(src, msg):
+                raise Exception("Error receiving msg on node {}".format(self.name))
+
+        # # signal to protocol that we've received a message
+        # for protocol in self.protocols:
+        #     if type(protocol) == msg.owner_type:
+        #         if protocol.received_message(src, msg):
+        #             return
 
         # if we reach here, we didn't successfully receive the message in any protocol
-        print(src, msg)
-        raise Exception("Unkown protocol")
+        # print(src, msg)
+        # raise Exception("Unkown protocol")
 
     def eg_add_middle(self, middle):
         self.eg.middles.append(middle.name)
@@ -79,6 +91,20 @@ class QuantumRepeater(Node):
         process = Process(self.eg, "start", [])
         event = Event(self.timeline.now(), process)
         self.timeline.schedule(event)
+
+    # hardware management for entanglement
+    def schedule_send_qubit(self, dst: str, qubit, min_time: int) -> int:
+        # schedule a send qubit process at next available time
+        send_time = max(min_time, self.next_send_time)
+        process = Process(self, "send_qubit", [dst, qubit])
+        event = Event(send_time, process)
+        self.timeline.schedule(event)
+
+        # set new next send time
+        period = int(1e12 / self.memory_array.max_frequency)
+        self.next_send_time += period
+
+        return send_time
 
 
 class MiddleNode(Node):
