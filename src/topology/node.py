@@ -41,8 +41,8 @@ class Node(Entity):
     def receive_message(self, src: str, msg: "Message") -> None:
         pass
 
-    def send_qubit(self, dst: str, qubit) -> None:
-        self.qchannels[dst].transmit(qubit, self)
+    def send_qubit(self, dst: str, qubit, min_time: int) -> None:
+        self.qchannels[dst].transmit(qubit, self, min_time)
 
     def receive_qubit(self, src: str, qubit) -> None:
         pass
@@ -91,20 +91,6 @@ class QuantumRepeater(Node):
         process = Process(self.eg, "start", [])
         event = Event(self.timeline.now(), process)
         self.timeline.schedule(event)
-
-    # hardware management for entanglement
-    def schedule_send_qubit(self, dst: str, qubit, min_time: int) -> int:
-        # schedule a send qubit process at next available time
-        send_time = max(min_time, self.next_send_time)
-        process = Process(self, "send_qubit", [dst, qubit])
-        event = Event(send_time, process)
-        self.timeline.schedule(event)
-
-        # set new next send time
-        period = int(1e12 / self.memory_array.max_frequency)
-        self.next_send_time += period
-
-        return send_time
 
 
 class MiddleNode(Node):

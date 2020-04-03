@@ -1,4 +1,6 @@
 import numpy
+import heapq as hq
+import warnings
 
 from ..kernel.entity import Entity
 from ..kernel.event import Event
@@ -28,6 +30,8 @@ class QuantumChannel(OpticalChannel):
         self.ends = []
         self.delay = 0
         self.loss = 1
+        self.frequency = kwargs.get("frequency", 1e12) # frequency at which send qubits (measured in Hz)
+        self.send_bins = []
 
     def init(self):
         self.delay = round(self.distance / self.light_speed)
@@ -39,8 +43,15 @@ class QuantumChannel(OpticalChannel):
         end1.assign_qchannel(self, end2.name)
         end2.assign_qchannel(self, end1.name)
 
-    def transmit(self, qubit, source):
+    def _transmit(self, qubit, source):
         assert self.delay != 0 and self.loss != 1, "QuantumChannel forgets to run init() function"
+
+        # remove lowest time bin
+        if len(self.send_bins) > 0:
+            hq.heappop(self.send_bins)
+        else:
+            warnings.warn("send_bins empty, if this is not a test something went wrong")
+
         # check if photon kept
         if numpy.random.random_sample() > self.loss:
             if source not in self.ends:
@@ -56,9 +67,27 @@ class QuantumChannel(OpticalChannel):
             process = Process(receiver, "receive_qubit", [source.name, qubit])
             event = Event(future_time, process)
             self.timeline.schedule(event)
+
+        # if photon lost, exit
         else:
             pass
 
+    def transmit(self, qubit, source, min_time):
+        time_bin = int((min_time * self.frequency) / 1e12) + 1
+       
+        # find earliest available time bin
+        while time_bin in self.send_bins:
+            time_bin += 1
+        hq.heappush(self.send_bins, time_bin)
+
+        # calculate time
+        time = (time_bin * 1e12) / self.frequency
+        # schedule _transmit
+        process = Process(self, "_transmit", [qubit, source])
+        event = Event(time, process)
+        self.timeline.schedule(event)
+
+        return time
 
 # class QuantumChannel(OpticalChannel):
 #     def __init__(self, name, timeline, attenuation, distance, **kwargs):

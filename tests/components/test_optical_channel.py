@@ -7,28 +7,6 @@ from sequence.topology.node import Node
 random.seed(1)
 
 
-def test_ClassicalChannel_add_end():
-    tl = Timeline()
-    cc = ClassicalChannel("cc", tl, distance=1000, attenuation=2e-4, delay=1e9)
-    assert cc.delay == 1e9
-
-    n1 = Node('n1', tl)
-    n2 = Node('n2', tl)
-    n3 = Node('n3', tl)
-
-    cc.add_end(n1)
-    assert cc.ends[0] == n1
-
-    with pytest.raises(Exception):
-        cc.add_end(n1)
-
-    cc.add_end(n2)
-    assert cc.ends[0] == n1 and cc.ends[1] == n2 and len(cc.ends) == 2
-
-    with pytest.raises(Exception):
-        cc.add_end(n3)
-
-
 def test_ClassicalChannel_set_ends():
     tl = Timeline()
     cc = ClassicalChannel("cc", tl, 2e-4, 1e3)
@@ -104,7 +82,7 @@ def test_QuantumChannel_set_ends():
     assert end1.name in end2.qchannels and end2.name in end1.qchannels
 
 
-def test_QuantumChannel_transmit():
+def test_QuantumChannel__transmit():
     from sequence.components.photon import Photon
     random.seed(1)
 
@@ -125,12 +103,12 @@ def test_QuantumChannel_transmit():
 
     for i in range(10):
         photon = Photon(str(i))
-        qc.transmit(photon, sender)
+        qc._transmit(photon, sender)
         tl.time = tl.time + 1
 
     for i in range(10):
         photon = Photon(str(i))
-        qc.transmit(photon, receiver)
+        qc._transmit(photon, receiver)
         tl.time = tl.time + 1
 
     assert len(sender.log) == len(receiver.log) == 0
