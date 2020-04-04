@@ -41,6 +41,9 @@ class Node(Entity):
     def receive_message(self, src: str, msg: "Message") -> None:
         pass
 
+    def schedule_qubit(self, dst: str, min_time: int) -> int:
+        return self.qchannels[dst].schedule_transmit(min_time)
+
     def send_qubit(self, dst: str, qubit) -> None:
         self.qchannels[dst].transmit(qubit, self)
 
@@ -57,16 +60,28 @@ class QuantumRepeater(Node):
         self.eg.middles = []
         self.memory_array.upper_protocols.append(self.eg)
 
+        # hardware management for entanglement
+        self.next_send_time = 0
+
     def receive_message(self, src: str, msg: "Message") -> None:
-        # signal to protocol that we've received a message
-        for protocol in self.protocols:
-            if type(protocol) == msg.owner_type:
-                if protocol.received_message(src, msg):
-                    return
+        protocol_list = [p for p in self.protocols if type(protocol) == msg.owner_type]
+
+        if len(protocol_list) == 0:
+            raise Exception("Received msg on node {} for unknown protocol {}".format(self.name, msg.owner_type))
+
+        for protocol in protocol_list:
+            if not protocol.received_message(src, msg):
+                raise Exception("Error receiving msg on node {}".format(self.name))
+
+        # # signal to protocol that we've received a message
+        # for protocol in self.protocols:
+        #     if type(protocol) == msg.owner_type:
+        #         if protocol.received_message(src, msg):
+        #             return
 
         # if we reach here, we didn't successfully receive the message in any protocol
-        print(src, msg)
-        raise Exception("Unkown protocol")
+        # print(src, msg)
+        # raise Exception("Unkown protocol")
 
     def eg_add_middle(self, middle):
         self.eg.middles.append(middle.name)

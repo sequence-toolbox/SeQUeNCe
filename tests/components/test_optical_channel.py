@@ -7,28 +7,6 @@ from sequence.topology.node import Node
 random.seed(1)
 
 
-def test_ClassicalChannel_add_end():
-    tl = Timeline()
-    cc = ClassicalChannel("cc", tl, distance=1000, attenuation=2e-4, delay=1e9)
-    assert cc.delay == 1e9
-
-    n1 = Node('n1', tl)
-    n2 = Node('n2', tl)
-    n3 = Node('n3', tl)
-
-    cc.add_end(n1)
-    assert cc.ends[0] == n1
-
-    with pytest.raises(Exception):
-        cc.add_end(n1)
-
-    cc.add_end(n2)
-    assert cc.ends[0] == n1 and cc.ends[1] == n2 and len(cc.ends) == 2
-
-    with pytest.raises(Exception):
-        cc.add_end(n3)
-
-
 def test_ClassicalChannel_set_ends():
     tl = Timeline()
     cc = ClassicalChannel("cc", tl, 2e-4, 1e3)
@@ -143,3 +121,28 @@ def test_QuantumChannel_transmit():
            ('receiver', 50000015, '5'), ('receiver', 50000016, '6'), ('receiver', 50000017, '7')]
     for real, expect in zip(sender.log, res):
         assert real == expect
+
+
+def test_QuantumChannel_schedule_transmit():
+    tl = Timeline()
+    qc = QuantumChannel("qc", tl, attenuation=0, distance=1e3, frequency=1e12)
+
+    # send at time 1 with low min time
+    tl.time = 0
+    time = qc.schedule_transmit(0)
+    assert time == 1
+
+    # high min time
+    time = qc.schedule_transmit(2)
+    assert time == 3
+
+    # another with low
+    time = qc.schedule_transmit(0)
+    assert time == 2
+
+    # new time 
+    tl.time = 2
+    time = qc.schedule_transmit(0)
+    assert time == 4
+
+

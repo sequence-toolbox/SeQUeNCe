@@ -9,7 +9,31 @@ from ...kernel.process import Process
 class EntanglementGenerationMessage(Message):
     def __init__(self, msg_type, **kwargs):
         self.msg_type = msg_type
-        self.owner_type = type(EntanglementGeneration(None))
+        self.owner_type = EntanglementGeneraiton
+
+        if msg_type == "NEGOTIATE":
+            self.qc_delay = kwargs.get("qc_delay")
+
+        elif msg_type == "NEGOTIATE_ACK":
+            self.start_time = kwargs.get("start_time")
+
+        elif msg_type == "MEAS_RES":
+            self.res = kwargs.get("res")
+            self.time = kwargs.get("time")
+            self.resolution = kwargs.get("resolution")
+
+        elif msg_type == "ENT_MEMO":
+            self.id = kwargs.get("memory_id")
+            self.time = kwargs.get("time")
+
+        else:
+            raise Exception("EntanglementGeneration generated invalid message type {}".format(msg_type))
+
+
+class EntanglementGenerationMessageOld(Message):
+    def __init__(self, msg_type, **kwargs):
+        self.msg_type = msg_type
+        self.owner_type = type(EntanglementGenerationOld(None))
 
         if msg_type == "EXPIRE":
             self.mem_num = kwargs.get("mem_num")
@@ -43,6 +67,118 @@ class EntanglementGenerationMessage(Message):
 
 
 class EntanglementGeneration(Protocol):
+    def __init__(self, own, **kwargs):
+        if own is None:
+            return
+
+        super().__init__(own)
+        self.middle = kwargs.get("middle", [self.own.name])
+        self.others = kwargs.get("others") # other node (or nodes if middle)
+        self.memory_index = kwargs.get("memory_index") # memory index used
+        self.memory_array = None
+        self.rsvp_name = 'EG'
+
+        # network info
+        self.fidelity = kwargs.get("fidelity", 0.9)
+        self.qc_delay = 0
+        self.start_time = -1
+
+        # memory internal info
+        self.round = 0 # keep track of current stage of protocol
+        self.bsm_wait_time = -1 # keep track of expected arrival time for bsm results
+        self.bsm_res = [-1, -1] # keep track of bsm measurements to distinguish Psi+ and Psi-
+        
+        # misc
+        self.debug = False
+
+    def init(self):
+        if self.debug:
+            print("EG protocol \033[1;36;40minit\033[0m on node", self.own.name)
+
+        assert ((self.middle == self.own.name and len(self.others) == 2) or (len(self.others) == 1))
+
+        if self.own.name != self.middle:
+            if self.debug:
+                print("\tEG protocol end node init")
+
+            self.memory_array = self.own.memory_array
+
+    # start: called on initializing node
+    #   starts current round of protocol
+    #   calls update memory and starts negotiation in anticipation of memory emit
+    def start(self):
+        assert self.middle != self.own.name, "EG protocol start() called on middle node {}".format(self.own.name)
+
+        if self.debug:
+            print("EG protocol \033[1;36;40mstart\033[0m on node {} with partner {}".format(self.own.name, self.others[another_index]))
+
+        self.update_memory()
+
+        # send NEGOTIATE message
+        qchannel = self.own.qchannels[self.others[0]]
+        self.qc_delay = int(round(qchannel.distance / qchannel.light_speed))
+        message = EntanglementGenerationMessage("NEGOTIATE", qc_delay=self.qc_delay)
+        self.own.send_message(self.others[0], message)
+
+    # update_memory: called on both nodes
+    #   check memory state, performs necessary memory operations
+    def update_memory(self):
+        self.round += 1
+       
+        if self.round == 1:
+            self.memory_array[self.memory_index].reset()
+
+        elif self.round == 2 and self.bsm_res[0] != -1:
+            self.memory_array[self.memory_index].flip_state()
+
+        elif self.round == 3 and self.bsm_res[1] != -1:
+            # send ent_memo
+            pass
+
+        else:
+            # entanglement failed
+            # TODO: notify resource manager
+            return
+
+    def received_message(self, src: str, msg: List[str]):
+        if self.debug:
+            print("EG protocol \033[1;36;40mreceived_message\033[0m on node {}".format(self.own.name))
+            print("\tsource:", src)
+            print("\t\033[1;32;40mtype\033[0m:", msg.msg_type)
+
+        # TEMPORARY: ignore unkown src
+        if not (src in self.others or src in self.middles):
+            return False
+
+        msg_type = msg.msg_type
+
+        if msg_type == "NEGOTIATE":
+            # configure params
+            # schedule emit
+            # send negotiate_ack
+            # schedule update_memory
+            pass
+
+        elif msg_type == "NEGOTIATE_ACK":
+            # configure params
+            # schedule emit
+            # schedule start if memory_stage is 0, else schedule update_memory
+            pass
+
+        elif msg_type == "MEAS_RES":
+            # update bsm_res
+            pass
+
+        elif msg_type == "ENT_MEMO":
+            pass
+
+        else:
+            raise Exception("WARNING: Invalid message {} received by EG on node {}".format(msg_type, self.own.name))
+
+        return True
+
+
+class EntanglementGenerationOld(Protocol):
     '''
     PROCEDURE:
 
