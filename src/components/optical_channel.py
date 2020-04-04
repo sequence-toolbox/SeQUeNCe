@@ -43,14 +43,20 @@ class QuantumChannel(OpticalChannel):
         end1.assign_qchannel(self, end2.name)
         end2.assign_qchannel(self, end1.name)
 
-    def _transmit(self, qubit, source):
+    def transmit(self, qubit, source):
         assert self.delay != 0 and self.loss != 1, "QuantumChannel forgets to run init() function"
 
         # remove lowest time bin
         if len(self.send_bins) > 0:
-            hq.heappop(self.send_bins)
+            # TODO: make sure we have matching time / clear least
+            time = -1
+            while time < self.timeline.now():
+                time_bin = hq.heappop(self.send_bins)
+                time = int((time_bin * 1e12) / self.frequency)
+            assert time == self.timeline.now(), "qc {} transmit method called at invalid time".format(self.name)
+
         else:
-            warnings.warn("send_bins empty, if this is not a test something went wrong")
+            warnings.warn("send_bins empty, this should only appear in unit test files")
 
         # check if photon kept
         if numpy.random.random_sample() > self.loss:
@@ -72,7 +78,7 @@ class QuantumChannel(OpticalChannel):
         else:
             pass
 
-    def transmit(self, qubit, source, min_time):
+    def schedule_transmit(self, min_time):
         min_time = max(min_time, self.timeline.now())
         time_bin = int((min_time * self.frequency) / 1e12) + 1
        
@@ -82,12 +88,7 @@ class QuantumChannel(OpticalChannel):
         hq.heappush(self.send_bins, time_bin)
 
         # calculate time
-        time = (time_bin * 1e12) / self.frequency
-        # schedule _transmit
-        process = Process(self, "_transmit", [qubit, source])
-        event = Event(time, process)
-        self.timeline.schedule(event)
-
+        time = int((time_bin * 1e12) / self.frequency)
         return time
 
 # class QuantumChannel(OpticalChannel):

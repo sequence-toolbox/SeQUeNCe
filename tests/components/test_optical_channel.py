@@ -82,7 +82,7 @@ def test_QuantumChannel_set_ends():
     assert end1.name in end2.qchannels and end2.name in end1.qchannels
 
 
-def test_QuantumChannel__transmit():
+def test_QuantumChannel_transmit():
     from sequence.components.photon import Photon
     random.seed(1)
 
@@ -103,12 +103,12 @@ def test_QuantumChannel__transmit():
 
     for i in range(10):
         photon = Photon(str(i))
-        qc._transmit(photon, sender)
+        qc.transmit(photon, sender)
         tl.time = tl.time + 1
 
     for i in range(10):
         photon = Photon(str(i))
-        qc._transmit(photon, receiver)
+        qc.transmit(photon, receiver)
         tl.time = tl.time + 1
 
     assert len(sender.log) == len(receiver.log) == 0
@@ -123,52 +123,26 @@ def test_QuantumChannel__transmit():
         assert real == expect
 
 
-def test_QuantumChannel_transmit():
-    from sequence.components.photon import Photon
-    random.seed(1)
-
-    class FakeNode(Node):
-        def __init__(self, name, tl):
-            Node.__init__(self, name, tl)
-            self.log = []
-
-        def receive_qubit(self, src, photon):
-            self.log.append((self.timeline.now(), photon.name))
-
+def test_QuantumChannel_schedule_transmit():
     tl = Timeline()
     qc = QuantumChannel("qc", tl, attenuation=0, distance=1e3, frequency=1e12)
-    sender = FakeNode("sender", tl)
-    receiver = FakeNode("receiver", tl)
-    qc.set_ends(sender, receiver)
-    tl.init()
 
     # send at time 1 with low min time
     tl.time = 0
-    photon = Photon("1")
-    time = qc.transmit(photon, sender, 0)
+    time = qc.schedule_transmit(0)
     assert time == 1
 
     # high min time
-    photon = Photon("2")
-    time = qc.transmit(photon, sender, 2)
+    time = qc.schedule_transmit(2)
     assert time == 3
 
     # another with low
-    photon = Photon("3")
-    time = qc.transmit(photon, sender, 0)
+    time = qc.schedule_transmit(0)
     assert time == 2
 
     # new time 
     tl.time = 2
-    photon = Photon("4")
-    time = qc.transmit(photon, sender, 0)
+    time = qc.schedule_transmit(0)
     assert time == 4
-
-    # check receiver
-    tl.time = 0
-    tl.run()
-    expected = ["1", "3", "2", "4"]
-    for i in range(len(expected)):
-        assert expected[i] == receiver.log[i][1]
 
 

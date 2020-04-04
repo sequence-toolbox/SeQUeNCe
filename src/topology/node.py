@@ -41,8 +41,11 @@ class Node(Entity):
     def receive_message(self, src: str, msg: "Message") -> None:
         pass
 
-    def send_qubit(self, dst: str, qubit, min_time: int) -> None:
-        self.qchannels[dst].transmit(qubit, self, min_time)
+    def schedule_qubit(self, dst: str, min_time: int) -> int:
+        return self.qchannels[dst].schedule_transmit(min_time)
+
+    def send_qubit(self, dst: str, qubit) -> None:
+        self.qchannels[dst].transmit(qubit, self)
 
     def receive_qubit(self, src: str, qubit) -> None:
         pass
