@@ -121,3 +121,54 @@ def test_QuantumChannel__transmit():
            ('receiver', 50000015, '5'), ('receiver', 50000016, '6'), ('receiver', 50000017, '7')]
     for real, expect in zip(sender.log, res):
         assert real == expect
+
+
+def test_QuantumChannel_transmit():
+    from sequence.components.photon import Photon
+    random.seed(1)
+
+    class FakeNode(Node):
+        def __init__(self, name, tl):
+            Node.__init__(self, name, tl)
+            self.log = []
+
+        def receive_qubit(self, src, photon):
+            self.log.append((self.timeline.now(), photon.name))
+
+    tl = Timeline()
+    qc = QuantumChannel("qc", tl, attenuation=0, distance=1e3, frequency=1e12)
+    sender = FakeNode("sender", tl)
+    receiver = FakeNode("receiver", tl)
+    qc.set_ends(sender, receiver)
+    tl.init()
+
+    # send at time 1 with low min time
+    tl.time = 0
+    photon = Photon("1")
+    time = qc.transmit(photon, sender, 0)
+    assert time == 1
+
+    # high min time
+    photon = Photon("2")
+    time = qc.transmit(photon, sender, 2)
+    assert time == 3
+
+    # another with low
+    photon = Photon("3")
+    time = qc.transmit(photon, sender, 0)
+    assert time == 2
+
+    # new time 
+    tl.time = 2
+    photon = Photon("4")
+    time = qc.transmit(photon, sender, 0)
+    assert time == 4
+
+    # check receiver
+    tl.time = 0
+    tl.run()
+    expected = ["1", "3", "2", "4"]
+    for i in range(len(expected)):
+        assert expected[i] == receiver.log[i][1]
+
+

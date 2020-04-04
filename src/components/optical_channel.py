@@ -73,6 +73,7 @@ class QuantumChannel(OpticalChannel):
             pass
 
     def transmit(self, qubit, source, min_time):
+        min_time = max(min_time, self.timeline.now())
         time_bin = int((min_time * self.frequency) / 1e12) + 1
        
         # find earliest available time bin
