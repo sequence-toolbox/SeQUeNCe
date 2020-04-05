@@ -1,4 +1,8 @@
-from typing import Set
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ...components.memory import Memory
+    from ...topology.node import Node
 
 from numpy.random import random
 
@@ -8,11 +12,10 @@ from ...topology.node import Node
 
 
 class EntanglementSwappingMessage(Message):
-    def __init__(self, msg_type: str, **kwargs):
-        self.msg_type = msg_type
-        self.owner_type = type(EntanglementSwapping(None, None, None, None))
+    def __init__(self, msg_type: str, receiver: str, **kwargs):
+        Message.__init__(self, msg_type)
+        self.receiver = receiver
         if self.msg_type == "SWAP_RES":
-            self.local_memo = kwargs.get("local_memo")
             self.fidelity = kwargs.get("fidelity")
             self.remote_node = kwargs.get("remote_node")
             self.remote_memo = kwargs.get("remote_memo")
@@ -21,143 +24,119 @@ class EntanglementSwappingMessage(Message):
 
     def __str__(self):
         if self.msg_type == "SWAP_RES":
-            return "EntanglementSwappingMessage: msg_type: %s; local_memo: %d; fidelity: %.2f; remote_node: %s; remote_memo: %d; " % (
-                self.msg_type, self.local_memo, self.fidelity, self.remote_node, self.remote_memo)
+            return "EntanglementSwappingMessage: msg_type: %s; local_memo: %d; fidelity: %.2f; " \
+                   "remote_node: %s; remote_memo: %d; " % (self.msg_type, self.local_memo,
+                                                           self.fidelity, self.remote_node,
+                                                           self.remote_memo)
 
 
-class EntanglementSwapping(Protocol):
-    '''
-    Node will execute entanglement swapping protocol will when there are
-    memories that are entangled with memories on node remote1 and remote2
-    SWAP_RES message is composed by:
-        1. Type of message: SWAP_RES
-        2. Influenced memory of receiver: integer
-        3. Fidelity after entanglement swap : float
-        4. Entangled node after entanglement swap : str
-        5. Entangled memory after entanglement swap: integer
-    ASSUMPTION:
-        1. The name of node is not null string
-    '''
+class EntanglementSwappingA(Protocol):
+    """
+    Entanglement swapping protocol is an asymmetric protocol. The EntanglementSwappingA initiate protocol and do
+    swapping operation. The EntanglementSwappingB waits swapping results from EntanglementSwappingA. The swapping
+    results decides the following operations of EntanglementSwappingB.
+    """
 
-    def __init__(self, own: Node, remote1: str, remote2: str, known_nodes):
-        if own is None:
-            # to create dummy object with none parameters
-            return
+    def __init__(self, own: "Node", name: str, left_memo: "Memory", right_memo: "Memory", success_prob=1,
+                 degradation=0.95):
+        assert left_memo != right_memo
         Protocol.__init__(self, own)
-        self.remote1 = remote1
-        self.remote2 = remote2
-        # self.waiting_memo1(2) stores memories that entangled with remote1(2)
-        self.waiting_memo1 = []
-        self.waiting_memo2 = []
-        self.waiting_swap_res = {}
-        self.known_nodes = known_nodes
-        self.rsvp_name = ''
-        self.valid_memories = set()
+        self.name = name
+        self.left_memo = left_memo
+        self.right_memo = right_memo
+        self.success_prob = success_prob
+        self.degradation = degradation
+        self.is_success = False
 
-    def init(self):
-        pass
+    def set_others(self, left: "EntanglementSwappingB", right: "EntanglementSwappingB") -> None:
+        self.left_protocol = left
+        self.right_protocol = right
 
-    def set_valid_memories(self, memories: Set):
-        self.valid_memories = memories
+    def start(self) -> None:
+        assert self.left_protocol is not None, "another protocol is not setted; please use set_another function"
+        assert self.left_memo.fidelity > 0 and self.right_memo.fidelity > 0
+        assert self.left_memo.entangled_memory["node_id"] == self.left_protocol.own.name
+        assert self.right_memo.entangled_memory["node_id"] == self.right_protocol.own.name
 
-    def push(self, **kwargs):
-        self._push(**kwargs)
-
-    def pop(self, **kwargs):  # memory_index: int, another_node: str:
-        if "info_type" in kwargs:
-            return
-
-        memory_index = kwargs["memory_index"]
-        another_node = kwargs["another_node"]
-        if memory_index not in self.valid_memories:
-            return False
-
-        if another_node == self.remote1:
-            self.waiting_memo1.append(memory_index)
-        elif another_node == self.remote2:
-            self.waiting_memo2.append(memory_index)
-        elif another_node in self.known_nodes:
-            self.waiting_swap_res[memory_index] = another_node
-        else:
-            self._pop(memory_index=memory_index, another_node=another_node)
-
-        while self.waiting_memo1 and self.waiting_memo2:
-            memo1 = self.waiting_memo1.pop()
-            memo2 = self.waiting_memo2.pop()
-            self.swap(memo1, memo2)
-            self._push(index=memo1)
-            self._push(index=memo2)
-
-        return True
-
-    def swap(self, memo_id1: int, memo_id2: int):
-        memo1 = self.own.components["MemoryArray"][memo_id1]
-        memo2 = self.own.components["MemoryArray"][memo_id2]
-
-        suc_prob = self.success_probability()
         fidelity = 0
-        if random() < suc_prob:
-            fidelity = self.updated_fidelity(memo1.fidelity, memo2.fidelity)
+        if random() > self.success_probability():
+            fidelity = self.updated_fidelity(self.left_memo.fidelity, self.right_memo.fidelity)
+            self.is_success = True
 
-        another_node_id1 = memo1.entangled_memory['node_id']
-        another_memo_id1 = memo1.entangled_memory['memo_id']
-        another_node_id2 = memo2.entangled_memory['node_id']
-        another_memo_id2 = memo2.entangled_memory['memo_id']
-        msg = EntanglementSwappingMessage("SWAP_RES", local_memo=another_memo_id1, fidelity=fidelity,
-                                          remote_node=another_node_id2, remote_memo=another_memo_id2)
-        # msg = self.rsvp_name + " EntanglementSwapping SWAP_RES %d %f %s %d" % (another_memo_id1,
-        #                                                                        fidelity,
-        #                                                                        another_node_id2,
-        #                                                                        another_memo_id2)
-        self.own.send_message(dst=another_node_id1, msg=msg, priority=3)
-        # msg = self.rsvp_name + " EntanglementSwapping SWAP_RES %d %f %s %d" % (another_memo_id2,
-        #                                                                        fidelity,
-        #                                                                        another_node_id1,
-        #                                                                        another_memo_id1)
-        msg = EntanglementSwappingMessage("SWAP_RES", local_memo=another_memo_id2, fidelity=fidelity,
-                                          remote_node=another_node_id1, remote_memo=another_memo_id1)
-        self.own.send_message(dst=another_node_id2, msg=msg, priority=3)
+        msg = EntanglementSwappingMessage("SWAP_RES", self.left_protocol.name,
+                                          fidelity=fidelity,
+                                          remote_node=self.right_memo.entangled_memory["node_id"],
+                                          remote_memo=self.right_memo.entangled_memory["memo_id"])
+        self.own.send_message(self.left_protocol.own.name, msg)
+        msg = EntanglementSwappingMessage("SWAP_RES", self.right_protocol.name,
+                                          fidelity=fidelity,
+                                          remote_node=self.left_memo.entangled_memory["node_id"],
+                                          remote_memo=self.left_memo.entangled_memory["memo_id"])
+        self.own.send_message(self.right_protocol.own.name, msg)
 
-    def received_message(self, src: str, msg: EntanglementSwappingMessage):
-        if src not in self.known_nodes:
-            return False
-        if msg.msg_type == "SWAP_RES":
-            memo_id = msg.local_memo
-            fidelity = msg.fidelity
-            another_node = msg.remote_node
-            another_memo = msg.remote_memo
+        self.left_memo.fidelity = self.right_memo.fidelity = 0
+        self.left_memo.entangled_memory["node_id"] = self.right_memo.entangled_memory["node_id"] = None
+        self.left_memo.entangled_memory["memo_id"] = self.right_memo.entangled_memory["memo_id"] = None
+        self.update_resource_manager(self.left_memo, "EMPTY")
+        self.update_resource_manager(self.right_memo, "EMPTY")
 
-            self.waiting_swap_res.pop(memo_id)
+    def update_resource_manager(self, memory: "Memory", state: str) -> None:
+        self.own.resource_manager.update(memory, state)
 
-            memory = self.own.components["MemoryArray"][memo_id]
-            if fidelity == 0:
-                self._push(index=memo_id)
-            else:
-                memory.fidelity = fidelity
-                memory.entangled_memory['node_id'] = another_node
-                memory.entangled_memory['memo_id'] = another_memo
-                self._pop(memory_index=memo_id, another_node=another_node)
-        else:
-            raise Exception("Entanglement swapping protocol "
-                            "receives unkown type of message: "
-                            "%s" % str(msg))
-
-        return True
-
-    def __str__(self):
-        return "EntanglementSwapping: remote1: %s;  remote2: %s; known_nodes: %s" % (
-            self.remote1, self.remote2, self.known_nodes)
-
-    @staticmethod
-    def success_probability() -> float:
+    def success_probability(self) -> float:
         '''
         A simple model for BSM success probability
         '''
-        return 0.93
+        return self.success_prob
 
-    @staticmethod
-    def updated_fidelity(f1: float, f2: float) -> float:
+    def updated_fidelity(self, f1: float, f2: float) -> float:
         '''
         A simple model updating fidelity of entanglement
         '''
-        return (f1 + f2) / 2 * 0.95
+        return (f1 + f2) / 2 * self.degradation
+
+    def push(self, **kwargs) -> None:
+        pass
+
+    def pop(self, **kwargs) -> None:
+        pass
+
+    def received_message(self, src: str, msg: "Message") -> None:
+        assert False
+
+
+class EntanglementSwappingB(Protocol):
+    """
+    Entanglement swapping protocol is an asymmetric protocol. The EntanglementSwappingA initiate protocol and do
+    swapping operation. The EntanglementSwappingB waits swapping results from EntanglementSwappingA. The swapping
+    results decides the following operations of EntanglementSwappingB.
+    """
+
+    def __init__(self, own: "Node", name: str, hold_memo: "Memory"):
+        Protocol.__init__(self, own)
+        self.name = name
+        self.hold_memo = hold_memo
+
+    def set_another(self, another: "EntanglementSwappingA") -> None:
+        self.another = another
+
+    def received_message(self, src: str, msg: "EntanglementSwappingMessage") -> None:
+        assert src == self.another.own.name
+        self.hold_memo.fidelity = msg.fidelity
+        if msg.fidelity > 0:
+            self.hold_memo.entangled_memory["node_id"] = msg.remote_node
+            self.hold_memo.entangled_memory["memo_id"] = msg.remote_memo
+            self.update_resource_manager(self.hold_memo, "ENTANGLE")
+        else:
+            self.hold_memo.entangled_memory["node_id"] = None
+            self.hold_memo.entangled_memory["memo_id"] = None
+            self.update_resource_manager(self.hold_memo, "EMPTY")
+
+    def update_resource_manager(self, memory: "Memory", state: str) -> None:
+        self.own.resource_manager.update(memory, state)
+
+    def push(self, **kwargs) -> None:
+        pass
+
+    def pop(self, **kwargs) -> None:
+        pass

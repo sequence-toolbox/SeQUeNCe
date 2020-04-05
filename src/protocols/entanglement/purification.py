@@ -12,7 +12,7 @@ from ..protocol import Protocol
 
 class BBPSSWMessage(Message):
     def __init__(self, msg_type: str, receiver: str, **kwargs):
-        Message.__init__(msg_type)
+        Message.__init__(self, msg_type)
         self.receiver = receiver
         if self.msg_type == "PURIFICATION_RES":
             pass
@@ -30,7 +30,7 @@ class BBPSSW(Protocol):
         self.another = None
         self.is_success = None
 
-    def set_another(self, another: "BBPSSW"):
+    def set_another(self, another: "BBPSSW") -> None:
         self.another = another
 
     def start(self) -> None:
@@ -64,10 +64,10 @@ class BBPSSW(Protocol):
         self.meas_memo.entangled_memory["memo_id"] = None
         self.update_resource_manager(self.meas_memo, "EMPTY")
 
-    def update_resource_manager(self, memory: "Memory", state: str):
+    def update_resource_manager(self, memory: "Memory", state: str) -> None:
         self.own.resource_manager.update(memory, state)
 
-    def received_message(self, src: str, msg: List[str]):
+    def received_message(self, src: str, msg: List[str]) -> None:
         assert src == self.another.own.name
         if self.is_success is True:
             self.update_resource_manager(self.kept_memo, state="ENTANGLE")
@@ -90,8 +90,8 @@ class BBPSSW(Protocol):
         '''
         return (F ** 2 + ((1 - F) / 3) ** 2) / (F ** 2 + 2 * F * (1 - F) / 3 + 5 * ((1 - F) / 3) ** 2)
 
-    def push(self, **kwargs):
+    def push(self, **kwargs) -> None:
         pass
 
-    def pop(self, **kwargs):
+    def pop(self, **kwargs) -> None:
         pass

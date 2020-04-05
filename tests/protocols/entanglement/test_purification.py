@@ -23,7 +23,7 @@ class FakeNode(Node):
         self.msg_log = []
         self.resource_manager = ResourceManager()
 
-    def receive_message(self, src: str, msg: Message):
+    def receive_message(self, src: str, msg: "Message"):
         self.msg_log.append((self.timeline.now(), src, msg))
         for protocol in self.protocols:
             if protocol.name == msg.receiver:

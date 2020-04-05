@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..topology.node import Node
+    from .message import Message
 
 
 class Protocol(ABC):
@@ -38,9 +39,8 @@ class Protocol(ABC):
         return
 
     @abstractmethod
-    def received_message(self, src: str, msg: List[str]):
+    def received_message(self, src: str, msg: "Message"):
         '''
         receive classical message from another node
         '''
         pass
-
