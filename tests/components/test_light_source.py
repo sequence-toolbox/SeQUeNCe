@@ -2,10 +2,17 @@ from numpy import random
 from sequence.components.light_source import LightSource
 from sequence.components.optical_channel import QuantumChannel
 from sequence.kernel.timeline import Timeline
-from sequence.topology.node import QKDNode, Node
+from sequence.topology.node import Node
 from sequence.utils.encoding import polarization
 
 random.seed(0)
+
+
+class FakeNode(Node):
+    def __init__(self, name, tl, ls):
+        Node.__init__(self, name, tl)
+        self.lightsource = ls
+        self.lightsource.owner = self
 
 
 def test_light_source():
@@ -18,10 +25,10 @@ def test_light_source():
             self.log.append((self.timeline.now(), src, qubit))
 
     tl = Timeline()
-    sender = QKDNode("sender", tl)
     FREQ, MEAN = 1e8, 0.1
     ls = LightSource("ls", tl, frequency=FREQ, mean_photon_num=MEAN)
-    sender.set_lightsource(ls)
+    sender = FakeNode("sender", tl, ls)
+
     assert sender.lightsource.frequency == FREQ and sender.lightsource.mean_photon_num == MEAN
 
     receiver = Receiver("receiver", tl)
@@ -44,7 +51,3 @@ def test_light_source():
         assert state_list[index] == qubit.quantum_state.state
         assert time == index * (1e12 / FREQ) + qc.delay
         assert src == "sender"
-
-
-def test_spdcsource():
-    assert False
