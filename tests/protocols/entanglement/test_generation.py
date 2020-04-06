@@ -1,54 +1,52 @@
-from sequence.components.memory import MemoryArray
-from sequence.components.optical_channel import QuantumChannel
+from sequence.components.memory import MemoryArray, AtomMemory
+from sequence.components.optical_channel import *
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.entanglement.generation import EntanglementGeneration, EntanglementGenerationMessage
-from sequence.topology.node import *
+from sequence.protocols.entanglement.generation import *
+from sequence.topology.node import Node
 
 
 def test_generation_message():
-    msg = EntanglementGenerationMessage("EXPIRE", mem_num=10)
+    msg = EntanglementGenerationMessage("NEGOTIATE", "alice", qc_delay=1)
 
-    assert msg.msg_type == "EXPIRE"
-    assert msg.owner_type == type(EntanglementGeneration(None))
-    assert msg.mem_num == 10
+    assert msg.receiver == "alice"
+    assert msg.msg_type == "NEGOTIATE"
+    assert msg.qc_delay == 1
+
 
 def test_generation_init_func():
-    # TODO: add BSM, quantum channels
     tl = Timeline()
-    node = QuantumRepeater("e1", tl)
-    node.eg.middles = ["m0", "m1"]
-    node.eg.others = ["e0", "e2"]
+    node = Node("e1", tl)
+    node.memory_array = MemoryArray("", tl)
+    eg = EntanglementGenerationA(node, "EG", middle="m1", other="e2", other_protocol="e1")
 
-    node.init()
+    eg.init()
 
-    # test set_params
-    assert len(node.eg.memory_indices) == 2
-    # test automatic generation of memory destinations
-    assert len(node.eg.memory_destinations) == 10
-    # test internal memory management construction
-    assert len(node.eg.memory_indices[0]) == 10
-    assert len(node.eg.memory_indices[1]) == 0
+    assert type(eg.memory) == AtomMemory
+
 
 def test_generation_receive_message():
     tl = Timeline()
-    node = QuantumRepeater("e1", tl)
-    node.eg.middles = ["m0", "m1"]
-    node.eg.others = ["e0", "e2"]
+    node = Node("e1", tl)
+    node.memory_array = MemoryArray("", tl)
+    node.assign_cchannel(ClassicalChannel("", tl, 0, 0, delay=1), "m1")
 
-    node.init()
-
-    # unknown message
+    eg = EntanglementGenerationA(node, "EG", middle="m1", other="e2", other_protocol="e1")
+    eg.qc_delay = 1
+    eg.init()
 
     # unknown node
-    msg = EntanglementGenerationMessage("EXPIRE", mem_num=10)
-    assert node.eg.received_message("e3", msg) is False
+    msg = EntanglementGenerationMessage("NEGOTIATE_ACK", "EG", emit_time=1)
+    assert eg.received_message("e3", msg) is False
 
-    # expire message
-    msg = EntanglementGenerationMessage("EXPIRE", mem_num=10)
-    assert node.eg.received_message("e0", msg) is True
-    assert node.eg.add_list[0] == [10]
+    # negotiate message
+    msg = EntanglementGenerationMessage("NEGOTIATE_ACK", "EG", emit_time=1)
+    assert eg.received_message("e2", msg) is True
+    assert eg.expected_time == 2
+    assert len(tl.events.data) == 2 # excite and next start time
+
 
 def test_generation_push():
+    return
     tl = Timeline()
 
     node = QuantumRepeater("e0", tl)
@@ -62,6 +60,7 @@ def test_generation_push():
     assert node.eg.add_list[0] == [0]
 
 def test_generation_pop():
+    return
     class DumbMemory():
         def __init__(self):
             self.entangled_memory = {"memo_id": 0}

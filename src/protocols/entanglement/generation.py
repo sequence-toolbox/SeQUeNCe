@@ -31,11 +31,11 @@ Entanglement generation is asymmetric:
     EntanglementGeneraitonB should be used on the middle node and does not need to be started
 """
 class EntanglementGenerationA(Protocol):
-    def __init__(self, own, **kwargs):
+    def __init__(self, own, name, **kwargs):
         if own is None:
             return
 
-        super().__init__(own)
+        super().__init__(own, name)
         self.middle = kwargs.get("middle")
         self.other = kwargs.get("other") # other node
         self.other_protocol = kwargs.get("other_protocol") # other EG protocol on other node
@@ -109,14 +109,14 @@ class EntanglementGenerationA(Protocol):
 
         return True
 
-    def received_message(self, src: str, msg: List[str]):
+    def received_message(self, src: str, msg: EntanglementGenerationMessage):
         if self.debug:
             print("EG protocol \033[1;36;40mreceived_message\033[0m on node {}".format(self.own.name))
             print("\tsource:", src)
             print("\t\033[1;32;40mtype\033[0m:", msg.msg_type)
 
         # TEMPORARY: ignore unkown src
-        if not (src in self.others or src in self.middles):
+        if src != self.other and src != self.middle:
             return False
 
         msg_type = msg.msg_type
@@ -149,7 +149,7 @@ class EntanglementGenerationA(Protocol):
                 process = Process(self, "start", [])
             else:
                 process = Process(self, "update_memory", [])
-            event = Event(process, future_start_time)
+            event = Event(future_start_time, process)
             self.own.timeline.schedule(event)
 
         elif msg_type == "NEGOTIATE_ACK":
@@ -168,7 +168,7 @@ class EntanglementGenerationA(Protocol):
                 process = Process(self, "start", [])
             else:
                 process = Process(self, "update_memory", [])
-            event = Event(process, future_start_time)
+            event = Event(future_start_time, process)
             self.own.timeline.schedule(event)
 
         elif msg_type == "MEAS_RES":
@@ -206,8 +206,8 @@ class EntanglementGenerationA(Protocol):
 
 
 class EntanglementGenerationB(Protocol):
-    def __init__(self, own, **kwargs):
-        super().__init__(own)
+    def __init__(self, own, name, **kwargs):
+        super().__init__(own, name)
         self.others = kwargs.get("others") # end nodes
         self.other_protocols = kwargs.get("other_protocols") # other EG protocols (must be same order as others)
 

@@ -13,7 +13,6 @@ from ..components.memory import MemoryArray
 from ..components.bsm import SingleAtomBSM
 from ..components.light_source import LightSource
 from ..components.detector import QSDetectorPolarization
-from ..protocols.entanglement.generation import EntanglementGeneration
 from ..protocols.qkd.BB84 import BB84
 
 
@@ -39,7 +38,10 @@ class Node(Entity):
         self.cchannels[dst].transmit(msg, self, priority)
 
     def receive_message(self, src: str, msg: "Message") -> None:
-        pass
+        # signal to protocol that we've received a message
+        for protocol in self.protocols:
+            if protocol.name == msg.receiver and protocol.received_message(src, msg):
+                return
 
     def schedule_qubit(self, dst: str, min_time: int) -> int:
         return self.qchannels[dst].schedule_transmit(min_time)
@@ -54,9 +56,10 @@ class Node(Entity):
 class QuantumRepeater(Node):
     def __init__(self, name: str, timeline: "Timeline", **kwargs) -> None:
         Node.__init__(self, name, timeline, **kwargs)
+        raise NotImplementedError("Need to rewrite QuantumRepeater for new entanglement generation")
         self.memory_array = kwargs.get("memory_array", MemoryArray("%s_memory" % name, timeline))
         self.memory_array.owner = self
-        self.eg = EntanglementGeneration(self)
+        self.eg = None
         self.eg.middles = []
         self.memory_array.upper_protocols.append(self.eg)
 

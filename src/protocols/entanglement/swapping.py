@@ -39,8 +39,7 @@ class EntanglementSwappingA(Protocol):
     def __init__(self, own: "Node", name: str, left_memo: "Memory", right_memo: "Memory", success_prob=1,
                  degradation=0.95):
         assert left_memo != right_memo
-        Protocol.__init__(self, own)
-        self.name = name
+        Protocol.__init__(self, own, name)
         self.left_memo = left_memo
         self.right_memo = right_memo
         self.success_prob = success_prob
@@ -112,8 +111,7 @@ class EntanglementSwappingB(Protocol):
     """
 
     def __init__(self, own: "Node", name: str, hold_memo: "Memory"):
-        Protocol.__init__(self, own)
-        self.name = name
+        Protocol.__init__(self, own, name)
         self.hold_memo = hold_memo
 
     def set_another(self, another: "EntanglementSwappingA") -> None:

@@ -22,8 +22,7 @@ class BBPSSWMessage(Message):
 class BBPSSW(Protocol):
     def __init__(self, own: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory"):
         assert kept_memo != meas_memo
-        Protocol.__init__(self, own)
-        self.name = name
+        Protocol.__init__(self, own, name)
         self.kept_memo = kept_memo
         self.meas_memo = meas_memo
         self.another = None
