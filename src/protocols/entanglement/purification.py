@@ -12,8 +12,7 @@ from ..protocol import Protocol
 
 class BBPSSWMessage(Message):
     def __init__(self, msg_type: str, receiver: str, **kwargs):
-        Message.__init__(self, msg_type)
-        self.receiver = receiver
+        Message.__init__(self, msg_type, receiver)
         if self.msg_type == "PURIFICATION_RES":
             pass
         else:

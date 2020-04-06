@@ -9,7 +9,6 @@ from ...kernel.process import Process
 class EntanglementGenerationMessage(Message):
     def __init__(self, msg_type, **kwargs):
         self.msg_type = msg_type
-        self.owner_type = EntanglementGeneraiton
 
         if msg_type == "NEGOTIATE":
             self.qc_delay = kwargs.get("qc_delay")

@@ -13,8 +13,7 @@ from ...topology.node import Node
 
 class EntanglementSwappingMessage(Message):
     def __init__(self, msg_type: str, receiver: str, **kwargs):
-        Message.__init__(self, msg_type)
-        self.receiver = receiver
+        Message.__init__(self, msg_type, receiver)
         if self.msg_type == "SWAP_RES":
             self.fidelity = kwargs.get("fidelity")
             self.remote_node = kwargs.get("remote_node")
