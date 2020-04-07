@@ -63,7 +63,6 @@ class EntanglementGenerationA(Protocol):
     def init(self):
         if self.debug:
             print("EG protocol \033[1;36;40minit\033[0m on node", self.own.name)
-            print("\tEG protocol end node init")
 
         memory_array = self.own.memory_array
         self.memory = memory_array[self.memory_index]
@@ -74,6 +73,7 @@ class EntanglementGenerationA(Protocol):
     def start(self):
         if self.debug:
             print("EG protocol \033[1;36;40mstart\033[0m on node {} with partner {}".format(self.own.name, self.other))
+            print("\tround:", self.round)
 
         # update memory, and if necessary start negotiations for round
         if self.update_memory() and self.primary:
@@ -87,7 +87,7 @@ class EntanglementGenerationA(Protocol):
     #   returns True if round successfull, otherwise returns False
     def update_memory(self):
         self.round += 1
-       
+
         if self.round == 1:
             self.memory.reset()
 
@@ -96,6 +96,8 @@ class EntanglementGenerationA(Protocol):
 
         elif self.round == 3 and self.bsm_res[1] != -1:
             # entanglement succeeded
+            if self.debug:
+                print("\tsuccessful entanglement of memory {} on node {}".format(self.memory_index, self.own.name))
             self.memory.entangled_memory["name"] = self.other
             self.memory.entangled_memory["id"] = self.another_index
             self.memory.fidelity = self.fidelity
@@ -104,6 +106,9 @@ class EntanglementGenerationA(Protocol):
 
         else:
             # entanglement failed
+            if self.debug:
+                print("\tfailed entanglement of memory {} on node {}".format(self.memory_index, self.own.name))
+
             self.own.resource_manager.update(self.memory, "EMPTY")
             return False
 
@@ -145,7 +150,7 @@ class EntanglementGenerationA(Protocol):
             # schedule start if necessary, else schedule update_memory
             # TODO: base future start time on resolution
             future_start_time = self.expected_time + self.own.cchannels[self.middle].delay + 1
-            if self.round < 3:
+            if self.round < 2:
                 process = Process(self, "start", [])
             else:
                 process = Process(self, "update_memory", [])
@@ -164,7 +169,7 @@ class EntanglementGenerationA(Protocol):
             # schedule start if memory_stage is 0, else schedule update_memory
             # TODO: base future start time on resolution
             future_start_time = self.expected_time + self.own.cchannels[self.middle].delay + 1
-            if self.round < 3:
+            if self.round < 2:
                 process = Process(self, "start", [])
             else:
                 process = Process(self, "update_memory", [])
@@ -222,7 +227,7 @@ class EntanglementGenerationB(Protocol):
         resolution = self.own.bsm.resolution
 
         for i, node in enumerate(self.others):
-            message = EntanglementGenerationMessage("MEAS_RES", self.others[i], res=res, time=time, resolution=resolution)
+            message = EntanglementGenerationMessage("MEAS_RES", self.other_protocols[i], res=res, time=time, resolution=resolution)
             self.own.send_message(node, message)
 
     def received_message(self, src: str, msg: EntanglementGenerationMessage):

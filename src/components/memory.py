@@ -74,7 +74,6 @@ class MemoryArray(Entity):
             time += period
 
     def pop(self, **kwargs):
-        print("got here")
         memory = kwargs.get("memory")
         index = self.memories.index(memory)
         # notify protocol
