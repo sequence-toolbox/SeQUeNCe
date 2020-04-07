@@ -42,7 +42,7 @@ class EntanglementGenerationA(Protocol):
 
         # memory info
         self.memory_index = kwargs.get("memory_index", -1) # memory index used
-        self.other_index = kwargs.get("another_index", -1) # memory index used by corresponding protocol on other node
+        self.another_index = kwargs.get("another_index", -1) # memory index used by corresponding protocol on other node
         self.memory = None
 
         # network and hardware info
@@ -73,14 +73,14 @@ class EntanglementGenerationA(Protocol):
     #   calls update memory and starts negotiation in anticipation of memory emit
     def start(self):
         if self.debug:
-            print("EG protocol \033[1;36;40mstart\033[0m on node {} with partner {}".format(self.own.name, self.others[another_index]))
+            print("EG protocol \033[1;36;40mstart\033[0m on node {} with partner {}".format(self.own.name, self.other))
 
         # update memory, and if necessary start negotiations for round
         if self.update_memory() and self.primary:
             # send NEGOTIATE message
             self.qc_delay = self.own.qchannels[self.middle].delay
             message = EntanglementGenerationMessage("NEGOTIATE", self.other_protocol, qc_delay=self.qc_delay)
-            self.own.send_message(self.others[0], message)
+            self.own.send_message(self.other, message)
         
     # update_memory: called on both nodes
     #   check memory state, performs necessary memory operations
@@ -89,10 +89,10 @@ class EntanglementGenerationA(Protocol):
         self.round += 1
        
         if self.round == 1:
-            self.memory_array[self.memory_index].reset()
+            self.memory.reset()
 
         elif self.round == 2 and self.bsm_res[0] != -1:
-            self.memory_array[self.memory_index].flip_state()
+            self.memory.flip_state()
 
         elif self.round == 3 and self.bsm_res[1] != -1:
             # entanglement succeeded
@@ -128,12 +128,12 @@ class EntanglementGenerationA(Protocol):
             cc_delay = int(self.own.cchannels[src].delay)
             total_quantum_delay = max(self.qc_delay, another_delay)
 
-            min_time = self.timeline.now() + total_quantum_delay - self.qc_delay + cc_delay
-            emit_time = self.own.schedule_qubit(self.other, min_time) # used to send memory
+            min_time = self.own.timeline.now() + total_quantum_delay - self.qc_delay + cc_delay
+            emit_time = self.own.schedule_qubit(self.middle, min_time) # used to send memory
             self.expected_time = emit_time + self.qc_delay
 
             # schedule emit
-            process = Process(self.memory, "excite", self.middle)
+            process = Process(self.memory, "excite", [self.middle])
             event = Event(emit_time, process)
             self.own.timeline.schedule(event)
 
@@ -157,7 +157,7 @@ class EntanglementGenerationA(Protocol):
             self.expected_time = msg.emit_time + self.qc_delay
 
             # schedule emit
-            process = Process(self.memory, "excite", self.middle)
+            process = Process(self.memory, "excite", [self.middle])
             event = Event(msg.emit_time, process)
             self.own.timeline.schedule(event)
 
@@ -211,6 +211,9 @@ class EntanglementGenerationB(Protocol):
         self.others = kwargs.get("others") # end nodes
         self.other_protocols = kwargs.get("other_protocols") # other EG protocols (must be same order as others)
 
+    def init(self):
+        pass
+
     def pop(self, info_type, **kwargs):
         assert info_type == "BSM_res"
 
@@ -221,5 +224,8 @@ class EntanglementGenerationB(Protocol):
         for i, node in enumerate(self.others):
             message = EntanglementGenerationMessage("MEAS_RES", self.others[i], res=res, time=time, resolution=resolution)
             self.own.send_message(node, message)
+
+    def received_message(self, src: str, msg: EntanglementGenerationMessage):
+        raise Exception("EntanglementGenerationB protocol '{}' should not receive message".format(self.name))
 
 

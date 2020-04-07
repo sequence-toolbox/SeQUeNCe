@@ -93,7 +93,7 @@ class MiddleNode(Node):
     def __init__(self, name: str, timeline: "Timeline", **kwargs) -> None:
         Node.__init__(self, name, timeline, **kwargs)
         self.bsm = SingleAtomBSM("%s_bsm" % name, timeline)
-        self.eg = EntanglementGeneration(self)
+        self.eg = EntanglementGenerationB(self, "{}_eg".format(name))
         self.bsm.upper_protocols.append(self.eg)
 
     def receive_message(self, src: str, msg: "Message") -> None:
