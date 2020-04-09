@@ -39,9 +39,14 @@ class Node(Entity):
 
     def receive_message(self, src: str, msg: "Message") -> None:
         # signal to protocol that we've received a message
-        for protocol in self.protocols:
-            if protocol.name == msg.receiver and protocol.received_message(src, msg):
-                return
+        if msg.receiver is not None:
+            for protocol in self.protocols:
+                if protocol.name == msg.receiver and protocol.received_message(src, msg):
+                    return
+        else:
+            matching = [p for p in self.protocols if type(p) == msg.protocol_type]
+            for p in matching:
+                p.received_message(src, msg)
 
     def schedule_qubit(self, dst: str, min_time: int) -> int:
         return self.qchannels[dst].schedule_transmit(min_time)

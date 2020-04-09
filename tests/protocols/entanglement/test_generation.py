@@ -37,30 +37,14 @@ def test_generation_message():
     assert msg.qc_delay == 1
 
 
-def test_generation_init_func():
-    tl = Timeline()
-    node = Node("e1", tl)
-    node.memory_array = MemoryArray("", tl)
-    eg = EntanglementGenerationA(node, "EG", middle="m1", other="e2", other_protocol="e1")
-
-    eg.init()
-
-    assert type(eg.memory) == AtomMemory
-
-
 def test_generation_receive_message():
     tl = Timeline()
     node = Node("e1", tl)
     node.memory_array = MemoryArray("", tl)
     node.assign_cchannel(ClassicalChannel("", tl, 0, 0, delay=1), "m1")
 
-    eg = EntanglementGenerationA(node, "EG", middle="m1", other="e2", other_protocol="e1")
+    eg = EntanglementGenerationA(node, "EG", middle="m1", other="e2", other_protocol="e1", memory=node.memory_array[0])
     eg.qc_delay = 1
-    eg.init()
-
-    # unknown node
-    msg = EntanglementGenerationMessage("NEGOTIATE_ACK", "EG", emit_time=1)
-    assert eg.received_message("e3", msg) is False
 
     # negotiate message
     msg = EntanglementGenerationMessage("NEGOTIATE_ACK", "EG", emit_time=1)
@@ -133,24 +117,23 @@ def test_generation_run():
 
     tl.init()
 
+    protocols_e0 = []
+    protocols_e1 = []
+
     for i in range(NUM_TESTS):
-        eg_e0 = EntanglementGenerationA(e0, "eg_e0", middle="m0", other="e1", other_protocol="eg_e1", memory_index=i, another_index=i)
-        eg_e0.primary = True
-        eg_e0.debug = True
-        eg_e1 = EntanglementGenerationA(e1, "eg_e1", middle="m0", other="e0", other_protocol="eg_e0", memory_index=i, another_index=i)
+        name0 = "eg_e0[{}]".format(i)
+        name1 = "eg_e1[{}]".format(i)
+        protocols_e0.append(EntanglementGenerationA(e0, name0, middle="m0", other="e1", other_protocol=name1, memory=e0.memory_array[i], another_index=i))
+        protocols_e0[i].primary = True
+        protocols_e0[i].debug = True
+        protocols_e1.append(EntanglementGenerationA(e1, name1, middle="m0", other="e0", other_protocol=name0, memory=e1.memory_array[i], another_index=i))
+        protocols_e1[i].debug = True
 
-        process = Process(eg_e0, "init", [])
+        process = Process(protocols_e0[i], "start", [])
         event = Event(i * 1e12, process)
         tl.schedule(event)
-        process = Process(eg_e1, "init", [])
+        process = Process(protocols_e1[i], "start", [])
         event = Event(i * 1e12, process)
-        tl.schedule(event)
-
-        process = Process(eg_e0, "start", [])
-        event = Event(i * 1e12 + 1, process)
-        tl.schedule(event)
-        process = Process(eg_e1, "start", [])
-        event = Event(i * 1e12 + 1, process)
         tl.schedule(event)
 
     tl.run()
@@ -158,4 +141,7 @@ def test_generation_run():
     for i in range(NUM_TESTS):
         print(e0.resource_manager.log[i][1])
 
+    # TODO: add assertion that we get about 1/2 of entanglement attempts successfull
+
+    assert False
 
