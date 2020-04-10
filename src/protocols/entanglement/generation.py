@@ -92,8 +92,8 @@ class EntanglementGenerationA(Protocol):
             # entanglement succeeded
             if self.debug:
                 print("\tsuccessful entanglement of memory {} on node {}".format(self.memory, self.own.name))
-            self.memory.entangled_memory["name"] = self.other
-            self.memory.entangled_memory["id"] = self.another_index
+            self.memory.entangled_memory["node_id"] = self.other
+            self.memory.entangled_memory["memo_id"] = self.another_index
             self.memory.fidelity = self.fidelity
             # TODO: notify of +/- state
             self.own.resource_manager.update(self.memory, "ENTANGLE")
@@ -102,7 +102,7 @@ class EntanglementGenerationA(Protocol):
             # entanglement failed
             if self.debug:
                 print("\tfailed entanglement of memory {} on node {}".format(self.memory, self.own.name))
-
+            self.memory.fidelity = 0
             self.own.resource_manager.update(self.memory, "EMPTY")
             return False
 
