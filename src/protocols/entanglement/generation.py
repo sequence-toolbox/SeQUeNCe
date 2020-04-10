@@ -151,6 +151,9 @@ class EntanglementGenerationA(Protocol):
             # configure params
             self.expected_time = msg.emit_time + self.qc_delay
 
+            if msg.emit_time < self.own.timeline.now():
+                msg.emit_time = self.own.timeline.now()
+
             # schedule emit
             process = Process(self.memory, "excite", [self.middle])
             event = Event(msg.emit_time, process)

@@ -82,8 +82,8 @@ def test_generation_pop():
 
 
 def test_generation_run():
-    numpy.random.seed(2)
-    NUM_TESTS = 1 
+    numpy.random.seed(0)
+    NUM_TESTS = 200
 
     tl = Timeline()
 
@@ -125,9 +125,7 @@ def test_generation_run():
         name1 = "eg_e1[{}]".format(i)
         protocols_e0.append(EntanglementGenerationA(e0, name0, middle="m0", other="e1", other_protocol=name1, memory=e0.memory_array[i], another_index=i))
         protocols_e0[i].primary = True
-        protocols_e0[i].debug = True
         protocols_e1.append(EntanglementGenerationA(e1, name1, middle="m0", other="e0", other_protocol=name0, memory=e1.memory_array[i], another_index=i))
-        protocols_e1[i].debug = True
 
         process = Process(protocols_e0[i], "start", [])
         event = Event(i * 1e12, process)
@@ -138,10 +136,12 @@ def test_generation_run():
 
     tl.run()
 
+    empty_count = 0
     for i in range(NUM_TESTS):
-        print(e0.resource_manager.log[i][1])
+        if e0.resource_manager.log[i][1] == "EMPTY":
+            empty_count += 1
 
-    # TODO: add assertion that we get about 1/2 of entanglement attempts successfull
+    ratio = empty_count / NUM_TESTS
+    assert abs(ratio - 0.5) < 0.1
 
-    assert False
 

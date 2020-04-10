@@ -48,15 +48,11 @@ class QuantumChannel(OpticalChannel):
 
         # remove lowest time bin
         if len(self.send_bins) > 0:
-            # TODO: make sure we have matching time / clear least
             time = -1
             while time < self.timeline.now():
                 time_bin = hq.heappop(self.send_bins)
                 time = int((time_bin * 1e12) / self.frequency)
             assert time == self.timeline.now(), "qc {} transmit method called at invalid time".format(self.name)
-
-        else:
-            warnings.warn("send_bins empty, this should only appear in unit test files")
 
         # check if photon kept
         if numpy.random.random_sample() > self.loss:

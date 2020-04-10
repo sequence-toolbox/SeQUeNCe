@@ -28,7 +28,7 @@ class Timeline:
         while len(self.events)>0:
             event = self.events.pop()
             if event.time > self.stop_time: break
-            assert self.time <= event.time
+            assert self.time <= event.time, "invalid event time for process scheduled on " + str(event.process.owner)
             self.time = event.time
             # if not event.process.activation in log:
             #     log[event.process.activation] = 0
