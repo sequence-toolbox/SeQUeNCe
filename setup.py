@@ -8,7 +8,8 @@ setup(
     description="Simulator of Quantum Network Communication: SEQUENCE-Python is a prototype version of official SEQUENCE release. ",
     # packages = find_packages('src'),
     packages=['sequence', 'sequence.kernel', 'sequence.components', 'sequence.protocols', 'sequence.protocols.control',
-              'sequence.protocols.entanglement', 'sequence.protocols.qkd', 'sequence.topology', 'sequence.utils'],
+              'sequence.protocols.entanglement', 'sequence.protocols.qkd', 'sequence.protocols.management',
+              'sequence.topology', 'sequence.utils'],
     package_dir={'sequence': 'src'},
     install_requires=[
         'setuptools',
