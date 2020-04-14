@@ -16,6 +16,7 @@ class MemoryManager():
         info.remote_node = memory.entangled_memory["node_id"]
         info.remote_memo = memory.entangled_memory["memo_id"]
         info.fidelity = memory.fidelity
+        info.expire = memory.coherence_time * 1e12
 
     def __len__(self):
         return len(self.memory_map)
@@ -25,11 +26,17 @@ class MemoryManager():
 
 
 class MemoryInfo():
+    """
+    Allowed states:
+    RAW       : Memory is unprocessed
+    OCCUPIED  : Memory is occupied by some protocol
+    ENTANGLED : Memory has been successfully entangled
+    """
     def __init__(self):
         self.state = "RAW"
         self.remote_node = None
         self.remote_memo = None
-        self.fidelity = None
-        self.expire = None
+        self.fidelity = 0
+        self.expire_time = -1
 
 

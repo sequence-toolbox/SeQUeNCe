@@ -90,7 +90,7 @@ class MemoryArray(Entity):
 class AtomMemory(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
-        self.fidelity = kwargs.get("fidelity", 1)
+        self.fidelity = kwargs.get("fidelity", 0)
         self.frequency = kwargs.get("frequency", 1)
         self.efficiency = kwargs.get("efficiency", 1)
         self.coherence_time = kwargs.get("coherence_time", -1) # average coherence time in seconds
@@ -102,6 +102,9 @@ class AtomMemory(Entity):
 
         # keep track of entanglement
         self.entangled_memory = {'node_id': None, 'memo_id': None}
+
+        # keep track of current memory write
+        self.exicte_id = 0
 
         # keep track of previous BSM result (for entanglement generation)
         # -1 = no result, 0/1 give detector number
@@ -119,9 +122,10 @@ class AtomMemory(Entity):
         if state == 0:
             photon.is_null = True
         elif self.coherence_time > 0:
+            self.excite_id += 1
             # set expiration
             decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
-            process = Process(self, "expire", [])
+            process = Process(self, "expire", [self.excite_id])
             event = Event(decay_time, process)
             self.timeline.schedule(event)
 
@@ -132,11 +136,12 @@ class AtomMemory(Entity):
             else:
                 self.owner.send_qubit(dst, photon)
 
-    def expire(self):
-        # TODO: change state?
-        #   curently just send to upper protocols and handle changes there
-        # pop expiration message
-        self._pop(memory=self)
+    def expire(self, excite_id):
+        if self.excite_id == excite_id:
+            # TODO: change state?
+            #   curently just send to upper protocols and handle changes there
+            # pop expiration message
+            self._pop(memory=self)
 
     def flip_state(self):
         # flip coefficients of state
