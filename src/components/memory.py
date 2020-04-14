@@ -95,7 +95,6 @@ class AtomMemory(Entity):
         self.efficiency = kwargs.get("efficiency", 1)
         self.coherence_time = kwargs.get("coherence_time", -1) # average coherence time in seconds
         self.direct_receiver = kwargs.get("direct_receiver", None)
-        self.destination = kwargs.get("destination", "")
         self.qstate = QuantumState()
 
         self.photon_encoding = single_atom.copy()
@@ -112,29 +111,26 @@ class AtomMemory(Entity):
         pass
 
     def excite(self, dst=""):
-        state = self.qstate.measure(ensemble["bases"][0])
-        # send photon in certain state to direct receiver
+        state = self.qstate.measure(single_atom["bases"][0])
+        # create photon and check if null
         photon = Photon("", wavelength=(1 / self.frequency), location=self,
                         encoding_type=self.photon_encoding)
+
         if state == 0:
             photon.is_null = True
+        elif self.coherence_time > 0:
+            # set expiration
+            decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
+            process = Process(self, "expire", [])
+            event = Event(decay_time, process)
+            self.timeline.schedule(event)
 
+        # send to direct receiver or node
+        if (state == 0) or (numpy.random.random_sample() < self.efficiency):
             if self.direct_receiver:
                 self.direct_receiver.get(photon)
             else:
                 self.owner.send_qubit(dst, photon)
-        else:
-            if numpy.random.random_sample() < self.efficiency:
-                if self.direct_receiver:
-                    self.direct_receiver.get(photon)
-                else:
-                    self.owner.send_qubit(dst, photon)
-            if self.coherence_time > 0:
-                # set expiration
-                decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
-                process = Process(self, "expire", [])
-                event = Event(decay_time, process)
-                self.timeline.schedule(event)
 
     def expire(self):
         # TODO: change state?
