@@ -11,7 +11,6 @@ def test_Rule_do():
     rule = Rule(1, fake_action, None)
     assert rule.priority == 1 and len(rule.protocols) == 0
     rule.do("memories")
-    print(rule.protocols)
     assert rule.protocols[0] == "fake_protocol with args=memories"
 
 

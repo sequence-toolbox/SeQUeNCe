@@ -1,5 +1,5 @@
-__all__ = ["ruleset"]
+__all__ = ["ruleset", "manager"]
 
 
 def __dir__():
-    return ('ruleset')
+    return ('ruleset', 'manager')
