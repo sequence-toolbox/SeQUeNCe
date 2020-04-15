@@ -17,7 +17,9 @@ def test_BB84():
     # dummy parent class to test BB84 functionality
     class Parent(Protocol):
         def __init__(self, own: "Node", keysize: int, role: int):
-            Protocol.__init__(self, own)
+            Protocol.__init__(self, own, "")
+            self.upper_protocols = []
+            self.lower_protocols = []
             self.keysize = keysize
             self.role = role
             self.key = 0
@@ -38,7 +40,7 @@ def test_BB84():
 
     print("Polarization:\n")
 
-    tl = Timeline(1e12)  # stop time is 100 ms
+    tl = Timeline(1e12)  # stop time is 1 s
 
     alice = QKDNode("alice", tl)
     bob = QKDNode("bob", tl)

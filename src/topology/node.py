@@ -152,7 +152,7 @@ class QKDNode(Node):
         self.lightsource.owner = self
         self.qsdetector = QSDetectorPolarization(name + ".qsdetector", timeline)
         self.qsdetector.owner = self
-        self.sifting_protocol = BB84(self)
+        self.sifting_protocol = BB84(self, name + ".BB84")
         self.protocols.append(self.sifting_protocol)
         self.qsdetector.protocols.append(self.sifting_protocol)
 

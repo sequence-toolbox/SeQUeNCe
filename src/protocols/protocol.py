@@ -20,3 +20,26 @@ class Protocol(ABC):
         pass
 
 
+class StackProtocol(Protocol):
+    def __init__(self, own: "Node", name: str):
+        super().__init__(own, name)
+        self.upper_protocols = []
+        self.lower_protocols = []
+
+    @abstractmethod
+    def push(self, **kwargs):
+        pass
+
+    @abstractmethod
+    def pop(self, **kwargs):
+        pass
+
+    def _push(self, **kwargs):
+        for protocol in self.lower_protocols:
+            protocol.push(**kwargs)
+
+    def _pop(self, **kwargs):
+        for protocol in self.upper_protocols:
+            protocol.pop(**kwargs)
+
+

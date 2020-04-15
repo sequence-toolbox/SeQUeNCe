@@ -3,7 +3,7 @@ import math
 import numpy
 
 from ..message import Message
-from ..protocol import Protocol
+from ..protocol import *
 from ...kernel.event import Event
 from ...kernel.process import Process
 
@@ -16,9 +16,9 @@ def pair_bb84_protocols(sender: "BB84", receiver: "BB84") -> None:
 
 
 class BB84Message(Message):
-    def __init__(self, msg_type: str, **kwargs):
-        Message.__init__(self, msg_type)
-        self.owner_type = type(BB84(None))
+    def __init__(self, msg_type: str, receiver: str, **kwargs):
+        Message.__init__(self, msg_type, receiver)
+        self.owner_type = BB84
         if self.msg_type == "begin_photon_pulse":
             self.frequency = kwargs["frequency"]
             self.light_time = kwargs["light_time"]
@@ -34,13 +34,13 @@ class BB84Message(Message):
             raise Exception("BB84 generated invalid message type {}".format(msg_type))
 
 
-class BB84(Protocol):
-    def __init__(self, own: "QKDNode", **kwargs):
+class BB84(StackProtocol):
+    def __init__(self, own: "QKDNode", name: str, **kwargs):
         if own == None:
             return
-        Protocol.__init__(self, own)
+        super().__init__(own, name)
         self.role = kwargs.get("role", -1)
-
+        
         self.working = False
         self.ready = True  # (for Alice) not currently processing a generate_key request
         self.light_time = 0  # time to use laser (measured in s)
@@ -108,7 +108,8 @@ class BB84(Protocol):
 
             # send message that photon pulse is beginning, then send bits
             self.start_time = int(self.own.timeline.now()) + round(self.own.cchannels[self.another.own.name].delay)
-            message = BB84Message("begin_photon_pulse", frequency=self.qubit_frequency, light_time=self.light_time,
+            message = BB84Message("begin_photon_pulse", self.another.name, 
+                                  frequency=self.qubit_frequency, light_time=self.light_time,
                                   start_time=self.start_time, wavelength=self.own.lightsource.wavelength)
             self.own.send_message(self.another.own.name, message)
 
@@ -182,7 +183,7 @@ class BB84(Protocol):
                 self.own.timeline.schedule(event)
 
             # send message that we got photons
-            message = BB84Message("received_qubits")
+            message = BB84Message("received_qubits", self.another.name)
             self.own.send_message(self.another.own.name, message)
 
     def received_message(self, src: str, msg: "Message") -> None:
@@ -208,7 +209,7 @@ class BB84(Protocol):
 
             elif msg.msg_type == "received_qubits":  # (Current node is Alice): can send basis
                 bases = self.basis_lists.pop(0)
-                message = BB84Message("basis_list", bases=bases)
+                message = BB84Message("basis_list", self.another.name, bases=bases)
                 self.own.send_message(self.another.own.name, message)
 
             elif msg.msg_type == "basis_list":  # (Current node is Bob): compare bases
@@ -225,7 +226,7 @@ class BB84(Protocol):
                         self.key_bits.append(bits[i])
 
                 # send to Alice list of matching indices
-                message = BB84Message("matching_indices", indices=indices)
+                message = BB84Message("matching_indices", self.another.name, indices=indices)
                 self.own.send_message(self.another.own.name, message)
 
             elif msg.msg_type == "matching_indices":  # (Current node is Alice): create key from matching indices
