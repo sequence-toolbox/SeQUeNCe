@@ -13,7 +13,7 @@ class ResourceManager():
     def __init__(self):
         self.log = []
 
-    def update(self, memory, state):
+    def update(self, protocol, memory, state):
         self.log.append((memory, state))
 
 

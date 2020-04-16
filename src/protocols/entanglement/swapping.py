@@ -79,7 +79,7 @@ class EntanglementSwappingA(Protocol):
         self.update_resource_manager(self.right_memo, "EMPTY")
 
     def update_resource_manager(self, memory: "Memory", state: str) -> None:
-        self.own.resource_manager.update(memory, state)
+        self.own.resource_manager.update(self, memory, state)
 
     def success_probability(self) -> float:
         '''
@@ -130,7 +130,7 @@ class EntanglementSwappingB(Protocol):
             self.update_resource_manager(self.hold_memo, "EMPTY")
 
     def update_resource_manager(self, memory: "Memory", state: str) -> None:
-        self.own.resource_manager.update(memory, state)
+        self.own.resource_manager.update(self, memory, state)
 
     def push(self, **kwargs) -> None:
         pass

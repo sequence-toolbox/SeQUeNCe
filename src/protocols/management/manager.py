@@ -16,10 +16,19 @@ class ResourceManager():
         self.ruleset = Ruleset()
 
     def load(self, rule: "Rule") -> bool:
-        pass
+        return self.ruleset.load(rule)
 
-    def update(self, memory: "Memory", state) -> bool:
-        pass
+    def update(self, protocol, memory: "Memory", state) -> bool:
+        self.tracer.update(memory, state)
+        self.owner.protocols.remove(protocol)
+
+        # check if any rules have been met
+        for rule in self.ruleset:
+            if rule.is_valid:
+                rule.do
+                return True
+
+        return False
 
     def received_message(self, src: str, msg: "Message") -> None:
         pass

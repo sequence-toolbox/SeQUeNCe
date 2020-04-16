@@ -63,7 +63,7 @@ class BBPSSW(Protocol):
         self.update_resource_manager(self.meas_memo, "EMPTY")
 
     def update_resource_manager(self, memory: "Memory", state: str) -> None:
-        self.own.resource_manager.update(memory, state)
+        self.own.resource_manager.update(self, memory, state)
 
     def received_message(self, src: str, msg: List[str]) -> None:
         assert src == self.another.own.name
