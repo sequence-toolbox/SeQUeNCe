@@ -12,11 +12,15 @@ class ResourceManager():
     def __init__(self, owner: "Node"):
         self.name = "resource_manager"
         self.owner = owner
-        self.tracer = MemoryManager()
+        self.tracer = MemoryManager(owner.memory_array)
         self.ruleset = Ruleset()
 
     def load(self, rule: "Rule") -> bool:
-        return self.ruleset.load(rule)
+        if self.ruleset.load(rule):
+            if rule.is_valid:
+                rule.do(self.tracer.memory_array)
+            return True
+        return False
 
     def update(self, protocol, memory: "Memory", state) -> bool:
         self.tracer.update(memory, state)
@@ -25,10 +29,10 @@ class ResourceManager():
         # check if any rules have been met
         for rule in self.ruleset:
             if rule.is_valid:
-                rule.do
+                rule.do(self.tracer.memory_array)
                 return True
 
-        return False
+        return True
 
     def received_message(self, src: str, msg: "Message") -> None:
         pass
