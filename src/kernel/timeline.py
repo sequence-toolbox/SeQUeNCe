@@ -1,3 +1,8 @@
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .event import Event
+
 import math
 
 from .eventlist import EventList
@@ -12,20 +17,20 @@ class Timeline:
         self.stop_time = stop_time
         self.event_counter = 0
 
-    def now(self):
+    def now(self) -> int:
         return self.time
 
-    def schedule(self, event):
-        self.event_counter+=1
+    def schedule(self, event: "Event") -> None:
+        self.event_counter += 1
         return self.events.push(event)
 
-    def init(self):
+    def init(self) -> None:
         for entity in self.entities:
             entity.init()
 
-    def run(self):
+    def run(self) -> None:
         # log = {}
-        while len(self.events)>0:
+        while len(self.events) > 0:
             event = self.events.pop()
             if event.time > self.stop_time: break
             assert self.time <= event.time, "invalid event time for process scheduled on " + str(event.process.owner)
@@ -34,8 +39,11 @@ class Timeline:
             #     log[event.process.activation] = 0
             # log[event.process.activation]+=1
             event.process.run()
-        print('number of event',self.event_counter)
-        #print('log:',log)
+        print('number of event', self.event_counter)
+        # print('log:',log)
 
-    def stop(self):
+    def stop(self) -> None:
         self.stop_time = self.now()
+
+    def remove_event(self, event: "Event"):
+        self.events.remove(event)

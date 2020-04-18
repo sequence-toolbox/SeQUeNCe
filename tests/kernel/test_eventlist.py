@@ -51,3 +51,22 @@ def test_len():
     e1 = el.pop()
     assert len(el) == 0
     assert e == e1
+
+def test_remove():
+    el = EventList()
+    e1 = Event(0, None)
+    e2 = Event(1, None)
+    el.push(e1)
+    el.push(e2)
+    assert el.data[0] == e1
+    el.remove(e1)
+    assert el.data[0] == e2
+    el.pop()
+    assert len(el) == 0
+    e3 = Event(2, None)
+    e4 = Event(2, None)
+    el.push(e3)
+    el.push(e4)
+    el.remove(e3)
+    top_e = el.pop()
+    assert len(el) == 0 and id(top_e) == id(e4) != id(e3) and top_e == e3
