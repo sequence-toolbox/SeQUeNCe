@@ -1,10 +1,11 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, List
 
 if TYPE_CHECKING:
     from ...topology.node import Node
 
 from ..message import Message
-from .rule_manager import *
+from .rule_manager import RuleManager
+from .memory_manager import MemoryManager
 
 
 class ResourceManagerMessage(Message):
@@ -19,7 +20,7 @@ class ResourceManagerMessage(Message):
       - paired_protocol: protocol that is paired with ini_protocol
     """
 
-    def __init__(self, msg_type, receiver, **kwargs):
+    def __init__(self, msg_type: str, receiver: str, **kwargs):
         Message.__init__(self, msg_type, receiver)
         self.ini_protocol = kwargs["protocol"]
         if msg_type == "REQUEST":

@@ -1,7 +1,10 @@
-from sequence.components.memory import *
-from sequence.protocols.management.manager import ResourceManagerMessage
-from sequence.protocols.management.rule_manager import *
-from sequence.topology.node import *
+import math
+
+from sequence.components.memory import MemoryArray
+from sequence.kernel.timeline import Timeline
+from sequence.protocols.management.manager import ResourceManagerMessage, ResourceManager
+from sequence.protocols.management.rule_manager import Rule
+from sequence.topology.node import Node
 
 
 class FakeNode(Node):
