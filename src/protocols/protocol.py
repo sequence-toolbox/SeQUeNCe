@@ -19,6 +19,12 @@ class Protocol(ABC):
         '''
         pass
 
+    def set_others(self, other):
+        pass
+
+    def start(self):
+        pass
+
 
 class StackProtocol(Protocol):
     def __init__(self, own: "Node", name: str):

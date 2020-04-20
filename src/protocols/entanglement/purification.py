@@ -16,7 +16,7 @@ class BBPSSWMessage(Message):
         if self.msg_type == "PURIFICATION_RES":
             pass
         else:
-            raise Exception("BBPSSW protocol create unkown type of message: %s" % str(msg_type))
+            raise Exception("BBPSSW protocol create unknown type of message: %s" % str(msg_type))
 
 
 class BBPSSW(Protocol):
