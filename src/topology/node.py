@@ -14,6 +14,7 @@ from ..components.bsm import SingleAtomBSM
 from ..components.light_source import LightSource
 from ..components.detector import QSDetectorPolarization
 from ..protocols.qkd.BB84 import BB84
+from ..utils.encoding import *
 
 
 class Node(Entity):
@@ -146,12 +147,21 @@ class QKDNode(Node):
     |         Sifting         |  <= implemented by BB84
     """
 
-    def __init__(self, name: str, timeline: "timeline"):
+    def __init__(self, name: str, timeline: "timeline", encoding=polarization):
         Node.__init__(self, name, timeline)
-        self.lightsource = LightSource(name + ".lightsource", timeline)
+        self.encoding = encoding
+        self.lightsource = LightSource(name + ".lightsource", timeline, encoding_type=encoding)
         self.lightsource.owner = self
-        self.qsdetector = QSDetectorPolarization(name + ".qsdetector", timeline)
+
+        if encoding["name"] == "polarization":
+            self.qsdetector = QSDetectorPolarization(name + ".qsdetector", timeline)
+        elif encoding["name"] == "time_bin":
+            self.qsdetector = QSDetectorTimeBin(name + ".qsdetector", timeline)
+        else:
+            raise Exception("invalid encoding {} given for QKD node {}".format(encoding["name"], name))
         self.qsdetector.owner = self
+
+        # Create BB84 protocol
         self.sifting_protocol = BB84(self, name + ".BB84")
         self.protocols.append(self.sifting_protocol)
         self.qsdetector.protocols.append(self.sifting_protocol)
@@ -164,23 +174,33 @@ class QKDNode(Node):
         self.lightsource.__setattr__(arg_name, value)
 
     def get_bits(self, light_time, start_time, frequency):
-        bits = [-1] * int(round(light_time * frequency))  # -1 used for invalid bits
+        # compute received bits based on encoding scheme
+        encoding = self.encoding["name"]
 
-        detection_times = self.qsdetector.get_photon_times()
+        if encoding == "polarization":
+            bits = [-1] * int(round(light_time * frequency))  # -1 used for invalid bits
 
-        # determine indices from detection times and record bits
-        for time in detection_times[0]:  # detection times for |0> detector
-            index = round((time - start_time) * frequency * 1e-12)
-            if 0 <= index < len(bits):
-                bits[index] = 0
+            detection_times = self.qsdetector.get_photon_times()
 
-        for time in detection_times[1]:  # detection times for |1> detector
-            index = round((time - start_time) * frequency * 1e-12)
-            if 0 <= index < len(bits):
-                if bits[index] == 0:
-                    bits[index] = -1
-                else:
-                    bits[index] = 1
+            # determine indices from detection times and record bits
+            for time in detection_times[0]:  # detection times for |0> detector
+                index = round((time - start_time) * frequency * 1e-12)
+                if 0 <= index < len(bits):
+                    bits[index] = 0
+
+            for time in detection_times[1]:  # detection times for |1> detector
+                index = round((time - start_time) * frequency * 1e-12)
+                if 0 <= index < len(bits):
+                    if bits[index] == 0:
+                        bits[index] = -1
+                    else:
+                        bits[index] = 1
+
+        elif encoding == "time_bin":
+            raise NotImplementedError("time bin encoding not yet implemented for QKD node")
+
+        else:
+            raise Exception("QKD node {} has illegal encoding type {}".format(self.name, encoding))
 
         return bits
 
