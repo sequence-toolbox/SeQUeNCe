@@ -12,7 +12,7 @@ from ..kernel.event import Event
 from ..components.memory import MemoryArray
 from ..components.bsm import SingleAtomBSM
 from ..components.light_source import LightSource
-from ..components.detector import QSDetectorPolarization
+from ..components.detector import QSDetectorPolarization, QSDetectorTimeBin
 from ..protocols.qkd.BB84 import BB84
 from ..utils.encoding import *
 
@@ -176,10 +176,9 @@ class QKDNode(Node):
     def get_bits(self, light_time, start_time, frequency):
         # compute received bits based on encoding scheme
         encoding = self.encoding["name"]
+        bits = [-1] * int(round(light_time * frequency))  # -1 used for invalid bits
 
         if encoding == "polarization":
-            bits = [-1] * int(round(light_time * frequency))  # -1 used for invalid bits
-
             detection_times = self.qsdetector.get_photon_times()
 
             # determine indices from detection times and record bits
@@ -197,7 +196,41 @@ class QKDNode(Node):
                         bits[index] = 1
 
         elif encoding == "time_bin":
-            raise NotImplementedError("time bin encoding not yet implemented for QKD node")
+            detection_times = self.qsdetector.get_photon_times()
+            bin_separation = self.encoding["bin_separation"]
+        
+            # single detector (for early, late basis) times
+            for time in detection_times[0]:
+                index = int(round((time - start_time) * frequency * 1e-12))
+                if 0 <= index < len(bits):
+                    if abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                        bits[index] = 0
+                    elif abs(((index * 1e12 / frequency) + start_time) - (time - bin_separation)) < bin_separation / 2:
+                        bits[index] = 1
+        
+            # interferometer detector 0 times
+            for time in detection_times[1]:
+                time -= bin_separation
+                index = int(round((time - start_time) * frequency * 1e-12))
+                # check if index is in range and is in correct time bin
+                if 0 <= index < len(bits) and \
+                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                    if bits[index] == -1:
+                        bits[index] = 0
+                    else:
+                        bits[index] = -1
+
+            # interferometer detector 1 times
+            for time in detection_times[2]:
+                time -= bin_separation
+                index = int(round((time - start_time) * frequency * 1e-12))
+                # check if index is in range and is in correct time bin
+                if 0 <= index < len(bits) and \
+                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                    if bits[index] == -1:
+                        bits[index] = 1
+                    else:
+                        bits[index] = -1
 
         else:
             raise Exception("QKD node {} has illegal encoding type {}".format(self.name, encoding))
