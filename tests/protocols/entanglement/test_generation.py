@@ -1,7 +1,6 @@
-import numpy
-from sequence.components.memory import MemoryArray, AtomMemory
-from sequence.components.optical_channel import *
 from sequence.components.bsm import *
+from sequence.components.memory import MemoryArray
+from sequence.components.optical_channel import *
 from sequence.kernel.timeline import Timeline
 from sequence.protocols.entanglement.generation import *
 from sequence.topology.node import Node
@@ -43,7 +42,7 @@ def test_generation_receive_message():
     node.memory_array = MemoryArray("", tl)
     node.assign_cchannel(ClassicalChannel("", tl, 0, 0, delay=1), "m1")
 
-    eg = EntanglementGenerationA(node, "EG", middle="m1", other="e2", other_protocol="e1", memory=node.memory_array[0])
+    eg = EntanglementGenerationA(node, "EG", middle="m1", other="e2", memory=node.memory_array[0])
     eg.qc_delay = 1
 
     # negotiate message
@@ -70,7 +69,7 @@ def test_generation_pop():
 
     m0 = DumbNode()
 
-    middle = EntanglementGenerationB(m0, "middle", others=["e0","e1"], other_protocols=["eg0", "eg1"])
+    middle = EntanglementGenerationB(m0, "middle", others=["e0", "e1"])
 
     # BSM result
     middle.pop("BSM_res", res=0)
@@ -112,7 +111,7 @@ def test_generation_run():
     m0.bsm = make_bsm("m0.bsm", tl, encoding_type="single_atom", detectors=detectors)
 
     # add middle protocol
-    eg_m0 = EntanglementGenerationB(m0, "eg_m0", others=["e0", "e1"], other_protocols=["eg_e0", "eg_e1"])
+    eg_m0 = EntanglementGenerationB(m0, "eg_m0", others=["e0", "e1"])
     m0.bsm.upper_protocols.append(eg_m0)
 
     tl.init()
@@ -123,9 +122,13 @@ def test_generation_run():
     for i in range(NUM_TESTS):
         name0 = "eg_e0[{}]".format(i)
         name1 = "eg_e1[{}]".format(i)
-        protocols_e0.append(EntanglementGenerationA(e0, name0, middle="m0", other="e1", other_protocol=name1, memory=e0.memory_array[i], another_index=i))
+        protocol0 = EntanglementGenerationA(e0, name0, middle="m0", other="e1", memory=e0.memory_array[i])
+        protocols_e0.append(protocol0)
         protocols_e0[i].primary = True
-        protocols_e1.append(EntanglementGenerationA(e1, name1, middle="m0", other="e0", other_protocol=name0, memory=e1.memory_array[i], another_index=i))
+        protocol1 = EntanglementGenerationA(e1, name1, middle="m0", other="e0", memory=e1.memory_array[i])
+        protocols_e1.append(protocol1)
+        protocol0.set_others(protocol1)
+        protocol1.set_others(protocol0)
 
         process = Process(protocols_e0[i], "start", [])
         event = Event(i * 1e12, process)
