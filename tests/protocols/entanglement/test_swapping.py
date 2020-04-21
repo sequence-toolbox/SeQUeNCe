@@ -70,8 +70,11 @@ def test_EntanglementSwapping():
         memo4.entangled_memory["memo_id"] = memo3.name
 
         es1 = EntanglementSwappingB(a1, "a1.ESb%d" % i, memo1)
+        a1.protocols.append(es1)
         es2 = EntanglementSwappingA(a2, "a2.ESa%d" % i, memo2, memo3, success_prob=0.5)
+        a2.protocols.append(es2)
         es3 = EntanglementSwappingB(a3, "a3.ESb%d" % i, memo4)
+        a3.protocols.append(es3)
 
         es1.set_another(es2)
         es2.set_others(es1, es3)

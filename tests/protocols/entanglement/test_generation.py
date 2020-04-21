@@ -123,9 +123,11 @@ def test_generation_run():
         name0 = "eg_e0[{}]".format(i)
         name1 = "eg_e1[{}]".format(i)
         protocol0 = EntanglementGenerationA(e0, name0, middle="m0", other="e1", memory=e0.memory_array[i])
+        e0.protocols.append(protocol0)
         protocols_e0.append(protocol0)
         protocols_e0[i].primary = True
         protocol1 = EntanglementGenerationA(e1, name1, middle="m0", other="e0", memory=e1.memory_array[i])
+        e1.protocols.append(protocol1)
         protocols_e1.append(protocol1)
         protocol0.set_others(protocol1)
         protocol1.set_others(protocol0)
