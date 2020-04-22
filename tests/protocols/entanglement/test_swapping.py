@@ -86,8 +86,8 @@ def test_EntanglementSwapping():
         assert memo1.entangled_memory["node_id"] == memo4.entangled_memory["node_id"] == "a2"
         assert memo2.entangled_memory["node_id"] == memo3.entangled_memory["node_id"] == None
         assert memo2.entangled_memory["memo_id"] == memo3.entangled_memory["memo_id"] == None
-        assert a2.resource_manager.log[-2] == (memo2, "EMPTY")
-        assert a2.resource_manager.log[-1] == (memo3, "EMPTY")
+        assert a2.resource_manager.log[-2] == (memo2, "RAW")
+        assert a2.resource_manager.log[-1] == (memo3, "RAW")
 
         tl.run()
 
@@ -95,13 +95,13 @@ def test_EntanglementSwapping():
             counter1 += 1
             assert memo1.entangled_memory["node_id"] == "a3" and memo4.entangled_memory["node_id"] == "a1"
             assert memo1.fidelity == memo4.fidelity > 0
-            assert a1.resource_manager.log[-1] == (memo1, "ENTANGLE")
-            assert a3.resource_manager.log[-1] == (memo4, "ENTANGLE")
+            assert a1.resource_manager.log[-1] == (memo1, "ENTANGLED")
+            assert a3.resource_manager.log[-1] == (memo4, "ENTANGLED")
         else:
             counter2 += 1
             assert memo1.entangled_memory["node_id"] == memo4.entangled_memory["node_id"] == None
             assert memo1.fidelity == memo4.fidelity == 0
-            assert a1.resource_manager.log[-1] == (memo1, "EMPTY")
-            assert a3.resource_manager.log[-1] == (memo4, "EMPTY")
+            assert a1.resource_manager.log[-1] == (memo1, "RAW")
+            assert a3.resource_manager.log[-1] == (memo4, "RAW")
 
     assert abs((counter1 / counter2) - 1) - 1 < 0.1

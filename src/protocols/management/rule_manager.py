@@ -3,7 +3,7 @@ from typing import Callable, TYPE_CHECKING, List, Tuple
 if TYPE_CHECKING:
     from ...components.memory import Memory
     from ..protocol import Protocol
-    from .memory_manager import MemoryInfo
+    from .memory_manager import MemoryInfo, MemoryManager
     from .manager import ResourceManager
 
 
@@ -50,8 +50,8 @@ class RuleManager():
 
 class Rule():
     def __init__(self, priority: int,
-                 action: Callable[[List["Memory"]], Tuple["Protocol", "str", Callable[["Protocol"], None]]],
-                 condition: Callable[["MemoryInfo"], List["Memory"]]):
+                 action: Callable[[List["Memory"]], Tuple["Protocol", "str", Callable[["Protocol"], bool]]],
+                 condition: Callable[["MemoryInfo", "MemoryManager"], List["Memory"]]):
         self.priority = priority
         self.action = action
         self.condition = condition

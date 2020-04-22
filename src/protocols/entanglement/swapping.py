@@ -75,8 +75,8 @@ class EntanglementSwappingA(Protocol):
         self.left_memo.fidelity = self.right_memo.fidelity = 0
         self.left_memo.entangled_memory["node_id"] = self.right_memo.entangled_memory["node_id"] = None
         self.left_memo.entangled_memory["memo_id"] = self.right_memo.entangled_memory["memo_id"] = None
-        self.update_resource_manager(self.left_memo, "EMPTY")
-        self.update_resource_manager(self.right_memo, "EMPTY")
+        self.update_resource_manager(self.left_memo, "RAW")
+        self.update_resource_manager(self.right_memo, "RAW")
 
     def update_resource_manager(self, memory: "Memory", state: str) -> None:
         self.own.resource_manager.update(self, memory, state)
@@ -123,11 +123,11 @@ class EntanglementSwappingB(Protocol):
         if msg.fidelity > 0:
             self.hold_memo.entangled_memory["node_id"] = msg.remote_node
             self.hold_memo.entangled_memory["memo_id"] = msg.remote_memo
-            self.update_resource_manager(self.hold_memo, "ENTANGLE")
+            self.update_resource_manager(self.hold_memo, "ENTANGLED")
         else:
             self.hold_memo.entangled_memory["node_id"] = None
             self.hold_memo.entangled_memory["memo_id"] = None
-            self.update_resource_manager(self.hold_memo, "EMPTY")
+            self.update_resource_manager(self.hold_memo, "RAW")
 
     def update_resource_manager(self, memory: "Memory", state: str) -> None:
         self.own.resource_manager.update(self, memory, state)

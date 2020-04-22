@@ -1,4 +1,3 @@
-import math
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -96,10 +95,11 @@ class QuantumRepeater(Node):
 
 
 class MiddleNode(Node):
-    def __init__(self, name: str, timeline: "Timeline", **kwargs) -> None:
+    def __init__(self, name: str, timeline: "Timeline", other_nodes: [str], **kwargs) -> None:
+        from ..protocols.entanglement.generation import EntanglementGenerationB
         Node.__init__(self, name, timeline, **kwargs)
         self.bsm = SingleAtomBSM("%s_bsm" % name, timeline)
-        self.eg = EntanglementGenerationB(self, "{}_eg".format(name))
+        self.eg = EntanglementGenerationB(self, "{}_eg".format(name), other_nodes)
         self.bsm.upper_protocols.append(self.eg)
 
     def receive_message(self, src: str, msg: "Message") -> None:

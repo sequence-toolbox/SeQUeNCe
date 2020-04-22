@@ -38,9 +38,6 @@ class EntanglementGenerationMessage(Message):
 
 class EntanglementGenerationA(Protocol):
     def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory", fidelity=0.9):
-        if own is None:
-            return
-
         super().__init__(own, name)
         self.middle = middle
         self.other = other  # other node
@@ -68,6 +65,8 @@ class EntanglementGenerationA(Protocol):
 
     def set_others(self, other: "EntanglementGenerationA") -> None:
         assert self.other_protocol is None
+        if other.other_protocol is not None:
+            assert self == other.other_protocol
         self.other_protocol = other
         self.remote_memo_id = other.memory.name
 
@@ -107,14 +106,14 @@ class EntanglementGenerationA(Protocol):
             self.memory.entangled_memory["memo_id"] = self.remote_memo_id
             self.memory.fidelity = self.fidelity
             # TODO: notify of +/- state
-            self.own.resource_manager.update(self, self.memory, "ENTANGLE")
+            self.own.resource_manager.update(self, self.memory, "ENTANGLED")
 
         else:
             # entanglement failed
             if self.debug:
                 print("\tfailed entanglement of memory {} on node {}".format(self.memory, self.own.name))
             self.memory.fidelity = 0
-            self.own.resource_manager.update(self, self.memory, "EMPTY")
+            self.own.resource_manager.update(self, self.memory, "RAW")
             return False
 
         return True
@@ -213,7 +212,6 @@ class EntanglementGenerationA(Protocol):
                     self.bsm_res[i] = res
                 else:
                     self.bsm_res[i] = -1
-
 
         else:
             raise Exception("Invalid message {} received by EG on node {}".format(msg_type, self.own.name))

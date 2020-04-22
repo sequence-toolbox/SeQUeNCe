@@ -154,6 +154,7 @@ class AtomMemory(Entity):
     def reset(self):
         self.qstate.set_state_single([complex(1/math.sqrt(2)), complex(1/math.sqrt(2))])
         self.previous_bsm = -1
+        self.entangled_memory = {'node_id': None, 'memo_id': None}
 
 
 # atomic ensemble memory for DLCZ/entanglement swapping

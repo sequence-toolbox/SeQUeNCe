@@ -54,11 +54,13 @@ class MemoryInfo():
 
     def to_raw(self) -> None:
         self.state = "RAW"
+        self.memory.reset()
         self.remote_node = None
         self.remote_memo = None
         self.fidelity = 0
 
     def to_occupied(self) -> None:
+        assert self.state != "OCCUPIED"
         self.state = "OCCUPIED"
 
     def to_entangled(self) -> None:

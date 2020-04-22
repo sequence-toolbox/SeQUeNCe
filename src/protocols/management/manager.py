@@ -93,6 +93,7 @@ class ResourceManager():
                     self.owner.send_message(src, new_msg)
                     self.waiting_protocols.remove(protocol)
                     self.owner.protocols.append(protocol)
+                    protocol.own = self.owner
                     protocol.start()
                     return
 
@@ -106,6 +107,7 @@ class ResourceManager():
                 protocol.set_others(msg.paired_protocol)
                 self.pending_protocols.remove(protocol)
                 self.owner.protocols.append(protocol)
+                protocol.own = self.owner
                 protocol.start()
             else:
                 protocol.release()

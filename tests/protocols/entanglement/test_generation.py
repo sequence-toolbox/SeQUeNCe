@@ -143,7 +143,7 @@ def test_generation_run():
 
     empty_count = 0
     for i in range(NUM_TESTS):
-        if e0.resource_manager.log[i][1] == "EMPTY":
+        if e0.resource_manager.log[i][1] == "RAW":
             empty_count += 1
 
     ratio = empty_count / NUM_TESTS

@@ -37,7 +37,7 @@ class QuantumChannel(OpticalChannel):
         self.ends = []
         self.delay = 0
         self.loss = 1
-        self.frequency = kwargs.get("frequency", 1e12)  # frequency at which send qubits (measured in Hz)
+        self.frequency = kwargs.get("frequency", 8e7)  # frequency at which send qubits (measured in Hz)
         self.send_bins = []
 
     def init(self) -> None:

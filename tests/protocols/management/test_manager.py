@@ -1,5 +1,9 @@
 import math
 
+import numpy
+
+numpy.random.seed(0)
+
 from sequence.components.memory import MemoryArray
 from sequence.kernel.timeline import Timeline
 from sequence.protocols.management.manager import ResourceManagerMessage, ResourceManager
@@ -159,3 +163,94 @@ def test_received_message():
     assert protocol2 in node.protocols
     assert protocol2 not in resource_manager.pending_protocols
     assert protocol2.other_is_setted and protocol2.is_started and not protocol2.is_released
+
+
+def test_ResourceManager():
+    from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
+    from sequence.topology.node import MiddleNode
+    from sequence.protocols.entanglement.generation import EntanglementGenerationA
+
+    class TestNode(Node):
+        def __init__(self, name, tl):
+            Node.__init__(self, name, tl)
+            self.memory_array = MemoryArray(name + ".MemoryArray", tl, num_memories=50)
+            self.memory_array.owner = self
+            self.resource_manager = ResourceManager(self)
+
+        def receive_message(self, src: str, msg: "Message") -> None:
+            if self.timeline.now() == 40380015043:
+                print("***", self.name, msg.msg_type, msg.time)
+            if msg.receiver == "resource_manager":
+                self.resource_manager.received_message(src, msg)
+            else:
+                if msg.receiver is None:
+                    matching = [p for p in self.protocols if type(p) == msg.protocol_type]
+                    for p in matching:
+                        p.received_message(src, msg)
+                else:
+                    for protocol in self.protocols:
+                        if protocol.name == msg.receiver:
+                            protocol.received_message(src, msg)
+                            break
+
+    def eg_rule_condition(memory_info, manager):
+        if memory_info.state == "RAW":
+            return [memory_info.memory]
+        else:
+            return []
+
+    def eg_rule_action1(memories):
+        def eg_req_func(protocol):
+            return isinstance(protocol, EntanglementGenerationA)
+
+        memory = memories[0]
+        protocol = EntanglementGenerationA(None, "EGA." + memory.name, "mid_node", "node2", memory)
+        protocol.primary = True
+        return [protocol, "node2", eg_req_func]
+
+    def eg_rule_action2(memories):
+        memory = memories[0]
+        protocol = EntanglementGenerationA(None, "EGA." + memory.name, "mid_node", "node1", memory)
+        return [protocol, None, None]
+
+    tl = Timeline()
+
+    node1, node2 = TestNode("node1", tl), TestNode("node2", tl)
+    mid_node = MiddleNode("mid_node", tl, [node1.name, node2.name])
+    mid_node.bsm.detectors[0].efficiency = 1
+    mid_node.bsm.detectors[1].efficiency = 1
+
+    cc = ClassicalChannel("cc_n1_m", tl, 0, 1e3)
+    cc.set_ends(node1, mid_node)
+    cc = ClassicalChannel("cc_n1_n2", tl, 0, 1e3)
+    cc.set_ends(node1, node2)
+    cc = ClassicalChannel("cc_n2_m", tl, 0, 1e3)
+    cc.set_ends(node2, mid_node)
+
+    qc = QuantumChannel("qc_n1_m", tl, 0, 1e3, frequency=8e7)
+    qc.set_ends(node1, mid_node)
+    qc = QuantumChannel("qc_n2_m", tl, 0, 1e3, frequency=8e7)
+    qc.set_ends(node2, mid_node)
+
+    tl.init()
+    rule1 = Rule(10, eg_rule_action1, eg_rule_condition)
+    node1.resource_manager.load(rule1)
+    rule2 = Rule(10, eg_rule_action2, eg_rule_condition)
+    node2.resource_manager.load(rule2)
+
+    tl.run()
+
+    # for info in node1.resource_manager.memory_manager:
+    #     print(info.memory.name, info.state, info.remote_memo)
+    #
+    # for info in node2.resource_manager.memory_manager:
+    #     print(info.memory.name, info.state, info.remote_memo)
+
+    for info in node1.resource_manager.memory_manager:
+        assert info.state == "ENTANGLED"
+
+    for info in node1.resource_manager.memory_manager:
+        for info2 in node2.resource_manager.memory_manager:
+            if info.remote_memo == info2.memory.name:
+                assert info2.remote_memo == info.memory.name
+                break

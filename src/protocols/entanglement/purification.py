@@ -1,5 +1,4 @@
 from typing import List, TYPE_CHECKING
-
 if TYPE_CHECKING:
     from ...components.memory import Memory
     from ...topology.node import Node
@@ -60,7 +59,7 @@ class BBPSSW(Protocol):
         self.meas_memo.fidelity = 0
         self.meas_memo.entangled_memory["node_id"] = None
         self.meas_memo.entangled_memory["memo_id"] = None
-        self.update_resource_manager(self.meas_memo, "EMPTY")
+        self.update_resource_manager(self.meas_memo, "RAW")
 
     def update_resource_manager(self, memory: "Memory", state: str) -> None:
         self.own.resource_manager.update(self, memory, state)
@@ -68,9 +67,9 @@ class BBPSSW(Protocol):
     def received_message(self, src: str, msg: List[str]) -> None:
         assert src == self.another.own.name
         if self.is_success is True:
-            self.update_resource_manager(self.kept_memo, state="ENTANGLE")
+            self.update_resource_manager(self.kept_memo, state="ENTANGLED")
         else:
-            self.update_resource_manager(self.kept_memo, state="EMPTY")
+            self.update_resource_manager(self.kept_memo, state="RAW")
 
     @staticmethod
     def success_probability(F: float) -> float:

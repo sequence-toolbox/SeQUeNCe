@@ -73,8 +73,8 @@ def test_BBPSSW():
         ep2.start()
 
         assert ep1.is_success == ep2.is_success
-        assert a1.resource_manager.log[-1] == (meas_memo1, "EMPTY")
-        assert a2.resource_manager.log[-1] == (meas_memo2, "EMPTY")
+        assert a1.resource_manager.log[-1] == (meas_memo1, "RAW")
+        assert a2.resource_manager.log[-1] == (meas_memo2, "RAW")
         assert meas_memo1.fidelity == meas_memo2.fidelity == 0
 
         tl.run()
@@ -82,10 +82,10 @@ def test_BBPSSW():
         if ep1.is_success:
             assert kept_memo1.fidelity == kept_memo2.fidelity == BBPSSW.improved_fidelity(fidelity)
             assert kept_memo1.entangled_memory["node_id"] == "a2" and kept_memo2.entangled_memory["node_id"] == "a1"
-            assert a1.resource_manager.log[-1] == (kept_memo1, "ENTANGLE")
-            assert a2.resource_manager.log[-1] == (kept_memo2, "ENTANGLE")
+            assert a1.resource_manager.log[-1] == (kept_memo1, "ENTANGLED")
+            assert a2.resource_manager.log[-1] == (kept_memo2, "ENTANGLED")
         else:
             assert kept_memo1.fidelity == kept_memo2.fidelity == 0
             assert kept_memo1.entangled_memory["node_id"] == kept_memo2.entangled_memory["node_id"] == None
-            assert a1.resource_manager.log[-1] == (kept_memo1, "EMPTY")
-            assert a2.resource_manager.log[-1] == (kept_memo2, "EMPTY")
+            assert a1.resource_manager.log[-1] == (kept_memo1, "RAW")
+            assert a2.resource_manager.log[-1] == (kept_memo2, "RAW")
