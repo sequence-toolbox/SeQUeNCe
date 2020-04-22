@@ -27,7 +27,7 @@ class BBPSSW(Protocol):
         self.another = None
         self.is_success = None
 
-    def set_another(self, another: "BBPSSW") -> None:
+    def set_others(self, another: "BBPSSW") -> None:
         self.another = another
 
     def start(self) -> None:
@@ -86,9 +86,3 @@ class BBPSSW(Protocol):
         Formula comes from Dur and Briegel (2007) formula (18) page 14
         '''
         return (F ** 2 + ((1 - F) / 3) ** 2) / (F ** 2 + 2 * F * (1 - F) / 3 + 5 * ((1 - F) / 3) ** 2)
-
-    def push(self, **kwargs) -> None:
-        pass
-
-    def pop(self, **kwargs) -> None:
-        pass

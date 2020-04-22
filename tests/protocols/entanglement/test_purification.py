@@ -66,8 +66,8 @@ def test_BBPSSW():
         ep2 = BBPSSW(a2, "a2.ep2.%d" % i, kept_memo2, meas_memo2)
         a1.protocols.append(ep1)
         a2.protocols.append(ep2)
-        ep1.set_another(ep2)
-        ep2.set_another(ep1)
+        ep1.set_others(ep2)
+        ep2.set_others(ep1)
 
         ep1.start()
         ep2.start()

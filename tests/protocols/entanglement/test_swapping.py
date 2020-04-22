@@ -76,9 +76,10 @@ def test_EntanglementSwapping():
         es3 = EntanglementSwappingB(a3, "a3.ESb%d" % i, memo4)
         a3.protocols.append(es3)
 
-        es1.set_another(es2)
-        es2.set_others(es1, es3)
-        es3.set_another(es2)
+        es1.set_others(es2)
+        es3.set_others(es2)
+        es2.set_others(es1)
+        es2.set_others(es3)
 
         es2.start()
 

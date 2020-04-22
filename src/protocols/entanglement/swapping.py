@@ -45,13 +45,18 @@ class EntanglementSwappingA(Protocol):
         self.success_prob = success_prob
         self.degradation = degradation
         self.is_success = False
+        self.left_protocol = None
+        self.right_protocol = None
 
-    def set_others(self, left: "EntanglementSwappingB", right: "EntanglementSwappingB") -> None:
-        self.left_protocol = left
-        self.right_protocol = right
+    def set_others(self, other: "EntanglementSwappingB") -> None:
+        if other.own.name == self.left_memo.entangled_memory["node_id"]:
+            self.left_protocol = other
+        elif other.own.name == self.right_memo.entangled_memory["node_id"]:
+            self.right_protocol = other
+        else:
+            raise Exception("Cannot pair protocol %s with %s" % (self.name, other.name))
 
     def start(self) -> None:
-        assert self.left_protocol is not None, "another protocol is not setted; please use set_another function"
         assert self.left_memo.fidelity > 0 and self.right_memo.fidelity > 0
         assert self.left_memo.entangled_memory["node_id"] == self.left_protocol.own.name
         assert self.right_memo.entangled_memory["node_id"] == self.right_protocol.own.name
@@ -93,12 +98,6 @@ class EntanglementSwappingA(Protocol):
         '''
         return (f1 + f2) / 2 * self.degradation
 
-    def push(self, **kwargs) -> None:
-        pass
-
-    def pop(self, **kwargs) -> None:
-        pass
-
     def received_message(self, src: str, msg: "Message") -> None:
         assert False
 
@@ -113,8 +112,9 @@ class EntanglementSwappingB(Protocol):
     def __init__(self, own: "Node", name: str, hold_memo: "Memory"):
         Protocol.__init__(self, own, name)
         self.hold_memo = hold_memo
+        self.another = None
 
-    def set_another(self, another: "EntanglementSwappingA") -> None:
+    def set_others(self, another: "EntanglementSwappingA") -> None:
         self.another = another
 
     def received_message(self, src: str, msg: "EntanglementSwappingMessage") -> None:
@@ -131,9 +131,3 @@ class EntanglementSwappingB(Protocol):
 
     def update_resource_manager(self, memory: "Memory", state: str) -> None:
         self.own.resource_manager.update(self, memory, state)
-
-    def push(self, **kwargs) -> None:
-        pass
-
-    def pop(self, **kwargs) -> None:
-        pass
