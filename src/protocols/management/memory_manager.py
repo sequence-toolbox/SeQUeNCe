@@ -51,6 +51,7 @@ class MemoryInfo():
         self.remote_memo = None
         self.fidelity = 0
         self.expire_event = None
+        self.entangle_time = -1
 
     def to_raw(self) -> None:
         self.state = "RAW"
@@ -68,3 +69,4 @@ class MemoryInfo():
         self.remote_node = self.memory.entangled_memory["node_id"]
         self.remote_memo = self.memory.entangled_memory["memo_id"]
         self.fidelity = self.memory.fidelity
+        self.entangle_time = self.memory.timeline.now()

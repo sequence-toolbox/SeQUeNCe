@@ -2,7 +2,7 @@ from sequence.components.optical_channel import *
 from sequence.components.optical_channel import QuantumChannel
 from sequence.kernel.timeline import Timeline
 from sequence.protocols.protocol import Protocol
-from sequence.topology.node import Node, QuantumRepeater
+from sequence.topology.node import Node
 
 
 class FakeProtocol(Protocol):
@@ -133,30 +133,3 @@ def test_Node_send_qubit():
 
     for ans, expect in zip(node2.log, expect_res):
         assert ans == expect
-
-
-def test_QuantumRepeater_init():
-    tl = Timeline()
-    qr = QuantumRepeater("qr", tl)
-
-
-def test_QuantumRepeater_schedule():
-    tl = Timeline()
-    qr = QuantumRepeater("qr", tl)
-    qc = QuantumChannel("qc", tl, 0, 1)
-    qr.assign_qchannel(qc, "alice")
-
-    # test initial
-    qr.schedule_send_qubit("alice", None, 0)
-    assert len(tl.events) == 1
-    assert tl.events.data[0].time == 0
-
-    # test another
-    qr.schedule_send_qubit("alice", None, 0)
-    assert len(tl.events) == 2
-    assert tl.events.data[1].time == int(1e12 / 8e7)
-
-    # test with min
-    qr.schedule_send_qubit("alice", None, 1e12)
-    assert len(tl.events) == 3
-    assert tl.events.data[2].time == 1e12

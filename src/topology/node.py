@@ -6,13 +6,12 @@ if TYPE_CHECKING:
     from ..components.optical_channel import QuantumChannel, ClassicalChannel
 
 from ..kernel.entity import Entity
-from ..kernel.process import Process
-from ..kernel.event import Event
 from ..components.memory import MemoryArray
 from ..components.bsm import SingleAtomBSM
 from ..components.light_source import LightSource
 from ..components.detector import QSDetectorPolarization, QSDetectorTimeBin
 from ..protocols.qkd.BB84 import BB84
+from ..protocols.management.manager import ResourceManager
 from ..utils.encoding import *
 
 
@@ -58,42 +57,6 @@ class Node(Entity):
         pass
 
 
-class QuantumRepeater(Node):
-    def __init__(self, name: str, timeline: "Timeline", **kwargs) -> None:
-        Node.__init__(self, name, timeline, **kwargs)
-        raise NotImplementedError("Need to rewrite QuantumRepeater for new entanglement generation")
-        self.memory_array = kwargs.get("memory_array", MemoryArray("%s_memory" % name, timeline))
-        self.memory_array.owner = self
-        self.eg = None
-        self.eg.middles = []
-        self.memory_array.upper_protocols.append(self.eg)
-
-        # hardware management for entanglement
-        self.next_send_time = 0
-
-    def receive_message(self, src: str, msg: "Message") -> None:
-        # signal to protocol that we've received a message
-        for protocol in self.protocols:
-            if protocol.name == msg.receiver and protocol.received_message(src, msg):
-                return
-
-        # if we reach here, we didn't successfully receive the message in any protocol
-        print(src, msg)
-        raise Exception("Unkown protocol")
-
-    def eg_add_middle(self, middle):
-        self.eg.middles.append(middle.name)
-
-    def eg_add_others(self, other):
-        self.eg.others.append(other.name)
-
-    def load_events(self):
-        self.eg.is_start = True
-        process = Process(self.eg, "start", [])
-        event = Event(self.timeline.now(), process)
-        self.timeline.schedule(event)
-
-
 class MiddleNode(Node):
     def __init__(self, name: str, timeline: "Timeline", other_nodes: [str], **kwargs) -> None:
         from ..protocols.entanglement.generation import EntanglementGenerationB
@@ -120,18 +83,26 @@ class MiddleNode(Node):
         self.eg.others.append(other.name)
 
 
-# class QuantumRouter(Node):
-#     def __init__(self, name, timeline, **kwargs):
-#         Node.__init__(self, name, timeline, **kwargs)
-#         self.bsm = kwargs.get("bsm", BSM())
-#         self.memo_array = kwargs.get("memo_array", MemoryArray())
-#         self.control_protocol = [ResourceReservationProtocol(), RoutingProtocol()]
-#
-#     def receive_message(self, src: str, msg: Message):
-#         pass
-#
-#     def receive_qubit(self, src: str, qubit):
-#         pass
+class QuantumRouter(Node):
+    def __init__(self, name, tl, memo_size=50):
+        Node.__init__(self, name, tl)
+        self.memory_array = MemoryArray(name + ".MemoryArray", tl, num_memories=memo_size)
+        self.memory_array.owner = self
+        self.resource_manager = ResourceManager(self)
+
+    def receive_message(self, src: str, msg: "Message") -> None:
+        if msg.receiver == "resource_manager":
+            self.resource_manager.received_message(src, msg)
+        else:
+            if msg.receiver is None:
+                matching = [p for p in self.protocols if type(p) == msg.protocol_type]
+                for p in matching:
+                    p.received_message(src, msg)
+            else:
+                for protocol in self.protocols:
+                    if protocol.name == msg.receiver:
+                        protocol.received_message(src, msg)
+                        break
 
 
 class QKDNode(Node):
@@ -236,45 +207,6 @@ class QKDNode(Node):
             raise Exception("QKD node {} has illegal encoding type {}".format(self.name, encoding))
 
         return bits
-
-        # elif encoding_type["name"] == "time_bin":
-        #     detection_times = self.components[detector_name].get_photon_times()
-        #     bin_separation = encoding_type["bin_separation"]
-        #
-        #     # single detector (for early, late basis) times
-        #     for time in detection_times[0]:
-        #         index = int(round((time - start_time) * frequency * 1e-12))
-        #         if 0 <= index < len(bits):
-        #             if abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
-        #                 bits[index] = 0
-        #             elif abs(((index * 1e12 / frequency) + start_time) - (time - bin_separation)) < bin_separation / 2:
-        #                 bits[index] = 1
-        #
-        #     # interferometer detector 0 times
-        #     for time in detection_times[1]:
-        #         time -= bin_separation
-        #         index = int(round((time - start_time) * frequency * 1e-12))
-        #         # check if index is in range and is in correct time bin
-        #         if 0 <= index < len(bits) and \
-        #                 abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
-        #             if bits[index] == -1:
-        #                 bits[index] = 0
-        #             else:
-        #                 bits[index] = -1
-        #
-        #     # interferometer detector 1 times
-        #     for time in detection_times[2]:
-        #         time -= bin_separation
-        #         index = int(round((time - start_time) * frequency * 1e-12))
-        #         # check if index is in range and is in correct time bin
-        #         if 0 <= index < len(bits) and \
-        #                 abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
-        #             if bits[index] == -1:
-        #                 bits[index] = 1
-        #             else:
-        #                 bits[index] = -1
-        #
-        #     return bits
 
     def set_bases(self, basis_list, start_time, frequency, component):
         encoding_type = component.encoding_type

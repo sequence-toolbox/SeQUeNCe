@@ -6,9 +6,9 @@ class EntanglementProtocol(Protocol):
         Protocol.__init__(self, own, name)
 
     @staticmethod
-    def set_others(self, other):
+    def set_others(self, other: "EntanglementProtocol") -> None:
         pass
 
     @staticmethod
-    def start(self):
+    def start(self) -> None:
         pass

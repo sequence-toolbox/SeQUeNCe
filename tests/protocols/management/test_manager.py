@@ -178,8 +178,6 @@ def test_ResourceManager():
             self.resource_manager = ResourceManager(self)
 
         def receive_message(self, src: str, msg: "Message") -> None:
-            if self.timeline.now() == 40380015043:
-                print("***", self.name, msg.msg_type, msg.time)
             if msg.receiver == "resource_manager":
                 self.resource_manager.received_message(src, msg)
             else:
