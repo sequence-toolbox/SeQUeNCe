@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 from numpy.random import random
 
 from ..message import Message
-from ..protocol import Protocol
+from .entanglement_protocol import EntanglementProtocol
 from ...topology.node import Node
 
 
@@ -29,7 +29,7 @@ class EntanglementSwappingMessage(Message):
                                                            self.remote_memo)
 
 
-class EntanglementSwappingA(Protocol):
+class EntanglementSwappingA(EntanglementProtocol):
     """
     Entanglement swapping protocol is an asymmetric protocol. The EntanglementSwappingA initiate protocol and do
     swapping operation. The EntanglementSwappingB waits swapping results from EntanglementSwappingA. The swapping
@@ -39,7 +39,7 @@ class EntanglementSwappingA(Protocol):
     def __init__(self, own: "Node", name: str, left_memo: "Memory", right_memo: "Memory", success_prob=1,
                  degradation=0.95):
         assert left_memo != right_memo
-        Protocol.__init__(self, own, name)
+        EntanglementProtocol.__init__(self, own, name)
         self.left_memo = left_memo
         self.right_memo = right_memo
         self.success_prob = success_prob
@@ -102,7 +102,7 @@ class EntanglementSwappingA(Protocol):
         assert False
 
 
-class EntanglementSwappingB(Protocol):
+class EntanglementSwappingB(EntanglementProtocol):
     """
     Entanglement swapping protocol is an asymmetric protocol. The EntanglementSwappingA initiate protocol and do
     swapping operation. The EntanglementSwappingB waits swapping results from EntanglementSwappingA. The swapping
@@ -110,7 +110,7 @@ class EntanglementSwappingB(Protocol):
     """
 
     def __init__(self, own: "Node", name: str, hold_memo: "Memory"):
-        Protocol.__init__(self, own, name)
+        EntanglementProtocol.__init__(self, own, name)
         self.hold_memo = hold_memo
         self.another = None
 

@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 from numpy.random import random
 
 from ..message import Message
-from ..protocol import Protocol
+from .entanglement_protocol import EntanglementProtocol
 
 
 class BBPSSWMessage(Message):
@@ -18,10 +18,10 @@ class BBPSSWMessage(Message):
             raise Exception("BBPSSW protocol create unknown type of message: %s" % str(msg_type))
 
 
-class BBPSSW(Protocol):
+class BBPSSW(EntanglementProtocol):
     def __init__(self, own: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory"):
         assert kept_memo != meas_memo
-        Protocol.__init__(self, own, name)
+        EntanglementProtocol.__init__(self, own, name)
         self.kept_memo = kept_memo
         self.meas_memo = meas_memo
         self.another = None

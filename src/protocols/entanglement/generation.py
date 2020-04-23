@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from ...topology.node import Node
 
 from ..message import Message
-from ..protocol import Protocol
+from .entanglement_protocol import EntanglementProtocol
 from ...kernel.event import Event
 from ...kernel.process import Process
 
@@ -36,7 +36,7 @@ class EntanglementGenerationMessage(Message):
             raise Exception("EntanglementGeneration generated invalid message type {}".format(msg_type))
 
 
-class EntanglementGenerationA(Protocol):
+class EntanglementGenerationA(EntanglementProtocol):
     def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory", fidelity=0.9):
         super().__init__(own, name)
         self.middle = middle
@@ -222,7 +222,7 @@ class EntanglementGenerationA(Protocol):
         pass
 
 
-class EntanglementGenerationB(Protocol):
+class EntanglementGenerationB(EntanglementProtocol):
     def __init__(self, own: "Node", name: str, others: List[str]):
         super().__init__(own, name)
         assert len(others) == 2
