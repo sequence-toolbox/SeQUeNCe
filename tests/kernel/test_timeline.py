@@ -33,8 +33,8 @@ def test_run():
     random.seed(0)
     tl = Timeline()
     dummy = Dummy("dummy", tl)
-    times = random.random_integers(0, 20, 200)
-    priorities = random.random_integers(0, 20, 200)
+    times = random.randint(0, 20, 200)
+    priorities = random.randint(0, 20, 200)
 
     for t, p in zip(times, priorities):
         process = Process(dummy, "op", [])

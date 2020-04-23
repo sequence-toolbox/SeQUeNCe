@@ -17,7 +17,7 @@ random.seed(0)
 
 # dummy parent class to test BB84 functionality
 class Parent(Protocol):
-    def __init__(self, own: "Node", keysize: int, role: int):
+    def __init__(self, own: "Node", keysize: int, role: str):
         Protocol.__init__(self, own, "")
         self.upper_protocols = []
         self.lower_protocols = []

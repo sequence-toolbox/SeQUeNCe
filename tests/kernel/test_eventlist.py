@@ -13,7 +13,7 @@ def test_push():
 def test_pop():
     from numpy import random
     random.seed(0)
-    times = list(random.random_integers(0, 100, 10))
+    times = list(random.randint(0, 100, 10))
     el = EventList()
     for t in times:
         e = Event(t, None)
@@ -22,7 +22,7 @@ def test_pop():
     while el.isempty() is False:
         assert times.pop(0) == el.pop().time
 
-    priorities = list(random.random_integers(0, 100, 10))
+    priorities = list(random.randint(0, 100, 10))
     el = EventList()
     for p in priorities:
         e = Event(5, None, p)

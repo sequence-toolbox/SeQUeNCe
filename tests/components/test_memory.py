@@ -40,7 +40,7 @@ def test_MemoryArray_pop():
 
 
 def test_AtomMemory_excite():
-    NUM_TESTS = 100
+    NUM_TESTS = 1000
 
     tl = Timeline()
     rec = DumbReceiver()

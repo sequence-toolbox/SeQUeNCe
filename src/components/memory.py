@@ -103,7 +103,7 @@ class AtomMemory(Entity):
         # keep track of entanglement
         self.entangled_memory = {'node_id': None, 'memo_id': None}
 
-        # keep track of current memory write
+        # keep track of current memory write (ignore expiration of past states)
         self.exicte_id = 0
 
         # keep track of previous BSM result (for entanglement generation)
@@ -137,9 +137,11 @@ class AtomMemory(Entity):
                 self.owner.send_qubit(dst, photon)
 
     def expire(self, excite_id):
+        # check if valid expiration
         if self.excite_id == excite_id:
-            # TODO: change state?
-            #   curently just send to upper protocols and handle changes there
+            self.fidelity = 0
+            self.qstate.measure(single_atom["bases"][0]) # to unentangle
+            self.entangled_memory = {'node_id': None, 'memo_id': None}
             # pop expiration message
             self._pop(memory=self)
 
