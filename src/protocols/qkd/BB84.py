@@ -36,7 +36,7 @@ class BB84Message(Message):
 
 class BB84(StackProtocol):
     def __init__(self, own: "QKDNode", name: str, **kwargs):
-        if own == None:
+        if own == None: # used only for unit test purposes
             return
         super().__init__(own, name)
         self.role = kwargs.get("role", -1)
@@ -192,11 +192,6 @@ class BB84(StackProtocol):
                 self.qubit_frequency = msg.frequency
                 self.light_time = msg.light_time
 
-                # unused dispersion calculations
-                # wavelength = int(message[4])
-                # qchannel = self.node.components["qchannel"]
-                # self.photon_delay = self.quantum_delay +\
-                #                     int(round(qchannel.chromatic_dispersion * wavelength * qchannel.distance * 1e-3))
                 self.start_time = int(msg.start_time) + self.own.qchannels[src].delay
 
                 # generate and set basis list

@@ -63,7 +63,7 @@ def test_Detector_get():
     # time_resolution
     time_resolution = 233
     detector, parent, tl = create_detector(efficiency=1, count_rate=1e12, time_resolution=time_resolution)
-    times = random.random_integers(0, 1e12, 100)
+    times = random.randint(0, 1e12, 100)
     times.sort()
     for t in times:
         tl.time = t
