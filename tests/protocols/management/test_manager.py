@@ -197,16 +197,18 @@ def test_ResourceManager():
         else:
             return []
 
-    def eg_rule_action1(memories):
+    def eg_rule_action1(memories_info):
         def eg_req_func(protocol):
             return isinstance(protocol, EntanglementGenerationA)
 
+        memories = [info.memory for info in memories_info]
         memory = memories[0]
         protocol = EntanglementGenerationA(None, "EGA." + memory.name, "mid_node", "node2", memory)
         protocol.primary = True
         return [protocol, ["node2"], [eg_req_func]]
 
-    def eg_rule_action2(memories):
+    def eg_rule_action2(memories_info):
+        memories = [info.memory for info in memories_info]
         memory = memories[0]
         protocol = EntanglementGenerationA(None, "EGA." + memory.name, "mid_node", "node1", memory)
         return [protocol, [None], [None]]

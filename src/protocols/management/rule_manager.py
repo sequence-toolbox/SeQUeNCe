@@ -1,7 +1,6 @@
 from typing import Callable, TYPE_CHECKING, List, Tuple
 
 if TYPE_CHECKING:
-    from ...components.memory import Memory
     from ..protocol import Protocol
     from .memory_manager import MemoryInfo, MemoryManager
     from .manager import ResourceManager
@@ -50,7 +49,8 @@ class RuleManager():
 
 class Rule():
     def __init__(self, priority: int,
-                 action: Callable[[List["Memory"]], Tuple["Protocol", List["str"], List[Callable[["Protocol"], bool]]]],
+                 action: Callable[
+                     [List["MemoryInfo"]], Tuple["Protocol", List["str"], List[Callable[["Protocol"], bool]]]],
                  condition: Callable[["MemoryInfo", "MemoryManager"], List["MemoryInfo"]]):
         self.priority = priority
         self.action = action
@@ -62,8 +62,7 @@ class Rule():
         self.rule_manager = rule_manager
 
     def do(self, memories_info: List["MemoryInfo"]) -> None:
-        memories = [info.memory for info in memories_info]
-        protocol, req_dsts, req_condition_funcs = self.action(memories)
+        protocol, req_dsts, req_condition_funcs = self.action(memories_info)
         self.protocols.append(protocol)
         for dst, req_func in zip(req_dsts, req_condition_funcs):
             self.rule_manager.send_request(protocol, dst, req_func)
