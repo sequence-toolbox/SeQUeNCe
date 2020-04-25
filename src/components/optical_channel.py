@@ -62,7 +62,7 @@ class QuantumChannel(OpticalChannel):
             assert time == self.timeline.now(), "qc {} transmit method called at invalid time".format(self.name)
 
         # check if photon kept
-        if numpy.random.random_sample() > self.loss:
+        if (numpy.random.random_sample() > self.loss) or qubit.is_null:
             if source not in self.ends:
                 raise Exception("no endpoint", source)
 
