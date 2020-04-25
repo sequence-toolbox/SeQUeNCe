@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 class MemoryManager():
     def __init__(self, memory_array: "MemoryArray"):
         self.memory_array = memory_array
-        self.memory_map = [MemoryInfo(memory) for memory in self.memory_array]
+        self.memory_map = [MemoryInfo(memory, index) for index, memory in enumerate(self.memory_array)]
         self.resource_manager = None
 
     def set_resource_manager(self, resource_manager: "ResourceManager") -> None:
@@ -44,8 +44,9 @@ class MemoryInfo():
     ENTANGLED : Memory has been successfully entangled
     """
 
-    def __init__(self, memory: "AtomMemory", state="RAW"):
+    def __init__(self, memory: "AtomMemory", index: int, state="RAW"):
         self.memory = memory
+        self.index = index
         self.state = state
         self.remote_node = None
         self.remote_memo = None
@@ -59,6 +60,7 @@ class MemoryInfo():
         self.remote_node = None
         self.remote_memo = None
         self.fidelity = 0
+        self.entangle_time = -1
 
     def to_occupied(self) -> None:
         assert self.state != "OCCUPIED"

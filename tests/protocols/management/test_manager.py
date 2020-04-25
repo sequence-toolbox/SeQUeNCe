@@ -25,7 +25,7 @@ class FakeNode(Node):
 def test_load():
     def fake_condition(memo_info, manager):
         if memo_info.state == "RAW":
-            return [memo_info.memory]
+            return [memo_info]
         else:
             return []
 
@@ -50,7 +50,7 @@ def test_load():
 def test_update():
     def fake_condition(memo_info, manager):
         if memo_info.state == "ENTANGLED" and memo_info.fidelity > 0.8:
-            return [memo_info.memory]
+            return [memo_info]
         else:
             return []
 
@@ -193,7 +193,7 @@ def test_ResourceManager():
 
     def eg_rule_condition(memory_info, manager):
         if memory_info.state == "RAW":
-            return [memory_info.memory]
+            return [memory_info]
         else:
             return []
 

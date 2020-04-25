@@ -1,5 +1,6 @@
 from numpy import random
-from sequence.protocols.management.rule_manager import *
+from sequence.protocols.management.memory_manager import MemoryInfo
+from sequence.protocols.management.rule_manager import RuleManager, Rule
 
 random.seed(1)
 
@@ -13,8 +14,8 @@ def test_Rule_do():
         def send_request(self, protocol, req_dst, req_condition):
             self.log.append((protocol, req_dst, req_condition))
 
-    def fake_action(memories):
-        if memories == 0:
+    def fake_action(memories_info):
+        if len(memories_info) == 1:
             return "protocol1", "req_dst1", "req_condition1"
         else:
             return "protocol2", None, None
@@ -23,10 +24,12 @@ def test_Rule_do():
     rule = Rule(1, fake_action, None)
     rule.set_rule_manager(rule_manager)
     assert rule.priority == 1 and len(rule.protocols) == 0
-    rule.do(0)
+    memories_info = [MemoryInfo(None, 0)]
+    rule.do(memories_info)
     assert len(rule.protocols) == 1 and rule.protocols[0] == "protocol1"
     assert len(rule_manager.log) == 1 and rule_manager.log[0] == ("protocol1", "req_dst1", "req_condition1")
-    rule.do(1)
+    memories_info = [MemoryInfo(None, 0), MemoryInfo(None, 1)]
+    rule.do(memories_info)
     assert len(rule.protocols) == 2 and rule.protocols[1] == "protocol2"
     assert len(rule_manager.log) == 2 and rule_manager.log[1] == ("protocol2", None, None)
 

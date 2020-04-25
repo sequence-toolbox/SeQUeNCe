@@ -50,10 +50,11 @@ class ResourceManager():
         self.rule_manager.load(rule)
 
         for memory_info in self.memory_manager:
-            memories = rule.is_valid(memory_info)
-            if len(memories) > 0:
-                memory_info.to_occupied()
-                rule.do(memories)
+            memories_info = rule.is_valid(memory_info)
+            if len(memories_info) > 0:
+                rule.do(memories_info)
+                for info in memories_info:
+                    info.to_occupied()
 
         return True
 
@@ -64,10 +65,11 @@ class ResourceManager():
         # check if any rules have been met
         memo_info = self.memory_manager.get_info_by_memory(memory)
         for rule in self.rule_manager:
-            memories = rule.is_valid(memo_info)
-            if len(memories) > 0:
-                rule.do(memories)
-                memo_info.to_occupied()
+            memories_info = rule.is_valid(memo_info)
+            if len(memories_info) > 0:
+                rule.do(memories_info)
+                for info in memories_info:
+                    info.to_occupied()
                 break
         return True
 

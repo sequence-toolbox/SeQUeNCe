@@ -51,7 +51,7 @@ class RuleManager():
 class Rule():
     def __init__(self, priority: int,
                  action: Callable[[List["Memory"]], Tuple["Protocol", "str", Callable[["Protocol"], bool]]],
-                 condition: Callable[["MemoryInfo", "MemoryManager"], List["Memory"]]):
+                 condition: Callable[["MemoryInfo", "MemoryManager"], List["MemoryInfo"]]):
         self.priority = priority
         self.action = action
         self.condition = condition
@@ -61,11 +61,12 @@ class Rule():
     def set_rule_manager(self, rule_manager: "RuleManager") -> None:
         self.rule_manager = rule_manager
 
-    def do(self, memories: List["Memory"]) -> None:
+    def do(self, memories_info: List["MemoryInfo"]) -> None:
+        memories = [info.memory for info in memories_info]
         protocol, req_dst, req_condition_func = self.action(memories)
         self.protocols.append(protocol)
         self.rule_manager.send_request(protocol, req_dst, req_condition_func)
 
-    def is_valid(self, memory_info: "MemoryInfo") -> List["Memory"]:
+    def is_valid(self, memory_info: "MemoryInfo") -> List["MemoryInfo"]:
         manager = self.rule_manager.get_memory_manager()
         return self.condition(memory_info, manager)

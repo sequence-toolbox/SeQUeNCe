@@ -65,6 +65,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
     def set_others(self, other: "EntanglementGenerationA") -> None:
         assert self.other_protocol is None
+        assert self.fidelity == other.fidelity
         if other.other_protocol is not None:
             assert self == other.other_protocol
         self.other_protocol = other
@@ -119,6 +120,9 @@ class EntanglementGenerationA(EntanglementProtocol):
         return True
 
     def received_message(self, src: str, msg: EntanglementGenerationMessage) -> None:
+        if src not in [self.middle, self.other]:
+            return
+
         if self.debug:
             print("EG protocol {} \033[1;36;40mreceived_message\033[0m on node {}".format(self.name, self.own.name))
             print("\tsource:", src)
