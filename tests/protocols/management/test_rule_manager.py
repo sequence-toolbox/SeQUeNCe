@@ -16,9 +16,9 @@ def test_Rule_do():
 
     def fake_action(memories_info):
         if len(memories_info) == 1:
-            return "protocol1", "req_dst1", "req_condition1"
+            return "protocol1", ["req_dst1"], ["req_condition1"]
         else:
-            return "protocol2", None, None
+            return "protocol2", [None], [None]
 
     rule_manager = FakeRuleManager()
     rule = Rule(1, fake_action, None)

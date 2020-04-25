@@ -30,7 +30,7 @@ def test_load():
             return []
 
     def fake_action(memories):
-        return "protocol", None, None
+        return "protocol", [None], [None]
 
     tl = Timeline()
     node = FakeNode("node", tl)
@@ -55,7 +55,7 @@ def test_update():
             return []
 
     def fake_action(memories):
-        return "protocol", None, None
+        return "protocol", [None], [None]
 
     tl = Timeline()
     node = FakeNode("node", tl)
@@ -204,12 +204,12 @@ def test_ResourceManager():
         memory = memories[0]
         protocol = EntanglementGenerationA(None, "EGA." + memory.name, "mid_node", "node2", memory)
         protocol.primary = True
-        return [protocol, "node2", eg_req_func]
+        return [protocol, ["node2"], [eg_req_func]]
 
     def eg_rule_action2(memories):
         memory = memories[0]
         protocol = EntanglementGenerationA(None, "EGA." + memory.name, "mid_node", "node1", memory)
-        return [protocol, None, None]
+        return [protocol, [None], [None]]
 
     tl = Timeline()
 
