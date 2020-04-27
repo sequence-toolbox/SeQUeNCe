@@ -36,12 +36,10 @@ def test_construct_func():
     # implemented encoding schemes
     polar_bsm = make_bsm("bsm", tl, encoding_type="polarization", detectors=detectors4)
     time_bin_bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors2)
-    ensemble_bsm = make_bsm("bsm", tl, encoding_type="ensemble", detectors=detectors2)
     atom_bsm = make_bsm("bsm", tl, encoding_type="single_atom", detectors=detectors2)
 
     assert type(polar_bsm) == PolarizationBSM
     assert type(time_bin_bsm) == TimeBinBSM
-    assert type(ensemble_bsm) == EnsembleBSM
     assert type(atom_bsm) == SingleAtomBSM
 
 def test_init():
@@ -202,21 +200,14 @@ def test_time_bin_pop():
 
     assert len(parent.results) == 2
 
-def test_ensemble_get():
-    # TODO
-    tl = Timeline()
-    detectors = [{}] * 2
-    bsm = make_bsm("bsm", tl, encoding_type="ensemble", detectors=detectors)
-
 def test_single_atom_get():
-    # TODO
     tl = Timeline()
     detectors = [{"efficiency": 1}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="single_atom", detectors=detectors)
     parent = Parent()
     bsm.upper_protocols.append(parent)
-    mem_1 = AtomMemory("mem_1", tl, direct_receiver=bsm)
-    mem_2 = AtomMemory("mem_2", tl, direct_receiver=bsm)
+    mem_1 = Memory("mem_1", tl, direct_receiver=bsm)
+    mem_2 = Memory("mem_2", tl, direct_receiver=bsm)
 
     # initially opposite states
     tl.time = 0

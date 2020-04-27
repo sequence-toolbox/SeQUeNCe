@@ -16,7 +16,7 @@ def test_MemoryArray_init():
 
     assert len(ma.memories) == 10
     for m in ma.memories:
-        assert type(m) == AtomMemory
+        assert type(m) == Memory
 
 
 def test_MemoryArray_pop():
@@ -39,12 +39,12 @@ def test_MemoryArray_pop():
     assert kwargs["index"] == 0
 
 
-def test_AtomMemory_excite():
+def test_Memory_excite():
     NUM_TESTS = 1000
 
     tl = Timeline()
     rec = DumbReceiver()
-    mem = AtomMemory("mem", tl, direct_receiver=rec)
+    mem = Memory("mem", tl, direct_receiver=rec)
 
     # test with perfect efficiency
 
@@ -87,10 +87,10 @@ def test_AtomMemory_excite():
     assert abs(null_ratio - 0.5) < 0.1
 
 
-def test_AtomMemory_flip_state():
+def test_Memory_flip_state():
     tl = Timeline()
     rec = DumbReceiver()
-    mem = AtomMemory("mem", tl, direct_receiver=rec)
+    mem = Memory("mem", tl, direct_receiver=rec)
     mem.qstate.set_state_single([complex(1), complex(0)])
 
     mem.excite()
