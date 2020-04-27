@@ -1,0 +1,26 @@
+{
+    "nodes": [
+        {
+            "name": "alice",
+            "type": "qkd"
+        },
+        {
+            "name": "bob",
+            "type": "qkd"
+        }
+    ],
+    "qconnections": [
+        {
+            "node1": "alice",
+            "node2": "bob",
+            "distance": 1
+        }
+    ],
+    "cconnections": [
+        {
+            "node1": "alice",
+            "node2": "bob",
+            "distance": 1
+        }
+    ]
+}
