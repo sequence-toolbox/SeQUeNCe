@@ -58,9 +58,11 @@ class ResourceManager():
 
         return True
 
-    def update(self, protocol: "Protocol", memory: "Memory", state) -> bool:
+    def update(self, protocol: "Protocol", memory: "Memory", state: str) -> bool:
         self.memory_manager.update(memory, state)
-        self.owner.protocols.remove(protocol)
+        if protocol in self.owner.protocols:
+            protocol.rule.protocols.remove(protocol)
+            self.owner.protocols.remove(protocol)
 
         # check if any rules have been met
         memo_info = self.memory_manager.get_info_by_memory(memory)
@@ -107,10 +109,17 @@ class ResourceManager():
 
             if msg.is_approved:
                 protocol.set_others(msg.paired_protocol)
-                self.pending_protocols.remove(protocol)
-                self.owner.protocols.append(protocol)
-                protocol.own = self.owner
-                protocol.start()
+                if protocol.is_ready():
+                    self.pending_protocols.remove(protocol)
+                    self.owner.protocols.append(protocol)
+                    protocol.own = self.owner
+                    protocol.start()
             else:
-                protocol.release()
+                protocol.rule.protocols.remove(protocol)
+                for memory in protocol.memories:
+                    info = self.memory_manager.get_info_by_memory(memory)
+                    if info.remote_node is None:
+                        self.update(None, memory, "RAW")
+                    else:
+                        self.update(None, memory, "ENTANGLED")
                 self.pending_protocols.remove(protocol)

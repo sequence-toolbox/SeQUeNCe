@@ -22,6 +22,25 @@ class FakeNode(Node):
         self.send_log.append((dst, msg))
 
 
+class FakeProtocol():
+    def __init__(self, name):
+        self.name = name
+        self.other_is_setted = False
+        self.is_started = False
+        self.rule = Rule(None, None, None)
+        self.rule.protocols.append(self)
+        self.memories = []
+
+    def is_ready(self):
+        return self.other_is_setted
+
+    def set_others(self, other):
+        self.other_is_setted = True
+
+    def start(self):
+        self.is_started = True
+
+
 def test_load():
     def fake_condition(memo_info, manager):
         if memo_info.state == "RAW":
@@ -30,7 +49,7 @@ def test_load():
             return []
 
     def fake_action(memories):
-        return "protocol", [None], [None]
+        return FakeProtocol("protocol"), [None], [None]
 
     tl = Timeline()
     node = FakeNode("node", tl)
@@ -55,7 +74,7 @@ def test_update():
             return []
 
     def fake_action(memories):
-        return "protocol", [None], [None]
+        return FakeProtocol("protocol"), [None], [None]
 
     tl = Timeline()
     node = FakeNode("node", tl)
@@ -66,14 +85,14 @@ def test_update():
     for memo_info in node.resource_manager.memory_manager:
         assert memo_info.state == "RAW"
 
-    protocol = "protocol1"
+    protocol = FakeProtocol("protocol1")
     node.protocols.append(protocol)
     node.memory_array[0].fidelity = 0.5
     node.resource_manager.update(protocol, node.memory_array[0], "ENTANGLED")
     assert len(node.protocols) == len(rule.protocols) == 0
     assert node.resource_manager.memory_manager[0].state == "ENTANGLED"
 
-    protocol = "protocol2"
+    protocol = FakeProtocol("protocol2")
     node.protocols.append(protocol)
     node.memory_array[1].fidelity = 0.9
     node.resource_manager.update(protocol, node.memory_array[1], "ENTANGLED")
@@ -101,21 +120,6 @@ def test_received_message():
     def false_fun(protocol):
         return False
 
-    class FakeProtocol():
-        def __init__(self, name):
-            self.name = name
-            self.other_is_setted = False
-            self.is_started = False
-            self.is_released = False
-
-        def set_others(self, other):
-            self.other_is_setted = True
-
-        def start(self):
-            self.is_started = True
-
-        def release(self):
-            self.is_released = True
 
     tl = Timeline()
     node = FakeNode("node", tl)
@@ -145,7 +149,7 @@ def test_received_message():
     assert isinstance(node.send_log[-1][1], ResourceManagerMessage)
     assert node.send_log[-1][1].msg_type == "RESPONSE" and not node.send_log[-1][1].is_approved
 
-    # test receive RESPONSE message
+    # test receive RESPONSE message: is_approved==False and is_approved==True
     protocol2 = FakeProtocol("pending_protocol")
     resource_manager.pending_protocols.append(protocol2)
     resp_msg = ResourceManagerMessage("RESPONSE", "resource_manager", protocol=protocol2, is_approved=False,
@@ -153,7 +157,8 @@ def test_received_message():
     resource_manager.received_message("sender", resp_msg)
     assert protocol2 not in node.protocols
     assert protocol2 not in resource_manager.pending_protocols
-    assert not protocol2.other_is_setted and not protocol2.is_started and protocol2.is_released
+    assert not protocol2.other_is_setted and not protocol2.is_started
+    assert protocol2 not in protocol2.rule.protocols
 
     protocol2 = FakeProtocol("pending_protocol")
     resource_manager.pending_protocols.append(protocol2)
@@ -162,7 +167,7 @@ def test_received_message():
     resource_manager.received_message("sender", resp_msg)
     assert protocol2 in node.protocols
     assert protocol2 not in resource_manager.pending_protocols
-    assert protocol2.other_is_setted and protocol2.is_started and not protocol2.is_released
+    assert protocol2.other_is_setted and protocol2.is_started
 
 
 def test_ResourceManager():

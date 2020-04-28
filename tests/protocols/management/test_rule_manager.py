@@ -12,13 +12,19 @@ def test_Rule_do():
             self.log = []
 
         def send_request(self, protocol, req_dst, req_condition):
-            self.log.append((protocol, req_dst, req_condition))
+            self.log.append((protocol.name, req_dst, req_condition))
+
+    class FakeProtocol():
+        def __init__(self, name):
+            self.name = name
+            self.rule = None
+            self.memories = []
 
     def fake_action(memories_info):
         if len(memories_info) == 1:
-            return "protocol1", ["req_dst1"], ["req_condition1"]
+            return FakeProtocol("protocol1"), ["req_dst1"], ["req_condition1"]
         else:
-            return "protocol2", [None], [None]
+            return FakeProtocol("protocol2"), [None], [None]
 
     rule_manager = FakeRuleManager()
     rule = Rule(1, fake_action, None)
@@ -26,12 +32,14 @@ def test_Rule_do():
     assert rule.priority == 1 and len(rule.protocols) == 0
     memories_info = [MemoryInfo(None, 0)]
     rule.do(memories_info)
-    assert len(rule.protocols) == 1 and rule.protocols[0] == "protocol1"
+    assert len(rule.protocols) == 1 and rule.protocols[0].name == "protocol1"
     assert len(rule_manager.log) == 1 and rule_manager.log[0] == ("protocol1", "req_dst1", "req_condition1")
+    assert rule.protocols[0].rule == rule
     memories_info = [MemoryInfo(None, 0), MemoryInfo(None, 1)]
     rule.do(memories_info)
-    assert len(rule.protocols) == 2 and rule.protocols[1] == "protocol2"
+    assert len(rule.protocols) == 2 and rule.protocols[1].name == "protocol2"
     assert len(rule_manager.log) == 2 and rule_manager.log[1] == ("protocol2", None, None)
+    assert rule.protocols[1].rule == rule
 
 
 def test_Rule_is_valid():

@@ -40,6 +40,7 @@ class EntanglementSwappingA(EntanglementProtocol):
                  degradation=0.95):
         assert left_memo != right_memo
         EntanglementProtocol.__init__(self, own, name)
+        self.memories = [left_memo, right_memo]
         self.left_memo = left_memo
         self.right_memo = right_memo
         self.success_prob = success_prob
@@ -47,6 +48,9 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.is_success = False
         self.left_protocol = None
         self.right_protocol = None
+
+    def is_ready(self) -> bool:
+        return self.left_protocol is not None and self.right_protocol is not None
 
     def set_others(self, other: "EntanglementSwappingB") -> None:
         if other.own.name == self.left_memo.entangled_memory["node_id"]:
@@ -62,7 +66,7 @@ class EntanglementSwappingA(EntanglementProtocol):
         assert self.right_memo.entangled_memory["node_id"] == self.right_protocol.own.name
 
         fidelity = 0
-        if random() > self.success_probability():
+        if random() < self.success_probability():
             fidelity = self.updated_fidelity(self.left_memo.fidelity, self.right_memo.fidelity)
             self.is_success = True
 
@@ -111,23 +115,30 @@ class EntanglementSwappingB(EntanglementProtocol):
 
     def __init__(self, own: "Node", name: str, hold_memo: "Memory"):
         EntanglementProtocol.__init__(self, own, name)
-        self.hold_memo = hold_memo
+        self.memories = [hold_memo]
+        self.memory = hold_memo
         self.another = None
+
+    def is_ready(self) -> bool:
+        return self.another is not None
 
     def set_others(self, another: "EntanglementSwappingA") -> None:
         self.another = another
 
     def received_message(self, src: str, msg: "EntanglementSwappingMessage") -> None:
         assert src == self.another.own.name
-        self.hold_memo.fidelity = msg.fidelity
+        self.memory.fidelity = msg.fidelity
         if msg.fidelity > 0:
-            self.hold_memo.entangled_memory["node_id"] = msg.remote_node
-            self.hold_memo.entangled_memory["memo_id"] = msg.remote_memo
-            self.update_resource_manager(self.hold_memo, "ENTANGLED")
+            self.memory.entangled_memory["node_id"] = msg.remote_node
+            self.memory.entangled_memory["memo_id"] = msg.remote_memo
+            self.update_resource_manager(self.memory, "ENTANGLED")
         else:
-            self.hold_memo.entangled_memory["node_id"] = None
-            self.hold_memo.entangled_memory["memo_id"] = None
-            self.update_resource_manager(self.hold_memo, "RAW")
+            self.memory.entangled_memory["node_id"] = None
+            self.memory.entangled_memory["memo_id"] = None
+            self.update_resource_manager(self.memory, "RAW")
 
     def update_resource_manager(self, memory: "Memory", state: str) -> None:
         self.own.resource_manager.update(self, memory, state)
+
+    def start(self) -> None:
+        pass

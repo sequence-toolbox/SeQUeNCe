@@ -71,7 +71,7 @@ def test_EntanglementSwapping():
 
         es1 = EntanglementSwappingB(a1, "a1.ESb%d" % i, memo1)
         a1.protocols.append(es1)
-        es2 = EntanglementSwappingA(a2, "a2.ESa%d" % i, memo2, memo3, success_prob=0.5)
+        es2 = EntanglementSwappingA(a2, "a2.ESa%d" % i, memo2, memo3, success_prob=0.2)
         a2.protocols.append(es2)
         es3 = EntanglementSwappingB(a3, "a3.ESb%d" % i, memo4)
         a3.protocols.append(es3)
@@ -105,4 +105,4 @@ def test_EntanglementSwapping():
             assert a1.resource_manager.log[-1] == (memo1, "RAW")
             assert a3.resource_manager.log[-1] == (memo4, "RAW")
 
-    assert abs((counter1 / counter2) - 1) - 1 < 0.1
+    assert abs((counter1 / (counter1 + counter2)) - 0.2) < 0.1

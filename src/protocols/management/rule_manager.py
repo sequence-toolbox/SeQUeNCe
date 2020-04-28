@@ -63,6 +63,7 @@ class Rule():
 
     def do(self, memories_info: List["MemoryInfo"]) -> None:
         protocol, req_dsts, req_condition_funcs = self.action(memories_info)
+        protocol.rule = self
         self.protocols.append(protocol)
         for dst, req_func in zip(req_dsts, req_condition_funcs):
             self.rule_manager.send_request(protocol, dst, req_func)

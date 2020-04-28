@@ -22,10 +22,14 @@ class BBPSSW(EntanglementProtocol):
     def __init__(self, own: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory"):
         assert kept_memo != meas_memo
         EntanglementProtocol.__init__(self, own, name)
+        self.memories = [kept_memo, meas_memo]
         self.kept_memo = kept_memo
         self.meas_memo = meas_memo
         self.another = None
         self.is_success = None
+
+    def is_ready(self) -> bool:
+        return self.another is not None
 
     def set_others(self, another: "BBPSSW") -> None:
         self.another = another

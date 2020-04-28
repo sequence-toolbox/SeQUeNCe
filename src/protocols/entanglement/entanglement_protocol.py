@@ -1,14 +1,26 @@
+from abc import abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ...topology.node import Node
+
 from ..protocol import Protocol
 
 
 class EntanglementProtocol(Protocol):
     def __init__(self, own: "Node", name: str):
         Protocol.__init__(self, own, name)
+        self.rule = None
+        self.memories = []
 
-    @staticmethod
+    @abstractmethod
     def set_others(self, other: "EntanglementProtocol") -> None:
         pass
 
-    @staticmethod
+    @abstractmethod
     def start(self) -> None:
+        pass
+
+    @abstractmethod
+    def is_ready(self) -> bool:
         pass
