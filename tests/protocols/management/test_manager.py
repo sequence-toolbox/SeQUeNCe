@@ -114,12 +114,11 @@ def test_send_request():
 
 
 def test_received_message():
-    def true_fun(protocol):
-        return True
+    def true_fun(protocols):
+        return protocols[0]
 
-    def false_fun(protocol):
-        return False
-
+    def false_fun(protocols):
+        return None
 
     tl = Timeline()
     node = FakeNode("node", tl)
@@ -128,7 +127,8 @@ def test_received_message():
     # test receive REQUEST message
     protocol1 = FakeProtocol("waiting_protocol")
     resource_manager.waiting_protocols.append(protocol1)
-    req_msg = ResourceManagerMessage("REQUEST", "resource_manager", protocol="ini_protocol", req_condition_fun=true_fun)
+    req_msg = ResourceManagerMessage("REQUEST", "resource_manager", protocol="ini_protocol",
+                                     req_condition_func=true_fun)
     resource_manager.received_message("sender", req_msg)
     assert protocol1 in node.protocols
     assert protocol1 not in resource_manager.waiting_protocols
@@ -140,7 +140,7 @@ def test_received_message():
     protocol1 = FakeProtocol("waiting_protocol")
     resource_manager.waiting_protocols.append(protocol1)
     req_msg = ResourceManagerMessage("REQUEST", "resource_manager", protocol="ini_protocol",
-                                     req_condition_fun=false_fun)
+                                     req_condition_func=false_fun)
     resource_manager.received_message("sender", req_msg)
     assert protocol1 not in node.protocols
     assert protocol1 in resource_manager.waiting_protocols
@@ -203,8 +203,10 @@ def test_ResourceManager():
             return []
 
     def eg_rule_action1(memories_info):
-        def eg_req_func(protocol):
-            return isinstance(protocol, EntanglementGenerationA)
+        def eg_req_func(protocols):
+            for protocol in protocols:
+                if isinstance(protocol, EntanglementGenerationA):
+                    return protocol
 
         memories = [info.memory for info in memories_info]
         memory = memories[0]

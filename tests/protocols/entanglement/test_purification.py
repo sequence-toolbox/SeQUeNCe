@@ -37,7 +37,7 @@ def test_BBPSSWMessage():
         BBPSSWMessage("unknown type")
 
 
-def test_BBPSSW():
+def test_BBPSSW1():
     tl = Timeline()
     a1 = FakeNode("a1", tl)
     a2 = FakeNode("a2", tl)
@@ -73,11 +73,12 @@ def test_BBPSSW():
         ep2.start()
 
         assert ep1.is_success == ep2.is_success
-        assert a1.resource_manager.log[-1] == (meas_memo1, "RAW")
-        assert a2.resource_manager.log[-1] == (meas_memo2, "RAW")
-        assert meas_memo1.fidelity == meas_memo2.fidelity == 0
 
         tl.run()
+
+        assert a1.resource_manager.log[-2] == (meas_memo1, "RAW")
+        assert a2.resource_manager.log[-2] == (meas_memo2, "RAW")
+        assert meas_memo1.fidelity == meas_memo2.fidelity == 0
 
         if ep1.is_success:
             assert kept_memo1.fidelity == kept_memo2.fidelity == BBPSSW.improved_fidelity(fidelity)
@@ -89,3 +90,51 @@ def test_BBPSSW():
             assert kept_memo1.entangled_memory["node_id"] == kept_memo2.entangled_memory["node_id"] == None
             assert a1.resource_manager.log[-1] == (kept_memo1, "RAW")
             assert a2.resource_manager.log[-1] == (kept_memo2, "RAW")
+
+
+def test_BBPSSW2():
+    tl = Timeline()
+    a1 = FakeNode("a1", tl)
+    a2 = FakeNode("a2", tl)
+    cc = ClassicalChannel("cc", tl, 0, 1e5)
+    cc.delay = 1e9
+    cc.set_ends(a1, a2)
+
+    tl.init()
+    counter1 = counter2 = 0
+    fidelity = 0.8
+
+    for i in range(1000):
+        kept_memo1 = AtomMemory("a1.kept", tl, fidelity=fidelity)
+        kept_memo2 = AtomMemory("a2.kept", tl, fidelity=fidelity)
+        meas_memo1 = AtomMemory("a1.meas", tl, fidelity=fidelity)
+        meas_memo2 = AtomMemory("a2.meas", tl, fidelity=fidelity)
+
+        kept_memo1.entangled_memory["node_id"] = "a2"
+        kept_memo1.entangled_memory["memo_id"] = "a2.kept"
+        kept_memo2.entangled_memory["node_id"] = "a1"
+        kept_memo2.entangled_memory["memo_id"] = "a1.kept"
+        meas_memo1.entangled_memory["node_id"] = "a2"
+        meas_memo1.entangled_memory["memo_id"] = "a2.meas"
+        meas_memo2.entangled_memory["node_id"] = "a1"
+        meas_memo2.entangled_memory["memo_id"] = "a1.meas"
+
+        ep1 = BBPSSW(a1, "a1.ep1.%d" % i, kept_memo1, meas_memo1)
+        ep2 = BBPSSW(a2, "a2.ep2.%d" % i, kept_memo2, meas_memo2)
+        a1.protocols.append(ep1)
+        a2.protocols.append(ep2)
+        ep1.set_others(ep2)
+        ep2.set_others(ep1)
+
+        ep1.start()
+        ep2.start()
+
+        assert ep1.is_success == ep2.is_success
+        if ep1.is_success:
+            counter1 += 1
+        else:
+            counter2 += 1
+
+        tl.run()
+
+    assert abs(counter1 / (counter1 + counter2) - BBPSSW.success_probability(fidelity)) < 0.1

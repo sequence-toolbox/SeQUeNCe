@@ -1,3 +1,4 @@
+from time import monotonic_ns
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -34,6 +35,8 @@ class Node(Entity):
         self.qchannels[another] = qchannel
 
     def send_message(self, dst: str, msg: "Message", priority=math.inf) -> None:
+        if priority == math.inf:
+            priority = monotonic_ns()
         self.cchannels[dst].transmit(msg, self, priority)
 
     def receive_message(self, src: str, msg: "Message") -> None:

@@ -1,7 +1,10 @@
 from typing import TYPE_CHECKING, Callable, List
 
 if TYPE_CHECKING:
-    from ...topology.node import Node
+    from ...components.memory import AtomMemory
+    from ...topology.node import QuantumRouter
+    from ..entanglement.entanglement_protocol import EntanglementProtocol
+    from .rule_manager import Rule
 
 from ..message import Message
 from .rule_manager import RuleManager
@@ -24,7 +27,7 @@ class ResourceManagerMessage(Message):
         Message.__init__(self, msg_type, receiver)
         self.ini_protocol = kwargs["protocol"]
         if msg_type == "REQUEST":
-            self.req_condition_fun = kwargs["req_condition_fun"]
+            self.req_condition_func = kwargs["req_condition_func"]
         elif msg_type == "RESPONSE":
             self.is_approved = kwargs["is_approved"]
             self.paired_protocol = kwargs["paired_protocol"]
@@ -33,7 +36,7 @@ class ResourceManagerMessage(Message):
 
 
 class ResourceManager():
-    def __init__(self, owner: "Node"):
+    def __init__(self, owner: "QuantumRouter"):
         self.name = "resource_manager"
         self.owner = owner
         self.memory_manager = MemoryManager(owner.memory_array)
@@ -58,7 +61,7 @@ class ResourceManager():
 
         return True
 
-    def update(self, protocol: "Protocol", memory: "Memory", state: str) -> bool:
+    def update(self, protocol: "EntanglementProtocol", memory: "AtomMemory", state: str) -> bool:
         self.memory_manager.update(memory, state)
         if protocol in self.owner.protocols:
             protocol.rule.protocols.remove(protocol)
@@ -78,28 +81,29 @@ class ResourceManager():
     def get_memory_manager(self):
         return self.memory_manager
 
-    def send_request(self, protocol: "Protocol", req_dst: str, req_condition_func: Callable[[List["Protocol"]], None]):
+    def send_request(self, protocol: "EntanglementProtocol", req_dst: str,
+                     req_condition_func: Callable[[List["EntanglementProtocol"]], "EntanglementProtocol"]):
         if req_dst is None:
             self.waiting_protocols.append(protocol)
             return
         self.pending_protocols.append(protocol)
         msg = ResourceManagerMessage("REQUEST", "resource_manager", protocol=protocol,
-                                     req_condition_fun=req_condition_func)
+                                     req_condition_func=req_condition_func)
         self.owner.send_message(req_dst, msg)
 
     def received_message(self, src: str, msg: "ResourceManagerMessage") -> None:
         if msg.msg_type == "REQUEST":
-            for protocol in self.waiting_protocols:
-                if msg.req_condition_fun(protocol):
-                    protocol.set_others(msg.ini_protocol)
-                    new_msg = ResourceManagerMessage("RESPONSE", "resource_manager", protocol=msg.ini_protocol,
-                                                     is_approved=True, paired_protocol=protocol)
-                    self.owner.send_message(src, new_msg)
-                    self.waiting_protocols.remove(protocol)
-                    self.owner.protocols.append(protocol)
-                    protocol.own = self.owner
-                    protocol.start()
-                    return
+            protocol = msg.req_condition_func(self.waiting_protocols)
+            if protocol is not None:
+                protocol.set_others(msg.ini_protocol)
+                new_msg = ResourceManagerMessage("RESPONSE", "resource_manager", protocol=msg.ini_protocol,
+                                                 is_approved=True, paired_protocol=protocol)
+                self.owner.send_message(src, new_msg)
+                self.waiting_protocols.remove(protocol)
+                self.owner.protocols.append(protocol)
+                protocol.own = self.owner
+                protocol.start()
+                return
 
             new_msg = ResourceManagerMessage("RESPONSE", "resource_manager", protocol=msg.ini_protocol,
                                              is_approved=False, paired_protocol=None)

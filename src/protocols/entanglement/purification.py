@@ -37,39 +37,34 @@ class BBPSSW(EntanglementProtocol):
     def start(self) -> None:
         assert self.another is not None, "another protocol is not setted; please use set_another function to set it."
         assert (self.kept_memo.entangled_memory["node_id"] ==
-                self.meas_memo.entangled_memory["node_id"] ==
-                self.another.own.name)
+                self.meas_memo.entangled_memory["node_id"])
         assert self.kept_memo.fidelity == self.meas_memo.fidelity > 0.5
 
         if self.is_success is None:
-            if random() > self.success_probability(self.kept_memo.fidelity):
+            if random() < self.success_probability(self.kept_memo.fidelity):
                 self.is_success = self.another.is_success = True
             else:
                 self.is_success = self.another.is_success = False
 
+        dst = self.kept_memo.entangled_memory["node_id"]
         if self.is_success:
             self.kept_memo.fidelity = self.improved_fidelity(self.kept_memo.fidelity)
-            dst = self.another.own.name
-            message = BBPSSWMessage("PURIFICATION_RES", self.another.name)
-            self.own.send_message(dst, message)
         else:
             self.kept_memo.fidelity = 0
             self.kept_memo.entangled_memory["node_id"] = None
             self.kept_memo.entangled_memory["memo_id"] = None
-            dst = self.another.own.name
-            message = BBPSSWMessage("PURIFICATION_RES", self.another.name)
-            self.own.send_message(dst, message)
-
-        self.meas_memo.fidelity = 0
-        self.meas_memo.entangled_memory["node_id"] = None
-        self.meas_memo.entangled_memory["memo_id"] = None
-        self.update_resource_manager(self.meas_memo, "RAW")
+        message = BBPSSWMessage("PURIFICATION_RES", self.another.name)
+        self.own.send_message(dst, message)
 
     def update_resource_manager(self, memory: "Memory", state: str) -> None:
         self.own.resource_manager.update(self, memory, state)
 
     def received_message(self, src: str, msg: List[str]) -> None:
         assert src == self.another.own.name
+        self.meas_memo.fidelity = 0
+        self.meas_memo.entangled_memory["node_id"] = None
+        self.meas_memo.entangled_memory["memo_id"] = None
+        self.update_resource_manager(self.meas_memo, "RAW")
         if self.is_success is True:
             self.update_resource_manager(self.kept_memo, state="ENTANGLED")
         else:

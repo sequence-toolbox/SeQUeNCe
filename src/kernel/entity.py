@@ -1,9 +1,13 @@
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .timeline import Timeline
 
 
 class Entity(ABC):
 
-    def __init__(self, name, timeline):
+    def __init__(self, name: str, timeline: "Timeline"):
         if name is None:
             self.name = ""
         else:
