@@ -1,13 +1,22 @@
+import math
 from sequence.kernel.timeline import Timeline
 from sequence.components.memory import *
 
 
 class DumbReceiver():
-        def __init__(self):
-            self.photon_list = []
+    def __init__(self):
+        self.photon_list = []
 
-        def get(self, photon):
-            self.photon_list.append(photon)
+    def get(self, photon):
+        self.photon_list.append(photon)
+
+class DumbParent():
+    def __init__(self, memory):
+        memory.parents.append(self)
+        self.pop_log = []
+
+    def pop(self, **kwargs):
+        self.pop_log.append(kwargs["memory"])
 
 
 def test_MemoryArray_init():
@@ -99,5 +108,22 @@ def test_Memory_flip_state():
 
     assert rec.photon_list[0].is_null
     assert not rec.photon_list[1].is_null
+
+
+def test_Memory_expire():
+    tl = Timeline()
+    mem = Memory("mem", tl)
+    parent = DumbParent(mem)
+    mem.reset()
+    entangled_memory = {"node_id": "node", "memo_id": 0}
+    mem.entangled_memory = entangled_memory
+
+    mem.expire(-1)
+    assert mem.qstate.state == [complex(1/math.sqrt(2)), complex(1/math.sqrt(2))]
+    assert mem.entangled_memory == entangled_memory
+
+    mem.expire(0)
+    assert any(mem.qstate.state == complex(1)) # check if collapsed to |0> or |1> state
+    assert mem.entangled_memory == {"node_id": None, "memo_id": None}
 
 
