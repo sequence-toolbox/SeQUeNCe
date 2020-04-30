@@ -1,8 +1,9 @@
 import numpy
 import pytest
+from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.entanglement.purification import *
+from sequence.protocols.entanglement.purification import BBPSSW, BBPSSWMessage
 from sequence.topology.node import Node
 
 numpy.random.seed(0)

@@ -1,7 +1,7 @@
 from typing import Callable, TYPE_CHECKING, List, Tuple
 
 if TYPE_CHECKING:
-    from ..protocol import Protocol
+    from ..entanglement.entanglement_protocol import EntanglementProtocol
     from .memory_manager import MemoryInfo, MemoryManager
     from .manager import ResourceManager
 
@@ -27,7 +27,7 @@ class RuleManager():
         self.rules.insert(left, rule)
         return True
 
-    def expire(self, rule: "Rule") -> List["Protocol"]:
+    def expire(self, rule: "Rule") -> List["EntanglementProtocol"]:
         """
         expire function return protocols created by expired rule
         """
