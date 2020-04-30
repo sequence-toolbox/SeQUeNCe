@@ -18,8 +18,6 @@ def make_bsm(name, timeline, **kwargs):
         return PolarizationBSM(name, timeline, **kwargs)
     elif encoding_type == "time_bin":
         return TimeBinBSM(name, timeline, **kwargs)
-    elif encoding_type == "ensemble":
-        return EnsembleBSM(name, timeline, **kwargs)
     elif encoding_type == "single_atom":
         return SingleAtomBSM(name, timeline, **kwargs)
     else:
@@ -214,53 +212,6 @@ class TimeBinBSM(BSM):
                 self._pop(entity="BSM", res=1, time=time)
 
         self.last_res = [time, detector_num]
-
-
-class EnsembleBSM(BSM):
-    def __init__(self, name, timeline, **kwargs):
-        super().__init__(name, timeline, **kwargs)
-        self.previous_state = None
-        assert len(self.detectors) == 2
-
-    def get(self, photon):
-        super().get(photon)
-
-        # TODO: what if photon lose in channel
-        if len(self.photons) == 1:
-            return
-        elif len(self.photons) == 2:
-            mem_0 = self.photons[0].encoding_type["memory"]
-            mem_1 = self.photons[1].encoding_type["memory"]
-
-            is_valid = self.photons[0].is_null ^ self.photons[1].is_null
-
-            # if we have 1 photon, generate entanglement
-            if is_valid:
-                qstate_0 = mem_0.qstate
-                qstate_1 = mem_1.qstate
-                # if unentangled, entangle
-                if qstate_0 not in qstate_1.entangled_states:
-                    qstate_0.entangle(qstate_1)
-                self.previous_state = mem_0.qstate.state
-                # project to bell basis
-                _ = QuantumState.measure_multiple(self.bell_basis, [qstate_0, qstate_1])
-                # send detect message to a random detector
-                detector_num = numpy.random.choice([0, 1])
-                self.detectors[detector_num].get()
-
-            # if we have 2 photons, have both detectors get
-            elif not self.photons[0].is_null:
-                self.detectors[0].get()
-                self.detectors[1].get()
-
-    def pop(self, **kwargs):
-        # calculate bsm based on detector num
-        detector = kwargs.get("detector")
-        detector_num = self.detectors.index(detector)
-        time = kwargs.get("time")
-
-        res = detector_num
-        self._pop(entity="BSM", res=res, time=time)
 
 
 class SingleAtomBSM(BSM):

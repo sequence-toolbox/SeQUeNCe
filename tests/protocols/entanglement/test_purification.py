@@ -1,6 +1,6 @@
 import numpy
 import pytest
-from sequence.components.memory import AtomMemory
+from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.kernel.timeline import Timeline
 from sequence.protocols.entanglement.purification import *
@@ -48,10 +48,10 @@ def test_BBPSSW1():
     tl.init()
     for i in range(1000):
         fidelity = numpy.random.uniform(0.5, 1)
-        kept_memo1 = AtomMemory("a1.kept", tl, fidelity=fidelity)
-        kept_memo2 = AtomMemory("a2.kept", tl, fidelity=fidelity)
-        meas_memo1 = AtomMemory("a1.meas", tl, fidelity=fidelity)
-        meas_memo2 = AtomMemory("a2.meas", tl, fidelity=fidelity)
+        kept_memo1 = Memory("a1.kept", tl, fidelity=fidelity)
+        kept_memo2 = Memory("a2.kept", tl, fidelity=fidelity)
+        meas_memo1 = Memory("a1.meas", tl, fidelity=fidelity)
+        meas_memo2 = Memory("a2.meas", tl, fidelity=fidelity)
 
         kept_memo1.entangled_memory["node_id"] = "a2"
         kept_memo1.entangled_memory["memo_id"] = "a2.kept"

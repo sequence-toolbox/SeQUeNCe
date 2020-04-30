@@ -1,0 +1,45 @@
+{
+    "global_params": {
+        "repeater_separation": 2e3
+    },
+    "nodes": [
+        {
+            "name": "alice",
+            "type": "QKDNode"
+        },
+        {
+            "name": "bob",
+            "type": "QKDNode"
+        },
+        {
+            "name": "e1",
+            "type": "QuantumRouter"
+        },
+        {
+            "name": "e2",
+            "type": "QuantumRouter"
+        }
+    ],
+    "qconnections": [
+        {
+            "node1": "alice",
+            "node2": "bob",
+            "attenuation": 1e-5,
+            "distance": 3e3
+        },
+        {
+            "node1": "e1",
+            "node2": "e2",
+            "attenuation": 1e-5,
+            "distance": 5e3
+        }
+    ],
+    "cconnections": [
+        {
+            "node1": "alice",
+            "node2": "bob",
+            "attenuation": 0,
+            "distance": 3e3
+        }
+    ]
+}

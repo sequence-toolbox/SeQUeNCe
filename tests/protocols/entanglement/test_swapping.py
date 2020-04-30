@@ -1,6 +1,6 @@
 import numpy
 import pytest
-from sequence.components.memory import AtomMemory
+from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.kernel.timeline import Timeline
 from sequence.protocols.entanglement.swapping import *
@@ -55,10 +55,10 @@ def test_EntanglementSwapping():
     counter1 = counter2 = 0
 
     for i in range(1000):
-        memo1 = AtomMemory("a1.%d" % i, timeline=tl, fidelity=0.9)
-        memo2 = AtomMemory("a2.%d" % i, timeline=tl, fidelity=0.9)
-        memo3 = AtomMemory("a2.%d" % i, timeline=tl, fidelity=0.9)
-        memo4 = AtomMemory("a3.%d" % i, timeline=tl, fidelity=0.9)
+        memo1 = Memory("a1.%d" % i, timeline=tl, fidelity=0.9)
+        memo2 = Memory("a2.%d" % i, timeline=tl, fidelity=0.9)
+        memo3 = Memory("a2.%d" % i, timeline=tl, fidelity=0.9)
+        memo4 = Memory("a3.%d" % i, timeline=tl, fidelity=0.9)
 
         memo1.entangled_memory["node_id"] = "a2"
         memo1.entangled_memory["memo_id"] = memo2.name
