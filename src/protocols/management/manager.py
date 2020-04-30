@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Callable, List
 
 if TYPE_CHECKING:
-    from ...components.memory import AtomMemory
+    from ...components.memory import Memory
     from ...topology.node import QuantumRouter
     from ..entanglement.entanglement_protocol import EntanglementProtocol
     from .rule_manager import Rule
@@ -61,7 +61,22 @@ class ResourceManager():
 
         return True
 
-    def update(self, protocol: "EntanglementProtocol", memory: "AtomMemory", state: str) -> bool:
+    def expire(self, rule: "Rule") -> None:
+        created_protocols = self.rule_manager.expire(rule)
+        for protocol in created_protocols:
+            if protocol in self.waiting_protocols:
+                self.waiting_protocols.remove(protocol)
+            elif protocol in self.pending_protocols:
+                self.pending_protocols.remove(protocol)
+            elif protocol in self.owner.protocols:
+                self.owner.protocols.remove(protocol)
+            else:
+                raise Exception("Unknown place of protocol")
+
+            for memory in protocol.memories:
+                self.update(None, memory, "RAW")
+
+    def update(self, protocol: "EntanglementProtocol", memory: "Memory", state: str) -> bool:
         self.memory_manager.update(memory, state)
         if protocol in self.owner.protocols:
             protocol.rule.protocols.remove(protocol)
@@ -119,11 +134,12 @@ class ResourceManager():
                     protocol.own = self.owner
                     protocol.start()
             else:
-                protocol.rule.protocols.remove(protocol)
-                for memory in protocol.memories:
-                    info = self.memory_manager.get_info_by_memory(memory)
-                    if info.remote_node is None:
-                        self.update(None, memory, "RAW")
-                    else:
-                        self.update(None, memory, "ENTANGLED")
-                self.pending_protocols.remove(protocol)
+                if protocol in self.pending_protocols:
+                    protocol.rule.protocols.remove(protocol)
+                    for memory in protocol.memories:
+                        info = self.memory_manager.get_info_by_memory(memory)
+                        if info.remote_node is None:
+                            self.update(None, memory, "RAW")
+                        else:
+                            self.update(None, memory, "ENTANGLED")
+                    self.pending_protocols.remove(protocol)

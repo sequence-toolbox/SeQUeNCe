@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...components.memory import *
+    from ...components.memory import Memory, MemoryArray
     from .manager import ResourceManager
 
 
@@ -14,7 +14,7 @@ class MemoryManager():
     def set_resource_manager(self, resource_manager: "ResourceManager") -> None:
         self.resource_manager = resource_manager
 
-    def update(self, memory: "AtomMemory", state: str) -> None:
+    def update(self, memory: "Memory", state: str) -> None:
         info = self.get_info_by_memory(memory)
         if state == "RAW":
             info.to_raw()
@@ -31,7 +31,7 @@ class MemoryManager():
     def __getitem__(self, item: int) -> "MemoryInfo":
         return self.memory_map[item]
 
-    def get_info_by_memory(self, memory: "AtomMemory") -> "MemoryInfo":
+    def get_info_by_memory(self, memory: "Memory") -> "MemoryInfo":
         index = self.memory_array.memories.index(memory)
         return self.memory_map[index]
 
@@ -44,7 +44,7 @@ class MemoryInfo():
     ENTANGLED : Memory has been successfully entangled
     """
 
-    def __init__(self, memory: "AtomMemory", index: int, state="RAW"):
+    def __init__(self, memory: "Memory", index: int, state="RAW"):
         self.memory = memory
         self.index = index
         self.state = state
