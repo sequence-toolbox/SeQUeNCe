@@ -77,7 +77,7 @@ class Memory(Entity):
         self.entangled_memory = {'node_id': None, 'memo_id': None}
 
         # keep track of current memory write (ignore expiration of past states)
-        self.exicte_id = 0
+        self.excite_id = 0
 
         # keep track of previous BSM result (for entanglement generation)
         # -1 = no result, 0/1 give detector number
