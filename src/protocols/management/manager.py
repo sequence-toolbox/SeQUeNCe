@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Callable, List
 
 if TYPE_CHECKING:
-    from ...components.memory import AtomMemory
+    from ...components.memory import Memory
     from ...topology.node import QuantumRouter
     from ..entanglement.entanglement_protocol import EntanglementProtocol
     from .rule_manager import Rule
@@ -61,7 +61,7 @@ class ResourceManager():
 
         return True
 
-    def update(self, protocol: "EntanglementProtocol", memory: "AtomMemory", state: str) -> bool:
+    def update(self, protocol: "EntanglementProtocol", memory: "Memory", state: str) -> bool:
         self.memory_manager.update(memory, state)
         if protocol in self.owner.protocols:
             protocol.rule.protocols.remove(protocol)
