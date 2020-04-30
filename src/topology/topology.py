@@ -22,6 +22,11 @@ class Topology():
     def load_config(self, config_file):
         topo_config = json5.load(open(config_file))
 
+        params = topo_config["global_params"]
+        repeater_sep = params["repeater_separation"]
+
+        # TODO: check to see if we need to add repeaters
+
         # create nodes
         for node_params in topo_config["nodes"]:
             name = node_params["name"]
@@ -29,8 +34,12 @@ class Topology():
             del node_params["name"]
             del node_params["type"]
 
-            if node_type == "qkd":
+            if node_type == "QKDNode":
                 node = QKDNode(name, self.timeline, **node_params)
+            elif node_type == "QuantumRouter":
+                node = QuantumRouter(name, self.timeline, **node_params)
+            elif node_type == "MiddleNode":
+                node = Middle(name, self.timeline, **node_params)
             else:
                 node = Node(name, self.timeline)
             
@@ -75,7 +84,7 @@ class Topology():
 
     def populate_protocols(self):
         # TODO: add higher-level protocols not added by nodes
-        pass
+        raise NotImplementedError("populate_protocols has not been added")
 
 
 class LegacyTopology:
