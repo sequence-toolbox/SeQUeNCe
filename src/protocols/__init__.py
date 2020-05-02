@@ -1,4 +1,4 @@
-__all__ = ["control", "entanglement", "qkd"]
+__all__ = ["network", "entanglement", "qkd"]
 
 
 def __dir__():

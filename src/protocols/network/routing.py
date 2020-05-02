@@ -39,6 +39,5 @@ class RoutingProtocol(Protocol):
         # print(self.own.timeline.now(), ':', self.own.name, "received_message from", src, "; msg is (", msg, ")")
         self._pop(msg=msg.payload, src=src)
 
-
     def init(self):
         pass

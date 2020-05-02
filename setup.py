@@ -7,7 +7,7 @@ setup(
     author_email="xwu64@hawk.iit.edu, chungmiranda@anl.gov, akolar@anl.gov, eugenewang@yahoo.com, tzh@uchicago.edu, kettimut@mcs.anl.gov, msuchara@anl.gov",
     description="Simulator of Quantum Network Communication: SEQUENCE-Python is a prototype version of official SEQUENCE release. ",
     # packages = find_packages('src'),
-    packages=['sequence', 'sequence.kernel', 'sequence.components', 'sequence.protocols', 'sequence.protocols.control',
+    packages=['sequence', 'sequence.kernel', 'sequence.components', 'sequence.protocols', 'sequence.protocols.network',
               'sequence.protocols.entanglement', 'sequence.protocols.qkd', 'sequence.protocols.management',
               'sequence.topology', 'sequence.utils'],
     package_dir={'sequence': 'src'},

@@ -40,3 +40,6 @@ class StackProtocol(Protocol):
     def _pop(self, **kwargs):
         for protocol in self.upper_protocols:
             protocol.pop(**kwargs)
+
+    def received_message(self, src: str, msg: "Message"):
+        pass

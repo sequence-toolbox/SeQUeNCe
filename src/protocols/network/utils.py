@@ -1,5 +1,5 @@
-from ..control.routing import *
-from ..control.rsvp import *
+from ..network.routing import *
+from ..network.rsvp import *
 from ...components.memory import MemoryArray
 from ...components.optical_channel import ClassicalChannel
 
