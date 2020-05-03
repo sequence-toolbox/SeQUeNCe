@@ -201,13 +201,24 @@ def test_time_bin_pop():
     assert len(parent.results) == 2
 
 def test_single_atom_get():
+    class PhotonSendWrapper():
+        def __init__(self, mem1, mem2, bsm):
+            self.bsm = bsm
+            mem1.owner = self
+            mem2.owner = self
+
+        def send_qubit(self, dst, photon):
+            self.bsm.get(photon)
+
     tl = Timeline()
     detectors = [{"efficiency": 1}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="single_atom", detectors=detectors)
     parent = Parent()
     bsm.upper_protocols.append(parent)
-    mem_1 = Memory("mem_1", tl, direct_receiver=bsm)
-    mem_2 = Memory("mem_2", tl, direct_receiver=bsm)
+    mem_1 = Memory("mem_1", tl)
+    mem_2 = Memory("mem_2", tl)
+
+    pw = PhotonSendWrapper(mem_1, mem_2, bsm)
 
     # initially opposite states
     tl.time = 0

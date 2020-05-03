@@ -146,7 +146,8 @@ class EntanglementGenerationA(EntanglementProtocol):
             cc_delay = int(self.own.cchannels[src].delay)
             total_quantum_delay = max(self.qc_delay, another_delay)
 
-            min_time = self.own.timeline.now() + total_quantum_delay - self.qc_delay + cc_delay
+            memory_excite_time = self.memory.next_excite_time
+            min_time = max(self.own.timeline.now(), memory_excite_time) + total_quantum_delay - self.qc_delay + cc_delay
             emit_time = self.own.schedule_qubit(self.middle, min_time) # used to send memory
             self.expected_time = emit_time + self.qc_delay
 

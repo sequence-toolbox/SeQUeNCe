@@ -7,7 +7,7 @@ class DumbReceiver():
     def __init__(self):
         self.photon_list = []
 
-    def get(self, photon):
+    def send_qubit(self, dst, photon):
         self.photon_list.append(photon)
 
 class DumbParent():
@@ -53,7 +53,8 @@ def test_Memory_excite():
 
     tl = Timeline()
     rec = DumbReceiver()
-    mem = Memory("mem", tl, direct_receiver=rec)
+    mem = Memory("mem", tl)
+    mem.owner = rec
 
     # test with perfect efficiency
 
@@ -99,7 +100,8 @@ def test_Memory_excite():
 def test_Memory_flip_state():
     tl = Timeline()
     rec = DumbReceiver()
-    mem = Memory("mem", tl, direct_receiver=rec)
+    mem = Memory("mem", tl)
+    mem.owner = rec
     mem.qstate.set_state_single([complex(1), complex(0)])
 
     mem.excite()
@@ -118,12 +120,8 @@ def test_Memory_expire():
     entangled_memory = {"node_id": "node", "memo_id": 0}
     mem.entangled_memory = entangled_memory
 
-    mem.expire(-1)
-    assert mem.qstate.state == [complex(1/math.sqrt(2)), complex(1/math.sqrt(2))]
-    assert mem.entangled_memory == entangled_memory
-
-    mem.expire(0)
-    assert any(mem.qstate.state == complex(1)) # check if collapsed to |0> or |1> state
+    mem.expire()
+    assert complex(0) in mem.qstate.state # check if collapsed to |0> or |1> state
     assert mem.entangled_memory == {"node_id": None, "memo_id": None}
 
 
