@@ -49,12 +49,7 @@ class MemoryArray(Entity):
         memory = kwargs.get("memory")
         index = self.memories.index(memory)
         # notify protocol
-        kwargs = {"info_type": "expired_memory", "index": index}
-        self._pop(**kwargs)
-
-    def set_direct_receiver(self, indices, direct_receiver):
-        for memo_index in indices:
-            self.memories[memo_index].direct_receiver = direct_receiver
+        self._pop(info_type="expired_memory", index=index)
 
 
 # single-atom memory

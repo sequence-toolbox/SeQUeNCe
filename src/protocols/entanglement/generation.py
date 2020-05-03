@@ -238,6 +238,10 @@ class EntanglementGenerationA(EntanglementProtocol):
     def release(self):
         pass
 
+    # ignore memory expiration events
+    def pop(self, **kwargs):
+        pass
+
 
 class EntanglementGenerationB(EntanglementProtocol):
     def __init__(self, own: "Node", name: str, others: List[str]):

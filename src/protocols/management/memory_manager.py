@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 class MemoryManager():
     def __init__(self, memory_array: "MemoryArray"):
         self.memory_array = memory_array
+        self.memory_array.upper_protocols.append(self)
         self.memory_map = [MemoryInfo(memory, index) for index, memory in enumerate(self.memory_array)]
         self.resource_manager = None
 
@@ -34,6 +35,12 @@ class MemoryManager():
     def get_info_by_memory(self, memory: "Memory") -> "MemoryInfo":
         index = self.memory_array.memories.index(memory)
         return self.memory_map[index]
+
+    def pop(self, **kwargs):
+        if kwargs["info_type"] != "expired_memory":
+            return
+
+        index = kwargs["index"]
 
 
 class MemoryInfo():
