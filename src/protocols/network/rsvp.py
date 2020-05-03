@@ -196,21 +196,54 @@ class ResourceReservationProtocol(Protocol):
 
 
 class Reservation():
-    def __init__(self, initiator, responder, start_time, end_time):
+    def __init__(self, initiator: str, responder: str, start_time: int, end_time: int, memory_size: int):
         self.initiator = initiator
         self.responder = responder
         self.start_time = start_time
         self.end_time = end_time
-
-    def __eq__(self, another):
-        return (self.initiator == another.initiator and
-                self.responder == another.responder and
-                self.start_time == another.start_time and
-                self.end_time == another.end_time)
+        self.memory_size = memory_size
+        assert self.start_time < self.end_time
 
     def __str__(self):
-        return "Reservation: initiator=%s, responder=%s, start_time=%d, end_time=%d" % (
-            self.initiator, self.responder, self.start_time, self.end_time)
+        return "Reservation: initiator=%s, responder=%s, start_time=%d, end_time=%d, memory_size=%d" % (
+            self.initiator, self.responder, self.start_time, self.end_time, self.memory_size)
+
+
+class MemoryTimeCard():
+    def __init__(self, memory_index: int):
+        self.memory_index = memory_index
+        self.reservations = []
+
+    def add(self, reservation: "Reservation") -> bool:
+        pos = self.schedule_reservation(reservation)
+        if pos >= 0:
+            self.reservations.insert(pos, reservation)
+            return True
+        else:
+            return False
+
+    def remove(self, reservation: "Reservation") -> bool:
+        try:
+            pos = self.reservations.index(reservation)
+            self.reservations.pop(pos)
+            return True
+        except ValueError:
+            return False
+
+    def schedule_reservation(self, resv: "Reservation") -> int:
+        start, end = 0, len(self.reservations) - 1
+        while start <= end:
+            mid = (start + end) // 2
+            if self.reservations[mid].start_time > resv.end_time:
+                end = mid - 1
+            elif self.reservations[mid].end_time < resv.start_time:
+                start = mid + 1
+            elif max(self.reservations[mid].start_time, resv.start_time) <= min(self.reservations[mid].end_time,
+                                                                                resv.end_time):
+                return -1
+            else:
+                raise Exception("Unexpected status")
+        return start
 
 
 class QCap():
