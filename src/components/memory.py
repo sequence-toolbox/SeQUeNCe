@@ -20,7 +20,6 @@ class MemoryArray(Entity):
         memory_params = kwargs.get("memory_params", {})
         self.memories = []
         self.frequency = self.max_frequency
-        self.upper_protocols = []
 
         if self.memory_type == "atom":
             for i in range(num_memories):
@@ -50,13 +49,7 @@ class MemoryArray(Entity):
         memory = kwargs.get("memory")
         index = self.memories.index(memory)
         # notify protocol
-        # self._pop(entity="MemoryArray", index=index)
-        for protocol in self.upper_protocols:
-            protocol.pop(info_type="expired_memory", index=index) 
-
-    def set_direct_receiver(self, indices, direct_receiver):
-        for memo_index in indices:
-            self.memories[memo_index].direct_receiver = direct_receiver
+        self._pop(info_type="expired_memory", index=index)
 
 
 # single-atom memory
@@ -64,32 +57,37 @@ class Memory(Entity):
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.fidelity = kwargs.get("fidelity", 0)
-        self.frequency = kwargs.get("frequency", 1)
+        self.frequency = kwargs.get("frequency", 0)
         self.efficiency = kwargs.get("efficiency", 1)
         self.coherence_time = kwargs.get("coherence_time", -1) # average coherence time in seconds
-        self.direct_receiver = kwargs.get("direct_receiver", None)
+        self.wavelength = kwargs.get("wavelength", 500)
         self.qstate = QuantumState()
 
         self.photon_encoding = single_atom.copy()
         self.photon_encoding["memory"] = self
+        # keep track of previous BSM result (for entanglement generation)
+        # -1 = no result, 0/1 give detector number
+        self.previous_bsm = -1
 
         # keep track of entanglement
         self.entangled_memory = {'node_id': None, 'memo_id': None}
 
         # keep track of current memory write (ignore expiration of past states)
-        self.excite_id = 0
+        self.expiration_event = None
 
-        # keep track of previous BSM result (for entanglement generation)
-        # -1 = no result, 0/1 give detector number
-        self.previous_bsm = -1
-
+        self.next_excite_time = 0
+        
     def init(self):
         pass
 
     def excite(self, dst=""):
+        # if can't excite yet, do nothing
+        if self.timeline.now() < self.next_excite_time:
+            return
+
         state = self.qstate.measure(single_atom["bases"][0])
         # create photon and check if null
-        photon = Photon("", wavelength=(1 / self.frequency), location=self,
+        photon = Photon("", wavelength=self.wavelength, location=self,
                         encoding_type=self.photon_encoding)
 
         if state == 0:
@@ -102,21 +100,22 @@ class Memory(Entity):
             event = Event(decay_time, process)
             self.timeline.schedule(event)
 
+        if self.frequency > 0:
+            period = 1e12 / self.frequency
+            self.next_excite_time = self.timeline.now() + period
+
         # send to direct receiver or node
         if (state == 0) or (numpy.random.random_sample() < self.efficiency):
-            if self.direct_receiver:
-                self.direct_receiver.get(photon)
-            else:
-                self.owner.send_qubit(dst, photon)
+            self.owner.send_qubit(dst, photon)
 
-    def expire(self, excite_id):
-        # check if valid expiration
-        if self.excite_id == excite_id:
-            self.fidelity = 0
-            self.qstate.measure(single_atom["bases"][0]) # to unentangle
-            self.entangled_memory = {'node_id': None, 'memo_id': None}
-            # pop expiration message
-            self._pop(memory=self)
+    def expire(self):
+        self.expiration_event = None
+
+        self.fidelity = 0
+        self.qstate.measure(single_atom["bases"][0]) # to unentangle
+        self.entangled_memory = {'node_id': None, 'memo_id': None}
+        # pop expiration message
+        self._pop(memory=self)
 
     def flip_state(self):
         # flip coefficients of state
@@ -130,5 +129,17 @@ class Memory(Entity):
         self.qstate.set_state_single([complex(1/math.sqrt(2)), complex(1/math.sqrt(2))])
         self.previous_bsm = -1
         self.entangled_memory = {'node_id': None, 'memo_id': None}
+
+        if self.expiration_event is not None:
+            self.timeline.remove_event(self.expiration_event)
+
+        # schedule expiration
+        if self.coherence_time > 0:
+            decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
+            process = Process(self, "expire", [])
+            event = Event(decay_time, process)
+            self.timeline.schedule(event)
+
+            self.expiration_event = event
 
 

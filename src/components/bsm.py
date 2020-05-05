@@ -31,7 +31,6 @@ class BSM(Entity):
         self.phase_error = kwargs.get("phase_error", 0)
         self.photons = []
         self.photon_arrival_time = -1
-        self.upper_protocols = []
         detectors = kwargs.get("detectors", [])
 
         self.detectors = []
@@ -74,11 +73,6 @@ class BSM(Entity):
         detector = kwargs.get("detector")
         detector_num = self.detectors.index(detector)
         time = kwargs.get("time")
-
-    def _pop(self, **kwargs):
-        kwargs["info_type"] = "BSM_res"
-        for protocol in self.upper_protocols:
-            protocol.pop(**kwargs)
 
 
 class PolarizationBSM(BSM):
@@ -131,10 +125,10 @@ class PolarizationBSM(BSM):
 
             # Psi-
             if detector_last + detector_num == 3:
-                self._pop(entity="BSM", res=1, time=time)
+                self._pop(entity="BSM", info_type="BSM_res", res=1, time=time)
             # Psi+
             elif abs(detector_last - detector_num) == 1:
-                self._pop(entity="BSM", res=0, time=time)
+                self._pop(entity="BSM", info_type="BSM_res", res=0, time=time)
 
         self.last_res = [time, detector_num]
 
@@ -206,10 +200,10 @@ class TimeBinBSM(BSM):
             # pop result message
             # Psi+
             if detector_num == self.last_res[1]:
-                self._pop(entity="BSM", res=0, time=time)
+                self._pop(entity="BSM", info_type="BSM_res", res=0, time=time)
             # Psi-
             else:
-                self._pop(entity="BSM", res=1, time=time)
+                self._pop(entity="BSM", info_type="BSM_res", res=1, time=time)
 
         self.last_res = [time, detector_num]
 
@@ -263,6 +257,6 @@ class SingleAtomBSM(BSM):
         time = kwargs.get("time")
 
         res = detector_num
-        self._pop(entity="BSM", res=res, time=time)
+        self._pop(entity="BSM", info_type="BSM_res", res=res, time=time)
 
 

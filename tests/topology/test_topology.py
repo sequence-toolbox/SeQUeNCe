@@ -46,22 +46,3 @@ def test_add_connection_individual():
     assert topo.cchannels[0].delay == 1e9
 
 
-def test_add_connection():
-    tl = Timeline()
-    topo = Topology("test_topo", tl)
-
-    n1 = QuantumRouter("n1", tl)
-    n2 = QuantumRouter("n2", tl)
-    topo.add_node(n1)
-    topo.add_node(n2)
-
-    # contains info for quantum and classical
-    connection_params = {"distance": 4e3, "attenuation": 1e-5, "delay": 1e9}
-
-    topo.add_connection("n1", "n2", 1e3, **connection_params)
-
-    assert len(topo.nodes) == 9 # 2 end nodes, 3 repeaters, 4 middle nodes
-    for qchannel in topo.qchannels:
-        assert qchannel.distance == 500
-
-

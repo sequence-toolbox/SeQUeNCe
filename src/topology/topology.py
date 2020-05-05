@@ -1,5 +1,4 @@
 import json5
-import math
 
 from ..components.detector import QSDetector
 from ..components.light_source import LightSource
@@ -16,15 +15,11 @@ from ..components.optical_channel import QuantumChannel, ClassicalChannel
 class Topology():
     def __init__(self, name, timeline: "Timeline"):
         self.timeline = timeline
-        self.nodes = {}
-        self.qchannels = []
-        self.cchannels = []
+        self.nodes = {} # internal node dictionary {node_name : node}
+        self.graph = {} # internal quantum graph representation {node_name : {adjacent_name : distance}}
 
     def load_config(self, config_file):
         topo_config = json5.load(open(config_file))
-
-        repeater_separation = topo_config["global_params"].pop("repeater_separation")
-        repeater_params = topo_config["global_params"]["repeater_params"]
 
         # create nodes
         for node_params in topo_config["nodes"]:
@@ -35,99 +30,105 @@ class Topology():
                 node = QKDNode(name, self.timeline, **node_params)
             elif node_type == "QuantumRouter":
                 node = QuantumRouter(name, self.timeline, **node_params)
-            elif node_type == "MiddleNode":
-                node = Middle(name, self.timeline, **node_params)
             else:
                 node = Node(name, self.timeline)
             
             self.add_node(node)
 
         # create connections
-        for connection_params in topo_config["connections"]:
-            node1 = connection_params.pop("node1")
-            node2 = connection_params.pop("node2")
+        for qchannel_params in topo_config["qconnections"]:
+            node1 = qchannel_params.pop("node1")
+            node2 = qchannel_params.pop("node2")
+            self.add_quantum_connection(node1, node2, **qchannel_params)
 
-            self.add_connection(node1, node2, repeater_separation, repeater_params, **connection_params)
+        for cchannel_params in topo_config["cconnections"]:
+            node1 = cchannel_params.pop("node1")
+            node2 = cchannel_params.pop("node2")
+            self.add_classical_connection(node1, node2, **cchannel_params)
 
     def add_node(self, node: "Node"):
         self.nodes[node.name] = node
+        self.graph[node.name] = {}
 
-    # creates a single quantum channel connection
     def add_quantum_connection(self, node1: str, node2: str, **kwargs):
         assert node1 in self.nodes and node2 in self.nodes
 
-        name = "_".join(["qc", node1, node2])
-        qchannel = QuantumChannel(name, self.timeline, **kwargs)
-        qchannel.set_ends(self.nodes[node1], self.nodes[node2])
-        self.qchannels.append(qchannel)
+        if (type(self.nodes[node1]) == QuantumRouter) and (type(self.nodes[node2]) == QuantumRouter):
+            # add middle node
+            name_middle = "_".join(["middle", node1, node2])
+            middle = MiddleNode(name_middle, self.timeline, [node1, node2])
+            self.add_node(middle)
 
-    # creates a single classical channel connection
+            # update params
+            kwargs["distance"] = kwargs["distance"] / 2
+
+            # add quantum channels
+            for node in [node1, node2]:
+                self.add_quantum_connection(node, name_middle, **kwargs)
+
+            # also add classical channels
+            for node in [node1, node2]:
+                self.add_classical_connection(node, name_middle, **kwargs)
+
+        else:
+            # add quantum channel
+            name = "_".join(["qc", node1, node2])
+            qchannel = QuantumChannel(name, self.timeline, **kwargs)
+            qchannel.set_ends(self.nodes[node1], self.nodes[node2])
+
+            # edit graph
+            self.graph[node1][node2] = kwargs["distance"]
+            self.graph[node2][node1] = kwargs["distance"]
+
     def add_classical_connection(self, node1: str, node2: str, **kwargs):
         assert node1 in self.nodes and node2 in self.nodes
+
+        # update params
+        kwargs["attenuation"] = 0
 
         name = "_".join(["cc", node1, node2])
         cchannel = ClassicalChannel(name, self.timeline, **kwargs)
         cchannel.set_ends(self.nodes[node1], self.nodes[node2])
-        self.cchannels.append(cchannel)
 
-    # creates a quantum and classical connection with middle nodes/repeaters as needed
-    def add_connection(self, node1: str, node2: str, repeater_separation=None, repeater_params={}, **kwargs):
-        """
-        node1, node2 : name of nodes to connect
-        repeater_separation (default None) : max distance between repeaters (in m)
-        repeater_params (default None) : dict of parameters for repeaters (if necessary)
-        kwargs : dict of parameters for quantum, classical connections
-        """
-        assert node1 in self.nodes and node2 in self.nodes
+    def _get_connections(self):
 
-        linear_node_list = []
 
-        if repeater_separation is not None:
-            num_links = math.ceil(kwargs["distance"] / repeater_separation)
-            kwargs["distance"] = kwargs["distance"] / num_links # separation of repeaters (in m)
+    def generate_forwarding_table(self, starting_node: str):
+        '''
+        generates a mapping of destination nodes to next node for routing using Dijkstra's algorithm
+        node: string (name of node for which to generate table)
+        '''
+        # set up priority queue and track previous nodes
+        nodes = self.nodes.keys()
+        costs = {node: float("inf") for node in nodes}
+        previous = {node: None for node in nodes}
+        costs[starting_node] = 0
 
-            # create repeaters (quantum router)
-            for i in range(num_links - 1):
-                name = "_".join([node1, node2, "repeater", str(i)])
-                node = QuantumRouter(name, self.timeline, **repeater_params)
-                self.add_node(node)
-                linear_node_list.append(name)
+        # Dijkstra's
+        while len(nodes) > 0:
+            current = min(nodes, key=lambda node: costs[node])
+            if costs[current] == float("inf"):
+                break
+            for neighbor in self.graph[current]:
+                distance = self.graph[current][neighbor]
+                new_cost = costs[current] + distance
+                if new_cost < costs[neighbor]:
+                    costs[neighbor] = new_cost
+                    previous[neighbor] = current
+            nodes.remove(current)
 
-        linear_node_list.insert(0, node1)
-        linear_node_list.append(node2)
+        # find forwarding nieghbor for each destination
+        for node, prev in previous.items():
+            if prev is None:
+                del previous[prev]
+            elif prev is starting_node:
+                previous[node] = node
+            else:
+                while prev not in self.graph[starting_node]:
+                    prev = previous[prev]
+                    previous[node] = prev
 
-        # add middle nodes and repeater classical connections (if necessary)
-        if type(self.nodes[node1]) == QuantumRouter:
-            middle_nodes = []
-
-            for i in range(len(linear_node_list) - 1):
-                n1 = linear_node_list[i]
-                n2 = linear_node_list[i + 1]
-                self.add_classical_connection(n1, n2, **kwargs)
-
-            for i in range(len(linear_node_list) - 1):
-                name = "_".join([node1, node2, "middle", str(i)])
-                others = linear_node_list[i:i+2]
-                node = MiddleNode(name, self.timeline, others)
-                self.add_node(node)
-                middle_nodes.append(name)
-
-            for i, node in enumerate(middle_nodes):
-                linear_node_list.insert(2*i + 1, node)
-
-            kwargs["distance"] = kwargs["distance"] / 2
-
-        # add classical connections
-        for i in range(len(linear_node_list) - 1):
-            n1 = linear_node_list[i]
-            n2 = linear_node_list[i + 1]
-            self.add_classical_connection(n1, n2, **kwargs)
-
-        # add quantum connections
-        for i in range(len(linear_node_list) - 1):
-            n1 = linear_node_list[i]
-            n2 = linear_node_list[i + 1]
-            self.add_quantum_connection(n1, n2, **kwargs)
+        return previous
 
     def populate_protocols(self):
         # TODO: add higher-level protocols not added by nodes

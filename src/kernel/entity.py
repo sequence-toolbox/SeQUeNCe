@@ -16,8 +16,12 @@ class Entity(ABC):
         self.owner = None
         timeline.entities.append(self)
 
+        # connected entities
         self.parents = []
         self.children = []
+
+        # connected protocols
+        self.upper_protocols = []
 
     @abstractmethod
     def init(self):
@@ -34,8 +38,12 @@ class Entity(ABC):
             entity.push(**kwargs)
 
     def _pop(self, **kwargs):
-        for entity in self.parents:
-            entity.pop(**kwargs)
+        if len(self.upper_protocols) > 0:
+            for protocol in self.upper_protocols:
+                protocol.pop(**kwargs)
+        else:
+            for entity in self.parents:
+                entity.pop(**kwargs)
 
     def remove_from_timeline(self):
         self.timeline.entities.remove(self)

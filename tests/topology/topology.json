@@ -1,8 +1,4 @@
 {
-    "global_params": {
-        "repeater_separation": 2e3,
-        "repeater_params": {}
-    },
     "nodes": [
         {
             "name": "alice",
@@ -21,7 +17,7 @@
             "type": "QuantumRouter"
         }
     ],
-    "connections": [
+    "qconnections": [
         {
             "node1": "alice",
             "node2": "bob",
@@ -32,6 +28,18 @@
             "node1": "e1",
             "node2": "e2",
             "attenuation": 1e-5,
+            "distance": 5e3
+        }
+    ],
+    "cconnections": [
+        {
+            "node1": "alice",
+            "node2": "bob",
+            "distance": 3e3
+        },
+        {
+            "node1": "e1",
+            "node2": "e2",
             "distance": 5e3
         }
     ]
