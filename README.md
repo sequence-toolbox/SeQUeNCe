@@ -61,3 +61,29 @@ $ source your-venv/bin/activate
 ```
 
 You can now select the created kernel your-env when you start Jupyter
+
+## Useful info
+
+### Profiling with py-spy
+First, ensure that py-spy is installed:
+```shell script
+$ pip3 install py-spy
+```
+To display the output of a program as a flame graph, use the `record` command on either a currently running process or a python program:
+```shell script
+$ py-spy record -o profile.svg --pid 1234
+$ py-spy record -o profile.svg -- python3 program.py
+```
+The `top` command can also be used to show real-time usage. More details can be found on the project page [here](http://pypi.org/project/py-spy/).
+
+### Generating class diagram with pylint
+
+First, ensure that pylint is installed:
+```shell script
+$ pip3 install pylint
+```
+To output a png image, the Graphviz package must be installed. This can be downloaded from the graphviz website [here](graphviz.org). Finally, run the command
+```shell script
+$ pyreverse src -o png
+```
+to generate the class diagram as a .png image.
