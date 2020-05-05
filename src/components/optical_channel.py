@@ -17,6 +17,7 @@ from ..kernel.process import Process
 class OpticalChannel(Entity):
     def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, **kwargs):
         Entity.__init__(self, name, timeline)
+        self.ends = []
         self.attenuation = attenuation
         self.distance = distance  # (measured in m)
         self.polarization_fidelity = kwargs.get("polarization_fidelity", 1)
@@ -34,7 +35,6 @@ class OpticalChannel(Entity):
 class QuantumChannel(OpticalChannel):
     def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, **kwargs):
         super().__init__(name, timeline, attenuation, distance, **kwargs)
-        self.ends = []
         self.delay = 0
         self.loss = 1
         self.frequency = kwargs.get("frequency", 8e7)  # frequency at which send qubits (measured in Hz)
@@ -98,7 +98,6 @@ class QuantumChannel(OpticalChannel):
 class ClassicalChannel(OpticalChannel):
     def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, **kwargs):
         super().__init__(name, timeline, attenuation, distance, **kwargs)
-        self.ends = []
         self.delay = kwargs.get("delay", (self.distance / self.light_speed))
 
     def set_ends(self, end1: "Node", end2: "Node") -> None:

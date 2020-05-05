@@ -61,9 +61,9 @@ class Node(Entity):
 
 
 class MiddleNode(Node):
-    def __init__(self, name: str, timeline: "Timeline", other_nodes: [str], **kwargs) -> None:
+    def __init__(self, name: str, timeline: "Timeline", other_nodes: [str]) -> None:
         from ..protocols.entanglement.generation import EntanglementGenerationB
-        Node.__init__(self, name, timeline, **kwargs)
+        Node.__init__(self, name, timeline)
         self.bsm = SingleAtomBSM("%s_bsm" % name, timeline)
         self.eg = EntanglementGenerationB(self, "{}_eg".format(name), other_nodes)
         self.bsm.upper_protocols.append(self.eg)
@@ -92,6 +92,7 @@ class QuantumRouter(Node):
         self.memory_array = MemoryArray(name + ".MemoryArray", tl, num_memories=memo_size)
         self.memory_array.owner = self
         self.resource_manager = ResourceManager(self)
+        self.map_to_middle_node = {}
 
     def receive_message(self, src: str, msg: "Message") -> None:
         if msg.receiver == "resource_manager":
@@ -106,6 +107,15 @@ class QuantumRouter(Node):
                     if protocol.name == msg.receiver:
                         protocol.received_message(src, msg)
                         break
+
+    def init(self):
+        super().init()
+        for dst in self.qchannels:
+            for end in self.qchannels[dst].ends:
+                if isinstance(end, MiddleNode):
+                    for other in end.eg.others:
+                        if other != self.name:
+                            self.map_to_middle_node[other] = end.name
 
 
 class QKDNode(Node):
