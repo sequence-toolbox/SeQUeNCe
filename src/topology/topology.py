@@ -1,5 +1,4 @@
 import json5
-import math
 
 from ..components.detector import QSDetector
 from ..components.light_source import LightSource
@@ -16,9 +15,8 @@ from ..components.optical_channel import QuantumChannel, ClassicalChannel
 class Topology():
     def __init__(self, name, timeline: "Timeline"):
         self.timeline = timeline
-        self.nodes = {}
-        self.qchannels = []
-        self.cchannels = []
+        self.nodes = {} # internal node dictionary {node_name : node}
+        self.graph = {} # internal quantum graph representation {node_name : {adjacent_name : distance}}
 
     def load_config(self, config_file):
         topo_config = json5.load(open(config_file))
@@ -50,6 +48,7 @@ class Topology():
 
     def add_node(self, node: "Node"):
         self.nodes[node.name] = node
+        self.graph[node.name] = {}
 
     def add_quantum_connection(self, node1: str, node2: str, **kwargs):
         assert node1 in self.nodes and node2 in self.nodes
@@ -76,7 +75,10 @@ class Topology():
             name = "_".join(["qc", node1, node2])
             qchannel = QuantumChannel(name, self.timeline, **kwargs)
             qchannel.set_ends(self.nodes[node1], self.nodes[node2])
-            self.qchannels.append(qchannel)
+
+            # edit graph
+            self.graph[node1][node2] = kwargs["distance"]
+            self.graph[node2][node1] = kwargs["distance"]
 
     def add_classical_connection(self, node1: str, node2: str, **kwargs):
         assert node1 in self.nodes and node2 in self.nodes
@@ -87,8 +89,46 @@ class Topology():
         name = "_".join(["cc", node1, node2])
         cchannel = ClassicalChannel(name, self.timeline, **kwargs)
         cchannel.set_ends(self.nodes[node1], self.nodes[node2])
-        self.cchannels.append(cchannel)
 
+    def _get_connections(self):
+
+
+    def generate_forwarding_table(self, starting_node: str):
+        '''
+        generates a mapping of destination nodes to next node for routing using Dijkstra's algorithm
+        node: string (name of node for which to generate table)
+        '''
+        # set up priority queue and track previous nodes
+        nodes = self.nodes.keys()
+        costs = {node: float("inf") for node in nodes}
+        previous = {node: None for node in nodes}
+        costs[starting_node] = 0
+
+        # Dijkstra's
+        while len(nodes) > 0:
+            current = min(nodes, key=lambda node: costs[node])
+            if costs[current] == float("inf"):
+                break
+            for neighbor in self.graph[current]:
+                distance = self.graph[current][neighbor]
+                new_cost = costs[current] + distance
+                if new_cost < costs[neighbor]:
+                    costs[neighbor] = new_cost
+                    previous[neighbor] = current
+            nodes.remove(current)
+
+        # find forwarding nieghbor for each destination
+        for node, prev in previous.items():
+            if prev is None:
+                del previous[prev]
+            elif prev is starting_node:
+                previous[node] = node
+            else:
+                while prev not in self.graph[starting_node]:
+                    prev = previous[prev]
+                    previous[node] = prev
+
+        return previous
 
     def populate_protocols(self):
         # TODO: add higher-level protocols not added by nodes
