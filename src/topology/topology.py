@@ -13,12 +13,13 @@ from .node import *
 from ..components.optical_channel import QuantumChannel, ClassicalChannel
 
 class Topology():
-    def __init__(self, name, timeline: "Timeline"):
+    def __init__(self, name: str, timeline: "Timeline"):
+        self.name = name
         self.timeline = timeline
         self.nodes = {} # internal node dictionary {node_name : node}
         self.graph = {} # internal quantum graph representation {node_name : {adjacent_name : distance}}
 
-    def load_config(self, config_file):
+    def load_config(self, config_file: str):
         topo_config = json5.load(open(config_file))
 
         # create nodes
@@ -89,9 +90,6 @@ class Topology():
         name = "_".join(["cc", node1, node2])
         cchannel = ClassicalChannel(name, self.timeline, **kwargs)
         cchannel.set_ends(self.nodes[node1], self.nodes[node2])
-
-    def _get_connections(self):
-
 
     def generate_forwarding_table(self, starting_node: str):
         '''

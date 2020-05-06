@@ -1,7 +1,10 @@
 from typing import Dict
 
+if TYPE_CHECKING:
+    from ...topology.node import Node
+
 from ..message import Message
-from ..protocol import Protocol
+from ..protocol import StackProtocol
 
 
 class RoutingMessage(Message):
@@ -11,8 +14,8 @@ class RoutingMessage(Message):
         self.payload = payload
 
 
-class RoutingProtocol(Protocol):
-    def __init__(self, own, forwarding_table: Dict):
+class RoutingProtocol(StackProtocol):
+    def __init__(self, own: "Node", forwarding_table: Dict):
         '''
         forwarding_table: {name of destination node: name of next node}
         '''
@@ -21,23 +24,23 @@ class RoutingProtocol(Protocol):
         Protocol.__init__(self, own)
         self.forwarding_table = forwarding_table
 
-    def add_forwarding_rule(self, dst, next_node):
+    def add_forwarding_rule(self, dst: str, next_node: str):
         assert dst not in self.forwarding_table
         self.forwarding_table[dst] = next_node
 
-    def push(self, msg: Message, dst: str):
+    def push(self, **kwargs):
+        dst = kwargs["dst"]
         assert dst in self.forwarding_table
+        kwargs["dst"] = self.forwarding_table[dst]
+        self._push(**kwargs)
 
-        next_node = self.forwarding_table[dst]
-        msg = RoutingMessage(None, payload=msg)
-        self.own.send_message(next_node, msg)
-
-    def pop(self):
-        pass
+    def pop(self, **kwargs):
+        self._pop(**kwargs)
 
     def received_message(self, src: str, msg: RoutingMessage):
-        # print(self.own.timeline.now(), ':', self.own.name, "received_message from", src, "; msg is (", msg, ")")
         self._pop(msg=msg.payload, src=src)
 
     def init(self):
         pass
+
+
