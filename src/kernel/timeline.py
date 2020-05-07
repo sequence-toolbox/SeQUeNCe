@@ -45,5 +45,5 @@ class Timeline:
     def stop(self) -> None:
         self.stop_time = self.now()
 
-    def remove_event(self, event: "Event"):
+    def remove_event(self, event: "Event") -> None:
         self.events.remove(event)

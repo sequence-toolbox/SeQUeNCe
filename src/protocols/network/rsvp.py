@@ -1,16 +1,17 @@
 from typing import List, TYPE_CHECKING
 
-from sequence.protocols.entanglement.generation import EntanglementGenerationA
-
 if TYPE_CHECKING:
     from ...topology.node import QuantumRouter
     from ..management.memory_manager import MemoryInfo, MemoryManager
 
 from ..management.rule_manager import Rule
+from ..entanglement.generation import EntanglementGenerationA
 from ..entanglement.purification import BBPSSW
 from ..entanglement.swapping import EntanglementSwappingA, EntanglementSwappingB
 from ..message import Message
 from ..protocol import StackProtocol
+from ...kernel.event import Event
+from ...kernel.process import Process
 
 
 class ResourceReservationMessage(Message):
@@ -54,7 +55,7 @@ class ResourceReservationProtocol(StackProtocol):
                 if self.own.name == msg.reservation.responder:
                     path = [qcap.node for qcap in msg.qcaps]
                     rules = self.create_rules(path, reservation=msg.reservation)
-                    self.load_rules(rules)
+                    self.load_rules(rules, msg.reservation)
                     new_msg = ResourceReservationMessage("APPROVE", self.name, msg.reservation, path=path)
                     self._push(dst=msg.reservation.initiator, msg=new_msg)
                 else:
@@ -71,7 +72,7 @@ class ResourceReservationProtocol(StackProtocol):
                 self._push(dst=msg.reservation.initiator, msg=msg)
         elif msg.msg_type == "APPROVE":
             rules = self.create_rules(msg.path, msg.reservation)
-            self.load_rules(rules)
+            self.load_rules(rules, msg.reservation)
             if msg.reservation.initiator == self.own.name:
                 self._pop(msg=msg)
             else:
@@ -333,9 +334,14 @@ class ResourceReservationProtocol(StackProtocol):
 
         return rules
 
-    def load_rules(self, rules: List["Rule"]) -> None:
+    def load_rules(self, rules: List["Rule"], reservation: "Reservation") -> None:
         for rule in rules:
-            self.own.resource_manager.load(rule)
+            process = Process(self.own.resource_manager, "load", [rule])
+            event = Event(reservation.start_time, process)
+            self.own.timeline.schedule(event)
+            process = Process(self.own.resource_manager, "expire", [rule])
+            event = Event(reservation.end_time, process)
+            self.own.timeline.schedule(event)
 
     def received_message(self, src, msg):
         raise Exception("RSVP protocol should not call this function")
