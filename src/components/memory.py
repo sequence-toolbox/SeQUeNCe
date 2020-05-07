@@ -12,14 +12,12 @@ from ..utils.quantum_state import QuantumState
 
 # array of atomic ensemble memories
 class MemoryArray(Entity):
-    def __init__(self, name, timeline, **kwargs):
+    def __init__(self, name, timeline, memory_type="atom", frequency=8e7, num_memories=10, memory_params={}):
         Entity.__init__(self, name, timeline)
-        self.memory_type = kwargs.get("memory_type", "atom")
-        self.max_frequency = kwargs.get("frequency", 8e7)
-        num_memories = kwargs.get("num_memories", 10)
-        memory_params = kwargs.get("memory_params", {})
+        self.memory_type = memory_type
+        self.max_frequency = frequency
         self.memories = []
-        self.frequency = self.max_frequency
+        self.frequency = frequency
 
         if self.memory_type == "atom":
             for i in range(num_memories):
@@ -54,13 +52,13 @@ class MemoryArray(Entity):
 
 # single-atom memory
 class Memory(Entity):
-    def __init__(self, name, timeline, **kwargs):
+    def __init__(self, name, timeline, fidelity=0, frequency=80e6, efficiency=1, coherence_time=-1, wavelength=500):
         Entity.__init__(self, name, timeline)
-        self.fidelity = kwargs.get("fidelity", 0)
-        self.frequency = kwargs.get("frequency", 0)
-        self.efficiency = kwargs.get("efficiency", 1)
-        self.coherence_time = kwargs.get("coherence_time", -1) # average coherence time in seconds
-        self.wavelength = kwargs.get("wavelength", 500)
+        self.fidelity = fidelity
+        self.frequency = frequency
+        self.efficiency = efficiency
+        self.coherence_time = coherence_time # average coherence time in seconds
+        self.wavelength = wavelength
         self.qstate = QuantumState()
 
         self.photon_encoding = single_atom.copy()
@@ -89,16 +87,8 @@ class Memory(Entity):
         # create photon and check if null
         photon = Photon("", wavelength=self.wavelength, location=self,
                         encoding_type=self.photon_encoding)
-
         if state == 0:
             photon.is_null = True
-        elif self.coherence_time > 0:
-            self.excite_id += 1
-            # set expiration
-            decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
-            process = Process(self, "expire", [self.excite_id])
-            event = Event(decay_time, process)
-            self.timeline.schedule(event)
 
         if self.frequency > 0:
             period = 1e12 / self.frequency
@@ -110,36 +100,42 @@ class Memory(Entity):
 
     def expire(self):
         self.expiration_event = None
-
-        self.fidelity = 0
-        self.qstate.measure(single_atom["bases"][0]) # to unentangle
-        self.entangled_memory = {'node_id': None, 'memo_id': None}
+        self.reset()
         # pop expiration message
         self._pop(memory=self)
 
     def flip_state(self):
-        # flip coefficients of state
-        # print(self.qstate.state)
+        # flip coefficients of state (apply x-gate)
         assert len(self.qstate.state) == 2, "qstate length error in memory {}".format(self.name)
         new_state = self.qstate.state
         new_state[0], new_state[1] = new_state[1], new_state[0]
         self.qstate.set_state_single(new_state)
 
     def reset(self):
+        self.fidelity = 0
+        if len(self.qstate.state) > 2:
+            self.qstate.measure(single_atom["bases"][0]) # to unentangle
+        self.qstate.set_state_single([complex(1), complex(0)]) # set to |0> state
+        self.entangled_memory = {'node_id': None, 'memo_id': None}
+
+    def set_plus(self):
         self.qstate.set_state_single([complex(1/math.sqrt(2)), complex(1/math.sqrt(2))])
         self.previous_bsm = -1
         self.entangled_memory = {'node_id': None, 'memo_id': None}
+        
+        # schedule expiration
+        if self.coherence_time > 0:
+            self._schedule_expiration()
 
+    def _schedule_expiration(self):
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
 
-        # schedule expiration
-        if self.coherence_time > 0:
-            decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
-            process = Process(self, "expire", [])
-            event = Event(decay_time, process)
-            self.timeline.schedule(event)
+        decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
+        process = Process(self, "expire", [])
+        event = Event(decay_time, process)
+        self.timeline.schedule(event)
 
-            self.expiration_event = event
+        self.expiration_event = event
 
 

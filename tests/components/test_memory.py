@@ -1,5 +1,7 @@
 import math
 from sequence.kernel.timeline import Timeline
+from sequence.kernel.event import Event
+from sequence.kernel.process import Process
 from sequence.components.memory import *
 
 
@@ -53,7 +55,7 @@ def test_Memory_excite():
 
     tl = Timeline()
     rec = DumbReceiver()
-    mem = Memory("mem", tl)
+    mem = Memory("mem", tl, frequency=0)
     mem.owner = rec
 
     # test with perfect efficiency
@@ -88,7 +90,7 @@ def test_Memory_excite():
     mem.efficiency = 1
 
     for _ in range(NUM_TESTS):
-       mem.reset()
+       mem.set_plus()
        mem.excite()
 
     assert len(rec.photon_list) == NUM_TESTS
@@ -100,7 +102,7 @@ def test_Memory_excite():
 def test_Memory_flip_state():
     tl = Timeline()
     rec = DumbReceiver()
-    mem = Memory("mem", tl)
+    mem = Memory("mem", tl, frequency=0)
     mem.owner = rec
     mem.qstate.set_state_single([complex(1), complex(0)])
 
@@ -116,12 +118,27 @@ def test_Memory_expire():
     tl = Timeline()
     mem = Memory("mem", tl)
     parent = DumbParent(mem)
-    mem.reset()
+    mem.set_plus()
     entangled_memory = {"node_id": "node", "memo_id": 0}
     mem.entangled_memory = entangled_memory
 
     mem.expire()
-    assert complex(0) in mem.qstate.state # check if collapsed to |0> or |1> state
+    assert [complex(1), complex(0)] == mem.qstate.state # check if collapsed to |0> state
     assert mem.entangled_memory == {"node_id": None, "memo_id": None}
+
+
+def test_Memory__schedule_expiration():
+    tl = Timeline()
+    mem = Memory("mem", tl, coherence_time=1)
+    parent = DumbParent(mem)
+    
+    process = Process(mem, "expire", [])
+    event = Event(1e12, process)
+    tl.schedule(event)
+    mem.expiration_event = event
+
+    mem._schedule_expiration()
+
+    assert len(tl.events) == 1
 
 
