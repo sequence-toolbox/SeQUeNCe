@@ -103,7 +103,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         self.ent_round += 1
 
         if self.ent_round == 1:
-            self.memory.reset()
+            self.memory.set_plus()
 
         elif self.ent_round == 2 and self.bsm_res[0] != -1:
             self.memory.flip_state()

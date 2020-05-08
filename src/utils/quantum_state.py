@@ -38,7 +38,11 @@ class QuantumState():
     # for use with single, unentangled state
     def set_state_single(self, state):
         for qs in self.entangled_states:
-            qs.entangled_states = [qs]
+            if qs is not None and qs != self:
+                print(qs.entangled_states)
+                index = qs.entangled_states.index(self)
+                qs.entangled_states[index] = None
+        self.entangled_states = [self]
         self.state = state
 
     def measure(self, basis):
@@ -72,7 +76,8 @@ class QuantumState():
             new_state = (projector0 @ state) / math.sqrt(prob_0)
 
         for s in self.entangled_states:
-            s.state = new_state
+            if s is not None:
+                s.state = new_state
 
         return result
 
