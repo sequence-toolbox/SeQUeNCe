@@ -1,0 +1,164 @@
+{
+    "nodes": [
+        {
+            "name": "NU",
+            "type": "QuantumRouter"
+        },
+        {
+            "name": "StarLight",
+            "type": "QuantumRouter"
+        },
+        {
+            "name": "UChicago_PME",
+            "type": "QuantumRouter"
+        },
+        {
+            "name": "UChichago_HC",
+            "type": "QuantumRouter"
+        },
+        {
+            "name": "Fermilab_1",
+            "type": "QuantumRouter"
+        },
+        {
+            "name": "Fermilab_2",
+            "type": "QuantumRouter"
+        },
+        {
+            "name": "Argonne_1",
+            "type": "QuantumRouter"
+        },
+        {
+            "name": "Argonne_2",
+            "type": "QuantumRouter"
+        },
+        {
+            "name": "Argonne_3",
+            "type": "QuantumRouter"
+        }
+    ],
+    "qconnections": [
+        {
+            "node1": "NU",
+            "node2": "StarLight",
+            "attenuation": 1e-5,
+            "distance": 20e3
+        },
+        {
+            "node1": "StarLight",
+            "node2": "UChicago_PME",
+            "attenuation": 1e-5,
+            "distance": 16e3
+        },
+        {
+            "node1": "UChicago_PME",
+            "node2": "UChicago_HC",
+            "attenuation": 1e-5,
+            "distance": 2e3
+        },
+        {
+            "node1": "StarLight",
+            "node2": "Fermilab_1",
+            "attenuation": 1e-5,
+            "distance": 66e3
+        },
+        {
+            "node1": "StarLight",
+            "node2": "Argonne_1",
+            "attenuation": 1e-5,
+            "distance": 54e3
+        },
+        {
+            "node1": "UChicago_PME",
+            "node2": "Argonne_1",
+            "attenuation": 1e-5,
+            "distance": 42e3
+        },
+        {
+            "node1": "Fermilab_1",
+            "node2": "Fermilab_2",
+            "attenuation": 1e-5,
+            "distance": 2e3
+        },
+        {
+            "node1": "Fermilab_1",
+            "node2": "Argonne_1",
+            "attenuation": 1e-5,
+            "distance": 53e3
+        },
+        {
+            "node1": "Argonne_1",
+            "node2": "Argonne_2",
+            "attenuation": 1e-5,
+            "distance": 41.8e3
+        },
+        {
+            "node1": "Argonne_2",
+            "node2": "Argonne_3",
+            "attenuation": 1e-5,
+            "distance": 100
+        }
+    ],
+    "cconnections": [
+        {
+            "node1": "NU",
+            "node2": "StarLight",
+            "distance": 20e3,
+            "delay": 0.8e9
+        },
+        {
+            "node1": "StarLight",
+            "node2": "UChicago_PME",
+            "distance": 16e3,
+            "delay": 2.99e9
+        },
+        {
+            "node1": "UChicago_PME",
+            "node2": "UChicago_HC",
+            "distance": 2e3,
+            "delay": 0.5e9
+        },
+        {
+            "node1": "StarLight",
+            "node2": "Fermilab_1",
+            "distance": 66e3,
+            "delay": 2.7e9
+        },
+        {
+            "node1": "StarLight",
+            "node2": "Argonne_1",
+            "distance": 54e3,
+            "delay": 1.77e9
+        },
+        {
+            "node1": "UChicago_PME",
+            "node2": "Argonne_1",
+            "distance": 42e3,
+            "delay": 2.94e9
+        },
+        {
+            "node1": "Fermilab_1",
+            "node2": "Fermilab_2",
+            "distance": 2e3,
+            "delay": 0.5e9
+        },
+        {
+            "node1": "Fermilab_1",
+            "node2": "Argonne_1",
+            "distance": 53e3,
+            "delay": 2.62e9
+        },
+        {
+            "node1": "Argonne_1",
+            "node2": "Argonne_2",
+            "distance": 41.8e3,
+            "delay": 0.5e9
+        },
+        {
+            "node1": "Argonne_2",
+            "node2": "Argonne_3",
+            "distance": 100
+            "delay": 0.5e9
+        }
+    ]
+}
