@@ -39,7 +39,6 @@ class QuantumState():
     def set_state_single(self, state):
         for qs in self.entangled_states:
             if qs is not None and qs != self:
-                print(qs.entangled_states)
                 index = qs.entangled_states.index(self)
                 qs.entangled_states[index] = None
         self.entangled_states = [self]

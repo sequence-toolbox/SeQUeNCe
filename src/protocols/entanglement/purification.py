@@ -27,6 +27,8 @@ class BBPSSW(EntanglementProtocol):
         self.meas_memo = meas_memo
         self.another = None
         self.is_success = None
+        if self.meas_memo is None:
+            self.memories.pop()
 
     def is_ready(self) -> bool:
         return self.another is not None

@@ -5,6 +5,8 @@ if TYPE_CHECKING:
     from ..protocol import StackProtocol
 
 from ..message import Message
+from .routing import StaticRoutingProtocol
+from .rsvp import ResourceReservationProtocol
 
 
 class NetworkManagerMessage(Message):
@@ -35,3 +37,16 @@ class NetworkManager():
 
     def received_message(self, src: str, msg: "NetworkManagerMessage"):
         self.protocol_stack[0].pop(src=src, msg=msg.payload)
+
+    def request(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float) -> None:
+        self.protocol_stack[-1].push(responder, start_time, end_time, memory_size, target_fidelity)
+
+
+def NewNetworkManager(owner: "QuantumRouter") -> NetworkManager:
+    manager = NetworkManager(owner, [])
+    routing = StaticRoutingProtocol(owner, owner.name + ".StaticRoutingProtocol", {})
+    rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP")
+    routing.upper_protocols.append(rsvp)
+    rsvp.lower_protocols.append(routing)
+    manager.load_stack([routing, rsvp])
+    return manager

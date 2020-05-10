@@ -126,6 +126,9 @@ class ResourceManager():
         elif msg.msg_type == "RESPONSE":
             protocol = msg.ini_protocol
 
+            if protocol not in self.pending_protocols:
+                return
+
             if msg.is_approved:
                 protocol.set_others(msg.paired_protocol)
                 if protocol.is_ready():
@@ -134,12 +137,11 @@ class ResourceManager():
                     protocol.own = self.owner
                     protocol.start()
             else:
-                if protocol in self.pending_protocols:
-                    protocol.rule.protocols.remove(protocol)
-                    for memory in protocol.memories:
-                        info = self.memory_manager.get_info_by_memory(memory)
-                        if info.remote_node is None:
-                            self.update(None, memory, "RAW")
-                        else:
-                            self.update(None, memory, "ENTANGLED")
-                    self.pending_protocols.remove(protocol)
+                protocol.rule.protocols.remove(protocol)
+                for memory in protocol.memories:
+                    info = self.memory_manager.get_info_by_memory(memory)
+                    if info.remote_node is None:
+                        self.update(None, memory, "RAW")
+                    else:
+                        self.update(None, memory, "ENTANGLED")
+                self.pending_protocols.remove(protocol)

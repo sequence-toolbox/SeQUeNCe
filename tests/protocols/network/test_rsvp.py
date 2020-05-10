@@ -1,5 +1,5 @@
 from numpy import random
-from sequence.components.optical_channel import QuantumChannel
+from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.kernel.timeline import Timeline
 from sequence.protocols.network.rsvp import ResourceReservationProtocol, ResourceReservationMessage, QCap
 
@@ -43,8 +43,8 @@ def test_MemoryTimeCard_schedule_reservation():
 
 
 class FakeNode(QuantumRouter):
-    def __init__(self, name, timeline):
-        super().__init__(name, timeline)
+    def __init__(self, name, timeline, memo_size=50):
+        super().__init__(name, timeline, memo_size)
         self.rsvp = ResourceReservationProtocol(self, self.name + ".rsvp")
         self.rsvp.upper_protocols.append(self)
         self.rsvp.lower_protocols.append(self)
@@ -218,7 +218,7 @@ def test_ResourceReservationProtocol_create_rules():
     routers = []
     mids = []
     for i in range(5):
-        router = FakeNode("r%d" % i, tl)
+        router = FakeNode("r%d" % i, tl, memo_size=20)
         routers.append(router)
     for i in range(4):
         mid = MiddleNode("mid%d" % i, tl, [routers[i].name, routers[i + 1].name])
@@ -228,23 +228,46 @@ def test_ResourceReservationProtocol_create_rules():
         qc.set_ends(routers[i], mids[i])
         qc = QuantumChannel("qc_r_%d" % i, tl, 0, 100)
         qc.set_ends(routers[i + 1], mids[i])
+    for i, n1 in enumerate(routers + mids):
+        for j, n2 in enumerate(routers + mids):
+            if i >= j:
+                continue
+            cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 0, 10, delay=100000)
+            cc.set_ends(n1, n2)
 
     tl.init()
 
     path = [r.name for r in routers]
-    reservation = Reservation("r0", "r4", 0, 100000, 25, 0.9)
+    reservation = Reservation("r0", "r4", 1, 1000000000, 10, 0.9)
 
     for node in [routers[0], routers[-1]]:
         for i, card in enumerate(node.rsvp.timecards):
-            if i >= 25:
+            if i >= 10:
                 break
             card.add(reservation)
 
         rules = node.rsvp.create_rules(path, reservation)
         assert len(rules) == 3
+        node.rsvp.load_rules(rules, reservation)
 
     for node in routers[1:-1]:
         for i, card in enumerate(node.rsvp.timecards):
             card.add(reservation)
         rules = node.rsvp.create_rules(path, reservation)
         assert len(rules) == 6
+        node.rsvp.load_rules(rules, reservation)
+
+    tl.run()
+    for node in routers:
+        assert len(node.resource_manager.rule_manager) == 0
+
+    counter = 0
+    for memory in routers[0].memory_array:
+        if memory.entangled_memory["node_id"] == "r4" and memory.fidelity >= 0.9:
+            counter += 1
+
+    assert counter >= 0
+    for info in routers[0].resource_manager.memory_manager:
+        if info.state == "ENTANGLED" and info.remote_node == "r4" and info.fidelity >= 0.9:
+            counter -= 1
+    assert counter == 0

@@ -25,13 +25,17 @@ class StaticRoutingProtocol(StackProtocol):
         assert dst not in self.forwarding_table
         self.forwarding_table[dst] = next_node
 
-    def push(self, **kwargs):
-        dst = kwargs["dst"]
-        kwargs["dst"] = self.forwarding_table[dst]
-        self._push(**kwargs)
+    def update_forwarding_rule(self, dst: str, next_node: str):
+        self.forwarding_table[dst] = next_node
 
-    def pop(self, **kwargs):
-        self._pop(**kwargs)
+    def push(self, dst: str, msg: "Message"):
+        assert dst != self.own.name
+        dst = self.forwarding_table[dst]
+        new_msg = StaticRoutingMessage("", self.name, msg)
+        self._push(dst=dst, msg=new_msg)
+
+    def pop(self, src: str, msg: "StaticRoutingMessage"):
+        self._pop(src=src, msg=msg.payload)
 
     def received_message(self, src: str, msg: "Message"):
         raise Exception("RSVP protocol should not call this function")

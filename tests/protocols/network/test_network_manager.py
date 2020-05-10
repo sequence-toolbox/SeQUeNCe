@@ -1,25 +1,35 @@
 import math
 
+from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.network.network_manager import NetworkManager, NetworkManagerMessage
+from sequence.protocols.network.network_manager import NewNetworkManager, NetworkManager, NetworkManagerMessage
 from sequence.protocols.protocol import StackProtocol
-from sequence.topology.node import QuantumRouter
+from sequence.topology.node import QuantumRouter, MiddleNode
 
 
 class FakeNode(QuantumRouter):
-    def __init__(self, name, timeline):
-        super().__init__(name, timeline)
-        self.network_manager = NetworkManager(self, [])
+    def __init__(self, name, timeline, memo_size=50):
+        super().__init__(name, timeline, memo_size)
+        self.network_manager = NewNetworkManager((self))
         self.send_log = []
+        self.receive_log = []
+        self.send_out = True
 
     def receive_message(self, src: str, msg: "Message") -> None:
         if msg.receiver == "network_manager":
+            self.receive_log.append((src, msg))
             self.network_manager.received_message(src, msg)
         else:
             super().receive_message(src, msg)
 
     def send_message(self, dst: str, msg: "Message", priority=math.inf) -> None:
         self.send_log.append([dst, msg])
+        if self.send_out:
+            super().send_message(dst, msg, priority)
+
+    def reset(self):
+        self.send_log = []
+        self.receive_log = []
 
 
 class FakeProtocol(StackProtocol):
@@ -56,7 +66,91 @@ def test_NetworkManager_load_stack():
 def test_NetworkManager_push():
     tl = Timeline()
     node = FakeNode("node", tl)
+    node.send_out = False
     assert len(node.send_log) == 0
     node.network_manager.push(dst="dst", msg="msg")
     assert len(node.send_log) == 1
     assert node.send_log[0][0] == "dst" and isinstance(node.send_log[0][1], NetworkManagerMessage)
+
+
+def test_NetworkManager():
+    tl = Timeline(1e10)
+    n1 = FakeNode("n1", tl, 50)
+    n2 = FakeNode("n2", tl, 50)
+    n3 = FakeNode("n3", tl, 20)
+    m1 = MiddleNode("m1", tl, ["n1", "n2"])
+    m2 = MiddleNode("m2", tl, ["n2", "n3"])
+
+    cc = ClassicalChannel("cc_n1_n2", tl, 0, 10, delay=1e5)
+    cc.set_ends(n1, n2)
+    cc = ClassicalChannel("cc_n1_m1", tl, 0, 10, delay=1e5)
+    cc.set_ends(n1, m1)
+    cc = ClassicalChannel("cc_n2_m1", tl, 0, 10, delay=1e5)
+    cc.set_ends(n2, m1)
+    cc = ClassicalChannel("cc_n2_n3", tl, 0, 10, delay=1e5)
+    cc.set_ends(n2, n3)
+    cc = ClassicalChannel("cc_n2_m2", tl, 0, 10, delay=1e5)
+    cc.set_ends(n2, m2)
+    cc = ClassicalChannel("cc_n3_m2", tl, 0, 10, delay=1e5)
+    cc.set_ends(n3, m2)
+
+    qc = QuantumChannel("qc_n1_m1", tl, 0, 10)
+    qc.set_ends(n1, m1)
+    qc = QuantumChannel("qc_n2_m1", tl, 0, 10)
+    qc.set_ends(n2, m1)
+    qc = QuantumChannel("qc_n2_m2", tl, 0, 10)
+    qc.set_ends(n2, m2)
+    qc = QuantumChannel("qc_n3_m2", tl, 0, 10)
+    qc.set_ends(n3, m2)
+
+    n1.network_manager.protocol_stack[0].add_forwarding_rule("n2", "n2")
+    n1.network_manager.protocol_stack[0].add_forwarding_rule("n3", "n2")
+    n2.network_manager.protocol_stack[0].add_forwarding_rule("n1", "n1")
+    n2.network_manager.protocol_stack[0].add_forwarding_rule("n3", "n3")
+    n3.network_manager.protocol_stack[0].add_forwarding_rule("n1", "n2")
+    n3.network_manager.protocol_stack[0].add_forwarding_rule("n2", "n2")
+
+    tl.init()
+
+    # approved request
+    n1.network_manager.request("n3", 1e12, 2e12, 20, 0.9)
+    tl.run()
+    assert len(n1.send_log) == len(n1.receive_log) == 1
+    assert n1.send_log[0][0] == "n2" and n1.receive_log[0][0] == "n2"
+    assert n1.send_log[0][1].payload.payload.msg_type == "REQUEST" and n1.receive_log[0][
+        1].payload.payload.msg_type == "APPROVE"
+    assert len(n2.send_log) == len(n2.receive_log) == 2
+    assert n2.send_log[0][0] == "n3" and n2.receive_log[0][0] == "n1"
+    assert n2.send_log[1][0] == "n1" and n2.receive_log[1][0] == "n3"
+    assert len(n3.send_log) == len(n3.receive_log) == 1
+    assert n3.send_log[0][0] == "n2" and n3.receive_log[0][0] == "n2"
+
+    n1.reset()
+    n2.reset()
+    n3.reset()
+
+    # rejected request
+    n1.network_manager.request("n3", 3e12, 4e12, 50, 0.9)
+    tl.run()
+    assert len(n1.send_log) == len(n1.receive_log) == 1
+    assert n1.send_log[0][0] == "n2" and n1.receive_log[0][0] == "n2"
+    assert n1.send_log[0][1].payload.payload.msg_type == "REQUEST" and n1.receive_log[0][
+        1].payload.payload.msg_type == "REJECT"
+    assert len(n2.send_log) == len(n2.receive_log) == 1
+    assert n2.send_log[0][0] == "n1" and n2.receive_log[0][0] == "n1"
+
+    n1.reset()
+    n2.reset()
+    n3.reset()
+
+    n1.network_manager.request("n3", 5e12, 6e12, 25, 0.9)
+    tl.run()
+    assert len(n1.send_log) == len(n1.receive_log) == 1
+    assert n1.send_log[0][0] == "n2" and n1.receive_log[0][0] == "n2"
+    assert n1.send_log[0][1].payload.payload.msg_type == "REQUEST" and n1.receive_log[0][
+        1].payload.payload.msg_type == "REJECT"
+    assert len(n2.send_log) == len(n2.receive_log) == 2
+    assert n2.send_log[0][0] == "n3" and n2.receive_log[0][0] == "n1"
+    assert n2.send_log[1][0] == "n1" and n2.receive_log[1][0] == "n3"
+    assert len(n3.send_log) == len(n3.receive_log) == 1
+    assert n3.send_log[0][0] == "n2" and n3.receive_log[0][0] == "n2"

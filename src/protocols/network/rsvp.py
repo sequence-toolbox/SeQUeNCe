@@ -121,7 +121,7 @@ class ResourceReservationProtocol(StackProtocol):
                 memory = memories[0]
                 mid = self.own.map_to_middle_node[path[index - 1]]
                 protocol = EntanglementGenerationA(None, "EGA." + memory.name, mid, path[index - 1], memory,
-                                                   memory.fidelity)
+                                                   0.85)
                 return [protocol, [None], [None]]
 
             rule = Rule(10, eg_rule_action, eg_rule_condition)
@@ -151,7 +151,7 @@ class ResourceReservationProtocol(StackProtocol):
                 memory = memories[0]
                 mid = self.own.map_to_middle_node[path[index + 1]]
                 protocol = EntanglementGenerationA(None, "EGA." + memory.name, mid, path[index + 1], memory,
-                                                   memory.fidelity)
+                                                   0.85)
                 protocol.primary = True
                 return [protocol, [path[index + 1]], [req_func]]
 
@@ -185,10 +185,8 @@ class ResourceReservationProtocol(StackProtocol):
                             _protocols.insert(1, protocol)
 
                     if len(_protocols) != 2:
-                        print(_protocols[0].kept_memo.timeline.now(), len(_protocols))
-                        for p in _protocols:
-                            print(p.name)
-                        assert False
+                        return None
+
                     _protocols[0].meas_memo = _protocols[1].kept_memo
                     _protocols[0].memories = [_protocols[0].kept_memo, _protocols[0].meas_memo]
                     _protocols[0].name = _protocols[0].name + "." + _protocols[0].meas_memo.name
