@@ -1,6 +1,5 @@
 import numpy
 import pytest
-from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.kernel.timeline import Timeline
 from sequence.protocols.entanglement.swapping import *
@@ -83,7 +82,7 @@ def test_EntanglementSwapping():
 
         es2.start()
 
-        assert memo2.fidelity == memo3.fidelity == 0
+        assert memo2.fidelity == memo3.fidelity == memo2.raw_fidelity
         assert memo1.entangled_memory["node_id"] == memo4.entangled_memory["node_id"] == "a2"
         assert memo2.entangled_memory["node_id"] == memo3.entangled_memory["node_id"] == None
         assert memo2.entangled_memory["memo_id"] == memo3.entangled_memory["memo_id"] == None
@@ -95,13 +94,13 @@ def test_EntanglementSwapping():
         if es2.is_success:
             counter1 += 1
             assert memo1.entangled_memory["node_id"] == "a3" and memo4.entangled_memory["node_id"] == "a1"
-            assert memo1.fidelity == memo4.fidelity > 0
+            assert memo1.fidelity == memo4.fidelity <= memo1.raw_fidelity
             assert a1.resource_manager.log[-1] == (memo1, "ENTANGLED")
             assert a3.resource_manager.log[-1] == (memo4, "ENTANGLED")
         else:
             counter2 += 1
             assert memo1.entangled_memory["node_id"] == memo4.entangled_memory["node_id"] == None
-            assert memo1.fidelity == memo4.fidelity == 0
+            assert memo1.fidelity == memo4.fidelity == memo1.raw_fidelity
             assert a1.resource_manager.log[-1] == (memo1, "RAW")
             assert a3.resource_manager.log[-1] == (memo4, "RAW")
 

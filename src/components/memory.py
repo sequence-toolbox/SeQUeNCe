@@ -6,7 +6,7 @@ from .photon import Photon
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
-from ..utils.encoding import single_atom, ensemble
+from ..utils.encoding import single_atom
 from ..utils.quantum_state import QuantumState
 
 
@@ -52,12 +52,13 @@ class MemoryArray(Entity):
 
 # single-atom memory
 class Memory(Entity):
-    def __init__(self, name, timeline, fidelity=0, frequency=80e6, efficiency=1, coherence_time=-1, wavelength=500):
+    def __init__(self, name, timeline, fidelity=0.85, frequency=80e6, efficiency=1, coherence_time=-1, wavelength=500):
         Entity.__init__(self, name, timeline)
         self.fidelity = fidelity
+        self.raw_fidelity = fidelity
         self.frequency = frequency
         self.efficiency = efficiency
-        self.coherence_time = coherence_time # average coherence time in seconds
+        self.coherence_time = coherence_time  # average coherence time in seconds
         self.wavelength = wavelength
         self.qstate = QuantumState()
 
@@ -112,11 +113,14 @@ class Memory(Entity):
         self.qstate.set_state_single(new_state)
 
     def reset(self):
-        self.fidelity = 0
+        self.fidelity = self.raw_fidelity
         if len(self.qstate.state) > 2:
-            self.qstate.measure(single_atom["bases"][0]) # to unentangle
-        self.qstate.set_state_single([complex(1), complex(0)]) # set to |0> state
+            self.qstate.measure(single_atom["bases"][0])  # to unentangle
+        self.qstate.set_state_single([complex(1), complex(0)])  # set to |0> state
         self.entangled_memory = {'node_id': None, 'memo_id': None}
+        if self.expiration_event is not None:
+            self.timeline.remove_event(self.expiration_event)
+            self.expiration_event = None
 
     def set_plus(self):
         self.qstate.set_state_single([complex(1/math.sqrt(2)), complex(1/math.sqrt(2))])

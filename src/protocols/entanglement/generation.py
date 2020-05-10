@@ -37,7 +37,7 @@ class EntanglementGenerationMessage(Message):
 
 
 class EntanglementGenerationA(EntanglementProtocol):
-    def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory", fidelity=0.9):
+    def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory"):
         super().__init__(own, name)
         self.middle = middle
         self.other = other  # other node
@@ -49,7 +49,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         self.remote_memo_id = ""  # memory index used by corresponding protocol on other node
 
         # network and hardware info
-        self.fidelity = fidelity
+        self.fidelity = memory.raw_fidelity
         self.qc_delay = 0
         self.expected_time = -1
 
@@ -114,7 +114,6 @@ class EntanglementGenerationA(EntanglementProtocol):
                 print("\tsuccessful entanglement of memory {} on node {}".format(self.memory, self.own.name))
             self.memory.entangled_memory["node_id"] = self.other
             self.memory.entangled_memory["memo_id"] = self.remote_memo_id
-            self.memory.fidelity = self.fidelity
             # TODO: notify of +/- state
             self.own.resource_manager.update(self, self.memory, "ENTANGLED")
 
@@ -122,7 +121,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             # entanglement failed
             if self.debug:
                 print("\tfailed entanglement of memory {} on node {}".format(self.memory, self.own.name))
-            self.memory.fidelity = 0
+            self.memory.reset()
             self.own.resource_manager.update(self, self.memory, "RAW")
             return False
 
