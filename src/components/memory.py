@@ -1,5 +1,10 @@
 import math
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..protocols.entanglement.entanglement_protocol import EntanglementProtocol
+    from ..kernel.timeline import Timeline
+    from ..topology.node import QuantumRouter
 
 import numpy
 
@@ -13,21 +18,17 @@ from ..utils.quantum_state import QuantumState
 
 # array of atomic ensemble memories
 class MemoryArray(Entity):
-    def __init__(self, name, timeline, memory_type="atom", num_memories=10, fidelity=0.85, frequency=80e6, efficiency=1,
-                 coherence_time=-1, wavelength=500):
+    def __init__(self, name: str, timeline: "Timeline", num_memories=10,
+                 fidelity=0.85, frequency=80e6, efficiency=1, coherence_time=-1, wavelength=500):
         Entity.__init__(self, name, timeline)
-        self.memory_type = memory_type
         self.memories = []
-        self.frequency = frequency
+        self.owner = None
 
-        if self.memory_type == "atom":
-            for i in range(num_memories):
-                memory = Memory(self.name + "[%d]" % i, timeline, fidelity, frequency, efficiency, coherence_time,
-                                wavelength)
-                memory.parents.append(self)
-                self.memories.append(memory)
-        else:
-            raise Exception("invalid memory type {}".format(self.memory_type))
+        for i in range(num_memories):
+            memory = Memory(self.name + "[%d]" % i, timeline, fidelity, frequency, efficiency, coherence_time,
+                            wavelength)
+            memory.parents.append(self)
+            self.memories.append(memory)
 
     def __getitem__(self, key):
         return self.memories[key]
@@ -39,21 +40,22 @@ class MemoryArray(Entity):
         for mem in self.memories:
             mem.owner = self.owner
 
-    def pop(self, **kwargs):
-        memory = kwargs.get("memory")
-        index = self.memories.index(memory)
-        # notify protocol
-        self._pop(info_type="expired_memory", index=index)
+    def pop(self, memory: "Memory"):
+        # notify node the expired memory
+        self.owner.memory_expire(memory)
 
     def update_memory_params(self, arg_name: str, value: Any) -> None:
         for memory in self.memories:
             memory.__setattr__(arg_name, value)
 
+    def set_node(self, node: "QuantumRouter") -> None:
+        self.owner = node
+
 
 # single-atom memory
 class Memory(Entity):
-    def __init__(self, name, timeline, fidelity: float, frequency: float, efficiency: float, coherence_time: int,
-                 wavelength: int):
+    def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
+                 efficiency: float, coherence_time: int, wavelength: int):
         Entity.__init__(self, name, timeline)
         assert 0 <= fidelity <= 1
         assert 0 <= efficiency <= 1
@@ -62,7 +64,7 @@ class Memory(Entity):
         self.raw_fidelity = fidelity
         self.frequency = frequency
         self.efficiency = efficiency
-        self.coherence_time = coherence_time  # average coherence time in seconds
+        self.coherence_time = coherence_time  # coherence time in seconds
         self.wavelength = wavelength
         self.qstate = QuantumState()
 
@@ -77,6 +79,7 @@ class Memory(Entity):
 
         # keep track of current memory write (ignore expiration of past states)
         self.expiration_event = None
+        self.excited_photon = None
 
         self.next_excite_time = 0
 
@@ -102,12 +105,19 @@ class Memory(Entity):
         # send to direct receiver or node
         if (state == 0) or (numpy.random.random_sample() < self.efficiency):
             self.owner.send_qubit(dst, photon)
+            self.excited_photon = photon
 
     def expire(self) -> None:
         self.expiration_event = None
+        if self.excited_photon:
+            self.excited_photon.is_null = True
         self.reset()
         # pop expiration message
-        self._pop(memory=self)
+        if self.upper_protocols:
+            for protocol in self.upper_protocols:
+                protocol.memory_expire()
+        else:
+            self._pop(memory=self)
 
     def flip_state(self) -> None:
         # flip coefficients of state (apply x-gate)
@@ -139,9 +149,15 @@ class Memory(Entity):
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
 
-        decay_time = self.timeline.now() + int(numpy.random.exponential(self.coherence_time) * 1e12)
+        decay_time = self.timeline.now() + int(self.coherence_time * 1e12)
         process = Process(self, "expire", [])
         event = Event(decay_time, process)
         self.timeline.schedule(event)
 
         self.expiration_event = event
+
+    def add_protocol(self, protocol: "EntanglementProtocol") -> None:
+        self.upper_protocols.append(protocol)
+
+    def remove_protocol(self, protocol: "EntanglementProtocol") -> None:
+        self.upper_protocols.remove(protocol)

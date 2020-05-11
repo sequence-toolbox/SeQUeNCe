@@ -78,6 +78,9 @@ class ResourceManager():
 
     def update(self, protocol: "EntanglementProtocol", memory: "Memory", state: str) -> bool:
         self.memory_manager.update(memory, state)
+        if protocol:
+            memory.remove_protocol(protocol)
+
         if protocol in self.owner.protocols:
             protocol.rule.protocols.remove(protocol)
             self.owner.protocols.remove(protocol)
@@ -139,9 +142,13 @@ class ResourceManager():
             else:
                 protocol.rule.protocols.remove(protocol)
                 for memory in protocol.memories:
+                    memory.remove_protocol(protocol)
                     info = self.memory_manager.get_info_by_memory(memory)
                     if info.remote_node is None:
                         self.update(None, memory, "RAW")
                     else:
                         self.update(None, memory, "ENTANGLED")
                 self.pending_protocols.remove(protocol)
+
+    def memory_expire(self, memory: "Memory"):
+        self.update(None, memory, "RAW")

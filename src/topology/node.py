@@ -5,6 +5,7 @@ if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..protocols.message import Message
     from ..components.optical_channel import QuantumChannel, ClassicalChannel
+    from ..components.memory import Memory
 
 from ..kernel.entity import Entity
 from ..components.memory import MemoryArray
@@ -14,7 +15,6 @@ from ..components.detector import QSDetectorPolarization, QSDetectorTimeBin
 from ..protocols.qkd.BB84 import BB84
 from ..protocols.management.manager import ResourceManager
 from ..protocols.network.network_manager import NewNetworkManager
-
 from ..utils.encoding import *
 
 
@@ -121,6 +121,9 @@ class QuantumRouter(Node):
                     for other in end.eg.others:
                         if other != self.name:
                             self.map_to_middle_node[other] = end.name
+
+    def memory_expire(self, memory: "Memory") -> None:
+        self.resource_manager.memory_expire(memory)
 
 
 class QKDNode(Node):

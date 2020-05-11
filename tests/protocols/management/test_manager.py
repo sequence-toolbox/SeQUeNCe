@@ -88,15 +88,18 @@ def test_update():
     protocol = FakeProtocol("protocol1")
     node.protocols.append(protocol)
     node.memory_array[0].fidelity = 0.5
+    node.memory_array[0].add_protocol(protocol)
     node.resource_manager.update(protocol, node.memory_array[0], "ENTANGLED")
-    assert len(node.protocols) == len(rule.protocols) == 0
+    assert len(node.protocols) == len(rule.protocols) == len(node.memory_array[0].upper_protocols) == 0
     assert node.resource_manager.memory_manager[0].state == "ENTANGLED"
 
     protocol = FakeProtocol("protocol2")
     node.protocols.append(protocol)
     node.memory_array[1].fidelity = 0.9
+    node.memory_array[1].add_protocol(protocol)
     node.resource_manager.update(protocol, node.memory_array[1], "ENTANGLED")
-    assert len(node.resource_manager.waiting_protocols) == len(rule.protocols) == 1
+    assert len(node.resource_manager.waiting_protocols) == len(rule.protocols) == len(
+        node.memory_array[1].upper_protocols) == 1
     assert node.resource_manager.memory_manager[1].state == "OCCUPIED"
 
 

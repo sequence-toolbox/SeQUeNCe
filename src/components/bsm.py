@@ -248,7 +248,8 @@ class SingleAtomBSM(BSM):
                     elif res == 3:  # Psi-
                         detector_num = 1 - memory_0.previous_bsm
                     else:
-                        raise Exception("invalid bell state result {}".format(res))
+                        # Happens if the memory is expired during photon transmission; randomly select a detector
+                        detector_num = numpy.random.randint(2)
                     self.detectors[detector_num].get()
 
     def pop(self, **kwargs):

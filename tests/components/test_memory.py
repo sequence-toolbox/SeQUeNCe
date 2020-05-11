@@ -1,5 +1,9 @@
-from sequence.components.memory import *
+from sequence.components.memory import Memory, MemoryArray
+from sequence.kernel.event import Event
+from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
+from sequence.protocols.entanglement.entanglement_protocol import EntanglementProtocol
+from sequence.topology.node import QuantumRouter
 
 
 class DumbReceiver():
@@ -8,6 +12,7 @@ class DumbReceiver():
 
     def send_qubit(self, dst, photon):
         self.photon_list.append(photon)
+
 
 class DumbParent():
     def __init__(self, memory):
@@ -28,23 +33,21 @@ def test_MemoryArray_init():
 
 
 def test_MemoryArray_pop():
-    class DumbProtocol():
-        def __init__(self):
-            self.pop_list = []
+    class FakeNode(QuantumRouter):
+        def __init__(self, tl):
+            super().__init__("fake", tl)
+            self.ma = MemoryArray("ma", tl)
+            self.ma.set_node(self)
+            self.is_expired = False
 
-        def pop(self, **kwargs):
-            self.pop_list.append(kwargs)
+        def memory_expire(self, memory: "Memory") -> None:
+            self.is_expired = True
 
     tl = Timeline()
-    ma = MemoryArray("ma", tl, num_memories=10)
-    protocol = DumbProtocol()
-    ma.upper_protocols.append(protocol)
+    node = FakeNode(tl)
+    ma = node.ma
     ma.pop(memory=ma[0])
-
-    assert len(protocol.pop_list) == 1
-    kwargs = protocol.pop_list[0]
-    assert kwargs["info_type"] == "expired_memory"
-    assert kwargs["index"] == 0
+    assert node.is_expired is True
 
 
 def test_Memory_excite():
@@ -112,23 +115,56 @@ def test_Memory_flip_state():
 
 
 def test_Memory_expire():
+    class FakeProtocol(EntanglementProtocol):
+        def __init__(self, name):
+            super().__init__(None, name)
+            self.is_expire = False
+
+        def set_others(self, other: "EntanglementProtocol") -> None:
+            pass
+
+        def start(self) -> None:
+            pass
+
+        def is_ready(self) -> bool:
+            pass
+
+        def memory_expire(self) -> None:
+            self.is_expire = True
+
+        def received_message(self, src: str, msg: "Message"):
+            pass
+
     tl = Timeline()
     mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
     parent = DumbParent(mem)
+    protocol = FakeProtocol("upper_protocol")
+    mem.add_protocol(protocol)
     mem.set_plus()
     entangled_memory = {"node_id": "node", "memo_id": 0}
     mem.entangled_memory = entangled_memory
 
+    # expire with upper protocols
+    assert len(parent.pop_log) == 0 and protocol.is_expire is False
     mem.expire()
-    assert [complex(1), complex(0)] == mem.qstate.state # check if collapsed to |0> state
+    assert [complex(1), complex(0)] == mem.qstate.state  # check if collapsed to |0> state
     assert mem.entangled_memory == {"node_id": None, "memo_id": None}
+    assert len(parent.pop_log) == 0 and protocol.is_expire is True
+
+    # expire without upper protocols
+    mem.remove_protocol(protocol)
+    mem.set_plus()
+    entangled_memory = {"node_id": "node", "memo_id": 0}
+    mem.entangled_memory = entangled_memory
+    mem.expire()
+    assert len(parent.pop_log) == 1
 
 
 def test_Memory__schedule_expiration():
     tl = Timeline()
     mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
     parent = DumbParent(mem)
-    
+
     process = Process(mem, "expire", [])
     event = Event(1e12, process)
     tl.schedule(event)

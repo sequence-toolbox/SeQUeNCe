@@ -65,6 +65,8 @@ class Rule():
         protocol, req_dsts, req_condition_funcs = self.action(memories_info)
         protocol.rule = self
         self.protocols.append(protocol)
+        for info in memories_info:
+            info.memory.add_protocol(protocol)
         for dst, req_func in zip(req_dsts, req_condition_funcs):
             self.rule_manager.send_request(protocol, dst, req_func)
 

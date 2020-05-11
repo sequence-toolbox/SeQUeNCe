@@ -30,4 +30,5 @@ class EventList:
         for i, e in enumerate(self.data):
             if id(e) == id(event):
                 self.data.pop(i)
+                heapq.heapify(self.data)
                 break

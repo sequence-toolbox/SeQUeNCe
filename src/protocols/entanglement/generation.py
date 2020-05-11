@@ -57,6 +57,8 @@ class EntanglementGenerationA(EntanglementProtocol):
         self.ent_round = 0  # keep track of current stage of protocol
         self.bsm_res = [-1, -1]  # keep track of bsm measurements to distinguish Psi+ and Psi-
 
+        self.scheduled_events = []
+
         # misc
         self.primary = False  # one end node is the "primary" that initiates negotiation
         self.debug = False
@@ -154,6 +156,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             process = Process(self.memory, "excite", [self.middle])
             event = Event(emit_time, process)
             self.own.timeline.schedule(event)
+            self.scheduled_events.append(event)
 
             # send negotiate_ack
             another_emit_time = emit_time + self.qc_delay - another_delay
@@ -170,6 +173,7 @@ class EntanglementGenerationA(EntanglementProtocol):
                 process = Process(self, "update_memory", [])
             event = Event(future_start_time, process)
             self.own.timeline.schedule(event)
+            self.scheduled_events.append(event)
 
         elif msg_type == "NEGOTIATE_ACK":
             # configure params
@@ -182,6 +186,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             process = Process(self.memory, "excite", [self.middle])
             event = Event(msg.emit_time, process)
             self.own.timeline.schedule(event)
+            self.scheduled_events.append(event)
 
             # schedule start if memory_stage is 0, else schedule update_memory
             # TODO: base future start time on resolution
@@ -192,6 +197,7 @@ class EntanglementGenerationA(EntanglementProtocol):
                 process = Process(self, "update_memory", [])
             event = Event(future_start_time, process)
             self.own.timeline.schedule(event)
+            self.scheduled_events.append(event)
 
         elif msg_type == "MEAS_RES":
             res = msg.res
@@ -234,8 +240,11 @@ class EntanglementGenerationA(EntanglementProtocol):
     def is_ready(self) -> bool:
         return self.other_protocol is not None
 
-    def release(self):
-        pass
+    def memory_expire(self) -> None:
+        self.own.resource_manager.update(self, self.memory, "RAW")
+        for event in self.scheduled_events:
+            if event.time >= self.own.timeline.now():
+                self.own.timeline.remove_event(event)
 
     # ignore memory expiration events
     def pop(self, **kwargs):
@@ -274,3 +283,6 @@ class EntanglementGenerationB(EntanglementProtocol):
 
     def is_ready(self) -> bool:
         return True
+
+    def memory_expire(self) -> None:
+        raise Exception("EntanglementGenerationB protocol '{}' should not have memory_expire".format(self.name))
