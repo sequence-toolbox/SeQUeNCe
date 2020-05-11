@@ -42,7 +42,7 @@ class NetworkManager():
         self.protocol_stack[-1].push(responder, start_time, end_time, memory_size, target_fidelity)
 
 
-def NewNetworkManager(owner: "QuantumRouter") -> NetworkManager:
+def NewNetworkManager(owner: "QuantumRouter") -> "NetworkManager":
     manager = NetworkManager(owner, [])
     routing = StaticRoutingProtocol(owner, owner.name + ".StaticRoutingProtocol", {})
     rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP")

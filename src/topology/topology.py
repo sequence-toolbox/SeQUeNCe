@@ -1,16 +1,13 @@
+from typing import TYPE_CHECKING
+
 import json5
 
-from ..components.detector import QSDetector
-from ..components.light_source import LightSource
-from ..components.optical_channel import *
-from ..protocols.qkd.BB84 import BB84
-from typing import List, TYPE_CHECKING
-
 if TYPE_CHECKING:
-    from ...kernel.timeline import Timeline
+    from ..kernel.timeline import Timeline
 
 from .node import *
 from ..components.optical_channel import QuantumChannel, ClassicalChannel
+
 
 class Topology():
     def __init__(self, name: str, timeline: "Timeline"):

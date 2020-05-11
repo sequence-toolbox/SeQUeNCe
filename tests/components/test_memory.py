@@ -1,8 +1,5 @@
-import math
-from sequence.kernel.timeline import Timeline
-from sequence.kernel.event import Event
-from sequence.kernel.process import Process
 from sequence.components.memory import *
+from sequence.kernel.timeline import Timeline
 
 
 class DumbReceiver():
@@ -23,7 +20,7 @@ class DumbParent():
 
 def test_MemoryArray_init():
     tl = Timeline()
-    ma = MemoryArray("ma", tl, num_memories=10, memory_params={})
+    ma = MemoryArray("ma", tl, num_memories=10)
 
     assert len(ma.memories) == 10
     for m in ma.memories:
@@ -39,7 +36,7 @@ def test_MemoryArray_pop():
             self.pop_list.append(kwargs)
 
     tl = Timeline()
-    ma = MemoryArray("ma", tl, num_memories=10, memory_params={})
+    ma = MemoryArray("ma", tl, num_memories=10)
     protocol = DumbProtocol()
     ma.upper_protocols.append(protocol)
     ma.pop(memory=ma[0])
@@ -55,7 +52,7 @@ def test_Memory_excite():
 
     tl = Timeline()
     rec = DumbReceiver()
-    mem = Memory("mem", tl, frequency=0)
+    mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
     mem.owner = rec
 
     # test with perfect efficiency
@@ -102,7 +99,7 @@ def test_Memory_excite():
 def test_Memory_flip_state():
     tl = Timeline()
     rec = DumbReceiver()
-    mem = Memory("mem", tl, frequency=0)
+    mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
     mem.owner = rec
     mem.qstate.set_state_single([complex(1), complex(0)])
 
@@ -116,7 +113,7 @@ def test_Memory_flip_state():
 
 def test_Memory_expire():
     tl = Timeline()
-    mem = Memory("mem", tl)
+    mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
     parent = DumbParent(mem)
     mem.set_plus()
     entangled_memory = {"node_id": "node", "memo_id": 0}
@@ -129,7 +126,7 @@ def test_Memory_expire():
 
 def test_Memory__schedule_expiration():
     tl = Timeline()
-    mem = Memory("mem", tl, coherence_time=1)
+    mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
     parent = DumbParent(mem)
     
     process = Process(mem, "expire", [])

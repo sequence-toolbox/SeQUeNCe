@@ -1,8 +1,10 @@
 import numpy
 import pytest
+from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.entanglement.swapping import *
+from sequence.protocols.entanglement.swapping import EntanglementSwappingA, EntanglementSwappingB, \
+    EntanglementSwappingMessage
 from sequence.topology.node import Node
 
 numpy.random.seed(0)
@@ -54,10 +56,11 @@ def test_EntanglementSwapping():
     counter1 = counter2 = 0
 
     for i in range(1000):
-        memo1 = Memory("a1.%d" % i, timeline=tl, fidelity=0.9)
-        memo2 = Memory("a2.%d" % i, timeline=tl, fidelity=0.9)
-        memo3 = Memory("a2.%d" % i, timeline=tl, fidelity=0.9)
-        memo4 = Memory("a3.%d" % i, timeline=tl, fidelity=0.9)
+        memo1 = Memory("a1.%d" % i, timeline=tl, fidelity=0.9, frequency=0, efficiency=1, coherence_time=1,
+                       wavelength=500)
+        memo2 = Memory("a2.%d" % i, tl, 0.9, 0, 1, 1, 500)
+        memo3 = Memory("a2.%d" % i, tl, 0.9, 0, 1, 1, 500)
+        memo4 = Memory("a3.%d" % i, tl, 0.9, 0, 1, 1, 500)
 
         memo1.entangled_memory["node_id"] = "a2"
         memo1.entangled_memory["memo_id"] = memo2.name

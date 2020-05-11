@@ -1,12 +1,8 @@
-import numpy
 import pytest
-
-from sequence.kernel.timeline import Timeline
-from sequence.components.photon import *
 from sequence.components.bsm import *
 from sequence.components.memory import *
+from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import *
-
 
 numpy.random.seed(0)
 
@@ -215,8 +211,8 @@ def test_single_atom_get():
     bsm = make_bsm("bsm", tl, encoding_type="single_atom", detectors=detectors)
     parent = Parent()
     bsm.upper_protocols.append(parent)
-    mem_1 = Memory("mem_1", tl)
-    mem_2 = Memory("mem_2", tl)
+    mem_1 = Memory("mem_1", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
+    mem_2 = Memory("mem_2", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
 
     pw = PhotonSendWrapper(mem_1, mem_2, bsm)
 
@@ -224,7 +220,7 @@ def test_single_atom_get():
     tl.time = 0
     mem_1.qstate.set_state_single([complex(1), complex(0)])
     mem_2.qstate.set_state_single([complex(0), complex(1)])
-    mem_1.excite() # send w/o destination as have direct_receiver set
+    mem_1.excite()  # send w/o destination as have direct_receiver set
     mem_2.excite()
 
     assert len(parent.results) == 1

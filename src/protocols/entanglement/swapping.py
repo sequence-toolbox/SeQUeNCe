@@ -1,14 +1,13 @@
 from typing import TYPE_CHECKING
 
+from numpy.random import random
+
 if TYPE_CHECKING:
     from ...components.memory import Memory
     from ...topology.node import Node
 
-from numpy.random import random
-
 from ..message import Message
 from .entanglement_protocol import EntanglementProtocol
-from ...topology.node import Node
 
 
 class EntanglementSwappingMessage(Message):

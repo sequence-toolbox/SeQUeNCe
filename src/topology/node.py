@@ -13,6 +13,8 @@ from ..components.light_source import LightSource
 from ..components.detector import QSDetectorPolarization, QSDetectorTimeBin
 from ..protocols.qkd.BB84 import BB84
 from ..protocols.management.manager import ResourceManager
+from ..protocols.network.network_manager import NewNetworkManager
+
 from ..utils.encoding import *
 
 
@@ -92,11 +94,14 @@ class QuantumRouter(Node):
         self.memory_array = MemoryArray(name + ".MemoryArray", tl, num_memories=memo_size)
         self.memory_array.owner = self
         self.resource_manager = ResourceManager(self)
+        self.network_manager = NewNetworkManager(self)
         self.map_to_middle_node = {}
 
     def receive_message(self, src: str, msg: "Message") -> None:
         if msg.receiver == "resource_manager":
             self.resource_manager.received_message(src, msg)
+        elif msg.receiver == "network_manager":
+            self.network_manager.received_message(src, msg)
         else:
             if msg.receiver is None:
                 matching = [p for p in self.protocols if type(p) == msg.protocol_type]

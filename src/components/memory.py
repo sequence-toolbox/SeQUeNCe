@@ -1,4 +1,5 @@
 import math
+from typing import Any
 
 import numpy
 
@@ -12,16 +13,17 @@ from ..utils.quantum_state import QuantumState
 
 # array of atomic ensemble memories
 class MemoryArray(Entity):
-    def __init__(self, name, timeline, memory_type="atom", frequency=8e7, num_memories=10, memory_params={}):
+    def __init__(self, name, timeline, memory_type="atom", num_memories=10, fidelity=0.85, frequency=80e6, efficiency=1,
+                 coherence_time=-1, wavelength=500):
         Entity.__init__(self, name, timeline)
         self.memory_type = memory_type
-        self.max_frequency = frequency
         self.memories = []
         self.frequency = frequency
 
         if self.memory_type == "atom":
             for i in range(num_memories):
-                memory = Memory(self.name + "[%d]" % i, timeline, **memory_params)
+                memory = Memory(self.name + "[%d]" % i, timeline, fidelity, frequency, efficiency, coherence_time,
+                                wavelength)
                 memory.parents.append(self)
                 self.memories.append(memory)
         else:
@@ -37,23 +39,25 @@ class MemoryArray(Entity):
         for mem in self.memories:
             mem.owner = self.owner
 
-    def write(self):
-        pass
-
-    def read(self):
-        pass
-
     def pop(self, **kwargs):
         memory = kwargs.get("memory")
         index = self.memories.index(memory)
         # notify protocol
         self._pop(info_type="expired_memory", index=index)
 
+    def update_memory_params(self, arg_name: str, value: Any) -> None:
+        for memory in self.memories:
+            memory.__setattr__(arg_name, value)
+
 
 # single-atom memory
 class Memory(Entity):
-    def __init__(self, name, timeline, fidelity=0.85, frequency=80e6, efficiency=1, coherence_time=-1, wavelength=500):
+    def __init__(self, name, timeline, fidelity: float, frequency: float, efficiency: float, coherence_time: int,
+                 wavelength: int):
         Entity.__init__(self, name, timeline)
+        assert 0 <= fidelity <= 1
+        assert 0 <= efficiency <= 1
+
         self.fidelity = fidelity
         self.raw_fidelity = fidelity
         self.frequency = frequency
@@ -75,11 +79,11 @@ class Memory(Entity):
         self.expiration_event = None
 
         self.next_excite_time = 0
-        
+
     def init(self):
         pass
 
-    def excite(self, dst=""):
+    def excite(self, dst="") -> None:
         # if can't excite yet, do nothing
         if self.timeline.now() < self.next_excite_time:
             return
@@ -99,20 +103,20 @@ class Memory(Entity):
         if (state == 0) or (numpy.random.random_sample() < self.efficiency):
             self.owner.send_qubit(dst, photon)
 
-    def expire(self):
+    def expire(self) -> None:
         self.expiration_event = None
         self.reset()
         # pop expiration message
         self._pop(memory=self)
 
-    def flip_state(self):
+    def flip_state(self) -> None:
         # flip coefficients of state (apply x-gate)
         assert len(self.qstate.state) == 2, "qstate length error in memory {}".format(self.name)
         new_state = self.qstate.state
         new_state[0], new_state[1] = new_state[1], new_state[0]
         self.qstate.set_state_single(new_state)
 
-    def reset(self):
+    def reset(self) -> None:
         self.fidelity = self.raw_fidelity
         if len(self.qstate.state) > 2:
             self.qstate.measure(single_atom["bases"][0])  # to unentangle
@@ -122,16 +126,16 @@ class Memory(Entity):
             self.timeline.remove_event(self.expiration_event)
             self.expiration_event = None
 
-    def set_plus(self):
-        self.qstate.set_state_single([complex(1/math.sqrt(2)), complex(1/math.sqrt(2))])
+    def set_plus(self) -> None:
+        self.qstate.set_state_single([complex(1 / math.sqrt(2)), complex(1 / math.sqrt(2))])
         self.previous_bsm = -1
         self.entangled_memory = {'node_id': None, 'memo_id': None}
-        
+
         # schedule expiration
         if self.coherence_time > 0:
             self._schedule_expiration()
 
-    def _schedule_expiration(self):
+    def _schedule_expiration(self) -> None:
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
 
@@ -141,5 +145,3 @@ class Memory(Entity):
         self.timeline.schedule(event)
 
         self.expiration_event = event
-
-

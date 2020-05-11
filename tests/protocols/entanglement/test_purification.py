@@ -48,10 +48,11 @@ def test_BBPSSW1():
     tl.init()
     for i in range(1000):
         fidelity = numpy.random.uniform(0.5, 1)
-        kept_memo1 = Memory("a1.kept", tl, fidelity=fidelity)
-        kept_memo2 = Memory("a2.kept", tl, fidelity=fidelity)
-        meas_memo1 = Memory("a1.meas", tl, fidelity=fidelity)
-        meas_memo2 = Memory("a2.meas", tl, fidelity=fidelity)
+        kept_memo1 = Memory("a1.kept", tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1,
+                            wavelength=500)
+        kept_memo2 = Memory("a2.kept", tl, fidelity, 0, 1, 1, 500)
+        meas_memo1 = Memory("a1.meas", tl, fidelity, 0, 1, 1, 500)
+        meas_memo2 = Memory("a2.meas", tl, fidelity, 0, 1, 1, 500)
 
         kept_memo1.entangled_memory["node_id"] = "a2"
         kept_memo1.entangled_memory["memo_id"] = "a2.kept"
@@ -105,10 +106,11 @@ def test_BBPSSW2():
     fidelity = 0.8
 
     for i in range(1000):
-        kept_memo1 = Memory("a1.kept", tl, fidelity=fidelity)
-        kept_memo2 = Memory("a2.kept", tl, fidelity=fidelity)
-        meas_memo1 = Memory("a1.meas", tl, fidelity=fidelity)
-        meas_memo2 = Memory("a2.meas", tl, fidelity=fidelity)
+        kept_memo1 = Memory("a1.kept", tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1,
+                            wavelength=500)
+        kept_memo2 = Memory("a2.kept", tl, fidelity, 0, 1, 1, 500)
+        meas_memo1 = Memory("a1.meas", tl, fidelity, 0, 1, 1, 500)
+        meas_memo2 = Memory("a2.meas", tl, fidelity, 0, 1, 1, 500)
 
         kept_memo1.entangled_memory["node_id"] = "a2"
         kept_memo1.entangled_memory["memo_id"] = "a2.kept"
