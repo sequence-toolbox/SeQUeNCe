@@ -240,7 +240,8 @@ class EntanglementGenerationA(EntanglementProtocol):
     def is_ready(self) -> bool:
         return self.other_protocol is not None
 
-    def memory_expire(self) -> None:
+    def memory_expire(self, memory: "Memory") -> None:
+        assert memory == self.memory
         self.own.resource_manager.update(self, self.memory, "RAW")
         for event in self.scheduled_events:
             if event.time >= self.own.timeline.now():

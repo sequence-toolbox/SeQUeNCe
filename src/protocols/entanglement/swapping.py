@@ -17,6 +17,7 @@ class EntanglementSwappingMessage(Message):
             self.fidelity = kwargs.get("fidelity")
             self.remote_node = kwargs.get("remote_node")
             self.remote_memo = kwargs.get("remote_memo")
+            self.expire_time = kwargs.get("expire_time")
         else:
             raise Exception("Entanglement swapping protocol create unkown type of message: %s" % str(msg_type))
 
@@ -68,16 +69,18 @@ class EntanglementSwappingA(EntanglementProtocol):
         if random() < self.success_probability():
             fidelity = self.updated_fidelity(self.left_memo.fidelity, self.right_memo.fidelity)
             self.is_success = True
-
+        expire_time = min(self.left_memo.get_expire_time(), self.right_memo.get_expire_time())
         msg = EntanglementSwappingMessage("SWAP_RES", self.left_protocol.name,
                                           fidelity=fidelity,
                                           remote_node=self.right_memo.entangled_memory["node_id"],
-                                          remote_memo=self.right_memo.entangled_memory["memo_id"])
+                                          remote_memo=self.right_memo.entangled_memory["memo_id"],
+                                          expire_time=expire_time)
         self.own.send_message(self.left_protocol.own.name, msg)
         msg = EntanglementSwappingMessage("SWAP_RES", self.right_protocol.name,
                                           fidelity=fidelity,
                                           remote_node=self.left_memo.entangled_memory["node_id"],
-                                          remote_memo=self.left_memo.entangled_memory["memo_id"])
+                                          remote_memo=self.left_memo.entangled_memory["memo_id"],
+                                          expire_time=expire_time)
         self.own.send_message(self.right_protocol.own.name, msg)
 
         self.left_memo.reset()
@@ -103,6 +106,17 @@ class EntanglementSwappingA(EntanglementProtocol):
     def received_message(self, src: str, msg: "Message") -> None:
         assert False
 
+    def memory_expire(self, memory: "Memory") -> None:
+        if self.is_ready():
+            for memo in self.memories:
+                self.own.resource_manager.update(self, memo, "RAW")
+        else:
+            for memo in self.memories:
+                if memo == memory:
+                    self.own.resource_manager.update(self, memo, "RAW")
+                else:
+                    self.own.resource_manager.update(self, memo, "ENTANGLED")
+
 
 class EntanglementSwappingB(EntanglementProtocol):
     """
@@ -113,6 +127,7 @@ class EntanglementSwappingB(EntanglementProtocol):
 
     def __init__(self, own: "Node", name: str, hold_memo: "Memory"):
         EntanglementProtocol.__init__(self, own, name)
+
         self.memories = [hold_memo]
         self.memory = hold_memo
         self.another = None
@@ -130,6 +145,7 @@ class EntanglementSwappingB(EntanglementProtocol):
             self.memory.fidelity = msg.fidelity
             self.memory.entangled_memory["node_id"] = msg.remote_node
             self.memory.entangled_memory["memo_id"] = msg.remote_memo
+            self.memory.update_expire_time(msg.expire_time)
             self.update_resource_manager(self.memory, "ENTANGLED")
         else:
             self.memory.reset()
@@ -140,3 +156,6 @@ class EntanglementSwappingB(EntanglementProtocol):
 
     def start(self) -> None:
         pass
+
+    def memory_expire(self, memory: "Memory") -> None:
+        self.own.resource_manager.update(self, self.memory, "RAW")

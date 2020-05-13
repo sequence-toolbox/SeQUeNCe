@@ -47,3 +47,8 @@ class Timeline:
 
     def remove_event(self, event: "Event") -> None:
         self.events.remove(event)
+
+    def update_event_time(self, event: "Event", time: int) -> None:
+        self.events.remove(event)
+        event.time = time
+        self.schedule(event)

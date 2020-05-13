@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ...topology.node import Node
+    from ...components.memory import Memory
 
 from ..protocol import Protocol
 
@@ -23,4 +24,8 @@ class EntanglementProtocol(Protocol):
 
     @abstractmethod
     def is_ready(self) -> bool:
+        pass
+
+    @abstractmethod
+    def memory_expire(self, memory: "Memory") -> None:
         pass

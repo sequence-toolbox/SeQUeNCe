@@ -85,6 +85,12 @@ class ResourceManager():
             protocol.rule.protocols.remove(protocol)
             self.owner.protocols.remove(protocol)
 
+        if protocol in self.waiting_protocols:
+            self.waiting_protocols.remove(protocol)
+
+        if protocol in self.pending_protocols:
+            self.pending_protocols.remove(protocol)
+
         # check if any rules have been met
         memo_info = self.memory_manager.get_info_by_memory(memory)
         for rule in self.rule_manager:
@@ -101,6 +107,7 @@ class ResourceManager():
 
     def send_request(self, protocol: "EntanglementProtocol", req_dst: str,
                      req_condition_func: Callable[[List["EntanglementProtocol"]], "EntanglementProtocol"]):
+        protocol.own = self.owner
         if req_dst is None:
             self.waiting_protocols.append(protocol)
             return
@@ -119,7 +126,6 @@ class ResourceManager():
                 self.owner.send_message(src, new_msg)
                 self.waiting_protocols.remove(protocol)
                 self.owner.protocols.append(protocol)
-                protocol.own = self.owner
                 protocol.start()
                 return
 

@@ -68,6 +68,18 @@ class BBPSSW(EntanglementProtocol):
         else:
             self.update_resource_manager(self.kept_memo, state="RAW")
 
+    def memory_expire(self, memory: "Memory") -> None:
+        assert memory in self.memories
+        if self.is_ready():
+            for memo in self.memories:
+                self.own.resource_manager.update(self, memo, "RAW")
+        else:
+            for memo in self.memories:
+                if memo == memory:
+                    self.own.resource_manager.update(self, memo, "RAW")
+                else:
+                    self.own.resource_manager.update(self, memo, "ENTANGLED")
+
     @staticmethod
     def success_probability(F: float) -> float:
         '''

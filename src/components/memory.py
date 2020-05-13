@@ -115,7 +115,7 @@ class Memory(Entity):
         # pop expiration message
         if self.upper_protocols:
             for protocol in self.upper_protocols:
-                protocol.memory_expire()
+                protocol.memory_expire(self)
         else:
             self._pop(memory=self)
 
@@ -161,3 +161,15 @@ class Memory(Entity):
 
     def remove_protocol(self, protocol: "EntanglementProtocol") -> None:
         self.upper_protocols.remove(protocol)
+
+    def update_expire_time(self, time: int):
+        if self.expiration_event is None:
+            if time >= self.timeline.now():
+                process = Process(self, "expire", [])
+                event = Event(time, process)
+                self.timeline.schedule(event)
+        else:
+            self.timeline.update_event_time(self.expiration_event, time)
+
+    def get_expire_time(self) -> int:
+        return self.expiration_event.time if self.expiration_event else -1

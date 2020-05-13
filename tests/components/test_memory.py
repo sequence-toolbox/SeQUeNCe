@@ -129,7 +129,7 @@ def test_Memory_expire():
         def is_ready(self) -> bool:
             pass
 
-        def memory_expire(self) -> None:
+        def memory_expire(self, memory) -> None:
             self.is_expire = True
 
         def received_message(self, src: str, msg: "Message"):

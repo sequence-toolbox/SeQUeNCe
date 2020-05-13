@@ -30,6 +30,7 @@ class FakeProtocol():
         self.rule = Rule(None, None, None)
         self.rule.protocols.append(self)
         self.memories = memories
+        self.own = None
 
     def is_ready(self):
         return self.other_is_setted
@@ -108,12 +109,16 @@ def test_send_request():
     node = FakeNode("node", tl)
     resource_manager = node.resource_manager
     assert len(node.send_log) == 0
-    resource_manager.send_request("protocol_no_send", None, None)
+    protocol = FakeProtocol("no_send")
+    resource_manager.send_request(protocol, None, None)
     assert len(node.send_log) == 0
-    assert "protocol_no_send" in resource_manager.waiting_protocols and len(resource_manager.pending_protocols) == 0
-    node.resource_manager.send_request("protocol_send", "dst_id", "req_condition_func")
+    assert protocol in resource_manager.waiting_protocols and len(resource_manager.pending_protocols) == 0
+    assert protocol.own == node
+    protocol = FakeProtocol("send")
+    node.resource_manager.send_request(protocol, "dst_id", "req_condition_func")
     assert len(node.send_log) == 1
-    assert "protocol_send" in resource_manager.pending_protocols and len(resource_manager.waiting_protocols) == 1
+    assert protocol in resource_manager.pending_protocols and len(resource_manager.waiting_protocols) == 1
+    assert protocol.own == node
 
 
 def test_received_message():
