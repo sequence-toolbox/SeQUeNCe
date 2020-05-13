@@ -13,10 +13,12 @@ class Topology():
     def __init__(self, name: str, timeline: "Timeline"):
         self.name = name
         self.timeline = timeline
-        self.nodes = {} # internal node dictionary {node_name : node}
-        self.graph = {} # internal quantum graph representation {node_name : {adjacent_name : distance}}
+        self.nodes = {}      # internal node dictionary {node_name : node}
+        self.graph = {}      # internal quantum graph representation {node_name : {adjacent_name : distance}}
+        self.qchannels = []  # list of quantum channels
+        self.cchannels = []  # list of classical channels
 
-    def load_config(self, config_file: str):
+    def load_config(self, config_file: str) -> None:
         topo_config = json5.load(open(config_file))
 
         # create nodes
@@ -44,12 +46,13 @@ class Topology():
             node2 = cchannel_params.pop("node2")
             self.add_classical_connection(node1, node2, **cchannel_params)
 
-    def add_node(self, node: "Node"):
+    def add_node(self, node: "Node") -> None:
         self.nodes[node.name] = node
         self.graph[node.name] = {}
 
-    def add_quantum_connection(self, node1: str, node2: str, **kwargs):
-        assert node1 in self.nodes and node2 in self.nodes
+    def add_quantum_connection(self, node1: str, node2: str, **kwargs) -> None:
+        assert node1 in self.nodes, node1 + " not a valid node"
+        assert node2 in self.nodes, node2 + " not a valid node"
 
         if (type(self.nodes[node1]) == QuantumRouter) and (type(self.nodes[node2]) == QuantumRouter):
             # add middle node
@@ -73,12 +76,13 @@ class Topology():
             name = "_".join(["qc", node1, node2])
             qchannel = QuantumChannel(name, self.timeline, **kwargs)
             qchannel.set_ends(self.nodes[node1], self.nodes[node2])
+            self.qchannels.append(qchannel)
 
             # edit graph
             self.graph[node1][node2] = kwargs["distance"]
             self.graph[node2][node1] = kwargs["distance"]
 
-    def add_classical_connection(self, node1: str, node2: str, **kwargs):
+    def add_classical_connection(self, node1: str, node2: str, **kwargs) -> None:
         assert node1 in self.nodes and node2 in self.nodes
 
         # update params
@@ -87,8 +91,9 @@ class Topology():
         name = "_".join(["cc", node1, node2])
         cchannel = ClassicalChannel(name, self.timeline, **kwargs)
         cchannel.set_ends(self.nodes[node1], self.nodes[node2])
+        self.cchannels.append(cchannel)
 
-    def generate_forwarding_table(self, starting_node: str):
+    def generate_forwarding_table(self, starting_node: str) -> dict:
         '''
         generates a mapping of destination nodes to next node for routing using Dijkstra's algorithm
         node: string (name of node for which to generate table)
@@ -128,5 +133,37 @@ class Topology():
     def populate_protocols(self):
         # TODO: add higher-level protocols not added by nodes
         raise NotImplementedError("populate_protocols has not been added")
+
+
+if __name__ == "__main__":
+    '''
+    Program for drawing network from json file
+    input: relative path to json file
+    Graphviz library must be installed
+    '''
+    import sys
+    from graphviz import Graph
+    from sequence.kernel.timeline import Timeline
+    from sequence.topology.topology import Topology
+
+    config_file = sys.argv[1]
+    tl = Timeline()
+    topo = Topology("", tl)
+    topo.load_config(config_file)
+    g = Graph()
+
+    # add nodes
+    for node in topo.graph:
+        g.node(node, str(type(topo.nodes[node])))
+    # add qconnections
+    for qc in topo.qchannels:
+        node1 = qc.ends[0].name
+        node2 = qc.edns[1].name
+        g.edge(node1, node2, color='red')
+    # add cconnections
+    for cc in topo.cchannels:
+        node1 = cc.ends[0].name
+        node2 = cc.edns[1].name
+        g.edge(node1, node2, color='blue')
 
 

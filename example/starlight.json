@@ -13,7 +13,7 @@
             "type": "QuantumRouter"
         },
         {
-            "name": "UChichago_HC",
+            "name": "UChicago_HC",
             "type": "QuantumRouter"
         },
         {
@@ -157,7 +157,7 @@
         {
             "node1": "Argonne_2",
             "node2": "Argonne_3",
-            "distance": 100
+            "distance": 100,
             "delay": 0.5e9
         }
     ]
