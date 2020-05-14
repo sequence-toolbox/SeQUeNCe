@@ -21,6 +21,8 @@ class FakeNode(Node):
     def send_message(self, dst: str, msg: "Message", priority=math.inf) -> None:
         self.send_log.append((dst, msg))
 
+    def get_idle_memory(self, info):
+        pass
 
 class FakeProtocol():
     def __init__(self, name, memories=[]):
@@ -239,6 +241,9 @@ def test_ResourceManager1():
                             protocol.received_message(src, msg)
                             break
 
+        def get_idle_memory(self, info):
+            pass
+
     def eg_rule_condition(memory_info, manager):
         if memory_info.state == "RAW":
             return [memory_info]
@@ -333,6 +338,9 @@ def test_ResourceManager2():
                         if protocol.name == msg.receiver:
                             protocol.received_message(src, msg)
                             break
+
+        def get_idle_memory(self, info):
+            pass
 
     def eg_rule_condition(memory_info, manager):
         if memory_info.state == "RAW":

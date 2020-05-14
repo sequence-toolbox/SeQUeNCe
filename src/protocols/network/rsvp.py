@@ -49,6 +49,7 @@ class ResourceReservationProtocol(StackProtocol):
 
     def pop(self, src: str, msg: "ResourceReservationMessage"):
         if msg.msg_type == "REQUEST":
+            assert self.own.timeline.now() < msg.reservation.start_time
             if self.schedule(msg.reservation):
                 qcap = QCap(self.own.name)
                 msg.qcaps.append(qcap)

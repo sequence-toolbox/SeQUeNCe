@@ -33,7 +33,11 @@ class NetworkManager():
         self.owner.send_message(kwargs["dst"], message)
 
     def pop(self, **kwargs):
-        pass
+        msg = kwargs.get("msg")
+        if msg.msg_type == "APPROVE":
+            self.owner.get_reserve_res(True)
+        else:
+            self.owner.get_reserve_res(False)
 
     def received_message(self, src: str, msg: "NetworkManagerMessage"):
         self.protocol_stack[0].pop(src=src, msg=msg.payload)

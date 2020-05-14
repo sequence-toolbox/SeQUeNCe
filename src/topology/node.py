@@ -1,11 +1,12 @@
 from time import monotonic_ns
 from typing import TYPE_CHECKING, Any
-
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..protocols.message import Message
+    from ..protocols.management.memory_manager import MemoryInfo
     from ..components.optical_channel import QuantumChannel, ClassicalChannel
     from ..components.memory import Memory
+    from ..app.random_request import RandomRequestApp
 
 from ..kernel.entity import Entity
 from ..components.memory import MemoryArray
@@ -96,6 +97,7 @@ class QuantumRouter(Node):
         self.resource_manager = ResourceManager(self)
         self.network_manager = NewNetworkManager(self)
         self.map_to_middle_node = {}
+        self.app = None
 
     def receive_message(self, src: str, msg: "Message") -> None:
         if msg.receiver == "resource_manager":
@@ -124,6 +126,21 @@ class QuantumRouter(Node):
 
     def memory_expire(self, memory: "Memory") -> None:
         self.resource_manager.memory_expire(memory)
+
+    def set_app(self, app: "RandomRequestApp"):
+        self.app = app
+
+    def reserve_net_resource(self, responder: str, start_time: int, end_time: int, memory_size: int,
+                             target_fidelity: float) -> None:
+        self.network_manager.request(responder, start_time, end_time, memory_size, target_fidelity)
+
+    def get_idle_memory(self, info: "MemoryInfo") -> None:
+        if self.app:
+            self.app.get_memory(info)
+
+    def get_reserve_res(self, res: bool) -> None:
+        if self.app:
+            self.app.get_reserve_res(res)
 
 
 class QKDNode(Node):

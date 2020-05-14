@@ -76,7 +76,7 @@ class ResourceManager():
             for memory in protocol.memories:
                 self.update(None, memory, "RAW")
 
-    def update(self, protocol: "EntanglementProtocol", memory: "Memory", state: str) -> bool:
+    def update(self, protocol: "EntanglementProtocol", memory: "Memory", state: str) -> None:
         self.memory_manager.update(memory, state)
         if protocol:
             memory.remove_protocol(protocol)
@@ -99,8 +99,9 @@ class ResourceManager():
                 rule.do(memories_info)
                 for info in memories_info:
                     info.to_occupied()
-                break
-        return True
+                return
+
+        self.owner.get_idle_memory(memo_info)
 
     def get_memory_manager(self):
         return self.memory_manager
