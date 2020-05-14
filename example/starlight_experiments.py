@@ -25,7 +25,7 @@ if __name__ == "__main__":
         print("\t" + qc.name + ": ", qc)
     print("Classical Channels:")
     for cc in network_topo.cchannels:
-        print("\t" + cc.name + ": ", cc)
+        print("\t" + cc.name + ": ", cc, "\tdelay:", cc.delay)
 
     routing_tables = {}
     for node in network_topo.nodes:

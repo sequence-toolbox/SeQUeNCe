@@ -99,7 +99,7 @@ class Topology():
         node: string (name of node for which to generate table)
         '''
         # set up priority queue and track previous nodes
-        nodes = self.nodes.keys()
+        nodes = list(self.nodes.keys())
         costs = {node: float("inf") for node in nodes}
         previous = {node: None for node in nodes}
         costs[starting_node] = 0
@@ -117,18 +117,27 @@ class Topology():
                     previous[neighbor] = current
             nodes.remove(current)
 
-        # find forwarding nieghbor for each destination
-        for node, prev in previous.items():
-            if prev is None:
-                del previous[prev]
-            elif prev is starting_node:
-                previous[node] = node
+        # find forwarding neighbor for each destination
+        next_node = {k: v for k, v in previous.items() if v} # remove nodes whose previous is None (starting, not connected)
+        for node, prev in next_node.items():
+            if prev is starting_node:
+                next_node[node] = node
             else:
                 while prev not in self.graph[starting_node]:
-                    prev = previous[prev]
-                    previous[node] = prev
+                    prev = next_node[prev]
+                    next_node[node] = prev
 
-        return previous
+        # modify forwarding table to bypass middle nodes
+        for node, dst in next_node.items():
+            if type(self.nodes[dst]) == MiddleNode:
+                adjacent_nodes = list(self.graph[dst].keys())
+                proper_dst = None
+                for adjacent in adjacent_nodes:
+                    if adjacent != starting_node:
+                        proper_dst = adjacent
+                next_node[node] = proper_dst
+
+        return next_node
 
     def populate_protocols(self):
         # TODO: add higher-level protocols not added by nodes
