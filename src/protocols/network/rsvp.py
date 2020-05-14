@@ -35,6 +35,9 @@ class ResourceReservationProtocol(StackProtocol):
     def __init__(self, own: "QuantumRouter", name: str):
         super().__init__(own, name)
         self.timecards = [MemoryTimeCard(i) for i in range(len(own.memory_array))]
+        self.es_succ_prob = 1
+        self.es_degradation = 0.95
+        self.accepted_reservation = []
 
     def push(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float):
         reservation = Reservation(self.own.name, responder, start_time, end_time, memory_size, target_fidelity)
@@ -310,8 +313,9 @@ class ResourceReservationProtocol(StackProtocol):
                                 and protocol.memory.name == memories_info[1].remote_memo):
                             return protocol
 
-                protocol = EntanglementSwappingA(None, "ESA.%s.%s" % (memories[0].name, memories[1].name), memories[0],
-                                                 memories[1])
+                protocol = EntanglementSwappingA(None, "ESA.%s.%s" % (memories[0].name, memories[1].name),
+                                                 memories[0], memories[1],
+                                                 success_prob=self.es_succ_prob, degradation=self.es_degradation)
                 dsts = [info.remote_node for info in memories_info]
                 req_funcs = [req_func1, req_func2]
                 return protocol, dsts, req_funcs
@@ -334,6 +338,7 @@ class ResourceReservationProtocol(StackProtocol):
         return rules
 
     def load_rules(self, rules: List["Rule"], reservation: "Reservation") -> None:
+        self.accepted_reservation.append(reservation)
         for rule in rules:
             process = Process(self.own.resource_manager, "load", [rule])
             event = Event(reservation.start_time, process)
@@ -344,6 +349,14 @@ class ResourceReservationProtocol(StackProtocol):
 
     def received_message(self, src, msg):
         raise Exception("RSVP protocol should not call this function")
+
+    def set_swapping_success_rate(self, prob: float) -> None:
+        assert 0 <= prob <= 1
+        self.es_succ_prob = prob
+
+    def set_swapping_degradation(self, degradation: float) -> None:
+        assert 0 <= degradation <= 1
+        self.es_degradation = degradation
 
 
 class Reservation():

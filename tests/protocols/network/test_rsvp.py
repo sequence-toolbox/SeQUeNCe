@@ -6,6 +6,7 @@ from sequence.protocols.network.rsvp import ResourceReservationProtocol, Resourc
 random.seed(0)
 
 from sequence.protocols.network.rsvp import MemoryTimeCard, Reservation
+from sequence.protocols.entanglement.swapping import EntanglementSwappingA
 from sequence.topology.node import QuantumRouter, MiddleNode
 
 
@@ -271,3 +272,67 @@ def test_ResourceReservationProtocol_create_rules():
         if info.state == "ENTANGLED" and info.remote_node == "r4" and info.fidelity >= 0.9:
             counter -= 1
     assert counter == 0
+
+
+def test_ResourceReservationProtocol_set_es_params():
+    class TestNode(FakeNode):
+        def __init__(self, name, tl):
+            super().__init__(name, tl, memo_size=20)
+            self.counter = 0
+
+        def receive_message(self, src: str, msg: "Message") -> None:
+            for protocol in self.resource_manager.pending_protocols:
+                if isinstance(protocol, EntanglementSwappingA):
+                    assert protocol.success_prob == 0.8 and protocol.degradation == 0.7
+                    self.counter += 1
+            super().receive_message(src, msg)
+
+    tl = Timeline()
+    routers = []
+    mids = []
+    for i in range(5):
+        router = TestNode("r%d" % i, tl)
+        router.rsvp.set_swapping_success_rate(0.8)
+        router.rsvp.set_swapping_degradation(0.7)
+        routers.append(router)
+    for i in range(4):
+        mid = MiddleNode("mid%d" % i, tl, [routers[i].name, routers[i + 1].name])
+        mids.append(mid)
+    for i in range(4):
+        qc = QuantumChannel("qc_l_%d" % i, tl, 0, 100)
+        qc.set_ends(routers[i], mids[i])
+        qc = QuantumChannel("qc_r_%d" % i, tl, 0, 100)
+        qc.set_ends(routers[i + 1], mids[i])
+    for i, n1 in enumerate(routers + mids):
+        for j, n2 in enumerate(routers + mids):
+            if i >= j:
+                continue
+            cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 0, 10, delay=100000)
+            cc.set_ends(n1, n2)
+
+    tl.init()
+
+    path = [r.name for r in routers]
+    reservation = Reservation("r0", "r4", 1, 9000000, 10, 0.9)
+    for node in [routers[0], routers[-1]]:
+        for i, card in enumerate(node.rsvp.timecards):
+            if i >= 10:
+                break
+            card.add(reservation)
+
+        rules = node.rsvp.create_rules(path, reservation)
+        assert len(rules) == 3
+        node.rsvp.load_rules(rules, reservation)
+
+    for node in routers[1:-1]:
+        for i, card in enumerate(node.rsvp.timecards):
+            card.add(reservation)
+        rules = node.rsvp.create_rules(path, reservation)
+        assert len(rules) == 6
+        node.rsvp.load_rules(rules, reservation)
+
+    tl.run()
+    counter = 0
+    for node in routers:
+        counter += node.counter
+    assert counter > 0
