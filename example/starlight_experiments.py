@@ -27,4 +27,8 @@ if __name__ == "__main__":
     for cc in network_topo.cchannels:
         print("\t" + cc.name + ": ", cc)
 
+    routing_tables = {}
+    for node in network_topo.nodes:
+        routing_tables[node] = network_topo.generate_forwarding_table(node)
+
 
