@@ -93,7 +93,7 @@
             "distance": 41.8e3
         },
         {
-            "node1": "Argonne_2",
+            "node1": "Argonne_1",
             "node2": "Argonne_3",
             "attenuation": 1e-5,
             "distance": 100
@@ -155,7 +155,7 @@
             "delay": 0.25e9
         },
         {
-            "node1": "Argonne_2",
+            "node1": "Argonne_1",
             "node2": "Argonne_3",
             "distance": 100,
             "delay": 0.25e9
