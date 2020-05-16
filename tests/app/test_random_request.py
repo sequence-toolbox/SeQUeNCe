@@ -16,10 +16,10 @@ class FakeNode(QuantumRouter):
 def test_RandomRequestApp_update_last_rsvp_metrics():
     tl = Timeline()
     node = QuantumRouter("n1", tl)
-    app = RandomRequestApp(node, [])
+    app = RandomRequestApp(node, [], 0)
     app._update_last_rsvp_metrics()
     assert len(app.get_throughput()) == 0
-    app.cur_reserve = ["n2", 10, 20, 5, 0.9]
+    app.cur_reserve = ["n2", 1e13, 2e13, 5, 0.9]
     app.memory_counter = 10
     tl.time = 20
     assert app.request_time == 0
@@ -33,7 +33,7 @@ def test_RandomRequestApp_update_last_rsvp_metrics():
 def test_RandomRequestApp_start():
     tl = Timeline()
     node = FakeNode("n1", tl)
-    app = RandomRequestApp(node, ["n2", "n3"])
+    app = RandomRequestApp(node, ["n2", "n3"], 0)
     for _ in range(1000):
         app.start()
         assert app.cur_reserve[0] == node.reserve_log[-1]
@@ -49,7 +49,7 @@ def test_RandomRequestApp_get_reserve_res():
     tl = Timeline()
     tl.time = 6
     node = FakeNode("n1", tl)
-    app = RandomRequestApp(node, ["n2", "n3"])
+    app = RandomRequestApp(node, ["n2", "n3"], 0)
     app.cur_reserve = ["n3", 10, 20, 5, 0.9]
     app.request_time = 5
     app.get_reserve_res(True)
@@ -59,7 +59,7 @@ def test_RandomRequestApp_get_reserve_res():
     tl = Timeline()
     tl.time = 6
     node = FakeNode("n1", tl)
-    app = RandomRequestApp(node, ["n2", "n3"])
+    app = RandomRequestApp(node, ["n2", "n3"], 0)
     app.cur_reserve = ["n3", 10, 20, 5, 0.9]
     app.request_time = 5
     app.get_reserve_res(False)
@@ -71,7 +71,7 @@ def test_RandomRequestApp_get_reserve_res():
 def test_RandomRequestApp_get_memory():
     tl = Timeline()
     node = FakeNode("n1", tl)
-    app = RandomRequestApp(node, ["n2", "n3"])
+    app = RandomRequestApp(node, ["n2", "n3"], 0)
     app.cur_reserve = ["n2", 0, 100, 0.85]
 
     node.memory_array[0].entangled_memory["node_id"] = "n2"

@@ -16,6 +16,8 @@ class ResourceManager():
 
     def update(self, protocol, memory, state):
         self.log.append((memory, state))
+        if state == "RAW":
+            memory.reset()
 
 
 class FakeNode(Node):

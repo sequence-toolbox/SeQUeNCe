@@ -11,11 +11,11 @@ from ..topology.node import QuantumRouter
 
 
 class RandomRequestApp():
-    def __init__(self, node: "QuantumRouter", others: List[str]):
+    def __init__(self, node: "QuantumRouter", others: List[str], seed: int):
         self.node = node
         self.node.set_app(self)
         self.others = others
-        self.rg = random.Generator(random.PCG64())
+        self.rg = random.default_rng(seed)
 
         self.cur_reserve = []
         self.request_time = 0
@@ -37,7 +37,7 @@ class RandomRequestApp():
 
     def _update_last_rsvp_metrics(self):
         if self.cur_reserve:
-            throughput = self.memory_counter / (self.cur_reserve[2] - self.cur_reserve[1])
+            throughput = self.memory_counter / (self.cur_reserve[2] - self.cur_reserve[1]) * 1e12
             self.throughput.append(throughput)
 
         self.cur_reserve = []

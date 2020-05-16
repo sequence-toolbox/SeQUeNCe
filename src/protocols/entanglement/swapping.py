@@ -83,8 +83,6 @@ class EntanglementSwappingA(EntanglementProtocol):
                                           expire_time=expire_time)
         self.own.send_message(self.right_protocol.own.name, msg)
 
-        self.left_memo.reset()
-        self.right_memo.reset()
         self.update_resource_manager(self.left_memo, "RAW")
         self.update_resource_manager(self.right_memo, "RAW")
 
@@ -101,7 +99,7 @@ class EntanglementSwappingA(EntanglementProtocol):
         '''
         A simple model updating fidelity of entanglement
         '''
-        return (f1 + f2) / 2 * self.degradation
+        return f1 * f2 * self.degradation
 
     def received_message(self, src: str, msg: "Message") -> None:
         assert False
@@ -148,7 +146,6 @@ class EntanglementSwappingB(EntanglementProtocol):
             self.memory.update_expire_time(msg.expire_time)
             self.update_resource_manager(self.memory, "ENTANGLED")
         else:
-            self.memory.reset()
             self.update_resource_manager(self.memory, "RAW")
 
     def update_resource_manager(self, memory: "Memory", state: str) -> None:

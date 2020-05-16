@@ -93,7 +93,7 @@
             "distance": 41.8e3
         },
         {
-            "node1": "Argonne_2",
+            "node1": "Argonne_1",
             "node2": "Argonne_3",
             "attenuation": 1e-5,
             "distance": 100
@@ -101,14 +101,62 @@
     ],
     "cconnections": [
         {
+            "node1": "Fermilab_1",
+            "node2": "Argonne_1",
+            "distance": 53e3,
+            "delay": 1.31e9
+        },
+        {
             "node1": "NU",
-            "node2": "StarLight",
+            "node2": "Argonne_1",
+            "distance": 0,
+            "delay": 0.995e9
+        },
+        {
+            "node1": "NU",
+            "node2": "Fermilab_1",
+            "distance": 0,
+            "delay": 1.455e9
+        },
+        {
+            "node1": "StarLight",
+            "node2": "Argonne_1",
+            "distance": 54e3,
+            "delay": 0.885e9
+        },
+        {
+            "node1": "StarLight",
+            "node2": "Fermilab_1",
+            "distance": 66e3,
+            "delay": 1.35e9
+        },
+        {
+            "node1": "StarLight",
+            "node2": "NU",
             "distance": 20e3,
             "delay": 0.395e9
         },
         {
-            "node1": "StarLight",
-            "node2": "UChicago_PME",
+            "node1": "UChicago_PME",
+            "node2": "Argonne_1",
+            "distance": 42e3,
+            "delay": 1.47e9
+        },
+        {
+            "node1": "UChicago_PME",
+            "node2": "Fermilab_1",
+            "distance": 0,
+            "delay": 1.97e9
+        },
+        {
+            "node1": "UChicago_PME",
+            "node2": "NU",
+            "distance": 0,
+            "delay": 3.3775e9
+        },
+        {
+            "node1": "UChicago_PME",
+            "node2": "StarLight",
             "distance": 16e3,
             "delay": 1.495e9
         },
@@ -119,34 +167,10 @@
             "delay": 0.25e9
         },
         {
-            "node1": "StarLight",
-            "node2": "Fermilab_1",
-            "distance": 66e3,
-            "delay": 1.35e9
-        },
-        {
-            "node1": "StarLight",
-            "node2": "Argonne_1",
-            "distance": 54e3,
-            "delay": 0.885e9
-        },
-        {
-            "node1": "UChicago_PME",
-            "node2": "Argonne_1",
-            "distance": 42e3,
-            "delay": 1.47e9
-        },
-        {
             "node1": "Fermilab_1",
             "node2": "Fermilab_2",
             "distance": 2e3,
             "delay": 0.25e9
-        },
-        {
-            "node1": "Fermilab_1",
-            "node2": "Argonne_1",
-            "distance": 53e3,
-            "delay": 1.31e9
         },
         {
             "node1": "Argonne_1",
@@ -155,7 +179,7 @@
             "delay": 0.25e9
         },
         {
-            "node1": "Argonne_2",
+            "node1": "Argonne_1",
             "node2": "Argonne_3",
             "distance": 100,
             "delay": 0.25e9

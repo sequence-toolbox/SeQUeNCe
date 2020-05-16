@@ -123,7 +123,6 @@ class EntanglementGenerationA(EntanglementProtocol):
             # entanglement failed
             if self.debug:
                 print("\tfailed entanglement of memory {} on node {}".format(self.memory, self.own.name))
-            self.memory.reset()
             self.own.resource_manager.update(self, self.memory, "RAW")
             return False
 

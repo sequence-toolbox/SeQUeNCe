@@ -84,7 +84,7 @@ class Memory(Entity):
         self.next_excite_time = 0
 
     def init(self):
-        pass
+        self.fidelity = self.raw_fidelity
 
     def excite(self, dst="") -> None:
         # if can't excite yet, do nothing
@@ -111,13 +111,13 @@ class Memory(Entity):
         self.expiration_event = None
         if self.excited_photon:
             self.excited_photon.is_null = True
-        self.reset()
         # pop expiration message
         if self.upper_protocols:
             for protocol in self.upper_protocols:
                 protocol.memory_expire(self)
         else:
             self._pop(memory=self)
+        self.reset()
 
     def flip_state(self) -> None:
         # flip coefficients of state (apply x-gate)
