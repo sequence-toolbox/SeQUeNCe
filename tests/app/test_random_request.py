@@ -20,6 +20,7 @@ def test_RandomRequestApp_update_last_rsvp_metrics():
     app._update_last_rsvp_metrics()
     assert len(app.get_throughput()) == 0
     app.cur_reserve = ["n2", 1e13, 2e13, 5, 0.9]
+    app.reserves.append(app.cur_reserve)
     app.memory_counter = 10
     tl.time = 20
     assert app.request_time == 0
@@ -63,6 +64,7 @@ def test_RandomRequestApp_get_reserve_res():
     app.cur_reserve = ["n3", 10, 20, 5, 0.9]
     app.request_time = 5
     app.get_reserve_res(False)
+    tl.run()
     assert len(app.get_wait_time()) == 0
     assert app.cur_reserve[-1] != 0.9
     assert len(node.reserve_log) == 1

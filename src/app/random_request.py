@@ -23,6 +23,7 @@ class RandomRequestApp():
 
         self.wait_time = []
         self.throughput = []
+        self.reserves = []
 
     def start(self):
         self._update_last_rsvp_metrics()
@@ -34,9 +35,10 @@ class RandomRequestApp():
         fidelity = self.rg.uniform(0.7, 0.9)
         self.node.reserve_net_resource(responder, start_time, end_time, memory_size, fidelity)
         self.cur_reserve = [responder, start_time, end_time, memory_size, fidelity]
+        # print(self.node.timeline.now(), self.node.name, "request", self.cur_reserve)
 
     def _update_last_rsvp_metrics(self):
-        if self.cur_reserve:
+        if self.cur_reserve and len(self.throughput) < len(self.reserves):
             throughput = self.memory_counter / (self.cur_reserve[2] - self.cur_reserve[1]) * 1e12
             self.throughput.append(throughput)
 
@@ -45,13 +47,16 @@ class RandomRequestApp():
         self.memory_counter = 0
 
     def get_reserve_res(self, result: bool) -> None:
+        process = Process(self, "start", [])
         if result:
-            process = Process(self, "start", [])
+            self.reserves.append(self.cur_reserve)
+            # print(self.node.timeline.now(), self.node.name, "request", self.cur_reserve, result)
             event = Event(self.cur_reserve[2] + 1, process)
             self.node.timeline.schedule(event)
             self.wait_time.append(self.cur_reserve[1] - self.request_time)
         else:
-            self.start()
+            event = Event(self.node.timeline.now() + 5e12, process)
+            self.node.timeline.schedule(event)
 
     def get_memory(self, info: "MemoryInfo") -> None:
         if info.remote_node == self.cur_reserve[0] and info.fidelity >= self.cur_reserve[-1]:

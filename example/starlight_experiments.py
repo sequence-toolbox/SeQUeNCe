@@ -8,7 +8,7 @@ from sequence.topology.topology import Topology
 if __name__ == "__main__":
     # Experiment params and config
     network_config_file = "example/starlight.json"
-    runtime = 1e15
+    runtime = 1e14
 
     seed(1)
     tl = Timeline(runtime)
@@ -79,13 +79,13 @@ if __name__ == "__main__":
                 # print("  ", dst, next_node)
 
     # set memory parameters
-    # MEMO_FREQ = 1e11
+    MEMO_FREQ = 1e11
     MEMO_EXPIRE = -1
     MEMO_EFFICIENCY = 1
-    MEMO_FIDELITY = 0.85
+    MEMO_FIDELITY = 1
     for name, node in network_topo.nodes.items():
         if isinstance(node, QuantumRouter):
-            # node.memory_array.update_memory_params("frequency", MEMO_FREQ)
+            node.memory_array.update_memory_params("frequency", MEMO_FREQ)
             node.memory_array.update_memory_params("coherence_time", MEMO_EXPIRE)
             node.memory_array.update_memory_params("efficiency", MEMO_EFFICIENCY)
             node.memory_array.update_memory_params("raw_fidelity", MEMO_FIDELITY)
@@ -102,10 +102,10 @@ if __name__ == "__main__":
 
     # set quantum channel parameters
     ATTENUATION = 0
-    # QC_FREQ = 1e11
+    QC_FREQ = 1e11
     for qc in network_topo.qchannels:
         qc.attenuation = ATTENUATION
-        # qc.frequency = QC_FREQ
+        qc.frequency = QC_FREQ
 
     # set entanglement swapping parameters
     SWAP_SUCC_PROB = 1
@@ -120,36 +120,23 @@ if __name__ == "__main__":
         if isinstance(node, QuantumRouter):
             nodes_name.append(name)
 
-    # apps = []
-    # for i, name in enumerate(nodes_name):
-    #     app_node_name = name
-    #     others = nodes_name[:]
-    #     others.remove(app_node_name)
-    #     app = RandomRequestApp(network_topo.nodes[app_node_name], others, i)
-    #     apps.append(app)
-    #     app.start()
-
-    app_node_name = "Argonne_2"
-    others = nodes_name[:]
-    others.remove(app_node_name)
-    app = RandomRequestApp(network_topo.nodes[app_node_name], others, 0)
-    app.start()
-    print(app_node_name)
+    apps = []
+    for i, name in enumerate(nodes_name):
+        app_node_name = name
+        others = nodes_name[:]
+        others.remove(app_node_name)
+        app = RandomRequestApp(network_topo.nodes[app_node_name], others, i)
+        apps.append(app)
+        app.start()
 
     tl.init()
     tl.run()
 
-    print(app.node.name)
-    print("  ", len(app.get_wait_time()))
-    print("  ", app.get_wait_time())
-    throughput = app.get_throughput()
-    print("  ", throughput)
-    print("  ", sum(throughput) / len(throughput))
-
-    # for app in apps:
-    #     print(app.node.name)
-    #     print("  ", len(app.get_wait_time()))
-    #     print("  ", app.get_wait_time())
-    #     throughput = app.get_throughput()
-    #     print("  ", throughput)
-    #     print("  ", sum(throughput) / len(throughput))
+    for app in apps:
+        print(app.node.name)
+        print("  ", len(app.get_wait_time()))
+        print("  ", app.get_wait_time())
+        throughput = app.get_throughput()
+        print(" ", app.reserves)
+        print("  ", throughput)
+        print("  ", sum(throughput) / len(throughput))

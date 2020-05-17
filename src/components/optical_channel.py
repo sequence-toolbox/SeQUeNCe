@@ -58,7 +58,7 @@ class QuantumChannel(OpticalChannel):
             time = -1
             while time < self.timeline.now():
                 time_bin = hq.heappop(self.send_bins)
-                time = int((time_bin * 1e12) / self.frequency)
+                time = int(time_bin * (1e12 / self.frequency))
             assert time == self.timeline.now(), "qc {} transmit method called at invalid time".format(self.name)
 
         # check if photon kept
@@ -83,7 +83,11 @@ class QuantumChannel(OpticalChannel):
 
     def schedule_transmit(self, min_time: int) -> int:
         min_time = max(min_time, self.timeline.now())
-        time_bin = int((min_time * self.frequency) / 1e12) + 1
+        time_bin = min_time * (self.frequency / 1e12)
+        if time_bin - int(time_bin) > 0.00001:
+            time_bin = int(time_bin) + 1
+        else:
+            time_bin = int(time_bin)
 
         # find earliest available time bin
         while time_bin in self.send_bins:
@@ -91,7 +95,7 @@ class QuantumChannel(OpticalChannel):
         hq.heappush(self.send_bins, time_bin)
 
         # calculate time
-        time = int((time_bin * 1e12) / self.frequency)
+        time = int(time_bin * (1e12 / self.frequency))
         return time
 
 

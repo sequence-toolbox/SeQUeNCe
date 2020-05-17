@@ -182,6 +182,9 @@ class EntanglementGenerationA(EntanglementProtocol):
                 msg.emit_time = self.own.timeline.now()
 
             # schedule emit
+            emit_time = self.own.schedule_qubit(self.middle, msg.emit_time)
+            assert emit_time == msg.emit_time, "%d %d" % (emit_time, msg.emit_time)
+
             process = Process(self.memory, "excite", [self.middle])
             event = Event(msg.emit_time, process)
             self.own.timeline.schedule(event)
