@@ -93,6 +93,9 @@ class Topology():
         cchannel.set_ends(self.nodes[node1], self.nodes[node2])
         self.cchannels.append(cchannel)
 
+    def get_nodes_by_type(self, node_type: str) -> [Node]:
+        return [node for name, node in self.nodes.items() if type(node).__name__ == node_type]
+
     def generate_forwarding_table(self, starting_node: str) -> dict:
         '''
         generates a mapping of destination nodes to next node for routing using Dijkstra's algorithm
