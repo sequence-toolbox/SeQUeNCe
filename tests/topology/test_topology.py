@@ -48,7 +48,7 @@ def test_add_classical_connection():
     assert channels[0].ends == [n1, n2]
 
 
-def test_add_quantum_individual():
+def test_add_quantum_connection():
     tl = Timeline()
     topo = Topology("test_topo", tl)
 
@@ -71,5 +71,24 @@ def test_add_quantum_individual():
     assert topo.graph["n3"] == {"middle_n3_n4": 500}
     channels = [e for e in tl.entities if type(e) == QuantumChannel]
     assert len(channels) == 3
+
+
+def test_get_nodes_by_type():
+    tl = Timeline()
+    topo = Topology("test_topo", tl)
+
+    n1 = Node("n1", tl)
+    n2 = QuantumRouter("n2", tl)
+    n3 = MiddleNode("n3", tl, ["n2","n4"])
+    n4 = QuantumRouter("n4", tl)
+    topo.add_node(n1)
+    topo.add_node(n2)
+    topo.add_node(n3)
+    topo.add_node(n4)
+
+    nodes = topo.get_nodes_by_type("QuantumRouter")
+    print(topo.nodes.items())
+
+    assert nodes == [n2, n4]
 
 
