@@ -32,14 +32,16 @@ class Timeline:
         # log = {}
         while len(self.events) > 0:
             event = self.events.pop()
-            if event.time > self.stop_time: break
+            if event.time > self.stop_time:
+                self.schedule(event)
+                break
             assert self.time <= event.time, "invalid event time for process scheduled on " + str(event.process.owner)
             self.time = event.time
             # if not event.process.activation in log:
             #     log[event.process.activation] = 0
             # log[event.process.activation]+=1
             event.process.run()
-        print('number of event', self.event_counter)
+        # print('number of event', self.event_counter)
         # print('log:',log)
 
     def stop(self) -> None:

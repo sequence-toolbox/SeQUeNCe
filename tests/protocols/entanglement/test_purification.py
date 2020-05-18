@@ -9,19 +9,20 @@ from sequence.topology.node import Node
 numpy.random.seed(0)
 
 
-class ResourceManager():
-    def __init__(self):
+class FakeResourceManager():
+    def __init__(self, owner):
         self.log = []
 
     def update(self, protocol, memory, state):
         self.log.append((memory, state))
-
+        if state == "RAW":
+            memory.reset()
 
 class FakeNode(Node):
     def __init__(self, name, tl, **kwargs):
         Node.__init__(self, name, tl)
         self.msg_log = []
-        self.resource_manager = ResourceManager()
+        self.resource_manager = FakeResourceManager(self)
 
     def receive_message(self, src: str, msg: "Message"):
         self.msg_log.append((self.timeline.now(), src, msg))

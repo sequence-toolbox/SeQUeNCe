@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from typing import Any
 
 import numpy
 
@@ -73,6 +74,10 @@ class BSM(Entity):
         detector = kwargs.get("detector")
         detector_num = self.detectors.index(detector)
         time = kwargs.get("time")
+
+    def update_detectors_params(self, arg_name: str, value: Any) -> None:
+        for detector in self.detectors:
+            detector.__setattr__(arg_name, value)
 
 
 class PolarizationBSM(BSM):

@@ -61,6 +61,7 @@ class ResourceReservationProtocol(StackProtocol):
                     rules = self.create_rules(path, reservation=msg.reservation)
                     self.load_rules(rules, msg.reservation)
                     new_msg = ResourceReservationMessage("APPROVE", self.name, msg.reservation, path=path)
+                    self._pop(msg=msg)
                     self._push(dst=msg.reservation.initiator, msg=new_msg)
                 else:
                     self._push(dst=msg.reservation.responder, msg=msg)
@@ -282,7 +283,7 @@ class ResourceReservationProtocol(StackProtocol):
                         and memory_info.fidelity >= reservation.fidelity):
                     for info in manager:
                         if (info.state == "ENTANGLED"
-                                and memory_info.index in memory_indices
+                                and info.index in memory_indices
                                 and info.remote_node == right
                                 and info.fidelity >= reservation.fidelity):
                             return [memory_info, info]
@@ -292,7 +293,7 @@ class ResourceReservationProtocol(StackProtocol):
                       and memory_info.fidelity >= reservation.fidelity):
                     for info in manager:
                         if (info.state == "ENTANGLED"
-                                and memory_info.index in memory_indices
+                                and info.index in memory_indices
                                 and info.remote_node == left
                                 and info.fidelity >= reservation.fidelity):
                             return [memory_info, info]
@@ -339,6 +340,13 @@ class ResourceReservationProtocol(StackProtocol):
 
     def load_rules(self, rules: List["Rule"], reservation: "Reservation") -> None:
         self.accepted_reservation.append(reservation)
+        for card in self.timecards:
+            if reservation in card.reservations:
+                process = Process(self.own.resource_manager, "update",
+                                  [None, self.own.memory_array[card.memory_index], "RAW"])
+                event = Event(reservation.end_time, process, 0)
+                self.own.timeline.schedule(event)
+
         for rule in rules:
             process = Process(self.own.resource_manager, "load", [rule])
             event = Event(reservation.start_time, process)

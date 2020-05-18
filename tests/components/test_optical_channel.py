@@ -1,4 +1,3 @@
-import pytest
 from numpy import random
 from sequence.components.optical_channel import *
 from sequence.kernel.timeline import Timeline
@@ -130,19 +129,17 @@ def test_QuantumChannel_schedule_transmit():
     # send at time 1 with low min time
     tl.time = 0
     time = qc.schedule_transmit(0)
-    assert time == 1
+    assert time == 0
 
     # high min time
     time = qc.schedule_transmit(2)
-    assert time == 3
+    assert time == 2
 
     # another with low
     time = qc.schedule_transmit(0)
-    assert time == 2
+    assert time == 1
 
     # new time 
     tl.time = 2
     time = qc.schedule_transmit(0)
-    assert time == 4
-
-
+    assert time == 3

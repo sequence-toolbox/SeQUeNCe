@@ -51,8 +51,7 @@ class BBPSSW(EntanglementProtocol):
         dst = self.kept_memo.entangled_memory["node_id"]
         if self.is_success:
             self.kept_memo.fidelity = self.improved_fidelity(self.kept_memo.fidelity)
-        else:
-            self.kept_memo.reset()
+
         message = BBPSSWMessage("PURIFICATION_RES", self.another.name)
         self.own.send_message(dst, message)
 
@@ -61,7 +60,6 @@ class BBPSSW(EntanglementProtocol):
 
     def received_message(self, src: str, msg: List[str]) -> None:
         assert src == self.another.own.name
-        self.meas_memo.reset()
         self.update_resource_manager(self.meas_memo, "RAW")
         if self.is_success is True:
             self.update_resource_manager(self.kept_memo, state="ENTANGLED")
