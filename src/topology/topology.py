@@ -35,16 +35,33 @@ class Topology():
             
             self.add_node(node)
 
-        # create connections
+        # create qconnections
         for qchannel_params in topo_config["qconnections"]:
             node1 = qchannel_params.pop("node1")
             node2 = qchannel_params.pop("node2")
             self.add_quantum_connection(node1, node2, **qchannel_params)
 
-        for cchannel_params in topo_config["cconnections"]:
-            node1 = cchannel_params.pop("node1")
-            node2 = cchannel_params.pop("node2")
-            self.add_classical_connection(node1, node2, **cchannel_params)
+        # create cconnections (if discrete present, otherwise generate from table
+        if "cconnections" in topo_config:
+            for cchannel_params in topo_config["cconnections"]:
+                node1 = cchannel_params.pop("node1")
+                node2 = cchannel_params.pop("node2")
+                self.add_classical_connection(node1, node2, **cchannel_params)
+        else:
+            table_type = topo_config["cconnections_table"].get("type", "RT")
+            assert table_type == "RT", "non-RT tables not yet supported"
+            labels = topo_config["cconnections_table"]["labels"]
+            table = topo_config["cconnections_table"]["table"]
+            assert len(labels) == len(table)                 # check that number of rows is correct
+            
+            for i in range(len(table)):
+                assert len(table[i]) == len(labels)          # check that number of columns is correct
+                for j in range(i + 1, len(table)):
+                    if table[i][j] == 0 or table[j][i] == 0: # skip if have 0 entries
+                        continue
+                    delay = (table[i][j] + table[j][i]) / 2
+                    cchannel_params = {"delay": delay, "distance": 1e3}
+                    self.add_classical_connection(labels[i], labels[j], **cchannel_params)
 
     def add_node(self, node: "Node") -> None:
         self.nodes[node.name] = node
