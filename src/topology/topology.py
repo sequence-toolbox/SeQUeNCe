@@ -59,7 +59,7 @@ class Topology():
                 for j in range(i + 1, len(table)):
                     if table[i][j] == 0 or table[j][i] == 0: # skip if have 0 entries
                         continue
-                    delay = (table[i][j] + table[j][i]) / 2
+                    delay = (table[i][j] + table[j][i]) / 4  # average RT time divided by 2
                     cchannel_params = {"delay": delay, "distance": 1e3}
                     self.add_classical_connection(labels[i], labels[j], **cchannel_params)
 
