@@ -61,6 +61,7 @@ class ResourceReservationProtocol(StackProtocol):
                     rules = self.create_rules(path, reservation=msg.reservation)
                     self.load_rules(rules, msg.reservation)
                     new_msg = ResourceReservationMessage("APPROVE", self.name, msg.reservation, path=path)
+                    self._pop(msg=msg)
                     self._push(dst=msg.reservation.initiator, msg=new_msg)
                 else:
                     self._push(dst=msg.reservation.responder, msg=msg)

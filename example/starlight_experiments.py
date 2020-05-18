@@ -1,3 +1,4 @@
+import pandas as pd
 from numpy.random import seed
 from sequence.app.random_request import RandomRequestApp
 from sequence.components.optical_channel import ClassicalChannel
@@ -8,7 +9,7 @@ from sequence.topology.topology import Topology
 if __name__ == "__main__":
     # Experiment params and config
     network_config_file = "example/starlight.json"
-    runtime = 1e14
+    runtime = 1e15
 
     seed(1)
     tl = Timeline(runtime)
@@ -139,4 +140,54 @@ if __name__ == "__main__":
         throughput = app.get_throughput()
         print(" ", app.reserves)
         print("  ", throughput)
-        print("  ", sum(throughput) / len(throughput))
+
+    initiators = []
+    responders = []
+    start_times = []
+    end_times = []
+    memory_sizes = []
+    fidelities = []
+    wait_times = []
+    throughputs = []
+    for node in network_topo.nodes.values():
+        if isinstance(node, QuantumRouter):
+            initiator = node.name
+            reserves = node.app.reserves
+            _wait_times = node.app.get_wait_time()
+            _throughputs = node.app.get_throughput()
+            min_size = min(len(reserves), len(_wait_times), len(_throughputs))
+            reserves = reserves[:min_size]
+            _wait_times = _wait_times[:min_size]
+            _throughputs = _throughputs[:min_size]
+            for reservation, wait_time, throughput in zip(reserves, _wait_times, _throughputs):
+                responder, s_t, e_t, size, fidelity = reservation
+                initiators.append(initiator)
+                responders.append(responder)
+                start_times.append(s_t)
+                end_times.append(e_t)
+                memory_sizes.append(size)
+                fidelities.append(fidelity)
+                wait_times.append(wait_time)
+                throughputs.append(throughput)
+    log = {"Initiator": initiators, "Responder": responders, "Start_time": start_times, "End_time": end_times,
+           "Memory_size": memory_sizes, "Fidelity": fidelities, "Wait_time": wait_times, "Throughput": throughputs}
+
+    df = pd.DataFrame(log)
+    df.to_csv("request_with_perfect_network.csv")
+
+    node_names = []
+    start_times = []
+    end_times = []
+    memory_sizes = []
+    for node in network_topo.nodes.values():
+        if isinstance(node, QuantumRouter):
+            node_name = node.name
+            for reservation in node.network_manager.protocol_stack[1].accepted_reservation:
+                s_t, e_t, size = reservation.start_time, reservation.end_time, reservation.memory_size
+                node_names.append(node_name)
+                start_times.append(s_t)
+                end_times.append(e_t)
+                memory_sizes.append(size)
+    log = {"Node": node_names, "Start_time": start_times, "End_time": end_times, "Memory_size": memory_sizes}
+    df = pd.DataFrame(log)
+    df.to_csv("memory_usage_with_perfect_network.csv")

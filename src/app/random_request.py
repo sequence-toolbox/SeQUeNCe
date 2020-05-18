@@ -1,7 +1,7 @@
 from typing import List, TYPE_CHECKING
-
 if TYPE_CHECKING:
     from ..protocols.management.memory_manager import MemoryInfo
+    from ..protocols.network.rsvp import Reservation
 
 from numpy import random
 
@@ -24,6 +24,7 @@ class RandomRequestApp():
         self.wait_time = []
         self.throughput = []
         self.reserves = []
+        self.memo_to_reserve = {}
 
     def start(self):
         self._update_last_rsvp_metrics()
@@ -55,13 +56,35 @@ class RandomRequestApp():
             self.node.timeline.schedule(event)
             self.wait_time.append(self.cur_reserve[1] - self.request_time)
         else:
-            event = Event(self.node.timeline.now() + 5e12, process)
+            event = Event(self.node.timeline.now() + 1e12, process)
             self.node.timeline.schedule(event)
 
+    def get_other_reservation(self, reservation: "Reservation") -> None:
+        for card in self.node.network_manager.protocol_stack[1].timecards:
+            if reservation in card.reservations:
+                process = Process(self, "add_memo_reserve_map", [card.memory_index, reservation])
+                event = Event(reservation.start_time, process)
+                self.node.timeline.schedule(event)
+                process = Process(self, "remove_memo_reserve_map", [card.memory_index])
+                event = Event(reservation.end_time, process)
+                self.node.timeline.schedule(event)
+
+    def add_memo_reserve_map(self, index: int, reservation: "Reservation") -> None:
+        self.memo_to_reserve[index] = reservation
+
+    def remove_memo_reserve_map(self, index: int) -> None:
+        self.memo_to_reserve.pop(index)
+
     def get_memory(self, info: "MemoryInfo") -> None:
-        if info.remote_node == self.cur_reserve[0] and info.fidelity >= self.cur_reserve[-1]:
+        if info.state != "ENTANGLED":
+            return
+        if self.cur_reserve and info.remote_node == self.cur_reserve[0] and info.fidelity >= self.cur_reserve[-1]:
             self.memory_counter += 1
             self.node.resource_manager.update(None, info.memory, "RAW")
+        elif info.index in self.memo_to_reserve:
+            reservation = self.memo_to_reserve[info.index]
+            if info.remote_node == reservation.initiator and info.fidelity >= reservation.fidelity:
+                self.node.resource_manager.update(None, info.memory, "RAW")
 
     def get_wait_time(self) -> List[int]:
         return self.wait_time

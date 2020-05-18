@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 from ..message import Message
 from .routing import StaticRoutingProtocol
-from .rsvp import ResourceReservationProtocol
+from .rsvp import ResourceReservationProtocol, ResourceReservationMessage
 
 
 class NetworkManagerMessage(Message):
@@ -34,10 +34,15 @@ class NetworkManager():
 
     def pop(self, **kwargs):
         msg = kwargs.get("msg")
-        if msg.msg_type == "APPROVE":
-            self.owner.get_reserve_res(True)
-        else:
-            self.owner.get_reserve_res(False)
+        assert isinstance(msg, ResourceReservationMessage)
+        reservation = msg.reservation
+        if reservation.initiator == self.owner.name:
+            if msg.msg_type == "APPROVE":
+                self.owner.get_reserve_res(True)
+            else:
+                self.owner.get_reserve_res(False)
+        elif reservation.responder == self.owner.name:
+            self.owner.get_other_reservation(reservation)
 
     def received_message(self, src: str, msg: "NetworkManagerMessage"):
         self.protocol_stack[0].pop(src=src, msg=msg.payload)

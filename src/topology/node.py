@@ -4,6 +4,7 @@ if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..protocols.message import Message
     from ..protocols.management.memory_manager import MemoryInfo
+    from ..protocols.network.rsvp import Reservation
     from ..components.optical_channel import QuantumChannel, ClassicalChannel
     from ..components.memory import Memory
     from ..app.random_request import RandomRequestApp
@@ -141,6 +142,10 @@ class QuantumRouter(Node):
     def get_reserve_res(self, res: bool) -> None:
         if self.app:
             self.app.get_reserve_res(res)
+
+    def get_other_reservation(self, reservation: "Reservation"):
+        if self.app:
+            self.app.get_other_reservation(reservation)
 
 
 class QKDNode(Node):

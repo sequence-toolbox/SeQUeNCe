@@ -1,5 +1,6 @@
 from sequence.app.random_request import RandomRequestApp
 from sequence.kernel.timeline import Timeline
+from sequence.protocols.network.rsvp import Reservation
 from sequence.topology.node import QuantumRouter
 
 
@@ -98,3 +99,62 @@ def test_RandomRequestApp_get_memory():
     node.resource_manager.update(None, node.memory_array[2], "ENTANGLED")
     app.get_memory(node.resource_manager.memory_manager[2])
     assert node.resource_manager.memory_manager[2].state == "ENTANGLED"
+
+
+def test_RandomRequestApp_get_other_reservation():
+    tl = Timeline()
+    node = FakeNode("fake", tl)
+    reservation = Reservation("initiator", "fake", 10, 100, 10, 0.9)
+    counter = 0
+    for card in node.network_manager.protocol_stack[1].timecards:
+        if counter >= 10:
+            break
+        card.add(reservation)
+        counter += 1
+
+    app = RandomRequestApp(node, [], 0)
+    app.get_other_reservation(reservation)
+    assert len(app.memo_to_reserve) == 0
+    tl.stop_time = 11
+    tl.run()
+    assert len(app.memo_to_reserve) == 10
+
+    info = node.resource_manager.memory_manager[0]
+    info.memory.entangled_memory = {"node_id": "initiator", "memo_id": "memo"}
+    info.memory.fidelity = 1
+    info.to_entangled()
+    app.get_memory(info)
+    assert info.state == "RAW" and info.memory.entangled_memory["node_id"] is None
+
+    info = node.resource_manager.memory_manager[10]
+    info.memory.entangled_memory = {"node_id": "initiator", "memo_id": "memo"}
+    info.memory.fidelity = 1
+    info.to_entangled()
+    app.get_memory(info)
+    assert info.state == "ENTANGLED"
+
+    info = node.resource_manager.memory_manager[0]
+    info.memory.entangled_memory = {"node_id": "initiator", "memo_id": "memo"}
+    info.memory.fidelity = 0.8
+    info.to_entangled()
+    app.get_memory(info)
+    assert info.state == "ENTANGLED"
+
+    info = node.resource_manager.memory_manager[1]
+    info.memory.entangled_memory = {"node_id": "x", "memo_id": "memo"}
+    info.memory.fidelity = 1
+    info.to_entangled()
+    app.get_memory(info)
+    assert info.state == "ENTANGLED"
+
+    tl.stop_time = 101
+    tl.run()
+
+    print(app.memo_to_reserve)
+    assert len(app.memo_to_reserve) == 0
+    info = node.resource_manager.memory_manager[0]
+    info.memory.entangled_memory = {"node_id": "initiator", "memo_id": "memo"}
+    info.memory.fidelity = 1
+    info.to_entangled()
+    app.get_memory(info)
+    assert info.state == "ENTANGLED"
