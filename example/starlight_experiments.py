@@ -31,14 +31,14 @@ if __name__ == "__main__":
     #     print("\t" + cc.name + ": ", cc, "\tdelay:", cc.delay)
 
     # update forwarding table
-    for name, node in network_topo.nodes.items():
-        if isinstance(node, QuantumRouter):
-            table = network_topo.generate_forwarding_table(name)
-            # print(name)
-            for dst in table:
-                next_node = table[dst]
-                node.network_manager.protocol_stack[0].add_forwarding_rule(dst, next_node)
-                # print("  ", dst, next_node)
+    # for name, node in network_topo.nodes.items():
+    #     if isinstance(node, QuantumRouter):
+    #         table = network_topo.generate_forwarding_table(name)
+    #         # print(name)
+    #         for dst in table:
+    #             next_node = table[dst]
+    #             node.network_manager.protocol_stack[0].add_forwarding_rule(dst, next_node)
+    #             # print("  ", dst, next_node)
 
     # set memory parameters
     MEMO_FREQ = 1e11
