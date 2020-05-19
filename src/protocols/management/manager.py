@@ -63,7 +63,8 @@ class ResourceManager():
 
     def expire(self, rule: "Rule") -> None:
         created_protocols = self.rule_manager.expire(rule)
-        for protocol in created_protocols:
+        while created_protocols:
+            protocol = created_protocols.pop()
             if protocol in self.waiting_protocols:
                 self.waiting_protocols.remove(protocol)
             elif protocol in self.pending_protocols:
@@ -74,15 +75,16 @@ class ResourceManager():
                 raise Exception("Unknown place of protocol")
 
             for memory in protocol.memories:
-                self.update(None, memory, "RAW")
+                self.update(protocol, memory, "RAW")
 
     def update(self, protocol: "EntanglementProtocol", memory: "Memory", state: str) -> None:
         self.memory_manager.update(memory, state)
         if protocol:
             memory.remove_protocol(protocol)
+            if protocol in protocol.rule.protocols:
+                protocol.rule.protocols.remove(protocol)
 
         if protocol in self.owner.protocols:
-            protocol.rule.protocols.remove(protocol)
             self.owner.protocols.remove(protocol)
 
         if protocol in self.waiting_protocols:

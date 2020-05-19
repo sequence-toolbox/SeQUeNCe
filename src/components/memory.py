@@ -108,7 +108,6 @@ class Memory(Entity):
             self.excited_photon = photon
 
     def expire(self) -> None:
-        self.expiration_event = None
         if self.excited_photon:
             self.excited_photon.is_null = True
         # pop expiration message

@@ -187,11 +187,17 @@ def test_expire():
         info.to_occupied()
     rule = Rule(0, None, None)
     p1 = FakeProtocol("waiting_protocol", [node.memory_array[0]])
+    node.memory_array[0].upper_protocols.append(p1)
     p2 = FakeProtocol("pending_protocol", [node.memory_array[1]])
+    node.memory_array[1].upper_protocols.append(p2)
     p3 = FakeProtocol("running_protocol", [node.memory_array[2]])
+    node.memory_array[2].upper_protocols.append(p3)
     p4 = FakeProtocol("other_waiting_protocol", [node.memory_array[3]])
+    node.memory_array[3].upper_protocols.append(p4)
     p5 = FakeProtocol("other_pending_protocol", [node.memory_array[4]])
+    node.memory_array[4].upper_protocols.append(p5)
     p6 = FakeProtocol("other_running_protocol", [node.memory_array[5]])
+    node.memory_array[5].upper_protocols.append(p6)
     for p in [p1, p2, p3]:
         p.rule = rule
         rule.protocols.append(p)
@@ -206,13 +212,20 @@ def test_expire():
         assert node.resource_manager.memory_manager[i].state == "OCCUPIED"
     node.resource_manager.expire(rule)
     assert p1 not in node.resource_manager.waiting_protocols and p4 in node.resource_manager.waiting_protocols
-    assert p2 not in node.resource_manager.pending_protocols and p5 in node.resource_manager.pending_protocols
+    assert p2 not in node.resource_manager.pending_protocols
+    assert p5 in node.resource_manager.pending_protocols
     assert p3 not in node.protocols and p6 in node.protocols
     for i in range(3):
         assert node.resource_manager.memory_manager[i].state == "RAW"
 
     for i in range(3, 6):
         assert node.resource_manager.memory_manager[i].state == "OCCUPIED"
+
+    for i, memory in enumerate(node.memory_array):
+        if i < 3:
+            assert len(memory.upper_protocols) == 0
+        elif i < 6:
+            assert len(memory.upper_protocols) == 1
 
 
 def test_ResourceManager1():

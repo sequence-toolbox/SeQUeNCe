@@ -344,7 +344,7 @@ class ResourceReservationProtocol(StackProtocol):
             if reservation in card.reservations:
                 process = Process(self.own.resource_manager, "update",
                                   [None, self.own.memory_array[card.memory_index], "RAW"])
-                event = Event(reservation.end_time, process, 0)
+                event = Event(reservation.end_time, process, 1)
                 self.own.timeline.schedule(event)
 
         for rule in rules:
@@ -352,7 +352,7 @@ class ResourceReservationProtocol(StackProtocol):
             event = Event(reservation.start_time, process)
             self.own.timeline.schedule(event)
             process = Process(self.own.resource_manager, "expire", [rule])
-            event = Event(reservation.end_time, process)
+            event = Event(reservation.end_time, process, 0)
             self.own.timeline.schedule(event)
 
     def received_message(self, src, msg):
