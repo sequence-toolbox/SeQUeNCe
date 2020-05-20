@@ -105,7 +105,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         self.ent_round += 1
 
         if self.ent_round == 1:
-            self.memory.set_plus()
+            return True
 
         elif self.ent_round == 2 and self.bsm_res[0] != -1:
             self.memory.flip_state()
@@ -128,6 +128,11 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         return True
 
+    def emit_event(self) -> None:
+        if self.ent_round == 1:
+            self.memory.set_plus()
+        self.memory.excite(self.middle)
+
     def received_message(self, src: str, msg: EntanglementGenerationMessage) -> None:
         if src not in [self.middle, self.other]:
             return
@@ -148,11 +153,11 @@ class EntanglementGenerationA(EntanglementProtocol):
 
             memory_excite_time = self.memory.next_excite_time
             min_time = max(self.own.timeline.now(), memory_excite_time) + total_quantum_delay - self.qc_delay + cc_delay
-            emit_time = self.own.schedule_qubit(self.middle, min_time) # used to send memory
+            emit_time = self.own.schedule_qubit(self.middle, min_time)# used to send memory
             self.expected_time = emit_time + self.qc_delay
 
             # schedule emit
-            process = Process(self.memory, "excite", [self.middle])
+            process = Process(self, "emit_event", [])
             event = Event(emit_time, process)
             self.own.timeline.schedule(event)
             self.scheduled_events.append(event)
@@ -183,9 +188,9 @@ class EntanglementGenerationA(EntanglementProtocol):
 
             # schedule emit
             emit_time = self.own.schedule_qubit(self.middle, msg.emit_time)
-            assert emit_time == msg.emit_time, "%d %d" % (emit_time, msg.emit_time)
+            assert emit_time == msg.emit_time, "%d %d %d" % (emit_time, msg.emit_time, self.own.timeline.now())
 
-            process = Process(self.memory, "excite", [self.middle])
+            process = Process(self, "emit_event", [])
             event = Event(msg.emit_time, process)
             self.own.timeline.schedule(event)
             self.scheduled_events.append(event)
