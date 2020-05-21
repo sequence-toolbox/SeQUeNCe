@@ -14,10 +14,18 @@ def pair_cascade_protocols(sender: "Cascade", receiver: "BB84") -> None:
     sender.role = 0
     receiver.role = 1
 
+    if sender.lower_protocols == []:
+        sender.lower_protocols.append(sender.own.sifting_protocol)
+        sender.own.sifting_protocol.upper_protocols.append(sender)
+
+    if receiver.lower_protocols == []:
+        receiver.lower_protocols.append(receiver.own.sifting_protocol)
+        receiver.own.sifting_protocol.upper_protocols.append(receiver)
+
 
 class CascadeMessage(Message):
     def __init__(self, msg_type: str, receiver: str, **kwargs):
-        super().__init__(self, msg_type, receiver)
+        super().__init__(msg_type, receiver)
         self.owner_type = Cascade
         if msg_type == "key":
             self.key = kwargs["key"]
@@ -42,6 +50,12 @@ class CascadeMessage(Message):
             self.start = kwargs["start"]
             self.end = kwargs["end"]
             self.checksum = kwargs["checksum"]
+        elif msg_type == "generate_key":
+            self.keylen = kwargs["keylen"]
+            self.frame_num = kwargs["frame_num"]
+            self.run_time = kwargs["run_time"]
+        elif msg_type == "key_is_valid":
+            self.key_id = kwargs["key_id"]
         else:
             raise Exception("Invalid cascade message type" + msg_type)
 
@@ -96,7 +110,7 @@ class Cascade(StackProtocol):
             print(self.own.timeline.now(), self.name, self.state, info)
 
     def push(self, keylen: int, frame_num=math.inf, run_time=math.inf) -> None:
-        self.generate_key(self, keylen, frame_num, run_time)
+        self.generate_key(keylen, frame_num, run_time)
 
     def pop(self, msg: int) -> None:
         """
@@ -181,8 +195,9 @@ class Cascade(StackProtocol):
                 raise Exception("Cascade protocol sender '{}' got params message".format(self.name))
 
             # Schedule a key generation event for Cascade sender
-            process = Process(self.another, "generate_key", [self.keylen, self.frame_num, self.run_time])
-            self.send_by_cc(process)
+            message = CascadeMessage("generate_key", self.another.name,
+                                     keylen=self.keylen, frame_num=self.frame_num, run_time=self.run_time)
+            self.send_by_cc(message)
 
         elif msg.msg_type == "checksums":
             key_id = msg.key_id
@@ -261,6 +276,16 @@ class Cascade(StackProtocol):
 
                 else:
                     self.interactive_binary_search(key_id, pass_id, block_id, start, end)
+
+        elif msg.msg_type == "generate_key":
+            keylen = msg.keylen
+            frame_num = msg.frame_num
+            run_time = msg.run_time
+            self.generate_key(keylen, frame_num, run_time)
+
+        elif msg.msg_type == "key_is_valid":
+            key_id = msg.key_id
+            self.key_is_valid(key_id)
 
     def generate_key(self, keylen: int, frame_num=math.inf, run_time=math.inf) -> None:
         """
@@ -371,8 +396,8 @@ class Cascade(StackProtocol):
         if self.role == 0: self.t2[key_id] = self.own.timeline.now()
         self.performance_measure()
 
-        process = Process(self.another, "key_is_valid", [key_id])
-        self.send_by_cc(process)
+        message = CascadeMessage("key_is_valid", self.another.name, key_id=key_id)
+        self.send_by_cc(message)
 
         return True
 
