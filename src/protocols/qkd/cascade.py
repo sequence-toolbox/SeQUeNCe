@@ -2,24 +2,59 @@ import math
 
 from numpy import random
 
-from ...kernel.entity import Entity
+from ..message import Message
+from ..protocol import *
 from ...kernel.event import Event
 from ...kernel.process import Process
 
 
-class Cascade(Entity):
-    def log(self, info):
-        if self.logflag:
-            print(self.timeline.now(), self.name, self.state, info)
+def pair_cascade_protocols(sender: "Cascade", receiver: "BB84") -> None:
+    sender.another = receiver
+    receiver.another = sender
+    sender.role = 0
+    receiver.role = 1
 
-    def __init__(self, name, timeline, **kwargs):
+
+class CascadeMessage(Message):
+    def __init__(self, msg_type: str, receiver: str, **kwargs):
+        super().__init__(self, msg_type, receiver)
+        self.owner_type = Cascade
+        if msg_type == "key":
+            self.key = kwargs["key"]
+        elif msg_type == "params":
+            self.k = kwargs["k"]
+            self.keylen = kwargs["keylen"]
+            self.frame_num = kwargs["frame_num"]
+            self.run_time = kwargs["run_time"]
+        elif msg_type == "checksums":
+            self.key_id = kwargs["key_id"]
+            self.checksums = kwargs["checksums"]
+        elif msg_type == "start_for_binary":
+            self.key_id = kwargs["key_id"]
+            self.pass_id = kwargs["pass_id"]
+            self.block_id = kwargs["block_id"]
+            self.start = kwargs["start"]
+            self.end = kwargs["end"]
+        elif msg_type == "receive_for_binary":
+            self.key_id = kwargs["key_id"]
+            self.pass_id = kwargs["pass_id"]
+            self.block_id = kwargs["block_id"]
+            self.start = kwargs["start"]
+            self.end = kwargs["end"]
+            self.checksum = kwargs["checksum"]
+        else:
+            raise Exception("Invalid cascade message type" + msg_type)
+
+
+class Cascade(StackProtocol):
+    def __init__(self, own: "QKDNode", name: str, **kwargs):
+        super().__init__(own, name)
+
         # TODO: now we assume key length is 256 bits
-        Entity.__init__(self, name, timeline)
         self.w = kwargs.get("w", 4)
-        self.bb84 = kwargs.get("bb84", None)
-        # for sender role==0; for receiver role==1
-        self.role = kwargs.get("role", None)
+        self.role = kwargs.get("role", 1)  # 0 for sender, 1 for receiver
         self.secure_params = kwargs.get("secure_params", 100)
+        
         self.another = None
         self.state = 0
         self.keylen = None
@@ -36,7 +71,6 @@ class Cascade(Entity):
         self.index_to_block_id_lists = [[]]
         self.block_id_to_index_lists = [[]]
         self.logflag = False
-        #self.tmp = {}
         self.time_cost = None
         self.setup_time = None
         self.start_time = None
@@ -54,10 +88,181 @@ class Cascade(Entity):
             2: end
         """
 
-    def assign_cchannel(self, cchanel):
-        self.cchanel = cchanel
+    def init(self) -> None:
+        pass
 
-    def generate_key(self, keylen, frame_num=math.inf, run_time=math.inf):
+    def log(self, info) -> None:
+        if self.logflag:
+            print(self.own.timeline.now(), self.name, self.state, info)
+
+    def push(self, keylen: int, frame_num=math.inf, run_time=math.inf) -> None:
+        self.generate_key(self, keylen, frame_num, run_time)
+
+    def pop(self, msg: int) -> None:
+        """
+        Function called by BB84 when it creates a key
+        """
+        self.log('get_key_from_BB84, key= ' + str(msg))
+        self.bits.append(msg)
+        self.t1.append(self.own.timeline.now())
+        self.t2.append(-1)
+
+        if self.state == 1:
+            self.create_checksum_table()
+        
+        if self.state == 0 and self.role == 1:
+            message = CascadeMessage("key", self.another.name, key=self.bits[0])
+            self.send_by_cc(message)
+
+        elif self.state == 1 and self.role == 0:
+            message = CascadeMessage("checksums", self.another.name,
+                                     key_id=len(self.checksum_tables)-1, checksums=self.checksum_tables[-1])
+            self.send_by_cc(message)
+
+    def received_message(self, src: str, msg: "Message") -> None:
+        if msg.msg_type == "key":
+            """
+            Sender receive key from receiver to measure the error rate of key
+            Calculate self.k by error rate
+            Send self.k and keylen to receiver
+            """
+            key = msg.key
+
+            self.log('receive_key, key=' + str(key))
+
+            def get_k1(p, lower, upper):
+                while lower <= upper:
+                    k1 = int((lower + upper) / 2)
+                    if (k1 * p - (1 - (1 - 2 * p)**k1) / 2) < (-(math.log(1 / 2) / 2)):
+                        lower = k1 + 1
+                    elif (k1 * p - (1 - (1 - 2 * p)**k1) / 2) > (-(math.log(1 / 2) / 2)):
+                        upper = k1 - 1
+                    else:
+                        return k1
+
+                return lower - 1
+
+            def get_diff_bit_num(key1, key2):
+                val = key1^key2
+                counter = 0
+                i = 0
+                while val>>i:
+                    if (val>>i)&1:
+                        counter += 1
+                    i+=1
+                return counter
+
+            p = get_diff_bit_num(key, self.bits[0]) / 10000
+            # avoid p==0, which will cause k1 to an infinite large number
+            if p == 0:
+                p = 0.0001
+            self.k1 = get_k1(p, 0, 10000)
+            self.state = 1
+
+            message = CascadeMessage("params", self.another.name,
+                                     k=self.k1, keylen=self.keylen, frame_num=self.frame_num,
+                                     run_time=self.run_time)
+            self.send_by_cc(message)
+
+        elif msg.msg_type == "params":
+            """
+            Receiver receive k, keylen from sender
+            """ 
+            self.k1 = msg.k
+            self.keylen = msg.keylen
+            self.frame_num = msg.frame_num
+            self.run_time = msg.run_time
+            self.start_time = self.own.timeline.now()
+            self.end_time = self.start_time + self.run_time
+            self.state = 1
+
+            self.log('receive_params with params= ' + str([self.k1, self.keylen]))
+            if self.role == 0:
+                raise Exception("Cascade protocol sender '{}' got params message".format(self.name))
+
+            # Schedule a key generation event for Cascade sender
+            process = Process(self.another, "generate_key", [self.keylen, self.frame_num, self.run_time])
+            self.send_by_cc(process)
+
+        elif msg.msg_type == "checksums":
+            key_id = msg.key_id
+            checksums = msg.checksums
+
+            self.log("receive_checksums")
+
+            while len(self.another_checksums) <= key_id:
+                self.another_checksums.append(None)
+            self.another_checksums[key_id] = checksums
+            self.check_checksum(key_id)
+
+        elif msg.msg_type == "send_for_binary":
+            """
+            Sender sends checksum of block[start:end] in pass_id pass
+            """
+            key_id = msg.key_id
+            pass_id = msg.pass_id
+            block_id = msg.block_id
+            start = msg.start
+            end = msg.end
+
+            self.log('send_for_binary, params' + str([pass_id, block_id, start, end]))
+
+            checksum = 0
+            block_id_to_index = self.block_id_to_index_lists[key_id]
+            for pos in block_id_to_index[pass_id][block_id][start:end]:
+                checksum ^= ((self.bits[key_id] >> pos) & 1)
+
+            message = CascadeMessage("receive_for_binary", self.another.name,
+                                     key_id=key_id, pass_id=pass_id, block_id=block_id,
+                                     start=start, end=end, checksum=checksum)
+            self.send_by_cc(message)
+
+        elif msg.msg_type == "receive_for_binary":
+            """
+            Receiver receive checksum of block[start:end] in pass_id pass
+            If checksums are different, continue interactive_binary_search
+            """
+            key_id = msg.key_id
+            pass_id = msg.pass_id
+            block_id = msg.block_id
+            start = msg.start
+            end = msg.end
+            checksum = msg.checksum
+
+            self.log('receive_for_binary, params= ' + str([key_id, pass_id, block_id, start, end, checksum]))
+
+            def flip_bit_at_pos(val, pos):
+                """
+                flip one bit of integer val at pos (right bit with lower position)
+                """
+                self.disclosed_bits_counter += 1
+                self.another.disclosed_bits_counter += 1
+                return (((val >> pos) ^ 1) << pos) + (((1 << pos) - 1) & val)
+
+            _checksum = 0
+            block_id_to_index = self.block_id_to_index_lists[key_id]
+            index_to_block_id = self.index_to_block_id_lists[key_id]
+            checksum_table = self.checksum_tables[key_id]
+            key = self.bits[key_id]
+            for pos in block_id_to_index[pass_id][block_id][start:end]:
+                _checksum ^= ((key >> pos) & 1)
+
+            if checksum != _checksum:
+                if end - start == 1:
+                    pos = block_id_to_index[pass_id][block_id][start]
+                    self.bits[key_id] = flip_bit_at_pos(key, pos)
+                    self.log("::: flip at " + str(pos))
+                    # update checksum_table
+                    for _pass in range(1, len(checksum_table)):
+                        _block = index_to_block_id[_pass][pos]
+                        checksum_table[_pass][_block] ^= 1
+
+                    if not self.check_checksum(key_id): return
+
+                else:
+                    self.interactive_binary_search(key_id, pass_id, block_id, start, end)
+
+    def generate_key(self, keylen: int, frame_num=math.inf, run_time=math.inf) -> None:
         """
         Generate 10000 bits key to measure error rate at 0 pass
         Generate keylen bits key at 1st pass
@@ -65,82 +270,21 @@ class Cascade(Entity):
         self.log('generate_key, keylen=' + str(keylen))
         if self.role == 1:
             raise Exception(
-                "Cascade protocol type is receiver (type==1); receiver cannot generate key")
+                "Cascase.generate_key() called on receiver '{}'".format(self.name))
 
         if self.state == 0:
             self.log('generate_key with state 0')
-            self.setup_time = self.timeline.now()
+            self.setup_time = self.own.timeline.now()
             self.keylen = keylen
             self.frame_num = frame_num
             self.run_time = run_time
-            self.bb84.generate_key(10000, key_num = 1)
+            self._push(length=10000, key_num=1)
+
         else:
-            self.start_time = self.timeline.now()
+            self.start_time = self.own.timeline.now()
             self.end_time = self.start_time + self.run_time
             self.log('generate_key with state ' + str(self.state))
-            self.bb84.generate_key(self.frame_len, self.frame_num, self.run_time)
-
-    def get_key_from_BB84(self, key):
-        """
-        Function called by BB84 when it creates a key
-        """
-        self.log('get_key_from_BB84, key= ' + str(key))
-        self.bits.append(key)
-        self.t1.append(self.timeline.now())
-        self.t2.append(-1)
-
-        if self.state == 1:
-            self.create_checksum_table()
-        if self.state == 0 and self.role == 1:
-            self.send_key()
-        elif self.state == 1 and self.role == 0:
-            self.send_checksums()
-
-    def send_key(self):
-        """
-        Schedule a receive key event
-        """
-        self.log('send_key')
-        process = Process(self.another, "receive_key", [self.bits[0]])
-        self.send_by_cc(process)
-
-    def receive_key(self, key):
-        """
-        Sender receive key from receiver to measure the error rate of key
-        Calculate self.k by error rate
-        Send self.k and keylen to receiver
-        """
-        self.log('receive_key, key=' + str(key))
-
-        def get_k1(p, lower, upper):
-            while lower <= upper:
-                k1 = int((lower + upper) / 2)
-                if (k1 * p - (1 - (1 - 2 * p)**k1) / 2) < (-(math.log(1 / 2) / 2)):
-                    lower = k1 + 1
-                elif (k1 * p - (1 - (1 - 2 * p)**k1) / 2) > (-(math.log(1 / 2) / 2)):
-                    upper = k1 - 1
-                else:
-                    return k1
-
-            return lower - 1
-
-        def get_diff_bit_num(key1, key2):
-            val = key1^key2
-            counter = 0
-            i = 0
-            while val>>i:
-                if (val>>i)&1:
-                    counter += 1
-                i+=1
-            return counter
-
-        p = get_diff_bit_num(key, self.bits[0]) / 10000
-        # avoid p==0, which will cause k1 to an infinite large number
-        if p == 0:
-            p = 0.0001
-        self.k1 = get_k1(p, 0, 10000)
-        self.send_params()
-        self.state = 1
+            self._push(length=keylen, key_num=frame_num, run_time=run_time)
 
     def create_checksum_table(self):
         """
@@ -207,55 +351,7 @@ class Cascade(Entity):
                 block_id = index_to_block_id[pass_id][i]
                 checksum_table[pass_id][block_id] ^= ((self.bits[-1] >> i) & 1)
         self.checksum_tables.append(checksum_table)
-
-    def send_params(self):
-        """
-        Schedule a receive paramters event
-        """
-        self.log('send_params'+str([self.k1, self.keylen, self.frame_num, self.run_time]))
-        process = Process(self.another, "receive_params", [self.k1, self.keylen, self.frame_num, self.run_time])
-        self.send_by_cc(process)
-
-    def receive_params(self, k, keylen, frame_num, run_time):
-        """
-        Receiver receive k, keylen from sender
-        """
-        self.log('receive_params with params= ' + str([k, keylen]))
-        if self.role == 0:
-            raise Exception(
-                "Cascade protocol type is sender (type==0); sender cannot receive parameters from receiver")
-
-        self.k1 = k
-        self.keylen = keylen
-        self.frame_num = frame_num
-        self.run_time = run_time
-        self.start_time = self.timeline.now()
-        self.end_time = self.start_time+self.run_time
-        self.state = 1
-
-        # Schedule a key generation event for Cascade sender
-        process = Process(self.another, "generate_key", [self.keylen, self.frame_num, self.run_time])
-        self.send_by_cc(process)
-
-    def send_checksums(self):
-        """
-        Sender send all checksums to receiver
-        """
-        self.log("send_checksums "+str(len(self.checksum_tables)))
-        if self.role == 1:
-            raise Exception(
-                "Cascade protocol type is receiver (type==1); receiver cannot send checksums to sender")
-        self.state = 1
-        process = Process(self.another, "receive_checksums", [len(self.checksum_tables)-1, self.checksum_tables[-1]])
-        self.send_by_cc(process)
-
-    def receive_checksums(self, key_id, checksums):
-        self.log("receive_checksums ")
-        while len(self.another_checksums) <= key_id:
-            self.another_checksums.append(None)
-        self.another_checksums[key_id] = checksums
-        self.check_checksum(key_id)
-
+   
     def check_checksum(self, key_id):
         self.log("check_checksum")
         cur_key = key_id
@@ -272,7 +368,7 @@ class Cascade(Entity):
         for i in range(40):
             self.valid_keys.append( (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1) )
 
-        if self.role == 0: self.t2[key_id] = self.timeline.now()
+        if self.role == 0: self.t2[key_id] = self.own.timeline.now()
         self.performance_measure()
 
         process = Process(self.another, "key_is_valid", [key_id])
@@ -282,92 +378,42 @@ class Cascade(Entity):
 
     def end_cascade(self):
         """
+        end cascade protocol
         """
         self.state = 2
 
     def key_is_valid(self, key_id):
         for i in range(40):
             self.valid_keys.append( (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1) )
-        self.t2[key_id] = self.timeline.now()
+        self.t2[key_id] = self.own.timeline.now()
         self.performance_measure()
-
-    def send_for_binary(self, key_id, pass_id, block_id, start, end):
-        """
-        Sender sends checksum of block[start:end] in pass_id pass
-        """
-        self.log('send_for_binary, params' + str([pass_id, block_id, start, end]))
-        checksum = 0
-        block_id_to_index = self.block_id_to_index_lists[key_id]
-        for pos in block_id_to_index[pass_id][block_id][start:end]:
-            checksum ^= ((self.bits[key_id] >> pos) & 1)
-
-        process = Process(self.another, "receive_for_binary", [key_id, pass_id, block_id, start, end, checksum])
-        self.send_by_cc(process)
-
-    def receive_for_binary(self, key_id, pass_id, block_id, start, end, checksum):
-        """
-        Receiver receive checksum of block[start:end] in pass_id pass
-        If checksums are different, continue interactive_binary_search
-        """
-        self.log('receive_for_binary, params= ' + str([key_id, pass_id, block_id, start, end, checksum]))
-
-        def flip_bit_at_pos(val, pos):
-            """
-            flip one bit of integer val at pos (right bit with lower position)
-            """
-            self.disclosed_bits_counter += 1
-            self.another.disclosed_bits_counter += 1
-            return (((val >> pos) ^ 1) << pos) + (((1 << pos) - 1) & val)
-
-        _checksum = 0
-        block_id_to_index = self.block_id_to_index_lists[key_id]
-        index_to_block_id = self.index_to_block_id_lists[key_id]
-        checksum_table = self.checksum_tables[key_id]
-        key = self.bits[key_id]
-        for pos in block_id_to_index[pass_id][block_id][start:end]:
-            _checksum ^= ((key >> pos) & 1)
-
-        if checksum != _checksum:
-            if end - start == 1:
-                pos = block_id_to_index[pass_id][block_id][start]
-                self.bits[key_id] = flip_bit_at_pos(key, pos)
-                self.log("::: flip at " + str(pos))
-                # update checksum_table
-                for _pass in range(1, len(checksum_table)):
-                    _block = index_to_block_id[_pass][pos]
-                    checksum_table[_pass][_block] ^= 1
-
-                if not self.check_checksum(key_id): return
-
-            else:
-                self.interactive_binary_search(key_id, pass_id, block_id, start, end)
-
+    
     def interactive_binary_search(self, key_id, pass_id, block_id, start, end):
         """
         Split block[start:end] to block[start:(start+end)/2], block[(start+end)/2,end]
         Ask checksums of subblock from sender
         """
         self.log('interactive_binary_search, params= ' + str([key_id, pass_id, block_id, start, end]))
+
         # first half checksum
-        process = Process(self.another, "send_for_binary", [key_id, pass_id, block_id, start, int((end + start) / 2)])
-        self.send_by_cc(process)
+        message = CascadeMessage("send_for_binary", self.another.name,
+                                 key_id=key_id, pass_id=pass_id, block_id=block_id,
+                                 start=start, end=int((end+start) / 2))
+        self.send_by_cc(message)
+
         # last half checksum
-        process = Process(self.another, "send_for_binary", [key_id, pass_id, block_id, int((end + start) / 2), end])
-        self.send_by_cc(process)
+        message = CascadeMessage("send_for_binary", self.another.name,
+                                 key_id=key_id, pass_id=pass_id, block_id=block_id,
+                                 start=int((end+start) / 2), end=end)
+        self.send_by_cc(message)
 
-    def send_by_cc(self, process):
-        """
-        Schedule an event after delay time
-        """
-
-        if self.timeline.now() > self.end_time and self.state!=2:
+    def send_by_cc(self, message):
+        if self.own.timeline.now() > self.end_time and self.state != 2:
             self.end_cascade()
             self.another.end_cascade()
             return
 
-        future_time = self.timeline.now() + self.cchanel.delay
-        event = Event(future_time, process)
-        self.timeline.schedule(event)
+        self.own.send_message(self.another.own.name, message)
 
     def performance_measure(self):
         if self.role == 0:
@@ -381,9 +427,9 @@ class Cascade(Entity):
             else: self.latency = None
             self.another.latency = self.latency
 
-        if self.timeline.now() - self.start_time:
-            self.throughput = 1e12 * len(self.valid_keys) * self.keylen / (self.timeline.now() - self.start_time)
-            self.privacy_throughput = 1e12 * (len(self.valid_keys) * (self.keylen) - int(len(self.valid_keys)/40) * self.secure_params - self.disclosed_bits_counter) / (self.timeline.now() - self.start_time)
+        if self.own.timeline.now() - self.start_time:
+            self.throughput = 1e12 * len(self.valid_keys) * self.keylen / (self.own.timeline.now() - self.start_time)
+            self.privacy_throughput = 1e12 * (len(self.valid_keys) * (self.keylen) - int(len(self.valid_keys)/40) * self.secure_params - self.disclosed_bits_counter) / (self.own.timeline.now() - self.start_time)
 
         counter = 0
         for j in range(min(len(self.valid_keys), len(self.another.valid_keys))):
@@ -400,10 +446,8 @@ class Cascade(Entity):
             self.error_bit_rate = 0
         self.time_cost = self.end_time - self.start_time
 
-    def init():
-        pass
 
-
+# TODO: Delete this section?
 if __name__ == "__main__":
     from timeline import Timeline
 
