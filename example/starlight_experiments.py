@@ -16,45 +16,6 @@ if __name__ == "__main__":
     network_topo = Topology("network_topo", tl)
     network_topo.load_config(network_config_file)
 
-    # update delay between middle node and end node
-    for name in network_topo.nodes:
-        node = network_topo.nodes[name]
-        if isinstance(node, MiddleNode):
-            ends = []
-            ccs = []
-            for dst_name in node.cchannels:
-                ends.append(dst_name)
-                ccs.append(node.cchannels[dst_name])
-            for cc in network_topo.cchannels:
-                _ends = [end.name for end in cc.ends]
-                if set(_ends) == set(ends):
-                    ccs[0].delay = cc.delay // 2
-                    ccs[1].delay = cc.delay // 2
-                    break
-
-    # create classical channels between [Fermilab_2, Argonne_2, Argonne_3, UChicago_HC] and rest of nodes
-    node = network_topo.nodes["Fermilab_2"]
-    for dst, cc in network_topo.nodes["Fermilab_1"].cchannels.items():
-        end = network_topo.nodes[dst]
-        if isinstance(end, QuantumRouter) and dst != node.name and dst not in node.cchannels:
-            new_cc = ClassicalChannel("cc_" + node.name + "_" + dst, tl, 0, 0, delay=cc.delay + 0.25e9)
-            new_cc.set_ends(node, end)
-
-    nodes = [network_topo.nodes["Argonne_2"], network_topo.nodes["Argonne_3"]]
-    for node in nodes:
-        for dst, cc in network_topo.nodes["Argonne_1"].cchannels.items():
-            end = network_topo.nodes[dst]
-            if isinstance(end, QuantumRouter) and dst != node.name and dst not in node.cchannels:
-                new_cc = ClassicalChannel("cc_" + node.name + "_" + dst, tl, 0, 0, delay=cc.delay + 0.25e9)
-                new_cc.set_ends(node, end)
-
-    node = network_topo.nodes["UChicago_HC"]
-    for dst, cc in network_topo.nodes["UChicago_PME"].cchannels.items():
-        end = network_topo.nodes[dst]
-        if isinstance(end, QuantumRouter) and dst != node.name and dst not in node.cchannels:
-            new_cc = ClassicalChannel("cc_" + node.name + "_" + dst, tl, 0, 0, delay=cc.delay + 0.25e9)
-            new_cc.set_ends(node, end)
-
     # display components
     #   nodes can be interated from Topology.nodes.values()
     #   quantum channels from Topology.qchannels
@@ -70,14 +31,14 @@ if __name__ == "__main__":
     #     print("\t" + cc.name + ": ", cc, "\tdelay:", cc.delay)
 
     # update forwarding table
-    for name, node in network_topo.nodes.items():
-        if isinstance(node, QuantumRouter):
-            table = network_topo.generate_forwarding_table(name)
-            # print(name)
-            for dst in table:
-                next_node = table[dst]
-                node.network_manager.protocol_stack[0].add_forwarding_rule(dst, next_node)
-                # print("  ", dst, next_node)
+    # for name, node in network_topo.nodes.items():
+    #     if isinstance(node, QuantumRouter):
+    #         table = network_topo.generate_forwarding_table(name)
+    #         # print(name)
+    #         for dst in table:
+    #             next_node = table[dst]
+    #             node.network_manager.protocol_stack[0].add_forwarding_rule(dst, next_node)
+    #             # print("  ", dst, next_node)
 
     # set memory parameters
     MEMO_FREQ = 1e11
