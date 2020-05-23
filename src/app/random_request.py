@@ -93,9 +93,9 @@ class RandomRequestApp():
             reservation = self.memo_to_reserve[info.index]
             if info.remote_node == reservation.initiator and info.fidelity >= reservation.fidelity:
                 self.node.resource_manager.update(None, info.memory, "RAW")
-        elif self.cur_reserve and info.remote_node == self.cur_reserve[0] and info.fidelity >= self.cur_reserve[-1]:
-            self.memory_counter += 1
-            self.node.resource_manager.update(None, info.memory, "RAW")
+            elif self.cur_reserve and info.remote_node == self.cur_reserve[0] and info.fidelity >= self.cur_reserve[-1]:
+                self.memory_counter += 1
+                self.node.resource_manager.update(None, info.memory, "RAW")
 
     def get_wait_time(self) -> List[int]:
         return self.wait_time
