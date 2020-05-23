@@ -34,8 +34,8 @@ class RandomRequestApp():
         end_time = start_time + self.rg.integers(10, 20) * 1e12  # start time + (10 second - 20 second)
         memory_size = self.rg.integers(10, len(self.node.memory_array) // 2)  # 10 - max_memory_size / 2
         fidelity = self.rg.uniform(0.7, 0.9)
-        self.node.reserve_net_resource(responder, start_time, end_time, memory_size, fidelity)
         self.cur_reserve = [responder, start_time, end_time, memory_size, fidelity]
+        self.node.reserve_net_resource(responder, start_time, end_time, memory_size, fidelity)
         # print(self.node.timeline.now(), self.node.name, "request", self.cur_reserve)
 
     def retry(self, responder: str, fidelity: float) -> None:
