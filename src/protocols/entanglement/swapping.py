@@ -115,6 +115,12 @@ class EntanglementSwappingA(EntanglementProtocol):
                 else:
                     self.own.resource_manager.update(self, memo, "ENTANGLED")
 
+        if self.left_protocol:
+            self.own.resource_manager.release_remote_protocol(self.left_protocol.own.name, self.left_protocol)
+
+        if self.right_protocol:
+            self.own.resource_manager.release_remote_protocol(self.right_protocol.own.name, self.right_protocol)
+
 
 class EntanglementSwappingB(EntanglementProtocol):
     """
@@ -139,7 +145,7 @@ class EntanglementSwappingB(EntanglementProtocol):
     def received_message(self, src: str, msg: "EntanglementSwappingMessage") -> None:
         assert src == self.another.own.name
 
-        if msg.fidelity > 0:
+        if msg.fidelity > 0 and self.own.timeline.now() < msg.expire_time:
             self.memory.fidelity = msg.fidelity
             self.memory.entangled_memory["node_id"] = msg.remote_node
             self.memory.entangled_memory["memo_id"] = msg.remote_memo
@@ -156,3 +162,6 @@ class EntanglementSwappingB(EntanglementProtocol):
 
     def memory_expire(self, memory: "Memory") -> None:
         self.own.resource_manager.update(self, self.memory, "RAW")
+
+    def release(self) -> None:
+        self.own.resource_manager.update(self, self.memory, "ENTANGLED")

@@ -38,9 +38,9 @@ class NetworkManager():
         reservation = msg.reservation
         if reservation.initiator == self.owner.name:
             if msg.msg_type == "APPROVE":
-                self.owner.get_reserve_res(True)
+                self.owner.get_reserve_res(reservation, True)
             else:
-                self.owner.get_reserve_res(False)
+                self.owner.get_reserve_res(reservation, False)
         elif reservation.responder == self.owner.name:
             self.owner.get_other_reservation(reservation)
 

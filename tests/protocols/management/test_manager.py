@@ -137,7 +137,7 @@ def test_received_message():
     # test receive REQUEST message
     protocol1 = FakeProtocol("waiting_protocol")
     resource_manager.waiting_protocols.append(protocol1)
-    req_msg = ResourceManagerMessage("REQUEST", "resource_manager", protocol="ini_protocol",
+    req_msg = ResourceManagerMessage("REQUEST", protocol="ini_protocol",
                                      req_condition_func=true_fun)
     resource_manager.received_message("sender", req_msg)
     assert protocol1 in node.protocols
@@ -149,7 +149,7 @@ def test_received_message():
 
     protocol1 = FakeProtocol("waiting_protocol")
     resource_manager.waiting_protocols.append(protocol1)
-    req_msg = ResourceManagerMessage("REQUEST", "resource_manager", protocol="ini_protocol",
+    req_msg = ResourceManagerMessage("REQUEST", protocol="ini_protocol",
                                      req_condition_func=false_fun)
     resource_manager.received_message("sender", req_msg)
     assert protocol1 not in node.protocols
@@ -162,7 +162,7 @@ def test_received_message():
     # test receive RESPONSE message: is_approved==False and is_approved==True
     protocol2 = FakeProtocol("pending_protocol")
     resource_manager.pending_protocols.append(protocol2)
-    resp_msg = ResourceManagerMessage("RESPONSE", "resource_manager", protocol=protocol2, is_approved=False,
+    resp_msg = ResourceManagerMessage("RESPONSE", protocol=protocol2, is_approved=False,
                                       paired_protocol="paired_protocol")
     resource_manager.received_message("sender", resp_msg)
     assert protocol2 not in node.protocols
@@ -172,7 +172,7 @@ def test_received_message():
 
     protocol2 = FakeProtocol("pending_protocol")
     resource_manager.pending_protocols.append(protocol2)
-    resp_msg = ResourceManagerMessage("RESPONSE", "resource_manager", protocol=protocol2, is_approved=True,
+    resp_msg = ResourceManagerMessage("RESPONSE", protocol=protocol2, is_approved=True,
                                       paired_protocol="paired_protocol")
     resource_manager.received_message("sender", resp_msg)
     assert protocol2 in node.protocols

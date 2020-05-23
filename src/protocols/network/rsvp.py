@@ -148,7 +148,8 @@ class ResourceReservationProtocol(StackProtocol):
             def eg_rule_action(memories_info: List["MemoryInfo"]):
                 def req_func(protocols):
                     for protocol in protocols:
-                        if isinstance(protocol, EntanglementGenerationA) and protocol.other == self.own.name:
+                        if isinstance(protocol,
+                                      EntanglementGenerationA) and protocol.other == self.own.name and protocol.rule.get_reservation() == reservation:
                             return protocol
 
                 memories = [info.memory for info in memories_info]
@@ -169,6 +170,7 @@ class ResourceReservationProtocol(StackProtocol):
                         if (info != memory_info and info.index in memory_indices[:reservation.memory_size]
                                 and info.state == "ENTANGLED" and info.remote_node == memory_info.remote_node
                                 and info.fidelity == memory_info.fidelity):
+                            assert memory_info.remote_memo != info.remote_memo
                             return [memory_info, info]
                 return []
 
@@ -189,13 +191,14 @@ class ResourceReservationProtocol(StackProtocol):
                     if len(_protocols) != 2:
                         return None
 
+                    protocols.remove(_protocols[1])
+                    _protocols[1].rule.protocols.remove(_protocols[1])
+                    _protocols[1].kept_memo.remove_protocol(_protocols[1])
                     _protocols[0].meas_memo = _protocols[1].kept_memo
                     _protocols[0].memories = [_protocols[0].kept_memo, _protocols[0].meas_memo]
                     _protocols[0].name = _protocols[0].name + "." + _protocols[0].meas_memo.name
                     _protocols[0].meas_memo.add_protocol(_protocols[0])
-                    protocols.remove(_protocols[1])
-                    _protocols[1].rule.protocols.remove(_protocols[1])
-                    _protocols[1].kept_memo.remove_protocol(_protocols[1])
+                    _protocols[0].t0 = _protocols[0].kept_memo.timeline.now()
 
                     return _protocols[0]
 
@@ -335,6 +338,8 @@ class ResourceReservationProtocol(StackProtocol):
             rule = Rule(10, es_rule_actionB, es_rule_conditionB)
             rules.append(rule)
 
+        for rule in rules:
+            rule.set_reservation(reservation)
         return rules
 
     def load_rules(self, rules: List["Rule"], reservation: "Reservation") -> None:

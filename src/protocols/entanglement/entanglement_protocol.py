@@ -29,3 +29,6 @@ class EntanglementProtocol(Protocol):
     @abstractmethod
     def memory_expire(self, memory: "Memory") -> None:
         pass
+
+    def release(self) -> None:
+        pass

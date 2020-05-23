@@ -139,9 +139,9 @@ class QuantumRouter(Node):
         if self.app:
             self.app.get_memory(info)
 
-    def get_reserve_res(self, res: bool) -> None:
+    def get_reserve_res(self, reservation: "Reservation", res: bool) -> None:
         if self.app:
-            self.app.get_reserve_res(res)
+            self.app.get_reserve_res(reservation, res)
 
     def get_other_reservation(self, reservation: "Reservation"):
         if self.app:

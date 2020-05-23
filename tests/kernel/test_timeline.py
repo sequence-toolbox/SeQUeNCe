@@ -55,4 +55,4 @@ def test_run():
     tl.init()
     tl.run()
 
-    assert tl.now() == tl.time == 5 and len(tl.events) > 0
+    assert tl.now() == tl.time < 5 and len(tl.events) > 0

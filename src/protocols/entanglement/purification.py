@@ -25,6 +25,8 @@ class BBPSSW(EntanglementProtocol):
         self.memories = [kept_memo, meas_memo]
         self.kept_memo = kept_memo
         self.meas_memo = meas_memo
+        self.is_primary = meas_memo is not None
+        self.t0 = self.kept_memo.timeline.now()
         self.another = None
         self.is_success = None
         if self.meas_memo is None:
@@ -68,15 +70,32 @@ class BBPSSW(EntanglementProtocol):
 
     def memory_expire(self, memory: "Memory") -> None:
         assert memory in self.memories
-        if self.is_ready():
-            for memo in self.memories:
-                self.own.resource_manager.update(self, memo, "RAW")
+        if self.meas_memo is None:
+            self.update_resource_manager(memory, "RAW")
         else:
-            for memo in self.memories:
-                if memo == memory:
-                    self.own.resource_manager.update(self, memo, "RAW")
+            delay = self.own.cchannels[self.kept_memo.entangled_memory["node_id"]].delay
+            if self.is_primary:
+                if self.own.timeline.now() < self.t0 + delay:
+                    self.update_resource_manager(memory, "RAW")
+                    for memory1 in self.memories:
+                        if memory1 != memory:
+                            self.update_resource_manager(memory1, "ENTANGLED")
+                elif self.own.timeline.now() < self.t0 + 2 * delay:
+                    for memory1 in self.memories:
+                        self.update_resource_manager(memory1, "RAW")
                 else:
-                    self.own.resource_manager.update(self, memo, "ENTANGLED")
+                    raise Exception("invalid call time, t0:%d, delay:%d" % (self.t0, delay))
+            else:
+                if self.own.timeline.now() < self.t0 + delay:
+                    for memory1 in self.memories:
+                        self.update_resource_manager(memory1, "RAW")
+                elif self.own.timeline.now() < self.t0 + 2 * delay:
+                    if memory == self.kept_memo:
+                        for memory1 in self.memories:
+                            self.update_resource_manager(memory1, "RAW")
+
+    def release(self) -> None:
+        pass
 
     @staticmethod
     def success_probability(F: float) -> float:
