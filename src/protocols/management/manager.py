@@ -3,9 +3,9 @@ from typing import TYPE_CHECKING, Callable, List
 if TYPE_CHECKING:
     from ...components.memory import Memory
     from ...topology.node import QuantumRouter
-    from ..entanglement.entanglement_protocol import EntanglementProtocol
     from .rule_manager import Rule
 
+from ..entanglement.entanglement_protocol import EntanglementProtocol
 from ..message import Message
 from .rule_manager import RuleManager
 from .memory_manager import MemoryManager
@@ -23,14 +23,16 @@ class ResourceManagerMessage(Message):
       - paired_protocol: protocol that is paired with ini_protocol
     """
 
-    def __init__(self, msg_type: str, receiver: str, **kwargs):
-        Message.__init__(self, msg_type, receiver)
+    def __init__(self, msg_type: str, **kwargs):
+        Message.__init__(self, msg_type, "resource_manager")
         self.ini_protocol = kwargs["protocol"]
         if msg_type == "REQUEST":
             self.req_condition_func = kwargs["req_condition_func"]
         elif msg_type == "RESPONSE":
             self.is_approved = kwargs["is_approved"]
             self.paired_protocol = kwargs["paired_protocol"]
+        elif msg_type == "RELEASE":
+            self.protocol = kwargs["protocol"]
         else:
             raise Exception("ResourceManagerMessage gets unknown type of message: %s" % str(msg_type))
 
@@ -116,7 +118,7 @@ class ResourceManager():
             return
         if not protocol in self.pending_protocols:
             self.pending_protocols.append(protocol)
-        msg = ResourceManagerMessage("REQUEST", "resource_manager", protocol=protocol,
+        msg = ResourceManagerMessage("REQUEST", protocol=protocol,
                                      req_condition_func=req_condition_func)
         self.owner.send_message(req_dst, msg)
 
@@ -125,7 +127,7 @@ class ResourceManager():
             protocol = msg.req_condition_func(self.waiting_protocols)
             if protocol is not None:
                 protocol.set_others(msg.ini_protocol)
-                new_msg = ResourceManagerMessage("RESPONSE", "resource_manager", protocol=msg.ini_protocol,
+                new_msg = ResourceManagerMessage("RESPONSE", protocol=msg.ini_protocol,
                                                  is_approved=True, paired_protocol=protocol)
                 self.owner.send_message(src, new_msg)
                 self.waiting_protocols.remove(protocol)
@@ -133,13 +135,15 @@ class ResourceManager():
                 protocol.start()
                 return
 
-            new_msg = ResourceManagerMessage("RESPONSE", "resource_manager", protocol=msg.ini_protocol,
+            new_msg = ResourceManagerMessage("RESPONSE", protocol=msg.ini_protocol,
                                              is_approved=False, paired_protocol=None)
             self.owner.send_message(src, new_msg)
         elif msg.msg_type == "RESPONSE":
             protocol = msg.ini_protocol
 
             if protocol not in self.pending_protocols:
+                if msg.is_approved:
+                    self.release_remote_protocol(src, msg.paired_protocol)
                 return
 
             if msg.is_approved:
@@ -159,6 +163,14 @@ class ResourceManager():
                     else:
                         self.update(None, memory, "ENTANGLED")
                 self.pending_protocols.remove(protocol)
+        elif msg.msg_type == "RELEASE":
+            if msg.protocol in self.owner.protocols:
+                assert isinstance(msg.protocol, EntanglementProtocol)
+                msg.protocol.release()
 
     def memory_expire(self, memory: "Memory"):
         self.update(None, memory, "RAW")
+
+    def release_remote_protocol(self, dst: str, protocol: "EntanglementProtocol") -> None:
+        msg = ResourceManagerMessage("RELEASE", protocol=protocol)
+        self.owner.send_message(dst, msg)

@@ -41,10 +41,10 @@ if __name__ == "__main__":
     #             # print("  ", dst, next_node)
 
     # set memory parameters
-    MEMO_FREQ = 1e11
-    MEMO_EXPIRE = -1
-    MEMO_EFFICIENCY = 1
-    MEMO_FIDELITY = 1
+    MEMO_FREQ = 2e4
+    MEMO_EXPIRE = 0.8
+    MEMO_EFFICIENCY = 0.8
+    MEMO_FIDELITY = 0.8
     for name, node in network_topo.nodes.items():
         if isinstance(node, QuantumRouter):
             node.memory_array.update_memory_params("frequency", MEMO_FREQ)
@@ -53,9 +53,9 @@ if __name__ == "__main__":
             node.memory_array.update_memory_params("raw_fidelity", MEMO_FIDELITY)
 
     # set detector parameters
-    DETECTOR_EFFICIENCY = 1
-    DETECTOR_COUNT_RATE = 1e12
-    DETECTOR_RESOLUTION = 1
+    DETECTOR_EFFICIENCY = 0.8
+    DETECTOR_COUNT_RATE = 5e7
+    DETECTOR_RESOLUTION = 100
     for name, node in network_topo.nodes.items():
         if isinstance(node, MiddleNode):
             node.bsm.update_detectors_params("efficiency", DETECTOR_EFFICIENCY)
@@ -63,15 +63,15 @@ if __name__ == "__main__":
             node.bsm.update_detectors_params("time_resolution", DETECTOR_RESOLUTION)
 
     # set quantum channel parameters
-    ATTENUATION = 0
+    ATTENUATION = 0.0002
     QC_FREQ = 1e11
     for qc in network_topo.qchannels:
         qc.attenuation = ATTENUATION
         qc.frequency = QC_FREQ
 
     # set entanglement swapping parameters
-    SWAP_SUCC_PROB = 1
-    SWAP_DEGRADATION = 1
+    SWAP_SUCC_PROB = 0.81
+    SWAP_DEGRADATION = 0.99
     for name, node in network_topo.nodes.items():
         if isinstance(node, QuantumRouter):
             node.network_manager.protocol_stack[1].set_swapping_success_rate(SWAP_SUCC_PROB)
@@ -93,7 +93,6 @@ if __name__ == "__main__":
 
     tl.init()
     tl.run()
-
     for app in apps:
         print(app.node.name)
         print("  ", len(app.get_wait_time()))

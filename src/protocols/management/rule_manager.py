@@ -4,6 +4,7 @@ if TYPE_CHECKING:
     from ..entanglement.entanglement_protocol import EntanglementProtocol
     from .memory_manager import MemoryInfo, MemoryManager
     from .manager import ResourceManager
+    from ..network.rsvp import Reservation
 
 
 class RuleManager():
@@ -73,3 +74,9 @@ class Rule():
     def is_valid(self, memory_info: "MemoryInfo") -> List["MemoryInfo"]:
         manager = self.rule_manager.get_memory_manager()
         return self.condition(memory_info, manager)
+
+    def set_reservation(self, reservation: "Reservation") -> None:
+        self.reservation = reservation
+
+    def get_reservation(self) -> "Reservation":
+        return self.reservation

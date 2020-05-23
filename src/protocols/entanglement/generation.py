@@ -73,6 +73,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             assert self == other.other_protocol
         self.other_protocol = other
         self.remote_memo_id = other.memories[0].name
+        self.primary = self.own.name > self.other
 
     # start: called on initializing node
     #   starts current round of protocol

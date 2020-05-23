@@ -53,21 +53,31 @@ def test_RandomRequestApp_get_reserve_res():
     node = FakeNode("n1", tl)
     app = RandomRequestApp(node, ["n2", "n3"], 0)
     app.cur_reserve = ["n3", 10, 20, 5, 0.9]
+    reservation = Reservation("n1", "n3", 10, 20, 5, 0.9)
+    for i, card in enumerate(node.network_manager.protocol_stack[1].timecards):
+        if i < 20:
+            card.add(reservation)
+
     app.request_time = 5
-    app.get_reserve_res(True)
+    app.get_reserve_res(reservation, True)
     assert app.get_wait_time()[0] == 5
-    assert len(tl.events) == 1 and tl.events.data[0].time == 21
+    assert len(tl.events) == 41 and tl.events.data[0].time == 10
 
     tl = Timeline()
     tl.time = 6
     node = FakeNode("n1", tl)
     app = RandomRequestApp(node, ["n2", "n3"], 0)
     app.cur_reserve = ["n3", 10, 20, 5, 0.9]
+    reservation = Reservation("n1", "n3", 10, 20, 5, 0.9)
     app.request_time = 5
-    app.get_reserve_res(False)
+    app.get_reserve_res(reservation, False)
     tl.run()
     assert len(app.get_wait_time()) == 0
-    assert app.cur_reserve[-1] != 0.9
+    assert app.cur_reserve[0] == "n3"
+    assert app.cur_reserve[1] != 10
+    assert app.cur_reserve[2] != 20
+    assert app.cur_reserve[3] != 5
+    assert app.cur_reserve[4] == 0.9
     assert len(node.reserve_log) == 1
 
 

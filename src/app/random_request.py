@@ -30,13 +30,20 @@ class RandomRequestApp():
         self._update_last_rsvp_metrics()
 
         responder = self.rg.choice(self.others)
-        start_time = self.node.timeline.now() + self.rg.integers(10, 20) * 1e11
-        end_time = start_time + self.rg.integers(10, 20) * 1e12
-        memory_size = self.rg.integers(10, len(self.node.memory_array) // 2)
+        start_time = self.node.timeline.now() + self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
+        end_time = start_time + self.rg.integers(10, 20) * 1e12  # start time + (10 second - 20 second)
+        memory_size = self.rg.integers(10, len(self.node.memory_array) // 2)  # 10 - max_memory_size / 2
         fidelity = self.rg.uniform(0.7, 0.9)
         self.node.reserve_net_resource(responder, start_time, end_time, memory_size, fidelity)
         self.cur_reserve = [responder, start_time, end_time, memory_size, fidelity]
         # print(self.node.timeline.now(), self.node.name, "request", self.cur_reserve)
+
+    def retry(self, responder: str, fidelity: float) -> None:
+        start_time = self.node.timeline.now() + self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
+        end_time = start_time + self.rg.integers(10, 20) * 1e12  # start time + (10 second - 20 second)
+        memory_size = self.rg.integers(10, len(self.node.memory_array) // 2)  # 10 - max_memory_size / 2
+        self.node.reserve_net_resource(responder, start_time, end_time, memory_size, fidelity)
+        self.cur_reserve = [responder, start_time, end_time, memory_size, fidelity]
 
     def _update_last_rsvp_metrics(self):
         if self.cur_reserve and len(self.throughput) < len(self.reserves):
@@ -47,15 +54,18 @@ class RandomRequestApp():
         self.request_time = self.node.timeline.now()
         self.memory_counter = 0
 
-    def get_reserve_res(self, result: bool) -> None:
-        process = Process(self, "start", [])
+    def get_reserve_res(self, reservation: "Reservation", result: bool) -> None:
         if result:
+            # todo: temp
+            self.get_other_reservation(reservation)
+            process = Process(self, "start", [])
             self.reserves.append(self.cur_reserve)
             # print(self.node.timeline.now(), self.node.name, "request", self.cur_reserve, result)
             event = Event(self.cur_reserve[2] + 1, process)
             self.node.timeline.schedule(event)
             self.wait_time.append(self.cur_reserve[1] - self.request_time)
         else:
+            process = Process(self, "retry", [self.cur_reserve[0], self.cur_reserve[4]])
             event = Event(self.node.timeline.now() + 1e12, process)
             self.node.timeline.schedule(event)
 
@@ -78,13 +88,14 @@ class RandomRequestApp():
     def get_memory(self, info: "MemoryInfo") -> None:
         if info.state != "ENTANGLED":
             return
-        if self.cur_reserve and info.remote_node == self.cur_reserve[0] and info.fidelity >= self.cur_reserve[-1]:
-            self.memory_counter += 1
-            self.node.resource_manager.update(None, info.memory, "RAW")
-        elif info.index in self.memo_to_reserve:
+
+        if info.index in self.memo_to_reserve:
             reservation = self.memo_to_reserve[info.index]
             if info.remote_node == reservation.initiator and info.fidelity >= reservation.fidelity:
                 self.node.resource_manager.update(None, info.memory, "RAW")
+        elif self.cur_reserve and info.remote_node == self.cur_reserve[0] and info.fidelity >= self.cur_reserve[-1]:
+            self.memory_counter += 1
+            self.node.resource_manager.update(None, info.memory, "RAW")
 
     def get_wait_time(self) -> List[int]:
         return self.wait_time

@@ -162,6 +162,7 @@ class Memory(Entity):
         self.upper_protocols.remove(protocol)
 
     def update_expire_time(self, time: int):
+        time = max(time, self.timeline.now())
         if self.expiration_event is None:
             if time >= self.timeline.now():
                 process = Process(self, "expire", [])
@@ -171,4 +172,4 @@ class Memory(Entity):
             self.timeline.update_event_time(self.expiration_event, time)
 
     def get_expire_time(self) -> int:
-        return self.expiration_event.time if self.expiration_event else -1
+        return self.expiration_event.time if self.expiration_event else math.inf

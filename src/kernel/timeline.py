@@ -32,7 +32,7 @@ class Timeline:
         # log = {}
         while len(self.events) > 0:
             event = self.events.pop()
-            if event.time > self.stop_time:
+            if event.time >= self.stop_time:
                 self.schedule(event)
                 break
             assert self.time <= event.time, "invalid event time for process scheduled on " + str(event.process.owner)
