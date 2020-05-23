@@ -13,10 +13,12 @@ class Topology():
     def __init__(self, name: str, timeline: "Timeline"):
         self.name = name
         self.timeline = timeline
-        self.nodes = {}      # internal node dictionary {node_name : node}
-        self.graph = {}      # internal quantum graph representation {node_name : {adjacent_name : distance}}
-        self.qchannels = []  # list of quantum channels
-        self.cchannels = []  # list of classical channels
+        self.nodes = {}        # internal node dictionary {node_name : node}
+        self.qchannels = []    # list of quantum channels
+        self.cchannels = []    # list of classical channels
+
+        self.graph = {}        # internal quantum graph representation {node_name : {adjacent_name : distance}}
+        self._cc_graph = {}    # internal classical graph representation {node_name : {adjacent_name : delay}}
 
     def load_config(self, config_file: str) -> None:
         topo_config = json5.load(open(config_file))
@@ -35,20 +37,44 @@ class Topology():
             
             self.add_node(node)
 
-        # create connections
+        # create cconnections (if discrete present, otherwise generate from table)
+        if "cconnections" in topo_config:
+            for cchannel_params in topo_config["cconnections"]:
+                node1 = cchannel_params.pop("node1")
+                node2 = cchannel_params.pop("node2")
+                self.add_classical_connection(node1, node2, **cchannel_params)
+        else:
+            table_type = topo_config["cconnections_table"].get("type", "RT")
+            assert table_type == "RT", "non-RT tables not yet supported"
+            labels = topo_config["cconnections_table"]["labels"]
+            table = topo_config["cconnections_table"]["table"]
+            assert len(labels) == len(table)                 # check that number of rows is correct
+            
+            for i in range(len(table)):
+                assert len(table[i]) == len(labels)          # check that number of columns is correct
+                for j in range(i + 1, len(table)):
+                    if table[i][j] == 0 or table[j][i] == 0: # skip if have 0 entries
+                        continue
+                    delay = (table[i][j] + table[j][i]) / 4  # average RT time divided by 2
+                    cchannel_params = {"delay": delay, "distance": 1e3}
+                    self.add_classical_connection(labels[i], labels[j], **cchannel_params)
+
+        # create qconnections
         for qchannel_params in topo_config["qconnections"]:
             node1 = qchannel_params.pop("node1")
             node2 = qchannel_params.pop("node2")
             self.add_quantum_connection(node1, node2, **qchannel_params)
 
-        for cchannel_params in topo_config["cconnections"]:
-            node1 = cchannel_params.pop("node1")
-            node2 = cchannel_params.pop("node2")
-            self.add_classical_connection(node1, node2, **cchannel_params)
+        # generate forwarding tables
+        for node in self.get_nodes_by_type("QuantumRouter"):
+            table = self.generate_forwarding_table(node.name)
+            for dst, next_node in table.items():
+                node.network_manager.protocol_stack[0].add_forwarding_rule(dst, next_node)
 
     def add_node(self, node: "Node") -> None:
         self.nodes[node.name] = node
         self.graph[node.name] = {}
+        self._cc_graph[node.name] = {}
 
     def add_quantum_connection(self, node1: str, node2: str, **kwargs) -> None:
         assert node1 in self.nodes, node1 + " not a valid node"
@@ -62,6 +88,8 @@ class Topology():
 
             # update params
             kwargs["distance"] = kwargs["distance"] / 2
+            if node1 in self._cc_graph and node2 in self._cc_graph[node1]:
+                kwargs["delay"] = self._cc_graph[node1][node2] / 2
 
             # add quantum channels
             for node in [node1, node2]:
@@ -92,6 +120,13 @@ class Topology():
         cchannel = ClassicalChannel(name, self.timeline, **kwargs)
         cchannel.set_ends(self.nodes[node1], self.nodes[node2])
         self.cchannels.append(cchannel)
+
+        # edit graph
+        self._cc_graph[node1][node2] = cchannel.delay
+        self._cc_graph[node2][node1] = cchannel.delay
+
+    def get_nodes_by_type(self, node_type: str) -> [Node]:
+        return [node for name, node in self.nodes.items() if type(node).__name__ == node_type]
 
     def generate_forwarding_table(self, starting_node: str) -> dict:
         '''

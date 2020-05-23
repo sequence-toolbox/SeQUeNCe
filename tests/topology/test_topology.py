@@ -12,6 +12,7 @@ def test_load_config():
 
     # NOTE: test should be run from Sequence-python directory
     #   if test needs to be run from a different directory, rewrite path
+    #   this also applies to the next test (test_load_config_2)
     config_file = "tests/topology/topology.json"
     topo.load_config(config_file)
     config = json5.load(open(config_file))
@@ -19,6 +20,24 @@ def test_load_config():
     # check if have all nodes plus extra middle node
     assert len(topo.nodes) == len(config["nodes"]) + 1
     assert topo.graph["alice"] == {"bob": 3e3}
+
+
+def test_load_config_2():
+    tl = Timeline()
+    topo = Topology("test_topo", tl)
+
+    config_file = "example/starlight.json"
+    topo.load_config(config_file)
+    config = json5.load(open(config_file))
+
+    assert len(topo.nodes) == len(config["nodes"]) + 10
+    assert len(topo.cchannels) == 36 + 20  # number of all-to-all connections plus middle node connectivity
+    starlight = topo.nodes["StarLight"]
+    assert starlight.cchannels["NU"].delay == (0.79e9 + 0.80e9) / 4  # avg. round trip / 2
+    table = starlight.network_manager.protocol_stack[0].forwarding_table
+    assert table["NU"] == "NU"
+    assert table["UChicago_HC"] == "UChicago_PME"
+    assert table["Argonne_2"] == "Argonne_1"
 
 
 def test_add_node():
@@ -48,7 +67,7 @@ def test_add_classical_connection():
     assert channels[0].ends == [n1, n2]
 
 
-def test_add_quantum_individual():
+def test_add_quantum_connection():
     tl = Timeline()
     topo = Topology("test_topo", tl)
 
@@ -71,5 +90,24 @@ def test_add_quantum_individual():
     assert topo.graph["n3"] == {"middle_n3_n4": 500}
     channels = [e for e in tl.entities if type(e) == QuantumChannel]
     assert len(channels) == 3
+
+
+def test_get_nodes_by_type():
+    tl = Timeline()
+    topo = Topology("test_topo", tl)
+
+    n1 = Node("n1", tl)
+    n2 = QuantumRouter("n2", tl)
+    n3 = MiddleNode("n3", tl, ["n2","n4"])
+    n4 = QuantumRouter("n4", tl)
+    topo.add_node(n1)
+    topo.add_node(n2)
+    topo.add_node(n3)
+    topo.add_node(n4)
+
+    nodes = topo.get_nodes_by_type("QuantumRouter")
+    print(topo.nodes.items())
+
+    assert nodes == [n2, n4]
 
 

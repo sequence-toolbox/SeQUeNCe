@@ -83,6 +83,58 @@ def test_generation_pop():
     assert m0.messages[0][1].msg_type == m0.messages[1][1].msg_type == "MEAS_RES"
 
 
+def test_generation_expire():
+    class DumbBSM():
+        def __init__(self):
+            pass
+
+        def get(self, qubit):
+            pass
+
+    tl = Timeline(1e12)
+    e0 = Node("e0", tl)
+    e1 = Node("e1", tl)
+    m0 = FakeNode("m0", tl)
+
+    qc0 = QuantumChannel("qc_e0m0", tl, 0, 1e3)
+    qc1 = QuantumChannel("qc_e1m0", tl, 0, 1e3)
+    qc0.set_ends(e0, m0)
+    qc1.set_ends(e1, m0)
+    cc0 = ClassicalChannel("cc_e0m0", tl, 0, 1e3, delay=1e12)
+    cc1 = ClassicalChannel("cc_e1m0", tl, 0, 1e3, delay=1e12)
+    cc2 = ClassicalChannel("cc_e0e1", tl, 0, 2e3, delay=1e9)
+    cc0.set_ends(e0, m0)
+    cc1.set_ends(e1, m0)
+    cc2.set_ends(e0, e1)
+
+    e0.memory_array = MemoryArray("e0mem", tl, coherence_time=1)
+    e1.memory_array = MemoryArray("e1mem", tl, coherence_time=1)
+    e0.memory_array.owner = e0
+    e1.memory_array.owner = e1
+    m0.bsm = DumbBSM()
+
+    tl.init()
+
+    protocol0 = EntanglementGenerationA(e0, "e0prot", middle="m0", other="e1", memory=e0.memory_array[0])
+    protocol1 = EntanglementGenerationA(e1, "e1prot", middle="m0", other="e0", memory=e1.memory_array[0])
+    protocol0.primary = True
+    e0.protocols.append(protocol0)
+    e1.protocols.append(protocol1)
+    protocol0.set_others(protocol1)
+    protocol1.set_others(protocol0)
+
+    process = Process(protocol0, "start", [])
+    event = Event(0, process)
+    tl.schedule(event)
+    process = Process(protocol1, "start", [])
+    event = Event(0, process)
+    tl.schedule(event)
+
+    tl.run()
+
+    assert e0.memory_array[0].expiration_event.time > 1e12
+
+
 def test_generation_run():
     numpy.random.seed(0)
     NUM_TESTS = 200
