@@ -82,10 +82,20 @@ def test_RandomRequestApp_get_reserve_res():
 
 
 def test_RandomRequestApp_get_memory():
-    tl = Timeline()
+    tl = Timeline(1)
     node = FakeNode("n1", tl)
     app = RandomRequestApp(node, ["n2", "n3"], 0)
-    app.cur_reserve = ["n2", 0, 100, 0.85]
+    app.cur_reserve = ["n2", 0, 100, 2, 0.85]
+    reservation = Reservation("n1", "n2", 0, 100, 2, 0.85)
+    counter = 0
+    for card in node.network_manager.protocol_stack[1].timecards:
+        card.add(reservation)
+        counter += 1
+        if counter > 2:
+            break
+    app.get_other_reservation(reservation)
+
+    tl.run()
 
     node.memory_array[0].entangled_memory["node_id"] = "n2"
     node.memory_array[0].entangled_memory["memo_id"] = "1"
@@ -109,6 +119,13 @@ def test_RandomRequestApp_get_memory():
     node.resource_manager.update(None, node.memory_array[2], "ENTANGLED")
     app.get_memory(node.resource_manager.memory_manager[2])
     assert node.resource_manager.memory_manager[2].state == "ENTANGLED"
+
+    node.memory_array[3].entangled_memory["node_id"] = "n2"
+    node.memory_array[3].entangled_memory["memo_id"] = "1"
+    node.memory_array[3].fidelity = 0.9
+    node.resource_manager.update(None, node.memory_array[3], "ENTANGLED")
+    app.get_memory(node.resource_manager.memory_manager[3])
+    assert node.resource_manager.memory_manager[3].state == "ENTANGLED"
 
 
 def test_RandomRequestApp_get_other_reservation():
