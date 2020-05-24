@@ -1,7 +1,6 @@
 import pandas as pd
 from numpy.random import seed
 from sequence.app.random_request import RandomRequestApp
-from sequence.components.optical_channel import ClassicalChannel
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import QuantumRouter, MiddleNode
 from sequence.topology.topology import Topology
@@ -43,8 +42,8 @@ if __name__ == "__main__":
     # set memory parameters
     MEMO_FREQ = 2e4
     MEMO_EXPIRE = 0.8
-    MEMO_EFFICIENCY = 0.8
-    MEMO_FIDELITY = 0.8
+    MEMO_EFFICIENCY = 0.2
+    MEMO_FIDELITY = 0.9349
     for name, node in network_topo.nodes.items():
         if isinstance(node, QuantumRouter):
             node.memory_array.update_memory_params("frequency", MEMO_FREQ)
@@ -93,6 +92,7 @@ if __name__ == "__main__":
 
     tl.init()
     tl.run()
+
     for app in apps:
         print(app.node.name)
         print("  ", len(app.get_wait_time()))
