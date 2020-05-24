@@ -105,21 +105,23 @@ class EntanglementSwappingA(EntanglementProtocol):
         assert False
 
     def memory_expire(self, memory: "Memory") -> None:
-        if self.is_ready():
-            for memo in self.memories:
-                self.own.resource_manager.update(self, memo, "RAW")
-        else:
-            for memo in self.memories:
-                if memo == memory:
-                    self.own.resource_manager.update(self, memo, "RAW")
-                else:
-                    self.own.resource_manager.update(self, memo, "ENTANGLED")
-
+        assert self.is_ready() is False
         if self.left_protocol:
-            self.own.resource_manager.release_remote_protocol(self.left_protocol.own.name, self.left_protocol)
-
+            self.own.resource_manager.release_remote_protocol(self.left_memo.entangled_memory["node_id"], self)
+        else:
+            self.own.resource_manager.release_remote_memory(self, self.left_memo.entangled_memory["node_id"],
+                                                            self.left_memo.entangled_memory["memo_id"])
         if self.right_protocol:
-            self.own.resource_manager.release_remote_protocol(self.right_protocol.own.name, self.right_protocol)
+            self.own.resource_manager.release_remote_protocol(self.right_memo.entangled_memory["node_id"], self)
+        else:
+            self.own.resource_manager.release_remote_memory(self, self.right_memo.entangled_memory["node_id"],
+                                                            self.right_memo.entangled_memory["memo_id"])
+
+        for memo in self.memories:
+            if memo == memory:
+                self.own.resource_manager.update(self, memo, "RAW")
+            else:
+                self.own.resource_manager.update(self, memo, "ENTANGLED")
 
 
 class EntanglementSwappingB(EntanglementProtocol):

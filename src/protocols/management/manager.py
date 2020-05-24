@@ -31,8 +31,10 @@ class ResourceManagerMessage(Message):
         elif msg_type == "RESPONSE":
             self.is_approved = kwargs["is_approved"]
             self.paired_protocol = kwargs["paired_protocol"]
-        elif msg_type == "RELEASE":
+        elif msg_type == "RELEASE_PROTOCOL":
             self.protocol = kwargs["protocol"]
+        elif msg_type == "RELEASE_MEMORY":
+            self.memory = kwargs["memory_id"]
         else:
             raise Exception("ResourceManagerMessage gets unknown type of message: %s" % str(msg_type))
 
@@ -163,14 +165,25 @@ class ResourceManager():
                     else:
                         self.update(None, memory, "ENTANGLED")
                 self.pending_protocols.remove(protocol)
-        elif msg.msg_type == "RELEASE":
+        elif msg.msg_type == "RELEASE_PROTOCOL":
             if msg.protocol in self.owner.protocols:
                 assert isinstance(msg.protocol, EntanglementProtocol)
                 msg.protocol.release()
+        elif msg.msg_type == "RELEASE_MEMORY":
+            target_id = msg.memory
+            for protocol in self.owner.protocols:
+                for memory in protocol.memories:
+                    if memory.name == target_id:
+                        protocol.release()
+                        return
 
     def memory_expire(self, memory: "Memory"):
         self.update(None, memory, "RAW")
 
     def release_remote_protocol(self, dst: str, protocol: "EntanglementProtocol") -> None:
-        msg = ResourceManagerMessage("RELEASE", protocol=protocol)
+        msg = ResourceManagerMessage("RELEASE_PROTOCOL", protocol=protocol)
+        self.owner.send_message(dst, msg)
+
+    def release_remote_memory(self, init_protocol: "EntanglementProtocol", dst: str, memory_id: str) -> None:
+        msg = ResourceManagerMessage("RELEASE_MEMORY", protocol=init_protocol, memory_id=memory_id)
         self.owner.send_message(dst, msg)
