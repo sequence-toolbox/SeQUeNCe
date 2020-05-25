@@ -8,7 +8,7 @@ from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.topology.node import QKDNode
-from sequence.protocols.protocol import Protocol
+from sequence.protocols.protocol import StackProtocol
 from sequence.utils.encoding import *
 
 
@@ -16,9 +16,9 @@ random.seed(0)
 
 
 # dummy parent class to test BB84 functionality
-class Parent(Protocol):
+class Parent(StackProtocol):
     def __init__(self, own: "Node", keysize: int, role: str):
-        Protocol.__init__(self, own, "")
+        super().__init__(own, "")
         self.upper_protocols = []
         self.lower_protocols = []
         self.keysize = keysize
@@ -43,9 +43,9 @@ class Parent(Protocol):
 def test_BB84_polarization(): 
     tl = Timeline(1e12)  # stop time is 1 s
 
-    alice = QKDNode("alice", tl)
-    bob = QKDNode("bob", tl)
-    pair_bb84_protocols(alice.sifting_protocol, bob.sifting_protocol)
+    alice = QKDNode("alice", tl, stack_size=1)
+    bob = QKDNode("bob", tl, stack_size=1)
+    pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
 
     qc = QuantumChannel("qc", tl, distance=10e3, polarization_fidelity=0.99, attenuation=0.00002)
     qc.set_ends(alice, bob)
@@ -55,10 +55,10 @@ def test_BB84_polarization():
     # Parent
     pa = Parent(alice, 128, "alice")
     pb = Parent(bob, 128, "bob")
-    pa.lower_protocols.append(alice.sifting_protocol)
-    pb.lower_protocols.append(bob.sifting_protocol)
-    alice.sifting_protocol.upper_protocols.append(pa)
-    bob.sifting_protocol.upper_protocols.append(pb)
+    alice.protocol_stack[0].upper_protocols.append(pa)
+    pa.lower_protocols.append(alice.protocol_stack[0])
+    bob.protocol_stack[0].upper_protocols.append(pb)
+    pb.lower_protocols.append(bob.protocol_stack[0])
 
     process = Process(pa, "push", [])
     event = Event(0, process)
@@ -72,9 +72,9 @@ def test_BB84_polarization():
 def test_BB84_time_bin():
     tl = Timeline(1e12)  # stop time is 1 s
 
-    alice = QKDNode("alice", tl, encoding=time_bin)
-    bob = QKDNode("bob", tl, encoding=time_bin)
-    pair_bb84_protocols(alice.sifting_protocol, bob.sifting_protocol)
+    alice = QKDNode("alice", tl, encoding=time_bin, stack_size=1)
+    bob = QKDNode("bob", tl, encoding=time_bin, stack_size=1)
+    pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
 
     qc = QuantumChannel("qc", tl, distance=10e3, polarization_fidelity=0.99, attenuation=0.00002)
     qc.set_ends(alice, bob)
@@ -84,10 +84,10 @@ def test_BB84_time_bin():
     # Parent
     pa = Parent(alice, 128, "alice")
     pb = Parent(bob, 128, "bob")
-    pa.lower_protocols.append(alice.sifting_protocol)
-    pb.lower_protocols.append(bob.sifting_protocol)
-    alice.sifting_protocol.upper_protocols.append(pa)
-    bob.sifting_protocol.upper_protocols.append(pb)
+    alice.protocol_stack[0].upper_protocols.append(pa)
+    pa.lower_protocols.append(alice.protocol_stack[0])
+    bob.protocol_stack[0].upper_protocols.append(pb)
+    pb.lower_protocols.append(bob.protocol_stack[0])
 
     process = Process(pa, "push", [])
     event = Event(0, process)

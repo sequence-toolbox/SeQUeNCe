@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..protocols.message import Message
+    from ..protocols.protocol import StackProtocol
     from ..protocols.management.memory_manager import MemoryInfo
     from ..protocols.network.rsvp import Reservation
     from ..components.optical_channel import QuantumChannel, ClassicalChannel
@@ -15,6 +16,7 @@ from ..components.bsm import SingleAtomBSM
 from ..components.light_source import LightSource
 from ..components.detector import QSDetectorPolarization, QSDetectorTimeBin
 from ..protocols.qkd.BB84 import BB84
+from ..protocols.qkd.cascade import Cascade
 from ..protocols.management.manager import ResourceManager
 from ..protocols.network.network_manager import NewNetworkManager
 from ..utils.encoding import *
@@ -154,15 +156,15 @@ class QKDNode(Node):
     (https://arxiv.org/pdf/quant-ph/0412029.pdf) page 24
     The protocol stack is :
 
-    |      Authentication     |  <= No implementation
-    |  Privacy Amplification  |  <= No implementation
-    |    Entropy Estimation   |  <= No implementation
-    |     Error Correction    |  <= implemented by cascade
-    |         Sifting         |  <= implemented by BB84
+    |      Authentication     | 4 | <= No implementation
+    |  Privacy Amplification  | 3 | <= No implementation
+    |    Entropy Estimation   | 2 | <= No implementation
+    |     Error Correction    | 1 | <= implemented by cascade
+    |         Sifting         | 0 | <= implemented by BB84
     """
 
-    def __init__(self, name: str, timeline: "timeline", encoding=polarization):
-        Node.__init__(self, name, timeline)
+    def __init__(self, name: str, timeline: "timeline", encoding=polarization, stack_size=5):
+        super().__init__(name, timeline)
         self.encoding = encoding
         self.lightsource = LightSource(name + ".lightsource", timeline, encoding_type=encoding)
         self.lightsource.owner = self
@@ -175,14 +177,41 @@ class QKDNode(Node):
             raise Exception("invalid encoding {} given for QKD node {}".format(encoding["name"], name))
         self.qsdetector.owner = self
 
-        # Create BB84 protocol
-        self.sifting_protocol = BB84(self, name + ".BB84")
-        self.protocols.append(self.sifting_protocol)
-        self.qsdetector.protocols.append(self.sifting_protocol)
+        self.protocol_stack = [None] * 5
+
+        if stack_size > 0:
+            # Create BB84 protocol
+            self.protocol_stack[0] = BB84(self, name + ".BB84")
+            self.protocols.append(self.protocol_stack[0])
+            self.qsdetector.protocols.append(self.protocol_stack[0])
+
+        if stack_size > 1:
+            # Create cascade protocol
+            self.protocol_stack[1] = Cascade(self, name + ".cascade")
+            self.protocols.append(self.protocol_stack[1])
+            self.protocol_stack[0].upper_protocols.append(self.protocol_stack[1])
+            self.protocol_stack[1].lower_protocols.append(self.protocol_stack[0])
 
     def init(self) -> None:
-        Node.init(self)
-        assert self.sifting_protocol.role != -1
+        super().init()
+        assert self.protocol_stack[0].role != -1
+
+    def set_protocol_layer(self, layer: int, protocol: "StackProtocol") -> None:
+        if layer < 0 or layer > 5:
+            raise ValueError("layer must be between 0 and 5; given {}".format(layer))
+
+        if self.protocol_stack[layer] is not None:
+            self.protocols.remove(self.protocol_stack[layer])
+        self.protocol_stack[layer] = protocol
+        self.protocols.append(protocol)
+
+        if layer > 0 and self.protocol_stack[layer - 1] is not None:
+            self.protocol_stack[layer - 1].upper_protocols.append(protocol)
+            protocol.lower_protocols.append(self.protocol_stack[layer - 1])
+
+        if layer < 5 and self.protocol_stack[layer + 1] is not None:
+            protocol.upper_protocols.append(self.protocol_stack[layer + 1])
+            self.protocol_stack[layer + 1].lower_protocols.append(protocol)
 
     def update_lightsource_params(self, arg_name: str, value: Any) -> None:
         self.lightsource.__setattr__(arg_name, value)

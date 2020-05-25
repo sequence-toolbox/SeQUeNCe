@@ -14,14 +14,6 @@ def pair_cascade_protocols(sender: "Cascade", receiver: "BB84") -> None:
     sender.role = 0
     receiver.role = 1
 
-    if sender.lower_protocols == []:
-        sender.lower_protocols.append(sender.own.sifting_protocol)
-        sender.own.sifting_protocol.upper_protocols.append(sender)
-
-    if receiver.lower_protocols == []:
-        receiver.lower_protocols.append(receiver.own.sifting_protocol)
-        receiver.own.sifting_protocol.upper_protocols.append(receiver)
-
 
 class CascadeMessage(Message):
     def __init__(self, msg_type: str, receiver: str, **kwargs):
@@ -65,7 +57,7 @@ class Cascade(StackProtocol):
         super().__init__(own, name)
 
         self.w = kwargs.get("w", 4)
-        self.role = kwargs.get("role", 1)  # 0 for sender, 1 for receiver
+        self.role = kwargs.get("role", -1)  # 0 for sender, 1 for receiver
         self.secure_params = kwargs.get("secure_params", 100)
         
         self.another = None
