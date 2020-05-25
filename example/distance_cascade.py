@@ -9,7 +9,7 @@ from sequence.BB84 import BB84
 from sequence.cascade import Cascade
 from sequence.process import Process
 
-if __name__ == "__main__":
+def old_main():
     random.seed(2)
     filename = "results/sensitivity/distance_cascade.log"
     fh = open(filename,'w')

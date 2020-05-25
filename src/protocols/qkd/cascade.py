@@ -64,13 +64,13 @@ class Cascade(StackProtocol):
     def __init__(self, own: "QKDNode", name: str, **kwargs):
         super().__init__(own, name)
 
-        # TODO: now we assume key length is 256 bits
         self.w = kwargs.get("w", 4)
         self.role = kwargs.get("role", 1)  # 0 for sender, 1 for receiver
         self.secure_params = kwargs.get("secure_params", 100)
         
         self.another = None
         self.state = 0
+
         self.keylen = None
         self.frame_len = 10240
         self.frame_num = None
@@ -84,14 +84,18 @@ class Cascade(StackProtocol):
         self.another_checksums = [[]]
         self.index_to_block_id_lists = [[]]
         self.block_id_to_index_lists = [[]]
-        self.logflag = False
         self.time_cost = None
         self.setup_time = None
         self.start_time = None
         self.end_time = math.inf
-        self.throughput = None # bits/sec
+
+        # used for debugging purposes (prints out cascade process)
+        self.logflag = False
+
+        # metrics
+        self.throughput = None  # bits/sec
         self.error_bit_rate = None
-        self.latency = None # the average latency
+        self.latency = None  # the average latency
         self.disclosed_bits_counter = 0
         self.privacy_throughput = None
 
@@ -390,8 +394,9 @@ class Cascade(StackProtocol):
                     self.interactive_binary_search(cur_key, _pass, _block, 0, block_size)
                     return False
 
-        for i in range(40):
-            self.valid_keys.append( (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1) )
+        # for i in range(self.frame_num): 
+        #     self.valid_keys.append( (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1) )
+        self.valid_keys.append(self.bits[key_id] & ((1 << self.keylen) - 1))
 
         if self.role == 0: self.t2[key_id] = self.own.timeline.now()
         self.performance_measure()
@@ -408,8 +413,9 @@ class Cascade(StackProtocol):
         self.state = 2
 
     def key_is_valid(self, key_id):
-        for i in range(40):
-            self.valid_keys.append( (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1) )
+        # for i in range(self.frame_num):
+        #     self.valid_keys.append( (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1) )
+        self.valid_keys.append(self.bits[key_id] & ((1 << self.keylen) - 1))
         self.t2[key_id] = self.own.timeline.now()
         self.performance_measure()
     

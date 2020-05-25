@@ -15,6 +15,7 @@ random.seed(0)
 
 def test_cascade_run():
     KEYSIZE = 64
+    KEYNUM = 10
 
     tl = Timeline(1e10)
 
@@ -34,14 +35,14 @@ def test_cascade_run():
     bob.protocols.append(casc_b)
     pair_cascade_protocols(casc_a, casc_b)  # also adds protocols to stack
     
-    process = Process(casc_a, "generate_key", [KEYSIZE, 1])
+    process = Process(casc_a, "push", [KEYSIZE, KEYNUM])
     event = Event(0, process)
     tl.schedule(event)
 
     tl.init()
     tl.run()
 
-    assert len(casc_a.valid_keys) > 0
+    assert len(casc_a.valid_keys) == KEYNUM
     assert len(casc_a.valid_keys) == len(casc_b.valid_keys)
     assert casc_a.error_bit_rate == 0
     assert casc_a.valid_keys[0] < 2 ** 64  # check that key is not too large
