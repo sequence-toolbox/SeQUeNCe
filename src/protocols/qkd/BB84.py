@@ -271,3 +271,4 @@ class BB84(StackProtocol):
         del self.key_bits[0:self.key_lengths[0]]
         self.key = int("".join(str(x) for x in key_bits), 2)  # convert from binary list to int
 
+

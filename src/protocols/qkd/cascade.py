@@ -68,7 +68,6 @@ class Cascade(StackProtocol):
         self.frame_num = None
         self.run_time = None
         self.bits = []
-        self.valid_keys = []
         self.t1 = []
         self.t2 = []
         self.k1 = 0
@@ -85,6 +84,7 @@ class Cascade(StackProtocol):
         self.logflag = False
 
         # metrics
+        self.valid_keys = []
         self.throughput = None  # bits/sec
         self.error_bit_rate = None
         self.latency = None  # the average latency
@@ -388,9 +388,12 @@ class Cascade(StackProtocol):
 
         # for i in range(self.frame_num): 
         #     self.valid_keys.append( (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1) )
-        self.valid_keys.append(self.bits[key_id] & ((1 << self.keylen) - 1))
+        key = self.bits[key_id] & ((1 << self.keylen) - 1)
+        self.valid_keys.append(key)
+        self._pop(key=key)
 
-        if self.role == 0: self.t2[key_id] = self.own.timeline.now()
+        if self.role == 0:
+            self.t2[key_id] = self.own.timeline.now()
         self.performance_measure()
 
         message = CascadeMessage("key_is_valid", self.another.name, key_id=key_id)
@@ -406,8 +409,11 @@ class Cascade(StackProtocol):
 
     def key_is_valid(self, key_id):
         # for i in range(self.frame_num):
-        #     self.valid_keys.append( (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1) )
-        self.valid_keys.append(self.bits[key_id] & ((1 << self.keylen) - 1))
+        #     self.valid_keys.append( (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1))
+        key = self.bits[key_id] & ((1 << self.keylen) - 1)
+        self.valid_keys.append(key)
+        self._pop(key=key)
+
         self.t2[key_id] = self.own.timeline.now()
         self.performance_measure()
     
