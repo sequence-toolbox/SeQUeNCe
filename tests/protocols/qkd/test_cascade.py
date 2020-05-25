@@ -14,15 +14,17 @@ random.seed(0)
 
 
 def test_cascade_run():
-    tl = Timeline(1e9)
+    KEYSIZE = 64
+
+    tl = Timeline(1e10)
 
     alice = QKDNode("alice", tl)
     bob = QKDNode("bob", tl)
     pair_bb84_protocols(alice.sifting_protocol, bob.sifting_protocol)
 
-    qc = QuantumChannel("qc", tl, distance=10e3, attenuation=2e-5)
+    qc = QuantumChannel("qc", tl, distance=1e3, attenuation=2e-5)
     qc.set_ends(alice, bob)
-    cc = ClassicalChannel("cc", tl, distance=10e3, attenuation=0)
+    cc = ClassicalChannel("cc", tl, distance=1e3, attenuation=0)
     cc.set_ends(alice, bob)
 
     # cascade
@@ -32,11 +34,16 @@ def test_cascade_run():
     bob.protocols.append(casc_b)
     pair_cascade_protocols(casc_a, casc_b)  # also adds protocols to stack
     
-    process = Process(casc_a, "push", [128])
+    process = Process(casc_a, "generate_key", [KEYSIZE, 1])
     event = Event(0, process)
     tl.schedule(event)
 
     tl.init()
     tl.run()
+
+    assert len(casc_a.valid_keys) > 0
+    assert len(casc_a.valid_keys) == len(casc_b.valid_keys)
+    assert casc_a.error_bit_rate == 0
+    assert casc_a.valid_keys[0] < 2 ** 64  # check that key is not too large
 
 
