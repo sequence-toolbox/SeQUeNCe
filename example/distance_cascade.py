@@ -2,69 +2,62 @@ from numpy import random
 import math
 
 import sequence
-from sequence import topology
-from sequence.event import Event
-from sequence.timeline import Timeline
-from sequence.BB84 import BB84
-from sequence.cascade import Cascade
-from sequence.process import Process
+from sequence.topology.node import QKDNode
+from sequence.kernel.process import Process
+from sequence.kernel.event import Event
+from sequence.kernel.timeline import Timeline
+from sequence.protocols.qkd.BB84 import *
+from sequence.protocols.qkd.cascade import *
+from sequence.components.optical_channel import *
 
-def old_main():
+if __name__ == "__main__":
+    NUM_EXPERIMENTS = 10
+
     random.seed(2)
     filename = "results/sensitivity/distance_cascade.log"
     fh = open(filename,'w')
-    for id in range(11):
+
+    for id in range(NUM_EXPERIMENTS):
         distance = max(1000,10000*int(id))
 
         tl = Timeline(12e12)
-        qc = topology.QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
-        cc = topology.ClassicalChannel("cc", tl, distance=distance)
-        cc.delay += 10**9
+        qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
+        cc = ClassicalChannel("cc", tl, distance=distance, attenuation=0)
+        cc.delay += 10e9
 
         # Alice
-        ls = topology.LightSource("alice.lightsource", tl, frequency=80*10**6, mean_photon_num=0.1, direct_receiver=qc)
-        components = {"lightsource": ls, "cchannel":cc, "qchannel":qc}
-        alice = topology.Node("alice", tl, components=components)
-        qc.set_sender(ls)
-        cc.add_end(alice)
-        tl.entities.append(alice)
+        ls_params = {"frequency": 80e6, "mean_photon_num": 0.1}
+        alice = QKDNode("alice", tl)
+        for name, param in ls_params.items():
+            alice.update_lightsource_params(name, param)
 
         # Bob
-        detectors = [{"efficiency":0.8, "dark_count":10, "time_resolution":10, "count_rate":50*10**6},
-                     {"efficiency":0.8, "dark_count":10, "time_resolution":10, "count_rate":50*10**6}]
-        splitter = {}
-        qsd = topology.QSDetector("bob.qsdetector", tl, detectors=detectors, splitter=splitter)
-        components = {"detector":qsd, "cchannel":cc, "qchannel":qc}
-        bob = topology.Node("bob",tl,components=components)
-        qc.set_receiver(qsd)
-        cc.add_end(bob)
-        tl.entities.append(bob)
+        detector_params = [{"efficiency": 0.8, "dark_count": 10, "time_resolution": 10, "count_rate": 50e6},
+                           {"efficiency": 0.8, "dark_count": 10, "time_resolution": 10, "count_rate": 50e6}]
+        bob = QKDNode("bob", tl)
+        for i in range(len(detector_params)):
+            for name, param in detector_params[i].items():
+                bob.update_detector_params(i, name, param)
 
-        # BB84
-        bba = BB84("bba", tl, role=0, encoding_type=0)
-        bbb = BB84("bbb", tl, role=1, encoding_type=0)
-        bba.assign_node(alice)
-        bbb.assign_node(bob)
-        bba.another = bbb
-        bbb.another = bba
-        alice.protocol = bba
-        bob.protocol = bbb
+        qc.set_ends(alice, bob)
+        cc.set_ends(alice, bob)
 
-        # Cascade
-        cascade_a = Cascade("cascade_a", tl, bb84=bba, role=0)
-        cascade_b = Cascade("cascade_b", tl, bb84=bbb, role=1)
-        cascade_a.assign_cchannel(cc)
-        cascade_b.assign_cchannel(cc)
-        cascade_a.another = cascade_b
-        cascade_b.another = cascade_a
-        bba.add_parent(cascade_a)
-        bbb.add_parent(cascade_b)
+        # BB84 config
+        pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
+        # cascade config
+        pair_cascade_protocols(alice.protocol_stack[1], bob.protocol_stack[1])
 
-        process = Process(cascade_a, 'generate_key', [256,math.inf,12*10**12])
+        process = Process(alice.protocol_stack[1], 'push', [256, math.inf, 12e12])
         tl.schedule(Event(0, process))
-        process = Process(ls, 'turn_off',[])
+
         tl.init()
         tl.run()
+
+        # log results
+        bba = alice.protocol_stack[0]
+        bbb = bob.protocol_stack[0]
+        cascade_a = alice.protocol_stack[1]
+        cascade_b = bob.protocol_stack[1]
 
         fh.write(str(distance))
         fh.write(' ')
@@ -86,5 +79,6 @@ def old_main():
         if bba.latency: fh.write(str(bba.latency))
         else: fh.write(str(None))
         fh.write('\n')
+
     fh.close()
 

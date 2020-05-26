@@ -66,7 +66,6 @@ class BB84(StackProtocol):
         pass
 
     def pop(self, detector_index: int, time: int) -> None:
-        print(detector_index, time)
         assert 0
 
     def push(self, length: int, key_num: int, run_time=math.inf) -> None:

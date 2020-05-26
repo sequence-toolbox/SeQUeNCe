@@ -216,6 +216,9 @@ class QKDNode(Node):
     def update_lightsource_params(self, arg_name: str, value: Any) -> None:
         self.lightsource.__setattr__(arg_name, value)
 
+    def update_detector_params(self, detector_id: int, arg_name: str, value: Any) -> None:
+        self.qsdetector.update_detector_params(detector_id, arg_name, value)
+
     def get_bits(self, light_time, start_time, frequency):
         # compute received bits based on encoding scheme
         encoding = self.encoding["name"]
