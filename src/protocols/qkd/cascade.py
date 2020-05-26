@@ -307,7 +307,7 @@ class Cascade(StackProtocol):
             self.log('generate_key with state ' + str(self.state))
             self._push(length=keylen, key_num=frame_num, run_time=run_time)
 
-    def create_checksum_table(self):
+    def create_checksum_table(self) -> None:
         """
         initialize checksum_table, index_to_block_id, and block_id_to_index after get key from bb84
         """
@@ -373,7 +373,7 @@ class Cascade(StackProtocol):
                 checksum_table[pass_id][block_id] ^= ((self.bits[-1] >> i) & 1)
         self.checksum_tables.append(checksum_table)
    
-    def check_checksum(self, key_id):
+    def check_checksum(self, key_id: int) -> bool:
         self.log("check_checksum")
         cur_key = key_id
         another_checksum = self.another_checksums[cur_key]
@@ -407,7 +407,7 @@ class Cascade(StackProtocol):
         """
         self.state = 2
 
-    def key_is_valid(self, key_id):
+    def key_is_valid(self, key_id: int) -> None:
         # for i in range(self.frame_num):
         #     self.valid_keys.append( (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1))
         key = self.bits[key_id] & ((1 << self.keylen) - 1)
@@ -417,7 +417,8 @@ class Cascade(StackProtocol):
         self.t2[key_id] = self.own.timeline.now()
         self.performance_measure()
     
-    def interactive_binary_search(self, key_id, pass_id, block_id, start, end):
+    def interactive_binary_search(self, key_id: int, pass_id: int, block_id: int,
+            start: int, end: int) -> None:
         """
         Split block[start:end] to block[start:(start+end)/2], block[(start+end)/2,end]
         Ask checksums of subblock from sender
@@ -436,7 +437,7 @@ class Cascade(StackProtocol):
                                  start=int((end+start) / 2), end=end)
         self.send_by_cc(message)
 
-    def send_by_cc(self, message):
+    def send_by_cc(self, message: "CascadeMessage") -> None:
         if self.own.timeline.now() > self.end_time and self.state != 2:
             self.end_cascade()
             self.another.end_cascade()
@@ -444,7 +445,8 @@ class Cascade(StackProtocol):
 
         self.own.send_message(self.another.own.name, message)
 
-    def performance_measure(self):
+    def performance_measure(self) -> None:
+        # record metrics
         if self.role == 0:
             self.latency = 0
             counter = 0

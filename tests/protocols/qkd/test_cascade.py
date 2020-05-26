@@ -70,7 +70,8 @@ def test_cascade_run():
     tl.run()
 
     assert pa.counter == pb.counter == KEYNUM
+    assert pa.key == pb.key
     assert pa.key < 2 ** KEYSIZE  # check that key is not too large
     assert alice.protocol_stack[1].error_bit_rate == 0
-    
+
 
