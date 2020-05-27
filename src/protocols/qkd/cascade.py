@@ -29,7 +29,7 @@ class CascadeMessage(Message):
         elif msg_type == "checksums":
             self.key_id = kwargs["key_id"]
             self.checksums = kwargs["checksums"]
-        elif msg_type == "start_for_binary":
+        elif msg_type == "send_for_binary":
             self.key_id = kwargs["key_id"]
             self.pass_id = kwargs["pass_id"]
             self.block_id = kwargs["block_id"]
