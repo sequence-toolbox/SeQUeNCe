@@ -40,10 +40,10 @@ if __name__ == "__main__":
     #             # print("  ", dst, next_node)
 
     # set memory parameters
-    MEMO_FREQ = 2e4
-    MEMO_EXPIRE = 0.8
-    MEMO_EFFICIENCY = 0.2
-    MEMO_FIDELITY = 0.9349
+    MEMO_FREQ = 2e3
+    MEMO_EXPIRE = 1.1
+    MEMO_EFFICIENCY = 1
+    MEMO_FIDELITY = 0.9349367588934053
     for name, node in network_topo.nodes.items():
         if isinstance(node, QuantumRouter):
             node.memory_array.update_memory_params("frequency", MEMO_FREQ)
@@ -69,7 +69,7 @@ if __name__ == "__main__":
         qc.frequency = QC_FREQ
 
     # set entanglement swapping parameters
-    SWAP_SUCC_PROB = 0.81
+    SWAP_SUCC_PROB = 0.64
     SWAP_DEGRADATION = 0.99
     for name, node in network_topo.nodes.items():
         if isinstance(node, QuantumRouter):
@@ -144,6 +144,8 @@ if __name__ == "__main__":
             node_name = node.name
             for reservation in node.network_manager.protocol_stack[1].accepted_reservation:
                 s_t, e_t, size = reservation.start_time, reservation.end_time, reservation.memory_size
+                if reservation.initiator != node.name and reservation.responder != node.name:
+                    size *= 2
                 node_names.append(node_name)
                 start_times.append(s_t)
                 end_times.append(e_t)
