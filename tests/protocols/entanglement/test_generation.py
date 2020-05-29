@@ -43,7 +43,7 @@ def test_generation_receive_message():
     qc = QuantumChannel("qc_nodem1", tl, 0, 1e3)
     qc.set_ends(node, m0)
     node.memory_array = MemoryArray("", tl)
-    node.assign_cchannel(ClassicalChannel("", tl, 0, 0, delay=1), "m1")
+    node.assign_cchannel(ClassicalChannel("", tl, 0, delay=1), "m1")
 
     eg = EntanglementGenerationA(node, "EG", middle="m1", other="e2", memory=node.memory_array[0])
     eg.qc_delay = 1
@@ -100,9 +100,9 @@ def test_generation_expire():
     qc1 = QuantumChannel("qc_e1m0", tl, 0, 1e3)
     qc0.set_ends(e0, m0)
     qc1.set_ends(e1, m0)
-    cc0 = ClassicalChannel("cc_e0m0", tl, 0, 1e3, delay=1e12)
-    cc1 = ClassicalChannel("cc_e1m0", tl, 0, 1e3, delay=1e12)
-    cc2 = ClassicalChannel("cc_e0e1", tl, 0, 2e3, delay=1e9)
+    cc0 = ClassicalChannel("cc_e0m0", tl, 1e3, delay=1e12)
+    cc1 = ClassicalChannel("cc_e1m0", tl, 1e3, delay=1e12)
+    cc2 = ClassicalChannel("cc_e0e1", tl, 2e3, delay=1e9)
     cc0.set_ends(e0, m0)
     cc1.set_ends(e1, m0)
     cc2.set_ends(e0, e1)
@@ -146,11 +146,11 @@ def test_generation_run():
     e1 = FakeNode("e1", tl)
 
     # add connections
-    cc = ClassicalChannel("cc_e0m0", tl, 0, 1e3)
+    cc = ClassicalChannel("cc_e0m0", tl, 1e3)
     cc.set_ends(e0, m0)
-    cc = ClassicalChannel("cc_e1m0", tl, 0, 1e3)
+    cc = ClassicalChannel("cc_e1m0", tl, 1e3)
     cc.set_ends(e1, m0)
-    cc = ClassicalChannel("cc_e0e1", tl, 0, 1e3)
+    cc = ClassicalChannel("cc_e0e1", tl, 1e3)
     cc.set_ends(e0, e1)
     qc = QuantumChannel("qc_e0m0", tl, 0, 1e3)
     qc.set_ends(e0, m0)

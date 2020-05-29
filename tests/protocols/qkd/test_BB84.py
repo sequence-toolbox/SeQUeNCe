@@ -49,7 +49,7 @@ def test_BB84_polarization():
 
     qc = QuantumChannel("qc", tl, distance=10e3, polarization_fidelity=0.99, attenuation=0.00002)
     qc.set_ends(alice, bob)
-    cc = ClassicalChannel("cc", tl, distance=10e3, attenuation=0.00002)
+    cc = ClassicalChannel("cc", tl, distance=10e3)
     cc.set_ends(alice, bob)
 
     # Parent
@@ -78,7 +78,7 @@ def test_BB84_time_bin():
 
     qc = QuantumChannel("qc", tl, distance=10e3, polarization_fidelity=0.99, attenuation=0.00002)
     qc.set_ends(alice, bob)
-    cc = ClassicalChannel("cc", tl, distance=10e3, attenuation=0.00002)
+    cc = ClassicalChannel("cc", tl, distance=10e3)
     cc.set_ends(alice, bob)
 
     # Parent

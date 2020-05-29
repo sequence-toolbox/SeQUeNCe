@@ -8,7 +8,7 @@ random.seed(1)
 
 def test_ClassicalChannel_set_ends():
     tl = Timeline()
-    cc = ClassicalChannel("cc", tl, 2e-4, 1e3)
+    cc = ClassicalChannel("cc", tl, 1e3)
 
     n1 = Node('n1', tl)
     n2 = Node('n2', tl)
@@ -29,7 +29,7 @@ def test_ClassicalChannel_transmit():
             self.msgs.append([tl.now(), src, msg])
 
     tl = Timeline()
-    cc = ClassicalChannel("cc", tl, 2e-4, 1e3)
+    cc = ClassicalChannel("cc", tl, 1e3)
 
     n1 = FakeNode('n1', tl)
     n2 = FakeNode('n2', tl)

@@ -51,7 +51,7 @@ def test_cascade_run():
 
     qc = QuantumChannel("qc", tl, distance=1e3, attenuation=2e-5)
     qc.set_ends(alice, bob)
-    cc = ClassicalChannel("cc", tl, distance=1e3, attenuation=0)
+    cc = ClassicalChannel("cc", tl, distance=1e3)
     cc.set_ends(alice, bob)
 
     # Parent

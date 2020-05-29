@@ -34,7 +34,7 @@ def test_Node_init():
 def test_Node_assign_cchannel():
     tl = Timeline()
     node = Node("node1", tl)
-    cc = ClassicalChannel("cc", tl, 2e-4, 1e3)
+    cc = ClassicalChannel("cc", tl, 1e3)
     node.assign_cchannel(cc, "node2")
     assert "node2" in node.cchannels and node.cchannels["node2"] == cc
 
@@ -59,7 +59,7 @@ def test_Node_send_message():
     tl = Timeline()
     node1 = FakeNode("node1", tl)
     node2 = FakeNode("node2", tl)
-    cc = ClassicalChannel("cc", tl, 2e-4, 1e3)
+    cc = ClassicalChannel("cc", tl, 1e3)
     cc.set_ends(node1, node2)
     for i in range(10):
         node1.send_message("node2", str(i))
