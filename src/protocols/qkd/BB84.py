@@ -66,7 +66,6 @@ class BB84(StackProtocol):
         pass
 
     def pop(self, detector_index: int, time: int) -> None:
-        print(detector_index, time)
         assert 0
 
     def push(self, length: int, key_num: int, run_time=math.inf) -> None:
@@ -270,4 +269,5 @@ class BB84(StackProtocol):
         key_bits = self.key_bits[0:self.key_lengths[0]]
         del self.key_bits[0:self.key_lengths[0]]
         self.key = int("".join(str(x) for x in key_bits), 2)  # convert from binary list to int
+
 

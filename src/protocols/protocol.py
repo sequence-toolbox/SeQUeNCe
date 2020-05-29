@@ -43,3 +43,5 @@ class StackProtocol(Protocol):
 
     def received_message(self, src: str, msg: "Message"):
         pass
+
+

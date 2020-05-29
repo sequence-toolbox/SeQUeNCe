@@ -15,14 +15,13 @@ from ..kernel.process import Process
 
 
 class OpticalChannel(Entity):
-    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, **kwargs):
+    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, polarization_fidelity: float, light_speed: float):
         Entity.__init__(self, name, timeline)
         self.ends = []
         self.attenuation = attenuation
         self.distance = distance  # (measured in m)
-        self.polarization_fidelity = kwargs.get("polarization_fidelity", 1)
-        self.light_speed = kwargs.get("light_speed",
-                                      2 * 10 ** -4)  # used for photon timing calculations (measured in m/ps)
+        self.polarization_fidelity = polarization_fidelity
+        self.light_speed = light_speed # used for photon timing calculations (measured in m/ps)
         # self.chromatic_dispersion = kwargs.get("cd", 17)  # measured in ps / (nm * km)
 
     def init(self) -> None:
@@ -33,11 +32,11 @@ class OpticalChannel(Entity):
 
 
 class QuantumChannel(OpticalChannel):
-    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, **kwargs):
-        super().__init__(name, timeline, attenuation, distance, **kwargs)
+    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, polarization_fidelity=1, light_speed=2e-4, frequency=8e7):
+        super().__init__(name, timeline, attenuation, distance, polarization_fidelity, light_speed)
         self.delay = 0
         self.loss = 1
-        self.frequency = kwargs.get("frequency", 8e7)  # frequency at which send qubits (measured in Hz)
+        self.frequency = frequency # maximum frequency for sending qubits (measured in Hz)
         self.send_bins = []
 
     def init(self) -> None:
@@ -100,9 +99,12 @@ class QuantumChannel(OpticalChannel):
 
 
 class ClassicalChannel(OpticalChannel):
-    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, **kwargs):
-        super().__init__(name, timeline, attenuation, distance, **kwargs)
-        self.delay = kwargs.get("delay", (self.distance / self.light_speed))
+    def __init__(self, name: str, timeline: "Timeline", distance: int, delay=-1):
+        super().__init__(name, timeline, 0, distance, 0, 2e-4)
+        if delay == -1:
+            self.delay = distance / self.light_speed
+        else:
+            self.delay = delay
 
     def set_ends(self, end1: "Node", end2: "Node") -> None:
         self.ends.append(end1)

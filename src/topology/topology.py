@@ -86,16 +86,19 @@ class Topology():
             middle = MiddleNode(name_middle, self.timeline, [node1, node2])
             self.add_node(middle)
 
-            # update params
+            # update distance param
             kwargs["distance"] = kwargs["distance"] / 2
-            if node1 in self._cc_graph and node2 in self._cc_graph[node1]:
-                kwargs["delay"] = self._cc_graph[node1][node2] / 2
 
             # add quantum channels
             for node in [node1, node2]:
                 self.add_quantum_connection(node, name_middle, **kwargs)
 
-            # also add classical channels
+            # update params
+            del kwargs["attenuation"]
+            if node1 in self._cc_graph and node2 in self._cc_graph[node1]:
+                kwargs["delay"] = self._cc_graph[node1][node2] / 2
+
+            # add classical channels (for middle node connectivity)
             for node in [node1, node2]:
                 self.add_classical_connection(node, name_middle, **kwargs)
 
@@ -112,9 +115,6 @@ class Topology():
 
     def add_classical_connection(self, node1: str, node2: str, **kwargs) -> None:
         assert node1 in self.nodes and node2 in self.nodes
-
-        # update params
-        kwargs["attenuation"] = 0
 
         name = "_".join(["cc", node1, node2])
         cchannel = ClassicalChannel(name, self.timeline, **kwargs)

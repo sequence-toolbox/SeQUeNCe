@@ -233,7 +233,7 @@ def test_ResourceReservationProtocol_create_rules():
         for j, n2 in enumerate(routers + mids):
             if i >= j:
                 continue
-            cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 0, 10, delay=100000)
+            cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 10, delay=100000)
             cc.set_ends(n1, n2)
 
     tl.init()
@@ -307,7 +307,7 @@ def test_ResourceReservationProtocol_set_es_params():
         for j, n2 in enumerate(routers + mids):
             if i >= j:
                 continue
-            cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 0, 10, delay=100000)
+            cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 10, delay=100000)
             cc.set_ends(n1, n2)
 
     tl.init()
