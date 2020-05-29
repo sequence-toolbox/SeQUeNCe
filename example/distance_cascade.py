@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
         tl = Timeline(12e12)
         qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
-        cc = ClassicalChannel("cc", tl, distance=distance, attenuation=0)
+        cc = ClassicalChannel("cc", tl, distance=distance)
         cc.delay += 10e9
 
         # Alice
