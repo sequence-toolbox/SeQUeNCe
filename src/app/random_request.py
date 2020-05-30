@@ -33,7 +33,7 @@ class RandomRequestApp():
         start_time = self.node.timeline.now() + self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
         end_time = start_time + self.rg.integers(10, 20) * 1e12  # start time + (10 second - 20 second)
         memory_size = self.rg.integers(10, len(self.node.memory_array) // 2)  # 10 - max_memory_size / 2
-        fidelity = self.rg.uniform(0.7, 0.9)
+        fidelity = self.rg.uniform(0.8, 1)
         self.cur_reserve = [responder, start_time, end_time, memory_size, fidelity]
         self.node.reserve_net_resource(responder, start_time, end_time, memory_size, fidelity)
         # print(self.node.timeline.now(), self.node.name, "request", self.cur_reserve)
