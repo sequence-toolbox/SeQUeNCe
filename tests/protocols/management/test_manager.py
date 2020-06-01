@@ -6,7 +6,7 @@ numpy.random.seed(0)
 
 from sequence.components.memory import MemoryArray
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.management.manager import ResourceManagerMessage, ResourceManager
+from sequence.protocols.management.manager import *
 from sequence.protocols.management.rule_manager import Rule
 from sequence.topology.node import Node
 
@@ -137,7 +137,7 @@ def test_received_message():
     # test receive REQUEST message
     protocol1 = FakeProtocol("waiting_protocol")
     resource_manager.waiting_protocols.append(protocol1)
-    req_msg = ResourceManagerMessage("REQUEST", protocol="ini_protocol",
+    req_msg = ResourceManagerMessage(ResourceManagerMsgType.request, protocol="ini_protocol",
                                      req_condition_func=true_fun)
     resource_manager.received_message("sender", req_msg)
     assert protocol1 in node.protocols
@@ -145,11 +145,12 @@ def test_received_message():
     assert protocol1.other_is_setted and protocol1.is_started
     assert node.send_log[-1][0] == "sender"
     assert isinstance(node.send_log[-1][1], ResourceManagerMessage)
-    assert node.send_log[-1][1].msg_type == "RESPONSE" and node.send_log[-1][1].is_approved
+    assert node.send_log[-1][1].msg_type == ResourceManagerMsgType.response
+    assert node.send_log[-1][1].is_approved
 
     protocol1 = FakeProtocol("waiting_protocol")
     resource_manager.waiting_protocols.append(protocol1)
-    req_msg = ResourceManagerMessage("REQUEST", protocol="ini_protocol",
+    req_msg = ResourceManagerMessage(ResourceManagerMsgType.request, protocol="ini_protocol",
                                      req_condition_func=false_fun)
     resource_manager.received_message("sender", req_msg)
     assert protocol1 not in node.protocols
@@ -157,12 +158,13 @@ def test_received_message():
     assert not protocol1.other_is_setted and not protocol1.is_started
     assert node.send_log[-1][0] == "sender"
     assert isinstance(node.send_log[-1][1], ResourceManagerMessage)
-    assert node.send_log[-1][1].msg_type == "RESPONSE" and not node.send_log[-1][1].is_approved
+    assert node.send_log[-1][1].msg_type == ResourceManagerMsgType.response
+    assert not node.send_log[-1][1].is_approved
 
     # test receive RESPONSE message: is_approved==False and is_approved==True
     protocol2 = FakeProtocol("pending_protocol")
     resource_manager.pending_protocols.append(protocol2)
-    resp_msg = ResourceManagerMessage("RESPONSE", protocol=protocol2, is_approved=False,
+    resp_msg = ResourceManagerMessage(ResourceManagerMsgType.response, protocol=protocol2, is_approved=False,
                                       paired_protocol="paired_protocol")
     resource_manager.received_message("sender", resp_msg)
     assert protocol2 not in node.protocols
@@ -172,7 +174,7 @@ def test_received_message():
 
     protocol2 = FakeProtocol("pending_protocol")
     resource_manager.pending_protocols.append(protocol2)
-    resp_msg = ResourceManagerMessage("RESPONSE", protocol=protocol2, is_approved=True,
+    resp_msg = ResourceManagerMessage(ResourceManagerMsgType.response, protocol=protocol2, is_approved=True,
                                       paired_protocol="paired_protocol")
     resource_manager.received_message("sender", resp_msg)
     assert protocol2 in node.protocols

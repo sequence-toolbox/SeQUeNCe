@@ -1,7 +1,7 @@
 from numpy import random
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.network.rsvp import ResourceReservationProtocol, ResourceReservationMessage, QCap
+from sequence.protocols.network.rsvp import *
 
 random.seed(0)
 
@@ -70,15 +70,19 @@ def test_ResourceReservationProtocol_push():
     n1 = FakeNode("n1", tl)
     assert len(n1.rsvp.timecards) == len(n1.memory_array)
     n1.rsvp.push("n10", 1, 10, 1000, 0.9)
-    assert n1.pop_log[0]["msg"].msg_type == "REJECT" and len(n1.push_log) == 0
+    assert n1.pop_log[0]["msg"].msg_type == RSVPMsgType.reject
+    assert len(n1.push_log) == 0
     n1.rsvp.push("n10", 1, 10, 50, 0.9)
-    assert n1.push_log[0]["msg"].msg_type == "REQUEST" and len(n1.pop_log) == 1
+    assert n1.push_log[0]["msg"].msg_type == RSVPMsgType.request
+    assert len(n1.pop_log) == 1
     for card in n1.rsvp.timecards:
         assert len(card.reservations) == 1
     n1.rsvp.push("n10", 5, 10, 1, 0.9)
-    assert n1.pop_log[1]["msg"].msg_type == "REJECT" and len(n1.push_log) == 1
+    assert n1.pop_log[1]["msg"].msg_type == RSVPMsgType.reject
+    assert len(n1.push_log) == 1
     n1.rsvp.push("n10", 20, 30, 1, 0.9)
-    assert n1.push_log[1]["msg"].msg_type == "REQUEST" and len(n1.pop_log) == 2
+    assert n1.push_log[1]["msg"].msg_type == RSVPMsgType.request
+    assert len(n1.pop_log) == 2
 
 
 def test_ResourceReservationProtocol_pop():
@@ -95,11 +99,12 @@ def test_ResourceReservationProtocol_pop():
 
     # intermediate node receives REQUEST and approve it
     reservation = Reservation("n0", "n2", 1, 10, 25, 0.9)
-    msg = ResourceReservationMessage("REQUEST", n1.rsvp.name, reservation)
+    msg = ResourceReservationMessage(RSVPMsgType.request, n1.rsvp.name, reservation)
     msg.qcaps.append(QCap("n0"))
     n1.rsvp.pop("n0", msg)
     assert len(n1.pop_log) == 0 and len(n1.push_log) == 1
-    assert n1.push_log[0]["dst"] == "n2" and n1.push_log[0]["msg"].msg_type == "REQUEST"
+    assert n1.push_log[0]["dst"] == "n2"
+    assert n1.push_log[0]["msg"].msg_type == RSVPMsgType.request
     assert len(n1.push_log[0]["msg"].qcaps) == 2
     for card in n1.rsvp.timecards:
         assert len(card.reservations) == 1
@@ -107,11 +112,12 @@ def test_ResourceReservationProtocol_pop():
 
     # responder receives REQUEST and approve it
     reservation = Reservation("n0", "n1", 1, 10, 50, 0.9)
-    msg = ResourceReservationMessage("REQUEST", n1.rsvp.name, reservation)
+    msg = ResourceReservationMessage(RSVPMsgType.request, n1.rsvp.name, reservation)
     msg.qcaps.append(QCap("n0"))
     n1.rsvp.pop("n0", msg)
     assert len(n1.pop_log) == 1 and len(n1.push_log) == 1
-    assert n1.push_log[0]["dst"] == "n0" and n1.push_log[0]["msg"].msg_type == "APPROVE"
+    assert n1.push_log[0]["dst"] == "n0"
+    assert n1.push_log[0]["msg"].msg_type == RSVPMsgType.approve
     assert len(n1.push_log[0]["msg"].path) == 2
     for card in n1.rsvp.timecards:
         assert len(card.reservations) == 1
@@ -119,11 +125,12 @@ def test_ResourceReservationProtocol_pop():
 
     # node receives REQUEST and reject it
     reservation = Reservation("n0", "n2", 1, 10, 1000, 0.9)
-    msg = ResourceReservationMessage("REQUEST", n1.rsvp.name, reservation)
+    msg = ResourceReservationMessage(RSVPMsgType.request, n1.rsvp.name, reservation)
     msg.qcaps.append(QCap("n0"))
     n1.rsvp.pop("n0", msg)
     assert len(n1.pop_log) == 0 and len(n1.push_log) == 1
-    assert n1.push_log[0]["dst"] == "n0" and n1.push_log[0]["msg"].msg_type == "REJECT"
+    assert n1.push_log[0]["dst"] == "n0"
+    assert n1.push_log[0]["msg"].msg_type == RSVPMsgType.reject
     for card in n1.rsvp.timecards:
         assert len(card.reservations) == 0
     reset(n1)
@@ -135,10 +142,10 @@ def test_ResourceReservationProtocol_pop():
             card.add(reservation)
         else:
             break
-    msg = ResourceReservationMessage("REJECT", n1.rsvp.name, reservation)
+    msg = ResourceReservationMessage(RSVPMsgType.reject, n1.rsvp.name, reservation)
     n1.rsvp.pop("n2", msg)
     assert len(n1.pop_log) == 1 and len(n1.push_log) == 0
-    assert n1.pop_log[0]["msg"].msg_type == "REJECT"
+    assert n1.pop_log[0]["msg"].msg_type == RSVPMsgType.reject
     for card in n1.rsvp.timecards:
         assert len(card.reservations) == 0
     reset(n1)
@@ -150,28 +157,28 @@ def test_ResourceReservationProtocol_pop():
             card.add(reservation)
         else:
             break
-    msg = ResourceReservationMessage("REJECT", n1.rsvp.name, reservation)
+    msg = ResourceReservationMessage(RSVPMsgType.reject, n1.rsvp.name, reservation)
     n1.rsvp.pop("n2", msg)
     assert len(n1.pop_log) == 0 and len(n1.push_log) == 1
-    assert n1.push_log[0]["msg"].msg_type == "REJECT"
+    assert n1.push_log[0]["msg"].msg_type == RSVPMsgType.reject
     for card in n1.rsvp.timecards:
         assert len(card.reservations) == 0
     reset(n1)
 
     # initiator receives APPROVE
     reservation = Reservation("n1", "n2", 1, 10, 1000, 0.9)
-    msg = ResourceReservationMessage("APPROVE", n1.rsvp.name, reservation, path=["n1", "n2"])
+    msg = ResourceReservationMessage(RSVPMsgType.approve, n1.rsvp.name, reservation, path=["n1", "n2"])
     n1.rsvp.pop("n2", msg)
     assert len(n1.pop_log) == 1 and len(n1.push_log) == 0
-    assert n1.pop_log[0]["msg"].msg_type == "APPROVE"
+    assert n1.pop_log[0]["msg"].msg_type == RSVPMsgType.approve
     reset(n1)
 
     # intermediate node receives APPROVE
     reservation = Reservation("n0", "n2", 1, 10, 1000, 0.9)
-    msg = ResourceReservationMessage("APPROVE", n1.rsvp.name, reservation, path=["n0", "n1", "n2"])
+    msg = ResourceReservationMessage(RSVPMsgType.approve, n1.rsvp.name, reservation, path=["n0", "n1", "n2"])
     n1.rsvp.pop("n2", msg)
     assert len(n1.pop_log) == 0 and len(n1.push_log) == 1
-    assert n1.push_log[0]["dst"] == "n0" and n1.push_log[0]["msg"].msg_type == "APPROVE"
+    assert n1.push_log[0]["dst"] == "n0" and n1.push_log[0]["msg"].msg_type == RSVPMsgType.approve
     reset(n1)
 
 

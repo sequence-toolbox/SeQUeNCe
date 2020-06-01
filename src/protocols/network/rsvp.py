@@ -1,3 +1,4 @@
+from enum import Enum, auto
 from typing import List, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -14,15 +15,21 @@ from ...kernel.event import Event
 from ...kernel.process import Process
 
 
+class RSVPMsgType(Enum):
+    request = auto()
+    reject = auto()
+    approve = auto()
+
+
 class ResourceReservationMessage(Message):
-    def __init__(self, msg_type: str, receiver: str, reservation: "Reservation", **kwargs):
+    def __init__(self, msg_type: any, receiver: str, reservation: "Reservation", **kwargs):
         Message.__init__(self, msg_type, receiver)
         self.reservation = reservation
-        if self.msg_type == "REQUEST":
+        if self.msg_type == RSVPMsgType.request:
             self.qcaps = []
-        elif self.msg_type == "REJECT":
+        elif self.msg_type == RSVPMsgType.reject:
             pass
-        elif self.msg_type == "APPROVE":
+        elif self.msg_type == RSVPMsgType.approve:
             self.path = kwargs["path"]
         else:
             raise Exception("Unknown type of message")
@@ -42,16 +49,16 @@ class ResourceReservationProtocol(StackProtocol):
     def push(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float):
         reservation = Reservation(self.own.name, responder, start_time, end_time, memory_size, target_fidelity)
         if self.schedule(reservation):
-            msg = ResourceReservationMessage("REQUEST", self.name, reservation)
+            msg = ResourceReservationMessage(RSVPMsgType.request, self.name, reservation)
             qcap = QCap(self.own.name)
             msg.qcaps.append(qcap)
             self._push(dst=responder, msg=msg)
         else:
-            msg = ResourceReservationMessage("REJECT", self.name, reservation)
+            msg = ResourceReservationMessage(RSVPMsgType.reject, self.name, reservation)
             self._pop(msg=msg)
 
     def pop(self, src: str, msg: "ResourceReservationMessage"):
-        if msg.msg_type == "REQUEST":
+        if msg.msg_type == RSVPMsgType.request:
             assert self.own.timeline.now() < msg.reservation.start_time
             if self.schedule(msg.reservation):
                 qcap = QCap(self.own.name)
@@ -60,22 +67,22 @@ class ResourceReservationProtocol(StackProtocol):
                     path = [qcap.node for qcap in msg.qcaps]
                     rules = self.create_rules(path, reservation=msg.reservation)
                     self.load_rules(rules, msg.reservation)
-                    new_msg = ResourceReservationMessage("APPROVE", self.name, msg.reservation, path=path)
+                    new_msg = ResourceReservationMessage(RSVPMsgType.approve, self.name, msg.reservation, path=path)
                     self._pop(msg=msg)
                     self._push(dst=msg.reservation.initiator, msg=new_msg)
                 else:
                     self._push(dst=msg.reservation.responder, msg=msg)
             else:
-                new_msg = ResourceReservationMessage("REJECT", self.name, msg.reservation)
+                new_msg = ResourceReservationMessage(RSVPMsgType.reject, self.name, msg.reservation)
                 self._push(dst=msg.reservation.initiator, msg=new_msg)
-        elif msg.msg_type == "REJECT":
+        elif msg.msg_type == RSVPMsgType.reject:
             for card in self.timecards:
                 card.remove(msg.reservation)
             if msg.reservation.initiator == self.own.name:
                 self._pop(msg=msg)
             else:
                 self._push(dst=msg.reservation.initiator, msg=msg)
-        elif msg.msg_type == "APPROVE":
+        elif msg.msg_type == RSVPMsgType.approve:
             rules = self.create_rules(msg.path, msg.reservation)
             self.load_rules(rules, msg.reservation)
             if msg.reservation.initiator == self.own.name:

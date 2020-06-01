@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -8,7 +9,7 @@ from ..protocol import StackProtocol
 
 
 class StaticRoutingMessage(Message):
-    def __init__(self, msg_type: str, receiver: str, payload: "Message"):
+    def __init__(self, msg_type: Enum, receiver: str, payload: "Message"):
         super().__init__(msg_type, receiver)
         self.payload = payload
 
@@ -31,7 +32,7 @@ class StaticRoutingProtocol(StackProtocol):
     def push(self, dst: str, msg: "Message"):
         assert dst != self.own.name
         dst = self.forwarding_table[dst]
-        new_msg = StaticRoutingMessage("", self.name, msg)
+        new_msg = StaticRoutingMessage(Enum, self.name, msg)
         self._push(dst=dst, msg=new_msg)
 
     def pop(self, src: str, msg: "StaticRoutingMessage"):

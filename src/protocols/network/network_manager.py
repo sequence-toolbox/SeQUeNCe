@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import List, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -10,7 +11,7 @@ from .rsvp import ResourceReservationProtocol, ResourceReservationMessage
 
 
 class NetworkManagerMessage(Message):
-    def __init__(self, msg_type: str, receiver: str, payload: "Message"):
+    def __init__(self, msg_type: Enum, receiver: str, payload: "Message"):
         Message.__init__(self, msg_type, receiver)
         self.payload = payload
 
@@ -29,7 +30,7 @@ class NetworkManager():
             self.protocol_stack[-1].upper_protocols.append(self)
 
     def push(self, **kwargs):
-        message = NetworkManagerMessage("", "network_manager", kwargs["msg"])
+        message = NetworkManagerMessage(Enum, "network_manager", kwargs["msg"])
         self.owner.send_message(kwargs["dst"], message)
 
     def pop(self, **kwargs):
