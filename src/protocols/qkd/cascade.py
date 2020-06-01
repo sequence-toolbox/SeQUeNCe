@@ -282,10 +282,13 @@ class Cascade(StackProtocol):
         elif msg.msg_type == "key_is_valid":
             key_id = msg.key_id
 
-            for i in range(self.frame_num):
+            num_keys_to_process = int(self.frame_len / self.keylen)
+            for i in range(num_keys_to_process):
                 key = (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1)
                 self.valid_keys.append(key)
-                self._pop(key=key)
+                if self.frame_num > 0:
+                    self.frame_num -= 1
+                    self._pop(key=key)
 
             self.t2[key_id] = self.own.timeline.now()
             self.performance_measure()
@@ -393,10 +396,13 @@ class Cascade(StackProtocol):
                     self.interactive_binary_search(cur_key, _pass, _block, 0, block_size)
                     return False
 
-        for i in range(self.frame_num): 
+        num_keys_to_process = int(self.frame_len / self.keylen)
+        for i in range(num_keys_to_process):
             key = (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1)
             self.valid_keys.append(key)
-            self._pop(key=key)
+            if self.frame_num > 0:
+                self.frame_num -= 1
+                self._pop(key=key)
 
         if self.role == 0:
             self.t2[key_id] = self.own.timeline.now()
