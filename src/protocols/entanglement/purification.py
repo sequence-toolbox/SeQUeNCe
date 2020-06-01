@@ -1,3 +1,4 @@
+from enum import Enum, auto
 from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:
     from ...components.memory import Memory
@@ -9,10 +10,14 @@ from ..message import Message
 from .entanglement_protocol import EntanglementProtocol
 
 
+class BBPSSWMsgType(Enum):
+    purification_res = auto()
+
+
 class BBPSSWMessage(Message):
-    def __init__(self, msg_type: str, receiver: str, **kwargs):
+    def __init__(self, msg_type: BBPSSWMsgType, receiver: str, **kwargs):
         Message.__init__(self, msg_type, receiver)
-        if self.msg_type == "PURIFICATION_RES":
+        if self.msg_type == BBPSSWMsgType.purification_res:
             pass
         else:
             raise Exception("BBPSSW protocol create unknown type of message: %s" % str(msg_type))
@@ -54,7 +59,7 @@ class BBPSSW(EntanglementProtocol):
         if self.is_success:
             self.kept_memo.fidelity = self.improved_fidelity(self.kept_memo.fidelity)
 
-        message = BBPSSWMessage("PURIFICATION_RES", self.another.name)
+        message = BBPSSWMessage(BBPSSWMsgType.purification_res, self.another.name)
         self.own.send_message(dst, message)
 
     def update_resource_manager(self, memory: "Memory", state: str) -> None:

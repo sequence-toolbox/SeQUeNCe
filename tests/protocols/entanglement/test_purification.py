@@ -3,7 +3,7 @@ import pytest
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.entanglement.purification import BBPSSW, BBPSSWMessage
+from sequence.protocols.entanglement.purification import *
 from sequence.topology.node import Node
 
 numpy.random.seed(0)
@@ -32,8 +32,9 @@ class FakeNode(Node):
 
 
 def test_BBPSSWMessage():
-    msg = BBPSSWMessage("PURIFICATION_RES", "another")
-    assert msg.msg_type == "PURIFICATION_RES" and msg.receiver == "another"
+    msg = BBPSSWMessage(BBPSSWMsgType.purification_res, "another")
+    assert msg.msg_type == BBPSSWMsgType.purification_res
+    assert msg.receiver == "another"
     with pytest.raises(Exception):
         BBPSSWMessage("unknown type")
 
