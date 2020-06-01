@@ -186,7 +186,7 @@ class Cascade(StackProtocol):
             self.end_time = self.start_time + self.run_time
             self.state = 1
 
-            self.log('receive_params with params= ' + str([self.k1, self.keylen]))
+            self.log('receive_params with params= ' + str([self.k1, self.keylen, self.frame_num]))
             if self.role == 0:
                 raise Exception("Cascade protocol sender '{}' got params message".format(self.name))
 
@@ -281,14 +281,21 @@ class Cascade(StackProtocol):
 
         elif msg.msg_type == "key_is_valid":
             key_id = msg.key_id
-            self.key_is_valid(key_id)
+
+            for i in range(self.frame_num):
+                key = (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1)
+                self.valid_keys.append(key)
+                self._pop(key=key)
+
+            self.t2[key_id] = self.own.timeline.now()
+            self.performance_measure()
 
     def generate_key(self, keylen: int, frame_num=math.inf, run_time=math.inf) -> None:
         """
         Generate 10000 bits key to measure error rate at 0 pass
         Generate keylen bits key at 1st pass
         """
-        self.log('generate_key, keylen=' + str(keylen))
+        self.log('generate_key, keylen=' + str(keylen) + ', keynum=' + str(frame_num))
         if self.role == 1:
             raise Exception(
                 "Cascase.generate_key() called on receiver '{}'".format(self.name))
@@ -305,7 +312,7 @@ class Cascade(StackProtocol):
             self.start_time = self.own.timeline.now()
             self.end_time = self.start_time + self.run_time
             self.log('generate_key with state ' + str(self.state))
-            self._push(length=keylen, key_num=frame_num, run_time=run_time)
+            self._push(length=self.frame_len, key_num=self.frame_num, run_time=self.run_time)
 
     def create_checksum_table(self) -> None:
         """
@@ -386,11 +393,10 @@ class Cascade(StackProtocol):
                     self.interactive_binary_search(cur_key, _pass, _block, 0, block_size)
                     return False
 
-        # for i in range(self.frame_num): 
-        #     self.valid_keys.append( (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1) )
-        key = self.bits[key_id] & ((1 << self.keylen) - 1)
-        self.valid_keys.append(key)
-        self._pop(key=key)
+        for i in range(self.frame_num): 
+            key = (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1)
+            self.valid_keys.append(key)
+            self._pop(key=key)
 
         if self.role == 0:
             self.t2[key_id] = self.own.timeline.now()
