@@ -282,13 +282,11 @@ class Cascade(StackProtocol):
         elif msg.msg_type == "key_is_valid":
             key_id = msg.key_id
 
-            num_keys_to_process = int(self.frame_len / self.keylen)
-            for i in range(num_keys_to_process):
-                key = (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1)
-                self.valid_keys.append(key)
+            for i in range(int(self.frame_len / self.keylen)):
+                self.valid_keys.append((self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1))
                 if self.frame_num > 0:
+                    self._pop(key=self.valid_keys[-1])
                     self.frame_num -= 1
-                    self._pop(key=key)
 
             self.t2[key_id] = self.own.timeline.now()
             self.performance_measure()
@@ -396,13 +394,11 @@ class Cascade(StackProtocol):
                     self.interactive_binary_search(cur_key, _pass, _block, 0, block_size)
                     return False
 
-        num_keys_to_process = int(self.frame_len / self.keylen)
-        for i in range(num_keys_to_process):
-            key = (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1)
-            self.valid_keys.append(key)
+        for i in range(int(self.frame_len / self.keylen)):
+            self.valid_keys.append((self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1))
             if self.frame_num > 0:
+                self._pop(key=self.valid_keys[-1])
                 self.frame_num -= 1
-                self._pop(key=key)
 
         if self.role == 0:
             self.t2[key_id] = self.own.timeline.now()
@@ -418,16 +414,6 @@ class Cascade(StackProtocol):
         end cascade protocol
         """
         self.state = 2
-
-    def key_is_valid(self, key_id: int) -> None:
-        # for i in range(self.frame_num):
-        #     self.valid_keys.append( (self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1))
-        key = self.bits[key_id] & ((1 << self.keylen) - 1)
-        self.valid_keys.append(key)
-        self._pop(key=key)
-
-        self.t2[key_id] = self.own.timeline.now()
-        self.performance_measure()
     
     def interactive_binary_search(self, key_id: int, pass_id: int, block_id: int,
             start: int, end: int) -> None:
