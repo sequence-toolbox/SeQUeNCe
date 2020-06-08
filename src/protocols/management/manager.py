@@ -34,14 +34,14 @@ class ResourceManagerMessage(Message):
     def __init__(self, msg_type: ResourceManagerMsgType, **kwargs):
         Message.__init__(self, msg_type, "resource_manager")
         self.ini_protocol = kwargs["protocol"]
-        if msg_type == ResourceManagerMsgType.request:
+        if msg_type is ResourceManagerMsgType.request:
             self.req_condition_func = kwargs["req_condition_func"]
-        elif msg_type == ResourceManagerMsgType.response:
+        elif msg_type is ResourceManagerMsgType.response:
             self.is_approved = kwargs["is_approved"]
             self.paired_protocol = kwargs["paired_protocol"]
-        elif msg_type == ResourceManagerMsgType.release_protocol:
+        elif msg_type is ResourceManagerMsgType.release_protocol:
             self.protocol = kwargs["protocol"]
-        elif msg_type == ResourceManagerMsgType.release_memory:
+        elif msg_type is ResourceManagerMsgType.release_memory:
             self.memory = kwargs["memory_id"]
         else:
             raise Exception("ResourceManagerMessage gets unknown type of message: %s" % str(msg_type))
@@ -133,7 +133,7 @@ class ResourceManager():
         self.owner.send_message(req_dst, msg)
 
     def received_message(self, src: str, msg: "ResourceManagerMessage") -> None:
-        if msg.msg_type == ResourceManagerMsgType.request:
+        if msg.msg_type is ResourceManagerMsgType.request:
             protocol = msg.req_condition_func(self.waiting_protocols)
             if protocol is not None:
                 protocol.set_others(msg.ini_protocol)
@@ -148,7 +148,7 @@ class ResourceManager():
             new_msg = ResourceManagerMessage(ResourceManagerMsgType.response, protocol=msg.ini_protocol,
                                              is_approved=False, paired_protocol=None)
             self.owner.send_message(src, new_msg)
-        elif msg.msg_type == ResourceManagerMsgType.response:
+        elif msg.msg_type is ResourceManagerMsgType.response:
             protocol = msg.ini_protocol
 
             if protocol not in self.pending_protocols:
@@ -173,11 +173,11 @@ class ResourceManager():
                     else:
                         self.update(None, memory, "ENTANGLED")
                 self.pending_protocols.remove(protocol)
-        elif msg.msg_type == ResourceManagerMsgType.release_protocol:
+        elif msg.msg_type is ResourceManagerMsgType.release_protocol:
             if msg.protocol in self.owner.protocols:
                 assert isinstance(msg.protocol, EntanglementProtocol)
                 msg.protocol.release()
-        elif msg.msg_type == ResourceManagerMsgType.release_memory:
+        elif msg.msg_type is ResourceManagerMsgType.release_memory:
             target_id = msg.memory
             for protocol in self.owner.protocols:
                 for memory in protocol.memories:

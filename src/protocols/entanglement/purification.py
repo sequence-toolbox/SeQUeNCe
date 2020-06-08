@@ -17,7 +17,7 @@ class BBPSSWMsgType(Enum):
 class BBPSSWMessage(Message):
     def __init__(self, msg_type: BBPSSWMsgType, receiver: str, **kwargs):
         Message.__init__(self, msg_type, receiver)
-        if self.msg_type == BBPSSWMsgType.purification_res:
+        if self.msg_type is BBPSSWMsgType.purification_res:
             pass
         else:
             raise Exception("BBPSSW protocol create unknown type of message: %s" % str(msg_type))

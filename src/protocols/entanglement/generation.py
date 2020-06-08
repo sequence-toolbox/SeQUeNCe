@@ -27,13 +27,13 @@ class EntanglementGenerationMessage(Message):
         super().__init__(msg_type, receiver)
         self.protocol_type = EntanglementGenerationA
 
-        if msg_type == GenerationMsgType.negotiate:
+        if msg_type is GenerationMsgType.negotiate:
             self.qc_delay = kwargs.get("qc_delay")
 
-        elif msg_type == GenerationMsgType.negotiate_ack:
+        elif msg_type is GenerationMsgType.negotiate_ack:
             self.emit_time = kwargs.get("emit_time")
 
-        elif msg_type == GenerationMsgType.meas_res:
+        elif msg_type is GenerationMsgType.meas_res:
             self.res = kwargs.get("res")
             self.time = kwargs.get("time")
             self.resolution = kwargs.get("resolution")
@@ -151,7 +151,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         msg_type = msg.msg_type
 
-        if msg_type == GenerationMsgType.negotiate:
+        if msg_type is GenerationMsgType.negotiate:
             # configure params
             another_delay = msg.qc_delay
             self.qc_delay = self.own.qchannels[self.middle].delay
@@ -186,7 +186,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             self.own.timeline.schedule(event)
             self.scheduled_events.append(event)
 
-        elif msg_type == GenerationMsgType.negotiate_ack:
+        elif msg_type is GenerationMsgType.negotiate_ack:
             # configure params
             self.expected_time = msg.emit_time + self.qc_delay
 
@@ -213,7 +213,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             self.own.timeline.schedule(event)
             self.scheduled_events.append(event)
 
-        elif msg_type == GenerationMsgType.meas_res:
+        elif msg_type is GenerationMsgType.meas_res:
             res = msg.res
             time = msg.time
             resolution = msg.resolution

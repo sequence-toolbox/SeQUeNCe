@@ -17,7 +17,7 @@ class SwappingMsgType(Enum):
 class EntanglementSwappingMessage(Message):
     def __init__(self, msg_type: str, receiver: str, **kwargs):
         Message.__init__(self, msg_type, receiver)
-        if self.msg_type == SwappingMsgType.swap_res:
+        if self.msg_type is SwappingMsgType.swap_res:
             self.fidelity = kwargs.get("fidelity")
             self.remote_node = kwargs.get("remote_node")
             self.remote_memo = kwargs.get("remote_memo")

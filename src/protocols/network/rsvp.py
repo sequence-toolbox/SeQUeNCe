@@ -25,11 +25,11 @@ class ResourceReservationMessage(Message):
     def __init__(self, msg_type: any, receiver: str, reservation: "Reservation", **kwargs):
         Message.__init__(self, msg_type, receiver)
         self.reservation = reservation
-        if self.msg_type == RSVPMsgType.request:
+        if self.msg_type is RSVPMsgType.request:
             self.qcaps = []
-        elif self.msg_type == RSVPMsgType.reject:
+        elif self.msg_type is RSVPMsgType.reject:
             pass
-        elif self.msg_type == RSVPMsgType.approve:
+        elif self.msg_type is RSVPMsgType.approve:
             self.path = kwargs["path"]
         else:
             raise Exception("Unknown type of message")
