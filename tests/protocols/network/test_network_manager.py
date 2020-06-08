@@ -2,7 +2,8 @@ import math
 
 from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.network.network_manager import NewNetworkManager, NetworkManager, NetworkManagerMessage
+from sequence.protocols.network.network_manager import *
+from sequence.protocols.network.rsvp import RSVPMsgType
 from sequence.protocols.protocol import StackProtocol
 from sequence.topology.node import QuantumRouter, MiddleNode
 
@@ -117,8 +118,8 @@ def test_NetworkManager():
     tl.run()
     assert len(n1.send_log) == len(n1.receive_log) == 1
     assert n1.send_log[0][0] == "n2" and n1.receive_log[0][0] == "n2"
-    assert n1.send_log[0][1].payload.payload.msg_type == "REQUEST" and n1.receive_log[0][
-        1].payload.payload.msg_type == "APPROVE"
+    assert n1.send_log[0][1].payload.payload.msg_type == RSVPMsgType.request 
+    assert n1.receive_log[0][1].payload.payload.msg_type == RSVPMsgType.approve
     assert len(n2.send_log) == len(n2.receive_log) == 2
     assert n2.send_log[0][0] == "n3" and n2.receive_log[0][0] == "n1"
     assert n2.send_log[1][0] == "n1" and n2.receive_log[1][0] == "n3"
@@ -134,8 +135,8 @@ def test_NetworkManager():
     tl.run()
     assert len(n1.send_log) == len(n1.receive_log) == 1
     assert n1.send_log[0][0] == "n2" and n1.receive_log[0][0] == "n2"
-    assert n1.send_log[0][1].payload.payload.msg_type == "REQUEST" and n1.receive_log[0][
-        1].payload.payload.msg_type == "REJECT"
+    assert n1.send_log[0][1].payload.payload.msg_type == RSVPMsgType.request
+    assert n1.receive_log[0][1].payload.payload.msg_type == RSVPMsgType.reject
     assert len(n2.send_log) == len(n2.receive_log) == 1
     assert n2.send_log[0][0] == "n1" and n2.receive_log[0][0] == "n1"
 
@@ -147,8 +148,8 @@ def test_NetworkManager():
     tl.run()
     assert len(n1.send_log) == len(n1.receive_log) == 1
     assert n1.send_log[0][0] == "n2" and n1.receive_log[0][0] == "n2"
-    assert n1.send_log[0][1].payload.payload.msg_type == "REQUEST" and n1.receive_log[0][
-        1].payload.payload.msg_type == "REJECT"
+    assert n1.send_log[0][1].payload.payload.msg_type == RSVPMsgType.request
+    assert n1.receive_log[0][1].payload.payload.msg_type == RSVPMsgType.reject
     assert len(n2.send_log) == len(n2.receive_log) == 2
     assert n2.send_log[0][0] == "n3" and n2.receive_log[0][0] == "n1"
     assert n2.send_log[1][0] == "n1" and n2.receive_log[1][0] == "n3"

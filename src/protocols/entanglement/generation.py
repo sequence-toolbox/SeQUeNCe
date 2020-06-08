@@ -1,3 +1,4 @@
+from enum import Enum, auto
 from typing import List, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -15,19 +16,24 @@ Entanglement generation is asymmetric:
     EntanglementGeneraitonB should be used on the middle node and does not need to be started
 """
 
+class GenerationMsgType(Enum):
+    negotiate = auto()
+    negotiate_ack = auto()
+    meas_res = auto()
+
 
 class EntanglementGenerationMessage(Message):
-    def __init__(self, msg_type: str, receiver: str, **kwargs):
+    def __init__(self, msg_type: GenerationMsgType, receiver: str, **kwargs):
         super().__init__(msg_type, receiver)
         self.protocol_type = EntanglementGenerationA
 
-        if msg_type == "NEGOTIATE":
+        if msg_type == GenerationMsgType.negotiate:
             self.qc_delay = kwargs.get("qc_delay")
 
-        elif msg_type == "NEGOTIATE_ACK":
+        elif msg_type == GenerationMsgType.negotiate_ack:
             self.emit_time = kwargs.get("emit_time")
 
-        elif msg_type == "MEAS_RES":
+        elif msg_type == GenerationMsgType.meas_res:
             self.res = kwargs.get("res")
             self.time = kwargs.get("time")
             self.resolution = kwargs.get("resolution")
@@ -92,7 +98,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         if self.update_memory() and self.primary:
             # send NEGOTIATE message
             self.qc_delay = self.own.qchannels[self.middle].delay
-            message = EntanglementGenerationMessage("NEGOTIATE", self.other_protocol.name, qc_delay=self.qc_delay)
+            message = EntanglementGenerationMessage(GenerationMsgType.negotiate, self.other_protocol.name, qc_delay=self.qc_delay)
             self.own.send_message(self.other, message)
         
     # update_memory: called on both nodes
@@ -145,7 +151,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         msg_type = msg.msg_type
 
-        if msg_type == "NEGOTIATE":
+        if msg_type == GenerationMsgType.negotiate:
             # configure params
             another_delay = msg.qc_delay
             self.qc_delay = self.own.qchannels[self.middle].delay
@@ -165,7 +171,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
             # send negotiate_ack
             another_emit_time = emit_time + self.qc_delay - another_delay
-            message = EntanglementGenerationMessage("NEGOTIATE_ACK", self.other_protocol.name,
+            message = EntanglementGenerationMessage(GenerationMsgType.negotiate_ack, self.other_protocol.name,
                                                     emit_time=another_emit_time)
             self.own.send_message(src, message)
 
@@ -180,7 +186,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             self.own.timeline.schedule(event)
             self.scheduled_events.append(event)
 
-        elif msg_type == "NEGOTIATE_ACK":
+        elif msg_type == GenerationMsgType.negotiate_ack:
             # configure params
             self.expected_time = msg.emit_time + self.qc_delay
 
@@ -207,7 +213,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             self.own.timeline.schedule(event)
             self.scheduled_events.append(event)
 
-        elif msg_type == "MEAS_RES":
+        elif msg_type == GenerationMsgType.meas_res:
             res = msg.res
             time = msg.time
             resolution = msg.resolution
@@ -278,7 +284,7 @@ class EntanglementGenerationB(EntanglementProtocol):
         resolution = self.own.bsm.resolution
 
         for i, node in enumerate(self.others):
-            message = EntanglementGenerationMessage("MEAS_RES", None, res=res, time=time, resolution=resolution)
+            message = EntanglementGenerationMessage(GenerationMsgType.meas_res, None, res=res, time=time, resolution=resolution)
             self.own.send_message(node, message)
 
     def received_message(self, src: str, msg: EntanglementGenerationMessage):

@@ -1,5 +1,5 @@
+from enum import Enum, auto
 from typing import TYPE_CHECKING
-
 from numpy.random import random
 
 if TYPE_CHECKING:
@@ -10,10 +10,14 @@ from ..message import Message
 from .entanglement_protocol import EntanglementProtocol
 
 
+class SwappingMsgType(Enum):
+    swap_res = auto()
+
+
 class EntanglementSwappingMessage(Message):
     def __init__(self, msg_type: str, receiver: str, **kwargs):
         Message.__init__(self, msg_type, receiver)
-        if self.msg_type == "SWAP_RES":
+        if self.msg_type == SwappingMsgType.swap_res:
             self.fidelity = kwargs.get("fidelity")
             self.remote_node = kwargs.get("remote_node")
             self.remote_memo = kwargs.get("remote_memo")
@@ -22,7 +26,7 @@ class EntanglementSwappingMessage(Message):
             raise Exception("Entanglement swapping protocol create unkown type of message: %s" % str(msg_type))
 
     def __str__(self):
-        if self.msg_type == "SWAP_RES":
+        if self.msg_type == SwappingMsgType.swap_res:
             return "EntanglementSwappingMessage: msg_type: %s; local_memo: %d; fidelity: %.2f; " \
                    "remote_node: %s; remote_memo: %d; " % (self.msg_type, self.local_memo,
                                                            self.fidelity, self.remote_node,
@@ -70,13 +74,13 @@ class EntanglementSwappingA(EntanglementProtocol):
             fidelity = self.updated_fidelity(self.left_memo.fidelity, self.right_memo.fidelity)
             self.is_success = True
         expire_time = min(self.left_memo.get_expire_time(), self.right_memo.get_expire_time())
-        msg = EntanglementSwappingMessage("SWAP_RES", self.left_protocol.name,
+        msg = EntanglementSwappingMessage(SwappingMsgType.swap_res, self.left_protocol.name,
                                           fidelity=fidelity,
                                           remote_node=self.right_memo.entangled_memory["node_id"],
                                           remote_memo=self.right_memo.entangled_memory["memo_id"],
                                           expire_time=expire_time)
         self.own.send_message(self.left_protocol.own.name, msg)
-        msg = EntanglementSwappingMessage("SWAP_RES", self.right_protocol.name,
+        msg = EntanglementSwappingMessage(SwappingMsgType.swap_res, self.right_protocol.name,
                                           fidelity=fidelity,
                                           remote_node=self.left_memo.entangled_memory["node_id"],
                                           remote_memo=self.left_memo.entangled_memory["memo_id"],
@@ -167,3 +171,5 @@ class EntanglementSwappingB(EntanglementProtocol):
 
     def release(self) -> None:
         self.own.resource_manager.update(self, self.memory, "ENTANGLED")
+
+

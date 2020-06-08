@@ -3,8 +3,7 @@ import pytest
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.entanglement.swapping import EntanglementSwappingA, EntanglementSwappingB, \
-    EntanglementSwappingMessage
+from sequence.protocols.entanglement.swapping import *
 from sequence.topology.node import Node
 
 numpy.random.seed(0)
@@ -35,12 +34,12 @@ class FakeNode(Node):
 
 def test_EntanglementSwappingMessage():
     # __init__ function
-    msg = EntanglementSwappingMessage("SWAP_RES", "receiver", fidelity=0.9, remote_node="a1", remote_memo=2)
-    assert ((msg.msg_type == "SWAP_RES") and
-            msg.receiver == "receiver" and
-            (msg.fidelity == 0.9) and
-            (msg.remote_node == "a1") and
-            (msg.remote_memo == 2))
+    msg = EntanglementSwappingMessage(SwappingMsgType.swap_res, "receiver", fidelity=0.9, remote_node="a1", remote_memo=2)
+    assert msg.msg_type == SwappingMsgType.swap_res
+    assert msg.receiver == "receiver"
+    assert msg.fidelity == 0.9
+    assert msg.remote_node == "a1"
+    assert msg.remote_memo == 2
     with pytest.raises(Exception):
         EntanglementSwappingMessage("error")
 
