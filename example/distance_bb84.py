@@ -2,59 +2,63 @@ from numpy import random
 import math
 
 import sequence
-from sequence import topology
-from sequence.event import Event
-from sequence.timeline import Timeline
-from sequence.BB84 import BB84
-from sequence.process import Process
+from sequence.kernel.event import Event
+from sequence.kernel.process import Process
+from sequence.kernel.timeline import Timeline
+from sequence.protocols.qkd.BB84 import *
+from sequence.components.optical_channel import *
+from sequence.topology.node import *
+from sequence.utils.encoding import *
 
 if __name__ == "__main__":
     random.seed(1)
+
+    NUM_EXPERIMENTS = 11
+    runtime = 6e12
     filename = "results/sensitivity/distance_bb84.log"
     fh = open(filename,'w')
-    for id in range(11):
-        distance = max(1000,10000*int(id))
 
-        tl = Timeline(6*1e12)
-        qc = topology.QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
-        cc = topology.ClassicalChannel("cc", tl, distance=distance)
-        cc.delay+= 10**9
+    for i in range(NUM_EXPERIMENTS):
+        distance = max(1000, 10000*int(i))
+
+        tl = Timeline(runtime)
+        qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
+        cc = ClassicalChannel("cc", tl, distance=distance)
+        cc.delay += 10e9  # 10 ms
 
         # Alice
-        ls = topology.LightSource("alice.lightsource", tl, frequency=80*10**6, mean_photon_num=0.1, direct_receiver=qc)
-        components = {"lightsource": ls, "cchannel":cc, "qchannel":qc}
-        alice = topology.Node("alice", tl, components=components)
-        qc.set_sender(ls)
-        cc.add_end(alice)
-        tl.entities.append(alice)
+        ls_params = {"frequency": 80e6, "mean_photon_num": 0.1}
+        alice = QKDNode("alice", tl, stack_size=1)
+
+        for name, param in ls_params.items():
+            alice.update_lightsource_params(name, param)
 
         # Bob
-        detectors = [{"efficiency":0.8, "dark_count":10, "time_resolution":10, "count_rate":50*10**6},
-                     {"efficiency":0.8, "dark_count":10, "time_resolution":10, "count_rate":50*10**6}]
-        splitter = {}
-        qsd = topology.QSDetector("bob.qsdetector", tl, detectors=detectors, splitter=splitter)
-        components = {"detector":qsd, "cchannel":cc, "qchannel":qc}
-        bob = topology.Node("bob",tl,components=components)
-        qc.set_receiver(qsd)
-        cc.add_end(bob)
-        tl.entities.append(bob)
+        detector_params = [{"efficiency": 0.8, "dark_count": 10, "time_resolution": 10, "count_rate": 50e6},
+                           {"efficiency": 0.8, "dark_count": 10, "time_resolution": 10, "count_rate": 50e6}]
+        bob = QKDNode("bob", tl, stack_size=1)
 
-        # BB84
-        bba = BB84("bba", tl, role=0, encoding_type=0)
-        bbb = BB84("bbb", tl, role=1, encoding_type=0)
-        bba.assign_node(alice)
-        bbb.assign_node(bob)
-        bba.another = bbb
-        bbb.another = bba
-        alice.protocol = bba
-        bob.protocol = bbb
+        for i in range(len(detector_params)):
+            for name, param in detector_params[i].items():
+                bob.update_detector_params(i, name, param)
 
-        process = Process(bba, "generate_key", [256,math.inf,6*10**12])
-        event = Event(0,process)
+        qc.set_ends(alice, bob)
+        cc.set_ends(alice, bob)
+
+        # BB84 config
+        pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
+
+        process = Process(alice.protocol_stack[0], "push", [256, math.inf, 6e12])
+        event = Event(0, process)
         tl.schedule(event)
+
         tl.init()
         tl.run()
 
+        print("completed distance {}".format(distance))
+
+        # record metrics
+        bba = alice.protocol_stack[0]
         fh.write(str(distance))
         fh.write(' ')
         if bba.throughputs:
