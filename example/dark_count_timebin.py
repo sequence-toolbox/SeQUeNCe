@@ -3,21 +3,49 @@ import math
 import statistics
 
 import sequence
-from sequence import topology
-from sequence import encoding
-from sequence.event import Event
-from sequence.timeline import Timeline
-from sequence.BB84 import BB84
-from sequence.cascade import Cascade
-from sequence.process import Process
+from sequence.topology.node import QKDNode
+from sequence.kernel.process import Process
+from sequence.kernel.event import Event
+from sequence.kernel.timeline import Timeline
+from sequence.protocols.qkd.BB84 import *
+from sequence.protocols.qkd.cascade import *
+from sequence.components.optical_channel import *
+from sequence.utils.encoding import time_bin
+
+
+# dummy parent class to receive cascade keys and end timeline
+class Parent(StackProtocol):
+    def __init__(self, own: "Node", keysize: int, keynum: int):
+        super().__init__(own, "")
+        self.upper_protocols = []
+        self.lower_protocols = []
+        self.keysize = keysize
+        self.keynum = keynum
+        self.keycounter = 0
+
+    def init(self):
+        pass
+
+    def pop(self, msg):
+        self.keycounter += 1
+        if self.keycounter >= self.keynum:
+            self.own.timeline.stop()
+
+    def push(self):
+        self.lower_protocols[0].push(self.keysize, self.keynum)
+
+    def received_message(self):
+        pass
 
 
 if __name__ == "__main__":
     random.seed(1)
 
-    runtime = math.inf
+    runtime = 10e12
     dark_count = 425
     distances = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]  # distances in km
+    KEYSIZE = 256
+    KEYNUM = 10
     errors = []  # store error rates
     throughputs = []  # store throughputs
     throughputs_cascade = []
@@ -29,68 +57,51 @@ if __name__ == "__main__":
 
     for distance in distances:
         tl = Timeline(runtime)
-        qc = topology.QuantumChannel("qc", tl,
-                                     distance=distance * 1e3, attenuation=0.0002)
-        cc = topology.ClassicalChannel("cc", tl,
-                                       distance=distance * 1e3)
+        qc = QuantumChannel("qc", tl, distance=distance * 1e3, attenuation=0.0002)
+        cc = ClassicalChannel("cc", tl, distance=distance * 1e3)
 
         # Alice
-        ls = topology.LightSource("alice.lightsource", tl,
-                                  frequency=2e6, mean_photon_num=0.1, direct_receiver=qc,
-                                  encoding_type=encoding.time_bin)
-        components = {"lightsource": ls, "cchannel": cc, "qchannel": qc}
-        alice = topology.Node("alice", tl, components=components)
-        qc.set_sender(ls)
-        cc.add_end(alice)
+        ls_params = {"frequency": 2e6, "mean_photon_num": 0.1}
+        alice = QKDNode("alice", tl, encoding=time_bin)
 
+        for name, param in ls_params.items():
+            alice.update_lightsource_params(name, param)
+        
         # Bob
-        detectors = [{"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10},
-                     {"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10},
-                     {"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10}]
-        interferometer = {"path_difference": encoding.time_bin["bin_separation"]}
-        switch = {}
-        qsd = topology.QSDetector("bob.qsdetector", tl,
-                                  encoding_type=encoding.time_bin, detectors=detectors, interferometer=interferometer,
-                                  switch=switch)
-        components = {"detector": qsd, "cchannel": cc, "qchannel": qc}
-        bob = topology.Node("bob", tl, components=components)
-        qc.set_receiver(qsd)
-        cc.add_end(bob)
+        detector_params = [{"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10},
+                           {"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10},
+                           {"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10}]
+        bob = QKDNode("bob", tl, encoding=time_bin)
 
-        # add entities
-        tl.entities.append(alice)
-        tl.entities.append(bob)
-        for key in alice.components:
-            tl.entities.append(alice.components[key])
-        for key in bob.components:
-            tl.entities.append(bob.components[key])
+        for i in range(len(detector_params)):
+            for name, param in detector_params[i].items():
+                bob.update_detector_params(i, name, param)
 
-        # BB84
-        bba = BB84("bba", tl, role=0)
-        bbb = BB84("bbb", tl, role=1)
-        bba.assign_node(alice)
-        bbb.assign_node(bob)
-        bba.another = bbb
-        bbb.another = bba
-        alice.protocol = bba
-        bob.protocol = bbb
+        qc.set_ends(alice, bob)
+        cc.set_ends(alice, bob)
 
-        # # Cascade
-        cascade_a = Cascade("cascade_a", tl, bb84=bba, role=0)
-        cascade_b = Cascade("cascade_b", tl, bb84=bbb, role=1)
-        cascade_a.assign_cchannel(cc)
-        cascade_b.assign_cchannel(cc)
-        cascade_a.another = cascade_b
-        cascade_b.another = cascade_a
-        bba.add_parent(cascade_a)
-        bbb.add_parent(cascade_b)
+        # BB84 and cascade config
+        pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
+        pair_cascade_protocols(alice.protocol_stack[1], bob.protocol_stack[1])
 
-        process = Process(cascade_a, "generate_key", [256, 10, math.inf])
+        # Parent
+        pa = Parent(alice, KEYSIZE, KEYNUM)
+        pb = Parent(bob, KEYSIZE, KEYNUM)
+        alice.protocol_stack[1].upper_protocols.append(pa)
+        pa.lower_protocols.append(alice.protocol_stack[1])
+        bob.protocol_stack[1].upper_protocols.append(pb)
+        pb.lower_protocols.append(bob.protocol_stack[1])
+
+        process = Process(pa, "push", [])
         event = Event(0, process)
         tl.schedule(event)
 
         tl.init()
         tl.run()
+
+        # get metrics
+        bba = alice.protocol_stack[0]
+        cascade_a = alice.protocol_stack[1]
 
         if bba.error_rates:
             error = statistics.mean(bba.error_rates)
