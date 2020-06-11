@@ -16,26 +16,26 @@ def pair_bb84_protocols(sender: "BB84", receiver: "BB84") -> None:
 
 
 class BB84MsgType(Enum):
-    begin_photon_pulse = auto()
-    received_qubits = auto()
-    basis_list = auto()
-    matching_indices = auto()
+    BEGIN_PHOTON_PULSE = auto()
+    RECEIVED_QUBITS = auto()
+    BASIS_LIST = auto()
+    MATCHING_INDICES = auto()
 
 
 class BB84Message(Message):
     def __init__(self, msg_type: BB84MsgType, receiver: str, **kwargs):
         Message.__init__(self, msg_type, receiver)
         self.owner_type = BB84
-        if self.msg_type is BB84MsgType.begin_photon_pulse:
+        if self.msg_type is BB84MsgType.BEGIN_PHOTON_PULSE:
             self.frequency = kwargs["frequency"]
             self.light_time = kwargs["light_time"]
             self.start_time = kwargs["start_time"]
             self.wavelength = kwargs["wavelength"]
-        elif self.msg_type is BB84MsgType.received_qubits:
+        elif self.msg_type is BB84MsgType.RECEIVED_QUBITS:
             pass
-        elif self.msg_type is BB84MsgType.basis_list:
+        elif self.msg_type is BB84MsgType.BASIS_LIST:
             self.bases = kwargs["bases"]
-        elif self.msg_type is BB84MsgType.matching_indices:
+        elif self.msg_type is BB84MsgType.MATCHING_INDICES:
             self.indices = kwargs["indices"]
         else:
             raise Exception("BB84 generated invalid message type {}".format(msg_type))
@@ -114,7 +114,7 @@ class BB84(StackProtocol):
 
             # send message that photon pulse is beginning, then send bits
             self.start_time = int(self.own.timeline.now()) + round(self.own.cchannels[self.another.own.name].delay)
-            message = BB84Message(BB84MsgType.begin_photon_pulse, self.another.name, 
+            message = BB84Message(BB84MsgType.BEGIN_PHOTON_PULSE, self.another.name, 
                                   frequency=self.qubit_frequency, light_time=self.light_time,
                                   start_time=self.start_time, wavelength=self.own.lightsource.wavelength)
             self.own.send_message(self.another.own.name, message)
@@ -189,12 +189,12 @@ class BB84(StackProtocol):
                 self.own.timeline.schedule(event)
 
             # send message that we got photons
-            message = BB84Message(BB84MsgType.received_qubits, self.another.name)
+            message = BB84Message(BB84MsgType.RECEIVED_QUBITS, self.another.name)
             self.own.send_message(self.another.own.name, message)
 
     def received_message(self, src: str, msg: "Message") -> None:
         if self.working and self.own.timeline.now() < self.end_run_times[0]:
-            if msg.msg_type is BB84MsgType.begin_photon_pulse:  # (current node is Bob): start to receive photons
+            if msg.msg_type is BB84MsgType.BEGIN_PHOTON_PULSE:  # (current node is Bob): start to receive photons
                 self.qubit_frequency = msg.frequency
                 self.light_time = msg.light_time
 
@@ -208,12 +208,12 @@ class BB84(StackProtocol):
                 event = Event(self.start_time + round(self.light_time * 1e12) - 1, process)
                 self.own.timeline.schedule(event)
 
-            elif msg.msg_type is BB84MsgType.received_qubits:  # (Current node is Alice): can send basis
+            elif msg.msg_type is BB84MsgType.RECEIVED_QUBITS:  # (Current node is Alice): can send basis
                 bases = self.basis_lists.pop(0)
-                message = BB84Message(BB84MsgType.basis_list, self.another.name, bases=bases)
+                message = BB84Message(BB84MsgType.BASIS_LIST, self.another.name, bases=bases)
                 self.own.send_message(self.another.own.name, message)
 
-            elif msg.msg_type is BB84MsgType.basis_list:  # (Current node is Bob): compare bases
+            elif msg.msg_type is BB84MsgType.BASIS_LIST:  # (Current node is Bob): compare bases
                 # parse alice basis list
                 basis_list_alice = msg.bases
 
@@ -227,10 +227,10 @@ class BB84(StackProtocol):
                         self.key_bits.append(bits[i])
 
                 # send to Alice list of matching indices
-                message = BB84Message(BB84MsgType.matching_indices, self.another.name, indices=indices)
+                message = BB84Message(BB84MsgType.MATCHING_INDICES, self.another.name, indices=indices)
                 self.own.send_message(self.another.own.name, message)
 
-            elif msg.msg_type is BB84MsgType.matching_indices:  # (Current node is Alice): create key from matching indices
+            elif msg.msg_type is BB84MsgType.MATCHING_INDICES:  # (Current node is Alice): create key from matching indices
                 # parse matching indices
                 indices = msg.indices
 
