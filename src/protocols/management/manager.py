@@ -13,10 +13,10 @@ from .memory_manager import MemoryManager
 
 
 class ResourceManagerMsgType(Enum):
-    request = auto()
-    response = auto()
-    release_protocol = auto()
-    release_memory = auto()
+    REQUEST = auto()
+    RESPONSE = auto()
+    RELEASE_PROTOCOL = auto()
+    RELEASE_MEMORY = auto()
 
 
 class ResourceManagerMessage(Message):
@@ -34,14 +34,14 @@ class ResourceManagerMessage(Message):
     def __init__(self, msg_type: ResourceManagerMsgType, **kwargs):
         Message.__init__(self, msg_type, "resource_manager")
         self.ini_protocol = kwargs["protocol"]
-        if msg_type is ResourceManagerMsgType.request:
+        if msg_type is ResourceManagerMsgType.REQUEST:
             self.req_condition_func = kwargs["req_condition_func"]
-        elif msg_type is ResourceManagerMsgType.response:
+        elif msg_type is ResourceManagerMsgType.RESPONSE:
             self.is_approved = kwargs["is_approved"]
             self.paired_protocol = kwargs["paired_protocol"]
-        elif msg_type is ResourceManagerMsgType.release_protocol:
+        elif msg_type is ResourceManagerMsgType.RELEASE_PROTOCOL:
             self.protocol = kwargs["protocol"]
-        elif msg_type is ResourceManagerMsgType.release_memory:
+        elif msg_type is ResourceManagerMsgType.RELEASE_MEMORY:
             self.memory = kwargs["memory_id"]
         else:
             raise Exception("ResourceManagerMessage gets unknown type of message: %s" % str(msg_type))
@@ -128,16 +128,16 @@ class ResourceManager():
             return
         if not protocol in self.pending_protocols:
             self.pending_protocols.append(protocol)
-        msg = ResourceManagerMessage(ResourceManagerMsgType.request, protocol=protocol,
+        msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST, protocol=protocol,
                                      req_condition_func=req_condition_func)
         self.owner.send_message(req_dst, msg)
 
     def received_message(self, src: str, msg: "ResourceManagerMessage") -> None:
-        if msg.msg_type is ResourceManagerMsgType.request:
+        if msg.msg_type is ResourceManagerMsgType.REQUEST:
             protocol = msg.req_condition_func(self.waiting_protocols)
             if protocol is not None:
                 protocol.set_others(msg.ini_protocol)
-                new_msg = ResourceManagerMessage(ResourceManagerMsgType.response, protocol=msg.ini_protocol,
+                new_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=msg.ini_protocol,
                                                  is_approved=True, paired_protocol=protocol)
                 self.owner.send_message(src, new_msg)
                 self.waiting_protocols.remove(protocol)
@@ -145,10 +145,10 @@ class ResourceManager():
                 protocol.start()
                 return
 
-            new_msg = ResourceManagerMessage(ResourceManagerMsgType.response, protocol=msg.ini_protocol,
+            new_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=msg.ini_protocol,
                                              is_approved=False, paired_protocol=None)
             self.owner.send_message(src, new_msg)
-        elif msg.msg_type is ResourceManagerMsgType.response:
+        elif msg.msg_type is ResourceManagerMsgType.RESPONSE:
             protocol = msg.ini_protocol
 
             if protocol not in self.pending_protocols:
@@ -173,11 +173,11 @@ class ResourceManager():
                     else:
                         self.update(None, memory, "ENTANGLED")
                 self.pending_protocols.remove(protocol)
-        elif msg.msg_type is ResourceManagerMsgType.release_protocol:
+        elif msg.msg_type is ResourceManagerMsgType.RELEASE_PROTOCOL:
             if msg.protocol in self.owner.protocols:
                 assert isinstance(msg.protocol, EntanglementProtocol)
                 msg.protocol.release()
-        elif msg.msg_type is ResourceManagerMsgType.release_memory:
+        elif msg.msg_type is ResourceManagerMsgType.RELEASE_MEMORY:
             target_id = msg.memory
             for protocol in self.owner.protocols:
                 for memory in protocol.memories:
@@ -189,9 +189,9 @@ class ResourceManager():
         self.update(None, memory, "RAW")
 
     def release_remote_protocol(self, dst: str, protocol: "EntanglementProtocol") -> None:
-        msg = ResourceManagerMessage(ResourceManagerMsgType.release_protocol, protocol=protocol)
+        msg = ResourceManagerMessage(ResourceManagerMsgType.RELEASE_PROTOCOL, protocol=protocol)
         self.owner.send_message(dst, msg)
 
     def release_remote_memory(self, init_protocol: "EntanglementProtocol", dst: str, memory_id: str) -> None:
-        msg = ResourceManagerMessage(ResourceManagerMsgType.release_memory, protocol=init_protocol, memory_id=memory_id)
+        msg = ResourceManagerMessage(ResourceManagerMsgType.RELEASE_MEMORY, protocol=init_protocol, memory_id=memory_id)
         self.owner.send_message(dst, msg)
