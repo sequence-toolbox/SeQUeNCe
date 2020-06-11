@@ -29,10 +29,10 @@ class FakeNode(Node):
 
 
 def test_generation_message():
-    msg = EntanglementGenerationMessage(GenerationMsgType.negotiate, "alice", qc_delay=1)
+    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE, "alice", qc_delay=1)
 
     assert msg.receiver == "alice"
-    assert msg.msg_type == GenerationMsgType.negotiate
+    assert msg.msg_type == GenerationMsgType.NEGOTIATE
     assert msg.qc_delay == 1
 
 
@@ -49,7 +49,7 @@ def test_generation_receive_message():
     eg.qc_delay = 1
 
     # negotiate message
-    msg = EntanglementGenerationMessage(GenerationMsgType.negotiate_ack, "EG", emit_time=0)
+    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG", emit_time=0)
     assert eg.received_message("e2", msg) is True
     assert eg.expected_time == 1
     assert len(tl.events.data) == 2  # excite and next start time
@@ -80,7 +80,7 @@ def test_generation_pop():
     assert len(m0.messages) == 2
     assert m0.messages[0][0] == "e0"
     assert m0.messages[1][0] == "e1"
-    assert m0.messages[0][1].msg_type == m0.messages[1][1].msg_type == GenerationMsgType.meas_res
+    assert m0.messages[0][1].msg_type == m0.messages[1][1].msg_type == GenerationMsgType.MEAS_RES
 
 
 def test_generation_expire():

@@ -34,8 +34,8 @@ class FakeNode(Node):
 
 def test_EntanglementSwappingMessage():
     # __init__ function
-    msg = EntanglementSwappingMessage(SwappingMsgType.swap_res, "receiver", fidelity=0.9, remote_node="a1", remote_memo=2)
-    assert msg.msg_type == SwappingMsgType.swap_res
+    msg = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, "receiver", fidelity=0.9, remote_node="a1", remote_memo=2)
+    assert msg.msg_type == SwappingMsgType.SWAP_RES
     assert msg.receiver == "receiver"
     assert msg.fidelity == 0.9
     assert msg.remote_node == "a1"

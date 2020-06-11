@@ -32,8 +32,8 @@ class FakeNode(Node):
 
 
 def test_BBPSSWMessage():
-    msg = BBPSSWMessage(BBPSSWMsgType.purification_res, "another")
-    assert msg.msg_type == BBPSSWMsgType.purification_res
+    msg = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, "another")
+    assert msg.msg_type == BBPSSWMsgType.PURIFICATION_RES
     assert msg.receiver == "another"
     with pytest.raises(Exception):
         BBPSSWMessage("unknown type")
