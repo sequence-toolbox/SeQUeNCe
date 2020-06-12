@@ -20,7 +20,7 @@ if __name__ == "__main__":
     for id in range(NUM_EXPERIMENTS):
         distance = max(1000,10000*int(id))
 
-        tl = Timeline(12e12)
+        tl = Timeline(1e12)
         qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
         cc = ClassicalChannel("cc", tl, distance=distance)
         cc.delay += 10e9
@@ -52,6 +52,8 @@ if __name__ == "__main__":
 
         tl.init()
         tl.run()
+
+        print("completed distance {}".format(distance))
 
         # log results
         bba = alice.protocol_stack[0]
