@@ -50,7 +50,7 @@ class QuantumChannel(OpticalChannel):
         end2.assign_qchannel(self, end1.name)
 
     def transmit(self, qubit: "Photon", source: "Node") -> None:
-        assert self.delay != 0 and self.loss != 1, "QuantumChannel forgets to run init() function"
+        assert self.delay != 0 and self.loss != 1, "QuantumChannel init() function has not been run for {}".format(self.name)
 
         # remove lowest time bin
         if len(self.send_bins) > 0:
@@ -69,6 +69,10 @@ class QuantumChannel(OpticalChannel):
             for e in self.ends:
                 if e != source:
                     receiver = e
+
+            # check if polarization encoding and apply necessary noise
+            if (qubit.encoding_type["name"] == "polarization") and (numpy.random.random_sample() > self.polarization_fidelity):
+                qubit.random_noise()
 
             # schedule receiving node to receive photon at future time determined by light speed
             future_time = self.timeline.now() + self.delay

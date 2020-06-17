@@ -15,7 +15,7 @@ class Event:
         return (self.time == another.time) and (self.priority == another.priority)
 
     def __ne__(self, another):
-        return (self.time != another.time) or (self.priority !=another.priority)
+        return (self.time != another.time) or (self.priority != another.priority)
 
     def __gt__(self, another):
         return (self.time > another.time) or (self.time == another.time and self.priority > another.priority)
