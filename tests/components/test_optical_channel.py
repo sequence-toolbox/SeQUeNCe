@@ -112,12 +112,12 @@ def test_QuantumChannel_transmit():
 
     assert len(sender.log) == len(receiver.log) == 0
     tl.run()
-    res = [('sender', 50000000, '0'), ('sender', 50000001, '1'), ('sender', 50000008, '8'), ('sender', 50000009, '9')]
+    res = [('sender', 50000000, '0'), ('sender', 50000007, '7'), ('sender', 50000008, '8')]
     for real, expect in zip(receiver.log, res):
         assert real == expect
 
-    res = [('receiver', 50000010, '0'), ('receiver', 50000011, '1'), ('receiver', 50000013, '3'),
-           ('receiver', 50000015, '5'), ('receiver', 50000016, '6'), ('receiver', 50000017, '7')]
+    res = [('receiver', 50000010, '0'), ('receiver', 50000011, '1'), ('receiver', 50000012, '2'),
+           ('receiver', 50000014, '4'), ('receiver', 50000016, '6'), ('receiver', 50000017, '7')]
     for real, expect in zip(sender.log, res):
         assert real == expect
 

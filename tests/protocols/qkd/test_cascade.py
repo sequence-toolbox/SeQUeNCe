@@ -42,14 +42,14 @@ def test_cascade_run():
     KEYSIZE = 64
     KEYNUM = 10
 
-    tl = Timeline(1e10)
+    tl = Timeline(1e11)
 
     alice = QKDNode("alice", tl)
     bob = QKDNode("bob", tl)
     pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
     pair_cascade_protocols(alice.protocol_stack[1], bob.protocol_stack[1])
 
-    qc = QuantumChannel("qc", tl, distance=1e3, attenuation=2e-5)
+    qc = QuantumChannel("qc", tl, distance=1e3, attenuation=2e-5, polarization_fidelity=0.97)
     qc.set_ends(alice, bob)
     cc = ClassicalChannel("cc", tl, distance=1e3)
     cc.set_ends(alice, bob)

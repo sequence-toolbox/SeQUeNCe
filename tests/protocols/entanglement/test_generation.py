@@ -202,5 +202,5 @@ def test_generation_run():
 
     ratio = empty_count / NUM_TESTS
     assert abs(ratio - 0.5) < 0.1
-
+    
 

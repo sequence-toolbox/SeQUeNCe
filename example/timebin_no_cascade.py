@@ -63,6 +63,8 @@ if __name__ == "__main__":
         tl.init()
         tl.run()
 
+        bba = alice.protocol_stack[0]
+
         error = statistics.mean(bba.error_rates)
         throughput = statistics.mean(bba.throughputs)
         latency = bba.latency
