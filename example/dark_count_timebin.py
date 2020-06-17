@@ -1,4 +1,5 @@
 from numpy import random
+from pathlib import Path
 import math
 import statistics
 
@@ -52,6 +53,8 @@ if __name__ == "__main__":
     throughputs_privacy = []
     latencies_privacy = []
 
+    # open file to store experiment results
+    Path("results/timebin").mkdir(parents=True, exist_ok=True)
     filename = "results/timebin/distance_cascade.log"
     fh = open(filename, 'w')
 

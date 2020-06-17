@@ -1,4 +1,5 @@
 from numpy import random
+from pathlib import Path
 import math
 
 import sequence
@@ -15,6 +16,9 @@ if __name__ == "__main__":
 
     NUM_EXPERIMENTS = 11
     runtime = 6e12
+
+    # open file to store experiment results
+    Path("results/sensitivity").mkdir(parents=True, exist_ok=True)
     filename = "results/sensitivity/distance_bb84.log"
     fh = open(filename,'w')
 

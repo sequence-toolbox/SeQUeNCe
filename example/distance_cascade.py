@@ -1,4 +1,5 @@
 from numpy import random
+from pathlib import Path
 import math
 
 import sequence
@@ -10,17 +11,22 @@ from sequence.protocols.qkd.BB84 import *
 from sequence.protocols.qkd.cascade import *
 from sequence.components.optical_channel import *
 
-if __name__ == "__main__":
-    NUM_EXPERIMENTS = 10
 
+if __name__ == "__main__":
     random.seed(2)
+
+    NUM_EXPERIMENTS = 10
+    runtime = 1e12
+
+    # open file to store experiment results
+    Path("results/sensitivity").mkdir(parents=True, exist_ok=True)
     filename = "results/sensitivity/distance_cascade.log"
     fh = open(filename,'w')
 
     for id in range(NUM_EXPERIMENTS):
         distance = max(1000,10000*int(id))
 
-        tl = Timeline(1e12)
+        tl = Timeline(runtime)
         qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
         cc = ClassicalChannel("cc", tl, distance=distance)
         cc.delay += 10e9
