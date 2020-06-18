@@ -1,6 +1,6 @@
-import math
-
-import numpy
+from math import sqrt
+from numpy import pi, cos, sin, array, outer, kron, identity, arange
+from numpy.random import random, random_sample, choice
 
 
 # used for photon.measure_multiple
@@ -19,7 +19,7 @@ class QuantumState():
 
     def entangle(self, another_state):
         entangled_states = self.entangled_states + another_state.entangled_states
-        new_state = numpy.kron(self.state, another_state.state)
+        new_state = kron(self.state, another_state.state)
 
         for quantum_state in entangled_states:
             quantum_state.entangled_states = entangled_states
@@ -27,8 +27,8 @@ class QuantumState():
 
     def random_noise(self):
         # TODO: rewrite for entangled states
-        angle = numpy.random.random() * 2 * numpy.pi
-        self.state = [complex(numpy.cos(angle)), complex(numpy.sin(angle))]
+        angle = random() * 2 * pi
+        self.state = [complex(cos(angle)), complex(sin(angle))]
 
     # only for use with entangled state
     def set_state(self, state):
@@ -45,34 +45,39 @@ class QuantumState():
         self.state = state
 
     def measure(self, basis):
-        state = numpy.array(self.state)
-        u = numpy.array(basis[0], dtype=complex)
-        v = numpy.array(basis[1], dtype=complex)
+        state = array(self.state)
+        u = array(basis[0], dtype=complex)
+        v = array(basis[1], dtype=complex)
         # measurement operator
-        M0 = numpy.outer(u.conj(), u)
-        M1 = numpy.outer(v.conj(), v)
+        M0 = outer(u.conj(), u)
+        M1 = outer(v.conj(), v)
 
-        projector0 = [1]
-        projector1 = [1]
-        for s in self.entangled_states:
-            if s == self:
-                projector0 = numpy.kron(projector0, M0)
-                projector1 = numpy.kron(projector1, M1)
-            else:
-                projector0 = numpy.kron(projector0, numpy.identity(2))
-                projector1 = numpy.kron(projector1, numpy.identity(2))
+        # generate projectors
+        if len(self.entangled_states) > 1:
+            projector0 = [1]
+            projector1 = [1]
+            for s in self.entangled_states:
+                if s == self:
+                    projector0 = kron(projector0, M0)
+                    projector1 = kron(projector1, M1)
+                else:
+                    projector0 = kron(projector0, identity(2))
+                    projector1 = kron(projector1, identity(2))
+        else:
+            projector0 = M0
+            projector1 = M1
 
         # probability of measuring basis[0]
         prob_0 = (state.conj().transpose() @ projector0.conj().transpose() @ projector0 @ state).real
 
         result = 0
-        if numpy.random.random_sample() > prob_0:
+        if random_sample() > prob_0:
             result = 1
 
         if result:
-            new_state = (projector1 @ state) / math.sqrt(1 - prob_0)
+            new_state = (projector1 @ state) / sqrt(1 - prob_0)
         else:
-            new_state = (projector0 @ state) / math.sqrt(prob_0)
+            new_state = (projector0 @ state) / sqrt(prob_0)
 
         for s in self.entangled_states:
             if s is not None:
@@ -100,7 +105,7 @@ class QuantumState():
         pos_state_1 = entangled_list.index(states[1])
         entangled_list[0], entangled_list[pos_state_0] = entangled_list[pos_state_0], entangled_list[0]
         entangled_list[1], entangled_list[pos_state_1] = entangled_list[pos_state_1], entangled_list[1]
-        switched_state = numpy.array([complex(0)] * len(state))
+        switched_state = array([complex(0)] * len(state))
         for i, coefficient in enumerate(state):
             switched_i = swap_bits(i, pos_state_0, pos_state_1)
             switched_state[switched_i] = coefficient
@@ -114,18 +119,18 @@ class QuantumState():
         projectors = [None] * basis_dimension
         probabilities = [0] * basis_dimension
         for i, vector in enumerate(basis):
-            vector = numpy.array(vector, dtype=complex)
-            M = numpy.outer(vector.conj(), vector)  # measurement operator
-            projectors[i] = numpy.kron(M, numpy.identity(2 ** length_diff))  # projector
+            vector = array(vector, dtype=complex)
+            M = outer(vector.conj(), vector)  # measurement operator
+            projectors[i] = kron(M, identity(2 ** length_diff))  # projector
             probabilities[i] = (state.conj().transpose() @ projectors[i].conj().transpose() @ projectors[i] @ state).real
             if probabilities[i] < 0:
                 probabilities[i] = 0
 
-        possible_results = numpy.arange(0, basis_dimension, 1)
+        possible_results = arange(0, basis_dimension, 1)
         # result gives index of the basis vector that will be projected to
-        res = numpy.random.choice(possible_results, p=probabilities)
+        res = choice(possible_results, p=probabilities)
         # project to new state, then reassign quantum state and entangled photons
-        new_state = (projectors[res] @ state) / math.sqrt(probabilities[res])
+        new_state = (projectors[res] @ state) / sqrt(probabilities[res])
         for state in entangled_list:
             state.quantum_state = new_state
             state.entangled_photons = entangled_list

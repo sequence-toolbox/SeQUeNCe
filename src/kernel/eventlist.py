@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .event import Event
 
-import heapq
+from heapq import heappush, heappop, heapify
 
 
 class EventList:
@@ -18,10 +18,10 @@ class EventList:
             yield data
 
     def push(self, event: "Event") -> "None":
-        heapq.heappush(self.data, event)
+        heappush(self.data, event)
 
     def pop(self) -> "Event":
-        return heapq.heappop(self.data)
+        return heappop(self.data)
 
     def isempty(self) -> bool:
         return len(self.data) == 0
@@ -30,5 +30,5 @@ class EventList:
         for i, e in enumerate(self.data):
             if id(e) == id(event):
                 self.data.pop(i)
-                heapq.heapify(self.data)
+                heapify(self.data)
                 break

@@ -3,14 +3,14 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .event import Event
 
-import math
+from math import inf
 
 from .eventlist import EventList
 
 
 class Timeline:
 
-    def __init__(self, stop_time=math.inf):
+    def __init__(self, stop_time=inf):
         self.events = EventList()
         self.entities = []
         self.time = 0

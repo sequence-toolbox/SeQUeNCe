@@ -1,4 +1,4 @@
-import math
+from math import inf
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 
 class Event:
-    def __init__(self, time: int, process: "Process", priority=math.inf):
+    def __init__(self, time: int, process: "Process", priority=inf):
         self.time = time
         self.priority = priority
         self.process = process
