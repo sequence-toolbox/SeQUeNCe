@@ -23,6 +23,14 @@ if __name__ == "__main__":
     filename = "results/sensitivity/distance_cascade.log"
     fh = open(filename,'w')
 
+    fh.write("{} {:11} {} {} {} {} {}".format("Distance",
+                                              "Throughput",
+                                              "Key_Error",
+                                              "Latency",
+                                              "Setup_Time",
+                                              "Start_Time",
+                                              "BB84_Latency"))
+
     for id in range(NUM_EXPERIMENTS):
         distance = max(1000,10000*int(id))
 
@@ -63,30 +71,27 @@ if __name__ == "__main__":
 
         # log results
         bba = alice.protocol_stack[0]
-        bbb = bob.protocol_stack[0]
         cascade_a = alice.protocol_stack[1]
-        cascade_b = bob.protocol_stack[1]
 
-        fh.write(str(distance))
-        fh.write(' ')
-        if cascade_a.throughput: fh.write(str(cascade_a.throughput))
-        else: fh.write(str(None))
-        fh.write(' ')
-        if cascade_a.error_bit_rate: fh.write(str(cascade_a.error_bit_rate))
-        else: fh.write(str(None))
-        fh.write(' ')
-        if cascade_a.latency: fh.write(str(cascade_a.latency/1e12))
-        else: fh.write(str(None))
-        fh.write(' ')
-        if cascade_a.setup_time: fh.write(str(cascade_a.setup_time/1e12))
-        else: fh.write(str(None))
-        fh.write(' ')
-        if cascade_a.start_time: fh.write(str(cascade_a.start_time/1e12))
-        else: fh.write(str(None))
-        fh.write(' ')
-        if bba.latency: fh.write(str(bba.latency))
-        else: fh.write(str(None))
-        fh.write('\n')
+        params = [distance, cascade_a.throughput, cascade_a.error_bit_rate,
+                  cascade_a.latency/1e12, cascade_a.setup_time/1e12, cascade_a.start_time/1e12,
+                  bba.latency]
+        fh.write("{:8d} {:11.3f} {:9%} {:7f} {:10f} {:10f} {:12f}\n".format(*params)
+
+        # fh.write(str(distance))
+        # fh.write(' ')
+        # fh.write(str(cascade_a.throughput))
+        # fh.write(' ')
+        # fh.write(str(cascade_a.error_bit_rate))
+        # fh.write(' ')
+        # fh.write(str(cascade_a.latency/1e12))
+        # fh.write(' ')
+        # fh.write(str(cascade_a.setup_time/1e12))
+        # fh.write(' ')
+        # fh.write(str(cascade_a.start_time/1e12))
+        # fh.write(' ')
+        # fh.write(str(bba.latency))
+        # fh.write('\n')
 
     fh.close()
 
