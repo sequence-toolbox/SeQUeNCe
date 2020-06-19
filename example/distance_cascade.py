@@ -76,7 +76,7 @@ if __name__ == "__main__":
         params = [distance, cascade_a.throughput, cascade_a.error_bit_rate,
                   cascade_a.latency/1e12, cascade_a.setup_time/1e12, cascade_a.start_time/1e12,
                   bba.latency]
-        fh.write("{:8d} {:11.3f} {:9%} {:7f} {:10f} {:10f} {:12f}\n".format(*params)
+        fh.write("{:8d} {:11.3f} {:9%} {:7f} {:10f} {:10f} {:12f}\n".format(*params))
 
         # fh.write(str(distance))
         # fh.write(' ')
