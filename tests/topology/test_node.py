@@ -109,12 +109,12 @@ def test_Node_send_qubit():
     qc.set_ends(node1, node2)
     tl.init()
 
-    for i in range(10):
+    for i in range(1000):
         photon = Photon(str(i))
         node1.send_qubit("node2", photon)
         tl.time += 1
 
-    for i in range(10):
+    for i in range(1000):
         photon = Photon(str(i))
         node2.send_qubit("node1", photon)
         tl.time += 1
@@ -122,17 +122,9 @@ def test_Node_send_qubit():
     assert len(node1.log) == len(node2.log) == 0
     tl.run()
 
-    expect_res = [(100000010, 'node2', '0'), (100000013, 'node2', '3'), (100000017, 'node2', '7'),
-                  (100000018, 'node2', '8'), (100000019, 'node2', '9')]
-
-    for ans, expect in zip(node1.log, expect_res):
-        assert ans == expect
-
-    expect_res = [(100000001, 'node1', '1'), (100000002, 'node1', '2'), (100000005, 'node1', '5'),
-                  (100000007, 'node1', '7'), (100000008, 'node1', '8')]
-
-    for ans, expect in zip(node2.log, expect_res):
-        assert ans == expect
+    expect_rate = 1 - qc.loss
+    assert abs(len(node1.log) / 1000 - expect_rate) < 0.1
+    assert abs(len(node2.log) / 1000 - expect_rate) < 0.1
 
 
 def test_QuantumRouter_init():

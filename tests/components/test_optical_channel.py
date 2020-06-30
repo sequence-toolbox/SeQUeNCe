@@ -100,26 +100,22 @@ def test_QuantumChannel_transmit():
     qc.set_ends(sender, receiver)
     tl.init()
 
-    for i in range(10):
+    for i in range(1000):
         photon = Photon(str(i))
         qc.transmit(photon, sender)
         tl.time = tl.time + 1
 
-    for i in range(10):
+    for i in range(1000):
         photon = Photon(str(i))
         qc.transmit(photon, receiver)
         tl.time = tl.time + 1
 
     assert len(sender.log) == len(receiver.log) == 0
     tl.run()
-    res = [('sender', 50000000, '0'), ('sender', 50000007, '7'), ('sender', 50000008, '8')]
-    for real, expect in zip(receiver.log, res):
-        assert real == expect
 
-    res = [('receiver', 50000010, '0'), ('receiver', 50000011, '1'), ('receiver', 50000012, '2'),
-           ('receiver', 50000014, '4'), ('receiver', 50000016, '6'), ('receiver', 50000017, '7')]
-    for real, expect in zip(sender.log, res):
-        assert real == expect
+    expect_rate = 1 - qc.loss
+    assert abs(len(sender.log) / 1000 - expect_rate) < 0.1
+    assert abs(len(receiver.log) / 1000 - expect_rate) < 0.1
 
 
 def test_QuantumChannel_schedule_transmit():
