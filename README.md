@@ -10,7 +10,7 @@ SeQUeNCe is an open source, discrete-event simulator for quantum networks. As de
 These modules can be edited by users to define additional functionality and test protocol schemes, or may be used as-is to test network parameters and topologies. TODO: link to full documentation page
 
 ## Installing
-SeQUeNCe requires an installation of Python 3.7. this can be found at the [Python Website](www.python.org/downloads/). Then, simply download the package, navigate to its directory, and install with
+SeQUeNCe requires an installation of Python 3.7. this can be found at the [Python Website](https://www.python.org/downloads/). Then, simply download the package, navigate to its directory, and install with
 ```
 $ pip install .
 ```
@@ -43,7 +43,7 @@ These examples include:
 ## Additional Tools
 
 ### Network Visualization
-The example directory contains an example json file `starlight.json` to specify a network topology and a the script `draw_topo.py` to visualize json files. To use this script, the Graphviz library must be installed. Installation information can be found on the [Graphviz website](www.graphviz.org/download/).
+The example directory contains an example json file `starlight.json` to specify a network topology and a the script `draw_topo.py` to visualize json files. To use this script, the Graphviz library must be installed. Installation information can be found on the [Graphviz website](https://www.graphviz.org/download/).
 
 To view a network, simply run the script and specify the relative location of your json file:
 ```
