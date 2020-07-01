@@ -1,8 +1,6 @@
-import math
-import copy
-import numpy
+from math import sqrt
+from numpy import random
 from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..components.photon import Photon
@@ -29,38 +27,38 @@ class Interferometer(Entity):
         self.receivers.insert(index, receiver)
 
     def get(self, photon: "Photon") -> None:
-        detector_num = numpy.random.choice([0, 1])
+        detector_num = random.choice([0, 1])
         quantum_state = photon.quantum_state
         time = 0
-        random = numpy.random.random_sample()
+        random_num = random.random_sample()
 
         if quantum_state.state == [complex(1), complex(0)]:  # Early
-            if random <= 0.5:
+            if random_num <= 0.5:
                 time = 0
             else:
                 time = self.path_difference
         if quantum_state.state == [complex(0), complex(1)]:  # Late
-            if random <= 0.5:
+            if random_num <= 0.5:
                 time = self.path_difference
             else:
                 time = 2 * self.path_difference
 
-        if numpy.random.random_sample() < self.phase_error:
-            quantum_state.state = list(numpy.multiply([1, -1], quantum_state))
+        if random.random_sample() < self.phase_error:
+            quantum_state.state = list(multiply([1, -1], quantum_state))
 
-        if quantum_state.state == [complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]:  # Early + Late
-            if random <= 0.25:
+        if quantum_state.state == [complex(sqrt(1/2)), complex(sqrt(1/2))]:  # Early + Late
+            if random_num <= 0.25:
                 time = 0
-            elif random <= 0.5:
+            elif random_num <= 0.5:
                 time = 2 * self.path_difference
             elif detector_num == 0:
                 time = self.path_difference
             else:
                 return
-        if quantum_state.state == [complex(math.sqrt(1/2)), complex(-math.sqrt(1/2))]:  # Early - Late
-            if random <= 0.25:
+        if quantum_state.state == [complex(sqrt(1/2)), complex(-sqrt(1/2))]:  # Early - Late
+            if random_num <= 0.25:
                 time = 0
-            elif random <= 0.5:
+            elif random_num <= 0.5:
                 time = 2 * self.path_difference
             elif detector_num == 1:
                 time = self.path_difference

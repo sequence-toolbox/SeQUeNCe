@@ -1,6 +1,5 @@
 from enum import Enum
 from typing import List, TYPE_CHECKING
-
 if TYPE_CHECKING:
     from ...topology.node import QuantumRouter
     from ..protocol import StackProtocol

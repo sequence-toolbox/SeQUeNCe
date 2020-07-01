@@ -1,9 +1,10 @@
 from typing import TYPE_CHECKING
 
-import numpy
+from numpy.random import random_sample
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
+
 from .photon import Photon
 from ..utils.encoding import polarization
 from ..kernel.entity import Entity
@@ -26,7 +27,7 @@ class BeamSplitter(Entity):
     def get(self, photon: "Photon") -> None:
         assert photon.encoding_type["name"] == "polarization"
 
-        if numpy.random.random_sample() < self.fidelity:
+        if random_sample() < self.fidelity:
             index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
 
             if 0 > index or index >= len(self.basis_list):

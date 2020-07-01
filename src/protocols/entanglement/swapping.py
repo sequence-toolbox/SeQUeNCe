@@ -1,5 +1,6 @@
 from enum import Enum, auto
 from typing import TYPE_CHECKING
+
 from numpy.random import random
 
 if TYPE_CHECKING:

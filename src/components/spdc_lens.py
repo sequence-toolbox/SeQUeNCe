@@ -1,6 +1,6 @@
-import copy
+from copy import deepcopy
 
-import numpy
+from numpy.random import random_sample
 
 from ..kernel.entity import Entity
 
@@ -15,10 +15,10 @@ class SPDCLens(Entity):
         pass
 
     def get(self, photon):
-        if numpy.random.random_sample() < self.rate:
+        if random_sample() < self.rate:
             state = photon.quantum_state
             photon.wavelength /= 2
-            new_photon = copy.deepcopy(photon)
+            new_photon = deepcopy(photon)
 
             photon.entangle(new_photon)
             photon.set_state([state[0], complex(0), complex(0), state[1]])

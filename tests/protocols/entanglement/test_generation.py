@@ -136,7 +136,7 @@ def test_generation_expire():
 
 
 def test_generation_run():
-    numpy.random.seed(0)
+    random.seed(0)
     NUM_TESTS = 200
 
     tl = Timeline()

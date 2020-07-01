@@ -1,9 +1,7 @@
+from math import inf
 from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from .event import Event
-
-from math import inf
 
 from .eventlist import EventList
 

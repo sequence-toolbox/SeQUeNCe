@@ -1,5 +1,4 @@
 from typing import Callable, TYPE_CHECKING, List, Tuple
-
 if TYPE_CHECKING:
     from ..entanglement.entanglement_protocol import EntanglementProtocol
     from .memory_manager import MemoryInfo, MemoryManager

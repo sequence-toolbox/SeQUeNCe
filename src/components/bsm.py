@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Any
 
-import numpy
+from numpy import random
 
 from .detector import Detector
 from .photon import Photon
@@ -47,10 +47,10 @@ class BSM(Entity):
         self.resolution = max(d.time_resolution for d in self.detectors)
 
         # define bell basis vectors
-        self.bell_basis = [[complex(math.sqrt(1 / 2)), complex(0), complex(0), complex(math.sqrt(1 / 2))],
-                           [complex(math.sqrt(1 / 2)), complex(0), complex(0), -complex(math.sqrt(1 / 2))],
-                           [complex(0), complex(math.sqrt(1 / 2)), complex(math.sqrt(1 / 2)), complex(0)],
-                           [complex(0), complex(math.sqrt(1 / 2)), -complex(math.sqrt(1 / 2)), complex(0)]]
+        self.bell_basis = [[complex(sqrt(1 / 2)), complex(0), complex(0), complex(sqrt(1 / 2))],
+                           [complex(sqrt(1 / 2)), complex(0), complex(0), -complex(sqrt(1 / 2))],
+                           [complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)],
+                           [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]]
 
     def init(self):
         pass
@@ -105,14 +105,14 @@ class PolarizationBSM(BSM):
         # measured as Psi+
         # photon detected in corresponding detectors
         if res == 2:
-            detector_num = numpy.random.choice([0, 2])
+            detector_num = random.choice([0, 2])
             self.detectors[detector_num].get()
             self.detectors[detector_num + 1].get()
 
         # measured as Psi-
         # photon detected in opposite detectors
         elif res == 3:
-            detector_num = numpy.random.choice([0, 2])
+            detector_num = random.choice([0, 2])
             self.detectors[detector_num].get()
             self.detectors[3 - detector_num].get()
 
@@ -151,7 +151,7 @@ class TimeBinBSM(BSM):
         if len(self.photons) != 2:
             return
 
-        if numpy.random.random_sample() < self.phase_error:
+        if random.random_sample() < self.phase_error:
             self.photons[1].apply_phase_error()
         # entangle photons to measure
         self.photons[0].entangle(self.photons[1])
@@ -169,7 +169,7 @@ class TimeBinBSM(BSM):
         # measured as Psi+
         # send both photons to the same detector at the early and late time
         if res == 2:
-            detector_num = numpy.random.choice([0, 1])
+            detector_num = random.choice([0, 1])
 
             process = Process(self.detectors[detector_num], "get", [])
             event = Event(int(round(early_time)), process)
@@ -181,7 +181,7 @@ class TimeBinBSM(BSM):
         # measured as Psi-
         # send photons to different detectors at the early and late time
         elif res == 3:
-            detector_num = numpy.random.choice([0, 1])
+            detector_num = random.choice([0, 1])
 
             process = Process(self.detectors[detector_num], "get", [])
             event = Event(int(round(early_time)), process)
@@ -227,7 +227,7 @@ class SingleAtomBSM(BSM):
 
         # check if we're in first stage. If we are and not null, send photon to random detector
         if memory.previous_bsm == -1 and not photon.is_null:
-            detector_num = numpy.random.choice([0, 1])
+            detector_num = random.choice([0, 1])
             memory.previous_bsm = detector_num
             self.detectors[detector_num].get()
 
@@ -254,7 +254,7 @@ class SingleAtomBSM(BSM):
                         detector_num = 1 - memory_0.previous_bsm
                     else:
                         # Happens if the memory is expired during photon transmission; randomly select a detector
-                        detector_num = numpy.random.randint(2)
+                        detector_num = random.randint(2)
                     self.detectors[detector_num].get()
 
     def pop(self, **kwargs):

@@ -1,4 +1,4 @@
-import numpy
+from numpy import random, multiply
 
 from .photon import Photon
 from ..kernel.entity import Entity
@@ -34,13 +34,13 @@ class LightSource(Entity):
         period = int(round(1e12 / self.frequency))
 
         for i, state in enumerate(state_list):
-            num_photons = numpy.random.poisson(self.mean_photon_num)
+            num_photons = random.poisson(self.mean_photon_num)
 
-            if numpy.random.random_sample() < self.phase_error:
-                state = numpy.multiply([1, -1], state)
+            if random.random_sample() < self.phase_error:
+                state = multiply([1, -1], state)
 
             for _ in range(num_photons):
-                wavelength = self.linewidth * numpy.random.randn() + self.wavelength
+                wavelength = self.linewidth * random.randn() + self.wavelength
                 new_photon = Photon(str(i),
                                     wavelength=wavelength,
                                     location=self.owner,
@@ -63,10 +63,10 @@ class SPDCSource(LightSource):
         time = self.timeline.now()
 
         for state in state_list:
-            num_photon_pairs = numpy.random.poisson(self.mean_photon_num)
+            num_photon_pairs = random.poisson(self.mean_photon_num)
 
-            if numpy.random.random_sample() < self.phase_error:
-                state = numpy.multiply([1, -1], state)
+            if random.random_sample() < self.phase_error:
+                state = multiply([1, -1], state)
 
             for _ in range(num_photon_pairs):
                 new_photon0 = Photon(None,

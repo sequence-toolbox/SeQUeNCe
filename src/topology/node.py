@@ -1,5 +1,7 @@
+from math import inf
 from time import monotonic_ns
 from typing import TYPE_CHECKING, Any
+
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..protocols.message import Message
@@ -40,8 +42,8 @@ class Node(Entity):
     def assign_qchannel(self, qchannel: "QuantumChannel", another: str) -> None:
         self.qchannels[another] = qchannel
 
-    def send_message(self, dst: str, msg: "Message", priority=math.inf) -> None:
-        if priority == math.inf:
+    def send_message(self, dst: str, msg: "Message", priority=inf) -> None:
+        if priority == inf:
             priority = monotonic_ns()
         self.cchannels[dst].transmit(msg, self, priority)
 

@@ -1,7 +1,7 @@
 import heapq as hq
 from typing import TYPE_CHECKING
 
-import numpy
+from numpy import random
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -61,7 +61,7 @@ class QuantumChannel(OpticalChannel):
             assert time == self.timeline.now(), "qc {} transmit method called at invalid time".format(self.name)
 
         # check if photon kept
-        if (numpy.random.random_sample() > self.loss) or qubit.is_null:
+        if (random.random_sample() > self.loss) or qubit.is_null:
             if source not in self.ends:
                 raise Exception("no endpoint", source)
 
@@ -71,7 +71,8 @@ class QuantumChannel(OpticalChannel):
                     receiver = e
 
             # check if polarization encoding and apply necessary noise
-            if (qubit.encoding_type["name"] == "polarization") and (numpy.random.random_sample() > self.polarization_fidelity):
+            if (qubit.encoding_type["name"] == "polarization") and (
+                    random.random_sample() > self.polarization_fidelity):
                 qubit.random_noise()
 
             # schedule receiving node to receive photon at future time determined by light speed

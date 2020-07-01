@@ -4,7 +4,7 @@ from sequence.components.memory import *
 from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import *
 
-numpy.random.seed(0)
+random.seed(0)
 
 
 class Parent():

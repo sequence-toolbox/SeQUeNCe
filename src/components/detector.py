@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
-import numpy
+from numpy import random
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -35,13 +35,13 @@ class Detector(Entity):
         now = self.timeline.now()
         time = int(round(now / self.time_resolution) * self.time_resolution)
 
-        if (numpy.random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
+        if (random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
             self._pop(detector=self, time=time)
             self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self) -> None:
         if self.dark_count > 0:
-            time_to_next = int(numpy.random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
+            time_to_next = int(random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
             time = time_to_next + self.timeline.now()  # time of next dark count
 
             process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future

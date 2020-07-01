@@ -1,12 +1,12 @@
-import math
+from math import sqrt, inf
 from typing import Any, TYPE_CHECKING
+
+from numpy import random
 
 if TYPE_CHECKING:
     from ..protocols.entanglement.entanglement_protocol import EntanglementProtocol
     from ..kernel.timeline import Timeline
     from ..topology.node import QuantumRouter
-
-import numpy
 
 from .photon import Photon
 from ..kernel.entity import Entity
@@ -103,7 +103,7 @@ class Memory(Entity):
             self.next_excite_time = self.timeline.now() + period
 
         # send to direct receiver or node
-        if (state == 0) or (numpy.random.random_sample() < self.efficiency):
+        if (state == 0) or (random.random_sample() < self.efficiency):
             self.owner.send_qubit(dst, photon)
             self.excited_photon = photon
 
@@ -136,7 +136,7 @@ class Memory(Entity):
             self.expiration_event = None
 
     def set_plus(self) -> None:
-        self.qstate.set_state_single([complex(1 / math.sqrt(2)), complex(1 / math.sqrt(2))])
+        self.qstate.set_state_single([complex(1 / sqrt(2)), complex(1 / sqrt(2))])
         self.previous_bsm = -1
         self.entangled_memory = {'node_id': None, 'memo_id': None}
 
@@ -172,4 +172,4 @@ class Memory(Entity):
             self.timeline.update_event_time(self.expiration_event, time)
 
     def get_expire_time(self) -> int:
-        return self.expiration_event.time if self.expiration_event else math.inf
+        return self.expiration_event.time if self.expiration_event else inf
