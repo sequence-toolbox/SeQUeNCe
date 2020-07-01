@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 from ..message import Message
 from .routing import StaticRoutingProtocol
-from .rsvp import ResourceReservationProtocol, ResourceReservationMessage, RSVPMsgType
+from .reservation import ResourceReservationProtocol, ResourceReservationMessage, RSVPMsgType
 
 
 class NetworkManagerMessage(Message):

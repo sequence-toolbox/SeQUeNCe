@@ -1,12 +1,12 @@
 from numpy import random
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.network.rsvp import *
+from sequence.protocols.network_management.reservation import *
 
 random.seed(0)
 
-from sequence.protocols.network.rsvp import MemoryTimeCard, Reservation
-from sequence.protocols.entanglement.swapping import EntanglementSwappingA
+from sequence.protocols.network_management.reservation import MemoryTimeCard, Reservation
+from sequence.protocols.entanglement_management.swapping import EntanglementSwappingA
 from sequence.topology.node import QuantumRouter, MiddleNode
 
 

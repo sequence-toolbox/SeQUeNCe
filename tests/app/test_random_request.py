@@ -1,6 +1,6 @@
 from sequence.app.random_request import RandomRequestApp
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.network.rsvp import Reservation
+from sequence.protocols.network_management.reservation import Reservation
 from sequence.topology.node import QuantumRouter
 
 

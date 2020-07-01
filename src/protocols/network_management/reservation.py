@@ -4,10 +4,10 @@ if TYPE_CHECKING:
     from ...topology.node import QuantumRouter
     from ..management.memory_manager import MemoryInfo, MemoryManager
 
-from ..management.rule_manager import Rule
-from ..entanglement.generation import EntanglementGenerationA
-from ..entanglement.purification import BBPSSW
-from ..entanglement.swapping import EntanglementSwappingA, EntanglementSwappingB
+from ..resource_management.rule_manager import Rule
+from ..entanglement_management.generation import EntanglementGenerationA
+from ..entanglement_management.purification import BBPSSW
+from ..entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 from ..message import Message
 from ..protocol import StackProtocol
 from ...kernel.event import Event
