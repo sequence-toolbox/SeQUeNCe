@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 from ..message import Message
 from .routing import StaticRoutingProtocol
-from .rsvp import ResourceReservationProtocol, ResourceReservationMessage
+from .rsvp import ResourceReservationProtocol, ResourceReservationMessage, RSVPMsgType
 
 
 class NetworkManagerMessage(Message):
@@ -38,7 +38,7 @@ class NetworkManager():
         assert isinstance(msg, ResourceReservationMessage)
         reservation = msg.reservation
         if reservation.initiator == self.owner.name:
-            if msg.msg_type == "APPROVE":
+            if msg.msg_type == RSVPMsgType.APPROVE:
                 self.owner.get_reserve_res(reservation, True)
             else:
                 self.owner.get_reserve_res(reservation, False)
