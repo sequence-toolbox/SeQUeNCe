@@ -6,6 +6,7 @@ SeQUeNCe is an open source, discrete-event simulator for quantum networks. As de
 * Resource Management
 * Network Management
 * Application
+
 These modules can be edited by users to define additional functionality and test protocol schemes, or may be used as-is to test network parameters and topologies. TODO: link to full documentation page
 
 ## Installing
