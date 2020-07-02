@@ -19,6 +19,7 @@ class Timeline:
         self.stop_time = stop_time
         self.event_counter = 0
         self.show_progress = False
+        self.is_running = False
 
     def now(self) -> int:
         return self.time
@@ -32,6 +33,8 @@ class Timeline:
             entity.init()
 
     def run(self) -> None:
+        self.is_running = True
+
         if self.show_progress:
             self.progress_bar()
 
@@ -51,6 +54,8 @@ class Timeline:
         # print('number of event', self.event_counter)
         # print('log:',log)
 
+        self.is_running = False
+
     def stop(self) -> None:
         self.stop_time = self.now()
 
@@ -65,7 +70,7 @@ class Timeline:
     def progress_bar(self):
         def print_time():
             start_time = time_ns()
-            while self.time < self.stop_time:
+            while self.is_running:
                 exe_time = self.ns_to_human_time(time_ns() - start_time)
                 sim_time = self.ns_to_human_time(self.time / 1e3)
                 stop_time = self.ns_to_human_time(self.stop_time / 1e3)
