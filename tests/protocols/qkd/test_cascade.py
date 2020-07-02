@@ -1,14 +1,12 @@
 from numpy import random
-
-from sequence.protocols.qkd.cascade import *
-
-# for testing protocol
+from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
+from sequence.kernel.event import Event
+from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
-from sequence.components.optical_channel import *
-from sequence.topology.node import QKDNode
-from sequence.protocols.protocol import Protocol
+from sequence.protocols.protocol import StackProtocol
 from sequence.protocols.qkd.BB84 import pair_bb84_protocols
-
+from sequence.protocols.qkd.cascade import pair_cascade_protocols
+from sequence.topology.node import QKDNode
 
 random.seed(0)
 
@@ -21,14 +19,14 @@ class Parent(StackProtocol):
         self.lower_protocols = []
         self.keysize = keysize
         self.keynum = keynum
-        self.key = 0
+        self.keys = []
         self.counter = 0
 
     def init(self):
         pass
 
     def pop(self, key):
-        self.key = key
+        self.keys.append(key)
         self.counter += 1
 
     def push(self):
@@ -39,7 +37,7 @@ class Parent(StackProtocol):
 
 
 def test_cascade_run():
-    KEYSIZE = 64
+    KEYSIZE = 512
     KEYNUM = 10
 
     tl = Timeline(1e11)
@@ -61,7 +59,7 @@ def test_cascade_run():
     pa.lower_protocols.append(alice.protocol_stack[1])
     bob.protocol_stack[1].upper_protocols.append(pb)
     pb.lower_protocols.append(bob.protocol_stack[1])
-    
+
     process = Process(pa, "push", [])
     event = Event(0, process)
     tl.schedule(event)
@@ -70,8 +68,7 @@ def test_cascade_run():
     tl.run()
 
     assert pa.counter == pb.counter == KEYNUM
-    assert pa.key == pb.key
-    assert pa.key < 2 ** KEYSIZE  # check that key is not too large
+    for k1, k2 in zip(pa.keys, pb.keys):
+        assert k1 == k2
+        assert k1 < 2 ** KEYSIZE  # check that key is not too large
     assert alice.protocol_stack[1].error_bit_rate == 0
-
-

@@ -1,15 +1,12 @@
-from enum import Enum, auto
 import math
+from enum import Enum, auto
 
 from numpy import random
 
-from ..message import Message
 from ..protocol import *
-from ...kernel.event import Event
-from ...kernel.process import Process
 
 
-def pair_cascade_protocols(sender: "Cascade", receiver: "BB84") -> None:
+def pair_cascade_protocols(sender: "Cascade", receiver: "Cascade") -> None:
     sender.another = receiver
     receiver.another = sender
     sender.role = 0
