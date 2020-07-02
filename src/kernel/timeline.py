@@ -35,7 +35,7 @@ class Timeline:
         if self.show_progress:
             def print_time():
                 start_time = time_ns()
-                while 1:
+                while self.time < self.stop_time:
                     exe_time = self.ns_to_human_time(time_ns() - start_time)
                     sim_time = self.ns_to_human_time(self.time / 1e3)
                     stop_time = self.ns_to_human_time(self.stop_time / 1e3)
