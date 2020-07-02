@@ -1,3 +1,4 @@
 sequence
+numpy
 json5==0.8.4
-numba==0.44.1
+pandas==0.24.2
