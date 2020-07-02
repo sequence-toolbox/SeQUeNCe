@@ -33,18 +33,7 @@ class Timeline:
 
     def run(self) -> None:
         if self.show_progress:
-            def print_time():
-                start_time = time_ns()
-                while self.time < self.stop_time:
-                    exe_time = self.ns_to_human_time(time_ns() - start_time)
-                    sim_time = self.ns_to_human_time(self.time / 1e3)
-                    stop_time = self.ns_to_human_time(self.stop_time / 1e3)
-                    process_bar = f'execution time: {exe_time};     simulation time: {sim_time} / {stop_time}\r'
-                    print(f'{process_bar}', end="")
-                    stdout.flush()
-                    sleep(3)
-
-            start_new_thread(print_time, ())
+            self.progress_bar()
 
         # log = {}
         while len(self.events) > 0:
@@ -58,6 +47,7 @@ class Timeline:
             #     log[event.process.activation] = 0
             # log[event.process.activation]+=1
             event.process.run()
+
         # print('number of event', self.event_counter)
         # print('log:',log)
 
@@ -71,6 +61,20 @@ class Timeline:
         self.events.remove(event)
         event.time = time
         self.schedule(event)
+
+    def progress_bar(self):
+        def print_time():
+            start_time = time_ns()
+            while self.time < self.stop_time:
+                exe_time = self.ns_to_human_time(time_ns() - start_time)
+                sim_time = self.ns_to_human_time(self.time / 1e3)
+                stop_time = self.ns_to_human_time(self.stop_time / 1e3)
+                process_bar = f'\rexecution time: {exe_time};     simulation time: {sim_time} / {stop_time}'
+                print(f'{process_bar}', end="\r")
+                stdout.flush()
+                sleep(3)
+
+        start_new_thread(print_time, ())
 
     def ns_to_human_time(self, nanosec: int) -> str:
         if nanosec >= 1e6:
