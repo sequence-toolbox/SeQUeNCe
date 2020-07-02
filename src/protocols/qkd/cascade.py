@@ -3,7 +3,8 @@ from enum import Enum, auto
 
 from numpy import random
 
-from ..protocol import *
+from ..message import Message
+from ..protocol import StackProtocol
 
 
 def pair_cascade_protocols(sender: "Cascade", receiver: "Cascade") -> None:

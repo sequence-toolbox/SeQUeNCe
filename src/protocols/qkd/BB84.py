@@ -3,7 +3,8 @@ from enum import Enum, auto
 
 import numpy
 
-from ..protocol import *
+from ..message import Message
+from ..protocol import StackProtocol
 from ...kernel.event import Event
 from ...kernel.process import Process
 
