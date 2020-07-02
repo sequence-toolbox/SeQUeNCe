@@ -2,8 +2,8 @@ import math
 
 from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.network.network_manager import *
-from sequence.protocols.network.rsvp import RSVPMsgType
+from sequence.protocols.network_management.network_manager import *
+from sequence.protocols.network_management.reservation import RSVPMsgType
 from sequence.protocols.protocol import StackProtocol
 from sequence.topology.node import QuantumRouter, MiddleNode
 

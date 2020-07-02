@@ -2,7 +2,7 @@ from sequence.components.bsm import *
 from sequence.components.memory import MemoryArray
 from sequence.components.optical_channel import *
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.entanglement.generation import *
+from sequence.protocols.entanglement_management.generation import *
 from sequence.topology.node import Node
 
 

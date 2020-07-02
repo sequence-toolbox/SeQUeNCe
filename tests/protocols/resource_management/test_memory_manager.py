@@ -1,4 +1,4 @@
-from sequence.protocols.management.memory_manager import *
+from sequence.protocols.resource_management.memory_manager import *
 from sequence.kernel.timeline import Timeline
 from sequence.components.memory import *
 

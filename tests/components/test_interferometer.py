@@ -5,6 +5,7 @@ from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import time_bin
 
 random.seed(0)
+NUM_TRIALS = int(10e3)
 
 
 def create_intf(quantum_state):
@@ -24,7 +25,7 @@ def create_intf(quantum_state):
     intfm.set_receiver(0, d0)
     intfm.set_receiver(1, d1)
     tl.init()
-    for i in range(4000):
+    for i in range(NUM_TRIALS):
         tl.time = i * 1e6
         photon = Photon(str(i), quantum_state=quantum_state)
         intfm.get(photon)
@@ -37,7 +38,7 @@ def create_intf(quantum_state):
 def test_Interferometer_get():
     # qstate = |e>
     log0, log1 = create_intf(time_bin["bases"][0][0])
-    assert abs(len(log0) - len(log1)) / 4000 < 0.1
+    assert abs(len(log0) - len(log1)) / NUM_TRIALS < 0.1
     counter1 = 0
     counter2 = 0
 
@@ -53,7 +54,7 @@ def test_Interferometer_get():
 
     # qstate = |l>
     log0, log1 = create_intf(time_bin["bases"][0][1])
-    assert abs(len(log0) - len(log1)) / 4000 < 0.1
+    assert abs(len(log0) - len(log1)) / NUM_TRIALS < 0.1
     counter1 = 0
     counter2 = 0
 
@@ -70,7 +71,7 @@ def test_Interferometer_get():
     # qstate = |e+l>
     log0, log1 = create_intf(time_bin["bases"][1][0])
     assert abs(len(log0) / len(log1)) - 2 < 0.1
-    assert len(log0 + log1) / 4000 - 3 / 4 < 0.1
+    assert len(log0 + log1) / NUM_TRIALS - 3 / 4 < 0.1
 
     counter1 = 0
     counter2 = 0
@@ -105,7 +106,7 @@ def test_Interferometer_get():
     # qstate = |e-l>
     log0, log1 = create_intf(time_bin["bases"][1][1])
     assert abs(len(log0) / len(log1)) - 2 < 0.1
-    assert len(log0 + log1) / 4000 - 3 / 4 < 0.1
+    assert len(log0 + log1) / NUM_TRIALS - 3 / 4 < 0.1
 
     counter1 = 0
     counter2 = 0

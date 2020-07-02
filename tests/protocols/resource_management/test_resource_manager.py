@@ -6,8 +6,8 @@ numpy.random.seed(0)
 
 from sequence.components.memory import MemoryArray
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.management.manager import *
-from sequence.protocols.management.rule_manager import Rule
+from sequence.protocols.resource_management.resource_manager import *
+from sequence.protocols.resource_management.rule_manager import Rule
 from sequence.topology.node import Node
 
 
@@ -233,7 +233,7 @@ def test_expire():
 def test_ResourceManager1():
     from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
     from sequence.topology.node import MiddleNode
-    from sequence.protocols.entanglement.generation import EntanglementGenerationA
+    from sequence.protocols.entanglement_management.generation import EntanglementGenerationA
 
     class TestNode(Node):
         def __init__(self, name, tl):
@@ -331,7 +331,7 @@ def test_ResourceManager2():
     from sequence.kernel.event import Event
     from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
     from sequence.topology.node import MiddleNode
-    from sequence.protocols.entanglement.generation import EntanglementGenerationA
+    from sequence.protocols.entanglement_management.generation import EntanglementGenerationA
 
     class TestNode(Node):
         def __init__(self, name, tl):

@@ -1,8 +1,8 @@
 from numpy import random
 from sequence.components.memory import Memory
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.management.memory_manager import MemoryInfo
-from sequence.protocols.management.rule_manager import RuleManager, Rule
+from sequence.protocols.resource_management.memory_manager import MemoryInfo
+from sequence.protocols.resource_management.rule_manager import RuleManager, Rule
 
 random.seed(1)
 

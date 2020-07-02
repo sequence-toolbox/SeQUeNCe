@@ -1,89 +1,52 @@
-# SEQUENCE-Python
+# SeQUeNCe-Python
 
-SEQUENCE-Python is a prototype version of official SEQUENCE release. We will use SEQUENCE-Python to demonstrate our design. To avoid confusion, we create a seperate repository to mange code for SEQUENCE-Python. 
+SeQUeNCe is an open source, discrete-event simulator for quantum networks. As described in our paper TODO: link?, the simulator includes 5 modules on top of a simulation kernel:
+* Hardware
+* Entanglement Management
+* Resource Management
+* Network Management
+* Application
 
-Example code for the final version of the model can be found in "sequence.py", which relies on the unfinished parser.
-Running code for the BB84 protocol can be found in "BB84.py".
+These modules can be edited by users to define additional functionality and test protocol schemes, or may be used as-is to test network parameters and topologies. TODO: link to full documentation page
 
-## Requirements
-
-### Install json5 (json5)
-
+## Installing
+SeQUeNCe requires an installation of Python 3.7. this can be found at the [Python Website](https://www.python.org/downloads/). Then, simply download the package, navigate to its directory, and install with
 ```
-$ pip3 install json5
+$ pip install .
 ```
-
-### Install numba
-
+Or, using the included makefile,
 ```
-$ pip3 install numba
+$ make install
 ```
+This will install the sequence library as well as the numpy, json5, and pandas dependancies.
 
-### Install pandas
+## Usage Examples
+Many examples of SeQUeNCe in action can be found in the example folder. These include both quantum key distribution and entanglement distribution examples.
 
+### Starlight Experiments
+Code for the experiments performed in our paper can be found in the file `starlight_experiments.py`. This script uses the `starlight.json` file (also within the example folder) to specify the network topology.
+
+### Jupyter Notebook Examples
+The example folder contains several scripts that can be run with jupyter notebook for easy editing and visualization. These files require that the notebook package be installed:
 ```
-$ pip3 install pandas
+$ pip install notebook
 ```
-
-### Jupyter Notebook
-
-* Installation 
-
-```shell script
-$ pip3 install notebook
+To run each file, simply run
 ```
-
-* Run
-
-```shell script
-$ jupyter notebook
+$ jupyter notebook <filename>
 ```
+These examples include:
+* `BB84_eg.ipynb`, which uses the BB84 protocol to distribute secure keys between two quantum nodes
+* `two_node_eg.ipynb`, which performs entanglement generation between two adjacent quantum routers
+* `three_node_eg_ep_es.ipynb`, which performs entanglement generation, purification, and swapping for a linear network of three quantum routers
 
-Add Virtual Environment to Jupyter Notebook (Optional)
+## Additional Tools
 
-* Activate the virtualenv
+### Network Visualization
+The example directory contains an example json file `starlight.json` to specify a network topology and a the script `draw_topo.py` to visualize json files. To use this script, the Graphviz library must be installed. Installation information can be found on the [Graphviz website](https://www.graphviz.org/download/).
 
-```shell script
-$ source your-venv/bin/activate
+To view a network, simply run the script and specify the relative location of your json file:
 ```
-
-* Install jupyter in the virtualenv
-
-```shell script
-(your-venv)$ pip install jupyter
+$ python example/draw_topo.py example/starlight.json
 ```
-
-* Add the virtualenv as a jupyter kernel
-
-```shell script
-(your-venv)$ ipython kernel install --name "local-venv" --user
-
-```
-
-You can now select the created kernel your-env when you start Jupyter
-
-## Useful info
-
-### Profiling with py-spy
-First, ensure that py-spy is installed:
-```shell script
-$ pip3 install py-spy
-```
-To display the output of a program as a flame graph, use the `record` command on either a currently running process or a python program:
-```shell script
-$ py-spy record -o profile.svg --pid 1234
-$ py-spy record -o profile.svg -- python3 program.py
-```
-The `top` command can also be used to show real-time usage. More details can be found on the project page [here](http://pypi.org/project/py-spy/).
-
-### Generating class diagram with pylint
-
-First, ensure that pylint is installed:
-```shell script
-$ pip3 install pylint
-```
-To output a png image, the Graphviz package must be installed. This can be downloaded from the graphviz website [here](graphviz.org). Finally, run the command
-```shell script
-$ pyreverse src -o png
-```
-to generate the class diagram as a .png image.
+This script also supports a flag `-m` to visualize BSM nodes created by default on quantum links between routers.
