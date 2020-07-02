@@ -1,5 +1,9 @@
+from _thread import start_new_thread
 from math import inf
+from sys import stdout
+from time import time_ns, sleep
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from .event import Event
 
@@ -14,6 +18,7 @@ class Timeline:
         self.time = 0
         self.stop_time = stop_time
         self.event_counter = 0
+        self.show_progress = False
 
     def now(self) -> int:
         return self.time
@@ -27,6 +32,20 @@ class Timeline:
             entity.init()
 
     def run(self) -> None:
+        if self.show_progress:
+            def print_time():
+                start_time = time_ns()
+                while 1:
+                    exe_time = self.ns_to_human_time(time_ns() - start_time)
+                    sim_time = self.ns_to_human_time(self.time / 1e3)
+                    stop_time = self.ns_to_human_time(self.stop_time / 1e3)
+                    process_bar = f'execution time: {exe_time};     simulation time: {sim_time} / {stop_time}\r'
+                    print(f'{process_bar}', end="")
+                    stdout.flush()
+                    sleep(3)
+
+            start_new_thread(print_time, ())
+
         # log = {}
         while len(self.events) > 0:
             event = self.events.pop()
@@ -52,3 +71,21 @@ class Timeline:
         self.events.remove(event)
         event.time = time
         self.schedule(event)
+
+    def ns_to_human_time(self, nanosec: int) -> str:
+        if nanosec >= 1e6:
+            ms = nanosec / 1e6
+            nanosec = nanosec % 1e6
+            if ms >= 1e3:
+                second = ms / 1e3
+                if second >= 60:
+                    minute = second // 60
+                    second = second % 60
+                    if minute >= 60:
+                        hour = minute // 60
+                        minute = minute % 60
+                        return '%d hour: %d min: %.2f sec' % (hour, minute, second)
+                    return '%d min: %.2f sec' % (minute, second)
+                return '%.2f sec' % (second)
+            return "%d ms, %.2f ns" % (ms, nanosec)
+        return '%d ns' % nanosec

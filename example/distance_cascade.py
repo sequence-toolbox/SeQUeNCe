@@ -1,16 +1,9 @@
-from numpy import random
 from pathlib import Path
-import math
 
-import sequence
-from sequence.topology.node import QKDNode
-from sequence.kernel.process import Process
-from sequence.kernel.event import Event
-from sequence.kernel.timeline import Timeline
+from sequence.components.optical_channel import *
 from sequence.protocols.qkd.BB84 import *
 from sequence.protocols.qkd.cascade import *
-from sequence.components.optical_channel import *
-
+from sequence.topology.node import QKDNode
 
 if __name__ == "__main__":
     random.seed(2)
@@ -35,6 +28,7 @@ if __name__ == "__main__":
         distance = max(1000,10000*int(id))
 
         tl = Timeline(runtime)
+        tl.show_progress = True
         qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
         cc = ClassicalChannel("cc", tl, distance=distance)
         cc.delay += 10e9
