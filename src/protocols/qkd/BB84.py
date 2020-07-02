@@ -1,8 +1,8 @@
-from enum import Enum, auto
 import math
+from enum import Enum, auto
+
 import numpy
 
-from ..message import Message
 from ..protocol import *
 from ...kernel.event import Event
 from ...kernel.process import Process
@@ -51,7 +51,7 @@ class BB84(StackProtocol):
         self.working = False
         self.ready = True  # (for Alice) not currently processing a generate_key request
         self.light_time = 0  # time to use laser (measured in s)
-        self.qubit_frequency = 0  # frequency of qubit sending
+        self.ls_freq = 0  # frequency of light source
         self.start_time = 0  # start time of light pulse
         self.photon_delay = 0  # time delay of photon (including dispersion) (ps)
         self.basis_lists = None
@@ -107,15 +107,15 @@ class BB84(StackProtocol):
             self.working = True
             self.another.working = True
 
-            self.qubit_frequency = self.own.lightsource.frequency
+            self.ls_freq = self.own.lightsource.frequency
 
             # calculate light time based on key length
-            self.light_time = self.key_lengths[0] / (self.qubit_frequency * self.own.lightsource.mean_photon_num)
+            self.light_time = self.key_lengths[0] / (self.ls_freq * self.own.lightsource.mean_photon_num)
 
             # send message that photon pulse is beginning, then send bits
             self.start_time = int(self.own.timeline.now()) + round(self.own.cchannels[self.another.own.name].delay)
-            message = BB84Message(BB84MsgType.BEGIN_PHOTON_PULSE, self.another.name, 
-                                  frequency=self.qubit_frequency, light_time=self.light_time,
+            message = BB84Message(BB84MsgType.BEGIN_PHOTON_PULSE, self.another.name,
+                                  frequency=self.ls_freq, light_time=self.light_time,
                                   start_time=self.start_time, wavelength=self.own.lightsource.wavelength)
             self.own.send_message(self.another.own.name, message)
 
@@ -130,7 +130,7 @@ class BB84(StackProtocol):
     def begin_photon_pulse(self) -> None:
         if self.working and self.own.timeline.now() < self.end_run_times[0]:
             # generate basis/bit list
-            num_pulses = round(self.light_time * self.qubit_frequency)
+            num_pulses = round(self.light_time * self.ls_freq)
             basis_list = numpy.random.choice([0, 1], num_pulses)
             bit_list = numpy.random.choice([0, 1], num_pulses)
 
@@ -168,15 +168,15 @@ class BB84(StackProtocol):
             self.own.timeline.schedule(event)
 
     def set_measure_basis_list(self) -> None:
-        num_pulses = int(self.light_time * self.qubit_frequency)
+        num_pulses = int(self.light_time * self.ls_freq)
         basis_list = numpy.random.choice([0, 1], num_pulses)
         self.basis_lists.append(basis_list)
-        self.own.qsdetector.set_basis_list(basis_list, self.start_time, self.qubit_frequency)
+        self.own.qsdetector.set_basis_list(basis_list, self.start_time, self.ls_freq)
 
     def end_photon_pulse(self) -> None:
         if self.working and self.own.timeline.now() < self.end_run_times[0]:
             # get bits
-            self.bit_lists.append(self.own.get_bits(self.light_time, self.start_time, self.qubit_frequency))
+            self.bit_lists.append(self.own.get_bits(self.light_time, self.start_time, self.ls_freq))
             self.start_time = self.own.timeline.now()
             # set bases for measurement
             self.set_measure_basis_list()
@@ -195,7 +195,7 @@ class BB84(StackProtocol):
     def received_message(self, src: str, msg: "Message") -> None:
         if self.working and self.own.timeline.now() < self.end_run_times[0]:
             if msg.msg_type is BB84MsgType.BEGIN_PHOTON_PULSE:  # (current node is Bob): start to receive photons
-                self.qubit_frequency = msg.frequency
+                self.ls_freq = msg.frequency
                 self.light_time = msg.light_time
 
                 self.start_time = int(msg.start_time) + self.own.qchannels[src].delay
