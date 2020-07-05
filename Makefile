@@ -13,5 +13,5 @@ jupyter:
 	jupyter notebook ./example/two_node_eg.ipynb
 
 test:
-	python3 setup.py install
+	pip3 install .
 	pytest ./tests

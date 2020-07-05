@@ -70,6 +70,19 @@ def test_Detector_get():
         assert parent.log[-1][1] % time_resolution == 0
 
 
+def test_Detector_dark_count():
+    time = 1e14
+    dark_count = 100
+    detector, parent, tl = create_detector(dark_count=dark_count)
+
+    tl.init()
+    tl.stop_time = time
+    tl.run()
+
+    ratio = len(parent.log) / (dark_count * time * 1e-12)
+    assert ratio - 1 < 0.1
+
+
 def test_QSDetectorPolarization_init():
     tl = Timeline()
     qsdetector = QSDetectorPolarization("qsd", tl)

@@ -1,5 +1,6 @@
 from enum import Enum, auto
 from typing import List, TYPE_CHECKING
+from functools import lru_cache
 
 from numpy.random import random
 
@@ -104,6 +105,7 @@ class BBPSSW(EntanglementProtocol):
         pass
 
     @staticmethod
+    @lru_cache(maxsize=128)
     def success_probability(F: float) -> float:
         '''
         F is the fidelity of entanglement
@@ -112,6 +114,7 @@ class BBPSSW(EntanglementProtocol):
         return F ** 2 + 2 * F * (1 - F) / 3 + 5 * ((1 - F) / 3) ** 2
 
     @staticmethod
+    @lru_cache(maxsize=128)
     def improved_fidelity(F: float) -> float:
         '''
         F is the fidelity of entanglement
