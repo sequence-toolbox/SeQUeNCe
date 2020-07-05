@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from ...topology.node import QuantumRouter
     from .rule_manager import Rule
 
-from ..entanglement.entanglement_protocol import EntanglementProtocol
+from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..message import Message
 from .rule_manager import RuleManager
 from .memory_manager import MemoryManager
