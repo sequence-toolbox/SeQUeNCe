@@ -1,4 +1,3 @@
-from numpy import random
 from sequence.components.detector import *
 from sequence.components.photon import Photon
 from sequence.kernel.timeline import Timeline
@@ -133,8 +132,10 @@ def test_QSDetectorPolarization():
         photon = Photon(str(i), quantum_state=polarization["bases"][basis][bit])
         qsdetector.get(photon)
 
-    length = len(qsdetector.get_photon_times()[0] + qsdetector.get_photon_times()[1])
+    trigger_times = qsdetector.get_photon_times()
+    length = len(trigger_times[0] + trigger_times[1])
     assert length == 1000
+    assert qsdetector.get_photon_times() == [[], []]
 
 
 def test_QSDetectorTimeBin():
@@ -156,5 +157,6 @@ def test_QSDetectorTimeBin():
     tl.time = 0
     tl.run()
 
-    length = len(qsdetector.get_photon_times()[0] + qsdetector.get_photon_times()[1] + qsdetector.get_photon_times()[2])
+    trigger_times = qsdetector.get_photon_times()
+    length = len(trigger_times[0] + trigger_times[1] + trigger_times[2])
     assert abs(length / 1000 - 7 / 8) < 0.1
