@@ -33,7 +33,7 @@ class Detector(Entity):
     def get(self, dark_get=False) -> None:
         self.photon_counter += 1
         now = self.timeline.now()
-        time = int(round(now / self.time_resolution) * self.time_resolution)
+        time = round(now / self.time_resolution) * self.time_resolution
 
         if (random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
             self._pop(detector=self, time=time)
@@ -102,6 +102,10 @@ class QSDetectorPolarization(QSDetector):
     def get(self, photon: "Photon") -> None:
         self.splitter.get(photon)
 
+    def get_photon_times(self):
+        times, self.trigger_times = self.trigger_times, [[], []]
+        return times
+
     def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
         self.splitter.set_basis_list(basis_list, start_time, frequency)
 
@@ -138,6 +142,10 @@ class QSDetectorTimeBin(QSDetector):
 
     def get(self, photon):
         self.switch.get(photon)
+
+    def get_photon_times(self):
+        times, self.trigger_times = self.trigger_times, [[], [], []]
+        return times
 
     def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
         self.switch.set_basis_list(basis_list, start_time, frequency)
