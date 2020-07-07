@@ -1,13 +1,13 @@
 from enum import Enum, auto
 from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:
-    from ...components.memory import Memory
-    from ...topology.node import Node
+    from ..components.memory import Memory
+    from ..topology.node import Node
 
 from .entanglement_protocol import EntanglementProtocol
 from ..message import Message
-from ...kernel.event import Event
-from ...kernel.process import Process
+from ..kernel.event import Event
+from ..kernel.process import Process
 
 """
 Entanglement generation is asymmetric:

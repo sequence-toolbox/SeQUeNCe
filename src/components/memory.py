@@ -4,7 +4,7 @@ from typing import Any, TYPE_CHECKING
 from numpy import random
 
 if TYPE_CHECKING:
-    from ..protocols.entanglement.entanglement_protocol import EntanglementProtocol
+    from ..entanglement_management.entanglement_protocol import EntanglementProtocol
     from ..kernel.timeline import Timeline
     from ..topology.node import QuantumRouter
 

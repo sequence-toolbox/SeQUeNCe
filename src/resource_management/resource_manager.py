@@ -1,8 +1,8 @@
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Callable, List
 if TYPE_CHECKING:
-    from ...components.memory import Memory
-    from ...topology.node import QuantumRouter
+    from ..components.memory import Memory
+    from ..topology.node import QuantumRouter
     from .rule_manager import Rule
 
 from ..entanglement_management.entanglement_protocol import EntanglementProtocol

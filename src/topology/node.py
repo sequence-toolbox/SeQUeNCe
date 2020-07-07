@@ -4,10 +4,10 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
-    from ..protocols.message import Message
-    from ..protocols.protocol import StackProtocol
-    from ..protocols.resource_management.memory_manager import MemoryInfo
-    from ..protocols.network_management.reservation import Reservation
+    from ..message import Message
+    from ..protocol import StackProtocol
+    from ..resource_management.memory_manager import MemoryInfo
+    from ..network_management.reservation import Reservation
     from ..components.optical_channel import QuantumChannel, ClassicalChannel
     from ..components.memory import Memory
     from ..app.random_request import RandomRequestApp
@@ -17,10 +17,10 @@ from ..components.memory import MemoryArray
 from ..components.bsm import SingleAtomBSM
 from ..components.light_source import LightSource
 from ..components.detector import QSDetectorPolarization, QSDetectorTimeBin
-from ..protocols.qkd.BB84 import BB84
-from ..protocols.qkd.cascade import Cascade
-from ..protocols.resource_management.resource_manager import ResourceManager
-from ..protocols.network_management.network_manager import NewNetworkManager
+from ..qkd.BB84 import BB84
+from ..qkd.cascade import Cascade
+from ..resource_management.resource_manager import ResourceManager
+from ..network_management.network_manager import NewNetworkManager
 from ..utils.encoding import *
 
 
@@ -70,7 +70,7 @@ class Node(Entity):
 
 class MiddleNode(Node):
     def __init__(self, name: str, timeline: "Timeline", other_nodes: [str]) -> None:
-        from ..protocols.entanglement_management.generation import EntanglementGenerationB
+        from ..entanglement_management.generation import EntanglementGenerationB
         Node.__init__(self, name, timeline)
         self.bsm = SingleAtomBSM("%s_bsm" % name, timeline)
         self.eg = EntanglementGenerationB(self, "{}_eg".format(name), other_nodes)

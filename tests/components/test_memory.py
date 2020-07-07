@@ -2,7 +2,7 @@ from sequence.components.memory import Memory, MemoryArray
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.entanglement_management.entanglement_protocol import EntanglementProtocol
+from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 from sequence.topology.node import QuantumRouter
 
 

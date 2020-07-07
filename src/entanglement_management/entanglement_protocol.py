@@ -2,8 +2,8 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...topology.node import Node
-    from ...components.memory import Memory
+    from ..topology.node import Node
+    from ..components.memory import Memory
 
 from ..protocol import Protocol
 

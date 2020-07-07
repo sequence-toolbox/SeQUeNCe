@@ -5,8 +5,8 @@ import numpy
 
 from ..message import Message
 from ..protocol import StackProtocol
-from ...kernel.event import Event
-from ...kernel.process import Process
+from ..kernel.event import Event
+from ..kernel.process import Process
 
 
 def pair_bb84_protocols(sender: "BB84", receiver: "BB84") -> None:

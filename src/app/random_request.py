@@ -1,7 +1,7 @@
 from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:
-    from ..protocols.management.memory_manager import MemoryInfo
-    from ..protocols.network.rsvp import Reservation
+    from ..resource_management.memory_manager import MemoryInfo
+    from ..network_management.reservation import Reservation
 
 from numpy import random
 

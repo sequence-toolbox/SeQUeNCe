@@ -1,9 +1,9 @@
 from typing import Callable, TYPE_CHECKING, List, Tuple
 if TYPE_CHECKING:
-    from ..entanglement.entanglement_protocol import EntanglementProtocol
+    from ..entanglement_management.entanglement_protocol import EntanglementProtocol
     from .memory_manager import MemoryInfo, MemoryManager
-    from .manager import ResourceManager
-    from ..network.rsvp import Reservation
+    from .resource_manager import ResourceManager
+    from ..network_management.reservation import Reservation
 
 
 class RuleManager():

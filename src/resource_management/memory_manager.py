@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .manager import ResourceManager
-    from ...components.memory import Memory, MemoryArray
+    from .resource_manager import ResourceManager
+    from ..components.memory import Memory, MemoryArray
 
 
 class MemoryManager():

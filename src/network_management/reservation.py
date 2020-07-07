@@ -1,8 +1,8 @@
 from enum import Enum, auto
 from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:
-    from ...topology.node import QuantumRouter
-    from ..management.memory_manager import MemoryInfo, MemoryManager
+    from ..topology.node import QuantumRouter
+    from ..resource_management.memory_manager import MemoryInfo, MemoryManager
 
 from ..resource_management.rule_manager import Rule
 from ..entanglement_management.generation import EntanglementGenerationA
@@ -10,8 +10,8 @@ from ..entanglement_management.purification import BBPSSW
 from ..entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 from ..message import Message
 from ..protocol import StackProtocol
-from ...kernel.event import Event
-from ...kernel.process import Process
+from ..kernel.event import Event
+from ..kernel.process import Process
 
 
 class RSVPMsgType(Enum):

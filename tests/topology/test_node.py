@@ -1,7 +1,7 @@
 from sequence.components.optical_channel import *
 from sequence.components.optical_channel import QuantumChannel
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.protocol import Protocol
+from sequence.protocol import Protocol
 from sequence.topology.node import Node, QuantumRouter, MiddleNode
 
 

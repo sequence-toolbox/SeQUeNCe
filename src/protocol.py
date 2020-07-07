@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..topology.node import Node
+    from .topology.node import Node
     from .message import Message
 
 

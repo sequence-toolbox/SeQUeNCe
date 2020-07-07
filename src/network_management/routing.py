@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Dict, TYPE_CHECKING
 if TYPE_CHECKING:
-    from ...topology.node import Node
+    from ..topology.node import Node
 
 from ..message import Message
 from ..protocol import StackProtocol

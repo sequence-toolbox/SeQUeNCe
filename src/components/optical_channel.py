@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..topology.node import Node
     from ..components.photon import Photon
-    from ..protocols.message import Message
+    from ..message import Message
 
 from ..kernel.entity import Entity
 from ..kernel.event import Event

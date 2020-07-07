@@ -1,6 +1,6 @@
 from numpy import random
 
-from sequence.protocols.qkd.BB84 import pair_bb84_protocols
+from sequence.qkd.BB84 import pair_bb84_protocols
 
 # For testing BB84 Protocol
 from sequence.kernel.timeline import Timeline
@@ -8,7 +8,7 @@ from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.topology.node import QKDNode
-from sequence.protocols.protocol import StackProtocol
+from sequence.protocol import StackProtocol
 from sequence.utils.encoding import *
 
 
