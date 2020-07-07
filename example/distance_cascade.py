@@ -6,8 +6,8 @@ from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.qkd.BB84 import pair_bb84_protocols
-from sequence.protocols.qkd.cascade import pair_cascade_protocols
+from sequence.qkd.BB84 import pair_bb84_protocols
+from sequence.qkd.cascade import pair_cascade_protocols
 from sequence.topology.node import QKDNode
 
 if __name__ == "__main__":

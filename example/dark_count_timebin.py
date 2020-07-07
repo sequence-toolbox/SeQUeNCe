@@ -8,8 +8,8 @@ from sequence.topology.node import QKDNode
 from sequence.kernel.process import Process
 from sequence.kernel.event import Event
 from sequence.kernel.timeline import Timeline
-from sequence.protocols.qkd.BB84 import *
-from sequence.protocols.qkd.cascade import *
+from sequence.qkd.BB84 import *
+from sequence.qkd.cascade import *
 from sequence.components.optical_channel import *
 from sequence.utils.encoding import time_bin
 
