@@ -7,7 +7,7 @@ random.seed(0)
 
 from sequence.network_management.reservation import MemoryTimeCard, Reservation
 from sequence.entanglement_management.swapping import EntanglementSwappingA
-from sequence.topology.node import QuantumRouter, MiddleNode
+from sequence.topology.node import QuantumRouter, BSMNode
 
 
 def test_MemoryTimeCard_add():
@@ -229,7 +229,7 @@ def test_ResourceReservationProtocol_create_rules():
         router = FakeNode("r%d" % i, tl, memo_size=20)
         routers.append(router)
     for i in range(4):
-        mid = MiddleNode("mid%d" % i, tl, [routers[i].name, routers[i + 1].name])
+        mid = BSMNode("mid%d" % i, tl, [routers[i].name, routers[i + 1].name])
         mids.append(mid)
     for i in range(4):
         qc = QuantumChannel("qc_l_%d" % i, tl, 0, 100)
@@ -303,7 +303,7 @@ def test_ResourceReservationProtocol_set_es_params():
         router.rsvp.set_swapping_degradation(0.7)
         routers.append(router)
     for i in range(4):
-        mid = MiddleNode("mid%d" % i, tl, [routers[i].name, routers[i + 1].name])
+        mid = BSMNode("mid%d" % i, tl, [routers[i].name, routers[i + 1].name])
         mids.append(mid)
     for i in range(4):
         qc = QuantumChannel("qc_l_%d" % i, tl, 0, 100)

@@ -232,7 +232,7 @@ def test_expire():
 
 def test_ResourceManager1():
     from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
-    from sequence.topology.node import MiddleNode
+    from sequence.topology.node import BSMNode
     from sequence.entanglement_management.generation import EntanglementGenerationA
 
     class TestNode(Node):
@@ -286,7 +286,7 @@ def test_ResourceManager1():
     tl = Timeline()
 
     node1, node2 = TestNode("node1", tl), TestNode("node2", tl)
-    mid_node = MiddleNode("mid_node", tl, [node1.name, node2.name])
+    mid_node = BSMNode("mid_node", tl, [node1.name, node2.name])
     mid_node.bsm.detectors[0].efficiency = 1
     mid_node.bsm.detectors[1].efficiency = 1
 
@@ -330,7 +330,7 @@ def test_ResourceManager2():
     from sequence.kernel.process import Process
     from sequence.kernel.event import Event
     from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
-    from sequence.topology.node import MiddleNode
+    from sequence.topology.node import BSMNode
     from sequence.entanglement_management.generation import EntanglementGenerationA
 
     class TestNode(Node):
@@ -384,7 +384,7 @@ def test_ResourceManager2():
     tl = Timeline()
 
     node1, node2 = TestNode("node1", tl), TestNode("node2", tl)
-    mid_node = MiddleNode("mid_node", tl, [node1.name, node2.name])
+    mid_node = BSMNode("mid_node", tl, [node1.name, node2.name])
     mid_node.bsm.detectors[0].efficiency = 1
     mid_node.bsm.detectors[1].efficiency = 1
 

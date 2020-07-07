@@ -83,7 +83,7 @@ class Topology():
         if (type(self.nodes[node1]) == QuantumRouter) and (type(self.nodes[node2]) == QuantumRouter):
             # add middle node
             name_middle = "_".join(["middle", node1, node2])
-            middle = MiddleNode(name_middle, self.timeline, [node1, node2])
+            middle = BSMNode(name_middle, self.timeline, [node1, node2])
             self.add_node(middle)
 
             # update distance param
@@ -164,7 +164,7 @@ class Topology():
 
         # modify forwarding table to bypass middle nodes
         for node, dst in next_node.items():
-            if type(self.nodes[dst]) == MiddleNode:
+            if type(self.nodes[dst]) == BSMNode:
                 adjacent_nodes = list(self.graph[dst].keys())
                 proper_dst = None
                 for adjacent in adjacent_nodes:

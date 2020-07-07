@@ -2,7 +2,7 @@ import sys
 from graphviz import Graph
 from sequence.kernel.timeline import Timeline
 from sequence.topology.topology import Topology
-from sequence.topology.node import MiddleNode
+from sequence.topology.node import BSMNode
 
 
 if __name__ == "__main__":
@@ -29,9 +29,9 @@ if __name__ == "__main__":
 
     # add nodes and update qchannels if necessary
     for node in nodes:
-        if type(topo.nodes[node]) == MiddleNode:
+        if type(topo.nodes[node]) == BSMNode:
             if draw_middle:
-                g.node(node, label='middle', shape='rectangle')
+                g.node(node, label='BSM', shape='rectangle')
             else:
                 connected_channels = [qc for qc in qc_ends if node in qc]
                 qc_ends = [qc for qc in qc_ends if qc not in connected_channels]

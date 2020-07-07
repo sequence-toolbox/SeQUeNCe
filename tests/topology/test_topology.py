@@ -98,7 +98,7 @@ def test_get_nodes_by_type():
 
     n1 = Node("n1", tl)
     n2 = QuantumRouter("n2", tl)
-    n3 = MiddleNode("n3", tl, ["n2","n4"])
+    n3 = BSMNode("n3", tl, ["n2","n4"])
     n4 = QuantumRouter("n4", tl)
     topo.add_node(n1)
     topo.add_node(n2)

@@ -2,7 +2,7 @@ from sequence.components.optical_channel import *
 from sequence.components.optical_channel import QuantumChannel
 from sequence.kernel.timeline import Timeline
 from sequence.protocol import Protocol
-from sequence.topology.node import Node, QuantumRouter, MiddleNode
+from sequence.topology.node import Node, QuantumRouter, BSMNode
 
 
 class FakeProtocol(Protocol):
@@ -132,7 +132,7 @@ def test_QuantumRouter_init():
     node1 = QuantumRouter("node1", tl)
     for i in range(2, 50):
         node = QuantumRouter("node%d" % i, tl)
-        mid = MiddleNode("mid%d" % i, tl, [node1.name, node.name])
+        mid = BSMNode("mid%d" % i, tl, [node1.name, node.name])
         qc = QuantumChannel("qc_l_%d" % i, tl, 0, 1000)
         qc.set_ends(node1, mid)
         qc = QuantumChannel("qc_r_%d" % i, tl, 0, 1000)

@@ -68,7 +68,7 @@ class Node(Entity):
         pass
 
 
-class MiddleNode(Node):
+class BSMNode(Node):
     def __init__(self, name: str, timeline: "Timeline", other_nodes: [str]) -> None:
         from ..entanglement_management.generation import EntanglementGenerationB
         Node.__init__(self, name, timeline)
@@ -124,7 +124,7 @@ class QuantumRouter(Node):
         super().init()
         for dst in self.qchannels:
             for end in self.qchannels[dst].ends:
-                if isinstance(end, MiddleNode):
+                if isinstance(end, BSMNode):
                     for other in end.eg.others:
                         if other != self.name:
                             self.map_to_middle_node[other] = end.name

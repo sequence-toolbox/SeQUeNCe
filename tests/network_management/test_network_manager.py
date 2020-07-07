@@ -5,7 +5,7 @@ from sequence.kernel.timeline import Timeline
 from sequence.network_management.network_manager import *
 from sequence.network_management.reservation import RSVPMsgType
 from sequence.protocol import StackProtocol
-from sequence.topology.node import QuantumRouter, MiddleNode
+from sequence.topology.node import QuantumRouter, BSMNode
 
 
 class FakeNode(QuantumRouter):
@@ -79,8 +79,8 @@ def test_NetworkManager():
     n1 = FakeNode("n1", tl, 50)
     n2 = FakeNode("n2", tl, 50)
     n3 = FakeNode("n3", tl, 20)
-    m1 = MiddleNode("m1", tl, ["n1", "n2"])
-    m2 = MiddleNode("m2", tl, ["n2", "n3"])
+    m1 = BSMNode("m1", tl, ["n1", "n2"])
+    m2 = BSMNode("m2", tl, ["n2", "n3"])
 
     cc = ClassicalChannel("cc_n1_n2", tl, 10, delay=1e5)
     cc.set_ends(n1, n2)
