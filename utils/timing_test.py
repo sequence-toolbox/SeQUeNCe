@@ -1,9 +1,10 @@
-import sys
 import os
-import time
 import statistics as stats
+import sys
+import time
 
 runtimes = []
+
 
 def timeit_wrapper(func):
     def wrapper(*args, **kwargs):

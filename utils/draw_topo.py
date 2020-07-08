@@ -1,9 +1,9 @@
 import sys
+
 from graphviz import Graph
 from sequence.kernel.timeline import Timeline
-from sequence.topology.topology import Topology
 from sequence.topology.node import BSMNode
-
+from sequence.topology.topology import Topology
 
 if __name__ == "__main__":
     '''
