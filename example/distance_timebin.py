@@ -1,16 +1,15 @@
-from numpy import random
-import math
 import statistics
 
-import sequence
+import pandas as pd
+from numpy import random
+from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
 from sequence.protocol import StackProtocol
-from sequence.qkd.BB84 import *
-from sequence.components.optical_channel import *
-from sequence.topology.node import *
-from sequence.utils.encoding import *
+from sequence.qkd.BB84 import pair_bb84_protocols
+from sequence.topology.node import QKDNode
+from sequence.utils.encoding import time_bin
 
 
 # dummy parent class to receive BB84 keys and initiate BB84
@@ -87,13 +86,16 @@ if __name__ == "__main__":
 
         tl.init()
         tl.run()
-        
+
         errors.append(statistics.mean(alice.protocol_stack[0].error_rates))
         throughputs.append(statistics.mean(alice.protocol_stack[0].throughputs))
-        
-        print("completed distance {}".format(distance))
 
+        print("completed distance {}".format(distance))
 
     print("distances: {}".format(distances))
     print("error rates: {}".format(errors))
     print("throughputs (bit/s): {}".format(throughputs))
+
+    log = {'Distance': distances, 'Error_rate': errors, 'Throughput': throughputs}
+    df = pd.DataFrame(log)
+    df.to_csv('distance_timebin.csv')

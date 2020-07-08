@@ -1,15 +1,13 @@
-from numpy import random
-from pathlib import Path
 import math
 
-import sequence
+import pandas as pd
+from numpy import random, mean
+from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
-from sequence.qkd.BB84 import *
-from sequence.components.optical_channel import *
-from sequence.topology.node import *
-from sequence.utils.encoding import *
+from sequence.qkd.BB84 import pair_bb84_protocols
+from sequence.topology.node import QKDNode
 
 if __name__ == "__main__":
     random.seed(1)
@@ -18,12 +16,17 @@ if __name__ == "__main__":
     runtime = 6e12
 
     # open file to store experiment results
-    Path("results/sensitivity").mkdir(parents=True, exist_ok=True)
-    filename = "results/sensitivity/distance_bb84.log"
-    fh = open(filename,'w')
+    # Path("results/sensitivity").mkdir(parents=True, exist_ok=True)
+    # filename = "results/sensitivity/distance_bb84.log"
+    # fh = open(filename,'w')
+
+    dist_list = []
+    tp_list = []
+    error_rate_list = []
+    latency_list = []
 
     for i in range(NUM_EXPERIMENTS):
-        distance = max(1000, 10000*int(i))
+        distance = max(1000, 10000 * int(i))
 
         tl = Timeline(runtime)
         qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
@@ -63,17 +66,27 @@ if __name__ == "__main__":
 
         # record metrics
         bba = alice.protocol_stack[0]
-        fh.write(str(distance))
-        fh.write(' ')
-        if bba.throughputs:
-            fh.write(str(1e-6 * sum(bba.throughputs) / len(bba.throughputs)))
-        else:
-            fh.write(str(None))
-        fh.write(' ')
-        if bba.error_rates:
-            fh.write(str(sum(bba.error_rates) / len(bba.error_rates)))
-        else:
-            fh.write(str(None))
-        fh.write(' ')
-        fh.write(str(bba.latency))
-        fh.write('\n')
+
+        dist_list.append(distance)
+        tp_list.append(mean(bba.throughputs))
+        error_rate_list.append(mean(bba.error_rates))
+        latency_list.append(bba.latency)
+
+        # fh.write(str(distance))
+        # fh.write(' ')
+        # if bba.throughputs:
+        #     fh.write(str(1e-6 * sum(bba.throughputs) / len(bba.throughputs)))
+        # else:
+        #     fh.write(str(None))
+        # fh.write(' ')
+        # if bba.error_rates:
+        #     fh.write(str(sum(bba.error_rates) / len(bba.error_rates)))
+        # else:
+        #     fh.write(str(None))
+        # fh.write(' ')
+        # fh.write(str(bba.latency))
+        # fh.write('\n')
+
+    log = {'Distance': dist_list, "Throughput": tp_list, 'Error_rate': error_rate_list, 'Latency': latency_list}
+    df = pd.DataFrame(log)
+    df.to_csv('distance_bb84.csv')

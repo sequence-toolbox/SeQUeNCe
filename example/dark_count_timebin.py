@@ -1,16 +1,15 @@
-from numpy import random
-from pathlib import Path
-import math
 import statistics
 
-import sequence
-from sequence.topology.node import QKDNode
-from sequence.kernel.process import Process
+import pandas as pd
+from numpy import random
+from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.kernel.event import Event
+from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
-from sequence.qkd.BB84 import *
-from sequence.qkd.cascade import *
-from sequence.components.optical_channel import *
+from sequence.protocol import StackProtocol
+from sequence.qkd.BB84 import pair_bb84_protocols
+from sequence.qkd.cascade import pair_cascade_protocols
+from sequence.topology.node import QKDNode
 from sequence.utils.encoding import time_bin
 
 
@@ -47,6 +46,7 @@ if __name__ == "__main__":
     distances = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]  # distances in km
     KEYSIZE = 256
     KEYNUM = 10
+
     errors = []  # store error rates
     throughputs = []  # store throughputs
     throughputs_cascade = []
@@ -54,9 +54,9 @@ if __name__ == "__main__":
     latencies_privacy = []
 
     # open file to store experiment results
-    Path("results/timebin").mkdir(parents=True, exist_ok=True)
-    filename = "results/timebin/distance_cascade.log"
-    fh = open(filename, 'w')
+    # Path("results/timebin").mkdir(parents=True, exist_ok=True)
+    # filename = "results/timebin/distance_cascade.log"
+    # fh = open(filename, 'w')
 
     for distance in distances:
         tl = Timeline(runtime)
@@ -133,21 +133,21 @@ if __name__ == "__main__":
         throughputs_privacy.append(throughput_privacy)
         latencies_privacy.append(latency_privacy)
 
-        fh.write(str(distance))
-        fh.write(' ')
-        fh.write(str(error))
-        fh.write(' ')
-        fh.write(str(throughput))
-        fh.write(' ')
-        fh.write(str(throughput_cascade))
-        fh.write(' ')
-        fh.write(str(throughput_privacy))
-        fh.write(' ')
-        fh.write(str(latency_privacy))
-        fh.write('\n')
+        # fh.write(str(distance))
+        # fh.write(' ')
+        # fh.write(str(error))
+        # fh.write(' ')
+        # fh.write(str(throughput))
+        # fh.write(' ')
+        # fh.write(str(throughput_cascade))
+        # fh.write(' ')
+        # fh.write(str(throughput_privacy))
+        # fh.write(' ')
+        # fh.write(str(latency_privacy))
+        # fh.write('\n')
 
-    print(errors)
-    print(throughputs)
-    print(throughputs_cascade)
-    print(throughputs_privacy)
-    print(latencies_privacy)
+    log = {'Distance': distances, 'Error_rate': errors, 'Throughput_BB84': throughputs,
+           'Throughput_Cascade': throughputs_cascade, 'Throughput_Privacy': throughputs_privacy,
+           'Latency_Privacy': latencies_privacy}
+    df = pd.DataFrame(log)
+    df.to_csv('dark_count_timebin.csv')

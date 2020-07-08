@@ -1,6 +1,6 @@
 import math
-from pathlib import Path
 
+import pandas as pd
 from numpy import random
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.kernel.event import Event
@@ -14,12 +14,20 @@ if __name__ == "__main__":
     random.seed(2)
 
     NUM_EXPERIMENTS = 10
-    runtime = 1e12
+    runtime = 12e12
 
     # open file to store experiment results
-    Path("results/sensitivity").mkdir(parents=True, exist_ok=True)
-    filename = "results/sensitivity/distance_cascade.log"
-    fh = open(filename,'w')
+    # Path("results/sensitivity").mkdir(parents=True, exist_ok=True)
+    # filename = "results/sensitivity/distance_cascade.log"
+    # fh = open(filename,'w')
+
+    dist_list = []
+    tp_list = []
+    key_error_list = []
+    latency_list = []
+    setup_time_list = []
+    start_time_list = []
+    bb84_latency_list = []
 
     # fh.write("{} {:11} {} {} {} {} {}".format("Distance",
     #                                           "Throughput",
@@ -33,7 +41,7 @@ if __name__ == "__main__":
         distance = max(1000,10000*int(id))
 
         tl = Timeline(runtime)
-        tl.show_progress = True
+        # tl.show_progress = True
         qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
         cc = ClassicalChannel("cc", tl, distance=distance)
         cc.delay += 10e9
@@ -77,26 +85,35 @@ if __name__ == "__main__":
         #           bba.latency]
         # fh.write("{:8d} {:11.3f} {:9%} {:7f} {:10f} {:10f} {:12f}\n".format(*params))
 
-        fh.write(str(distance))
-        fh.write(' ')
-        if cascade_a.throughput: fh.write(str(cascade_a.throughput))
-        else: fh.write(str(None))
-        fh.write(' ')
-        if cascade_a.error_bit_rate: fh.write(str(cascade_a.error_bit_rate))
-        else: fh.write(str(None))
-        fh.write(' ')
-        if cascade_a.latency: fh.write(str(cascade_a.latency/1e12))
-        else: fh.write(str(None))
-        fh.write(' ')
-        if cascade_a.setup_time: fh.write(str(cascade_a.setup_time/1e12))
-        else: fh.write(str(None))
-        fh.write(' ')
-        if cascade_a.start_time: fh.write(str(cascade_a.start_time/1e12))
-        else: fh.write(str(None))
-        fh.write(' ')
-        if bba.latency: fh.write(str(bba.latency))
-        else: fh.write(str(None))
-        fh.write('\n')
+        dist_list.append(distance)
+        tp_list.append(cascade_a.throughput)
+        key_error_list.append(cascade_a.error_bit_rate)
+        latency_list.append(cascade_a.latency)
+        setup_time_list.append(cascade_a.setup_time)
+        start_time_list.append(cascade_a.start_time)
+        bb84_latency_list.append(bba.latency)
+        # fh.write(str(distance))
+        # fh.write(' ')
+        # if cascade_a.throughput: fh.write(str(cascade_a.throughput))
+        # else: fh.write(str(None))
+        # fh.write(' ')
+        # if cascade_a.error_bit_rate: fh.write(str(cascade_a.error_bit_rate))
+        # else: fh.write(str(None))
+        # fh.write(' ')
+        # if cascade_a.latency: fh.write(str(cascade_a.latency/1e12))
+        # else: fh.write(str(None))
+        # fh.write(' ')
+        # if cascade_a.setup_time: fh.write(str(cascade_a.setup_time/1e12))
+        # else: fh.write(str(None))
+        # fh.write(' ')
+        # if cascade_a.start_time: fh.write(str(cascade_a.start_time/1e12))
+        # else: fh.write(str(None))
+        # fh.write(' ')
+        # if bba.latency: fh.write(str(bba.latency))
+        # else: fh.write(str(None))
+        # fh.write('\n')
 
-    fh.close()
-
+    log = {"Distance": dist_list, "Throughput": tp_list, "Key_error": key_error_list, "Latency": latency_list,
+           "Setup_time": setup_time_list, "Start_time": start_time_list, "BB84_latency": bb84_latency_list}
+    df = pd.DataFrame(log)
+    df.to_csv("distance_cascade.csv")
