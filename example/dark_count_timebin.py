@@ -26,7 +26,7 @@ class Parent(StackProtocol):
     def init(self):
         pass
 
-    def pop(self, msg):
+    def pop(self, key):
         self.keycounter += 1
         if self.keycounter >= self.keynum:
             self.own.timeline.stop()
