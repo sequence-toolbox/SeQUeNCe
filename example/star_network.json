@@ -26,25 +26,25 @@
             "node1": "center",
             "node2": "edge1",
             "attenuation": 1e-5,
-            "distance": 1e3
+            "distance": 500
         },
         {
             "node1": "center",
             "node2": "edge2",
             "attenuation": 1e-5,
-            "distance": 1e3
+            "distance": 500
         },
         {
             "node1": "center",
             "node2": "edge3",
             "attenuation": 1e-5,
-            "distance": 1e3
+            "distance": 500
         },
         {
             "node1": "center",
             "node2": "edge4",
             "attenuation": 1e-5,
-            "distance": 1e3
+            "distance": 500
         }
     ],
     "cconnections_table": {
