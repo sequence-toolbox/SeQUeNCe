@@ -73,7 +73,10 @@ class Timeline:
             while self.is_running:
                 exe_time = self.ns_to_human_time(time_ns() - start_time)
                 sim_time = self.ns_to_human_time(self.time / 1e3)
-                stop_time = self.ns_to_human_time(self.stop_time / 1e3)
+                if self.stop_time == float('inf'):
+                    stop_time = 'NaN'
+                else:
+                    stop_time = self.ns_to_human_time(self.stop_time / 1e3)
                 process_bar = f'\rexecution time: {exe_time};     simulation time: {sim_time} / {stop_time}'
                 print(f'{process_bar}', end="\r")
                 stdout.flush()

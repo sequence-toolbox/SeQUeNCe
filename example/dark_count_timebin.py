@@ -1,3 +1,4 @@
+import math
 import statistics
 
 import pandas as pd
@@ -26,7 +27,7 @@ class Parent(StackProtocol):
     def init(self):
         pass
 
-    def pop(self, msg):
+    def pop(self, key):
         self.keycounter += 1
         if self.keycounter >= self.keynum:
             self.own.timeline.stop()
@@ -41,17 +42,15 @@ class Parent(StackProtocol):
 if __name__ == "__main__":
     random.seed(1)
 
-    runtime = 10e12
+    runtime = math.inf
     dark_count = 425
     distances = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]  # distances in km
+    # distances = [120]
     KEYSIZE = 256
     KEYNUM = 10
 
     errors = []  # store error rates
     throughputs = []  # store throughputs
-    throughputs_cascade = []
-    throughputs_privacy = []
-    latencies_privacy = []
 
     # open file to store experiment results
     # Path("results/timebin").mkdir(parents=True, exist_ok=True)
@@ -60,6 +59,7 @@ if __name__ == "__main__":
 
     for distance in distances:
         tl = Timeline(runtime)
+        tl.show_progress = True
         qc = QuantumChannel("qc", tl, distance=distance * 1e3, attenuation=0.0002)
         cc = ClassicalChannel("cc", tl, distance=distance * 1e3)
 
@@ -116,22 +116,12 @@ if __name__ == "__main__":
         else:
             throughput = None
 
-        throughput_cascade = cascade_a.throughput
-        throughput_privacy = cascade_a.privacy_throughput
-        latency_privacy = cascade_a.latency
-
-        print("{} km:".format(distance))
+        print("\n{} km:".format(distance))
         print("\tbb84 error:\t\t\t{}".format(error))
         print("\tbb84 throughput:\t{}".format(throughput))
-        print("\tcascade throughput:\t{}".format(throughput_cascade))
-        print("\tprivacy throughput:\t{}".format(throughput_privacy))
-        print("\tprivacy latency:\t{}".format(latency_privacy))
 
         errors.append(error)
         throughputs.append(throughput)
-        throughputs_cascade.append(throughput_cascade)
-        throughputs_privacy.append(throughput_privacy)
-        latencies_privacy.append(latency_privacy)
 
         # fh.write(str(distance))
         # fh.write(' ')
@@ -146,8 +136,6 @@ if __name__ == "__main__":
         # fh.write(str(latency_privacy))
         # fh.write('\n')
 
-    log = {'Distance': distances, 'Error_rate': errors, 'Throughput_BB84': throughputs,
-           'Throughput_Cascade': throughputs_cascade, 'Throughput_Privacy': throughputs_privacy,
-           'Latency_Privacy': latencies_privacy}
+    log = {'Distance': distances, 'Error_rate': errors, 'Throughput_BB84': throughputs}
     df = pd.DataFrame(log)
     df.to_csv('dark_count_timebin.csv')
