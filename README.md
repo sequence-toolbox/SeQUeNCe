@@ -43,10 +43,10 @@ These examples include:
 ## Additional Tools
 
 ### Network Visualization
-The example directory contains an example json file `starlight.json` to specify a network topology and a the script `draw_topo.py` to visualize json files. To use this script, the Graphviz library must be installed. Installation information can be found on the [Graphviz website](https://www.graphviz.org/download/).
+The example directory contains an example json file `starlight.json` to specify a network topology, and the utils directory contains the script `draw_topo.py` to visualize json files. To use this script, the Graphviz library must be installed. Installation information can be found on the [Graphviz website](https://www.graphviz.org/download/).
 
 To view a network, simply run the script and specify the relative location of your json file:
 ```
-$ python example/draw_topo.py example/starlight.json
+$ python utils/draw_topo.py example/starlight.json
 ```
 This script also supports a flag `-m` to visualize BSM nodes created by default on quantum links between routers.
