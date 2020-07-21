@@ -67,6 +67,10 @@ class Timeline:
         event.time = time
         self.schedule(event)
 
+    def seed(self, seed: int) -> None:
+        from numpy import random
+        random.seed(seed)
+
     def progress_bar(self):
         def print_time():
             start_time = time_ns()
