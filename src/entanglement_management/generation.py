@@ -123,6 +123,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             self.memory.entangled_memory["node_id"] = self.other
             self.memory.entangled_memory["memo_id"] = self.remote_memo_id
             # TODO: notify of +/- state
+            self.memory.fidelity = self.memory.raw_fidelity
             self.own.resource_manager.update(self, self.memory, "ENTANGLED")
 
         else:

@@ -60,7 +60,7 @@ class Memory(Entity):
         assert 0 <= fidelity <= 1
         assert 0 <= efficiency <= 1
 
-        self.fidelity = fidelity
+        self.fidelity = 0
         self.raw_fidelity = fidelity
         self.frequency = frequency
         self.efficiency = efficiency
@@ -84,7 +84,7 @@ class Memory(Entity):
         self.next_excite_time = 0
 
     def init(self):
-        self.fidelity = self.raw_fidelity
+        pass
 
     def excite(self, dst="") -> None:
         # if can't excite yet, do nothing
@@ -126,7 +126,7 @@ class Memory(Entity):
         self.qstate.set_state_single(new_state)
 
     def reset(self) -> None:
-        self.fidelity = self.raw_fidelity
+        self.fidelity = 0
         if len(self.qstate.state) > 2:
             self.qstate.measure(single_atom["bases"][0])  # to unentangle
         self.qstate.set_state_single([complex(1), complex(0)])  # set to |0> state

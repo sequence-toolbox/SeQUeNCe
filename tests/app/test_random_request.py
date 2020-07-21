@@ -104,7 +104,7 @@ def test_RandomRequestApp_get_memory():
     app.get_memory(node.resource_manager.memory_manager[0])
     assert node.resource_manager.memory_manager[0].state == "RAW"
     assert node.memory_array[0].entangled_memory["node_id"] == None
-    assert node.memory_array[0].fidelity == node.memory_array[0].raw_fidelity
+    assert node.memory_array[0].fidelity == 0
 
     node.memory_array[1].entangled_memory["node_id"] = "n3"
     node.memory_array[1].entangled_memory["memo_id"] = "1"

@@ -65,12 +65,16 @@ def test_EntanglementSwapping():
 
         memo1.entangled_memory["node_id"] = "a2"
         memo1.entangled_memory["memo_id"] = memo2.name
+        memo1.fidelity = 0.9
         memo2.entangled_memory["node_id"] = "a1"
         memo2.entangled_memory["memo_id"] = memo1.name
+        memo2.fidelity = 0.9
         memo3.entangled_memory["node_id"] = "a3"
         memo3.entangled_memory["memo_id"] = memo4.name
+        memo3.fidelity = 0.9
         memo4.entangled_memory["node_id"] = "a2"
         memo4.entangled_memory["memo_id"] = memo3.name
+        memo4.fidelity = 0.9
 
         es1 = EntanglementSwappingB(a1, "a1.ESb%d" % i, memo1)
         a1.protocols.append(es1)
@@ -86,7 +90,7 @@ def test_EntanglementSwapping():
 
         es2.start()
 
-        assert memo2.fidelity == memo3.fidelity == memo2.raw_fidelity
+        assert memo2.fidelity == memo3.fidelity == 0
         assert memo1.entangled_memory["node_id"] == memo4.entangled_memory["node_id"] == "a2"
         assert memo2.entangled_memory["node_id"] == memo3.entangled_memory["node_id"] == None
         assert memo2.entangled_memory["memo_id"] == memo3.entangled_memory["memo_id"] == None
@@ -104,7 +108,7 @@ def test_EntanglementSwapping():
         else:
             counter2 += 1
             assert memo1.entangled_memory["node_id"] == memo4.entangled_memory["node_id"] == None
-            assert memo1.fidelity == memo4.fidelity == memo1.raw_fidelity
+            assert memo1.fidelity == memo4.fidelity == 0
             assert a1.resource_manager.log[-1] == (memo1, "RAW")
             assert a3.resource_manager.log[-1] == (memo4, "RAW")
 

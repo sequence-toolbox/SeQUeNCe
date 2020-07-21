@@ -58,12 +58,16 @@ def test_BBPSSW1():
 
         kept_memo1.entangled_memory["node_id"] = "a2"
         kept_memo1.entangled_memory["memo_id"] = "a2.kept"
+        kept_memo1.fidelity = fidelity
         kept_memo2.entangled_memory["node_id"] = "a1"
         kept_memo2.entangled_memory["memo_id"] = "a1.kept"
+        kept_memo2.fidelity = fidelity
         meas_memo1.entangled_memory["node_id"] = "a2"
         meas_memo1.entangled_memory["memo_id"] = "a2.meas"
+        meas_memo1.fidelity = fidelity
         meas_memo2.entangled_memory["node_id"] = "a1"
         meas_memo2.entangled_memory["memo_id"] = "a1.meas"
+        meas_memo2.fidelity = fidelity
 
         ep1 = BBPSSW(a1, "a1.ep1.%d" % i, kept_memo1, meas_memo1)
         ep2 = BBPSSW(a2, "a2.ep2.%d" % i, kept_memo2, meas_memo2)
@@ -81,7 +85,7 @@ def test_BBPSSW1():
 
         assert a1.resource_manager.log[-2] == (meas_memo1, "RAW")
         assert a2.resource_manager.log[-2] == (meas_memo2, "RAW")
-        assert meas_memo1.fidelity == meas_memo2.fidelity == meas_memo1.raw_fidelity
+        assert meas_memo1.fidelity == meas_memo2.fidelity == 0
 
         if ep1.is_success:
             assert kept_memo1.fidelity == kept_memo2.fidelity == BBPSSW.improved_fidelity(fidelity)
@@ -89,7 +93,7 @@ def test_BBPSSW1():
             assert a1.resource_manager.log[-1] == (kept_memo1, "ENTANGLED")
             assert a2.resource_manager.log[-1] == (kept_memo2, "ENTANGLED")
         else:
-            assert kept_memo1.fidelity == kept_memo2.fidelity == kept_memo1.raw_fidelity
+            assert kept_memo1.fidelity == kept_memo2.fidelity == 0
             assert kept_memo1.entangled_memory["node_id"] == kept_memo2.entangled_memory["node_id"] == None
             assert a1.resource_manager.log[-1] == (kept_memo1, "RAW")
             assert a2.resource_manager.log[-1] == (kept_memo2, "RAW")
@@ -116,12 +120,16 @@ def test_BBPSSW2():
 
         kept_memo1.entangled_memory["node_id"] = "a2"
         kept_memo1.entangled_memory["memo_id"] = "a2.kept"
+        kept_memo1.fidelity = fidelity
         kept_memo2.entangled_memory["node_id"] = "a1"
         kept_memo2.entangled_memory["memo_id"] = "a1.kept"
+        kept_memo2.fidelity = fidelity
         meas_memo1.entangled_memory["node_id"] = "a2"
         meas_memo1.entangled_memory["memo_id"] = "a2.meas"
+        meas_memo1.fidelity = fidelity
         meas_memo2.entangled_memory["node_id"] = "a1"
         meas_memo2.entangled_memory["memo_id"] = "a1.meas"
+        meas_memo2.fidelity = fidelity
 
         ep1 = BBPSSW(a1, "a1.ep1.%d" % i, kept_memo1, meas_memo1)
         ep2 = BBPSSW(a2, "a2.ep2.%d" % i, kept_memo2, meas_memo2)
