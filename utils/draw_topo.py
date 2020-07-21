@@ -1,4 +1,4 @@
-import sys
+import argparse
 
 from graphviz import Graph
 from sequence.kernel.timeline import Timeline
@@ -12,15 +12,15 @@ if __name__ == "__main__":
     Graphviz library must be installed
     '''
     
-    config_file = sys.argv[1]
-    try:
-        draw_middle = bool(sys.argv[2])
-    except IndexError:
-        draw_middle = False
+    parser = argparse.ArgumentParser()
+    parser.add_argument('config_file')
+    parser.add_argument('-m', dest='draw_middle', action='store_true')
+
+    args = parser.parse_args()
 
     tl = Timeline()
     topo = Topology("", tl)
-    topo.load_config(config_file)
+    topo.load_config(args.config_file)
     g = Graph(format='png')
     g.attr(layout='neato', overlap='false')
 
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     # add nodes and update qchannels if necessary
     for node in nodes:
         if type(topo.nodes[node]) == BSMNode:
-            if draw_middle:
+            if args.draw_middle:
                 g.node(node, label='BSM', shape='rectangle')
             else:
                 connected_channels = [qc for qc in qc_ends if node in qc]
