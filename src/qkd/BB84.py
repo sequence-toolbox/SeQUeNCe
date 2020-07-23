@@ -70,9 +70,6 @@ class BB84(StackProtocol):
         self.throughputs = []  # measured in bits/sec
         self.error_rates = []
 
-    def init(self) -> None:
-        pass
-
     def pop(self, detector_index: int, time: int) -> None:
         assert 0
 

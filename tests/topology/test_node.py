@@ -1,34 +1,6 @@
-from sequence.components.optical_channel import *
-from sequence.components.optical_channel import QuantumChannel
+from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.kernel.timeline import Timeline
-from sequence.protocol import Protocol
 from sequence.topology.node import Node, QuantumRouter, BSMNode
-
-
-class FakeProtocol(Protocol):
-    def __init__(self):
-        self.flag = False
-
-    def init(self):
-        self.flag = True
-
-    def pop(self):
-        pass
-
-    def push(self):
-        pass
-
-    def received_message(self, src, msg):
-        pass
-
-
-def test_Node_init():
-    tl = Timeline()
-    node = Node("node", tl)
-    node.protocols.append(FakeProtocol())
-    assert node.protocols[0].flag is False
-    tl.init()
-    assert node.protocols[0].flag is True
 
 
 def test_Node_assign_cchannel():

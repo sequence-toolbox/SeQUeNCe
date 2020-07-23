@@ -33,8 +33,7 @@ class Node(Entity):
         self.protocols = []
 
     def init(self) -> None:
-        for protocol in self.protocols:
-            protocol.init()
+        pass
 
     def assign_cchannel(self, cchannel: "ClassicalChannel", another: str) -> None:
         self.cchannels[another] = cchannel

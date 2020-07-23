@@ -68,9 +68,6 @@ class EntanglementGenerationA(EntanglementProtocol):
         self.primary = False  # one end node is the "primary" that initiates negotiation
         self.debug = False
 
-    def init(self) -> None:
-        pass
-
     def set_others(self, other: "EntanglementGenerationA") -> None:
         assert self.other_protocol is None
         assert self.fidelity == other.fidelity
@@ -272,9 +269,6 @@ class EntanglementGenerationB(EntanglementProtocol):
         assert len(others) == 2
         self.others = others  # end nodes
         # self.other_protocols = kwargs.get("other_protocols") # other EG protocols (must be same order as others)
-
-    def init(self):
-        pass
 
     def pop(self, info_type, **kwargs):
         assert info_type == "BSM_res"

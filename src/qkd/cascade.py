@@ -108,9 +108,6 @@ class Cascade(StackProtocol):
             2: end
         """
 
-    def init(self) -> None:
-        pass
-
     def log(self, info) -> None:
         if self.logflag:
             print(self.own.timeline.now(), self.name, self.state, info)
