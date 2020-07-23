@@ -93,6 +93,11 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.update_resource_manager(self.right_memo, "RAW")
 
     def update_resource_manager(self, memory: "Memory", state: str) -> None:
+        if state == 'RAW':
+            memory.fidelity = 0
+            memory.entangled_memory['node_id'] = None
+            memory.entangled_memory['memo_id'] = None
+
         self.own.resource_manager.update(self, memory, state)
 
     def success_probability(self) -> float:
