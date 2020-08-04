@@ -1,3 +1,8 @@
+"""Model for simulation of a SPDC Lens.
+
+This module defines the SPDCLens class for creation of entangled photons.
+"""
+
 from copy import deepcopy
 
 from numpy.random import random_sample

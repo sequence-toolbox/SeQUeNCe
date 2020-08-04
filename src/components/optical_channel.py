@@ -1,3 +1,10 @@
+"""Models for simulation of optical fiber channels.
+
+This module introduces the abstract OpticalChannel class for general optical fibers.
+It also defines the QuantumChannel class for transmission of qubits/photons and the ClassicalChannel class for transmission of classical control messages.
+OpticalChannels must be attached to nodes on both ends.
+"""
+
 import heapq as hq
 from typing import TYPE_CHECKING
 

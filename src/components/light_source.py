@@ -1,3 +1,9 @@
+"""Models for simulation of photon emission devices.
+
+This module defines the LightSource class to supply individual photons and the SPDCSource class to supply pre-entangled photons.
+These classes should be connected to one or two entities, respectively, that are capable of receiving photons.
+"""
+
 from numpy import random, multiply
 
 from .photon import Photon

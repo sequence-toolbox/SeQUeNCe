@@ -1,3 +1,9 @@
+"""Model for single photon.
+
+This module defines the Photon class for tracking individual photons.
+Photons may be encoded directly with polarization or time bin schemes, or may herald the encoded state of single atom memories.
+"""
+
 from ..utils.encoding import polarization
 from ..utils.quantum_state import QuantumState
 

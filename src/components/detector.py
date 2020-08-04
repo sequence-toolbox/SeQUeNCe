@@ -1,3 +1,10 @@
+"""Models for photon detection devices.
+
+This module models a single photon detector (SPD) for measurement of individual photons.
+It also defines a QSDetector class, which combines models of different hardware devices to measure photon states in different bases.
+QSDetector is defined as an abstract template and as implementaions for polarization and time bin qubits.
+"""
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 

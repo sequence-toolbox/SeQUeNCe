@@ -1,3 +1,9 @@
+"""Model for simulation of an optical switch.
+
+This module defines the Switch class for directing the flow of photons.
+The switch is usually created as part of a time bin QSDetector object, but may be used individually.
+"""
+
 from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
