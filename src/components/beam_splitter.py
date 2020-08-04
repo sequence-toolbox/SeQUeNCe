@@ -1,6 +1,8 @@
 """Models for simulation of a polarization beam splitter.
 
-This module defines the class BeamSplitter, which may be used for simulating polarization beam splitters. The beam splitter may receive photons with polarization encoding and will forward photons to one of two attached receivers (which can be any entity).
+This module defines the class BeamSplitter, which is used for simulating polarization beam splitters. 
+The beam splitter receives photons with polarization encoding and forwards photons to one of two 
+attached receivers (which can be any entity).
 """
 
 from typing import TYPE_CHECKING
