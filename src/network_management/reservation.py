@@ -1,3 +1,10 @@
+"""Definition of Reservation protocol and related tools.
+
+This module provides a definition for the reservation protocol used by the network manager.
+This includes the Reservation, MemoryTimeCard, and QCap classes, which are used by the network manager to track reservations.
+Also included is the definition of the message type used by the reservation protocol.
+"""
+
 from enum import Enum, auto
 from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:

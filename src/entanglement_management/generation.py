@@ -1,3 +1,12 @@
+"""Code for Barrett-Kok entanglement Generation protocol
+
+This module defines code to support entanglement generation between single-atom memories on distant nodes.
+Also defined is the message type used by this implementation.
+Entanglement generation is asymmetric:
+    EntanglementGenerationA should be used on the end nodes (with one node set as the primary) and should be started via the "start" method
+    EntanglementGeneraitonB should be used on the middle node and does not need to be started
+"""
+
 from enum import Enum, auto
 from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:
@@ -9,11 +18,6 @@ from ..message import Message
 from ..kernel.event import Event
 from ..kernel.process import Process
 
-"""
-Entanglement generation is asymmetric:
-    EntanglementGenerationA should be used on the end nodes (with one node set as the primary) and should be started via the "start" method
-    EntanglementGeneraitonB should be used on the middle node and does not need to be started
-"""
 
 class GenerationMsgType(Enum):
     NEGOTIATE = auto()

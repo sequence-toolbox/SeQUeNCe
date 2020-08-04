@@ -1,3 +1,8 @@
+"""Definition of the Process class
+
+This module defines a process, which is performed when an event is executed.
+"""
+
 class Process:
     def __init__(self, owner, activation_method, act_params):
         self.owner = owner

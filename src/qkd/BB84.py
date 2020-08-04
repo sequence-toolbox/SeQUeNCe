@@ -1,3 +1,10 @@
+"""Definition of BB84 protocol implementation.
+
+This module provides an implementation of the BB84 protocol for quantum key distribution.
+The BB84 class must be attachedd to a node with suitable hardware, such as a QKDNode.
+Also included in this module are a function to pair protocol instances (required before the start of transmission) and the message type used by the protocol.
+"""
+
 import math
 from enum import Enum, auto
 

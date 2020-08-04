@@ -1,3 +1,9 @@
+"""Definition of EventList class.
+
+This module defines the EventList class, used by the timeline to order and execute events.
+EventList is implemented as a min heap ordered by simulation time.
+"""
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:

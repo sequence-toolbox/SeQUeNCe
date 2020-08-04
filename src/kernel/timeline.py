@@ -1,3 +1,9 @@
+"""Definition of main Timeline class.
+
+This module defines the Timeline class, which provides an interface for the simulation kernel and drives event execution.
+All entities are required to have an attached timeline for simulation.
+"""
+
 from _thread import start_new_thread
 from math import inf
 from sys import stdout

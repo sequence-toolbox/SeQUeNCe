@@ -1,3 +1,9 @@
+"""Definition of the quantum state class.
+
+This module defines the QuantumState class, used by photons and memories to track internal quantum states.
+The class provides interfaces for measurement and entanglement.
+"""
+
 from math import sqrt
 from numpy import pi, cos, sin, array, outer, kron, identity, arange
 from numpy.random import random, random_sample, choice

@@ -1,3 +1,9 @@
+"""Definition of Memory Manager.
+
+This module provides a definition for the memory manager, which tracks the state of memories on a node.
+This is done through instances of the MemoryInfo class, which track a single memory.
+"""
+
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .resource_manager import ResourceManager

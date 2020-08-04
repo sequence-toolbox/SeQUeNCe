@@ -1,3 +1,14 @@
+"""Code for entanglement swapping.
+
+This module defines code for entanglement swapping.
+Success is pre-determined based on network parameters.
+The entanglement swapping protocol is an asymmetric protocol:
+    The EntanglementSwappingA instance initiates the protocol and performs the swapping operation.
+    The EntanglementSwappingB instance waits for the swapping result from EntanglementSwappingA.
+The swapping results decides the following operations of EntanglementSwappingB.
+Also defined in this module is the message type used by these protocols.
+"""
+
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 from functools import lru_cache

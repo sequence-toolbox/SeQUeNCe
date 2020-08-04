@@ -1,3 +1,10 @@
+"""Definition of resource managemer.
+
+This module defines the resource manager, which composes the SeQUeNCe resource management module.
+The manager uses a memory manager and rule manager to track memories and control entanglement operations, respectively.
+This module also defines the message type used by the resource manager.
+"""
+
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Callable, List
 if TYPE_CHECKING:

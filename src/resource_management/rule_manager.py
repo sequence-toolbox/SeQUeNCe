@@ -1,3 +1,9 @@
+"""Definition of rule manager.
+
+This module defines the rule manager, which is used by the resource manager to instantiate and control entanglement protocols.
+This is achieved through rules (also defined in this module), which if met define a set of actions to take.
+"""
+
 from typing import Callable, TYPE_CHECKING, List, Tuple
 if TYPE_CHECKING:
     from ..entanglement_management.entanglement_protocol import EntanglementProtocol

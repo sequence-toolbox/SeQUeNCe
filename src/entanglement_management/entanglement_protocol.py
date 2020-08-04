@@ -1,3 +1,5 @@
+"""Entanglement protocol definition (abstract)"""
+
 from abc import abstractmethod
 from typing import TYPE_CHECKING
 

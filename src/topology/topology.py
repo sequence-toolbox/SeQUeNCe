@@ -1,3 +1,9 @@
+"""Definition of the Topology class.
+
+This module provides a definition of the Topology class, which can be used to manage a network's structure.
+Topology instances automatically perform many useful network functions.
+"""
+
 from typing import TYPE_CHECKING
 
 import json5

@@ -1,3 +1,8 @@
+"""Definition of abstract Entity class.
+
+This module defines the Entity class, inherited by all physical simulation elements (including hardware and photons).
+"""
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 

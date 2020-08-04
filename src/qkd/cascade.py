@@ -1,3 +1,10 @@
+"""Definition of cascade protocol implementation.
+
+This module provides an implementation of the cascade protocol for error correction.
+The protocol must be provided with a lower-layer protocol for key generation, such as BB84.
+Also included in this module are a function to pair protocol instances (required before the start of transmission) and the message type used by the protocol.
+"""
+
 import math
 from enum import Enum, auto
 from functools import lru_cache

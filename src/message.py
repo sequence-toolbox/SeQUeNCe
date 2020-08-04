@@ -1,3 +1,5 @@
+"""Definition of abstract message type."""
+
 from enum import Enum
 from abc import ABC
 

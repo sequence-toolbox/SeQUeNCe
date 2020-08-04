@@ -1,3 +1,9 @@
+"""Code for a randomozed application
+
+This module defines the RandomRequestApp, which will create entanglement requests with random parameters.
+Useful for testing network properties and throughputs.
+"""
+
 from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:
     from ..resource_management.memory_manager import MemoryInfo

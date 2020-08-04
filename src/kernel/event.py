@@ -1,3 +1,9 @@
+"""Definition of the Event class.
+
+This module defines the Event class, which is executed by the timeline.
+Events should be scheduled through the timeline to take effect.
+"""
+
 from math import inf
 from typing import TYPE_CHECKING
 

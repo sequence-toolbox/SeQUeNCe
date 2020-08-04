@@ -1,3 +1,10 @@
+"""Definition of Routing protocol.
+
+This module defines the StaticRouting protocol, which uses a pre-generated static routing table to direct reservation hops.
+Routing tables may be created manually, or generated and installed automatically by the Topology class.
+Also included is the message type used by the routing protocol.
+"""
+
 from enum import Enum
 from typing import Dict, TYPE_CHECKING
 if TYPE_CHECKING:

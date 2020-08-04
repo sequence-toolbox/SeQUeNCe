@@ -1,3 +1,9 @@
+"""Definition of abstract protocol type.
+
+This module defines the protocol type inherited by all protocol code implementations.
+Also defined is the stack protocol, which adds push and pop functionality.
+"""
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 

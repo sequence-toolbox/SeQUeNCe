@@ -1,3 +1,10 @@
+"""Code for BBPSSW entanglement purification.
+
+This module defines code to support the BBPSSW protocol for entanglement purification.
+Success results are pre-determined based on network parameters.
+Also defined is the message type used by the BBPSSW code.
+"""
+
 from enum import Enum, auto
 from typing import List, TYPE_CHECKING
 from functools import lru_cache

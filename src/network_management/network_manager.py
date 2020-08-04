@@ -1,3 +1,9 @@
+"""Definition of the Network Manager.
+
+This module defines the NetworkManager class, an implementation of the SeQUeNCe network management module.
+Also included in this module is the message type used by the network manager and a function for generating network managers with default protocols.
+"""
+
 from enum import Enum
 from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:
