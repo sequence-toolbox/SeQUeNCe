@@ -53,12 +53,13 @@ class BSM(Entity):
     """
 
     def __init__(self, name, timeline, **kwargs):
-        """
-        Arguments:
+        """Constructor for base BSM object.
+
+        Args:
             name (str): name of the beamsplitter instance
             timeline (Timeline): simulation timeline
 
-        Keyword Arguments:
+        Keyword Args:
             phase_error (float): phase error applied to polarization photons
             detectors (List[Dict]): list of parameters for attached detectors, in dictionary format
         """
@@ -88,7 +89,7 @@ class BSM(Entity):
                            [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]]
 
     def init(self):
-        """Implementation of Entity interface (no action)"""
+        """Implementation of Entity interface (see base class)."""
 
         pass
 
@@ -98,9 +99,6 @@ class BSM(Entity):
 
         Arguments:
             photon (Photon): photon to measure
-
-        Returns:
-            None
         """
         # check if photon arrived later than current photon
         if self.photon_arrival_time < self.timeline.now():
@@ -120,9 +118,6 @@ class BSM(Entity):
         Keyword Arguments:
             detector: detector object that is invoking the method
             time: simulation time of the detection event
-
-        Returns:
-            None
         """
 
         # calculate bsm based on detector num
@@ -150,12 +145,13 @@ class PolarizationBSM(BSM):
     """
 
     def __init__(self, name, timeline, **kwargs):
-        """
-        Arguments:
+        """Constructor for Polarization BSM.
+
+        Args:
             name (str): name of the beamsplitter instance
             timeline (Timeline): simulation timeline
 
-        Keyword Arguments:
+        Keyword Args:
             phase_error (float): phase error applied to polarization photons
             detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 4)
         """
@@ -165,13 +161,9 @@ class PolarizationBSM(BSM):
         assert len(self.detectors) == 4
 
     def get(self, photon):
-        """Method to receive a photon for measurement.
+        """See base class.
 
-        Arguments:
-            photon (Photon): photon to measure
-
-        Returns:
-            None
+        This method adds additional side effects not present in the base class.
 
         Side Effects:
             May call get method of one or more attached detector(s).
@@ -211,14 +203,9 @@ class PolarizationBSM(BSM):
             raise Exception("Invalid result from photon.measure_multiple")
         
     def pop(self, **kwargs):
-        """Method to receive photon detection events from attached detectors.
+        """See base class.
 
-        Keyword Arguments:
-            detector: detector object that is invoking the method
-            time: simulation time of the detection event
-
-        Returns:
-            None
+        This method adds additional side effects not present in the base class.
 
         Side Effects:
             May send a further pop message to any attached entities.
@@ -255,12 +242,13 @@ class TimeBinBSM(BSM):
     """
 
     def __init__(self, name, timeline, **kwargs):
-        """
-        Arguments:
+        """Constructor for the time bin BSM class.
+
+        Args:
             name (str): name of the beamsplitter instance
             timeline (Timeline): simulation timeline
 
-        Keyword Arguments:
+        Keyword Args:
             detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2)
         """
 
@@ -270,13 +258,9 @@ class TimeBinBSM(BSM):
         assert len(self.detectors) == 2
 
     def get(self, photon):
-        """Method to receive a photon for measurement.
+        """See base class.
 
-        Arguments:
-            photon (Photon): photon to measure
-
-        Returns:
-            None
+        This method adds additional side effects not present in the base class.
 
         Side Effects:
             May call get method of one or more attached detector(s).
@@ -332,14 +316,9 @@ class TimeBinBSM(BSM):
             raise Exception("Invalid result from photon.measure_multiple")
 
     def pop(self, **kwargs):
-        """Method to receive photon detection events from attached detectors.
+        """See base class.
 
-        Keyword Arguments:
-            detector: detector object that is invoking the method
-            time: simulation time of the detection event
-
-        Returns:
-            None
+        This method adds additional side effects not present in the base class.
 
         Side Effects:
             May send a further pop message to any attached entities.
@@ -364,9 +343,9 @@ class TimeBinBSM(BSM):
 
 
 class SingleAtomBSM(BSM):
-    """Class modeling a time bin BSM device.
+    """Class modeling a single atom BSM device.
 
-    Measures incoming photons according to time bins and manages entanglement.
+    Measures incoming photons and manages entanglement of associated memories.
 
     Attributes:
         name (str): label for BSM instance
@@ -376,12 +355,13 @@ class SingleAtomBSM(BSM):
     """
 
     def __init__(self, name, timeline, **kwargs):
-        """
-        Arguments:
+        """Constructor for the single atom BSM class.
+
+        Args:
             name (str): name of the beamsplitter instance
             timeline (Timeline): simulation timeline
 
-        Keyword Arguments:
+        Keyword Args:
             detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2)
         """
 
@@ -391,13 +371,9 @@ class SingleAtomBSM(BSM):
         assert len(self.detectors) == 2
 
     def get(self, photon):
-        """Method to receive a photon for measurement.
+        """See base class.
 
-        Arguments:
-            photon (Photon): photon to measure
-
-        Returns:
-            None
+        This method adds additional side effects not present in the base class.
 
         Side Effects:
             May call get method of one or more attached detector(s).
@@ -441,14 +417,9 @@ class SingleAtomBSM(BSM):
                     self.detectors[detector_num].get()
 
     def pop(self, **kwargs):
-        """Method to receive photon detection events from attached detectors.
+        """See base class.
 
-        Keyword Arguments:
-            detector: detector object that is invoking the method
-            time: simulation time of the detection event
-
-        Returns:
-            None
+        This method adds additional side effects not present in the base class.
 
         Side Effects:
             May send a further pop message to any attached entities.

@@ -32,12 +32,13 @@ class BeamSplitter(Entity):
     """
 
     def __init__(self, name: str, timeline: "Timeline", **kwargs):
-        """
-        Arguments:
+        """Constructor for the beamsplitter class
+
+        Args:
             name (str): name of the beamsplitter instance
             timeline (Timeline): simulation timeline
 
-        Keyword Arguments:
+        Keyword Args:
             fidelity (float): probability of transmitting a received photon (default 1)
         """
 
@@ -50,18 +51,15 @@ class BeamSplitter(Entity):
         self.basis_list = []
 
     def init(self) -> None:
-        """Implementation of Entity interface (no action)"""
+        """Implementation of Entity interface (see base class)."""
 
         pass
 
     def get(self, photon: "Photon") -> None:
         """Method to receive a photon for measurement.
 
-        Arguments:
+        Args:
             photon (Photon): photon to measure (must have polarization encoding)
-
-        Returns:
-            None
 
         Side Effects:
             May call get method of one receiver from the receivers attribute if start_time, frequency, and basis_list attributes are set up properly.
@@ -79,14 +77,14 @@ class BeamSplitter(Entity):
             self.receivers[res].get()
 
     def set_basis_list(self, basis_list: "List[int]", start_time: int, frequency: int) -> None:
-        """Sets the basis_list, start_time, and frequency attributes"""
+        """Sets the basis_list, start_time, and frequency attributes."""
 
         self.basis_list = basis_list
         self.start_time = start_time
         self.frequency = frequency
 
     def set_receiver(self, index: int, receiver: "Entity") -> None:
-        """Sets the receivers attribute at the specified index"""
+        """Sets the receivers attribute at the specified index."""
 
         if index > len(self.receivers):
             raise Exception("index is larger than the length of receivers")

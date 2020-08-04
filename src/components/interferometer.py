@@ -18,8 +18,7 @@ from ..kernel.event import Event
 
 
 class Interferometer(Entity):
-    """
-    Class modeling a Mach-Zehnder interferometer (MZI).
+    """Class modeling a Mach-Zehnder interferometer (MZI).
 
     Useful for measurement of time bin encoded photons in the X-basis.
 
@@ -32,13 +31,14 @@ class Interferometer(Entity):
     """
 
     def __init__(self, name: str, timeline: "Timeline", path_diff, **kwargs):
-        """
-        Arguments:
+        """Constructor for the interferometer class.
+
+        Args:
             name (str): name of the interferometer instance
             timeline (Timeline): simulation timeline
             path_diff (int): sets path difference for interferometer instance
 
-        Keyword Arguments:
+        Keyword Args:
             phase_error (float): phase error applied to measurement (default 0)
         """
 
@@ -48,28 +48,19 @@ class Interferometer(Entity):
         self.receivers = []
 
     def init(self) -> None:
-        """
-        Implementation of Entity initialization interface
-        
-        Arguments:
-            None
-
-        Returns:
-            None
-        """
+        """See base class."""
 
         assert len(self.receivers) == 2
 
     def set_receiver(self, index: int, receiver: "Detector") -> None:
-        """Sets the receivers attribute at the specified index"""
+        """Sets the receivers attribute at the specified index."""
 
         if index > len(self.receivers):
             raise Exception("index is larger than the length of receivers")
         self.receivers.insert(index, receiver)
 
     def get(self, photon: "Photon") -> None:
-        """
-        Method to receive a photon for measurement.
+        """Method to receive a photon for measurement.
 
         Arguments:
             photon (Photon): photon to measure (must have polarization encoding)
