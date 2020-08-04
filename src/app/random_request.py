@@ -1,6 +1,6 @@
 """Code for a randomozed application
 
-This module defines the RandomRequestApp, which will create entanglement requests with random parameters.
+This module defines the RandomRequestApp, which will create random entanglement requests repeatedly.
 Useful for testing network properties and throughputs.
 """
 
