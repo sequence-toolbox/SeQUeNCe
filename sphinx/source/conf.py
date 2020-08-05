@@ -18,8 +18,8 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'SeQUeNCe'
-copyright = '2020, Alexander Kolar'
-author = 'Alexander Kolar'
+copyright = '2020'
+author = 'Xiaoliang Wu, Joaquin Chung, Alexander Kolar, Eugene Wang, Tian Zhong, Rajkumar Kettimuthu, Martin Suchara'
 
 # The full version, including alpha/beta/rc tags
 release = '0.2.0'
