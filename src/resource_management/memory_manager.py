@@ -1,6 +1,10 @@
 """Definition of Memory Manager.
 
 This module provides a definition for the memory manager, which tracks the state of memories on a node.
+There are three states of quantum memory represented by the string: "RAW", "OCCUPIED", "ENTANGLED". 
+    "RAW" denotes a free memory that is not entangling with other memories.
+    "OCCUPIED" denotes a memory that is allocated to protocols or applications.
+    "ENTANGLED" denotes a free memory that is entangling with other memories. 
 This is done through instances of the MemoryInfo class, which track a single memory.
 """
 
