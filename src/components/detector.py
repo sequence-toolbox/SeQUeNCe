@@ -86,11 +86,10 @@ class QSDetector(Entity, ABC):
 
 
 class QSDetectorPolarization(QSDetector):
-    """
-       There are two detectors. Their connections are shown below.
+    """There are two detectors. Their connections are shown below.
 
-       polarization splitter ---- detectors[0]
-                         |------- detectors[1]
+    polarization splitter ---- detectors[0]
+                      |------- detectors[1]
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
@@ -121,8 +120,7 @@ class QSDetectorPolarization(QSDetector):
 
 
 class QSDetectorTimeBin(QSDetector):
-    """
-    There are three detectors. Their connections are shown below.
+    """There are three detectors. Their connections are shown below.
 
     switch ---- detectors[0]
         |------ interferometer ---- detectors[1]

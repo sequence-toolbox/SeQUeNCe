@@ -5,8 +5,7 @@ Welcome to SeQUeNCe's documentation!
     :maxdepth: 2
     :caption: Contents:
 
-.. automodule:: src.components.bsm
-    :members:
+    components/top
 
 
 Indices and tables
