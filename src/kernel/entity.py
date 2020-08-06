@@ -11,7 +11,12 @@ if TYPE_CHECKING:
 
 
 class Entity(ABC):
+    """Abstract Entity class
 
+    Args:
+        name (str): name of the entity
+        timeline (Timeline): the simulation timeline of entity
+    """
     def __init__(self, name: str, timeline: "Timeline"):
         if name is None:
             self.name = ""

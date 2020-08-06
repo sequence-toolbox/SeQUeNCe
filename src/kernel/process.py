@@ -2,9 +2,26 @@
 
 This module defines a process, which is performed when an event is executed.
 """
+from typing import Any, List
+
 
 class Process:
-    def __init__(self, owner, activation_method, act_params):
+    """Class of process
+
+    The process claims the object of process, the function of object, and the arguments of object.
+
+    Args:
+        owner (Any): the object of process
+        activation_method (str): the function of object
+        act_params (List[Any]) : the arguments of object
+
+    Attributes:
+        owner (Any): the object of process
+        activation_method (str): the function of object
+        act_params (List[Any]) : the arguments of object
+    """
+
+    def __init__(self, owner: Any, activation_method: str, act_params: List[Any]):
         self.owner = owner
         self.activation = activation_method
         self.act_params = act_params

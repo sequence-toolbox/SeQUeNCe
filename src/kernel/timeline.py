@@ -17,6 +17,27 @@ from .eventlist import EventList
 
 
 class Timeline:
+    """ Class of timeline
+    Timeline holds entities, which is configured before the simulation. Before the start of simulation, timeline must
+    initialize all controlled entities. The initialization of entities may schedule events. The timeline pushes these
+    events to its event list. The timeline starts simulation by popping the top event in the event list repeatedly. The
+    time of popped event becomes current simulation time of timeline. The process of popped event is executed. The
+    simulation stops if the timestamp on popped event is equal or larger than the stop time.
+
+    To monitor the progress of simulation, people could change the value of Timeline.show_progress to show/hide progress
+    bar.
+
+    Args:
+        stop_time (int): the stop time of simulation
+
+    Attributes:
+        events (EventList): the event list of timeline
+        entities (List[Entity]): the entity list of timeline used for initialization
+        time (int): current simulation time (picoseconds)
+        stop_time (int): the stop (simulation) time of simulation
+        show_progress (bool): show/hide the progress bar of simulation
+        is_running (bool): if the simulation stops executing event
+    """
 
     def __init__(self, stop_time=inf):
         self.events = EventList()
