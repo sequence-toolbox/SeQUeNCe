@@ -19,6 +19,8 @@ from .memory_manager import MemoryManager
 
 
 class ResourceManagerMsgType(Enum):
+    """Available message types for the ResourceManagerMessage."""
+
     REQUEST = auto()
     RESPONSE = auto()
     RELEASE_PROTOCOL = auto()
@@ -26,15 +28,18 @@ class ResourceManagerMsgType(Enum):
 
 
 class ResourceManagerMessage(Message):
-    """
-    Two type of ResourceManagerMessage:
-    - REQUEST: request eligible protocols from remote resource manager to pair entanglement protocols
-      - ini_protocol: protocol that creates this message
-      - request_fun: a function using ResourceManager as input to search eligible protocols on remote node
-    - RESPONSE: approve or reject received request
-      - is_approved: bool type
-      - ini_protocol: protocol that creates REQUEST message
-      - paired_protocol: protocol that is paired with ini_protocol
+    """Message for resource manager communication.
+
+    There are two types of ResourceManagerMessage:
+
+    * REQUEST: request eligible protocols from remote resource manager to pair entanglement protocols
+    * RESPONSE: approve or reject received request
+
+    Attributes:
+        ini_protocol (str): name of protocol that creates the original REQUEST message.
+        request_fun (func): a function using ResourceManager to search eligible protocols on remote node (if `msg_type` == REQUEST).
+        is_approved (bool): acceptance/failure of condition function (if `msg_type` == RESPONSE).
+        paired_protocol (str): protocol that is paired with ini_protocol (if `msg-type` == RESPONSE).
     """
 
     def __init__(self, msg_type: ResourceManagerMsgType, **kwargs):
@@ -54,6 +59,20 @@ class ResourceManagerMessage(Message):
 
 
 class ResourceManager():
+    """Class to define the resource manager.
+
+    The resource manager uses a memory manager to track memory states for the entanglement protocols.
+    It also uses a rule manager to direct the creation and operation of entanglement protocols.
+
+    Attributes:
+        name (str): label for manager instance.
+        owner (QuantumRouter): node that resource manager is attached to.
+        memory_manager (MemoryManager): internal memory manager object.
+        rule_manager (RuleManager): internal rule manager object.
+        pending_protocols (List[Protocol]): list of protocols awaiting a response for a remote resource request.
+        waiting_protocols (List[Protocol]): list of protocols awaiting a request from a remote protocol.
+    """
+
     def __init__(self, owner: "QuantumRouter"):
         self.name = "resource_manager"
         self.owner = owner

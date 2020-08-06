@@ -1,7 +1,7 @@
 """Definition of Routing protocol.
 
 This module defines the StaticRouting protocol, which uses a pre-generated static routing table to direct reservation hops.
-Routing tables may be created manually, or generated and installed automatically by the Topology class.
+Routing tables may be created manually, or generated and installed automatically by the `Topology` class.
 Also included is the message type used by the routing protocol.
 """
 
@@ -15,16 +15,35 @@ from ..protocol import StackProtocol
 
 
 class StaticRoutingMessage(Message):
+    """Message used for communications between routing protocol instances.
+
+    Attributes:
+        msg_type (Enum): type of message, required by base `Message` class.
+        receiver (str): name of destination protocol instance.
+        payload (Message): message to be delivered to destination.
+    """
+    
     def __init__(self, msg_type: Enum, receiver: str, payload: "Message"):
         super().__init__(msg_type, receiver)
         self.payload = payload
 
 
 class StaticRoutingProtocol(StackProtocol):
+    """Class to route reservation requests.
+
+    The `StaticRoutingProtocol` class uses a static routing table to direct the flow of reservation requests.
+    This is usually defined based on the shortest quantum channel length.
+
+    Attributes:
+        own (Node): node that protocol instance is attached to.
+        name (str): label for protocol instance.
+        forwarding_table (Dict): mapping of destination node names to name of node for next hop.
+    """
+    
     def __init__(self, own: "Node", name: str, forwarding_table: Dict):
-        '''
+        """
         forwarding_table: {name of destination node: name of next node}
-        '''
+        """
         super().__init__(own, name)
         self.forwarding_table = forwarding_table
 

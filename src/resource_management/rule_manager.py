@@ -13,6 +13,16 @@ if TYPE_CHECKING:
 
 
 class RuleManager():
+    """Class to manage and follow installed rules.
+
+    The RuleManager checks available rules when the state of a memory is updated.
+    Rules that are met have their action executed by the rule manager.
+
+    Attributes:
+        rules (List[Rules]): List of installed rules.
+        resource_manager (ResourceManager): reference to the resource manager using this rule manager.
+    """
+
     def __init__(self):
         self.rules = []
         self.resource_manager = None
@@ -54,6 +64,19 @@ class RuleManager():
 
 
 class Rule():
+    """Definition of rule for the rule manager.
+
+    Rule objects are installed on and interacted with by the rule manager.
+
+    Attributes:
+        priority (int): priority of the rule, used as a tiebreaker when conditions of multiple rules are met.
+        action (Callable[[List["MemoryInfo"]], Tuple["Protocol", List["str"], List[Callable[["Protocol"], bool]]]]):
+            action to take when rule condition is met.
+        condition (Callable[["MemoryInfo", "MemoryManager"], List["MemoryInfo"]]): condition required by rule.
+        protocols (List[Protocols]): protocols created by rule.
+        rule_manager (RuleManager): reference to rule manager object where rule is installed.
+    """
+
     def __init__(self, priority: int,
                  action: Callable[
                      [List["MemoryInfo"]], Tuple["Protocol", List["str"], List[Callable[["Protocol"], bool]]]],

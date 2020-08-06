@@ -16,12 +16,31 @@ from .reservation import ResourceReservationProtocol, ResourceReservationMessage
 
 
 class NetworkManagerMessage(Message):
+    """Message used by the network manager.
+
+    Attributes:
+        message_type (Enum): message type required by base message type.
+        receiver (str): name of destination protocol instance.
+        payload (Message): message to be passed through destination network manager.
+    """
+
     def __init__(self, msg_type: Enum, receiver: str, payload: "Message"):
         Message.__init__(self, msg_type, receiver)
         self.payload = payload
 
 
 class NetworkManager():
+    """Network manager implementation class.
+
+    The network manager is responsible for the operations of a node within a broader quantum network.
+    This is done through a `protocol_stack` of protocols, which messages are passed and packaged through.
+
+    Attributes:
+        name (str): name of the network manager instance.
+        owner (QuantumRouter): node that protocol instance is attached to.
+        protocol_stack (List[StackProtocol]): network manager protocol stack.
+    """
+
     def __init__(self, owner: "QuantumRouter", protocol_stack: "List[StackProtocol]"):
         self.name = "network_manager"
         self.owner = owner

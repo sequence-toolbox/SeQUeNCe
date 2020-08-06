@@ -1,10 +1,12 @@
 """Definition of Memory Manager.
 
 This module provides a definition for the memory manager, which tracks the state of memories on a node.
-There are three states of quantum memory represented by the string: "RAW", "OCCUPIED", "ENTANGLED". 
-    "RAW" denotes a free memory that is not entangling with other memories.
-    "OCCUPIED" denotes a memory that is allocated to protocols or applications.
-    "ENTANGLED" denotes a free memory that is entangling with other memories. 
+There are three states of quantum memory represented by the string: "RAW", "OCCUPIED", "ENTANGLED".
+
+* "RAW" denotes a free memory that is not entangling with other memories.
+* "OCCUPIED" denotes a memory that is allocated to protocols or applications.
+* "ENTANGLED" denotes a free memory that is entangling with other memories. 
+
 This is done through instances of the MemoryInfo class, which track a single memory.
 """
 
@@ -15,6 +17,16 @@ if TYPE_CHECKING:
 
 
 class MemoryManager():
+    """Class to manage a node's memories.
+
+    The memory manager tracks the entanglement state of a node's memories, along with other information (such as fidelity).
+
+    Attributes:
+        memory_array (MemoryArray): memory array object to be tracked.
+        memory_map (List[MemoryInfo]): array of memory info objects corresponding to memory array.
+        resource_manager (ResourceManager): resource manager object using the memory manager.
+    """
+
     def __init__(self, memory_array: "MemoryArray"):
         self.memory_array = memory_array
         self.memory_array.upper_protocols.append(self)
@@ -53,11 +65,25 @@ class MemoryManager():
 
 
 class MemoryInfo():
-    """
-    Allowed states:
-    RAW       : Memory is unprocessed
-    OCCUPIED  : Memory is occupied by some protocol
-    ENTANGLED : Memory has been successfully entangled
+    """Class to track memory information parameters for memory manager.
+
+    The memory info class chiefly tracks a memory's entanglement state, in one of 3 allowed states:
+    
+    * RAW: Memory is unprocessed
+    * OCCUPIED: Memory is occupied by some protocol
+    * ENTANGLED: Memory has been successfully entangled
+
+    The class additionally tracks other memory parameters and properties.
+
+    Attributes:
+        memory (Memory): specific memory being tracked.
+        index (int): index of memory in memory array.
+        state (str): state of memory.
+        remote_node (str): name of node holding entangled memory.
+        remote_memo (int): index of entangled memory on remote node.
+        fidelity (int): fidelity of entanglement for memory.
+        expire_event (Event): expiration event for the memory.
+        entangle_time (int): time at which most recent entanglement is achieved.
     """
 
     def __init__(self, memory: "Memory", index: int, state="RAW"):

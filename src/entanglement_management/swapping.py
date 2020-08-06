@@ -3,8 +3,10 @@
 This module defines code for entanglement swapping.
 Success is pre-determined based on network parameters.
 The entanglement swapping protocol is an asymmetric protocol:
-    The EntanglementSwappingA instance initiates the protocol and performs the swapping operation.
-    The EntanglementSwappingB instance waits for the swapping result from EntanglementSwappingA.
+
+* The EntanglementSwappingA instance initiates the protocol and performs the swapping operation.
+* The EntanglementSwappingB instance waits for the swapping result from EntanglementSwappingA.
+
 The swapping results decides the following operations of EntanglementSwappingB.
 Also defined in this module is the message type used by these protocols.
 """
@@ -24,10 +26,25 @@ from .entanglement_protocol import EntanglementProtocol
 
 
 class SwappingMsgType(Enum):
+    """Defines possible message types for entanglement generation."""
+
     SWAP_RES = auto()
 
 
 class EntanglementSwappingMessage(Message):
+    """Message used by entanglement swapping protocols.
+
+    This message contains all information passed between swapping protocol instances.
+
+    Attributes:
+        msg_type (SwappingMsgType): defines the message type.
+        receiver (str): name of destination protocol instance.
+        fidelity (float): fidelity of the newly swapped memory pair.
+        remote_node (str): name of the distant node holding the entangled memory of the new pair.
+        remote_memo (int): index of the entangled memory on the remote node.
+        expire_time (int): expiration time of the new memory pair.
+    """
+
     def __init__(self, msg_type: str, receiver: str, **kwargs):
         Message.__init__(self, msg_type, receiver)
         if self.msg_type is SwappingMsgType.SWAP_RES:
@@ -47,10 +64,19 @@ class EntanglementSwappingMessage(Message):
 
 
 class EntanglementSwappingA(EntanglementProtocol):
-    """
-    Entanglement swapping protocol is an asymmetric protocol. The EntanglementSwappingA initiate protocol and do
-    swapping operation. The EntanglementSwappingB waits swapping results from EntanglementSwappingA. The swapping
-    results decides the following operations of EntanglementSwappingB.
+    """Entanglement swapping protocol for middle router.
+
+    The entanglement swapping protocol is an asymmetric protocol.
+    EntanglementSwappingA should be instantiated on the middle node, where it measures a memory from each pair to be swapped.
+    Results of measurement and swapping are sent to the end routers.
+
+    Attributes:
+        own (QuantumRouter): node that protocol instance is attached to.
+        name (str): label for protocol instance.
+        left_memo (Memory): a memory from one pair to be swapped.
+        right_memo (Memory): a memory from the other pair to be swapped.
+        success_prob (float): probability of a successful swapping operation (default 1).
+        degradation (float): degradation factor of memory fidelity after the swapping operation (default 0.95).
     """
 
     def __init__(self, own: "Node", name: str, left_memo: "Memory", right_memo: "Memory", success_prob=1,
@@ -112,16 +138,14 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.own.resource_manager.update(self, memory, state)
 
     def success_probability(self) -> float:
-        '''
-        A simple model for BSM success probability
-        '''
+        """A simple model for BSM success probability"""
+
         return self.success_prob
 
     @lru_cache(maxsize=128)
     def updated_fidelity(self, f1: float, f2: float) -> float:
-        '''
-        A simple model updating fidelity of entanglement
-        '''
+        """A simple model updating fidelity of entanglement"""
+
         return f1 * f2 * self.degradation
 
     def received_message(self, src: str, msg: "Message") -> None:
@@ -148,10 +172,15 @@ class EntanglementSwappingA(EntanglementProtocol):
 
 
 class EntanglementSwappingB(EntanglementProtocol):
-    """
-    Entanglement swapping protocol is an asymmetric protocol. The EntanglementSwappingA initiate protocol and do
-    swapping operation. The EntanglementSwappingB waits swapping results from EntanglementSwappingA. The swapping
-    results decides the following operations of EntanglementSwappingB.
+    """Entanglement swapping protocol for middle router.
+
+    The entanglement swapping protocol is an asymmetric protocol.
+    EntanglementSwappingB should be instantiated on the end nodes, where it waits for swapping results from the middle node.
+
+    Attributes:
+        own (QuantumRouter): node that protocol instance is attached to.
+        name (str): label for protocol instance.
+        hold_memory (Memory): quantum memory to be swapped.
     """
 
     def __init__(self, own: "Node", name: str, hold_memo: "Memory"):

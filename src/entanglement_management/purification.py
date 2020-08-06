@@ -20,10 +20,21 @@ from .entanglement_protocol import EntanglementProtocol
 
 
 class BBPSSWMsgType(Enum):
+    """Defines possible message types for entanglement purification"""
+
     PURIFICATION_RES = auto()
 
 
 class BBPSSWMessage(Message):
+    """Message used by entanglement purification protocols.
+
+    This message contains all information passed between purification protocol instances.
+
+    Attributes:
+        msg_type (BBPSSWMsgType): defines the message type.
+        receiver (str): name of destination protocol instance.
+    """
+
     def __init__(self, msg_type: BBPSSWMsgType, receiver: str, **kwargs):
         Message.__init__(self, msg_type, receiver)
         if self.msg_type is BBPSSWMsgType.PURIFICATION_RES:
@@ -33,6 +44,18 @@ class BBPSSWMessage(Message):
 
 
 class BBPSSW(EntanglementProtocol):
+    """Purification protocol instance.
+
+    This class provides an implementation of the BBPSSW purification protocol.
+    It should be instantiated on a quantum router node.
+
+    Attributes:
+        own (QuantumRouter): node that protocol instance is attached to.
+        name (str): label for protocol instance.
+        kept_memo: memory to be purified by the protocol (should already be entangled).
+        meas_memo: memory to measure and discart (should already be entangled).
+    """
+
     def __init__(self, own: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory"):
         assert kept_memo != meas_memo
         EntanglementProtocol.__init__(self, own, name)
