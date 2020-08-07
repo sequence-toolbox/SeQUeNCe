@@ -17,6 +17,18 @@ from ..kernel.process import Process
 
 
 class Switch(Entity):
+    """Class for a simple optical switch.
+
+    Attributes:
+        name (str): label for switch instance.
+        timeline (Timeline): timeline for simulation.
+        start_time (int): simulation start time (in ps) for transmission.
+        frequency (float): frequency with whitch to switch destinations.
+        basis_list (List[int]): 0/1 list denoting which receiver to rout photons to each period.
+        interferometer (Interferometer): linked interferometer to receive photons in basis 1.
+        detector (Detector): linked SPD to receive photons in basis 0.
+    """
+
     def __init__(self, name: str, timeline: "Timeline"):
         Entity.__init__(self, name, timeline)
         self.start_time = 0

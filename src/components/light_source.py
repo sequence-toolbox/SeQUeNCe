@@ -14,6 +14,22 @@ from ..utils.encoding import polarization
 
 
 class LightSource(Entity):
+    """Model for a laser light source.
+
+    The LightSource component acts as a simple low intensity laser, providing photon clusters at a set frequency.
+
+    Attributes:
+        name (str): label for beamsplitter instance
+        timeline (Timeline): timeline for simulation
+        frequency (float): frequency (in Hz) of photon creation.
+        wavelength (float): wavelength (in nm) of emitted photons.
+        linewidth (float): st. dev. in photon wavelength (in nm).
+        mean_photon_num (float): mean number of photons emitted each period.
+        encoding_type (Dict): encoding scheme of emitted photons (as defined in the encoding module).
+        phase_error (float): phase error applied to qubits.
+        photon_counter (int): counter for number of photons emitted.
+    """
+
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.frequency = kwargs.get("frequency", 8e7)  # measured in Hz
@@ -60,8 +76,28 @@ class LightSource(Entity):
 
 
 class SPDCSource(LightSource):
+    """Model for a laser light source for entangled photons (via SPDC).
+
+    The SPDCLightSource component acts as a simple low intensity laser with an SPDC lens.
+    It provides entangled photon clusters at a set frequency.
+
+    Attributes:
+        name (str): label for beamsplitter instance
+        timeline (Timeline): timeline for simulation
+        frequency (float): frequency (in Hz) of photon creation.
+        wavelengths (float): wavelengths (in nm) of emitted entangled photons.
+        linewidth (float): st. dev. in photon wavelength (in nm).
+        mean_photon_num (float): mean number of photons emitted each period.
+        encoding_type (Dict): encoding scheme of emitted photons (as defined in the encoding module).
+        phase_error (float): phase error applied to qubits.
+        photon_counter (int): counter for number of photons emitted.
+        direct_receiver (Entity): device to receive one entangled photon.
+        another_receiver (Entity): device to receive another entangled photon.
+    """
+
     def __init__(self, name, timeline, **kwargs):
         super().__init__(name, timeline, **kwargs)
+        self.direct_receiver = kwargs.get("direct_receiver", None)
         self.another_receiver = kwargs.get("another_receiver", None)
         self.wavelengths = kwargs.get("wavelengths", [])
 

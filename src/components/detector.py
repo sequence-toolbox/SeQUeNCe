@@ -25,10 +25,25 @@ from ..utils.encoding import time_bin
 
 
 class Detector(Entity):
+    """Single photon detector device.
+
+    This class models a single photon detector, for detecting photons.
+    Can be attached to many different devices to enable different measurement options.
+
+    Attributes:
+        name (str): label for detector instance.
+        timeline (Timeline): timeline for simulation.
+        efficiency (float): probability to successfully measure an incoming photon.
+        dark_count (float): average number of false positive detections per second.
+        count_rate (float): maximum detection rate; defines detector cooldown time.
+        time_resolution (int): minimum resolving power of photon arrival time (in ps).
+        photon_counter (int): counts number of detection events.
+    """
+
     def __init__(self, name: str, timeline: "Timeline", **kwargs):
         Entity.__init__(self, name, timeline)  # Detector is part of the QSDetector, and does not have its own name
         self.efficiency = kwargs.get("efficiency", 0.9)
-        self.dark_count = kwargs.get("dark_count", 0)  # measured in Hz
+        self.dark_count = kwargs.get("dark_count", 0)  # measured in 1/s
         self.count_rate = kwargs.get("count_rate", int(25e6))  # measured in Hz
         self.time_resolution = kwargs.get("time_resolution", 150)  # measured in ps
         self.next_detection_time = -1
@@ -60,9 +75,21 @@ class Detector(Entity):
 
 
 class QSDetector(Entity, ABC):
+    """Abstract QSDetector parent class.
+
+    Provides a template for objects measuring qubits in different encoding schemes.
+
+    Attributes:
+        name (str): label for QSDetector instance.
+        timeline (Timeline): timeline for simulation.
+        protocols (List[Protocol]): list of attached protocols.
+        detectors (List[Detector]): list of attached detectors.
+        trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
+    """
+
     def __init__(self, name: str, timeline: "Timeline"):
         Entity.__init__(self, name, timeline)
-        self.protocols = []
+        self.protocols = [] # TODO: delete?
         self.detectors = []
         self.trigger_times = []
 
@@ -86,10 +113,19 @@ class QSDetector(Entity, ABC):
 
 
 class QSDetectorPolarization(QSDetector):
-    """There are two detectors. Their connections are shown below.
+    """QSDetector to measure polarization encoded qubits.
 
-    polarization splitter ---- detectors[0]
-                      |------- detectors[1]
+    There are two detectors. Their connections are shown below:
+        polarization splitter ---- detectors[0]
+                          |------- detectors[1]
+
+    Attributes:
+        name (str): label for QSDetector instance.
+        timeline (Timeline): timeline for simulation.
+        protocols (List[Protocol]): list of attached protocols.
+        detectors (List[Detector]): list of attached detectors (length 2).
+        trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
+        splitter (BeamSplitter): internal beamsplitter object.
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
@@ -120,11 +156,21 @@ class QSDetectorPolarization(QSDetector):
 
 
 class QSDetectorTimeBin(QSDetector):
-    """There are three detectors. Their connections are shown below.
+    """QSDetector to measure time bin encoded qubits.
 
-    switch ---- detectors[0]
-        |------ interferometer ---- detectors[1]
-                            |------ detectors[2]
+    There are three detectors. Their connections are shown below:
+        switch ---- detectors[0]
+            |------ interferometer ---- detectors[1]
+                                |------ detectors[2]
+
+    Attributes:
+        name (str): label for QSDetector instance.
+        timeline (Timeline): timeline for simulation.
+        protocols (List[Protocol]): list of attached protocols.
+        detectors (List[Detector]): list of attached detectors (length 3).
+        trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
+        switch (Switch): internal optical switch component.
+        interferometer (Interferometer): internal interferometer component.
     """
 
     def __init__(self, name: str, timeline: "Timeline"):

@@ -25,6 +25,16 @@ from ..utils.quantum_state import QuantumState
 
 # array of atomic ensemble memories
 class MemoryArray(Entity):
+    """Aggregator for Memory objects.
+
+    The MemoryArray can be accessed as a list to get individual memories.
+    
+    Attributes:
+        name (str): label for memory array instance.
+        timeline (Timeline): timeline for simulation.
+        memories (List[Memory]): list of all memories.
+    """
+
     def __init__(self, name: str, timeline: "Timeline", num_memories=10,
                  fidelity=0.85, frequency=80e6, efficiency=1, coherence_time=-1, wavelength=500):
         Entity.__init__(self, name, timeline)
@@ -61,6 +71,23 @@ class MemoryArray(Entity):
 
 # single-atom memory
 class Memory(Entity):
+    """Individual single-atom memory.
+
+    This class models a single-atom memory, where the quantum state is stored as the spin of a single ion.
+
+    Attributes:
+        name (str): label for memory instance.
+        timeline (Timeline): timeline for simulation.
+        fidelity (float): (current) fidelity of memory.
+        raw_fidelity (float): fidelity of memory in the RAW (unentangled) state.
+        frequency (float): maximum frequency at which memory can be excited.
+        efficiency (float): probability of emitting a photon when excited.
+        coherence_time (float): average usable lifetime of memory (in seconds).
+        wavelength (float): wavelength (in nm) of emitted photons.
+        qstate (QuantumState): quantum state of memory.
+        entangled_memory (Dict): tracks entanglement state of memory.
+    """
+
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
                  efficiency: float, coherence_time: int, wavelength: int):
         Entity.__init__(self, name, timeline)

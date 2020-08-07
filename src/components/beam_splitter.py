@@ -24,13 +24,13 @@ class BeamSplitter(Entity):
     The BeamSplitter class can be configured to measure polarization in different bases at different times.
     
     Attributes:
-        name (str): label for beamsplitter instance
-        timeline (Timeline): timeline for simulation
-        fidelity (float): probability of transmitting a received photon
-        receivers (List[Entities]): entities to receive transmitted photons
-        start_time (int): start time (in ps) of photon interaction
-        frequency (float): frequency with which to switch measurement bases
-        basis_list (List[int]): 0/1 indices of measurement bases over time
+        name (str): label for beamsplitter instance.
+        timeline (Timeline): timeline for simulation.
+        fidelity (float): probability of transmitting a received photon.
+        receivers (List[Entities]): entities to receive transmitted photons.
+        start_time (int): start time (in ps) of photon interaction.
+        frequency (float): frequency with which to switch measurement bases.
+        basis_list (List[int]): 0/1 indices of measurement bases over time.
     """
 
     def __init__(self, name: str, timeline: "Timeline", **kwargs):
