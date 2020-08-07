@@ -10,7 +10,10 @@ Welcome to the SeQUeNCe reference page
     entanglement_management/top
     resource_management/top
     network_management/top
-
+    application/top
+    topology/top
+    qkd/top
+    misc/top
 
 Indices and tables
 ==================

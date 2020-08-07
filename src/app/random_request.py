@@ -17,6 +17,25 @@ from ..topology.node import QuantumRouter
 
 
 class RandomRequestApp():
+    """Code for the random request application.
+
+    This application will create a request for entanglement with a random node (and with other random parameters).
+    If the request is accepted, a new request will be made once it has expired.
+    Otherwise, a new request will be made immediately.
+
+    Attributes:
+        node (QuantumRouter): Node that code is attached to.
+        others (List[str]): list of names for available other nodes.
+        rg (numpy.random.default_rng): random number generator for application.
+        cur_reserve (List[any]): list describing current reservation.
+        request_time (int): simulation time at which current reservation requested.
+        memory_counter (int): number of successfully received memories.
+        wait_time (List[int]): aggregates times between request and accepted reservation.
+        throughput (List[float]): aggregates average rate of memory entanglement per reservation
+        reserves (List[List[any]]): aggregates previous reservations 
+        memo_to_reserve (Dict): mapping of memory index to corresponding reservation.
+    """
+
     def __init__(self, node: "QuantumRouter", others: List[str], seed: int):
         self.node = node
         self.node.set_app(self)
