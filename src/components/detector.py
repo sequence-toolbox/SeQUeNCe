@@ -6,7 +6,7 @@ QSDetector is defined as an abstract template and as implementaions for polariza
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Dict
 
 from numpy import random
 
@@ -43,7 +43,7 @@ class Detector(Entity):
         time = round(now / self.time_resolution) * self.time_resolution
 
         if (random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
-            self._pop(detector=self, time=time)
+            self.notify({'time': time})
             self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self) -> None:
@@ -57,6 +57,10 @@ class Detector(Entity):
             event2 = Event(time, process2)
             self.timeline.schedule(event1)
             self.timeline.schedule(event2)
+
+    def notify(self, msg: Dict[str, Any]):
+        for observer in self._observers:
+            observer.trigger(self, msg)
 
 
 class QSDetector(Entity, ABC):
@@ -73,9 +77,9 @@ class QSDetector(Entity, ABC):
     def get(self, photon: "Photon") -> None:
         pass
 
-    def pop(self, detector: "Detector", time: int) -> None:
+    def trigger(self, detector: Detector, msg: Dict[str, Any]) -> None:
         detector_index = self.detectors.index(detector)
-        self.trigger_times[detector_index].append(time)
+        self.trigger_times[detector_index].append(msg['time'])
 
     def get_photon_times(self):
         return self.trigger_times
@@ -98,8 +102,8 @@ class QSDetectorPolarization(QSDetector):
         self.splitter = BeamSplitter(name + ".splitter", timeline)
         self.splitter.set_receiver(0, self.detectors[0])
         self.splitter.set_receiver(1, self.detectors[1])
-        self.children += [self.splitter, self.detectors[0], self.detectors[1]]
-        [component.parents.append(self) for component in self.children]
+        self.components = [self.splitter, self.detectors[0], self.detectors[1]]
+        [component.attach(self) for component in self.components]
         self.trigger_times = [[], []]
 
     def init(self) -> None:
@@ -137,9 +141,8 @@ class QSDetectorTimeBin(QSDetector):
         self.interferometer.set_receiver(1, self.detectors[2])
         self.switch.set_interferometer(self.interferometer)
 
-        self.children += [self.switch, self.interferometer]
-        self.children += self.detectors
-        [component.parents.append(self) for component in self.children]
+        self.components = [self.switch, self.interferometer] + self.detectors
+        [component.attach(self) for component in self.components]
         self.trigger_times = [[], [], []]
 
     def init(self):

@@ -4,7 +4,7 @@ This module defines the Entity class, inherited by all physical simulation eleme
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict
 
 if TYPE_CHECKING:
     from .timeline import Timeline
@@ -24,38 +24,22 @@ class Entity(ABC):
             self.name = name
         self.timeline = timeline
         self.owner = None
+        self._observers = []
         timeline.entities.append(self)
-
-        # connected entities
-        self.parents = []
-        self.children = []
-
-        # connected protocols
-        self.upper_protocols = []
 
     @abstractmethod
     def init(self):
         pass
 
-    def push(self, **kwargs):
-        pass
+    def attach(self, observer: Any):
+        self._observers.append(observer)
 
-    def pop(self, **kwargs):
-        pass
+    def detach(self, observer: Any):
+        self._observers.remove(observer)
 
-    def _push(self, **kwargs):
-        for entity in self.children:
-            entity.push(**kwargs)
-
-    def _pop(self, **kwargs):
-        if len(self.upper_protocols) > 0:
-            for protocol in self.upper_protocols:
-                protocol.pop(**kwargs)
-        else:
-            for entity in self.parents:
-                entity.pop(**kwargs)
+    def notify(self, msg: Dict[str, Any]):
+        for observer in self._observers:
+            observer.update(self, msg)
 
     def remove_from_timeline(self):
         self.timeline.entities.remove(self)
-
-

@@ -5,7 +5,7 @@ Also defined is a function to automatically construct a BSM of a specified type.
 """
 
 from abc import abstractmethod
-from typing import Any
+from typing import Any, Dict
 
 from numpy import random
 
@@ -52,6 +52,7 @@ class BSM(Entity):
         resolution (int): maximum time resolution achievable with attached detectors
     """
 
+    # todo: clarify arguments instead of **kwargs
     def __init__(self, name, timeline, **kwargs):
         """Constructor for base BSM object.
 
@@ -74,7 +75,7 @@ class BSM(Entity):
         for d in detectors:
             if d is not None:
                 detector = Detector("", timeline, **d)
-                detector.parents.append(self)
+                detector.attach(self)
             else:
                 detector = None
             self.detectors.append(detector)
@@ -111,19 +112,29 @@ class BSM(Entity):
         if not any([reference.location == photon.location for reference in self.photons]):
             self.photons.append(photon)
 
+    # @abstractmethod
+    # def pop(self, **kwargs):
+    #     """Method to receive photon detection events from attached detectors (abstract)
+    #
+    #     Keyword Arguments:
+    #         detector: detector object that is invoking the method
+    #         time: simulation time of the detection event
+    #     """
+    #
+    #     # calculate bsm based on detector num
+    #     detector = kwargs.get("detector")
+    #     detector_num = self.detectors.index(detector)
+    #     time = kwargs.get("time")
+
     @abstractmethod
-    def pop(self, **kwargs):
+    def trigger(self, detector: Detector, msg: Dict[str, Any]):
         """Method to receive photon detection events from attached detectors (abstract)
 
         Keyword Arguments:
-            detector: detector object that is invoking the method
-            time: simulation time of the detection event
+            src: the source of message
+            msg: the message from the source detector
         """
-
-        # calculate bsm based on detector num
-        detector = kwargs.get("detector")
-        detector_num = self.detectors.index(detector)
-        time = kwargs.get("time")
+        pass
 
     def update_detectors_params(self, arg_name: str, value: Any) -> None:
         """Updates parameters of attached detectors"""
@@ -201,19 +212,18 @@ class PolarizationBSM(BSM):
 
         else:
             raise Exception("Invalid result from photon.measure_multiple")
-        
-    def pop(self, **kwargs):
+
+    def trigger(self, detector: Detector, msg: Dict[str, Any]):
         """See base class.
 
         This method adds additional side effects not present in the base class.
 
         Side Effects:
-            May send a further pop message to any attached entities.
+            May send a further message to any attached entities.
         """
 
-        detector = kwargs.get("detector")
         detector_num = self.detectors.index(detector)
-        time = kwargs.get("time")
+        time = msg["time"]
 
         # check if matching time
         if abs(time - self.last_res[0]) < self.resolution:
@@ -221,10 +231,12 @@ class PolarizationBSM(BSM):
 
             # Psi-
             if detector_last + detector_num == 3:
-                self._pop(entity="BSM", info_type="BSM_res", res=1, time=time)
+                msg = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 1, 'time': time}
+                self.notify(msg)
             # Psi+
             elif abs(detector_last - detector_num) == 1:
-                self._pop(entity="BSM", info_type="BSM_res", res=0, time=time)
+                msg = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 0, 'time': time}
+                self.notify(msg)
 
         self.last_res = [time, detector_num]
 
@@ -315,29 +327,30 @@ class TimeBinBSM(BSM):
         else:
             raise Exception("Invalid result from photon.measure_multiple")
 
-    def pop(self, **kwargs):
+    def trigger(self, detector: Detector, msg: Dict[str, Any]):
         """See base class.
 
         This method adds additional side effects not present in the base class.
 
         Side Effects:
-            May send a further pop message to any attached entities.
+            May send a further message to any attached entities.
         """
 
-        detector = kwargs.get("detector")
         detector_num = self.detectors.index(detector)
-        time = kwargs.get("time")
+        time = msg["time"]
 
         # check if valid time
         if round((time - self.last_res[0]) / self.encoding_type["bin_separation"]) == 1:
-        # if time - self.last_res[0] < self.resolution + self.encoding_type["bin_separation"]:
+            # if time - self.last_res[0] < self.resolution + self.encoding_type["bin_separation"]:
             # pop result message
             # Psi+
             if detector_num == self.last_res[1]:
-                self._pop(entity="BSM", info_type="BSM_res", res=0, time=time)
+                msg = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 0, 'time': time}
+                self.notify(msg)
             # Psi-
             else:
-                self._pop(entity="BSM", info_type="BSM_res", res=1, time=time)
+                msg = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 1, 'time': time}
+                self.notify(msg)
 
         self.last_res = [time, detector_num]
 
@@ -416,20 +429,18 @@ class SingleAtomBSM(BSM):
                         detector_num = random.randint(2)
                     self.detectors[detector_num].get()
 
-    def pop(self, **kwargs):
+    def trigger(self, detector: Detector, msg: Dict[str, Any]):
         """See base class.
 
         This method adds additional side effects not present in the base class.
 
         Side Effects:
-            May send a further pop message to any attached entities.
+            May send a further message to any attached entities.
         """
 
-        detector = kwargs.get("detector")
         detector_num = self.detectors.index(detector)
-        time = kwargs.get("time")
+        time = msg["time"]
 
         res = detector_num
-        self._pop(entity="BSM", info_type="BSM_res", res=res, time=time)
-
-
+        msg = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
+        self.notify(msg)
