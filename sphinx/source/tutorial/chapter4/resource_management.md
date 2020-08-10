@@ -1,4 +1,4 @@
-# Resource Management
+# Chapter 4: Resource Management
 
 In this tutorial, we will show the usual operation of the Resource Management module included in SeQUeNCe. We’re going to build a linear, three-node network and create two entanglement flows. The network, including flows, is shown below:
 

@@ -11,12 +11,17 @@ if TYPE_CHECKING:
 
 
 class Entity(ABC):
-    """Abstract Entity class
+    """Abstract Entity class.
 
-    Args:
-        name (str): name of the entity
-        timeline (Timeline): the simulation timeline of entity
+    Attributes:
+        name (str): name of the entity.
+        timeline (Timeline): the simulation timeline for the entity.
+        owner (Entity): another entity that owns or aggregates the current entity.
+        parents (List[Entity]): upper-level entities that receive `pop` notifications.
+        children (List[Entity]): lower-level entities that receive `push` notifications.
+        upper_protocols (List[Protocol]): connected protocols.
     """
+
     def __init__(self, name: str, timeline: "Timeline"):
         if name is None:
             self.name = ""

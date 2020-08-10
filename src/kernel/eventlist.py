@@ -13,9 +13,9 @@ from heapq import heappush, heappop, heapify
 
 
 class EventList:
-    """Class of event list
+    """Class of event list.
 
-    This class is implemented by a min-heap. The event with the lowest time and priority is placed at the top of heap.
+    This class is implemented as a min-heap. The event with the lowest time and priority is placed at the top of heap.
     """
 
     def __init__(self):

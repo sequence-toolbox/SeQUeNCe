@@ -1,4 +1,4 @@
-# Entanglement Management
+# Chapter 3: Entanglement Management
 
 In previous chapters, we introduced the usage of hardware models. 
 In this chapter, we will use protocols in the entanglement management module to control these hardware devices and change the entanglement state of quantum memories.

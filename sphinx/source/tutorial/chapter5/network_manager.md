@@ -1,4 +1,4 @@
-# Network Manager
+# Chapter 5: Network Manager
 
 In this tutorial, we will showcase the Network Management module of SeQUeNCe and show its operation on a typical network. The goal of this tutorial is to
 - Gain familiarity with the `network_management` module

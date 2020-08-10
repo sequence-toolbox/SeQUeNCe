@@ -12,20 +12,15 @@ if TYPE_CHECKING:
 
 
 class Event:
-    """Class of event for simulation
+    """Class of events for simulation.
 
-    The event is sorted by its time and priority. The event with lower time is less than the event with higher time.
-    Events with the same time is sorted by their priority from low to high.
-
-    Args:
-        time (int): the execution time of event
-        process (Process): the process encapsulated in the event
-        priority (int): the priority of event, lower value denotes the higher priority
+    Events are sorted by their time and priority. Events with lower times come before events with higher times.
+    Events with the same time are sorted by their priority from low to high.
 
     Attributes:
-        time (int): the execution time of event
-        process (Process): the process encapsulated in the event
-        priority (int): the priority of event, lower value denotes the higher priority
+        time (int): the execution time of the event.
+        process (Process): the process encapsulated in the event.
+        priority (int): the priority of the event, lower value denotes a higher priority.
     """
 
     def __init__(self, time: int, process: "Process", priority=inf):

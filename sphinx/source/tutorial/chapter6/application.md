@@ -1,4 +1,4 @@
-# Application
+# Chapter 6: Application
 
 In this sixth and final tutorial chapter, we will create a custom appliation to interact with the modules we have already seen. The goal of this tutorial is thus to see how applications are constructed in SeQUeNCe and how they interface with the network.
 
