@@ -33,7 +33,8 @@ release = '0.2.0'
 extensions = [
         'sphinx.ext.autodoc',
         'sphinx.ext.coverage',
-        'sphinx.ext.napoleon'
+        'sphinx.ext.napoleon',
+        'recommonmark'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -43,6 +44,11 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
+
+source_suffix = {
+        '.rst': 'restructuredtext',
+        '.md': 'markdown'
+}
 
 
 # -- Options for HTML output -------------------------------------------------
