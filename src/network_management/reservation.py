@@ -1,3 +1,10 @@
+"""Definition of Reservation protocol and related tools.
+
+This module provides a definition for the reservation protocol used by the network manager.
+This includes the Reservation, MemoryTimeCard, and QCap classes, which are used by the network manager to track reservations.
+Also included is the definition of the message type used by the reservation protocol.
+"""
+
 from enum import Enum, auto
 from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:
@@ -15,12 +22,27 @@ from ..kernel.process import Process
 
 
 class RSVPMsgType(Enum):
+    """Defines possible message types for the reservation protocol."""
+
     REQUEST = auto()
     REJECT = auto()
     APPROVE = auto()
 
 
 class ResourceReservationMessage(Message):
+    """Message used by resource reservation protocol.
+
+    This message contains all information passed between reservation protocol instances.
+    Messages of different types contain different information.
+
+    Attributes:
+        msg_type (GenerationMsgType): defines the message type.
+        receiver (str): name of destination protocol instance.
+        reservation (Reservation): reservation object relayed between nodes.
+        qcaps (List[QCaps]): cumulative quantum capacity object list (if `msg_type == REQUEST`)
+        path (List[str]): cumulative node list for entanglement path (if `msg_type == APPROVE`)
+    """
+
     def __init__(self, msg_type: any, receiver: str, reservation: "Reservation", **kwargs):
         Message.__init__(self, msg_type, receiver)
         self.reservation = reservation
@@ -38,6 +60,22 @@ class ResourceReservationMessage(Message):
 
 
 class ResourceReservationProtocol(StackProtocol):
+    """ReservationProtocol for  node resources.
+
+    The reservation protocol receives network entanglement requests and attempts to reserve local resources.
+    If successful, it will forward the request to another node in the entanglement path and create local rules.
+    These rules are passed to the node's resource manager.
+    If unsuccessful, the protocol will notify the network manager of failure.
+
+    Attributes:
+        own (QuantumRouter): node that protocol instance is attached to.
+        name (str): label for protocol instance.
+        timecards (List[MemoryTimeCard]): list of reservation cards for all memories on node.
+        es_succ_prob (float): sets `success_probability` of `EntanglementSwappingA` protocols created by rules.
+        es_degredation (float): sets `degredation` of `EntanglementSwappingA` protocols created by rules.
+        accepted_reservation (List[Reservation]): list of all approved reservation requests.
+    """
+
     def __init__(self, own: "QuantumRouter", name: str):
         super().__init__(own, name)
         self.timecards = [MemoryTimeCard(i) for i in range(len(own.memory_array))]
@@ -378,6 +416,16 @@ class ResourceReservationProtocol(StackProtocol):
 
 
 class Reservation():
+    """Tracking of reservation parameters for the network manager.
+
+    Attributes:
+        initiator (str): name of the node that created the reservation request.
+        responder (str): name of distant node with witch entanglement is requested.
+        start_time (int): simulation time at which entanglement should be attempted.
+        end_time (int): simulation time at which resources may be released.
+        memory_size (int): number of entangled memory pairs requested.
+    """
+
     def __init__(self, initiator: str, responder: str, start_time: int, end_time: int, memory_size: int,
                  fidelity: float):
         self.initiator = initiator
@@ -395,6 +443,13 @@ class Reservation():
 
 
 class MemoryTimeCard():
+    """Class for tracking reservations on a specific memory.
+
+    Attributes:
+        memory_index (int): index of memory being tracked (in memory array).
+        reservations (List[Reservation]): list of reservations for the memory.
+    """
+
     def __init__(self, memory_index: int):
         self.memory_index = memory_index
         self.reservations = []
@@ -432,5 +487,11 @@ class MemoryTimeCard():
 
 
 class QCap():
+    """Class to track Nodes affected by a reservation.
+
+    Attributes:
+        node (str): name of affected node.
+    """
+
     def __init__(self, node: str):
         self.node = node

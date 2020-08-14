@@ -1,3 +1,9 @@
+"""Model for simulation of an optical switch.
+
+This module defines the Switch class for directing the flow of photons.
+The switch is usually created as part of a time bin QSDetector object, but may be used individually.
+"""
+
 from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
@@ -11,6 +17,18 @@ from ..kernel.process import Process
 
 
 class Switch(Entity):
+    """Class for a simple optical switch.
+
+    Attributes:
+        name (str): label for switch instance.
+        timeline (Timeline): timeline for simulation.
+        start_time (int): simulation start time (in ps) for transmission.
+        frequency (float): frequency with whitch to switch destinations.
+        basis_list (List[int]): 0/1 list denoting which receiver to rout photons to each period.
+        interferometer (Interferometer): linked interferometer to receive photons in basis 1.
+        detector (Detector): linked SPD to receive photons in basis 0.
+    """
+
     def __init__(self, name: str, timeline: "Timeline"):
         Entity.__init__(self, name, timeline)
         self.start_time = 0

@@ -1,3 +1,9 @@
+"""Definition of main Timeline class.
+
+This module defines the Timeline class, which provides an interface for the simulation kernel and drives event execution.
+All entities are required to have an attached timeline for simulation.
+"""
+
 from _thread import start_new_thread
 from math import inf
 from sys import stdout
@@ -11,6 +17,27 @@ from .eventlist import EventList
 
 
 class Timeline:
+    """Class of timeline.
+
+    Timeline holds entities, which is configured before the simulation.
+    Before the start of simulation, the timeline must initialize all controlled entities.
+    The initialization of entities may schedule events.
+    The timeline pushes these events to its event list.
+    The timeline starts simulation by popping the top event in the event list repeatedly.
+    The time of popped event becomes current simulation time of the timeline.
+    The process of popped event is executed.
+    The simulation stops if the timestamp on popped event is equal or larger than the stop time, or if the eventlist is empty.
+
+    To monitor the progress of simulation, the Timeline.show_progress attribute can be modified to show/hide a progress bar.
+
+    Attributes:
+        events (EventList): the event list of timeline.
+        entities (List[Entity]): the entity list of timeline used for initialization.
+        time (int): current simulation time (picoseconds).
+        stop_time (int): the stop (simulation) time of the simulation.
+        show_progress (bool): show/hide the progress bar of simulation.
+        is_running (bool): records if the simulation has stopped executing events.
+    """
 
     def __init__(self, stop_time=inf):
         self.events = EventList()

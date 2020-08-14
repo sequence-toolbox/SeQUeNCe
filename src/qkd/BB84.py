@@ -1,3 +1,10 @@
+"""Definition of BB84 protocol implementation.
+
+This module provides an implementation of the BB84 protocol for quantum key distribution.
+The BB84 class must be attachedd to a node with suitable hardware, such as a QKDNode.
+Also included in this module are a function to pair protocol instances (required before the start of transmission) and the message type used by the protocol.
+"""
+
 import math
 from enum import Enum, auto
 
@@ -17,6 +24,8 @@ def pair_bb84_protocols(sender: "BB84", receiver: "BB84") -> None:
 
 
 class BB84MsgType(Enum):
+    """Defines possible message types for BB84."""
+
     BEGIN_PHOTON_PULSE = auto()
     RECEIVED_QUBITS = auto()
     BASIS_LIST = auto()
@@ -24,6 +33,22 @@ class BB84MsgType(Enum):
 
 
 class BB84Message(Message):
+    """Message used by BB84 protocols.
+
+    This message contains all information passed between BB84 protocol instances.
+    Messages of different types contain different information.
+
+    Attributes:
+        msg_type (BB84MsgType): defines the message type.
+        receiver (str): name of destination protocol instance.
+        frequency (float): frequency for qubit generation (if `msg_type == BEGIN_PHOTON_PULSE`).
+        light_time (float): lenght of time to send qubits (if `msg_type == BEGIN_PHOTON_PULSE`).
+        start_time (int): simulation start time of qubit pulse (if `msg_type == BEGIN_PHOTON_PULSE`).
+        wavelenght (float): wavelength (in nm) of photons (if `msg_type == BEGIN_PHOTON_PULSE`).
+        bases (List[int]): list of measurement bases (if `msg_type == BASIS_LIST`).
+        indices (List[int]): list of indices for matching bases (if `msg_type == MATCHING_INDICES`).
+    """
+
     def __init__(self, msg_type: BB84MsgType, receiver: str, **kwargs):
         Message.__init__(self, msg_type, receiver)
         self.owner_type = BB84
@@ -43,6 +68,29 @@ class BB84Message(Message):
 
 
 class BB84(StackProtocol):
+    """Implementation of BB84 protocol.
+
+    The BB84 protocol uses photons to create a secure key between two QKD Nodes.
+
+    Attributes:
+        own (QKDNode): node that protocol instance is attached to.
+        name (str): label for protocol instance.
+        role (int): determines if instance is "alice" or "bob" node.
+        working (bool): shows if protocol is currently working on a key.
+        ready (bool): used by alice to show if protocol currently processing a generate_key request.
+        light_time (float): time to use laser (in s).
+        start_time (int): simulation start time of key generation.
+        photon_delay (int): time delay of photon (ps).
+        basis_lists (List[int]): list of bases that qubits are sent in.
+        bit_lists (List[int]): list of 0/1 qubits sent (in bases from basis_lists).
+        key (int): generated key as an integer.
+        key_bits (List[int]): generated key as a list of 0/1 bits.
+        another (BB84): other BB84 protocol instance (on opposite node).
+        key_lenghts (List[int]): list of desired key lengths.
+        self.keys_left_list (List[int]): list of desired number of keys.
+        self.end_run_times (List[int]): simulation time for end of each request.
+    """
+
     def __init__(self, own: "QKDNode", name: str, **kwargs):
         if own == None: # used only for unit test purposes
             return

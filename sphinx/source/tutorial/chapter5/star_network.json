@@ -1,0 +1,63 @@
+{
+    "nodes": [
+        {
+            "name": "center",
+            "type": "QuantumRouter"
+        },
+        {
+            "name": "end1",
+            "type": "QuantumRouter",
+            "memo_size": 25
+        },
+        {
+            "name": "end2",
+            "type": "QuantumRouter",
+            "memo_size": 25
+        },
+        {
+            "name": "end3",
+            "type": "QuantumRouter",
+            "memo_size": 25
+        },
+        {
+            "name": "end4",
+            "type": "QuantumRouter",
+            "memo_size": 25
+        }
+    ],
+    "qconnections": [
+        {
+            "node1": "center",
+            "node2": "end1",
+            "attenuation": 1e-5,
+            "distance": 500
+        },
+        {
+            "node1": "center",
+            "node2": "end2",
+            "attenuation": 1e-5,
+            "distance": 500
+        },
+        {
+            "node1": "center",
+            "node2": "end3",
+            "attenuation": 1e-5,
+            "distance": 500
+        },
+        {
+            "node1": "center",
+            "node2": "end4",
+            "attenuation": 1e-5,
+            "distance": 500
+        }
+    ],
+    "cconnections_table": {
+        "type": "RT",
+        "labels": ["center", "end1", "end2", "end3", "end4"],
+        "table": [[0,   1e9, 1e9, 1e9, 1e9],
+                  [1e9, 0,   2e9, 2e9, 2e9],
+                  [1e9, 2e9, 0,   2e9, 2e9],
+                  [1e9, 2e9, 2e9, 0,   2e9],
+                  [1e9, 2e9, 2e9, 2e9, 0]]
+    }
+}

@@ -1,3 +1,8 @@
+"""Definition of abstract Entity class.
+
+This module defines the Entity class, inherited by all physical simulation elements (including hardware and photons).
+"""
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -6,6 +11,16 @@ if TYPE_CHECKING:
 
 
 class Entity(ABC):
+    """Abstract Entity class.
+
+    Attributes:
+        name (str): name of the entity.
+        timeline (Timeline): the simulation timeline for the entity.
+        owner (Entity): another entity that owns or aggregates the current entity.
+        parents (List[Entity]): upper-level entities that receive `pop` notifications.
+        children (List[Entity]): lower-level entities that receive `push` notifications.
+        upper_protocols (List[Protocol]): connected protocols.
+    """
 
     def __init__(self, name: str, timeline: "Timeline"):
         if name is None:

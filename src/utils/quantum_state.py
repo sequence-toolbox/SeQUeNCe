@@ -1,10 +1,20 @@
+"""Definition of the quantum state class.
+
+This module defines the QuantumState class, used by photons and memories to track internal quantum states.
+The class provides interfaces for measurement and entanglement.
+"""
+
 from math import sqrt
 from numpy import pi, cos, sin, array, outer, kron, identity, arange
 from numpy.random import random, random_sample, choice
 
 
-# used for photon.measure_multiple
 def swap_bits(num, pos1, pos2):
+    """Swaps bits in num at positions 1 and 2.
+
+    Used by quantum_state.measure_multiple method.
+    """
+
     bit1 = (num >> pos1) & 1
     bit2 = (num >> pos2) & 1
     x = bit1 ^ bit2
@@ -13,6 +23,15 @@ def swap_bits(num, pos1, pos2):
 
 
 class QuantumState():
+    """Class to manage a quantum state.
+
+    Tracks quantum state coefficients (in Z-basis) and entangled states.
+
+    Attributes:
+        state (List[complex]): list of complex coefficients in Z-basis.
+        entangled_states (List[QuantumState]): list of entangled states (indludng self).
+    """
+
     def __init__(self):
         self.state = [complex(1), complex(0)]
         self.entangled_states = [self]

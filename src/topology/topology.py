@@ -1,3 +1,9 @@
+"""Definition of the Topology class.
+
+This module provides a definition of the Topology class, which can be used to manage a network's structure.
+Topology instances automatically perform many useful network functions.
+"""
+
 from typing import TYPE_CHECKING
 
 import json5
@@ -10,6 +16,20 @@ from ..components.optical_channel import QuantumChannel, ClassicalChannel
 
 
 class Topology():
+    """Class for managing network topologies.
+
+    The topology class provies a simple interface for managing the nodes and connections in a network.
+    A network may also be generated using an external json file.
+
+    Attributes:
+        name (str): label for topology.
+        timeline (Timeline): timeline to be used for all objects in network.
+        nodes (Dict): mapping of node names to node objects.
+        qchannels (List[QuantumChannel]): list of quantum channel objects in network.
+        cchannels (List[ClassicalChannel]): list of classical channel objects in network.
+        graph: (Dict): internal representation of quantum graph.
+    """
+
     def __init__(self, name: str, timeline: "Timeline"):
         self.name = name
         self.timeline = timeline

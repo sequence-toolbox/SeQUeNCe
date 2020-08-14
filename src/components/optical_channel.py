@@ -1,3 +1,10 @@
+"""Models for simulation of optical fiber channels.
+
+This module introduces the abstract OpticalChannel class for general optical fibers.
+It also defines the QuantumChannel class for transmission of qubits/photons and the ClassicalChannel class for transmission of classical control messages.
+OpticalChannels must be attached to nodes on both ends.
+"""
+
 import heapq as hq
 from typing import TYPE_CHECKING
 
@@ -15,6 +22,18 @@ from ..kernel.process import Process
 
 
 class OpticalChannel(Entity):
+    """Parent class for optical fibers.
+
+    Attributes;
+        name (str): label for channel instance.
+        timeline (Timeline): timeline for simulation.
+        ends (List[Node]): ends of channel (must be length 2 before simulation)
+        atteunuation (float): attenuation of the fiber (in dB/km).
+        distance (float): length of the fiber (in m).
+        polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
+        light_speed (float): speed of light within the fiber (in m/ps).
+    """
+
     def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, polarization_fidelity: float, light_speed: float):
         Entity.__init__(self, name, timeline)
         self.ends = []
@@ -32,6 +51,21 @@ class OpticalChannel(Entity):
 
 
 class QuantumChannel(OpticalChannel):
+    """Optical channel for transmission of photons/qubits.
+
+    Attributes;
+        name (str): label for channel instance.
+        timeline (Timeline): timeline for simulation.
+        ends (List[Node]): ends of channel (must be length 2 before simulation)
+        atteunuation (float): attenuation of the fiber (in dB/km).
+        distance (float): length of the fiber (in m).
+        polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
+        light_speed (float): speed of light within the fiber (in m/ps).
+        loss (float): loss rate for transmitted photons (determined by attenuation).
+        delay (int): delay (in ps) of photon transmission (determined by light speed, distance).
+        frequency (float): maximum frequency of qubit transmission (in Hz).
+    """
+
     def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, polarization_fidelity=1, light_speed=2e-4, frequency=8e7):
         super().__init__(name, timeline, attenuation, distance, polarization_fidelity, light_speed)
         self.delay = 0
@@ -104,6 +138,19 @@ class QuantumChannel(OpticalChannel):
 
 
 class ClassicalChannel(OpticalChannel):
+    """Optical channel for transmission of classical messages.
+
+    Classical message transmission is assumed to be lossless.
+
+    Attributes:
+        name (str): label for channel instance.
+        timeline (Timeline): timeline for simulation.
+        ends (List[Node]): ends of channel (must be length 2 before simulation)
+        distance (float): length of the fiber (in m).
+        light_speed (float): speed of light within the fiber (in m/ps).
+        delay (float): delay in message transmission (default distance / light_speed).
+    """
+
     def __init__(self, name: str, timeline: "Timeline", distance: int, delay=-1):
         super().__init__(name, timeline, 0, distance, 0, 2e-4)
         if delay == -1:

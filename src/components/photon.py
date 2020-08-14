@@ -1,8 +1,25 @@
+"""Model for single photon.
+
+This module defines the Photon class for tracking individual photons.
+Photons may be encoded directly with polarization or time bin schemes, or may herald the encoded state of single atom memories.
+"""
+
 from ..utils.encoding import polarization
 from ..utils.quantum_state import QuantumState
 
 
 class Photon():
+    """Class for a single photon.
+
+    Attributes:
+        name (str): label for photon instance.
+        wavelength (float): wavelength of photon (in nm).
+        location (Entity): current location of photon.
+        encoding_type (Dict): encoding type of photon (as defined in encoding module).
+        quantum_state (QuantumState): quantum state of photon.
+        is_null (bool): defines whether photon is real or a "ghost" photon (not detectable but used in memory encoding).
+    """
+
     def __init__(self, name, **kwargs):
         self.name = name
         self.wavelength = kwargs.get("wavelength", 0)

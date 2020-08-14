@@ -1,3 +1,8 @@
+"""Model for simulation of a SPDC Lens.
+
+This module defines the SPDCLens class for creation of entangled photons.
+"""
+
 from copy import deepcopy
 
 from numpy.random import random_sample
@@ -6,6 +11,15 @@ from ..kernel.entity import Entity
 
 
 class SPDCLens(Entity):
+    """Lens to create entangled photons (via SPDC).
+
+    Attributes:
+        name (str): label for SPDCLens instance. 
+        timeline (Timeline): timeline for simulation.
+        rate (float): probability of successful down conversion.
+        direct_receiver (Entity): entity to receive entangled photons.
+    """
+
     def __init__(self, name, timeline, **kwargs):
         Entity.__init__(self, name, timeline)
         self.rate = kwargs.get("rate", 1)

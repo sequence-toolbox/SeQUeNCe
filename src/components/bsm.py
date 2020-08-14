@@ -1,3 +1,9 @@
+"""Models for simulating bell state measurement.
+
+This module defines a template bell state measurement (BSM) class, as well as implementations for polarization, time bin, and memory encoding schemes.
+Also defined is a function to automatically construct a BSM of a specified type.
+"""
+
 from abc import abstractmethod
 from typing import Any
 
@@ -13,6 +19,16 @@ from ..utils.quantum_state import QuantumState
 
 
 def make_bsm(name, timeline, **kwargs):
+    """Function to construct BSM of specified type
+
+    Arguments:
+        name (str): name to be used for BSM instance
+        timeline (Timeline): timeline to be used for BSM instance
+
+    Keyword Arguments:
+        encoding_type (str): type of BSM to generate (default "time_bin")
+    """
+
     encoding_type = kwargs.pop("encoding_type", "time_bin")
 
     if encoding_type == "polarization":
@@ -25,9 +41,29 @@ def make_bsm(name, timeline, **kwargs):
         raise Exception("invalid encoding {} given for BSM {}".format(encoding_type, name))
 
 
-# abstract parent BSM class
 class BSM(Entity):
+    """Parent class for bell state measurement devices.
+
+    Attributes:
+        name (str): label for BSM instance
+        timeline (Timeline): timeline for simulation
+        phase_error (float): phase error applied to measurement
+        detectors (List[Detector]): list of attached photon detection devices
+        resolution (int): maximum time resolution achievable with attached detectors
+    """
+
     def __init__(self, name, timeline, **kwargs):
+        """Constructor for base BSM object.
+
+        Args:
+            name (str): name of the beamsplitter instance
+            timeline (Timeline): simulation timeline
+
+        Keyword Args:
+            phase_error (float): phase error applied to polarization photons
+            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format
+        """
+
         super().__init__(name, timeline)
         self.phase_error = kwargs.get("phase_error", 0)
         self.photons = []
@@ -53,10 +89,17 @@ class BSM(Entity):
                            [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]]
 
     def init(self):
+        """Implementation of Entity interface (see base class)."""
+
         pass
 
     @abstractmethod
     def get(self, photon):
+        """Method to receive a photon for measurement (abstract).
+
+        Arguments:
+            photon (Photon): photon to measure
+        """
         # check if photon arrived later than current photon
         if self.photon_arrival_time < self.timeline.now():
             # clear photons
@@ -70,23 +113,63 @@ class BSM(Entity):
 
     @abstractmethod
     def pop(self, **kwargs):
+        """Method to receive photon detection events from attached detectors (abstract)
+
+        Keyword Arguments:
+            detector: detector object that is invoking the method
+            time: simulation time of the detection event
+        """
+
         # calculate bsm based on detector num
         detector = kwargs.get("detector")
         detector_num = self.detectors.index(detector)
         time = kwargs.get("time")
 
     def update_detectors_params(self, arg_name: str, value: Any) -> None:
+        """Updates parameters of attached detectors"""
         for detector in self.detectors:
             detector.__setattr__(arg_name, value)
 
 
 class PolarizationBSM(BSM):
+    """Class modeling a polarization BSM device.
+
+    Measures incoming photons according to polarization and manages entanglement.
+
+    Attributes:
+        name (str): label for BSM instance
+        timeline (Timeline): timeline for simulation
+        phase_error (float): phase error applied to measurement
+        detectors (List[Detector]): list of attached photon detection devices
+        resolution (int): maximum time resolution achievable with attached detectors  
+    """
+
     def __init__(self, name, timeline, **kwargs):
+        """Constructor for Polarization BSM.
+
+        Args:
+            name (str): name of the beamsplitter instance
+            timeline (Timeline): simulation timeline
+
+        Keyword Args:
+            phase_error (float): phase error applied to polarization photons
+            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 4)
+        """
+
         super().__init__(name, timeline, **kwargs)
         self.last_res = [-2 * self.resolution, -1]
         assert len(self.detectors) == 4
 
     def get(self, photon):
+        """See base class.
+
+        This method adds additional side effects not present in the base class.
+
+        Side Effects:
+            May call get method of one or more attached detector(s).
+            May alter the quantum state of photon and any stored photons.
+        """
+
         super().get(photon)
 
         if len(self.photons) != 2:
@@ -120,6 +203,14 @@ class PolarizationBSM(BSM):
             raise Exception("Invalid result from photon.measure_multiple")
         
     def pop(self, **kwargs):
+        """See base class.
+
+        This method adds additional side effects not present in the base class.
+
+        Side Effects:
+            May send a further pop message to any attached entities.
+        """
+
         detector = kwargs.get("detector")
         detector_num = self.detectors.index(detector)
         time = kwargs.get("time")
@@ -139,13 +230,43 @@ class PolarizationBSM(BSM):
 
 
 class TimeBinBSM(BSM):
+    """Class modeling a time bin BSM device.
+
+    Measures incoming photons according to time bins and manages entanglement.
+
+    Attributes:
+        name (str): label for BSM instance
+        timeline (Timeline): timeline for simulation
+        detectors (List[Detector]): list of attached photon detection devices
+        resolution (int): maximum time resolution achievable with attached detectors  
+    """
+
     def __init__(self, name, timeline, **kwargs):
+        """Constructor for the time bin BSM class.
+
+        Args:
+            name (str): name of the beamsplitter instance
+            timeline (Timeline): simulation timeline
+
+        Keyword Args:
+            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2)
+        """
+
         super().__init__(name, timeline, **kwargs)
         self.encoding_type = time_bin
         self.last_res = [-1, -1]
         assert len(self.detectors) == 2
 
     def get(self, photon):
+        """See base class.
+
+        This method adds additional side effects not present in the base class.
+
+        Side Effects:
+            May call get method of one or more attached detector(s).
+            May alter the quantum state of photon and any stored photons.
+        """
+
         super().get(photon)
 
         if len(self.photons) != 2:
@@ -195,6 +316,14 @@ class TimeBinBSM(BSM):
             raise Exception("Invalid result from photon.measure_multiple")
 
     def pop(self, **kwargs):
+        """See base class.
+
+        This method adds additional side effects not present in the base class.
+
+        Side Effects:
+            May send a further pop message to any attached entities.
+        """
+
         detector = kwargs.get("detector")
         detector_num = self.detectors.index(detector)
         time = kwargs.get("time")
@@ -214,13 +343,43 @@ class TimeBinBSM(BSM):
 
 
 class SingleAtomBSM(BSM):
+    """Class modeling a single atom BSM device.
+
+    Measures incoming photons and manages entanglement of associated memories.
+
+    Attributes:
+        name (str): label for BSM instance
+        timeline (Timeline): timeline for simulation
+        detectors (List[Detector]): list of attached photon detection devices
+        resolution (int): maximum time resolution achievable with attached detectors  
+    """
+
     def __init__(self, name, timeline, **kwargs):
+        """Constructor for the single atom BSM class.
+
+        Args:
+            name (str): name of the beamsplitter instance
+            timeline (Timeline): simulation timeline
+
+        Keyword Args:
+            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2)
+        """
+
         if not "detectors" in kwargs:
             kwargs["detectors"] = [{}] * 2
         super().__init__(name, timeline, **kwargs)
         assert len(self.detectors) == 2
 
     def get(self, photon):
+        """See base class.
+
+        This method adds additional side effects not present in the base class.
+
+        Side Effects:
+            May call get method of one or more attached detector(s).
+            May alter the quantum state of photon and any stored photons, as well as their corresponding memories.
+        """
+
         super().get(photon)
 
         memory = photon.encoding_type["memory"]
@@ -258,6 +417,14 @@ class SingleAtomBSM(BSM):
                     self.detectors[detector_num].get()
 
     def pop(self, **kwargs):
+        """See base class.
+
+        This method adds additional side effects not present in the base class.
+
+        Side Effects:
+            May send a further pop message to any attached entities.
+        """
+
         detector = kwargs.get("detector")
         detector_num = self.detectors.index(detector)
         time = kwargs.get("time")

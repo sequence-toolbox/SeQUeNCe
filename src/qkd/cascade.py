@@ -1,3 +1,10 @@
+"""Definition of cascade protocol implementation.
+
+This module provides an implementation of the cascade protocol for error correction.
+The protocol must be provided with a lower-layer protocol for key generation, such as BB84.
+Also included in this module are a function to pair protocol instances (required before the start of transmission) and the message type used by the protocol.
+"""
+
 import math
 from enum import Enum, auto
 from functools import lru_cache
@@ -16,6 +23,7 @@ def pair_cascade_protocols(sender: "Cascade", receiver: "Cascade") -> None:
 
 
 class CascadeMsgType(Enum):
+    """Defines possible message types for cascade."""
     KEY = auto()
     PARAMS = auto()
     CHECKSUMS = auto()
@@ -26,6 +34,28 @@ class CascadeMsgType(Enum):
 
 
 class CascadeMessage(Message):
+    """Message used by cascade protocols.
+
+    This message contains all information passed between cascade protocol instances.
+    Messages of different types contain different information.
+
+    Attributes:
+        msg_type (CascadeMsgType): defines the message type.
+        receiver (str): name of destination protocol instance.
+        key (int): initial key sent to establish parameters (if `msg_type == KEY`).
+        k (int): cascade parameter (if `msg_type == PARAMS`).
+        keylen (int): length of keys to request from BB84 (if `msg_type == PARAMS or GENERATE_KEY`).
+        frame_num (int): number of keys to request (if `msg_type == PARAMS or GENERATE_KEY`).
+        run_time (int): runtime for BB84 (if `msg_type == PARAMS or GENERATE_KEY`).
+        key_id (int): key being processed  (if `msg_type == CHECKSUMS or SEND_FOR_BINARY or RECEIVE_FOR_BINARY or KEY_IS_VALID`).
+        checksums (int): checksum results (if `msg_type == CHECKSUMS`).
+        pass_id (int): pass number (if `msg_type == SEND_FOR_BINARY or RECEIVE_FOR_BINARY`).
+        block_id (int): block number (if `msg_type == SEND_FOR_BINARY or RECEIVE_FOR_BINARY`).
+        start (int): starting position in key (if `msg_type == SEND_FOR_BINARY or RECEIVE_FOR_BINARY`).
+        end (int): ending position in key (if `msg_type == SEND_FOR_BINARY or RECEIVE_FOR_BINARY`).
+        checksum (int): checksum result (if `msg_type == RECEIVE_FOR_BINARY`).
+    """
+
     def __init__(self, msg_type: Enum, receiver: str, **kwargs):
         super().__init__(msg_type, receiver)
         self.owner_type = Cascade
@@ -63,6 +93,48 @@ class CascadeMessage(Message):
 
 
 class Cascade(StackProtocol):
+    """Implementation of cascade error correction protocol.
+
+    The cascade protocol uses checksums to determine if there are errors in a generated key and pinpoint the errors.
+    The protocol exists in 3 states:
+
+    0. initialization step of protocol
+    1. generating block
+    2. end
+
+    Attributes:
+        own (QuantumRouter): node that protocol instance is attached to.
+        name (str): label for protocol instance.
+        w (int): cascade parameter.
+        role (int): differentiates "alice" and "bob" protocols.
+        secure_params (int): security parameter.
+        another (Cascade): reference to paired cascade protocol.
+        state (int): current state of protocol.
+        keylen (int): lenght of keys to generate.
+        frame_len (int): length of frame to use to generate keys.
+        frame_num (int): frame number.
+        run_time (int): time to run protocol.
+        bits (List[int]): bits to operate on (received from BB84).
+        tl (int): cascade parameter.
+        t2 (int): cascade parameter.
+        k1 (int): cascade parameter.
+        checksum_tables (List[List[int]]): lists of generated checksums.
+        another_checksums (List[List[int]]): checksums of paired protocol.
+        index_to_block_id_lists (List): store block ids.
+        block_id_to_index_lists (List): store index ids.
+        time_cost (int): time penalty for key generation.
+        setup_time (int): time of cascade protocol setup.
+        start_time (int): time to start generating corrected keys.
+        end_time (int): time to stop generating keys.
+        logflag (bool): tracks debug information.
+        valid_keys (List[int]): list of keys generated.
+        throughput (float): protocol throughput in bits/s.
+        error_bit_rate (float): rate of errors in finished keys.
+        latency (int): average latency of generated keys.
+        disclosed_bits_counter (int): counts revealed bits.
+        privacy_throughput (int): throughput of not revealed bits.
+    """
+
     def __init__(self, own: "QKDNode", name: str, **kwargs):
         super().__init__(own, name)
 
@@ -100,13 +172,6 @@ class Cascade(StackProtocol):
         self.latency = None  # the average latency
         self.disclosed_bits_counter = 0
         self.privacy_throughput = None
-
-        """
-        state of protocol:
-            0: initialization step of protocol
-            1: generating block
-            2: end
-        """
 
     def log(self, info) -> None:
         if self.logflag:

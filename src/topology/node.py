@@ -1,3 +1,10 @@
+"""Definitions of node types.
+
+This module provides definitions for various types of quantum network nodes.
+All node types inherit from the base Node type, which inherits from Entity.
+Node types can be used to collect all the necessary hardware and software for a network usage scenario.
+"""
+
 from math import inf
 from time import monotonic_ns
 from typing import TYPE_CHECKING, Any
@@ -25,6 +32,18 @@ from ..utils.encoding import *
 
 
 class Node(Entity):
+    """Base node type.
+    
+    Provides default interfaces for network.
+
+    Attributes:
+        name (str): label for node instance.
+        timeline (Timeline): timeline for simulation.
+        cchannels (Dict): mapping of destination node names to classical channel instances.
+        qchannels (Dict): mapping of destination node names to quantum channel instances.
+        protocols (List[Protocol]): list of attached protocols.
+    """
+
     def __init__(self, name: str, timeline: "Timeline"):
         Entity.__init__(self, name, timeline)
         self.owner = self
@@ -68,6 +87,17 @@ class Node(Entity):
 
 
 class BSMNode(Node):
+    """Bell state measurement node.
+
+    This node provides bell state measurement and the EntanglementGenerationB protocol for entanglement generation.
+
+    Attributes:
+        name (str): label for node instance.
+        timeline (Timeline): timeline for simulation.
+        bsm (SingleAtomBSM): BSM instance object.
+        eg (EntanglementGenerationB): entanglement generation protocol instance.
+    """
+
     def __init__(self, name: str, timeline: "Timeline", other_nodes: [str]) -> None:
         from ..entanglement_management.generation import EntanglementGenerationB
         Node.__init__(self, name, timeline)
@@ -94,6 +124,20 @@ class BSMNode(Node):
 
 
 class QuantumRouter(Node):
+    """Node for entanglement distribution networks.
+
+    This node type comes pre-equipped with memory hardware, along with the default SeQUeNCe modules (sans application).
+
+    Attributes:
+        name (str): label for node instance.
+        timeline (Timeline): timeline for simulation.
+        memory_array (MemoryArray): internal memory array object.
+        resource_manager (ResourceManager): resource management module.
+        network_manager (NetworkManager): network management module.
+        map_to_middle_node (Dict): mapping of router names to intermediate bsm node names.
+        app (any): application in use on node.
+    """
+
     def __init__(self, name, tl, memo_size=50):
         Node.__init__(self, name, tl)
         self.memory_array = MemoryArray(name + ".MemoryArray", tl, num_memories=memo_size)
@@ -152,16 +196,26 @@ class QuantumRouter(Node):
 
 
 class QKDNode(Node):
-    """
-    Protocol stack of QKDNode follows "BBN QKD Protocol Suite" introduced in the DARPA quantum network.
-    (https://arxiv.org/pdf/quant-ph/0412029.pdf) page 24
-    The protocol stack is :
+    """Node for quantum key distribution.
 
-    |      Authentication     | 4 | <= No implementation
-    |  Privacy Amplification  | 3 | <= No implementation
-    |    Entropy Estimation   | 2 | <= No implementation
-    |     Error Correction    | 1 | <= implemented by cascade
-    |         Sifting         | 0 | <= implemented by BB84
+    QKDNodes include a protocol stack to create keys.
+    The protocol stack follows the "BBN QKD Protocol Suite" introduced in the DARPA quantum network
+    (https://arxiv.org/pdf/quant-ph/0412029.pdf page 24).
+    The protocol stack is:
+
+    4. Authentication <= No implementation
+    3. Privacy Amplification  <= No implementation
+    2. Entropy Estimation <= No implementation
+    1. Error Correction <= implemented by cascade
+    0. Sifting <= implemented by BB84
+
+    Attributes:
+        name (str): label for node instance.
+        timeline (Timeline): timeline for simulation.
+        encoding (Dict): encoding type for qkd qubits (from encoding module).
+        lightsource (LightSource): laser light source to generate keys.
+        qsdetector (QSDetector): quantum state detector for qubit measurement.
+        protocol_stack (List[StackProtocol]): protocols for qkdd process.
     """
 
     def __init__(self, name: str, timeline: "timeline", encoding=polarization, stack_size=5):

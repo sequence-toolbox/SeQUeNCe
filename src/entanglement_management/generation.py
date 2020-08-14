@@ -1,3 +1,13 @@
+"""Code for Barrett-Kok entanglement Generation protocol
+
+This module defines code to support entanglement generation between single-atom memories on distant nodes.
+Also defined is the message type used by this implementation.
+Entanglement generation is asymmetric:
+
+* EntanglementGenerationA should be used on the QuantumRouter (with one node set as the primary) and should be started via the "start" method
+* EntanglementGeneraitonB should be used on the BSMNode and does not need to be started
+"""
+
 from enum import Enum, auto
 from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:
@@ -9,19 +19,31 @@ from ..message import Message
 from ..kernel.event import Event
 from ..kernel.process import Process
 
-"""
-Entanglement generation is asymmetric:
-    EntanglementGenerationA should be used on the end nodes (with one node set as the primary) and should be started via the "start" method
-    EntanglementGeneraitonB should be used on the middle node and does not need to be started
-"""
 
 class GenerationMsgType(Enum):
+    """Defines possible message types for entanglement generation."""
+
     NEGOTIATE = auto()
     NEGOTIATE_ACK = auto()
     MEAS_RES = auto()
 
 
 class EntanglementGenerationMessage(Message):
+    """Message used by entanglement generation protocols.
+
+    This message contains all information passed between generation protocol instances.
+    Messages of different types contain different information.
+
+    Attributes:
+        msg_type (GenerationMsgType): defines the message type.
+        receiver (str): name of destination protocol instance.
+        qc_delay (int): quantum channel delay to BSM node (if `msg_type == NEGOTIATE`).
+        emit_time (int): time to emit photon for measurement (if `msg_type == NEGOTIATE_ACK`).
+        res (int): detector number at BSM node (if `msg_type == MEAS_RES`).
+        time (int): detection time at BSM node (if `msg_type == MEAS_RES`).
+        resolution (int): time resolution of BSM detectors (if `msg_type == MEAS_RES`).
+    """
+
     def __init__(self, msg_type: GenerationMsgType, receiver: str, **kwargs):
         super().__init__(msg_type, receiver)
         self.protocol_type = EntanglementGenerationA
@@ -42,6 +64,19 @@ class EntanglementGenerationMessage(Message):
 
 
 class EntanglementGenerationA(EntanglementProtocol):
+    """Entanglement generation protocol for quantum router.
+
+    The EntanglementGenerationA protocol should be instantiated on a quantum router node.
+    Instances will communicate with each other (and with the B instance on a BSM node) to generate entanglement.
+
+    Attributes:
+        own (QuantumRouter): node that protocol instance is attached to.
+        name (str): label for protocol instance.
+        middle (str): name of BSM measurement node where emitted photons should be directed.
+        other (str): name of distant QuantumRouter node, containing a memory to be entangled with local memory.
+        memory (Memory): quantum memory object to attempt entanglement for.
+    """
+
     def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory"):
         super().__init__(own, name)
         self.middle = middle
@@ -264,6 +299,16 @@ class EntanglementGenerationA(EntanglementProtocol):
 
 
 class EntanglementGenerationB(EntanglementProtocol):
+    """Entanglement generation protocol for BSM node.
+
+    The EntanglementGenerationB protocol should be instantiated on a BSM node.
+    Instances will communicate with the A instance on neighboring quantum router nodes to generate entanglement.
+
+    Attributes:
+        own (BSMNode): node that protocol instance is attached to.
+        name (str): label for protocol instance.
+        others (List[str]): list of neighboring quantum router nodes
+    """
     def __init__(self, own: "Node", name: str, others: List[str]):
         super().__init__(own, name)
         assert len(others) == 2
