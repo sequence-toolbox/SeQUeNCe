@@ -37,6 +37,16 @@ class QuantumState():
         self.entangled_states = [self]
 
     def entangle(self, another_state):
+        """Method to entangle two quantum states.
+
+        Arguments:
+            another_state (QuantumState): state to entangle current state with.
+
+        Side Effects:
+            Modifies the `entangled_states` field for current state and `another_state`.
+            Modifies the `state` field for current state and `another_state`.
+        """
+
         entangled_states = self.entangled_states + another_state.entangled_states
         new_state = kron(self.state, another_state.state)
 
@@ -45,17 +55,44 @@ class QuantumState():
             quantum_state.state = new_state
 
     def random_noise(self):
+        """Method to add random noise to a single state.
+
+        Chooses a random angle to set the quantum state to (with no phase difference).
+
+        Side Effects:
+            Modifies the `state` field.
+        """
+
         # TODO: rewrite for entangled states
         angle = random() * 2 * pi
         self.state = [complex(cos(angle)), complex(sin(angle))]
 
     # only for use with entangled state
     def set_state(self, state):
+        """Method to change entangled state of multiple quantum states.
+
+        Args:
+            state (List[complex]): new coefficients for state. Should be 2^n in length, where n is the length of `entangled_states`.
+
+        Side Effects:
+            Modifies the `state` field for current and entangled states.
+        """
+
         for qs in self.entangled_states:
             qs.state = state
 
     # for use with single, unentangled state
     def set_state_single(self, state):
+        """Method to unentangle and set the state of a single quantum state object.
+
+        Args:
+            state (List[complex]): 2-element list of new complex coefficients.
+
+        Side Effects:
+            Will remove current state from any entangled states (if present).
+            Modifies the `state` field of current state.
+        """
+
         for qs in self.entangled_states:
             if qs is not None and qs != self:
                 index = qs.entangled_states.index(self)
@@ -64,6 +101,18 @@ class QuantumState():
         self.state = state
 
     def measure(self, basis):
+        """Method to measure a single quantum state.
+
+        Args:
+            basis (List[List[complex]]): measurement basis, given as list of states (that are themselves lists of complex coefficients).
+
+        Returns:
+            int: 0/1 measurement result, corresponding to one basis vector.
+
+        Side Effects:
+            Modifies the `state` field for current and any entangled states.
+        """
+
         state = array(self.state)
         u = array(basis[0], dtype=complex)
         v = array(basis[1], dtype=complex)
@@ -106,6 +155,21 @@ class QuantumState():
 
     @staticmethod
     def measure_multiple(basis, states):
+        """Method to measure multiple qubits in a more complex basis.
+
+        May be used for bell state measurement.
+
+        Args:
+            basis (List[List[complex]]): list of basis vectors.
+            states (List[QuantumState]): list of quantum state objects to meausre.
+
+        Returns:
+            int: measurement result in given basis.
+
+        Side Effects:
+            Will modify the `state` field of all entangled states.
+        """
+
         # ensure states are entangled
         # (must be entangled prior to calling measure_multiple)
         entangled_list = states[0].entangled_states

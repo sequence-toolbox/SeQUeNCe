@@ -17,6 +17,13 @@ from ..kernel.process import Process
 
 
 def pair_bb84_protocols(sender: "BB84", receiver: "BB84") -> None:
+    """Function to pair BB84 protocol instances.
+
+    Args:
+        sender (BB84): protocol instance sending qubits (Alice).
+        receiver (BB84): protocol instance receiving qubits (Bob).
+    """
+
     sender.another = receiver
     receiver.another = sender
     sender.role = 0
@@ -92,6 +99,16 @@ class BB84(StackProtocol):
     """
 
     def __init__(self, own: "QKDNode", name: str, **kwargs):
+        """Constructor for BB84 class.
+
+        Args:
+            own (QKDNode): node hosting protocol instance.
+            name (str): name of protocol instance.
+
+        Keyword Args:
+            role (int): 0/1 role defining Alice and Bob protocols (default -1).
+        """
+
         if own == None: # used only for unit test purposes
             return
         super().__init__(own, name)
@@ -119,9 +136,22 @@ class BB84(StackProtocol):
         self.error_rates = []
 
     def pop(self, detector_index: int, time: int) -> None:
+        """Method to receive detection events (currently unused)."""
+
         assert 0
 
     def push(self, length: int, key_num: int, run_time=math.inf) -> None:
+        """Method to receive requests for key generation.
+        
+        Args:
+            length (int): length of key to generate.
+            key_num (int): number of keys to generate.
+            run_time (int): max simulation time allowed for key generation (default inf).
+
+        Side Effects:
+            Will potentially invoke `start_protocol` method to start operations.
+        """
+
         if self.role != 0:
             raise AssertionError("generate key must be called from Alice")
 
@@ -139,6 +169,16 @@ class BB84(StackProtocol):
             self.start_protocol()
 
     def start_protocol(self) -> None:
+        """Method to start protocol.
+
+        When called, this method will begin the process of key generation.
+        Parameters for hardware will be calculated, and a `begin_photon_pulse` method scheduled.
+
+        Side Effects:
+            Will schedule future `begin_photon_pulse` event.
+            Will send a BEGIN_PHOTON_PULSE method to other protocol instance.
+        """
+
         if len(self.key_lengths) > 0:
             # reset buffers for self and another
             self.basis_lists = []
@@ -174,6 +214,16 @@ class BB84(StackProtocol):
             self.ready = True
 
     def begin_photon_pulse(self) -> None:
+        """Method to begin sending photons.
+
+        Will calculate qubit parameters and invoke lightsource emit method.
+        Also records bits sent for future processing.
+
+        Side Effects:
+            Will invoke emit method of node lightsource.
+            Will schedule another `begin_photon_pulse` event after the emit period.
+        """
+
         if self.working and self.own.timeline.now() < self.end_run_times[0]:
             # generate basis/bit list
             num_pulses = round(self.light_time * self.ls_freq)
@@ -214,12 +264,16 @@ class BB84(StackProtocol):
             self.own.timeline.schedule(event)
 
     def set_measure_basis_list(self) -> None:
+        """Method to set measurement basis list."""
+
         num_pulses = int(self.light_time * self.ls_freq)
         basis_list = numpy.random.choice([0, 1], num_pulses)
         self.basis_lists.append(basis_list)
         self.own.qsdetector.set_basis_list(basis_list, self.start_time, self.ls_freq)
 
     def end_photon_pulse(self) -> None:
+        """Method to process sent qubits."""
+
         if self.working and self.own.timeline.now() < self.end_run_times[0]:
             # get bits
             self.bit_lists.append(self.own.get_bits(self.light_time, self.start_time, self.ls_freq))
@@ -239,6 +293,15 @@ class BB84(StackProtocol):
             self.own.send_message(self.another.own.name, message)
 
     def received_message(self, src: str, msg: "Message") -> None:
+        """Method to receive messages.
+
+        Will perform different processing actions based on the message received.
+
+        Args:
+            src (str): source node sending message.
+            msg (Message): message received.
+        """
+
         if self.working and self.own.timeline.now() < self.end_run_times[0]:
             if msg.msg_type is BB84MsgType.BEGIN_PHOTON_PULSE:  # (current node is Bob): start to receive photons
                 self.ls_freq = msg.frequency
@@ -319,6 +382,8 @@ class BB84(StackProtocol):
                     self.another.working = False
 
     def set_key(self):
+        """Method to convert `bit_list` field (List[int]) to a single key (int)."""
+
         key_bits = self.key_bits[0:self.key_lengths[0]]
         del self.key_bits[0:self.key_lengths[0]]
         self.key = int("".join(str(x) for x in key_bits), 2)  # convert from binary list to int

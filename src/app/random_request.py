@@ -37,6 +37,14 @@ class RandomRequestApp():
     """
 
     def __init__(self, node: "QuantumRouter", others: List[str], seed: int):
+        """Constructor for the random application class.
+
+        Args:
+            node (QuantumRouter): node that application is attached to.
+            others (List[str]): list of names for other available routers.
+            seed (int): seed for internal random number generator.
+        """
+
         self.node = node
         self.node.set_app(self)
         self.others = others
@@ -52,6 +60,21 @@ class RandomRequestApp():
         self.memo_to_reserve = {}
 
     def start(self):
+        """Method to start the application.
+
+        This method will:
+        
+        1. Choose a random destination node from the `others` list.
+        2. Choose a start time between 1-2 seconds in the future.
+        3. Choose an end time 10-20 seconds after the start time.
+        4. Pick a number of memories to request between 10 and half the max memory size.
+        5. Pick a random fidelity between 0.8 and 1.
+        6. Create a request and start recording metrics.
+
+        Side Effects:
+            Will create request for network manager on node.
+        """
+
         self._update_last_rsvp_metrics()
 
         responder = self.rg.choice(self.others)
@@ -64,6 +87,16 @@ class RandomRequestApp():
         # print(self.node.timeline.now(), self.node.name, "request", self.cur_reserve)
 
     def retry(self, responder: str, fidelity: float) -> None:
+        """Method to retry a failed request.
+
+        Args:
+            responder (str): responder node to reattempt entanglement with.
+            fidelity (float): new fidelity to request.
+
+        Side Effects:
+            Will create request for network manager on node.
+        """
+
         start_time = self.node.timeline.now() + self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
         end_time = start_time + self.rg.integers(10, 20) * 1e12  # start time + (10 second - 20 second)
         memory_size = self.rg.integers(10, len(self.node.memory_array) // 2)  # 10 - max_memory_size / 2
@@ -80,6 +113,16 @@ class RandomRequestApp():
         self.memory_counter = 0
 
     def get_reserve_res(self, reservation: "Reservation", result: bool) -> None:
+        """Method to receive reservation result from network manager.
+
+        Args:
+            reservation (Reservation): reservation that has been completed.
+            result (bool): result of the requesst (approved/rejected).
+
+        Side Effects:
+            May schedule a start/retry event based on reservation result.
+        """
+
         if result:
             # todo: temp
             self.get_other_reservation(reservation)
@@ -95,6 +138,12 @@ class RandomRequestApp():
             self.node.timeline.schedule(event)
 
     def get_other_reservation(self, reservation: "Reservation") -> None:
+        """Method to add all reserved memories to the memory-reservation map.
+
+        Side Effects:
+            Will add calls to `add_memo_reserve_map` and `remove_memo_reserve_map` methods.
+        """
+
         for card in self.node.network_manager.protocol_stack[1].timecards:
             if reservation in card.reservations:
                 process = Process(self, "add_memo_reserve_map", [card.memory_index, reservation])
@@ -111,6 +160,15 @@ class RandomRequestApp():
         self.memo_to_reserve.pop(index)
 
     def get_memory(self, info: "MemoryInfo") -> None:
+        """Method to receive entangled memories.
+
+        Will set memory to RAW state and return to resource manager.
+        If the requesting node, will also addd memory to memory count.
+
+        Args:
+            info (MemoryInfo): info on entangled memory.
+        """
+
         if info.state != "ENTANGLED":
             return
 

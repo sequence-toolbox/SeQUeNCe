@@ -78,6 +78,16 @@ class EntanglementGenerationA(EntanglementProtocol):
     """
 
     def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory"):
+        """Constructor for entanglement generation a class.
+
+        Args:
+            own (Node): node to attach protocol to.
+            name (str): name of protocol instance.
+            middle (str): name of middle measurement node.
+            other (str): name of other node.
+            memory (Memory): memory to entangle.
+        """
+
         super().__init__(own, name)
         self.middle = middle
         self.other = other  # other node
@@ -104,6 +114,12 @@ class EntanglementGenerationA(EntanglementProtocol):
         self.debug = False
 
     def set_others(self, other: "EntanglementGenerationA") -> None:
+        """Method to set other entanglement protocol instance.
+
+        Args:
+            other (EntanglementGenerationA): other protocol instance.
+        """
+
         assert self.other_protocol is None
         assert self.fidelity == other.fidelity
         if other.other_protocol is not None:
@@ -112,10 +128,16 @@ class EntanglementGenerationA(EntanglementProtocol):
         self.remote_memo_id = other.memories[0].name
         self.primary = self.own.name > self.other
 
-    # start: called on initializing node
-    #   starts current round of protocol
-    #   calls update memory and starts negotiation in anticipation of memory emit
     def start(self) -> None:
+        """Method to start current round of entanglement generation protocol.
+
+        Will update memory and start negotiations with other protocol.
+
+        Side Effects:
+            Will call `update_memory` method.
+            Will send message through attached node.
+        """
+
         if self.debug:
             print("EG protocol {} \033[1;36;40mstart\033[0m on node {} with partner {}".format(self.name, self.own.name,
                                                                                                self.other))
@@ -136,6 +158,15 @@ class EntanglementGenerationA(EntanglementProtocol):
     #   check memory state, performs necessary memory operations
     #   returns True if round successfull, otherwise returns False
     def update_memory(self):
+        """Method to handle necessary memory operations.
+
+        Will check the state of the memory and protocol.
+
+        Side Effects:
+            May change state of attached memory.
+            May update memory state in the attached node's resource manager.
+        """
+
         # to avoid start after remove protocol
         if self not in self.own.protocols:
             return
@@ -168,11 +199,34 @@ class EntanglementGenerationA(EntanglementProtocol):
         return True
 
     def emit_event(self) -> None:
+        """Method to setup memory and emit photons.
+
+        If the protocol is in round 1, the memory will be first set to the |+> state.
+        Regardless of round, the memory excite method will be invoked.
+
+        Side Effects:
+            May change state of attached memory.
+            May cause attached memory to emit photon.
+        """
+
         if self.ent_round == 1:
             self.memory.set_plus()
         self.memory.excite(self.middle)
 
     def received_message(self, src: str, msg: EntanglementGenerationMessage) -> None:
+        """Method to receive messages.
+
+        This method receives messages from other entanglement generation protocols.
+        Depending on the message, different actions may be taken by the protocol.
+
+        Args:
+            src (str): name of the source node sending the message.
+            msg (EntanglementGenerationMessage): message received.
+
+        Side Effects:
+            May schedule various internal and hardware events.
+        """
+
         if src not in [self.middle, self.other]:
             return
 
@@ -287,6 +341,8 @@ class EntanglementGenerationA(EntanglementProtocol):
         return self.other_protocol is not None
 
     def memory_expire(self, memory: "Memory") -> None:
+        """Method to receive expired memories."""
+
         assert memory == self.memory
         self.own.resource_manager.update(self, self.memory, "RAW")
         for event in self.scheduled_events:
@@ -295,6 +351,8 @@ class EntanglementGenerationA(EntanglementProtocol):
 
     # ignore memory expiration events
     def pop(self, **kwargs):
+        """Method to receive hardware info (currently unused)."""
+
         pass
 
 
@@ -309,13 +367,35 @@ class EntanglementGenerationB(EntanglementProtocol):
         name (str): label for protocol instance.
         others (List[str]): list of neighboring quantum router nodes
     """
+
     def __init__(self, own: "Node", name: str, others: List[str]):
+        """Constructor for entanglement generation b protocol.
+
+        Args:
+            own (Node): attached node.
+            name (str): name of protocol instance.
+            others (List[str]): name of protocol instance on end nodes.
+        """
+
         super().__init__(own, name)
         assert len(others) == 2
         self.others = others  # end nodes
         # self.other_protocols = kwargs.get("other_protocols") # other EG protocols (must be same order as others)
 
     def pop(self, info_type, **kwargs):
+        """Method to receive info from bell state measurement device.
+        
+        Args:
+            info_type (str): string describing type of information received (should be "BSM_res")
+
+        Keyword Args:
+            res (int): measurement result.
+            time (int): simulation time of measurement.
+
+        Side Effects:
+            May send result message to A protocols on end nodes.
+        """
+
         assert info_type == "BSM_res"
 
         res = kwargs.get("res")

@@ -45,6 +45,12 @@ class Node(Entity):
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
+        """Constructor for node.
+
+        name (str): name of node instance.
+        timeline (Timeline): timeline for simulation.
+        """
+
         Entity.__init__(self, name, timeline)
         self.owner = self
         self.cchannels = {}  # mapping of destination node names to classical channels
@@ -55,17 +61,52 @@ class Node(Entity):
         pass
 
     def assign_cchannel(self, cchannel: "ClassicalChannel", another: str) -> None:
+        """Method to assign a classical channel to the node.
+
+        This method is usually called by the `ClassicalChannel.add_ends` method and not called individually.
+
+        Args:
+            cchannel (ClassicalChannel): channel to add.
+            another (str): name of node at other end of channel.
+        """
+
         self.cchannels[another] = cchannel
 
     def assign_qchannel(self, qchannel: "QuantumChannel", another: str) -> None:
+        """Method to assign a quantum channel to the node.
+
+        This method is usually called by the `QuantumChannel.add_ends` method and not called individually.
+
+        Args:
+            qchannel (QuantumChannel): channel to add.
+            another (str): name of node at other end of channel.
+        """
+
         self.qchannels[another] = qchannel
 
     def send_message(self, dst: str, msg: "Message", priority=inf) -> None:
+        """Method to send classical message.
+
+        Args:
+            dst (str): name of destination node for message.
+            msg (Message): message to transmit.
+            priority (int): priority for transmitted message (default inf).
+        """
+
         if priority == inf:
             priority = monotonic_ns()
         self.cchannels[dst].transmit(msg, self, priority)
 
     def receive_message(self, src: str, msg: "Message") -> None:
+        """Method to receive message from classical channel.
+
+        Searches through attached protocols for those matching message, then invokes `received_message` method of protocol(s).
+
+        Args:
+            src (str): name of node sending the message.
+            msg (Message): message transmitted from node.
+        """
+
         # signal to protocol that we've received a message
         if msg.receiver is not None:
             for protocol in self.protocols:
@@ -77,12 +118,18 @@ class Node(Entity):
                 p.received_message(src, msg)
 
     def schedule_qubit(self, dst: str, min_time: int) -> int:
+        """Interface for quantum channel `schedule_transmit` method."""
+
         return self.qchannels[dst].schedule_transmit(min_time)
 
     def send_qubit(self, dst: str, qubit) -> None:
+        """Interface for quantum channel `transmit` method."""
+
         self.qchannels[dst].transmit(qubit, self)
 
     def receive_qubit(self, src: str, qubit) -> None:
+        """Method to receive qubits from quantum channel (does nothing for this class)."""
+
         pass
 
 
@@ -99,6 +146,14 @@ class BSMNode(Node):
     """
 
     def __init__(self, name: str, timeline: "Timeline", other_nodes: [str]) -> None:
+        """Constructor for BSM node.
+
+        Args:
+            name (str): name of node.
+            timeline (Timeline): simulation timeline.
+            other_nodes (str): 2-member list of node names for adjacent quantum routers.
+        """
+
         from ..entanglement_management.generation import EntanglementGenerationB
         Node.__init__(self, name, timeline)
         self.bsm = SingleAtomBSM("%s_bsm" % name, timeline)
@@ -117,9 +172,24 @@ class BSMNode(Node):
         raise Exception("Unkown protocol")
 
     def receive_qubit(self, src: str, qubit):
+        """Method to receive qubit from quantum channel.
+
+        Invokes get method of internal bsm with `qubit` as argument.
+
+        Args:
+            src (str): name of node where qubit was sent from.
+            qubit (any): transmitted qubit.
+        """
+
         self.bsm.get(qubit)
 
     def eg_add_others(self, other):
+        """Method to addd other protocols to entanglement generation protocol.
+
+        Args:
+            other (EntanglementProtocol): other entanglement protocol instance.
+        """
+
         self.eg.others.append(other.name)
 
 
@@ -139,6 +209,14 @@ class QuantumRouter(Node):
     """
 
     def __init__(self, name, tl, memo_size=50):
+        """Constructor for quantum router class.
+
+        Args:
+            name (str): label for node.
+            tl (Timeline): timeline for simulation.
+            memo_size (int): number of memories to add in the array (default 50).
+        """
+
         Node.__init__(self, name, tl)
         self.memory_array = MemoryArray(name + ".MemoryArray", tl, num_memories=memo_size)
         self.memory_array.owner = self
@@ -164,6 +242,11 @@ class QuantumRouter(Node):
                         break
 
     def init(self):
+        """Method to initialize quantum router node.
+
+        Sets up map_to_middle_node dictionary.
+        """
+
         super().init()
         for dst in self.qchannels:
             for end in self.qchannels[dst].ends:
@@ -173,24 +256,48 @@ class QuantumRouter(Node):
                             self.map_to_middle_node[other] = end.name
 
     def memory_expire(self, memory: "Memory") -> None:
+        """Method to receive expired memories.
+
+        Args:
+            memory (Memory): memory that has expired.
+        """
+
         self.resource_manager.memory_expire(memory)
 
     def set_app(self, app: "RandomRequestApp"):
+        """Method to add an application to the node."""
+
         self.app = app
 
     def reserve_net_resource(self, responder: str, start_time: int, end_time: int, memory_size: int,
                              target_fidelity: float) -> None:
+        """Method to request a reservation.
+
+        Args:
+            responder (str): name of the node with which entanglement is requested.
+            start_time (int): desired simulation start time of entanglement.
+            end_time (int): desired simulation end time of entanglement.
+            memory_size (int): number of memories requested.
+            target_fidelity (float): desired fidelity of entanglement.
+        """
+
         self.network_manager.request(responder, start_time, end_time, memory_size, target_fidelity)
 
     def get_idle_memory(self, info: "MemoryInfo") -> None:
+        """Method for application to receive available memories."""
+
         if self.app:
             self.app.get_memory(info)
 
     def get_reserve_res(self, reservation: "Reservation", res: bool) -> None:
+        """Method for application to receive reservations results."""
+
         if self.app:
             self.app.get_reserve_res(reservation, res)
 
     def get_other_reservation(self, reservation: "Reservation"):
+        """Method for application to get another reservation."""
+
         if self.app:
             self.app.get_other_reservation(reservation)
 
@@ -218,7 +325,16 @@ class QKDNode(Node):
         protocol_stack (List[StackProtocol]): protocols for qkdd process.
     """
 
-    def __init__(self, name: str, timeline: "timeline", encoding=polarization, stack_size=5):
+    def __init__(self, name: str, timeline: "Timeline", encoding=polarization, stack_size=5):
+        """Constructor for the qkd node class.
+
+        Args:
+            name (str): label for the node instance.
+            timeline (Timeline): simulation timeline.
+            encoding (Dict): encoding scheme for qubits (from encoding module) (default polarization).
+            stack_size (int): number of qkd protocols to include in the protocol stack (default 5).
+        """
+
         super().__init__(name, timeline)
         self.encoding = encoding
         self.lightsource = LightSource(name + ".lightsource", timeline, encoding_type=encoding)
@@ -252,6 +368,13 @@ class QKDNode(Node):
         assert self.protocol_stack[0].role != -1
 
     def set_protocol_layer(self, layer: int, protocol: "StackProtocol") -> None:
+        """Method to set a layer of the protocol stack.
+
+        Args:
+            layer (int): layer to change.
+            protocol (StackProtocol): protocol to insert.
+        """
+
         if layer < 0 or layer > 5:
             raise ValueError("layer must be between 0 and 5; given {}".format(layer))
 
@@ -275,6 +398,20 @@ class QKDNode(Node):
         self.qsdetector.update_detector_params(detector_id, arg_name, value)
 
     def get_bits(self, light_time, start_time, frequency):
+        """Method for QKD protocols to get received qubits from the node.
+
+        Uses the detection times from attached detectors to calculate which bits were received.
+        Returns 0/1 for successfully transmitted bits and -1 for lost/ambiguous bits.
+
+        Args:
+            light_time (int): time for which qubits were transmitted.
+            start_time (int): time at which qubits were first received.
+            frequency (float): frequency of qubit transmission.
+
+        Returns:
+            List[int]: list of calculated bits.
+        """
+
         # compute received bits based on encoding scheme
         encoding = self.encoding["name"]
         bits = [-1] * int(round(light_time * frequency))  # -1 used for invalid bits
@@ -339,6 +476,15 @@ class QKDNode(Node):
         return bits
 
     def set_bases(self, basis_list, start_time, frequency, component):
+        """Method to set basis list for measurement component.
+
+        Args:
+            basis_list (List[int]): list of bases to measure in.
+            start_time (int): time to start measurement.
+            frequency (float): frequency with which to measure.
+            component (Entity): measurement component to edit (normally a QSDetector).
+        """
+
         encoding_type = component.encoding_type
         basis_start_time = start_time - 1e12 / (2 * frequency)
 
