@@ -206,11 +206,11 @@ class ResourceReservationProtocol(StackProtocol):
 
                     protocols.remove(_protocols[1])
                     _protocols[1].rule.protocols.remove(_protocols[1])
-                    _protocols[1].kept_memo.remove_protocol(_protocols[1])
+                    _protocols[1].kept_memo.detach(_protocols[1])
                     _protocols[0].meas_memo = _protocols[1].kept_memo
                     _protocols[0].memories = [_protocols[0].kept_memo, _protocols[0].meas_memo]
                     _protocols[0].name = _protocols[0].name + "." + _protocols[0].meas_memo.name
-                    _protocols[0].meas_memo.add_protocol(_protocols[0])
+                    _protocols[0].meas_memo.attach(_protocols[0])
                     _protocols[0].t0 = _protocols[0].kept_memo.timeline.now()
 
                     return _protocols[0]

@@ -112,20 +112,6 @@ class BSM(Entity):
         if not any([reference.location == photon.location for reference in self.photons]):
             self.photons.append(photon)
 
-    # @abstractmethod
-    # def pop(self, **kwargs):
-    #     """Method to receive photon detection events from attached detectors (abstract)
-    #
-    #     Keyword Arguments:
-    #         detector: detector object that is invoking the method
-    #         time: simulation time of the detection event
-    #     """
-    #
-    #     # calculate bsm based on detector num
-    #     detector = kwargs.get("detector")
-    #     detector_num = self.detectors.index(detector)
-    #     time = kwargs.get("time")
-
     @abstractmethod
     def trigger(self, detector: Detector, msg: Dict[str, Any]):
         """Method to receive photon detection events from attached detectors (abstract)
@@ -135,6 +121,10 @@ class BSM(Entity):
             msg: the message from the source detector
         """
         pass
+
+    def notify(self, msg: Dict[str, Any]):
+        for observer in self._observers:
+            observer.bsm_update(self, msg)
 
     def update_detectors_params(self, arg_name: str, value: Any) -> None:
         """Updates parameters of attached detectors"""
@@ -444,3 +434,4 @@ class SingleAtomBSM(BSM):
         res = detector_num
         msg = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
         self.notify(msg)
+

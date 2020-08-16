@@ -32,7 +32,8 @@ class Entity(ABC):
         pass
 
     def attach(self, observer: Any):
-        self._observers.append(observer)
+        if not observer in self._observers:
+            self._observers.append(observer)
 
     def detach(self, observer: Any):
         self._observers.remove(observer)
