@@ -15,7 +15,7 @@ class Photon():
         name (str): label for photon instance.
         wavelength (float): wavelength of photon (in nm).
         location (Entity): current location of photon.
-        encoding_type (Dict): encoding type of photon (as defined in encoding module).
+        encoding_type (Dict[str, Any]): encoding type of photon (as defined in encoding module).
         quantum_state (QuantumState): quantum state of photon.
         is_null (bool): defines whether photon is real or a "ghost" photon (not detectable but used in memory encoding).
     """
@@ -30,7 +30,7 @@ class Photon():
         Keyword Args:
             wavelength (int): wavelength of photon (in nm) (default 0).
             location (Entity): location of the photon.
-            encoding_type (Dict): encoding type of photon (from encoding module) (default polarization).
+            encoding_type (Dict[str, Any]): encoding type of photon (from encoding module) (default polarization).
             quantum_state (List[complex]): complex coefficients for photon's quantum state.
         """
 

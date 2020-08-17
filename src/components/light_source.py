@@ -25,7 +25,7 @@ class LightSource(Entity):
         wavelength (float): wavelength (in nm) of emitted photons.
         linewidth (float): st. dev. in photon wavelength (in nm).
         mean_photon_num (float): mean number of photons emitted each period.
-        encoding_type (Dict): encoding scheme of emitted photons (as defined in the encoding module).
+        encoding_type (Dict[str, Any]): encoding scheme of emitted photons (as defined in the encoding module).
         phase_error (float): phase error applied to qubits.
         photon_counter (int): counter for number of photons emitted.
     """

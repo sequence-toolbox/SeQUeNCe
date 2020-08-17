@@ -106,7 +106,7 @@ class Memory(Entity):
         coherence_time (float): average usable lifetime of memory (in seconds).
         wavelength (float): wavelength (in nm) of emitted photons.
         qstate (QuantumState): quantum state of memory.
-        entangled_memory (Dict): tracks entanglement state of memory.
+        entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
     """
 
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,

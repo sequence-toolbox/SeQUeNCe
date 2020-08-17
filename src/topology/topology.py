@@ -24,10 +24,10 @@ class Topology():
     Attributes:
         name (str): label for topology.
         timeline (Timeline): timeline to be used for all objects in network.
-        nodes (Dict): mapping of node names to node objects.
+        nodes (Dict[str, Node]): mapping of node names to node objects.
         qchannels (List[QuantumChannel]): list of quantum channel objects in network.
         cchannels (List[ClassicalChannel]): list of classical channel objects in network.
-        graph: (Dict): internal representation of quantum graph.
+        graph: (Dict[str, Dict[str, float]]): internal representation of quantum graph.
     """
 
     def __init__(self, name: str, timeline: "Timeline"):

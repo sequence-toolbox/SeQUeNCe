@@ -33,7 +33,7 @@ class RandomRequestApp():
         wait_time (List[int]): aggregates times between request and accepted reservation.
         throughput (List[float]): aggregates average rate of memory entanglement per reservation
         reserves (List[List[any]]): aggregates previous reservations 
-        memo_to_reserve (Dict): mapping of memory index to corresponding reservation.
+        memo_to_reserve (Dict[int, Reservation]): mapping of memory index to corresponding reservation.
     """
 
     def __init__(self, node: "QuantumRouter", others: List[str], seed: int):

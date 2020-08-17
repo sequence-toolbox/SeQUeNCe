@@ -39,8 +39,8 @@ class Node(Entity):
     Attributes:
         name (str): label for node instance.
         timeline (Timeline): timeline for simulation.
-        cchannels (Dict): mapping of destination node names to classical channel instances.
-        qchannels (Dict): mapping of destination node names to quantum channel instances.
+        cchannels (Dict[str, ClassicalChannel]): mapping of destination node names to classical channel instances.
+        qchannels (Dict[str, ClassicalChannel]): mapping of destination node names to quantum channel instances.
         protocols (List[Protocol]): list of attached protocols.
     """
 
@@ -204,7 +204,7 @@ class QuantumRouter(Node):
         memory_array (MemoryArray): internal memory array object.
         resource_manager (ResourceManager): resource management module.
         network_manager (NetworkManager): network management module.
-        map_to_middle_node (Dict): mapping of router names to intermediate bsm node names.
+        map_to_middle_node (Dict[str, str]): mapping of router names to intermediate bsm node names.
         app (any): application in use on node.
     """
 
@@ -319,7 +319,7 @@ class QKDNode(Node):
     Attributes:
         name (str): label for node instance.
         timeline (Timeline): timeline for simulation.
-        encoding (Dict): encoding type for qkd qubits (from encoding module).
+        encoding (Dict[str, Any]): encoding type for qkd qubits (from encoding module).
         lightsource (LightSource): laser light source to generate keys.
         qsdetector (QSDetector): quantum state detector for qubit measurement.
         protocol_stack (List[StackProtocol]): protocols for qkdd process.
@@ -331,7 +331,7 @@ class QKDNode(Node):
         Args:
             name (str): label for the node instance.
             timeline (Timeline): simulation timeline.
-            encoding (Dict): encoding scheme for qubits (from encoding module) (default polarization).
+            encoding (Dict[str, Any]): encoding scheme for qubits (from encoding module) (default polarization).
             stack_size (int): number of qkd protocols to include in the protocol stack (default 5).
         """
 
