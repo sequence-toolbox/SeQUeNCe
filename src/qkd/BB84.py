@@ -50,12 +50,12 @@ class BB84Message(Message):
 
 
 class BB84(StackProtocol):
-    def __init__(self, own: "QKDNode", name: str, **kwargs):
-        if own == None: # used only for unit test purposes
+    def __init__(self, own: "QKDNode", name: str, role=-1):
+        if own == None:  # used only for unit test purposes
             return
         super().__init__(own, name)
-        self.role = kwargs.get("role", -1)
-        
+        self.role = role
+
         self.working = False
         self.ready = True  # (for Alice) not currently processing a generate_key request
         self.light_time = 0  # time to use laser (measured in s)
