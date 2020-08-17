@@ -144,9 +144,8 @@ class QSDetector(Entity, ABC):
 class QSDetectorPolarization(QSDetector):
     """QSDetector to measure polarization encoded qubits.
 
-    There are two detectors. Their connections are shown below:
-        polarization splitter ---- detectors[0]
-                          |------- detectors[1]
+    There are two detectors.
+    Detectors[0] and detectors[1] are directly connected to the beamsplitter.
 
     Attributes:
         name (str): label for QSDetector instance.
@@ -200,10 +199,9 @@ class QSDetectorPolarization(QSDetector):
 class QSDetectorTimeBin(QSDetector):
     """QSDetector to measure time bin encoded qubits.
 
-    There are three detectors. Their connections are shown below:
-        switch ---- detectors[0]
-            |------ interferometer ---- detectors[1]
-                                |------ detectors[2]
+    There are three detectors.
+    The switch is connected to detectors[0] and the interferometer.
+    The interferometer is connected to detectors[1] and detectors[2].
 
     Attributes:
         name (str): label for QSDetector instance.

@@ -201,7 +201,7 @@ class EntanglementGenerationA(EntanglementProtocol):
     def emit_event(self) -> None:
         """Method to setup memory and emit photons.
 
-        If the protocol is in round 1, the memory will be first set to the |+> state.
+        If the protocol is in round 1, the memory will be first set to the \|+> state.
         Regardless of round, the memory excite method will be invoked.
 
         Side Effects:

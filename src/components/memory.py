@@ -221,7 +221,7 @@ class Memory(Entity):
     def reset(self) -> None:
         """Method to clear quantum memory.
 
-        Will reset quantum state to |0> and will clear entanglement information.
+        Will reset quantum state to \|0> and will clear entanglement information.
 
         Side Effects:
             Will modify internal parameters and quantum state.
@@ -237,7 +237,7 @@ class Memory(Entity):
             self.expiration_event = None
 
     def set_plus(self) -> None:
-        """Method to set the memory state to |+> (superposition of |0> and |1> states).
+        """Method to set the memory state to \|+> (superposition of \|0> and \|1> states).
 
         Side Effects:
             Will modify internal quantum state and parameters.
