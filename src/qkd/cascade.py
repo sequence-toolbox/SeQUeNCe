@@ -70,13 +70,13 @@ class CascadeMessage(Message):
 
 
 class Cascade(StackProtocol):
-    def __init__(self, own: "QKDNode", name: str, **kwargs):
+    def __init__(self, own: "QKDNode", name: str, w=4, role=-1, secure_params=100):
         super().__init__(own, name)
 
-        self.w = kwargs.get("w", 4)
-        self.role = kwargs.get("role", -1)  # 0 for sender, 1 for receiver
-        self.secure_params = kwargs.get("secure_params", 100)
-        
+        self.w = w
+        self.role = role  # 0 for sender, 1 for receiver
+        self.secure_params = secure_params
+
         self.another = None
         self.state = 0
 
