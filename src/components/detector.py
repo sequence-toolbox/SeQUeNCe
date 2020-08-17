@@ -25,12 +25,13 @@ from ..utils.encoding import time_bin
 
 
 class Detector(Entity):
-    def __init__(self, name: str, timeline: "Timeline", **kwargs):
+    def __init__(self, name: str, timeline: "Timeline", efficiency=0.9, dark_count=0, count_rate=int(25e6),
+                 time_resolution=150):
         Entity.__init__(self, name, timeline)  # Detector is part of the QSDetector, and does not have its own name
-        self.efficiency = kwargs.get("efficiency", 0.9)
-        self.dark_count = kwargs.get("dark_count", 0)  # measured in Hz
-        self.count_rate = kwargs.get("count_rate", int(25e6))  # measured in Hz
-        self.time_resolution = kwargs.get("time_resolution", 150)  # measured in ps
+        self.efficiency = efficiency
+        self.dark_count = dark_count  # measured in Hz
+        self.count_rate = count_rate  # measured in Hz
+        self.time_resolution = time_resolution  # measured in ps
         self.next_detection_time = -1
         self.photon_counter = 0
 
