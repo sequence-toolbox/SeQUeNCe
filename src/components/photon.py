@@ -9,12 +9,12 @@ from ..utils.quantum_state import QuantumState
 
 
 class Photon():
-    def __init__(self, name, **kwargs):
+    def __init__(self, name, wavelength=0, location=None, encoding_type=polarization,
+                 quantum_state=[complex(1), complex(0)]):
         self.name = name
-        self.wavelength = kwargs.get("wavelength", 0)
-        self.location = kwargs.get("location", None)
-        self.encoding_type = kwargs.get("encoding_type", polarization)
-        quantum_state = kwargs.get("quantum_state", [complex(1), complex(0)])
+        self.wavelength = wavelength
+        self.location = location
+        self.encoding_type = encoding_type
         self.quantum_state = QuantumState()
         self.quantum_state.state = quantum_state
         # self.entangled_photons = [self]
