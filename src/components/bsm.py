@@ -113,18 +113,18 @@ class BSM(Entity):
             self.photons.append(photon)
 
     @abstractmethod
-    def trigger(self, detector: Detector, msg: Dict[str, Any]):
+    def trigger(self, detector: Detector, info: Dict[str, Any]):
         """Method to receive photon detection events from attached detectors (abstract)
 
         Keyword Arguments:
             src: the source of message
-            msg: the message from the source detector
+            info: the message from the source detector
         """
         pass
 
-    def notify(self, msg: Dict[str, Any]):
+    def notify(self, info: Dict[str, Any]):
         for observer in self._observers:
-            observer.bsm_update(self, msg)
+            observer.bsm_update(self, info)
 
     def update_detectors_params(self, arg_name: str, value: Any) -> None:
         """Updates parameters of attached detectors"""
@@ -203,7 +203,7 @@ class PolarizationBSM(BSM):
         else:
             raise Exception("Invalid result from photon.measure_multiple")
 
-    def trigger(self, detector: Detector, msg: Dict[str, Any]):
+    def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.
 
         This method adds additional side effects not present in the base class.
@@ -213,7 +213,7 @@ class PolarizationBSM(BSM):
         """
 
         detector_num = self.detectors.index(detector)
-        time = msg["time"]
+        time = info["time"]
 
         # check if matching time
         if abs(time - self.last_res[0]) < self.resolution:
@@ -221,12 +221,12 @@ class PolarizationBSM(BSM):
 
             # Psi-
             if detector_last + detector_num == 3:
-                msg = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 1, 'time': time}
-                self.notify(msg)
+                info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 1, 'time': time}
+                self.notify(info)
             # Psi+
             elif abs(detector_last - detector_num) == 1:
-                msg = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 0, 'time': time}
-                self.notify(msg)
+                info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 0, 'time': time}
+                self.notify(info)
 
         self.last_res = [time, detector_num]
 
@@ -317,7 +317,7 @@ class TimeBinBSM(BSM):
         else:
             raise Exception("Invalid result from photon.measure_multiple")
 
-    def trigger(self, detector: Detector, msg: Dict[str, Any]):
+    def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.
 
         This method adds additional side effects not present in the base class.
@@ -327,7 +327,7 @@ class TimeBinBSM(BSM):
         """
 
         detector_num = self.detectors.index(detector)
-        time = msg["time"]
+        time = info["time"]
 
         # check if valid time
         if round((time - self.last_res[0]) / self.encoding_type["bin_separation"]) == 1:
@@ -335,12 +335,12 @@ class TimeBinBSM(BSM):
             # pop result message
             # Psi+
             if detector_num == self.last_res[1]:
-                msg = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 0, 'time': time}
-                self.notify(msg)
+                info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 0, 'time': time}
+                self.notify(info)
             # Psi-
             else:
-                msg = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 1, 'time': time}
-                self.notify(msg)
+                info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 1, 'time': time}
+                self.notify(info)
 
         self.last_res = [time, detector_num]
 
@@ -419,7 +419,7 @@ class SingleAtomBSM(BSM):
                         detector_num = random.randint(2)
                     self.detectors[detector_num].get()
 
-    def trigger(self, detector: Detector, msg: Dict[str, Any]):
+    def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.
 
         This method adds additional side effects not present in the base class.
@@ -429,9 +429,8 @@ class SingleAtomBSM(BSM):
         """
 
         detector_num = self.detectors.index(detector)
-        time = msg["time"]
+        time = info["time"]
 
         res = detector_num
-        msg = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
-        self.notify(msg)
-
+        info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
+        self.notify(info)

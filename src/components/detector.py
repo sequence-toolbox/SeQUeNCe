@@ -58,9 +58,9 @@ class Detector(Entity):
             self.timeline.schedule(event1)
             self.timeline.schedule(event2)
 
-    def notify(self, msg: Dict[str, Any]):
+    def notify(self, info: Dict[str, Any]):
         for observer in self._observers:
-            observer.trigger(self, msg)
+            observer.trigger(self, info)
 
 
 class QSDetector(Entity, ABC):
@@ -77,9 +77,9 @@ class QSDetector(Entity, ABC):
     def get(self, photon: "Photon") -> None:
         pass
 
-    def trigger(self, detector: Detector, msg: Dict[str, Any]) -> None:
+    def trigger(self, detector: Detector, info: Dict[str, Any]) -> None:
         detector_index = self.detectors.index(detector)
-        self.trigger_times[detector_index].append(msg['time'])
+        self.trigger_times[detector_index].append(info['time'])
 
     def get_photon_times(self):
         return self.trigger_times

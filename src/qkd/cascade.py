@@ -122,18 +122,18 @@ class Cascade(StackProtocol):
     def push(self, keylen: int, frame_num=math.inf, run_time=math.inf) -> None:
         self.generate_key(keylen, frame_num, run_time)
 
-    def pop(self, msg: int) -> None:
+    def pop(self, info: int) -> None:
         """
         Function called by BB84 when it creates a key
         """
-        self.log('get_key_from_BB84, key= ' + str(msg))
-        self.bits.append(msg)
+        self.log('get_key_from_BB84, key= ' + str(info))
+        self.bits.append(info)
         self.t1.append(self.own.timeline.now())
         self.t2.append(-1)
 
         if self.state == 1:
             self.create_checksum_table()
-        
+
         if self.state == 0 and self.role == 1:
             message = CascadeMessage(CascadeMsgType.KEY, self.another.name, key=self.bits[0])
             self.send_by_cc(message)

@@ -38,9 +38,9 @@ class Entity(ABC):
     def detach(self, observer: Any):
         self._observers.remove(observer)
 
-    def notify(self, msg: Dict[str, Any]):
+    def notify(self, info: Dict[str, Any]):
         for observer in self._observers:
-            observer.update(self, msg)
+            observer.update(self, info)
 
     def remove_from_timeline(self):
         self.timeline.entities.remove(self)

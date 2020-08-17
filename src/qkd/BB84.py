@@ -251,9 +251,9 @@ class BB84(StackProtocol):
 
                     while len(self.key_bits) >= self.key_lengths[0] and self.keys_left_list[0] > 0:
                         self.set_key()  # convert from binary list to int
-                        self._pop(msg=self.key)
+                        self._pop(info=self.key)
                         self.another.set_key()
-                        self.another._pop(msg=self.another.key)
+                        self.another._pop(info=self.another.key)
 
                         # for metrics
                         if self.latency == 0:
