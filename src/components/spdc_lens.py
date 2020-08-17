@@ -11,10 +11,10 @@ from ..kernel.entity import Entity
 
 
 class SPDCLens(Entity):
-    def __init__(self, name, timeline, **kwargs):
+    def __init__(self, name, timeline, rate=1, direct_receiver=None):
         Entity.__init__(self, name, timeline)
-        self.rate = kwargs.get("rate", 1)
-        self.direct_receiver = kwargs.get("direct_receiver", None)
+        self.rate = rate
+        self.direct_receiver = direct_receiver
 
     def init(self):
         pass
