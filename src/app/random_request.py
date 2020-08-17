@@ -22,6 +22,7 @@ class RandomRequestApp():
     This application will create a request for entanglement with a random node (and with other random parameters).
     If the request is accepted, a new request will be made once it has expired.
     Otherwise, a new request will be made immediately.
+    The responder and fidelity of failed request will be kept in the new request.
 
     Attributes:
         node (QuantumRouter): Node that code is attached to.
@@ -90,8 +91,8 @@ class RandomRequestApp():
         """Method to retry a failed request.
 
         Args:
-            responder (str): responder node to reattempt entanglement with.
-            fidelity (float): new fidelity to request.
+            responder (str): responder node of failed request.
+            fidelity (float): fidelity of failed request.
 
         Side Effects:
             Will create request for network manager on node.
@@ -138,7 +139,10 @@ class RandomRequestApp():
             self.node.timeline.schedule(event)
 
     def get_other_reservation(self, reservation: "Reservation") -> None:
-        """Method to add all reserved memories to the memory-reservation map.
+        """Method to add the approved reservation that is requested by other nodes
+
+        Args:
+            reservation (Reservation): reservation that uses the node of application as the responder
 
         Side Effects:
             Will add calls to `add_memo_reserve_map` and `remove_memo_reserve_map` methods.
@@ -162,11 +166,13 @@ class RandomRequestApp():
     def get_memory(self, info: "MemoryInfo") -> None:
         """Method to receive entangled memories.
 
-        Will set memory to RAW state and return to resource manager.
-        If the requesting node, will also addd memory to memory count.
+        Will check if the received memory is qualified.
+        If it's a qualified memory, the application sets memory to RAW state and release back to resource manager.
+        The counter of entanglement memories, 'memory_counter', is added.
+        Otherwise, the application does not modify the state of memory and release back to the resource manager.
 
         Args:
-            info (MemoryInfo): info on entangled memory.
+            info (MemoryInfo): info on the qualified entangled memory.
         """
 
         if info.state != "ENTANGLED":
