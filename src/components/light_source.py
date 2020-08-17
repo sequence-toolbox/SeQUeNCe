@@ -14,14 +14,15 @@ from ..utils.encoding import polarization
 
 
 class LightSource(Entity):
-    def __init__(self, name, timeline, **kwargs):
+    def __init__(self, name, timeline, frequency=8e7, wavelength=1550, bandwidth=0, mean_photon_num=0.1,
+                 encoding_type=polarization, phase_error=0):
         Entity.__init__(self, name, timeline)
-        self.frequency = kwargs.get("frequency", 8e7)  # measured in Hz
-        self.wavelength = kwargs.get("wavelength", 1550)  # measured in nm
-        self.linewidth = kwargs.get("bandwidth", 0)  # st. dev. in photon wavelength (nm)
-        self.mean_photon_num = kwargs.get("mean_photon_num", 0.1)
-        self.encoding_type = kwargs.get("encoding_type", polarization)
-        self.phase_error = kwargs.get("phase_error", 0)
+        self.frequency = frequency  # measured in Hz
+        self.wavelength = wavelength  # measured in nm
+        self.linewidth = bandwidth  # st. dev. in photon wavelength (nm)
+        self.mean_photon_num = mean_photon_num
+        self.encoding_type = encoding_type
+        self.phase_error = phase_error
         self.photon_counter = 0
         # for BB84
         # self.basis_lists = []
@@ -60,10 +61,11 @@ class LightSource(Entity):
 
 
 class SPDCSource(LightSource):
-    def __init__(self, name, timeline, **kwargs):
-        super().__init__(name, timeline, **kwargs)
-        self.another_receiver = kwargs.get("another_receiver", None)
-        self.wavelengths = kwargs.get("wavelengths", [])
+    def __init__(self, name, timeline, another_receiver=None, wavelengths=[], frequency=8e7, wavelength=1550,
+                 bandwidth=0, mean_photon_num=0.1, encoding_type=polarization, phase_error=0):
+        super().__init__(name, timeline, frequency, wavelength, bandwidth, mean_photon_num, encoding_type, phase_error)
+        self.another_receiver = another_receiver
+        self.wavelengths = wavelengths
 
     def emit(self, state_list):
         time = self.timeline.now()
