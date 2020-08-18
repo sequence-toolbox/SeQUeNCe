@@ -50,9 +50,20 @@ class Detector(Entity):
         self.photon_counter = 0
 
     def init(self):
+        """Implementation of Entity interface (see base class)."""
         self.add_dark_count()
 
     def get(self, dark_get=False) -> None:
+        """Method to receive a photon for measurement.
+
+        Args:
+            dark_get (bool): Signifies if the call is the result of a false positive dark count event.
+                If true, will ignore probability calculations (default false).
+
+        Side Effects:
+            May notify upper entities of a detection event.
+        """
+
         self.photon_counter += 1
         now = self.timeline.now()
         time = round(now / self.time_resolution) * self.time_resolution
@@ -62,6 +73,15 @@ class Detector(Entity):
             self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self) -> None:
+        """Method to schedule false positive detection events.
+
+        Events are scheduled as a Poisson process.
+
+        Side Effects:
+            May schedule future `get` method calls.
+            May schedule future calls to self.
+        """
+
         if self.dark_count > 0:
             time_to_next = int(random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
             time = time_to_next + self.timeline.now()  # time of next dark count
@@ -98,9 +118,18 @@ class QSDetector(Entity, ABC):
 
     @abstractmethod
     def get(self, photon: "Photon") -> None:
+        """Abstract method for receiving photons for measurement."""
+
         pass
 
     def pop(self, detector: "Detector", time: int) -> None:
+        """Method to receive measurements from lower-level entities (i.e. Detectors).
+
+        Arguments:
+            detector (Detector): detector object making a detection.
+            time (int): simulation time of detection.
+        """
+
         detector_index = self.detectors.index(detector)
         self.trigger_times[detector_index].append(time)
 
@@ -115,9 +144,8 @@ class QSDetector(Entity, ABC):
 class QSDetectorPolarization(QSDetector):
     """QSDetector to measure polarization encoded qubits.
 
-    There are two detectors. Their connections are shown below:
-        polarization splitter ---- detectors[0]
-                          |------- detectors[1]
+    There are two detectors.
+    Detectors[0] and detectors[1] are directly connected to the beamsplitter.
 
     Attributes:
         name (str): label for QSDetector instance.
@@ -139,9 +167,22 @@ class QSDetectorPolarization(QSDetector):
         self.trigger_times = [[], []]
 
     def init(self) -> None:
+        """Implementation of Entity interface (see base class)."""
+
         assert len(self.detectors) == 2
 
     def get(self, photon: "Photon") -> None:
+        """Method to receive a photon for measurement.
+
+        Forwards the photon to the internal polariaztion beamsplitter.
+
+        Arguments:
+            photon (Photon): photon to measure.
+
+        Side Effects:
+            Will call `get` method of attached beamsplitter.
+        """
+
         self.splitter.get(photon)
 
     def get_photon_times(self):
@@ -158,10 +199,9 @@ class QSDetectorPolarization(QSDetector):
 class QSDetectorTimeBin(QSDetector):
     """QSDetector to measure time bin encoded qubits.
 
-    There are three detectors. Their connections are shown below:
-        switch ---- detectors[0]
-            |------ interferometer ---- detectors[1]
-                                |------ detectors[2]
+    There are three detectors.
+    The switch is connected to detectors[0] and the interferometer.
+    The interferometer is connected to detectors[1] and detectors[2].
 
     Attributes:
         name (str): label for QSDetector instance.
@@ -189,9 +229,22 @@ class QSDetectorTimeBin(QSDetector):
         self.trigger_times = [[], [], []]
 
     def init(self):
+        """Implementation of Entity interface (see base class)."""
+
         pass
 
     def get(self, photon):
+        """Method to receive a photon for measurement.
+
+        Forwards the photon to the internal fiber switch.
+
+        Args:
+            photon (Photon): photon to measure.
+
+        Side Effects:
+            Will call `get` method of attached switch.
+        """
+
         self.switch.get(photon)
 
     def get_photon_times(self):

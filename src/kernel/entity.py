@@ -23,6 +23,13 @@ class Entity(ABC):
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
+        """Constructor for entity class.
+
+        Args:
+            name (str): name of entity.
+            timeline (Timeline): timeline for simulation.
+        """
+
         if name is None:
             self.name = ""
         else:
@@ -40,12 +47,22 @@ class Entity(ABC):
 
     @abstractmethod
     def init(self):
+        """Method to initialize entity (abstract).
+
+        Entity `init` methods are invoked for all timeline entities when the timeline is initialized.
+        This method can be used to perform any necessary functions before simulation.
+        """
+
         pass
 
     def push(self, **kwargs):
+        """Method to receive information from upper entities."""
+
         pass
 
     def pop(self, **kwargs):
+        """Method to receive information from lower entities."""
+
         pass
 
     def _push(self, **kwargs):
@@ -61,6 +78,11 @@ class Entity(ABC):
                 entity.pop(**kwargs)
 
     def remove_from_timeline(self):
+        """Method to remove entity from attached timeline.
+
+        This is to allow unused entities to be garbage collected.
+        """
+
         self.timeline.entities.remove(self)
 
 

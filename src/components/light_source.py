@@ -25,12 +25,27 @@ class LightSource(Entity):
         wavelength (float): wavelength (in nm) of emitted photons.
         linewidth (float): st. dev. in photon wavelength (in nm).
         mean_photon_num (float): mean number of photons emitted each period.
-        encoding_type (Dict): encoding scheme of emitted photons (as defined in the encoding module).
+        encoding_type (Dict[str, Any]): encoding scheme of emitted photons (as defined in the encoding module).
         phase_error (float): phase error applied to qubits.
         photon_counter (int): counter for number of photons emitted.
     """
 
     def __init__(self, name, timeline, **kwargs):
+        """Constructor for the LightSource class.
+
+        Arguments:
+            name (str): name of the light source instance.
+            timeline (Timeline): simulation timeline.
+
+        Keyword Arguments:
+            frequency (float): frequency (in Hz) of photon creation (default 8e7).
+            wavelength (float): wavelength (in nm) of emitted photons (default 1550).
+            bandwidth (float): st. dev. in photon wavelength (default 0).
+            mean_photon_num (float): mean number of photons emitted each period (default 0.1).
+            encoding_type (Dict): encoding scheme of emitted photons (as defined in the encoding module) (default polarization).
+            phase_error (float): phase error applied to qubits (default 0).
+        """
+
         Entity.__init__(self, name, timeline)
         self.frequency = kwargs.get("frequency", 8e7)  # measured in Hz
         self.wavelength = kwargs.get("wavelength", 1550)  # measured in nm
@@ -48,10 +63,22 @@ class LightSource(Entity):
         # self.pulse_id = 0
 
     def init(self):
+        """Implementation of Entity interface (see base class)."""
+
         pass
 
     # for general use
     def emit(self, state_list, dst: str) -> None:
+        """Method to emit photons.
+
+        Will emit photons for a length of time determined by the `state_list` parameter.
+        The number of photons emitted per period is calculated as a poisson random variable.
+
+        Arguments:
+            state_list (List[List[complex]]): list of complex coefficient arrays to send as photon-encoded qubits.
+            dst (str): name of destination node to receive photons.
+        """
+
         time = self.timeline.now()
         period = int(round(1e12 / self.frequency))
 
@@ -102,6 +129,15 @@ class SPDCSource(LightSource):
         self.wavelengths = kwargs.get("wavelengths", [])
 
     def emit(self, state_list):
+        """Method to emit photons.
+
+        Will emit photons for a length of time determined by the `state_list` parameter.
+        The number of photons emitted per period is calculated as a poisson random variable.
+
+        Arguments:
+            state_list (List[List[complex]]): list of complex coefficient arrays to send as photon-encoded qubits.
+        """
+
         time = self.timeline.now()
 
         for state in state_list:

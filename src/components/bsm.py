@@ -61,7 +61,7 @@ class BSM(Entity):
 
         Keyword Args:
             phase_error (float): phase error applied to polarization photons
-            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format
+            detectors (List[Dict[str, Any]]): list of parameters for attached detectors, in dictionary format
         """
 
         super().__init__(name, timeline)

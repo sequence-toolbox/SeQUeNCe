@@ -34,14 +34,14 @@ class BeamSplitter(Entity):
     """
 
     def __init__(self, name: str, timeline: "Timeline", **kwargs):
-        """Constructor for the beamsplitter class
+        """Constructor for the beamsplitter class.
 
         Args:
-            name (str): name of the beamsplitter instance
-            timeline (Timeline): simulation timeline
+            name (str): name of the beamsplitter instance.
+            timeline (Timeline): simulation timeline.
 
         Keyword Args:
-            fidelity (float): probability of transmitting a received photon (default 1)
+            fidelity (float): probability of transmitting a received photon (default 1).
         """
 
         Entity.__init__(self, name, timeline)  # Splitter is part of the QSDetector, and does not have its own name

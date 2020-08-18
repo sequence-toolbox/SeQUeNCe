@@ -21,14 +21,38 @@ class SPDCLens(Entity):
     """
 
     def __init__(self, name, timeline, **kwargs):
+        """Constructor for the spdc lens class.
+
+        Args:
+            name (str): name of the spdc lens instance.
+            timeline (Timeline): simulation timeline.
+
+        Keyword Args:
+            rate (float): probability of successfull down conversion (default 1).
+            direct_receiver (Entity): entity to receive down-converted photons (default None).
+        """
+
         Entity.__init__(self, name, timeline)
         self.rate = kwargs.get("rate", 1)
         self.direct_receiver = kwargs.get("direct_receiver", None)
 
     def init(self):
+        """Implementation of Entity interface (see base class)."""
+
         pass
 
     def get(self, photon):
+        """Method to receive a photon for transmission.
+
+        Based on rate probability, may split photon into two entangled photons.
+
+        Args:
+            photon (Photon): photon to down-convert.
+
+        Side Effects:
+            May create two entangledd photons and send them to the direct_receiver.
+        """
+
         if random_sample() < self.rate:
             state = photon.quantum_state
             photon.wavelength /= 2

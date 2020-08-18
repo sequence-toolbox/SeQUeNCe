@@ -16,6 +16,13 @@ from ..protocol import StackProtocol
 
 
 def pair_cascade_protocols(sender: "Cascade", receiver: "Cascade") -> None:
+    """Method to pair cascade protocol instance.
+
+    Args:
+        sender (Cascade): cascade protocol on node sending qubits (Alice).
+        receiver (Cascade): cascade protocol on node receiving qubits (Bob).
+    """
+
     sender.another = receiver
     receiver.another = sender
     sender.role = 0
@@ -24,6 +31,7 @@ def pair_cascade_protocols(sender: "Cascade", receiver: "Cascade") -> None:
 
 class CascadeMsgType(Enum):
     """Defines possible message types for cascade."""
+
     KEY = auto()
     PARAMS = auto()
     CHECKSUMS = auto()
@@ -136,6 +144,18 @@ class Cascade(StackProtocol):
     """
 
     def __init__(self, own: "QKDNode", name: str, **kwargs):
+        """Constructor for cascade class.
+
+        Args:
+            own (QKDNode): node protocol instance is attached to.
+            name (str): name of protocol instance.
+        
+        Keyword Args:
+            w (int): parameter for cascade protocol (default 4).
+            role (int): 0/1 role for protocol, differentiates Alice/Bob instances (default -1).
+            secure_params (int): security parameter (default 100).
+        """
+
         super().__init__(own, name)
 
         self.w = kwargs.get("w", 4)
@@ -178,12 +198,20 @@ class Cascade(StackProtocol):
             print(self.own.timeline.now(), self.name, self.state, info)
 
     def push(self, keylen: int, frame_num=math.inf, run_time=math.inf) -> None:
+        """Method to receive key generation events.
+        
+        Defers to `generate_key` method.
+        """
+
         self.generate_key(keylen, frame_num, run_time)
 
     def pop(self, msg: int) -> None:
+        """Function called by BB84 when it creates a key.
+
+        Args:
+            msg (int): key received.
         """
-        Function called by BB84 when it creates a key
-        """
+
         self.log('get_key_from_BB84, key= ' + str(msg))
         self.bits.append(msg)
         self.t1.append(self.own.timeline.now())
@@ -202,6 +230,15 @@ class Cascade(StackProtocol):
             self.send_by_cc(message)
 
     def received_message(self, src: str, msg: "Message") -> None:
+        """Method to receive messages from other protocol instance.
+
+        Different messages will cause different actions.
+
+        Args:
+            src (str): name of node that sent the message.
+            msg (Message): message received.
+        """
+
         if msg.msg_type is CascadeMsgType.KEY:
             """
             Sender receive key from receiver to measure the error rate of key
@@ -366,10 +403,19 @@ class Cascade(StackProtocol):
             self.performance_measure()
 
     def generate_key(self, keylen: int, frame_num=math.inf, run_time=math.inf) -> None:
+        """Method to start key generation.
+
+        The process for generating keys is:
+        
+        1. Generate 10000 bits key to measure error rate at 0 pass
+        2. Generate keylen bits key at 1st pass
+
+        Args:
+            keylen (int): length of key to generate.
+            frame_num (int): number of keys to generate (default inf).
+            runtime (int): max simulation time allowed for key generation (default inf).
         """
-        Generate 10000 bits key to measure error rate at 0 pass
-        Generate keylen bits key at 1st pass
-        """
+
         self.log('generate_key, keylen=' + str(keylen) + ', keynum=' + str(frame_num))
         if self.role == 1:
             raise Exception(
@@ -390,9 +436,14 @@ class Cascade(StackProtocol):
             self._push(length=self.frame_len, key_num=self.frame_num, run_time=self.run_time)
 
     def create_checksum_table(self) -> None:
+        """Method to create checksum tables.
+
+        Initialize checksum_table, index_to_block_id, and block_id_to_index after get key from BB84.
+
+        Side Effects:
+            Will modify `index_to_block_id_lists`, `block_id_to_index_lists`,  and `checksum_tables` attributes.
         """
-        initialize checksum_table, index_to_block_id, and block_id_to_index after get key from bb84
-        """
+
         # create index_to_block_id
         self.log('create_checksum_table')
         index_to_block_id = [[]]
@@ -456,6 +507,16 @@ class Cascade(StackProtocol):
         self.checksum_tables.append(checksum_table)
    
     def check_checksum(self, key_id: int) -> bool:
+        """Method to check a checksum.
+
+        Args:
+            key_id (int): key id to check checksums for.
+
+        Side Effects:
+            May return keys to upper protocol.
+            WILL send a KEY_IS_VALID method to other cascade protocols.
+        """
+
         self.log("check_checksum")
         cur_key = key_id
         another_checksum = self.another_checksums[cur_key]
@@ -484,17 +545,28 @@ class Cascade(StackProtocol):
         return True
 
     def end_cascade(self):
-        """
-        end cascade protocol
-        """
+        """Method to end cascade protocol."""
+
         self.state = 2
     
     def interactive_binary_search(self, key_id: int, pass_id: int, block_id: int,
             start: int, end: int) -> None:
+        """Method to search for errors in key.
+
+        Split block[start:end] to block[start:(start+end)/2], block[(start+end)/2,end].
+        Ask checksums of subblock from sender.
+
+        Args:
+            key_id (int): id of key to check.
+            pass_id (int): id of pass to check.
+            block_id (int): id of block to check.
+            start (int): index to start checking at.
+            end (int): index to stop checking at.
+
+        Side Effects:
+            Will send SEND_FOR_BINARY messages to other protocol.
         """
-        Split block[start:end] to block[start:(start+end)/2], block[(start+end)/2,end]
-        Ask checksums of subblock from sender
-        """
+
         self.log('interactive_binary_search, params= ' + str([key_id, pass_id, block_id, start, end]))
 
         # first half checksum
@@ -510,6 +582,8 @@ class Cascade(StackProtocol):
         self.send_by_cc(message)
 
     def send_by_cc(self, message: "CascadeMessage") -> None:
+        """Method to send classical messages."""
+
         if self.own.timeline.now() > self.end_time and self.state != 2:
             self.end_cascade()
             self.another.end_cascade()
@@ -518,6 +592,8 @@ class Cascade(StackProtocol):
         self.own.send_message(self.another.own.name, message)
 
     def performance_measure(self) -> None:
+        """Method to record performance metrics."""
+
         # record metrics
         if self.role == 0:
             self.latency = 0
