@@ -76,14 +76,6 @@ class MemoryManager():
         index = self.memory_array.memories.index(memory)
         return self.memory_map[index]
 
-    def pop(self, **kwargs):
-        """Method to receive expiration events from memories (unused)."""
-
-        if kwargs["info_type"] != "expired_memory":
-            return
-
-        index = kwargs["index"]
-
 
 class MemoryInfo():
     """Class to track memory information parameters for memory manager.
