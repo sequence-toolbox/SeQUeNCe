@@ -34,6 +34,8 @@ class ResourceManagerMessage(Message):
 
     * REQUEST: request eligible protocols from remote resource manager to pair entanglement protocols.
     * RESPONSE: approve or reject received request.
+    * RELEASE_PROTOCOL: release the protocol on the remote node
+    * RELEASE_MEMORY: release the memory on the remote node
 
     Attributes:
         ini_protocol (str): name of protocol that creates the original REQUEST message.
@@ -188,6 +190,9 @@ class ResourceManager():
                      req_condition_func: Callable[[List["EntanglementProtocol"]], "EntanglementProtocol"]):
         """Method to send protocol request to another node.
 
+        Send the request to pair the local 'protocol' with the protocol on the remote node 'req_dst'.
+        The function `req_condition_func` describes the desired protocol.
+
         Args:
             protocol (EntanglementProtocol): protocol sending the request.
             req_dst (str): name of destination node.
@@ -275,6 +280,10 @@ class ResourceManager():
     def release_remote_protocol(self, dst: str, protocol: "EntanglementProtocol") -> None:
         """Method to release protocols from memories on distant nodes.
 
+        Release the remote protocol 'protocol' on the remote node 'dst'.
+        The local protocol was paired with the remote protocol but local protocol becomes invalid.
+        The resource manager needs to notify the remote node to cancel the paired protocol.
+
         Args:
             dst (str): name of the destination node.
             protocol (EntanglementProtocol): protocol to release on node.
@@ -286,7 +295,10 @@ class ResourceManager():
     def release_remote_memory(self, init_protocol: "EntanglementProtocol", dst: str, memory_id: str) -> None:
         """Method to release memories on distant nodes.
 
-        TODO: review this section
+        Release the remote memory 'memory_id' on the node 'dst'.
+        The entanglement protocol of remote memory was paired with the local protocol 'init_protocol', but local
+        protocol becomes invalid.
+        The resource manager needs to notify the remote node to release the occupied memory.
 
         Args:
             init_protocol (EntanglementProtocol): protocol holding memory.
