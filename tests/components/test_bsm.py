@@ -11,13 +11,13 @@ class Parent():
         def __init__(self):
             self.results = []
 
-        def bsm_update(self, src: BSM, msg: Dict[str, Any]):
-            entity = msg.get("entity")
+        def pop(self, **kwargs):
+            entity = kwargs.get("entity")
             if entity == "BSM":
-                res = msg.get("res")
+                res=kwargs.get("res")
                 self.results.append(res)
             else:
-                raise Exception("invalid update")
+                raise Exception("invalid pop")
 
 
 def test_construct_func():
@@ -76,7 +76,7 @@ def test_polarization_get():
     detectors = [{"efficiency": 1}] * 4
     bsm = make_bsm("bsm", tl, encoding_type="polarization", detectors=detectors)
     parent = Parent()
-    bsm.attach(parent)
+    bsm.upper_protocols.append(parent)
 
     # get 2 photons in orthogonal states (map to Psi+)
     p1 = Photon("p1", location=1, quantum_state=[complex(1), complex(0)])
@@ -95,39 +95,38 @@ def test_polarization_get():
 
     assert len(parent.results) == 1
 
-
-def test_polarization_update():
+def test_polarization_pop():
     tl = Timeline()
     detectors = [{"time_resolution": 1}] * 4
     bsm = make_bsm("bsm", tl, encoding_type="polarization", detectors=detectors)
     parent = Parent()
-    bsm.attach(parent)
+    bsm.upper_protocols.append(parent)
     detector_list = bsm.detectors
 
     # test Psi+
-    bsm.trigger(detector_list[0], {'time': 0})
-    bsm.trigger(detector_list[1], {'time': 0})
+    bsm.pop(detector=detector_list[0], time=0)
+    bsm.pop(detector=detector_list[1], time=0)
 
     assert len(parent.results) == 1
     assert parent.results[0] == 0
 
     # test Psi-
-    bsm.trigger(detector_list[0], {'time': 1})
-    bsm.trigger(detector_list[3], {'time': 1})
+    bsm.pop(detector=detector_list[0], time=1)
+    bsm.pop(detector=detector_list[3], time=1)
 
     assert len(parent.results) == 2
     assert parent.results[1] == 1
 
     # test not matching times
-    bsm.trigger(detector_list[0], {'time': 2})
-    bsm.trigger(detector_list[3], {'time': 3})
+    bsm.pop(detector=detector_list[0], time=2)
+    bsm.pop(detector=detector_list[3], time=3)
 
     assert len(parent.results) == 2
 
     # test invalid measurement
-    bsm.trigger(detector_list[0], {'time': 4})
-    bsm.trigger(detector_list[2], {'time': 4})
-
+    bsm.pop(detector=detector_list[0], time=4)
+    bsm.pop(detector=detector_list[2], time=4)
+    
     assert len(parent.results) == 2
 
 def test_time_bin_get():
@@ -135,7 +134,7 @@ def test_time_bin_get():
     detectors = [{"efficiency": 1, "count_rate": 1e9}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors)
     parent = Parent()
-    bsm.attach(parent)
+    bsm.upper_protocols.append(parent)
     detector_list = bsm.detectors
 
     # get 2 photons in orthogonal states (map to Psi+)
@@ -164,37 +163,36 @@ def test_time_bin_get():
 
     assert len(parent.results) == 1
 
-
-def test_time_bin_update():
+def test_time_bin_pop():
     tl = Timeline()
     detectors = [{}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors)
     parent = Parent()
-    bsm.attach(parent)
+    bsm.upper_protocols.append(parent)
     detector_list = bsm.detectors
 
     # test Psi+
-    bsm.trigger(detector_list[0], {'time': 0})
-    bsm.trigger(detector_list[0], {'time': 0 + time_bin["bin_separation"]})
+    bsm.pop(detector=detector_list[0], time=0)
+    bsm.pop(detector=detector_list[0], time=0+time_bin["bin_separation"])
 
     assert len(parent.results) == 1
     assert parent.results[0] == 0
 
     # test Psi-
-    bsm.trigger(detector_list[0], {'time': 1e6})
-    bsm.trigger(detector_list[1], {'time': 1e6 + time_bin["bin_separation"]})
+    bsm.pop(detector=detector_list[0], time=1e6)
+    bsm.pop(detector=detector_list[1], time=1e6+time_bin["bin_separation"])
 
     assert len(parent.results) == 2
     assert parent.results[1] == 1
 
     # test invalid time separation
-    bsm.trigger(detector_list[0], {'time': 2e6})
-    bsm.trigger(detector_list[0], {'time': 2e6})
+    bsm.pop(detector=detector_list[0], time=2e6)
+    bsm.pop(detector=detector_list[0], time=2e6)
 
     assert len(parent.results) == 2
 
-    bsm.trigger(detector_list[0], {'time': 3e6})
-    bsm.trigger(detector_list[0], {'time': 4e6})
+    bsm.pop(detector=detector_list[0], time=3e6)
+    bsm.pop(detector=detector_list[0], time=4e6)
 
     assert len(parent.results) == 2
 
@@ -212,7 +210,7 @@ def test_single_atom_get():
     detectors = [{"efficiency": 1}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="single_atom", detectors=detectors)
     parent = Parent()
-    bsm.attach(parent)
+    bsm.upper_protocols.append(parent)
     mem_1 = Memory("mem_1", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
     mem_2 = Memory("mem_2", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
 

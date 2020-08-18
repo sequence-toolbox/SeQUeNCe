@@ -91,20 +91,18 @@ def test_update():
     protocol = FakeProtocol("protocol1")
     node.protocols.append(protocol)
     node.memory_array[0].fidelity = 0.5
-    node.memory_array[0].detach(node.memory_array)
-    node.memory_array[0].attach(protocol)
+    node.memory_array[0].add_protocol(protocol)
     node.resource_manager.update(protocol, node.memory_array[0], "ENTANGLED")
-    assert len(node.protocols) == len(rule.protocols) == 0
-    assert len(node.memory_array[0]._observers) == 1
+    assert len(node.protocols) == len(rule.protocols) == len(node.memory_array[0].upper_protocols) == 0
     assert node.resource_manager.memory_manager[0].state == "ENTANGLED"
 
     protocol = FakeProtocol("protocol2")
     node.protocols.append(protocol)
     node.memory_array[1].fidelity = 0.9
-    node.memory_array[1].attach(protocol)
+    node.memory_array[1].add_protocol(protocol)
     node.resource_manager.update(protocol, node.memory_array[1], "ENTANGLED")
-    assert len(node.resource_manager.waiting_protocols) == len(rule.protocols) == 1
-    assert len(node.memory_array[1]._observers) == 2
+    assert len(node.resource_manager.waiting_protocols) == len(rule.protocols) == len(
+        node.memory_array[1].upper_protocols) == 1
     assert node.resource_manager.memory_manager[1].state == "OCCUPIED"
 
 
@@ -187,24 +185,21 @@ def test_received_message():
 def test_expire():
     tl = Timeline()
     node = FakeNode("node", tl)
-    tl.init()
     for info in node.resource_manager.memory_manager:
         info.to_occupied()
     rule = Rule(0, None, None)
-    for i in range(6):
-        node.memory_array[i].detach(node.memory_array)
     p1 = FakeProtocol("waiting_protocol", [node.memory_array[0]])
-    node.memory_array[0].attach(p1)
+    node.memory_array[0].upper_protocols.append(p1)
     p2 = FakeProtocol("pending_protocol", [node.memory_array[1]])
-    node.memory_array[1].attach(p2)
+    node.memory_array[1].upper_protocols.append(p2)
     p3 = FakeProtocol("running_protocol", [node.memory_array[2]])
-    node.memory_array[2].attach(p3)
+    node.memory_array[2].upper_protocols.append(p3)
     p4 = FakeProtocol("other_waiting_protocol", [node.memory_array[3]])
-    node.memory_array[3].attach(p4)
+    node.memory_array[3].upper_protocols.append(p4)
     p5 = FakeProtocol("other_pending_protocol", [node.memory_array[4]])
-    node.memory_array[4].attach(p5)
+    node.memory_array[4].upper_protocols.append(p5)
     p6 = FakeProtocol("other_running_protocol", [node.memory_array[5]])
-    node.memory_array[5].attach(p6)
+    node.memory_array[5].upper_protocols.append(p6)
     for p in [p1, p2, p3]:
         p.rule = rule
         rule.protocols.append(p)
@@ -230,9 +225,9 @@ def test_expire():
 
     for i, memory in enumerate(node.memory_array):
         if i < 3:
-            assert len(memory._observers) == 1 and isinstance(memory._observers.pop(), MemoryArray)
+            assert len(memory.upper_protocols) == 0
         elif i < 6:
-            assert len(memory._observers) == 1 and isinstance(memory._observers.pop(), FakeProtocol)
+            assert len(memory.upper_protocols) == 1
 
 
 def test_ResourceManager1():

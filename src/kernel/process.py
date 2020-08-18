@@ -21,10 +21,6 @@ class Process:
         self.activation = activation_method
         self.act_params = act_params
 
+    # return activation method with act_params as arguments
     def run(self) -> None:
-        """Method to execute process.
-
-        Will run the `activation_method` method of `owner` with `act_params` passed as args.
-        """
-
         return getattr(self.owner, self.activation)(*self.act_params)
