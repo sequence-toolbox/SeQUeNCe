@@ -50,7 +50,6 @@ class BSM(Entity):
         resolution (int): maximum time resolution achievable with attached detectors
     """
 
-    # todo: clarify arguments instead of **kwargs
     def __init__(self, name, timeline, phase_error=0, detectors=[]):
         """Constructor for base BSM object.
 

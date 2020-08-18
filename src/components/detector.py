@@ -107,14 +107,12 @@ class QSDetector(Entity, ABC):
     Attributes:
         name (str): label for QSDetector instance.
         timeline (Timeline): timeline for simulation.
-        protocols (List[Protocol]): list of attached protocols.
         detectors (List[Detector]): list of attached detectors.
         trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
         Entity.__init__(self, name, timeline)
-        self.protocols = [] # TODO: delete?
         self.detectors = []
         self.trigger_times = []
 
@@ -148,7 +146,6 @@ class QSDetectorPolarization(QSDetector):
     Attributes:
         name (str): label for QSDetector instance.
         timeline (Timeline): timeline for simulation.
-        protocols (List[Protocol]): list of attached protocols.
         detectors (List[Detector]): list of attached detectors (length 2).
         trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
         splitter (BeamSplitter): internal beamsplitter object.
@@ -204,7 +201,6 @@ class QSDetectorTimeBin(QSDetector):
     Attributes:
         name (str): label for QSDetector instance.
         timeline (Timeline): timeline for simulation.
-        protocols (List[Protocol]): list of attached protocols.
         detectors (List[Detector]): list of attached detectors (length 3).
         trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
         switch (Switch): internal optical switch component.
