@@ -21,13 +21,6 @@ class Protocol(ABC):
     """
 
     def __init__(self, own: "Node", name: str):
-        """Constructor for protocol.
-
-        Args:
-            own (Node): node protocol is attached to.
-            name (str): name of protocol instance.
-        """
-
         self.own = own
         self.name = name
 
@@ -51,27 +44,16 @@ class StackProtocol(Protocol):
     """
 
     def __init__(self, own: "Node", name: str):
-        """Constructor for stack protocol class.
-
-        Args:
-            own (Node): node protocol is attached to.
-            name (str): name of protocl instance.
-        """
-
         super().__init__(own, name)
         self.upper_protocols = []
         self.lower_protocols = []
 
     @abstractmethod
     def push(self, **kwargs):
-        """Method to receive information from protocols higher on stack (abstract)."""
-
         pass
 
     @abstractmethod
     def pop(self, **kwargs):
-        """Method to receive information from protocols lower on stack (abstract)."""
-
         pass
 
     def _push(self, **kwargs):
@@ -83,8 +65,6 @@ class StackProtocol(Protocol):
             protocol.pop(**kwargs)
 
     def received_message(self, src: str, msg: "Message"):
-        """Method to receive messages from distant nodes."""
-
         pass
 
 

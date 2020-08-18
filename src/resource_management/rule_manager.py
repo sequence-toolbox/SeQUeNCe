@@ -24,32 +24,13 @@ class RuleManager():
     """
 
     def __init__(self):
-        """Constructor for rule manager class."""
-
         self.rules = []
         self.resource_manager = None
 
     def set_resource_manager(self, resource_manager: "ResourceManager"):
-        """Method to set overseeing resource manager.
-
-        Args:
-            resource_manager (ResourceManager): resource manager to attach to.
-        """
-
         self.resource_manager = resource_manager
 
     def load(self, rule: "Rule") -> bool:
-        """Method to load rule into ruleset.
-
-        Tries to insert rule into internal `rules` list based on priority.
-
-        Args:
-            rule (Rule): rule to insert.
-
-        Returns:
-            bool: success of rule insertion.
-        """
-
         # binary search for inserting rule
         rule.set_rule_manager(self)
         left, right = 0, len(self.rules) - 1
@@ -63,15 +44,9 @@ class RuleManager():
         return True
 
     def expire(self, rule: "Rule") -> List["EntanglementProtocol"]:
-        """Method to remove expired protocol.
-
-        Args:
-            rule (Rule): rule to remove.
-
-        Returns:
-            List[EntanglementProtocol]: list of protocols created by rule (if any).
         """
-
+        expire function return protocols created by expired rule
+        """
         self.rules.remove(rule)
         return rule.protocols
 
@@ -106,8 +81,6 @@ class Rule():
                  action: Callable[
                      [List["MemoryInfo"]], Tuple["Protocol", List["str"], List[Callable[["Protocol"], bool]]]],
                  condition: Callable[["MemoryInfo", "MemoryManager"], List["MemoryInfo"]]):
-        """Constructor for rule class."""
-
         self.priority = priority
         self.action = action
         self.condition = condition
@@ -115,40 +88,18 @@ class Rule():
         self.rule_manager = None
 
     def set_rule_manager(self, rule_manager: "RuleManager") -> None:
-        """Method to assign rule to a rule manager.
-
-        Args:
-            rule_manager (RuleManager): manager to assign.
-        """
-
         self.rule_manager = rule_manager
 
     def do(self, memories_info: List["MemoryInfo"]) -> None:
-        """Method to perform rule activation and send requirements to other nodes.
-
-        Args:
-            memories_info (List[MemoryInfo]): list of memory infos for memories meeting requirements.
-        """
-
         protocol, req_dsts, req_condition_funcs = self.action(memories_info)
         protocol.rule = self
         self.protocols.append(protocol)
         for info in memories_info:
-            info.memory.detach(info.memory.memory_array)
-            info.memory.attach(protocol)
+            info.memory.add_protocol(protocol)
         for dst, req_func in zip(req_dsts, req_condition_funcs):
             self.rule_manager.send_request(protocol, dst, req_func)
 
     def is_valid(self, memory_info: "MemoryInfo") -> List["MemoryInfo"]:
-        """Method to check for memories meeting condition.
-
-        Args:
-            memory_info (MemoryInfo): memory info object to test.
-
-        Returns:
-            List[memory_info]: list of memory info objects meeting requirements of rule.
-        """
-
         manager = self.rule_manager.get_memory_manager()
         return self.condition(memory_info, manager)
 

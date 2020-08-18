@@ -16,9 +16,6 @@ class EventList:
     """Class of event list.
 
     This class is implemented as a min-heap. The event with the lowest time and priority is placed at the top of heap.
-
-    Attributes:
-        data (List[Event]): heap storing events.
     """
 
     def __init__(self):
@@ -41,8 +38,6 @@ class EventList:
         return len(self.data) == 0
 
     def remove(self, event: "Event") -> None:
-        """Method to remove events from heap."""
-
         for i, e in enumerate(self.data):
             if id(e) == id(event):
                 self.data.pop(i)
