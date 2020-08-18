@@ -19,14 +19,14 @@ from ..utils.quantum_state import QuantumState
 
 
 def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=[]):
-    """Function to construct BSM of specified type
+    """Function to construct BSM of specified type.
 
     Arguments:
-        name (str): name to be used for BSM instance
-        timeline (Timeline): timeline to be used for BSM instance
-
-    Keyword Arguments:
-        encoding_type (str): type of BSM to generate (default "time_bin")
+        name (str): name to be used for BSM instance.
+        timeline (Timeline): timeline to be used for BSM instance.
+        encoding_type (str): type of BSM to generate (default "time_bin").
+        phase_error (float): error to apply to incoming qubits (default 0).
+        detectors (List[Dict[str, any]): list of detector objects given as dicts (default []).
     """
 
     if encoding_type == "polarization":
@@ -43,11 +43,11 @@ class BSM(Entity):
     """Parent class for bell state measurement devices.
 
     Attributes:
-        name (str): label for BSM instance
-        timeline (Timeline): timeline for simulation
-        phase_error (float): phase error applied to measurement
-        detectors (List[Detector]): list of attached photon detection devices
-        resolution (int): maximum time resolution achievable with attached detectors
+        name (str): label for BSM instance.
+        timeline (Timeline): timeline for simulation.
+        phase_error (float): phase error applied to measurement.
+        detectors (List[Detector]): list of attached photon detection devices.
+        resolution (int): maximum time resolution achievable with attached detectors.
     """
 
     # todo: clarify arguments instead of **kwargs
@@ -55,12 +55,10 @@ class BSM(Entity):
         """Constructor for base BSM object.
 
         Args:
-            name (str): name of the beamsplitter instance
-            timeline (Timeline): simulation timeline
-
-        Keyword Args:
-            phase_error (float): phase error applied to polarization photons
-            detectors (List[Dict[str, Any]]): list of parameters for attached detectors, in dictionary format
+            name (str): name of the beamsplitter instance.
+            timeline (Timeline): simulation timeline.
+            phase_error (float): Phase error applied to polarization photons (default 0).
+            detectors (List[Dict[str, Any]]): List of parameters for attached detectors, in dictionary format (default []).
         """
 
         super().__init__(name, timeline)
@@ -96,7 +94,7 @@ class BSM(Entity):
         """Method to receive a photon for measurement (abstract).
 
         Arguments:
-            photon (Photon): photon to measure
+            photon (Photon): photon to measure.
         """
         # check if photon arrived later than current photon
         if self.photon_arrival_time < self.timeline.now():
@@ -111,12 +109,13 @@ class BSM(Entity):
 
     @abstractmethod
     def trigger(self, detector: Detector, info: Dict[str, Any]):
-        """Method to receive photon detection events from attached detectors (abstract)
+        """Method to receive photon detection events from attached detectors (abstract).
 
-        Keyword Arguments:
-            src: the source of message
-            info: the message from the source detector
+        Arguments:
+            detector (Detector): the source of the detection message.
+            info (Dict[str, Any]): the message from the source detector.
         """
+
         pass
 
     def notify(self, info: Dict[str, Any]):
@@ -124,7 +123,7 @@ class BSM(Entity):
             observer.bsm_update(self, info)
 
     def update_detectors_params(self, arg_name: str, value: Any) -> None:
-        """Updates parameters of attached detectors"""
+        """Updates parameters of attached detectors."""
         for detector in self.detectors:
             detector.__setattr__(arg_name, value)
 
@@ -135,23 +134,21 @@ class PolarizationBSM(BSM):
     Measures incoming photons according to polarization and manages entanglement.
 
     Attributes:
-        name (str): label for BSM instance
-        timeline (Timeline): timeline for simulation
-        phase_error (float): phase error applied to measurement
-        detectors (List[Detector]): list of attached photon detection devices
-        resolution (int): maximum time resolution achievable with attached detectors  
+        name (str): label for BSM instance.
+        timeline (Timeline): timeline for simulation.
+        phase_error (float): phase error applied to measurement.
+        detectors (List[Detector]): list of attached photon detection devices.
+        resolution (int): maximum time resolution achievable with attached detectors.
     """
 
     def __init__(self, name, timeline, phase_error=0, detectors=[]):
         """Constructor for Polarization BSM.
 
         Args:
-            name (str): name of the beamsplitter instance
-            timeline (Timeline): simulation timeline
-
-        Keyword Args:
-            phase_error (float): phase error applied to polarization photons
-            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 4)
+            name (str): name of the beamsplitter instance.
+            timeline (Timeline): simulation timeline.
+            phase_error (float): phase error applied to polarization photons (default 0).
+            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 4) (default []).
         """
 
         super().__init__(name, timeline, phase_error, detectors)
@@ -244,11 +241,10 @@ class TimeBinBSM(BSM):
         """Constructor for the time bin BSM class.
 
         Args:
-            name (str): name of the beamsplitter instance
-            timeline (Timeline): simulation timeline
-
-        Keyword Args:
-            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2)
+            name (str): name of the beamsplitter instance.
+            timeline (Timeline): simulation timeline.
+            phase_error (float): phase error applied to polarization qubits (unused) (default 0).
+            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2) (default []).
         """
 
         super().__init__(name, timeline, phase_error, detectors)
@@ -358,11 +354,10 @@ class SingleAtomBSM(BSM):
         """Constructor for the single atom BSM class.
 
         Args:
-            name (str): name of the beamsplitter instance
-            timeline (Timeline): simulation timeline
-
-        Keyword Args:
-            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2)
+            name (str): name of the beamsplitter instance.
+            timeline (Timeline): simulation timeline.
+            phase_error (float): phase error applied to polarization qubits (unused) (default 0).
+            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2) (default []).
         """
 
         if detectors == []:

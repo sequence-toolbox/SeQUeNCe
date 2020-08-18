@@ -34,7 +34,7 @@ class BeamSplitter(Entity):
     """
 
     def __init__(self, name: str, timeline: "Timeline", fidelity=1):
-        """Constructor for the beamsplitter class
+        """Constructor for the beamsplitter class.
 
         Args:
             name (str): name of the beamsplitter instance.

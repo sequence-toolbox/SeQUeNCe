@@ -26,11 +26,10 @@ class SPDCLens(Entity):
         Args:
             name (str): name of the spdc lens instance.
             timeline (Timeline): simulation timeline.
-
-        Keyword Args:
             rate (float): probability of successfull down conversion (default 1).
             direct_receiver (Entity): entity to receive down-converted photons (default None).
         """
+
         Entity.__init__(self, name, timeline)
         self.rate = rate
         self.direct_receiver = direct_receiver

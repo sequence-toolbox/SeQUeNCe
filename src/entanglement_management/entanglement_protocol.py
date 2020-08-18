@@ -18,7 +18,7 @@ class EntanglementProtocol(Protocol):
     Attributes:
         own (Node): Node object to attach to
         name (str): Name of the protocol instance
-        rule (Rule): Rule which created this protocol instance (from the rule manager)
+        rule (Rule): Rule which created this protocol instance (from the rule manager).
         memories (List[Memory]): Any memories being operated on
     """
 
