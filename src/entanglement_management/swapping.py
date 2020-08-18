@@ -222,9 +222,9 @@ class EntanglementSwappingA(EntanglementProtocol):
 
         for memo in self.memories:
             if memo == memory:
-                self.update_resource_manager(self, memo, "RAW")
+                self.update_resource_manager(memo, "RAW")
             else:
-                self.update_resource_manager(self, memo, "ENTANGLED")
+                self.update_resource_manager(memo, "ENTANGLED")
 
     def release_remote_protocol(self, remote_node: str):
         self.own.resource_manager.release_remote_protocol(remote_node, self)
