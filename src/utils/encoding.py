@@ -4,10 +4,10 @@ Encoding schemes are applied to photons and memories to track how quantum inform
 This includes the name of the encoding scheme, bases available, and any other necessary parameters.
 
 Attributes:
-    polarization (dict): defines the polarization encoding scheme, including the Z- and X-basis.
-    time_bin (dict): defines the time bin encoding scheme, including the Z- and X-basis. Also defines the bin separation time.
-    ensemble (dict): defines the atomic ensemble memory scheme, including the Z-basis (currently unused).
-    single_atom (dict): defines the single atom memory scheme, including the Z-basis.
+    polarization (Dict[str, any]): defines the polarization encoding scheme, including the Z- and X-basis.
+    time_bin (Dict[str, any]): defines the time bin encoding scheme, including the Z- and X-basis. Also defines the bin separation time.
+    ensemble (Dict[str, any]): defines the atomic ensemble memory scheme, including the Z-basis (currently unused).
+    single_atom (Dict[str, any]): defines the single atom memory scheme, including the Z-basis.
 """
 
 from math import sqrt

@@ -42,22 +42,52 @@ class NetworkManager():
     """
 
     def __init__(self, owner: "QuantumRouter", protocol_stack: "List[StackProtocol]"):
+        """Constructor for network manager.
+
+        Args:
+            owner (QuantumRouter): node network manager is attached to.
+            protocol_stack (List[StackProtocol]): stack of protocols to use for processing.
+        """
+
         self.name = "network_manager"
         self.owner = owner
         self.protocol_stack = protocol_stack
         self.load_stack(protocol_stack)
 
     def load_stack(self, stack: "List[StackProtocol]"):
+        """Method to load a defined protocol stack.
+
+        Args:
+            stack (List[StackProtocol]): new protocol stack.
+        """
+
         self.protocol_stack = stack
         if len(self.protocol_stack) > 0:
             self.protocol_stack[0].lower_protocols.append(self)
             self.protocol_stack[-1].upper_protocols.append(self)
 
     def push(self, **kwargs):
+        """Method to receive pushes from lowest protocol in protocol stack.
+
+        Will create message to send to another node.
+
+        Keyword Args:
+            msg (any): message to deliver.
+            dst (str): name of destination node.
+        """
+
         message = NetworkManagerMessage(Enum, "network_manager", kwargs["msg"])
         self.owner.send_message(kwargs["dst"], message)
 
     def pop(self, **kwargs):
+        """Method to receive pops from highest protocol in protocol stack.
+
+        Will get reservation from message and attempt to meet it.
+
+        Keyword Args:
+            msg (any): message containing reservation.
+        """
+
         msg = kwargs.get("msg")
         assert isinstance(msg, ResourceReservationMessage)
         reservation = msg.reservation
@@ -70,13 +100,52 @@ class NetworkManager():
             self.owner.get_other_reservation(reservation)
 
     def received_message(self, src: str, msg: "NetworkManagerMessage"):
+        """Method to receive transmitted network reservation method.
+
+        Will pop message to lowest protocol in protocol stack.
+
+        Args:
+            src (str): name of source node for message.
+            msg (NetworkManagerMessage): message received.
+
+        Side Effects:
+            Will invoke `pop` method of 0 indexed protocol in `protocol_stack`.
+        """
+
         self.protocol_stack[0].pop(src=src, msg=msg.payload)
 
     def request(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float) -> None:
+        """Method to make an entanglement request.
+
+        Will defer request to top protocol in protocol stack.
+
+        Args:
+            responder (str): name of node to establish entanglement with.
+            start_time (int): simulation start time of entanglement.
+            end_time (int): simulation end time of entanglement.
+            memory_size (int): number of entangledd memory pairs to create.
+            target_fidelity (float): desired fidelity of entanglement.
+
+        Side Effects:
+            Will invoke `push` method of -1 indexed protocol in `protocol_stack`.
+        """
+
         self.protocol_stack[-1].push(responder, start_time, end_time, memory_size, target_fidelity)
 
 
 def NewNetworkManager(owner: "QuantumRouter") -> "NetworkManager":
+    """Function to create a new network manager.
+
+    Will create a network manager with default protocol stack.
+    This stack inclused a reservation and routing protocol.
+
+    Args:
+        owner (QuantumRouter): node to attach network manager to.
+
+    Returns:
+        NetworkManager: network manager object created.
+    """
+
     manager = NetworkManager(owner, [])
     routing = StaticRoutingProtocol(owner, owner.name + ".StaticRoutingProtocol", {})
     rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP")

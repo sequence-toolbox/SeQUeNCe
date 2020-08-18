@@ -29,12 +29,23 @@ class OpticalChannel(Entity):
         timeline (Timeline): timeline for simulation.
         ends (List[Node]): ends of channel (must be length 2 before simulation)
         atteunuation (float): attenuation of the fiber (in dB/km).
-        distance (float): length of the fiber (in m).
+        distance (int): length of the fiber (in m).
         polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
         light_speed (float): speed of light within the fiber (in m/ps).
     """
 
     def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, polarization_fidelity: float, light_speed: float):
+        """Constructor for abstract Optical Channel class.
+
+        Args:
+            name (str): name of the beamsplitter instance.
+            timeline (Timeline): simulation timeline.
+            attenuation (float): loss rate of optical fiber (in dB/km).
+            distance (int): length of fiber (in m).
+            polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
+            light_speed (float): speed of light within the fiber (in m/ps).
+        """
+
         Entity.__init__(self, name, timeline)
         self.ends = []
         self.attenuation = attenuation
@@ -58,7 +69,7 @@ class QuantumChannel(OpticalChannel):
         timeline (Timeline): timeline for simulation.
         ends (List[Node]): ends of channel (must be length 2 before simulation)
         atteunuation (float): attenuation of the fiber (in dB/km).
-        distance (float): length of the fiber (in m).
+        distance (int): length of the fiber (in m).
         polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
         light_speed (float): speed of light within the fiber (in m/ps).
         loss (float): loss rate for transmitted photons (determined by attenuation).
@@ -67,6 +78,18 @@ class QuantumChannel(OpticalChannel):
     """
 
     def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, polarization_fidelity=1, light_speed=2e-4, frequency=8e7):
+        """Constructor for Quatnum Channel class.
+
+        Args:
+            name (str): name of the quantum channel instance.
+            timeline (Timeline): simulation timeline.
+            attenuation (float): loss rate of optical fiber (in dB/km).
+            distance (int): length of fiber (in m).
+            polarization_fidelity (float): probability of no polarization error for a transmitted qubit (default 1).
+            light_speed (float): speed of light within the fiber (in m/ps) (default 2e-4).
+            frequency (float): maximum frequency of qubit transmission (in Hz) (default 8e7).
+        """
+
         super().__init__(name, timeline, attenuation, distance, polarization_fidelity, light_speed)
         self.delay = 0
         self.loss = 1
@@ -74,6 +97,8 @@ class QuantumChannel(OpticalChannel):
         self.send_bins = []
 
     def init(self) -> None:
+        """Implementation of Entity interface (see base class)."""
+
         self.delay = round(self.distance / self.light_speed)
         self.loss = 1 - 10 ** (self.distance * self.attenuation / -10)
 
@@ -84,6 +109,16 @@ class QuantumChannel(OpticalChannel):
         end2.assign_qchannel(self, end1.name)
 
     def transmit(self, qubit: "Photon", source: "Node") -> None:
+        """Method to transmit photon-encoded qubits.
+
+        Args:
+            qubit (Photon): photon to be transmitted.
+            source (Node): source node sending the qubit.
+
+        Side Effects:
+            End node that is NOT the source node may receive the qubit (via the `receive_qubit` method).
+        """
+
         assert self.delay != 0 and self.loss != 1, "QuantumChannel init() function has not been run for {}".format(self.name)
 
         # remove lowest time bin
@@ -120,6 +155,18 @@ class QuantumChannel(OpticalChannel):
             pass
 
     def schedule_transmit(self, min_time: int) -> int:
+        """Method to schedule a time for photon transmission.
+
+        Quantum Channels are limited by a frequency of transmission.
+        This method returns the next available time for transmitting a photon.
+        
+        Args:
+            min_time (int): minimum simulation time for transmission.
+
+        Returns:
+            int: simulation time for next available transmission window.
+        """
+
         min_time = max(min_time, self.timeline.now())
         time_bin = min_time * (self.frequency / 1e12)
         if time_bin - int(time_bin) > 0.00001:
@@ -152,6 +199,15 @@ class ClassicalChannel(OpticalChannel):
     """
 
     def __init__(self, name: str, timeline: "Timeline", distance: int, delay=-1):
+        """Constructor for Classical Channel class.
+
+        Args:
+            name (str): name of the classical channel instance.
+            timeline (Timeline): simulation timeline.
+            distance (int): length of the fiber (in m).
+            delay (float): delay (in ps) of message transmission (default distance / light_speed).
+        """
+
         super().__init__(name, timeline, 0, distance, 0, 2e-4)
         if delay == -1:
             self.delay = distance / self.light_speed
@@ -165,6 +221,17 @@ class ClassicalChannel(OpticalChannel):
         end2.assign_cchannel(self, end1.name)
 
     def transmit(self, message: "Message", source: "Node", priority: int) -> None:
+        """Method to transmit classical messages.
+
+        Args:
+            message (Message): message to be transmitted.
+            source (Node): node sending the message.
+            priority (int): priority of transmitted message (to resolve message reception conflicts).
+
+        Side Effects:
+            End node that is NOT the source node may receive the qubit (via the `receive_qubit` method).
+        """
+
         # get node that's not equal to source
         if source not in self.ends:
             raise Exception("no endpoint", source)

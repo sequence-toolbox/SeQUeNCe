@@ -28,15 +28,32 @@ class MemoryManager():
     """
 
     def __init__(self, memory_array: "MemoryArray"):
+        """Constructor for memory manager.
+
+        Args:
+            memory_array (MemoryArray): memory array to monitor and manage.
+        """
+
         self.memory_array = memory_array
-        self.memory_array.upper_protocols.append(self)
+        self.memory_array.attach(self)
         self.memory_map = [MemoryInfo(memory, index) for index, memory in enumerate(self.memory_array)]
         self.resource_manager = None
 
     def set_resource_manager(self, resource_manager: "ResourceManager") -> None:
+        """Method to set the resource manager."""
+
         self.resource_manager = resource_manager
 
     def update(self, memory: "Memory", state: str) -> None:
+        """Method to update the state of a memory.
+
+        Modifies the memory info object corresponding to the memory.
+
+        Args:
+            memory (Memory): memory to update.
+            state (str): new state for memory.
+        """
+
         info = self.get_info_by_memory(memory)
         if state == "RAW":
             info.to_raw()
@@ -54,14 +71,10 @@ class MemoryManager():
         return self.memory_map[item]
 
     def get_info_by_memory(self, memory: "Memory") -> "MemoryInfo":
+        """Gets memory info object for a desired memory."""
+
         index = self.memory_array.memories.index(memory)
         return self.memory_map[index]
-
-    def pop(self, **kwargs):
-        if kwargs["info_type"] != "expired_memory":
-            return
-
-        index = kwargs["index"]
 
 
 class MemoryInfo():
@@ -87,6 +100,14 @@ class MemoryInfo():
     """
 
     def __init__(self, memory: "Memory", index: int, state="RAW"):
+        """Constructor for memory info class.
+
+        Args:
+            memory (Memory): memory to monitor.
+            index (int): index of memory in the corresponding memory array.
+            state (str): state of memory to be monitored (default "RAW").
+        """
+
         self.memory = memory
         self.index = index
         self.state = state
@@ -97,6 +118,8 @@ class MemoryInfo():
         self.entangle_time = -1
 
     def to_raw(self) -> None:
+        """Method to set memory to raw (unentangled) state."""
+
         self.state = "RAW"
         self.memory.reset()
         self.remote_node = None
@@ -105,10 +128,14 @@ class MemoryInfo():
         self.entangle_time = -1
 
     def to_occupied(self) -> None:
+        """Method to set memory to occupied state."""
+
         assert self.state != "OCCUPIED"
         self.state = "OCCUPIED"
 
     def to_entangled(self) -> None:
+        """Method to set memory to entangled state."""
+
         self.state = "ENTANGLED"
         self.remote_node = self.memory.entangled_memory["node_id"]
         self.remote_memo = self.memory.entangled_memory["memo_id"]

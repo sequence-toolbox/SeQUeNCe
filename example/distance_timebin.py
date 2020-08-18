@@ -24,7 +24,7 @@ class Parent(StackProtocol):
     def init(self):
         pass
 
-    def pop(self, msg):
+    def pop(self, info):
         pass
 
     def push(self):

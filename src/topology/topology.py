@@ -24,13 +24,20 @@ class Topology():
     Attributes:
         name (str): label for topology.
         timeline (Timeline): timeline to be used for all objects in network.
-        nodes (Dict): mapping of node names to node objects.
+        nodes (Dict[str, Node]): mapping of node names to node objects.
         qchannels (List[QuantumChannel]): list of quantum channel objects in network.
         cchannels (List[ClassicalChannel]): list of classical channel objects in network.
-        graph: (Dict): internal representation of quantum graph.
+        graph: (Dict[str, Dict[str, float]]): internal representation of quantum graph.
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
+        """Constructor for topology class.
+
+        Args:
+            name (str): label for topology.
+            timeline (Timeline): timeline for simulation.
+        """
+
         self.name = name
         self.timeline = timeline
         self.nodes = {}        # internal node dictionary {node_name : node}
@@ -41,6 +48,15 @@ class Topology():
         self._cc_graph = {}    # internal classical graph representation {node_name : {adjacent_name : delay}}
 
     def load_config(self, config_file: str) -> None:
+        """Method to load a network configuration file.
+
+        Network should be specifiedd in json format.
+        Will populate nodes, qchannels, cchannels, and graph fields.
+
+        Args:
+            config_file (str): path to json file specifying network.
+        """
+
         topo_config = json5.load(open(config_file))
 
         # create nodes
@@ -92,11 +108,26 @@ class Topology():
                 node.network_manager.protocol_stack[0].add_forwarding_rule(dst, next_node)
 
     def add_node(self, node: "Node") -> None:
+        """Method to add a node to the network.
+
+        Args:
+            node (Node): node to add.
+        """
+
         self.nodes[node.name] = node
         self.graph[node.name] = {}
         self._cc_graph[node.name] = {}
 
     def add_quantum_connection(self, node1: str, node2: str, **kwargs) -> None:
+        """Method to add a quantum channel connection between nodes.
+
+        NOTE: kwargs are passed to constructor for quantum channel, may be used to specify channel parameters.
+
+        Args:
+            node1 (str): first node in pair to connect.
+            node2 (str): second node in pair to connect.
+        """
+
         assert node1 in self.nodes, node1 + " not a valid node"
         assert node2 in self.nodes, node2 + " not a valid node"
 
@@ -134,6 +165,15 @@ class Topology():
             self.graph[node2][node1] = kwargs["distance"]
 
     def add_classical_connection(self, node1: str, node2: str, **kwargs) -> None:
+        """Method to add a classical channel connection between nodes.
+
+        NOTE: kwargs are passed to constructor for classical channel, may be used to specify channel parameters.
+
+        Args:
+            node1 (str): first node in pair to connect.
+            node2 (str): second node in pair to connect.
+        """
+
         assert node1 in self.nodes and node2 in self.nodes
 
         name = "_".join(["cc", node1, node2])
@@ -149,10 +189,14 @@ class Topology():
         return [node for name, node in self.nodes.items() if type(node).__name__ == node_type]
 
     def generate_forwarding_table(self, starting_node: str) -> dict:
-        '''
-        generates a mapping of destination nodes to next node for routing using Dijkstra's algorithm
-        node: string (name of node for which to generate table)
-        '''
+        """Method to create forwarding table for static routing protocol.
+
+        Generates a mapping of destination nodes to next node for routing using Dijkstra's algorithm.
+
+        Args:
+            node (str): name of node for which to generate table.
+        """
+
         # set up priority queue and track previous nodes
         nodes = list(self.nodes.keys())
         costs = {node: float("inf") for node in nodes}

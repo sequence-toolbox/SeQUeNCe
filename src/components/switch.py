@@ -30,6 +30,13 @@ class Switch(Entity):
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
+        """Constructor for the switch class.
+
+        Args:
+            name (str): name of the beamsplitter instance.
+            timeline (Timeline): simulation timeline.
+        """
+
         Entity.__init__(self, name, timeline)
         self.start_time = 0
         self.frequency = 0
@@ -38,6 +45,8 @@ class Switch(Entity):
         self.detector = None
 
     def init(self) -> None:
+        """Implementation of Entity interface (see base class)."""
+
         pass
 
     def set_detector(self, detector: "Detector") -> None:
@@ -52,6 +61,15 @@ class Switch(Entity):
         self.frequency = frequency
 
     def get(self, photon: "Photon") -> None:
+        """Method to receive photon for transmission
+
+        Args:
+            photon (Photon): photon to transmit.
+
+        Side Effects:
+            May call `get` method of attached detector or interferometer.
+        """
+
         index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
         if index < 0 or index >= len(self.basis_list):
             return
