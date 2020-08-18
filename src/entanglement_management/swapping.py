@@ -170,11 +170,6 @@ class EntanglementSwappingA(EntanglementProtocol):
             May alter the state of `memory`.
         """
 
-        if state == 'RAW':
-            memory.fidelity = 0
-            memory.entangled_memory['node_id'] = None
-            memory.entangled_memory['memo_id'] = None
-
         self.own.resource_manager.update(self, memory, state)
 
     def success_probability(self) -> float:
@@ -217,19 +212,25 @@ class EntanglementSwappingA(EntanglementProtocol):
 
         assert self.is_ready() is False
         if self.left_protocol:
-            self.own.resource_manager.release_remote_protocol(self.left_node, self)
+            self.release_remote_protocol(self.left_node)
         else:
-            self.own.resource_manager.release_remote_memory(self, self.left_node, self.left_remote_memo)
+            self.release_remote_memory(self.left_node, self.left_remote_memo)
         if self.right_protocol:
-            self.own.resource_manager.release_remote_protocol(self.right_node, self)
+            self.release_remote_protocol(self.right_node)
         else:
-            self.own.resource_manager.release_remote_memory(self, self.right_node, self.right_remote_memo)
+            self.release_remote_memory(self.right_node, self.right_remote_memo)
 
         for memo in self.memories:
             if memo == memory:
-                self.own.resource_manager.update(self, memo, "RAW")
+                self.update_resource_manager(memo, "RAW")
             else:
-                self.own.resource_manager.update(self, memo, "ENTANGLED")
+                self.update_resource_manager(memo, "ENTANGLED")
+
+    def release_remote_protocol(self, remote_node: str):
+        self.own.resource_manager.release_remote_protocol(remote_node, self)
+
+    def release_remote_memory(self, remote_node: str, remote_memo: str):
+        self.own.resource_manager.release_remote_memory(self, remote_node, remote_memo)
 
 
 class EntanglementSwappingB(EntanglementProtocol):
@@ -319,9 +320,7 @@ class EntanglementSwappingB(EntanglementProtocol):
             Will update memory in attached resource manager.
         """
 
-        self.own.resource_manager.update(self, self.memory, "RAW")
+        self.update_resource_manager(self.memory, "RAW")
 
     def release(self) -> None:
-        self.own.resource_manager.update(self, self.memory, "ENTANGLED")
-
-
+        self.update_resource_manager(self.memory, "ENTANGLED")
