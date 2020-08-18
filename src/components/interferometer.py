@@ -34,12 +34,10 @@ class Interferometer(Entity):
         """Constructor for the interferometer class.
 
         Args:
-            name (str): name of the interferometer instance
-            timeline (Timeline): simulation timeline
-            path_diff (int): sets path difference for interferometer instance
-
-        Keyword Args:
-            phase_error (float): phase error applied to measurement (default 0)
+            name (str): name of the interferometer instance.
+            timeline (Timeline): simulation timeline.
+            path_diff (int): sets path difference for interferometer instance.
+            phase_error (float): phase error applied to measurement (default 0).
         """
 
         Entity.__init__(self, "", timeline)

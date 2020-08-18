@@ -69,8 +69,9 @@ class MemoryArray(Entity):
     def init(self):
         """Implementation of Entity interface (see base class).
 
-        Set the owner of memory as the owner of memory array
+        Set the owner of memory as the owner of memory array.
         """
+
         for mem in self.memories:
             mem.owner = self.owner
             mem.set_memory_array(self)
@@ -81,6 +82,7 @@ class MemoryArray(Entity):
         Args:
             memory (Memory): expired memory.
         """
+
         self.owner.memory_expire(memory)
 
     def update_memory_params(self, arg_name: str, value: Any) -> None:
@@ -246,6 +248,7 @@ class Memory(Entity):
             Will modify internal quantum state and parameters.
             May schedule expiration event.
         """
+
         self.qstate.set_state_single([complex(1 / sqrt(2)), complex(1 / sqrt(2))])
         self.previous_bsm = -1
         self.entangled_memory = {'node_id': None, 'memo_id': None}

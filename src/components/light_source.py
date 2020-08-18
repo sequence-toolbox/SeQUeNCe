@@ -37,8 +37,6 @@ class LightSource(Entity):
         Arguments:
             name (str): name of the light source instance.
             timeline (Timeline): simulation timeline.
-
-        Keyword Arguments:
             frequency (float): frequency (in Hz) of photon creation (default 8e7).
             wavelength (float): wavelength (in nm) of emitted photons (default 1550).
             bandwidth (float): st. dev. in photon wavelength (default 0).
@@ -46,6 +44,7 @@ class LightSource(Entity):
             encoding_type (Dict): encoding scheme of emitted photons (as defined in the encoding module) (default polarization).
             phase_error (float): phase error applied to qubits (default 0).
         """
+
         Entity.__init__(self, name, timeline)
         self.frequency = frequency  # measured in Hz
         self.wavelength = wavelength  # measured in nm

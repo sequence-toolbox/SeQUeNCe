@@ -95,6 +95,7 @@ class Detector(Entity):
             self.timeline.schedule(event2)
 
     def notify(self, info: Dict[str, Any]):
+        """Custom notify function (calls `trigger` method)."""
         for observer in self._observers:
             observer.trigger(self, info)
 

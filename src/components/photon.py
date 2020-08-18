@@ -26,21 +26,18 @@ class Photon():
 
         Args:
             name (str): name of the photon instance.
-            timeline (Timeline): simulation timeline.
-
-        Keyword Args:
             wavelength (int): wavelength of photon (in nm) (default 0).
-            location (Entity): location of the photon.
+            location (Entity): location of the photon (default None).
             encoding_type (Dict[str, Any]): encoding type of photon (from encoding module) (default polarization).
-            quantum_state (List[complex]): complex coefficients for photon's quantum state.
+            quantum_state (List[complex]): complex coefficients for photon's quantum state (default [1, 0]).
         """
+
         self.name = name
         self.wavelength = wavelength
         self.location = location
         self.encoding_type = encoding_type
         self.quantum_state = QuantumState()
         self.quantum_state.state = quantum_state
-        # self.entangled_photons = [self]
         self.is_null = False
 
     def entangle(self, photon):

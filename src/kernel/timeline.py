@@ -17,9 +17,9 @@ from .eventlist import EventList
 
 
 class Timeline:
-    """Class of timeline.
+    """Class for a simulation timeline.
 
-    Timeline holds entities, which is configured before the simulation.
+    Timeline holds entities, which are configured before the simulation.
     Before the start of simulation, the timeline must initialize all controlled entities.
     The initialization of entities may schedule events.
     The timeline pushes these events to its event list.

@@ -48,13 +48,19 @@ class Entity(ABC):
         pass
 
     def attach(self, observer: Any):
+        """Method to add an ovserver (to receive hardware updates)."""
+
         if not observer in self._observers:
             self._observers.append(observer)
 
     def detach(self, observer: Any):
+        """Method to remove an observer."""
+
         self._observers.remove(observer)
 
     def notify(self, info: Dict[str, Any]):
+        """Method to notify all attached observers of an update."""
+
         for observer in self._observers:
             observer.update(self, info)
 

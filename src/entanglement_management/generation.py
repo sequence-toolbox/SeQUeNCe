@@ -157,13 +157,14 @@ class EntanglementGenerationA(EntanglementProtocol):
             message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE, self.other_protocol.name, qc_delay=self.qc_delay)
             self.own.send_message(self.other, message)
         
-    # update_memory: called on both nodes
-    #   check memory state, performs necessary memory operations
-    #   returns True if round successfull, otherwise returns False
     def update_memory(self):
         """Method to handle necessary memory operations.
 
+        Called on both nodes.
         Will check the state of the memory and protocol.
+
+        Returns:
+            bool: if current round was successfull.
 
         Side Effects:
             May change state of attached memory.
@@ -385,11 +386,18 @@ class EntanglementGenerationB(EntanglementProtocol):
         self.others = others  # end nodes
         # self.other_protocols = kwargs.get("other_protocols") # other EG protocols (must be same order as others)
 
-    def bsm_update(self, bsm: 'SingleAtomBSM', msg: Dict[str, Any]):
-        assert msg['info_type'] == "BSM_res"
+    def bsm_update(self, bsm: 'SingleAtomBSM', info: Dict[str, Any]):
+        """Method to receive detection events from BSM on node.
 
-        res = msg.get("res")
-        time = msg.get("time")
+        Args:
+            bsm (SingleAtomBSM): bsm object calling method.
+            info (Dict[str, any]): information passed from bsm.
+        """
+
+        assert info['info_type'] == "BSM_res"
+
+        res = info["res"]
+        time = info["time"]
         resolution = self.own.bsm.resolution
 
         for i, node in enumerate(self.others):
