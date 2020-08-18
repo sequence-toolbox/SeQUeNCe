@@ -170,7 +170,7 @@ class ResourceReservationProtocol(StackProtocol):
             raise Exception("Unknown type of message", msg.msg_type)
 
     def schedule(self, reservation: "Reservation") -> bool:
-        """Method to attemt reservation request.
+        """Method to attempt reservation request.
 
         Args:
             reservation (Reservation): reservation to approve or reject.
@@ -199,7 +199,7 @@ class ResourceReservationProtocol(StackProtocol):
         return True
 
     def create_rules(self, path: List[str], reservation: "Reservation") -> List["Rule"]:
-        """Method to create rules for a successfull request.
+        """Method to create rules for a successful request.
 
         Rules are used to direct the flow of information/entanglement in the resource manager.
 
@@ -612,10 +612,10 @@ class MemoryTimeCard():
 
 
 class QCap():
-    """Class to track Nodes affected by a reservation.
+    """Class to collect local information for the reservation protocol
 
     Attributes:
-        node (str): name of affected node.
+        node (str): name of current node.
     """
 
     def __init__(self, node: str):

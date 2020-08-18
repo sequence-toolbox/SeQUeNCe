@@ -55,7 +55,7 @@ class NetworkManager():
         self.load_stack(protocol_stack)
 
     def load_stack(self, stack: "List[StackProtocol]"):
-        """Method to reset protocol stack.
+        """Method to load a defined protocol stack.
 
         Args:
             stack (List[StackProtocol]): new protocol stack.
