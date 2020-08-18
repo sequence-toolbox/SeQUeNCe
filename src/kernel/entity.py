@@ -17,9 +17,7 @@ class Entity(ABC):
         name (str): name of the entity.
         timeline (Timeline): the simulation timeline for the entity.
         owner (Entity): another entity that owns or aggregates the current entity.
-        parents (List[Entity]): upper-level entities that receive `pop` notifications.
-        children (List[Entity]): lower-level entities that receive `push` notifications.
-        upper_protocols (List[Protocol]): connected protocols.
+        _observer (List): a list of observers for the entity
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
