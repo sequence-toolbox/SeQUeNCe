@@ -67,8 +67,10 @@ class MemoryArray(Entity):
         return len(self.memories)
 
     def init(self):
-        """Implementation of Entity interface (see base class)."""
+        """Implementation of Entity interface (see base class).
 
+        Set the owner of memory as the owner of memory array
+        """
         for mem in self.memories:
             mem.owner = self.owner
 
