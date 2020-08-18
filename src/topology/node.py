@@ -354,7 +354,6 @@ class QKDNode(Node):
             # Create BB84 protocol
             self.protocol_stack[0] = BB84(self, name + ".BB84")
             self.protocols.append(self.protocol_stack[0])
-            self.qsdetector.protocols.append(self.protocol_stack[0])
 
         if stack_size > 1:
             # Create cascade protocol

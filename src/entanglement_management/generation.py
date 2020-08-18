@@ -347,16 +347,23 @@ class EntanglementGenerationA(EntanglementProtocol):
         """Method to receive expired memories."""
 
         assert memory == self.memory
-        self.own.resource_manager.update(self, self.memory, "RAW")
+        self.update_resource_manager(memory, 'RAW')
         for event in self.scheduled_events:
             if event.time >= self.own.timeline.now():
                 self.own.timeline.remove_event(event)
 
-    # ignore memory expiration events
-    def pop(self, **kwargs):
-        """Method to receive hardware info (currently unused)."""
+    def update_resource_manager(self, memory: "Memory", state: str) -> None:
+        """Method to update attached memory to desired state.
 
-        pass
+        Args:
+            memory (Memory): attached memory to update.
+            state (str): state memory should be updated to.
+
+        Side Effects:
+            May alter the state of `memory`.
+        """
+
+        self.own.resource_manager.update(self, memory, state)
 
 
 class EntanglementGenerationB(EntanglementProtocol):
