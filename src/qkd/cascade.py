@@ -143,13 +143,13 @@ class Cascade(StackProtocol):
         privacy_throughput (int): throughput of not revealed bits.
     """
 
-    def __init__(self, own: "QKDNode", name: str, **kwargs):
+    def __init__(self, own: "QKDNode", name: str, w=4, role=-1, secure_params=100):
         """Constructor for cascade class.
 
         Args:
             own (QKDNode): node protocol instance is attached to.
             name (str): name of protocol instance.
-        
+
         Keyword Args:
             w (int): parameter for cascade protocol (default 4).
             role (int): 0/1 role for protocol, differentiates Alice/Bob instances (default -1).
@@ -158,10 +158,10 @@ class Cascade(StackProtocol):
 
         super().__init__(own, name)
 
-        self.w = kwargs.get("w", 4)
-        self.role = kwargs.get("role", -1)  # 0 for sender, 1 for receiver
-        self.secure_params = kwargs.get("secure_params", 100)
-        
+        self.w = w
+        self.role = role  # 0 for sender, 1 for receiver
+        self.secure_params = secure_params
+
         self.another = None
         self.state = 0
 
@@ -199,21 +199,21 @@ class Cascade(StackProtocol):
 
     def push(self, keylen: int, frame_num=math.inf, run_time=math.inf) -> None:
         """Method to receive key generation events.
-        
+
         Defers to `generate_key` method.
         """
 
         self.generate_key(keylen, frame_num, run_time)
 
-    def pop(self, msg: int) -> None:
+    def pop(self, info: int) -> None:
         """Function called by BB84 when it creates a key.
 
         Args:
-            msg (int): key received.
+            info (int): key received.
         """
 
-        self.log('get_key_from_BB84, key= ' + str(msg))
-        self.bits.append(msg)
+        self.log('get_key_from_BB84, key= ' + str(info))
+        self.bits.append(info)
         self.t1.append(self.own.timeline.now())
         self.t2.append(-1)
 
@@ -406,7 +406,7 @@ class Cascade(StackProtocol):
         """Method to start key generation.
 
         The process for generating keys is:
-        
+
         1. Generate 10000 bits key to measure error rate at 0 pass
         2. Generate keylen bits key at 1st pass
 

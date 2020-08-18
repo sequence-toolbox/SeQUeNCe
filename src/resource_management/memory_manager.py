@@ -35,7 +35,7 @@ class MemoryManager():
         """
 
         self.memory_array = memory_array
-        self.memory_array.upper_protocols.append(self)
+        self.memory_array.attach(self)
         self.memory_map = [MemoryInfo(memory, index) for index, memory in enumerate(self.memory_array)]
         self.resource_manager = None
 

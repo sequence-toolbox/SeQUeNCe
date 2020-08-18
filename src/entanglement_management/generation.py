@@ -9,7 +9,8 @@ Entanglement generation is asymmetric:
 """
 
 from enum import Enum, auto
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Dict, Any
+
 if TYPE_CHECKING:
     from ..components.memory import Memory
     from ..topology.node import Node
@@ -76,6 +77,8 @@ class EntanglementGenerationA(EntanglementProtocol):
         other (str): name of distant QuantumRouter node, containing a memory to be entangled with local memory.
         memory (Memory): quantum memory object to attempt entanglement for.
     """
+
+    # todo: use a function to update resource manager
 
     def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory"):
         """Constructor for entanglement generation a class.
@@ -382,28 +385,16 @@ class EntanglementGenerationB(EntanglementProtocol):
         self.others = others  # end nodes
         # self.other_protocols = kwargs.get("other_protocols") # other EG protocols (must be same order as others)
 
-    def pop(self, info_type, **kwargs):
-        """Method to receive info from bell state measurement device.
-        
-        Args:
-            info_type (str): string describing type of information received (should be "BSM_res")
+    def bsm_update(self, bsm: 'SingleAtomBSM', msg: Dict[str, Any]):
+        assert msg['info_type'] == "BSM_res"
 
-        Keyword Args:
-            res (int): measurement result.
-            time (int): simulation time of measurement.
-
-        Side Effects:
-            May send result message to A protocols on end nodes.
-        """
-
-        assert info_type == "BSM_res"
-
-        res = kwargs.get("res")
-        time = kwargs.get("time")
+        res = msg.get("res")
+        time = msg.get("time")
         resolution = self.own.bsm.resolution
 
         for i, node in enumerate(self.others):
-            message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES, None, res=res, time=time, resolution=resolution)
+            message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES, None, res=res, time=time,
+                                                    resolution=resolution)
             self.own.send_message(node, message)
 
     def received_message(self, src: str, msg: EntanglementGenerationMessage):

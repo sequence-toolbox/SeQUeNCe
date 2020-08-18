@@ -74,6 +74,7 @@ class BBPSSW(EntanglementProtocol):
         self.is_primary = meas_memo is not None
         self.t0 = self.kept_memo.timeline.now()
         self.another = None
+        self.another_node = self.kept_memo.entangled_memory['node_id']
         self.is_success = None
         if self.meas_memo is None:
             self.memories.pop()
@@ -169,7 +170,7 @@ class BBPSSW(EntanglementProtocol):
         if self.meas_memo is None:
             self.update_resource_manager(memory, "RAW")
         else:
-            delay = self.own.cchannels[self.kept_memo.entangled_memory["node_id"]].delay
+            delay = self.own.cchannels[self.another_node].delay
             if self.is_primary:
                 if self.own.timeline.now() < self.t0 + delay:
                     self.update_resource_manager(memory, "RAW")
@@ -218,3 +219,4 @@ class BBPSSW(EntanglementProtocol):
         """
 
         return (F ** 2 + ((1 - F) / 3) ** 2) / (F ** 2 + 2 * F * (1 - F) / 3 + 5 * ((1 - F) / 3) ** 2)
+

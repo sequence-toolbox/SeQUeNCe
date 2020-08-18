@@ -1,3 +1,5 @@
+from typing import Dict
+
 from sequence.components.memory import Memory, MemoryArray
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
@@ -16,11 +18,11 @@ class DumbReceiver():
 
 class DumbParent():
     def __init__(self, memory):
-        memory.parents.append(self)
+        memory.attach(self)
         self.pop_log = []
 
-    def pop(self, **kwargs):
-        self.pop_log.append(kwargs["memory"])
+    def memory_expire(self, memory):
+        self.pop_log.append(memory)
 
 
 def test_MemoryArray_init():
@@ -32,22 +34,25 @@ def test_MemoryArray_init():
         assert type(m) == Memory
 
 
-def test_MemoryArray_pop():
+def test_MemoryArray_expire():
     class FakeNode(QuantumRouter):
         def __init__(self, tl):
             super().__init__("fake", tl)
             self.ma = MemoryArray("ma", tl)
             self.ma.set_node(self)
             self.is_expired = False
+            self.expired_memory = -1
 
         def memory_expire(self, memory: "Memory") -> None:
             self.is_expired = True
+            self.expired_memory = memory
 
     tl = Timeline()
     node = FakeNode(tl)
     ma = node.ma
-    ma.pop(memory=ma[0])
-    assert node.is_expired is True
+    expired_memo = ma[0]
+    ma.memory_expire(expired_memo)
+    assert node.is_expired is True and node.expired_memory == expired_memo
 
 
 def test_Memory_excite():
@@ -135,24 +140,29 @@ def test_Memory_expire():
         def received_message(self, src: str, msg: "Message"):
             pass
 
+        def expire(self, memory: Memory):
+            self.memory_expire(memory)
+
     tl = Timeline()
     mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
     parent = DumbParent(mem)
     protocol = FakeProtocol("upper_protocol")
-    mem.add_protocol(protocol)
+    mem.attach(protocol)
     mem.set_plus()
     entangled_memory = {"node_id": "node", "memo_id": 0}
     mem.entangled_memory = entangled_memory
 
-    # expire with upper protocols
+    # expire when the protocol controls memory
+    mem.detach(parent)
     assert len(parent.pop_log) == 0 and protocol.is_expire is False
     mem.expire()
     assert [complex(1), complex(0)] == mem.qstate.state  # check if collapsed to |0> state
     assert mem.entangled_memory == {"node_id": None, "memo_id": None}
     assert len(parent.pop_log) == 0 and protocol.is_expire is True
 
-    # expire without upper protocols
-    mem.remove_protocol(protocol)
+    # expire when the resource manager controls memory
+    mem.attach(parent)
+    mem.detach(protocol)
     mem.set_plus()
     entangled_memory = {"node_id": "node", "memo_id": 0}
     mem.entangled_memory = entangled_memory

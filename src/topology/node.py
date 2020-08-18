@@ -158,7 +158,7 @@ class BSMNode(Node):
         Node.__init__(self, name, timeline)
         self.bsm = SingleAtomBSM("%s_bsm" % name, timeline)
         self.eg = EntanglementGenerationB(self, "{}_eg".format(name), other_nodes)
-        self.bsm.upper_protocols.append(self.eg)
+        self.bsm.attach(self.eg)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         # signal to protocol that we've received a message

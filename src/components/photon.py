@@ -20,7 +20,8 @@ class Photon():
         is_null (bool): defines whether photon is real or a "ghost" photon (not detectable but used in memory encoding).
     """
 
-    def __init__(self, name, **kwargs):
+    def __init__(self, name, wavelength=0, location=None, encoding_type=polarization,
+                 quantum_state=[complex(1), complex(0)]):
         """Constructor for the photon class.
 
         Args:
@@ -33,12 +34,10 @@ class Photon():
             encoding_type (Dict[str, Any]): encoding type of photon (from encoding module) (default polarization).
             quantum_state (List[complex]): complex coefficients for photon's quantum state.
         """
-
         self.name = name
-        self.wavelength = kwargs.get("wavelength", 0)
-        self.location = kwargs.get("location", None)
-        self.encoding_type = kwargs.get("encoding_type", polarization)
-        quantum_state = kwargs.get("quantum_state", [complex(1), complex(0)])
+        self.wavelength = wavelength
+        self.location = location
+        self.encoding_type = encoding_type
         self.quantum_state = QuantumState()
         self.quantum_state.state = quantum_state
         # self.entangled_photons = [self]

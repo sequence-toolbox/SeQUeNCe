@@ -4,7 +4,7 @@ This module defines the Entity class, inherited by all physical simulation eleme
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict
 
 if TYPE_CHECKING:
     from .timeline import Timeline
@@ -36,14 +36,8 @@ class Entity(ABC):
             self.name = name
         self.timeline = timeline
         self.owner = None
+        self._observers = []
         timeline.entities.append(self)
-
-        # connected entities
-        self.parents = []
-        self.children = []
-
-        # connected protocols
-        self.upper_protocols = []
 
     @abstractmethod
     def init(self):
@@ -55,27 +49,16 @@ class Entity(ABC):
 
         pass
 
-    def push(self, **kwargs):
-        """Method to receive information from upper entities."""
+    def attach(self, observer: Any):
+        if not observer in self._observers:
+            self._observers.append(observer)
 
-        pass
+    def detach(self, observer: Any):
+        self._observers.remove(observer)
 
-    def pop(self, **kwargs):
-        """Method to receive information from lower entities."""
-
-        pass
-
-    def _push(self, **kwargs):
-        for entity in self.children:
-            entity.push(**kwargs)
-
-    def _pop(self, **kwargs):
-        if len(self.upper_protocols) > 0:
-            for protocol in self.upper_protocols:
-                protocol.pop(**kwargs)
-        else:
-            for entity in self.parents:
-                entity.pop(**kwargs)
+    def notify(self, info: Dict[str, Any]):
+        for observer in self._observers:
+            observer.update(self, info)
 
     def remove_from_timeline(self):
         """Method to remove entity from attached timeline.
@@ -84,5 +67,3 @@ class Entity(ABC):
         """
 
         self.timeline.entities.remove(self)
-
-

@@ -6,7 +6,7 @@ Photons should be routed to a BSM device for entanglement generation, or through
 """
 
 from math import sqrt, inf
-from typing import Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING, Dict
 
 from numpy import random
 
@@ -28,7 +28,7 @@ class MemoryArray(Entity):
     """Aggregator for Memory objects.
 
     The MemoryArray can be accessed as a list to get individual memories.
-    
+
     Attributes:
         name (str): label for memory array instance.
         timeline (Timeline): timeline for simulation.
@@ -57,7 +57,7 @@ class MemoryArray(Entity):
         for i in range(num_memories):
             memory = Memory(self.name + "[%d]" % i, timeline, fidelity, frequency, efficiency, coherence_time,
                             wavelength)
-            memory.parents.append(self)
+            memory.attach(self)
             self.memories.append(memory)
 
     def __getitem__(self, key):
@@ -73,15 +73,14 @@ class MemoryArray(Entity):
         """
         for mem in self.memories:
             mem.owner = self.owner
+            mem.set_memory_array(self)
 
-    def pop(self, memory: "Memory"):
+    def memory_expire(self, memory: "Memory"):
         """Method to receive expiration events from memories.
 
         Args:
             memory (Memory): expired memory.
         """
-
-        # notify node the expired memory
         self.owner.memory_expire(memory)
 
     def update_memory_params(self, arg_name: str, value: Any) -> None:
@@ -137,6 +136,8 @@ class Memory(Entity):
         self.wavelength = wavelength
         self.qstate = QuantumState()
 
+        self.memory_array = None
+
         self.photon_encoding = single_atom.copy()
         self.photon_encoding["memory"] = self
         # keep track of previous BSM result (for entanglement generation)
@@ -154,6 +155,9 @@ class Memory(Entity):
 
     def init(self):
         pass
+
+    def set_memory_array(self, memory_array: MemoryArray):
+        self.memory_array = memory_array
 
     def excite(self, dst="") -> None:
         """Method to excite memory and potentially emit a photon.
@@ -200,13 +204,10 @@ class Memory(Entity):
 
         if self.excited_photon:
             self.excited_photon.is_null = True
-        # pop expiration message
-        if self.upper_protocols:
-            for protocol in self.upper_protocols:
-                protocol.memory_expire(self)
-        else:
-            self._pop(memory=self)
+
         self.reset()
+        # pop expiration message
+        self.notify(self)
 
     def flip_state(self) -> None:
         """Method to apply X-gate to quantum state.
@@ -264,12 +265,6 @@ class Memory(Entity):
 
         self.expiration_event = event
 
-    def add_protocol(self, protocol: "EntanglementProtocol") -> None:
-        self.upper_protocols.append(protocol)
-
-    def remove_protocol(self, protocol: "EntanglementProtocol") -> None:
-        self.upper_protocols.remove(protocol)
-
     def update_expire_time(self, time: int):
         time = max(time, self.timeline.now())
         if self.expiration_event is None:
@@ -282,3 +277,11 @@ class Memory(Entity):
 
     def get_expire_time(self) -> int:
         return self.expiration_event.time if self.expiration_event else inf
+
+    def notify(self, msg: Dict[str, Any]):
+        for observer in self._observers:
+            observer.memory_expire(self)
+
+    def detach(self, observer: 'EntanglementProtocol'):
+        if observer in self._observers:
+            self._observers.remove(observer)

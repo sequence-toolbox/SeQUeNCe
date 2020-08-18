@@ -33,8 +33,8 @@ class BeamSplitter(Entity):
         basis_list (List[int]): 0/1 indices of measurement bases over time.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", **kwargs):
-        """Constructor for the beamsplitter class.
+    def __init__(self, name: str, timeline: "Timeline", fidelity=1):
+        """Constructor for the beamsplitter class
 
         Args:
             name (str): name of the beamsplitter instance.
@@ -45,7 +45,7 @@ class BeamSplitter(Entity):
         """
 
         Entity.__init__(self, name, timeline)  # Splitter is part of the QSDetector, and does not have its own name
-        self.fidelity = kwargs.get("fidelity", 1)
+        self.fidelity = fidelity
         self.receivers = []
         # for BB84
         self.start_time = 0

@@ -6,7 +6,7 @@ QSDetector is defined as an abstract template and as implementaions for polariza
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Dict
 
 from numpy import random
 
@@ -40,12 +40,13 @@ class Detector(Entity):
         photon_counter (int): counts number of detection events.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", **kwargs):
+    def __init__(self, name: str, timeline: "Timeline", efficiency=0.9, dark_count=0, count_rate=int(25e6),
+                 time_resolution=150):
         Entity.__init__(self, name, timeline)  # Detector is part of the QSDetector, and does not have its own name
-        self.efficiency = kwargs.get("efficiency", 0.9)
-        self.dark_count = kwargs.get("dark_count", 0)  # measured in 1/s
-        self.count_rate = kwargs.get("count_rate", int(25e6))  # measured in Hz
-        self.time_resolution = kwargs.get("time_resolution", 150)  # measured in ps
+        self.efficiency = efficiency
+        self.dark_count = dark_count  # measured in 1/s
+        self.count_rate = count_rate  # measured in Hz
+        self.time_resolution = time_resolution  # measured in ps
         self.next_detection_time = -1
         self.photon_counter = 0
 
@@ -69,7 +70,7 @@ class Detector(Entity):
         time = round(now / self.time_resolution) * self.time_resolution
 
         if (random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
-            self._pop(detector=self, time=time)
+            self.notify({'time': time})
             self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self) -> None:
@@ -92,6 +93,10 @@ class Detector(Entity):
             event2 = Event(time, process2)
             self.timeline.schedule(event1)
             self.timeline.schedule(event2)
+
+    def notify(self, info: Dict[str, Any]):
+        for observer in self._observers:
+            observer.trigger(self, info)
 
 
 class QSDetector(Entity, ABC):
@@ -122,16 +127,9 @@ class QSDetector(Entity, ABC):
 
         pass
 
-    def pop(self, detector: "Detector", time: int) -> None:
-        """Method to receive measurements from lower-level entities (i.e. Detectors).
-
-        Arguments:
-            detector (Detector): detector object making a detection.
-            time (int): simulation time of detection.
-        """
-
+    def trigger(self, detector: Detector, info: Dict[str, Any]) -> None:
         detector_index = self.detectors.index(detector)
-        self.trigger_times[detector_index].append(time)
+        self.trigger_times[detector_index].append(info['time'])
 
     def get_photon_times(self):
         return self.trigger_times
@@ -162,8 +160,8 @@ class QSDetectorPolarization(QSDetector):
         self.splitter = BeamSplitter(name + ".splitter", timeline)
         self.splitter.set_receiver(0, self.detectors[0])
         self.splitter.set_receiver(1, self.detectors[1])
-        self.children += [self.splitter, self.detectors[0], self.detectors[1]]
-        [component.parents.append(self) for component in self.children]
+        self.components = [self.splitter, self.detectors[0], self.detectors[1]]
+        [component.attach(self) for component in self.components]
         self.trigger_times = [[], []]
 
     def init(self) -> None:
@@ -223,9 +221,8 @@ class QSDetectorTimeBin(QSDetector):
         self.interferometer.set_receiver(1, self.detectors[2])
         self.switch.set_interferometer(self.interferometer)
 
-        self.children += [self.switch, self.interferometer]
-        self.children += self.detectors
-        [component.parents.append(self) for component in self.children]
+        self.components = [self.switch, self.interferometer] + self.detectors
+        [component.attach(self) for component in self.components]
         self.trigger_times = [[], [], []]
 
     def init(self):

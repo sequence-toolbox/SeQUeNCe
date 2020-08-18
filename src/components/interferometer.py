@@ -30,7 +30,7 @@ class Interferometer(Entity):
         receivers (List[Entities]): entities to receive transmitted photons
     """
 
-    def __init__(self, name: str, timeline: "Timeline", path_diff, **kwargs):
+    def __init__(self, name: str, timeline: "Timeline", path_diff, phase_error=0):
         """Constructor for the interferometer class.
 
         Args:
@@ -44,7 +44,7 @@ class Interferometer(Entity):
 
         Entity.__init__(self, "", timeline)
         self.path_difference = path_diff  # time difference in ps
-        self.phase_error = kwargs.get("phase_error", 0)  # chance of measurement error in phase
+        self.phase_error = phase_error  # chance of measurement error in phase
         self.receivers = []
 
     def init(self) -> None:

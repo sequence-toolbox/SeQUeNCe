@@ -5,7 +5,7 @@ Also defined is a function to automatically construct a BSM of a specified type.
 """
 
 from abc import abstractmethod
-from typing import Any
+from typing import Any, Dict
 
 from numpy import random
 
@@ -18,7 +18,7 @@ from ..utils.encoding import *
 from ..utils.quantum_state import QuantumState
 
 
-def make_bsm(name, timeline, **kwargs):
+def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=[]):
     """Function to construct BSM of specified type
 
     Arguments:
@@ -29,14 +29,12 @@ def make_bsm(name, timeline, **kwargs):
         encoding_type (str): type of BSM to generate (default "time_bin")
     """
 
-    encoding_type = kwargs.pop("encoding_type", "time_bin")
-
     if encoding_type == "polarization":
-        return PolarizationBSM(name, timeline, **kwargs)
+        return PolarizationBSM(name, timeline, phase_error, detectors)
     elif encoding_type == "time_bin":
-        return TimeBinBSM(name, timeline, **kwargs)
+        return TimeBinBSM(name, timeline, phase_error, detectors)
     elif encoding_type == "single_atom":
-        return SingleAtomBSM(name, timeline, **kwargs)
+        return SingleAtomBSM(name, timeline, phase_error, detectors)
     else:
         raise Exception("invalid encoding {} given for BSM {}".format(encoding_type, name))
 
@@ -52,7 +50,8 @@ class BSM(Entity):
         resolution (int): maximum time resolution achievable with attached detectors
     """
 
-    def __init__(self, name, timeline, **kwargs):
+    # todo: clarify arguments instead of **kwargs
+    def __init__(self, name, timeline, phase_error=0, detectors=[]):
         """Constructor for base BSM object.
 
         Args:
@@ -65,16 +64,15 @@ class BSM(Entity):
         """
 
         super().__init__(name, timeline)
-        self.phase_error = kwargs.get("phase_error", 0)
+        self.phase_error = phase_error
         self.photons = []
         self.photon_arrival_time = -1
-        detectors = kwargs.get("detectors", [])
 
         self.detectors = []
         for d in detectors:
             if d is not None:
                 detector = Detector("", timeline, **d)
-                detector.parents.append(self)
+                detector.attach(self)
             else:
                 detector = None
             self.detectors.append(detector)
@@ -112,18 +110,18 @@ class BSM(Entity):
             self.photons.append(photon)
 
     @abstractmethod
-    def pop(self, **kwargs):
+    def trigger(self, detector: Detector, info: Dict[str, Any]):
         """Method to receive photon detection events from attached detectors (abstract)
 
         Keyword Arguments:
-            detector: detector object that is invoking the method
-            time: simulation time of the detection event
+            src: the source of message
+            info: the message from the source detector
         """
+        pass
 
-        # calculate bsm based on detector num
-        detector = kwargs.get("detector")
-        detector_num = self.detectors.index(detector)
-        time = kwargs.get("time")
+    def notify(self, info: Dict[str, Any]):
+        for observer in self._observers:
+            observer.bsm_update(self, info)
 
     def update_detectors_params(self, arg_name: str, value: Any) -> None:
         """Updates parameters of attached detectors"""
@@ -144,7 +142,7 @@ class PolarizationBSM(BSM):
         resolution (int): maximum time resolution achievable with attached detectors  
     """
 
-    def __init__(self, name, timeline, **kwargs):
+    def __init__(self, name, timeline, phase_error=0, detectors=[]):
         """Constructor for Polarization BSM.
 
         Args:
@@ -156,7 +154,7 @@ class PolarizationBSM(BSM):
             detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 4)
         """
 
-        super().__init__(name, timeline, **kwargs)
+        super().__init__(name, timeline, phase_error, detectors)
         self.last_res = [-2 * self.resolution, -1]
         assert len(self.detectors) == 4
 
@@ -201,19 +199,18 @@ class PolarizationBSM(BSM):
 
         else:
             raise Exception("Invalid result from photon.measure_multiple")
-        
-    def pop(self, **kwargs):
+
+    def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.
 
         This method adds additional side effects not present in the base class.
 
         Side Effects:
-            May send a further pop message to any attached entities.
+            May send a further message to any attached entities.
         """
 
-        detector = kwargs.get("detector")
         detector_num = self.detectors.index(detector)
-        time = kwargs.get("time")
+        time = info["time"]
 
         # check if matching time
         if abs(time - self.last_res[0]) < self.resolution:
@@ -221,10 +218,12 @@ class PolarizationBSM(BSM):
 
             # Psi-
             if detector_last + detector_num == 3:
-                self._pop(entity="BSM", info_type="BSM_res", res=1, time=time)
+                info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 1, 'time': time}
+                self.notify(info)
             # Psi+
             elif abs(detector_last - detector_num) == 1:
-                self._pop(entity="BSM", info_type="BSM_res", res=0, time=time)
+                info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 0, 'time': time}
+                self.notify(info)
 
         self.last_res = [time, detector_num]
 
@@ -241,7 +240,7 @@ class TimeBinBSM(BSM):
         resolution (int): maximum time resolution achievable with attached detectors  
     """
 
-    def __init__(self, name, timeline, **kwargs):
+    def __init__(self, name, timeline, phase_error=0, detectors=[]):
         """Constructor for the time bin BSM class.
 
         Args:
@@ -252,7 +251,7 @@ class TimeBinBSM(BSM):
             detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2)
         """
 
-        super().__init__(name, timeline, **kwargs)
+        super().__init__(name, timeline, phase_error, detectors)
         self.encoding_type = time_bin
         self.last_res = [-1, -1]
         assert len(self.detectors) == 2
@@ -315,29 +314,30 @@ class TimeBinBSM(BSM):
         else:
             raise Exception("Invalid result from photon.measure_multiple")
 
-    def pop(self, **kwargs):
+    def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.
 
         This method adds additional side effects not present in the base class.
 
         Side Effects:
-            May send a further pop message to any attached entities.
+            May send a further message to any attached entities.
         """
 
-        detector = kwargs.get("detector")
         detector_num = self.detectors.index(detector)
-        time = kwargs.get("time")
+        time = info["time"]
 
         # check if valid time
         if round((time - self.last_res[0]) / self.encoding_type["bin_separation"]) == 1:
-        # if time - self.last_res[0] < self.resolution + self.encoding_type["bin_separation"]:
+            # if time - self.last_res[0] < self.resolution + self.encoding_type["bin_separation"]:
             # pop result message
             # Psi+
             if detector_num == self.last_res[1]:
-                self._pop(entity="BSM", info_type="BSM_res", res=0, time=time)
+                info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 0, 'time': time}
+                self.notify(info)
             # Psi-
             else:
-                self._pop(entity="BSM", info_type="BSM_res", res=1, time=time)
+                info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 1, 'time': time}
+                self.notify(info)
 
         self.last_res = [time, detector_num]
 
@@ -354,7 +354,7 @@ class SingleAtomBSM(BSM):
         resolution (int): maximum time resolution achievable with attached detectors  
     """
 
-    def __init__(self, name, timeline, **kwargs):
+    def __init__(self, name, timeline, phase_error=0, detectors=[]):
         """Constructor for the single atom BSM class.
 
         Args:
@@ -365,9 +365,9 @@ class SingleAtomBSM(BSM):
             detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2)
         """
 
-        if not "detectors" in kwargs:
-            kwargs["detectors"] = [{}] * 2
-        super().__init__(name, timeline, **kwargs)
+        if detectors == []:
+            detectors = [{}, {}]
+        super().__init__(name, timeline, phase_error, detectors)
         assert len(self.detectors) == 2
 
     def get(self, photon):
@@ -416,20 +416,18 @@ class SingleAtomBSM(BSM):
                         detector_num = random.randint(2)
                     self.detectors[detector_num].get()
 
-    def pop(self, **kwargs):
+    def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.
 
         This method adds additional side effects not present in the base class.
 
         Side Effects:
-            May send a further pop message to any attached entities.
+            May send a further message to any attached entities.
         """
 
-        detector = kwargs.get("detector")
         detector_num = self.detectors.index(detector)
-        time = kwargs.get("time")
+        time = info["time"]
 
         res = detector_num
-        self._pop(entity="BSM", info_type="BSM_res", res=res, time=time)
-
-
+        info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
+        self.notify(info)

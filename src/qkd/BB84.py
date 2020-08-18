@@ -98,7 +98,7 @@ class BB84(StackProtocol):
         self.end_run_times (List[int]): simulation time for end of each request.
     """
 
-    def __init__(self, own: "QKDNode", name: str, **kwargs):
+    def __init__(self, own: "QKDNode", name: str, role=-1):
         """Constructor for BB84 class.
 
         Args:
@@ -112,8 +112,8 @@ class BB84(StackProtocol):
         if own == None: # used only for unit test purposes
             return
         super().__init__(own, name)
-        self.role = kwargs.get("role", -1)
-        
+        self.role = role
+
         self.working = False
         self.ready = True  # (for Alice) not currently processing a generate_key request
         self.light_time = 0  # time to use laser (measured in s)
@@ -142,7 +142,7 @@ class BB84(StackProtocol):
 
     def push(self, length: int, key_num: int, run_time=math.inf) -> None:
         """Method to receive requests for key generation.
-        
+
         Args:
             length (int): length of key to generate.
             key_num (int): number of keys to generate.
@@ -355,9 +355,9 @@ class BB84(StackProtocol):
 
                     while len(self.key_bits) >= self.key_lengths[0] and self.keys_left_list[0] > 0:
                         self.set_key()  # convert from binary list to int
-                        self._pop(msg=self.key)
+                        self._pop(info=self.key)
                         self.another.set_key()
-                        self.another._pop(msg=self.another.key)
+                        self.another._pop(info=self.another.key)
 
                         # for metrics
                         if self.latency == 0:

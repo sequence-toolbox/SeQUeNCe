@@ -97,6 +97,10 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.memories = [left_memo, right_memo]
         self.left_memo = left_memo
         self.right_memo = right_memo
+        self.left_node = left_memo.entangled_memory['node_id']
+        self.left_remote_memo = left_memo.entangled_memory['memo_id']
+        self.right_node = right_memo.entangled_memory['node_id']
+        self.right_remote_memo = right_memo.entangled_memory['memo_id']
         self.success_prob = success_prob
         self.degradation = degradation
         self.is_success = False
@@ -213,15 +217,13 @@ class EntanglementSwappingA(EntanglementProtocol):
 
         assert self.is_ready() is False
         if self.left_protocol:
-            self.own.resource_manager.release_remote_protocol(self.left_memo.entangled_memory["node_id"], self)
+            self.own.resource_manager.release_remote_protocol(self.left_node, self)
         else:
-            self.own.resource_manager.release_remote_memory(self, self.left_memo.entangled_memory["node_id"],
-                                                            self.left_memo.entangled_memory["memo_id"])
+            self.own.resource_manager.release_remote_memory(self, self.left_node, self.left_remote_memo)
         if self.right_protocol:
-            self.own.resource_manager.release_remote_protocol(self.right_memo.entangled_memory["node_id"], self)
+            self.own.resource_manager.release_remote_protocol(self.right_node, self)
         else:
-            self.own.resource_manager.release_remote_memory(self, self.right_memo.entangled_memory["node_id"],
-                                                            self.right_memo.entangled_memory["memo_id"])
+            self.own.resource_manager.release_remote_memory(self, self.right_node, self.right_remote_memo)
 
         for memo in self.memories:
             if memo == memory:
