@@ -118,7 +118,7 @@ class RandomRequestApp():
 
         Args:
             reservation (Reservation): reservation that has been completed.
-            result (bool): result of the requesst (approved/rejected).
+            result (bool): result of the request (approved/rejected).
 
         Side Effects:
             May schedule a start/retry event based on reservation result.

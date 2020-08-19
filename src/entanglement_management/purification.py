@@ -131,11 +131,6 @@ class BBPSSW(EntanglementProtocol):
             Will call `update` method of node's resource manager.
         """
 
-        if state == 'RAW':
-            memory.fidelity = 0
-            memory.entangled_memory['node_id'] = None
-            memory.entangled_memory['memo_id'] = None
-
         self.own.resource_manager.update(self, memory, state)
 
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:
