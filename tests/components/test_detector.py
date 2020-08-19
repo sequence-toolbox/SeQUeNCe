@@ -12,14 +12,14 @@ def create_detector(efficiency=0.9, dark_count=0, count_rate=25e6, time_resoluti
             self.timeline = tl
             self.log = []
 
-        def pop(self, detector, time):
-            self.log.append((self.timeline.now(), time, detector))
+        def trigger(self, detector, msg):
+            self.log.append((self.timeline.now(), msg['time'], detector))
 
     tl = Timeline()
     detector = Detector("", tl, efficiency=efficiency, dark_count=dark_count,
                         count_rate=count_rate, time_resolution=time_resolution)
     parent = Parent(tl)
-    detector.parents.append(parent)
+    detector.attach(parent)
     return detector, parent, tl
 
 
@@ -117,13 +117,13 @@ def test_QSDetectorPolarization_update_detector_params():
     assert qsdetector.detectors[0].dark_count == 99 and qsdetector.detectors[1].dark_count != 99
 
 
-def test_QSDetectorPolarization_pop():
+def test_QSDetector_update():
     tl = Timeline()
     qsdetector = QSDetectorPolarization("qsd", tl)
 
     args = [[0, 10], [1, 20], [1, 40]]
     for arg in args:
-        qsdetector.pop(qsdetector.detectors[arg[0]], arg[1])
+        qsdetector.trigger(qsdetector.detectors[arg[0]], {'time': arg[1]})
         trigger_times = qsdetector.trigger_times
         assert trigger_times[arg[0]][-1] == arg[1]
 

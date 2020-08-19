@@ -75,17 +75,32 @@ class EntanglementSwappingA(EntanglementProtocol):
         name (str): label for protocol instance.
         left_memo (Memory): a memory from one pair to be swapped.
         right_memo (Memory): a memory from the other pair to be swapped.
-        success_prob (float): probability of a successful swapping operation (default 1).
-        degradation (float): degradation factor of memory fidelity after the swapping operation (default 0.95).
+        success_prob (float): probability of a successful swapping operation.
+        degradation (float): degradation factor of memory fidelity after the swapping operation.
     """
 
     def __init__(self, own: "Node", name: str, left_memo: "Memory", right_memo: "Memory", success_prob=1,
                  degradation=0.95):
+        """Constructor for entanglement swapping A protocol.
+
+        Args:
+            own (Node): node that protocol is attached to.
+            name (str): label for swapping protocol instance.
+            left_memo (Memory): memory entangled with a memory on one distant node.
+            right_memo (Memory): memory entangled with a memory on the other distant node.
+            success_prob (float): probability of a successful swapping operation (default 1).
+            degradation (float): degradation factor of memory fidelity after swapping (default 0.95).
+        """
+
         assert left_memo != right_memo
         EntanglementProtocol.__init__(self, own, name)
         self.memories = [left_memo, right_memo]
         self.left_memo = left_memo
         self.right_memo = right_memo
+        self.left_node = left_memo.entangled_memory['node_id']
+        self.left_remote_memo = left_memo.entangled_memory['memo_id']
+        self.right_node = right_memo.entangled_memory['node_id']
+        self.right_remote_memo = right_memo.entangled_memory['memo_id']
         self.success_prob = success_prob
         self.degradation = degradation
         self.is_success = False
@@ -96,6 +111,12 @@ class EntanglementSwappingA(EntanglementProtocol):
         return self.left_protocol is not None and self.right_protocol is not None
 
     def set_others(self, other: "EntanglementSwappingB") -> None:
+        """Method to set one other protocol.
+
+        Args:
+            other (EntanglementSwappingB): protocol to add to other list.
+        """
+
         if other.own.name == self.left_memo.entangled_memory["node_id"]:
             self.left_protocol = other
         elif other.own.name == self.right_memo.entangled_memory["node_id"]:
@@ -104,6 +125,15 @@ class EntanglementSwappingA(EntanglementProtocol):
             raise Exception("Cannot pair protocol %s with %s" % (self.name, other.name))
 
     def start(self) -> None:
+        """Method to start entanglement swapping protocol.
+
+        Will pre-determine swapping result and send messages to other protocols.
+
+        Side Effects:
+            Will call `update_resource_manager` method.
+            Will send messages to other protocols.
+        """
+
         assert self.left_memo.fidelity > 0 and self.right_memo.fidelity > 0
         assert self.left_memo.entangled_memory["node_id"] == self.left_protocol.own.name
         assert self.right_memo.entangled_memory["node_id"] == self.right_protocol.own.name
@@ -130,6 +160,16 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.update_resource_manager(self.right_memo, "RAW")
 
     def update_resource_manager(self, memory: "Memory", state: str) -> None:
+        """Method to update attached memory to desired state.
+
+        Args:
+            memory (Memory): attached memory to update.
+            state (str): state memory should be updated to.
+        
+        Side Effects:
+            May alter the state of `memory`.
+        """
+
         if state == 'RAW':
             memory.fidelity = 0
             memory.entangled_memory['node_id'] = None
@@ -138,31 +178,52 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.own.resource_manager.update(self, memory, state)
 
     def success_probability(self) -> float:
-        """A simple model for BSM success probability"""
+        """A simple model for BSM success probability."""
 
         return self.success_prob
 
     @lru_cache(maxsize=128)
     def updated_fidelity(self, f1: float, f2: float) -> float:
-        """A simple model updating fidelity of entanglement"""
+        """A simple model updating fidelity of entanglement.
+
+        Args:
+            f1 (float): fidelity 1.
+            f2 (float): fidelity 2.
+
+        Returns:
+            float: fidelity of swapped entanglement.
+        """
 
         return f1 * f2 * self.degradation
 
     def received_message(self, src: str, msg: "Message") -> None:
-        assert False
+        """Method to receive messages (should not be used on A protocol)."""
+
+        raise Exception("EntanglementSwappingA protocol '{}' should not receive messages.".format(self.name))
 
     def memory_expire(self, memory: "Memory") -> None:
+        """Method to receive memory expiration events.
+
+        Releases held memories on current node.
+        Memories at the remote node are released as well.
+
+        Args:
+            memory (Memory): memory that expired.
+
+        Side Effects:
+            Will invoke `update` method of attached resource manager.
+            Will invoke `release_remote_protocol` or `release_remote_memory` method of resource manager.
+        """
+
         assert self.is_ready() is False
         if self.left_protocol:
-            self.own.resource_manager.release_remote_protocol(self.left_memo.entangled_memory["node_id"], self)
+            self.own.resource_manager.release_remote_protocol(self.left_node, self)
         else:
-            self.own.resource_manager.release_remote_memory(self, self.left_memo.entangled_memory["node_id"],
-                                                            self.left_memo.entangled_memory["memo_id"])
+            self.own.resource_manager.release_remote_memory(self, self.left_node, self.left_remote_memo)
         if self.right_protocol:
-            self.own.resource_manager.release_remote_protocol(self.right_memo.entangled_memory["node_id"], self)
+            self.own.resource_manager.release_remote_protocol(self.right_node, self)
         else:
-            self.own.resource_manager.release_remote_memory(self, self.right_memo.entangled_memory["node_id"],
-                                                            self.right_memo.entangled_memory["memo_id"])
+            self.own.resource_manager.release_remote_memory(self, self.right_node, self.right_remote_memo)
 
         for memo in self.memories:
             if memo == memory:
@@ -184,6 +245,14 @@ class EntanglementSwappingB(EntanglementProtocol):
     """
 
     def __init__(self, own: "Node", name: str, hold_memo: "Memory"):
+        """Constructor for entanglement swapping B protocol.
+
+        Args:
+            own (Node): node protocol is attached to.
+            name (str): name of protocol instance.
+            hold_memo (Memory): memory entangled with a memory on middle node.
+        """
+
         EntanglementProtocol.__init__(self, own, name)
 
         self.memories = [hold_memo]
@@ -194,9 +263,25 @@ class EntanglementSwappingB(EntanglementProtocol):
         return self.another is not None
 
     def set_others(self, another: "EntanglementSwappingA") -> None:
+        """Method to set one other protocol.
+
+        Args:
+            other (EntanglementSwappingA): protocol to set as other.
+        """
+
         self.another = another
 
     def received_message(self, src: str, msg: "EntanglementSwappingMessage") -> None:
+        """Method to receive messages from EntanglementSwappingA.
+
+        Args:
+            src (str): name of node sending message.
+            msg (EntanglementSwappingMesssage): message sent.
+
+        Side Effects:
+            Will invoke `update_resource_manager` method.
+        """
+
         assert src == self.another.own.name
 
         if msg.fidelity > 0 and self.own.timeline.now() < msg.expire_time:
@@ -209,12 +294,31 @@ class EntanglementSwappingB(EntanglementProtocol):
             self.update_resource_manager(self.memory, "RAW")
 
     def update_resource_manager(self, memory: "Memory", state: str) -> None:
+        """Method to update attached memory in resource manager.
+
+        Args:
+            memory (Memory): memory to update.
+            state (str): state to set memory to.
+
+        Side Effects:
+            Will invoke `update` method of attached resource_manager.
+        """
+
         self.own.resource_manager.update(self, memory, state)
 
     def start(self) -> None:
         pass
 
     def memory_expire(self, memory: "Memory") -> None:
+        """Method to deal with expired memories.
+
+        Args:
+            memory (Memory): memory that expired.
+
+        Side Effects:
+            Will update memory in attached resource manager.
+        """
+
         self.own.resource_manager.update(self, self.memory, "RAW")
 
     def release(self) -> None:

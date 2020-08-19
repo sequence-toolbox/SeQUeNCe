@@ -17,9 +17,9 @@ from .eventlist import EventList
 
 
 class Timeline:
-    """Class of timeline.
+    """Class for a simulation timeline.
 
-    Timeline holds entities, which is configured before the simulation.
+    Timeline holds entities, which are configured before the simulation.
     Before the start of simulation, the timeline must initialize all controlled entities.
     The initialization of entities may schedule events.
     The timeline pushes these events to its event list.
@@ -40,6 +40,12 @@ class Timeline:
     """
 
     def __init__(self, stop_time=inf):
+        """Constructor for timeline.
+
+        Args:
+            stop_time (int): stop time (in ps) of simulation (default inf).
+        """
+
         self.events = EventList()
         self.entities = []
         self.time = 0
@@ -49,17 +55,30 @@ class Timeline:
         self.is_running = False
 
     def now(self) -> int:
+        """Returns current simulation time."""
+
         return self.time
 
     def schedule(self, event: "Event") -> None:
+        """Method to schedule an event."""
+
         self.event_counter += 1
         return self.events.push(event)
 
     def init(self) -> None:
+        """Method to initialize all simulated entities."""
+
         for entity in self.entities:
             entity.init()
 
     def run(self) -> None:
+        """Main simulation method.
+
+        The `run` method begins simulation of events.
+        Events are continuously popped and executed, until the simulation time limit is reached or events are exhausted.
+        A progress bar may also be displayed, if the `show_progress` flag is set.
+        """
+
         self.is_running = True
 
         if self.show_progress:
@@ -84,21 +103,37 @@ class Timeline:
         self.is_running = False
 
     def stop(self) -> None:
+        """Method to stop simulation."""
+
         self.stop_time = self.now()
 
     def remove_event(self, event: "Event") -> None:
         self.events.remove(event)
 
     def update_event_time(self, event: "Event", time: int) -> None:
+        """Method to change execution time of an event.
+
+        Args:
+            event (Event): event to reschedule.
+            time (int): new simulation time (should be >= current time).
+        """
+
         self.events.remove(event)
         event.time = time
         self.schedule(event)
 
     def seed(self, seed: int) -> None:
+        """Sets random seed for simulation."""
+
         from numpy import random
         random.seed(seed)
 
     def progress_bar(self):
+        """Method to draw progress bar.
+
+        Progress bar will display the execution time of simulation, as well as the current simulation time.
+        """
+
         def print_time():
             start_time = time_ns()
             while self.is_running:

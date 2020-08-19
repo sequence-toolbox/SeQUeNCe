@@ -75,7 +75,7 @@ def test_generation_pop():
     middle = EntanglementGenerationB(m0, "middle", others=["e0", "e1"])
 
     # BSM result
-    middle.pop("BSM_res", res=0)
+    middle.bsm_update(None, {'info_type': "BSM_res", 'res': 0, 'time': 100})
     
     assert len(m0.messages) == 2
     assert m0.messages[0][0] == "e0"
@@ -167,7 +167,7 @@ def test_generation_run():
 
     # add middle protocol
     eg_m0 = EntanglementGenerationB(m0, "eg_m0", others=["e0", "e1"])
-    m0.bsm.upper_protocols.append(eg_m0)
+    m0.bsm.attach(eg_m0)
 
     tl.init()
 
