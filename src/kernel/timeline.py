@@ -35,8 +35,9 @@ class Timeline:
         entities (List[Entity]): the entity list of timeline used for initialization.
         time (int): current simulation time (picoseconds).
         stop_time (int): the stop (simulation) time of the simulation.
-        show_progress (bool): show/hide the progress bar of simulation.
         is_running (bool): records if the simulation has stopped executing events.
+        show_progress (bool): show/hide the progress bar of simulation.
+        log (bool): determines if timeline should log events.
     """
 
     def __init__(self, stop_time=inf):
@@ -51,8 +52,11 @@ class Timeline:
         self.time = 0
         self.stop_time = stop_time
         self.event_counter = 0
-        self.show_progress = False
         self.is_running = False
+
+        self.show_progress = False
+        self.log = False
+        self._logger = None
 
     def now(self) -> int:
         """Returns current simulation time."""
@@ -66,7 +70,14 @@ class Timeline:
         return self.events.push(event)
 
     def init(self) -> None:
-        """Method to initialize all simulated entities."""
+        """Method to initialize all simulated entities.
+
+        Also sets timeline logger.
+        """
+
+        if self.log:
+            from utils.logging import new_sequence_logger
+            self._logger = new_sequence_logger(__name__)
 
         for entity in self.entities:
             entity.init()
@@ -127,6 +138,24 @@ class Timeline:
 
         from numpy import random
         random.seed(seed)
+
+    def log(self, caller: any, level: int, message: str):
+        """Method to access timeline log.
+
+        Before using, must:
+
+        1. Set `logfile` flag in utils.logs module.
+        2. Call timeline `init` method to initialize logger.
+
+        Args:
+            caller (any): object calling the log method.
+            level (int): log level (defined from default `logging` module).
+            message (str): message to log.
+        """
+
+        if self.log:
+            message = " ".join(self.now(), message)
+            self._logger.log(level, message)
 
     def progress_bar(self):
         """Method to draw progress bar.
