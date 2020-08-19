@@ -6,7 +6,7 @@ Photons should be routed to a BSM device for entanglement generation, or through
 """
 
 from math import sqrt, inf
-from typing import Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING, Dict
 
 from numpy import random
 
@@ -28,7 +28,7 @@ class MemoryArray(Entity):
     """Aggregator for Memory objects.
 
     The MemoryArray can be accessed as a list to get individual memories.
-    
+
     Attributes:
         name (str): label for memory array instance.
         timeline (Timeline): timeline for simulation.
@@ -37,6 +37,19 @@ class MemoryArray(Entity):
 
     def __init__(self, name: str, timeline: "Timeline", num_memories=10,
                  fidelity=0.85, frequency=80e6, efficiency=1, coherence_time=-1, wavelength=500):
+        """Constructor for the Memory Array class.
+
+        Args:
+            name (str): name of the memory array instance.
+            timeline (Timeline): simulation timeline.
+            num_memories (int): number of memories in the array (default 10).
+            fidelity (float): fidelity of memories (default 0.85).
+            frequency (float): maximum frequency of excitation for memories (default 80e6).
+            efficiency (float): efficiency of memories (default 1).
+            coherence_time (float): average time (in s) that memory state is valid (default -1 -> inf).
+            wavelength (int): wavelength (in nm) of photons emitted by memories (default 500).
+        """
+
         Entity.__init__(self, name, timeline)
         self.memories = []
         self.owner = None
@@ -44,7 +57,7 @@ class MemoryArray(Entity):
         for i in range(num_memories):
             memory = Memory(self.name + "[%d]" % i, timeline, fidelity, frequency, efficiency, coherence_time,
                             wavelength)
-            memory.parents.append(self)
+            memory.attach(self)
             self.memories.append(memory)
 
     def __getitem__(self, key):
@@ -54,11 +67,22 @@ class MemoryArray(Entity):
         return len(self.memories)
 
     def init(self):
+        """Implementation of Entity interface (see base class).
+
+        Set the owner of memory as the owner of memory array.
+        """
+
         for mem in self.memories:
             mem.owner = self.owner
+            mem.set_memory_array(self)
 
-    def pop(self, memory: "Memory"):
-        # notify node the expired memory
+    def memory_expire(self, memory: "Memory"):
+        """Method to receive expiration events from memories.
+
+        Args:
+            memory (Memory): expired memory.
+        """
+
         self.owner.memory_expire(memory)
 
     def update_memory_params(self, arg_name: str, value: Any) -> None:
@@ -85,11 +109,23 @@ class Memory(Entity):
         coherence_time (float): average usable lifetime of memory (in seconds).
         wavelength (float): wavelength (in nm) of emitted photons.
         qstate (QuantumState): quantum state of memory.
-        entangled_memory (Dict): tracks entanglement state of memory.
+        entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
     """
 
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
                  efficiency: float, coherence_time: int, wavelength: int):
+        """Constructor for the Memory class.
+
+        Args:
+            name (str): name of the memory instance.
+            timeline (Timeline): simulation timeline.
+            fidelity (float): fidelity of memory.
+            frequency (float): maximum frequency of excitation for memory.
+            efficiency (float): efficiency of memories.
+            coherence_time (float): average time (in s) that memory state is valid.
+            wavelength (int): wavelength (in nm) of photons emitted by memories.
+        """
+
         Entity.__init__(self, name, timeline)
         assert 0 <= fidelity <= 1
         assert 0 <= efficiency <= 1
@@ -101,6 +137,8 @@ class Memory(Entity):
         self.coherence_time = coherence_time  # coherence time in seconds
         self.wavelength = wavelength
         self.qstate = QuantumState()
+
+        self.memory_array = None
 
         self.photon_encoding = single_atom.copy()
         self.photon_encoding["memory"] = self
@@ -120,7 +158,22 @@ class Memory(Entity):
     def init(self):
         pass
 
+    def set_memory_array(self, memory_array: MemoryArray):
+        self.memory_array = memory_array
+
     def excite(self, dst="") -> None:
+        """Method to excite memory and potentially emit a photon.
+
+        If it is possible to emit a photon, the photon may be marked as null based on the state of the memory.
+
+        Args:
+            dst (str): name of destination node for emitted photon (default "").
+
+        Side Effects:
+            May modify quantum state of memory.
+            May schedule photon transmission to destination node.
+        """
+
         # if can't excite yet, do nothing
         if self.timeline.now() < self.next_excite_time:
             return
@@ -142,24 +195,43 @@ class Memory(Entity):
             self.excited_photon = photon
 
     def expire(self) -> None:
+        """Method to handle memory expiration.
+
+        Is scheduled automatically by the `set_plus` memory operation.
+
+        Side Effects:
+            Will notify upper entities of expiration via the `pop` interface.
+            Will modify the quantum state of the memory.
+        """
+
         if self.excited_photon:
             self.excited_photon.is_null = True
-        # pop expiration message
-        if self.upper_protocols:
-            for protocol in self.upper_protocols:
-                protocol.memory_expire(self)
-        else:
-            self._pop(memory=self)
+
         self.reset()
+        # pop expiration message
+        self.notify(self)
 
     def flip_state(self) -> None:
-        # flip coefficients of state (apply x-gate)
+        """Method to apply X-gate to quantum state.
+
+        Side Efffects:
+            will modify the quantum state of the memory.
+        """
+
         assert len(self.qstate.state) == 2, "qstate length error in memory {}".format(self.name)
         new_state = self.qstate.state
         new_state[0], new_state[1] = new_state[1], new_state[0]
         self.qstate.set_state_single(new_state)
 
     def reset(self) -> None:
+        """Method to clear quantum memory.
+
+        Will reset quantum state to \|0> and will clear entanglement information.
+
+        Side Effects:
+            Will modify internal parameters and quantum state.
+        """
+
         self.fidelity = 0
         if len(self.qstate.state) > 2:
             self.qstate.measure(single_atom["bases"][0])  # to unentangle
@@ -170,6 +242,13 @@ class Memory(Entity):
             self.expiration_event = None
 
     def set_plus(self) -> None:
+        """Method to set the memory state to \|+> (superposition of \|0> and \|1> states).
+
+        Side Effects:
+            Will modify internal quantum state and parameters.
+            May schedule expiration event.
+        """
+
         self.qstate.set_state_single([complex(1 / sqrt(2)), complex(1 / sqrt(2))])
         self.previous_bsm = -1
         self.entangled_memory = {'node_id': None, 'memo_id': None}
@@ -189,12 +268,6 @@ class Memory(Entity):
 
         self.expiration_event = event
 
-    def add_protocol(self, protocol: "EntanglementProtocol") -> None:
-        self.upper_protocols.append(protocol)
-
-    def remove_protocol(self, protocol: "EntanglementProtocol") -> None:
-        self.upper_protocols.remove(protocol)
-
     def update_expire_time(self, time: int):
         time = max(time, self.timeline.now())
         if self.expiration_event is None:
@@ -207,3 +280,11 @@ class Memory(Entity):
 
     def get_expire_time(self) -> int:
         return self.expiration_event.time if self.expiration_event else inf
+
+    def notify(self, msg: Dict[str, Any]):
+        for observer in self._observers:
+            observer.memory_expire(self)
+
+    def detach(self, observer: 'EntanglementProtocol'):
+        if observer in self._observers:
+            self._observers.remove(observer)

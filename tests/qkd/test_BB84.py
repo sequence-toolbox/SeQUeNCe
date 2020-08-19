@@ -29,8 +29,8 @@ class Parent(StackProtocol):
     def init(self):
         pass
 
-    def pop(self, msg):
-        self.key = msg
+    def pop(self, info):
+        self.key = info
         self.counter += 1
 
     def push(self):
