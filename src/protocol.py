@@ -18,6 +18,7 @@ class Protocol(ABC):
     Attributes:
         own (Node): node protocol is attached to.
         name (str): label for protocol instance.
+        logflag (bool): tracks protocol information.
     """
 
     def __init__(self, own: "Node", name: str):
@@ -30,6 +31,11 @@ class Protocol(ABC):
 
         self.own = own
         self.name = name
+        self.logflag = False
+
+    def log(self, level, info) -> None:
+        if self.logflag:
+            self.own.timeline.log(self, level, info)
 
     @abstractmethod
     def received_message(self, src: str, msg: "Message"):

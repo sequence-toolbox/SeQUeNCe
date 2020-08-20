@@ -129,17 +129,13 @@ class BB84(StackProtocol):
         self.key_lengths = []  # desired key lengths (from parent)
         self.keys_left_list = []
         self.end_run_times = []
-        self.logflag = False
+        # self.logflag = False
 
         # metrics
         self.latency = 0  # measured in seconds
         self.last_key_time = 0
         self.throughputs = []  # measured in bits/sec
         self.error_rates = []
-
-    def log(self, level, info) -> None:
-        if self.logflag:
-            tl.log(self, level, info)
 
     def pop(self, detector_index: int, time: int) -> None:
         """Method to receive detection events (currently unused)."""

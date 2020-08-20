@@ -154,8 +154,15 @@ class Timeline:
         """
 
         if self.logflag:
+            if hasattr(caller, 'name'):
+                message = " ".join([caller.name, message])
             message = " ".join([str(self.now()), message])
             self._logger.log(level, message)
+
+    def set_log_level(self, level: int):
+        """Changes the level of internal logger."""
+
+        self._logger.setLevel(level)
 
     def progress_bar(self):
         """Method to draw progress bar.

@@ -135,7 +135,6 @@ class Cascade(StackProtocol):
         setup_time (int): time of cascade protocol setup.
         start_time (int): time to start generating corrected keys.
         end_time (int): time to stop generating keys.
-        logflag (bool): tracks debug information.
         valid_keys (List[int]): list of keys generated.
         throughput (float): protocol throughput in bits/s.
         error_bit_rate (float): rate of errors in finished keys.
@@ -183,9 +182,6 @@ class Cascade(StackProtocol):
         self.start_time = None
         self.end_time = math.inf
 
-        # used for debugging purposes (prints out cascade process)
-        self.logflag = False
-
         # metrics
         self.valid_keys = []
         self.throughput = None  # bits/sec
@@ -196,7 +192,7 @@ class Cascade(StackProtocol):
 
     def log(self, level, info) -> None:
         if self.logflag:
-            tl.log(self, level, " ".join(self.state, info))
+            self.own.timeline.log(self, level, " ".join(self.state, info))
 
     def push(self, keylen: int, frame_num=math.inf, run_time=math.inf) -> None:
         """Method to receive key generation events.
