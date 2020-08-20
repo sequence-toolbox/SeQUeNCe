@@ -192,7 +192,8 @@ class Cascade(StackProtocol):
 
     def log(self, level, info) -> None:
         if self.logflag:
-            self.own.timeline.log(self, level, " ".join(self.state, info))
+            info = "state=" + str(self.state) + " " + info
+            self.own.timeline.log(self, level, info)
 
     def push(self, keylen: int, frame_num=math.inf, run_time=math.inf) -> None:
         """Method to receive key generation events.
