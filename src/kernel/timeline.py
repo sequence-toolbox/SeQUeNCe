@@ -37,7 +37,7 @@ class Timeline:
         stop_time (int): the stop (simulation) time of the simulation.
         is_running (bool): records if the simulation has stopped executing events.
         show_progress (bool): show/hide the progress bar of simulation.
-        log (bool): determines if timeline should log events.
+        logflag (bool): determines if timeline should log events.
     """
 
     def __init__(self, stop_time=inf):
@@ -55,7 +55,7 @@ class Timeline:
         self.is_running = False
 
         self.show_progress = False
-        self.log = False
+        self.logflag = False
         self._logger = None
 
     def now(self) -> int:
@@ -75,8 +75,8 @@ class Timeline:
         Also sets timeline logger.
         """
 
-        if self.log:
-            from utils.logging import new_sequence_logger
+        if self.logflag:
+            from ..utils.log import new_sequence_logger
             self._logger = new_sequence_logger(__name__)
 
         for entity in self.entities:
@@ -153,8 +153,8 @@ class Timeline:
             message (str): message to log.
         """
 
-        if self.log:
-            message = " ".join(self.now(), message)
+        if self.logflag:
+            message = " ".join([str(self.now()), message])
             self._logger.log(level, message)
 
     def progress_bar(self):

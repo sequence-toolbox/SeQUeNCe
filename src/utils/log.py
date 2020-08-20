@@ -11,7 +11,8 @@ Attributes:
 import logging
 
 logfile = None
-LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+LOG_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
+
 
 def new_sequence_logger(name: str):
     """Function to generate and configure new logger.
@@ -27,6 +28,7 @@ def new_sequence_logger(name: str):
 
     logger = logging.getLogger(name)
     handler = logging.FileHandler(logfile)
-    handler.setFormatter(LOG_FORMAT)
+    fmt = logging.Formatter(LOG_FORMAT)
+    handler.setFormatter(fmt)
     logger.addHandler(handler)
     return logger
