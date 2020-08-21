@@ -91,6 +91,8 @@ class Timeline:
                 self.schedule(event)
                 break
             assert self.time <= event.time, "invalid event time for process scheduled on " + str(event.process.owner)
+            if event.is_invalid():
+                continue
             self.time = event.time
             # if not event.process.activation in log:
             #     log[event.process.activation] = 0
@@ -118,9 +120,7 @@ class Timeline:
             time (int): new simulation time (should be >= current time).
         """
 
-        self.events.remove(event)
-        event.time = time
-        self.schedule(event)
+        self.events.update_event_time(event, time)
 
     def seed(self, seed: int) -> None:
         """Sets random seed for simulation."""
