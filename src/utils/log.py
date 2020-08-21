@@ -4,31 +4,49 @@ This module defines a method to create loggers for SeQUeNCe.
 These loggers are created on and used by timelines.
 
 Attributes:
-    logfile (str): file name to use for logging.
+    logger (Logger): logger object used for logging by sequence modules.
     LOG_FORMAT (str): formatting string for logging.
 """
 
 import logging
 
-logfile = None
-LOG_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
+
+def _init_logger():
+    lg = logging.getLogger(__name__)
+    lg.addHandler(logging.NullHandler())
+    return lg
+
+logger = _init_logger()
+LOG_FORMAT = '%(asctime)-15s %(simtime)s %(levelname)-8s %(objname)s: %(message)s'
 
 
-def new_sequence_logger(name: str):
-    """Function to generate and configure new logger.
-
-    Currently uses default `Logger` class.
-
-    Args:
-        name (str): name of logger.
-
-    Returns:
-        Logger: configured logger to use.
-    """
-
+def set_logger(name: str, timeline, logfile="out.log"):
+    global logger
     logger = logging.getLogger(name)
+
     handler = logging.FileHandler(logfile)
     fmt = logging.Formatter(LOG_FORMAT)
+    f = ContextFilter(timeline)
+
     handler.setFormatter(fmt)
     logger.addHandler(handler)
-    return logger
+    logger.addFilter(f)
+
+
+class ContextFilter(logging.Filter):
+    def __init__(self, timeline):
+        super().__init__()
+        self.timeline = timeline
+
+    def filter(self, record):
+        record.simtime = self.timeline.now()
+        record.objname = "unnamed"
+
+        if hasattr(record, "caller"):
+            caller = record.caller
+            if hasattr(caller, "name"):
+                record.objname = caller.name
+            if hasattr(caller, "logflag"):
+                return record.caller.logflag
+
+        return True

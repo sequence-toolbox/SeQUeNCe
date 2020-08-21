@@ -7,7 +7,6 @@ Also included in this module are a function to pair protocol instances (required
 
 import math
 from enum import Enum, auto
-import logging as lg
 
 import numpy
 
@@ -15,6 +14,7 @@ from ..message import Message
 from ..protocol import StackProtocol
 from ..kernel.event import Event
 from ..kernel.process import Process
+from ..utils import log
 
 
 def pair_bb84_protocols(sender: "BB84", receiver: "BB84") -> None:
@@ -129,7 +129,6 @@ class BB84(StackProtocol):
         self.key_lengths = []  # desired key lengths (from parent)
         self.keys_left_list = []
         self.end_run_times = []
-        # self.logflag = False
 
         # metrics
         self.latency = 0  # measured in seconds
@@ -157,7 +156,7 @@ class BB84(StackProtocol):
         if self.role != 0:
             raise AssertionError("generate key must be called from Alice")
 
-        self.log(lg.INFO, "generating keys, keylen={}, keynum={}".format(length, key_num))
+        log.logger.info("generating keys, keylen={}, keynum={}".format(length, key_num), extra={"caller": self})
 
         self.key_lengths.append(length)
         self.another.key_lengths.append(length)
@@ -183,7 +182,7 @@ class BB84(StackProtocol):
             Will send a BEGIN_PHOTON_PULSE method to other protocol instance.
         """
 
-        self.log(lg.DEBUG, "starting protocol")
+        log.logger.debug("starting protocol", extra={"caller": self})
 
         if len(self.key_lengths) > 0:
             # reset buffers for self and another
@@ -230,7 +229,7 @@ class BB84(StackProtocol):
             Will schedule another `begin_photon_pulse` event after the emit period.
         """
         
-        self.log(lg.DEBUG, "starting photon pulse")
+        log.logger.debug("starting photon pulse", extra={"caller": self})
         
         if self.working and self.own.timeline.now() < self.end_run_times[0]:
             # generate basis/bit list
@@ -274,7 +273,7 @@ class BB84(StackProtocol):
     def set_measure_basis_list(self) -> None:
         """Method to set measurement basis list."""
 
-        self.log(lg.DEBUG, "setting measurement basis")
+        log.logger.debug("setting measurement basis", extra={"caller": self})
 
         num_pulses = int(self.light_time * self.ls_freq)
         basis_list = numpy.random.choice([0, 1], num_pulses)
@@ -284,7 +283,7 @@ class BB84(StackProtocol):
     def end_photon_pulse(self) -> None:
         """Method to process sent qubits."""
 
-        self.log(lg.DEBUG, "ending photon pulse")
+        log.logger.debug("ending photon pulse")
 
         if self.working and self.own.timeline.now() < self.end_run_times[0]:
             # get bits
@@ -319,7 +318,7 @@ class BB84(StackProtocol):
                 self.ls_freq = msg.frequency
                 self.light_time = msg.light_time
 
-                self.log(lg.DEBUG, "received BEGIN_PHOTON_PULSE, ls_freq={}, light_time={}".format(self.ls_freq, self.light_time))
+                log.logger.debug("received BEGIN_PHOTON_PULSE, ls_freq={}, light_time={}".format(self.ls_freq, self.light_time), extra={"caller": self})
 
                 self.start_time = int(msg.start_time) + self.own.qchannels[src].delay
 
@@ -332,13 +331,13 @@ class BB84(StackProtocol):
                 self.own.timeline.schedule(event)
 
             elif msg.msg_type is BB84MsgType.RECEIVED_QUBITS:  # (Current node is Alice): can send basis
-                self.log(lg.DEBUG, "received RECEIVED_QUBITS message")
+                log.logger.debug("received RECEIVED_QUBITS message", extra={"caller": self})
                 bases = self.basis_lists.pop(0)
                 message = BB84Message(BB84MsgType.BASIS_LIST, self.another.name, bases=bases)
                 self.own.send_message(self.another.own.name, message)
 
             elif msg.msg_type is BB84MsgType.BASIS_LIST:  # (Current node is Bob): compare bases
-                self.log(lg.DEBUG, "received BASIS_LIST message")
+                log.logger.debug("received BASIS_LIST message", extra={"caller": self})
                 # parse alice basis list
                 basis_list_alice = msg.bases
 
@@ -356,7 +355,7 @@ class BB84(StackProtocol):
                 self.own.send_message(self.another.own.name, message)
 
             elif msg.msg_type is BB84MsgType.MATCHING_INDICES:  # (Current node is Alice): create key from matching indices
-                self.log(lg.DEBUG, "received MATCHING_INDICES message")
+                log.logger.debug("received MATCHING_INDICES message", extra={"caller": self})
                 # parse matching indices
                 indices = msg.indices
 
@@ -371,7 +370,7 @@ class BB84(StackProtocol):
                     throughput = self.key_lengths[0] * 1e12 / (self.own.timeline.now() - self.last_key_time)
 
                     while len(self.key_bits) >= self.key_lengths[0] and self.keys_left_list[0] > 0:
-                        self.log(lg.INFO, "generated a valid key")
+                        log.logger.info("generated a valid key", extra={"caller": self})
                         self.set_key()  # convert from binary list to int
                         self._pop(info=self.key)
                         self.another.set_key()

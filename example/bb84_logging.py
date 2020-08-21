@@ -12,7 +12,6 @@ import sequence.utils.log as log
 
 # clear and set logfile
 filename = "bb84.log"
-log.logfile = filename
 open(filename, 'w').close()
 
 random.seed(1)
@@ -22,8 +21,12 @@ runtime = 1e12
 distance = 1e3
 
 tl = Timeline(runtime)
-tl.logflag = True
 tl.show_progress = True
+
+# set log
+log.set_logger(__name__, tl, filename)
+log.logger.setLevel(lg.DEBUG)
+print(log.logger)
 
 qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
 cc = ClassicalChannel("cc", tl, distance=distance)
@@ -58,5 +61,4 @@ event = Event(0, process)
 tl.schedule(event)
 
 tl.init()
-tl.set_log_level(lg.DEBUG)
 tl.run()

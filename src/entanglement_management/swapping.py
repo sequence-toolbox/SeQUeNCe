@@ -14,7 +14,6 @@ Also defined in this module is the message type used by these protocols.
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 from functools import lru_cache
-import logging as lg
 
 from numpy.random import random
 
@@ -24,6 +23,7 @@ if TYPE_CHECKING:
 
 from ..message import Message
 from .entanglement_protocol import EntanglementProtocol
+from ..utils import log
 
 
 class SwappingMsgType(Enum):
@@ -135,8 +135,8 @@ class EntanglementSwappingA(EntanglementProtocol):
             Will send messages to other protocols.
         """
         
-        self.log(lg.INFO, "ES middle protocol start with ends {}, {}".format(self.left_protocol.own.name,
-                                                                             self.right_protocol.own.name))
+        log.logger.info("ES middle protocol start with ends {}, {}".format(self.left_protocol.own.name,
+                                                                           self.right_protocol.own.name))
 
         assert self.left_memo.fidelity > 0 and self.right_memo.fidelity > 0
         assert self.left_memo.entangled_memory["node_id"] == self.left_protocol.own.name
@@ -287,7 +287,7 @@ class EntanglementSwappingB(EntanglementProtocol):
             Will invoke `update_resource_manager` method.
         """
 
-        self.log("ES protocol received_message from node {}, fidelity={}".format(src, msg.fidelity))
+        log.logger.debug("ES protocol received_message from node {}, fidelity={}".format(src, msg.fidelity))
 
         assert src == self.another.own.name
 
@@ -314,7 +314,7 @@ class EntanglementSwappingB(EntanglementProtocol):
         self.own.resource_manager.update(self, memory, state)
 
     def start(self) -> None:
-        self.log(lg.INFO, "ES end protocol start with partner {}".format(self.another.own.name))
+        log.logger.info("ES end protocol start with partner {}".format(self.another.own.name))
 
     def memory_expire(self, memory: "Memory") -> None:
         """Method to deal with expired memories.

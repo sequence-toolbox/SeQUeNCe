@@ -73,7 +73,3 @@ class Entity(ABC):
         """
 
         self.timeline.entities.remove(self)
-
-    def log(self, level, info) -> None:
-        if self.logflag:
-            self.own.timeline.log(self, level, info)

@@ -33,10 +33,6 @@ class Protocol(ABC):
         self.name = name
         self.logflag = False
 
-    def log(self, level, info) -> None:
-        if self.logflag:
-            self.own.timeline.log(self, level, info)
-
     @abstractmethod
     def received_message(self, src: str, msg: "Message"):
         """Receive classical message from another node."""

@@ -8,7 +8,6 @@ Also defined is the message type used by the BBPSSW code.
 from enum import Enum, auto
 from typing import List, TYPE_CHECKING
 from functools import lru_cache
-import logging as lg
 
 from numpy.random import random
 
@@ -18,6 +17,7 @@ if TYPE_CHECKING:
 
 from ..message import Message
 from .entanglement_protocol import EntanglementProtocol
+from ..utils import log
 
 
 class BBPSSWMsgType(Enum):
@@ -102,7 +102,7 @@ class BBPSSW(EntanglementProtocol):
             Will send message to other protocol instance.
         """
 
-        self.log(lg.INFO, "EP protocol start with partner {}".format(self.another.own.name))
+        log.logger.info("EP protocol start with partner {}".format(self.another.own.name))
 
         assert self.another is not None, "another protocol is not setted; please use set_others function to set it."
         assert (self.kept_memo.entangled_memory["node_id"] ==
@@ -147,7 +147,7 @@ class BBPSSW(EntanglementProtocol):
             Will call `update_resource_manager` method.
         """
 
-        self.log(lg.INFO, "received result message, succeeded: {}".format(self.is_success))
+        log.logger.info("received result message, succeeded: {}".format(self.is_success))
 
         assert src == self.another.own.name
         self.update_resource_manager(self.meas_memo, "RAW")

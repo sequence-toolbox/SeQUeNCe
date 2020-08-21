@@ -3,7 +3,6 @@ import logging
 from sequence.kernel.timeline import Timeline
 
 filename = "tests/utils/test.log"
-lg.logfile = filename
 
 
 class DumbEntity():
@@ -11,8 +10,8 @@ class DumbEntity():
         self.name = name
         self.tl = tl
 
-    def send_log(self):
-        self.tl.log(self, logging.ERROR, "test message")
+    def log(self):
+        lg.logger.debug("test message", extra={"caller": self})
 
 
 def file_len(fname):
@@ -20,26 +19,23 @@ def file_len(fname):
 
 
 def test_new_log():
-    log = lg.new_sequence_logger("")
-
-
-def test_timeline_init():
     tl = Timeline()
-    tl.logflag = True
-    tl.init()
+    lg.set_logger(__name__, tl, filename)
 
 
-def test_timeline_log():
+def test_log():
     open(filename, 'w').close()
 
     assert file_len(filename) == 0
 
     tl = Timeline()
-    tl.logflag = True
     de = DumbEntity("de", tl)
 
+    lg.set_logger(__name__, tl, filename)
+    lg.logger.setLevel(logging.DEBUG)
+
     tl.init()
-    de.send_log()
+    de.log()
 
     # TODO: fix (should be 1)
-    assert file_len(filename) == 3
+    assert file_len(filename) == 2

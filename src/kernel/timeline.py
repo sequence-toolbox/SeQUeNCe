@@ -37,7 +37,6 @@ class Timeline:
         stop_time (int): the stop (simulation) time of the simulation.
         is_running (bool): records if the simulation has stopped executing events.
         show_progress (bool): show/hide the progress bar of simulation.
-        logflag (bool): determines if timeline should log events.
     """
 
     def __init__(self, stop_time=inf):
@@ -55,8 +54,6 @@ class Timeline:
         self.is_running = False
 
         self.show_progress = False
-        self.logflag = False
-        self._logger = None
 
     def now(self) -> int:
         """Returns current simulation time."""
@@ -70,14 +67,7 @@ class Timeline:
         return self.events.push(event)
 
     def init(self) -> None:
-        """Method to initialize all simulated entities.
-
-        Also sets timeline logger.
-        """
-
-        if self.logflag:
-            from ..utils.log import new_sequence_logger
-            self._logger = new_sequence_logger(__name__)
+        """Method to initialize all simulated entities."""
 
         for entity in self.entities:
             entity.init()
@@ -138,31 +128,6 @@ class Timeline:
 
         from numpy import random
         random.seed(seed)
-
-    def log(self, caller: any, level: int, message: str):
-        """Method to access timeline log.
-
-        Before using, must:
-
-        1. Set `logfile` flag in utils.logs module.
-        2. Call timeline `init` method to initialize logger.
-
-        Args:
-            caller (any): object calling the log method.
-            level (int): log level (defined from default `logging` module).
-            message (str): message to log.
-        """
-
-        if self.logflag:
-            if hasattr(caller, 'name'):
-                message = " ".join([caller.name, message])
-            message = " ".join([str(self.now()), message])
-            self._logger.log(level, message)
-
-    def set_log_level(self, level: int):
-        """Changes the level of internal logger."""
-
-        self._logger.setLevel(level)
 
     def progress_bar(self):
         """Method to draw progress bar.

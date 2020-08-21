@@ -10,7 +10,6 @@ Entanglement generation is asymmetric:
 
 from enum import Enum, auto
 from typing import List, TYPE_CHECKING, Dict, Any
-import logging as lg
 
 if TYPE_CHECKING:
     from ..components.memory import Memory
@@ -20,6 +19,7 @@ from .entanglement_protocol import EntanglementProtocol
 from ..message import Message
 from ..kernel.event import Event
 from ..kernel.process import Process
+from ..utils import log
 
 
 class GenerationMsgType(Enum):
@@ -117,11 +117,6 @@ class EntanglementGenerationA(EntanglementProtocol):
         self.primary = False  # one end node is the "primary" that initiates negotiation
         self.debug = False
 
-    def log(self, level, info) -> None:
-        if self.logflag:
-            info = "round=" + str(self.ent_round + 1) + " " + info
-            self.own.timeline.log(self, level, info)
-
     def set_others(self, other: "EntanglementGenerationA") -> None:
         """Method to set other entanglement protocol instance.
 
@@ -147,7 +142,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             Will send message through attached node.
         """
 
-        self.log(lg.INFO, "EG protocol start with partner {}".format(self.other))
+        log.logger.info("EG protocol start with partner {}, round={}".format(self.other, self.ent_round + 1))
 
         #if self.debug:
         #    print("EG protocol {} \033[1;36;40mstart\033[0m on node {} with partner {}".format(self.name, self.own.name,
@@ -193,7 +188,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         elif self.ent_round == 3 and self.bsm_res[1] != -1:
             # successful entanglement
-            self.log(lg.INFO, "successful entanglement of memory {}".format(self.memory))
+            log.logger.info("successful entanglement of memory {}".format(self.memory))
             self.memory.entangled_memory["node_id"] = self.other
             self.memory.entangled_memory["memo_id"] = self.remote_memo_id
             # TODO: notify of +/- state
@@ -202,7 +197,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         else:
             # entanglement failed
-            self.log(lg.INFO, "failed entanglement of memory {}".format(self.memory))
+            log.logger.info("failed entanglement of memory {}".format(self.memory))
             self.own.resource_manager.update(self, self.memory, "RAW")
             return False
 
@@ -242,7 +237,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         msg_type = msg.msg_type
 
-        self.log(lg.DEBUG, "EG protocol received_message of type {} from node {}".format(msg.msg_type, src))
+        log.logger.debug("EG protocol received_message of type {} from node {}, round={}".format(msg.msg_type, src, self.ent_round + 1))
 
         if msg_type is GenerationMsgType.NEGOTIATE:
             # configure params
@@ -311,7 +306,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             time = msg.time
             resolution = msg.resolution
 
-            self.log(lg.DEBUG, "received MEAS_RES {} at time {}, expected {}".format(res, time, self.expected_time))
+            log.logger.debug("received MEAS_RES {} at time {}, expected {}, round={}".format(res, time, self.expected_time, self.ent_round + 1))
 
             def valid_trigger_time(trigger_time, target_time, resolution):
                 upper = target_time + resolution
