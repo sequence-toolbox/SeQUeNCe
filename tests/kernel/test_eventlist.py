@@ -58,18 +58,16 @@ def test_remove():
     e2 = Event(1, None)
     el.push(e1)
     el.push(e2)
-    assert el.data[0] == e1
-    el.remove(e1)
-    assert el.data[0] == e2
-    el.pop()
-    assert len(el) == 0
-    e3 = Event(2, None)
-    e4 = Event(2, None)
-    el.push(e3)
-    el.push(e4)
-    el.remove(e3)
-    top_e = el.pop()
-    assert len(el) == 0 and id(top_e) == id(e4) != id(e3) and top_e == e3
+    for e in el:
+        assert not e.is_invalid()
+
+    el.remove(e2)
+
+    for e in el:
+        if e == e1:
+            assert not e.is_invalid()
+        else:
+            assert e.is_invalid()
 
 
 def test_update_event_time():
@@ -79,7 +77,7 @@ def test_update_event_time():
     # increase time
     for i in range(200):
         e = EventList()
-        ts = random.random_integers(1, 100, i + 10)
+        ts = [random.randint(1, 100) for _ in range(i + 10)]
         for t in ts:
             event = Event(t, None)
             e.push(event)
@@ -100,7 +98,7 @@ def test_update_event_time():
 
     for i in range(200):
         e = EventList()
-        ts = random.random_integers(1, 100, i + 10)
+        ts = [random.randint(1, 100) for _ in range(i + 10)]
         for t in ts:
             event = Event(t, None)
             e.push(event)
@@ -120,7 +118,7 @@ def test_update_event_time():
     # same time
     for i in range(200):
         e = EventList()
-        ts = random.random_integers(1, 100, i + 10)
+        ts = [random.randint(1, 100) for _ in range(i + 10)]
         for t in ts:
             event = Event(t, None)
             e.push(event)
