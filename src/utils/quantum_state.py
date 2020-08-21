@@ -5,6 +5,8 @@ The class provides interfaces for measurement and entanglement.
 """
 
 from math import sqrt
+from typing import Tuple
+
 from numpy import pi, cos, sin, array, outer, kron, identity, arange
 from numpy.random import random, random_sample, choice
 
@@ -33,10 +35,10 @@ class QuantumState():
     """
 
     def __init__(self):
-        self.state = [complex(1), complex(0)]
+        self.state = (complex(1), complex(0))
         self.entangled_states = [self]
 
-    def entangle(self, another_state):
+    def entangle(self, another_state: "QuantumState"):
         """Method to entangle two quantum states.
 
         Arguments:
@@ -65,14 +67,14 @@ class QuantumState():
 
         # TODO: rewrite for entangled states
         angle = random() * 2 * pi
-        self.state = [complex(cos(angle)), complex(sin(angle))]
+        self.state = (complex(cos(angle)), complex(sin(angle)))
 
     # only for use with entangled state
-    def set_state(self, state):
+    def set_state(self, state: Tuple[complex]):
         """Method to change entangled state of multiple quantum states.
 
         Args:
-            state (List[complex]): new coefficients for state. Should be 2^n in length, where n is the length of `entangled_states`.
+            state (Tuple[complex]): new coefficients for state. Should be 2^n in length, where n is the length of `entangled_states`.
 
         Side Effects:
             Modifies the `state` field for current and entangled states.
@@ -82,11 +84,11 @@ class QuantumState():
             qs.state = state
 
     # for use with single, unentangled state
-    def set_state_single(self, state):
+    def set_state_single(self, state: Tuple[complex]):
         """Method to unentangle and set the state of a single quantum state object.
 
         Args:
-            state (List[complex]): 2-element list of new complex coefficients.
+            state (Tuple[complex]): 2-element list of new complex coefficients.
 
         Side Effects:
             Will remove current state from any entangled states (if present).
@@ -100,11 +102,11 @@ class QuantumState():
         self.entangled_states = [self]
         self.state = state
 
-    def measure(self, basis):
+    def measure(self, basis: Tuple[Tuple[complex]]):
         """Method to measure a single quantum state.
 
         Args:
-            basis (List[List[complex]]): measurement basis, given as list of states (that are themselves lists of complex coefficients).
+            basis (Tuple[Tuple[complex]]): measurement basis, given as list of states (that are themselves lists of complex coefficients).
 
         Returns:
             int: 0/1 measurement result, corresponding to one basis vector.
@@ -219,3 +221,7 @@ class QuantumState():
             state.entangled_photons = entangled_list
 
         return res
+
+
+def _measure_state_with_cache(state: Tuple[complex], basis: Tuple[complex]):
+    pass

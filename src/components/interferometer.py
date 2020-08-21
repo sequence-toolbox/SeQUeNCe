@@ -74,12 +74,12 @@ class Interferometer(Entity):
         time = 0
         random_num = random.random_sample()
 
-        if quantum_state.state == [complex(1), complex(0)]:  # Early
+        if quantum_state.state == (complex(1), complex(0)):  # Early
             if random_num <= 0.5:
                 time = 0
             else:
                 time = self.path_difference
-        if quantum_state.state == [complex(0), complex(1)]:  # Late
+        if quantum_state.state == (complex(0), complex(1)):  # Late
             if random_num <= 0.5:
                 time = self.path_difference
             else:
@@ -88,7 +88,7 @@ class Interferometer(Entity):
         if random.random_sample() < self.phase_error:
             quantum_state.state = list(multiply([1, -1], quantum_state))
 
-        if quantum_state.state == [complex(sqrt(1/2)), complex(sqrt(1/2))]:  # Early + Late
+        if quantum_state.state == (complex(sqrt(1/2)), complex(sqrt(1/2))):  # Early + Late
             if random_num <= 0.25:
                 time = 0
             elif random_num <= 0.5:
@@ -97,7 +97,7 @@ class Interferometer(Entity):
                 time = self.path_difference
             else:
                 return
-        if quantum_state.state == [complex(sqrt(1/2)), complex(-sqrt(1/2))]:  # Early - Late
+        if quantum_state.state == (complex(sqrt(1/2)), complex(-sqrt(1/2))):  # Early - Late
             if random_num <= 0.25:
                 time = 0
             elif random_num <= 0.5:
