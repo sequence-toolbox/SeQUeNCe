@@ -21,6 +21,7 @@ class Event:
         time (int): the execution time of the event.
         process (Process): the process encapsulated in the event.
         priority (int): the priority of the event, lower value denotes a higher priority.
+        _is_removed (bool): the flag to denotes if it's a valid event
     """
 
     def __init__(self, time: int, process: "Process", priority=inf):
@@ -30,7 +31,6 @@ class Event:
             time (int): the execution time of the event.
             process (Process): the process encapsulated in the event.
             priority (int): the priority of the event, lower value denotes a higher priority (default inf).
-            _is_removed (bool): the flag to denotes if it's a valid event
         """
 
         self.time = time

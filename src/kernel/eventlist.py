@@ -41,16 +41,16 @@ class EventList:
         return len(self.data) == 0
 
     def remove(self, event: "Event") -> None:
-        """Method to remove events from heap."""
+        """Method to remove events from heap.
+
+        The event is set as the invalid state to save the time of removing event from heap.
+        """
 
         event.set_invalid()
-        # for i, e in enumerate(self.data):
-        #     if id(e) == id(event):
-        #         self.data.pop(i)
-        #         heapify(self.data)
-        #         break
 
     def update_event_time(self, event: "Event", time: int):
+        """Method to update the timestamp of event and maintain the min-heap structure.
+        """
         if time == event.time:
             return
 
