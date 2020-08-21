@@ -1,7 +1,9 @@
 """Logging information.
 
-This module defines a method to create loggers for SeQUeNCe.
-These loggers are created on and used by timelines.
+This module defines the behavior for the default SeQUeNCe logging system.
+The logger used and log format are specified here.
+Modules will use the `logger` attribute as a normal logging system, saving log outputs in a user specified file.
+If a file is not set, no output will be recorded.
 
 Attributes:
     logger (Logger): logger object used for logging by sequence modules.
@@ -21,6 +23,16 @@ LOG_FORMAT = '%(asctime)-15s %(simtime)s %(levelname)-8s %(objname)s: %(message)
 
 
 def set_logger(name: str, timeline, logfile="out.log"):
+    """Method to link logger to output file.
+
+    The provided timeline is used to add simulation timestamps to the logs.
+
+    Args:
+        name (str): name to use for the logger.
+        timeline (Timeline): timeline to use for simulation timestamps.
+        logfile (str): file to use in recording log output (default "out.log")
+    """
+
     global logger
     logger = logging.getLogger(name)
 
@@ -34,6 +46,8 @@ def set_logger(name: str, timeline, logfile="out.log"):
 
 
 class ContextFilter(logging.Filter):
+    """Custom filter class to use for the logger."""
+
     def __init__(self, timeline):
         super().__init__()
         self.timeline = timeline
