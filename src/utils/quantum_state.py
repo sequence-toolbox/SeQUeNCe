@@ -3,7 +3,7 @@
 This module defines the QuantumState class, used by photons and memories to track internal quantum states.
 The class provides interfaces for measurement and entanglement.
 """
-
+from functools import lru_cache
 from math import sqrt
 from typing import Tuple
 
@@ -102,7 +102,7 @@ class QuantumState():
         self.entangled_states = [self]
         self.state = state
 
-    def measure(self, basis: Tuple[Tuple[complex]]):
+    def measure(self, basis: Tuple[Tuple[complex]]) -> int:
         """Method to measure a single quantum state.
 
         Args:
@@ -114,16 +114,15 @@ class QuantumState():
         Side Effects:
             Modifies the `state` field for current and any entangled states.
         """
-
-        state = array(self.state)
-        u = array(basis[0], dtype=complex)
-        v = array(basis[1], dtype=complex)
-        # measurement operator
-        M0 = outer(u.conj(), u)
-        M1 = outer(v.conj(), v)
-
-        # generate projectors
         if len(self.entangled_states) > 1:
+            state = array(self.state)
+            u = array(basis[0], dtype=complex)
+            v = array(basis[1], dtype=complex)
+            # measurement operator
+            M0 = outer(u.conj(), u)
+            M1 = outer(v.conj(), v)
+
+            # generate projectors
             projector0 = [1]
             projector1 = [1]
             for s in self.entangled_states:
@@ -133,21 +132,26 @@ class QuantumState():
                 else:
                     projector0 = kron(projector0, identity(2))
                     projector1 = kron(projector1, identity(2))
+
+            # probability of measuring basis[0]
+            prob_0 = (state.conj().transpose() @ projector0.conj().transpose() @ projector0 @ state).real
+
+            result = 0
+            if random_sample() > prob_0:
+                result = 1
+
+            if result:
+                new_state = (projector1 @ state) / sqrt(1 - prob_0)
+            else:
+                new_state = (projector0 @ state) / sqrt(prob_0)
         else:
-            projector0 = M0
-            projector1 = M1
-
-        # probability of measuring basis[0]
-        prob_0 = (state.conj().transpose() @ projector0.conj().transpose() @ projector0 @ state).real
-
-        result = 0
-        if random_sample() > prob_0:
-            result = 1
-
-        if result:
-            new_state = (projector1 @ state) / sqrt(1 - prob_0)
-        else:
-            new_state = (projector0 @ state) / sqrt(prob_0)
+            state1, state2, prob = _measure_state_with_cache(self.state, basis)
+            if random_sample() < prob:
+                new_state = state1
+                result = 0
+            else:
+                new_state = state2
+                result = 1
 
         for s in self.entangled_states:
             if s is not None:
@@ -223,5 +227,24 @@ class QuantumState():
         return res
 
 
-def _measure_state_with_cache(state: Tuple[complex], basis: Tuple[complex]):
-    pass
+@lru_cache(maxsize=1000)
+def _measure_state_with_cache(state: Tuple[complex, complex], basis: Tuple[Tuple[complex]]) -> Tuple[
+    Tuple[complex], Tuple[complex], float]:
+    state = array(state)
+    u = array(basis[0], dtype=complex)
+    v = array(basis[1], dtype=complex)
+    # measurement operator
+    M0 = outer(u.conj(), u)
+    M1 = outer(v.conj(), v)
+
+    # generate projectors
+    projector0 = M0
+    projector1 = M1
+
+    # probability of measuring basis[0]
+    prob_0 = (state.conj().transpose() @ projector0.conj().transpose() @ projector0 @ state).real
+
+    state1 = (projector1 @ state) / sqrt(1 - prob_0)
+    state2 = (projector0 @ state) / sqrt(prob_0)
+
+    return (state1, state2, prob_0)
