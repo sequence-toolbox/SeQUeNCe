@@ -283,7 +283,7 @@ class BB84(StackProtocol):
     def end_photon_pulse(self) -> None:
         """Method to process sent qubits."""
 
-        log.logger.debug("ending photon pulse")
+        log.logger.debug("ending photon pulse", extra={"caller": self})
 
         if self.working and self.own.timeline.now() < self.end_run_times[0]:
             # get bits

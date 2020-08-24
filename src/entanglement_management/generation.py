@@ -142,7 +142,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             Will send message through attached node.
         """
 
-        log.logger.info("EG protocol start with partner {}, round={}".format(self.other, self.ent_round + 1))
+        log.logger.info("EG protocol start with partner {}, round={}".format(self.other, self.ent_round + 1), extra={"caller": self})
 
         #if self.debug:
         #    print("EG protocol {} \033[1;36;40mstart\033[0m on node {} with partner {}".format(self.name, self.own.name,
@@ -188,7 +188,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         elif self.ent_round == 3 and self.bsm_res[1] != -1:
             # successful entanglement
-            log.logger.info("successful entanglement of memory {}".format(self.memory))
+            log.logger.info("successful entanglement of memory {}".format(self.memory), extra={"caller": self})
             self.memory.entangled_memory["node_id"] = self.other
             self.memory.entangled_memory["memo_id"] = self.remote_memo_id
             # TODO: notify of +/- state
@@ -197,7 +197,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         else:
             # entanglement failed
-            log.logger.info("failed entanglement of memory {}".format(self.memory))
+            log.logger.info("failed entanglement of memory {}".format(self.memory), extra={"caller": self})
             self.own.resource_manager.update(self, self.memory, "RAW")
             return False
 
@@ -237,7 +237,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         msg_type = msg.msg_type
 
-        log.logger.debug("EG protocol received_message of type {} from node {}, round={}".format(msg.msg_type, src, self.ent_round + 1))
+        log.logger.debug("EG protocol received_message of type {} from node {}, round={}".format(msg.msg_type, src, self.ent_round + 1), extra={"caller": self})
 
         if msg_type is GenerationMsgType.NEGOTIATE:
             # configure params
@@ -306,7 +306,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             time = msg.time
             resolution = msg.resolution
 
-            log.logger.debug("received MEAS_RES {} at time {}, expected {}, round={}".format(res, time, self.expected_time, self.ent_round + 1))
+            log.logger.debug("received MEAS_RES {} at time {}, expected {}, round={}".format(res, time, self.expected_time, self.ent_round + 1), extra={"caller": self})
 
             def valid_trigger_time(trigger_time, target_time, resolution):
                 upper = target_time + resolution

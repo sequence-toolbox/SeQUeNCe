@@ -26,7 +26,6 @@ tl.show_progress = True
 # set log
 log.set_logger(__name__, tl, filename)
 log.logger.setLevel(lg.DEBUG)
-print(log.logger)
 
 qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
 cc = ClassicalChannel("cc", tl, distance=distance)

@@ -102,7 +102,7 @@ class BBPSSW(EntanglementProtocol):
             Will send message to other protocol instance.
         """
 
-        log.logger.info("EP protocol start with partner {}".format(self.another.own.name))
+        log.logger.info("EP protocol start with partner {}".format(self.another.own.name), extra={"caller": self})
 
         assert self.another is not None, "another protocol is not setted; please use set_others function to set it."
         assert (self.kept_memo.entangled_memory["node_id"] ==
@@ -147,7 +147,7 @@ class BBPSSW(EntanglementProtocol):
             Will call `update_resource_manager` method.
         """
 
-        log.logger.info("received result message, succeeded: {}".format(self.is_success))
+        log.logger.info("received result message, succeeded: {}".format(self.is_success), extra={"caller": self})
 
         assert src == self.another.own.name
         self.update_resource_manager(self.meas_memo, "RAW")
