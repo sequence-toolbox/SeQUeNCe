@@ -23,7 +23,7 @@ LOG_FORMAT = '%(asctime)-15s %(simtime)s %(levelname)-8s %(objname)s: %(message)
 
 
 def set_logger(name: str, timeline, logfile="out.log"):
-    """Method to link logger to output file.
+    """Function to link logger to output file.
 
     The provided timeline is used to add simulation timestamps to the logs.
 
@@ -43,6 +43,17 @@ def set_logger(name: str, timeline, logfile="out.log"):
     handler.setFormatter(fmt)
     logger.addHandler(handler)
     logger.addFilter(f)
+
+
+def set_logger_level(level: str):
+    """Function to set output level of logger without requiring logging import.
+
+    Args:
+        level (str): level to set logger to, given as string (in all caps)
+    """
+
+    global logger
+    logger.setLevel(getattr(logging, level))
 
 
 class ContextFilter(logging.Filter):

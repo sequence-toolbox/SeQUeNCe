@@ -1,4 +1,3 @@
-import logging as lg
 from numpy import random
 import math
 
@@ -25,7 +24,7 @@ tl.show_progress = True
 
 # set log
 log.set_logger(__name__, tl, filename)
-log.logger.setLevel(lg.DEBUG)
+log.set_logger_level("DEBUG")
 
 qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
 cc = ClassicalChannel("cc", tl, distance=distance)
