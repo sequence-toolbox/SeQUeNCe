@@ -44,6 +44,9 @@ def set_logger(name: str, timeline, logfile="out.log"):
     logger.addHandler(handler)
     logger.addFilter(f)
 
+    # reset logging
+    open(logfile, 'w').close()
+    
 
 def set_logger_level(level: str):
     """Function to set output level of logger without requiring logging import.

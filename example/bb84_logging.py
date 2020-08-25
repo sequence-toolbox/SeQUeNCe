@@ -9,13 +9,10 @@ from sequence.qkd.BB84 import pair_bb84_protocols
 from sequence.topology.node import QKDNode
 import sequence.utils.log as log
 
-# clear and set logfile
-filename = "bb84.log"
-open(filename, 'w').close()
-
 random.seed(1)
 
 # constants
+filename = "bb84.log"
 runtime = 1e12
 distance = 1e3
 
