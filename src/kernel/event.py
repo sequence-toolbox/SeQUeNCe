@@ -21,6 +21,7 @@ class Event:
         time (int): the execution time of the event.
         process (Process): the process encapsulated in the event.
         priority (int): the priority of the event, lower value denotes a higher priority.
+        _is_removed (bool): the flag to denotes if it's a valid event
     """
 
     def __init__(self, time: int, process: "Process", priority=inf):
@@ -35,6 +36,7 @@ class Event:
         self.time = time
         self.priority = priority
         self.process = process
+        self._is_removed = False
 
     def __eq__(self, another):
         return (self.time == another.time) and (self.priority == another.priority)
@@ -46,4 +48,10 @@ class Event:
         return (self.time > another.time) or (self.time == another.time and self.priority > another.priority)
 
     def __lt__(self, another):
-        return (self.time < another.time)  or (self.time == another.time and self.priority < another.priority)
+        return (self.time < another.time) or (self.time == another.time and self.priority < another.priority)
+
+    def set_invalid(self):
+        self._is_removed = True
+
+    def is_invalid(self):
+        return self._is_removed

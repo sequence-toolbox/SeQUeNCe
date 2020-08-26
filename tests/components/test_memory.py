@@ -182,6 +182,8 @@ def test_Memory__schedule_expiration():
 
     mem._schedule_expiration()
 
-    assert len(tl.events) == 1
-
-
+    counter = 0
+    for event in tl.events:
+        if event.is_invalid():
+            counter += 1
+    assert counter == 1

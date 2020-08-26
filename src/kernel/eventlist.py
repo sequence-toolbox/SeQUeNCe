@@ -41,10 +41,37 @@ class EventList:
         return len(self.data) == 0
 
     def remove(self, event: "Event") -> None:
-        """Method to remove events from heap."""
+        """Method to remove events from heap.
+
+        The event is set as the invalid state to save the time of removing event from heap.
+        """
+
+        event.set_invalid()
+
+    def update_event_time(self, event: "Event", time: int):
+        """Method to update the timestamp of event and maintain the min-heap structure.
+        """
+        if time == event.time:
+            return
+
+        def _pop_updated_event(heap: "List", index: int):
+            parent_i = (index - 1) // 2
+            while index > 0 and event < self.data[parent_i]:
+                heap[index], heap[parent_i] = heap[parent_i], heap[index]
+                index = parent_i
+                parent_i = (parent_i - 1) // 2
 
         for i, e in enumerate(self.data):
             if id(e) == id(event):
-                self.data.pop(i)
-                heapify(self.data)
+                if event.time > time:
+                    event.time = time
+                    _pop_updated_event(self.data, i)
+
+                elif event.time < time:
+                    event.time = -1
+                    _pop_updated_event(self.data, i)
+                    self.pop()
+                    event.time = time
+                    self.push(event)
+
                 break
