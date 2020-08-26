@@ -8,6 +8,7 @@ If a file is not set, no output will be recorded.
 Attributes:
     logger (Logger): logger object used for logging by sequence modules.
     LOG_FORMAT (str): formatting string for logging.
+    _log_modules (List[str]): modules to track with logging (given as list of names)
 """
 
 import logging
@@ -19,7 +20,8 @@ def _init_logger():
     return lg
 
 logger = _init_logger()
-LOG_FORMAT = '%(asctime)-15s %(simtime)s %(levelname)-8s %(objname)s: %(message)s'
+LOG_FORMAT = '%(asctime)-15s %(simtime)s %(levelname)-8s %(module)s: %(message)s'
+_log_modules = []
 
 
 def set_logger(name: str, timeline, logfile="out.log"):
@@ -59,6 +61,21 @@ def set_logger_level(level: str):
     logger.setLevel(getattr(logging, level))
 
 
+def track_module(module_name: str):
+    """Sets a given module to be tracked by logger."""
+
+    global _log_modules
+    _log_modules.append(module_name)
+
+
+def remove_module(module_name: str):
+    """Sets a given module to no longer be tracked."""
+
+    global _log_modules
+    assert module_name in _log_modules, "Module is not currently logged: " + module_name
+    _log_modules.remove(module_name)
+
+
 class ContextFilter(logging.Filter):
     """Custom filter class to use for the logger."""
 
@@ -67,14 +84,6 @@ class ContextFilter(logging.Filter):
         self.timeline = timeline
 
     def filter(self, record):
+        global _log_modules
         record.simtime = self.timeline.now()
-        record.objname = "unnamed"
-
-        if hasattr(record, "caller"):
-            caller = record.caller
-            if hasattr(caller, "name"):
-                record.objname = caller.name
-            if hasattr(caller, "logflag"):
-                return record.caller.logflag
-
-        return True
+        return record.module in _log_modules

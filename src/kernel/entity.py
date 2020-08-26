@@ -18,7 +18,6 @@ class Entity(ABC):
         timeline (Timeline): the simulation timeline for the entity.
         owner (Entity): another entity that owns or aggregates the current entity.
         _observer (List): a list of observers for the entity.
-        logflag (bool): tracks entity output.
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
@@ -37,7 +36,6 @@ class Entity(ABC):
         self.owner = None
         self._observers = []
         timeline.entities.append(self)
-        self.logflag = False
 
     @abstractmethod
     def init(self):

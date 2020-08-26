@@ -22,6 +22,7 @@ tl.show_progress = True
 # set log
 log.set_logger(__name__, tl, filename)
 log.set_logger_level("DEBUG")
+log.track_module("BB84")
 
 qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
 cc = ClassicalChannel("cc", tl, distance=distance)
@@ -48,8 +49,6 @@ cc.set_ends(alice, bob)
 
 # BB84 config
 pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
-alice.protocol_stack[0].logflag = True
-bob.protocol_stack[0].logflag = True
 
 process = Process(alice.protocol_stack[0], "push", [256, math.inf, 6e12])
 event = Event(0, process)

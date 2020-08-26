@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from .event import Event
 
 from .eventlist import EventList
+from ..utils.log import logger
 
 
 class Timeline:
@@ -68,6 +69,8 @@ class Timeline:
 
     def init(self) -> None:
         """Method to initialize all simulated entities."""
+
+        logger.info("Timeline init", extra={"caller": self})
 
         for entity in self.entities:
             entity.init()
