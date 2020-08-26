@@ -27,7 +27,7 @@ log.track_module('timeline')
 
 qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
 cc = ClassicalChannel("cc", tl, distance=distance)
-cc.delay += 10e9  # 10 ms
+cc.delay += 1e9  # 1 ms
 
 # Alice
 ls_params = {"frequency": 80e6, "mean_photon_num": 0.1}
