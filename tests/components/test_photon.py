@@ -36,8 +36,8 @@ def test_set_state():
         assert coeff == test_state[i]
 
 def test_measure():
-    photon1 = Photon("p1", quantum_state=[complex(1), complex(0)])
-    photon2 = Photon("p2", quantum_state=[complex(0), complex(1)])
+    photon1 = Photon("p1", quantum_state=(complex(1), complex(0)))
+    photon2 = Photon("p2", quantum_state=(complex(0), complex(1)))
     basis = ((complex(1), complex(0)), (complex(0), complex(1)))
 
     assert Photon.measure(basis, photon1) == 0

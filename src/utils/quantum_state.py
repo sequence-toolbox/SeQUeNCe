@@ -30,7 +30,7 @@ class QuantumState():
     Tracks quantum state coefficients (in Z-basis) and entangled states.
 
     Attributes:
-        state (List[complex]): list of complex coefficients in Z-basis.
+        state (Tuple[complex]): list of complex coefficients in Z-basis.
         entangled_states (List[QuantumState]): list of entangled states (indludng self).
     """
 
@@ -114,6 +114,8 @@ class QuantumState():
         Side Effects:
             Modifies the `state` field for current and any entangled states.
         """
+
+        # handle entangled case
         if len(self.entangled_states) > 1:
             state = array(self.state)
             u = array(basis[0], dtype=complex)
@@ -144,15 +146,20 @@ class QuantumState():
                 new_state = (projector1 @ state) / sqrt(1 - prob_0)
             else:
                 new_state = (projector0 @ state) / sqrt(prob_0)
+
+        # handle unentangled case with caching
         else:
-            state1, state2, prob = _measure_state_with_cache(self.state, basis)
+            print(self.state)
+            state0, state1, prob = _measure_state_with_cache(self.state, basis)
             if random_sample() < prob:
-                new_state = state1
+                new_state = state0
                 result = 0
             else:
-                new_state = state2
+                new_state = state1
                 result = 1
 
+        # set new state
+        new_state = tuple(new_state)
         for s in self.entangled_states:
             if s is not None:
                 s.state = new_state
@@ -220,6 +227,7 @@ class QuantumState():
         res = choice(possible_results, p=probabilities)
         # project to new state, then reassign quantum state and entangled photons
         new_state = (projectors[res] @ state) / sqrt(probabilities[res])
+        new_state = tuple(new_state)
         for state in entangled_list:
             state.quantum_state = new_state
             state.entangled_photons = entangled_list
@@ -237,14 +245,18 @@ def _measure_state_with_cache(state: Tuple[complex, complex], basis: Tuple[Tuple
     M0 = outer(u.conj(), u)
     M1 = outer(v.conj(), v)
 
-    # generate projectors
-    projector0 = M0
-    projector1 = M1
-
     # probability of measuring basis[0]
-    prob_0 = (state.conj().transpose() @ projector0.conj().transpose() @ projector0 @ state).real
+    prob_0 = (state.conj().transpose() @ M0.conj().transpose() @ M0 @ state).real
 
-    state1 = (projector1 @ state) / sqrt(1 - prob_0)
-    state2 = (projector0 @ state) / sqrt(prob_0)
+    # avoid / 0 errors and calculate projected states
+    if prob_0 >= 1:
+        state1 = None
+    else:
+        state1 = (M1 @ state) / sqrt(1 - prob_0)
 
-    return (state1, state2, prob_0)
+    if prob_0 <= 0:
+        state0 = None
+    else:
+        state0 = (M0 @ state) / sqrt(prob_0)
+
+    return (state0, state1, prob_0)
