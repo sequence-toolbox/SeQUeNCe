@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 from ..message import Message
 from .entanglement_protocol import EntanglementProtocol
+from ..utils import log
 
 
 class BBPSSWMsgType(Enum):
@@ -101,6 +102,8 @@ class BBPSSW(EntanglementProtocol):
             Will send message to other protocol instance.
         """
 
+        log.logger.info(self.own.name + " protocol start with partner {}".format(self.another.own.name))
+
         assert self.another is not None, "another protocol is not setted; please use set_others function to set it."
         assert (self.kept_memo.entangled_memory["node_id"] ==
                 self.meas_memo.entangled_memory["node_id"])
@@ -143,6 +146,8 @@ class BBPSSW(EntanglementProtocol):
         Side Effects:
             Will call `update_resource_manager` method.
         """
+
+        log.logger.info(self.own.name + " received result message, succeeded: {}".format(self.is_success))
 
         assert src == self.another.own.name
         self.update_resource_manager(self.meas_memo, "RAW")

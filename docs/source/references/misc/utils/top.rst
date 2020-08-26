@@ -7,4 +7,5 @@ Utilities for SeQUeNCe.
     :maxdepth: 2
 
     encoding
+    log
     quantum_state
