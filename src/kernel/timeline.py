@@ -14,8 +14,7 @@ if TYPE_CHECKING:
     from .event import Event
 
 from .eventlist import EventList
-from ..utils.log import logger
-
+from ..utils import log
 
 class Timeline:
     """Class for a simulation timeline.
@@ -36,6 +35,8 @@ class Timeline:
         entities (List[Entity]): the entity list of timeline used for initialization.
         time (int): current simulation time (picoseconds).
         stop_time (int): the stop (simulation) time of the simulation.
+        schedule_counter (int): the counter of scheduled events
+        run_counter (int): the counter of executed events
         is_running (bool): records if the simulation has stopped executing events.
         show_progress (bool): show/hide the progress bar of simulation.
     """
@@ -46,14 +47,13 @@ class Timeline:
         Args:
             stop_time (int): stop time (in ps) of simulation (default inf).
         """
-
         self.events = EventList()
         self.entities = []
         self.time = 0
         self.stop_time = stop_time
-        self.event_counter = 0
+        self.schedule_counter = 0
+        self.run_counter = 0
         self.is_running = False
-
         self.show_progress = False
 
     def now(self) -> int:
@@ -64,13 +64,12 @@ class Timeline:
     def schedule(self, event: "Event") -> None:
         """Method to schedule an event."""
 
-        self.event_counter += 1
+        self.schedule_counter += 1
         return self.events.push(event)
 
     def init(self) -> None:
         """Method to initialize all simulated entities."""
-
-        logger.info("Timeline init", extra={"caller": self})
+        log.logger.info("Timeline initial network")
 
         for entity in self.entities:
             entity.init()
@@ -82,7 +81,8 @@ class Timeline:
         Events are continuously popped and executed, until the simulation time limit is reached or events are exhausted.
         A progress bar may also be displayed, if the `show_progress` flag is set.
         """
-
+        log.logger.info("Timeline start simulation")
+        tick = time_ns()
         self.is_running = True
 
         if self.show_progress:
@@ -100,15 +100,19 @@ class Timeline:
             #     log[event.process.activation] = 0
             # log[event.process.activation]+=1
             event.process.run()
+            self.run_counter += 1
 
         # print('number of event', self.event_counter)
         # print('log:',log)
 
         self.is_running = False
+        elapse = time_ns() - tick
+        log.logger.info("Timeline end simulation. Execution Time: %d ns; Scheduled Event: %d; Executed Event: %d" %
+                        (elapse, self.schedule_counter, self.run_counter))
 
     def stop(self) -> None:
         """Method to stop simulation."""
-
+        log.logger.info("Timeline is stopped")
         self.stop_time = self.now()
 
     def remove_event(self, event: "Event") -> None:
@@ -157,7 +161,6 @@ class Timeline:
     def ns_to_human_time(self, nanosec: int) -> str:
         if nanosec >= 1e6:
             ms = nanosec / 1e6
-            nanosec = nanosec % 1e6
             if ms >= 1e3:
                 second = ms / 1e3
                 if second >= 60:
@@ -169,5 +172,5 @@ class Timeline:
                         return '%d hour: %d min: %.2f sec' % (hour, minute, second)
                     return '%d min: %.2f sec' % (minute, second)
                 return '%.2f sec' % (second)
-            return "%d ms, %.2f ns" % (ms, nanosec)
-        return '%d ns' % nanosec
+            return "%d ms" % (ms)
+        return '0 ms'

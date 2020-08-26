@@ -12,17 +12,18 @@ import sequence.utils.log as log
 random.seed(1)
 
 # constants
-filename = "bb84.log"
-runtime = 1e12
+log_filename = "bb84.log"
+runtime = 2e10
 distance = 1e3
 
 tl = Timeline(runtime)
 tl.show_progress = True
 
 # set log
-log.set_logger(__name__, tl, filename)
+log.set_logger(__name__, tl, log_filename)
 log.set_logger_level("DEBUG")
 log.track_module("BB84")
+log.track_module('timeline')
 
 qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
 cc = ClassicalChannel("cc", tl, distance=distance)

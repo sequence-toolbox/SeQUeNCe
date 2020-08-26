@@ -7,7 +7,7 @@ If a file is not set, no output will be recorded.
 
 Attributes:
     logger (Logger): logger object used for logging by sequence modules.
-    LOG_FORMAT (str): formatting string for logging.
+    LOG_FORMAT (str): formatting string for logging as '{real time}\t{simulation time}\t%{log level}\t{module name}\t{message}'.
     _log_modules (List[str]): modules to track with logging (given as list of names)
 """
 
@@ -19,8 +19,9 @@ def _init_logger():
     lg.addHandler(logging.NullHandler())
     return lg
 
+
 logger = _init_logger()
-LOG_FORMAT = '%(asctime)-15s %(simtime)s %(levelname)-8s %(module)s: %(message)s'
+LOG_FORMAT = '%(asctime)-15s\t%(simtime)s\t%(levelname)-8s\t%(module)s:\t%(message)s'
 _log_modules = []
 
 
