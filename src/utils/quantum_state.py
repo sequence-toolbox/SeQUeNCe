@@ -149,7 +149,6 @@ class QuantumState():
 
         # handle unentangled case with caching
         else:
-            print(self.state)
             state0, state1, prob = _measure_state_with_cache(self.state, basis)
             if random_sample() < prob:
                 new_state = state0

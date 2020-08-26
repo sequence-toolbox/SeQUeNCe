@@ -241,7 +241,7 @@ class ClassicalChannel(OpticalChannel):
             if e != source:
                 receiver = e
 
-        future_time = int(round(self.timeline.now() + int(self.delay)))
+        future_time = round(self.timeline.now() + int(self.delay))
         process = Process(receiver, "receive_message", [source.name, message])
         event = Event(future_time, process, priority)
         self.timeline.schedule(event)
