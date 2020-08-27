@@ -51,6 +51,7 @@ class QuantumState():
 
         entangled_states = self.entangled_states + another_state.entangled_states
         new_state = kron(self.state, another_state.state)
+        new_state = tuple(new_state)
 
         for quantum_state in entangled_states:
             quantum_state.entangled_states = entangled_states
@@ -117,48 +118,29 @@ class QuantumState():
 
         # handle entangled case
         if len(self.entangled_states) > 1:
-            state = array(self.state)
-            u = array(basis[0], dtype=complex)
-            v = array(basis[1], dtype=complex)
-            # measurement operator
-            M0 = outer(u.conj(), u)
-            M1 = outer(v.conj(), v)
-
-            # generate projectors
-            projector0 = [1]
-            projector1 = [1]
-            for s in self.entangled_states:
-                if s == self:
-                    projector0 = kron(projector0, M0)
-                    projector1 = kron(projector1, M1)
-                else:
-                    projector0 = kron(projector0, identity(2))
-                    projector1 = kron(projector1, identity(2))
-
-            # probability of measuring basis[0]
-            prob_0 = (state.conj().transpose() @ projector0.conj().transpose() @ projector0 @ state).real
-
-            result = 0
-            if random_sample() > prob_0:
-                result = 1
-
-            if result:
-                new_state = (projector1 @ state) / sqrt(1 - prob_0)
-            else:
-                new_state = (projector0 @ state) / sqrt(prob_0)
-
-        # handle unentangled case with caching
-        else:
-            state0, state1, prob = _measure_state_with_cache(self.state, basis)
+            num_states = len(self.entangled_states)
+            state_index = self.entangled_states.index(self)
+            state0, state1, prob = _measure_entangled_state_with_cache(self.state, basis, state_index, num_states)
             if random_sample() < prob:
                 new_state = state0
                 result = 0
             else:
                 new_state = state1
                 result = 1
+            new_state = tuple(new_state)
+
+        # handle unentangled case
+        else:
+            prob = _measure_state_with_cache(self.state, basis)
+            if random_sample() < prob:
+                new_state = basis[0]
+                result = 0
+            else:
+                new_state = basis[1]
+                result = 1
 
         # set new state
-        new_state = tuple(new_state)
+        # new_state = tuple(new_state)
         for s in self.entangled_states:
             if s is not None:
                 s.state = new_state
@@ -235,8 +217,7 @@ class QuantumState():
 
 
 @lru_cache(maxsize=1000)
-def _measure_state_with_cache(state: Tuple[complex, complex], basis: Tuple[Tuple[complex]]) -> Tuple[
-    Tuple[complex], Tuple[complex], float]:
+def _measure_state_with_cache(state: Tuple[complex, complex], basis: Tuple[Tuple[complex]]) -> float:
     state = array(state)
     u = array(basis[0], dtype=complex)
     v = array(basis[1], dtype=complex)
@@ -246,16 +227,41 @@ def _measure_state_with_cache(state: Tuple[complex, complex], basis: Tuple[Tuple
 
     # probability of measuring basis[0]
     prob_0 = (state.conj().transpose() @ M0.conj().transpose() @ M0 @ state).real
+    return prob_0
 
-    # avoid / 0 errors and calculate projected states
+@lru_cache(maxsize=1000)
+def _measure_entangled_state_with_cache(state: Tuple[complex], basis:Tuple[Tuple[complex]],
+                                        state_index: int, num_states: int) -> Tuple[
+        Tuple[complex], Tuple[complex], float]:
+    state = array(state)
+    u = array(basis[0], dtype=complex)
+    v = array(basis[1], dtype=complex)
+    # measurement operator
+    M0 = outer(u.conj(), u)
+    M1 = outer(v.conj(), v)
+
+    # generate projectors
+    projector0 = [1]
+    projector1 = [1]
+    for i in range(num_states):
+        if i == state_index:
+            projector0 = kron(projector0, M0)
+            projector1 = kron(projector1, M1)
+        else:
+            projector0 = kron(projector0, identity(2))
+            projector1 = kron(projector1, identity(2))
+
+    # probability of measuring basis[0]
+    prob_0 = (state.conj().transpose() @ projector0.conj().transpose() @ projector0 @ state).real
+
     if prob_0 >= 1:
         state1 = None
     else:
-        state1 = (M1 @ state) / sqrt(1 - prob_0)
+        state1 = (projector1 @ state) / sqrt(1 - prob_0)
 
     if prob_0 <= 0:
         state0 = None
     else:
-        state0 = (M0 @ state) / sqrt(prob_0)
+        state0 = (projector0 @ state) / sqrt(prob_0)
 
     return (state0, state1, prob_0)
