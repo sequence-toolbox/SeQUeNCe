@@ -182,33 +182,23 @@ class QuantumState():
         pos_state_1 = entangled_list.index(states[1])
         entangled_list[0], entangled_list[pos_state_0] = entangled_list[pos_state_0], entangled_list[0]
         entangled_list[1], entangled_list[pos_state_1] = entangled_list[pos_state_1], entangled_list[1]
-        switched_state = array([complex(0)] * len(state))
+        switched_state = [complex(0)] * len(state)
         for i, coefficient in enumerate(state):
             switched_i = swap_bits(i, pos_state_0, pos_state_1)
             switched_state[switched_i] = coefficient
 
-        state = switched_state
+        state = tuple(switched_state)
 
         # math for probability calculations
         length_diff = len(entangled_list) - len(states)
 
-        # construct measurement operators, projectors, and probabilities of measurement
-        projectors = [None] * basis_dimension
-        probabilities = [0] * basis_dimension
-        for i, vector in enumerate(basis):
-            vector = array(vector, dtype=complex)
-            M = outer(vector.conj(), vector)  # measurement operator
-            projectors[i] = kron(M, identity(2 ** length_diff))  # projector
-            probabilities[i] = (state.conj().transpose() @ projectors[i].conj().transpose() @ projectors[i] @ state).real
-            if probabilities[i] < 0:
-                probabilities[i] = 0
+        new_states, probabilities = _measure_multiple_with_cache(state, basis, length_diff)
 
         possible_results = arange(0, basis_dimension, 1)
         # result gives index of the basis vector that will be projected to
         res = choice(possible_results, p=probabilities)
         # project to new state, then reassign quantum state and entangled photons
-        new_state = (projectors[res] @ state) / sqrt(probabilities[res])
-        new_state = tuple(new_state)
+        new_state = new_states[res]
         for state in entangled_list:
             state.quantum_state = new_state
             state.entangled_photons = entangled_list
@@ -265,3 +255,28 @@ def _measure_entangled_state_with_cache(state: Tuple[complex], basis:Tuple[Tuple
         state0 = (projector0 @ state) / sqrt(prob_0)
 
     return (state0, state1, prob_0)
+
+@lru_cache(maxsize=1000)
+def _measure_multiple_with_cache(state: Tuple[Tuple[complex]], basis: Tuple[Tuple[complex]], length_diff: int) -> Tuple[
+        Tuple[Tuple[complex]], Tuple[float]]:
+    state = array(state)
+    # construct measurement operators, projectors, and probabilities of measurement
+    projectors = [None] * len(basis)
+    probabilities = [0] * len(basis)
+    for i, vector in enumerate(basis):
+        vector = array(vector, dtype=complex)
+        M = outer(vector.conj(), vector)  # measurement operator
+        projectors[i] = kron(M, identity(2 ** length_diff))  # projector
+        probabilities[i] = (state.conj().transpose() @ projectors[i].conj().transpose() @ projectors[i] @ state).real
+        if probabilities[i] < 0:
+            probabilities[i] = 0
+
+    return_states = [None] * len(projectors)
+    for i, proj in enumerate(projectors):
+        # project to new state
+        if probabilities[i] > 0:
+            new_state = (proj @ state) / sqrt(probabilities[i])
+            new_state = tuple(new_state)
+            return_states[i] = new_state
+
+    return (tuple(return_states), tuple(probabilities))
