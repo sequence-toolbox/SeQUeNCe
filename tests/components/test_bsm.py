@@ -4,8 +4,6 @@ from sequence.components.memory import *
 from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import *
 
-random.seed(0)
-
 
 class Parent():
         def __init__(self):
@@ -22,6 +20,7 @@ class Parent():
 
 def test_construct_func():
     tl = Timeline()
+    tl.seed(0)
     detectors2 = [{}] * 2
     detectors4 = [{}] * 4
 
@@ -40,6 +39,7 @@ def test_construct_func():
 
 def test_init():
     tl = Timeline()
+    tl.seed(0)
     detectors = [{"dark_count": 1}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors)
     tl.init()
@@ -48,6 +48,7 @@ def test_init():
 
 def test_base_get():
     tl = Timeline()
+    tl.seed(0)
     photon1 = Photon("", location=1)
     photon2 = Photon("", location=2)
     photon3 = Photon("", location=3)
@@ -73,6 +74,7 @@ def test_base_get():
 
 def test_polarization_get():
     tl = Timeline()
+    tl.seed(0)
     detectors = [{"efficiency": 1}] * 4
     bsm = make_bsm("bsm", tl, encoding_type="polarization", detectors=detectors)
     parent = Parent()
@@ -98,6 +100,7 @@ def test_polarization_get():
 
 def test_polarization_update():
     tl = Timeline()
+    tl.seed(0)
     detectors = [{"time_resolution": 1}] * 4
     bsm = make_bsm("bsm", tl, encoding_type="polarization", detectors=detectors)
     parent = Parent()
@@ -132,6 +135,7 @@ def test_polarization_update():
 
 def test_time_bin_get():
     tl = Timeline()
+    tl.seed(0)
     detectors = [{"efficiency": 1, "count_rate": 1e9}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors)
     parent = Parent()
@@ -167,6 +171,7 @@ def test_time_bin_get():
 
 def test_time_bin_update():
     tl = Timeline()
+    tl.seed(0)
     detectors = [{}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors)
     parent = Parent()
@@ -209,6 +214,7 @@ def test_single_atom_get():
             self.bsm.get(photon)
 
     tl = Timeline()
+    tl.seed(0)
     detectors = [{"efficiency": 1}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="single_atom", detectors=detectors)
     parent = Parent()

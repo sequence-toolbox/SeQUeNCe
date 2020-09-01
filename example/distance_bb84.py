@@ -1,7 +1,7 @@
 import math
 
 import pandas as pd
-from numpy import random, mean
+from numpy import mean
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
@@ -10,8 +10,6 @@ from sequence.qkd.BB84 import pair_bb84_protocols
 from sequence.topology.node import QKDNode
 
 if __name__ == "__main__":
-    random.seed(1)
-
     NUM_EXPERIMENTS = 11
     runtime = 6e12
 
@@ -29,6 +27,7 @@ if __name__ == "__main__":
         distance = max(1000, 10000 * int(i))
 
         tl = Timeline(runtime)
+        tl.seed(1)
         qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
         cc = ClassicalChannel("cc", tl, distance=distance)
         cc.delay += 10e9  # 10 ms

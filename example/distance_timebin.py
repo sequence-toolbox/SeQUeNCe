@@ -1,7 +1,6 @@
 import statistics
 
 import pandas as pd
-from numpy import random
 from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
@@ -35,8 +34,6 @@ class Parent(StackProtocol):
 
 
 if __name__ == "__main__":
-    random.seed(1)
-
     runtime = 1e12
     keysize = 256
     distances = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]  # distances in km
@@ -46,6 +43,7 @@ if __name__ == "__main__":
 
     for distance in distances:
         tl = Timeline(runtime)
+        tl.seed(1)
         qc = QuantumChannel("qc", tl, distance=distance * 1e3, polarization_fidelity=0.97, attenuation=0.0002)
         cc = ClassicalChannel("cc", tl, distance=distance * 1e3)
 

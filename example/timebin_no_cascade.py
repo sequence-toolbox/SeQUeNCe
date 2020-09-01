@@ -1,4 +1,3 @@
-from numpy import random
 from pathlib import Path
 import math
 import statistics
@@ -14,7 +13,6 @@ from sequence.utils.encoding import *
 
 
 if __name__ == "__main__":
-    random.seed(1)
 
     runtime = 1e12
     dark_count = 425
@@ -31,6 +29,7 @@ if __name__ == "__main__":
 
     for distance in distances:
         tl = Timeline(runtime)
+        tl.seed(1)
         qc = QuantumChannel("qc", tl, distance=distance * 1e3, attenuation=0.0002)
         cc = ClassicalChannel("cc", tl, distance=distance * 1e3)
 
