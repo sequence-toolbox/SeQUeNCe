@@ -3,8 +3,6 @@ from sequence.components.photon import Photon
 from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import polarization, time_bin
 
-random.seed(1)
-
 
 def create_detector(efficiency=0.9, dark_count=0, count_rate=25e6, time_resolution=150):
     class Parent():
@@ -16,6 +14,7 @@ def create_detector(efficiency=0.9, dark_count=0, count_rate=25e6, time_resoluti
             self.log.append((self.timeline.now(), msg['time'], detector))
 
     tl = Timeline()
+    tl.seed(1)
     detector = Detector("", tl, efficiency=efficiency, dark_count=dark_count,
                         count_rate=count_rate, time_resolution=time_resolution)
     parent = Parent(tl)
@@ -85,12 +84,14 @@ def test_Detector_dark_count():
 
 def test_QSDetectorPolarization_init():
     tl = Timeline()
+    tl.seed(1)
     qsdetector = QSDetectorPolarization("qsd", tl)
     tl.init()
 
 
 def test_QSDetectorPolarization_set_basis_list():
     tl = Timeline()
+    tl.seed(1)
     qsdetector = QSDetectorPolarization("qsd", tl)
     basis_list = []
     start_time = 0
@@ -104,6 +105,7 @@ def test_QSDetectorPolarization_set_basis_list():
 def test_QSDetectorPolarization_update_splitter_params():
     fidelity = 0.9
     tl = Timeline()
+    tl.seed(1)
     qsdetector = QSDetectorPolarization("qsd", tl)
     qsdetector.update_splitter_params("fidelity", fidelity)
 
@@ -112,6 +114,7 @@ def test_QSDetectorPolarization_update_splitter_params():
 
 def test_QSDetectorPolarization_update_detector_params():
     tl = Timeline()
+    tl.seed(1)
     qsdetector = QSDetectorPolarization("qsd", tl)
     qsdetector.update_detector_params(0, "dark_count", 99)
     assert qsdetector.detectors[0].dark_count == 99 and qsdetector.detectors[1].dark_count != 99
@@ -119,6 +122,7 @@ def test_QSDetectorPolarization_update_detector_params():
 
 def test_QSDetector_update():
     tl = Timeline()
+    tl.seed(1)
     qsdetector = QSDetectorPolarization("qsd", tl)
 
     args = [[0, 10], [1, 20], [1, 40]]
@@ -130,6 +134,7 @@ def test_QSDetector_update():
 
 def test_QSDetectorPolarization():
     tl = Timeline()
+    tl.seed(1)
     qsdetector = QSDetectorPolarization("qsd", tl)
     qsdetector.update_detector_params(0, "efficiency", 1)
     qsdetector.update_detector_params(1, "efficiency", 1)
@@ -153,6 +158,7 @@ def test_QSDetectorPolarization():
 
 def test_QSDetectorTimeBin():
     tl = Timeline()
+    tl.seed(1)
     qsdetector = QSDetectorTimeBin("qsd", tl)
     [qsdetector.update_detector_params(i, "efficiency", 1) for i in range(3)]
     frequency = 1e5

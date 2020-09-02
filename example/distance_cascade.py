@@ -1,7 +1,6 @@
 import math
 
 import pandas as pd
-from numpy import random
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
@@ -11,8 +10,6 @@ from sequence.qkd.cascade import pair_cascade_protocols
 from sequence.topology.node import QKDNode
 
 if __name__ == "__main__":
-    random.seed(2)
-
     NUM_EXPERIMENTS = 10
     runtime = 12e12
 
@@ -41,6 +38,7 @@ if __name__ == "__main__":
         distance = max(1000,10000*int(id))
 
         tl = Timeline(runtime)
+        tl.seed(2)
         # tl.show_progress = True
         qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
         cc = ClassicalChannel("cc", tl, distance=distance)

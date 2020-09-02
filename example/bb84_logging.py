@@ -1,4 +1,3 @@
-from numpy import random
 import math
 
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
@@ -9,7 +8,6 @@ from sequence.qkd.BB84 import pair_bb84_protocols
 from sequence.topology.node import QKDNode
 import sequence.utils.log as log
 
-random.seed(1)
 
 # constants
 log_filename = "bb84.log"
@@ -17,6 +15,7 @@ runtime = 2e10
 distance = 1e3
 
 tl = Timeline(runtime)
+tl.seed(1)
 tl.show_progress = True
 
 # set log
