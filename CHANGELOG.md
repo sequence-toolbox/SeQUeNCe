@@ -18,3 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - push/pop functions for entities and non-stack protocols
 - some unnecessary entity attributes
+
+## [0.2.2]
+### Added
+- logging functionality with "log" module
+- cached quantum state measurement
+
+### Changed
+- changed all quantum state representations from list to tuple
+- event removal system
+- example scripts now use "Timeline.seed()" method
+- Timeline event removal method
