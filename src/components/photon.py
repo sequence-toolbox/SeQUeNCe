@@ -21,7 +21,7 @@ class Photon():
     """
 
     def __init__(self, name, wavelength=0, location=None, encoding_type=polarization,
-                 quantum_state=[complex(1), complex(0)]):
+                 quantum_state=(complex(1), complex(0))):
         """Constructor for the photon class.
 
         Args:

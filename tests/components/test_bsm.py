@@ -79,8 +79,8 @@ def test_polarization_get():
     bsm.attach(parent)
 
     # get 2 photons in orthogonal states (map to Psi+)
-    p1 = Photon("p1", location=1, quantum_state=[complex(1), complex(0)])
-    p2 = Photon("p2", location=2, quantum_state=[complex(0), complex(1)])
+    p1 = Photon("p1", location=1, quantum_state=(complex(1), complex(0)))
+    p2 = Photon("p2", location=2, quantum_state=(complex(0), complex(1)))
     bsm.get(p1)
     bsm.get(p2)
 
@@ -88,8 +88,8 @@ def test_polarization_get():
 
     # get 2 photons in same state (map to Phi+ / can't measure)
     tl.time = 1e6
-    p3 = Photon("p3", location=1, quantum_state=[complex(1), complex(0)])
-    p4 = Photon("p4", location=2, quantum_state=[complex(1), complex(0)])
+    p3 = Photon("p3", location=1, quantum_state=(complex(1), complex(0)))
+    p4 = Photon("p4", location=2, quantum_state=(complex(1), complex(0)))
     bsm.get(p3)
     bsm.get(p4)
 
@@ -139,8 +139,8 @@ def test_time_bin_get():
     detector_list = bsm.detectors
 
     # get 2 photons in orthogonal states (map to Psi+)
-    p1 = Photon("p1", encoding_type=time_bin, location=1, quantum_state=[complex(1), complex(0)])
-    p2 = Photon("p2", encoding_type=time_bin, location=2, quantum_state=[complex(0), complex(1)])
+    p1 = Photon("p1", encoding_type=time_bin, location=1, quantum_state=(complex(1), complex(0)))
+    p2 = Photon("p2", encoding_type=time_bin, location=2, quantum_state=(complex(0), complex(1)))
     process = Process(bsm, "get", [p1])
     event = Event(0, process)
     tl.schedule(event)
@@ -152,8 +152,8 @@ def test_time_bin_get():
     assert len(parent.results) == 1
 
     # get 2 photons in same state (map to Phi+ / can't measure)
-    p3 = Photon("p3", encoding_type=time_bin, location=1, quantum_state=[complex(1), complex(0)])
-    p4 = Photon("p4", encoding_type=time_bin, location=2, quantum_state=[complex(1), complex(0)])
+    p3 = Photon("p3", encoding_type=time_bin, location=1, quantum_state=(complex(1), complex(0)))
+    p4 = Photon("p4", encoding_type=time_bin, location=2, quantum_state=(complex(1), complex(0)))
     process = Process(bsm, "get", [p3])
     event = Event(1e6, process)
     tl.schedule(event)
@@ -220,8 +220,8 @@ def test_single_atom_get():
 
     # initially opposite states
     tl.time = 0
-    mem_1.qstate.set_state_single([complex(1), complex(0)])
-    mem_2.qstate.set_state_single([complex(0), complex(1)])
+    mem_1.qstate.set_state_single((complex(1), complex(0)))
+    mem_2.qstate.set_state_single((complex(0), complex(1)))
     mem_1.excite()  # send w/o destination as have direct_receiver set
     mem_2.excite()
 

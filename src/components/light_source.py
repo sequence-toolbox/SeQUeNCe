@@ -157,7 +157,7 @@ class SPDCSource(LightSource):
                                      encoding_type=self.encoding_type)
 
                 new_photon0.entangle(new_photon1)
-                new_photon0.set_state([state[0], complex(0), complex(0), state[1]])
+                new_photon0.set_state((state[0], complex(0), complex(0), state[1]))
 
                 process0 = Process(self.direct_receiver, "get", [new_photon0])
                 process1 = Process(self.another_receiver, "get", [new_photon1])

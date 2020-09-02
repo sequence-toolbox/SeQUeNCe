@@ -78,10 +78,10 @@ class BSM(Entity):
         self.resolution = max(d.time_resolution for d in self.detectors)
 
         # define bell basis vectors
-        self.bell_basis = [[complex(sqrt(1 / 2)), complex(0), complex(0), complex(sqrt(1 / 2))],
-                           [complex(sqrt(1 / 2)), complex(0), complex(0), -complex(sqrt(1 / 2))],
-                           [complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)],
-                           [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]]
+        self.bell_basis = ((complex(sqrt(1 / 2)), complex(0), complex(0), complex(sqrt(1 / 2))),
+                           (complex(sqrt(1 / 2)), complex(0), complex(0), -complex(sqrt(1 / 2))),
+                           (complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)),
+                           (complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)))
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
