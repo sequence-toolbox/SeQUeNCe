@@ -13,6 +13,7 @@ from numpy import random
 
 from ..message import Message
 from ..protocol import StackProtocol
+from ..utils import log
 
 
 def pair_cascade_protocols(sender: "Cascade", receiver: "Cascade") -> None:
@@ -134,7 +135,6 @@ class Cascade(StackProtocol):
         setup_time (int): time of cascade protocol setup.
         start_time (int): time to start generating corrected keys.
         end_time (int): time to stop generating keys.
-        logflag (bool): tracks debug information.
         valid_keys (List[int]): list of keys generated.
         throughput (float): protocol throughput in bits/s.
         error_bit_rate (float): rate of errors in finished keys.
@@ -182,9 +182,6 @@ class Cascade(StackProtocol):
         self.start_time = None
         self.end_time = math.inf
 
-        # used for debugging purposes (prints out cascade process)
-        self.logflag = False
-
         # metrics
         self.valid_keys = []
         self.throughput = None  # bits/sec
@@ -192,10 +189,6 @@ class Cascade(StackProtocol):
         self.latency = None  # the average latency
         self.disclosed_bits_counter = 0
         self.privacy_throughput = None
-
-    def log(self, info) -> None:
-        if self.logflag:
-            print(self.own.timeline.now(), self.name, self.state, info)
 
     def push(self, keylen: int, frame_num=math.inf, run_time=math.inf) -> None:
         """Method to receive key generation events.
@@ -212,7 +205,7 @@ class Cascade(StackProtocol):
             info (int): key received.
         """
 
-        self.log('get_key_from_BB84, key= ' + str(info))
+        log.logger.debug(self.name + ' state={} get_key_from_BB84, key={}'.format(self.state, info))
         self.bits.append(info)
         self.t1.append(self.own.timeline.now())
         self.t2.append(-1)
@@ -247,7 +240,7 @@ class Cascade(StackProtocol):
             """
             key = msg.key
 
-            self.log('receive_key, key=' + str(key))
+            log.logger.debug(self.name + ' state={} receive_key, key={}'.format(self.state, key))
 
             @lru_cache(maxsize=128)
             def get_k1(p, lower, upper):
@@ -297,7 +290,7 @@ class Cascade(StackProtocol):
             self.end_time = self.start_time + self.run_time
             self.state = 1
 
-            self.log('receive_params with params= ' + str([self.k1, self.keylen, self.frame_num]))
+            log.logger.debug(self.name + ' state={} receive_params with params={}'.format(self.state, [self.k1, self.keylen, self.frame_num]))
             if self.role == 0:
                 raise Exception("Cascade protocol sender '{}' got params message".format(self.name))
 
@@ -310,7 +303,7 @@ class Cascade(StackProtocol):
             key_id = msg.key_id
             checksums = msg.checksums
 
-            self.log("receive_checksums")
+            log.logger.debug(self.name + ' state={} receive_checksums'.format(self.state))
 
             while len(self.another_checksums) <= key_id:
                 self.another_checksums.append(None)
@@ -327,7 +320,7 @@ class Cascade(StackProtocol):
             start = msg.start
             end = msg.end
 
-            self.log('send_for_binary, params' + str([pass_id, block_id, start, end]))
+            log.logger.debug(self.name + ' state={} send_for_binary, params={}'.format(self.state, [pass_id, block_id, start, end]))
 
             checksum = 0
             block_id_to_index = self.block_id_to_index_lists[key_id]
@@ -351,7 +344,7 @@ class Cascade(StackProtocol):
             end = msg.end
             checksum = msg.checksum
 
-            self.log('receive_for_binary, params= ' + str([key_id, pass_id, block_id, start, end, checksum]))
+            log.logger.debug(self.name + ' state={} receive_for_binary, params={}'.format(self.state, [key_id, pass_id, block_id, start, end, checksum]))
 
             def flip_bit_at_pos(val, pos):
                 """
@@ -373,7 +366,7 @@ class Cascade(StackProtocol):
                 if end - start == 1:
                     pos = block_id_to_index[pass_id][block_id][start]
                     self.bits[key_id] = flip_bit_at_pos(key, pos)
-                    self.log("::: flip at " + str(pos))
+                    log.logger.debug(self.name + ' state={} ::: flip at {}'.format(self.state, pos))
                     # update checksum_table
                     for _pass in range(1, len(checksum_table)):
                         _block = index_to_block_id[_pass][pos]
@@ -396,6 +389,7 @@ class Cascade(StackProtocol):
             for i in range(int(self.frame_len / self.keylen)):
                 self.valid_keys.append((self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1))
                 if self.frame_num > 0:
+                    log.logger.info(self.name + ' state={} got valid key'.format(self.state))
                     self._pop(key=self.valid_keys[-1])
                     self.frame_num -= 1
 
@@ -416,13 +410,13 @@ class Cascade(StackProtocol):
             runtime (int): max simulation time allowed for key generation (default inf).
         """
 
-        self.log('generate_key, keylen=' + str(keylen) + ', keynum=' + str(frame_num))
+        log.logger.info(self.name + ' state={} generate_key, keylen={}, keynum={}'.format(self.state, keylen, frame_num))
         if self.role == 1:
             raise Exception(
                 "Cascase.generate_key() called on receiver '{}'".format(self.name))
 
         if self.state == 0:
-            self.log('generate_key with state 0')
+            log.logger.debug(self.name + ' generate_key with state 0')
             self.setup_time = self.own.timeline.now()
             self.keylen = keylen
             self.frame_num = frame_num
@@ -432,7 +426,7 @@ class Cascade(StackProtocol):
         else:
             self.start_time = self.own.timeline.now()
             self.end_time = self.start_time + self.run_time
-            self.log('generate_key with state ' + str(self.state))
+            log.logger.debug(self.name + ' generate_key with state ' + str(self.state))
             self._push(length=self.frame_len, key_num=self.frame_num, run_time=self.run_time)
 
     def create_checksum_table(self) -> None:
@@ -445,7 +439,7 @@ class Cascade(StackProtocol):
         """
 
         # create index_to_block_id
-        self.log('create_checksum_table')
+        log.logger.debug(self.name + ' state={} create_checksum_table'.format(self.state))
         index_to_block_id = [[]]
         for pass_id in range(1, self.w + 1):
             index_to_block_relation = []
@@ -517,14 +511,14 @@ class Cascade(StackProtocol):
             WILL send a KEY_IS_VALID method to other cascade protocols.
         """
 
-        self.log("check_checksum")
+        log.logger.debug(self.name + ' state={} check_checksum'.format(self.state))
         cur_key = key_id
         another_checksum = self.another_checksums[cur_key]
         block_id_to_index = self.block_id_to_index_lists[cur_key]
         for _pass in range(1,len(another_checksum)):
             for _block in range(len(another_checksum[_pass])):
                 if self.checksum_tables[cur_key][_pass][_block] != self.another_checksums[cur_key][_pass][_block]:
-                    self.log('two checksums are different'+str([cur_key,_pass,_block]))
+                    log.logger.debug(self.name + ' state={} two checksums are different'.format(self.state, [cur_key,_pass,_block]))
                     block_size = len(block_id_to_index[_pass][_block])
                     self.interactive_binary_search(cur_key, _pass, _block, 0, block_size)
                     return False
@@ -532,6 +526,7 @@ class Cascade(StackProtocol):
         for i in range(int(self.frame_len / self.keylen)):
             self.valid_keys.append((self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1))
             if self.frame_num > 0:
+                log.logger.info(self.name + ' state={} got_valid_key'.format(self.state))
                 self._pop(key=self.valid_keys[-1])
                 self.frame_num -= 1
 
@@ -567,7 +562,7 @@ class Cascade(StackProtocol):
             Will send SEND_FOR_BINARY messages to other protocol.
         """
 
-        self.log('interactive_binary_search, params= ' + str([key_id, pass_id, block_id, start, end]))
+        log.logger.debug(self.name + ' state={} interactive_binary_search, params={}'.format(self.state, [key_id, pass_id, block_id, start, end]))
 
         # first half checksum
         message = CascadeMessage(CascadeMsgType.SEND_FOR_BINARY, self.another.name,

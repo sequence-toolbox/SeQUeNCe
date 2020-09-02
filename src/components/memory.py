@@ -23,7 +23,7 @@ from ..utils.encoding import single_atom
 from ..utils.quantum_state import QuantumState
 
 
-# array of atomic ensemble memories
+# array of single atom memories
 class MemoryArray(Entity):
     """Aggregator for Memory objects.
 
@@ -219,8 +219,7 @@ class Memory(Entity):
         """
 
         assert len(self.qstate.state) == 2, "qstate length error in memory {}".format(self.name)
-        new_state = self.qstate.state
-        new_state[0], new_state[1] = new_state[1], new_state[0]
+        new_state = (self.qstate.state[1], self.qstate.state[0])
         self.qstate.set_state_single(new_state)
 
     def reset(self) -> None:
@@ -235,7 +234,9 @@ class Memory(Entity):
         self.fidelity = 0
         if len(self.qstate.state) > 2:
             self.qstate.measure(single_atom["bases"][0])  # to unentangle
-        self.qstate.set_state_single([complex(1), complex(0)])  # set to |0> state
+
+        state = (complex(1), complex(0))
+        self.qstate.set_state_single(state)  # set to |0> state
         self.entangled_memory = {'node_id': None, 'memo_id': None}
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
@@ -248,8 +249,8 @@ class Memory(Entity):
             Will modify internal quantum state and parameters.
             May schedule expiration event.
         """
-
-        self.qstate.set_state_single([complex(1 / sqrt(2)), complex(1 / sqrt(2))])
+        state = (complex(1 / sqrt(2)), complex(1 / sqrt(2)))
+        self.qstate.set_state_single(state)
         self.previous_bsm = -1
         self.entangled_memory = {'node_id': None, 'memo_id': None}
 

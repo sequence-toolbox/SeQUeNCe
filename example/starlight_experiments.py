@@ -1,5 +1,4 @@
 import pandas as pd
-from numpy.random import seed
 from sequence.app.random_request import RandomRequestApp
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import QuantumRouter, BSMNode
@@ -10,8 +9,9 @@ if __name__ == "__main__":
     network_config_file = "example/starlight.json"
     runtime = 1e15
 
-    seed(1)
     tl = Timeline(runtime)
+    tl.seed(1)
+
     network_topo = Topology("network_topo", tl)
     network_topo.load_config(network_config_file)
 

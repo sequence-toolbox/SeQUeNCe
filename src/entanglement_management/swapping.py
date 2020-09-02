@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
 from ..message import Message
 from .entanglement_protocol import EntanglementProtocol
+from ..utils import log
 
 
 class SwappingMsgType(Enum):
@@ -133,6 +134,9 @@ class EntanglementSwappingA(EntanglementProtocol):
             Will call `update_resource_manager` method.
             Will send messages to other protocols.
         """
+        
+        log.logger.info(self.own.name + " middle protocol start with ends {}, {}".format(self.left_protocol.own.name,
+                                                                                         self.right_protocol.own.name))
 
         assert self.left_memo.fidelity > 0 and self.right_memo.fidelity > 0
         assert self.left_memo.entangled_memory["node_id"] == self.left_protocol.own.name
@@ -283,6 +287,8 @@ class EntanglementSwappingB(EntanglementProtocol):
             Will invoke `update_resource_manager` method.
         """
 
+        log.logger.debug(self.own.name + " protocol received_message from node {}, fidelity={}".format(src, msg.fidelity))
+
         assert src == self.another.own.name
 
         if msg.fidelity > 0 and self.own.timeline.now() < msg.expire_time:
@@ -308,7 +314,7 @@ class EntanglementSwappingB(EntanglementProtocol):
         self.own.resource_manager.update(self, memory, state)
 
     def start(self) -> None:
-        pass
+        log.logger.info(self.own.name + " end protocol start with partner {}".format(self.another.own.name))
 
     def memory_expire(self, memory: "Memory") -> None:
         """Method to deal with expired memories.

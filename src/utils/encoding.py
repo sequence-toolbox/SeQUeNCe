@@ -6,7 +6,6 @@ This includes the name of the encoding scheme, bases available, and any other ne
 Attributes:
     polarization (Dict[str, any]): defines the polarization encoding scheme, including the Z- and X-basis.
     time_bin (Dict[str, any]): defines the time bin encoding scheme, including the Z- and X-basis. Also defines the bin separation time.
-    ensemble (Dict[str, any]): defines the atomic ensemble memory scheme, including the Z-basis (currently unused).
     single_atom (Dict[str, any]): defines the single atom memory scheme, including the Z-basis.
 """
 
@@ -15,29 +14,20 @@ from math import sqrt
 
 polarization =\
     {"name": "polarization",
-     "bases": [[[complex(1), complex(0)], [complex(0), complex(1)]],
-               [[complex(sqrt(1 / 2)), complex(sqrt(1 / 2))], [complex(-sqrt(1 / 2)), complex(sqrt(1 / 2))]]]
+     "bases": [((complex(1), complex(0)), (complex(0), complex(1))),
+               ((complex(sqrt(1 / 2)), complex(sqrt(1 / 2))), (complex(-sqrt(1 / 2)), complex(sqrt(1 / 2))))]
      }
 
 time_bin = \
     {"name": "time_bin",
-     "bases": [[[complex(1), complex(0)], [complex(0), complex(1)]],
-               [[complex(sqrt(1 / 2)), complex(sqrt(1 / 2))], [complex(sqrt(1 / 2)), complex(-sqrt(1 / 2))]]],
+     "bases": [((complex(1), complex(0)), (complex(0), complex(1))),
+               ((complex(sqrt(1 / 2)), complex(sqrt(1 / 2))), (complex(sqrt(1 / 2)), complex(-sqrt(1 / 2))))],
      "bin_separation": 1400  # measured in ps
      }
 
-# ensemble must be copied by photon so the memory field can be overwritten    
-ensemble =\
-    {"name": "ensemble",
-     "bases": [[[complex(1), complex(0)], [complex(0), complex(1)]],
-               None],
-     "memory": None  # overwritten by photon
-     }
-
 # single_atom must be copied by photon so the memory field can be overwritten 
-single_atom =\
+single_atom = \
     {"name": "single_atom",
-     "bases": [[[complex(1), complex(0)], [complex(0), complex(1)]],
-               None],
+     "bases": [((complex(1), complex(0)), (complex(0), complex(1))), None],
      "memory": None  # overwritten by photon
      }

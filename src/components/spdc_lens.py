@@ -57,7 +57,7 @@ class SPDCLens(Entity):
             new_photon = deepcopy(photon)
 
             photon.entangle(new_photon)
-            photon.set_state([state[0], complex(0), complex(0), state[1]])
+            photon.set_state((state[0], complex(0), complex(0), state[1]))
 
             self.direct_receiver.get(photon)
             self.direct_receiver.get(new_photon)

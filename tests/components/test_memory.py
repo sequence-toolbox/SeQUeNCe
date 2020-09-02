@@ -65,7 +65,8 @@ def test_Memory_excite():
 
     # test with perfect efficiency
 
-    mem.qstate.set_state_single([complex(1), complex(0)])
+    state = (complex(1), complex(0))
+    mem.qstate.set_state_single(state)
 
     for _ in range(NUM_TESTS):
         mem.excite()
@@ -76,10 +77,11 @@ def test_Memory_excite():
     assert null_ratio == 1
 
     # test with imperfect efficiency
-    
+
     rec.photon_list = []
     mem.efficiency = 0.7
-    mem.qstate.set_state_single([complex(0), complex(1)])
+    state = (complex(0), complex(1))
+    mem.qstate.set_state_single(state)
 
     for _ in range(NUM_TESTS):
         mem.excite()
@@ -109,7 +111,8 @@ def test_Memory_flip_state():
     rec = DumbReceiver()
     mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
     mem.owner = rec
-    mem.qstate.set_state_single([complex(1), complex(0)])
+    state = (complex(1), complex(0))
+    mem.qstate.set_state_single(state)
 
     mem.excite()
     mem.flip_state()
@@ -156,7 +159,7 @@ def test_Memory_expire():
     mem.detach(parent)
     assert len(parent.pop_log) == 0 and protocol.is_expire is False
     mem.expire()
-    assert [complex(1), complex(0)] == mem.qstate.state  # check if collapsed to |0> state
+    assert (complex(1), complex(0)) == mem.qstate.state  # check if collapsed to |0> state
     assert mem.entangled_memory == {"node_id": None, "memo_id": None}
     assert len(parent.pop_log) == 0 and protocol.is_expire is True
 
@@ -182,6 +185,8 @@ def test_Memory__schedule_expiration():
 
     mem._schedule_expiration()
 
-    assert len(tl.events) == 1
-
-
+    counter = 0
+    for event in tl.events:
+        if event.is_invalid():
+            counter += 1
+    assert counter == 1

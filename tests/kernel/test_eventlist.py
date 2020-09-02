@@ -58,15 +58,78 @@ def test_remove():
     e2 = Event(1, None)
     el.push(e1)
     el.push(e2)
-    assert el.data[0] == e1
-    el.remove(e1)
-    assert el.data[0] == e2
-    el.pop()
-    assert len(el) == 0
-    e3 = Event(2, None)
-    e4 = Event(2, None)
-    el.push(e3)
-    el.push(e4)
-    el.remove(e3)
-    top_e = el.pop()
-    assert len(el) == 0 and id(top_e) == id(e4) != id(e3) and top_e == e3
+    for e in el:
+        assert not e.is_invalid()
+
+    el.remove(e2)
+
+    for e in el:
+        if e == e1:
+            assert not e.is_invalid()
+        else:
+            assert e.is_invalid()
+
+
+def test_update_event_time():
+    from numpy import random
+    random.seed(0)
+
+    # increase time
+    for i in range(200):
+        e = EventList()
+        ts = [random.randint(1, 100) for _ in range(i + 10)]
+        for t in ts:
+            event = Event(t, None)
+            e.push(event)
+
+        index = random.randint(len(ts))
+        agg_t = random.randint(25)
+        event = e.data[index]
+
+        e.update_event_time(event, event.time + agg_t)
+
+        pre_time = -1
+        while not e.isempty():
+            event = e.pop()
+            assert event.time >= pre_time
+            pre_time = event.time
+
+    # decrease time
+
+    for i in range(200):
+        e = EventList()
+        ts = [random.randint(1, 100) for _ in range(i + 10)]
+        for t in ts:
+            event = Event(t, None)
+            e.push(event)
+
+        index = random.randint(len(ts))
+        dec_t = random.randint(e.data[index].time)
+        event = e.data[index]
+
+        e.update_event_time(event, event.time - dec_t)
+
+        pre_time = -1
+        while not e.isempty():
+            event = e.pop()
+            assert event.time >= pre_time
+            pre_time = event.time
+
+    # same time
+    for i in range(200):
+        e = EventList()
+        ts = [random.randint(1, 100) for _ in range(i + 10)]
+        for t in ts:
+            event = Event(t, None)
+            e.push(event)
+
+        index = random.randint(len(ts))
+        event = e.data[index]
+
+        e.update_event_time(event, event.time)
+
+        pre_time = -1
+        while not e.isempty():
+            event = e.pop()
+            assert event.time >= pre_time
+            pre_time = event.time

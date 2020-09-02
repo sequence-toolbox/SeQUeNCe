@@ -17,7 +17,7 @@ class Entity(ABC):
         name (str): name of the entity.
         timeline (Timeline): the simulation timeline for the entity.
         owner (Entity): another entity that owns or aggregates the current entity.
-        _observer (List): a list of observers for the entity
+        _observer (List): a list of observers for the entity.
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
