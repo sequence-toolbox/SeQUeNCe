@@ -106,7 +106,6 @@ class QuantumChannel(OpticalChannel):
         self.ends.append(end1)
         self.ends.append(end2)
         end1.assign_qchannel(self, end2.name)
-        end2.assign_qchannel(self, end1.name)
 
     def transmit(self, qubit: "Photon", source: "Node") -> None:
         """Method to transmit photon-encoded qubits.
@@ -120,6 +119,7 @@ class QuantumChannel(OpticalChannel):
         """
 
         assert self.delay != 0 and self.loss != 1, "QuantumChannel init() function has not been run for {}".format(self.name)
+        assert source == self.ends[0]
 
         # remove lowest time bin
         if len(self.send_bins) > 0:
@@ -131,14 +131,6 @@ class QuantumChannel(OpticalChannel):
 
         # check if photon kept
         if (random.random_sample() > self.loss) or qubit.is_null:
-            if source not in self.ends:
-                raise Exception("no endpoint", source)
-
-            receiver = None
-            for e in self.ends:
-                if e != source:
-                    receiver = e
-
             # check if polarization encoding and apply necessary noise
             if (qubit.encoding_type["name"] == "polarization") and (
                     random.random_sample() > self.polarization_fidelity):
@@ -146,7 +138,7 @@ class QuantumChannel(OpticalChannel):
 
             # schedule receiving node to receive photon at future time determined by light speed
             future_time = self.timeline.now() + self.delay
-            process = Process(receiver, "receive_qubit", [source.name, qubit])
+            process = Process(self.ends[1], "receive_qubit", [source.name, qubit])
             event = Event(future_time, process)
             self.timeline.schedule(event)
 
@@ -218,7 +210,6 @@ class ClassicalChannel(OpticalChannel):
         self.ends.append(end1)
         self.ends.append(end2)
         end1.assign_cchannel(self, end2.name)
-        end2.assign_cchannel(self, end1.name)
 
     def transmit(self, message: "Message", source: "Node", priority: int) -> None:
         """Method to transmit classical messages.
@@ -232,16 +223,9 @@ class ClassicalChannel(OpticalChannel):
             End node that is NOT the source node may receive the qubit (via the `receive_qubit` method).
         """
 
-        # get node that's not equal to source
-        if source not in self.ends:
-            raise Exception("no endpoint", source)
-
-        receiver = None
-        for e in self.ends:
-            if e != source:
-                receiver = e
+        assert source == self.ends[0]
 
         future_time = round(self.timeline.now() + int(self.delay))
-        process = Process(receiver, "receive_message", [source.name, message])
+        process = Process(self.ends[1], "receive_message", [source.name, message])
         event = Event(future_time, process, priority)
         self.timeline.schedule(event)
