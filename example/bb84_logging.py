@@ -24,9 +24,12 @@ log.set_logger_level("DEBUG")
 log.track_module("BB84")
 log.track_module('timeline')
 
-qc = QuantumChannel("qc", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
-cc = ClassicalChannel("cc", tl, distance=distance)
-cc.delay += 1e9  # 1 ms
+qc0 = QuantumChannel("qc0", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
+qc1 = QuantumChannel("qc1", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
+cc0 = ClassicalChannel("cc0", tl, distance=distance)
+cc1 = ClassicalChannel("cc1", tl, distance=distance)
+cc0.delay += 1e9  # 1 ms
+cc1.delay += 1e9
 
 # Alice
 ls_params = {"frequency": 80e6, "mean_photon_num": 0.1}
@@ -44,8 +47,10 @@ for i in range(len(detector_params)):
     for name, param in detector_params[i].items():
         bob.update_detector_params(i, name, param)
 
-qc.set_ends(alice, bob)
-cc.set_ends(alice, bob)
+qc0.set_ends(alice, bob)
+qc1.set_ends(bob, alice)
+cc0.set_ends(alice, bob)
+cc1.set_ends(bob, alice)
 
 # BB84 config
 pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])

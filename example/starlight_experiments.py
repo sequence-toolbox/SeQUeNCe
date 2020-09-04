@@ -15,30 +15,6 @@ if __name__ == "__main__":
     network_topo = Topology("network_topo", tl)
     network_topo.load_config(network_config_file)
 
-    # display components
-    #   nodes can be interated from Topology.nodes.values()
-    #   quantum channels from Topology.qchannels
-    #   classical channels from Topology.cchannels
-    # print("Nodes:")
-    # for name, node in network_topo.nodes.items():
-    #     print("\t" + name + ": ", node)
-    # print("Quantum Channels:")
-    # for qc in network_topo.qchannels:
-    #     print("\t" + qc.name + ": ", qc)
-    # print("Classical Channels:")
-    # for cc in network_topo.cchannels:
-    #     print("\t" + cc.name + ": ", cc, "\tdelay:", cc.delay)
-
-    # update forwarding table
-    # for name, node in network_topo.nodes.items():
-    #     if isinstance(node, QuantumRouter):
-    #         table = network_topo.generate_forwarding_table(name)
-    #         # print(name)
-    #         for dst in table:
-    #             next_node = table[dst]
-    #             node.network_manager.protocol_stack[0].add_forwarding_rule(dst, next_node)
-    #             # print("  ", dst, next_node)
-
     # set memory parameters
     MEMO_FREQ = 2e3
     MEMO_EXPIRE = 1.1
