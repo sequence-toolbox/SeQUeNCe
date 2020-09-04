@@ -25,25 +25,40 @@ if __name__ == "__main__":
     g.attr(layout='neato', overlap='false')
 
     nodes = list(topo.nodes.keys())
-    qc_ends = [(qc.ends[0].name, qc.ends[1].name) for qc in topo.qchannels]
+    # qc_ends = [(qc.ends[0].name, qc.ends[1].name) for qc in topo.qchannels]
+    qc_ends = []
 
-    # add nodes and update qchannels if necessary
+    # add nodes and translate qchannels from graph
     for node in nodes:
-        if type(topo.nodes[node]) == BSMNode:
-            if args.draw_middle:
+        if args.draw_middle:
+            if type(topo.nodes[node]) == BSMNode:
                 g.node(node, label='BSM', shape='rectangle')
             else:
-                connected_channels = [qc for qc in qc_ends if node in qc]
-                qc_ends = [qc for qc in qc_ends if qc not in connected_channels]
-                node1 = [end for end in connected_channels[0] if end not in connected_channels[1]][0]
-                node2 = [end for end in connected_channels[1] if end not in connected_channels[0]][0]
-                qc_ends.append((node1, node2))
+                g.node(node)
+            qc_ends += [(node, other) for other in topo.graph[node].keys()]
         else:
-            g.node(node)
+            if type(topo.nodes[node]) == BSMNode:
+                continue
+            else:
+                g.node(node)
+            qc_ends += [(node, other) for other in topo.graph_no_middle[node].keys()]
 
-    # add qconnections
+    #for node in nodes:
+    #    if type(topo.nodes[node]) == BSMNode:
+    #        if args.draw_middle:
+    #            g.node(node, label='BSM', shape='rectangle')
+    #        else:
+    #            connected_channels = [qc for qc in qc_ends if node in qc]
+    #            qc_ends = [qc for qc in qc_ends if qc not in connected_channels]
+    #            node1 = [end for end in connected_channels[0] if end not in connected_channels[1]][0]
+    #            node2 = [end for end in connected_channels[1] if end not in connected_channels[0]][0]
+    #            qc_ends.append((node1, node2))
+    #    else:
+    #        g.node(node)
+
+    # add qchannels
     for qc in qc_ends:
-        g.edge(qc[0], qc[1], color='blue')
+        g.edge(qc[0], qc[1], color='blue', dir='forward')
 
     g.view()
 

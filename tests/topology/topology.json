@@ -17,13 +17,15 @@
             "type": "QuantumRouter"
         }
     ],
-    "qconnections": [
+    "qchannels": [
         {
             "node1": "alice",
             "node2": "bob",
             "attenuation": 1e-5,
             "distance": 3e3
-        },
+        }
+    ],
+    "qconnections": [
         {
             "node1": "e1",
             "node2": "e2",
