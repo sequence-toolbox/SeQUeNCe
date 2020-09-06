@@ -1,5 +1,6 @@
-__all__ = ["components", "kernel", "protocols", "topology", "utils"]
+__all__ = ['app', 'components', 'entanglement_management', 'kernel', 'network_management', 'qkd', 'resource_management',
+           'topology', 'utils']
 
 
 def __dir__():
-    return ("components", "kernel", "protocols", "topology", "utils")
+    return 'app', 'components', 'entanglement_management', 'kernel', 'network_management', 'qkd', 'resource_management', 'topology', 'utils'

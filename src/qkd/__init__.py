@@ -1,2 +1,2 @@
 def __dir__():
-    return ("BB84", "cascade")
+    return "BB84", "cascade"

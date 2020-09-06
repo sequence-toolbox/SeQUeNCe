@@ -1,2 +1,2 @@
 def __dir__():
-    return ("entity", "event", "eventlist", "process", "timeline")
+    return "entity", "event", "eventlist", "process", "timeline"

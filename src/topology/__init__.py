@@ -1,2 +1,2 @@
 def __dir__():
-    return ("node", "topology")
+    return "node", "topology"
