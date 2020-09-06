@@ -56,8 +56,10 @@ if __name__ == "__main__":
     node1 = Node("node1", tl)
     node2 = Node("node2", tl)
 
-    cc = ClassicalChannel("cc", tl, 1e3, 1e9)
-    cc.set_ends(node1, node2)
+    cc0 = ClassicalChannel("cc0", tl, 1e3, 1e9)
+    cc1 = ClassicalChannel("cc1", tl, 1e3, 1e9)
+    cc0.set_ends(node1, node2)
+    cc1.set_ends(node2, node1)
 
     pingp = PingProtocol(node1, "pingp", "pongp", "node2")
     pongp = PongProtocol(node2, "pongp", "pingp", "node1")

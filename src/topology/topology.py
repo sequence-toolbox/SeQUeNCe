@@ -51,11 +51,15 @@ class Topology():
     def load_config(self, config_file: str) -> None:
         """Method to load a network configuration file.
 
-        Network should be specifiedd in json format.
+        Network should be specified in json format.
         Will populate nodes, qchannels, cchannels, and graph fields.
+        Will also generate and install forwarding tables for quantum router nodes.
 
         Args:
             config_file (str): path to json file specifying network.
+
+        Side Effects:
+            Will modify graph, graph_no_middle, qchannels, and cchannels attributes.
         """
 
         topo_config = json5.load(open(config_file))

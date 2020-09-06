@@ -24,7 +24,7 @@ from ..kernel.process import Process
 class OpticalChannel(Entity):
     """Parent class for optical fibers.
 
-    Attributes;
+    Attributes:
         name (str): label for channel instance.
         timeline (Timeline): timeline for simulation.
         ends (List[Node]): ends of channel (must be length 2 before simulation)
@@ -64,7 +64,7 @@ class OpticalChannel(Entity):
 class QuantumChannel(OpticalChannel):
     """Optical channel for transmission of photons/qubits.
 
-    Attributes;
+    Attributes:
         name (str): label for channel instance.
         timeline (Timeline): timeline for simulation.
         ends (List[Node]): ends of channel (must be length 2 before simulation)

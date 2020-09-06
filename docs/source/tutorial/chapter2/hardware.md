@@ -23,7 +23,7 @@ The hardware used in this tutorial is a single atom quantum memory and a single 
 
 To begin, we create our custom node classes. We will make two types - a `SenderNode` to hold the memory and send photons and a `ReceiverNode` to receive and detect photons. Both of our node types will inherit from `Node`, the basic node class from sequence, and we invoke the parent constructor for `Node`. In general, entities (such as nodes and hardware) require a string `name` and a `Timeline` in their constructor, as well as necessary parameters (for more details on timelines, see Tutorial 1).
 
-Next, we create all of our hardware elements on each node. The detector is created easily, as no specific parameters are required (but we wish to set the `efficiency` to 1 to prevent errors). We’ll attach the detector class to the receiver node.
+Next, we create all of our hardware elements on each node. The detector is created easily, as no specific parameters are required (but we wish to set the `efficiency` to 1 to prevent errors). We’ll put the detector class on the receiver node.
 
 The required parameters for memories are more numerous and are listed here:
 * `fidelity`: fidelity of entanglement. This is usually set to 0 when unentangled, but can be set to other values as it is usually replaced when entangled.
@@ -64,15 +64,15 @@ Notice that we also needed to change the `receive_qubit` method of the base `Nod
 
 ### Step 2: Custom Protocol
 
-Next, we will create our custom protocol using a custom class. Let’s denote this class as `Counter`, as we will be counting photons detection. The initializing method is very simple, only setting the count to 0. We then proceed to the pop function, which will handle information from the detector. Normally, the detector will pass two arguments through this function (a detection time and detector identity), but we are not concerned with these. We only wish to increment our counter.
+Next, we will create our custom protocol using a custom class. Let’s denote this class as `Counter`, as we will be counting photons detection. The initializing method is very simple, only setting the count to 0. We then proceed to the trigger function, which will handle information from the detector. Normally, the detector will pass two arguments through this function (a reference to the specific detector and info including the detection time), but we are not concerned with these. We only wish to increment our counter.
 
 ```python
 class Counter():
     def __init__(self):
         self.count = 0
 
-    def pop(self, **kwargs) -> None:
-        self.counter += 1
+    def trigger(self, detector, info):
+        self.count += 1
 ```
 
 ### Step 3: Build the Network
@@ -91,7 +91,7 @@ node1 = SenderNode("node1", tl)
 node2 = ReceiverNode("node2", tl)
 ```
 
-Next, we create the quantum channel to provide connectivity between the nodes. We won’t need a classical channel, as we’re not sending any messages between nodes. In the initializer, we again specify the name and timeline, and include the additional required attenuation and distance parameters. We set attenuation to 0, so that we do not lose any photons in the channel (try changing it to see the effects!), and set the distance to one kilometer (note that the distance is given in meters).
+Next, we create the quantum channel to provide connectivity between the nodes. We won’t need a classical channel, as we’re not sending any messages between nodes. In the initializer, we again specify the name and timeline, and include the additional required attenuation and distance parameters. We set attenuation to 0, so that we do not lose any photons in the channel (try changing it to see the effects!), and set the distance to one kilometer (note that the distance is given in meters). The `set_ends` method finally sets the sender and receiver for the channel.
 
 ```python
 from sequence.components.optical_channel import QuantumChannel
@@ -190,9 +190,9 @@ print("percent measured: {}%".format(100 * counter.count / NUM_TRIALS))
 
 We expect the percent to be about 50%, as we initialized the memory in the |+&#10217; state each time. Try messing with parameters to achieve different measurement results!
 
-## Example 2: Classical Messaging
+## Example: Classical Messaging
 
-In this example, we will build a simple 2-node network connected with a classical channel. The topology is shown here:
+In this example, we will build a simple 2-node network connected with a two-way classical channel. The topology is shown here:
 
 ![net_topo2](figures/hardware_architecture_2.png)
 
@@ -275,7 +275,7 @@ On both protocols, we wish to display when we receive a message. We can see the 
 
 ### Step 2: Building the Network
 
-We have now already completed the majority of the work required for our experiment! The only thing left is to create our nodes, protocols, and classical channel connection, and then run the experiment (which we will do in the next step).
+We have now already completed the majority of the work required for our experiment! The only thing left is to create our nodes, protocols, and classical channel connection, and then run the experiment (which we will do in the next step). Classical channels in sequence are one-way only, so we will need to define two to achieve our two-way communication.
 
 ```python
 from sequence.kernel.timeline import Timeline
@@ -286,8 +286,10 @@ tl = Timeline(1e12)
 node1 = Node("node1", tl)
 node2 = Node("node2", tl)
 
-cc = ClassicalChannel("cc", tl, distance=1e3, delay=1e9)
-cc.set_ends(node1, node2)
+cc0 = ClassicalChannel("cc0", tl, 1e3, 1e9)
+cc1 = ClassicalChannel("cc1", tl, 1e3, 1e9)
+cc0.set_ends(node1, node2)
+cc1.set_ends(node2, node1)
 
 pingp = PingProtocol(node1, "pingp", "pongp", "node2")
 pongp = PongProtocol(node2, "pongp", "pingp", "node1")

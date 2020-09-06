@@ -126,8 +126,6 @@ nodes = [node1, node2, bsm_node]
 
 for i in range(3):
     for j in range(3):
-        if i >= j:
-            continue
         cc= ClassicalChannel('cc_%s_%s'%(nodes[i].name, nodes[j].name), tl, 1000, 1e8)
         cc.set_ends(nodes[i], nodes[j])
 ```
@@ -261,8 +259,10 @@ tl = Timeline()
 node1 = PurifyNode('node1', tl)
 node2 = PurifyNode('node2', tl)
 
-cc = ClassicalChannel('cc', tl, 1000, 1e9)
-cc.set_ends(node1, node2)
+cc0 = ClassicalChannel('cc0', tl, 1000, 1e9)
+cc1 = ClassicalChannel('cc1', tl, 1000, 1e9)
+cc0.set_ends(node1, node2)
+cc1.set_ends(node2, node1)
 ```
 
 ### Step 3: Manually Set Entanglement States 
@@ -449,8 +449,6 @@ nodes = [left_node, right_node, mid_node]
 
 for i in range(3):
     for j in range(3):
-        if i >= j:
-            continue
         cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl, 1000, 1e9)
         cc.set_ends(nodes[i], nodes[j])
 ```
