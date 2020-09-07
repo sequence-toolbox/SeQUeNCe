@@ -1,2 +1,2 @@
 def __dir__():
-    return ("encoding", "quantum_state")
+    return 'encoding', 'log', 'quantum_state'

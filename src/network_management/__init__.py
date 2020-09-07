@@ -1,2 +1,2 @@
 def __dir__():
-    return ("routing", "rsvp", "network_manager")
+    return 'routing', 'reservation', 'network_manager'
