@@ -1,2 +1,2 @@
 def __dir__():
-    return "random_request"
+    return 'random_request'
