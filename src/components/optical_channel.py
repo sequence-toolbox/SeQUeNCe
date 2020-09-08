@@ -27,7 +27,8 @@ class OpticalChannel(Entity):
     Attributes:
         name (str): label for channel instance.
         timeline (Timeline): timeline for simulation.
-        ends (List[Node]): ends of channel (must be length 2 before simulation)
+        sender (Node): node at sending end of optical channel.
+        receiver (Node): node at receiving end of optical channel.
         atteunuation (float): attenuation of the fiber (in dB/km).
         distance (int): length of the fiber (in m).
         polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
@@ -47,7 +48,8 @@ class OpticalChannel(Entity):
         """
 
         Entity.__init__(self, name, timeline)
-        self.ends = []
+        self.sender = None
+        self.receiver = None
         self.attenuation = attenuation
         self.distance = distance  # (measured in m)
         self.polarization_fidelity = polarization_fidelity
@@ -67,7 +69,8 @@ class QuantumChannel(OpticalChannel):
     Attributes:
         name (str): label for channel instance.
         timeline (Timeline): timeline for simulation.
-        ends (List[Node]): ends of channel (must be length 2 before simulation)
+        sender (Node): node at sending end of optical channel.
+        receiver (Node): node at receiving end of optical channel.
         atteunuation (float): attenuation of the fiber (in dB/km).
         distance (int): length of the fiber (in m).
         polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
@@ -103,8 +106,8 @@ class QuantumChannel(OpticalChannel):
         self.loss = 1 - 10 ** (self.distance * self.attenuation / -10)
 
     def set_ends(self, end1: "Node", end2: "Node") -> None:
-        self.ends.append(end1)
-        self.ends.append(end2)
+        self.sender = end1
+        self.receiver = end2
         end1.assign_qchannel(self, end2.name)
 
     def transmit(self, qubit: "Photon", source: "Node") -> None:
@@ -115,11 +118,11 @@ class QuantumChannel(OpticalChannel):
             source (Node): source node sending the qubit.
 
         Side Effects:
-            End node that is NOT the source node may receive the qubit (via the `receive_qubit` method).
+            Receiver node may receive the qubit (via the `receive_qubit` method).
         """
 
         assert self.delay != 0 and self.loss != 1, "QuantumChannel init() function has not been run for {}".format(self.name)
-        assert source == self.ends[0]
+        assert source == self.sender
 
         # remove lowest time bin
         if len(self.send_bins) > 0:
@@ -138,7 +141,7 @@ class QuantumChannel(OpticalChannel):
 
             # schedule receiving node to receive photon at future time determined by light speed
             future_time = self.timeline.now() + self.delay
-            process = Process(self.ends[1], "receive_qubit", [source.name, qubit])
+            process = Process(self.receiver, "receive_qubit", [source.name, qubit])
             event = Event(future_time, process)
             self.timeline.schedule(event)
 
@@ -184,7 +187,8 @@ class ClassicalChannel(OpticalChannel):
     Attributes:
         name (str): label for channel instance.
         timeline (Timeline): timeline for simulation.
-        ends (List[Node]): ends of channel (must be length 2 before simulation)
+        sender (Node): node at sending end of optical channel.
+        receiver (Node): node at receiving end of optical channel.
         distance (float): length of the fiber (in m).
         light_speed (float): speed of light within the fiber (in m/ps).
         delay (float): delay in message transmission (default distance / light_speed).
@@ -207,8 +211,8 @@ class ClassicalChannel(OpticalChannel):
             self.delay = delay
 
     def set_ends(self, end1: "Node", end2: "Node") -> None:
-        self.ends.append(end1)
-        self.ends.append(end2)
+        self.sender = end1
+        self.receiver = end2
         end1.assign_cchannel(self, end2.name)
 
     def transmit(self, message: "Message", source: "Node", priority: int) -> None:
@@ -220,12 +224,12 @@ class ClassicalChannel(OpticalChannel):
             priority (int): priority of transmitted message (to resolve message reception conflicts).
 
         Side Effects:
-            End node that is NOT the source node may receive the qubit (via the `receive_qubit` method).
+            Receiver node may receive the qubit (via the `receive_qubit` method).
         """
 
-        assert source == self.ends[0]
+        assert source == self.sender
 
         future_time = round(self.timeline.now() + int(self.delay))
-        process = Process(self.ends[1], "receive_message", [source.name, message])
+        process = Process(self.receiver, "receive_message", [source.name, message])
         event = Event(future_time, process, priority)
         self.timeline.schedule(event)

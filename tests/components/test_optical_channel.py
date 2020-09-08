@@ -15,6 +15,8 @@ def test_ClassicalChannel_set_ends():
     assert len(n1.cchannels) == 0 and len(n2.cchannels) == 0
 
     cc.set_ends(n1, n2)
+    assert cc.sender == n1
+    assert cc.receiver == n2
     assert 'n2' in n1.cchannels
     assert n1.cchannels["n2"] == cc
     assert len(n2.cchannels) == 0
@@ -66,7 +68,8 @@ def test_QuantumChannel_set_ends():
 
     assert len(end1.qchannels) == 1
     assert len(end2.qchannels) == 0
-    assert end1 in qc.ends and end2 in qc.ends
+    assert qc.sender == end1
+    assert qc.receiver == end2
     assert end2.name in end1.qchannels
 
 

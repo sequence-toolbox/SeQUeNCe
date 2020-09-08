@@ -68,7 +68,8 @@ def test_add_classical_connection():
     channels = [e for e in tl.entities if type(e) == ClassicalChannel]
     assert len(channels) == 2
     for channel in channels:
-        assert n1 in channel.ends and n2 in channel.ends
+        ends = [channel.receiver, channel.sender]
+        assert n1 in ends and n2 in ends
 
 
 def test_add_quantum_connection():
