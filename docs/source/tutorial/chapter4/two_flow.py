@@ -169,11 +169,11 @@ def add_ep_rules(index: int, path: List[RouterNode], target_fidelity: float):
 
                 protocols.remove(_protocols[1])
                 _protocols[1].rule.protocols.remove(_protocols[1])
-                _protocols[1].kept_memo.remove_protocol(_protocols[1])
+                _protocols[1].kept_memo.detach(_protocols[1])
                 _protocols[0].meas_memo = _protocols[1].kept_memo
                 _protocols[0].memories = [_protocols[0].kept_memo, _protocols[0].meas_memo]
                 _protocols[0].name = _protocols[0].name + "." + _protocols[0].meas_memo.name
-                _protocols[0].meas_memo.add_protocol(_protocols[0])
+                _protocols[0].meas_memo.attach(_protocols[0])
                 _protocols[0].t0 = _protocols[0].kept_memo.timeline.now()
 
                 return _protocols[0]
@@ -341,8 +341,8 @@ if __name__ == "__main__":
     # create all-to-all classical connections
     cc_delay = 1e9
     node_list = [r1, r2, r3, m12, m23]
-    for i, node1 in enumerate(node_list):
-        for node2 in node_list[i+1:]:
+    for node1 in node_list:
+        for node2 in node_list:
             cc = ClassicalChannel("cc_%s_%s"%(node1.name, node2.name), tl, 1e3, delay=cc_delay)
             cc.set_ends(node1, node2)
 

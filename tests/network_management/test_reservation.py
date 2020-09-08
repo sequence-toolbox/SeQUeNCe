@@ -236,9 +236,10 @@ def test_ResourceReservationProtocol_create_rules():
         qc.set_ends(routers[i], mids[i])
         qc = QuantumChannel("qc_r_%d" % i, tl, 0, 100)
         qc.set_ends(routers[i + 1], mids[i])
+    # all-to-all classical connections
     for i, n1 in enumerate(routers + mids):
         for j, n2 in enumerate(routers + mids):
-            if i >= j:
+            if i == j:
                 continue
             cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 10, delay=100000)
             cc.set_ends(n1, n2)
@@ -310,9 +311,10 @@ def test_ResourceReservationProtocol_set_es_params():
         qc.set_ends(routers[i], mids[i])
         qc = QuantumChannel("qc_r_%d" % i, tl, 0, 100)
         qc.set_ends(routers[i + 1], mids[i])
+    # all-to-all classical connections
     for i, n1 in enumerate(routers + mids):
         for j, n2 in enumerate(routers + mids):
-            if i >= j:
+            if i == j:
                 continue
             cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 10, delay=100000)
             cc.set_ends(n1, n2)

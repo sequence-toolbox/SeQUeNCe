@@ -36,9 +36,12 @@ def NewNetworkManager(owner: "QuantumRouter") -> "NetworkManager":
 
 For this example, we will be using a json file to specify the nodes and connectivity of the network. The json file should be structured as a dictionary with the following keys:
 - `nodes`, giving a list of node specifications,
-- `qconnections`, giving a list of quantum channel specifications, and
 - One of the following:
-    - `cconnections`, giving a list of classical channel specifications (similar to `qconnections`)
+    - `qchannels`, giving a list of quantum channel specifications,
+    - `qconnections`, giving a list of two-way quantum connection specifications, and
+- One of the following:
+    - `cchannels`, giving a list of classical channel specifications (similar to `qchannels`)
+    - `cconnections`, giving a list of two-way classical connection specifications, and
     - `cconnections_table`, giving a specially formatted round-trip connection time for nodes on a complete classical network
 
 We will first make the `nodes` entry. All fields of the list will have the `name` field required by the node constructor and a specification of the node type, along with any more arguments (optional or not) specified by the specific node type. We will be using the `QuantumRouter` node type for this tutorial, which already includes all of the necessary hardware for entanglement distribution as well as all necessary modules (including network management).
@@ -103,10 +106,10 @@ The `qconnections` entry should have multiple entries specifying the name of the
 ]
 ```
 
-Finally, for the classical channels, we will be using the round trip delay table option. We will thus need to label the section as `cconnections_table` and specify the `type` field as `RT`. We then specify the `labels` field, which gives the labels of the round trip table rows and columns (specifically, the names of the network nodes). Finally, we construct the table itself, which is a two-dimensional array with rows specifying the sending node and columns specifying the receiving node:
+Finally, for the classical channels, we will be using the round trip delay table option. We will thus need to label the section as `cchannels_table` and specify the `type` field as `RT`. We then specify the `labels` field, which gives the labels of the round trip table rows and columns (specifically, the names of the network nodes). Finally, we construct the table itself, which is a two-dimensional array with rows specifying the sending node and columns specifying the receiving node:
 
 ```json
-"cconnections_table": {
+"cchannels_table": {
     "type": "RT",
     "labels": ["center", "end1", "end2", "end3", "end4"],
     "table": [[0,   1e9, 1e9, 1e9, 1e9],

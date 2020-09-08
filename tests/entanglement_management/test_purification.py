@@ -43,9 +43,12 @@ def test_BBPSSW1():
     tl = Timeline()
     a1 = FakeNode("a1", tl)
     a2 = FakeNode("a2", tl)
-    cc = ClassicalChannel("cc", tl, 0, 1e5)
-    cc.delay = 1e9
-    cc.set_ends(a1, a2)
+    cc0 = ClassicalChannel("cc0", tl, 0, 1e5)
+    cc1 = ClassicalChannel("cc1", tl, 0, 1e5)
+    cc0.delay = 1e9
+    cc1.delay = 1e9
+    cc0.set_ends(a1, a2)
+    cc1.set_ends(a2, a1)
 
     tl.init()
     for i in range(1000):
@@ -103,9 +106,12 @@ def test_BBPSSW2():
     tl = Timeline()
     a1 = FakeNode("a1", tl)
     a2 = FakeNode("a2", tl)
-    cc = ClassicalChannel("cc", tl, 0, 1e5)
-    cc.delay = 1e9
-    cc.set_ends(a1, a2)
+    cc0 = ClassicalChannel("cc0", tl, 0, 1e5)
+    cc1 = ClassicalChannel("cc1", tl, 0, 1e5)
+    cc0.delay = 1e9
+    cc1.delay = 1e9
+    cc0.set_ends(a1, a2)
+    cc1.set_ends(a2, a1)
 
     tl.init()
     counter1 = counter2 = 0

@@ -249,11 +249,11 @@ class QuantumRouter(Node):
 
         super().init()
         for dst in self.qchannels:
-            for end in self.qchannels[dst].ends:
-                if isinstance(end, BSMNode):
-                    for other in end.eg.others:
-                        if other != self.name:
-                            self.map_to_middle_node[other] = end.name
+            end = self.qchannels[dst].receiver
+            if isinstance(end, BSMNode):
+                for other in end.eg.others:
+                    if other != self.name:
+                        self.map_to_middle_node[other] = end.name
 
     def memory_expire(self, memory: "Memory") -> None:
         """Method to receive expired memories.

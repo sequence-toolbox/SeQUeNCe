@@ -47,7 +47,7 @@
             "distance": 500
         }
     ],
-    "cconnections_table": {
+    "cchannels_table": {
         "type": "RT",
         "labels": ["center", "edge1", "edge2", "edge3", "edge4"],
         "table": [[0,   1e9, 1e9, 1e9, 1e9],

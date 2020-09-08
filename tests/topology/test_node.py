@@ -31,8 +31,11 @@ def test_Node_send_message():
     tl = Timeline()
     node1 = FakeNode("node1", tl)
     node2 = FakeNode("node2", tl)
-    cc = ClassicalChannel("cc", tl, 1e3)
-    cc.set_ends(node1, node2)
+    cc0 = ClassicalChannel("cc0", tl, 1e3)
+    cc1 = ClassicalChannel("cc1", tl, 1e3)
+    cc0.set_ends(node1, node2)
+    cc1.set_ends(node2, node1)
+
     for i in range(10):
         node1.send_message("node2", str(i))
         tl.time += 1
@@ -77,8 +80,10 @@ def test_Node_send_qubit():
     tl = Timeline()
     node1 = FakeNode("node1", tl)
     node2 = FakeNode("node2", tl)
-    qc = QuantumChannel("qc", tl, 2e-4, 2e4)
-    qc.set_ends(node1, node2)
+    qc0 = QuantumChannel("qc0", tl, 2e-4, 2e4)
+    qc1 = QuantumChannel("qc1", tl, 2e-4, 2e4)
+    qc0.set_ends(node1, node2)
+    qc1.set_ends(node2, node1)
     tl.init()
 
     for i in range(1000):
@@ -94,9 +99,10 @@ def test_Node_send_qubit():
     assert len(node1.log) == len(node2.log) == 0
     tl.run()
 
-    expect_rate = 1 - qc.loss
-    assert abs(len(node1.log) / 1000 - expect_rate) < 0.1
-    assert abs(len(node2.log) / 1000 - expect_rate) < 0.1
+    expect_rate_0 = 1 - qc0.loss
+    expect_rate_1 = 1 - qc1.loss
+    assert abs(len(node1.log) / 1000 - expect_rate_1) < 0.1
+    assert abs(len(node2.log) / 1000 - expect_rate_0) < 0.1
 
 
 def test_QuantumRouter_init():

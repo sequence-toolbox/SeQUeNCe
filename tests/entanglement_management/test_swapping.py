@@ -49,9 +49,9 @@ def test_EntanglementSwapping():
     a1 = FakeNode("a1", tl)
     a2 = FakeNode("a2", tl)
     a3 = FakeNode("a3", tl)
-    cc1 = ClassicalChannel("a1-a2", tl, 0, 1e5)
-    cc1.set_ends(a1, a2)
+    cc0 = ClassicalChannel("a2-a1", tl, 0, 1e5)
     cc1 = ClassicalChannel("a2-a3", tl, 0, 1e5)
+    cc0.set_ends(a2, a1)
     cc1.set_ends(a2, a3)
     tl.init()
     counter1 = counter2 = 0
