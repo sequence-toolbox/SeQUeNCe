@@ -96,7 +96,7 @@ class QuantumChannel(OpticalChannel):
         super().__init__(name, timeline, attenuation, distance, polarization_fidelity, light_speed)
         self.delay = 0
         self.loss = 1
-        self.frequency = frequency # maximum frequency for sending qubits (measured in Hz)
+        self.frequency = frequency  # maximum frequency for sending qubits (measured in Hz)
         self.send_bins = []
 
     def init(self) -> None:
@@ -105,10 +105,10 @@ class QuantumChannel(OpticalChannel):
         self.delay = round(self.distance / self.light_speed)
         self.loss = 1 - 10 ** (self.distance * self.attenuation / -10)
 
-    def set_ends(self, end1: "Node", end2: "Node") -> None:
-        self.sender = end1
-        self.receiver = end2
-        end1.assign_qchannel(self, end2.name)
+    def set_ends(self, sender: "Node", receiver: "Node") -> None:
+        self.sender = sender
+        self.receiver = receiver
+        sender.assign_qchannel(self, receiver.name)
 
     def transmit(self, qubit: "Photon", source: "Node") -> None:
         """Method to transmit photon-encoded qubits.
@@ -210,10 +210,10 @@ class ClassicalChannel(OpticalChannel):
         else:
             self.delay = delay
 
-    def set_ends(self, end1: "Node", end2: "Node") -> None:
-        self.sender = end1
-        self.receiver = end2
-        end1.assign_cchannel(self, end2.name)
+    def set_ends(self, sender: "Node", receiver: "Node") -> None:
+        self.sender = sender
+        self.receiver = receiver
+        sender.assign_cchannel(self, receiver.name)
 
     def transmit(self, message: "Message", source: "Node", priority: int) -> None:
         """Method to transmit classical messages.
