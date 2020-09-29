@@ -21,22 +21,22 @@ def test_qmanager_new():
 
     test_state = [complex(0), complex(1)]
     key = qm.new(test_state)
-    assert (qm.get(key[0]).state == np.array(test_state)).all
-
-    test_state_2 = [complex(1), complex(0), complex(0), complex(0)]
-    keys = qm.new(test_state_2)
-    assert len(keys) == 2
-    assert qm.get(keys[0]) is qm.get(keys[1])
-    assert (qm.get(keys[0]).state == np.array(test_state_2)).all
-    assert (qm.get(keys[1]).state == np.array(test_state_2)).all
+    assert (qm.get(key).state == np.array(test_state)).all
 
 
 def test_qmanager_set():
     qm = QuantumManager()
     key = qm.new()
     new_state = [complex(0), complex(1)]
-    qm.set(key[0], new_state)
-    assert (qm.get(key[0]) == np.array(new_state)).all
+    qm.set([key], new_state)
+    assert (qm.get(key) == np.array(new_state)).all
+
+    key2 = qm.new()
+    keys = [key, key2]
+    new_state = [complex(1), complex(0), complex(0), complex(0)]
+    qm.set(keys, new_state)
+    assert (qm.get(key).state == qm.get(key2).state).all
+    assert (qm.get(key).state == np.array(new_state)).all
 
 
 def test_qmanager_remove():

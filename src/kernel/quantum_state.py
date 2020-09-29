@@ -15,35 +15,20 @@ class QuantumManager():
         self.states = {}
         self._least_available = 0
 
-    def _get_least_available(self) -> int:
-        """Gets least available key for state storage."""
-
-        val = self._least_available
-        while True:
-            self._least_available += 1
-            if self._least_available not in self.states.keys():
-                break
-        return val
-
-    def new(self, amplitudes=[complex(1), complex(0)]) -> Tuple[int]:
+    def new(self, amplitudes=[complex(1), complex(0)]) -> int:
         """Method to create a new quantum state.
 
         Args:
             amplitudes (List[complex]): complex amplitudes of new state (default [1, 0]).
 
         Returns:
-            Tuple[int]: keys for new state generated where length is log2(len(amplitudes)).
+            int: key for new state generated.
         """
-
-        num_qubits = log2(len(amplitudes))
-        assert num_qubits.is_integer()
-        num_qubits = int(num_qubits)
-
-        keys = [self._get_least_available() for _ in range(num_qubits)]
-        state = KetState(amplitudes, keys)
-        for key in keys:
-            self.states[key] = state
-        return tuple(keys)
+        
+        key = self._least_available
+        self._least_available += 1
+        self.states[key] = KetState(amplitudes, [key])
+        return key
 
     def get(self, key: int) -> "KetState":
         """Method to get quantum state stored at an index.
@@ -56,7 +41,7 @@ class QuantumManager():
         """
         return self.states[key]
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Tuple[int]:
+    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> List[int]:
         """Method to run a circuit on a given set of quantum states.
         
         Args:
@@ -69,27 +54,36 @@ class QuantumManager():
 
         pass
 
-    def set(self, key: int, amplitudes: List[complex]) -> None:
-        """Method to set quantum state at a given key.
-
-        Should only be used for single (unentangled) qubits.
+    def set(self, keys: List[int], amplitudes: List[complex]) -> None:
+        """Method to set quantum state at a given key(s).
 
         Args:
-            key (int): key of state to change.
-            amplitudes (List[complex]): List of amplitudes to set state to (should be of length 2).
+            keys (List[int]): key(s) of state(s) to change.
+            amplitudes (List[complex]): List of amplitudes to set state to (should be of length 2 ** len(keys)).
         """
 
-        assert len(amplitudes) == 2
-        self.states[key] = KetState(amplitudes, key)
+        num_qubits = log2(len(amplitudes))
+        assert num_qubits.is_integer()
+        num_qubits = int(num_qubits)
+        assert num_qubits == len(keys)
+
+        new_state = KetState(amplitudes, keys)
+        for key in keys:
+            self.states[key] = new_state
 
     def remove(self, key: int) -> None:
         """Method to remove state stored at key."""
         del self.states[key]
-        self._least_available = key
 
 
 class KetState():
     def __init__(self, amplitudes: List[complex], keys: List[int]):
+        # check formatting
+        assert all([abs(a) <= 1 for a in amplitudes])
+        num_qubits = log2(len(amplitudes))
+        assert num_qubits.is_integer()
+        assert num_qubits == len(keys)
+
         self.state = array(amplitudes)
         self.keys = keys
 
