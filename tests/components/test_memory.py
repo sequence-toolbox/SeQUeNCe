@@ -1,6 +1,7 @@
 from typing import Dict
+import numpy as np
 
-from sequence.components.memory import Memory, MemoryArray
+from sequence.components.memory import NewMemory, Memory, MemoryArray
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
@@ -53,6 +54,18 @@ def test_MemoryArray_expire():
     expired_memo = ma[0]
     ma.memory_expire(expired_memo)
     assert node.is_expired is True and node.expired_memory == expired_memo
+
+
+def test_NewMemory_update_state():
+    new_state = [complex(0), complex(1)]
+    
+    tl = Timeline()
+    mem = NewMemory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
+
+    mem.update_state(new_state)
+    
+    assert len(tl.quantum_manager.states) == 1
+    assert (tl.quantum_manager.get(mem.qstate_key) == np.array(new_state)).all
 
 
 def test_Memory_excite():

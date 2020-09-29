@@ -6,7 +6,7 @@ Photons should be routed to a BSM device for entanglement generation, or through
 """
 
 from math import sqrt, inf
-from typing import Any, TYPE_CHECKING, Dict
+from typing import Any, List, TYPE_CHECKING, Dict
 
 from numpy import random
 
@@ -91,6 +91,189 @@ class MemoryArray(Entity):
 
     def set_node(self, node: "QuantumRouter") -> None:
         self.owner = node
+
+
+class NewMemory(Entity):
+    """Individual single-atom memory.
+
+    This class models a single-atom memory, where the quantum state is stored as the spin of a single ion.
+    This class will replace the older implementation once completed.
+
+    Attributes:
+        name (str): label for memory instance.
+        timeline (Timeline): timeline for simulation.
+        fidelity (float): (current) fidelity of memory.
+        frequency (float): maximum frequency at which memory can be excited.
+        efficiency (float): probability of emitting a photon when excited.
+        coherence_time (float): average usable lifetime of memory (in seconds).
+        wavelength (float): wavelength (in nm) of emitted photons.
+        qstate (QuantumState): quantum state of memory.
+        entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
+    """
+    
+    def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
+                 efficiency: float, coherence_time: int, wavelength: int):
+        """Constructor for the Memory class.
+
+        Args:
+            name (str): name of the memory instance.
+            timeline (Timeline): simulation timeline.
+            fidelity (float): fidelity of memory.
+            frequency (float): maximum frequency of excitation for memory.
+            efficiency (float): efficiency of memories.
+            coherence_time (float): average time (in s) that memory state is valid.
+            wavelength (int): wavelength (in nm) of photons emitted by memories.
+        """
+
+        super().__init__(name, timeline)
+        assert 0 <= fidelity <= 1
+        assert 0 <= efficiency <= 1
+
+        self.fidelity = 0
+        self.raw_fidelity = fidelity
+        self.frequency = frequency
+        self.efficiency = efficiency
+        self.coherence_time = coherence_time  # coherence time in seconds
+        self.wavelength = wavelength
+        self.qstate_key = timeline.quantum_manager.new()[0]
+
+        self.memory_array = None
+
+        # keep track of previous BSM result (for entanglement generation)
+        # -1 = no result, 0/1 give detector number
+        self.previous_bsm = -1
+
+        # keep track of entanglement
+        self.entangled_memory = {'node_id': None, 'memo_id': None}
+
+        # keep track of current memory write (ignore expiration of past states)
+        self.expiration_event = None
+        self.excited_photon = None
+
+        self.next_excite_time = 0
+
+    def init(self):
+        pass
+
+    def set_memory_array(self, memory_array: MemoryArray):
+        self.memory_array = memory_array
+
+    def excite(self, dst="") -> None:
+        """Method to excite memory and potentially emit a photon.
+
+        If it is possible to emit a photon, the photon may be marked as null based on the state of the memory.
+
+        Args:
+            dst (str): name of destination node for emitted photon (default "").
+
+        Side Effects:
+            May modify quantum state of memory.
+            May schedule photon transmission to destination node.
+        """
+
+        # if can't excite yet, do nothing
+        if self.timeline.now() < self.next_excite_time:
+            return
+
+        # TODO: measure quantum state
+        state = -1
+        # create photon and check if null
+        photon = Photon("", wavelength=self.wavelength, location=self,
+                        encoding_type=self.photon_encoding)
+        photon.qstate_key = self.qstate_key
+        if state == 0:
+            photon.is_null = True
+
+        if self.frequency > 0:
+            period = 1e12 / self.frequency
+            self.next_excite_time = self.timeline.now() + period
+
+        # send to node
+        if (state == 0) or (random.random_sample() < self.efficiency):
+            self.owner.send_qubit(dst, photon)
+            self.excited_photon = photon
+
+    def expire(self) -> None:
+        """Method to handle memory expiration.
+
+        Is scheduled automatically by the `set_plus` memory operation.
+
+        Side Effects:
+            Will notify upper entities of expiration via the `pop` interface.
+            Will modify the quantum state of the memory.
+        """
+
+        if self.excited_photon:
+            self.excited_photon.is_null = True
+
+        self.reset()
+        # pop expiration message
+        self.notify(self)
+
+    def reset(self) -> None:
+        """Method to clear quantum memory.
+
+        Will reset quantum state to \|0> and will clear entanglement information.
+
+        Side Effects:
+            Will modify internal parameters and quantum state.
+        """
+
+        self.fidelity = 0
+        self.timeline.quantum_manager.remove(self.qstate_key)
+
+        self.qstate_key = self.timeline.quantum_manager.new()  # set to |0> state
+        self.entangled_memory = {'node_id': None, 'memo_id': None}
+        if self.expiration_event is not None:
+            self.timeline.remove_event(self.expiration_event)
+            self.expiration_event = None
+
+    def update_state(self, state: List[complex]) -> None:
+        """Method to set the memory state to \|+> (superposition of \|0> and \|1> states).
+
+        Side Effects:
+            Will modify internal quantum state and parameters.
+            May schedule expiration event.
+        """
+        self.timeline.quantum_manager.set(self.qstate_key, state)
+        self.previous_bsm = -1
+        self.entangled_memory = {'node_id': None, 'memo_id': None}
+
+        # schedule expiration
+        if self.coherence_time > 0:
+            self._schedule_expiration()
+
+    def _schedule_expiration(self) -> None:
+        if self.expiration_event is not None:
+            self.timeline.remove_event(self.expiration_event)
+
+        decay_time = self.timeline.now() + int(self.coherence_time * 1e12)
+        process = Process(self, "expire", [])
+        event = Event(decay_time, process)
+        self.timeline.schedule(event)
+
+        self.expiration_event = event
+
+    def update_expire_time(self, time: int):
+        time = max(time, self.timeline.now())
+        if self.expiration_event is None:
+            if time >= self.timeline.now():
+                process = Process(self, "expire", [])
+                event = Event(time, process)
+                self.timeline.schedule(event)
+        else:
+            self.timeline.update_event_time(self.expiration_event, time)
+
+    def get_expire_time(self) -> int:
+        return self.expiration_event.time if self.expiration_event else inf
+
+    def notify(self, msg: Dict[str, Any]):
+        for observer in self._observers:
+            observer.memory_expire(self)
+
+    def detach(self, observer: 'EntanglementProtocol'):
+        if observer in self._observers:
+            self._observers.remove(observer)
 
 
 # single-atom memory

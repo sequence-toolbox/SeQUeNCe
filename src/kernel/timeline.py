@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 from .eventlist import EventList
 from ..utils import log
+from .quantum_state import QuantumManager
 
 class Timeline:
     """Class for a simulation timeline.
@@ -55,6 +56,7 @@ class Timeline:
         self.run_counter = 0
         self.is_running = False
         self.show_progress = False
+        self.quantum_manager = QuantumManager()
 
     def now(self) -> int:
         """Returns current simulation time."""
