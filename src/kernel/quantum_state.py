@@ -1,4 +1,7 @@
-from numpy import log2, array
+from copy import copy
+from qutip.qip.circuit import QubitCircuit, Gate
+from qutip.qip.operations import gate_sequence_product
+from numpy import log2, array, kron, identity
 from typing import List, Tuple, TYPE_CHECKING
 
 
@@ -52,7 +55,44 @@ class QuantumManager():
             Tuple[int]: measurement results.
         """
 
-        pass
+        old_states = []
+        all_keys = []
+        for key in keys:
+            qstate = self.states[key]
+            if qstate.state not in old_states:
+                old_states.append(qstate.state)
+                all_keys += qstate.keys
+
+        # construct compound state; order qubits
+        new_state = [1]
+        for state in old_states:
+            new_state = kron(new_state, state)
+        qubit_indices = [all_keys.index(key) for key in keys]
+        swap_circuit = QubitCircuit(N=len(all_keys)
+
+        for i, j in enumerate(qubit_indices):
+            if i != j:
+                # swapping operation
+                gate = Gate("SWAP", targets=[i, j])
+                swap_circuit.add_gate(gate)
+                all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
+        swap_mat = gate_sequence_product(swap_circuit.propagators)
+        new_state = swap_mat @ new_state
+
+        # multiply circuit matrix
+        circ_mat = circuit.circuit_matrix
+        if circuit.size < len(all_keys):
+            # pad size of circuit matrix if necessary
+            diff = len(all_keys) - circuit.size
+            circ_mat = circ_mat @ identity(diff)
+        new_state = circ_mat @ new_state
+
+        # measure (TODO)
+
+        # set state, return
+        for key in all_keys:
+            self.states[key] = KetState(new_state, all_keys)
+        return None
 
     def set(self, keys: List[int], amplitudes: List[complex]) -> None:
         """Method to set quantum state at a given key(s).
