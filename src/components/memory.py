@@ -135,7 +135,7 @@ class NewMemory(Entity):
         self.efficiency = efficiency
         self.coherence_time = coherence_time  # coherence time in seconds
         self.wavelength = wavelength
-        self.qstate_key = timeline.quantum_manager.new()[0]
+        self.qstate_key = timeline.quantum_manager.new()
 
         self.memory_array = None
 
@@ -235,7 +235,7 @@ class NewMemory(Entity):
             Will modify internal quantum state and parameters.
             May schedule expiration event.
         """
-        self.timeline.quantum_manager.set(self.qstate_key, state)
+        self.timeline.quantum_manager.set([self.qstate_key], state)
         self.previous_bsm = -1
         self.entangled_memory = {'node_id': None, 'memo_id': None}
 

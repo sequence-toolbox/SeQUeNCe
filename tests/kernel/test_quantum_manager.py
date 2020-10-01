@@ -1,6 +1,15 @@
 import numpy as np
 
-from sequence.kernel.quantum_state import *
+from sequence.kernel.quantum_manager import *
+
+
+class DumbCircuit():
+    def __init__(self, size, matrix):
+        self.size = size
+        self.matrix = matrix
+
+    def get_unitary_matrix(self):
+        return self.matrix
 
 
 def test_qmanager_get():
@@ -44,4 +53,28 @@ def test_qmanager_remove():
     qm.states[0] = "test_string"
     qm.remove(0)
     assert len(qm.states.keys()) == 0
+
+
+def test_qmanager_circuit():
+    qm = QuantumManager()
+
+    # single state
+    key = qm.new()
+    circuit = DumbCircuit(1, np.array([[0, 1], [1, 0]]))
+    qm.run_circuit(circuit, [key])
+    assert (qm.get(key).state == np.array([0, 1])).all
+
+    # two states
+    key1 = qm.new()
+    key2 = qm.new()
+    circuit = DumbCircuit(2, np.identity(4))
+    qm.run_circuit(circuit, [key1, key2])
+    assert (qm.get(key1).state == qm.get(key2).state).all
+    assert (qm.get(key1).state == np.array([1, 0, 0, 0])).all
+
+    # two states, wrong order
+    qm.run_circuit(circuit, [key2, key1])
+    assert (qm.get(key1).state == qm.get(key2).state).all
+    assert (qm.get(key1).state == np.array([1, 0, 0, 0])).all
+    assert qm.get(key1).keys == [key2, key1]
 

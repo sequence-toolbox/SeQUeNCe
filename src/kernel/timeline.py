@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 from .eventlist import EventList
 from ..utils import log
-from .quantum_state import QuantumManager
+from .quantum_manager import QuantumManager
 
 class Timeline:
     """Class for a simulation timeline.

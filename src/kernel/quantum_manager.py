@@ -54,12 +54,13 @@ class QuantumManager():
         Returns:
             Tuple[int]: measurement results.
         """
+        assert len(keys) == circuit.size, "mismatch between circuit size and supplied qubits"
 
         old_states = []
         all_keys = []
         for key in keys:
             qstate = self.states[key]
-            if qstate.state not in old_states:
+            if qstate.keys[0] not in all_keys:
                 old_states.append(qstate.state)
                 all_keys += qstate.keys
 
@@ -67,20 +68,23 @@ class QuantumManager():
         new_state = [1]
         for state in old_states:
             new_state = kron(new_state, state)
-        qubit_indices = [all_keys.index(key) for key in keys]
-        swap_circuit = QubitCircuit(N=len(all_keys)
 
-        for i, j in enumerate(qubit_indices):
-            if i != j:
-                # swapping operation
-                gate = Gate("SWAP", targets=[i, j])
-                swap_circuit.add_gate(gate)
-                all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
-        swap_mat = gate_sequence_product(swap_circuit.propagators)
-        new_state = swap_mat @ new_state
-
+        if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
+            print("got here")
+            print(all_keys)
+            swap_circuit = QubitCircuit(N=len(all_keys))
+            for i, key in enumerate(keys):
+                j = all_keys.index(key)
+                if j != i:
+                    gate = Gate("SWAP", targets=[i, j])
+                    swap_circuit.add_gate(gate)
+                    all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
+            swap_mat = gate_sequence_product(swap_circuit.propagators())
+            new_state = swap_mat @ new_state
+            print(all_keys)
+        
         # multiply circuit matrix
-        circ_mat = circuit.circuit_matrix
+        circ_mat = circuit.get_unitary_matrix()
         if circuit.size < len(all_keys):
             # pad size of circuit matrix if necessary
             diff = len(all_keys) - circuit.size
@@ -103,9 +107,9 @@ class QuantumManager():
         """
 
         num_qubits = log2(len(amplitudes))
-        assert num_qubits.is_integer()
+        assert num_qubits.is_integer(), "Length of amplitudes should be 2 ** n, where n is the number of keys"
         num_qubits = int(num_qubits)
-        assert num_qubits == len(keys)
+        assert num_qubits == len(keys), "Length of amplitudes should be 2 ** n, where n is the number of keys"
 
         new_state = KetState(amplitudes, keys)
         for key in keys:
@@ -119,10 +123,11 @@ class QuantumManager():
 class KetState():
     def __init__(self, amplitudes: List[complex], keys: List[int]):
         # check formatting
-        assert all([abs(a) <= 1 for a in amplitudes])
+        assert all([abs(a) <= 1 for a in amplitudes]), "Illegal value with abs>1 in ket vector"
+        assert abs(sum([a ** 2 for a in amplitudes]) - 1) < 1e-5, "Squared amplitudes do not sum to 1" 
         num_qubits = log2(len(amplitudes))
-        assert num_qubits.is_integer()
-        assert num_qubits == len(keys)
+        assert num_qubits.is_integer(), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
+        assert num_qubits == len(keys), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
 
         self.state = array(amplitudes)
         self.keys = keys
