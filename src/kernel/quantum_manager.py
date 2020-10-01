@@ -1,8 +1,11 @@
+from functools import lru_cache
 from copy import copy
+from typing import List, Tuple, TYPE_CHECKING
+
 from qutip.qip.circuit import QubitCircuit, Gate
 from qutip.qip.operations import gate_sequence_product
 from numpy import log2, array, kron, identity
-from typing import List, Tuple, TYPE_CHECKING
+from numpy.random import random_sample
 
 
 class QuantumManager():
@@ -91,12 +94,17 @@ class QuantumManager():
             circ_mat = circ_mat @ identity(diff)
         new_state = circ_mat @ new_state
 
-        # measure (TODO)
-
-        # set state, return
+        # set state
         for key in all_keys:
             self.states[key] = KetState(new_state, all_keys)
-        return None
+        
+        # measure and return
+        results = []
+        for index in circuit.measured_qubits:
+            key = keys[index]
+            results.append(self._measure(key))
+
+        return results
 
     def set(self, keys: List[int], amplitudes: List[complex]) -> None:
         """Method to set quantum state at a given key(s).
@@ -119,6 +127,36 @@ class QuantumManager():
         """Method to remove state stored at key."""
         del self.states[key]
 
+    def _measure(self, key) -> int:
+        """Method to measure qubit at given key"""
+
+        state_obj = self.states[key]
+
+        if len(state_obj.keys) == 1:
+            prob_0 = _measure_state_with_cache(tuple(state_obj.state))
+            if random_sample() < prob_0:
+                new_state = array([1, 0], dtype=complex)
+                result = 0
+            else:
+                new_state = array([0, 1], dtype=complex)
+                result = 1
+
+        else:
+            num_states = len(state_obj.keys)
+            state_index = state_obj.keys.index(key)
+            state_0, state_1, prob_0 = _measure_entangled_state_with_cache(tuple(state_obj.state), state_index, num_states)
+            if random_sample() < prob_0:
+                new_state = array(state_0, dtype=complex)
+                result = 0
+            else:
+                new_state = array(state_1, dtype=complex)
+                result = 1
+
+        new_state_obj = KetState(new_state, state_obj.keys)
+        for key in state_obj.keys:
+            self.states[key] = new_state_obj
+        return result
+
 
 class KetState():
     def __init__(self, amplitudes: List[complex], keys: List[int]):
@@ -131,4 +169,50 @@ class KetState():
 
         self.state = array(amplitudes)
         self.keys = keys
+
+
+@lru_cache(maxsize=1000)
+def _measure_state_with_cache(state: Tuple[complex, complex]) -> float:
+    state = array(state)
+    M0 = array([[1, 0], [0, 0]], dtype=complex)
+
+    # probability of measuring basis[0]
+    prob_0 = (state.conj().transpose() @ M0.conj().transpose() @ M0 @ state).real
+    return prob_0
+
+
+@lru_cache(maxsize=1000)
+def _measure_entangled_state_with_cache(state: Tuple[complex], state_index: int, num_states: int) -> Tuple[
+        Tuple[complex], Tuple[complex], float]:
+    state = array(state)
+    # measurement operator
+    M0 = array([[1, 0], [0, 0]], dtype=complex)
+    M1 = array([[0, 0], [0, 1]], dtype=complex)
+
+    # generate projectors
+    projector0 = [1]
+    projector1 = [1]
+    for i in range(num_states):
+        if i == state_index:
+            projector0 = kron(projector0, M0)
+            projector1 = kron(projector1, M1)
+        else:
+            projector0 = kron(projector0, identity(2))
+            projector1 = kron(projector1, identity(2))
+
+    # probability of measuring basis[0]
+    prob_0 = (state.conj().transpose() @ projector0.conj().transpose() @ projector0 @ state).real
+
+    if prob_0 >= 1:
+        state1 = None
+    else:
+        state1 = (projector1 @ state) / sqrt(1 - prob_0)
+
+    if prob_0 <= 0:
+        state0 = None
+    else:
+        state0 = (projector0 @ state) / sqrt(prob_0)
+
+    return (state0, state1, prob_0)
+
 

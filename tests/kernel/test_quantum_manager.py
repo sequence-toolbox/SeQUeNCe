@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 from sequence.kernel.quantum_manager import *
 
@@ -7,6 +8,7 @@ class DumbCircuit():
     def __init__(self, size, matrix):
         self.size = size
         self.matrix = matrix
+        self.measured_qubits = []
 
     def get_unitary_matrix(self):
         return self.matrix
@@ -77,4 +79,27 @@ def test_qmanager_circuit():
     assert (qm.get(key1).state == qm.get(key2).state).all
     assert (qm.get(key1).state == np.array([1, 0, 0, 0])).all
     assert qm.get(key1).keys == [key2, key1]
+
+
+def test_qmanager__measure():
+    NUM_TESTS = 1000
+    
+    qm = QuantumManager()
+
+    # single state
+    meas_0 = []
+    meas_1 = []
+    for _ in range(NUM_TESTS):
+        key = qm.new([math.sqrt(1/2), math.sqrt(1/2)])
+        res = qm._measure(key)
+        if res:
+            meas_1.append(key)
+        else:
+            meas_0.append(key)
+    
+    assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
+    for key in meas_0:
+        assert (qm.get(key).state == np.array([1, 0])).all
+    for key in meas_1:
+        assert (qm.get(key).state == np.array([0, 1])).all
 
