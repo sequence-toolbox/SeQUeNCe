@@ -2,12 +2,43 @@
 
 This module introduces the QuantumCircuit class.
 """
+from math import e, pi
 from typing import List, TYPE_CHECKING, Dict
+
+import numpy as np
 from qutip.qip.circuit import QubitCircuit, Gate
 from qutip.qip.operations import gate_sequence_product
+from qutip import Qobj
 
-if TYPE_CHECKING:
-    import numpy
+
+def x_gate():
+    mat = np.array([[0, 1],
+                    [1, 0]])
+    return Qobj(mat, dims=[[2], [2]])
+
+
+def y_gate():
+    mat = np.array([[0, -1.j],
+                    [1.j, 0]])
+    return Qobj(mat, dims=[[2], [2]])
+
+
+def z_gate():
+    mat = np.array([[1, 0],
+                    [0, -1]])
+    return Qobj(mat, dims=[[2], [2]])
+
+
+def s_gate():
+    mat = np.array([[1.,   0],
+                    [0., 1.j]])
+    return Qobj(mat, dims=[[2], [2]])
+
+
+def t_gate():
+    mat = np.array([[1.,   0],
+                    [0., e ** (1.j * (pi / 4))]])
+    return Qobj(mat, dims=[[2], [2]])
 
 
 def validator(func):
@@ -37,14 +68,19 @@ class Circuit():
         self.measured_qubits = set()
         self._cache = None
 
-    def get_unitary_matrix(self) -> "numpy.ndarray":
+    def get_unitary_matrix(self) -> "np.ndarray":
         """Method to get unitary matrix of circuit without measurement
 
         Returns:
-            numpy.ndarray: the matrix stored in the numpy.ndarray
+            np.ndarray: the matrix stored in the np.ndarray
         """
         if self._cache is None:
             qc = QubitCircuit(self.size)
+            qc.user_gates = {"X": x_gate,
+                             "Y": y_gate,
+                             "Z": z_gate,
+                             "S": s_gate,
+                             "T": t_gate}
             for gate in self.gates:
                 name, indices = gate
                 if name == 'h':

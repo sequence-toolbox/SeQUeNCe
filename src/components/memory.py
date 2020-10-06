@@ -93,7 +93,7 @@ class MemoryArray(Entity):
         self.owner = node
 
 
-class NewMemory(Entity):
+class Memory(Entity):
     """Individual single-atom memory.
 
     This class models a single-atom memory, where the quantum state is stored as the spin of a single ion.
@@ -175,11 +175,14 @@ class NewMemory(Entity):
         if self.timeline.now() < self.next_excite_time:
             return
 
-        # TODO: measure quantum state
-        state = -1
+        # measure quantum state
+        # TODO: change to use quantum circuit
+        state = self.timeline.quantum_manager._measure([self.qstate_key])
+        
         # create photon and check if null
         photon = Photon("", wavelength=self.wavelength, location=self,
-                        encoding_type=self.photon_encoding)
+                        encoding_type=single_atom)
+        photon.memory = self
         photon.qstate_key = self.qstate_key
         if state == 0:
             photon.is_null = True
@@ -277,7 +280,7 @@ class NewMemory(Entity):
 
 
 # single-atom memory
-class Memory(Entity):
+class OldMemory(Entity):
     """Individual single-atom memory.
 
     This class models a single-atom memory, where the quantum state is stored as the spin of a single ion.

@@ -48,7 +48,7 @@ class QuantumManager():
         """
         return self.states[key]
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> List[int]:
+    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> int:
         """Method to run a circuit on a given set of quantum states.
         
         Args:
@@ -56,7 +56,7 @@ class QuantumManager():
             keys (List[int]): list of keys for quantum states to apply circuit to.
 
         Returns:
-            Tuple[int]: measurement results.
+            int: measurement results.
         """
         assert len(keys) == circuit.size, "mismatch between circuit size and supplied qubits"
 
@@ -93,16 +93,15 @@ class QuantumManager():
         new_state = circ_mat @ new_state
 
         # set state
+        new_ket = KetState(new_state, all_keys)
         for key in all_keys:
-            self.states[key] = KetState(new_state, all_keys)
+            self.states[key] = new_ket
         
         # measure and return
-        results = []
-        for index in circuit.measured_qubits:
-            key = keys[index]
-            results.append(self._measure(key))
-
-        return results
+        if len(circuit.measured_qubits) == 0:
+            return None
+        else:
+            return self._measure(list(circuit.measured_qubits))
 
     def set(self, keys: List[int], amplitudes: List[complex]) -> None:
         """Method to set quantum state at a given key(s).

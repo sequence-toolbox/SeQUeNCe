@@ -9,6 +9,7 @@ from typing import Any, Dict
 
 from numpy import random
 
+from .circuit import Circuit
 from .detector import Detector
 from .photon import Photon
 from ..kernel.entity import Entity
@@ -376,10 +377,10 @@ class SingleAtomBSM(BSM):
 
         super().get(photon)
 
-        memory = photon.encoding_type["memory"]
+        memory = photon.memory
 
         # check if we're in first stage. If we are and not null, send photon to random detector
-        if memory.previous_bsm == -1 and not photon.is_null:
+        if not photon.is_null:
             detector_num = random.choice([0, 1])
             memory.previous_bsm = detector_num
             self.detectors[detector_num].get()
@@ -388,27 +389,34 @@ class SingleAtomBSM(BSM):
             null_0 = self.photons[0].is_null
             null_1 = self.photons[1].is_null
             is_valid = null_0 ^ null_1
+            
             if is_valid:
-                memory_0 = self.photons[0].encoding_type["memory"]
-                memory_1 = self.photons[1].encoding_type["memory"]
+                memory_0 = self.photons[0].memory
+                memory_1 = self.photons[1].memory
+                
                 # if we're in stage 1: null photon will need bsm assigned
                 if null_0 and memory_0.previous_bsm == -1:
                     memory_0.previous_bsm = memory_1.previous_bsm
                 elif null_1 and memory_1.previous_bsm == -1:
                     memory_1.previous_bsm = memory_0.previous_bsm
-                # if we're in stage 2: send photon to same (opposite) detector for psi+ (psi-)
+                
+                # if we're in stage 2: check if psi+ or psi-, then assign new state
                 else:
-                    if memory_0.qstate not in memory_1.qstate.entangled_states:
-                        memory_0.qstate.entangle(memory_1.qstate)
-                    res = QuantumState.measure_multiple(self.bell_basis, [memory_0.qstate, memory_1.qstate])
-                    if res == 2:  # Psi+
-                        detector_num = memory_0.previous_bsm
-                    elif res == 3:  # Psi-
-                        detector_num = 1 - memory_0.previous_bsm
-                    else:
-                        # Happens if the memory is expired during photon transmission; randomly select a detector
-                        detector_num = random.randint(2)
-                    self.detectors[detector_num].get()
+                    qm = self.timeline.quantum_manager
+                    key0 = qm.new()
+                    key1 = qm.new()
+                    
+                    circ = Circuit(2)
+                    circ.h(0)
+                    circ.cx(0, 1)
+                    circ.x(0)
+                    if memory_0.previous_bsm != memory_1.previous_bsm:
+                        circ.z(1)
+                    
+                    qm.run_circuit(circ, [key0, key1])
+                    memory_0.qstate_key = key0
+                    memory_1.qstate_key = key1
+
 
     def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.

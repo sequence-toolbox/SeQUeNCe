@@ -1,7 +1,8 @@
 from typing import Dict
 import numpy as np
+import math
 
-from sequence.components.memory import NewMemory, Memory, MemoryArray
+from sequence.components.memory import Memory, MemoryArray
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
@@ -56,11 +57,11 @@ def test_MemoryArray_expire():
     assert node.is_expired is True and node.expired_memory == expired_memo
 
 
-def test_NewMemory_update_state():
+def test_Memory_update_state():
     new_state = [complex(0), complex(1)]
     
     tl = Timeline()
-    mem = NewMemory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
+    mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
 
     mem.update_state(new_state)
     
@@ -78,9 +79,6 @@ def test_Memory_excite():
 
     # test with perfect efficiency
 
-    state = (complex(1), complex(0))
-    mem.qstate.set_state_single(state)
-
     for _ in range(NUM_TESTS):
         mem.excite()
 
@@ -93,8 +91,7 @@ def test_Memory_excite():
 
     rec.photon_list = []
     mem.efficiency = 0.7
-    state = (complex(0), complex(1))
-    mem.qstate.set_state_single(state)
+    mem.update_state([complex(0), complex(1)])
 
     for _ in range(NUM_TESTS):
         mem.excite()
@@ -108,31 +105,16 @@ def test_Memory_excite():
 
     rec.photon_list = []
     mem.efficiency = 1
+    plus = [math.sqrt(1/2), math.sqrt(1/2)]
 
     for _ in range(NUM_TESTS):
-       mem.set_plus()
+       mem.update_state(plus)
        mem.excite()
 
     assert len(rec.photon_list) == NUM_TESTS
     null_photons = [p for p in rec.photon_list if p.is_null]
     null_ratio = len(null_photons) / NUM_TESTS
     assert abs(null_ratio - 0.5) < 0.1
-
-
-def test_Memory_flip_state():
-    tl = Timeline()
-    rec = DumbReceiver()
-    mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
-    mem.owner = rec
-    state = (complex(1), complex(0))
-    mem.qstate.set_state_single(state)
-
-    mem.excite()
-    mem.flip_state()
-    mem.excite()
-
-    assert rec.photon_list[0].is_null
-    assert not rec.photon_list[1].is_null
 
 
 def test_Memory_expire():
@@ -164,7 +146,7 @@ def test_Memory_expire():
     parent = DumbParent(mem)
     protocol = FakeProtocol("upper_protocol")
     mem.attach(protocol)
-    mem.set_plus()
+    mem.update_state([math.sqrt(1/2), math.sqrt(1/2)])
     entangled_memory = {"node_id": "node", "memo_id": 0}
     mem.entangled_memory = entangled_memory
 
@@ -172,14 +154,14 @@ def test_Memory_expire():
     mem.detach(parent)
     assert len(parent.pop_log) == 0 and protocol.is_expire is False
     mem.expire()
-    assert (complex(1), complex(0)) == mem.qstate.state  # check if collapsed to |0> state
+    assert (tl.quantum_manager.get(mem.qstate_key).state == np.array([1, 0])).all  # check if collapsed to |0> state
     assert mem.entangled_memory == {"node_id": None, "memo_id": None}
     assert len(parent.pop_log) == 0 and protocol.is_expire is True
 
     # expire when the resource manager controls memory
     mem.attach(parent)
     mem.detach(protocol)
-    mem.set_plus()
+    mem.update_state([math.sqrt(1/2), math.sqrt(1/2)])
     entangled_memory = {"node_id": "node", "memo_id": 0}
     mem.entangled_memory = entangled_memory
     mem.expire()
