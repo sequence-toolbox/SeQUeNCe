@@ -1,5 +1,5 @@
 from sequence.components.circuit import Circuit
-from numpy import array, array_equal
+from numpy import array, array_equal, identity
 from pytest import raises
 
 
@@ -99,6 +99,8 @@ def test_measure():
 
 def test_Circuit():
     qc = Circuit(4)
+    expect = identity(16)
+    assert array_equal(qc.get_unitary_matrix(), expect)
     assert qc.size == 4 and len(qc.gates) == 0 and len(qc.measured_qubits) == 0
     with raises(AssertionError):
         qc.h(4)

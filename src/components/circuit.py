@@ -75,6 +75,10 @@ class Circuit():
             np.ndarray: the matrix stored in the np.ndarray
         """
         if self._cache is None:
+            if len(self.gates) == 0:
+                self._cache = np.identity(self.size ** 2)
+                return self._cache
+
             qc = QubitCircuit(self.size)
             qc.user_gates = {"X": x_gate,
                              "Y": y_gate,
