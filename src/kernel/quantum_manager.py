@@ -101,7 +101,8 @@ class QuantumManager():
         if len(circuit.measured_qubits) == 0:
             return None
         else:
-            return self._measure(circuit.measured_qubits)
+            keys = [all_keys[i] for i in circuit.measured_qubits]
+            return self._measure(new_state, keys, all_keys)
 
     def set(self, keys: List[int], amplitudes: List[complex]) -> None:
         """Method to set quantum state at a given key(s).
@@ -124,7 +125,7 @@ class QuantumManager():
         """Method to remove state stored at key."""
         del self.states[key]
 
-    def _measure(self, keys: List[int]) -> int:
+    def _measure(self, state: List[complex], keys: List[int], all_keys: List[int]) -> int:
         """Method to measure qubits at given keys.
 
         SHOULD NOT be called individually; only from circuit method (unless for unit testing purposes).
@@ -136,11 +137,9 @@ class QuantumManager():
             int: Measurement result. In range 0 to (2 ** len(keys)) 
         """
 
-        state_obj = self.states[keys[0]]
-
         if len(keys) == 1:
-            if len(state_obj.keys) == 1:
-                prob_0 = _measure_state_with_cache(tuple(state_obj.state))
+            if len(all_keys) == 1:
+                prob_0 = _measure_state_with_cache(tuple(state))
                 if random_sample() < prob_0:
                     new_state = array([1, 0], dtype=complex)
                     result = 0
@@ -150,9 +149,9 @@ class QuantumManager():
 
             else:
                 key = keys[0]
-                num_states = len(state_obj.keys)
-                state_index = state_obj.keys.index(key)
-                state_0, state_1, prob_0 = _measure_entangled_state_with_cache(tuple(state_obj.state), state_index, num_states)
+                num_states = len(all_keys)
+                state_index = all_keys.index(key)
+                state_0, state_1, prob_0 = _measure_entangled_state_with_cache(tuple(state), state_index, num_states)
                 if random_sample() < prob_0:
                     new_state = array(state_0, dtype=complex)
                     result = 0
@@ -160,12 +159,9 @@ class QuantumManager():
                     new_state = array(state_1, dtype=complex)
                     result = 1
 
-            new_state_obj = KetState(new_state, state_obj.keys)
+            new_state_obj = KetState(new_state, all_keys)
 
         else:
-            all_keys = state_obj.keys
-            new_state = state_obj.state
-
             # swap states into correct position
             if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
                 swap_circuit = QubitCircuit(N=len(all_keys))
@@ -176,11 +172,11 @@ class QuantumManager():
                         swap_circuit.add_gate(gate)
                         all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
                 swap_mat = gate_sequence_product(swap_circuit.propagators())
-                new_state = swap_mat @ new_state
+                state = swap_mat @ state
 
             # calculate meas probabilities and projected states
             len_diff = len(all_keys) - len(keys)
-            new_states, probabilities = _measure_multiple_with_cache(tuple(new_state), len(keys), len_diff)
+            new_states, probabilities = _measure_multiple_with_cache(tuple(state), len(keys), len_diff)
 
             # choose result, set as new state
             possible_results = arange(0, 2 ** len(keys), 1)
@@ -188,7 +184,7 @@ class QuantumManager():
             new_state = new_states[result]
             new_state_obj = KetState(new_state, all_keys)
 
-        for key in state_obj.keys:
+        for key in keys:
             self.states[key] = new_state_obj
         return result
             

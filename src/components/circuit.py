@@ -76,7 +76,7 @@ class Circuit():
         """
         if self._cache is None:
             if len(self.gates) == 0:
-                self._cache = np.identity(self.size ** 2)
+                self._cache = np.identity(2 ** self.size)
                 return self._cache
 
             qc = QubitCircuit(self.size)

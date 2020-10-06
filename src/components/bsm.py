@@ -365,6 +365,17 @@ class SingleAtomBSM(BSM):
         super().__init__(name, timeline, phase_error, detectors)
         assert len(self.detectors) == 2
 
+        self.circ_psi_plus = Circuit(2)
+        self.circ_psi_plus.h(0)
+        self.circ_psi_plus.cx(0, 1)
+        self.circ_psi_plus.x(0)
+
+        self.circ_psi_minus = Circuit(2)
+        self.circ_psi_minus.h(0)
+        self.circ_psi_minus.cx(0, 1)
+        self.circ_psi_minus.x(0)
+        self.circ_psi_minus.z(1)
+
     def get(self, photon):
         """See base class.
 
@@ -406,17 +417,13 @@ class SingleAtomBSM(BSM):
                     key0 = qm.new()
                     key1 = qm.new()
                     
-                    circ = Circuit(2)
-                    circ.h(0)
-                    circ.cx(0, 1)
-                    circ.x(0)
                     if memory_0.previous_bsm != memory_1.previous_bsm:
-                        circ.z(1)
-                    
-                    qm.run_circuit(circ, [key0, key1])
+                        qm.run_circuit(self.circ_psi_minus, [key0, key1])
+                    else:
+                        qm.run_circuit(self.circ_psi_plus, [key0, key1])
+
                     memory_0.qstate_key = key0
                     memory_1.qstate_key = key1
-
 
     def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.

@@ -2,6 +2,7 @@ import numpy as np
 import math
 
 from sequence.kernel.quantum_manager import *
+from sequence.components.circuit import Circuit
 
 
 class DumbCircuit():
@@ -89,9 +90,10 @@ def test_qmanager__measure():
     # single state
     meas_0 = []
     meas_1 = []
+    state = [math.sqrt(1/2), math.sqrt(1/2)]
     for _ in range(NUM_TESTS):
-        key = qm.new([math.sqrt(1/2), math.sqrt(1/2)])
-        res = qm._measure([key])
+        key = qm.new()
+        res = qm._measure(state, [key], [key])
         if res:
             meas_1.append(key)
         else:
@@ -107,12 +109,12 @@ def test_qmanager__measure():
     meas_0 = []
     meas_1 = []
     for _ in range(NUM_TESTS):
-        key1 = qm.new([math.sqrt(1/2), math.sqrt(1/2)])
+        key1 = qm.new(state)
         key2 = qm.new()
         # compound
-        circuit = DumbCircuit(2, np.identity(4))
-        qm.run_circuit(circuit, [key1, key2])
-        res = qm._measure([key1])
+        circuit = Circuit(2)
+        circuit.measure(0)
+        res = qm.run_circuit(circuit, [key1, key2])
         if res:
             meas_1.append(key1)
         else:
@@ -131,9 +133,10 @@ def test_qmanager__measure():
         key1 = qm.new()
         key2 = qm.new([math.sqrt(1/2), math.sqrt(1/2)])
         # compound
-        circuit = DumbCircuit(2, np.identity(4))
-        qm.run_circuit(circuit, [key1, key2])
-        res = qm._measure([key1, key2])
+        circuit = Circuit(2)
+        circuit.measure(0)
+        circuit.measure(1)
+        res = qm.run_circuit(circuit, [key1, key2])
         if res == 2:
             meas_2.append(key1)
         elif res == 0:

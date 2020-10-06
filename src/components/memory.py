@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
 
 from .photon import Photon
+from .circuit import Circuit
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
@@ -152,6 +153,9 @@ class Memory(Entity):
 
         self.next_excite_time = 0
 
+        self._meas_circuit = Circuit(1)
+        self._meas_circuit.measure(0)
+
     def init(self):
         pass
 
@@ -177,8 +181,8 @@ class Memory(Entity):
 
         # measure quantum state
         # TODO: change to use quantum circuit
-        state = self.timeline.quantum_manager._measure([self.qstate_key])
-        
+        state = self.timeline.quantum_manager.run_circuit(self._meas_circuit, [self.qstate_key])
+
         # create photon and check if null
         photon = Photon("", wavelength=self.wavelength, location=self,
                         encoding_type=single_atom)
