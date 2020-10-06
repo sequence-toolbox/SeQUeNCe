@@ -91,7 +91,7 @@ def test_qmanager__measure():
     meas_1 = []
     for _ in range(NUM_TESTS):
         key = qm.new([math.sqrt(1/2), math.sqrt(1/2)])
-        res = qm._measure(key)
+        res = qm._measure([key])
         if res:
             meas_1.append(key)
         else:
@@ -102,4 +102,42 @@ def test_qmanager__measure():
         assert (qm.get(key).state == np.array([1, 0])).all
     for key in meas_1:
         assert (qm.get(key).state == np.array([0, 1])).all
+
+    # single state in multi-qubit system
+    meas_0 = []
+    meas_1 = []
+    for _ in range(NUM_TESTS):
+        key1 = qm.new([math.sqrt(1/2), math.sqrt(1/2)])
+        key2 = qm.new()
+        # compound
+        circuit = DumbCircuit(2, np.identity(4))
+        qm.run_circuit(circuit, [key1, key2])
+        res = qm._measure([key1])
+        if res:
+            meas_1.append(key1)
+        else:
+            meas_0.append(key1)
+
+    assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
+    for key in meas_0:
+        assert (qm.get(key).state == np.array([1, 0, 0, 0])).all
+    for key in meas_1:
+        assert (qm.get(key).state == np.array([0, 1, 0, 0])).all
+
+    # multiple state
+    meas_0 = []
+    meas_2 = []
+    for _ in range(NUM_TESTS):
+        key1 = qm.new()
+        key2 = qm.new([math.sqrt(1/2), math.sqrt(1/2)])
+        # compound
+        circuit = DumbCircuit(2, np.identity(4))
+        qm.run_circuit(circuit, [key1, key2])
+        res = qm._measure([key1, key2])
+        if res == 2:
+            meas_2.append(key1)
+        elif res == 0:
+            meas_0.append(key1)
+        else:
+            assert False, "invalid measurement"
 
