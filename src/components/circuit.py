@@ -65,7 +65,7 @@ class Circuit():
     def __init__(self, size: int):
         self.size = size
         self.gates = []
-        self.measured_qubits = set()
+        self.measured_qubits = []
         self._cache = None
 
     def get_unitary_matrix(self) -> "np.ndarray":
@@ -209,4 +209,4 @@ class Circuit():
             qubit (int): the index of qubit in the circuit
 
         """
-        self.measured_qubits.add(qubit)
+        self.measured_qubits.append(qubit)

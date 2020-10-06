@@ -101,7 +101,7 @@ class QuantumManager():
         if len(circuit.measured_qubits) == 0:
             return None
         else:
-            return self._measure(list(circuit.measured_qubits))
+            return self._measure(circuit.measured_qubits)
 
     def set(self, keys: List[int], amplitudes: List[complex]) -> None:
         """Method to set quantum state at a given key(s).
