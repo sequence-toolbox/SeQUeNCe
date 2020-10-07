@@ -9,6 +9,7 @@ Entanglement generation is asymmetric:
 """
 
 from enum import Enum, auto
+from math import sqrt
 from typing import List, TYPE_CHECKING, Dict, Any
 
 if TYPE_CHECKING:
@@ -19,6 +20,7 @@ from .entanglement_protocol import EntanglementProtocol
 from ..message import Message
 from ..kernel.event import Event
 from ..kernel.process import Process
+from ..components.circuit import Circuit
 from ..utils import log
 
 
@@ -116,6 +118,10 @@ class EntanglementGenerationA(EntanglementProtocol):
         # misc
         self.primary = False  # one end node is the "primary" that initiates negotiation
         self.debug = False
+        self._plus_state = [sqrt(1/2), sqrt(1/2)]
+        self._flip_circuit = Circuit(1)
+        self._flip_circuit.x(0)
+        self._qstate_key = self.memory.qstate_key
 
     def set_others(self, other: "EntanglementGenerationA") -> None:
         """Method to set other entanglement protocol instance.
@@ -184,7 +190,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             return True
 
         elif self.ent_round == 2 and self.bsm_res[0] != -1:
-            self.memory.flip_state()
+            self.own.timeline.quantum_manager.run_circuit(self._flip_circuit, [self._qstate_key])
 
         elif self.ent_round == 3 and self.bsm_res[1] != -1:
             # successful entanglement
@@ -215,7 +221,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         """
 
         if self.ent_round == 1:
-            self.memory.set_plus()
+            self.memory.update_state(self._plus_state)
         self.memory.excite(self.middle)
 
     def received_message(self, src: str, msg: EntanglementGenerationMessage) -> None:
@@ -421,3 +427,4 @@ class EntanglementGenerationB(EntanglementProtocol):
 
     def memory_expire(self) -> None:
         raise Exception("EntanglementGenerationB protocol '{}' should not have memory_expire".format(self.name))
+
