@@ -82,6 +82,16 @@ def test_qmanager_circuit():
     assert qm.get(key1).keys == [key2, key1]
 
 
+    # single state in multi-qubit system
+    key1 = qm.new()
+    key2 = qm.new()
+    circuit1 = DumbCircuit(2, np.identity(4))
+    qm.run_circuit(circuit1, [key1, key2])
+    circuit2 = DumbCircuit(1, np.array([[0, 1],[1, 0]]))
+    qm.run_circuit(circuit2, [key1])
+    assert (qm.get(key1).state == np.array([0, 1, 0, 0])).all
+    assert (qm.get(key1) is qm.get(key2))
+
 def test_qmanager__measure():
     NUM_TESTS = 1000
     

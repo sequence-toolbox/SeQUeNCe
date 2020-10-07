@@ -89,7 +89,7 @@ class QuantumManager():
         if circuit.size < len(all_keys):
             # pad size of circuit matrix if necessary
             diff = len(all_keys) - circuit.size
-            circ_mat = circ_mat @ identity(diff)
+            circ_mat = kron(identity(2 ** diff), circ_mat)
         new_state = circ_mat @ new_state
 
         # set state
