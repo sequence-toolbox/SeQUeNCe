@@ -118,9 +118,12 @@ class EntanglementGenerationA(EntanglementProtocol):
         # misc
         self.primary = False  # one end node is the "primary" that initiates negotiation
         self.debug = False
+
         self._plus_state = [sqrt(1/2), sqrt(1/2)]
         self._flip_circuit = Circuit(1)
         self._flip_circuit.x(0)
+        self._z_circuit = Circuit(1)
+        self._z_circuit.z(0)
         self._qstate_key = self.memory.qstate_key
 
     def set_others(self, other: "EntanglementGenerationA") -> None:
@@ -197,8 +200,14 @@ class EntanglementGenerationA(EntanglementProtocol):
             log.logger.info(self.own.name + " successful entanglement of memory {}".format(self.memory))
             self.memory.entangled_memory["node_id"] = self.other
             self.memory.entangled_memory["memo_id"] = self.remote_memo_id
-            # TODO: notify of +/- state
             self.memory.fidelity = self.memory.raw_fidelity
+            
+            # state correction
+            if self.primary:
+                self.own.timeline.quantum_manager.run_circuit(self._flip_circuit, [self._qstate_key])
+            elif self.bsm_res[0] != self.bsm_res[1]:
+                self.own.timeline.quantum_manager.run_circuit(self._z_circuit, [self._qstate_key])
+
             self.own.resource_manager.update(self, self.memory, "ENTANGLED")
 
         else:
@@ -392,7 +401,6 @@ class EntanglementGenerationB(EntanglementProtocol):
         super().__init__(own, name)
         assert len(others) == 2
         self.others = others  # end nodes
-        # self.other_protocols = kwargs.get("other_protocols") # other EG protocols (must be same order as others)
 
     def bsm_update(self, bsm: 'SingleAtomBSM', info: Dict[str, Any]):
         """Method to receive detection events from BSM on node.
