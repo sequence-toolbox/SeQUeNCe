@@ -97,10 +97,14 @@ class QuantumManager():
         for key in all_keys:
             self.states[key] = new_ket
         
-        # measure and return
         if len(circuit.measured_qubits) == 0:
+            # set state, return no measurement result
+            new_ket = KetState(new_state, all_keys)
+            for key in all_keys:
+                self.states[key] = new_ket
             return None
         else:
+            # measure state (state reassignment done in _measure method)
             keys = [all_keys[i] for i in circuit.measured_qubits]
             return self._measure(new_state, keys, all_keys)
 
@@ -129,9 +133,12 @@ class QuantumManager():
         """Method to measure qubits at given keys.
 
         SHOULD NOT be called individually; only from circuit method (unless for unit testing purposes).
+        Modifies quantum state of all qubits given by all_keys.
 
         Args:
-            keys (List[int]): list of keys to measure
+            state (List[complex]): state to measure.
+            keys (List[int]): list of keys to measure.
+            all_keys (List[int]): list of all keys corresponding to state.
 
         Returns:
             int: Measurement result. In range 0 to (2 ** len(keys)) 
@@ -141,10 +148,8 @@ class QuantumManager():
             if len(all_keys) == 1:
                 prob_0 = _measure_state_with_cache(tuple(state))
                 if random_sample() < prob_0:
-                    new_state = array([1, 0], dtype=complex)
                     result = 0
                 else:
-                    new_state = array([0, 1], dtype=complex)
                     result = 1
 
             else:
@@ -159,7 +164,7 @@ class QuantumManager():
                     new_state = array(state_1, dtype=complex)
                     result = 1
 
-            new_state_obj = KetState(new_state, all_keys)
+            all_keys.remove(keys[0])
 
         else:
             # swap states into correct position
@@ -182,10 +187,23 @@ class QuantumManager():
             possible_results = arange(0, 2 ** len(keys), 1)
             result = choice(possible_results, p=probabilities)
             new_state = new_states[result]
-            new_state_obj = KetState(new_state, all_keys)
 
-        for key in keys:
+            for key in keys:
+                all_keys.remove(key)
+
+        result_states = [array([1, 0]), array([0, 1])]
+        result_digits = [int(x) for x in bin(result)[2:]]
+        while len(result_digits) < len(keys):
+            result_digits.insert(0, 0)
+
+        for res, key in zip(result_digits, keys):
+            # set to state measured
+            new_state_obj = KetState(result_states[res], [key])
             self.states[key] = new_state_obj
+        if len(all_keys) > 0:
+            new_state_obj = KetState(new_state, all_keys)
+            for key in all_keys:
+                self.states[key] = new_state_obj
         return result
             
 
@@ -208,7 +226,7 @@ def _measure_state_with_cache(state: Tuple[complex, complex]) -> float:
     M0 = array([[1, 0], [0, 0]], dtype=complex)
 
     # probability of measuring basis[0]
-    prob_0 = (state.conj().transpose() @ M0.conj().transpose() @ M0 @ state).real
+    prob_0 = (state.conj().T @ M0 @ state).real
     return prob_0
 
 
@@ -216,23 +234,20 @@ def _measure_state_with_cache(state: Tuple[complex, complex]) -> float:
 def _measure_entangled_state_with_cache(state: Tuple[complex], state_index: int, num_states: int) -> Tuple[
         Tuple[complex], Tuple[complex], float]:
     state = array(state)
-    # measurement operator
-    M0 = array([[1, 0], [0, 0]], dtype=complex)
-    M1 = array([[0, 0], [0, 1]], dtype=complex)
 
     # generate projectors
     projector0 = [1]
     projector1 = [1]
     for i in range(num_states):
         if i == state_index:
-            projector0 = kron(M0, projector0)
-            projector1 = kron(M1, projector1)
+            projector0 = kron([1, 0], projector0)
+            projector1 = kron([0, 1], projector1)
         else:
             projector0 = kron(identity(2), projector0)
             projector1 = kron(identity(2), projector1)
 
     # probability of measuring basis[0]
-    prob_0 = (state.conj().transpose() @ projector0.conj().transpose() @ projector0 @ state).real
+    prob_0 = (state.conj().T @ projector0.T @ projector0 @ state).real
 
     if prob_0 >= 1:
         state1 = None
@@ -257,10 +272,10 @@ def _measure_multiple_with_cache(state: Tuple[complex], num_states: int, length_
     projectors = [None] * basis_count
     probabilities = [0] * basis_count
     for i in range(basis_count):
-        M = zeros((basis_count, basis_count), dtype=complex)  # measurement operator
-        M[i, i] = 1
+        M = zeros((1, basis_count), dtype=complex)  # measurement operator
+        M[0, i] = 1
         projectors[i] = kron(identity(2 ** length_diff), M)  # projector
-        probabilities[i] = (state.conj().transpose() @ projectors[i].conj().transpose() @ projectors[i] @ state).real
+        probabilities[i] = (state.conj().T @ projectors[i].T @ projectors[i] @ state).real
         if probabilities[i] < 0:
             probabilities[i] = 0
         if probabilities[i] > 1:

@@ -81,7 +81,6 @@ def test_qmanager_circuit():
     assert (qm.get(key1).state == np.array([1, 0, 0, 0])).all
     assert qm.get(key1).keys == [key2, key1]
 
-
     # single state in multi-qubit system
     key1 = qm.new()
     key2 = qm.new()
@@ -132,16 +131,16 @@ def test_qmanager__measure():
 
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
     for key in meas_0:
-        assert (qm.get(key).state == np.array([1, 0, 0, 0])).all
+        assert (qm.get(key).state == np.array([1, 0])).all
     for key in meas_1:
-        assert (qm.get(key).state == np.array([0, 1, 0, 0])).all
+        assert (qm.get(key).state == np.array([0, 1])).all
 
     # multiple state
     meas_0 = []
     meas_2 = []
     for _ in range(NUM_TESTS):
         key1 = qm.new()
-        key2 = qm.new([math.sqrt(1/2), math.sqrt(1/2)])
+        key2 = qm.new(state)
         # compound
         circuit = Circuit(2)
         circuit.measure(0)
@@ -153,4 +152,6 @@ def test_qmanager__measure():
             meas_0.append(key1)
         else:
             assert False, "invalid measurement"
+
+    assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
 
