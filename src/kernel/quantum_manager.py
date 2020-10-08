@@ -219,6 +219,9 @@ class KetState():
         self.state = array(amplitudes)
         self.keys = keys
 
+    def __str__(self):
+        return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])
+
 
 @lru_cache(maxsize=1000)
 def _measure_state_with_cache(state: Tuple[complex, complex]) -> float:
