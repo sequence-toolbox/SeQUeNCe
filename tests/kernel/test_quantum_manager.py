@@ -88,8 +88,9 @@ def test_qmanager_circuit():
     qm.run_circuit(circuit1, [key1, key2])
     circuit2 = DumbCircuit(1, np.array([[0, 1],[1, 0]]))
     qm.run_circuit(circuit2, [key1])
-    assert (qm.get(key1).state == np.array([0, 1, 0, 0])).all
+    assert (qm.get(key1).state == np.array([0, 0, 1, 0])).all
     assert (qm.get(key1) is qm.get(key2))
+
 
 def test_qmanager__measure():
     NUM_TESTS = 1000
@@ -139,8 +140,8 @@ def test_qmanager__measure():
     meas_0 = []
     meas_2 = []
     for _ in range(NUM_TESTS):
-        key1 = qm.new()
-        key2 = qm.new(state)
+        key1 = qm.new(state)
+        key2 = qm.new()
         # compound
         circuit = Circuit(2)
         circuit.measure(0)

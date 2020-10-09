@@ -71,7 +71,7 @@ class QuantumManager():
         # construct compound state; order qubits
         new_state = [1]
         for state in old_states:
-            new_state = kron(state, new_state)
+            new_state = kron(new_state, state)
 
         if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
             swap_circuit = QubitCircuit(N=len(all_keys))
@@ -89,7 +89,7 @@ class QuantumManager():
         if circuit.size < len(all_keys):
             # pad size of circuit matrix if necessary
             diff = len(all_keys) - circuit.size
-            circ_mat = kron(identity(2 ** diff), circ_mat)
+            circ_mat = kron(circ_mat, identity(2 ** diff))
         new_state = circ_mat @ new_state
 
         # set state
@@ -243,11 +243,11 @@ def _measure_entangled_state_with_cache(state: Tuple[complex], state_index: int,
     projector1 = [1]
     for i in range(num_states):
         if i == state_index:
-            projector0 = kron([1, 0], projector0)
-            projector1 = kron([0, 1], projector1)
+            projector0 = kron(projector0, [1, 0])
+            projector1 = kron(projector1, [0, 1])
         else:
-            projector0 = kron(identity(2), projector0)
-            projector1 = kron(identity(2), projector1)
+            projector0 = kron(projector0, identity(2))
+            projector1 = kron(projector1, identity(2))
 
     # probability of measuring basis[0]
     prob_0 = (state.conj().T @ projector0.T @ projector0 @ state).real
@@ -277,7 +277,7 @@ def _measure_multiple_with_cache(state: Tuple[complex], num_states: int, length_
     for i in range(basis_count):
         M = zeros((1, basis_count), dtype=complex)  # measurement operator
         M[0, i] = 1
-        projectors[i] = kron(identity(2 ** length_diff), M)  # projector
+        projectors[i] = kron(M, identity(2 ** length_diff))  # projector
         probabilities[i] = (state.conj().T @ projectors[i].T @ projectors[i] @ state).real
         if probabilities[i] < 0:
             probabilities[i] = 0
@@ -293,3 +293,4 @@ def _measure_multiple_with_cache(state: Tuple[complex], num_states: int, length_
             return_states[i] = new_state
 
     return (tuple(return_states), tuple(probabilities))
+
