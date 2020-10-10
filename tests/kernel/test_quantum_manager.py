@@ -86,15 +86,42 @@ def test_qmanager_circuit():
     key2 = qm.new()
     circuit1 = DumbCircuit(2, np.identity(4))
     qm.run_circuit(circuit1, [key1, key2])
-    circuit2 = DumbCircuit(1, np.array([[0, 1],[1, 0]]))
+    circuit2 = DumbCircuit(1, np.array([[0, 1], [1, 0]]))
     qm.run_circuit(circuit2, [key1])
     assert (qm.get(key1).state == np.array([0, 0, 1, 0])).all
     assert (qm.get(key1) is qm.get(key2))
 
+    # extension of circuit
+
+    key1 = qm.new()
+    key2 = qm.new()
+    qm.set([key1, key2], [0.5 ** 0.5, 0.5 ** 0.5, 0, 0])
+    circuit1 = Circuit(1)
+    circuit1.x(0)
+    qm.run_circuit(circuit1, [key2])
+    ket1 = qm.get(key1)
+    if ket1.keys[0] > ket1.keys[1]:
+        ket1.keys.reverse()
+        ket1.state = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ ket1.state
+
+    key3 = qm.new()
+    key4 = qm.new()
+    qm.set([key3, key4], [0.5 ** 0.5, 0.5 ** 0.5, 0, 0])
+    circuit2 = Circuit(2)
+    circuit2.x(1)
+    qm.run_circuit(circuit2, [key3, key4])
+
+    ket2 = qm.get(key3)
+    if ket2.keys[0] > ket2.keys[1]:
+        ket2.keys.reverse()
+        ket2.state = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ ket1.state
+
+    assert np.array_equal(qm.get(key1).state, qm.get(key3).state)
+
 
 def test_qmanager__measure():
     NUM_TESTS = 1000
-    
+
     qm = QuantumManager()
 
     # single state

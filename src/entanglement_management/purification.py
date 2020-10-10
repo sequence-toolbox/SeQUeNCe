@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 from ..message import Message
 from .entanglement_protocol import EntanglementProtocol
 from ..utils import log
+from ..components.circuit import Circuit
 
 
 class BBPSSWMsgType(Enum):
@@ -39,7 +40,7 @@ class BBPSSWMessage(Message):
     def __init__(self, msg_type: BBPSSWMsgType, receiver: str, **kwargs):
         Message.__init__(self, msg_type, receiver)
         if self.msg_type is BBPSSWMsgType.PURIFICATION_RES:
-            pass
+            self.meas_res = kwargs['meas_res']
         else:
             raise Exception("BBPSSW protocol create unknown type of message: %s" % str(msg_type))
 
@@ -56,6 +57,10 @@ class BBPSSW(EntanglementProtocol):
         kept_memo: memory to be purified by the protocol (should already be entangled).
         meas_memo: memory to measure and discart (should already be entangled).
     """
+
+    circuit = Circuit(2)
+    circuit.cx(0, 1)
+    circuit.measure(1)
 
     def __init__(self, own: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory"):
         """Constructor for purification protocol.
@@ -76,7 +81,7 @@ class BBPSSW(EntanglementProtocol):
         self.t0 = self.kept_memo.timeline.now()
         self.another = None
         self.another_node = self.kept_memo.entangled_memory['node_id']
-        self.is_success = None
+        self.meas_res = None
         if self.meas_memo is None:
             self.memories.pop()
 
@@ -95,7 +100,27 @@ class BBPSSW(EntanglementProtocol):
     def start(self) -> None:
         """Method to start entanglement purification.
 
-        Will pre-determine result of purification and send message.
+        Run the circuit below on two pairs of entangled memories on both sides of protocol.
+
+        o -------(x)----------| M |
+        .         |
+        .   o ----.----------------
+        .   .
+        .   .
+        .   o
+        .
+        o
+
+        The overall circuit is shown below:
+
+         o -------(x)----------| M |
+         .         |
+         .   o ----.----------------
+         .   .
+         .   .
+         .   o ----.----------------
+         .         |
+         o -------(x)----------| M |
 
         Side Effects:
             May update parameters of kept memory.
@@ -109,17 +134,12 @@ class BBPSSW(EntanglementProtocol):
                 self.meas_memo.entangled_memory["node_id"])
         assert self.kept_memo.fidelity == self.meas_memo.fidelity > 0.5
 
-        if self.is_success is None:
-            if random() < self.success_probability(self.kept_memo.fidelity):
-                self.is_success = self.another.is_success = True
-            else:
-                self.is_success = self.another.is_success = False
+        self.meas_res = self.own.timeline.quantum_manager.run_circuit(self.circuit, [self.kept_memo.qstate_key,
+                                                                                     self.meas_memo.qstate_key])
 
         dst = self.kept_memo.entangled_memory["node_id"]
-        if self.is_success:
-            self.kept_memo.fidelity = self.improved_fidelity(self.kept_memo.fidelity)
 
-        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.another.name)
+        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.another.name, meas_res=self.meas_res)
         self.own.send_message(dst, message)
 
     def update_resource_manager(self, memory: "Memory", state: str) -> None:
@@ -147,12 +167,12 @@ class BBPSSW(EntanglementProtocol):
             Will call `update_resource_manager` method.
         """
 
-        log.logger.info(self.own.name + " received result message, succeeded: {}".format(self.is_success))
-
+        log.logger.info(self.own.name + " received result message, succeeded: {}".format(self.meas_res == msg.meas_res))
         assert src == self.another.own.name
         self.update_resource_manager(self.meas_memo, "RAW")
-        if self.is_success is True:
+        if self.meas_res == msg.meas_res:
             self.update_resource_manager(self.kept_memo, state="ENTANGLED")
+            self.kept_memo.fidelity = self.improved_fidelity(self.kept_memo.fidelity)
         else:
             self.update_resource_manager(self.kept_memo, state="RAW")
 
