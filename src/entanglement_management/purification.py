@@ -136,7 +136,7 @@ class BBPSSW(EntanglementProtocol):
 
         self.meas_res = self.own.timeline.quantum_manager.run_circuit(self.circuit, [self.kept_memo.qstate_key,
                                                                                      self.meas_memo.qstate_key])
-
+        self.meas_res = self.meas_res[self.meas_memo.qstate_key]
         dst = self.kept_memo.entangled_memory["node_id"]
 
         message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.another.name, meas_res=self.meas_res)
