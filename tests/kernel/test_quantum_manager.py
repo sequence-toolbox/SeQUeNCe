@@ -131,7 +131,7 @@ def test_qmanager__measure():
     for _ in range(NUM_TESTS):
         key = qm.new()
         res = qm._measure(state, [key], [key])
-        if res:
+        if res[key]:
             meas_1.append(key)
         else:
             meas_0.append(key)
@@ -152,7 +152,7 @@ def test_qmanager__measure():
         circuit = Circuit(2)
         circuit.measure(0)
         res = qm.run_circuit(circuit, [key1, key2])
-        if res:
+        if res[key1]:
             meas_1.append(key1)
         else:
             meas_0.append(key1)
@@ -174,12 +174,11 @@ def test_qmanager__measure():
         circuit.measure(0)
         circuit.measure(1)
         res = qm.run_circuit(circuit, [key1, key2])
-        if res == 2:
+        if res[key1]:
             meas_2.append(key1)
-        elif res == 0:
-            meas_0.append(key1)
         else:
-            assert False, "invalid measurement"
+            meas_0.append(key1)
+        assert res[key2] == 0
 
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
 

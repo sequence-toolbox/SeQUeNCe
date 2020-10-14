@@ -180,8 +180,8 @@ class Memory(Entity):
             return
 
         # measure quantum state
-        # TODO: change to use quantum circuit
-        state = self.timeline.quantum_manager.run_circuit(self._meas_circuit, [self.qstate_key])
+        res = self.timeline.quantum_manager.run_circuit(self._meas_circuit, [self.qstate_key])
+        state = res[self.qstate_key]
 
         # create photon and check if null
         photon = Photon("", wavelength=self.wavelength, location=self,

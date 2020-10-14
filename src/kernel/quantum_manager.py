@@ -1,6 +1,6 @@
 from functools import lru_cache
 from copy import copy
-from typing import List, Tuple, TYPE_CHECKING
+from typing import List, Dict, Tuple, TYPE_CHECKING
 from math import sqrt
 
 from qutip.qip.circuit import QubitCircuit, Gate
@@ -129,7 +129,7 @@ class QuantumManager():
         """Method to remove state stored at key."""
         del self.states[key]
 
-    def _measure(self, state: List[complex], keys: List[int], all_keys: List[int]) -> int:
+    def _measure(self, state: List[complex], keys: List[int], all_keys: List[int]) -> Dict[int, int]:
         """Method to measure qubits at given keys.
 
         SHOULD NOT be called individually; only from circuit method (unless for unit testing purposes).
@@ -141,7 +141,7 @@ class QuantumManager():
             all_keys (List[int]): list of all keys corresponding to state.
 
         Returns:
-            int: Measurement result. In range 0 to (2 ** len(keys)) 
+            Dict[int, int]: mapping of measured keys to measurement results.
         """
 
         if len(keys) == 1:
@@ -200,11 +200,13 @@ class QuantumManager():
             # set to state measured
             new_state_obj = KetState(result_states[res], [key])
             self.states[key] = new_state_obj
+        
         if len(all_keys) > 0:
             new_state_obj = KetState(new_state, all_keys)
             for key in all_keys:
                 self.states[key] = new_state_obj
-        return result
+        
+        return dict(zip(keys, result_digits))
             
 
 class KetState():
