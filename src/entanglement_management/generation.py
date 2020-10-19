@@ -80,8 +80,15 @@ class EntanglementGenerationA(EntanglementProtocol):
         other (str): name of distant QuantumRouter node, containing a memory to be entangled with local memory.
         memory (Memory): quantum memory object to attempt entanglement for.
     """
+    
+    # TODO: use a function to update resource manager
 
-    # todo: use a function to update resource manager
+    _plus_state = [sqrt(1/2), sqrt(1/2)]
+    _flip_circuit = Circuit(1)
+    _flip_circuit.x(0)
+    _z_circuit = Circuit(1)
+    _z_circuit.z(0)
+
 
     def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory"):
         """Constructor for entanglement generation a class.
@@ -119,11 +126,6 @@ class EntanglementGenerationA(EntanglementProtocol):
         self.primary = False  # one end node is the "primary" that initiates negotiation
         self.debug = False
 
-        self._plus_state = [sqrt(1/2), sqrt(1/2)]
-        self._flip_circuit = Circuit(1)
-        self._flip_circuit.x(0)
-        self._z_circuit = Circuit(1)
-        self._z_circuit.z(0)
         self._qstate_key = self.memory.qstate_key
 
     def set_others(self, other: "EntanglementGenerationA") -> None:
@@ -193,7 +195,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             return True
 
         elif self.ent_round == 2 and self.bsm_res[0] != -1:
-            self.own.timeline.quantum_manager.run_circuit(self._flip_circuit, [self._qstate_key])
+            self.own.timeline.quantum_manager.run_circuit(EntanglementGenerationA._flip_circuit, [self._qstate_key])
 
         elif self.ent_round == 3 and self.bsm_res[1] != -1:
             # successful entanglement
@@ -204,9 +206,9 @@ class EntanglementGenerationA(EntanglementProtocol):
             
             # state correction
             if self.primary:
-                self.own.timeline.quantum_manager.run_circuit(self._flip_circuit, [self._qstate_key])
+                self.own.timeline.quantum_manager.run_circuit(EntanglementGenerationA._flip_circuit, [self._qstate_key])
             elif self.bsm_res[0] != self.bsm_res[1]:
-                self.own.timeline.quantum_manager.run_circuit(self._z_circuit, [self._qstate_key])
+                self.own.timeline.quantum_manager.run_circuit(EntanglementGenerationA._z_circuit, [self._qstate_key])
 
             self.own.resource_manager.update(self, self.memory, "ENTANGLED")
 
@@ -230,7 +232,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         """
 
         if self.ent_round == 1:
-            self.memory.update_state(self._plus_state)
+            self.memory.update_state(EntanglementGenerationA._plus_state)
         self.memory.excite(self.middle)
 
     def received_message(self, src: str, msg: EntanglementGenerationMessage) -> None:

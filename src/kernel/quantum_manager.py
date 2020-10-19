@@ -92,11 +92,6 @@ class QuantumManager():
             circ_mat = kron(circ_mat, identity(2 ** diff))
         new_state = circ_mat @ new_state
 
-        # set state
-        new_ket = KetState(new_state, all_keys)
-        for key in all_keys:
-            self.states[key] = new_ket
-        
         if len(circuit.measured_qubits) == 0:
             # set state, return no measurement result
             new_ket = KetState(new_state, all_keys)
