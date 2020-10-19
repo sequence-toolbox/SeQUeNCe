@@ -136,7 +136,7 @@ class BBPSSW(EntanglementProtocol):
 
         self.meas_res = self.own.timeline.quantum_manager.run_circuit(self.circuit, [self.kept_memo.qstate_key,
                                                                                      self.meas_memo.qstate_key])
-
+        self.meas_res = self.meas_res[self.meas_memo.qstate_key]
         dst = self.kept_memo.entangled_memory["node_id"]
 
         message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.another.name, meas_res=self.meas_res)
@@ -171,8 +171,8 @@ class BBPSSW(EntanglementProtocol):
         assert src == self.another.own.name
         self.update_resource_manager(self.meas_memo, "RAW")
         if self.meas_res == msg.meas_res:
-            self.update_resource_manager(self.kept_memo, state="ENTANGLED")
             self.kept_memo.fidelity = self.improved_fidelity(self.kept_memo.fidelity)
+            self.update_resource_manager(self.kept_memo, state="ENTANGLED")
         else:
             self.update_resource_manager(self.kept_memo, state="RAW")
 

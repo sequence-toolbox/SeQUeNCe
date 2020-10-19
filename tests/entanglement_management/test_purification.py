@@ -607,7 +607,7 @@ def test_BBPSSW_psi_minus_psi_minus():
 bell_states = [phi_plus, phi_minus, psi_plus, psi_minus]
 
 
-def test_BBPSSW1():
+def test_BBPSSW_fidelity():
     tl = Timeline()
     a1 = FakeNode("a1", tl)
     a2 = FakeNode("a2", tl)
@@ -676,7 +676,7 @@ def test_BBPSSW1():
             assert a2.resource_manager.log[-1] == (kept_memo2, "RAW")
 
 
-def test_BBPSSW2():
+def test_BBPSSW_success_rate():
     tl = Timeline()
     a1 = FakeNode("a1", tl)
     a2 = FakeNode("a2", tl)
