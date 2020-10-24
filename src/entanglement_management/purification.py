@@ -190,26 +190,8 @@ class BBPSSW(EntanglementProtocol):
         if self.meas_memo is None:
             self.update_resource_manager(memory, "RAW")
         else:
-            delay = self.own.cchannels[self.another_node].delay
-            if self.is_primary:
-                if self.own.timeline.now() < self.t0 + delay:
-                    self.update_resource_manager(memory, "RAW")
-                    for memory1 in self.memories:
-                        if memory1 != memory:
-                            self.update_resource_manager(memory1, "ENTANGLED")
-                elif self.own.timeline.now() < self.t0 + 2 * delay:
-                    for memory1 in self.memories:
-                        self.update_resource_manager(memory1, "RAW")
-                else:
-                    raise Exception("invalid call time, t0:%d, delay:%d" % (self.t0, delay))
-            else:
-                if self.own.timeline.now() < self.t0 + delay:
-                    for memory1 in self.memories:
-                        self.update_resource_manager(memory1, "RAW")
-                elif self.own.timeline.now() < self.t0 + 2 * delay:
-                    if memory == self.kept_memo:
-                        for memory1 in self.memories:
-                            self.update_resource_manager(memory1, "RAW")
+            for memory in self.memories:
+                self.update_resource_manager(memory, "RAW")
 
     def release(self) -> None:
         pass
