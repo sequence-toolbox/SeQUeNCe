@@ -1,5 +1,5 @@
-__all__ = ["rule_manager", "manager", "memory_manager"]
+__all__ = ["rule_manager", "resource_manager", "memory_manager"]
 
 
 def __dir__():
-    return ("rule_manager", "manager", "memory_manager")
+    return sorted(__all__)
