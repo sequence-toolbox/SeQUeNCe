@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from functools import lru_cache
 from copy import copy
 from typing import List, Dict, Tuple, TYPE_CHECKING
@@ -22,32 +23,30 @@ class QuantumManager():
         self.states = {}
         self._least_available = 0
 
-    def new(self, amplitudes=[complex(1), complex(0)]) -> int:
+    @abstractmethod
+    def new(self, amplitudes: any) -> int:
         """Method to create a new quantum state.
 
         Args:
-            amplitudes (List[complex]): complex amplitudes of new state (default [1, 0]).
+            amplitudes: complex amplitudes of new state. Type depends on type of subclass.
 
         Returns:
             int: key for new state generated.
         """
-        
-        key = self._least_available
-        self._least_available += 1
-        self.states[key] = KetState(amplitudes, [key])
-        return key
+        pass
 
-    def get(self, key: int) -> "KetState":
+    def get(self, key: int) -> "State":
         """Method to get quantum state stored at an index.
 
         Args:
             key (int): key for quantum state.
 
         Returns:
-            KetState: quantum state at supplied key.
+            State: quantum state at supplied key.
         """
         return self.states[key]
 
+    @abstractmethod
     def run_circuit(self, circuit: "Circuit", keys: List[int]) -> int:
         """Method to run a circuit on a given set of quantum states.
         
@@ -59,6 +58,38 @@ class QuantumManager():
             int: measurement results.
         """
         assert len(keys) == circuit.size, "mismatch between circuit size and supplied qubits"
+
+    @abstractmethod
+    def set(self, keys: List[int], amplitudes: any) -> None:
+        """Method to set quantum state at a given key(s).
+
+        Args:
+            keys (List[int]): key(s) of state(s) to change.
+            amplitudes: Amplitudes to set state to, type determined by type of subclass.
+        """
+
+        num_qubits = log2(len(amplitudes))
+        assert num_qubits.is_integer(), "Length of amplitudes should be 2 ** n, where n is the number of keys"
+        num_qubits = int(num_qubits)
+        assert num_qubits == len(keys), "Length of amplitudes should be 2 ** n, where n is the number of keys"
+
+    def remove(self, key: int) -> None:
+        """Method to remove state stored at key."""
+        del self.states[key]
+
+
+class QuantumManagerKet(QuantumManager):
+    def __init__(self):
+        super().__init__()
+
+    def new(self, amplitudes=[complex(1), complex(0)]) -> int:        
+        key = self._least_available
+        self._least_available += 1
+        self.states[key] = KetState(amplitudes, [key])
+        return key
+
+    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> int:
+        super().run_circuit(circuit, keys)
 
         old_states = []
         all_keys = []
@@ -104,25 +135,10 @@ class QuantumManager():
             return self._measure(new_state, keys, all_keys)
 
     def set(self, keys: List[int], amplitudes: List[complex]) -> None:
-        """Method to set quantum state at a given key(s).
-
-        Args:
-            keys (List[int]): key(s) of state(s) to change.
-            amplitudes (List[complex]): List of amplitudes to set state to (should be of length 2 ** len(keys)).
-        """
-
-        num_qubits = log2(len(amplitudes))
-        assert num_qubits.is_integer(), "Length of amplitudes should be 2 ** n, where n is the number of keys"
-        num_qubits = int(num_qubits)
-        assert num_qubits == len(keys), "Length of amplitudes should be 2 ** n, where n is the number of keys"
-
+        super().set(keys, amplitudes)
         new_state = KetState(amplitudes, keys)
         for key in keys:
             self.states[key] = new_state
-
-    def remove(self, key: int) -> None:
-        """Method to remove state stored at key."""
-        del self.states[key]
 
     def _measure(self, state: List[complex], keys: List[int], all_keys: List[int]) -> Dict[int, int]:
         """Method to measure qubits at given keys.
@@ -202,7 +218,7 @@ class QuantumManager():
                 self.states[key] = new_state_obj
         
         return dict(zip(keys, result_digits))
-            
+
 
 class KetState():
     def __init__(self, amplitudes: List[complex], keys: List[int]):

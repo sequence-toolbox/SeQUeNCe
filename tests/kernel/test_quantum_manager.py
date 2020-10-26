@@ -16,7 +16,7 @@ class DumbCircuit():
 
 
 def test_qmanager_get():
-    qm = QuantumManager()
+    qm = QuantumManagerKet()
     qm.states[49] = "test_string"
     assert qm.get(49) == "test_string"
 
@@ -24,7 +24,7 @@ def test_qmanager_get():
 def test_qmanager_new():
     NUM_TESTS = 1000
 
-    qm = QuantumManager()
+    qm = QuantumManagerKet()
     
     keys = []
     for _ in range(NUM_TESTS):
@@ -37,7 +37,7 @@ def test_qmanager_new():
 
 
 def test_qmanager_set():
-    qm = QuantumManager()
+    qm = QuantumManagerKet()
     key = qm.new()
     new_state = [complex(0), complex(1)]
     qm.set([key], new_state)
@@ -52,14 +52,14 @@ def test_qmanager_set():
 
 
 def test_qmanager_remove():
-    qm = QuantumManager()
+    qm = QuantumManagerKet()
     qm.states[0] = "test_string"
     qm.remove(0)
     assert len(qm.states.keys()) == 0
 
 
 def test_qmanager_circuit():
-    qm = QuantumManager()
+    qm = QuantumManagerKet()
 
     # single state
     key = qm.new()
@@ -122,7 +122,7 @@ def test_qmanager_circuit():
 def test_qmanager__measure():
     NUM_TESTS = 1000
 
-    qm = QuantumManager()
+    qm = QuantumManagerKet()
 
     # single state
     meas_0 = []
