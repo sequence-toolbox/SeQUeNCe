@@ -51,6 +51,9 @@ class BSM(Entity):
         resolution (int): maximum time resolution achievable with attached detectors.
     """
 
+    _psi_plus = [complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)]
+    _psi_minus = [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]
+
     def __init__(self, name, timeline, phase_error=0, detectors=[]):
         """Constructor for base BSM object.
 
@@ -365,17 +368,6 @@ class SingleAtomBSM(BSM):
         super().__init__(name, timeline, phase_error, detectors)
         assert len(self.detectors) == 2
 
-        self.circ_psi_plus = Circuit(2)
-        self.circ_psi_plus.h(0)
-        self.circ_psi_plus.cx(0, 1)
-        self.circ_psi_plus.x(0)
-
-        self.circ_psi_minus = Circuit(2)
-        self.circ_psi_minus.h(0)
-        self.circ_psi_minus.cx(0, 1)
-        self.circ_psi_minus.x(0)
-        self.circ_psi_minus.z(1)
-
     def get(self, photon):
         """See base class.
 
@@ -414,16 +406,11 @@ class SingleAtomBSM(BSM):
                 # if we're in stage 2: check if psi+ or psi-, then assign new state
                 else:
                     qm = self.timeline.quantum_manager
-                    key0 = qm.new()
-                    key1 = qm.new()
-                    
-                    if memory_0.previous_bsm != memory_1.previous_bsm:
-                        qm.run_circuit(self.circ_psi_minus, [key0, key1])
-                    else:
-                        qm.run_circuit(self.circ_psi_plus, [key0, key1])
 
-                    memory_0.qstate_key = key0
-                    memory_1.qstate_key = key1
+                    if memory_0.previous_bsm != memory_1.previous_bsm:
+                        qm.set([memory_0.qstate_key, memory_1.qstate_key], BSM._psi_minus)
+                    else:
+                        qm.set([memory_0.qstate_key, memory_1.qstate_key], BSM._psi_plus)
 
     def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.
