@@ -47,7 +47,7 @@ class EntanglementSwappingMessage(Message):
         expire_time (int): expiration time of the new memory pair.
     """
 
-    def __init__(self, msg_type: str, receiver: str, **kwargs):
+    def __init__(self, msg_type: SwappingMsgType, receiver: str, **kwargs):
         Message.__init__(self, msg_type, receiver)
         if self.msg_type is SwappingMsgType.SWAP_RES:
             self.fidelity = kwargs.get("fidelity")
@@ -73,6 +73,9 @@ class EntanglementSwappingA(EntanglementProtocol):
     EntanglementSwappingA should be instantiated on the middle node, where it measures a memory from each pair to be swapped.
     Results of measurement and swapping are sent to the end routers.
 
+    Variables:
+        EntanglementSwappingA.circuit (Circuit): circuit that does swapping operations
+
     Attributes:
         own (QuantumRouter): node that protocol instance is attached to.
         name (str): label for protocol instance.
@@ -97,8 +100,15 @@ class EntanglementSwappingA(EntanglementProtocol):
             name (str): label for swapping protocol instance.
             left_memo (Memory): memory entangled with a memory on one distant node.
             right_memo (Memory): memory entangled with a memory on the other distant node.
+            left_node (str): name of node that contains memory entangling with left_memo.
+            left_remote_memo (str): name of memory that entangles with left_memo.
+            right_node (str): name of node that contains memory entangling with right_memo.
+            right_remote_memo (str): name of memory that entangles with right_memo.
             success_prob (float): probability of a successful swapping operation (default 1).
             degradation (float): degradation factor of memory fidelity after swapping (default 0.95).
+            is_success (bool): flag to show the result of swapping
+            left_protocol (EntanglementSwappingB): pointer of left protocol (may be removed in the future).
+            right_protocol (EntanglementSwappingB): pointer of right protocol (may be removed in the future).
         """
 
         assert left_memo != right_memo
@@ -136,7 +146,7 @@ class EntanglementSwappingA(EntanglementProtocol):
     def start(self) -> None:
         """Method to start entanglement swapping protocol.
 
-        Will pre-determine swapping result and send messages to other protocols.
+        Will run circuit and send measurement results to other protocols.
 
         Side Effects:
             Will call `update_resource_manager` method.
@@ -176,8 +186,8 @@ class EntanglementSwappingA(EntanglementProtocol):
             msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, self.left_protocol.name, fidelity=0)
             msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, self.right_protocol.name, fidelity=0)
 
-        self.own.send_message(self.left_protocol.own.name, msg_l)
-        self.own.send_message(self.right_protocol.own.name, msg_r)
+        self.own.send_message(self.left_node, msg_l)
+        self.own.send_message(self.right_node, msg_r)
 
         self.update_resource_manager(self.left_memo, "RAW")
         self.update_resource_manager(self.right_memo, "RAW")
@@ -261,6 +271,11 @@ class EntanglementSwappingB(EntanglementProtocol):
 
     The entanglement swapping protocol is an asymmetric protocol.
     EntanglementSwappingB should be instantiated on the end nodes, where it waits for swapping results from the middle node.
+
+    Variables:
+            EntanglementSwappingB.x_cir (Circuit): circuit that corrects state by x gate
+            EntanglementSwappingB.z_cir (Circuit): circuit that corrects state by z gate
+            EntanglementSwappingB.x_z_cir (Circuit): circuit that corrects state by x and z gate
 
     Attributes:
         own (QuantumRouter): node that protocol instance is attached to.

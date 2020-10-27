@@ -1,12 +1,12 @@
 """Models for simulation of quantum circuit
 
-This module introduces the QuantumCircuit class.
+This module introduces the QuantumCircuit class. We use qutip to calculate the unitary matrix of circuit.
 """
 from math import e, pi
-from typing import List, TYPE_CHECKING, Dict
+from typing import List
 
 import numpy as np
-from qutip.qip.circuit import QubitCircuit, Gate
+from qutip.qip.circuit import QubitCircuit
 from qutip.qip.operations import gate_sequence_product
 from qutip import Qobj
 
@@ -59,10 +59,15 @@ class Circuit():
     Attributes:
         size (int): the number of quantum qubits of circuit
         gates (List[str]): a list of command bound to some registers
-        circuit_matrix (List[List[complex]]): the unitary matrix of circuit
+        measured_qubits (List[int]): a list of indices of measured qubits
     """
 
     def __init__(self, size: int):
+        """Constructor for quantum circuit.
+
+        Args:
+            size (int): the number of qubits used in circuit
+        """
         self.size = size
         self.gates = []
         self.measured_qubits = []
