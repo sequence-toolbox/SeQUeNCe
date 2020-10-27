@@ -16,7 +16,7 @@ class DumbCircuit():
 
 
 def test_qmanager_get():
-    qm = QuantumManager()
+    qm = QuantumManagerKet()
     qm.states[49] = "test_string"
     assert qm.get(49) == "test_string"
 
@@ -24,7 +24,7 @@ def test_qmanager_get():
 def test_qmanager_new():
     NUM_TESTS = 1000
 
-    qm = QuantumManager()
+    qm = QuantumManagerKet()
     
     keys = []
     for _ in range(NUM_TESTS):
@@ -37,7 +37,7 @@ def test_qmanager_new():
 
 
 def test_qmanager_set():
-    qm = QuantumManager()
+    qm = QuantumManagerKet()
     key = qm.new()
     new_state = [complex(0), complex(1)]
     qm.set([key], new_state)
@@ -52,14 +52,14 @@ def test_qmanager_set():
 
 
 def test_qmanager_remove():
-    qm = QuantumManager()
+    qm = QuantumManagerKet()
     qm.states[0] = "test_string"
     qm.remove(0)
     assert len(qm.states.keys()) == 0
 
 
 def test_qmanager_circuit():
-    qm = QuantumManager()
+    qm = QuantumManagerKet()
 
     # single state
     key = qm.new()
@@ -122,7 +122,7 @@ def test_qmanager_circuit():
 def test_qmanager__measure():
     NUM_TESTS = 1000
 
-    qm = QuantumManager()
+    qm = QuantumManagerKet()
 
     # single state
     meas_0 = []
@@ -181,4 +181,60 @@ def test_qmanager__measure():
         assert res[key2] == 0
 
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
+
+def test_qmanager__measure_density():
+    NUM_TESTS = 1000
+
+    qm = QuantumManagerDensity()
+
+    # single state
+    meas_0 = []
+    meas_1 = []
+    state_single = [math.sqrt(1/2), math.sqrt(1/2)]
+    state = np.outer(state_single, state_single)
+    for _ in range(NUM_TESTS):
+        key = qm.new()
+        res = qm._measure(state, [key], [key])
+        if res[key]:
+            meas_1.append(key)
+        else:
+            meas_0.append(key)
+    
+    assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
+    for key in meas_0:
+        assert (qm.get(key).state == np.array([[1, 0], [0, 0]])).all
+    for key in meas_1:
+        assert (qm.get(key).state == np.array([[0, 0], [0, 1]])).all
+
+    # mixed state
+    meas_0 = []
+    meas_1 = []
+    state = [[0.5, 0], [0.5, 0]]
+    for _ in range(NUM_TESTS):
+        key = qm.new()
+        res = qm._measure(state, [key], [key])
+        if res[key]:
+            meas_1.append(key)
+        else:
+            meas_0.append(key)
+    
+    assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
+
+    # single state in multi-qubit system
+    meas_0 = []
+    meas_1 = []
+    for _ in range(NUM_TESTS):
+        key1 = qm.new(state)
+        key2 = qm.new()
+        # compound
+        circuit = Circuit(2)
+        circuit.measure(0)
+        res = qm.run_circuit(circuit, [key1, key2])
+        if res[key1]:
+            meas_1.append(key1)
+        else:
+            meas_0.append(key1)
+
+    assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
+
 

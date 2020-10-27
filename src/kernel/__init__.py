@@ -1,4 +1,4 @@
-__all__ = ["entity", "event", "eventlist", "process", "quantum_manager", "timeline"]
+__all__ = ["entity", "event", "eventlist", "process", "quantum_manager", "quantum_utils", "timeline"]
 
 
 def __dir__():
