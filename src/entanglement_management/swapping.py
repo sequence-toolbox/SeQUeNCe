@@ -192,19 +192,6 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.update_resource_manager(self.left_memo, "RAW")
         self.update_resource_manager(self.right_memo, "RAW")
 
-    def update_resource_manager(self, memory: "Memory", state: str) -> None:
-        """Method to update attached memory to desired state.
-
-        Args:
-            memory (Memory): attached memory to update.
-            state (str): state memory should be updated to.
-        
-        Side Effects:
-            May alter the state of `memory`.
-        """
-
-        self.own.resource_manager.update(self, memory, state)
-
     def success_probability(self) -> float:
         """A simple model for BSM success probability."""
 
@@ -351,19 +338,6 @@ class EntanglementSwappingB(EntanglementProtocol):
             self.update_resource_manager(self.memory, "ENTANGLED")
         else:
             self.update_resource_manager(self.memory, "RAW")
-
-    def update_resource_manager(self, memory: "Memory", state: str) -> None:
-        """Method to update attached memory in resource manager.
-
-        Args:
-            memory (Memory): memory to update.
-            state (str): state to set memory to.
-
-        Side Effects:
-            Will invoke `update` method of attached resource_manager.
-        """
-
-        self.own.resource_manager.update(self, memory, state)
 
     def start(self) -> None:
         log.logger.info(self.own.name + " end protocol start with partner {}".format(self.another.own.name))

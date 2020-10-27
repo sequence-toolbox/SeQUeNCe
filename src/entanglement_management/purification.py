@@ -144,20 +144,6 @@ class BBPSSW(EntanglementProtocol):
         message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.another.name, meas_res=self.meas_res)
         self.own.send_message(dst, message)
 
-    def update_resource_manager(self, memory: "Memory", state: str) -> None:
-        """Method to update memory parameters.
-
-        Args:
-            memory (Memory): memory to update.
-            state (str): state to set memory to.
-
-        Side Effects:
-            May update state of memory.
-            Will call `update` method of node's resource manager.
-        """
-
-        self.own.resource_manager.update(self, memory, state)
-
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:
         """Method to receive messages.
 
