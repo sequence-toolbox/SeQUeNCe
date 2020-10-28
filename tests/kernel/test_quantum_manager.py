@@ -209,7 +209,7 @@ def test_qmanager__measure_density():
     # mixed state
     meas_0 = []
     meas_1 = []
-    state = [[0.5, 0], [0.5, 0]]
+    state = [[0.5, 0], [0, 0.5]]
     for _ in range(NUM_TESTS):
         key = qm.new()
         res = qm._measure(state, [key], [key])
@@ -237,4 +237,22 @@ def test_qmanager__measure_density():
 
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
 
+    # multiple state
+    meas_0 = []
+    meas_2 = []
+    for _ in range(NUM_TESTS):
+        key1 = qm.new(state)
+        key2 = qm.new()
+        # compound
+        circuit = Circuit(2)
+        circuit.measure(0)
+        circuit.measure(1)
+        res = qm.run_circuit(circuit, [key1, key2])
+        if res[key1]:
+            meas_2.append(key1)
+        else:
+            meas_0.append(key1)
+        assert res[key2] == 0
+
+    assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
 

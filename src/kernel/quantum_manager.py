@@ -238,10 +238,10 @@ class QuantumManagerDensity(QuantumManager):
     def __init__(self):
         super().__init__()
 
-    def new(self, amplitudes=[[complex(1), complex(0)], [complex(0), complex(0)]]) -> int:        
+    def new(self, state=[[complex(1), complex(0)], [complex(0), complex(0)]]) -> int:        
         key = self._least_available
         self._least_available += 1
-        self.states[key] = DensityState(amplitudes, [key])
+        self.states[key] = DensityState(state, [key])
         return key
 
     def run_circuit(self, circuit: "Circuit", keys: List[int]) -> int:
@@ -290,14 +290,14 @@ class QuantumManagerDensity(QuantumManager):
             keys = [all_keys[i] for i in circuit.measured_qubits]
             return self._measure(new_state, keys, all_keys)
 
-    def set(self, keys: List[int], amplitudes: List[List[complex]]) -> None:
-        super().set(keys, amplitudes)
-        new_state = DensityState(amplitudes, keys)
+    def set(self, keys: List[int], state: List[List[complex]]) -> None:
+        super().set(keys, state)
+        new_state = DensityState(state, keys)
         for key in keys:
             self.states[key] = new_state
 
 
-    def _measure(self, state: List[complex], keys: List[int], all_keys: List[int]) -> Dict[int, int]:
+    def _measure(self, state: List[List[complex]], keys: List[int], all_keys: List[int]) -> Dict[int, int]:
         """Method to measure qubits at given keys.
 
         SHOULD NOT be called individually; only from circuit method (unless for unit testing purposes).
@@ -336,17 +336,32 @@ class QuantumManagerDensity(QuantumManager):
                     result = 1
 
         else:
-            raise NotImplementedError()
+            # swap states into correct position
+            if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
+                swap_circuit = QubitCircuit(N=len(all_keys))
+                for i, key in enumerate(keys):
+                    j = all_keys.index(key)
+                    if j != i:
+                        gate = Gate("SWAP", targets=[i, j])
+                        swap_circuit.add_gate(gate)
+                        all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
+                swap_mat = gate_sequence_product(swap_circuit.propagators())
+                state = swap_mat @ state @ swap_mat.T
 
-        # result_states = [array([[1, 0], [0, 0]]),
-        #                  array([[0, 0], [0, 1]])]
+            # calculate meas probabilities and projected states
+            len_diff = len(all_keys) - len(keys)
+            state_to_measure = tuple(map(tuple, state))
+            new_states, probabilities = measure_multiple_with_cache_density(state_to_measure, len(keys), len_diff)
+
+            # choose result, set as new state
+            possible_results = arange(0, 2 ** len(keys), 1)
+            result = choice(possible_results, p=probabilities)
+            new_state = new_states[result]
+
         result_digits = [int(x) for x in bin(result)[2:]]
-
-        # for res, key in zip(result_digits, keys):
-        #     # set to state measured
-        #     new_state_obj = DensityState(result_states[res], [key])
-        #     self.states[key] = new_state_obj
-        
+        while len(result_digits) < len(keys):
+            result_digits.insert(0, 0)
+       
         new_state_obj = DensityState(new_state, all_keys)
         for key in all_keys:
             self.states[key] = new_state_obj
@@ -385,15 +400,16 @@ class DensityState():
         keys (List[int]): list of keys (qubits) associated with this state.
     """
 
-    def __init__(self, amplitudes: List[List[complex]], keys: List[int]):
+    def __init__(self, state: List[List[complex]], keys: List[int]):
         # check formatting
-        for row in amplitudes:
-            assert len(amplitudes) == len(row), "density matrix must be square"
-        num_qubits = log2(len(amplitudes))
+        assert trace(array(state)) == 1, "density matrix trace must be 1"
+        for row in state:
+            assert len(state) == len(row), "density matrix must be square"
+        num_qubits = log2(len(state))
         assert num_qubits.is_integer(), "Dimensions of density matrix should be 2 ** n, where n is the number of qubits"
         assert num_qubits == len(keys), "Dimensions of density matrix should be 2 ** n, where n is the number of qubits"
 
-        self.state = array(amplitudes)
+        self.state = array(state)
         self.keys = keys
 
     def __str__(self):

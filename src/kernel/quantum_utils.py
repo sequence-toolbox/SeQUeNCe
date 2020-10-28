@@ -123,3 +123,32 @@ def measure_entangled_state_with_cache_density(state: Tuple[Tuple[complex]], sta
 
     return (state0, state1, prob_0)
 
+@lru_cache(maxsize=1000)
+def measure_multiple_with_cache_density(state: Tuple[Tuple[complex]], num_states: int, length_diff: int) -> Tuple[
+        Tuple[Tuple[complex]], Tuple[float]]:
+    state = array(state)
+    basis_count = 2 ** num_states
+
+    # construct measurement operators, projectors, and probabilities of measurement
+    projectors = [None] * basis_count
+    probabilities = [0] * basis_count
+    for i in range(basis_count):
+        M = zeros((basis_count, basis_count), dtype=complex)  # measurement operator
+        M[i, i] = 1
+        projectors[i] = kron(M, identity(2 ** length_diff))  # projector
+        probabilities[i] = trace(state @ projectors[i]).real
+        if probabilities[i] < 0:
+            probabilities[i] = 0
+        if probabilities[i] > 1:
+            probabilities[i] = 1
+
+    return_states = [None] * len(projectors)
+    for i, proj in enumerate(projectors):
+        # project to new state
+        if probabilities[i] > 0:
+            new_state = (proj @ state @ proj) / probabilities[i]
+            new_state = tuple(new_state)
+            return_states[i] = new_state
+
+    return (tuple(return_states), tuple(probabilities))
+
