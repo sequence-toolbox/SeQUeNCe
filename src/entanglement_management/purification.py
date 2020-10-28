@@ -52,7 +52,7 @@ class BBPSSW(EntanglementProtocol):
     It should be instantiated on a quantum router node.
 
     Variables:
-        BBPSSW.circuit (Circuit): circuit that purifies entangled memories
+        BBPSSW.circuit (Circuit): circuit that purifies entangled memories.
 
     Attributes:
         own (QuantumRouter): node that protocol instance is attached to.

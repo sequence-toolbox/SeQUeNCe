@@ -1,3 +1,8 @@
+"""This module defines functions to handle cached measurement of quantum states.
+
+These should not be used directly, but accessed by a QuantumManager instance.
+"""
+
 from functools import lru_cache
 from typing import Tuple
 from math import sqrt

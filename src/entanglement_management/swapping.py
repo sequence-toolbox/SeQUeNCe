@@ -74,7 +74,7 @@ class EntanglementSwappingA(EntanglementProtocol):
     Results of measurement and swapping are sent to the end routers.
 
     Variables:
-        EntanglementSwappingA.circuit (Circuit): circuit that does swapping operations
+        EntanglementSwappingA.circuit (Circuit): circuit that does swapping operations.
 
     Attributes:
         own (QuantumRouter): node that protocol instance is attached to.
@@ -260,9 +260,9 @@ class EntanglementSwappingB(EntanglementProtocol):
     EntanglementSwappingB should be instantiated on the end nodes, where it waits for swapping results from the middle node.
 
     Variables:
-            EntanglementSwappingB.x_cir (Circuit): circuit that corrects state by x gate
-            EntanglementSwappingB.z_cir (Circuit): circuit that corrects state by z gate
-            EntanglementSwappingB.x_z_cir (Circuit): circuit that corrects state by x and z gate
+            EntanglementSwappingB.x_cir (Circuit): circuit that corrects state with an x gate.
+            EntanglementSwappingB.z_cir (Circuit): circuit that corrects state with z gate.
+            EntanglementSwappingB.x_z_cir (Circuit): circuit that corrects state with an x and z gate.
 
     Attributes:
         own (QuantumRouter): node that protocol instance is attached to.

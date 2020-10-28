@@ -1,7 +1,8 @@
-"""Models for simulation of quantum circuit
+"""Models for simulation of quantum circuit.
 
-This module introduces the QuantumCircuit class. We use qutip to calculate the unitary matrix of circuit.
+This module introduces the QuantumCircuit class. The qutip library is used to calculate the unitary matrix of a circuit.
 """
+
 from math import e, pi
 from typing import List
 
@@ -54,31 +55,33 @@ def validator(func):
 
 
 class Circuit():
-    """Class of quantum circuit
+    """Class for a quantum circuit.
 
     Attributes:
-        size (int): the number of quantum qubits of circuit
-        gates (List[str]): a list of command bound to some registers
-        measured_qubits (List[int]): a list of indices of measured qubits
+        size (int): the number of qubits in the circuit.
+        gates (List[str]): a list of commands bound to register.
+        measured_qubits (List[int]): a list of indices of measured qubits.
     """
 
     def __init__(self, size: int):
         """Constructor for quantum circuit.
 
         Args:
-            size (int): the number of qubits used in circuit
+            size (int): the number of qubits used in circuit.
         """
+        
         self.size = size
         self.gates = []
         self.measured_qubits = []
         self._cache = None
 
     def get_unitary_matrix(self) -> "np.ndarray":
-        """Method to get unitary matrix of circuit without measurement
+        """Method to get unitary matrix of circuit without measurement.
 
         Returns:
-            np.ndarray: the matrix stored in the np.ndarray
+            np.ndarray: the matrix for the circuit operations.
         """
+
         if self._cache is None:
             if len(self.gates) == 0:
                 self._cache = np.identity(2 ** self.size)
@@ -121,9 +124,9 @@ class Circuit():
         """Method to apply single-qubit Hadamard gate on a qubit.
 
         Args:
-            qubit (int): the index of qubit in the circuit
-
+            qubit (int): the index of qubit in the circuit.
         """
+
         self.gates.append(['h', [qubit]])
 
     @validator
@@ -131,9 +134,9 @@ class Circuit():
         """Method to apply single-qubit Pauli-X gate on a qubit.
 
         Args:
-            qubit (int): the index of qubit in the circuit
-
+            qubit (int): the index of qubit in the circuit.
         """
+
         self.gates.append(['x', [qubit]])
 
     @validator
@@ -141,9 +144,9 @@ class Circuit():
         """Method to apply single-qubit Pauli-Y gate on a qubit.
 
         Args:
-            qubit (int): the index of qubit in the circuit
-
+            qubit (int): the index of qubit in the circuit.
         """
+
         self.gates.append(['y', [qubit]])
 
     @validator
@@ -151,9 +154,9 @@ class Circuit():
         """Method to apply single-qubit Pauli-Z gate on a qubit.
 
         Args:
-            qubit (int): the index of qubit in the circuit
-
+            qubit (int): the index of qubit in the circuit.
         """
+
         self.gates.append(['z', [qubit]])
 
     @validator
@@ -161,10 +164,10 @@ class Circuit():
         """Method to apply Control-X gate on three qubits.
 
         Args:
-            control1 (int): the index of control1 in the circuit
-            target (int): the index of target in the circuit
-
+            control1 (int): the index of control1 in the circuit.
+            target (int): the index of target in the circuit.
         """
+
         self.gates.append(['cx', [control, target]])
 
     @validator
@@ -172,11 +175,11 @@ class Circuit():
         """Method to apply Toffoli gate on three qubits.
 
         Args:
-            control1 (int): the index of control1 in the circuit
-            control2 (int): the index of control2 in the circuit
-            target (int): the index of target in the circuit
-
+            control1 (int): the index of control1 in the circuit.
+            control2 (int): the index of control2 in the circuit.
+            target (int): the index of target in the circuit.
         """
+
         self.gates.append(['ccx', [control1, control2, target]])
 
     @validator
@@ -184,10 +187,10 @@ class Circuit():
         """Method to apply SWAP gate on two qubits.
 
         Args:
-            qubit1 (int): the index of qubit1 in the circuit
-            qubit2 (int): the index of qubit2 in the circuit
-
+            qubit1 (int): the index of qubit1 in the circuit.
+            qubit2 (int): the index of qubit2 in the circuit.
         """
+
         self.gates.append(['swap', [qubit1, qubit2]])
 
     @validator
@@ -195,9 +198,9 @@ class Circuit():
         """Method to apply single T gate on a qubit.
 
         Args:
-            qubit (int): the index of qubit in the circuit
-
+            qubit (int): the index of qubit in the circuit.
         """
+
         self.gates.append(['t', [qubit]])
 
     @validator
@@ -205,9 +208,9 @@ class Circuit():
         """Method to apply single S gate on a qubit.
 
         Args:
-            qubit (int): the index of qubit in the circuit
-
+            qubit (int): the index of qubit in the circuit.
         """
+
         self.gates.append(['s', [qubit]])
 
     @validator
@@ -215,7 +218,8 @@ class Circuit():
         """Method to measure quantum bit into classical bit.
 
         Args:
-            qubit (int): the index of qubit in the circuit
-
+            qubit (int): the index of qubit in the circuit.
         """
+
         self.measured_qubits.append(qubit)
+

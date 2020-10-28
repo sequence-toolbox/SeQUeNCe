@@ -76,3 +76,4 @@ class EntanglementProtocol(Protocol):
         """
 
         self.own.resource_manager.update(self, memory, state)
+

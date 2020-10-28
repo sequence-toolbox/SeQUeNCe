@@ -1,3 +1,12 @@
+"""This module defines the quantum manager class, to track quantum states.
+
+The states may currently be defined in two possible ways:
+    - KetState (with the QuantumManagerKet class)
+    - DensityMatrix (with the QuantumManagerDensity class)
+
+The manager defines an API for interacting with quantum states.
+"""
+
 from abc import abstractmethod
 from copy import copy
 from typing import List, Dict, Tuple, TYPE_CHECKING
@@ -12,7 +21,7 @@ from .quantum_utils import *
 
 
 class QuantumManager():
-    """Class to track and manage quantum states.
+    """Class to track and manage quantum states (abstract).
 
     All states stored are of a single formalism (by default as a ket vector).
 
@@ -80,6 +89,8 @@ class QuantumManager():
 
 
 class QuantumManagerKet(QuantumManager):
+    """Class to track and manage quantum states with the ket vector formalism."""
+
     def __init__(self):
         super().__init__()
 
@@ -222,6 +233,8 @@ class QuantumManagerKet(QuantumManager):
 
 
 class QuantumManagerDensity(QuantumManager):
+    """Class to track and manage states with the density matrix formalism."""
+
     def __init__(self):
         super().__init__()
 
@@ -342,6 +355,13 @@ class QuantumManagerDensity(QuantumManager):
 
 
 class KetState():
+    """Class to represent an individual quantum state as a ket vector.
+
+    Attributes:
+        state (np.array): state vector. Should be of length 2 ** len(keys).
+        keys (List[int]): list of keys (qubits) associated with this state.
+    """
+
     def __init__(self, amplitudes: List[complex], keys: List[int]):
         # check formatting
         assert all([abs(a) <= 1.01 for a in amplitudes]), "Illegal value with abs > 1 in ket vector"
@@ -358,6 +378,13 @@ class KetState():
 
 
 class DensityState():
+    """Class to represent an individual quantum state as a density matrix.
+
+    Attributes:
+        state (np.array): density matrix values. NxN matrix with N = 2 ** len(keys).
+        keys (List[int]): list of keys (qubits) associated with this state.
+    """
+
     def __init__(self, amplitudes: List[List[complex]], keys: List[int]):
         # check formatting
         for row in amplitudes:
