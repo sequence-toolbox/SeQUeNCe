@@ -57,23 +57,21 @@ class QuantumManager():
         return self.states[key]
 
     @abstractmethod
-    def run_circuit(self, circuit: "Circuit", keys: List[int]):
+    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> int:
         """Method to run a circuit on a given set of quantum states.
 
-        For the base class, this method computes the unitary matrix of the circuit, including any necessary swapping operations.
-        
         Args:
             circuit (Circuit): quantum circuit to apply.
             keys (List[int]): list of keys for quantum states to apply circuit to.
 
         Returns:
-            np.array: combined quantum state for input
-            List[int]: list corresponding to qubit keys for returned state (after swapping)
-            np.array: circuit matrix
+            Dict[int, int]: dictionary mapping qstate keys to measurement results.
         """
 
         assert len(keys) == circuit.size, "mismatch between circuit size and supplied qubits"
-        
+
+
+    def _prepare_circuit(self, circuit: "Circuit", keys: List[int]):
         old_states = []
         all_keys = []
 
@@ -98,17 +96,21 @@ class QuantumManager():
 
         # apply any necessary swaps
         if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
-            swap_circuit = QubitCircuit(N=len(all_keys))
-            for i, key in enumerate(keys):
-                j = all_keys.index(key)
-                if j != i:
-                    gate = Gate("SWAP", targets=[i, j])
-                    swap_circuit.add_gate(gate)
-                    all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
-            swap_mat = gate_sequence_product(swap_circuit.propagators()).full()
+            all_keys, swap_mat = self._swap_qubits(all_keys, keys)
             circ_mat = circ_mat @ swap_mat
 
         return new_state, all_keys, circ_mat
+
+    def _swap_qubits(self, all_keys, keys):
+        swap_circuit = QubitCircuit(N=len(all_keys))
+        for i, key in enumerate(keys):
+            j = all_keys.index(key)
+            if j != i:
+                gate = Gate("SWAP", targets=[i, j])
+                swap_circuit.add_gate(gate)
+                all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
+        swap_mat = gate_sequence_product(swap_circuit.propagators()).full()
+        return all_keys, swap_mat
 
     @abstractmethod
     def set(self, keys: List[int], amplitudes: any) -> None:
@@ -142,7 +144,8 @@ class QuantumManagerKet(QuantumManager):
         return key
 
     def run_circuit(self, circuit: "Circuit", keys: List[int]) -> int:
-        new_state, all_keys, circ_mat = super().run_circuit(circuit, keys)
+        super().run_circuit(circuit, keys)
+        new_state, all_keys, circ_mat = self._prepare_circuit(circuit, keys)
 
         new_state = circ_mat @ new_state
 
@@ -203,14 +206,7 @@ class QuantumManagerKet(QuantumManager):
         else:
             # swap states into correct position
             if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
-                swap_circuit = QubitCircuit(N=len(all_keys))
-                for i, key in enumerate(keys):
-                    j = all_keys.index(key)
-                    if j != i:
-                        gate = Gate("SWAP", targets=[i, j])
-                        swap_circuit.add_gate(gate)
-                        all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
-                swap_mat = gate_sequence_product(swap_circuit.propagators())
+                all_keys, swap_mat = self._swap_qubits(all_keys, keys)
                 state = swap_mat @ state
 
             # calculate meas probabilities and projected states
@@ -256,7 +252,8 @@ class QuantumManagerDensity(QuantumManager):
         return key
 
     def run_circuit(self, circuit: "Circuit", keys: List[int]) -> int:
-        new_state, all_keys, circ_mat = super().run_circuit(circuit, keys)
+        super().run_circuit(circuit, keys)
+        new_state, all_keys, circ_mat = super()._prepare_circuit(circuit, keys)
 
         new_state = circ_mat @ new_state @ circ_mat.T
 
@@ -319,14 +316,7 @@ class QuantumManagerDensity(QuantumManager):
         else:
             # swap states into correct position
             if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
-                swap_circuit = QubitCircuit(N=len(all_keys))
-                for i, key in enumerate(keys):
-                    j = all_keys.index(key)
-                    if j != i:
-                        gate = Gate("SWAP", targets=[i, j])
-                        swap_circuit.add_gate(gate)
-                        all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
-                swap_mat = gate_sequence_product(swap_circuit.propagators())
+                all_keys, swap_mat = self._swap_qubits(all_keys, keys)
                 state = swap_mat @ state @ swap_mat.T
 
             # calculate meas probabilities and projected states
