@@ -57,17 +57,58 @@ class QuantumManager():
         return self.states[key]
 
     @abstractmethod
-    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> int:
+    def run_circuit(self, circuit: "Circuit", keys: List[int]):
         """Method to run a circuit on a given set of quantum states.
+
+        For the base class, this method computes the unitary matrix of the circuit, including any necessary swapping operations.
         
         Args:
             circuit (Circuit): quantum circuit to apply.
             keys (List[int]): list of keys for quantum states to apply circuit to.
 
         Returns:
-            int: measurement results.
+            np.array: combined quantum state for input
+            List[int]: list corresponding to qubit keys for returned state (after swapping)
+            np.array: circuit matrix
         """
+
         assert len(keys) == circuit.size, "mismatch between circuit size and supplied qubits"
+        
+        old_states = []
+        all_keys = []
+
+        # go through keys and get all unique qstate objects
+        for key in keys:
+            qstate = self.states[key]
+            if qstate.keys[0] not in all_keys:
+                old_states.append(qstate.state)
+                all_keys += qstate.keys
+
+        # construct compound state; order qubits
+        new_state = [1]
+        for state in old_states:
+            new_state = kron(new_state, state)
+
+        # get circuit matrix; expand if necessary
+        circ_mat = circuit.get_unitary_matrix()
+        if circuit.size < len(all_keys):
+            # pad size of circuit matrix if necessary
+            diff = len(all_keys) - circuit.size
+            circ_mat = kron(circ_mat, identity(2 ** diff))
+
+        # apply any necessary swaps
+        if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
+            swap_circuit = QubitCircuit(N=len(all_keys))
+            for i, key in enumerate(keys):
+                j = all_keys.index(key)
+                if j != i:
+                    gate = Gate("SWAP", targets=[i, j])
+                    swap_circuit.add_gate(gate)
+                    all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
+            swap_mat = gate_sequence_product(swap_circuit.propagators()).full()
+            circ_mat = circ_mat @ swap_mat
+
+        return new_state, all_keys, circ_mat
 
     @abstractmethod
     def set(self, keys: List[int], amplitudes: any) -> None:
@@ -101,38 +142,8 @@ class QuantumManagerKet(QuantumManager):
         return key
 
     def run_circuit(self, circuit: "Circuit", keys: List[int]) -> int:
-        super().run_circuit(circuit, keys)
+        new_state, all_keys, circ_mat = super().run_circuit(circuit, keys)
 
-        old_states = []
-        all_keys = []
-        for key in keys:
-            qstate = self.states[key]
-            if qstate.keys[0] not in all_keys:
-                old_states.append(qstate.state)
-                all_keys += qstate.keys
-
-        # construct compound state; order qubits
-        new_state = [1]
-        for state in old_states:
-            new_state = kron(new_state, state)
-
-        if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
-            swap_circuit = QubitCircuit(N=len(all_keys))
-            for i, key in enumerate(keys):
-                j = all_keys.index(key)
-                if j != i:
-                    gate = Gate("SWAP", targets=[i, j])
-                    swap_circuit.add_gate(gate)
-                    all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
-            swap_mat = gate_sequence_product(swap_circuit.propagators())
-            new_state = swap_mat @ new_state
-        
-        # multiply circuit matrix
-        circ_mat = circuit.get_unitary_matrix()
-        if circuit.size < len(all_keys):
-            # pad size of circuit matrix if necessary
-            diff = len(all_keys) - circuit.size
-            circ_mat = kron(circ_mat, identity(2 ** diff))
         new_state = circ_mat @ new_state
 
         if len(circuit.measured_qubits) == 0:
@@ -236,7 +247,7 @@ class QuantumManagerDensity(QuantumManager):
     """Class to track and manage states with the density matrix formalism."""
 
     def __init__(self):
-        super().__init__()
+                super().__init__()
 
     def new(self, state=[[complex(1), complex(0)], [complex(0), complex(0)]]) -> int:        
         key = self._least_available
@@ -245,38 +256,8 @@ class QuantumManagerDensity(QuantumManager):
         return key
 
     def run_circuit(self, circuit: "Circuit", keys: List[int]) -> int:
-        super().run_circuit(circuit, keys)
+        new_state, all_keys, circ_mat = super().run_circuit(circuit, keys)
 
-        old_states = []
-        all_keys = []
-        for key in keys:
-            qstate = self.states[key]
-            if qstate.keys[0] not in all_keys:
-                old_states.append(qstate.state)
-                all_keys += qstate.keys
-
-        # construct compound state; order qubits
-        new_state = [1]
-        for state in old_states:
-            new_state = kron(new_state, state)
-
-        if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
-            swap_circuit = QubitCircuit(N=len(all_keys))
-            for i, key in enumerate(keys):
-                j = all_keys.index(key)
-                if j != i:
-                    gate = Gate("SWAP", targets=[i, j])
-                    swap_circuit.add_gate(gate)
-                    all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
-            swap_mat = gate_sequence_product(swap_circuit.propagators())
-            new_state = swap_mat @ new_state @ swap_mat.T
-        
-        # multiply circuit matrix
-        circ_mat = circuit.get_unitary_matrix()
-        if circuit.size < len(all_keys):
-            # pad size of circuit matrix if necessary
-            diff = len(all_keys) - circuit.size
-            circ_mat = kron(circ_mat, identity(2 ** diff))
         new_state = circ_mat @ new_state @ circ_mat.T
 
         if len(circuit.measured_qubits) == 0:
@@ -402,7 +383,7 @@ class DensityState():
 
     def __init__(self, state: List[List[complex]], keys: List[int]):
         # check formatting
-        assert trace(array(state)) == 1, "density matrix trace must be 1"
+        assert abs(trace(array(state)) - 1) < 0.1, "density matrix trace must be 1"
         for row in state:
             assert len(state) == len(row), "density matrix must be square"
         num_qubits = log2(len(state))

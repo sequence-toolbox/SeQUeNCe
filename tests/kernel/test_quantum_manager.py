@@ -92,7 +92,6 @@ def test_qmanager_circuit():
     assert (qm.get(key1) is qm.get(key2))
 
     # extension of circuit
-
     key1 = qm.new()
     key2 = qm.new()
     qm.set([key1, key2], [0.5 ** 0.5, 0.5 ** 0.5, 0, 0])
@@ -114,9 +113,87 @@ def test_qmanager_circuit():
     ket2 = qm.get(key3)
     if ket2.keys[0] > ket2.keys[1]:
         ket2.keys.reverse()
-        ket2.state = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ ket1.state
+        ket2.state = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ ket2.state
 
     assert np.array_equal(qm.get(key1).state, qm.get(key3).state)
+
+
+def test_qmanager_circuit_density():
+    qm = QuantumManagerDensity()
+
+    # single state
+    key = qm.new()
+    circuit = DumbCircuit(1, np.array([[0, 1], [1, 0]]))
+    qm.run_circuit(circuit, [key])
+    desired_state = np.array([[0, 0],
+                              [0, 1]])
+    assert np.array_equal(qm.get(key).state, desired_state)
+
+    # two states
+    key1 = qm.new()
+    key2 = qm.new()
+    circuit = DumbCircuit(2, np.identity(4))
+    qm.run_circuit(circuit, [key1, key2])
+    desired_state = np.array([[1, 0, 0, 0],
+                              [0, 0, 0, 0],
+                              [0, 0, 0, 0],
+                              [0, 0, 0, 0]])
+    assert qm.get(key1) is qm.get(key2)
+    assert np.array_equal(qm.get(key1).state, desired_state)
+
+    # two states, wrong order
+    qm.run_circuit(circuit, [key2, key1])
+    assert qm.get(key1) is qm.get(key2)
+    assert np.array_equal(qm.get(key1).state, desired_state)
+    assert qm.get(key1).keys == [key2, key1]
+
+    # single state in multi-qubit system
+    key1 = qm.new()
+    key2 = qm.new()
+    circuit1 = DumbCircuit(2, np.identity(4))
+    qm.run_circuit(circuit1, [key1, key2])
+    circuit2 = DumbCircuit(1, np.array([[0, 1], [1, 0]]))
+    qm.run_circuit(circuit2, [key1])
+    desired_state = np.array([[0, 0, 0, 0],
+                              [0, 0, 0, 0],
+                              [0, 0, 1, 0],
+                              [0, 0, 0, 0]])
+    assert np.array_equal(qm.get(key1).state, desired_state)
+    assert (qm.get(key1) is qm.get(key2))
+
+    # extension of circuit
+    key1 = qm.new()
+    key2 = qm.new()
+
+    input_ket = [0.5**0.5, 0.5**0.5, 0, 0]
+    input_dense = np.outer(input_ket, input_ket).tolist()
+
+    qm.set([key1, key2], input_dense)
+    circuit1 = Circuit(1)
+    circuit1.x(0)
+    qm.run_circuit(circuit1, [key2])
+    density1 = qm.get(key1)
+    reversal = np.array([[1, 0, 0, 0],
+                         [0, 0, 1, 0],
+                         [0, 1, 0, 0],
+                         [0, 0, 0, 1]])
+    if density1.keys[0] > density1.keys[1]:
+        density1.keys.reverse()
+        density1.state = reversal @ density1.state @ reversal.T
+
+    key3 = qm.new()
+    key4 = qm.new()
+    qm.set([key3, key4], input_dense)
+    circuit2 = Circuit(2)
+    circuit2.x(1)
+    qm.run_circuit(circuit2, [key3, key4])
+
+    density2 = qm.get(key3)
+    if density2.keys[0] > density2.keys[1]:
+        density2.keys.reverse()
+        density2.state = reversal @ density2.state @ reversal.T
+
+    assert np.array_equal(density1.state, density2.state)
 
 
 def test_qmanager__measure():
