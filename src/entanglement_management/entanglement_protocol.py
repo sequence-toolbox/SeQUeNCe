@@ -63,3 +63,17 @@ class EntanglementProtocol(Protocol):
         """Method to release attached memories."""
 
         pass
+
+    def update_resource_manager(self, memory: "Memory", state: str) -> None:
+        """Method to update attached memory to desired state.
+
+        Args:
+            memory (Memory): attached memory to update.
+            state (str): state memory should be updated to.
+
+        Side Effects:
+            May alter the state of `memory`.
+        """
+
+        self.own.resource_manager.update(self, memory, state)
+

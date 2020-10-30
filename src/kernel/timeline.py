@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 from .eventlist import EventList
 from ..utils import log
+from .quantum_manager import QuantumManagerKet
 
 class Timeline:
     """Class for a simulation timeline.
@@ -41,7 +42,7 @@ class Timeline:
         show_progress (bool): show/hide the progress bar of simulation.
     """
 
-    def __init__(self, stop_time=inf):
+    def __init__(self, stop_time=inf, formalism='ket_vector'):
         """Constructor for timeline.
 
         Args:
@@ -55,6 +56,11 @@ class Timeline:
         self.run_counter = 0
         self.is_running = False
         self.show_progress = False
+        
+        if formalism == 'ket_vector':
+            self.quantum_manager = QuantumManagerKet()
+        else:
+            raise ValueError("Invalid formalism {}".format(formalism))
 
     def now(self) -> int:
         """Returns current simulation time."""
