@@ -49,10 +49,10 @@ def test_generation_receive_message():
     eg.qc_delay = 1
 
     # negotiate message
-    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG", emit_time=0)
+    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG", emit_time_0=0, emit_time_1=0)
     assert eg.received_message("e2", msg) is True
-    assert eg.expected_time == 1
-    assert len(tl.events.data) == 2  # excite and next start time
+    assert eg.expected_times[0] == 1
+    assert len(tl.events.data) == 4  # two excites, flip state, end time
 
 
 def test_generation_pop():
@@ -170,7 +170,7 @@ def test_generation_run():
     e0.memory_array.owner = e0
     e1.memory_array = MemoryArray("e1.memory_array", tl, num_memories=NUM_TESTS)
     e1.memory_array.owner = e1
-    detectors = [{"efficiency": 1}] * 2
+    detectors = [{"efficiency": 1, "count_rate": 1e11}] * 2
     m0.bsm = make_bsm("m0.bsm", tl, encoding_type="single_atom", detectors=detectors)
 
     # add middle protocol
