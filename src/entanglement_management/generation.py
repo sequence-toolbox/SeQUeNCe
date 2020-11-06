@@ -348,7 +348,9 @@ class EntanglementGenerationA(EntanglementProtocol):
                     if self.bsm_res[i] == -1:
                         self.bsm_res[i] = res
                     else:
-                        self.bsm_res[i] = -1
+                        # entanglement failed
+                        log.logger.info(self.own.name + " failed entanglement of memory {}".format(self.memory))
+                        self.own.resource_manager.update(self, self.memory, "RAW")
 
         else:
             raise Exception("Invalid message {} received by EG on node {}".format(msg_type, self.own.name))

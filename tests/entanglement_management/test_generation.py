@@ -138,8 +138,8 @@ def test_generation_expire():
 
 
 def test_generation_run():
-    random.seed(0)
-    NUM_TESTS = 200
+    random.seed(1)
+    NUM_TESTS = 100
 
     tl = Timeline()
 
