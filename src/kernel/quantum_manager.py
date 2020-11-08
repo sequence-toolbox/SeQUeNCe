@@ -14,7 +14,7 @@ from math import sqrt
 
 from qutip.qip.circuit import QubitCircuit, Gate
 from qutip.qip.operations import gate_sequence_product
-from numpy import log2, array, kron, identity, zeros, arange
+from numpy import log2, array, kron, identity, zeros, arange, outer
 from numpy.random import random_sample, choice
 
 from .quantum_utils import *
@@ -243,7 +243,7 @@ class QuantumManagerDensity(QuantumManager):
     """Class to track and manage states with the density matrix formalism."""
 
     def __init__(self):
-                super().__init__()
+        super().__init__()
 
     def new(self, state=[[complex(1), complex(0)], [complex(0), complex(0)]]) -> int:        
         key = self._least_available
@@ -356,7 +356,7 @@ class KetState():
         assert num_qubits.is_integer(), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
         assert num_qubits == len(keys), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
 
-        self.state = array(amplitudes)
+        self.state = array(amplitudes, dtype=complex)
         self.keys = keys
 
     def __str__(self):
@@ -372,6 +372,10 @@ class DensityState():
     """
 
     def __init__(self, state: List[List[complex]], keys: List[int]):
+        state = array(state, dtype=complex)
+        if state.ndim == 1:
+            state = outer(state.conj, state)
+
         # check formatting
         assert abs(trace(array(state)) - 1) < 0.1, "density matrix trace must be 1"
         for row in state:
@@ -380,7 +384,7 @@ class DensityState():
         assert num_qubits.is_integer(), "Dimensions of density matrix should be 2 ** n, where n is the number of qubits"
         assert num_qubits == len(keys), "Dimensions of density matrix should be 2 ** n, where n is the number of qubits"
 
-        self.state = array(state)
+        self.state = state
         self.keys = keys
 
     def __str__(self):
