@@ -222,7 +222,7 @@ def test_ResourceReservationProtocol_schedule():
 
 
 def test_ResourceReservationProtocol_create_rules():
-    tl = Timeline()
+    tl = Timeline(2e9)
     routers = []
     mids = []
     for i in range(5):

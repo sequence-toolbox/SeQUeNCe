@@ -5,9 +5,9 @@ Also defined is a function to automatically construct a BSM of a specified type.
 """
 
 from abc import abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, List
 
-from numpy import random
+from numpy import random, outer, add, zeros
 
 from .circuit import Circuit
 from .detector import Detector
@@ -15,6 +15,7 @@ from .photon import Photon
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
+from ..kernel.quantum_manager import QuantumManagerKet, QuantumManagerDensity
 from ..utils.encoding import *
 from ..utils.quantum_state import QuantumState
 
@@ -40,6 +41,31 @@ def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=
         raise Exception("invalid encoding {} given for BSM {}".format(encoding_type, name))
 
 
+def _set_memory_with_fidelity(memories: List["Memory"], desired_state):
+    possible_states = [BSM._phi_plus, BSM._phi_minus, BSM._psi_plus, BSM._psi_minus]
+    assert desired_state in possible_states
+    qm = memories[0].timeline.quantum_manager
+    fidelity = (memories[0].raw_fidelity + memories[1].raw_fidelity) / 2
+    keys = [memories[0].qstate_key, memories[1].qstate_key]
+    
+    if qm.formalism == "KET":
+        probabilities = [(1-fidelity)/3] * 4
+        probabilities[possible_states.index(desired_state)] = fidelity
+        state_ind = random.choice(4, p=probabilities)
+        qm.set(keys, possible_states[state_ind])
+
+    elif qm.formalism == "DENSITY":
+        #multipliers = [(1-fidelity)/3] * 4
+        #multipliers[possible_states.index(desired_state)] = fidelity
+        #state = zeros((4, 4))
+        #for mult, pure in zip(multipliers, possible_states):
+        #    state = add(state, mult*outer(pure, pure))
+        qm.set(keys, state)
+
+    else:
+        raise Exception("Invalid quantum manager with formalism {}".format(qm.formalism))
+
+
 class BSM(Entity):
     """Parent class for bell state measurement devices.
 
@@ -51,6 +77,8 @@ class BSM(Entity):
         resolution (int): maximum time resolution achievable with attached detectors.
     """
 
+    _phi_plus = [complex(sqrt(1 / 2)), complex(0), complex(0), complex(sqrt(1 / 2))]
+    _phi_minus = [complex(sqrt(1 / 2)), complex(0), complex(0), -complex(sqrt(1 / 2))]
     _psi_plus = [complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)]
     _psi_minus = [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]
 
@@ -405,12 +433,12 @@ class SingleAtomBSM(BSM):
                 
                 # if we're in stage 2: check if psi+ or psi-, then assign new state
                 else:
-                    qm = self.timeline.quantum_manager
-
                     if memory_0.previous_bsm != memory_1.previous_bsm:
-                        qm.set([memory_0.qstate_key, memory_1.qstate_key], BSM._psi_minus)
+                        desired_state = BSM._psi_minus
                     else:
-                        qm.set([memory_0.qstate_key, memory_1.qstate_key], BSM._psi_plus)
+                        desired_state = BSM._psi_plus
+
+                    _set_memory_with_fidelity([memory_0, memory_1], desired_state)
 
     def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.
@@ -427,3 +455,4 @@ class SingleAtomBSM(BSM):
         res = detector_num
         info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
         self.notify(info)
+

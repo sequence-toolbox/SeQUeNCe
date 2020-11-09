@@ -185,12 +185,12 @@ class EntanglementGenerationA(EntanglementProtocol):
             elif self.bsm_res[0] != self.bsm_res[1]:
                 self.own.timeline.quantum_manager.run_circuit(EntanglementGenerationA._z_circuit, [self._qstate_key])
 
-            self.own.resource_manager.update(self, self.memory, "ENTANGLED")
+            self.update_resource_manager(self.memory, "ENTANGLED")
 
         else:
             # entanglement failed
             log.logger.info(self.own.name + " failed entanglement of memory {}".format(self.memory))
-            self.own.resource_manager.update(self, self.memory, "RAW")
+            self.update_resource_manager(self.memory, "RAW")
 
     def next_round(self) -> None:
         self.ent_round += 1
@@ -350,7 +350,7 @@ class EntanglementGenerationA(EntanglementProtocol):
                     else:
                         # entanglement failed
                         log.logger.info(self.own.name + " failed entanglement of memory {}".format(self.memory))
-                        self.own.resource_manager.update(self, self.memory, "RAW")
+                        self.update_resource_manager(self.memory, "RAW")
 
         else:
             raise Exception("Invalid message {} received by EG on node {}".format(msg_type, self.own.name))
