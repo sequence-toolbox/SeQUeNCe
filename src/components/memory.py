@@ -227,7 +227,6 @@ class Memory(Entity):
         """
 
         self.fidelity = 0
-        self.timeline.quantum_manager.remove(self.qstate_key)
 
         self.timeline.quantum_manager.set([self.qstate_key], [complex(1), complex(0)])
         self.entangled_memory = {'node_id': None, 'memo_id': None}
