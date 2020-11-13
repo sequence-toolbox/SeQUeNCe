@@ -174,23 +174,18 @@ class EntanglementGenerationA(EntanglementProtocol):
     def end(self) -> None:
         if self.bsm_res[0] != -1 and self.bsm_res[1] != -1:
             # successful entanglement
-            log.logger.info(self.own.name + " successful entanglement of memory {}".format(self.memory))
-            self.memory.entangled_memory["node_id"] = self.other
-            self.memory.entangled_memory["memo_id"] = self.remote_memo_id
-            self.memory.fidelity = self.memory.raw_fidelity
-            
+
             # state correction
             if self.primary:
                 self.own.timeline.quantum_manager.run_circuit(EntanglementGenerationA._flip_circuit, [self._qstate_key])
             elif self.bsm_res[0] != self.bsm_res[1]:
                 self.own.timeline.quantum_manager.run_circuit(EntanglementGenerationA._z_circuit, [self._qstate_key])
 
-            self.update_resource_manager(self.memory, "ENTANGLED")
-
+            self._entanglement_succeed()
+            
         else:
             # entanglement failed
-            log.logger.info(self.own.name + " failed entanglement of memory {}".format(self.memory))
-            self.update_resource_manager(self.memory, "RAW")
+            self._entanglement_fail()
 
     def next_round(self) -> None:
         self.ent_round += 1
@@ -349,8 +344,7 @@ class EntanglementGenerationA(EntanglementProtocol):
                         self.bsm_res[i] = res
                     else:
                         # entanglement failed
-                        log.logger.info(self.own.name + " failed entanglement of memory {}".format(self.memory))
-                        self.update_resource_manager(self.memory, "RAW")
+                        self._entanglement_fail()
 
         else:
             raise Exception("Invalid message {} received by EG on node {}".format(msg_type, self.own.name))
@@ -364,10 +358,26 @@ class EntanglementGenerationA(EntanglementProtocol):
         """Method to receive expired memories."""
 
         assert memory == self.memory
+
         self.update_resource_manager(memory, 'RAW')
         for event in self.scheduled_events:
             if event.time >= self.own.timeline.now():
                 self.own.timeline.remove_event(event)
+
+    def _entanglement_succeed(self):
+        log.logger.info(self.own.name + " successful entanglement of memory {}".format(self.memory))
+        self.memory.entangled_memory["node_id"] = self.other
+        self.memory.entangled_memory["memo_id"] = self.remote_memo_id
+        self.memory.fidelity = self.memory.raw_fidelity
+
+        self.update_resource_manager(self.memory, 'ENTANGLED')
+
+    def _entanglement_fail(self):
+        for event in self.scheduled_events:
+            self.own.timeline.remove_event(event)
+        log.logger.info(self.own.name + " failed entanglement of memory {}".format(self.memory))
+        
+        self.update_resource_manager(self.memory, 'RAW')
 
 
 class EntanglementGenerationB(EntanglementProtocol):

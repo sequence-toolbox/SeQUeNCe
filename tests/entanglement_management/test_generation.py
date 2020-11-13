@@ -143,8 +143,8 @@ def test_generation_expire():
 
 
 def test_generation_run():
-    random.seed(0)
-    NUM_TESTS = 100
+    random.seed(1)
+    NUM_TESTS = 500
 
     tl = Timeline()
 
@@ -212,6 +212,14 @@ def test_generation_run():
     for i in range(NUM_TESTS):
         if e0.resource_manager.log[i][1] == "RAW":
             empty_count += 1
+        else:
+            assert e0.resource_manager.log[i][1] == "ENTANGLED"
+            memory0 = e0.resource_manager.log[i][0]
+            memory1 = e1.resource_manager.log[i][0]
+            assert memory0.fidelity == memory0.raw_fidelity
+            assert memory1.fidelity == memory1.raw_fidelity
+            assert memory0.entangled_memory["node_id"] == e1.name
+            assert memory1.entangled_memory["node_id"] == e0.name
 
     ratio = empty_count / NUM_TESTS
     assert abs(ratio - 0.5) < 0.1
