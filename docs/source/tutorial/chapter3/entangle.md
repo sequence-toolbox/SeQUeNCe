@@ -312,17 +312,18 @@ tl.run()
 
 print(node1.left_memo.entangled_memory, node2.left_memo.fidelity)
 # 'node1.kept_memo {'node_id': 'node2', 'memo_id': 'node2.kept_memo'} 0.9263959390862945'
-# or 'node1.kept_memo {'node_id': None, 'memo_id': None} 0'
+# or 'node1.kept_memo {'node_id': 'node2', 'memo_id': 'node2.kept_memo'} 0.9'
 
 print(node1.right_memo.entangled_memory, node2.right_memo.fidelity)
-# 'node1.meas_memo {'node_id': None, 'memo_id': None} 0'
+# 'node1.meas_memo {'node_id': 'node2', 'memo_id': node2.meas_memo'} 0.9'
 ```
 
 After the simulation, the first print statement produces one of two possible outputs. 
 The first output (the first comment) shows a successful purification operation.
 The second output (the second comment) shows the failure of purification.
+Note that the entanglement fields and fidelity will be reset by the resource manager, discussed in the next chapter.
 The success rate of purificaiton depends on the fidelity of entanglement.
-The entanglements with higher fidelity have a higher success rate.
+Entanglements with higher fidelities have a higher success rate.
 
 **Note**: The BBPSSW protocol assumes the fidelity of the two entangled pairs are the same.
 

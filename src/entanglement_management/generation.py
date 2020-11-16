@@ -94,7 +94,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
 
     def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory"):
-        """Constructor for entanglement generation a class.
+        """Constructor for entanglement generation A class.
 
         Args:
             own (Node): node to attach protocol to.
@@ -147,12 +147,11 @@ class EntanglementGenerationA(EntanglementProtocol):
         self.primary = self.own.name > self.other
 
     def start(self) -> None:
-        """Method to start current round of entanglement generation protocol.
+        """Method to start entanglement generation protocol.
 
-        Will update memory and start negotiations with other protocol.
+        Will start negotiations with other protocol (if primary).
 
         Side Effects:
-            Will call `update_memory` method.
             Will send message through attached node.
         """
 
@@ -162,7 +161,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         if self not in self.own.protocols:
             return
 
-        # update memory, and if necessary start negotiations for round
+        # start negotiations
         if self.primary:
             # send NEGOTIATE message
             self.qc_delay = self.own.qchannels[self.middle].delay
@@ -172,6 +171,17 @@ class EntanglementGenerationA(EntanglementProtocol):
             self.own.send_message(self.other, message)
 
     def end(self) -> None:
+        """Method to end entanglement generation protocol.
+
+        Checks the measurement results received to determine if valid entanglement achieved, and what the state is.
+        If entanglement is achieved, the memory fidelity will be increased to equal the `fidelity` field.
+        Otherwise, it will be set to 0.
+        Also performs corrections to map psi+ and psi- states to phi+.
+
+        Side Effects:
+            Will call `update_resource_manager` method of base class.
+        """
+
         if self.bsm_res[0] != -1 and self.bsm_res[1] != -1:
             # successful entanglement
 
@@ -188,6 +198,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             self._entanglement_fail()
 
     def next_round(self) -> None:
+        """Sets entanglement generation to next round."""
         self.ent_round += 1
 
     def emit_event(self) -> None:
@@ -195,7 +206,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         If the protocol is in round 1, the memory will be first set to the \|+> state.
         Otherwise, it will apply an x_gate to the memory.
-        Regardless of round, the memory excite method will be invoked.
+        Regardless of the round, the memory `excite` method will be invoked.
 
         Side Effects:
             May change state of attached memory.
@@ -393,7 +404,7 @@ class EntanglementGenerationB(EntanglementProtocol):
     """
 
     def __init__(self, own: "Node", name: str, others: List[str]):
-        """Constructor for entanglement generation b protocol.
+        """Constructor for entanglement generation B protocol.
 
         Args:
             own (Node): attached node.
