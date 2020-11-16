@@ -47,7 +47,7 @@
             "distance": 500
         }
     ],
-    "cconnections_table": {
+    "cchannels_table": {
         "type": "RT",
         "labels": ["center", "router1", "router2", "router3", "router4"],
         "table": [[0,   1e9, 1e9, 1e9, 1e9],

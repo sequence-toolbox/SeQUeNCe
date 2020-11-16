@@ -1,2 +1,4 @@
+__all__ = ['encoding', 'quantum_state', 'log']
+
 def __dir__():
-    return 'encoding', 'log', 'quantum_state'
+    return sorted(__all__)

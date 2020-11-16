@@ -15,8 +15,11 @@ def test_ClassicalChannel_set_ends():
     assert len(n1.cchannels) == 0 and len(n2.cchannels) == 0
 
     cc.set_ends(n1, n2)
-    assert 'n1' in n2.cchannels and 'n2' in n1.cchannels
-    assert n1.cchannels["n2"] == n2.cchannels["n1"] == cc
+    assert cc.sender == n1
+    assert cc.receiver == n2
+    assert 'n2' in n1.cchannels
+    assert n1.cchannels["n2"] == cc
+    assert len(n2.cchannels) == 0
 
 
 def test_ClassicalChannel_transmit():
@@ -46,19 +49,6 @@ def test_ClassicalChannel_transmit():
     assert len(n1.msgs) == 0 and len(n2.msgs) == 2
     for msg, res in zip(n2.msgs, results):
         assert msg == res
-    n2.msgs = []
-
-    args = [['2-1', n2, 5], ['2-2', n2, 5]]
-    results = [[2 + cc.delay, 'n2', '2-1'], [3 + cc.delay, 'n2', '2-2']]
-    for arg in args:
-        cc.transmit(arg[0], arg[1], arg[2])
-        tl.time += 1
-
-    tl.run()
-    assert len(n1.msgs) == 2 and len(n2.msgs) == 0
-    for msg, res in zip(n2.msgs, results):
-        assert msg == res
-    n1.msgs = []
 
 
 def test_QuantumChannel_init():
@@ -76,9 +66,11 @@ def test_QuantumChannel_set_ends():
     assert len(end1.qchannels) == len(end2.qchannels) == 0
     qc.set_ends(end1, end2)
 
-    assert len(end1.qchannels) == len(end2.qchannels) == 1
-    assert end1 in qc.ends and end2 in qc.ends
-    assert end1.name in end2.qchannels and end2.name in end1.qchannels
+    assert len(end1.qchannels) == 1
+    assert len(end2.qchannels) == 0
+    assert qc.sender == end1
+    assert qc.receiver == end2
+    assert end2.name in end1.qchannels
 
 
 def test_QuantumChannel_transmit():
@@ -105,17 +97,12 @@ def test_QuantumChannel_transmit():
         qc.transmit(photon, sender)
         tl.time = tl.time + 1
 
-    for i in range(1000):
-        photon = Photon(str(i))
-        qc.transmit(photon, receiver)
-        tl.time = tl.time + 1
-
     assert len(sender.log) == len(receiver.log) == 0
     tl.run()
 
     expect_rate = 1 - qc.loss
-    assert abs(len(sender.log) / 1000 - expect_rate) < 0.1
     assert abs(len(receiver.log) / 1000 - expect_rate) < 0.1
+    assert len(sender.log) == 0
 
 
 def test_QuantumChannel_schedule_transmit():

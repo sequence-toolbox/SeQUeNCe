@@ -236,17 +236,18 @@ def test_ResourceReservationProtocol_create_rules():
         qc.set_ends(routers[i], mids[i])
         qc = QuantumChannel("qc_r_%d" % i, tl, 0, 100)
         qc.set_ends(routers[i + 1], mids[i])
+    # all-to-all classical connections
     for i, n1 in enumerate(routers + mids):
         for j, n2 in enumerate(routers + mids):
-            if i >= j:
+            if i == j:
                 continue
-            cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 10, delay=100000)
+            cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 10, delay=1e6)
             cc.set_ends(n1, n2)
 
     tl.init()
 
     path = [r.name for r in routers]
-    reservation = Reservation("r0", "r4", 1, 1000000000, 10, 0.9)
+    reservation = Reservation("r0", "r4", 1, int(1e9), 10, 0.9)
 
     for node in [routers[0], routers[-1]]:
         for i, card in enumerate(node.rsvp.timecards):
@@ -271,6 +272,7 @@ def test_ResourceReservationProtocol_create_rules():
 
     counter = 0
     for memory in routers[0].memory_array:
+        print(memory.entangled_memory["node_id"], memory.fidelity)
         if memory.entangled_memory["node_id"] == "r4" and memory.fidelity >= 0.9:
             counter += 1
 
@@ -310,9 +312,10 @@ def test_ResourceReservationProtocol_set_es_params():
         qc.set_ends(routers[i], mids[i])
         qc = QuantumChannel("qc_r_%d" % i, tl, 0, 100)
         qc.set_ends(routers[i + 1], mids[i])
+    # all-to-all classical connections
     for i, n1 in enumerate(routers + mids):
         for j, n2 in enumerate(routers + mids):
-            if i >= j:
+            if i == j:
                 continue
             cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 10, delay=100000)
             cc.set_ends(n1, n2)

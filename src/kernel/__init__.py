@@ -1,2 +1,4 @@
+__all__ = ['entity', 'event', 'eventlist', 'process', 'quantum_manager', 'quantum_utils', 'timeline']
+
 def __dir__():
-    return 'entity', 'event', 'eventlist', 'process', 'timeline'
+    return sorted(__all__)

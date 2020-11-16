@@ -40,21 +40,26 @@ class Topology():
 
         self.name = name
         self.timeline = timeline
-        self.nodes = {}        # internal node dictionary {node_name : node}
-        self.qchannels = []    # list of quantum channels
-        self.cchannels = []    # list of classical channels
+        self.nodes = {}           # internal node dictionary {node_name : node}
+        self.qchannels = []       # list of quantum channels
+        self.cchannels = []       # list of classical channels
 
-        self.graph = {}        # internal quantum graph representation {node_name : {adjacent_name : distance}}
-        self._cc_graph = {}    # internal classical graph representation {node_name : {adjacent_name : delay}}
+        self.graph = {}           # internal quantum graph representation {node_name : {adjacent_name : distance}}
+        self.graph_no_middle = {} # internal quantum graph without bsm nodes {node_name : {adjacent_name : distance}}
+        self._cc_graph = {}       # internal classical graph representation {node_name : {adjacent_name : delay}}
 
     def load_config(self, config_file: str) -> None:
         """Method to load a network configuration file.
 
-        Network should be specifiedd in json format.
+        Network should be specified in json format.
         Will populate nodes, qchannels, cchannels, and graph fields.
+        Will also generate and install forwarding tables for quantum router nodes.
 
         Args:
             config_file (str): path to json file specifying network.
+
+        Side Effects:
+            Will modify graph, graph_no_middle, qchannels, and cchannels attributes.
         """
 
         topo_config = json5.load(open(config_file))
@@ -73,33 +78,50 @@ class Topology():
             
             self.add_node(node)
 
-        # create cconnections (if discrete present, otherwise generate from table)
+        # create discrete cconnections (two way classical channel)
         if "cconnections" in topo_config:
             for cchannel_params in topo_config["cconnections"]:
                 node1 = cchannel_params.pop("node1")
                 node2 = cchannel_params.pop("node2")
                 self.add_classical_connection(node1, node2, **cchannel_params)
-        else:
-            table_type = topo_config["cconnections_table"].get("type", "RT")
+
+        # create discrete cchannels
+        if "cchannels" in topo_config:
+            for cchannel_params in topo_config["cchannels"]:
+                node1 = cchannel_params.pop("node1")
+                node2 = cchannel_params.pop("node2")
+                self.add_classical_channel(node1, node2, **cchannel_params)
+
+        # create cchannels from a RT table
+        if "cchannels_table" in topo_config:
+            table_type = topo_config["cchannels_table"].get("type", "RT")
             assert table_type == "RT", "non-RT tables not yet supported"
-            labels = topo_config["cconnections_table"]["labels"]
-            table = topo_config["cconnections_table"]["table"]
+            labels = topo_config["cchannels_table"]["labels"]
+            table = topo_config["cchannels_table"]["table"]
             assert len(labels) == len(table)                 # check that number of rows is correct
-            
+
             for i in range(len(table)):
                 assert len(table[i]) == len(labels)          # check that number of columns is correct
-                for j in range(i + 1, len(table)):
-                    if table[i][j] == 0 or table[j][i] == 0: # skip if have 0 entries
+                for j in range(len(table[i])):
+                    if table[i][j] == 0:                     # skip if have 0 entries
                         continue
-                    delay = (table[i][j] + table[j][i]) / 4  # average RT time divided by 2
+                    delay = table[i][j] / 2                  # divide RT time by 2
                     cchannel_params = {"delay": delay, "distance": 1e3}
-                    self.add_classical_connection(labels[i], labels[j], **cchannel_params)
+                    self.add_classical_channel(labels[i], labels[j], **cchannel_params)
 
-        # create qconnections
-        for qchannel_params in topo_config["qconnections"]:
-            node1 = qchannel_params.pop("node1")
-            node2 = qchannel_params.pop("node2")
-            self.add_quantum_connection(node1, node2, **qchannel_params)
+        # create qconnections (two way quantum channel)
+        if "qconnections" in topo_config:
+            for qchannel_params in topo_config["qconnections"]:
+                node1 = qchannel_params.pop("node1")
+                node2 = qchannel_params.pop("node2")
+                self.add_quantum_connection(node1, node2, **qchannel_params)
+        
+        # create qchannels
+        if "qchannels" in topo_config:
+            for qchannel_params in topo_config["qchannels"]:
+                node1 = qchannel_params.pop("node1")
+                node2 = qchannel_params.pop("node2")
+                self.add_quantum_channel(node1, node2, **qchannel_params)
 
         # generate forwarding tables
         for node in self.get_nodes_by_type("QuantumRouter"):
@@ -116,10 +138,12 @@ class Topology():
 
         self.nodes[node.name] = node
         self.graph[node.name] = {}
+        if type(node) != BSMNode:
+            self.graph_no_middle[node.name] = {}
         self._cc_graph[node.name] = {}
 
     def add_quantum_connection(self, node1: str, node2: str, **kwargs) -> None:
-        """Method to add a quantum channel connection between nodes.
+        """Method to add a two-way quantum channel connection between nodes.
 
         NOTE: kwargs are passed to constructor for quantum channel, may be used to specify channel parameters.
 
@@ -132,6 +156,10 @@ class Topology():
         assert node2 in self.nodes, node2 + " not a valid node"
 
         if (type(self.nodes[node1]) == QuantumRouter) and (type(self.nodes[node2]) == QuantumRouter):
+            # update non-middle graph
+            self.graph_no_middle[node1][node2] = kwargs["distance"]
+            self.graph_no_middle[node2][node1] = kwargs["distance"]
+
             # add middle node
             name_middle = "_".join(["middle", node1, node2])
             middle = BSMNode(name_middle, self.timeline, [node1, node2])
@@ -142,30 +170,56 @@ class Topology():
 
             # add quantum channels
             for node in [node1, node2]:
-                self.add_quantum_connection(node, name_middle, **kwargs)
+                self.add_quantum_channel(node, name_middle, **kwargs)
 
             # update params
             del kwargs["attenuation"]
             if node1 in self._cc_graph and node2 in self._cc_graph[node1]:
-                kwargs["delay"] = self._cc_graph[node1][node2] / 2
+                kwargs["delay"] = (self._cc_graph[node1][node2] + self._cc_graph[node2][node1]) / 4
 
             # add classical channels (for middle node connectivity)
             for node in [node1, node2]:
-                self.add_classical_connection(node, name_middle, **kwargs)
+                self.add_classical_connection(name_middle, node, **kwargs)
 
         else:
-            # add quantum channel
-            name = "_".join(["qc", node1, node2])
-            qchannel = QuantumChannel(name, self.timeline, **kwargs)
-            qchannel.set_ends(self.nodes[node1], self.nodes[node2])
-            self.qchannels.append(qchannel)
+            self.add_quantum_channel(node1, node2, **kwargs)
+            self.add_quantum_channel(node2, node1, **kwargs)
 
-            # edit graph
-            self.graph[node1][node2] = kwargs["distance"]
-            self.graph[node2][node1] = kwargs["distance"]
+    def add_quantum_channel(self, node1: str, node2: str, **kwargs) -> None:
+        """Method to add a one-way quantum channel connection.
+
+        NOTE: kwargs are passed to constructor for quantum channel, may be used to specify channel parameters.
+
+        Args:
+            node1 (str): first node in pair to connect (sender).
+            node2 (str): second node in pair to connect (receiver).
+        """
+
+        name = "_".join(["qc", node1, node2])
+        qchannel = QuantumChannel(name, self.timeline, **kwargs)
+        qchannel.set_ends(self.nodes[node1], self.nodes[node2])
+        self.qchannels.append(qchannel)
+
+        # edit graph
+        self.graph[node1][node2] = kwargs["distance"]
+        if type(self.nodes[node1]) != BSMNode and type(self.nodes[node2]) != BSMNode:
+            self.graph_no_middle[node1][node2] = kwargs["distance"]
 
     def add_classical_connection(self, node1: str, node2: str, **kwargs) -> None:
-        """Method to add a classical channel connection between nodes.
+        """Method to add a two-way classical channel between nodes.
+
+        NOTE: kwargs are passed to constructor for classical channel, may be used to specify channel parameters.
+
+        Args:
+            node1 (str): first node in pair to connect.
+            node2 (str): second node in pair to connect.
+        """
+
+        self.add_classical_channel(node1, node2, **kwargs)
+        self.add_classical_channel(node2, node1, **kwargs)
+
+    def add_classical_channel(self, node1: str, node2: str, **kwargs) -> None:
+        """Method to add a one-way classical channel between nodes.
 
         NOTE: kwargs are passed to constructor for classical channel, may be used to specify channel parameters.
 
@@ -182,8 +236,7 @@ class Topology():
         self.cchannels.append(cchannel)
 
         # edit graph
-        self._cc_graph[node1][node2] = cchannel.delay
-        self._cc_graph[node2][node1] = cchannel.delay
+        self._cc_graph[node1][node2] = cchannel.delay 
 
     def get_nodes_by_type(self, node_type: str) -> [Node]:
         return [node for name, node in self.nodes.items() if type(node).__name__ == node_type]
@@ -206,10 +259,13 @@ class Topology():
         # Dijkstra's
         while len(nodes) > 0:
             current = min(nodes, key=lambda node: costs[node])
+            if type(self.nodes[current]) == BSMNode:
+                nodes.remove(current)
+                continue
             if costs[current] == float("inf"):
                 break
-            for neighbor in self.graph[current]:
-                distance = self.graph[current][neighbor]
+            for neighbor in self.graph_no_middle[current]:
+                distance = self.graph_no_middle[current][neighbor]
                 new_cost = costs[current] + distance
                 if new_cost < costs[neighbor]:
                     costs[neighbor] = new_cost
@@ -222,19 +278,9 @@ class Topology():
             if prev is starting_node:
                 next_node[node] = node
             else:
-                while prev not in self.graph[starting_node]:
+                while prev not in self.graph_no_middle[starting_node]:
                     prev = next_node[prev]
                     next_node[node] = prev
-
-        # modify forwarding table to bypass middle nodes
-        for node, dst in next_node.items():
-            if type(self.nodes[dst]) == BSMNode:
-                adjacent_nodes = list(self.graph[dst].keys())
-                proper_dst = None
-                for adjacent in adjacent_nodes:
-                    if adjacent != starting_node:
-                        proper_dst = adjacent
-                next_node[node] = proper_dst
 
         return next_node
 

@@ -1,2 +1,4 @@
+__all__ = ['node', 'topology']
+
 def __dir__():
-    return 'node', 'topology'
+    return sorted(__all__)

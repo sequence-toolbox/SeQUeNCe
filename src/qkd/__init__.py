@@ -1,2 +1,4 @@
+__all__ = ['BB84', 'cascade']
+
 def __dir__():
-    return 'BB84', 'cascade'
+    return sorted(__all__)

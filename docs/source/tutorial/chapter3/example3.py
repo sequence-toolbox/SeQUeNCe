@@ -77,8 +77,6 @@ nodes = [left_node, right_node, mid_node]
 
 for i in range(3):
     for j in range(3):
-        if i >= j:
-            continue
         cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl, 1000, 1e9)
         cc.set_ends(nodes[i], nodes[j])
 

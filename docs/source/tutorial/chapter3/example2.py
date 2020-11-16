@@ -60,8 +60,10 @@ tl = Timeline()
 node1 = PurifyNode('node1', tl)
 node2 = PurifyNode('node2', tl)
 
-cc = ClassicalChannel('cc', tl, 1000, 1e9)
-cc.set_ends(node1, node2)
+cc0 = ClassicalChannel('cc0', tl, 1000, 1e9)
+cc1 = ClassicalChannel('cc1', tl, 1000, 1e9)
+cc0.set_ends(node1, node2)
+cc1.set_ends(node2, node1)
 
 for i in range(10):
     entangle_memory(node1.kept_memo, node2.kept_memo, 0.9)

@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 from ..message import Message
 from .entanglement_protocol import EntanglementProtocol
 from ..utils import log
+from ..components.circuit import Circuit
 
 
 class BBPSSWMsgType(Enum):
@@ -39,7 +40,7 @@ class BBPSSWMessage(Message):
     def __init__(self, msg_type: BBPSSWMsgType, receiver: str, **kwargs):
         Message.__init__(self, msg_type, receiver)
         if self.msg_type is BBPSSWMsgType.PURIFICATION_RES:
-            pass
+            self.meas_res = kwargs['meas_res']
         else:
             raise Exception("BBPSSW protocol create unknown type of message: %s" % str(msg_type))
 
@@ -50,12 +51,21 @@ class BBPSSW(EntanglementProtocol):
     This class provides an implementation of the BBPSSW purification protocol.
     It should be instantiated on a quantum router node.
 
+    Variables:
+        BBPSSW.circuit (Circuit): circuit that purifies entangled memories.
+
     Attributes:
         own (QuantumRouter): node that protocol instance is attached to.
         name (str): label for protocol instance.
         kept_memo: memory to be purified by the protocol (should already be entangled).
         meas_memo: memory to measure and discart (should already be entangled).
+        another (BBPSSW): pointer of BBPSSW on another side (may be removed in the future).
+        meas_res (int): measurement result from circuit.
     """
+
+    circuit = Circuit(2)
+    circuit.cx(0, 1)
+    circuit.measure(1)
 
     def __init__(self, own: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory"):
         """Constructor for purification protocol.
@@ -72,11 +82,8 @@ class BBPSSW(EntanglementProtocol):
         self.memories = [kept_memo, meas_memo]
         self.kept_memo = kept_memo
         self.meas_memo = meas_memo
-        self.is_primary = meas_memo is not None
-        self.t0 = self.kept_memo.timeline.now()
         self.another = None
-        self.another_node = self.kept_memo.entangled_memory['node_id']
-        self.is_success = None
+        self.meas_res = None
         if self.meas_memo is None:
             self.memories.pop()
 
@@ -95,7 +102,27 @@ class BBPSSW(EntanglementProtocol):
     def start(self) -> None:
         """Method to start entanglement purification.
 
-        Will pre-determine result of purification and send message.
+        Run the circuit below on two pairs of entangled memories on both sides of protocol.
+
+        o -------(x)----------| M |
+        .         |
+        .   o ----.----------------
+        .   .
+        .   .
+        .   o
+        .
+        o
+
+        The overall circuit is shown below:
+
+         o -------(x)----------| M |
+         .         |
+         .   o ----.----------------
+         .   .
+         .   .
+         .   o ----.----------------
+         .         |
+         o -------(x)----------| M |
 
         Side Effects:
             May update parameters of kept memory.
@@ -104,37 +131,19 @@ class BBPSSW(EntanglementProtocol):
 
         log.logger.info(self.own.name + " protocol start with partner {}".format(self.another.own.name))
 
-        assert self.another is not None, "another protocol is not setted; please use set_others function to set it."
-        assert (self.kept_memo.entangled_memory["node_id"] ==
-                self.meas_memo.entangled_memory["node_id"])
+        assert self.another is not None, "other protocol is not set; please use set_others function to set it."
+        kept_memo_ent = self.kept_memo.entangled_memory["node_id"]
+        meas_memo_ent = self.meas_memo.entangled_memory["node_id"]
+        assert kept_memo_ent == meas_memo_ent, "mismatch of entangled memories {}, {} on node {}".format(kept_memo_ent, meas_memo_ent, self.own.name)
         assert self.kept_memo.fidelity == self.meas_memo.fidelity > 0.5
 
-        if self.is_success is None:
-            if random() < self.success_probability(self.kept_memo.fidelity):
-                self.is_success = self.another.is_success = True
-            else:
-                self.is_success = self.another.is_success = False
-
+        self.meas_res = self.own.timeline.quantum_manager.run_circuit(self.circuit, [self.kept_memo.qstate_key,
+                                                                                     self.meas_memo.qstate_key])
+        self.meas_res = self.meas_res[self.meas_memo.qstate_key]
         dst = self.kept_memo.entangled_memory["node_id"]
-        if self.is_success:
-            self.kept_memo.fidelity = self.improved_fidelity(self.kept_memo.fidelity)
 
-        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.another.name)
+        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.another.name, meas_res=self.meas_res)
         self.own.send_message(dst, message)
-
-    def update_resource_manager(self, memory: "Memory", state: str) -> None:
-        """Method to update memory parameters.
-
-        Args:
-            memory (Memory): memory to update.
-            state (str): state to set memory to.
-
-        Side Effects:
-            May update state of memory.
-            Will call `update` method of node's resource manager.
-        """
-
-        self.own.resource_manager.update(self, memory, state)
 
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:
         """Method to receive messages.
@@ -147,11 +156,11 @@ class BBPSSW(EntanglementProtocol):
             Will call `update_resource_manager` method.
         """
 
-        log.logger.info(self.own.name + " received result message, succeeded: {}".format(self.is_success))
-
+        log.logger.info(self.own.name + " received result message, succeeded: {}".format(self.meas_res == msg.meas_res))
         assert src == self.another.own.name
         self.update_resource_manager(self.meas_memo, "RAW")
-        if self.is_success is True:
+        if self.meas_res == msg.meas_res:
+            self.kept_memo.fidelity = self.improved_fidelity(self.kept_memo.fidelity)
             self.update_resource_manager(self.kept_memo, state="ENTANGLED")
         else:
             self.update_resource_manager(self.kept_memo, state="RAW")
@@ -170,26 +179,8 @@ class BBPSSW(EntanglementProtocol):
         if self.meas_memo is None:
             self.update_resource_manager(memory, "RAW")
         else:
-            delay = self.own.cchannels[self.another_node].delay
-            if self.is_primary:
-                if self.own.timeline.now() < self.t0 + delay:
-                    self.update_resource_manager(memory, "RAW")
-                    for memory1 in self.memories:
-                        if memory1 != memory:
-                            self.update_resource_manager(memory1, "ENTANGLED")
-                elif self.own.timeline.now() < self.t0 + 2 * delay:
-                    for memory1 in self.memories:
-                        self.update_resource_manager(memory1, "RAW")
-                else:
-                    raise Exception("invalid call time, t0:%d, delay:%d" % (self.t0, delay))
-            else:
-                if self.own.timeline.now() < self.t0 + delay:
-                    for memory1 in self.memories:
-                        self.update_resource_manager(memory1, "RAW")
-                elif self.own.timeline.now() < self.t0 + 2 * delay:
-                    if memory == self.kept_memo:
-                        for memory1 in self.memories:
-                            self.update_resource_manager(memory1, "RAW")
+            for memory in self.memories:
+                self.update_resource_manager(memory, "RAW")
 
     def release(self) -> None:
         pass
