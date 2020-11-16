@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 from .eventlist import EventList
 from ..utils import log
-from .quantum_manager import QuantumManagerKet
+from .quantum_manager import QuantumManagerKet, QuantumManagerDensity
 
 class Timeline:
     """Class for a simulation timeline.
@@ -59,6 +59,8 @@ class Timeline:
         
         if formalism == 'ket_vector':
             self.quantum_manager = QuantumManagerKet()
+        elif formalism == 'density_matrix':
+            self.quantum_manager = QuantumManagerDensity()
         else:
             raise ValueError("Invalid formalism {}".format(formalism))
 

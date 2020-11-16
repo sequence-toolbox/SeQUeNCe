@@ -131,9 +131,10 @@ class BBPSSW(EntanglementProtocol):
 
         log.logger.info(self.own.name + " protocol start with partner {}".format(self.another.own.name))
 
-        assert self.another is not None, "another protocol is not setted; please use set_others function to set it."
-        assert (self.kept_memo.entangled_memory["node_id"] ==
-                self.meas_memo.entangled_memory["node_id"])
+        assert self.another is not None, "other protocol is not set; please use set_others function to set it."
+        kept_memo_ent = self.kept_memo.entangled_memory["node_id"]
+        meas_memo_ent = self.meas_memo.entangled_memory["node_id"]
+        assert kept_memo_ent == meas_memo_ent, "mismatch of entangled memories {}, {} on node {}".format(kept_memo_ent, meas_memo_ent, self.own.name)
         assert self.kept_memo.fidelity == self.meas_memo.fidelity > 0.5
 
         self.meas_res = self.own.timeline.quantum_manager.run_circuit(self.circuit, [self.kept_memo.qstate_key,

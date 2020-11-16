@@ -42,6 +42,7 @@ class EntanglementGenerationMessage(Message):
         msg_type (GenerationMsgType): defines the message type.
         receiver (str): name of destination protocol instance.
         qc_delay (int): quantum channel delay to BSM node (if `msg_type == NEGOTIATE`).
+        frequency (float): frequency with which local memory can be excited (if `msg_type == NEGOTIATE`).
         emit_time (int): time to emit photon for measurement (if `msg_type == NEGOTIATE_ACK`).
         res (int): detector number at BSM node (if `msg_type == MEAS_RES`).
         time (int): detection time at BSM node (if `msg_type == MEAS_RES`).
@@ -54,9 +55,11 @@ class EntanglementGenerationMessage(Message):
 
         if msg_type is GenerationMsgType.NEGOTIATE:
             self.qc_delay = kwargs.get("qc_delay")
+            self.frequency = kwargs.get("frequency")
 
         elif msg_type is GenerationMsgType.NEGOTIATE_ACK:
-            self.emit_time = kwargs.get("emit_time")
+            self.emit_time_0 = kwargs.get("emit_time_0")
+            self.emit_time_1 = kwargs.get("emit_time_1")
 
         elif msg_type is GenerationMsgType.MEAS_RES:
             self.res = kwargs.get("res")
@@ -114,10 +117,10 @@ class EntanglementGenerationA(EntanglementProtocol):
         # network and hardware info
         self.fidelity = memory.raw_fidelity
         self.qc_delay = 0
-        self.expected_time = -1
+        self.expected_times = [-1, -1]
 
         # memory internal info
-        self.ent_round = 0  # keep track of current stage of protocol
+        self.ent_round = 1  # keep track of current stage of protocol
         self.bsm_res = [-1, -1]  # keep track of bsm measurements to distinguish Psi+ and Psi-
 
         self.scheduled_events = []
@@ -153,77 +156,45 @@ class EntanglementGenerationA(EntanglementProtocol):
             Will send message through attached node.
         """
 
-        log.logger.info(self.own.name + " protocol start with partner {}, round={}".format(self.other, self.ent_round + 1))
-
-        #if self.debug:
-        #    print("EG protocol {} \033[1;36;40mstart\033[0m on node {} with partner {}".format(self.name, self.own.name,
-        #                                                                                       self.other))
-        #    print("\tround:", self.ent_round + 1)
+        log.logger.info(self.own.name + " protocol start with partner {}".format(self.other))
 
         # to avoid start after remove protocol
         if self not in self.own.protocols:
             return
 
         # update memory, and if necessary start negotiations for round
-        if self.update_memory() and self.primary:
+        if self.primary:
             # send NEGOTIATE message
             self.qc_delay = self.own.qchannels[self.middle].delay
-            message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE, self.other_protocol.name, qc_delay=self.qc_delay)
+            frequency = self.memory.frequency
+            message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE, self.other_protocol.name,
+                                                    qc_delay=self.qc_delay, frequency=frequency)
             self.own.send_message(self.other, message)
-        
-    def update_memory(self):
-        """Method to handle necessary memory operations.
 
-        Called on both nodes.
-        Will check the state of the memory and protocol.
-
-        Returns:
-            bool: if current round was successfull.
-
-        Side Effects:
-            May change state of attached memory.
-            May update memory state in the attached node's resource manager.
-        """
-
-        # to avoid start after remove protocol
-        if self not in self.own.protocols:
-            return
-
-        self.ent_round += 1
-
-        if self.ent_round == 1:
-            return True
-
-        elif self.ent_round == 2 and self.bsm_res[0] != -1:
-            self.own.timeline.quantum_manager.run_circuit(EntanglementGenerationA._flip_circuit, [self._qstate_key])
-
-        elif self.ent_round == 3 and self.bsm_res[1] != -1:
+    def end(self) -> None:
+        if self.bsm_res[0] != -1 and self.bsm_res[1] != -1:
             # successful entanglement
-            log.logger.info(self.own.name + " successful entanglement of memory {}".format(self.memory))
-            self.memory.entangled_memory["node_id"] = self.other
-            self.memory.entangled_memory["memo_id"] = self.remote_memo_id
-            self.memory.fidelity = self.memory.raw_fidelity
-            
+
             # state correction
             if self.primary:
                 self.own.timeline.quantum_manager.run_circuit(EntanglementGenerationA._flip_circuit, [self._qstate_key])
             elif self.bsm_res[0] != self.bsm_res[1]:
                 self.own.timeline.quantum_manager.run_circuit(EntanglementGenerationA._z_circuit, [self._qstate_key])
 
-            self.own.resource_manager.update(self, self.memory, "ENTANGLED")
-
+            self._entanglement_succeed()
+            
         else:
             # entanglement failed
-            log.logger.info(self.own.name + " failed entanglement of memory {}".format(self.memory))
-            self.own.resource_manager.update(self, self.memory, "RAW")
-            return False
+            self._entanglement_fail()
 
-        return True
+    def next_round(self) -> None:
+        self.ent_round += 1
 
     def emit_event(self) -> None:
         """Method to setup memory and emit photons.
 
         If the protocol is in round 1, the memory will be first set to the \|+> state.
+        Otherwise, it will apply an x_gate to the memory.
         Regardless of round, the memory excite method will be invoked.
 
         Side Effects:
@@ -233,6 +204,8 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         if self.ent_round == 1:
             self.memory.update_state(EntanglementGenerationA._plus_state)
+        else:
+            self.own.timeline.quantum_manager.run_circuit(EntanglementGenerationA._flip_circuit, [self._qstate_key])
         self.memory.excite(self.middle)
 
     def received_message(self, src: str, msg: EntanglementGenerationMessage) -> None:
@@ -263,58 +236,82 @@ class EntanglementGenerationA(EntanglementProtocol):
             cc_delay = int(self.own.cchannels[src].delay)
             total_quantum_delay = max(self.qc_delay, another_delay)
 
+            # get time for first excite event
             memory_excite_time = self.memory.next_excite_time
             min_time = max(self.own.timeline.now(), memory_excite_time) + total_quantum_delay - self.qc_delay + cc_delay
-            emit_time = self.own.schedule_qubit(self.middle, min_time)# used to send memory
-            self.expected_time = emit_time + self.qc_delay
+            emit_time_0 = self.own.schedule_qubit(self.middle, min_time)
+            self.expected_times[0] = emit_time_0 + self.qc_delay
+
+            # get time for second excite event
+            local_frequency = self.memory.frequency
+            other_frequency = msg.frequency
+            total = min(local_frequency, other_frequency)
+            min_time = min_time + int(1e12 / total)
+            emit_time_1 = self.own.schedule_qubit(self.middle, min_time)
+            self.expected_times[1] = emit_time_1 + self.qc_delay
 
             # schedule emit
             process = Process(self, "emit_event", [])
-            event = Event(emit_time, process)
+            event = Event(emit_time_0, process)
+            self.own.timeline.schedule(event)
+            self.scheduled_events.append(event)
+
+            process = Process(self, "next_round", [])
+            event = Event(int((emit_time_0 + emit_time_1) / 2), process)
+            self.own.timeline.schedule(event)
+            self.scheduled_events.append(event)
+
+            process = Process(self, "emit_event", [])
+            event = Event(emit_time_1, process)
+            self.own.timeline.schedule(event)
+            self.scheduled_events.append(event)
+
+            # schedule end of protocol
+            end_time = self.expected_times[1] + self.own.cchannels[self.middle].delay + 10
+            process = Process(self, "end", [])
+            event = Event(end_time, process)
             self.own.timeline.schedule(event)
             self.scheduled_events.append(event)
 
             # send negotiate_ack
-            another_emit_time = emit_time + self.qc_delay - another_delay
+            another_emit_time_0 = emit_time_0 + self.qc_delay - another_delay
+            another_emit_time_1 = emit_time_1 + self.qc_delay - another_delay
             message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, self.other_protocol.name,
-                                                    emit_time=another_emit_time)
+                                                    emit_time_0=another_emit_time_0, emit_time_1=another_emit_time_1)
             self.own.send_message(src, message)
-
-            # schedule start if necessary, else schedule update_memory
-            # TODO: base future start time on resolution
-            future_start_time = self.expected_time + self.own.cchannels[self.middle].delay + 10
-            if self.ent_round == 1:
-                process = Process(self, "start", [])
-            else:
-                process = Process(self, "update_memory", [])
-            event = Event(future_start_time, process)
-            self.own.timeline.schedule(event)
-            self.scheduled_events.append(event)
 
         elif msg_type is GenerationMsgType.NEGOTIATE_ACK:
             # configure params
-            self.expected_time = msg.emit_time + self.qc_delay
+            self.expected_times[0] = msg.emit_time_0 + self.qc_delay
+            self.expected_times[1] = msg.emit_time_1 + self.qc_delay
 
-            if msg.emit_time < self.own.timeline.now():
-                msg.emit_time = self.own.timeline.now()
+            if msg.emit_time_0 < self.own.timeline.now():
+                msg.emit_time_0 = self.own.timeline.now()
 
             # schedule emit
-            emit_time = self.own.schedule_qubit(self.middle, msg.emit_time)
-            assert emit_time == msg.emit_time, "%d %d %d" % (emit_time, msg.emit_time, self.own.timeline.now())
+            emit_time_0 = self.own.schedule_qubit(self.middle, msg.emit_time_0)
+            assert emit_time_0 == msg.emit_time_0, "%d %d %d" % (emit_time_0, msg.emit_time_0, self.own.timeline.now())
+            emit_time_1 = self.own.schedule_qubit(self.middle, msg.emit_time_1)
 
             process = Process(self, "emit_event", [])
-            event = Event(msg.emit_time, process)
+            event = Event(msg.emit_time_0, process)
             self.own.timeline.schedule(event)
             self.scheduled_events.append(event)
 
-            # schedule start if memory_stage is 0, else schedule update_memory
-            # TODO: base future start time on resolution
-            future_start_time = self.expected_time + self.own.cchannels[self.middle].delay + 10
-            if self.ent_round == 1:
-                process = Process(self, "start", [])
-            else:
-                process = Process(self, "update_memory", [])
-            event = Event(future_start_time, process)
+            process = Process(self, "next_round", [])
+            event = Event(int((msg.emit_time_0 + msg.emit_time_1) / 2), process)
+            self.own.timeline.schedule(event)
+            self.scheduled_events.append(event)
+
+            process = Process(self, "emit_event", [])
+            event = Event(msg.emit_time_1, process)
+            self.own.timeline.schedule(event)
+            self.scheduled_events.append(event)
+
+            # schedule end of protocol
+            end_time = self.expected_times[1] + self.own.cchannels[self.middle].delay + 10
+            process = Process(self, "end", [])
+            event = Event(end_time, process)
             self.own.timeline.schedule(event)
             self.scheduled_events.append(event)
 
@@ -323,7 +320,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             time = msg.time
             resolution = msg.resolution
 
-            log.logger.debug(self.own.name + " received MEAS_RES {} at time {}, expected {}, round={}".format(res, time, self.expected_time, self.ent_round + 1))
+            log.logger.debug(self.own.name + " received MEAS_RES {} at time {}, expected {}, round={}".format(res, time, self.expected_times, self.ent_round))
 
             def valid_trigger_time(trigger_time, target_time, resolution):
                 upper = target_time + resolution
@@ -340,13 +337,14 @@ class EntanglementGenerationA(EntanglementProtocol):
                     lower += 1
                 return lower <= trigger_time <= upper
 
-            if valid_trigger_time(time, self.expected_time, resolution):
-                # record result if we don't already have one
-                i = self.ent_round - 1
-                if self.bsm_res[i] == -1:
-                    self.bsm_res[i] = res
-                else:
-                    self.bsm_res[i] = -1
+            for i, expected_time in enumerate(self.expected_times):
+                if valid_trigger_time(time, expected_time, resolution):
+                    # record result if we don't already have one
+                    if self.bsm_res[i] == -1:
+                        self.bsm_res[i] = res
+                    else:
+                        # entanglement failed
+                        self._entanglement_fail()
 
         else:
             raise Exception("Invalid message {} received by EG on node {}".format(msg_type, self.own.name))
@@ -360,10 +358,26 @@ class EntanglementGenerationA(EntanglementProtocol):
         """Method to receive expired memories."""
 
         assert memory == self.memory
+
         self.update_resource_manager(memory, 'RAW')
         for event in self.scheduled_events:
             if event.time >= self.own.timeline.now():
                 self.own.timeline.remove_event(event)
+
+    def _entanglement_succeed(self):
+        log.logger.info(self.own.name + " successful entanglement of memory {}".format(self.memory))
+        self.memory.entangled_memory["node_id"] = self.other
+        self.memory.entangled_memory["memo_id"] = self.remote_memo_id
+        self.memory.fidelity = self.memory.raw_fidelity
+
+        self.update_resource_manager(self.memory, 'ENTANGLED')
+
+    def _entanglement_fail(self):
+        for event in self.scheduled_events:
+            self.own.timeline.remove_event(event)
+        log.logger.info(self.own.name + " failed entanglement of memory {}".format(self.memory))
+        
+        self.update_resource_manager(self.memory, 'RAW')
 
 
 class EntanglementGenerationB(EntanglementProtocol):
