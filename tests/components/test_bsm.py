@@ -1,6 +1,7 @@
 import pytest
 from sequence.components.bsm import *
 from sequence.components.memory import *
+from sequence.components.circuit import Circuit
 from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import *
 
@@ -226,8 +227,8 @@ def test_single_atom_get():
 
     # initially opposite states
     tl.time = 0
-    mem_1.qstate.set_state_single((complex(1), complex(0)))
-    mem_2.qstate.set_state_single((complex(0), complex(1)))
+    mem_1.update_state([complex(1), complex(0)])
+    mem_2.update_state([complex(0), complex(1)])
     mem_1.excite()  # send w/o destination as have direct_receiver set
     mem_2.excite()
 
@@ -235,13 +236,16 @@ def test_single_atom_get():
 
     # flip state and resend
     tl.time = 1e6
-    mem_1.flip_state()
-    mem_2.flip_state()
+    circ = Circuit(1)
+    circ.x(0)
+    tl.quantum_manager.run_circuit(circ, [mem_1.qstate_key])
+    tl.quantum_manager.run_circuit(circ, [mem_2.qstate_key])
     mem_1.excite()
     mem_2.excite()
 
     assert len(parent.results) == 2
     # check that we've entangled
-    assert len(mem_1.qstate.state) == 4
+    assert len(tl.quantum_manager.get(mem_1.qstate_key).state) == 4
+    assert tl.quantum_manager.get(mem_1.qstate_key) is tl.quantum_manager.get(mem_2.qstate_key)
 
 

@@ -15,7 +15,7 @@ class Counter():
     def __init__(self):
         self.count = 0
 
-    def pop(self, **kwargs):
+    def trigger(self, detector, info):
         self.count += 1
 
 
@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     # counter
     counter = Counter()
-    node2.detector.upper_protocols.append(counter)
+    node2.detector.attach(counter)
 
     # schedule events
     time_bin = int(1e12 / FREQUENCY)

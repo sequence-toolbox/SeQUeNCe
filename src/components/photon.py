@@ -36,8 +36,11 @@ class Photon():
         self.wavelength = wavelength
         self.location = location
         self.encoding_type = encoding_type
+        if self.encoding_type["name"] == "single_atom":
+            self.memory = None
         self.quantum_state = QuantumState()
         self.quantum_state.state = quantum_state
+        self.qstate_key = None
         self.is_null = False
 
     def entangle(self, photon):

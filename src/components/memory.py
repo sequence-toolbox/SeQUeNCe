@@ -6,7 +6,7 @@ Photons should be routed to a BSM device for entanglement generation, or through
 """
 
 from math import sqrt, inf
-from typing import Any, TYPE_CHECKING, Dict
+from typing import Any, List, TYPE_CHECKING, Dict
 
 from numpy import random
 
@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
 
 from .photon import Photon
+from .circuit import Circuit
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
@@ -93,17 +94,16 @@ class MemoryArray(Entity):
         self.owner = node
 
 
-# single-atom memory
 class Memory(Entity):
     """Individual single-atom memory.
 
     This class models a single-atom memory, where the quantum state is stored as the spin of a single ion.
+    This class will replace the older implementation once completed.
 
     Attributes:
         name (str): label for memory instance.
         timeline (Timeline): timeline for simulation.
         fidelity (float): (current) fidelity of memory.
-        raw_fidelity (float): fidelity of memory in the RAW (unentangled) state.
         frequency (float): maximum frequency at which memory can be excited.
         efficiency (float): probability of emitting a photon when excited.
         coherence_time (float): average usable lifetime of memory (in seconds).
@@ -111,6 +111,9 @@ class Memory(Entity):
         qstate (QuantumState): quantum state of memory.
         entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
     """
+
+    _meas_circuit = Circuit(1)
+    _meas_circuit.measure(0)
 
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
                  efficiency: float, coherence_time: int, wavelength: int):
@@ -126,7 +129,7 @@ class Memory(Entity):
             wavelength (int): wavelength (in nm) of photons emitted by memories.
         """
 
-        Entity.__init__(self, name, timeline)
+        super().__init__(name, timeline)
         assert 0 <= fidelity <= 1
         assert 0 <= efficiency <= 1
 
@@ -136,12 +139,10 @@ class Memory(Entity):
         self.efficiency = efficiency
         self.coherence_time = coherence_time  # coherence time in seconds
         self.wavelength = wavelength
-        self.qstate = QuantumState()
+        self.qstate_key = timeline.quantum_manager.new()
 
         self.memory_array = None
 
-        self.photon_encoding = single_atom.copy()
-        self.photon_encoding["memory"] = self
         # keep track of previous BSM result (for entanglement generation)
         # -1 = no result, 0/1 give detector number
         self.previous_bsm = -1
@@ -178,10 +179,15 @@ class Memory(Entity):
         if self.timeline.now() < self.next_excite_time:
             return
 
-        state = self.qstate.measure(single_atom["bases"][0])
+        # measure quantum state
+        res = self.timeline.quantum_manager.run_circuit(Memory._meas_circuit, [self.qstate_key])
+        state = res[self.qstate_key]
+
         # create photon and check if null
         photon = Photon("", wavelength=self.wavelength, location=self,
-                        encoding_type=self.photon_encoding)
+                        encoding_type=single_atom)
+        photon.memory = self
+        photon.qstate_key = self.qstate_key
         if state == 0:
             photon.is_null = True
 
@@ -189,7 +195,7 @@ class Memory(Entity):
             period = 1e12 / self.frequency
             self.next_excite_time = self.timeline.now() + period
 
-        # send to direct receiver or node
+        # send to node
         if (state == 0) or (random.random_sample() < self.efficiency):
             self.owner.send_qubit(dst, photon)
             self.excited_photon = photon
@@ -211,17 +217,6 @@ class Memory(Entity):
         # pop expiration message
         self.notify(self)
 
-    def flip_state(self) -> None:
-        """Method to apply X-gate to quantum state.
-
-        Side Efffects:
-            will modify the quantum state of the memory.
-        """
-
-        assert len(self.qstate.state) == 2, "qstate length error in memory {}".format(self.name)
-        new_state = (self.qstate.state[1], self.qstate.state[0])
-        self.qstate.set_state_single(new_state)
-
     def reset(self) -> None:
         """Method to clear quantum memory.
 
@@ -232,25 +227,21 @@ class Memory(Entity):
         """
 
         self.fidelity = 0
-        if len(self.qstate.state) > 2:
-            self.qstate.measure(single_atom["bases"][0])  # to unentangle
 
-        state = (complex(1), complex(0))
-        self.qstate.set_state_single(state)  # set to |0> state
+        self.timeline.quantum_manager.set([self.qstate_key], [complex(1), complex(0)])
         self.entangled_memory = {'node_id': None, 'memo_id': None}
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
             self.expiration_event = None
 
-    def set_plus(self) -> None:
+    def update_state(self, state: List[complex]) -> None:
         """Method to set the memory state to \|+> (superposition of \|0> and \|1> states).
 
         Side Effects:
             Will modify internal quantum state and parameters.
             May schedule expiration event.
         """
-        state = (complex(1 / sqrt(2)), complex(1 / sqrt(2)))
-        self.qstate.set_state_single(state)
+        self.timeline.quantum_manager.set([self.qstate_key], state)
         self.previous_bsm = -1
         self.entangled_memory = {'node_id': None, 'memo_id': None}
 
@@ -289,3 +280,4 @@ class Memory(Entity):
     def detach(self, observer: 'EntanglementProtocol'):
         if observer in self._observers:
             self._observers.remove(observer)
+

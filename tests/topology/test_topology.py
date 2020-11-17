@@ -31,10 +31,13 @@ def test_load_config_2():
     config = json5.load(open(config_file))
 
     assert len(topo.nodes) == len(config["nodes"]) + 10
-    assert len(topo.cchannels) == 36 + 20  # number of all-to-all connections plus middle node connectivity
+    assert len(topo.cchannels) == (36 * 2) + (10 * 4)  # number of all-to-all connections plus middle node connectivity
     starlight = topo.nodes["StarLight"]
-    assert starlight.cchannels["NU"].delay == (0.79e9 + 0.80e9) / 4  # avg. round trip / 2
+    assert starlight.cchannels["NU"].delay == 0.79e9 / 2  # round trip / 2
+
+    # test generated forwarding table
     table = starlight.network_manager.protocol_stack[0].forwarding_table
+    print(table)
     assert table["NU"] == "NU"
     assert table["UChicago_HC"] == "UChicago_PME"
     assert table["Argonne_2"] == "Argonne_1"
@@ -63,8 +66,10 @@ def test_add_classical_connection():
     
     assert topo.graph["n1"] == {}
     channels = [e for e in tl.entities if type(e) == ClassicalChannel]
-    assert len(channels) == 1
-    assert channels[0].ends == [n1, n2]
+    assert len(channels) == 2
+    for channel in channels:
+        ends = [channel.receiver, channel.sender]
+        assert n1 in ends and n2 in ends
 
 
 def test_add_quantum_connection():
@@ -83,13 +88,14 @@ def test_add_quantum_connection():
     topo.add_quantum_connection("n1", "n2", attenuation=1e-5, distance=1e3)
 
     assert topo.graph["n1"] == {"n2": 1e3}
+    assert topo.graph["n2"] == {"n1": 1e3}
 
     topo.add_quantum_connection("n3", "n4", attenuation=1e-5, distance=1e3)
 
     assert len(topo.nodes) == 5 # added middle node
     assert topo.graph["n3"] == {"middle_n3_n4": 500}
     channels = [e for e in tl.entities if type(e) == QuantumChannel]
-    assert len(channels) == 3
+    assert len(channels) == 4 # 2 for each connection
 
 
 def test_get_nodes_by_type():

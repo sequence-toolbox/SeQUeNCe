@@ -1,2 +1,4 @@
+__all__ = ['routing', 'reservation', 'network_manager']
+
 def __dir__():
-    return 'routing', 'reservation', 'network_manager'
+    return sorted(__all__)

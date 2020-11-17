@@ -295,17 +295,23 @@ def test_ResourceManager1():
     mid_node.bsm.detectors[0].efficiency = 1
     mid_node.bsm.detectors[1].efficiency = 1
 
-    cc = ClassicalChannel("cc_n1_m", tl, 0, 1e3)
-    cc.set_ends(node1, mid_node)
-    cc = ClassicalChannel("cc_n1_n2", tl, 0, 1e3)
-    cc.set_ends(node1, node2)
-    cc = ClassicalChannel("cc_n2_m", tl, 0, 1e3)
-    cc.set_ends(node2, mid_node)
+    cc0 = ClassicalChannel("cc_n1_n2", tl, 0, 1e3)
+    cc1 = ClassicalChannel("cc_n2_n1", tl, 0, 1e3)
+    cc2 = ClassicalChannel("cc_n1_m", tl, 0, 1e3)
+    cc3 = ClassicalChannel("cc_m_n1", tl, 0, 1e3)
+    cc4 = ClassicalChannel("cc_n2_m", tl, 0, 1e3)
+    cc5 = ClassicalChannel("cc_m_n2", tl, 0, 1e3)
+    cc0.set_ends(node1, node2)
+    cc1.set_ends(node2, node1)
+    cc2.set_ends(node1, mid_node)
+    cc3.set_ends(mid_node, node1)
+    cc4.set_ends(node2, mid_node)
+    cc5.set_ends(mid_node, node2)
 
-    qc = QuantumChannel("qc_n1_m", tl, 0, 1e3, frequency=8e7)
-    qc.set_ends(node1, mid_node)
-    qc = QuantumChannel("qc_n2_m", tl, 0, 1e3, frequency=8e7)
-    qc.set_ends(node2, mid_node)
+    qc0 = QuantumChannel("qc_n1_m", tl, 0, 1e3, frequency=8e7)
+    qc1 = QuantumChannel("qc_n2_m", tl, 0, 1e3, frequency=8e7)
+    qc0.set_ends(node1, mid_node)
+    qc1.set_ends(node2, mid_node)
 
     tl.init()
     rule1 = Rule(10, eg_rule_action1, eg_rule_condition)
@@ -315,11 +321,14 @@ def test_ResourceManager1():
 
     tl.run()
 
-    # for info in node1.resource_manager.memory_manager:
-    #     print(info.memory.name, info.state, info.remote_memo)
-    #
-    # for info in node2.resource_manager.memory_manager:
-    #     print(info.memory.name, info.state, info.remote_memo)
+    for info in node1.resource_manager.memory_manager:
+        print(info.memory.name, info.state, info.remote_memo)
+    
+    for info in node2.resource_manager.memory_manager:
+        print(info.memory.name, info.state, info.remote_memo)
+
+    for event in tl.events:
+        print(event._is_removed, event.time, event.process.owner, event.process.activation)
 
     for info in node1.resource_manager.memory_manager:
         assert info.state == "ENTANGLED"
@@ -393,17 +402,23 @@ def test_ResourceManager2():
     mid_node.bsm.detectors[0].efficiency = 1
     mid_node.bsm.detectors[1].efficiency = 1
 
-    cc = ClassicalChannel("cc_n1_m", tl, 0, 1e3)
-    cc.set_ends(node1, mid_node)
-    cc = ClassicalChannel("cc_n1_n2", tl, 0, 1e3)
-    cc.set_ends(node1, node2)
-    cc = ClassicalChannel("cc_n2_m", tl, 0, 1e3)
-    cc.set_ends(node2, mid_node)
+    cc0 = ClassicalChannel("cc_n1_n2", tl, 0, 1e3)
+    cc1 = ClassicalChannel("cc_n2_n1", tl, 0, 1e3)
+    cc2 = ClassicalChannel("cc_n1_m", tl, 0, 1e3)
+    cc3 = ClassicalChannel("cc_m_n1", tl, 0, 1e3)
+    cc4 = ClassicalChannel("cc_n2_m", tl, 0, 1e3)
+    cc5 = ClassicalChannel("cc_m_n2", tl, 0, 1e3)
+    cc0.set_ends(node1, node2)
+    cc1.set_ends(node2, node1)
+    cc2.set_ends(node1, mid_node)
+    cc3.set_ends(mid_node, node1)
+    cc4.set_ends(node2, mid_node)
+    cc5.set_ends(mid_node, node2)
 
-    qc = QuantumChannel("qc_n1_m", tl, 0, 1e3, frequency=8e7)
-    qc.set_ends(node1, mid_node)
-    qc = QuantumChannel("qc_n2_m", tl, 0, 1e3, frequency=8e7)
-    qc.set_ends(node2, mid_node)
+    qc0 = QuantumChannel("qc_n1_m", tl, 0, 1e3, frequency=8e7)
+    qc1 = QuantumChannel("qc_n2_m", tl, 0, 1e3, frequency=8e7)
+    qc0.set_ends(node1, mid_node)
+    qc1.set_ends(node2, mid_node)
 
     tl.init()
     rule1 = Rule(10, eg_rule_action1, eg_rule_condition)

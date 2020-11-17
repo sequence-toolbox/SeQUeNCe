@@ -99,7 +99,7 @@
             "distance": 100
         }
     ],
-    "cconnections_table": {
+    "cchannels_table": {
         "type": "RT",
         "labels": ["Argonne_1", "Argonne_2", "Argonne_3", "Fermilab_1", "Fermilab_2", "NU", "StarLight", "UChicago_PME", "UChicago_HC"],
         "table": [[0,      0.50e9, 0.50e9, 2.65e9, 3.15e9, 1.95e9, 1.76e9, 5.20e9, 5.70e9],

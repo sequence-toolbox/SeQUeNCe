@@ -2,9 +2,9 @@ name: main
 
 on:
   push:
-    branches: [master]
+    branches: [master, RnD]
   pull_request:
-    branches: [master]
+    branches: [master. RnD]
 
 jobs:
   build:

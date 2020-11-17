@@ -14,6 +14,7 @@ setup(
     install_requires=[
         'numpy',
         'json5',
-        'pandas'
+        'pandas',
+        'qutip'
     ],
 )

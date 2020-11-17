@@ -1,2 +1,4 @@
+__all__ = ['random_request']
+
 def __dir__():
-    return 'random_request'
+    return sorted(__all__)

@@ -11,3 +11,4 @@ The Kernel module provides the discrete event simulator for SeQUeNCe.
     eventlist
     process
     timeline
+    quantum_manager
