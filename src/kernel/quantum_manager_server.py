@@ -5,6 +5,8 @@ from ipaddress import ip_address
 from pickle import loads, dumps
 import multiprocessing
 
+from sequence.kernel.p_quantum_manager import ParallelQuantumManagerKet
+
 
 def valid_port(port):
     port = int(port)
@@ -35,6 +37,7 @@ class QuantumManagerMsgType():
     CLOSE = 5
     CONNECT = 6
     TERMINATE = 7
+    CONNECTED = 8
 
 
 class QuantumManagerMessage():
@@ -46,18 +49,55 @@ class QuantumManagerMessage():
         return str(self.type) + ' ' + str(self.args)
 
 
-def start_session(comm:socket):
-    while 1:
+def start_session(comm: socket, states, least_available):
+    qm = ParallelQuantumManagerKet(states, least_available)
+
+    # send connected message
+    msg = QuantumManagerMessage(QuantumManagerMsgType.CONNECTED, [])
+    data = dumps(msg)
+    comm.sendall(data)
+
+    while True:
         data = comm.recv(1024)
+
+        # if receiving empty data packets, close socket
+        if data == b'':
+            comm.close()
+            break
+
         msg = loads(data)
+        return_val = None
 
         if msg.type == QuantumManagerMsgType.CLOSE:
             comm.close()
             break
 
-        print(msg.type, msg.args)
-        # todo: logic of quantum manager
+        elif msg.type == QuantumManagerMsgType.NEW:
+            assert len(msg.args) <= 1
+            return_val = qm.new(*msg.args)
 
+        elif msg.type == QuantumManagerMsgType.GET:
+            assert len(msg.args) == 1
+            return_val = qm.get(*msg.args)
+
+        elif msg.type == QuantumManagerMsgType.SET:
+            assert len(msg.args) == 2
+            qm.set(*msg.args)
+
+        elif msg.type == QuantumManagerMsgType.RUN:
+            assert len(msg.args) == 2
+            return_val = qm.run_circuit(*msg.args)
+
+        elif msg.type == QuantumManagerMsgType.REMOVE:
+            assert len(msg.args) == 1
+            qm.remove(*msg.args)
+
+        else:
+            raise Exception("Quantum manager session received invalid message type {}".format(msg.type))
+
+        # send return value
+        data = dumps(return_val)
+        comm.sendall(data)
 
 
 if __name__ == '__main__':
@@ -68,20 +108,29 @@ if __name__ == '__main__':
     s.bind((args.ip, args.port))
     s.listen()
     processes = []
-    while 1:
+
+    # initialize shared data
+    _least_available = multiprocessing.Value('i', 0)
+    manager = multiprocessing.Manager()
+    states = manager.dict()
+
+    while True:
         c, addr = s.accept()
 
         raw_msg = c.recv(1024)
         msg = loads(raw_msg)
-        print(msg.type, QuantumManagerMsgType.CONNECT, type(msg.type), type(QuantumManagerMsgType.CONNECT), msg.type is QuantumManagerMsgType.CONNECT )
+
         if msg.type == QuantumManagerMsgType.TERMINATE:
             break
+
         elif msg.type == QuantumManagerMsgType.CONNECT:
-            process = multiprocessing.Process(target=start_session, args=(c,))
+            process = multiprocessing.Process(target=start_session, args=(c, states, _least_available))
             processes.append(process)
             process.start()
+
         else:
             raise Exception('Unknown message type received by quantum manager server')
 
     for p in processes:
         p.terminate()
+
