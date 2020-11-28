@@ -94,7 +94,7 @@ class Node(Entity):
         """
 
         if priority == inf:
-            priority = monotonic_ns()
+            priority = self.timeline.schedule_counter
         self.cchannels[dst].transmit(msg, self, priority)
 
     def receive_message(self, src: str, msg: "Message") -> None:
