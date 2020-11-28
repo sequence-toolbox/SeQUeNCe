@@ -15,6 +15,7 @@ setup(
         'numpy',
         'json5',
         'pandas',
-        'qutip'
+        'qutip',
+        'tqdm'
     ],
 )

@@ -28,7 +28,6 @@ if __name__ == "__main__":
 
         tl = Timeline(runtime)
         tl.seed(1)
-        tl.show_progress = True
 
         qc0 = QuantumChannel("qc0", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
         qc1 = QuantumChannel("qc1", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)

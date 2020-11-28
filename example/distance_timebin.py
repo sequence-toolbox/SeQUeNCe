@@ -44,7 +44,6 @@ if __name__ == "__main__":
     for distance in distances:
         tl = Timeline(runtime)
         tl.seed(1)
-        tl.show_progress = True
 
         qc0 = QuantumChannel("qc0", tl, distance=distance * 1e3, polarization_fidelity=0.97, attenuation=0.0002)
         qc1 = QuantumChannel("qc1", tl, distance=distance * 1e3, polarization_fidelity=0.97, attenuation=0.0002)
