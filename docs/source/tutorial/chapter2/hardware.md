@@ -168,12 +168,12 @@ process1 = Process(node1.memory, "set_plus", [])
 process2 = Process(node1.memory, "excite", ["node2"])
 for i in range(NUM_TRIALS):
     event1 = Event(i * time_bin, process1)
-    event1 = Event(i * time_bin + (time_bin / 2), process2)
+    event2 = Event(i * time_bin + (time_bin / 2), process2)
     tl.schedule(event1)
     tl.schedule(event2)
 ```
 
-### Step 7: Running and Output
+### Step 6: Running and Output
 
 The procedure to initialize and run the timeline is the same as Tutorial 1:
 
@@ -313,4 +313,4 @@ tl.init()
 tl.run()
 ```
 
-In the output, we see that the `PING` message is received on node 2 first, followed by a `PONG` message received on node 2. The reception times of the messages are at 1 ms and 2 ms of simulation time, respectively, as determined by our classical channel delay.
+In the output, we see that the `PING` message is received on node 2 first, followed by a `PONG` message received on node 1. The reception times of the messages are at 1 ms and 2 ms of simulation time, respectively, as determined by our classical channel delay.
