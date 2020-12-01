@@ -29,3 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - event removal system
 - example scripts now use "Timeline.seed()" method
 - Timeline event removal method
+
+## [0.2.3]
+### Added
+- quantum state manager for quantum memories
+- quantum circuit class (for use with quantum memories)
+- Qutip library dependency
+
+### Changed
+- rewrite of quantum entanglement class
+- change all optical channels to one-way
