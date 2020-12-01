@@ -9,6 +9,7 @@ from math import inf
 from sys import stdout
 from time import time_ns, sleep
 from typing import TYPE_CHECKING
+from tqdm import tqdm
 
 if TYPE_CHECKING:
     from .event import Event
@@ -54,9 +55,7 @@ class Timeline:
         self.stop_time = stop_time
         self.schedule_counter = 0
         self.run_counter = 0
-        self.is_running = False
-        self.show_progress = False
-        
+
         if formalism == 'ket_vector':
             self.quantum_manager = QuantumManagerKet()
         else:
@@ -89,31 +88,21 @@ class Timeline:
         """
         log.logger.info("Timeline start simulation")
         tick = time_ns()
-        self.is_running = True
 
-        if self.show_progress:
-            self.progress_bar()
+        with tqdm(total=self.stop_time/1e12, bar_format='{l_bar}{bar:50}{r_bar}{bar:-50b}') as pbar:
+            while len(self.events) > 0:
+                event = self.events.pop()
+                if event.time >= self.stop_time:
+                    self.schedule(event)
+                    break
+                assert self.time <= event.time, "invalid event time for process scheduled on " + str(event.process.owner)
+                if event.is_invalid():
+                    continue
+                pbar.update((event.time - self.time)/1e12)
+                self.time = event.time
+                event.process.run()
+                self.run_counter += 1
 
-        # log = {}
-        while len(self.events) > 0:
-            event = self.events.pop()
-            if event.time >= self.stop_time:
-                self.schedule(event)
-                break
-            assert self.time <= event.time, "invalid event time for process scheduled on " + str(event.process.owner)
-            if event.is_invalid():
-                continue
-            self.time = event.time
-            # if not event.process.activation in log:
-            #     log[event.process.activation] = 0
-            # log[event.process.activation]+=1
-            event.process.run()
-            self.run_counter += 1
-
-        # print('number of event', self.event_counter)
-        # print('log:',log)
-
-        self.is_running = False
         elapse = time_ns() - tick
         log.logger.info("Timeline end simulation. Execution Time: %d ns; Scheduled Event: %d; Executed Event: %d" %
                         (elapse, self.schedule_counter, self.run_counter))
@@ -142,41 +131,3 @@ class Timeline:
         from numpy import random
         random.seed(seed)
 
-    def progress_bar(self):
-        """Method to draw progress bar.
-
-        Progress bar will display the execution time of simulation, as well as the current simulation time.
-        """
-
-        def print_time():
-            start_time = time_ns()
-            while self.is_running:
-                exe_time = self.ns_to_human_time(time_ns() - start_time)
-                sim_time = self.ns_to_human_time(self.time / 1e3)
-                if self.stop_time == float('inf'):
-                    stop_time = 'NaN'
-                else:
-                    stop_time = self.ns_to_human_time(self.stop_time / 1e3)
-                process_bar = f'\rexecution time: {exe_time};     simulation time: {sim_time} / {stop_time}'
-                print(f'{process_bar}', end="\r")
-                stdout.flush()
-                sleep(3)
-
-        start_new_thread(print_time, ())
-
-    def ns_to_human_time(self, nanosec: int) -> str:
-        if nanosec >= 1e6:
-            ms = nanosec / 1e6
-            if ms >= 1e3:
-                second = ms / 1e3
-                if second >= 60:
-                    minute = second // 60
-                    second = second % 60
-                    if minute >= 60:
-                        hour = minute // 60
-                        minute = minute % 60
-                        return '%d hour: %d min: %.2f sec' % (hour, minute, second)
-                    return '%d min: %.2f sec' % (minute, second)
-                return '%.2f sec' % (second)
-            return "%d ms" % (ms)
-        return '0 ms'

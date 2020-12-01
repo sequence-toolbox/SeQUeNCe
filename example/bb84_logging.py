@@ -16,7 +16,6 @@ distance = 1e3
 
 tl = Timeline(runtime)
 tl.seed(1)
-tl.show_progress = True
 
 # set log
 log.set_logger(__name__, tl, log_filename)
