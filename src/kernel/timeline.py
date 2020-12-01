@@ -89,7 +89,7 @@ class Timeline:
         log.logger.info("Timeline start simulation")
         tick = time_ns()
 
-        with tqdm(total=self.stop_time/1e12) as pbar:
+        with tqdm(total=self.stop_time/1e12, bar_format='{l_bar}{bar:50}{r_bar}{bar:-50b}') as pbar:
             while len(self.events) > 0:
                 event = self.events.pop()
                 if event.time >= self.stop_time:
