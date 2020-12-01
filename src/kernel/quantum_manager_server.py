@@ -59,12 +59,6 @@ def start_session(comm: socket, states, least_available):
 
     while True:
         data = comm.recv(1024)
-
-        # if receiving empty data packets, close socket
-        if data == b'':
-            comm.close()
-            break
-
         msg = loads(data)
         return_val = None
 
