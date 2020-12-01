@@ -9,6 +9,7 @@ from math import inf
 from sys import stdout
 from time import time_ns, sleep
 from typing import TYPE_CHECKING
+from tqdm import tqdm
 
 if TYPE_CHECKING:
     from .event import Event
@@ -16,7 +17,6 @@ if TYPE_CHECKING:
 from .eventlist import EventList
 from ..utils import log
 from .quantum_manager import QuantumManagerKet
-from tqdm import tqdm
 
 class Timeline:
     """Class for a simulation timeline.
@@ -89,7 +89,6 @@ class Timeline:
         log.logger.info("Timeline start simulation")
         tick = time_ns()
 
-        # log = {}
         with tqdm(total=self.stop_time/1e12) as pbar:
             while len(self.events) > 0:
                 event = self.events.pop()
@@ -101,15 +100,8 @@ class Timeline:
                     continue
                 pbar.update((event.time - self.time)/1e12)
                 self.time = event.time
-                # if not event.process.activation in log:
-                #     log[event.process.activation] = 0
-                # log[event.process.activation]+=1
                 event.process.run()
                 self.run_counter += 1
-
-
-        # print('number of event', self.event_counter)
-        # print('log:',log)
 
         elapse = time_ns() - tick
         log.logger.info("Timeline end simulation. Execution Time: %d ns; Scheduled Event: %d; Executed Event: %d" %
@@ -138,3 +130,4 @@ class Timeline:
 
         from numpy import random
         random.seed(seed)
+
