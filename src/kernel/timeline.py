@@ -40,6 +40,7 @@ class Timeline:
         run_counter (int): the counter of executed events
         is_running (bool): records if the simulation has stopped executing events.
         show_progress (bool): show/hide the progress bar of simulation.
+        quantum_manager (QuantumManager): quantum state manager.
     """
 
     def __init__(self, stop_time=inf, formalism='ket_vector'):

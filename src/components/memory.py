@@ -127,6 +127,7 @@ class Memory(Entity):
             efficiency (float): efficiency of memories.
             coherence_time (float): average time (in s) that memory state is valid.
             wavelength (int): wavelength (in nm) of photons emitted by memories.
+            qstate_key (int): key for associated quantum state in timeline's quantum manager.
         """
 
         super().__init__(name, timeline)
@@ -235,12 +236,16 @@ class Memory(Entity):
             self.expiration_event = None
 
     def update_state(self, state: List[complex]) -> None:
-        """Method to set the memory state to \|+> (superposition of \|0> and \|1> states).
+        """Method to set the memory state to an arbitrary pure state.
+
+        Args:
+            state (List[complex]): array of amplitudes for pure state in Z-basis.
 
         Side Effects:
             Will modify internal quantum state and parameters.
             May schedule expiration event.
         """
+
         self.timeline.quantum_manager.set([self.qstate_key], state)
         self.previous_bsm = -1
         self.entangled_memory = {'node_id': None, 'memo_id': None}
@@ -261,6 +266,14 @@ class Memory(Entity):
         self.expiration_event = event
 
     def update_expire_time(self, time: int):
+        """Method to change time of expiration.
+
+        Should not normally be called by protocols.
+
+        Args:
+            time (int): new expiration time.
+        """
+
         time = max(time, self.timeline.now())
         if self.expiration_event is None:
             if time >= self.timeline.now():

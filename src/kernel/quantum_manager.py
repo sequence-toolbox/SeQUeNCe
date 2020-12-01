@@ -373,6 +373,13 @@ class DensityState():
     """
 
     def __init__(self, state: List[List[complex]], keys: List[int]):
+        """Constructor for density state class.
+
+        Args:
+            state (List[List[complex]]): density matrix elements given as a list. If the list is one-dimensional, will be converted to matrix with outer product operation.
+            keys (List[int]): list of keys to this state in quantum manager.
+        """
+
         state = array(state, dtype=complex)
         if state.ndim == 1:
             state = outer(state.conj(), state)
