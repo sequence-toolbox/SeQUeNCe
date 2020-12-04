@@ -1,12 +1,13 @@
-import numpy
+import numpy as np
 import pytest
+
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.kernel.timeline import Timeline
 from sequence.entanglement_management.purification import *
 from sequence.topology.node import Node
 
-numpy.random.seed(0)
+np.random.seed(0)
 
 ENTANGLED = 'ENTANGLED'
 RAW = 'RAW'
@@ -107,7 +108,7 @@ def complex_array_equal(arr1, arr2, precision=5):
 
 def correct_order(state, keys):
     if keys[0] > keys[1]:
-        return numpy.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ state
+        return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ state
 
 
 def test_BBPSSW_phi_plus_phi_plus():
@@ -622,7 +623,7 @@ def test_BBPSSW_fidelity():
     tl.init()
 
     for i in range(1000):
-        fidelity = numpy.random.uniform(0.5, 1)
+        fidelity = np.random.uniform(0.5, 1)
         kept_memo1 = Memory("a1.kept", tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1,
                             wavelength=HALF_MICRON)
         kept_memo2 = Memory("a2.kept", tl, fidelity, 0, 1, 1, HALF_MICRON)
@@ -642,10 +643,10 @@ def test_BBPSSW_fidelity():
         meas_memo2.entangled_memory["memo_id"] = "a1.meas"
         meas_memo2.fidelity = fidelity
 
-        pair1 = numpy.random.choice([0, 1, 2, 3], 1,
-                                    p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
-        pair2 = numpy.random.choice([0, 1, 2, 3], 1,
-                                    p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
+        pair1 = np.random.choice(range(4), 1,
+                                 p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
+        pair2 = np.random.choice(range(4), 1,
+                                 p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
         tl.quantum_manager.set([kept_memo1.qstate_key, kept_memo2.qstate_key], BELL_STATES[pair1[0]])
         tl.quantum_manager.set([meas_memo1.qstate_key, meas_memo2.qstate_key], BELL_STATES[pair2[0]])
 
@@ -712,10 +713,10 @@ def test_BBPSSW_success_rate():
         meas_memo2.entangled_memory["memo_id"] = "a1.meas"
         meas_memo2.fidelity = fidelity
 
-        pair1 = numpy.random.choice([0, 1, 2, 3], 1,
-                                    p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
-        pair2 = numpy.random.choice([0, 1, 2, 3], 1,
-                                    p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
+        pair1 = np.random.choice(range(4), 1,
+                                 p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
+        pair2 = np.random.choice(range(4), 1,
+                                 p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
         tl.quantum_manager.set([kept_memo1.qstate_key, kept_memo2.qstate_key], BELL_STATES[pair1[0]])
         tl.quantum_manager.set([meas_memo1.qstate_key, meas_memo2.qstate_key], BELL_STATES[pair2[0]])
 
