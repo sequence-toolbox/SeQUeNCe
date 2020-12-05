@@ -1,12 +1,26 @@
-import numpy
+import numpy as np
 import pytest
+
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.kernel.timeline import Timeline
 from sequence.entanglement_management.purification import *
 from sequence.topology.node import Node
 
-numpy.random.seed(0)
+np.random.seed(0)
+
+ENTANGLED = 'ENTANGLED'
+RAW = 'RAW'
+
+HALF_MICRON = 500
+ONE_MILLISECOND = 1e9
+SQRT_HALF = 0.5 ** 0.5
+
+phi_plus = [SQRT_HALF, 0, 0, SQRT_HALF]
+phi_minus = [SQRT_HALF, 0, 0, -SQRT_HALF]
+psi_plus = [0, SQRT_HALF, SQRT_HALF, 0]
+psi_minus = [0, SQRT_HALF, -SQRT_HALF, 0]
+BELL_STATES = [phi_plus, phi_minus, psi_plus, psi_minus]
 
 
 class FakeResourceManager():
@@ -15,7 +29,7 @@ class FakeResourceManager():
 
     def update(self, protocol, memory, state):
         self.log.append((memory, state))
-        if state == "RAW":
+        if state == RAW:
             memory.reset()
 
 class FakeNode(Node):
@@ -40,12 +54,6 @@ def test_BBPSSWMessage():
         BBPSSWMessage("unknown type")
 
 
-phi_plus = [0.5 ** 0.5, 0, 0, 0.5 ** 0.5]
-phi_minus = [0.5 ** 0.5, 0, 0, -(0.5 ** 0.5)]
-psi_plus = [0, 0.5 ** 0.5, 0.5 ** 0.5, 0]
-psi_minus = [0, 0.5 ** 0.5, -(0.5 ** 0.5), 0]
-
-
 def create_scenario(state1, state2, seed):
     tl = Timeline()
     tl.seed(seed)
@@ -53,15 +61,15 @@ def create_scenario(state1, state2, seed):
     a2 = FakeNode("a2", tl)
     cc0 = ClassicalChannel("cc0", tl, 0, 1e5)
     cc1 = ClassicalChannel("cc1", tl, 0, 1e5)
-    cc0.delay = 1e9
-    cc1.delay = 1e9
+    cc0.delay = ONE_MILLISECOND
+    cc1.delay = ONE_MILLISECOND
     cc0.set_ends(a1, a2)
     cc1.set_ends(a2, a1)
 
-    kept1 = Memory('kept1', tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
-    kept2 = Memory('kept2', tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
-    meas1 = Memory('mea1', tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
-    meas2 = Memory('mea2', tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
+    kept1 = Memory('kept1', tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
+    kept2 = Memory('kept2', tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
+    meas1 = Memory('mea1', tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
+    meas2 = Memory('mea2', tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
 
     tl.init()
 
@@ -93,17 +101,14 @@ def create_scenario(state1, state2, seed):
 
 def complex_array_equal(arr1, arr2, precision=5):
     for c1, c2 in zip(arr1, arr2):
-        if abs(c1 - c2) >= 1 ** -precision:
+        if abs(c1 - c2) >= 2 ** -precision:
             return False
     return True
 
 
 def correct_order(state, keys):
     if keys[0] > keys[1]:
-        return numpy.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ state
-
-
-sqrt_2 = complex(0.5 ** 0.5)
+        return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ state
 
 
 def test_BBPSSW_phi_plus_phi_plus():
@@ -165,7 +170,7 @@ def test_BBPSSW_phi_plus_phi_minus():
             counter += 1
             assert complex_array_equal(phi_minus, state)
         else:
-            assert complex_array_equal([-sqrt_2, 0, 0, sqrt_2], state)
+            assert complex_array_equal([-SQRT_HALF, 0, 0, SQRT_HALF], state)
 
     assert abs(counter - 50) < 10
 
@@ -233,7 +238,7 @@ def test_BBPSSW_phi_minus_phi_minus():
             counter += 1
             assert complex_array_equal(phi_plus, state)
         else:
-            assert complex_array_equal([-sqrt_2, 0, 0, -sqrt_2], state)
+            assert complex_array_equal([-SQRT_HALF, 0, 0, -SQRT_HALF], state)
 
     assert abs(counter - 50) < 10
 
@@ -490,13 +495,13 @@ def test_BBPSSW_psi_plus_psi_plus():
         ket2 = tl.quantum_manager.get(kept2.qstate_key)
         assert id(ket1) == id(ket2)
         assert kept1.qstate_key in ket1.keys and kept2.qstate_key in ket1.keys
-        state = correct_order(ket1.state, ket1.keys)
 
+        state = correct_order(ket1.state, ket1.keys)
+        assert complex_array_equal(psi_plus, state)
         if ep1.meas_res == 0:
             counter += 1
-            assert complex_array_equal(psi_plus, state)
         else:
-            assert complex_array_equal(psi_plus, state)
+            pass
 
     assert abs(counter - 50) < 10
 
@@ -531,7 +536,7 @@ def test_BBPSSW_psi_plus_psi_minus():
             counter += 1
             assert complex_array_equal(psi_minus, state)
         else:
-            assert complex_array_equal([0, -sqrt_2, sqrt_2, 0], state)
+            assert complex_array_equal([0, -SQRT_HALF, SQRT_HALF, 0], state)
 
     assert abs(counter - 50) < 10
 
@@ -598,13 +603,10 @@ def test_BBPSSW_psi_minus_psi_minus():
 
         if ep1.meas_res == 0:
             counter += 1
-            assert complex_array_equal(phi_plus, state)
+            assert complex_array_equal(psi_plus, state)
         else:
-            assert complex_array_equal([0, -sqrt_2, -sqrt_2, 0], state)
+            assert complex_array_equal([0, -SQRT_HALF, -SQRT_HALF, 0], state)
     assert abs(counter - 50) < 10
-
-
-bell_states = [phi_plus, phi_minus, psi_plus, psi_minus]
 
 
 def test_BBPSSW_fidelity():
@@ -613,20 +615,20 @@ def test_BBPSSW_fidelity():
     a2 = FakeNode("a2", tl)
     cc0 = ClassicalChannel("cc0", tl, 0, 1e5)
     cc1 = ClassicalChannel("cc1", tl, 0, 1e5)
-    cc0.delay = 1e9
-    cc1.delay = 1e9
+    cc0.delay = ONE_MILLISECOND
+    cc1.delay = ONE_MILLISECOND
     cc0.set_ends(a1, a2)
     cc1.set_ends(a2, a1)
 
     tl.init()
 
     for i in range(1000):
-        fidelity = numpy.random.uniform(0.5, 1)
+        fidelity = np.random.uniform(0.5, 1)
         kept_memo1 = Memory("a1.kept", tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1,
-                            wavelength=500)
-        kept_memo2 = Memory("a2.kept", tl, fidelity, 0, 1, 1, 500)
-        meas_memo1 = Memory("a1.meas", tl, fidelity, 0, 1, 1, 500)
-        meas_memo2 = Memory("a2.meas", tl, fidelity, 0, 1, 1, 500)
+                            wavelength=HALF_MICRON)
+        kept_memo2 = Memory("a2.kept", tl, fidelity, 0, 1, 1, HALF_MICRON)
+        meas_memo1 = Memory("a1.meas", tl, fidelity, 0, 1, 1, HALF_MICRON)
+        meas_memo2 = Memory("a2.meas", tl, fidelity, 0, 1, 1, HALF_MICRON)
 
         kept_memo1.entangled_memory["node_id"] = "a2"
         kept_memo1.entangled_memory["memo_id"] = "a2.kept"
@@ -641,12 +643,12 @@ def test_BBPSSW_fidelity():
         meas_memo2.entangled_memory["memo_id"] = "a1.meas"
         meas_memo2.fidelity = fidelity
 
-        pair1 = numpy.random.choice([0, 1, 2, 3], 1,
-                                    p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
-        pair2 = numpy.random.choice([0, 1, 2, 3], 1,
-                                    p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
-        tl.quantum_manager.set([kept_memo1.qstate_key, kept_memo2.qstate_key], bell_states[pair1[0]])
-        tl.quantum_manager.set([meas_memo1.qstate_key, meas_memo2.qstate_key], bell_states[pair2[0]])
+        pair1 = np.random.choice(range(4), 1,
+                                 p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
+        pair2 = np.random.choice(range(4), 1,
+                                 p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
+        tl.quantum_manager.set([kept_memo1.qstate_key, kept_memo2.qstate_key], BELL_STATES[pair1[0]])
+        tl.quantum_manager.set([meas_memo1.qstate_key, meas_memo2.qstate_key], BELL_STATES[pair2[0]])
 
         ep1 = BBPSSW(a1, "a1.ep1.%d" % i, kept_memo1, meas_memo1)
         ep2 = BBPSSW(a2, "a2.ep2.%d" % i, kept_memo2, meas_memo2)
@@ -660,20 +662,20 @@ def test_BBPSSW_fidelity():
 
         tl.run()
 
-        assert a1.resource_manager.log[-2] == (meas_memo1, "RAW")
-        assert a2.resource_manager.log[-2] == (meas_memo2, "RAW")
+        assert a1.resource_manager.log[-2] == (meas_memo1, RAW)
+        assert a2.resource_manager.log[-2] == (meas_memo2, RAW)
         assert meas_memo1.fidelity == meas_memo2.fidelity == 0
 
         if ep1.meas_res == ep2.meas_res:
             assert kept_memo1.fidelity == kept_memo2.fidelity == BBPSSW.improved_fidelity(fidelity)
             assert kept_memo1.entangled_memory["node_id"] == "a2" and kept_memo2.entangled_memory["node_id"] == "a1"
-            assert a1.resource_manager.log[-1] == (kept_memo1, "ENTANGLED")
-            assert a2.resource_manager.log[-1] == (kept_memo2, "ENTANGLED")
+            assert a1.resource_manager.log[-1] == (kept_memo1, ENTANGLED)
+            assert a2.resource_manager.log[-1] == (kept_memo2, ENTANGLED)
         else:
             assert kept_memo1.fidelity == kept_memo2.fidelity == 0
             assert kept_memo1.entangled_memory["node_id"] == kept_memo2.entangled_memory["node_id"] == None
-            assert a1.resource_manager.log[-1] == (kept_memo1, "RAW")
-            assert a2.resource_manager.log[-1] == (kept_memo2, "RAW")
+            assert a1.resource_manager.log[-1] == (kept_memo1, RAW)
+            assert a2.resource_manager.log[-1] == (kept_memo2, RAW)
 
 
 def test_BBPSSW_success_rate():
@@ -682,8 +684,8 @@ def test_BBPSSW_success_rate():
     a2 = FakeNode("a2", tl)
     cc0 = ClassicalChannel("cc0", tl, 0, 1e5)
     cc1 = ClassicalChannel("cc1", tl, 0, 1e5)
-    cc0.delay = 1e9
-    cc1.delay = 1e9
+    cc0.delay = ONE_MILLISECOND
+    cc1.delay = ONE_MILLISECOND
     cc0.set_ends(a1, a2)
     cc1.set_ends(a2, a1)
 
@@ -693,10 +695,10 @@ def test_BBPSSW_success_rate():
 
     for i in range(1000):
         kept_memo1 = Memory("a1.kept", tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1,
-                            wavelength=500)
-        kept_memo2 = Memory("a2.kept", tl, fidelity, 0, 1, 1, 500)
-        meas_memo1 = Memory("a1.meas", tl, fidelity, 0, 1, 1, 500)
-        meas_memo2 = Memory("a2.meas", tl, fidelity, 0, 1, 1, 500)
+                            wavelength=HALF_MICRON)
+        kept_memo2 = Memory("a2.kept", tl, fidelity, 0, 1, 1, HALF_MICRON)
+        meas_memo1 = Memory("a1.meas", tl, fidelity, 0, 1, 1, HALF_MICRON)
+        meas_memo2 = Memory("a2.meas", tl, fidelity, 0, 1, 1, HALF_MICRON)
 
         kept_memo1.entangled_memory["node_id"] = "a2"
         kept_memo1.entangled_memory["memo_id"] = "a2.kept"
@@ -711,12 +713,12 @@ def test_BBPSSW_success_rate():
         meas_memo2.entangled_memory["memo_id"] = "a1.meas"
         meas_memo2.fidelity = fidelity
 
-        pair1 = numpy.random.choice([0, 1, 2, 3], 1,
-                                    p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
-        pair2 = numpy.random.choice([0, 1, 2, 3], 1,
-                                    p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
-        tl.quantum_manager.set([kept_memo1.qstate_key, kept_memo2.qstate_key], bell_states[pair1[0]])
-        tl.quantum_manager.set([meas_memo1.qstate_key, meas_memo2.qstate_key], bell_states[pair2[0]])
+        pair1 = np.random.choice(range(4), 1,
+                                 p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
+        pair2 = np.random.choice(range(4), 1,
+                                 p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
+        tl.quantum_manager.set([kept_memo1.qstate_key, kept_memo2.qstate_key], BELL_STATES[pair1[0]])
+        tl.quantum_manager.set([meas_memo1.qstate_key, meas_memo2.qstate_key], BELL_STATES[pair2[0]])
 
         ep1 = BBPSSW(a1, "a1.ep1.%d" % i, kept_memo1, meas_memo1)
         ep2 = BBPSSW(a2, "a2.ep2.%d" % i, kept_memo2, meas_memo2)
