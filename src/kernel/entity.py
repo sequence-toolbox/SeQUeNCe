@@ -35,7 +35,8 @@ class Entity(ABC):
         self.timeline = timeline
         self.owner = None
         self._observers = []
-        timeline.entities.append(self)
+        assert not name in timeline.entities
+        timeline.entities[name] = self
 
     @abstractmethod
     def init(self):
