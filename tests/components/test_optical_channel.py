@@ -14,9 +14,9 @@ def test_ClassicalChannel_set_ends():
     n2 = Node('n2', tl)
     assert len(n1.cchannels) == 0 and len(n2.cchannels) == 0
 
-    cc.set_ends(n1, n2)
+    cc.set_ends(n1, n2.name)
     assert cc.sender == n1
-    assert cc.receiver == n2
+    assert cc.receiver == n2.name
     assert 'n2' in n1.cchannels
     assert n1.cchannels["n2"] == cc
     assert len(n2.cchannels) == 0
@@ -64,12 +64,12 @@ def test_QuantumChannel_set_ends():
     end1 = Node("end1", tl)
     end2 = Node("end2", tl)
     assert len(end1.qchannels) == len(end2.qchannels) == 0
-    qc.set_ends(end1, end2)
+    qc.set_ends(end1, end2.name)
 
     assert len(end1.qchannels) == 1
     assert len(end2.qchannels) == 0
     assert qc.sender == end1
-    assert qc.receiver == end2
+    assert qc.receiver == end2.name
     assert end2.name in end1.qchannels
 
 

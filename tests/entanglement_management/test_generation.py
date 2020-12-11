@@ -41,15 +41,17 @@ def test_generation_receive_message():
     node = Node("e1", tl)
     m0 = FakeNode("m1", tl)
     qc = QuantumChannel("qc_nodem1", tl, 0, 1e3)
-    qc.set_ends(node, m0)
-    node.memory_array = MemoryArray("", tl)
-    node.assign_cchannel(ClassicalChannel("", tl, 0, delay=1), "m1")
+    qc.set_ends(node, m0.name)
+    node.memory_array = MemoryArray("memory", tl)
+    node.assign_cchannel(ClassicalChannel("cc", tl, 0, delay=1), "m1")
 
-    eg = EntanglementGenerationA(node, "EG", middle="m1", other="e2", memory=node.memory_array[0])
+    eg = EntanglementGenerationA(node, "EG", middle="m1", other="e2",
+                                 memory=node.memory_array[0])
     eg.qc_delay = 1
 
     # negotiate message
-    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG", emit_time=0)
+    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG",
+                                        emit_time=0)
     assert eg.received_message("e2", msg) is True
     assert eg.expected_time == 1
     assert len(tl.events.data) == 2  # excite and next start time
@@ -98,16 +100,15 @@ def test_generation_expire():
 
     qc0 = QuantumChannel("qc_e0m0", tl, 0, 1e3)
     qc1 = QuantumChannel("qc_e1m0", tl, 0, 1e3)
-    qc0.set_ends(e0, m0)
-    qc1.set_ends(e1, m0)
-    cc0 = ClassicalChannel("cc_e0m0", tl, 1e3, delay=1e12)
-    cc1 = ClassicalChannel("cc_e1m0", tl, 1e3, delay=1e12)
-    cc2 = ClassicalChannel("cc_e0e1", tl, 2e3, delay=1e9)
-    cc3 = ClassicalChannel("cc_e1e0", tl, 2e3, delay=1e9)
-    cc0.set_ends(e0, m0)
-    cc1.set_ends(e1, m0)
-    cc2.set_ends(e0, e1)
-    cc3.set_ends(e1, e0)
+    qc0.set_ends(e0, m0.name)
+    qc1.set_ends(e1, m0.name)
+
+    for src in [e0, e1, m0]:
+        for dst in [e0, e1, m0]:
+            if src.name != dst.name:
+                cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl,
+                                      1e3, delay=4e11)
+                cc.set_ends(src, dst.name)
 
     e0.memory_array = MemoryArray("e0mem", tl, coherence_time=1)
     e1.memory_array = MemoryArray("e1mem", tl, coherence_time=1)
@@ -117,20 +118,20 @@ def test_generation_expire():
 
     tl.init()
 
-    protocol0 = EntanglementGenerationA(e0, "e0prot", middle="m0", other="e1", memory=e0.memory_array[0])
-    protocol1 = EntanglementGenerationA(e1, "e1prot", middle="m0", other="e0", memory=e1.memory_array[0])
+    protocol0 = EntanglementGenerationA(e0, "e0prot", middle="m0", other="e1",
+                                        memory=e0.memory_array[0])
+    protocol1 = EntanglementGenerationA(e1, "e1prot", middle="m0", other="e0",
+                                        memory=e1.memory_array[0])
     protocol0.primary = True
     e0.protocols.append(protocol0)
     e1.protocols.append(protocol1)
     protocol0.set_others(protocol1)
     protocol1.set_others(protocol0)
 
-    process = Process(protocol0, "start", [])
-    event = Event(0, process)
-    tl.schedule(event)
-    process = Process(protocol1, "start", [])
-    event = Event(0, process)
-    tl.schedule(event)
+    for p in [protocol0, protocol1]:
+        process = Process(p, "start", [])
+        event = Event(0, process)
+        tl.schedule(event)
 
     tl.run()
 
@@ -150,28 +151,26 @@ def test_generation_run():
     # add connections
     qc0 = QuantumChannel("qc_e0m0", tl, 0, 1e3)
     qc1 = QuantumChannel("qc_e1m0", tl, 0, 1e3)
-    qc0.set_ends(e0, m0)
-    qc1.set_ends(e1, m0)
-    cc0 = ClassicalChannel("cc_e0m0", tl, 1e3, delay=1e12)
-    cc1 = ClassicalChannel("cc_m0e0", tl, 1e3, delay=1e12)
-    cc2 = ClassicalChannel("cc_e1m0", tl, 1e3, delay=1e12)
-    cc3 = ClassicalChannel("cc_m0e1", tl, 1e3, delay=1e12)
-    cc4 = ClassicalChannel("cc_e0e1", tl, 2e3, delay=1e9)
-    cc5 = ClassicalChannel("cc_e1e0", tl, 2e3, delay=1e9)
-    cc0.set_ends(e0, m0)
-    cc1.set_ends(m0, e0)
-    cc2.set_ends(e1, m0)
-    cc3.set_ends(m0, e1)
-    cc4.set_ends(e0, e1)
-    cc5.set_ends(e1, e0)
+    qc0.set_ends(e0, m0.name)
+    qc1.set_ends(e1, m0.name)
+
+    for src in [e0, e1, m0]:
+        for dst in [e0, e1, m0]:
+            if src.name != dst.name:
+                cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl,
+                                      1e3, delay=1e9)
+                cc.set_ends(src, dst.name)
 
     # add hardware
-    e0.memory_array = MemoryArray("e0.memory_array", tl, num_memories=NUM_TESTS)
+    e0.memory_array = MemoryArray("e0.memory_array", tl,
+                                  num_memories=NUM_TESTS)
     e0.memory_array.owner = e0
-    e1.memory_array = MemoryArray("e1.memory_array", tl, num_memories=NUM_TESTS)
+    e1.memory_array = MemoryArray("e1.memory_array", tl,
+                                  num_memories=NUM_TESTS)
     e1.memory_array.owner = e1
     detectors = [{"efficiency": 1}] * 2
-    m0.bsm = make_bsm("m0.bsm", tl, encoding_type="single_atom", detectors=detectors)
+    m0.bsm = make_bsm("m0.bsm", tl, encoding_type="single_atom",
+                      detectors=detectors)
 
     # add middle protocol
     eg_m0 = EntanglementGenerationB(m0, "eg_m0", others=["e0", "e1"])

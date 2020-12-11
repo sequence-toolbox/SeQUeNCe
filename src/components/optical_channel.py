@@ -105,10 +105,10 @@ class QuantumChannel(OpticalChannel):
         self.delay = round(self.distance / self.light_speed)
         self.loss = 1 - 10 ** (self.distance * self.attenuation / -10)
 
-    def set_ends(self, sender: "Node", receiver: "Node") -> None:
+    def set_ends(self, sender: "Node", receiver: str) -> None:
         self.sender = sender
         self.receiver = receiver
-        sender.assign_qchannel(self, receiver.name)
+        sender.assign_qchannel(self, receiver)
 
     def transmit(self, qubit: "Photon", source: "Node") -> None:
         """Method to transmit photon-encoded qubits.
@@ -210,10 +210,10 @@ class ClassicalChannel(OpticalChannel):
         else:
             self.delay = delay
 
-    def set_ends(self, sender: "Node", receiver: "Node") -> None:
+    def set_ends(self, sender: "Node", receiver: "str") -> None:
         self.sender = sender
         self.receiver = receiver
-        sender.assign_cchannel(self, receiver.name)
+        sender.assign_cchannel(self, receiver)
 
     def transmit(self, message: "Message", source: "Node", priority: int) -> None:
         """Method to transmit classical messages.

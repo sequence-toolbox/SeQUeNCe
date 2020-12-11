@@ -49,7 +49,7 @@ class ResourceReservationMessage(Message):
         if self.msg_type is RSVPMsgType.REQUEST:
             self.qcaps = []
         elif self.msg_type is RSVPMsgType.REJECT:
-            pass
+            self.path = kwargs["path"]
         elif self.msg_type is RSVPMsgType.APPROVE:
             self.path = kwargs["path"]
         else:
@@ -115,7 +115,8 @@ class ResourceReservationProtocol(StackProtocol):
             msg.qcaps.append(qcap)
             self._push(dst=responder, msg=msg)
         else:
-            msg = ResourceReservationMessage(RSVPMsgType.REJECT, self.name, reservation)
+            msg = ResourceReservationMessage(RSVPMsgType.REJECT, self.name,
+                                             reservation, path=[])
             self._pop(msg=msg)
 
     def pop(self, src: str, msg: "ResourceReservationMessage"):
@@ -142,15 +143,24 @@ class ResourceReservationProtocol(StackProtocol):
                 msg.qcaps.append(qcap)
                 if self.own.name == msg.reservation.responder:
                     path = [qcap.node for qcap in msg.qcaps]
-                    rules = self.create_rules(path, reservation=msg.reservation)
+                    rules = self.create_rules(path,
+                                              reservation=msg.reservation)
                     self.load_rules(rules, msg.reservation)
-                    new_msg = ResourceReservationMessage(RSVPMsgType.APPROVE, self.name, msg.reservation, path=path)
+                    new_msg = ResourceReservationMessage(RSVPMsgType.APPROVE,
+                                                         self.name,
+                                                         msg.reservation,
+                                                         path=path)
                     self._pop(msg=msg)
-                    self._push(dst=msg.reservation.initiator, msg=new_msg)
+                    prev_node = path[path.index(self.own.name) - 1]
+                    self._push(dst=prev_node, msg=new_msg)
                 else:
                     self._push(dst=msg.reservation.responder, msg=msg)
             else:
-                new_msg = ResourceReservationMessage(RSVPMsgType.REJECT, self.name, msg.reservation)
+                path = [qcap.node for qcap in msg.qcaps]
+                new_msg = ResourceReservationMessage(RSVPMsgType.REJECT,
+                                                     self.name,
+                                                     msg.reservation,
+                                                     path=path)
                 self._push(dst=msg.reservation.initiator, msg=new_msg)
         elif msg.msg_type == RSVPMsgType.REJECT:
             for card in self.timecards:
@@ -158,14 +168,16 @@ class ResourceReservationProtocol(StackProtocol):
             if msg.reservation.initiator == self.own.name:
                 self._pop(msg=msg)
             else:
-                self._push(dst=msg.reservation.initiator, msg=msg)
+                prev_node = msg.path[msg.path.index(self.own.name) - 1]
+                self._push(dst=prev_node, msg=msg)
         elif msg.msg_type == RSVPMsgType.APPROVE:
             rules = self.create_rules(msg.path, msg.reservation)
             self.load_rules(rules, msg.reservation)
             if msg.reservation.initiator == self.own.name:
                 self._pop(msg=msg)
             else:
-                self._push(dst=msg.reservation.initiator, msg=msg)
+                prev_node = msg.path[msg.path.index(self.own.name) - 1]
+                self._push(dst=prev_node, msg=msg)
         else:
             raise Exception("Unknown type of message", msg.msg_type)
 

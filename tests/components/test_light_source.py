@@ -33,7 +33,7 @@ def test_light_source():
 
     receiver = Receiver("receiver", tl)
     qc = QuantumChannel("qc", tl, distance=1e5, attenuation=0)
-    qc.set_ends(sender, receiver)
+    qc.set_ends(sender, receiver.name)
     state_list = []
     STATE_LEN = 1000
     for _ in range(STATE_LEN):
