@@ -1,11 +1,10 @@
 from socket import socket
-import argparse
-from ipaddress import ip_address
 from pickle import loads, dumps
 from typing import List
 
-from quantum_manager_server import valid_port, valid_ip, generate_arg_parser, QuantumManagerMsgType, QuantumManagerMessage
-from sequence.components.circuit import Circuit
+from .quantum_manager_server import generate_arg_parser, QuantumManagerMsgType, \
+    QuantumManagerMessage
+from ..components.circuit import Circuit
 
 
 class QuantumManagerClient():
