@@ -65,7 +65,7 @@ def test_add_classical_connection():
     topo.add_classical_connection("n1", "n2", distance=1e3)
     
     assert topo.graph["n1"] == {}
-    channels = [e for e in tl.entities if type(e) == ClassicalChannel]
+    channels = [e for e in tl.entities.values() if type(e) == ClassicalChannel]
     assert len(channels) == 2
     for channel in channels:
         ends = [channel.receiver, channel.sender]
@@ -94,7 +94,7 @@ def test_add_quantum_connection():
 
     assert len(topo.nodes) == 5 # added middle node
     assert topo.graph["n3"] == {"middle_n3_n4": 500}
-    channels = [e for e in tl.entities if type(e) == QuantumChannel]
+    channels = [e for e in tl.entities.values() if type(e) == QuantumChannel]
     assert len(channels) == 4 # 2 for each connection
 
 

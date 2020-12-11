@@ -71,4 +71,4 @@ class Entity(ABC):
         This is to allow unused entities to be garbage collected.
         """
 
-        self.timeline.entities.remove(self)
+        self.timeline.remove_entity_by_name(self.name)
