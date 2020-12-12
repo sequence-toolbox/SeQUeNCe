@@ -1,11 +1,14 @@
+from copy import copy
 from enum import Enum, auto
-from socket import socket
+import socket
 import argparse
 from ipaddress import ip_address
 from pickle import loads, dumps
 import multiprocessing
+import threading
 
 from sequence.kernel.p_quantum_manager import ParallelQuantumManagerKet
+from sequence.kernel.quantum_manager import QuantumManagerKet
 
 
 def valid_port(port):
@@ -94,12 +97,10 @@ def start_session(comm: socket, states, least_available):
         comm.sendall(data)
 
 
-if __name__ == '__main__':
-    parser = generate_arg_parser()
-    args = parser.parse_args()
-
-    s = socket()
-    s.bind((args.ip, args.port))
+def start_server(ip, port):
+    s = socket.socket()
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.bind((ip, port))
     s.listen()
     processes = []
 
@@ -127,4 +128,11 @@ if __name__ == '__main__':
 
     for p in processes:
         p.terminate()
+
+
+if __name__ == '__main__':
+    parser = generate_arg_parser()
+    args = parser.parse_args()
+
+    start_server(args.ip, args.port)
 
