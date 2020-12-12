@@ -2,8 +2,7 @@ from socket import socket
 from pickle import loads, dumps
 from typing import List
 
-from .quantum_manager_server import generate_arg_parser, QuantumManagerMsgType, \
-    QuantumManagerMessage
+from .quantum_manager_server import generate_arg_parser, QuantumManagerMsgType, QuantumManagerMessage
 from ..components.circuit import Circuit
 
 
@@ -84,7 +83,7 @@ class QuantumManagerClient():
         """
 
         self._check_connection()
-        self._send_message(QuantumManagerMsgType.CLOSE, [])
+        self._send_message(QuantumManagerMsgType.CLOSE, [], expecting_receive=False)
         self.connected = False
 
     def kill(self) -> None:
@@ -95,20 +94,21 @@ class QuantumManagerClient():
             Will set the `connected` attribute to False.
         """
         self._check_connection()
-        self._send_message(QuantumManagerMsgType.TERMINATE, [])
+        self._send_message(QuantumManagerMsgType.TERMINATE, [], expecting_receive=False)
         self.connected = False
 
     def _check_connection(self):
         assert self.connected, "must run init method before attempting communications"
 
-    def _send_message(self, msg_type, args: List) -> any:
+    def _send_message(self, msg_type, args: List, expecting_receive=True) -> any:
         msg = QuantumManagerMessage(msg_type, args)
         data = dumps(msg)
         self.s.sendall(data)
 
-        received_data = self.s.recv(1024)
-        received_msg = loads(received_data)
-        return received_msg
+        if expecting_receive:
+            received_data = self.s.recv(1024)
+            received_msg = loads(received_data)
+            return received_msg
 
 
 if __name__ == '__main__':
