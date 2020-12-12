@@ -34,7 +34,7 @@ class Timeline:
 
     Attributes:
         events (EventList): the event list of timeline.
-        entities (List[Entity]): the entity list of timeline used for initialization.
+        entities (Dict[str]:Entity): the dictionary map name to the object of Entity
         time (int): current simulation time (picoseconds).
         stop_time (int): the stop (simulation) time of the simulation.
         schedule_counter (int): the counter of scheduled events
@@ -50,7 +50,7 @@ class Timeline:
             stop_time (int): stop time (in ps) of simulation (default inf).
         """
         self.events = EventList()
-        self.entities = []
+        self.entities = {}
         self.time = 0
         self.stop_time = stop_time
         self.schedule_counter = 0
@@ -68,7 +68,8 @@ class Timeline:
 
     def schedule(self, event: "Event") -> None:
         """Method to schedule an event."""
-
+        if type(event.process.owner) == type(''):
+            event.process.owner = self.entities[event.process.owner]
         self.schedule_counter += 1
         return self.events.push(event)
 
@@ -76,7 +77,7 @@ class Timeline:
         """Method to initialize all simulated entities."""
         log.logger.info("Timeline initial network")
 
-        for entity in self.entities:
+        for entity in self.entities.values():
             entity.init()
 
     def run(self) -> None:
@@ -131,3 +132,5 @@ class Timeline:
         from numpy import random
         random.seed(seed)
 
+    def remove_entity_by_name(self, name: str):
+        self.entities.pop(name)

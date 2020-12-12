@@ -33,8 +33,8 @@ def test_Node_send_message():
     node2 = FakeNode("node2", tl)
     cc0 = ClassicalChannel("cc0", tl, 1e3)
     cc1 = ClassicalChannel("cc1", tl, 1e3)
-    cc0.set_ends(node1, node2)
-    cc1.set_ends(node2, node1)
+    cc0.set_ends(node1, node2.name)
+    cc1.set_ends(node2, node1.name)
 
     for i in range(10):
         node1.send_message("node2", str(i))
@@ -82,8 +82,8 @@ def test_Node_send_qubit():
     node2 = FakeNode("node2", tl)
     qc0 = QuantumChannel("qc0", tl, 2e-4, 2e4)
     qc1 = QuantumChannel("qc1", tl, 2e-4, 2e4)
-    qc0.set_ends(node1, node2)
-    qc1.set_ends(node2, node1)
+    qc0.set_ends(node1, node2.name)
+    qc1.set_ends(node2, node1.name)
     tl.init()
 
     for i in range(1000):
@@ -103,22 +103,3 @@ def test_Node_send_qubit():
     expect_rate_1 = 1 - qc1.loss
     assert abs(len(node1.log) / 1000 - expect_rate_1) < 0.1
     assert abs(len(node2.log) / 1000 - expect_rate_0) < 0.1
-
-
-def test_QuantumRouter_init():
-    tl = Timeline()
-    node1 = QuantumRouter("node1", tl)
-    for i in range(2, 50):
-        node = QuantumRouter("node%d" % i, tl)
-        mid = BSMNode("mid%d" % i, tl, [node1.name, node.name])
-        qc = QuantumChannel("qc_l_%d" % i, tl, 0, 1000)
-        qc.set_ends(node1, mid)
-        qc = QuantumChannel("qc_r_%d" % i, tl, 0, 1000)
-        qc.set_ends(node, mid)
-
-    node1.init()
-
-    assert len(node1.map_to_middle_node) == 48
-    for i in range(2, 50):
-        node_name = "node%d" % i
-        assert node1.map_to_middle_node[node_name] == "mid%d" % i

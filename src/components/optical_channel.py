@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
+from ..utils import log
 
 
 class OpticalChannel(Entity):
@@ -46,6 +47,7 @@ class OpticalChannel(Entity):
             polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
             light_speed (float): speed of light within the fiber (in m/ps).
         """
+        log.logger.info("Create channel {}".format(name))
 
         Entity.__init__(self, name, timeline)
         self.sender = None
@@ -105,10 +107,14 @@ class QuantumChannel(OpticalChannel):
         self.delay = round(self.distance / self.light_speed)
         self.loss = 1 - 10 ** (self.distance * self.attenuation / -10)
 
-    def set_ends(self, sender: "Node", receiver: "Node") -> None:
+    def set_ends(self, sender: "Node", receiver: str) -> None:
+        log.logger.info(
+            "Set {} {} as ends of quantum channel {}".format(sender.name,
+                                                             receiver,
+                                                             self.name))
         self.sender = sender
         self.receiver = receiver
-        sender.assign_qchannel(self, receiver.name)
+        sender.assign_qchannel(self, receiver)
 
     def transmit(self, qubit: "Photon", source: "Node") -> None:
         """Method to transmit photon-encoded qubits.
@@ -120,6 +126,10 @@ class QuantumChannel(OpticalChannel):
         Side Effects:
             Receiver node may receive the qubit (via the `receive_qubit` method).
         """
+        log.logger.info(
+            "{} send qubit with state {} to {} by Channel {}".format(
+                self.sender.name, qubit.quantum_state.state, self.receiver,
+                self.name))
 
         assert self.delay != 0 and self.loss != 1, "QuantumChannel init() function has not been run for {}".format(self.name)
         assert source == self.sender
@@ -210,10 +220,14 @@ class ClassicalChannel(OpticalChannel):
         else:
             self.delay = delay
 
-    def set_ends(self, sender: "Node", receiver: "Node") -> None:
+    def set_ends(self, sender: "Node", receiver: "str") -> None:
+        log.logger.info(
+            "Set {} {} as ends of classical channel {}".format(sender.name,
+                                                               receiver,
+                                                               self.name))
         self.sender = sender
         self.receiver = receiver
-        sender.assign_cchannel(self, receiver.name)
+        sender.assign_cchannel(self, receiver)
 
     def transmit(self, message: "Message", source: "Node", priority: int) -> None:
         """Method to transmit classical messages.
@@ -226,7 +240,11 @@ class ClassicalChannel(OpticalChannel):
         Side Effects:
             Receiver node may receive the qubit (via the `receive_qubit` method).
         """
-
+        log.logger.info(
+            "{} send message {} to {} by Channel {}".format(self.sender.name,
+                                                            message,
+                                                            self.receiver,
+                                                            self.name))
         assert source == self.sender
 
         future_time = round(self.timeline.now() + int(self.delay))

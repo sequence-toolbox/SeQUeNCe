@@ -17,7 +17,7 @@ class FakeNode(QuantumRouter):
 def test_RandomRequestApp_update_last_rsvp_metrics():
     tl = Timeline()
     node = QuantumRouter("n1", tl)
-    app = RandomRequestApp(node, [], 0)
+    app = RandomRequestApp(node, [], 0, 1e13, 2e13, 10, 25, 0.8, 1.0)
     app._update_last_rsvp_metrics()
     assert len(app.get_throughput()) == 0
     app.cur_reserve = ["n2", 1e13, 2e13, 5, 0.9]
@@ -35,7 +35,7 @@ def test_RandomRequestApp_update_last_rsvp_metrics():
 def test_RandomRequestApp_start():
     tl = Timeline()
     node = FakeNode("n1", tl)
-    app = RandomRequestApp(node, ["n2", "n3"], 0)
+    app = RandomRequestApp(node, ["n2", "n3"], 0, 1e13, 2e13, 10, 25, 0.8, 1.0)
     for _ in range(1000):
         app.start()
         assert app.cur_reserve[0] == node.reserve_log[-1]
@@ -51,7 +51,7 @@ def test_RandomRequestApp_get_reserve_res():
     tl = Timeline()
     tl.time = 6
     node = FakeNode("n1", tl)
-    app = RandomRequestApp(node, ["n2", "n3"], 0)
+    app = RandomRequestApp(node, ["n2", "n3"], 0, 1e13, 2e13, 10, 25, 0.8, 1.0)
     app.cur_reserve = ["n3", 10, 20, 5, 0.9]
     reservation = Reservation("n1", "n3", 10, 20, 5, 0.9)
     for i, card in enumerate(node.network_manager.protocol_stack[1].timecards):
@@ -66,7 +66,7 @@ def test_RandomRequestApp_get_reserve_res():
     tl = Timeline()
     tl.time = 6
     node = FakeNode("n1", tl)
-    app = RandomRequestApp(node, ["n2", "n3"], 0)
+    app = RandomRequestApp(node, ["n2", "n3"], 0, 1e13, 2e13, 10, 25, 0.8, 1.0)
     app.cur_reserve = ["n3", 10, 20, 5, 0.9]
     reservation = Reservation("n1", "n3", 10, 20, 5, 0.9)
     app.request_time = 5
@@ -84,7 +84,7 @@ def test_RandomRequestApp_get_reserve_res():
 def test_RandomRequestApp_get_memory():
     tl = Timeline(1)
     node = FakeNode("n1", tl)
-    app = RandomRequestApp(node, ["n2", "n3"], 0)
+    app = RandomRequestApp(node, ["n2", "n3"], 0, 1e13, 2e13, 10, 25, 0.8, 1.0)
     app.cur_reserve = ["n2", 0, 100, 2, 0.85]
     reservation = Reservation("n1", "n2", 0, 100, 2, 0.85)
     counter = 0
@@ -139,7 +139,7 @@ def test_RandomRequestApp_get_other_reservation():
         card.add(reservation)
         counter += 1
 
-    app = RandomRequestApp(node, [], 0)
+    app = RandomRequestApp(node, [], 0, 1e13, 2e13, 10, 25, 0.8, 1.0)
     app.get_other_reservation(reservation)
     assert len(app.memo_to_reserve) == 0
     tl.stop_time = 11

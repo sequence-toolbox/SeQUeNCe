@@ -12,7 +12,9 @@ if TYPE_CHECKING:
 
 from ..message import Message
 from .routing import StaticRoutingProtocol
-from .reservation import ResourceReservationProtocol, ResourceReservationMessage, RSVPMsgType
+from .reservation import ResourceReservationProtocol, \
+    ResourceReservationMessage, RSVPMsgType
+from ..utils import log
 
 
 class NetworkManagerMessage(Message):
@@ -27,6 +29,11 @@ class NetworkManagerMessage(Message):
     def __init__(self, msg_type: Enum, receiver: str, payload: "Message"):
         Message.__init__(self, msg_type, receiver)
         self.payload = payload
+
+    def __str__(self):
+        return "type={}, receiver={}, payload={}".format(self.msg_type,
+                                                         self.receiver,
+                                                         self.payload)
 
 
 class NetworkManager():
@@ -48,7 +55,7 @@ class NetworkManager():
             owner (QuantumRouter): node network manager is attached to.
             protocol_stack (List[StackProtocol]): stack of protocols to use for processing.
         """
-
+        log.logger.info("Create network manager of Node {}".format(owner.name))
         self.name = "network_manager"
         self.owner = owner
         self.protocol_stack = protocol_stack
@@ -111,7 +118,9 @@ class NetworkManager():
         Side Effects:
             Will invoke `pop` method of 0 indexed protocol in `protocol_stack`.
         """
-
+        log.logger.info(
+            "{} network manager receives message {} from {}".format(
+                self.owner.name, msg.payload, src))
         self.protocol_stack[0].pop(src=src, msg=msg.payload)
 
     def request(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float) -> None:

@@ -70,9 +70,9 @@ class BSM(Entity):
         self.photon_arrival_time = -1
 
         self.detectors = []
-        for d in detectors:
+        for i, d in enumerate(detectors):
             if d is not None:
-                detector = Detector("", timeline, **d)
+                detector = Detector("%s_%d" % (self.name, i), timeline, **d)
                 detector.attach(self)
             else:
                 detector = None

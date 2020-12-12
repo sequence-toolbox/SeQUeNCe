@@ -47,8 +47,10 @@ class FakeProtocol(StackProtocol):
 
 
 def test_NetworkManager_received_message():
+    tl = Timeline()
+    node = FakeNode('fake', tl)
     protocol = FakeProtocol(None, "protocol")
-    manager = NetworkManager(None, [protocol])
+    manager = NetworkManager(node, [protocol])
     assert protocol.is_pop is False
     msg = NetworkManagerMessage("", "network_manager", "payload")
     manager.received_message("src", msg)
@@ -56,12 +58,15 @@ def test_NetworkManager_received_message():
 
 
 def test_NetworkManager_load_stack():
-    manager = NetworkManager(None, [])
+    tl = Timeline()
+    node = FakeNode('fake', tl)
+    manager = NetworkManager(node, [])
     assert len(manager.protocol_stack) == 0
     protocol = FakeProtocol(None, "protocol")
     manager.load_stack([protocol])
     assert len(manager.protocol_stack) == 1
-    assert protocol.upper_protocols[0] == manager and protocol.lower_protocols[0] == manager
+    assert protocol.upper_protocols[0] == manager and protocol.lower_protocols[
+        0] == manager
 
 
 def test_NetworkManager_push():
@@ -82,33 +87,21 @@ def test_NetworkManager():
     m1 = BSMNode("m1", tl, ["n1", "n2"])
     m2 = BSMNode("m2", tl, ["n2", "n3"])
 
-
-
-    cc0 = ClassicalChannel("cc_n1_n2", tl, 10, delay=1e5)
-    cc1 = ClassicalChannel("cc_n2_n1", tl, 10, delay=1e5)
-    cc2 = ClassicalChannel("cc_n1_m1", tl, 10, delay=1e5)
-    cc3 = ClassicalChannel("cc_n2_m1", tl, 10, delay=1e5)
-    cc4 = ClassicalChannel("cc_n2_n3", tl, 10, delay=1e5)
-    cc5 = ClassicalChannel("cc_n3_n2", tl, 10, delay=1e5)
-    cc6 = ClassicalChannel("cc_n2_m2", tl, 10, delay=1e5)
-    cc7 = ClassicalChannel("cc_n3_m2", tl, 10, delay=1e5)
-    cc0.set_ends(n1, n2)
-    cc1.set_ends(n2, n1)
-    cc2.set_ends(n1, m1)
-    cc3.set_ends(n2, m1)
-    cc4.set_ends(n2, n3)
-    cc5.set_ends(n3, n2)
-    cc6.set_ends(n2, m2)
-    cc7.set_ends(n3, m2)
+    for src in [n1, n2, n3, m1, m2]:
+        for dst in [n1, n2, n3, m1, m2]:
+            if src.name != dst.name:
+                cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl,
+                                      10, delay=1e5)
+                cc.set_ends(src, dst.name)
 
     qc = QuantumChannel("qc_n1_m1", tl, 0, 10)
-    qc.set_ends(n1, m1)
+    qc.set_ends(n1, m1.name)
     qc = QuantumChannel("qc_n2_m1", tl, 0, 10)
-    qc.set_ends(n2, m1)
+    qc.set_ends(n2, m1.name)
     qc = QuantumChannel("qc_n2_m2", tl, 0, 10)
-    qc.set_ends(n2, m2)
+    qc.set_ends(n2, m2.name)
     qc = QuantumChannel("qc_n3_m2", tl, 0, 10)
-    qc.set_ends(n3, m2)
+    qc.set_ends(n3, m2.name)
 
     n1.network_manager.protocol_stack[0].add_forwarding_rule("n2", "n2")
     n1.network_manager.protocol_stack[0].add_forwarding_rule("n3", "n2")
