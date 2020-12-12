@@ -68,7 +68,7 @@ class Timeline:
 
     def schedule(self, event: "Event") -> None:
         """Method to schedule an event."""
-        if type(event.process.owner) == type(''):
+        if type(event.process.owner) is str:
             event.process.owner = self.entities[event.process.owner]
         self.schedule_counter += 1
         return self.events.push(event)

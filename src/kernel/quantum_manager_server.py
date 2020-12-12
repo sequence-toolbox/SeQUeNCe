@@ -129,10 +129,3 @@ def start_server(ip, port):
     for p in processes:
         p.terminate()
 
-
-if __name__ == '__main__':
-    parser = generate_arg_parser()
-    args = parser.parse_args()
-
-    start_server(args.ip, args.port)
-

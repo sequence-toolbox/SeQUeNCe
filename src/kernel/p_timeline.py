@@ -42,7 +42,7 @@ class ParallelTimeline():
         return self.time
 
     def schedule(self, event:'Event'):
-        if type(event.process.owner) == type(''):
+        if type(event.process.owner) is str:
             if event.process.owner in self.foreign_entities:
                 tl_id = self.foreign_entities[event.process.owner]
                 self.event_buffer[tl_id].append(event)
