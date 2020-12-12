@@ -49,7 +49,7 @@ class ResourceReservationMessage(Message):
         if self.msg_type is RSVPMsgType.REQUEST:
             self.qcaps = []
         elif self.msg_type is RSVPMsgType.REJECT:
-            self.path = kwargs["path"]
+            pass
         elif self.msg_type is RSVPMsgType.APPROVE:
             self.path = kwargs["path"]
         else:
@@ -134,6 +134,9 @@ class ResourceReservationProtocol(StackProtocol):
         
         Side Effects:
             May push/pop to lower/upper attached protocols (or network manager).
+
+        Assumption:
+            the path initiator -> responder is same as the reverse path
         """
 
         if msg.msg_type == RSVPMsgType.REQUEST:
@@ -151,16 +154,13 @@ class ResourceReservationProtocol(StackProtocol):
                                                          msg.reservation,
                                                          path=path)
                     self._pop(msg=msg)
-                    prev_node = path[path.index(self.own.name) - 1]
-                    self._push(dst=prev_node, msg=new_msg)
+                    self._push(dst=msg.reservation.initiator, msg=new_msg)
                 else:
                     self._push(dst=msg.reservation.responder, msg=msg)
             else:
-                path = [qcap.node for qcap in msg.qcaps]
                 new_msg = ResourceReservationMessage(RSVPMsgType.REJECT,
                                                      self.name,
-                                                     msg.reservation,
-                                                     path=path)
+                                                     msg.reservation)
                 self._push(dst=msg.reservation.initiator, msg=new_msg)
         elif msg.msg_type == RSVPMsgType.REJECT:
             for card in self.timecards:
@@ -168,16 +168,14 @@ class ResourceReservationProtocol(StackProtocol):
             if msg.reservation.initiator == self.own.name:
                 self._pop(msg=msg)
             else:
-                prev_node = msg.path[msg.path.index(self.own.name) - 1]
-                self._push(dst=prev_node, msg=msg)
+                self._push(dst=msg.reservation.initiator, msg=msg)
         elif msg.msg_type == RSVPMsgType.APPROVE:
             rules = self.create_rules(msg.path, msg.reservation)
             self.load_rules(rules, msg.reservation)
             if msg.reservation.initiator == self.own.name:
                 self._pop(msg=msg)
             else:
-                prev_node = msg.path[msg.path.index(self.own.name) - 1]
-                self._push(dst=prev_node, msg=msg)
+                self._push(dst=msg.reservation.initiator, msg=msg)
         else:
             raise Exception("Unknown type of message", msg.msg_type)
 
