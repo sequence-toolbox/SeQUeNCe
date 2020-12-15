@@ -39,8 +39,6 @@ class Timeline:
         stop_time (int): the stop (simulation) time of the simulation.
         schedule_counter (int): the counter of scheduled events
         run_counter (int): the counter of executed events
-        is_running (bool): records if the simulation has stopped executing events.
-        show_progress (bool): show/hide the progress bar of simulation.
     """
 
     def __init__(self, stop_time=inf, formalism='ket_vector'):
