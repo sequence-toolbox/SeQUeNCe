@@ -103,6 +103,7 @@ def start_server(ip, port):
     s.bind((ip, port))
     s.listen()
     processes = []
+    print("connected:", ip, port)
 
     # initialize shared data
     _least_available = multiprocessing.Value('i', 0)
