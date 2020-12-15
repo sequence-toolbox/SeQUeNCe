@@ -129,3 +129,10 @@ def start_server(ip, port):
     for p in processes:
         p.terminate()
 
+def kill_server(ip, port):
+    s = socket.socket()
+    s.connect((ip, port))
+    msg = QuantumManagerMessage(QuantumManagerMsgType.TERMINATE, [])
+    data = dumps(msg)
+    s.sendall(data)
+

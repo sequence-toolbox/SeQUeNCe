@@ -1,4 +1,5 @@
 from sequence.kernel.p_timeline import ParallelTimeline
+from sequence.kernel.quantum_manager_server import kill_server
 from sequence.topology.node import QuantumRouter, BSMNode
 from sequence.components.optical_channel import ClassicalChannel, \
     QuantumChannel
@@ -7,7 +8,7 @@ import sequence.utils.log as log
 
 
 def generate_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
-                     mpi_size: int, qm_ip: str, qm_port: int):
+                     mpi_size: int, qm_ip: str, qm_port: int, kill=True):
     tl = ParallelTimeline(lookahead=lookahead, stop_time=stop_time,
                           qm_ip=qm_ip, qm_port=qm_port)
     tl.seed(rank)
@@ -105,6 +106,9 @@ def generate_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     tl.init()
     tl.run()
 
+    if kill:
+        kill_server(qm_pi, qm_port)
+
     print(tl.now(), len(tl.events))
 
 
@@ -130,3 +134,4 @@ if __name__ == "__main__":
 
     generate_network(args.ring_size, args.lookahead, args.stop_time, rank,
                      size, args.ip, args.port)
+

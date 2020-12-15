@@ -2,7 +2,8 @@ import time
 import multiprocessing
 import numpy as np
 
-from sequence.kernel.quantum_manager_server import generate_arg_parser, start_server, QuantumManagerMessage, QuantumManagerMsgType
+from sequence.kernel.quantum_manager_server import generate_arg_parser, start_server, kill_server, \
+        QuantumManagerMessage, QuantumManagerMsgType
 from sequence.kernel.quantum_manager_client import QuantumManagerClient
 from sequence.components.circuit import Circuit
 
@@ -29,7 +30,7 @@ def client_function(ip, port):
     client.close()
 
 
-NUM_TRIALS = 3
+NUM_TRIALS = 1
 NUM_CLIENTS = 100
 
 parser = generate_arg_parser()
@@ -49,8 +50,7 @@ for _ in range(NUM_TRIALS):
     times.append(end - start)
 
 # close server
-kill_client = QuantumManagerClient(args.ip, args.port)
-kill_client.kill()
+kill_server(args.ip, args.port)
 
 print("average time:", np.mean(times))
 
