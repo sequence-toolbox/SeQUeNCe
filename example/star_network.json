@@ -5,51 +5,51 @@
             "type": "QuantumRouter"
         },
         {
-            "name": "edge1",
+            "name": "router1",
             "type": "QuantumRouter"
         },
         {
-            "name": "edge2",
+            "name": "router2",
             "type": "QuantumRouter"
         },
         {
-            "name": "edge3",
+            "name": "router3",
             "type": "QuantumRouter"
         },
         {
-            "name": "edge4",
+            "name": "router4",
             "type": "QuantumRouter"
         }
     ],
     "qconnections": [
         {
             "node1": "center",
-            "node2": "edge1",
+            "node2": "router1",
             "attenuation": 1e-5,
             "distance": 500
         },
         {
             "node1": "center",
-            "node2": "edge2",
+            "node2": "router2",
             "attenuation": 1e-5,
             "distance": 500
         },
         {
             "node1": "center",
-            "node2": "edge3",
+            "node2": "router3",
             "attenuation": 1e-5,
             "distance": 500
         },
         {
             "node1": "center",
-            "node2": "edge4",
+            "node2": "router4",
             "attenuation": 1e-5,
             "distance": 500
         }
     ],
     "cchannels_table": {
         "type": "RT",
-        "labels": ["center", "edge1", "edge2", "edge3", "edge4"],
+        "labels": ["center", "router1", "router2", "router3", "router4"],
         "table": [[0,   1e9, 1e9, 1e9, 1e9],
                   [1e9, 0,   2e9, 2e9, 2e9],
                   [1e9, 2e9, 0,   2e9, 2e9],

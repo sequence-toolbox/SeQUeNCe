@@ -29,9 +29,10 @@ class QuantumManager():
         states (Dict[int, KetState]): mapping of state keys to quantum state objects.
     """
 
-    def __init__(self):
+    def __init__(self, formalism):
         self.states = {}
         self._least_available = 0
+        self.formalism = formalism
 
     @abstractmethod
     def new(self, amplitudes: any) -> int:
@@ -135,7 +136,7 @@ class QuantumManagerKet(QuantumManager):
     """Class to track and manage quantum states with the ket vector formalism."""
 
     def __init__(self):
-        super().__init__()
+        super().__init__("KET")
 
     def new(self, amplitudes=[complex(1), complex(0)]) -> int:        
         key = self._least_available
@@ -243,7 +244,7 @@ class QuantumManagerDensity(QuantumManager):
     """Class to track and manage states with the density matrix formalism."""
 
     def __init__(self):
-        super().__init__()
+        super().__init__("DENSITY")
 
     def new(self, state=[[complex(1), complex(0)], [complex(0), complex(0)]]) -> int:        
         key = self._least_available
@@ -372,9 +373,16 @@ class DensityState():
     """
 
     def __init__(self, state: List[List[complex]], keys: List[int]):
+        """Constructor for density state class.
+
+        Args:
+            state (List[List[complex]]): density matrix elements given as a list. If the list is one-dimensional, will be converted to matrix with outer product operation.
+            keys (List[int]): list of keys to this state in quantum manager.
+        """
+
         state = array(state, dtype=complex)
         if state.ndim == 1:
-            state = outer(state.conj, state)
+            state = outer(state.conj(), state)
 
         # check formatting
         assert abs(trace(array(state)) - 1) < 0.1, "density matrix trace must be 1"

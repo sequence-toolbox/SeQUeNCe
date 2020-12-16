@@ -108,13 +108,13 @@ detector.upper_protocols.append(counter)
 
 ### Step 4: Measure Memory Once
 
-With the network built, we are ready to schedule simulation events and run our experiment. The details on scheduling events are covered in Tutorial 1, so we will not focus on them here. Let's first run one experiment with the memory in the |&#8593;&#10217; state and observe the detection time of the single emitted photon. The memory state can be set by accessing the qstate field of the memory:
+With the network built, we are ready to schedule simulation events and run our experiment. The details on scheduling events are covered in Tutorial 1, so we will not focus on them here. Let's first run one experiment with the memory in the |&#8593;&#10217; state and observe the detection time of the single emitted photon. The memory state can be set with the `update_state` method:
 
 ```python
-node1.memory.qstate.set_state_single([complex(0), complex(1)])
+node1.memory.update_state([complex(0), complex(1)])
 ```
 
-We set the state of this single memory (`set_state_single`) to a quantum state, given as a complex array of coefficients for the |&#8593;&#10217; and |&#8595;&#10217; states. Let's also change our counter slightly to record the detection time:
+We set the state of this single memory to a quantum state, given as a complex array of coefficients for the |&#8593;&#10217; and |&#8595;&#10217; states. Let's also change our counter slightly to record the detection time:
 
 ```python
 class Counter():
@@ -156,24 +156,25 @@ print("detection time: {}".format(counter.time))
 
 Next, let's repeatedly set the memeory to the |+&#10217; state and record detection events. To give us a clean state, we'll remove the code we wrote for step 5.
 
-The events we wish to schedule are all for the memory. We want to first set it to a |+&#10217; state with the `set_plus` method, and then excite the memory to measure emitted photons with the `excite` method. The `excite` method needs an argument for the desired destination node, so we'll supply the name of our `node2`. We’ll schedule both of these at a predetermined frequency `FREQUENCY` (given in Hz) for a set number of trials `NUM_TRIALS`.
+The events we wish to schedule are all for the memory. We want to first set it to a |+&#10217; state with the `update_state` method, and then excite the memory to measure emitted photons with the `excite` method. The `update_state` method will require a plus state as input. The `excite` method needs an argument for the desired destination node, so we'll supply the name of our `node2`. We’ll schedule both of these at a predetermined frequency `FREQUENCY` (given in Hz) for a set number of trials `NUM_TRIALS`.
 
 ```python
+import math
 from sequence.kernel.process import Process
 from sequence.kernel.event import Event
 
 time_bin = int(1e12 / FREQUENCY)
 
-process1 = Process(node1.memory, "set_plus", [])
+process1 = Process(node1.memory, "set_plus", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))])
 process2 = Process(node1.memory, "excite", ["node2"])
 for i in range(NUM_TRIALS):
     event1 = Event(i * time_bin, process1)
-    event1 = Event(i * time_bin + (time_bin / 2), process2)
+    event2 = Event(i * time_bin + (time_bin / 2), process2)
     tl.schedule(event1)
     tl.schedule(event2)
 ```
 
-### Step 7: Running and Output
+### Step 6: Running and Output
 
 The procedure to initialize and run the timeline is the same as Tutorial 1:
 
@@ -313,4 +314,4 @@ tl.init()
 tl.run()
 ```
 
-In the output, we see that the `PING` message is received on node 2 first, followed by a `PONG` message received on node 2. The reception times of the messages are at 1 ms and 2 ms of simulation time, respectively, as determined by our classical channel delay.
+In the output, we see that the `PING` message is received on node 2 first, followed by a `PONG` message received on node 1. The reception times of the messages are at 1 ms and 2 ms of simulation time, respectively, as determined by our classical channel delay.

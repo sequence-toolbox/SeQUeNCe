@@ -1,3 +1,5 @@
+import math
+
 from sequence.kernel.timeline import Timeline
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
@@ -56,7 +58,7 @@ if __name__ == "__main__":
     # schedule events
     time_bin = int(1e12 / FREQUENCY)
     
-    process1 = Process(node1.memory, "set_plus", [])
+    process1 = Process(node1.memory, "update_state", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]])
     process2 = Process(node1.memory, "excite", ["node2"])
     for i in range(NUM_TRIALS):
         event1 = Event(i * time_bin, process1)
@@ -68,5 +70,4 @@ if __name__ == "__main__":
     tl.run()
 
     print("percent measured: {}%".format(100 * counter.count / NUM_TRIALS))
-
 

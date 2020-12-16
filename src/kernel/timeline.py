@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 from .eventlist import EventList
 from ..utils import log
-from .quantum_manager import QuantumManagerKet
+from .quantum_manager import QuantumManagerKet, QuantumManagerDensity
 
 class Timeline:
     """Class for a simulation timeline.
@@ -39,6 +39,9 @@ class Timeline:
         stop_time (int): the stop (simulation) time of the simulation.
         schedule_counter (int): the counter of scheduled events
         run_counter (int): the counter of executed events
+        is_running (bool): records if the simulation has stopped executing events.
+        show_progress (bool): show/hide the progress bar of simulation.
+        quantum_manager (QuantumManager): quantum state manager.
     """
 
     def __init__(self, stop_time=inf, formalism='ket_vector'):
@@ -56,6 +59,8 @@ class Timeline:
 
         if formalism == 'ket_vector':
             self.quantum_manager = QuantumManagerKet()
+        elif formalism == 'density_matrix':
+            self.quantum_manager = QuantumManagerDensity()
         else:
             raise ValueError("Invalid formalism {}".format(formalism))
 

@@ -316,11 +316,14 @@ def test_ResourceManager1():
 
     tl.run()
 
-    # for info in node1.resource_manager.memory_manager:
-    #     print(info.memory.name, info.state, info.remote_memo)
-    #
-    # for info in node2.resource_manager.memory_manager:
-    #     print(info.memory.name, info.state, info.remote_memo)
+    for info in node1.resource_manager.memory_manager:
+        print(info.memory.name, info.state, info.remote_memo)
+    
+    for info in node2.resource_manager.memory_manager:
+        print(info.memory.name, info.state, info.remote_memo)
+
+    for event in tl.events:
+        print(event._is_removed, event.time, event.process.owner, event.process.activation)
 
     for info in node1.resource_manager.memory_manager:
         assert info.state == "ENTANGLED"

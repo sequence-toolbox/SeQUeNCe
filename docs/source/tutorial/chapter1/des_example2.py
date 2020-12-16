@@ -20,9 +20,7 @@ class Store(object):
         self.timeline.schedule(event)
 
 
-
-# tl = Timeline()
-tl = Timeline(52)
+tl = Timeline(60)
 store = Store(tl)
 print(tl.now())
 
