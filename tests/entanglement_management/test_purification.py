@@ -63,8 +63,8 @@ def create_scenario(state1, state2, seed):
     cc1 = ClassicalChannel("cc1", tl, 0, 1e5)
     cc0.delay = ONE_MILLISECOND
     cc1.delay = ONE_MILLISECOND
-    cc0.set_ends(a1, a2)
-    cc1.set_ends(a2, a1)
+    cc0.set_ends(a1, a2.name)
+    cc1.set_ends(a2, a1.name)
 
     kept1 = Memory('kept1', tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
     kept2 = Memory('kept2', tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
@@ -617,8 +617,8 @@ def test_BBPSSW_fidelity():
     cc1 = ClassicalChannel("cc1", tl, 0, 1e5)
     cc0.delay = ONE_MILLISECOND
     cc1.delay = ONE_MILLISECOND
-    cc0.set_ends(a1, a2)
-    cc1.set_ends(a2, a1)
+    cc0.set_ends(a1, a2.name)
+    cc1.set_ends(a2, a1.name)
 
     tl.init()
 
@@ -626,9 +626,9 @@ def test_BBPSSW_fidelity():
         fidelity = np.random.uniform(0.5, 1)
         kept_memo1 = Memory("a1.kept", tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1,
                             wavelength=HALF_MICRON)
-        kept_memo2 = Memory("a2.kept", tl, fidelity, 0, 1, 1, HALF_MICRON)
-        meas_memo1 = Memory("a1.meas", tl, fidelity, 0, 1, 1, HALF_MICRON)
-        meas_memo2 = Memory("a2.meas", tl, fidelity, 0, 1, 1, HALF_MICRON)
+        kept_memo2 = Memory("a2.kept.%d" % i, tl, fidelity, 0, 1, 1, HALF_MICRON)
+        meas_memo1 = Memory("a1.meas.%d" % i, tl, fidelity, 0, 1, 1, HALF_MICRON)
+        meas_memo2 = Memory("a2.meas.%d" % i, tl, fidelity, 0, 1, 1, HALF_MICRON)
 
         kept_memo1.entangled_memory["node_id"] = "a2"
         kept_memo1.entangled_memory["memo_id"] = "a2.kept"
@@ -686,19 +686,19 @@ def test_BBPSSW_success_rate():
     cc1 = ClassicalChannel("cc1", tl, 0, 1e5)
     cc0.delay = ONE_MILLISECOND
     cc1.delay = ONE_MILLISECOND
-    cc0.set_ends(a1, a2)
-    cc1.set_ends(a2, a1)
+    cc0.set_ends(a1, a2.name)
+    cc1.set_ends(a2, a1.name)
 
     tl.init()
     counter1 = counter2 = 0
     fidelity = 0.8
 
     for i in range(1000):
-        kept_memo1 = Memory("a1.kept", tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1,
+        kept_memo1 = Memory("a1.kept.%d" % i, tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1,
                             wavelength=HALF_MICRON)
-        kept_memo2 = Memory("a2.kept", tl, fidelity, 0, 1, 1, HALF_MICRON)
-        meas_memo1 = Memory("a1.meas", tl, fidelity, 0, 1, 1, HALF_MICRON)
-        meas_memo2 = Memory("a2.meas", tl, fidelity, 0, 1, 1, HALF_MICRON)
+        kept_memo2 = Memory("a2.kept.%d" % i, tl, fidelity, 0, 1, 1, HALF_MICRON)
+        meas_memo1 = Memory("a1.meas.%d" % i, tl, fidelity, 0, 1, 1, HALF_MICRON)
+        meas_memo2 = Memory("a2.meas.%d" % i, tl, fidelity, 0, 1, 1, HALF_MICRON)
 
         kept_memo1.entangled_memory["node_id"] = "a2"
         kept_memo1.entangled_memory["memo_id"] = "a2.kept"

@@ -285,7 +285,8 @@ def test_ResourceManager1():
     def eg_rule_action2(memories_info):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA(None, "EGA." + memory.name, "mid_node", "node1", memory)
+        protocol = EntanglementGenerationA(None, "EGA." + memory.name,
+                                           "mid_node", "node1", memory)
         return [protocol, [None], [None]]
 
     tl = Timeline()
@@ -295,23 +296,17 @@ def test_ResourceManager1():
     mid_node.bsm.detectors[0].efficiency = 1
     mid_node.bsm.detectors[1].efficiency = 1
 
-    cc0 = ClassicalChannel("cc_n1_n2", tl, 0, 1e3)
-    cc1 = ClassicalChannel("cc_n2_n1", tl, 0, 1e3)
-    cc2 = ClassicalChannel("cc_n1_m", tl, 0, 1e3)
-    cc3 = ClassicalChannel("cc_m_n1", tl, 0, 1e3)
-    cc4 = ClassicalChannel("cc_n2_m", tl, 0, 1e3)
-    cc5 = ClassicalChannel("cc_m_n2", tl, 0, 1e3)
-    cc0.set_ends(node1, node2)
-    cc1.set_ends(node2, node1)
-    cc2.set_ends(node1, mid_node)
-    cc3.set_ends(mid_node, node1)
-    cc4.set_ends(node2, mid_node)
-    cc5.set_ends(mid_node, node2)
+    for src in [node1, node2, mid_node]:
+        for dst in [node1, node2, mid_node]:
+            if src.name != dst.name:
+                cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl, 0,
+                                      1e3)
+                cc.set_ends(src, dst.name)
 
     qc0 = QuantumChannel("qc_n1_m", tl, 0, 1e3, frequency=8e7)
     qc1 = QuantumChannel("qc_n2_m", tl, 0, 1e3, frequency=8e7)
-    qc0.set_ends(node1, mid_node)
-    qc1.set_ends(node2, mid_node)
+    qc0.set_ends(node1, mid_node.name)
+    qc1.set_ends(node2, mid_node.name)
 
     tl.init()
     rule1 = Rule(10, eg_rule_action1, eg_rule_condition)
@@ -392,7 +387,8 @@ def test_ResourceManager2():
     def eg_rule_action2(memories_info):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA(None, "EGA." + memory.name, "mid_node", "node1", memory)
+        protocol = EntanglementGenerationA(None, "EGA." + memory.name,
+                                           "mid_node", "node1", memory)
         return [protocol, [None], [None]]
 
     tl = Timeline()
@@ -402,23 +398,17 @@ def test_ResourceManager2():
     mid_node.bsm.detectors[0].efficiency = 1
     mid_node.bsm.detectors[1].efficiency = 1
 
-    cc0 = ClassicalChannel("cc_n1_n2", tl, 0, 1e3)
-    cc1 = ClassicalChannel("cc_n2_n1", tl, 0, 1e3)
-    cc2 = ClassicalChannel("cc_n1_m", tl, 0, 1e3)
-    cc3 = ClassicalChannel("cc_m_n1", tl, 0, 1e3)
-    cc4 = ClassicalChannel("cc_n2_m", tl, 0, 1e3)
-    cc5 = ClassicalChannel("cc_m_n2", tl, 0, 1e3)
-    cc0.set_ends(node1, node2)
-    cc1.set_ends(node2, node1)
-    cc2.set_ends(node1, mid_node)
-    cc3.set_ends(mid_node, node1)
-    cc4.set_ends(node2, mid_node)
-    cc5.set_ends(mid_node, node2)
+    for src in [node1, node2, mid_node]:
+        for dst in [node1, node2, mid_node]:
+            if src.name != dst.name:
+                cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl, 0,
+                                      1e3)
+                cc.set_ends(src, dst.name)
 
     qc0 = QuantumChannel("qc_n1_m", tl, 0, 1e3, frequency=8e7)
     qc1 = QuantumChannel("qc_n2_m", tl, 0, 1e3, frequency=8e7)
-    qc0.set_ends(node1, mid_node)
-    qc1.set_ends(node2, mid_node)
+    qc0.set_ends(node1, mid_node.name)
+    qc1.set_ends(node2, mid_node.name)
 
     tl.init()
     rule1 = Rule(10, eg_rule_action1, eg_rule_condition)

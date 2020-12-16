@@ -115,7 +115,8 @@ class ResourceReservationProtocol(StackProtocol):
             msg.qcaps.append(qcap)
             self._push(dst=responder, msg=msg)
         else:
-            msg = ResourceReservationMessage(RSVPMsgType.REJECT, self.name, reservation)
+            msg = ResourceReservationMessage(RSVPMsgType.REJECT, self.name,
+                                             reservation, path=[])
             self._pop(msg=msg)
 
     def pop(self, src: str, msg: "ResourceReservationMessage"):
@@ -133,6 +134,9 @@ class ResourceReservationProtocol(StackProtocol):
         
         Side Effects:
             May push/pop to lower/upper attached protocols (or network manager).
+
+        Assumption:
+            the path initiator -> responder is same as the reverse path
         """
 
         if msg.msg_type == RSVPMsgType.REQUEST:
@@ -142,15 +146,21 @@ class ResourceReservationProtocol(StackProtocol):
                 msg.qcaps.append(qcap)
                 if self.own.name == msg.reservation.responder:
                     path = [qcap.node for qcap in msg.qcaps]
-                    rules = self.create_rules(path, reservation=msg.reservation)
+                    rules = self.create_rules(path,
+                                              reservation=msg.reservation)
                     self.load_rules(rules, msg.reservation)
-                    new_msg = ResourceReservationMessage(RSVPMsgType.APPROVE, self.name, msg.reservation, path=path)
+                    new_msg = ResourceReservationMessage(RSVPMsgType.APPROVE,
+                                                         self.name,
+                                                         msg.reservation,
+                                                         path=path)
                     self._pop(msg=msg)
                     self._push(dst=msg.reservation.initiator, msg=new_msg)
                 else:
                     self._push(dst=msg.reservation.responder, msg=msg)
             else:
-                new_msg = ResourceReservationMessage(RSVPMsgType.REJECT, self.name, msg.reservation)
+                new_msg = ResourceReservationMessage(RSVPMsgType.REJECT,
+                                                     self.name,
+                                                     msg.reservation)
                 self._push(dst=msg.reservation.initiator, msg=new_msg)
         elif msg.msg_type == RSVPMsgType.REJECT:
             for card in self.timecards:

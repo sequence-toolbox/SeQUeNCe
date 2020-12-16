@@ -53,11 +53,12 @@ def create_scenario(state1, state2, seed):
     a3 = FakeNode("a3", tl)
     cc0 = ClassicalChannel("a2-a1", tl, 0, 1e5)
     cc1 = ClassicalChannel("a2-a3", tl, 0, 1e5)
-    cc0.set_ends(a2, a1)
-    cc1.set_ends(a2, a3)
+    cc0.set_ends(a2, a1.name)
+    cc1.set_ends(a2, a3.name)
     tl.init()
 
-    memo1 = Memory("a1.0", timeline=tl, fidelity=0.9, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
+    memo1 = Memory("a1.0", timeline=tl, fidelity=0.9, frequency=0,
+                   efficiency=1, coherence_time=1, wavelength=500)
     memo2 = Memory("a2.0", tl, 0.9, 0, 1, 1, 500)
     memo3 = Memory("a2.1", tl, 0.9, 0, 1, 1, 500)
     memo4 = Memory("a3.0", tl, 0.9, 0, 1, 1, 500)
@@ -505,23 +506,26 @@ def test_EntanglementSwappingMessage():
 
 
 def test_EntanglementSwapping():
-    tl = Timeline()
-    a1 = FakeNode("a1", tl)
-    a2 = FakeNode("a2", tl)
-    a3 = FakeNode("a3", tl)
-    cc0 = ClassicalChannel("a2-a1", tl, 0, 1e5)
-    cc1 = ClassicalChannel("a2-a3", tl, 0, 1e5)
-    cc0.set_ends(a2, a1)
-    cc1.set_ends(a2, a3)
-    tl.init()
+
     counter1 = counter2 = 0
 
     for i in range(1000):
-        memo1 = Memory("a1.%d" % i, timeline=tl, fidelity=0.9, frequency=0, efficiency=1, coherence_time=1,
+        tl = Timeline()
+        a1 = FakeNode("a1", tl)
+        a2 = FakeNode("a2", tl)
+        a3 = FakeNode("a3", tl)
+        cc0 = ClassicalChannel("a2-a1", tl, 0, 1e5)
+        cc1 = ClassicalChannel("a2-a3", tl, 0, 1e5)
+        cc0.set_ends(a2, a1.name)
+        cc1.set_ends(a2, a3.name)
+        tl.init()
+
+        memo1 = Memory("a1.%d" % 1, timeline=tl, fidelity=0.9, frequency=0,
+                       efficiency=1, coherence_time=1,
                        wavelength=500)
-        memo2 = Memory("a2.%d" % i, tl, 0.9, 0, 1, 1, 500)
-        memo3 = Memory("a2.%d" % i, tl, 0.9, 0, 1, 1, 500)
-        memo4 = Memory("a3.%d" % i, tl, 0.9, 0, 1, 1, 500)
+        memo2 = Memory("a2.%d" % 2, tl, 0.9, 0, 1, 1, 500)
+        memo3 = Memory("a2.%d" % 3, tl, 0.9, 0, 1, 1, 500)
+        memo4 = Memory("a3.%d" % 4, tl, 0.9, 0, 1, 1, 500)
 
         memo1.entangled_memory["node_id"] = "a2"
         memo1.entangled_memory["memo_id"] = memo2.name

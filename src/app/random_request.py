@@ -35,16 +35,33 @@ class RandomRequestApp():
         throughput (List[float]): aggregates average rate of memory entanglement per reservation
         reserves (List[List[any]]): aggregates previous reservations 
         memo_to_reserve (Dict[int, Reservation]): mapping of memory index to corresponding reservation.
+        min_dur (int): the minimum duration of request (ps)
+        max_dur (int): the maximum duration of request (ps)
+        min_size (int): the minimum required memory of request
+        max_size (int): the maximum required memory of request
+        min_fidelity (float): the minimum required fidelity of entanglement
+        max_fidelity (float): the maximum required fidelity of entanglement
     """
 
-    def __init__(self, node: "QuantumRouter", others: List[str], seed: int):
+    def __init__(self, node: "QuantumRouter", others: List[str], seed: int,
+                 min_dur: int, max_dur: int, min_size: int, max_size: int,
+                 min_fidelity: float, max_fidelity: float):
         """Constructor for the random application class.
 
         Args:
             node (QuantumRouter): node that application is attached to.
             others (List[str]): list of names for other available routers.
             seed (int): seed for internal random number generator.
+            min_dur (int): the minimum duration of request (ps)
+            max_dur (int): the maximum duration of request (ps)
+            min_size (int): the minimum required memory of request
+            max_size (int): the maximum required memory of request
+            min_fidelity (float): the minimum required fidelity of entanglement
+            max_fidelity (float): the maximum required fidelity of entanglement
         """
+        assert 0 < min_dur <= max_dur
+        assert 0 < min_size <= max_size
+        assert 0 < min_fidelity <= max_fidelity <= 1
 
         self.node = node
         self.node.set_app(self)
@@ -60,6 +77,13 @@ class RandomRequestApp():
         self.reserves = []
         self.memo_to_reserve = {}
 
+        self.min_dur = min_dur
+        self.max_dur = max_dur
+        self.min_size = int(min_size)
+        self.max_size = int(max_size)
+        self.min_fidelity = min_fidelity
+        self.max_fidelity = max_fidelity
+
     def start(self):
         """Method to start the application.
 
@@ -67,9 +91,9 @@ class RandomRequestApp():
         
         1. Choose a random destination node from the `others` list.
         2. Choose a start time between 1-2 seconds in the future.
-        3. Choose an end time 10-20 seconds after the start time.
-        4. Pick a number of memories to request between 10 and half the max memory size.
-        5. Pick a random fidelity between 0.8 and 1.
+        3. Choose a random duration between min_dur and max_dur to set end_time
+        4. Pick a number of memories to request between min_size and max_size
+        5. Pick a random fidelity between min_fidelity and max_fidelity.
         6. Create a request and start recording metrics.
 
         Side Effects:
@@ -79,12 +103,15 @@ class RandomRequestApp():
         self._update_last_rsvp_metrics()
 
         responder = self.rg.choice(self.others)
-        start_time = self.node.timeline.now() + self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
-        end_time = start_time + self.rg.integers(10, 20) * 1e12  # start time + (10 second - 20 second)
-        memory_size = self.rg.integers(10, len(self.node.memory_array) // 2)  # 10 - max_memory_size / 2
-        fidelity = self.rg.uniform(0.8, 1)
-        self.cur_reserve = [responder, start_time, end_time, memory_size, fidelity]
-        self.node.reserve_net_resource(responder, start_time, end_time, memory_size, fidelity)
+        start_time = self.node.timeline.now() + self.rg.integers(10,
+                                                                 20) * 1e11  # now + 1 sec - 2 sec
+        end_time = start_time + self.rg.integers(self.min_dur, self.max_dur)
+        memory_size = self.rg.integers(self.min_size, self.max_size)
+        fidelity = self.rg.uniform(self.min_fidelity, self.max_fidelity)
+        self.cur_reserve = [responder, start_time, end_time, memory_size,
+                            fidelity]
+        self.node.reserve_net_resource(responder, start_time, end_time,
+                                       memory_size, fidelity)
         # print(self.node.timeline.now(), self.node.name, "request", self.cur_reserve)
 
     def retry(self, responder: str, fidelity: float) -> None:
@@ -98,11 +125,14 @@ class RandomRequestApp():
             Will create request for network manager on node.
         """
 
-        start_time = self.node.timeline.now() + self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
-        end_time = start_time + self.rg.integers(10, 20) * 1e12  # start time + (10 second - 20 second)
-        memory_size = self.rg.integers(10, len(self.node.memory_array) // 2)  # 10 - max_memory_size / 2
-        self.node.reserve_net_resource(responder, start_time, end_time, memory_size, fidelity)
-        self.cur_reserve = [responder, start_time, end_time, memory_size, fidelity]
+        start_time = self.node.timeline.now() + self.rg.integers(10,
+                                                                 20) * 1e11  # now + 1 sec - 2 sec
+        end_time = start_time + self.rg.integers(self.min_dur, self.max_dur)
+        memory_size = self.rg.integers(self.min_size, self.max_size)
+        self.node.reserve_net_resource(responder, start_time, end_time,
+                                       memory_size, fidelity)
+        self.cur_reserve = [responder, start_time, end_time, memory_size,
+                            fidelity]
 
     def _update_last_rsvp_metrics(self):
         if self.cur_reserve and len(self.throughput) < len(self.reserves):

@@ -163,6 +163,8 @@ class Topology():
             # add middle node
             name_middle = "_".join(["middle", node1, node2])
             middle = BSMNode(name_middle, self.timeline, [node1, node2])
+            self.nodes[node1].add_bsm_node(middle.name, node2)
+            self.nodes[node2].add_bsm_node(middle.name, node1)
             self.add_node(middle)
 
             # update distance param
@@ -197,7 +199,7 @@ class Topology():
 
         name = "_".join(["qc", node1, node2])
         qchannel = QuantumChannel(name, self.timeline, **kwargs)
-        qchannel.set_ends(self.nodes[node1], self.nodes[node2])
+        qchannel.set_ends(self.nodes[node1], node2)
         self.qchannels.append(qchannel)
 
         # edit graph
@@ -232,7 +234,7 @@ class Topology():
 
         name = "_".join(["cc", node1, node2])
         cchannel = ClassicalChannel(name, self.timeline, **kwargs)
-        cchannel.set_ends(self.nodes[node1], self.nodes[node2])
+        cchannel.set_ends(self.nodes[node1], node2)
         self.cchannels.append(cchannel)
 
         # edit graph

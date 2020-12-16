@@ -22,10 +22,15 @@ class StaticRoutingMessage(Message):
         receiver (str): name of destination protocol instance.
         payload (Message): message to be delivered to destination.
     """
-    
+
     def __init__(self, msg_type: Enum, receiver: str, payload: "Message"):
         super().__init__(msg_type, receiver)
         self.payload = payload
+
+    def __str__(self):
+        return "type={}, receiver={}, payload={}".format(self.msg_type,
+                                                         self.receiver,
+                                                         self.payload)
 
 
 class StaticRoutingProtocol(StackProtocol):
