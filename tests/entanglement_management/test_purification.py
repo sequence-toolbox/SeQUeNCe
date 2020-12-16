@@ -624,9 +624,11 @@ def test_BBPSSW_fidelity():
 
     for i in range(1000):
         fidelity = np.random.uniform(0.5, 1)
-        kept_memo1 = Memory("a1.kept", tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1,
+        kept_memo1 = Memory("a1.kept.%d" % i, tl, fidelity=fidelity,
+                            frequency=0, efficiency=1, coherence_time=1,
                             wavelength=HALF_MICRON)
-        kept_memo2 = Memory("a2.kept.%d" % i, tl, fidelity, 0, 1, 1, HALF_MICRON)
+        kept_memo2 = Memory("a2.kept.%d" % i, tl, fidelity, 0, 1, 1,
+                            HALF_MICRON)
         meas_memo1 = Memory("a1.meas.%d" % i, tl, fidelity, 0, 1, 1, HALF_MICRON)
         meas_memo2 = Memory("a2.meas.%d" % i, tl, fidelity, 0, 1, 1, HALF_MICRON)
 

@@ -236,28 +236,26 @@ def test_generation_fidelity_ket():
     # add connections
     qc0 = QuantumChannel("qc_e0m0", tl, 0, 1e3)
     qc1 = QuantumChannel("qc_e1m0", tl, 0, 1e3)
-    qc0.set_ends(e0, m0)
-    qc1.set_ends(e1, m0)
-    cc0 = ClassicalChannel("cc_e0m0", tl, 1e3, delay=1e12)
-    cc1 = ClassicalChannel("cc_m0e0", tl, 1e3, delay=1e12)
-    cc2 = ClassicalChannel("cc_e1m0", tl, 1e3, delay=1e12)
-    cc3 = ClassicalChannel("cc_m0e1", tl, 1e3, delay=1e12)
-    cc4 = ClassicalChannel("cc_e0e1", tl, 2e3, delay=1e9)
-    cc5 = ClassicalChannel("cc_e1e0", tl, 2e3, delay=1e9)
-    cc0.set_ends(e0, m0)
-    cc1.set_ends(m0, e0)
-    cc2.set_ends(e1, m0)
-    cc3.set_ends(m0, e1)
-    cc4.set_ends(e0, e1)
-    cc5.set_ends(e1, e0)
+    qc0.set_ends(e0, m0.name)
+    qc1.set_ends(e1, m0.name)
+
+    for n1 in [e0, e1, m0]:
+        for n2 in [e0, e1, m0]:
+            if n1 != n2:
+                cc = ClassicalChannel("cc_%s%s" % (n1.name, n2.name), tl, 1e3,
+                                      delay=1e12)
+                cc.set_ends(n1, n2.name)
 
     # add hardware
-    e0.memory_array = MemoryArray("e0.memory_array", tl, fidelity=FIDELITY, num_memories=NUM_TESTS)
+    e0.memory_array = MemoryArray("e0.memory_array", tl, fidelity=FIDELITY,
+                                  num_memories=NUM_TESTS)
     e0.memory_array.owner = e0
-    e1.memory_array = MemoryArray("e1.memory_array", tl, fidelity=FIDELITY, num_memories=NUM_TESTS)
+    e1.memory_array = MemoryArray("e1.memory_array", tl, fidelity=FIDELITY,
+                                  num_memories=NUM_TESTS)
     e1.memory_array.owner = e1
     detectors = [{"efficiency": 1, "count_rate": 1e11}] * 2
-    m0.bsm = make_bsm("m0.bsm", tl, encoding_type="single_atom", detectors=detectors)
+    m0.bsm = make_bsm("m0.bsm", tl, encoding_type="single_atom",
+                      detectors=detectors)
 
     # add middle protocol
     eg_m0 = EntanglementGenerationB(m0, "eg_m0", others=["e0", "e1"])
