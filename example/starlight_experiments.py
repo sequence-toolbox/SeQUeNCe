@@ -73,11 +73,16 @@ if __name__ == "__main__":
 
     for app in apps:
         print(app.node.name)
-        print("  ", len(app.get_wait_time()))
-        print("  ", app.get_wait_time())
-        throughput = app.get_throughput()
-        print(" ", app.reserves)
-        print("  ", throughput)
+        for reserve, wait_t, tp in zip(app.reserves, app.get_wait_time(),
+                                       app.get_throughput()):
+            print("    responder={}, start time={} sec, end time={} sec, "
+                  "used memory={}, fidelity thredshold={}, wait time={} sec, "
+                  "throughput={} pairs/sec".format(reserve[0],
+                                                   reserve[1] / 1e12,
+                                                   reserve[2] / 1e12,
+                                                   reserve[3],
+                                                   reserve[4],
+                                                   wait_t / 1e12, tp))
 
     initiators = []
     responders = []
