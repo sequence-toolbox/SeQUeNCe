@@ -18,6 +18,7 @@ from .eventlist import EventList
 from ..utils import log
 from .quantum_manager import QuantumManagerKet, QuantumManagerDensity
 
+
 class Timeline:
     """Class for a simulation timeline.
 
@@ -39,8 +40,6 @@ class Timeline:
         stop_time (int): the stop (simulation) time of the simulation.
         schedule_counter (int): the counter of scheduled events
         run_counter (int): the counter of executed events
-        is_running (bool): records if the simulation has stopped executing events.
-        show_progress (bool): show/hide the progress bar of simulation.
         quantum_manager (QuantumManager): quantum state manager.
     """
 
@@ -93,23 +92,26 @@ class Timeline:
         log.logger.info("Timeline start simulation")
         tick = time_ns()
 
-        with tqdm(total=self.stop_time/1e12, bar_format='{l_bar}{bar:50}{r_bar}{bar:-50b}') as pbar:
+        with tqdm(total=self.stop_time / 1e12,
+                  bar_format='{l_bar}{bar:50}{r_bar}{bar:-50b}') as pbar:
             while len(self.events) > 0:
                 event = self.events.pop()
                 if event.time >= self.stop_time:
                     self.schedule(event)
                     break
-                assert self.time <= event.time, "invalid event time for process scheduled on " + str(event.process.owner)
+                assert self.time <= event.time, "invalid event time for process scheduled on " + str(
+                    event.process.owner)
                 if event.is_invalid():
                     continue
-                pbar.update((event.time - self.time)/1e12)
+                pbar.update((event.time - self.time) / 1e12)
                 self.time = event.time
                 event.process.run()
                 self.run_counter += 1
 
         elapse = time_ns() - tick
-        log.logger.info("Timeline end simulation. Execution Time: %d ns; Scheduled Event: %d; Executed Event: %d" %
-                        (elapse, self.schedule_counter, self.run_counter))
+        log.logger.info(
+            "Timeline end simulation. Execution Time: %d ns; Scheduled Event: %d; Executed Event: %d" %
+            (elapse, self.schedule_counter, self.run_counter))
 
     def stop(self) -> None:
         """Method to stop simulation."""
