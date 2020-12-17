@@ -75,6 +75,7 @@ class RandomRequestApp():
         self.wait_time = []
         self.throughput = []
         self.reserves = []
+        self.paths = []
         self.memo_to_reserve = {}
 
         self.min_dur = min_dur
@@ -103,8 +104,8 @@ class RandomRequestApp():
         self._update_last_rsvp_metrics()
 
         responder = self.rg.choice(self.others)
-        start_time = self.node.timeline.now() + self.rg.integers(10,
-                                                                 20) * 1e11  # now + 1 sec - 2 sec
+        start_time = self.node.timeline.now() + \
+                     self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
         end_time = start_time + self.rg.integers(self.min_dur, self.max_dur)
         memory_size = self.rg.integers(self.min_size, self.max_size)
         fidelity = self.rg.uniform(self.min_fidelity, self.max_fidelity)
@@ -125,8 +126,8 @@ class RandomRequestApp():
             Will create request for network manager on node.
         """
 
-        start_time = self.node.timeline.now() + self.rg.integers(10,
-                                                                 20) * 1e11  # now + 1 sec - 2 sec
+        start_time = self.node.timeline.now() + \
+                     self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
         end_time = start_time + self.rg.integers(self.min_dur, self.max_dur)
         memory_size = self.rg.integers(self.min_size, self.max_size)
         self.node.reserve_net_resource(responder, start_time, end_time,
@@ -136,7 +137,8 @@ class RandomRequestApp():
 
     def _update_last_rsvp_metrics(self):
         if self.cur_reserve and len(self.throughput) < len(self.reserves):
-            throughput = self.memory_counter / (self.cur_reserve[2] - self.cur_reserve[1]) * 1e12
+            throughput = self.memory_counter / \
+                         (self.cur_reserve[2] - self.cur_reserve[1]) * 1e12
             self.throughput.append(throughput)
 
         self.cur_reserve = []
@@ -159,6 +161,7 @@ class RandomRequestApp():
             self.get_other_reservation(reservation)
             process = Process(self, "start", [])
             self.reserves.append(self.cur_reserve)
+            self.paths.append(reservation.path)
             # print(self.node.timeline.now(), self.node.name, "request", self.cur_reserve, result)
             event = Event(self.cur_reserve[2] + 1, process)
             self.node.timeline.schedule(event)

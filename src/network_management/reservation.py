@@ -19,6 +19,7 @@ from ..message import Message
 from ..protocol import StackProtocol
 from ..kernel.event import Event
 from ..kernel.process import Process
+from ..utils import log
 
 
 class RSVPMsgType(Enum):
@@ -149,6 +150,7 @@ class ResourceReservationProtocol(StackProtocol):
                     rules = self.create_rules(path,
                                               reservation=msg.reservation)
                     self.load_rules(rules, msg.reservation)
+                    msg.reservation.set_path(path)
                     new_msg = ResourceReservationMessage(RSVPMsgType.APPROVE,
                                                          self.name,
                                                          msg.reservation,
@@ -263,8 +265,9 @@ class ResourceReservationProtocol(StackProtocol):
             def eg_rule_action(memories_info: List["MemoryInfo"]):
                 def req_func(protocols):
                     for protocol in protocols:
-                        if isinstance(protocol,
-                                      EntanglementGenerationA) and protocol.other == self.own.name and protocol.rule.get_reservation() == reservation:
+                        if (isinstance(protocol, EntanglementGenerationA) and
+                                protocol.other == self.own.name and
+                                protocol.rule.get_reservation() == reservation):
                             return protocol
 
                 memories = [info.memory for info in memories_info]
@@ -509,8 +512,8 @@ class Reservation():
         memory_size (int): number of entangled memory pairs requested.
     """
 
-    def __init__(self, initiator: str, responder: str, start_time: int, end_time: int, memory_size: int,
-                 fidelity: float):
+    def __init__(self, initiator: str, responder: str, start_time: int,
+                 end_time: int, memory_size: int, fidelity: float):
         """Constructor for the reservation class.
 
         Args:
@@ -528,12 +531,24 @@ class Reservation():
         self.end_time = end_time
         self.memory_size = memory_size
         self.fidelity = fidelity
+        self.path = []
         assert self.start_time < self.end_time
         assert self.memory_size > 0
+
+    def set_path(self, path: List[str]):
+        self.path = path
 
     def __str__(self):
         return "Reservation: initiator=%s, responder=%s, start_time=%d, end_time=%d, memory_size=%d, target_fidelity=%.2f" % (
             self.initiator, self.responder, self.start_time, self.end_time, self.memory_size, self.fidelity)
+
+    def __eq__(self, other: "Reservation"):
+        return other.initiator == self.initiator and \
+               other.responder == self.responder and \
+               other.start_time == self.start_time and \
+               other.end_time == self.end_time and \
+               other.memory_size == self.memory_size and \
+               other.fidelity == self.fidelity
 
 
 class MemoryTimeCard():
