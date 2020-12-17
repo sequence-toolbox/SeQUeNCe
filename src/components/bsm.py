@@ -7,7 +7,7 @@ Also defined is a function to automatically construct a BSM of a specified type.
 from abc import abstractmethod
 from typing import Any, Dict, List
 
-from numpy import random, outer, add, zeros
+from numpy import outer, add, zeros
 
 from .circuit import Circuit
 from .detector import Detector
@@ -41,7 +41,7 @@ def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=
         raise Exception("invalid encoding {} given for BSM {}".format(encoding_type, name))
 
 
-def _set_memory_with_fidelity(memories: List["Memory"], desired_state):
+def _set_memory_with_fidelity(memories: List["Memory"], desired_state, generator):
     possible_states = [BSM._phi_plus, BSM._phi_minus, BSM._psi_plus, BSM._psi_minus]
     assert desired_state in possible_states
     qm = memories[0].timeline.quantum_manager
@@ -51,7 +51,7 @@ def _set_memory_with_fidelity(memories: List["Memory"], desired_state):
     if qm.formalism == "KET":
         probabilities = [(1-fidelity)/3] * 4
         probabilities[possible_states.index(desired_state)] = fidelity
-        state_ind = random.choice(4, p=probabilities)
+        state_ind = generator.choice(4, p=probabilities)
         qm.set(keys, possible_states[state_ind])
 
     elif qm.formalism == "DENSITY":
@@ -214,14 +214,14 @@ class PolarizationBSM(BSM):
         # measured as Psi+
         # photon detected in corresponding detectors
         if res == 2:
-            detector_num = random.choice([0, 2])
+            detector_num = self.get_generator().choice([0, 2])
             self.detectors[detector_num].get()
             self.detectors[detector_num + 1].get()
 
         # measured as Psi-
         # photon detected in opposite detectors
         elif res == 3:
-            detector_num = random.choice([0, 2])
+            detector_num = self.get_generator().choice([0, 2])
             self.detectors[detector_num].get()
             self.detectors[3 - detector_num].get()
 
@@ -298,7 +298,7 @@ class TimeBinBSM(BSM):
         if len(self.photons) != 2:
             return
 
-        if random.random_sample() < self.phase_error:
+        if self.get_generator().random() < self.phase_error:
             self.photons[1].apply_phase_error()
         # entangle photons to measure
         self.photons[0].entangle(self.photons[1])
@@ -316,7 +316,7 @@ class TimeBinBSM(BSM):
         # measured as Psi+
         # send both photons to the same detector at the early and late time
         if res == 2:
-            detector_num = random.choice([0, 1])
+            detector_num = self.get_generator().choice([0, 1])
 
             process = Process(self.detectors[detector_num], "get", [])
             event = Event(int(round(early_time)), process)
@@ -328,7 +328,7 @@ class TimeBinBSM(BSM):
         # measured as Psi-
         # send photons to different detectors at the early and late time
         elif res == 3:
-            detector_num = random.choice([0, 1])
+            detector_num = self.get_generator().choice([0, 1])
 
             process = Process(self.detectors[detector_num], "get", [])
             event = Event(int(round(early_time)), process)
@@ -412,7 +412,7 @@ class SingleAtomBSM(BSM):
 
         # check if we're in first stage. If we are and not null, send photon to random detector
         if not photon.is_null:
-            detector_num = random.choice([0, 1])
+            detector_num = self.get_generator().choice([0, 1])
             memory.previous_bsm = detector_num
             self.detectors[detector_num].get()
 
@@ -438,7 +438,7 @@ class SingleAtomBSM(BSM):
                     else:
                         desired_state = BSM._psi_plus
 
-                    _set_memory_with_fidelity([memory_0, memory_1], desired_state)
+                    _set_memory_with_fidelity([memory_0, memory_1], desired_state, self.get_generator())
 
     def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.

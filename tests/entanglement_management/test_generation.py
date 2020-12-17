@@ -143,7 +143,7 @@ def test_generation_expire():
 
 
 def test_generation_run():
-    random.seed(1)
+    np.random.seed(1)
     NUM_TESTS = 500
 
     tl = Timeline()
@@ -223,7 +223,7 @@ def test_generation_run():
     
 
 def test_generation_fidelity_ket():
-    random.seed(0)
+    np.random.seed(0)
     NUM_TESTS = 1000
     FIDELITY = 0.75
 
