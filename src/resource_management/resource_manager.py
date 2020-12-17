@@ -6,13 +6,15 @@ This module also defines the message type used by the resource manager.
 """
 
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Callable, List
+from typing import TYPE_CHECKING, Callable, List, Dict, Any
+
 if TYPE_CHECKING:
     from ..components.memory import Memory
     from ..topology.node import QuantumRouter
     from .rule_manager import Rule
 
-from ..entanglement_management.entanglement_protocol import EntanglementProtocol
+from ..entanglement_management.entanglement_protocol import \
+    EntanglementProtocol
 from ..message import Message
 from ..utils import log
 from .rule_manager import RuleManager
@@ -50,6 +52,7 @@ class ResourceManagerMessage(Message):
         self.ini_protocol = kwargs["protocol"]
         if msg_type is ResourceManagerMsgType.REQUEST:
             self.req_condition_func = kwargs["req_condition_func"]
+            self.req_args = kwargs["req_args"]
         elif msg_type is ResourceManagerMsgType.RESPONSE:
             self.is_approved = kwargs["is_approved"]
             self.paired_protocol = kwargs["paired_protocol"]
@@ -190,7 +193,9 @@ class ResourceManager():
         return self.memory_manager
 
     def send_request(self, protocol: "EntanglementProtocol", req_dst: str,
-                     req_condition_func: Callable[[List["EntanglementProtocol"]], "EntanglementProtocol"]):
+                     req_condition_func: Callable[[List[
+                                                       "EntanglementProtocol"]], "EntanglementProtocol"],
+                     req_args: Dict[str, Any]):
         """Method to send protocol request to another node.
 
         Send the request to pair the local 'protocol' with the protocol on the remote node 'req_dst'.
@@ -208,8 +213,10 @@ class ResourceManager():
             return
         if not protocol in self.pending_protocols:
             self.pending_protocols.append(protocol)
-        msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST, protocol=protocol,
-                                     req_condition_func=req_condition_func)
+        msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST,
+                                     protocol=protocol,
+                                     req_condition_func=req_condition_func,
+                                     req_args=req_args)
         self.owner.send_message(req_dst, msg)
         log.logger.info(
             "{} network manager send {} message to {}".format(self.owner.name,
@@ -229,7 +236,8 @@ class ResourceManager():
                                                                msg.msg_type.name,
                                                                src))
         if msg.msg_type is ResourceManagerMsgType.REQUEST:
-            protocol = msg.req_condition_func(self.waiting_protocols)
+            protocol = msg.req_condition_func(self.waiting_protocols,
+                                              msg.req_args)
             if protocol is not None:
                 protocol.set_others(msg.ini_protocol)
                 new_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=msg.ini_protocol,
