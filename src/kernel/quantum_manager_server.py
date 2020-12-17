@@ -31,7 +31,7 @@ def generate_arg_parser():
     return parser
 
 
-class QuantumManagerMsgType():
+class QuantumManagerMsgType(Enum):
     NEW = 0
     GET = 1
     SET = 2

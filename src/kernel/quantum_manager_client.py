@@ -1,6 +1,8 @@
+from collections import defaultdict
 from socket import socket
 from pickle import loads, dumps
 from typing import List
+from time import time
 
 from .quantum_manager_server import generate_arg_parser, QuantumManagerMsgType, QuantumManagerMessage
 from ..components.circuit import Circuit
@@ -16,17 +18,19 @@ class QuantumManagerClient():
         connected (bool): denotes if client has been properly connected with remote server.
     """
 
-    def __init__(self, ip, port):
+    def __init__(self, formalism: str, ip: str, port: int):
         """Constructor for QuantumManagerClient class.
 
         Args:
             ip: ip of quantum manager server.
             port: port of quantum manager server.
         """
-
+        self.formalism = formalism
         self.s = socket()
         self.s.connect((ip, port))
         self.connected = True
+        self.io_time = defaultdict(lambda: 0)
+        self.type_counter = defaultdict(lambda: 0)
 
     def init(self) -> None:
         """Method to configure client connection.
@@ -100,7 +104,11 @@ class QuantumManagerClient():
     def _check_connection(self):
         assert self.connected, "must run init method before attempting communications"
 
-    def _send_message(self, msg_type, args: List, expecting_receive=True) -> any:
+    def _send_message(self, msg_type, args: List,
+                      expecting_receive=True) -> any:
+        self.type_counter[msg_type.name] += 1
+        tick = time()
+
         msg = QuantumManagerMessage(msg_type, args)
         data = dumps(msg)
         self.s.sendall(data)
@@ -109,6 +117,8 @@ class QuantumManagerClient():
             received_data = self.s.recv(1024)
             received_msg = loads(received_data)
             return received_msg
+
+        self.io_time[msg_type.name] += time() - tick
 
 
 if __name__ == '__main__':

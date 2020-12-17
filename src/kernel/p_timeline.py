@@ -1,5 +1,6 @@
 from mpi4py import MPI
 from typing import TYPE_CHECKING
+from time import time
 
 from .eventlist import EventList
 from .quantum_manager_client import QuantumManagerClient
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
 
 class ParallelTimeline():
 
-    def __init__(self, lookahead: int, stop_time=float('inf'),
+    def __init__(self, lookahead: int, stop_time=float('inf'), formalism='KET',
                  qm_ip="127.0.0.1", qm_port="6789"):
         self.stop_time = stop_time
         self.id = MPI.COMM_WORLD.Get_rank()
@@ -23,11 +24,15 @@ class ParallelTimeline():
         self.events = EventList()
         self.lookahead = lookahead
         self.execute_flag = False
+        self.quantum_manager = QuantumManagerClient(formalism, qm_ip, qm_port)
+        self.quantum_manager.init()
+
         self.sync_counter = 0
         self.event_counter = 0
         self.schedule_counter = 0
-        self.quantum_manager = QuantumManagerClient(qm_ip, qm_port)
-        self.quantum_manager.init()
+        self.exchange_counter = 0
+        self.computing_time = 0
+        self.communication_time = 0
 
     def seed(self, n):
         seed(n)
@@ -60,34 +65,54 @@ class ParallelTimeline():
     def run(self):
         self.execute_flag = True
         while self.time < self.stop_time:
+            tick = time()
             keep_run = MPI.COMM_WORLD.allreduce(self.execute_flag, op=MPI.BOR)
+            self.communication_time += time() - tick
+
             if not keep_run:
                 break
+
+            tick = time()
             inbox = MPI.COMM_WORLD.alltoall(self.event_buffer)
+            self.communication_time += time() - tick
+
             for buff in self.event_buffer:
                 buff.clear()
 
             for events in inbox:
                 for event in events:
-                    event.process.owner = self.get_entity_by_name(event.process.owner)
+                    event.process.owner = self.get_entity_by_name(
+                        event.process.owner)
+                    self.exchange_counter += 1
                     self.schedule(event)
 
-            min_time = MPI.COMM_WORLD.allreduce(self.events.top().time, op=MPI.MIN)
+            tick = time()
+            min_time = MPI.COMM_WORLD.allreduce(self.events.top().time,
+                                                op=MPI.MIN)
+            self.communication_time += time() - tick
+
             self.execute_flag = False
             self.sync_counter += 1
-            print("sync counter=", self.sync_counter)
 
             sync_time = min(min_time + self.lookahead, self.stop_time)
+
+            tick = time()
             while len(self.events) > 0 and self.events.top().time < sync_time:
                 event = self.events.pop()
                 if event.is_invalid():
                     continue
-                assert self.time <= event.time, "invalid event time for process scheduled on " + str(event.process.owner)
+                assert self.time <= event.time, "invalid event time for process scheduled on " + str(
+                    event.process.owner)
                 if type(event.process.owner) == type(''):
                     fh = open('log', 'a')
-                    fh.write("%d %.2f %s" % (self.id, self.time, event.process.owner))
+                    fh.write("%d %.2f %s" % (
+                    self.id, self.time, event.process.owner))
                     fh.close()
                 self.time = event.time
                 event.process.run()
                 self.execute_flag = True
                 self.event_counter += 1
+            self.computing_time += time() - tick
+
+    def remove_event(self, event: "Event") -> None:
+        self.events.remove(event)
