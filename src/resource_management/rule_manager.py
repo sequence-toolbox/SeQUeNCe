@@ -5,6 +5,7 @@ This is achieved through rules (also defined in this module), which if met defin
 """
 
 from typing import Callable, TYPE_CHECKING, List, Tuple
+from ..utils import log
 if TYPE_CHECKING:
     from ..entanglement_management.entanglement_protocol import EntanglementProtocol
     from .memory_manager import MemoryInfo, MemoryManager
@@ -79,6 +80,9 @@ class RuleManager():
         return self.resource_manager.get_memory_manager()
 
     def send_request(self, protocol, req_dst, req_condition_func):
+        log.logger.info(
+            'Rule manager send request for protocol {} to {}'.format(
+                protocol.name, req_dst))
         return self.resource_manager.send_request(protocol, req_dst, req_condition_func)
 
     def __len__(self):
@@ -131,6 +135,8 @@ class Rule():
         """
 
         protocol, req_dsts, req_condition_funcs = self.action(memories_info)
+        log.logger.info('Rule generates protocol {}'.format(protocol.name))
+
         protocol.rule = self
         self.protocols.append(protocol)
         for info in memories_info:
