@@ -46,6 +46,7 @@ def test_generation_receive_message():
     node = Node("e1", tl)
     m0 = FakeNode("m1", tl)
     qc = QuantumChannel("qc_nodem1", tl, 0, 1e3)
+    qc.frequency = 1e12
     qc.set_ends(node, m0.name)
     node.memory_array = MemoryArray("memory", tl)
     node.assign_cchannel(ClassicalChannel("cc", tl, 0, delay=1), "m1")
@@ -55,9 +56,10 @@ def test_generation_receive_message():
     eg.qc_delay = 1
 
     # negotiate message
-    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG", emit_time_0=0, emit_time_1=0)
-    assert eg.received_message("e2", msg) is True
-    assert eg.expected_times[0] == 1
+    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG",
+                                        emit_time_0=0, emit_time_1=1)
+    eg.received_message("e2", msg)
+    assert eg.expected_times[0] == 1 and eg.expected_times[1] == 2
     assert len(tl.events.data) == 4  # two excites, flip state, end time
 
 

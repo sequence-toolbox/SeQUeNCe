@@ -14,7 +14,7 @@ from typing import List, TYPE_CHECKING, Dict, Any
 
 if TYPE_CHECKING:
     from ..components.memory import Memory
-    from ..topology.node import Node
+    from ..topology.node import Node, BSMNode
     from ..components.bsm import SingleAtomBSM
 
 from .entanglement_protocol import EntanglementProtocol
@@ -63,7 +63,7 @@ class EntanglementGenerationMessage(Message):
             self.emit_time_1 = kwargs.get("emit_time_1")
 
         elif msg_type is GenerationMsgType.MEAS_RES:
-            self.res = kwargs.get("res")
+            self.detector = kwargs.get("detector")
             self.time = kwargs.get("time")
             self.resolution = kwargs.get("resolution")
 
@@ -281,7 +281,8 @@ class EntanglementGenerationA(EntanglementProtocol):
             self.scheduled_events.append(event)
 
             # schedule end of protocol
-            end_time = self.expected_times[1] + self.own.cchannels[self.middle].delay + 10
+            end_time = self.expected_times[1] \
+                       + self.own.cchannels[self.middle].delay + 10
             process = Process(self, "end", [])
             event = Event(end_time, process)
             self.own.timeline.schedule(event)
@@ -306,8 +307,12 @@ class EntanglementGenerationA(EntanglementProtocol):
 
             # schedule emit
             emit_time_0 = self.own.schedule_qubit(self.middle, msg.emit_time_0)
-            assert emit_time_0 == msg.emit_time_0, "%d %d %d" % (emit_time_0, msg.emit_time_0, self.own.timeline.now())
             emit_time_1 = self.own.schedule_qubit(self.middle, msg.emit_time_1)
+
+            assert emit_time_0 == msg.emit_time_0, "%d %d %d" % (
+                emit_time_0, msg.emit_time_0, self.own.timeline.now())
+            assert emit_time_1 == msg.emit_time_1, "%d %d %d" % (
+                emit_time_1, msg.emit_time_1, self.own.timeline.now())
 
             process = Process(self, "emit_event", [])
             event = Event(msg.emit_time_0, process)
@@ -315,7 +320,8 @@ class EntanglementGenerationA(EntanglementProtocol):
             self.scheduled_events.append(event)
 
             process = Process(self, "next_round", [])
-            event = Event(int((msg.emit_time_0 + msg.emit_time_1) / 2), process)
+            event = Event(int((msg.emit_time_0 + msg.emit_time_1) / 2),
+                          process)
             self.own.timeline.schedule(event)
             self.scheduled_events.append(event)
 
@@ -325,18 +331,22 @@ class EntanglementGenerationA(EntanglementProtocol):
             self.scheduled_events.append(event)
 
             # schedule end of protocol
-            end_time = self.expected_times[1] + self.own.cchannels[self.middle].delay + 10
+            end_time = self.expected_times[1] \
+                       + self.own.cchannels[self.middle].delay + 10
             process = Process(self, "end", [])
             event = Event(end_time, process)
             self.own.timeline.schedule(event)
             self.scheduled_events.append(event)
 
         elif msg_type is GenerationMsgType.MEAS_RES:
-            res = msg.res
+            detector = msg.detector
             time = msg.time
             resolution = msg.resolution
 
-            log.logger.debug(self.own.name + " received MEAS_RES {} at time {}, expected {}, round={}".format(res, time, self.expected_times, self.ent_round))
+            log.logger.debug("{} received MEAS_RES {} at time {}, expected {},"
+                             " round={}".format(self.own.name, detector, time,
+                                                self.expected_times,
+                                                self.ent_round))
 
             def valid_trigger_time(trigger_time, target_time, resolution):
                 upper = target_time + resolution
@@ -357,15 +367,14 @@ class EntanglementGenerationA(EntanglementProtocol):
                 if valid_trigger_time(time, expected_time, resolution):
                     # record result if we don't already have one
                     if self.bsm_res[i] == -1:
-                        self.bsm_res[i] = res
+                        self.bsm_res[i] = detector
                     else:
                         # entanglement failed
                         self._entanglement_fail()
 
         else:
-            raise Exception("Invalid message {} received by EG on node {}".format(msg_type, self.own.name))
-
-        return True
+            raise Exception("Invalid message {} received by EG on node "
+                            "{}".format(msg_type, self.own.name))
 
     def is_ready(self) -> bool:
         return self.remote_protocol_name is not None
@@ -408,7 +417,7 @@ class EntanglementGenerationB(EntanglementProtocol):
         others (List[str]): list of neighboring quantum router nodes
     """
 
-    def __init__(self, own: "Node", name: str, others: List[str]):
+    def __init__(self, own: "BSMNode", name: str, others: List[str]):
         """Constructor for entanglement generation B protocol.
 
         Args:
@@ -436,12 +445,15 @@ class EntanglementGenerationB(EntanglementProtocol):
         resolution = self.own.bsm.resolution
 
         for i, node in enumerate(self.others):
-            message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES, None, res=res, time=time,
+            message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES,
+                                                    None, detector=res,
+                                                    time=time,
                                                     resolution=resolution)
             self.own.send_message(node, message)
 
     def received_message(self, src: str, msg: EntanglementGenerationMessage):
-        raise Exception("EntanglementGenerationB protocol '{}' should not receive message".format(self.name))
+        raise Exception("EntanglementGenerationB protocol '{}' should not "
+                        "receive message".format(self.name))
 
     def start(self) -> None:
         pass
@@ -454,6 +466,5 @@ class EntanglementGenerationB(EntanglementProtocol):
         return True
 
     def memory_expire(self, memory: "Memory") -> None:
-        raise Exception(
-            "EntanglementGenerationB protocol '{}' should not have memory_expire".format(
-                self.name))
+        raise Exception("EntanglementGenerationB protocol '{}' should not have"
+                        " memory_expire".format(self.name))
