@@ -8,8 +8,6 @@ OpticalChannels must be attached to nodes on both ends.
 import heapq as hq
 from typing import TYPE_CHECKING
 
-from numpy import random
-
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..topology.node import Node
@@ -143,10 +141,10 @@ class QuantumChannel(OpticalChannel):
             assert time == self.timeline.now(), "qc {} transmit method called at invalid time".format(self.name)
 
         # check if photon kept
-        if (random.random_sample() > self.loss) or qubit.is_null:
+        if (self.sender.generator.random() > self.loss) or qubit.is_null:
             # check if polarization encoding and apply necessary noise
             if (qubit.encoding_type["name"] == "polarization") and (
-                    random.random_sample() > self.polarization_fidelity):
+                    self.sender.generator.random() > self.polarization_fidelity):
                 qubit.random_noise()
 
             # schedule receiving node to receive photon at future time determined by light speed

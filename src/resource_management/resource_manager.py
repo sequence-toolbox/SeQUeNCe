@@ -116,7 +116,7 @@ class ResourceManager():
             bool: if rule was loaded successfully.
         """
         log.logger.info(
-            'load rule for reservation {}'.format(rule.reservation))
+            'load rule {}'.format(rule))
         self.rule_manager.load(rule)
 
         for memory_info in self.memory_manager:
@@ -138,7 +138,7 @@ class ResourceManager():
             rule (Rule): rule to remove.
         """
         log.logger.info(
-            'expire rule for reservation {}'.format(rule.reservation))
+            'expired rule {}'.format(rule))
         created_protocols = self.rule_manager.expire(rule)
         while created_protocols:
             protocol = created_protocols.pop()

@@ -4,6 +4,7 @@ This module defines the Photon class for tracking individual photons.
 Photons may be encoded directly with polarization or time bin schemes, or may herald the encoded state of single atom memories.
 """
 
+from ..kernel.entity import Entity
 from ..utils.encoding import polarization
 from ..utils.quantum_state import QuantumState
 
@@ -38,7 +39,10 @@ class Photon():
         self.encoding_type = encoding_type
         if self.encoding_type["name"] == "single_atom":
             self.memory = None
-        self.quantum_state = QuantumState()
+        if isinstance(location, Entity):
+            self.quantum_state = QuantumState(location.get_generator())
+        else:
+            self.quantum_state = QuantumState()
         self.quantum_state.state = quantum_state
         self.qstate_key = None
         self.is_null = False
@@ -82,4 +86,5 @@ class Photon():
             int: 0-3 value giving the result of measurement in given basis.
         """
 
-        return QuantumState.measure_multiple(basis, [photons[0].quantum_state, photons[1].quantum_state])
+        return QuantumState.measure_multiple(basis, [photons[0].quantum_state, photons[1].quantum_state],
+                                             photons[0].quantum_state.generator)

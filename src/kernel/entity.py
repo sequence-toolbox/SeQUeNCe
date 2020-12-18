@@ -5,6 +5,7 @@ This module defines the Entity class, inherited by all physical simulation eleme
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict
+from numpy.random import default_rng
 
 if TYPE_CHECKING:
     from .timeline import Timeline
@@ -72,3 +73,14 @@ class Entity(ABC):
         """
 
         self.timeline.remove_entity_by_name(self.name)
+
+    def get_generator(self):
+        """Method to get random generator of parent node.
+        
+        If entity is not attached to a node, return default generator.
+        """
+        if isinstance(self.owner, Entity):
+            return self.owner.get_generator()
+        else:
+            return default_rng()
+
