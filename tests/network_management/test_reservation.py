@@ -246,7 +246,8 @@ def test_ResourceReservationProtocol_create_rules():
         for j, n2 in enumerate(routers + mids):
             if i == j:
                 continue
-            cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 10, delay=1e6)
+            cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 10,
+                                  delay=1e6)
             cc.set_ends(n1, n2.name)
 
     tl.init()
@@ -278,12 +279,15 @@ def test_ResourceReservationProtocol_create_rules():
     counter = 0
     for memory in routers[0].memory_array:
         print(memory.entangled_memory["node_id"], memory.fidelity)
-        if memory.entangled_memory["node_id"] == "r4" and memory.fidelity >= 0.9:
+        if memory.entangled_memory["node_id"] == "r4" \
+                and memory.fidelity >= 0.9:
             counter += 1
 
     assert counter >= 0
     for info in routers[0].resource_manager.memory_manager:
-        if info.state == "ENTANGLED" and info.remote_node == "r4" and info.fidelity >= 0.9:
+        if info.state == "ENTANGLED" \
+                and info.remote_node == "r4" \
+                and info.fidelity >= 0.9:
             counter -= 1
     assert counter == 0
 
@@ -297,7 +301,8 @@ def test_ResourceReservationProtocol_set_es_params():
         def receive_message(self, src: str, msg: "Message") -> None:
             for protocol in self.resource_manager.pending_protocols:
                 if isinstance(protocol, EntanglementSwappingA):
-                    assert protocol.success_prob == 0.8 and protocol.degradation == 0.7
+                    assert protocol.success_prob == 0.8 \
+                           and protocol.degradation == 0.7
                     self.counter += 1
             super().receive_message(src, msg)
 
@@ -324,7 +329,8 @@ def test_ResourceReservationProtocol_set_es_params():
         for j, n2 in enumerate(routers + mids):
             if i == j:
                 continue
-            cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 10, delay=100000)
+            cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 10,
+                                  delay=100000)
             cc.set_ends(n1, n2.name)
 
     tl.init()

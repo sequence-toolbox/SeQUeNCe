@@ -7,7 +7,7 @@ Node types can be used to collect all the necessary hardware and software for a 
 
 from math import inf
 from time import monotonic_ns
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, List
 import numpy as np
 
 if TYPE_CHECKING:
@@ -158,7 +158,8 @@ class BSMNode(Node):
         eg (EntanglementGenerationB): entanglement generation protocol instance.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", other_nodes: [str]) -> None:
+    def __init__(self, name: str, timeline: "Timeline",
+                 other_nodes: List[str]) -> None:
         """Constructor for BSM node.
 
         Args:
@@ -167,7 +168,8 @@ class BSMNode(Node):
             other_nodes (str): 2-member list of node names for adjacent quantum routers.
         """
 
-        from ..entanglement_management.generation import EntanglementGenerationB
+        from ..entanglement_management.generation import \
+            EntanglementGenerationB
         Node.__init__(self, name, timeline)
         self.bsm = SingleAtomBSM("%s_bsm" % name, timeline)
         self.eg = EntanglementGenerationB(self, "{}_eg".format(name), other_nodes)

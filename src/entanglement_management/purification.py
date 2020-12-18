@@ -82,22 +82,28 @@ class BBPSSW(EntanglementProtocol):
         self.memories = [kept_memo, meas_memo]
         self.kept_memo = kept_memo
         self.meas_memo = meas_memo
-        self.another = None
+        self.remote_node_name = None
+        self.remote_protocol_name = None
+        self.remote_memories = None
         self.meas_res = None
         if self.meas_memo is None:
             self.memories.pop()
 
     def is_ready(self) -> bool:
-        return self.another is not None
+        return self.remote_node_name is not None
 
-    def set_others(self, another: "BBPSSW") -> None:
+    def set_others(self, protocol: str, node: str,
+                   memories: List[str]) -> None:
         """Method to set other entanglement protocol instance.
 
         Args:
-            another (BBPSSW): other purification protocol instance.
+            protocol (str): other protocol name.
+            node (str): other node name.
+            memories (List[str]): the list of memories name used on other node.
         """
-
-        self.another = another
+        self.remote_node_name = node
+        self.remote_protocol_name = protocol
+        self.remote_memories = memories
 
     def start(self) -> None:
         """Method to start entanglement purification.
@@ -129,9 +135,11 @@ class BBPSSW(EntanglementProtocol):
             Will send message to other protocol instance.
         """
 
-        log.logger.info(self.own.name + " protocol start with partner {}".format(self.another.own.name))
+        log.logger.info(
+            self.own.name + " protocol start with partner {}".format(
+                self.remote_node_name))
 
-        assert self.another is not None, "other protocol is not set; please use set_others function to set it."
+        assert self.remote_protocol_name is not None, "other protocol is not set; please use set_others function to set it."
         kept_memo_ent = self.kept_memo.entangled_memory["node_id"]
         meas_memo_ent = self.meas_memo.entangled_memory["node_id"]
         assert kept_memo_ent == meas_memo_ent, "mismatch of entangled memories {}, {} on node {}".format(kept_memo_ent, meas_memo_ent, self.own.name)
@@ -142,7 +150,9 @@ class BBPSSW(EntanglementProtocol):
         self.meas_res = self.meas_res[self.meas_memo.qstate_key]
         dst = self.kept_memo.entangled_memory["node_id"]
 
-        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.another.name, meas_res=self.meas_res)
+        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES,
+                                self.remote_protocol_name,
+                                meas_res=self.meas_res)
         self.own.send_message(dst, message)
 
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:
@@ -157,7 +167,7 @@ class BBPSSW(EntanglementProtocol):
         """
 
         log.logger.info(self.own.name + " received result message, succeeded: {}".format(self.meas_res == msg.meas_res))
-        assert src == self.another.own.name
+        assert src == self.remote_node_name
 
         self.update_resource_manager(self.meas_memo, "RAW")
         if self.meas_res == msg.meas_res:
