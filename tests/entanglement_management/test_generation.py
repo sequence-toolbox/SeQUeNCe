@@ -129,8 +129,8 @@ def test_generation_expire():
     protocol0.primary = True
     e0.protocols.append(protocol0)
     e1.protocols.append(protocol1)
-    protocol0.set_others(protocol1)
-    protocol1.set_others(protocol0)
+    protocol0.set_others(protocol1.name, e1.name, [e1.memory_array[0].name])
+    protocol1.set_others(protocol0.name, e0.name, [e0.memory_array[0].name])
 
     for p in [protocol0, protocol1]:
         process = Process(p, "start", [])
@@ -187,14 +187,18 @@ def test_generation_run():
     for i in range(NUM_TESTS):
         name0 = "eg_e0[{}]".format(i)
         name1 = "eg_e1[{}]".format(i)
-        protocol0 = EntanglementGenerationA(e0, name0, middle="m0", other="e1", memory=e0.memory_array[i])
+        protocol0 = EntanglementGenerationA(e0, name0, middle="m0", other="e1",
+                                            memory=e0.memory_array[i])
         e0.protocols.append(protocol0)
         protocols_e0.append(protocol0)
-        protocol1 = EntanglementGenerationA(e1, name1, middle="m0", other="e0", memory=e1.memory_array[i])
+        protocol1 = EntanglementGenerationA(e1, name1, middle="m0", other="e0",
+                                            memory=e1.memory_array[i])
         e1.protocols.append(protocol1)
         protocols_e1.append(protocol1)
-        protocol0.set_others(protocol1)
-        protocol1.set_others(protocol0)
+        protocol0.set_others(protocol1.name, e1.name,
+                             [e1.memory_array[i].name])
+        protocol1.set_others(protocol0.name, e0.name,
+                             [e0.memory_array[i].name])
 
         process = Process(protocols_e0[i], "start", [])
         event = Event(i * 1e12, process)
@@ -269,14 +273,18 @@ def test_generation_fidelity_ket():
     for i in range(NUM_TESTS):
         name0 = "eg_e0[{}]".format(i)
         name1 = "eg_e1[{}]".format(i)
-        protocol0 = EntanglementGenerationA(e0, name0, middle="m0", other="e1", memory=e0.memory_array[i])
+        protocol0 = EntanglementGenerationA(e0, name0, middle="m0", other="e1",
+                                            memory=e0.memory_array[i])
         e0.protocols.append(protocol0)
         protocols_e0.append(protocol0)
-        protocol1 = EntanglementGenerationA(e1, name1, middle="m0", other="e0", memory=e1.memory_array[i])
+        protocol1 = EntanglementGenerationA(e1, name1, middle="m0", other="e0",
+                                            memory=e1.memory_array[i])
         e1.protocols.append(protocol1)
         protocols_e1.append(protocol1)
-        protocol0.set_others(protocol1)
-        protocol1.set_others(protocol0)
+        protocol0.set_others(protocol1.name, e1.name,
+                             [e1.memory_array[i].name])
+        protocol1.set_others(protocol0.name, e0.name,
+                             [e0.memory_array[i].name])
 
         process = Process(protocols_e0[i], "start", [])
         event = Event(i * 1e12, process)

@@ -185,7 +185,7 @@ class Memory(Entity):
         state = res[self.qstate_key]
 
         # create photon and check if null
-        photon = Photon("", wavelength=self.wavelength, location=self,
+        photon = Photon("", wavelength=self.wavelength, location=self.name,
                         encoding_type=single_atom)
         photon.memory = self
         photon.qstate_key = self.qstate_key

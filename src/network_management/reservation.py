@@ -106,7 +106,7 @@ def eg_req_func(protocols: List["EntanglementProtocol"],
     reservation = args["reservation"]
     for protocol in protocols:
         if (isinstance(protocol, EntanglementGenerationA)
-                and protocol.other == name
+                and protocol.remote_node_name == name
                 and protocol.rule.get_reservation() == reservation):
             return protocol
 

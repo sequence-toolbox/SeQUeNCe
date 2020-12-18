@@ -6,7 +6,8 @@ numpy.random.seed(0)
 
 from sequence.components.memory import MemoryArray
 from sequence.kernel.timeline import Timeline
-from sequence.resource_management.resource_manager import *
+from sequence.resource_management.resource_manager import ResourceManager, \
+    ResourceManagerMessage, ResourceManagerMsgType
 from sequence.resource_management.rule_manager import Rule
 from sequence.topology.node import Node
 
@@ -37,7 +38,7 @@ class FakeProtocol():
     def is_ready(self):
         return self.other_is_setted
 
-    def set_others(self, other):
+    def set_others(self, other, arg2, arg3):
         self.other_is_setted = True
 
     def start(self):
@@ -142,6 +143,8 @@ def test_received_message():
     resource_manager.waiting_protocols.append(protocol1)
     req_msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST,
                                      protocol="ini_protocol",
+                                     node="source",
+                                     memories=[],
                                      req_condition_func=true_fun, req_args={})
     resource_manager.received_message("sender", req_msg)
     assert protocol1 in node.protocols
@@ -156,6 +159,8 @@ def test_received_message():
     resource_manager.waiting_protocols.append(protocol1)
     req_msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST,
                                      protocol="ini_protocol",
+                                     node="source",
+                                     memories=[],
                                      req_condition_func=false_fun, req_args={})
     resource_manager.received_message("sender", req_msg)
     assert protocol1 not in node.protocols
@@ -169,8 +174,15 @@ def test_received_message():
     # test receive RESPONSE message: is_approved==False and is_approved==True
     protocol2 = FakeProtocol("pending_protocol")
     resource_manager.pending_protocols.append(protocol2)
-    resp_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=protocol2, is_approved=False,
-                                      paired_protocol="paired_protocol")
+    resp_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE,
+                                      protocol=protocol2.name,
+                                      node="source",
+                                      memories=[],
+                                      is_approved=False,
+                                      paired_protocol="paired_protocol",
+                                      paired_node="paired_node",
+                                      paired_memories=[]
+                                      )
     resource_manager.received_message("sender", resp_msg)
     assert protocol2 not in node.protocols
     assert protocol2 not in resource_manager.pending_protocols
@@ -179,8 +191,14 @@ def test_received_message():
 
     protocol2 = FakeProtocol("pending_protocol")
     resource_manager.pending_protocols.append(protocol2)
-    resp_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=protocol2, is_approved=True,
-                                      paired_protocol="paired_protocol")
+    resp_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE,
+                                      protocol=protocol2.name,
+                                      node="source",
+                                      memories=[],
+                                      is_approved=True,
+                                      paired_protocol="paired_protocol",
+                                      paired_node="paired_node",
+                                      paired_memories=[])
     resource_manager.received_message("sender", resp_msg)
     assert protocol2 in node.protocols
     assert protocol2 not in resource_manager.pending_protocols
@@ -221,7 +239,8 @@ def test_expire():
     for i in range(6):
         assert node.resource_manager.memory_manager[i].state == "OCCUPIED"
     node.resource_manager.expire(rule)
-    assert p1 not in node.resource_manager.waiting_protocols and p4 in node.resource_manager.waiting_protocols
+    assert p1 not in node.resource_manager.waiting_protocols \
+           and p4 in node.resource_manager.waiting_protocols
     assert p2 not in node.resource_manager.pending_protocols
     assert p5 in node.resource_manager.pending_protocols
     assert p3 not in node.protocols and p6 in node.protocols
@@ -233,9 +252,11 @@ def test_expire():
 
     for i, memory in enumerate(node.memory_array):
         if i < 3:
-            assert len(memory._observers) == 1 and isinstance(memory._observers.pop(), MemoryArray)
+            assert len(memory._observers) == 1 \
+                   and isinstance(memory._observers.pop(), MemoryArray)
         elif i < 6:
-            assert len(memory._observers) == 1 and isinstance(memory._observers.pop(), FakeProtocol)
+            assert len(memory._observers) == 1 \
+                   and isinstance(memory._observers.pop(), FakeProtocol)
 
 
 def test_ResourceManager1():
@@ -246,7 +267,8 @@ def test_ResourceManager1():
     class TestNode(Node):
         def __init__(self, name, tl):
             Node.__init__(self, name, tl)
-            self.memory_array = MemoryArray(name + ".MemoryArray", tl, num_memories=50)
+            self.memory_array = MemoryArray(name + ".MemoryArray", tl,
+                                            num_memories=50)
             self.memory_array.owner = self
             self.resource_manager = ResourceManager(self)
 
@@ -319,15 +341,6 @@ def test_ResourceManager1():
     node2.resource_manager.load(rule2)
 
     tl.run()
-
-    for info in node1.resource_manager.memory_manager:
-        print(info.memory.name, info.state, info.remote_memo)
-    
-    for info in node2.resource_manager.memory_manager:
-        print(info.memory.name, info.state, info.remote_memo)
-
-    for event in tl.events:
-        print(event._is_removed, event.time, event.process.owner, event.process.activation)
 
     for info in node1.resource_manager.memory_manager:
         assert info.state == "ENTANGLED"
