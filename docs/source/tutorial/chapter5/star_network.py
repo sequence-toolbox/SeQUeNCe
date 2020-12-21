@@ -1,5 +1,3 @@
-from numpy import random
-
 from sequence.kernel.timeline import Timeline
 from sequence.topology.topology import Topology
 
@@ -41,12 +39,12 @@ def set_parameters(topology: Topology):
 
 
 if __name__ == "__main__":
-    random.seed(0)
     network_config = "star_network.json"
 
     tl = Timeline(2e12)
     network_topo = Topology("network_topo", tl)
     network_topo.load_config(network_config)
+    network_topo.set_seeds()
 
     set_parameters(network_topo)
 

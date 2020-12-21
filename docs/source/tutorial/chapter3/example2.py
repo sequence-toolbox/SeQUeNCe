@@ -1,8 +1,4 @@
-from numpy import random
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
-
-random.seed(0)
-
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.components.memory import Memory
@@ -56,14 +52,17 @@ def pair_protocol(p1: EntanglementProtocol, p2: EntanglementProtocol):
 
 
 tl = Timeline()
+tl.show_progress = False
 
 node1 = PurifyNode('node1', tl)
 node2 = PurifyNode('node2', tl)
+node1.set_seed(0)
+node2.set_seed(1)
 
 cc0 = ClassicalChannel('cc0', tl, 1000, 1e9)
 cc1 = ClassicalChannel('cc1', tl, 1000, 1e9)
-cc0.set_ends(node1, node2)
-cc1.set_ends(node2, node1)
+cc0.set_ends(node1, node2.name)
+cc1.set_ends(node2, node1.name)
 
 for i in range(10):
     entangle_memory(node1.kept_memo, node2.kept_memo, 0.9)
@@ -82,3 +81,4 @@ for i in range(10):
 
     print(node1.kept_memo.name, node1.kept_memo.entangled_memory, node1.kept_memo.fidelity)
     print(node1.meas_memo.name, node1.meas_memo.entangled_memory, node1.meas_memo.fidelity)
+

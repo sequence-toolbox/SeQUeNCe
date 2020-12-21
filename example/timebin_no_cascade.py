@@ -28,7 +28,6 @@ if __name__ == "__main__":
 
     for distance in distances:
         tl = Timeline(runtime)
-        tl.seed(1)
 
         qc0 = QuantumChannel("qc0", tl, distance=distance * 1e3, attenuation=0.0002)
         qc1 = QuantumChannel("qc1", tl, distance=distance * 1e3, attenuation=0.0002)
@@ -38,6 +37,7 @@ if __name__ == "__main__":
         # Alice
         ls_params = {"frequency": 2e6, "mean_photon_num": 0.1}
         alice = QKDNode("alice", tl, encoding=time_bin, stack_size=1)
+        alice.set_seed(0)
         
         for name, param in ls_params.items():
             alice.update_lightsource_params(name, param)
@@ -50,6 +50,7 @@ if __name__ == "__main__":
                            {"efficiency": 0.072, "dark_count": dark_count,
                             "time_resolution": 10}]
         bob = QKDNode("bob", tl, encoding=time_bin, stack_size=1)
+        bob.set_seed(0)
 
         for i in range(len(detector_params)):
             for name, param in detector_params[i].items():

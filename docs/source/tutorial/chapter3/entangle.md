@@ -101,7 +101,8 @@ A: The implementation of `EntanglementGenerationA` assumes it has been placed in
 ### Step 2: Create Network
 
 As introduced in the previous chapter, we create nodes and channels to define the network.
-To avoid unnecessary errors, we will set the efficiency of our detectors to 1. 
+To avoid unnecessary errors, we will set the efficiency of our detectors to 1.
+Also note that we will set the timeline `show_progress` attribute to 0, since we will be calling the run method multiple times.
 
 ```python
 from sequence.kernel.timeline import Timeline
@@ -110,24 +111,28 @@ from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 
 
 tl = Timeline()
+tl.show_progress = False
 
 node1 = EntangleGenNode('node1', tl)
 node2 = EntangleGenNode('node2', tl)
 bsm_node = BSMNode('bsm_node', tl, ['node1', 'node2'])
+node1.set_seed(0)
+node2.set_seed(1)
+bsm_node.set_seed(2)
 
 bsm_node.bsm.update_detectors_params('efficiency', 1)
 
 qc1 = QuantumChannel('qc1', tl, attenuation=0, distance=1000)
 qc2 = QuantumChannel('qc2', tl, attenuation=0, distance=1000)
-qc1.set_ends(node1, bsm_node)
-qc2.set_ends(node2, bsm_node)
+qc1.set_ends(node1, bsm_node.name)
+qc2.set_ends(node2, bsm_node.name)
 
 nodes = [node1, node2, bsm_node]
 
 for i in range(3):
     for j in range(3):
         cc= ClassicalChannel('cc_%s_%s'%(nodes[i].name, nodes[j].name), tl, 1000, 1e8)
-        cc.set_ends(nodes[i], nodes[j])
+        cc.set_ends(nodes[i], nodes[j].name)
 ```
 
 ### Step 3: Configure and Start the `EntanglementGenerationA` Protocol
@@ -255,14 +260,17 @@ We can now use the code below to create the simulated network.
 
 ```python
 tl = Timeline()
+tl.show_progress = False
 
 node1 = PurifyNode('node1', tl)
 node2 = PurifyNode('node2', tl)
+node1.set_seed(0)
+node2.set_seed(1)
 
 cc0 = ClassicalChannel('cc0', tl, 1000, 1e9)
 cc1 = ClassicalChannel('cc1', tl, 1000, 1e9)
-cc0.set_ends(node1, node2)
-cc1.set_ends(node2, node1)
+cc0.set_ends(node1, node2.name)
+cc1.set_ends(node2, node1.name)
 ```
 
 ### Step 3: Manually Set Entanglement States 
@@ -445,13 +453,16 @@ tl = Timeline()
 left_node = SwapNodeB('left', tl)
 right_node = SwapNodeB('right', tl)
 mid_node = SwapNodeA('mid', tl)
+left_node.set_seed(0)
+right_node.set_seed(1)
+mid_node.set_seed(2)
 
 nodes = [left_node, right_node, mid_node]
 
 for i in range(3):
     for j in range(3):
         cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl, 1000, 1e9)
-        cc.set_ends(nodes[i], nodes[j])
+        cc.set_ends(nodes[i], nodes[j].name)
 ```
 
 ### Step 3: Manually Set Entanglement State and Start Protocol

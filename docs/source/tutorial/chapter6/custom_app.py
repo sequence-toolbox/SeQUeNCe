@@ -1,5 +1,3 @@
-from numpy import random
-
 from sequence.kernel.timeline import Timeline
 from sequence.kernel.process import Process
 from sequence.kernel.event import Event
@@ -42,13 +40,14 @@ class PeriodicApp():
 
 
 if __name__ == "__main__":
-    random.seed(0)
     network_config = "star_network.json"
 
     num_periods = 5
     tl = Timeline(2e12 * num_periods)
+    tl.show_progress = False
     network_topo = Topology("network_topo", tl)
     network_topo.load_config(network_config)
+    network_topo.set_seeds()
 
     node1 = "end1"
     node2 = "end2"

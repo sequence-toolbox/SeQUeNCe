@@ -52,14 +52,17 @@ class PongProtocol(Protocol):
 
 if __name__ == "__main__":
     tl = Timeline(1e12)
+    tl.show_progress = False
 
     node1 = Node("node1", tl)
     node2 = Node("node2", tl)
+    node1.set_seed(0)
+    node2.set_seed(1)
 
     cc0 = ClassicalChannel("cc0", tl, 1e3, 1e9)
     cc1 = ClassicalChannel("cc1", tl, 1e3, 1e9)
-    cc0.set_ends(node1, node2)
-    cc1.set_ends(node2, node1)
+    cc0.set_ends(node1, node2.name)
+    cc1.set_ends(node2, node1.name)
 
     pingp = PingProtocol(node1, "pingp", "pongp", "node2")
     pongp = PongProtocol(node2, "pongp", "pingp", "node1")

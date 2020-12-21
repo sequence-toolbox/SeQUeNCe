@@ -74,7 +74,7 @@ class Topology():
             elif node_type == "QuantumRouter":
                 node = QuantumRouter(name, self.timeline, **node_params)
             else:
-                node = Node(name, self.timeline)
+                node = Node(name, self.timeline, **node_params)
             
             self.add_node(node)
 
@@ -285,6 +285,26 @@ class Topology():
                     next_node[node] = prev
 
         return next_node
+
+    def set_seeds(self, seeds=None):
+        """
+        Method to set all seeds.
+        
+        Requires a list of seeds equal to the number of nodes (including middle nodes).
+        if seeds is None, will set all seeds as sequential integers.
+
+        Args:
+            seeds (List[int]): list of seeds to assign to each node (default None).
+        """
+
+        if seeds is not None:
+            assert len(seeds) == len(self.nodes)
+            for seed, node in zip(seeds, self.nodes.values()):
+                node.set_seed(seed)
+
+        else:
+            for i, node in enumerate(self.nodes.values()):
+                node.set_seed(i)
 
     def populate_protocols(self):
         # TODO: add higher-level protocols not added by nodes

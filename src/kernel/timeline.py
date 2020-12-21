@@ -55,6 +55,7 @@ class Timeline:
         self.stop_time = stop_time
         self.schedule_counter = 0
         self.run_counter = 0
+        self.show_progress = True
 
         if formalism == 'ket_vector':
             self.quantum_manager = QuantumManagerKet()
@@ -92,21 +93,23 @@ class Timeline:
         log.logger.info("Timeline start simulation")
         tick = time_ns()
 
-        with tqdm(total=self.stop_time / 1e12,
-                  bar_format='{l_bar}{bar:50}{r_bar}{bar:-50b}') as pbar:
-            while len(self.events) > 0:
-                event = self.events.pop()
-                if event.time >= self.stop_time:
-                    self.schedule(event)
-                    break
-                assert self.time <= event.time, "invalid event time for process scheduled on " + str(
-                    event.process.owner)
-                if event.is_invalid():
-                    continue
+        if self.show_progress:
+            pbar = tqdm(total=self.stop_time / 1e12, bar_format='{l_bar}{bar:50}{r_bar}{bar:-50b}')
+
+        while len(self.events) > 0:
+            event = self.events.pop()
+            if event.time >= self.stop_time:
+                self.schedule(event)
+                break
+            assert self.time <= event.time, "invalid event time for process scheduled on " + str(
+                event.process.owner)
+            if event.is_invalid():
+                continue
+            if self.show_progress:
                 pbar.update((event.time - self.time) / 1e12)
-                self.time = event.time
-                event.process.run()
-                self.run_counter += 1
+            self.time = event.time
+            event.process.run()
+            self.run_counter += 1
 
         elapse = time_ns() - tick
         log.logger.info(
@@ -130,12 +133,6 @@ class Timeline:
         """
 
         self.events.update_event_time(event, time)
-
-    def seed(self, seed: int) -> None:
-        """Sets random seed for simulation."""
-
-        from numpy import random
-        random.seed(seed)
 
     def remove_entity_by_name(self, name: str):
         self.entities.pop(name)

@@ -1,4 +1,3 @@
-from numpy import random
 from typing import List, TYPE_CHECKING
 
 from sequence.kernel.timeline import Timeline
@@ -325,8 +324,6 @@ def add_es_rules(index: int, path: List[RouterNode], target_fidelity: float, suc
 
 
 if __name__ == "__main__":
-    random.seed(0)
-
     runtime = 10e12
     tl = Timeline(runtime)
 
@@ -337,27 +334,30 @@ if __name__ == "__main__":
     
     m12 = BSMNode("m12", tl, ["r1", "r2"])
     m23 = BSMNode("m23", tl, ["r2", "r3"])
+    
+    node_list = [r1, r2, r3, m12, m23]
+    for i, node in enumerate(node_list):
+        node.set_seed(i)
 
     # create all-to-all classical connections
     cc_delay = 1e9
-    node_list = [r1, r2, r3, m12, m23]
     for node1 in node_list:
         for node2 in node_list:
             cc = ClassicalChannel("cc_%s_%s"%(node1.name, node2.name), tl, 1e3, delay=cc_delay)
-            cc.set_ends(node1, node2)
+            cc.set_ends(node1, node2.name)
 
     # create quantum channels linking r1 and r2 to m1
     qc_atten = 0
     qc_dist = 1e3
     qc1 = QuantumChannel("qc_r1_m12", tl, qc_atten, qc_dist)
-    qc1.set_ends(r1, m12)
+    qc1.set_ends(r1, m12.name)
     qc2 = QuantumChannel("qc_r2_m12", tl, qc_atten, qc_dist)
-    qc2.set_ends(r2, m12)
+    qc2.set_ends(r2, m12.name)
     # create quantum channels linking r2 and r3 to m2
     qc3 = QuantumChannel("qc_r2_m23", tl, qc_atten, qc_dist)
-    qc3.set_ends(r2, m23)
+    qc3.set_ends(r2, m23.name)
     qc4 = QuantumChannel("qc_r3_m23", tl, qc_atten, qc_dist)
-    qc4.set_ends(r3, m23)
+    qc4.set_ends(r3, m23.name)
 
     tl.init()
 

@@ -1,6 +1,3 @@
-from numpy import random
-random.seed(0)
-
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node, BSMNode
 from sequence.components.memory import Memory
@@ -42,24 +39,28 @@ def pair_protocol(p1: EntanglementProtocol, p2: EntanglementProtocol):
 
 
 tl = Timeline()
+tl.show_progress = False
 
 node1 = EntangleGenNode('node1', tl)
 node2 = EntangleGenNode('node2', tl)
 bsm_node = BSMNode('bsm_node', tl, ['node1', 'node2'])
+node1.set_seed(0)
+node2.set_seed(1)
+bsm_node.set_seed(2)
 
 bsm_node.bsm.update_detectors_params('efficiency', 1)
 
 qc1 = QuantumChannel('qc1', tl, attenuation=0, distance=1000)
 qc2 = QuantumChannel('qc2', tl, attenuation=0, distance=1000)
-qc1.set_ends(node1, bsm_node)
-qc2.set_ends(node2, bsm_node)
+qc1.set_ends(node1, bsm_node.name)
+qc2.set_ends(node2, bsm_node.name)
 
 nodes = [node1, node2, bsm_node]
 
 for i in range(3):
     for j in range(3):
-        cc= ClassicalChannel('cc_%s_%s'%(nodes[i].name, nodes[j].name), tl, 1000, 1e8)
-        cc.set_ends(nodes[i], nodes[j])
+        cc = ClassicalChannel('cc_%s_%s'%(nodes[i].name, nodes[j].name), tl, 1000, 1e8)
+        cc.set_ends(nodes[i], nodes[j].name)
 
 for i in range(1000):
     tl.time = tl.now() + 1e11

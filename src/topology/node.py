@@ -44,6 +44,7 @@ class Node(Entity):
         cchannels (Dict[str, ClassicalChannel]): mapping of destination node names to classical channel instances.
         qchannels (Dict[str, ClassicalChannel]): mapping of destination node names to quantum channel instances.
         protocols (List[Protocol]): list of attached protocols.
+        generator (np.random.Generator): random number generator used by node.
     """
 
     def __init__(self, name: str, timeline: "Timeline", seed=None):

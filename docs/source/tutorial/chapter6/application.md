@@ -74,13 +74,14 @@ if TYPE_CHECKING:
 With all of the tools we have seen through the tutorials, creating our network and running the simulation are now a very simple process. We will use the same json file as the last tutorial (`star_network.json`) to automatically build the network, and will add our custom application to one node. Finally, we will begin the application processes with the `start` method.
 
 ```python
-random.seed(0)
 network_config = "star_network.json"
 
 num_runs = 5
 tl = Timeline(2e12 * num_runs)
+tl.show_progress = False
 network_topo = Topology("network_topo", tl)
 network_topo.load_config(network_config)
+network_topo.set_seeds()
 
 node1 = "end1"
 node2 = "end2"
