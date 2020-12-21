@@ -117,8 +117,8 @@ class BSM(Entity):
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
-
-        pass
+        for detector in self.detectors:
+            detector.owner = self.owner
 
     @abstractmethod
     def get(self, photon):

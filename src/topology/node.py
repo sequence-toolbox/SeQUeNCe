@@ -172,7 +172,9 @@ class BSMNode(Node):
             EntanglementGenerationB
         Node.__init__(self, name, timeline)
         self.bsm = SingleAtomBSM("%s_bsm" % name, timeline)
-        self.eg = EntanglementGenerationB(self, "{}_eg".format(name), other_nodes)
+        self.bsm.owner = self
+        self.eg = EntanglementGenerationB(self, "{}_eg".format(name),
+                                          other_nodes)
         self.bsm.attach(self.eg)
 
     def receive_message(self, src: str, msg: "Message") -> None:
