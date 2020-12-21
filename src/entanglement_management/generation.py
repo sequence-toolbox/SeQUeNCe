@@ -263,9 +263,9 @@ class EntanglementGenerationA(EntanglementProtocol):
             local_frequency = self.memory.frequency
             other_frequency = msg.frequency
             total = min(local_frequency, other_frequency)
-            # min_time = min_time + int(1e12 / total)
-            emit_time_1 = self.own.schedule_qubit(self.middle,
-                                                  self.expected_times[0] + 1)
+            min_time = max(emit_time_0 + 1e12 / self.memory.frequency,
+                           self.expected_times[0]) + 1
+            emit_time_1 = self.own.schedule_qubit(self.middle, min_time)
             self.expected_times[1] = emit_time_1 + self.qc_delay
 
             # schedule emit
