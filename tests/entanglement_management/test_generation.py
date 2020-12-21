@@ -236,8 +236,11 @@ def test_generation_fidelity_ket():
     tl = Timeline()
 
     e0 = FakeNode("e0", tl)
+    e0.set_seed(0)
     m0 = FakeNode("m0", tl)
+    m0.set_seed(1)
     e1 = FakeNode("e1", tl)
+    e1.set_seed(2)
 
     # add connections
     qc0 = QuantumChannel("qc_e0m0", tl, 0, 1e3)
@@ -249,7 +252,7 @@ def test_generation_fidelity_ket():
         for n2 in [e0, e1, m0]:
             if n1 != n2:
                 cc = ClassicalChannel("cc_%s%s" % (n1.name, n2.name), tl, 1e3,
-                                      delay=1e12)
+                                      delay=1e9)
                 cc.set_ends(n1, n2.name)
 
     # add hardware

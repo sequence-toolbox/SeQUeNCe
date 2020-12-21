@@ -205,7 +205,8 @@ class PolarizationBSM(BSM):
         self.photons[0].entangle(self.photons[1])
 
         # measure in bell basis
-        res = Photon.measure_multiple(self.bell_basis, self.photons)
+        res = Photon.measure_multiple(self.bell_basis, self.photons,
+                                      self.get_generator())
 
         # check if we've measured as Phi+ or Phi-; these cannot be measured by the BSM
         if res == 0 or res == 1:
@@ -304,7 +305,8 @@ class TimeBinBSM(BSM):
         self.photons[0].entangle(self.photons[1])
 
         # measure in bell basis
-        res = Photon.measure_multiple(self.bell_basis, self.photons)
+        res = Photon.measure_multiple(self.bell_basis, self.photons,
+                                      self.get_generator())
 
         # check if we've measured as Phi+ or Phi-; these cannot be measured by the BSM
         if res == 0 or res == 1:
@@ -453,6 +455,7 @@ class SingleAtomBSM(BSM):
         time = info["time"]
 
         res = detector_num
-        info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
+        info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res,
+                'time': time}
         self.notify(info)
 
