@@ -74,8 +74,10 @@ class EntanglementGenerationMessage(Message):
 class EntanglementGenerationA(EntanglementProtocol):
     """Entanglement generation protocol for quantum router.
 
-    The EntanglementGenerationA protocol should be instantiated on a quantum router node.
-    Instances will communicate with each other (and with the B instance on a BSM node) to generate entanglement.
+    The EntanglementGenerationA protocol should be instantiated on a quantum
+    router node.
+    Instances will communicate with each other (and with the B instance on a
+    BSM node) to generate entanglement.
 
     Attributes:
         own (QuantumRouter): node that protocol instance is attached to.
@@ -84,8 +86,6 @@ class EntanglementGenerationA(EntanglementProtocol):
         other (str): name of distant QuantumRouter node, containing a memory to be entangled with local memory.
         memory (Memory): quantum memory object to attempt entanglement for.
     """
-    
-    # TODO: use a function to update resource manager
 
     _plus_state = [sqrt(1/2), sqrt(1/2)]
     _flip_circuit = Circuit(1)
@@ -176,8 +176,10 @@ class EntanglementGenerationA(EntanglementProtocol):
     def end(self) -> None:
         """Method to end entanglement generation protocol.
 
-        Checks the measurement results received to determine if valid entanglement achieved, and what the state is.
-        If entanglement is achieved, the memory fidelity will be increased to equal the `fidelity` field.
+        Checks the measurement results received to determine if valid
+        entanglement achieved, and what the state is.
+        If entanglement is achieved, the memory fidelity will be increased to
+        equal the `fidelity` field.
         Otherwise, it will be set to 0.
         Also performs corrections to map psi+ and psi- states to phi+.
 
@@ -252,7 +254,8 @@ class EntanglementGenerationA(EntanglementProtocol):
 
             # get time for first excite event
             memory_excite_time = self.memory.next_excite_time
-            min_time = max(self.own.timeline.now(), memory_excite_time) + total_quantum_delay - self.qc_delay + cc_delay
+            min_time = max(self.own.timeline.now(),
+                           memory_excite_time) + total_quantum_delay - self.qc_delay + cc_delay
             emit_time_0 = self.own.schedule_qubit(self.middle, min_time)
             self.expected_times[0] = emit_time_0 + self.qc_delay
 
@@ -260,8 +263,9 @@ class EntanglementGenerationA(EntanglementProtocol):
             local_frequency = self.memory.frequency
             other_frequency = msg.frequency
             total = min(local_frequency, other_frequency)
-            min_time = min_time + int(1e12 / total)
-            emit_time_1 = self.own.schedule_qubit(self.middle, min_time)
+            # min_time = min_time + int(1e12 / total)
+            emit_time_1 = self.own.schedule_qubit(self.middle,
+                                                  self.expected_times[0] + 1)
             self.expected_times[1] = emit_time_1 + self.qc_delay
 
             # schedule emit
