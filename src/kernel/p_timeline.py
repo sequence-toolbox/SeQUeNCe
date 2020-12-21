@@ -81,8 +81,6 @@ class ParallelTimeline():
 
             for events in inbox:
                 for event in events:
-                    event.process.owner = self.get_entity_by_name(
-                        event.process.owner)
                     self.exchange_counter += 1
                     self.schedule(event)
 
@@ -103,11 +101,6 @@ class ParallelTimeline():
                     continue
                 assert self.time <= event.time, "invalid event time for process scheduled on " + str(
                     event.process.owner)
-                if type(event.process.owner) == type(''):
-                    fh = open('log', 'a')
-                    fh.write("%d %.2f %s" % (
-                    self.id, self.time, event.process.owner))
-                    fh.close()
                 self.time = event.time
                 event.process.run()
                 self.execute_flag = True

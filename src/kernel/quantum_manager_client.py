@@ -116,6 +116,7 @@ class QuantumManagerClient():
         if expecting_receive:
             received_data = self.s.recv(1024)
             received_msg = loads(received_data)
+            self.io_time[msg_type.name] += time() - tick
             return received_msg
 
         self.io_time[msg_type.name] += time() - tick
