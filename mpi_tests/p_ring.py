@@ -25,7 +25,6 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
 
     tl = ParallelTimeline(lookahead=lookahead, stop_time=stop_time,
                           qm_ip=qm_ip, qm_port=qm_port)
-    tl.seed(rank)
 
     log.set_logger(__name__, tl, "mpi_%d.log" % rank)
     log.set_logger_level("INFO")
@@ -41,6 +40,7 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
         router_names.append(node_name)
         if node_id // group_size == rank:
             node = QuantumRouter(node_name, tl, MEMO_SIZE)
+            node.set_seed(node_id)
             node.memory_array.update_memory_params('raw_fidelity',
                                                    RAW_FIDELITY)
             routers.append(node)
@@ -54,6 +54,7 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
             post_node_name = 'Node_%d' % bsm_id
 
             node = BSMNode(node_name, tl, [pre_node_name, post_node_name])
+            node.set_seed(ring_size + bsm_id)
             bsm_nodes.append(node)
         else:
             tl.foreign_entities[node_name] = bsm_id // group_size
@@ -216,6 +217,7 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
 
     with open('%s/perf_%d.json' % (log_path, rank), 'w') as fh:
         dump(perf_info, fh)
+
 
 if __name__ == "__main__":
     from mpi4py import MPI
