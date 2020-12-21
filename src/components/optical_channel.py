@@ -142,6 +142,9 @@ class QuantumChannel(OpticalChannel):
 
         # check if photon kept
         if (self.sender.generator.random() > self.loss) or qubit.is_null:
+            if qubit.is_null:
+                qubit.add_loss(self.loss)
+
             # check if polarization encoding and apply necessary noise
             if (qubit.encoding_type["name"] == "polarization") and (
                     self.sender.generator.random() > self.polarization_fidelity):
@@ -149,7 +152,8 @@ class QuantumChannel(OpticalChannel):
 
             # schedule receiving node to receive photon at future time determined by light speed
             future_time = self.timeline.now() + self.delay
-            process = Process(self.receiver, "receive_qubit", [source.name, qubit])
+            process = Process(self.receiver, "receive_qubit",
+                              [source.name, qubit])
             event = Event(future_time, process)
             self.timeline.schedule(event)
 

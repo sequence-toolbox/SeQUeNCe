@@ -90,3 +90,7 @@ class Photon():
         return QuantumState.measure_multiple(basis, [photons[0].quantum_state,
                                                      photons[1].quantum_state],
                                              rng)
+
+    def add_loss(self, loss: float):
+        assert 0 <= loss <= 1
+        self.loss = 1 - (1 - self.loss) * (1 - loss)

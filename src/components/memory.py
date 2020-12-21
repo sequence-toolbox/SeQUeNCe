@@ -178,26 +178,22 @@ class Memory(Entity):
         if self.timeline.now() < self.next_excite_time:
             return
 
-        # measure quantum state
-        res = self.timeline.quantum_manager.run_circuit(Memory._meas_circuit, [self.qstate_key])
-        state = res[self.qstate_key]
-
-        # create photon and check if null
+        # create photon
         photon = Photon("", wavelength=self.wavelength, location=self.name,
                         encoding_type=single_atom)
-        photon.memory = self
+
         photon.qstate_key = self.qstate_key
-        if state == 0:
-            photon.is_null = True
+        photon.fidelity = self.raw_fidelity
+        photon.is_null = True
+        photon.add_loss(1 - self.efficiency)
 
         if self.frequency > 0:
             period = 1e12 / self.frequency
             self.next_excite_time = self.timeline.now() + period
 
         # send to node
-        if (state == 0) or (self.get_generator().random() < self.efficiency):
-            self.owner.send_qubit(dst, photon)
-            self.excited_photon = photon
+        self.owner.send_qubit(dst, photon)
+        self.excited_photon = photon
 
     def expire(self) -> None:
         """Method to handle memory expiration.
