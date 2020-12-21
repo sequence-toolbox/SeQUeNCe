@@ -145,7 +145,7 @@ class QuantumChannel(OpticalChannel):
             # check if polarization encoding and apply necessary noise
             if (qubit.encoding_type["name"] == "polarization") and (
                     self.sender.generator.random() > self.polarization_fidelity):
-                qubit.random_noise()
+                qubit.random_noise(self.get_generator())
 
             # schedule receiving node to receive photon at future time determined by light speed
             future_time = self.timeline.now() + self.delay

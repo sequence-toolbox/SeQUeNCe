@@ -78,8 +78,10 @@ class Switch(Entity):
             receiver = self.detector
             # check if receiver is detector, if we're using time bin, and if the photon is "late" to schedule measurement
             assert photon.encoding_type["name"] == "time_bin"
-            if Photon.measure(photon.encoding_type["bases"][0], photon):
-                time = self.timeline.now() + photon.encoding_type["bin_separation"]
+            if Photon.measure(photon.encoding_type["bases"][0], photon,
+                              self.get_generator()):
+                time = self.timeline.now() + photon.encoding_type[
+                    "bin_separation"]
                 process = Process(receiver, "get", [])
                 event = Event(time, process)
                 self.timeline.schedule(event)
