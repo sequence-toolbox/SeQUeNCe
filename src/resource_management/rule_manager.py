@@ -4,7 +4,7 @@ This module defines the rule manager, which is used by the resource manager to i
 This is achieved through rules (also defined in this module), which if met define a set of actions to take.
 """
 
-from typing import Callable, TYPE_CHECKING, List, Tuple
+from typing import Callable, TYPE_CHECKING, List, Tuple, Any, Dict
 from ..utils import log
 if TYPE_CHECKING:
     from ..entanglement_management.entanglement_protocol import EntanglementProtocol
@@ -79,11 +79,12 @@ class RuleManager():
     def get_memory_manager(self):
         return self.resource_manager.get_memory_manager()
 
-    def send_request(self, protocol, req_dst, req_condition_func):
+    def send_request(self, protocol, req_dst, req_condition_func, req_args):
         log.logger.info(
             'Rule manager send request for protocol {} to {}'.format(
                 protocol.name, req_dst))
-        return self.resource_manager.send_request(protocol, req_dst, req_condition_func)
+        return self.resource_manager.send_request(protocol, req_dst,
+                                                  req_condition_func, req_args)
 
     def __len__(self):
         return len(self.rules)
@@ -107,16 +108,25 @@ class Rule():
     """
 
     def __init__(self, priority: int,
-                 action: Callable[
-                     [List["MemoryInfo"]], Tuple["Protocol", List["str"], List[Callable[["Protocol"], bool]]]],
-                 condition: Callable[["MemoryInfo", "MemoryManager"], List["MemoryInfo"]]):
+                 action: Callable[[List["MemoryInfo"], Dict[str, Any]],
+                                  Tuple["EntanglementProtocol", List["str"],
+                                        List[Callable[
+                                            ["EntanglementProtocol"], bool]]]],
+                 condition: Callable[
+                     ["MemoryInfo", "MemoryManager", Dict[str, Any]],
+                     List["MemoryInfo"]],
+                 action_args: Dict[str, Any],
+                 condition_args: Dict[str, Any]):
         """Constructor for rule class."""
 
         self.priority = priority
         self.action = action
+        self.action_args = action_args
         self.condition = condition
+        self.condition_args = condition_args
         self.protocols = []
         self.rule_manager = None
+        self.reservation = None
 
     def set_rule_manager(self, rule_manager: "RuleManager") -> None:
         """Method to assign rule to a rule manager.
@@ -134,7 +144,8 @@ class Rule():
             memories_info (List[MemoryInfo]): list of memory infos for memories meeting requirements.
         """
 
-        protocol, req_dsts, req_condition_funcs = self.action(memories_info)
+        protocol, req_dsts, req_condition_funcs, req_args = self.action(
+            memories_info, self.action_args)
         log.logger.info('Rule generates protocol {}'.format(protocol.name))
 
         protocol.rule = self
@@ -142,8 +153,9 @@ class Rule():
         for info in memories_info:
             info.memory.detach(info.memory.memory_array)
             info.memory.attach(protocol)
-        for dst, req_func in zip(req_dsts, req_condition_funcs):
-            self.rule_manager.send_request(protocol, dst, req_func)
+        for dst, req_func, args in zip(req_dsts, req_condition_funcs,
+                                       req_args):
+            self.rule_manager.send_request(protocol, dst, req_func, args)
 
     def is_valid(self, memory_info: "MemoryInfo") -> List["MemoryInfo"]:
         """Method to check for memories meeting condition.
@@ -156,7 +168,7 @@ class Rule():
         """
 
         manager = self.rule_manager.get_memory_manager()
-        return self.condition(memory_info, manager)
+        return self.condition(memory_info, manager, self.condition_args)
 
     def set_reservation(self, reservation: "Reservation") -> None:
         self.reservation = reservation
