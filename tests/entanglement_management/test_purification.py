@@ -7,7 +7,6 @@ from sequence.kernel.timeline import Timeline
 from sequence.entanglement_management.purification import *
 from sequence.topology.node import Node
 
-np.random.seed(0)
 
 ENTANGLED = 'ENTANGLED'
 RAW = 'RAW'
@@ -54,11 +53,12 @@ def test_BBPSSWMessage():
         BBPSSWMessage("unknown type")
 
 
-def create_scenario(state1, state2, seed):
+def create_scenario(state1, state2, seed_index):
     tl = Timeline()
-    tl.seed(seed)
     a1 = FakeNode("a1", tl)
     a2 = FakeNode("a2", tl)
+    a1.set_seed(2*seed_index)
+    a2.set_seed(2*seed_index+1)
     cc0 = ClassicalChannel("cc0", tl, 0, 1e5)
     cc1 = ClassicalChannel("cc1", tl, 0, 1e5)
     cc0.delay = ONE_MILLISECOND

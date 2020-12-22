@@ -44,29 +44,29 @@ class RouterNode(Node):
 
 # entanglement generation
 
-def eg_rule_condition_f1(memory_info: "MemoryInfo", manager: "MemoryManager"):
+def eg_rule_condition_f1(memory_info: "MemoryInfo", manager: "MemoryManager", args):
     if memory_info.state == "RAW" and memory_info.index < 10:
         return [memory_info]
     else:
         return []
 
-def eg_rule_action_f1_1(memories_info: List["MemoryInfo"]):
-    def req_func(protocols):
+def eg_rule_action_f1_1(memories_info: List["MemoryInfo"], args):
+    def req_func(protocols, args):
         for protocol in protocols:
-            if isinstance(protocol, EntanglementGenerationA) and protocol.other == "r1" and r2.memory_array.memories.index(protocol.memory) < 10:
+            if isinstance(protocol, EntanglementGenerationA) and protocol.remote_node_name == "r1" and r2.memory_array.memories.index(protocol.memory) < 10:
                 return protocol
 
     memories = [info.memory for info in memories_info]
     memory = memories[0]
     protocol = EntanglementGenerationA(None, "EGA." + memory.name, "m12", "r2", memory)
-    return [protocol, ["r2"], [req_func]]
+    return [protocol, ["r2"], [req_func], [None]]
 
 
-def eg_rule_action_f1_2(memories_info: List["MemoryInfo"]):
+def eg_rule_action_f1_2(memories_info: List["MemoryInfo"], args):
     memories = [info.memory for info in memories_info]
     memory = memories[0]
     protocol = EntanglementGenerationA(None, "EGA." + memory.name, "m12", "r1", memory)
-    return [protocol, [None], [None]]
+    return [protocol, [None], [None], [None]]
 
 
 ## flow 2
@@ -83,49 +83,49 @@ def add_eg_rules(index: int, path: List[RouterNode], middles: List[BSMNode]):
     mem_range = node_mems[index]
 
     if index > 0:
-        def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager"):
+        def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager", args):
             if memory_info.state == "RAW" and memory_info.index in range(mem_range[0], mem_range[1])[:10]:
                 return [memory_info]
             else:
                 return []
 
-        def eg_rule_action(memories_info: List["MemoryInfo"]):
+        def eg_rule_action(memories_info: List["MemoryInfo"], args):
             memories = [info.memory for info in memories_info]
             memory = memories[0]
             protocol = EntanglementGenerationA(None, "EGA." + memory.name, middle_names[index - 1], node_names[index - 1], memory)
-            return [protocol, [None], [None]]
+            return [protocol, [None], [None], [None]]
 
-        rule = Rule(10, eg_rule_action, eg_rule_condition)
+        rule = Rule(10, eg_rule_action, eg_rule_condition, None, None)
         node.resource_manager.load(rule)
 
     if index < (len(path) - 1):
         if index == 0:
-            def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager"):
+            def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager", args):
                 if memory_info.state == "RAW" and memory_info.index in range(mem_range[0], mem_range[1]):
                     return [memory_info]
                 else:
-                    return []
+                        return []
 
         else:
-            def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager"):
+            def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager", args):
                 if memory_info.state == "RAW" and memory_info.index in range(mem_range[0], mem_range[1])[10:]:
                     return [memory_info]
                 else:
                     return []
 
 
-        def eg_rule_action(memories_info: List["MemoryInfo"]):
-            def req_func(protocols):
+        def eg_rule_action(memories_info: List["MemoryInfo"], args):
+            def req_func(protocols, args):
                 for protocol in protocols:
-                    if isinstance(protocol, EntanglementGenerationA) and protocol.other == node.name and path[index+1].memory_array.memories.index(protocol.memory) in range(node_mems[index+1][0], node_mems[index+1][1]):
+                    if isinstance(protocol, EntanglementGenerationA) and protocol.remote_node_name == node.name and path[index+1].memory_array.memories.index(protocol.memory) in range(node_mems[index+1][0], node_mems[index+1][1]):
                         return protocol
 
             memories = [info.memory for info in memories_info]
             memory = memories[0]
             protocol = EntanglementGenerationA(None, "EGA." + memory.name, middle_names[index], node_names[index + 1], memory)
-            return [protocol, [node_names[index + 1]], [req_func]]
+            return [protocol, [node_names[index + 1]], [req_func], [None]]
 
-        rule = Rule(10, eg_rule_action, eg_rule_condition)
+        rule = Rule(10, eg_rule_action, eg_rule_condition, None, None)
         node.resource_manager.load(rule)
 
 
@@ -139,7 +139,7 @@ def add_ep_rules(index: int, path: List[RouterNode], target_fidelity: float):
     mem_range = node_mems[index]
 
     if index > 0:
-        def ep_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager"):
+        def ep_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager", args):
             if (memory_info.index in range(mem_range[0], mem_range[1]) and memory_info.state == "ENTANGLED" and memory_info.fidelity < target_fidelity):
                 for info in manager:
                     if (info != memory_info and info.index in range(mem_range[0], mem_range[1])[:10]
@@ -149,10 +149,10 @@ def add_ep_rules(index: int, path: List[RouterNode], target_fidelity: float):
                         return [memory_info, info]
             return []
 
-        def ep_rule_action(memories_info: List["MemoryInfo"]):
+        def ep_rule_action(memories_info: List["MemoryInfo"], args):
             memories = [info.memory for info in memories_info]
 
-            def req_func(protocols):
+            def req_func(protocols, args):
                 _protocols = []
                 for protocol in protocols:
                     if not isinstance(protocol, BBPSSW):
@@ -181,32 +181,32 @@ def add_ep_rules(index: int, path: List[RouterNode], target_fidelity: float):
             protocol = BBPSSW(None, name, memories[0], memories[1])
             dsts = [memories_info[0].remote_node]
             req_funcs = [req_func]
-            return [protocol, dsts, req_funcs]
+            return [protocol, dsts, req_funcs, [None]]
 
-        rule = Rule(10, ep_rule_action, ep_rule_condition)
+        rule = Rule(10, ep_rule_action, ep_rule_condition, None, None)
         node.resource_manager.load(rule)
 
     if index < len(path) - 1:
         if index == 0:
-            def ep_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager"):
+            def ep_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager", args):
                 if (memory_info.index in range(mem_range[0], mem_range[1])
                         and memory_info.state == "ENTANGLED" and memory_info.fidelity < target_fidelity):
                     return [memory_info]
                 return []
         else:
-            def ep_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager"):
+            def ep_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager", args):
                 if (memory_info.index in range(mem_range[0], mem_range[1])[10:]
                         and memory_info.state == "ENTANGLED" and memory_info.fidelity < target_fidelity):
                     return [memory_info]
                 return []
 
-        def ep_rule_action(memories_info: List["MemoryInfo"]):
+        def ep_rule_action(memories_info: List["MemoryInfo"], args):
             memories = [info.memory for info in memories_info]
             name = "EP.%s" % (memories[0].name)
             protocol = BBPSSW(None, name, memories[0], None)
-            return protocol, [None], [None]
+            return [protocol, [None], [None], [None]]
 
-        rule = Rule(10, ep_rule_action, ep_rule_condition)
+        rule = Rule(10, ep_rule_action, ep_rule_condition, None, None)
         node.resource_manager.load(rule)
 
 
@@ -219,14 +219,14 @@ def add_es_rules(index: int, path: List[RouterNode], target_fidelity: float, suc
     node = path[index]
     mem_range = node_mems[index]
 
-    def es_rule_actionB(memories_info: List["MemoryInfo"]):
+    def es_rule_actionB(memories_info: List["MemoryInfo"], args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
         protocol = EntanglementSwappingB(None, "ESB." + memory.name, memory)
-        return [protocol, [None], [None]]
+        return [protocol, [None], [None], [None]]
 
     if index == 0:
-        def es_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager"):
+        def es_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager", args):
             if (memory_info.state == "ENTANGLED"
                     and memory_info.index in range(mem_range[0], mem_range[1])
                     and memory_info.remote_node != node_names[-1]
@@ -235,11 +235,11 @@ def add_es_rules(index: int, path: List[RouterNode], target_fidelity: float, suc
             else:
                 return []
 
-        rule = Rule(10, es_rule_actionB, es_rule_condition)
+        rule = Rule(10, es_rule_actionB, es_rule_condition, None, None)
         node.resource_manager.load(rule)
 
     elif index == len(path) - 1:
-        def es_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager"):
+        def es_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager", args):
             if (memory_info.state == "ENTANGLED"
                     and memory_info.index in range(mem_range[0], mem_range[1])
                     and memory_info.remote_node != node_names[0]
@@ -248,7 +248,7 @@ def add_es_rules(index: int, path: List[RouterNode], target_fidelity: float, suc
             else:
                 return []
 
-        rule = Rule(10, es_rule_actionB, es_rule_condition)
+        rule = Rule(10, es_rule_actionB, es_rule_condition, None, None)
         node.resource_manager.load(rule)
 
     else:
@@ -262,7 +262,7 @@ def add_es_rules(index: int, path: List[RouterNode], target_fidelity: float, suc
         _index = _path.index(node.name)
         left, right = _path[_index - 1], _path[_index + 1]
 
-        def es_rule_conditionA(memory_info: "MemoryInfo", manager: "MemoryManager"):
+        def es_rule_conditionA(memory_info: "MemoryInfo", manager: "MemoryManager", args):
             if (memory_info.state == "ENTANGLED"
                     and memory_info.index in range(mem_range[0], mem_range[1])
                     and memory_info.remote_node == left
@@ -285,16 +285,16 @@ def add_es_rules(index: int, path: List[RouterNode], target_fidelity: float, suc
                         return [memory_info, info]
             return []
 
-        def es_rule_actionA(memories_info: List["MemoryInfo"]):
+        def es_rule_actionA(memories_info: List["MemoryInfo"], args):
             memories = [info.memory for info in memories_info]
 
-            def req_func1(protocols):
+            def req_func1(protocols, args):
                 for protocol in protocols:
                     if (isinstance(protocol, EntanglementSwappingB)
                             and protocol.memory.name == memories_info[0].remote_memo):
                         return protocol
 
-            def req_func2(protocols):
+            def req_func2(protocols, args):
                 for protocol in protocols:
                     if (isinstance(protocol, EntanglementSwappingB)
                             and protocol.memory.name == memories_info[1].remote_memo):
@@ -305,12 +305,12 @@ def add_es_rules(index: int, path: List[RouterNode], target_fidelity: float, suc
                                              success_prob=succ_prob, degradation=degradation)
             dsts = [info.remote_node for info in memories_info]
             req_funcs = [req_func1, req_func2]
-            return [protocol, dsts, req_funcs]
+            return [protocol, dsts, req_funcs, [None]]
 
-        rule = Rule(10, es_rule_actionA, es_rule_conditionA)
+        rule = Rule(10, es_rule_actionA, es_rule_conditionA, None, None)
         node.resource_manager.load(rule)
 
-        def es_rule_conditionB(memory_info: "MemoryInfo", manager: "MemoryManager") -> List["MemoryInfo"]:
+        def es_rule_conditionB(memory_info: "MemoryInfo", manager: "MemoryManager", args) -> List["MemoryInfo"]:
             if (memory_info.state == "ENTANGLED"
                     and memory_info.index in range(mem_range[0], mem_range[1])
                     and memory_info.remote_node not in [left, right]
@@ -319,7 +319,7 @@ def add_es_rules(index: int, path: List[RouterNode], target_fidelity: float, suc
             else:
                 return []
 
-        rule = Rule(10, es_rule_actionB, es_rule_conditionB)
+        rule = Rule(10, es_rule_actionB, es_rule_conditionB, None, None)
         node.resource_manager.load(rule)
 
 
@@ -362,9 +362,9 @@ if __name__ == "__main__":
     tl.init()
 
     # load rules
-    rule1 = Rule(10, eg_rule_action_f1_1, eg_rule_condition_f1)
+    rule1 = Rule(10, eg_rule_action_f1_1, eg_rule_condition_f1, None, None)
     r1.resource_manager.load(rule1)
-    rule2 = Rule(10, eg_rule_action_f1_2, eg_rule_condition_f1)
+    rule2 = Rule(10, eg_rule_action_f1_2, eg_rule_condition_f1, None, None)
     r2.resource_manager.load(rule2)
 
     for i in range(3):

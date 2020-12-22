@@ -1,10 +1,6 @@
-import numpy
 import pytest
 
 from sequence.components.photon import Photon
-
-
-numpy.random.seed(0)
 
 
 def test_init():

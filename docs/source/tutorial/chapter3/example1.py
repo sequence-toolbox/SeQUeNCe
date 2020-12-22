@@ -33,9 +33,11 @@ class EntangleGenNode(Node):
         self.protocols = [EntanglementGenerationA(self, '%s.eg'%self.name, middle, other, self.memory)]
 
 
-def pair_protocol(p1: EntanglementProtocol, p2: EntanglementProtocol):
-    p1.set_others(p2)
-    p2.set_others(p1)
+def pair_protocol(node1: Node, node2: Node):
+    p1 = node1.protocols[0]
+    p2 = node2.protocols[0]
+    p1.set_others(p2.name, node2.name, [node2.memory.name])
+    p2.set_others(p1.name, node1.name, [node1.memory.name])
 
 
 tl = Timeline()
@@ -66,7 +68,7 @@ for i in range(1000):
     tl.time = tl.now() + 1e11
     node1.create_protocol('bsm_node', 'node2')
     node2.create_protocol('bsm_node', 'node1')
-    pair_protocol(node1.protocols[0], node2.protocols[0])
+    pair_protocol(node1, node2)
 
     node1.memory.reset()
     node2.memory.reset()
