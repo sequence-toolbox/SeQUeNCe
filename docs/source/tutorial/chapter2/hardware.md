@@ -82,21 +82,24 @@ We are now ready to start writing the main function of our script. The first ste
 ```python
 from sequence.kernel.timeline import Timeline
 tl = Timeline(10e12)
+tl.show_progress = False
 ```
 
-We can then create our two network nodes using our custom node class. We only need to specify a name for each node and the timeline it belongs to:
+We can then create our two network nodes using our custom node class. We only need to specify a name for each node and the timeline it belongs to. We will also set the seed for the random number generator on each node.
 
 ```python
 node1 = SenderNode("node1", tl)
 node2 = ReceiverNode("node2", tl)
+node1.set_seed(0)
+node2.set_seed(1)
 ```
 
-Next, we create the quantum channel to provide connectivity between the nodes. We won’t need a classical channel, as we’re not sending any messages between nodes. In the initializer, we again specify the name and timeline, and include the additional required attenuation and distance parameters. We set attenuation to 0, so that we do not lose any photons in the channel (try changing it to see the effects!), and set the distance to one kilometer (note that the distance is given in meters). The `set_ends` method finally sets the sender and receiver for the channel.
+Next, we create the quantum channel to provide connectivity between the nodes. We won’t need a classical channel, as we’re not sending any messages between nodes. In the initializer, we again specify the name and timeline, and include the additional required attenuation and distance parameters. We set attenuation to 0, so that we do not lose any photons in the channel (try changing it to see the effects!), and set the distance to one kilometer (note that the distance is given in meters). The `set_ends` method finally sets the sender and receiver for the channel. Note that the arguments to the method are the node object of the sending node and the string name of the receiving node.
 
 ```python
 from sequence.components.optical_channel import QuantumChannel
 qc = QuantumChannel("qc", tl, attenuation=0, distance=1e3)
-qc.set_ends(node1, node2)
+qc.set_ends(node1, node2.name)
 ```
 
 Lastly, we’ll create the counter for our detector. We only need to define an instance, and add it to the internal protocol list of the detector. When the detector properly detects a photon, it will pop a message to all connected protocols, including our custom class.
@@ -289,8 +292,8 @@ node2 = Node("node2", tl)
 
 cc0 = ClassicalChannel("cc0", tl, 1e3, 1e9)
 cc1 = ClassicalChannel("cc1", tl, 1e3, 1e9)
-cc0.set_ends(node1, node2)
-cc1.set_ends(node2, node1)
+cc0.set_ends(node1, node2.name)
+cc1.set_ends(node2, node1.name)
 
 pingp = PingProtocol(node1, "pingp", "pongp", "node2")
 pongp = PongProtocol(node2, "pongp", "pingp", "node1")

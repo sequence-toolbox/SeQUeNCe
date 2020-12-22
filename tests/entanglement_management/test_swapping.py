@@ -1,12 +1,10 @@
-import numpy
+import numpy as np
 import pytest
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.kernel.timeline import Timeline
 from sequence.entanglement_management.swapping import *
 from sequence.topology.node import Node
-
-numpy.random.seed(0)
 
 
 class ResourceManager():
@@ -40,17 +38,19 @@ psi_minus = [0, 0.5 ** 0.5, -(0.5 ** 0.5), 0]
 
 def correct_order(state, keys):
     if keys[0] > keys[1]:
-        return numpy.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ state
+        return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ state
     else:
         return state
 
 
-def create_scenario(state1, state2, seed):
+def create_scenario(state1, state2, seed_index):
     tl = Timeline()
-    tl.seed(seed)
     a1 = FakeNode("a1", tl)
     a2 = FakeNode("a2", tl)
     a3 = FakeNode("a3", tl)
+    a1.set_seed(3*seed_index)
+    a2.set_seed(3*seed_index+1)
+    a3.set_seed(3*seed_index+2)
     cc0 = ClassicalChannel("a2-a1", tl, 0, 1e5)
     cc1 = ClassicalChannel("a2-a3", tl, 0, 1e5)
     cc0.set_ends(a2, a1.name)
@@ -121,7 +121,7 @@ def test_phi_plus_phi_plus():
         k1, k2, k3, k4, a3 = create_scenario(phi_plus, phi_plus, i)
 
         state = correct_order(k1.state, k1.keys)
-        assert numpy.array_equal(state, phi_plus)
+        assert np.array_equal(state, phi_plus)
 
 
 def test_phi_plus_phi_minus():
@@ -141,13 +141,13 @@ def test_phi_plus_phi_minus():
         k1, k2, k3, k4, a3 = create_scenario(phi_plus, phi_minus, i)
         state = correct_order(k1.state, k1.keys)
         if a3.msg_log[0][2].meas_res == [0, 0]:
-            assert numpy.array_equal(state, phi_minus)
+            assert np.array_equal(state, phi_minus)
         elif a3.msg_log[0][2].meas_res == [0, 1]:
-            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, 0.5 ** 0.5])
+            assert np.array_equal(state, [-(0.5 ** 0.5), 0, 0, 0.5 ** 0.5])
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, phi_minus)
+            assert np.array_equal(state, phi_minus)
         else:
-            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, 0.5 ** 0.5])
+            assert np.array_equal(state, [-(0.5 ** 0.5), 0, 0, 0.5 ** 0.5])
 
 
 def test_phi_plus_psi_plus():
@@ -167,13 +167,13 @@ def test_phi_plus_psi_plus():
         k1, k2, k3, k4, a3 = create_scenario(phi_plus, psi_plus, i)
         state = correct_order(k1.state, k1.keys)
         if a3.msg_log[0][2].meas_res == [0, 0]:
-            assert numpy.array_equal(state, psi_plus)
+            assert np.array_equal(state, psi_plus)
         elif a3.msg_log[0][2].meas_res == [0, 1]:
-            assert numpy.array_equal(state, psi_plus)
+            assert np.array_equal(state, psi_plus)
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
+            assert np.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
         else:
-            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
+            assert np.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
 
 
 def test_phi_plus_psi_minus():
@@ -193,13 +193,13 @@ def test_phi_plus_psi_minus():
         k1, k2, k3, k4, a3 = create_scenario(phi_plus, psi_minus, i)
         state = correct_order(k1.state, k1.keys)
         if a3.msg_log[0][2].meas_res == [0, 0]:
-            assert numpy.array_equal(state, psi_minus)
+            assert np.array_equal(state, psi_minus)
         elif a3.msg_log[0][2].meas_res == [0, 1]:
-            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
+            assert np.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
+            assert np.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
         else:
-            assert numpy.array_equal(state, psi_minus)
+            assert np.array_equal(state, psi_minus)
 
 
 def test_phi_minus_phi_plus():
@@ -218,7 +218,7 @@ def test_phi_minus_phi_plus():
     for i in range(200):
         k1, k2, k3, k4, a3 = create_scenario(phi_minus, phi_plus, i)
         state = correct_order(k1.state, k1.keys)
-        assert numpy.array_equal(state, phi_minus)
+        assert np.array_equal(state, phi_minus)
 
 
 def test_phi_minus_phi_minus():
@@ -238,13 +238,13 @@ def test_phi_minus_phi_minus():
         k1, k2, k3, k4, a3 = create_scenario(phi_minus, phi_minus, i)
         state = correct_order(k1.state, k1.keys)
         if a3.msg_log[0][2].meas_res == [0, 0]:
-            assert numpy.array_equal(state, phi_plus)
+            assert np.array_equal(state, phi_plus)
         elif a3.msg_log[0][2].meas_res == [0, 1]:
-            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
+            assert np.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, phi_plus)
+            assert np.array_equal(state, phi_plus)
         else:
-            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
+            assert np.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
 
 
 def test_phi_minus_psi_plus():
@@ -264,13 +264,13 @@ def test_phi_minus_psi_plus():
         k1, k2, k3, k4, a3 = create_scenario(phi_minus, psi_plus, i)
         state = correct_order(k1.state, k1.keys)
         if a3.msg_log[0][2].meas_res == [0, 0]:
-            assert numpy.array_equal(state, psi_minus)
+            assert np.array_equal(state, psi_minus)
         elif a3.msg_log[0][2].meas_res == [0, 1]:
-            assert numpy.array_equal(state, psi_minus)
+            assert np.array_equal(state, psi_minus)
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
+            assert np.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
         else:
-            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
+            assert np.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
 
 
 def test_phi_minus_psi_minus():
@@ -290,13 +290,13 @@ def test_phi_minus_psi_minus():
         k1, k2, k3, k4, a3 = create_scenario(phi_minus, psi_minus, i)
         state = correct_order(k1.state, k1.keys)
         if a3.msg_log[0][2].meas_res == [0, 0]:
-            assert numpy.array_equal(state, psi_plus)
+            assert np.array_equal(state, psi_plus)
         elif a3.msg_log[0][2].meas_res == [0, 1]:
-            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
+            assert np.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
+            assert np.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
         else:
-            assert numpy.array_equal(state, psi_plus)
+            assert np.array_equal(state, psi_plus)
 
 
 def test_psi_plus_phi_plus():
@@ -315,7 +315,7 @@ def test_psi_plus_phi_plus():
     for i in range(200):
         k1, k2, k3, k4, a3 = create_scenario(psi_plus, phi_plus, i)
         state = correct_order(k1.state, k1.keys)
-        assert numpy.array_equal(state, psi_plus)
+        assert np.array_equal(state, psi_plus)
 
 
 def test_psi_plus_phi_minus():
@@ -335,13 +335,13 @@ def test_psi_plus_phi_minus():
         k1, k2, k3, k4, a3 = create_scenario(psi_plus, phi_minus, i)
         state = correct_order(k1.state, k1.keys)
         if a3.msg_log[0][2].meas_res == [0, 0]:
-            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
+            assert np.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
         elif a3.msg_log[0][2].meas_res == [0, 1]:
-            assert numpy.array_equal(state, psi_minus)
+            assert np.array_equal(state, psi_minus)
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
+            assert np.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
         else:
-            assert numpy.array_equal(state, psi_minus)
+            assert np.array_equal(state, psi_minus)
 
 
 def test_psi_plus_psi_plus():
@@ -361,13 +361,13 @@ def test_psi_plus_psi_plus():
         k1, k2, k3, k4, a3 = create_scenario(psi_plus, psi_plus, i)
         state = correct_order(k1.state, k1.keys)
         if a3.msg_log[0][2].meas_res == [0, 0]:
-            assert numpy.array_equal(state, phi_plus)
+            assert np.array_equal(state, phi_plus)
         elif a3.msg_log[0][2].meas_res == [0, 1]:
-            assert numpy.array_equal(state, phi_plus)
+            assert np.array_equal(state, phi_plus)
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
+            assert np.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
         else:
-            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
+            assert np.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
 
 
 def test_psi_plus_psi_minus():
@@ -387,13 +387,13 @@ def test_psi_plus_psi_minus():
         k1, k2, k3, k4, a3 = create_scenario(psi_plus, psi_minus, i)
         state = correct_order(k1.state, k1.keys)
         if a3.msg_log[0][2].meas_res == [0, 0]:
-            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, (0.5 ** 0.5)])
+            assert np.array_equal(state, [-(0.5 ** 0.5), 0, 0, (0.5 ** 0.5)])
         elif a3.msg_log[0][2].meas_res == [0, 1]:
-            assert numpy.array_equal(state, phi_minus)
+            assert np.array_equal(state, phi_minus)
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, phi_minus)
+            assert np.array_equal(state, phi_minus)
         else:
-            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, (0.5 ** 0.5)])
+            assert np.array_equal(state, [-(0.5 ** 0.5), 0, 0, (0.5 ** 0.5)])
 
 
 def test_psi_minus_phi_plus():
@@ -412,7 +412,7 @@ def test_psi_minus_phi_plus():
     for i in range(200):
         k1, k2, k3, k4, a3 = create_scenario(psi_minus, phi_plus, i)
         state = correct_order(k1.state, k1.keys)
-        assert numpy.array_equal(state, psi_minus)
+        assert np.array_equal(state, psi_minus)
 
 
 def test_psi_minus_phi_minus():
@@ -432,13 +432,13 @@ def test_psi_minus_phi_minus():
         k1, k2, k3, k4, a3 = create_scenario(psi_minus, phi_minus, i)
         state = correct_order(k1.state, k1.keys)
         if a3.msg_log[0][2].meas_res == [0, 0]:
-            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
+            assert np.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
         elif a3.msg_log[0][2].meas_res == [0, 1]:
-            assert numpy.array_equal(state, psi_plus)
+            assert np.array_equal(state, psi_plus)
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
+            assert np.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
         else:
-            assert numpy.array_equal(state, psi_plus)
+            assert np.array_equal(state, psi_plus)
 
 
 def test_psi_minus_psi_plus():
@@ -458,13 +458,13 @@ def test_psi_minus_psi_plus():
         k1, k2, k3, k4, a3 = create_scenario(psi_minus, psi_plus, i)
         state = correct_order(k1.state, k1.keys)
         if a3.msg_log[0][2].meas_res == [0, 0]:
-            assert numpy.array_equal(state, phi_minus)
+            assert np.array_equal(state, phi_minus)
         elif a3.msg_log[0][2].meas_res == [0, 1]:
-            assert numpy.array_equal(state, phi_minus)
+            assert np.array_equal(state, phi_minus)
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, (0.5 ** 0.5)])
+            assert np.array_equal(state, [-(0.5 ** 0.5), 0, 0, (0.5 ** 0.5)])
         else:
-            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, (0.5 ** 0.5)])
+            assert np.array_equal(state, [-(0.5 ** 0.5), 0, 0, (0.5 ** 0.5)])
 
 
 def test_psi_minus_psi_minus():
@@ -484,13 +484,13 @@ def test_psi_minus_psi_minus():
         k1, k2, k3, k4, a3 = create_scenario(psi_minus, psi_minus, i)
         state = correct_order(k1.state, k1.keys)
         if a3.msg_log[0][2].meas_res == [0, 0]:
-            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
+            assert np.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
         elif a3.msg_log[0][2].meas_res == [0, 1]:
-            assert numpy.array_equal(state, phi_plus)
+            assert np.array_equal(state, phi_plus)
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, phi_plus)
+            assert np.array_equal(state, phi_plus)
         else:
-            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
+            assert np.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
 
 
 def test_EntanglementSwappingMessage():

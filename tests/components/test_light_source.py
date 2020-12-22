@@ -5,6 +5,7 @@ from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.utils.encoding import polarization
 
+
 random.seed(0)
 
 
@@ -28,6 +29,7 @@ def test_light_source():
     FREQ, MEAN = 1e8, 0.1
     ls = LightSource("ls", tl, frequency=FREQ, mean_photon_num=MEAN)
     sender = FakeNode("sender", tl, ls)
+    sender.set_seed(0)
 
     assert sender.lightsource.frequency == FREQ and sender.lightsource.mean_photon_num == MEAN
 
@@ -51,3 +53,4 @@ def test_light_source():
         assert state_list[index] == qubit.quantum_state.state
         assert time == index * (1e12 / FREQ) + qc.delay
         assert src == "sender"
+

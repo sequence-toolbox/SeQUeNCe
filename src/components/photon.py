@@ -13,6 +13,8 @@ from ..utils.quantum_state import QuantumState
 class Photon():
     """Class for a single photon.
 
+    Note: the quantum_state attribute will use the same random number generator as the enitity producing the photon.
+
     Attributes:
         name (str): label for photon instance.
         wavelength (float): wavelength of photon (in nm).
