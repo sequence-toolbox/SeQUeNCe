@@ -11,7 +11,7 @@ from numpy import array, kron, identity, zeros, trace
 
 
 @lru_cache(maxsize=1000)
-def measure_state_with_cache_ket(state: Tuple[complex, complex]) -> float:
+def measure_state_with_cache_ket(state: Tuple[complex, ...]) -> float:
     state = array(state)
     M0 = array([[1, 0], [0, 0]], dtype=complex)
 
@@ -83,7 +83,7 @@ def measure_multiple_with_cache_ket(state: Tuple[complex], num_states: int, leng
 
 
 @lru_cache(maxsize=1000)
-def measure_state_with_cache_density(state: Tuple[Tuple[complex, complex]]) -> float:
+def measure_state_with_cache_density(state: Tuple[tuple, ...]) -> float:
     state = array(state)
     M0 = array([[1, 0], [0, 0]], dtype=complex)
 
@@ -93,8 +93,10 @@ def measure_state_with_cache_density(state: Tuple[Tuple[complex, complex]]) -> f
 
 
 @lru_cache(maxsize=1000)
-def measure_entangled_state_with_cache_density(state: Tuple[Tuple[complex]], state_index: int, num_states: int) -> Tuple[
-        Tuple[complex], Tuple[complex], float]:
+def measure_entangled_state_with_cache_density(state: Tuple[tuple, ...],
+                                               state_index: int,
+                                               num_states: int) -> Tuple[
+    Tuple[complex], Tuple[complex], float]:
     state = array(state)
 
     # generate projectors
@@ -123,9 +125,12 @@ def measure_entangled_state_with_cache_density(state: Tuple[Tuple[complex]], sta
 
     return (state0, state1, prob_0)
 
+
 @lru_cache(maxsize=1000)
-def measure_multiple_with_cache_density(state: Tuple[Tuple[complex]], num_states: int, length_diff: int) -> Tuple[
-        Tuple[Tuple[complex]], Tuple[float]]:
+def measure_multiple_with_cache_density(state: Tuple[tuple, ...],
+                                        num_states: int, length_diff: int) -> \
+Tuple[
+    Tuple[Tuple[complex]], Tuple[float]]:
     state = array(state)
     basis_count = 2 ** num_states
 
@@ -133,7 +138,8 @@ def measure_multiple_with_cache_density(state: Tuple[Tuple[complex]], num_states
     projectors = [None] * basis_count
     probabilities = [0] * basis_count
     for i in range(basis_count):
-        M = zeros((basis_count, basis_count), dtype=complex)  # measurement operator
+        M = zeros((basis_count, basis_count),
+                  dtype=complex)  # measurement operator
         M[i, i] = 1
         projectors[i] = kron(M, identity(2 ** length_diff))  # projector
         probabilities[i] = trace(state @ projectors[i]).real

@@ -17,8 +17,18 @@ def create_intf(quantum_state):
         def get(self):
             self.log.append(self.timeline.now())
 
+    class FakeOwner():
+        def __init__(self):
+            self.generator = random.default_rng(0)
+
+        def get_generator(self):
+            return self.generator
+
     tl = Timeline()
     intfm = Interferometer("interferometer", tl, time_bin["bin_separation"])
+    owner = FakeOwner()
+    intfm.owner = owner
+
     d0 = Receiver("d0", tl)
     d1 = Receiver("d1", tl)
     intfm.set_receiver(0, d0)

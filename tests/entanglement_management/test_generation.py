@@ -45,6 +45,7 @@ def test_generation_receive_message():
     node = Node("e1", tl)
     m0 = FakeNode("m1", tl)
     qc = QuantumChannel("qc_nodem1", tl, 0, 1e3)
+    qc.frequency = 1e12
     qc.set_ends(node, m0.name)
     node.memory_array = MemoryArray("memory", tl)
     node.assign_cchannel(ClassicalChannel("cc", tl, 0, delay=1), "m1")
@@ -54,9 +55,10 @@ def test_generation_receive_message():
     eg.qc_delay = 1
 
     # negotiate message
-    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG", emit_time_0=0, emit_time_1=0)
-    assert eg.received_message("e2", msg) is True
-    assert eg.expected_times[0] == 1
+    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG",
+                                        emit_time_0=0, emit_time_1=1)
+    eg.received_message("e2", msg)
+    assert eg.expected_times[0] == 1 and eg.expected_times[1] == 2
     assert len(tl.events.data) == 4  # two excites, flip state, end time
 
 
@@ -234,8 +236,11 @@ def test_generation_fidelity_ket():
     tl = Timeline()
 
     e0 = FakeNode("e0", tl)
+    e0.set_seed(0)
     m0 = FakeNode("m0", tl)
+    m0.set_seed(1)
     e1 = FakeNode("e1", tl)
+    e1.set_seed(2)
 
     # add connections
     qc0 = QuantumChannel("qc_e0m0", tl, 0, 1e3)
@@ -247,7 +252,7 @@ def test_generation_fidelity_ket():
         for n2 in [e0, e1, m0]:
             if n1 != n2:
                 cc = ClassicalChannel("cc_%s%s" % (n1.name, n2.name), tl, 1e3,
-                                      delay=1e12)
+                                      delay=1e9)
                 cc.set_ends(n1, n2.name)
 
     # add hardware

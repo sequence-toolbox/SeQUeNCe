@@ -1,4 +1,4 @@
-from sequence.kernel.p_timeline import ParallelTimeline
+from sequence.kernel.timeline import Timeline
 from sequence.kernel.quantum_manager_server import kill_server
 from sequence.topology.node import QuantumRouter, BSMNode
 from sequence.components.optical_channel import ClassicalChannel, \
@@ -12,9 +12,8 @@ import pandas as pd
 from time import time
 
 
-def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
-                 mpi_size: int, qm_ip: str, qm_port: int, log_path: str):
-    kill = False
+def ring_network(ring_size: int, lookahead: int, stop_time: int,
+                 log_path: str):
     tick = time()
     if not os.path.exists(log_path):
         os.mkdir(log_path)
@@ -23,41 +22,29 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     MEMO_SIZE = 50
     RAW_FIDELITY = 0.99
 
-    tl = ParallelTimeline(lookahead=lookahead, stop_time=stop_time,
-                          qm_ip=qm_ip, qm_port=qm_port)
-
-    log.set_logger(__name__, tl, "mpi_%d.log" % rank)
-    log.set_logger_level("INFO")
-    log.track_module('node')
-    log.track_module('network_manager')
+    tl = Timeline(stop_time=stop_time)
 
     routers = []
     bsm_nodes = []
     router_names = []
-    group_size = ring_size // mpi_size
     for node_id in range(ring_size):
         node_name = "Node_%d" % node_id
         router_names.append(node_name)
-        if node_id // group_size == rank:
-            node = QuantumRouter(node_name, tl, MEMO_SIZE)
-            node.set_seed(node_id)
-            node.memory_array.update_memory_params('raw_fidelity',
-                                                   RAW_FIDELITY)
-            routers.append(node)
-        else:
-            tl.foreign_entities[node_name] = node_id // group_size
+
+        node = QuantumRouter(node_name, tl, MEMO_SIZE)
+        node.set_seed(node_id)
+        node.memory_array.update_memory_params('raw_fidelity',
+                                               RAW_FIDELITY)
+        routers.append(node)
 
     for bsm_id in range(ring_size):
         node_name = "BSM_%d" % bsm_id
-        if bsm_id // group_size == rank:
-            pre_node_name = 'Node_%d' % ((bsm_id - 1) % ring_size)
-            post_node_name = 'Node_%d' % bsm_id
+        pre_node_name = 'Node_%d' % ((bsm_id - 1) % ring_size)
+        post_node_name = 'Node_%d' % bsm_id
 
-            node = BSMNode(node_name, tl, [pre_node_name, post_node_name])
-            node.set_seed(ring_size + bsm_id)
-            bsm_nodes.append(node)
-        else:
-            tl.foreign_entities[node_name] = bsm_id // group_size
+        node = BSMNode(node_name, tl, [pre_node_name, post_node_name])
+        node.set_seed(ring_size + bsm_id)
+        bsm_nodes.append(node)
 
     for src in routers + bsm_nodes:
         for dst_index in range(ring_size):
@@ -89,12 +76,6 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
         router_name = "Node_%d" % ((bsm_index - 1) % ring_size)
         src.add_bsm_node(bsm_name, router_name)
 
-    if ring_size == 2 and mpi_size == 2:
-        if rank == 0:
-            routers[0].map_to_middle_node['Node_1'] = 'BSM_0'
-
-    print([router.name for router in routers],
-          [bsm_node.name for bsm_node in bsm_nodes])
     for node in routers:
         node_index = int(node.name.replace("Node_", ""))
         for dst in router_names:
@@ -117,8 +98,7 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
 
         # for dst in node.network_manager.protocol_stack[0].forwarding_table:
         #     print(node.name, '->', dst, node.network_manager.protocol_stack[0].forwarding_table[dst])
-    for node in routers:
-        print(node.map_to_middle_node)
+
     apps = []
     for i, node in enumerate(routers):
         seed = int(node.name.replace("Node_", ""))
@@ -138,23 +118,19 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     tl.run()
     execution_time = time() - tick
 
-    tl.quantum_manager.close()
-
-    if kill:
-        kill_server(qm_ip, qm_port)
-
     print(tl.now(), len(tl.events))
 
     # write network information into log_path/net_info.json file
-    if rank == 0:
-        net_info = {'topology': 'ring', 'size': ring_size,
-                    'lookahead': lookahead,
-                    'stop_time': stop_time, 'processor_num': mpi_size,
-                    'CC_delay': CC_DELAY, 'QC_delay': lookahead * 2e-4,
-                    'memory_array_size': MEMO_SIZE,
-                    'initial_fidelity': RAW_FIDELITY}
-        with open(log_path + '/net_info.json', 'w') as fh:
-            dump(net_info, fh)
+    net_info = {'topology': 'ring', 'size': ring_size,
+                'lookahead': lookahead,
+                'stop_time': stop_time,
+                'CC_delay': CC_DELAY, 'QC_delay': lookahead * 2e-4,
+                'memory_array_size': MEMO_SIZE,
+                'initial_fidelity': RAW_FIDELITY,
+                "execution_time": execution_time,
+                "prepare_time": prepare_time}
+    with open(log_path + '/net_info.json', 'w') as fh:
+        dump(net_info, fh)
 
     # write reservation information into log_path/traffic_RANK.csv file
     initiators = []
@@ -196,41 +172,14 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
                     "Throughput": throughputs}
 
     df = pd.DataFrame(traffic_info)
-    df.to_csv(log_path + "/traffic_%d.csv" % rank)
-
-    # write information of parallelization performance into log_path/perf.json file
-    sync_time = execution_time - tl.computing_time - tl.communication_time
-    perf_info = {'prepare_time': prepare_time,
-                 'execution_time': execution_time,
-                 'computing_time': tl.computing_time,
-                 'communication_time': tl.communication_time,
-                 'sync_time': sync_time,
-                 'sync_counter': tl.sync_counter,
-                 'event_counter': tl.event_counter,
-                 'schedule_counter': tl.schedule_counter,
-                 'exchange_counter': tl.exchange_counter}
-    for msg_type in tl.quantum_manager.io_time:
-        perf_info['%s_counter' % msg_type] = tl.quantum_manager.type_counter[
-            msg_type]
-        perf_info['%s_io_time' % msg_type] = tl.quantum_manager.io_time[
-            msg_type]
-
-    with open('%s/perf_%d.json' % (log_path, rank), 'w') as fh:
-        dump(perf_info, fh)
+    df.to_csv(log_path + "/traffic.csv")
 
 
 if __name__ == "__main__":
-    from mpi4py import MPI
-    from sequence.kernel.quantum_manager_server import valid_port, valid_ip
     import argparse
 
-    rank = MPI.COMM_WORLD.Get_rank()
-    size = MPI.COMM_WORLD.Get_size()
-
     parser = argparse.ArgumentParser(
-        description='The example of parallel quantum network')
-    parser.add_argument('ip', type=valid_ip, help='listening IP address')
-    parser.add_argument('port', type=valid_port, help='listening port number')
+        description='The example of sequential quantum network')
     parser.add_argument('ring_size', type=int, help='the size of ring network')
     parser.add_argument('lookahead', type=int,
                         help='the lookahead of parallel simulation (ps); the longer lookahead generate the longer quantum channel')
@@ -241,13 +190,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if rank == 0:
-        print('Simulate {}-node ring network {} sec by {} processors'.format(
-            args.ring_size, args.stop_time, size))
-        print(
-            'Connecting to the quanum manager server at {}:{}'.format(args.ip,
-                                                                      args.port))
-        print('log path: {}'.format(args.log_path))
+    print('Simulate {}-node ring network {} sec sequentially'.format(
+        args.ring_size, args.stop_time))
 
-    ring_network(args.ring_size, args.lookahead, args.stop_time * 1e12, rank,
-                 size, args.ip, args.port, args.log_path)
+    ring_network(args.ring_size, args.lookahead, args.stop_time * 1e12,
+                 args.log_path)

@@ -62,6 +62,12 @@ class ParallelTimeline():
         for entity in self.entities.values():
             entity.init()
 
+    def top_time(self):
+        if len(self.events) > 0:
+            return self.events.top().time
+        else:
+            return float('inf')
+
     def run(self):
         self.execute_flag = True
         while self.time < self.stop_time:
@@ -81,13 +87,11 @@ class ParallelTimeline():
 
             for events in inbox:
                 for event in events:
-                    event.process.owner = self.get_entity_by_name(
-                        event.process.owner)
                     self.exchange_counter += 1
                     self.schedule(event)
 
             tick = time()
-            min_time = MPI.COMM_WORLD.allreduce(self.events.top().time,
+            min_time = MPI.COMM_WORLD.allreduce(self.top_time(),
                                                 op=MPI.MIN)
             self.communication_time += time() - tick
 
@@ -103,11 +107,6 @@ class ParallelTimeline():
                     continue
                 assert self.time <= event.time, "invalid event time for process scheduled on " + str(
                     event.process.owner)
-                if type(event.process.owner) == type(''):
-                    fh = open('log', 'a')
-                    fh.write("%d %.2f %s" % (
-                    self.id, self.time, event.process.owner))
-                    fh.close()
                 self.time = event.time
                 event.process.run()
                 self.execute_flag = True

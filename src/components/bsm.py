@@ -5,9 +5,9 @@ Also defined is a function to automatically construct a BSM of a specified type.
 """
 
 from abc import abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, TYPE_CHECKING
 
-from numpy import outer, add, zeros
+from numpy import outer, zeros, add, array_equal
 
 from .circuit import Circuit
 from .detector import Detector
@@ -15,12 +15,14 @@ from .photon import Photon
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
-from ..kernel.quantum_manager import QuantumManagerKet, QuantumManagerDensity
 from ..utils.encoding import *
-from ..utils.quantum_state import QuantumState
+
+if TYPE_CHECKING:
+    from ..kernel.quantum_manager import QuantumManager, State
 
 
-def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=[]):
+def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0,
+             detectors=[]):
     """Function to construct BSM of specified type.
 
     Arguments:
@@ -39,31 +41,6 @@ def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=
         return SingleAtomBSM(name, timeline, phase_error, detectors)
     else:
         raise Exception("invalid encoding {} given for BSM {}".format(encoding_type, name))
-
-
-def _set_memory_with_fidelity(memories: List["Memory"], desired_state, generator):
-    possible_states = [BSM._phi_plus, BSM._phi_minus, BSM._psi_plus, BSM._psi_minus]
-    assert desired_state in possible_states
-    qm = memories[0].timeline.quantum_manager
-    fidelity = (memories[0].raw_fidelity + memories[1].raw_fidelity) / 2
-    keys = [memories[0].qstate_key, memories[1].qstate_key]
-    
-    if qm.formalism == "KET":
-        probabilities = [(1-fidelity)/3] * 4
-        probabilities[possible_states.index(desired_state)] = fidelity
-        state_ind = generator.choice(4, p=probabilities)
-        qm.set(keys, possible_states[state_ind])
-
-    elif qm.formalism == "DENSITY":
-        #multipliers = [(1-fidelity)/3] * 4
-        #multipliers[possible_states.index(desired_state)] = fidelity
-        #state = zeros((4, 4))
-        #for mult, pure in zip(multipliers, possible_states):
-        #    state = add(state, mult*outer(pure, pure))
-        qm.set(keys, state)
-
-    else:
-        raise Exception("Invalid quantum manager with formalism {}".format(qm.formalism))
 
 
 class BSM(Entity):
@@ -117,8 +94,8 @@ class BSM(Entity):
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
-
-        pass
+        for detector in self.detectors:
+            detector.owner = self.owner
 
     @abstractmethod
     def get(self, photon):
@@ -205,7 +182,8 @@ class PolarizationBSM(BSM):
         self.photons[0].entangle(self.photons[1])
 
         # measure in bell basis
-        res = Photon.measure_multiple(self.bell_basis, self.photons)
+        res = Photon.measure_multiple(self.bell_basis, self.photons,
+                                      self.get_generator())
 
         # check if we've measured as Phi+ or Phi-; these cannot be measured by the BSM
         if res == 0 or res == 1:
@@ -304,7 +282,8 @@ class TimeBinBSM(BSM):
         self.photons[0].entangle(self.photons[1])
 
         # measure in bell basis
-        res = Photon.measure_multiple(self.bell_basis, self.photons)
+        res = Photon.measure_multiple(self.bell_basis, self.photons,
+                                      self.get_generator())
 
         # check if we've measured as Phi+ or Phi-; these cannot be measured by the BSM
         if res == 0 or res == 1:
@@ -359,14 +338,66 @@ class TimeBinBSM(BSM):
             # pop result message
             # Psi+
             if detector_num == self.last_res[1]:
-                info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 0, 'time': time}
+                info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 0,
+                        'time': time}
                 self.notify(info)
             # Psi-
             else:
-                info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 1, 'time': time}
+                info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': 1,
+                        'time': time}
                 self.notify(info)
 
         self.last_res = [time, detector_num]
+
+
+def _set_state_with_fidelity(keys: List[int], desired_state: List[complex],
+                             fidelity: float, rng, qm: "QuantumManager"):
+    possible_states = [BSM._phi_plus, BSM._phi_minus,
+                       BSM._psi_plus, BSM._psi_minus]
+    assert desired_state in possible_states
+
+    if qm.formalism == "KET":
+        probabilities = [(1 - fidelity) / 3] * 4
+        probabilities[possible_states.index(desired_state)] = fidelity
+        state_ind = rng.choice(4, p=probabilities)
+        qm.set(keys, possible_states[state_ind])
+
+    elif qm.formalism == "DENSITY":
+        multipliers = [(1 - fidelity) / 3] * 4
+        multipliers[possible_states.index(desired_state)] = fidelity
+        state = zeros((4, 4))
+        for mult, pure in zip(multipliers, possible_states):
+            state = add(state, mult * outer(pure, pure))
+        qm.set(keys, state)
+
+    else:
+        raise Exception("Invalid quantum manager "
+                        "with formalism {}".format(qm.formalism))
+
+
+def _set_pure_state(keys: List[int], ket_state: List[complex],
+                    qm: "QuantumManager"):
+    if qm.formalism == "KET":
+        qm.set(keys, ket_state)
+    elif qm.formalism == "DENSITY":
+        state = outer(ket_state, ket_state)
+        qm.set(keys, state)
+    else:
+        raise NotImplementedError("formalism of quantum state {} is not "
+                                  "implemented in the set_pure_quantum_state "
+                                  "function of bsm.py".format(qm.formalism))
+
+
+def _eq_psi_plus(state: "State", formalism: str):
+    if formalism == "KET":
+        return array_equal(state.state, BSM._psi_plus)
+    elif formalism == "DENSITY":
+        d_state = outer(BSM._phi_plus, BSM._psi_plus)
+        return array_equal(state.state, d_state)
+    else:
+        raise NotImplementedError("formalism of quantum state {} is not "
+                                  "implemented in the eq_phi_plus "
+                                  "function of bsm.py".format(formalism))
 
 
 class SingleAtomBSM(BSM):
@@ -380,6 +411,8 @@ class SingleAtomBSM(BSM):
         detectors (List[Detector]): list of attached photon detection devices
         resolution (int): maximum time resolution achievable with attached detectors  
     """
+    _meas_circuit = Circuit(1)
+    _meas_circuit.measure(0)
 
     def __init__(self, name, timeline, phase_error=0, detectors=[]):
         """Constructor for the single atom BSM class.
@@ -408,37 +441,50 @@ class SingleAtomBSM(BSM):
 
         super().get(photon)
 
-        memory = photon.memory
-
-        # check if we're in first stage. If we are and not null, send photon to random detector
-        if not photon.is_null:
-            detector_num = self.get_generator().choice([0, 1])
-            memory.previous_bsm = detector_num
-            self.detectors[detector_num].get()
-
         if len(self.photons) == 2:
-            null_0 = self.photons[0].is_null
-            null_1 = self.photons[1].is_null
-            is_valid = null_0 ^ null_1
-            
-            if is_valid:
-                memory_0 = self.photons[0].memory
-                memory_1 = self.photons[1].memory
-                
-                # if we're in stage 1: null photon will need bsm assigned
-                if null_0 and memory_0.previous_bsm == -1:
-                    memory_0.previous_bsm = memory_1.previous_bsm
-                elif null_1 and memory_1.previous_bsm == -1:
-                    memory_1.previous_bsm = memory_0.previous_bsm
-                
-                # if we're in stage 2: check if psi+ or psi-, then assign new state
-                else:
-                    if memory_0.previous_bsm != memory_1.previous_bsm:
-                        desired_state = BSM._psi_minus
+            qm = self.timeline.quantum_manager
+            p0, p1 = self.photons
+            key0, key1 = p0.qstate_key, p1.qstate_key
+            keys = [key0, key1]
+            state0, state1 = qm.get(key0), qm.get(key1)
+            meas0, meas1 = [qm.run_circuit(self._meas_circuit, [key])[key]
+                            for key in keys]
+            if meas0 ^ meas1:
+                detector_num = self.get_generator().choice([0, 1])
+                if len(state0.keys) == 1:
+                    # if we're in stage 1: we set state to psi+/psi- to mark the
+                    # first triggered detector
+                    if detector_num == 0:
+                        _set_pure_state(keys, BSM._psi_minus, qm)
                     else:
-                        desired_state = BSM._psi_plus
+                        _set_pure_state(keys, BSM._psi_plus, qm)
+                elif len(state0.keys) == 2:
+                    # if we're in stage 2: check if the same detector is triggered
+                    # twice to assign state to psi+ or psi-
+                    if _eq_psi_plus(state0, qm.formalism) ^ detector_num:
+                        _set_state_with_fidelity(keys, BSM._psi_minus,
+                                                 p0.fidelity,
+                                                 self.get_generator(),
+                                                 qm)
+                    else:
+                        _set_state_with_fidelity(keys, BSM._psi_plus,
+                                                 p0.fidelity,
+                                                 self.get_generator(),
+                                                 qm)
+                else:
+                    raise NotImplementedError("Unknown state")
 
-                    _set_memory_with_fidelity([memory_0, memory_1], desired_state, self.get_generator())
+                photon = p0 if meas0 else p1
+                if self.get_generator().random() > photon.loss:
+                    self.detectors[detector_num].get()
+            else:
+                if meas0 and self.get_generator().random() > p0.loss:
+                    detector_num = self.get_generator().choice([0, 1])
+                    self.detectors[detector_num].get()
+
+                if meas1 and self.get_generator().random() > p1.loss:
+                    detector_num = self.get_generator().choice([0, 1])
+                    self.detectors[detector_num].get()
 
     def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.
@@ -453,6 +499,6 @@ class SingleAtomBSM(BSM):
         time = info["time"]
 
         res = detector_num
-        info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
+        info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res,
+                'time': time}
         self.notify(info)
-

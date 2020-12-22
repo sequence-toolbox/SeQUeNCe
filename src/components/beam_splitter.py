@@ -73,7 +73,8 @@ class BeamSplitter(Entity):
             if 0 > index or index >= len(self.basis_list):
                 return
 
-            res = Photon.measure(polarization["bases"][self.basis_list[index]], photon)
+            res = Photon.measure(polarization["bases"][self.basis_list[index]],
+                                 photon, self.get_generator())
             self.receivers[res].get()
 
     def set_basis_list(self, basis_list: "List[int]", start_time: int, frequency: int) -> None:
