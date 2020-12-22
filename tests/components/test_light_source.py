@@ -1,12 +1,8 @@
-from numpy import random
 from sequence.components.light_source import LightSource
 from sequence.components.optical_channel import QuantumChannel
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.utils.encoding import polarization
-
-
-random.seed(0)
 
 
 class FakeNode(Node):
@@ -39,8 +35,8 @@ def test_light_source():
     state_list = []
     STATE_LEN = 1000
     for _ in range(STATE_LEN):
-        basis = random.randint(2)
-        bit = random.randint(2)
+        basis = sender.get_generator().integers(2)
+        bit = sender.get_generator().integers(2)
         state_list.append(polarization["bases"][basis][bit])
 
     tl.init()
