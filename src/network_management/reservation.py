@@ -582,7 +582,7 @@ class ResourceReservationProtocol(StackProtocol):
             while _path.index(self.own.name) % 2 == 0:
                 new_path = []
                 for i, n in enumerate(_path):
-                    if i % 2 == 0 or i == len(path) - 1:
+                    if i % 2 == 0 or i == len(_path) - 1:
                         new_path.append(n)
                 _path = new_path
             _index = _path.index(self.own.name)

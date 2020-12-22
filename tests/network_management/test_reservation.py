@@ -338,7 +338,7 @@ def test_ResourceReservationProtocol_set_es_params():
     tl.init()
 
     path = [r.name for r in routers]
-    reservation = Reservation("r0", "r4", 1, 9000000, 10, 0.9)
+    reservation = Reservation("r0", "r4", 1, 20000000, 10, 0.9)
     for node in [routers[0], routers[-1]]:
         for i, card in enumerate(node.rsvp.timecards):
             if i >= 10:
