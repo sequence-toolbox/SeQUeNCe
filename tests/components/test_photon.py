@@ -1,9 +1,8 @@
 import pytest
-
+import numpy as np
 from sequence.components.photon import Photon
 
-
-rng = numpy.random.default_rng()
+rng = np.random.default_rng()
 
 
 def test_init():
