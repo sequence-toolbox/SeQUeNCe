@@ -2,6 +2,7 @@ from sequence.components.interferometer import Interferometer
 from sequence.components.photon import Photon
 from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import time_bin
+from numpy import random
 
 
 NUM_TRIALS = int(10e3)

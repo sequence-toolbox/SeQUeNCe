@@ -1,6 +1,4 @@
-from qutip import Qobj
-from qutip.metrics import fidelity
-from qutip.states import ket, ket2dm
+import numpy as np
 
 from sequence.components.bsm import *
 from sequence.components.memory import MemoryArray
