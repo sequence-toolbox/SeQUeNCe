@@ -1,4 +1,3 @@
-import numpy as np
 from qutip import Qobj
 from qutip.metrics import fidelity
 from qutip.states import ket, ket2dm
@@ -145,7 +144,6 @@ def test_generation_expire():
 
 
 def test_generation_run():
-    np.random.seed(1)
     NUM_TESTS = 500
 
     tl = Timeline()
@@ -153,6 +151,9 @@ def test_generation_run():
     e0 = FakeNode("e0", tl)
     m0 = FakeNode("m0", tl)
     e1 = FakeNode("e1", tl)
+    e0.set_seed(0)
+    m0.set_seed(1)
+    e1.set_seed(2)
 
     # add connections
     qc0 = QuantumChannel("qc_e0m0", tl, 0, 1e3)
@@ -229,7 +230,6 @@ def test_generation_run():
     
 
 def test_generation_fidelity_ket():
-    np.random.seed(0)
     NUM_TESTS = 1000
     FIDELITY = 0.75
 

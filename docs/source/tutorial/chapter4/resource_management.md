@@ -106,16 +106,12 @@ def eg_rule_action_f1_2(memories_info: List["MemoryInfo"]):
 
 ### Step 4: Build the Network
 
-We’ll now actually build our network and get ready to run the simulation. We will include the third router node, as this will be used for our second flow, but we will not use it in our first experiment:
+We’ll now actually build our network and get ready to run the simulation. We will include the third router node, as this will be used for our second flow, but we will not use it in our first experiment. Also note that we have left the timeline `show_progress` attribute as its default true value, unlike previous tutorials. This will show a progress bar of the simulation during execution. This is most useful for longer experiments, where a user might wish to estimate the time remaining for a simulation.
 
 ```python
-from numpy import random
-
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import BSMNode
 from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
-
-random.seed(0)
 
 runtime = 10e12
 tl = Timeline(runtime)
@@ -128,26 +124,29 @@ r3 = RouterNode("r3", tl, memo_size=10)
 m12 = BSMNode("m12", tl, ["r1", "r2"])
 m23 = BSMNode("m23", tl, ["r2", "r3"])
 
+node_list = [r1, r2, r3, m12, m23]
+for i, node in enumerate(node_list):
+    node.set_seed(i)
+
 # create all-to-all classical connections
 cc_delay = 1e9
-node_list = [r1, r2, r3, m12, m23]
-for i, node1 in enumerate(node_list):
-    for node2 in node_list[i+1:]:
+for node1 in node_list:
+    for node2 in node_list:
         cc = ClassicalChannel("cc_%s_%s"%(node1.name, node2.name), tl, 1e3, delay=cc_delay)
-        cc.set_ends(node1, node2)
+        cc.set_ends(node1, node2.name)
 
 # create quantum channels linking r1 and r2 to m1
 qc_atten = 0
 qc_dist = 1e3
 qc1 = QuantumChannel("qc_r1_m12", tl, qc_atten, qc_dist)
-qc1.set_ends(r1, m12)
+qc1.set_ends(r1, m12.name)
 qc2 = QuantumChannel("qc_r2_m12", tl, qc_atten, qc_dist)
-qc2.set_ends(r2, m12)
+qc2.set_ends(r2, m12.name)
 # create quantum channels linking r2 and r3 to m2
 qc3 = QuantumChannel("qc_r2_m23", tl, qc_atten, qc_dist)
-qc3.set_ends(r2, m23)
+qc3.set_ends(r2, m23.name)
 qc4 = QuantumChannel("qc_r3_m23", tl, qc_atten, qc_dist)
-qc4.set_ends(r3, m23)
+qc4.set_ends(r3, m23.name)
 ```
 
 ### Step 5: Run the Simulation with 1 Flow

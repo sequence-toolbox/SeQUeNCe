@@ -124,19 +124,18 @@ Note that diagonal entries are 0, as these represent connections of nodes to the
 
 ### Step 2: Build the Network
 
-Now, we can move to our script and begin building the experiment from our json file. The file can be loaded with the `topology.load_config` method. Note that we have the json file saved as `star_network.json` here. We will also create a timeline with 2 seconds of simulation time to allow for requests and entanglement to be processed.
+Now, we can move to our script and begin building the experiment from our json file. The file can be loaded with the `Topology.load_config` method. Note that we have the json file saved as `star_network.json` here. We will also create a timeline with 2 seconds of simulation time to allow for requests and entanglement to be processed. We will then use the `Topology.set_seeds()` method to set the seeds for the random number generator on each node.
 
 ```python
-from numpy import random
 from sequence.kernel.timeline import Timeline
 from sequence.topology.topology import Topology
 
-random.seed(0)
 network_config = "star_network.json"
 
 tl = Timeline(2e12)
 network_topo = Topology("network_topo", tl)
 network_topo.load_config(network_config)
+network_topo.set_seeds()
 ```
 
 To edit network parameters quickly, we can define a custom function to interact with the topology. This function will take one argument:

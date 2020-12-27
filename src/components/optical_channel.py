@@ -66,6 +66,8 @@ class OpticalChannel(Entity):
 class QuantumChannel(OpticalChannel):
     """Optical channel for transmission of photons/qubits.
 
+    Note: the quantum channel will use the random number generator of the sender node.
+
     Attributes:
         name (str): label for channel instance.
         timeline (Timeline): timeline for simulation.
@@ -106,6 +108,15 @@ class QuantumChannel(OpticalChannel):
         self.loss = 1 - 10 ** (self.distance * self.attenuation / -10)
 
     def set_ends(self, sender: "Node", receiver: str) -> None:
+        """Method to set endpoints for the quantum channel.
+
+        This must be performed before transmission.
+
+        Args:
+            sender (Node): node sending qubits.
+            receiver (str): name of node receiving qubits.
+        """
+
         log.logger.info(
             "Set {} {} as ends of quantum channel {}".format(sender.name,
                                                              receiver,
@@ -124,6 +135,7 @@ class QuantumChannel(OpticalChannel):
         Side Effects:
             Receiver node may receive the qubit (via the `receive_qubit` method).
         """
+
         log.logger.info(
             "{} send qubit with state {} to {} by Channel {}".format(
                 self.sender.name, qubit.quantum_state.state, self.receiver,
@@ -222,7 +234,16 @@ class ClassicalChannel(OpticalChannel):
         else:
             self.delay = delay
 
-    def set_ends(self, sender: "Node", receiver: "str") -> None:
+    def set_ends(self, sender: "Node", receiver: str) -> None:
+        """Method to set endpoints for the classical channel.
+
+        This must be performed before transmission.
+
+        Args:
+            sender (Node): node sending classical messages.
+            receiver (str): name of node receiving classical messages.
+        """
+
         log.logger.info(
             "Set {} {} as ends of classical channel {}".format(sender.name,
                                                                receiver,
@@ -242,6 +263,7 @@ class ClassicalChannel(OpticalChannel):
         Side Effects:
             Receiver node may receive the qubit (via the `receive_qubit` method).
         """
+
         log.logger.info(
             "{} send message {} to {} by Channel {}".format(self.sender.name,
                                                             message,
@@ -253,3 +275,4 @@ class ClassicalChannel(OpticalChannel):
         process = Process(self.receiver, "receive_message", [source.name, message])
         event = Event(future_time, process, priority)
         self.timeline.schedule(event)
+

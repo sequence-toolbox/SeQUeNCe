@@ -1,10 +1,10 @@
-from numpy import random
 from sequence.components.interferometer import Interferometer
 from sequence.components.photon import Photon
 from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import time_bin
 
-NUM_TRIALS = int(20e3)
+
+NUM_TRIALS = int(10e3)
 
 
 def create_intf(quantum_state):

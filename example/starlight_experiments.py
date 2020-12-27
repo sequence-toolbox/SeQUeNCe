@@ -10,10 +10,10 @@ if __name__ == "__main__":
     runtime = 1e15
 
     tl = Timeline(runtime)
-    tl.seed(1)
 
     network_topo = Topology("network_topo", tl)
     network_topo.load_config(network_config_file)
+    network_topo.set_seeds()
 
     # set memory parameters
     MEMO_FREQ = 2e3

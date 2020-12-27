@@ -1,10 +1,10 @@
-import numpy
 import pytest
 
 from sequence.components.photon import Photon
 
 
 rng = numpy.random.default_rng()
+
 
 def test_init():
     photon = Photon("")

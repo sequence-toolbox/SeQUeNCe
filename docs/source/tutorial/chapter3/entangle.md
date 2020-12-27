@@ -101,7 +101,8 @@ A: The implementation of `EntanglementGenerationA` assumes it has been placed in
 ### Step 2: Create Network
 
 As introduced in the previous chapter, we create nodes and channels to define the network.
-To avoid unnecessary errors, we will set the efficiency of our detectors to 1. 
+To avoid unnecessary errors, we will set the efficiency of our detectors to 1.
+Also note that we will set the timeline `show_progress` attribute to 0, since we will be calling the run method multiple times.
 
 ```python
 from sequence.kernel.timeline import Timeline
@@ -110,32 +111,36 @@ from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 
 
 tl = Timeline()
+tl.show_progress = False
 
 node1 = EntangleGenNode('node1', tl)
 node2 = EntangleGenNode('node2', tl)
 bsm_node = BSMNode('bsm_node', tl, ['node1', 'node2'])
+node1.set_seed(0)
+node2.set_seed(1)
+bsm_node.set_seed(2)
 
 bsm_node.bsm.update_detectors_params('efficiency', 1)
 
 qc1 = QuantumChannel('qc1', tl, attenuation=0, distance=1000)
 qc2 = QuantumChannel('qc2', tl, attenuation=0, distance=1000)
-qc1.set_ends(node1, bsm_node)
-qc2.set_ends(node2, bsm_node)
+qc1.set_ends(node1, bsm_node.name)
+qc2.set_ends(node2, bsm_node.name)
 
 nodes = [node1, node2, bsm_node]
 
 for i in range(3):
     for j in range(3):
         cc= ClassicalChannel('cc_%s_%s'%(nodes[i].name, nodes[j].name), tl, 1000, 1e8)
-        cc.set_ends(nodes[i], nodes[j])
+        cc.set_ends(nodes[i], nodes[j].name)
 ```
 
 ### Step 3: Configure and Start the `EntanglementGenerationA` Protocol
 
 First, we will use `create_protocol` to create the instance of the protocol on the node. 
 Before we start the protocol, we need to pair the protocols on the two nodes.
-The function `pair_protocol` defined here uses two `EntangleGenNode` as the input and will pair all necessary protocols.
-The protocols in `EntangleGenNode.protocols` are paired with the `set_others` method. 
+The function `pair_protocol` defined here uses two `EntanglementGenNode` instances and will pair the two node protocols.
+The protocols are paired with the `set_others` method.
 
 Now, the protocols are ready to start generating entanglement and we can start our experiment. 
 
@@ -143,9 +148,11 @@ Now, the protocols are ready to start generating entanglement and we can start o
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 
 
-def pair_protocol(p1: EntanglementProtocol, p2: EntanglementProtocol):
-    p1.set_others(p2)
-    p2.set_others(p1)
+def pair_protocol(node1: Node, node2: Node):
+    p1 = node1.protocols[0]
+    p2 = node2.protocols[0]
+    p1.set_others(p2.name, node2.name, [node2.memory.name])
+    p2.set_others(p1.name, node1.name, [node1.memory.name])
 
 
 node1.create_protocol('bsm_node', 'node2')
@@ -184,7 +191,9 @@ for i in range(1000):
     tl.time = tl.now() + 1e11
     node1.create_protocol('bsm_node', 'node2')
     node2.create_protocol('bsm_node', 'node1')
-    pair_protocol(node1.protocols[0], node2.protocols[0])
+    pair_protocol(node1.protocols[0], node2.protocols[0],
+                  node1.name, node2.name,
+                  node1.memory.name, node2.memory.name)
 
     node1.memory.reset()
     node2.memory.reset()
@@ -255,14 +264,17 @@ We can now use the code below to create the simulated network.
 
 ```python
 tl = Timeline()
+tl.show_progress = False
 
 node1 = PurifyNode('node1', tl)
 node2 = PurifyNode('node2', tl)
+node1.set_seed(0)
+node2.set_seed(1)
 
 cc0 = ClassicalChannel('cc0', tl, 1000, 1e9)
 cc1 = ClassicalChannel('cc1', tl, 1000, 1e9)
-cc0.set_ends(node1, node2)
-cc1.set_ends(node2, node1)
+cc0.set_ends(node1, node2.name)
+cc1.set_ends(node2, node1.name)
 ```
 
 ### Step 3: Manually Set Entanglement States 
@@ -294,15 +306,17 @@ entangle_memory(node1.right_memo, node2.right_memo, 0.9)
 Similar to the previous example, we create, pair, and start the protocols.
 
 ```python
-def pair_protocol(p1, p2):
-    p1.set_others(p2)
-    p2.set_others(p1)
+def pair_protocol(node1: Node, node2: Node):
+    p1 = node1.protocols[0]
+    p2 = node2.protocols[0]
+    p1.set_others(p2.name, node2.name, [node2.kept_memo.name, node2.meas_memo.name])
+    p2.set_others(p1.name, node1.name, [node1.kept_memo.name, node1.meas_memo.name])
 
 
 node1.create_protocol()
 node2.create_protocol()
 
-pair_protocol(node1.protocols[0], node2.protocols[0])
+pair_protocol(node1, node2)
 
 node1.protocols[0].start()
 node2.protocols[0].start()
@@ -342,7 +356,9 @@ for i in range(10):
     node1.create_protocol()
     node2.create_protocol()
 
-    pair_protocol(node1.protocols[0], node2.protocols[0])
+    pair_protocol(node1.protocols[0], node2.protocols[0],
+                  node1.name, node2.name,
+                  node1.memory.name, node2.memory.name)
 
     node1.protocols[0].start()
     node2.protocols[0].start()
@@ -445,22 +461,36 @@ tl = Timeline()
 left_node = SwapNodeB('left', tl)
 right_node = SwapNodeB('right', tl)
 mid_node = SwapNodeA('mid', tl)
+left_node.set_seed(0)
+right_node.set_seed(1)
+mid_node.set_seed(2)
 
 nodes = [left_node, right_node, mid_node]
 
 for i in range(3):
     for j in range(3):
         cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl, 1000, 1e9)
-        cc.set_ends(nodes[i], nodes[j])
+        cc.set_ends(nodes[i], nodes[j].name)
 ```
 
 ### Step 3: Manually Set Entanglement State and Start Protocol
 
-We will reuse the code for `entangle_memory` and `pair_protocol` from the previous examples to configure the states of hardware and software.
+We will reuse the code for `entangle_memory` from the previous examples to configure the states of hardware and software.
+The `pair_protocol` function is slightly more complicated, as there are more nodes to deal with.
 Because we set the success probability to 1, we can guaruntee a successful result after running the simulation.
 The fidelity of entanglement after swapping will be `0.9*0.9*0.99=0.8019`.
 
 ```python
+def pair_protocol(node1, node2, node_mid):
+    p1 = node1.protocols[0]
+    p2 = node2.protocols[0]
+    pmid = node_mid.protocols[0]
+    p1.set_others(pmid.name, node_mid.name, [node_mid.left_memo.name, node_mid.right_memo.name])
+    p2.set_others(pmid.name, node_mid.name, [node_mid.left_memo.name, node_mid.right_memo.name])
+    pmid.set_others(p1.name, node1.name, [node1.memo.name])
+    pmid.set_others(p2.name, node2.name, [node2.memo.name])
+
+
 entangle_memory(left_node.memo, mid_node.left_memo, 0.9)
 entangle_memory(right_node.memo, mid_node.right_memo, 0.9)
 
