@@ -32,7 +32,9 @@ class ParallelTimeline():
         self.schedule_counter = 0
         self.exchange_counter = 0
         self.computing_time = 0
-        self.communication_time = 0
+        self.communication_time1 = 0
+        self.communication_time2 = 0
+        self.communication_time3 = 0
 
     def seed(self, n):
         seed(n)
@@ -73,14 +75,14 @@ class ParallelTimeline():
         while self.time < self.stop_time:
             tick = time()
             keep_run = MPI.COMM_WORLD.allreduce(self.execute_flag, op=MPI.BOR)
-            self.communication_time += time() - tick
+            self.communication_time1 += time() - tick
 
             if not keep_run:
                 break
 
             tick = time()
             inbox = MPI.COMM_WORLD.alltoall(self.event_buffer)
-            self.communication_time += time() - tick
+            self.communication_time2 += time() - tick
 
             for buff in self.event_buffer:
                 buff.clear()
@@ -93,7 +95,7 @@ class ParallelTimeline():
             tick = time()
             min_time = MPI.COMM_WORLD.allreduce(self.top_time(),
                                                 op=MPI.MIN)
-            self.communication_time += time() - tick
+            self.communication_time3 += time() - tick
 
             self.execute_flag = False
             self.sync_counter += 1

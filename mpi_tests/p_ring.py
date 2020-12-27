@@ -14,7 +14,7 @@ from time import time
 
 def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
                  mpi_size: int, qm_ip: str, qm_port: int, log_path: str):
-    kill = False
+    kill = True
     tick = time()
     if not os.path.exists(log_path):
         os.mkdir(log_path)
@@ -26,10 +26,10 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     tl = ParallelTimeline(lookahead=lookahead, stop_time=stop_time,
                           qm_ip=qm_ip, qm_port=qm_port)
 
-    log.set_logger(__name__, tl, "mpi_%d.log" % rank)
-    log.set_logger_level("INFO")
-    log.track_module('node')
-    log.track_module('network_manager')
+    # log.set_logger(__name__, tl, "mpi_%d.log" % rank)
+    # log.set_logger_level("INFO")
+    # log.track_module('node')
+    # log.track_module('network_manager')
 
     routers = []
     bsm_nodes = []
@@ -199,11 +199,14 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     df.to_csv(log_path + "/traffic_%d.csv" % rank)
 
     # write information of parallelization performance into log_path/perf.json file
-    sync_time = execution_time - tl.computing_time - tl.communication_time
+    sync_time = execution_time - tl.computing_time - tl.communication_time1 - tl.communication_time2 - tl.communication_time3
     perf_info = {'prepare_time': prepare_time,
                  'execution_time': execution_time,
                  'computing_time': tl.computing_time,
-                 'communication_time': tl.communication_time,
+                 'communication_time': tl.communication_time1 + tl.communication_time2 + tl.communication_time3,
+                 'communication_time1': tl.communication_time1,
+                 'communication_time2': tl.communication_time2,
+                 'communication_time3': tl.communication_time3,
                  'sync_time': sync_time,
                  'sync_counter': tl.sync_counter,
                  'event_counter': tl.event_counter,
