@@ -164,36 +164,21 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     memory_sizes = []
     fidelities = []
     paths = []
-    wait_times = []
     throughputs = []
-    for node in routers:
-        initiator = node.name
-        reserves = node.app.reserves
-        _wait_times = node.app.get_wait_time()
-        _throughputs = node.app.get_throughput()
-        min_size = min(len(reserves), len(_wait_times), len(_throughputs))
-        reserves = reserves[:min_size]
-        _wait_times = _wait_times[:min_size]
-        _throughputs = _throughputs[:min_size]
-        for reservation, path, wait_time, throughput in zip(reserves,
-                                                            node.app.paths,
-                                                            _wait_times,
-                                                            _throughputs):
-            responder, s_t, e_t, size, fidelity = reservation
-            initiators.append(initiator)
-            responders.append(responder)
-            start_times.append(s_t)
-            end_times.append(e_t)
-            memory_sizes.append(size)
-            fidelities.append(fidelity)
-            paths.append(path)
-            wait_times.append(wait_time)
-            throughputs.append(throughput)
+    for app in apps:
+        initiators.append(app.node.name)
+        responders.append(app.responder)
+        start_times.append(app.start_t)
+        end_times.append(app.end_t)
+        memory_sizes.append(app.memo_size)
+        fidelities.append(app.fidelity)
+        paths.append(app.path)
+        throughputs.append(app.get_throughput())
+
     traffic_info = {"Initiator": initiators, "Responder": responders,
                     "Start_time": start_times, "End_time": end_times,
                     "Memory_size": memory_sizes, "Fidelity": fidelities,
-                    "Path": paths, "Wait_time": wait_times,
-                    "Throughput": throughputs}
+                    "Path": paths, "Throughput": throughputs}
 
     df = pd.DataFrame(traffic_info)
     df.to_csv(log_path + "/traffic_%d.csv" % rank)
