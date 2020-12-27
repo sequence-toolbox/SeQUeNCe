@@ -4,6 +4,7 @@ from sequence.topology.node import QuantumRouter, BSMNode
 from sequence.components.optical_channel import ClassicalChannel, \
     QuantumChannel
 from sequence.app.random_request import RandomRequestApp
+from sequence.app.request_app import RequestApp
 import sequence.utils.log as log
 
 from json import dump
@@ -93,8 +94,6 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
         if rank == 0:
             routers[0].map_to_middle_node['Node_1'] = 'BSM_0'
 
-    print([router.name for router in routers],
-          [bsm_node.name for bsm_node in bsm_nodes])
     for node in routers:
         node_index = int(node.name.replace("Node_", ""))
         for dst in router_names:
@@ -120,15 +119,16 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     for node in routers:
         print(node.map_to_middle_node)
     apps = []
-    for i, node in enumerate(routers):
-        seed = int(node.name.replace("Node_", ""))
-        app_node_name = node.name
-        others = router_names[:]
-        others.remove(app_node_name)
-        app = RandomRequestApp(node, others, seed, 1e13, 2e13, 10, 25, 0.8,
-                               1.0)
-        apps.append(app)
-        app.start()
+    for node in routers:
+        index = int(node.name.replace("Node_", ""))
+        if index % 4 == 1:
+            app_node_name = node.name
+            others = router_names[:]
+            others.remove(app_node_name)
+            app = RequestApp(node)
+            apps.append(app)
+            responder = "Node_%d" % ((index + 3) % ring_size)
+            app.start(responder, 10e12, 20e12, MEMO_SIZE // 2, 0.9)
 
     tl.init()
 
