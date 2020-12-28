@@ -152,16 +152,17 @@ def ep_req_func1(protocols, args: Dict[str, Any]) -> "BBPSSW":
     on the remote node
 
     """
-    memories_info = args["memories_info"]
+    remote0 = args["remote0"]
+    remote1 = args["remote1"]
 
     _protocols = []
     for protocol in protocols:
         if not isinstance(protocol, BBPSSW):
             continue
 
-        if protocol.kept_memo.name == memories_info[0].remote_memo:
+        if protocol.kept_memo.name == remote0:
             _protocols.insert(0, protocol)
-        if protocol.kept_memo.name == memories_info[1].remote_memo:
+        if protocol.kept_memo.name == remote1:
             _protocols.insert(1, protocol)
 
     if len(_protocols) != 2:
@@ -190,7 +191,8 @@ def ep_rule_action1(memories_info: List["MemoryInfo"], args: Dict[str, Any]):
     protocol = BBPSSW(None, name, memories[0], memories[1])
     dsts = [memories_info[0].remote_node]
     req_funcs = [ep_req_func1]
-    req_args = [{"memories_info": memories_info}]
+    req_args = [{"remote0": memories_info[0].remote_memo,
+                 "remote1": memories_info[1].remote_memo}, ]
     return protocol, dsts, req_funcs, req_args
 
 
