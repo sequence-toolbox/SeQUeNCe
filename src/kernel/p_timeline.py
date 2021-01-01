@@ -4,8 +4,6 @@ from time import time
 
 from .eventlist import EventList
 from .quantum_manager_client import QuantumManagerClient
-from ..utils.phold import PholdNode
-from numpy.random import seed
 
 if TYPE_CHECKING:
     from .event import Event
@@ -35,9 +33,6 @@ class ParallelTimeline():
         self.communication_time1 = 0
         self.communication_time2 = 0
         self.communication_time3 = 0
-
-    def seed(self, n):
-        seed(n)
 
     def get_entity_by_name(self, name: str):
         if name in self.entities:
@@ -71,15 +66,7 @@ class ParallelTimeline():
             return float('inf')
 
     def run(self):
-        self.execute_flag = True
         while self.time < self.stop_time:
-            tick = time()
-            keep_run = MPI.COMM_WORLD.allreduce(self.execute_flag, op=MPI.BOR)
-            self.communication_time1 += time() - tick
-
-            if not keep_run:
-                break
-
             tick = time()
             inbox = MPI.COMM_WORLD.alltoall(self.event_buffer)
             self.communication_time2 += time() - tick
@@ -97,7 +84,56 @@ class ParallelTimeline():
                                                 op=MPI.MIN)
             self.communication_time3 += time() - tick
 
-            self.execute_flag = False
+            if min_time >= self.stop_time:
+                break
+
+            self.sync_counter += 1
+
+            sync_time = min(min_time + self.lookahead, self.stop_time)
+            self.time = min_time
+
+            tick = time()
+            while len(self.events) > 0 and self.events.top().time < sync_time:
+                event = self.events.pop()
+                if event.is_invalid():
+                    continue
+                assert self.time <= event.time, "invalid event time for process scheduled on " + str(
+                    event.process.owner)
+                self.time = event.time
+                event.process.run()
+                self.event_counter += 1
+            self.computing_time += time() - tick
+
+    def remove_event(self, event: "Event") -> None:
+        self.events.remove(event)
+
+
+class AsyncParallelTimeline(ParallelTimeline):
+    def top_time(self):
+        return float('inf')
+
+    def run(self):
+        while self.time < self.stop_time:
+            tick = time()
+            inbox = MPI.COMM_WORLD.alltoall(self.event_buffer)
+            self.communication_time2 += time() - tick
+
+            for buff in self.event_buffer:
+                buff.clear()
+
+            for events in inbox:
+                for event in events:
+                    self.exchange_counter += 1
+                    self.schedule(event)
+
+            tick = time()
+            min_time = MPI.COMM_WORLD.allreduce(self.top_time(),
+                                                op=MPI.MIN)
+            self.communication_time3 += time() - tick
+
+            if min_time >= self.stop_time:
+                break
+
             self.sync_counter += 1
 
             sync_time = min(min_time + self.lookahead, self.stop_time)
@@ -111,9 +147,5 @@ class ParallelTimeline():
                     event.process.owner)
                 self.time = event.time
                 event.process.run()
-                self.execute_flag = True
                 self.event_counter += 1
             self.computing_time += time() - tick
-
-    def remove_event(self, event: "Event") -> None:
-        self.events.remove(event)
