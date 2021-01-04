@@ -83,7 +83,7 @@ memories in use by some protocol) and `ENTANGLED` (for memories currently entang
 memory). If our desired condition is met, we will return the `memory_info` as a valid memory. Otherwise, we return
 nothing.
 
-The arguments in `args` for flow 1 is introduced in the line 9. We will create variable when we load the rule into the
+The arguments for `args` for flow 1 are shown on line 9. We will create a variable to store these when we load the rule into the
 rule manager.
 
 ### Step 3: Create Rule Actions for Flow 1
@@ -98,16 +98,16 @@ condition of the rule. They should return three objects:
 2. A list of nodes of which there are other requirements for operation, and
 3. Requirements that should be met on other nodes.
 
-   In our case, we will create an entanglement generation protocol on both nodes and have router 1 confirm that router 2
-   has created a protocol. `eg_rule_action1` will give the action for router 1 (including sending a requirement to
-   router 2), and `eg_rule_action2` will give the action for router 2. The action on router 1 will create
-   the `EntanglementGenerationA` protocol and request the corresponding protocol from the router 2 by sending the
-   function `eg_req_func` and its arguments `req_args`. The `req_args` contains constraints about the target protocol.
-   In this example, we use the type of protocol and index of memory to filter the proper protocol. The action on router
-   2 will create the `EntanglementGenerationA` protocol and wait request from the router 1. The `mid_name`
-   and `other_name` in `args` define the name of BSM node and the other router used for generating entanglement. Note
-   that the name of router 1 will be `“r1”`, the name of router 2 will be `“r2”`, and the name of the intermediate
-   measurement node (see tutorial 3 for details) will be `“m12”`, which will be set at the place of loading rules.
+In our case, we will create an entanglement generation protocol on both nodes and have router 1 confirm that router 2
+has created a protocol. `eg_rule_action1` will give the action for router 1 (including sending a requirement to
+router 2), and `eg_rule_action2` will give the action for router 2. The action on router 1 will create
+the `EntanglementGenerationA` protocol and request the corresponding protocol from router 2 by sending the
+function `eg_req_func` and its arguments `req_args`. The `req_args` contain constraints about the target protocol.
+In this example, we use the type of protocol and memory index to filter the proper protocol. The action on router
+2 will create an `EntanglementGenerationA` protocol and wait for a request from router 1. The `mid_name`
+and `other_name` in `args` define the name of BSM node and the other router used for generating entanglement. Note
+that the name of router 1 will be `“r1”`, the name of router 2 will be `“r2”`, and the name of the intermediate
+measurement node (see tutorial 3 for details) will be `“m12”`, which will be set when loading rules.
 
 ```python
 from sequence.entanglement_management.generation import EntanglementGenerationA
@@ -198,10 +198,10 @@ qc4.set_ends(r3, m23.name)
 ### Step 5: Run the Simulation with 1 Flow
 
 Finally, we can run our initial simulation, including installation of our custom rules. We will start our entanglement
-flow at the beginning of the simulation by installing the rules. Rules are created with the priority, rule action, rule
-condition as well as arguments of action and condition , while rules are installed with the `load` method of the
-resource manager. For the flow 1, routers `r1` and `r2` will use BSM node `m12` and memories with indicies between 0 and
-9 to generate entanglement. Therefore, we use lines 6-8 and 12 to specific related variables.
+flow at the beginning of the simulation by installing the rules. Rules are created with a priority, rule action, rule
+condition, and arguments of action and condition, while rules are installed with the `load` method of the
+resource manager. For flow 1, routers `r1` and `r2` will use BSM node `m12` and memories with indicies between 0 and
+9 to generate entanglement. These are specified in the action and condition args.
 
 ```python
 from sequence.resource_management.rule_manager import Rule
@@ -238,12 +238,13 @@ At the end of our simulation, we will print out for each memory (on router 1):
 We should notice that all of the memories 0-9 are entangled with router 2 within a short time.
 
 ### Step 6: Flow 2 Entanglement Generation
+
 Now, we'll create the custom rules to control our second flow between routers 1 and 3. The first step is again to set up entanglement generation in a similar manner to the first flow. To do this, we'll create a function `add_eg_rules` that takes as arguments
 - `index`, the index of the router (in the path) we will be adding rules to,
 - `path`, a list of router nodes that make up the path of the entanglement flow, and
 - `middles`, a list of bsm nodes along the path.
 
-The conditions and actions of the rule will be very similar to before, but with variable memory indices, nodes and
+The conditions and actions of the rule will be very similar to before, but with variable memory indices, nodes, and
 arguments.
 
 ```python
@@ -291,10 +292,10 @@ We'll next create rules for entanglement purification. Our rule conditions will 
 memories to be in the `ENTANGLED` state with fidelity below some threshold (that we wish to improve). Each protocol will
 also need two memories, one of which will be consumed while the fidelity of the other increases.
 
-The purification protocol requires collaborations between two routers. We let the right side router, like `r2` and `r3`,
-to select memories used for purification. The left side router, like `r1` and `r2`, waits the request from the right
+The purification protocol requires collaboration between two routers. We will let the right side router, like `r2` and `r3`,
+select memories used for purification. The left side router, like `r1` and `r2`, will wait for a request from the right
 side router. We use function `ep_rule_condition1` to represent the condition of rule on the right side router. The
-condition function will select two entangled memories that are reserved for the flow 2 and have the identical
+condition function will select two entangled memories that are reserved for the flow 2 and have an identical
 entanglement state.
 
 ```python
@@ -318,9 +319,9 @@ def ep_rule_condition1(memory_info: "MemoryInfo", manager: "MemoryManager", args
     return []
 ```
 
-We use function `ep_rule_action1` to represent the action of rule on the right side router. Two selected memories from
-the condition function are allocated to a new instance of `BBPSSW` protocol. The names of two entangled memories on the
-left router are used as the arguments of the request function `ep_req_func`. The requeset function will use names of
+We use the function `ep_rule_action1` to represent the action of the rule on the right side router. Two selected memories from
+the condition function are allocated to a new instance of the `BBPSSW` protocol. The names of two entangled memories on the
+left router are used as the arguments of the request function `ep_req_func`. The requeset function will use the names of
 memories to construct a `BBPSSW` protocol on the left router.
 
 ```python
@@ -365,9 +366,9 @@ def ep_rule_action1(memories_info: List["MemoryInfo"], args):
 ```
 
 Compared with rule and condition of the right router, the rule and condition of the left router is relatively simple.
-The condition function `ep_rule_condition2` selectes reserved memories with `ENTANGLED` state and fidelity lower than
-the target fidelity. The action function `ep_rule_action2` assigns the selected memory to a `BBPSSW` protocol for
-waiting selection from the request function.
+The condition function `ep_rule_condition2` selectes reserved memories in the `ENTANGLED` state and fidelity lower than
+the target fidelity. The action function `ep_rule_action2` assigns the selected memory to a `BBPSSW` protocol 
+awaiting selection from the request function.
 
 ```python
 def ep_rule_condition2(memory_info: "MemoryInfo", manager: "MemoryManager",
@@ -389,7 +390,7 @@ def ep_rule_action2(memories_info: List["MemoryInfo"], args):
     return [protocol, [None], [None], [None]]
 ```
 
-We use function `add_ep_rules` to set rules on the routers `r1` - `r3`. The arguments for function will be similar to
+We use the function `add_ep_rules` to set the rules on the routers `r1` to `r3`. The arguments for function will be similar to
 our previous function:
 
 - `index`, the index of the router (in the path) we will be adding rules to,
@@ -433,10 +434,10 @@ the `ENTANGLED` state between the intermediate and each end router, and that the
 some threshold.
 
 The swapping protocol contains two parts. One part is used on the intermediate node to do swapping operations. The
-function `es_rule_conditionA` represent the condition used on the rule of intermediate node. The condition function will
-select two entangled memories that entangle with left and right routers respectively and have high fidelity. The
+function `es_rule_conditionA` represent the condition used in the rule on the intermediate node. The condition function will
+select two memories entangled with the left and right routers, respectively, and have a high fidelity. The
 selected memories are used to construct an instance of the `EntanglementSwappingA` protocol. For selecting the
-proper `EntanglementSwappingB` on the left and right routers, the `es_req_func` is sent to two routers with the name of
+proper `EntanglementSwappingB` instance on the left and right routers, the `es_req_func` is sent to two routers with the name of
 entangled memories.
 
 ```python
@@ -500,7 +501,7 @@ def es_rule_actionA(memories_info: List["MemoryInfo"], args):
 
 The condition and action of rules on the end routers is relatively simple. The `es_rule_conditionB` selects reserved
 memories that have high fidelity entanglement with the intermediate router. The `es_rule_actionB`
-constructs `EntanglementSwappingB` protocol for waiting the request from the intermediate node.
+constructs `EntanglementSwappingB` protocols awaiting a request from the intermediate node.
 
 ```python
 def es_rule_conditionB(memory_info: "MemoryInfo", manager: "MemoryManager", args):
