@@ -1,0 +1,31 @@
+{
+    "nodes": [
+        {
+            "name": "router1",
+            "type": "QuantumRouter"
+        },
+        {
+            "name": "router2",
+            "type": "QuantumRouter"
+        },
+        {
+            "name": "middle",
+            "type": "BSMNode",
+            "other_nodes": ["router1", "router2"]
+        }
+    ],
+    "qchannels": [
+        {
+            "node1": "router1",
+            "node2": "middle",
+            "attenuation": 1e-5,
+            "distance": 1e3
+        },
+        {
+            "node1": "router2",
+            "node2": "middle",
+            "attenuation": 1e-5,
+            "distance": 1e3
+        }
+    ]
+}

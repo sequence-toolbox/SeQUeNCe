@@ -9,7 +9,7 @@ from sequence.components.circuit import Circuit
 
 
 def client_function(ip, port):
-    client = QuantumManagerClient(ip, port)
+    client = QuantumManagerClient("KET", ip, port)
     client.init()
 
     # send request for new state
@@ -31,7 +31,7 @@ def client_function(ip, port):
 
 
 NUM_TRIALS = 1
-NUM_CLIENTS = 100
+NUM_CLIENTS = 18
 
 parser = generate_arg_parser()
 args = parser.parse_args()

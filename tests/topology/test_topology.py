@@ -12,7 +12,7 @@ def test_load_config():
 
     # NOTE: test should be run from Sequence-python directory
     #   if test needs to be run from a different directory, rewrite path
-    #   this also applies to the next test (test_load_config_2)
+    #   this also applies to the next 2 tests (test_load_config_2 and test_load_config_3)
     config_file = "tests/topology/topology.json"
     topo.load_config(config_file)
     config = json5.load(open(config_file))
@@ -23,6 +23,21 @@ def test_load_config():
 
 
 def test_load_config_2():
+    tl = Timeline()
+    topo = Topology("test_topo", tl)
+
+    config_file = "tests/topology/topology2.json"
+    topo.load_config(config_file)
+    config = json5.load(open(config_file))
+    
+    # check if right number of nodes
+    assert len(topo.nodes) == len(config["nodes"])
+    # check for right bsm connectivity
+    proper_distance = 1e3 + 1e3
+    assert topo.graph_no_middle["router1"] == {"router2": proper_distance}
+
+
+def test_load_config_3():
     tl = Timeline()
     topo = Topology("test_topo", tl)
 

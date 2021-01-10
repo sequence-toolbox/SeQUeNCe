@@ -73,6 +73,8 @@ class Topology():
                 node = QKDNode(name, self.timeline, **node_params)
             elif node_type == "QuantumRouter":
                 node = QuantumRouter(name, self.timeline, **node_params)
+            elif node_type == "BSMNode":
+                node = BSMNode(name, self.timeline, **node_params)
             else:
                 node = Node(name, self.timeline, **node_params)
             
@@ -156,15 +158,9 @@ class Topology():
         assert node2 in self.nodes, node2 + " not a valid node"
 
         if (type(self.nodes[node1]) == QuantumRouter) and (type(self.nodes[node2]) == QuantumRouter):
-            # update non-middle graph
-            self.graph_no_middle[node1][node2] = kwargs["distance"]
-            self.graph_no_middle[node2][node1] = kwargs["distance"]
-
             # add middle node
             name_middle = "_".join(["middle", node1, node2])
             middle = BSMNode(name_middle, self.timeline, [node1, node2])
-            self.nodes[node1].add_bsm_node(middle.name, node2)
-            self.nodes[node2].add_bsm_node(middle.name, node1)
             self.add_node(middle)
 
             # update distance param
@@ -206,6 +202,19 @@ class Topology():
         self.graph[node1][node2] = kwargs["distance"]
         if type(self.nodes[node1]) != BSMNode and type(self.nodes[node2]) != BSMNode:
             self.graph_no_middle[node1][node2] = kwargs["distance"]
+        else:
+            for other_node in self.nodes.keys():
+                if other_node == node1 or other_node == node2:
+                    continue
+                if node2 in self.graph[other_node].keys():
+                    # add bsm node
+                    self.nodes[node1].add_bsm_node(node2, other_node)
+                    self.nodes[other_node].add_bsm_node(node2, node1)
+
+                    # edit non-middle graph
+                    total_distance = kwargs["distance"] + self.graph[other_node][node2]
+                    self.graph_no_middle[node1][other_node] = total_distance
+                    self.graph_no_middle[other_node][node1] = total_distance
 
     def add_classical_connection(self, node1: str, node2: str, **kwargs) -> None:
         """Method to add a two-way classical channel between nodes.

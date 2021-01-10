@@ -52,8 +52,8 @@ class QuantumManagerMessage():
         return str(self.type) + ' ' + str(self.args)
 
 
-def start_session(comm: socket, states, least_available):
-    qm = ParallelQuantumManagerKet(states, least_available)
+def start_session(comm: socket, states, least_available, locks, manager):
+    qm = ParallelQuantumManagerKet(states, least_available, locks, manager)
 
     # send connected message
     msg = QuantumManagerMessage(QuantumManagerMsgType.CONNECTED, [])
@@ -109,6 +109,7 @@ def start_server(ip, port):
     _least_available = multiprocessing.Value('i', 0)
     manager = multiprocessing.Manager()
     states = manager.dict()
+    locks = manager.dict()
 
     while True:
         c, addr = s.accept()
@@ -120,7 +121,7 @@ def start_server(ip, port):
             break
 
         elif msg.type == QuantumManagerMsgType.CONNECT:
-            process = multiprocessing.Process(target=start_session, args=(c, states, _least_available))
+            process = multiprocessing.Process(target=start_session, args=(c, states, _least_available, locks, manager))
             processes.append(process)
             process.start()
 

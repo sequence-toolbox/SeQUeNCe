@@ -347,9 +347,7 @@ class QuantumManagerDensity(QuantumManager):
 
 
 class State():
-    """Class to represent state of qubits
-
-    """
+    """Class to represent state of qubits."""
 
     def __init__(self, state, keys):
         self.state = state
@@ -409,3 +407,4 @@ class DensityState(State):
         assert num_qubits.is_integer(), "Dimensions of density matrix should be 2 ** n, where n is the number of qubits"
         assert num_qubits == len(keys), "Dimensions of density matrix should be 2 ** n, where n is the number of qubits"
         super().__init__(state, keys)
+

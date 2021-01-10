@@ -12,8 +12,9 @@ def setup_environment():
     least_available = multiprocessing.Value('i', 0)
     manager = multiprocessing.Manager()
     states = manager.dict()
+    locks = manager.dict()
 
-    return states, least_available
+    return states, least_available, locks, manager
 
 
 def close():
@@ -27,15 +28,15 @@ def test_new():
     msg = QuantumManagerMessage(QuantumManagerMsgType.NEW, [])
     data = dumps(msg)
 
-    # setup environ
-    states, least_available = setup_environment()
+    # setup environment
+    states, least_available, locks, manager = setup_environment()
 
     # create dummy socket
     s = Mock()
     s.recv.side_effect = [data, close()]
 
     # run
-    start_session(s, states, least_available)
+    start_session(s, states, least_available, locks, manager)
 
     # get key
     key_data = s.mock_calls[-3][1][0]
@@ -53,14 +54,14 @@ def test_get():
     data2 = dumps(msg2)
 
     # setup environ
-    states, least_available = setup_environment()
+    states, least_available, locks, manager = setup_environment()
 
     # create dummy socket
     s = Mock()
     s.recv.side_effect = [data1, data2, close()]
 
     # run
-    start_session(s, states, least_available)
+    start_session(s, states, least_available, locks, manager)
 
     # get state
     state_data = s.mock_calls[-3][1][0]
@@ -81,14 +82,14 @@ def test_set():
     data3 = dumps(msg3)
 
     # setup environ
-    states, least_available = setup_environment()
+    states, least_available, locks, manager = setup_environment()
 
     # create dummy socket
     s = Mock()
     s.recv.side_effect = [data1, data2, data3, close()]
 
     # run
-    start_session(s, states, least_available)
+    start_session(s, states, least_available, locks, manager)
 
     # get state
     state_data = s.mock_calls[-3][1][0]
@@ -106,14 +107,14 @@ def test_remove():
     data2 = dumps(msg2)
 
     # setup environ
-    states, least_available = setup_environment()
+    states, least_available, locks, manager = setup_environment()
 
     # create dummy socket
     s = Mock()
     s.recv.side_effect = [data1, data2, close()]
 
     # run
-    start_session(s, states, least_available)
+    start_session(s, states, least_available, locks, manager)
 
     assert not states
 
