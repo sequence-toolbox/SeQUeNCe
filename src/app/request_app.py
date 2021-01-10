@@ -49,17 +49,8 @@ class RequestApp():
             May schedule a start/retry event based on reservation result.
         """
         self.reserve_res = result
-
-        for card in self.node.network_manager.protocol_stack[1].timecards:
-            if reservation in card.reservations:
-                process = Process(self, "add_memo_reserve_map",
-                                  [card.memory_index, reservation])
-                event = Event(reservation.start_time, process)
-                self.node.timeline.schedule(event)
-                process = Process(self, "remove_memo_reserve_map",
-                                  [card.memory_index])
-                event = Event(reservation.end_time, process)
-                self.node.timeline.schedule(event)
+        if result:
+            self.schedule_reservation(reservation)
 
     def add_memo_reserve_map(self, index: int,
                              reservation: "Reservation") -> None:
@@ -97,3 +88,27 @@ class RequestApp():
 
     def get_throughput(self) -> float:
         return self.memory_counter / (self.end_t - self.start_t) * 1e12
+
+    def get_other_reservation(self, reservation: "Reservation") -> None:
+        """Method to add the approved reservation that is requested by other nodes
+
+        Args:
+            reservation (Reservation): reservation that uses the node of application as the responder
+
+        Side Effects:
+            Will add calls to `add_memo_reserve_map` and `remove_memo_reserve_map` methods.
+        """
+        self.schedule_reservation(reservation)
+
+    def schedule_reservation(self, reservation: "Reservation") -> None:
+        self.path = reservation.path
+        for card in self.node.network_manager.protocol_stack[1].timecards:
+            if reservation in card.reservations:
+                process = Process(self, "add_memo_reserve_map",
+                                  [card.memory_index, reservation])
+                event = Event(reservation.start_time, process)
+                self.node.timeline.schedule(event)
+                process = Process(self, "remove_memo_reserve_map",
+                                  [card.memory_index])
+                event = Event(reservation.end_time, process)
+                self.node.timeline.schedule(event)

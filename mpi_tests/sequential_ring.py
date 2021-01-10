@@ -146,7 +146,7 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int,
         initiator = node.name
         reserves = node.app.reserves
         _wait_times = node.app.get_wait_time()
-        _throughputs = node.app.get_throughput()
+        _throughputs = node.app.get_all_throughput()
         min_size = min(len(reserves), len(_wait_times), len(_throughputs))
         reserves = reserves[:min_size]
         _wait_times = _wait_times[:min_size]

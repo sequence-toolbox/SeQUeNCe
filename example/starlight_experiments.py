@@ -74,7 +74,7 @@ if __name__ == "__main__":
     for app in apps:
         print(app.node.name)
         for reserve, wait_t, tp in zip(app.reserves, app.get_wait_time(),
-                                       app.get_throughput()):
+                                       app.get_all_throughput()):
             print("    responder={}, start time={} sec, end time={} sec, "
                   "used memory={}, fidelity thredshold={}, wait time={} sec, "
                   "throughput={} pairs/sec".format(reserve[0],
@@ -97,7 +97,7 @@ if __name__ == "__main__":
             initiator = node.name
             reserves = node.app.reserves
             _wait_times = node.app.get_wait_time()
-            _throughputs = node.app.get_throughput()
+            _throughputs = node.app.get_all_throughput()
             min_size = min(len(reserves), len(_wait_times), len(_throughputs))
             reserves = reserves[:min_size]
             _wait_times = _wait_times[:min_size]
