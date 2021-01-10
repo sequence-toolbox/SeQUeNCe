@@ -9,6 +9,29 @@ if TYPE_CHECKING:
 
 
 class RequestApp():
+    """Code for the request application.
+
+        This application will create a request for entanglement.
+        If the request is accepted, the network will start to serve the request
+         at the start time of the request and end at the end time of the
+        request.
+        Otherwise, the app do nothing.
+        The information about the request is defined in the arguments of the
+        start function.
+
+        Attributes:
+            node (QuantumRouter): Node that code is attached to.
+            responder (str): name of the responder node
+            start_t (int): the start time of request (ps)
+            end_t (int): the end time of request (ps)
+            memo_size (int): the size of memory used for the request
+            fidelity (float): the target fidelity of the entanglement
+            reserve_res (bool): if network approves the request
+            memory_counter (int): number of successfully received memories
+            path (List[str]): the path of flow denoted by a list of node names
+            memo_to_reserve (Dict[int, Reservation]): mapping of memory index to corresponding reservation.
+    """
+
     def __init__(self, node: "QuantumRouter"):
         self.node = node
         self.node.set_app(self)
@@ -20,11 +43,18 @@ class RequestApp():
         self.reserve_res = None
         self.memory_counter = 0
         self.path = []
-        self.reserve_as_responder = []
         self.memo_to_reserve = {}
 
     def start(self, responder: str, start_t: int, end_t: int, memo_size: int,
               fidelity: float):
+        """Method to start the application.
+
+            This method will use arguments to create a request and send to the
+            network.
+
+        Side Effects:
+            Will create request for network manager on node.
+        """
         assert 0 < fidelity <= 1
         assert 0 <= start_t <= end_t
         assert 0 < memo_size
@@ -90,7 +120,8 @@ class RequestApp():
         return self.memory_counter / (self.end_t - self.start_t) * 1e12
 
     def get_other_reservation(self, reservation: "Reservation") -> None:
-        """Method to add the approved reservation that is requested by other nodes
+        """Method to add the approved reservation that is requested by other
+        nodes
 
         Args:
             reservation (Reservation): reservation that uses the node of application as the responder

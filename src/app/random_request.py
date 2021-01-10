@@ -1,4 +1,4 @@
-"""Code for a randomozed application
+"""Code for a randomized application
 
 This module defines the RandomRequestApp, which will create random entanglement requests repeatedly.
 Useful for testing network properties and throughputs.
@@ -20,10 +20,20 @@ from ..topology.node import QuantumRouter
 class RandomRequestApp(RequestApp):
     """Code for the random request application.
 
-    This application will create a request for entanglement with a random node (and with other random parameters).
+    This application will create a request for entanglement with a random node
+    (and with other random parameters).
     If the request is accepted, a new request will be made once it has expired.
     Otherwise, a new request will be made immediately.
-    The responder and fidelity of failed request will be kept in the new request.
+    The responder and fidelity of failed request will be kept in the new
+    request.
+
+    The RandomRequestApp class inherits three functions from the RequsetApp
+    class: get_memory(memory_info), get_throughput(),
+    get_other_reservation(reservation). The "get_memory" function consumes the
+    memory when the qualified entanglement is generate. The "get_throughput"
+    function provides the throughput of the serving reservation. The
+    "get_other_reservation" function accepts reservation when node is the
+    responder node.
 
     Attributes:
         node (QuantumRouter): Node that code is attached to.
@@ -92,7 +102,7 @@ class RandomRequestApp(RequestApp):
         3. Choose a random duration between min_dur and max_dur to set end_time
         4. Pick a number of memories to request between min_size and max_size
         5. Pick a random fidelity between min_fidelity and max_fidelity.
-        6. Create a request and start recording metrics.
+        6. Use its parent class start function to create request
 
         Side Effects:
             Will create request for network manager on node.
