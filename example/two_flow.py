@@ -3,10 +3,12 @@ from typing import List
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import BSMNode, Node
 from sequence.components.memory import MemoryArray
-from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
+from sequence.components.optical_channel import ClassicalChannel, \
+    QuantumChannel
 from sequence.entanglement_management.generation import EntanglementGenerationA
 from sequence.entanglement_management.purification import BBPSSW
-from sequence.entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
+from sequence.entanglement_management.swapping import EntanglementSwappingA, \
+    EntanglementSwappingB
 from sequence.resource_management.resource_manager import ResourceManager
 from sequence.resource_management.rule_manager import Rule
 
@@ -15,9 +17,9 @@ from sequence.resource_management.rule_manager import Rule
 
 class RouterNode(Node):
     def __init__(self, name, tl, memo_size=50):
-        print(sequence)
         super().__init__(name, tl)
-        self.memory_array = MemoryArray(name + ".MemoryArray", tl, num_memories=memo_size)
+        self.memory_array = MemoryArray(name + ".MemoryArray", tl,
+                                        num_memories=memo_size)
         self.memory_array.owner = self
         self.resource_manager = ResourceManager(self)
 
