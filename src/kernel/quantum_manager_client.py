@@ -15,7 +15,6 @@ class QuantumManagerClient():
 
     Attributes:
         s (socket): socket for communication with server.
-        connected (bool): denotes if client has been properly connected with remote server.
     """
 
     def __init__(self, formalism: str, ip: str, port: int):
@@ -28,7 +27,6 @@ class QuantumManagerClient():
         self.formalism = formalism
         self.s = socket()
         self.s.connect((ip, port))
-        self.connected = True
         self.io_time = defaultdict(lambda: 0)
         self.type_counter = defaultdict(lambda: 0)
 
@@ -36,14 +34,9 @@ class QuantumManagerClient():
         """Method to configure client connection.
 
         Must be called before any other methods are used.
-
-        Side Effects:
-            Will set the `connected` attribute to True.
         """
 
-        msg = self._send_message(QuantumManagerMsgType.CONNECT, [])
-        assert msg.type == QuantumManagerMsgType.CONNECTED, "QuantumManagerClient failed connection."
-        self.connected = True
+        pass
 
     def new(self, state=None) -> int:
         """Method to get a new state from server.
@@ -54,7 +47,6 @@ class QuantumManagerClient():
         Returns:
             int: key for the new state generated.
         """
-        self._check_connection()
 
         if state is None:
             args = []
@@ -64,31 +56,16 @@ class QuantumManagerClient():
         return self._send_message(QuantumManagerMsgType.NEW, args)
 
     def get(self, key: int) -> any:
-        self._check_connection()
         return self._send_message(QuantumManagerMsgType.GET, [key])
 
     def run_circuit(self, circuit: "Circuit", keys: List[int]) -> any:
-        self._check_connection()
         return self._send_message(QuantumManagerMsgType.RUN, [circuit, keys])
 
     def set(self, keys: List[int], amplitudes: any) -> None:
-        self._check_connection()
         self._send_message(QuantumManagerMsgType.SET, [keys, amplitudes])
 
     def remove(self, key: int) -> None:
-        self._check_connection()
         self._send_message(QuantumManagerMsgType.REMOVE, [key])
-
-    def close(self) -> None:
-        """Method to close communication with server.
-
-        Side Effects:
-            Will set the `connected` attribute to False
-        """
-
-        self._check_connection()
-        self._send_message(QuantumManagerMsgType.CLOSE, [], expecting_receive=False)
-        self.connected = False
 
     def kill(self) -> None:
         """Method to terminate the connected server.
@@ -97,15 +74,9 @@ class QuantumManagerClient():
             Will end all processes of remote server.
             Will set the `connected` attribute to False.
         """
-        self._check_connection()
         self._send_message(QuantumManagerMsgType.TERMINATE, [], expecting_receive=False)
-        self.connected = False
 
-    def _check_connection(self):
-        assert self.connected, "must run init method before attempting communications"
-
-    def _send_message(self, msg_type, args: List,
-                      expecting_receive=True) -> any:
+    def _send_message(self, msg_type, args: List, expecting_receive=True) -> any:
         self.type_counter[msg_type.name] += 1
         tick = time()
 

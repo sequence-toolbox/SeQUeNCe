@@ -37,10 +37,7 @@ class QuantumManagerMsgType(Enum):
     SET = 2
     RUN = 3
     REMOVE = 4
-    CLOSE = 5
-    CONNECT = 6
-    TERMINATE = 7
-    CONNECTED = 8
+    TERMINATE = 5
 
 
 class QuantumManagerMessage():
@@ -52,57 +49,49 @@ class QuantumManagerMessage():
         return str(self.type) + ' ' + str(self.args)
 
 
-def start_session(comm: socket, states, least_available, locks, manager):
-    qm = ParallelQuantumManagerKet(states, least_available, locks, manager)
+def service_request(comm: socket, formalism: str, msg: QuantumManagerMessage,
+                    states, least_available, locks, manager):
+    # create quantum manager
+    if formalism == "KET":
+        qm = ParallelQuantumManagerKet(states, least_available, locks, manager)
+    elif formalism == "DENSITY":
+        qm = ParallelQuantumManagerDensity(states, least_available, locks, manager)
 
-    # send connected message
-    msg = QuantumManagerMessage(QuantumManagerMsgType.CONNECTED, [])
-    data = dumps(msg)
+    return_val = None
+
+    if msg.type == QuantumManagerMsgType.NEW:
+        assert len(msg.args) <= 1
+        return_val = qm.new(*msg.args)
+
+    elif msg.type == QuantumManagerMsgType.GET:
+        assert len(msg.args) == 1
+        return_val = qm.get(*msg.args)
+
+    elif msg.type == QuantumManagerMsgType.SET:
+        assert len(msg.args) == 2
+        qm.set(*msg.args)
+
+    elif msg.type == QuantumManagerMsgType.RUN:
+        assert len(msg.args) == 2
+        return_val = qm.run_circuit(*msg.args)
+
+    elif msg.type == QuantumManagerMsgType.REMOVE:
+        assert len(msg.args) == 1
+        qm.remove(*msg.args)
+
+    else:
+        raise Exception("Quantum manager session received invalid message type {}".format(msg.type))
+
+    # send return value
+    data = dumps(return_val)
     comm.sendall(data)
 
-    while True:
-        data = comm.recv(1024)
-        msg = loads(data)
-        return_val = None
 
-        if msg.type == QuantumManagerMsgType.CLOSE:
-            comm.close()
-            break
-
-        elif msg.type == QuantumManagerMsgType.NEW:
-            assert len(msg.args) <= 1
-            return_val = qm.new(*msg.args)
-
-        elif msg.type == QuantumManagerMsgType.GET:
-            assert len(msg.args) == 1
-            return_val = qm.get(*msg.args)
-
-        elif msg.type == QuantumManagerMsgType.SET:
-            assert len(msg.args) == 2
-            qm.set(*msg.args)
-
-        elif msg.type == QuantumManagerMsgType.RUN:
-            assert len(msg.args) == 2
-            return_val = qm.run_circuit(*msg.args)
-
-        elif msg.type == QuantumManagerMsgType.REMOVE:
-            assert len(msg.args) == 1
-            qm.remove(*msg.args)
-
-        else:
-            raise Exception("Quantum manager session received invalid message type {}".format(msg.type))
-
-        # send return value
-        data = dumps(return_val)
-        comm.sendall(data)
-
-
-def start_server(ip, port):
+def start_server(ip, port, formalism="KET"):
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((ip, port))
     s.listen()
-    processes = []
     print("connected:", ip, port)
 
     # initialize shared data
@@ -120,16 +109,16 @@ def start_server(ip, port):
         if msg.type == QuantumManagerMsgType.TERMINATE:
             break
 
-        elif msg.type == QuantumManagerMsgType.CONNECT:
-            process = multiprocessing.Process(target=start_session, args=(c, states, _least_available, locks, manager))
-            processes.append(process)
-            process.start()
+        # elif msg.type == QuantumManagerMsgType.CONNECT:
+        #     process = multiprocessing.Process(target=start_session, args=(c, states, _least_available, locks, manager))
+        #     processes.append(process)
+        #     process.start()
 
         else:
-            raise Exception('Unknown message type received by quantum manager server')
+            process = multiprocessing.Process(target=service_request,
+                                              args=(c, formalism, msg, states, _least_available, locks, manager))
+            process.start()
 
-    for p in processes:
-        p.terminate()
 
 def kill_server(ip, port):
     s = socket.socket()

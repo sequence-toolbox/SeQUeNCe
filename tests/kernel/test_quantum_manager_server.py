@@ -17,29 +17,21 @@ def setup_environment():
     return states, least_available, locks, manager
 
 
-def close():
-    msg = QuantumManagerMessage(QuantumManagerMsgType.CLOSE, [])
-    data = dumps(msg)
-    return data
-
-
 def test_new():
     # create new message
     msg = QuantumManagerMessage(QuantumManagerMsgType.NEW, [])
-    data = dumps(msg)
 
     # setup environment
     states, least_available, locks, manager = setup_environment()
 
     # create dummy socket
     s = Mock()
-    s.recv.side_effect = [data, close()]
 
     # run
-    start_session(s, states, least_available, locks, manager)
+    service_request(s, "KET", msg, states, least_available, locks, manager)
 
     # get key
-    key_data = s.mock_calls[-3][1][0]
+    key_data = s.mock_calls[0][1][0]
     key = loads(key_data)
 
     assert least_available.value > 0
@@ -50,21 +42,19 @@ def test_get():
     # create messages
     msg1 = QuantumManagerMessage(QuantumManagerMsgType.NEW, [])
     msg2 = QuantumManagerMessage(QuantumManagerMsgType.GET, [0]) 
-    data1 = dumps(msg1)
-    data2 = dumps(msg2)
 
     # setup environ
     states, least_available, locks, manager = setup_environment()
 
     # create dummy socket
     s = Mock()
-    s.recv.side_effect = [data1, data2, close()]
 
     # run
-    start_session(s, states, least_available, locks, manager)
+    for msg in [msg1, msg2]:
+        service_request(s, "KET", msg, states, least_available, locks, manager)
 
     # get state
-    state_data = s.mock_calls[-3][1][0]
+    state_data = s.mock_calls[1][1][0]
     state = loads(state_data)
 
     assert type(state) is KetState
@@ -77,22 +67,19 @@ def test_set():
     msg1 = QuantumManagerMessage(QuantumManagerMsgType.NEW, [])
     msg2 = QuantumManagerMessage(QuantumManagerMsgType.SET, [[0], desired_state])
     msg3 = QuantumManagerMessage(QuantumManagerMsgType.GET, [0])
-    data1 = dumps(msg1)
-    data2 = dumps(msg2)
-    data3 = dumps(msg3)
 
     # setup environ
     states, least_available, locks, manager = setup_environment()
 
     # create dummy socket
     s = Mock()
-    s.recv.side_effect = [data1, data2, data3, close()]
 
     # run
-    start_session(s, states, least_available, locks, manager)
+    for msg in [msg1, msg2, msg3]:
+        service_request(s, "KET", msg, states, least_available, locks, manager)
 
     # get state
-    state_data = s.mock_calls[-3][1][0]
+    state_data = s.mock_calls[2][1][0]
     state = loads(state_data)
 
     assert type(state) is KetState
@@ -103,18 +90,16 @@ def test_remove():
     # create messages
     msg1 = QuantumManagerMessage(QuantumManagerMsgType.NEW, [])
     msg2 = QuantumManagerMessage(QuantumManagerMsgType.REMOVE, [0])
-    data1 = dumps(msg1)
-    data2 = dumps(msg2)
 
     # setup environ
     states, least_available, locks, manager = setup_environment()
 
     # create dummy socket
     s = Mock()
-    s.recv.side_effect = [data1, data2, close()]
 
     # run
-    start_session(s, states, least_available, locks, manager)
+    for msg in [msg1, msg2]:
+        service_request(s, "KET", msg, states, least_available, locks, manager)
 
     assert not states
 
