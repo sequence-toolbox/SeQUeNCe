@@ -50,6 +50,7 @@ class SimpleManager():
     def update(self, protocol, memory, state):
         if state == 'RAW':
             self.raw_counter += 1
+            memory.reset()
         else:
             self.ent_counter += 1
 
