@@ -1,13 +1,11 @@
 """Definition of the Topology class.
 
-This module provides a definition of the Topology class, which can be used to manage a network's structure.
+This module provides a definition of the Topology class, which can be used to
+manage a network's structure.
 Topology instances automatically perform many useful network functions.
 """
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Dict
-
-import json5
-
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
 
@@ -16,6 +14,19 @@ from ..components.optical_channel import QuantumChannel, ClassicalChannel
 
 
 class Topology():
+    """Class for generating network from configuration file.
+
+    The topology class provides a simple interface for managing the nodes
+    and connections in a network.
+    A network may also be generated using an external json/json5 file.
+
+    Attributes:
+        nodes (Dict[str, List[Node]]): mapping of type of node to a list of same type node.
+        qchannels (List[QuantumChannel]): list of quantum channel objects in network.
+        cchannels (List[ClassicalChannel]): list of classical channel objects in network.
+        tl (Timeline): the timeline used for simulation
+    """
+
     ALL_CC_CONNECT = "cconnections"
     ALL_C_CHANNEL = "cchannels"
     ALL_NODE = "nodes"
@@ -34,6 +45,11 @@ class Topology():
     TYPE = "type"
 
     def __init__(self, conf_file_name: str):
+        """Constructor for topology class.
+
+        Args:
+            conf_file_name (str): the name of configuration file
+        """
         self.nodes = {}
         self.qchannels = []
         self.cchannels = []
@@ -41,10 +57,15 @@ class Topology():
         self._load(conf_file_name)
 
     @abstractmethod
-    def _load(self, filename):
+    def _load(self, filename: str):
+        """Method for parsing configuration file and generate network
+
+        Args:
+            filename (str): the name of configuration file
+        """
         pass
 
-    def _add_qchannels(self, config):
+    def _add_qchannels(self, config: Dict):
         for qc in config.get(self.ALL_Q_CHANNEL, []):
             src_str, dst_str = qc[self.SRC], qc[self.DST]
             src_node = self.tl.get_entity_by_name(src_str)
@@ -56,7 +77,7 @@ class Topology():
                 qc_obj.set_ends(src_node, dst_str)
                 self.qchannels.append(qc_obj)
 
-    def _add_cchannels(self, config):
+    def _add_cchannels(self, config: Dict):
         for cc in config.get(self.ALL_C_CHANNEL, []):
             src_str, dst_str = cc[self.SRC], cc[self.DST]
             src_node = self.tl.get_entity_by_name(src_str)
@@ -68,7 +89,7 @@ class Topology():
                 cc_obj.set_ends(src_node, dst_str)
                 self.cchannels.append(cc_obj)
 
-    def _add_cconnections(self, config):
+    def _add_cconnections(self, config: Dict):
         for c_connect in config.get(self.ALL_CC_CONNECT, []):
             node1 = c_connect[self.CONNECT_NODE_1]
             node2 = c_connect[self.CONNECT_NODE_2]
@@ -86,7 +107,7 @@ class Topology():
         assert self.tl is not None, "timeline is not set properly."
         return self.tl
 
-    def get_nodes_by_type(self, type: str):
+    def get_nodes_by_type(self, type: str) -> List[Node]:
         return self.nodes[type]
 
     def get_qchannels(self) -> List["QuantumChannel"]:
