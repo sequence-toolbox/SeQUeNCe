@@ -156,10 +156,9 @@ pair_protocol(node1, node2)
 print('before', node1.memory.entangled_memory, node1.memory.fidelity)
 # "before node1.memo {'node_id': None, 'memo_id': None} 0"
 
+tl.init()
 node1.protocols[0].start()
 node2.protocols[0].start()
-
-tl.init()
 tl.run()
 
 print('after', node1.memory.entangled_memory, node1.memory.fidelity)
@@ -168,6 +167,7 @@ print('after', node1.memory.entangled_memory, node1.memory.fidelity)
 ```
 
 The `start` method starts the protocol. The `run` mehtod starts the simulation.
+Note that the `start` method must be called after the timeline `init` method.
 After the simulation, we can observe two possible states of memory based on the result of entanglement generation.
 If the protocol generates entanglement successfully, the `Memory.entangled_memory` will present information about the entangled memory.
 The fidelity of entanglements equal `0.9`, as set in the constructor function of `Memory`.
@@ -190,10 +190,9 @@ for i in range(1000):
     node1.memory.reset()
     node2.memory.reset()
 
+    tl.init()
     node1.protocols[0].start()
     node2.protocols[0].start()
-
-    tl.init()
     tl.run()
 
 print(node1.resource_manager.ent_counter, ':', node1.resource_manager.raw_counter)
@@ -305,10 +304,9 @@ node2.create_protocol()
 
 pair_protocol(node1.protocols[0], node2.protocols[0])
 
+tl.init()
 node1.protocols[0].start()
 node2.protocols[0].start()
-
-tl.init()
 tl.run()
 
 print(node1.left_memo.entangled_memory, node2.left_memo.fidelity)
@@ -345,10 +343,9 @@ for i in range(10):
 
     pair_protocol(node1.protocols[0], node2.protocols[0])
 
+    tl.init()
     node1.protocols[0].start()
     node2.protocols[0].start()
-
-    tl.init()
     tl.run()
 
     print(node1.left_memo.entangled_memory, node2.left_memo.fidelity)
@@ -470,10 +467,10 @@ for node in nodes:
 
 pair_protocol(left_node.protocols[0], mid_node.protocols[0])
 pair_protocol(right_node.protocols[0], mid_node.protocols[0])
-for node in nodes:
-    node.protocols[0].start()
 
 tl.init()
+for node in nodes:
+    node.protocols[0].start()
 tl.run()
 
 print(left_node.memo.entangled_memory)
