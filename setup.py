@@ -16,6 +16,7 @@ setup(
         'json5',
         'pandas',
         'qutip',
-        'tqdm'
+        'tqdm',
+        'networkx'
     ],
 )

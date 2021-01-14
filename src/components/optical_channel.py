@@ -82,7 +82,9 @@ class QuantumChannel(OpticalChannel):
         frequency (float): maximum frequency of qubit transmission (in Hz).
     """
 
-    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, polarization_fidelity=1, light_speed=2e-4, frequency=8e7):
+    def __init__(self, name: str, timeline: "Timeline", attenuation: float,
+                 distance: int, polarization_fidelity=1, light_speed=2e-4,
+                 frequency=8e7):
         """Constructor for Quatnum Channel class.
 
         Args:

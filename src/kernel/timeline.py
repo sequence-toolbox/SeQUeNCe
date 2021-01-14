@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 if TYPE_CHECKING:
     from .event import Event
+    from .entity import Entity
 
 from .eventlist import EventList
 from ..utils import log
@@ -136,3 +137,6 @@ class Timeline:
 
     def remove_entity_by_name(self, name: str):
         self.entities.pop(name)
+
+    def get_entity_by_name(self, name: str) -> "Entity":
+        return self.entities[name]
