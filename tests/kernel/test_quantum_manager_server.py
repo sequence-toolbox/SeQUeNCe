@@ -54,7 +54,7 @@ def test_get():
         service_request(s, "KET", msg, states, least_available, locks, manager)
 
     # get state
-    state_data = s.mock_calls[1][1][0]
+    state_data = s.mock_calls[2][1][0]
     state = loads(state_data)
 
     assert type(state) is KetState
@@ -79,7 +79,7 @@ def test_set():
         service_request(s, "KET", msg, states, least_available, locks, manager)
 
     # get state
-    state_data = s.mock_calls[2][1][0]
+    state_data = s.mock_calls[4][1][0]
     state = loads(state_data)
 
     assert type(state) is KetState

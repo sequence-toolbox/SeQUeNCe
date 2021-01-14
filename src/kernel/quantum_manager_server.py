@@ -86,6 +86,8 @@ def service_request(comm: socket, formalism: str, msg: QuantumManagerMessage,
     data = dumps(return_val)
     comm.sendall(data)
 
+    comm.close()
+
 
 def start_server(ip, port, formalism="KET"):
     s = socket.socket()
@@ -108,11 +110,6 @@ def start_server(ip, port, formalism="KET"):
 
         if msg.type == QuantumManagerMsgType.TERMINATE:
             break
-
-        # elif msg.type == QuantumManagerMsgType.CONNECT:
-        #     process = multiprocessing.Process(target=start_session, args=(c, states, _least_available, locks, manager))
-        #     processes.append(process)
-        #     process.start()
 
         else:
             process = multiprocessing.Process(target=service_request,

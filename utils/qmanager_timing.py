@@ -26,11 +26,8 @@ def client_function(ip, port):
     # get state again to verify
     ket_vec = client.get(key)
 
-    # disconnect
-    client.close()
 
-
-NUM_TRIALS = 5
+NUM_TRIALS = 10
 NUM_CLIENTS = 10
 
 parser = generate_arg_parser()

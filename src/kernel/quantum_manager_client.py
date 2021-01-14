@@ -25,8 +25,8 @@ class QuantumManagerClient():
             port: port of quantum manager server.
         """
         self.formalism = formalism
-        self.s = socket()
-        self.s.connect((ip, port))
+        self.ip = ip
+        self.port = port
         self.io_time = defaultdict(lambda: 0)
         self.type_counter = defaultdict(lambda: 0)
 
@@ -77,20 +77,28 @@ class QuantumManagerClient():
         self._send_message(QuantumManagerMsgType.TERMINATE, [], expecting_receive=False)
 
     def _send_message(self, msg_type, args: List, expecting_receive=True) -> any:
+        s = socket()
+        s.connect((self.ip, self.port))
+
         self.type_counter[msg_type.name] += 1
         tick = time()
 
         msg = QuantumManagerMessage(msg_type, args)
         data = dumps(msg)
-        self.s.sendall(data)
+        s.sendall(data)
 
         if expecting_receive:
-            received_data = self.s.recv(1024)
+            received_data = s.recv(1024)
             received_msg = loads(received_data)
             self.io_time[msg_type.name] += time() - tick
             return received_msg
 
         self.io_time[msg_type.name] += time() - tick
+
+    def _connect(self) -> "Socket":
+        s = socket()
+        s.connect((self.ip, self.port))
+        return s
 
 
 if __name__ == '__main__':
