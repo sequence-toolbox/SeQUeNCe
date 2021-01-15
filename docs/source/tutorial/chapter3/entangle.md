@@ -334,6 +334,7 @@ and `BBPSSW.improved_fidelity(F: float)` to customize the success probability an
 We can run the purification protocol multiple times to observe the state of memory with different purification results.
 
 ```python
+tl.init()
 for i in range(10):
     entangle_memory(node1.left_memo, node2.left_memo, 0.9)
     entangle_memory(node1.right_memo, node2.right_memo, 0.9)
@@ -343,7 +344,6 @@ for i in range(10):
 
     pair_protocol(node1.protocols[0], node2.protocols[0])
 
-    tl.init()
     node1.protocols[0].start()
     node2.protocols[0].start()
     tl.run()

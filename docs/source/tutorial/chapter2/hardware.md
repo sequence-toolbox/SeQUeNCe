@@ -154,7 +154,7 @@ print("detection time: {}".format(counter.time))
 
 ### Step 5: Repeated Operation
 
-Next, let's repeatedly set the memeory to the |+&#10217; state and record detection events. To give us a clean state, we'll remove the code we wrote for step 5.
+Next, let's repeatedly set the memeory to the |+&#10217; state and record detection events. To give us a clean state, we'll remove the code we wrote for step 4.
 
 The events we wish to schedule are all for the memory. We want to first set it to a |+&#10217; state with the `update_state` method, and then excite the memory to measure emitted photons with the `excite` method. The `update_state` method will require a plus state as input. The `excite` method needs an argument for the desired destination node, so we'll supply the name of our `node2`. We’ll schedule both of these at a predetermined frequency `FREQUENCY` (given in Hz) for a set number of trials `NUM_TRIALS`.
 
@@ -165,7 +165,7 @@ from sequence.kernel.event import Event
 
 time_bin = int(1e12 / FREQUENCY)
 
-process1 = Process(node1.memory, "set_plus", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))])
+process1 = Process(node1.memory, "set_plus", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]])
 process2 = Process(node1.memory, "excite", ["node2"])
 for i in range(NUM_TRIALS):
     event1 = Event(i * time_bin, process1)
@@ -174,7 +174,7 @@ for i in range(NUM_TRIALS):
     tl.schedule(event2)
 ```
 
-### Step 7: Running and Output
+### Step 6: Running and Output
 
 The procedure to initialize and run the timeline is the same as Tutorial 1:
 
