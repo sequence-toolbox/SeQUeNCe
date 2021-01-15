@@ -7,8 +7,8 @@ from pickle import loads, dumps
 import multiprocessing
 import threading
 
-from sequence.kernel.p_quantum_manager import ParallelQuantumManagerKet
-from sequence.kernel.quantum_manager import QuantumManagerKet
+from sequence.kernel.p_quantum_manager import ParallelQuantumManagerKet, ParallelQuantumManagerDensity
+from sequence.kernel.quantum_manager import QuantumManager
 
 
 def valid_port(port):
@@ -49,14 +49,7 @@ class QuantumManagerMessage():
         return str(self.type) + ' ' + str(self.args)
 
 
-def service_request(comm: socket, formalism: str, msg: QuantumManagerMessage,
-                    states, least_available, locks, manager):
-    # create quantum manager
-    if formalism == "KET":
-        qm = ParallelQuantumManagerKet(states, least_available, locks, manager)
-    elif formalism == "DENSITY":
-        qm = ParallelQuantumManagerDensity(states, least_available, locks, manager)
-
+def service_request(comm: socket, qm: QuantumManager, msg: QuantumManagerMessage): 
     return_val = None
 
     if msg.type == QuantumManagerMsgType.NEW:
@@ -97,10 +90,18 @@ def start_server(ip, port, formalism="KET"):
     print("connected:", ip, port)
 
     # initialize shared data
-    _least_available = multiprocessing.Value('i', 0)
+    least_available = multiprocessing.Value('i', 0)
     manager = multiprocessing.Manager()
     states = manager.dict()
     locks = manager.dict()
+
+    # create quantum manager
+    if formalism == "KET":
+        qm = ParallelQuantumManagerKet(states, least_available, locks, manager)
+    elif formalism == "DENSITY":
+        qm = ParallelQuantumManagerDensity(states, least_available, locks, manager)
+    else:
+        raise Exception("Invalid quantum manager formalism '{}'".format(formalism))
 
     while True:
         c, addr = s.accept()
@@ -112,8 +113,7 @@ def start_server(ip, port, formalism="KET"):
             break
 
         else:
-            process = multiprocessing.Process(target=service_request,
-                                              args=(c, formalism, msg, states, _least_available, locks, manager))
+            process = multiprocessing.Process(target=service_request, args=(c, qm, msg))
             process.start()
 
 
