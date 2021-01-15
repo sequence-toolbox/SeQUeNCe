@@ -47,7 +47,9 @@ class RouterNetTopo(Topo):
     def _load(self, filename):
         with open(filename, 'r') as fh:
             config = load(fh)
-
+        # quantum connections is supported by sequential simulation so far
+        if not config[self.IS_PARALLEL]:
+            self._add_qconnections(config)
         self._add_timeline(config)
         self._map_bsm_routers(config)
         self._add_nodes(config)
@@ -55,9 +57,6 @@ class RouterNetTopo(Topo):
         self._add_qchannels(config)
         self._add_cchannels(config)
         self._add_cconnections(config)
-        # quantum connections is supported by sequential simulation so far
-        if not config[self.IS_PARALLEL]:
-            self._add_qconnections(config)
         self._generate_forwaring_table(config)
 
     def _add_timeline(self, config):
@@ -108,7 +107,7 @@ class RouterNetTopo(Topo):
                     if memo_size:
                         node_obj = QuantumRouter(name, self.tl, memo_size)
                     else:
-                        print("the size of memory on quantum router {} "
+                        print("WARN: the size of memory on quantum router {} "
                               "is not set".format(name))
                         node_obj = QuantumRouter(name, self.tl)
                 else:
@@ -140,37 +139,58 @@ class RouterNetTopo(Topo):
             distance = q_connect[Topo.DISTANCE] // 2
             type = q_connect[Topo.TYPE]
             cc_delay = []
-            for cc in self.cchannels:
-                if cc.sender.name == node1 and cc.receiver == node2:
+            for cc in config.get(self.ALL_C_CHANNEL, []):
+                if cc[self.SRC] == node1 and cc[self.DST] == node2:
                     cc_delay.append(cc.delay)
-                elif cc.sender.name == node2 and cc.receiver == node1:
+                elif cc[self.SRC] == node2 and cc[self.DST] == node1:
                     cc_delay.append(cc.delay)
+
+            for cc in config.get(self.ALL_CC_CONNECT, []):
+                if (cc[self.CONNECT_NODE_1] == node1
+                    and cc[self.CONNECT_NODE_2] == node2) \
+                        or (cc[self.CONNECT_NODE_1] == node2
+                            and cc[self.CONNECT_NODE_2] == node1):
+                    delay = cc.get(self.DELAY,
+                                   cc.get(self.DISTANCE, 1000) / 2e-4)
+                    cc_delay.append(delay)
+            if len(cc_delay) == 0:
+                assert 0, q_connect
             cc_delay = mean(cc_delay) // 2
             if type == self.MEET_IN_THE_MID:
-                name = "BSM.{}.{}.auto".format(node1, node2)
-                bsm_node = BSMNode(name, self.tl, [node1, node2])
-                self.bsm_to_router_map[bsm_node] = [node1, node2]
-                self.nodes[self.BSM_NODE].append(bsm_node)
-                for src, dst in zip([node1, node2], [node2, node1]):
-                    qc_name = "QC.{}.{}".format(src, bsm_node.name)
-                    qc_obj = QuantumChannel(qc_name, self.tl, attenuation,
-                                            distance)
-                    src_obj = self.tl.get_entity_by_name(src)
-                    src_obj.add_bsm_node(bsm_node.name, dst)
-                    qc_obj.set_ends(src_obj, bsm_node.name)
-                    self.qchannels.append(qc_obj)
+                bsm_name = "BSM.{}.{}.auto".format(node1, node2)
+                bsm_info = {self.NAME: bsm_name,
+                            self.TYPE: self.BSM_NODE,
+                            self.SEED: 0}
+                config[self.ALL_NODE].append(bsm_info)
 
-                    cc_name = "CC.{}.{}".format(src, bsm_node.name)
-                    cc_obj = ClassicalChannel(cc_name, self.tl, distance,
-                                              cc_delay)
-                    cc_obj.set_ends(src_obj, bsm_node.name)
-                    self.cchannels.append(cc_obj)
+                for src in [node1, node2]:
+                    qc_name = "QC.{}.{}".format(src, bsm_name)
+                    qc_info = {self.NAME: qc_name,
+                               self.SRC: src,
+                               self.DST: bsm_name,
+                               self.DISTANCE: distance,
+                               self.ATTENUATION: attenuation}
+                    if not self.ALL_Q_CHANNEL in config:
+                        config[self.ALL_Q_CHANNEL] = []
+                    config[self.ALL_Q_CHANNEL].append(qc_info)
 
-                    cc_name = "CC.{}.{}".format(bsm_node.name, src)
-                    cc_obj = ClassicalChannel(cc_name, self.tl, distance,
-                                              cc_delay)
-                    cc_obj.set_ends(bsm_node, src)
-                    self.cchannels.append(cc_obj)
+                    cc_name = "CC.{}.{}".format(src, bsm_name)
+                    cc_info = {self.NAME: cc_name,
+                               self.SRC: src,
+                               self.DST: bsm_name,
+                               self.DISTANCE: distance,
+                               self.DELAY: cc_delay}
+                    if not self.ALL_C_CHANNEL in config:
+                        config[self.ALL_C_CHANNEL] = []
+                    config[self.ALL_C_CHANNEL].append(cc_info)
+
+                    cc_name = "CC.{}.{}".format(bsm_name, src)
+                    cc_info = {self.NAME: cc_name,
+                               self.SRC: bsm_name,
+                               self.DST: src,
+                               self.DISTANCE: distance,
+                               self.DELAY: cc_delay}
+                    config[self.ALL_C_CHANNEL].append(cc_info)
             else:
                 raise NotImplementedError("Unknown type of quantum connection")
 
