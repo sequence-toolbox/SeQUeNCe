@@ -107,6 +107,9 @@ class ParallelTimeline():
     def remove_event(self, event: "Event") -> None:
         self.events.remove(event)
 
+    def add_foreign_entity(self, entity_name: str, foreign_id: int):
+        self.foreign_entities[entity_name] = foreign_id
+
 
 class AsyncParallelTimeline(ParallelTimeline):
     def top_time(self):

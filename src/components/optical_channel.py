@@ -72,7 +72,7 @@ class QuantumChannel(OpticalChannel):
         name (str): label for channel instance.
         timeline (Timeline): timeline for simulation.
         sender (Node): node at sending end of optical channel.
-        receiver (Node): node at receiving end of optical channel.
+        receiver (str): name of node at receiving end of optical channel.
         atteunuation (float): attenuation of the fiber (in dB/km).
         distance (int): length of the fiber (in m).
         polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
@@ -82,7 +82,9 @@ class QuantumChannel(OpticalChannel):
         frequency (float): maximum frequency of qubit transmission (in Hz).
     """
 
-    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, polarization_fidelity=1, light_speed=2e-4, frequency=8e7):
+    def __init__(self, name: str, timeline: "Timeline", attenuation: float,
+                 distance: int, polarization_fidelity=1, light_speed=2e-4,
+                 frequency=8e7):
         """Constructor for Quatnum Channel class.
 
         Args:
