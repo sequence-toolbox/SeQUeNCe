@@ -165,7 +165,7 @@ from sequence.kernel.event import Event
 
 time_bin = int(1e12 / FREQUENCY)
 
-process1 = Process(node1.memory, "set_plus", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))])
+process1 = Process(node1.memory, "update_state", [[complex(math.sqrt(1 / 2)), complex(math.sqrt(1 / 2))]])
 process2 = Process(node1.memory, "excite", ["node2"])
 for i in range(NUM_TRIALS):
     event1 = Event(i * time_bin, process1)
