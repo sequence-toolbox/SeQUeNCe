@@ -7,7 +7,7 @@ from pickle import loads, dumps
 import multiprocessing
 import threading
 
-from sequence.kernel.p_quantum_manager import ParallelQuantumManagerKet, ParallelQuantumManagerDensity
+from sequence.kernel.p_quantum_manager import *
 from sequence.kernel.quantum_manager import QuantumManager
 
 
@@ -49,28 +49,37 @@ class QuantumManagerMessage():
         return str(self.type) + ' ' + str(self.args)
 
 
-def service_request(comm: socket, qm: QuantumManager, msg: QuantumManagerMessage): 
+def service_request(comm: socket, formalism, states, least_available, locks, manager, msg: QuantumManagerMessage): 
     return_val = None
 
     if msg.type == QuantumManagerMsgType.NEW:
         assert len(msg.args) <= 1
-        return_val = qm.new(*msg.args)
+        if formalism == "KET":
+            return_val = p_new_ket(states, least_available, locks, manager, *msg.args)
+        else:
+            return_val = p_new_density(states, least_available, locks, manager, *msg.args)
 
     elif msg.type == QuantumManagerMsgType.GET:
         assert len(msg.args) == 1
-        return_val = qm.get(*msg.args)
+        return_val = p_get(states, *msg.args)
 
     elif msg.type == QuantumManagerMsgType.SET:
         assert len(msg.args) == 2
-        qm.set(*msg.args)
+        if formalism == "KET":
+            p_set_ket(states, *msg.args)
+        else:
+            p_set_density(states, *msg.args)
 
     elif msg.type == QuantumManagerMsgType.RUN:
         assert len(msg.args) == 2
-        return_val = qm.run_circuit(*msg.args)
+        if formalism == "KET":
+            return_val = p_run_circuit_ket(states, locks, *msg.args)
+        else:
+            return_val = p_run_circuit_density(states, locks, *msg.args)
 
     elif msg.type == QuantumManagerMsgType.REMOVE:
         assert len(msg.args) == 1
-        qm.remove(*msg.args)
+        p_remove(states, locks, *msg.args)
 
     else:
         raise Exception("Quantum manager session received invalid message type {}".format(msg.type))
@@ -83,6 +92,8 @@ def service_request(comm: socket, qm: QuantumManager, msg: QuantumManagerMessage
 
 
 def start_server(ip, port, formalism="KET"):
+    assert formalism in ["KET", "DENSITY"], "Invalid formalism " + formalism
+
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((ip, port))
@@ -95,14 +106,6 @@ def start_server(ip, port, formalism="KET"):
     states = manager.dict()
     locks = manager.dict()
 
-    # create quantum manager
-    if formalism == "KET":
-        qm = ParallelQuantumManagerKet(states, least_available, locks, manager)
-    elif formalism == "DENSITY":
-        qm = ParallelQuantumManagerDensity(states, least_available, locks, manager)
-    else:
-        raise Exception("Invalid quantum manager formalism '{}'".format(formalism))
-
     while True:
         c, addr = s.accept()
 
@@ -113,7 +116,8 @@ def start_server(ip, port, formalism="KET"):
             break
 
         else:
-            process = multiprocessing.Process(target=service_request, args=(c, qm, msg))
+            process = multiprocessing.Process(target=service_request,
+                                              args=(c, formalism, states, least_available, locks, manager, msg))
             process.start()
 
 

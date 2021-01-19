@@ -74,13 +74,14 @@ class QuantumManager():
         assert len(keys) == circuit.size, "mismatch between circuit size and supplied qubits"
 
 
-    def _prepare_circuit(self, circuit: "Circuit", keys: List[int]):
+    @staticmethod
+    def _prepare_circuit(states, circuit: "Circuit", keys: List[int]):
         old_states = []
         all_keys = []
 
         # go through keys and get all unique qstate objects
         for key in keys:
-            qstate = self.states[key]
+            qstate = states[key]
             if qstate.keys[0] not in all_keys:
                 old_states.append(qstate.state)
                 all_keys += qstate.keys
@@ -99,12 +100,14 @@ class QuantumManager():
 
         # apply any necessary swaps
         if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
-            all_keys, swap_mat = self._swap_qubits(all_keys, keys)
+            all_keys, swap_mat = QuantumManager._swap_qubits(all_keys, keys)
             circ_mat = circ_mat @ swap_mat
 
         return new_state, all_keys, circ_mat
 
-    def _swap_qubits(self, all_keys, keys):
+
+    @staticmethod
+    def _swap_qubits(all_keys, keys):
         swap_circuit = QubitCircuit(N=len(all_keys))
         for i, key in enumerate(keys):
             j = all_keys.index(key)
@@ -146,10 +149,13 @@ class QuantumManagerKet(QuantumManager):
         self.states[key] = KetState(amplitudes, [key])
         return key
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[
-        int, int]:
+    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
         super().run_circuit(circuit, keys)
-        new_state, all_keys, circ_mat = self._prepare_circuit(circuit, keys)
+        return QuantumManagerKet._run_circuit_static(self.states, circuit, keys)
+
+    @staticmethod
+    def _run_circuit_static(states: Dict[int, int], circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
+        new_state, all_keys, circ_mat = QuantumManager._prepare_circuit(states, circuit, keys)
 
         new_state = circ_mat @ new_state
 
@@ -157,12 +163,12 @@ class QuantumManagerKet(QuantumManager):
             # set state, return no measurement result
             new_ket = KetState(new_state, all_keys)
             for key in all_keys:
-                self.states[key] = new_ket
+                states[key] = new_ket
             return {}
         else:
             # measure state (state reassignment done in _measure method)
             keys = [all_keys[i] for i in circuit.measured_qubits]
-            return self._measure(new_state, keys, all_keys)
+            return QuantumManagerKet._measure(states, new_state, keys, all_keys)
 
     def set(self, keys: List[int], amplitudes: List[complex]) -> None:
         super().set(keys, amplitudes)
@@ -170,13 +176,17 @@ class QuantumManagerKet(QuantumManager):
         for key in keys:
             self.states[key] = new_state
 
-    def _measure(self, state: List[complex], keys: List[int], all_keys: List[int]) -> Dict[int, int]:
+    @staticmethod
+    def _measure(states: Dict[int, int], state: List[complex], keys: List[int],
+                 all_keys: List[int]) -> Dict[int, int]:
         """Method to measure qubits at given keys.
 
         SHOULD NOT be called individually; only from circuit method (unless for unit testing purposes).
         Modifies quantum state of all qubits given by all_keys.
+        This method implements functionality of _measure method without self object, for parallelized managers.
 
         Args:
+            states (Dict[int, int]): dictionary mapping keys to states.
             state (List[complex]): state to measure.
             keys (List[int]): list of keys to measure.
             all_keys (List[int]): list of all keys corresponding to state.
@@ -210,7 +220,7 @@ class QuantumManagerKet(QuantumManager):
         else:
             # swap states into correct position
             if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
-                all_keys, swap_mat = self._swap_qubits(all_keys, keys)
+                all_keys, swap_mat = QuantumManager._swap_qubits(all_keys, keys)
                 state = swap_mat @ state
 
             # calculate meas probabilities and projected states
@@ -233,12 +243,12 @@ class QuantumManagerKet(QuantumManager):
         for res, key in zip(result_digits, keys):
             # set to state measured
             new_state_obj = KetState(result_states[res], [key])
-            self.states[key] = new_state_obj
+            states[key] = new_state_obj
         
         if len(all_keys) > 0:
             new_state_obj = KetState(new_state, all_keys)
             for key in all_keys:
-                self.states[key] = new_state_obj
+                states[key] = new_state_obj
         
         return dict(zip(keys, result_digits))
 
@@ -256,10 +266,13 @@ class QuantumManagerDensity(QuantumManager):
         self.states[key] = DensityState(state, [key])
         return key
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[
-        int, int]:
+    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
         super().run_circuit(circuit, keys)
-        new_state, all_keys, circ_mat = super()._prepare_circuit(circuit, keys)
+        return QuantumManagerDensity._run_circuit_static(self.states, circuit, keys)
+
+    @staticmethod
+    def _run_circuit_static(states, circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
+        new_state, all_keys, circ_mat = QuantumManager._prepare_circuit(states, circuit, keys)
 
         new_state = circ_mat @ new_state @ circ_mat.T
 
@@ -267,12 +280,12 @@ class QuantumManagerDensity(QuantumManager):
             # set state, return no measurement result
             new_state_obj = DensityState(new_state, all_keys)
             for key in all_keys:
-                self.states[key] = new_state_obj
+                states[key] = new_state_obj
             return {}
         else:
             # measure state (state reassignment done in _measure method)
             keys = [all_keys[i] for i in circuit.measured_qubits]
-            return self._measure(new_state, keys, all_keys)
+            return QuantumManagerDensity._measure(states, new_state, keys, all_keys)
 
     def set(self, keys: List[int], state: List[List[complex]]) -> None:
         super().set(keys, state)
@@ -280,14 +293,17 @@ class QuantumManagerDensity(QuantumManager):
         for key in keys:
             self.states[key] = new_state
 
-
-    def _measure(self, state: List[List[complex]], keys: List[int], all_keys: List[int]) -> Dict[int, int]:
+    @staticmethod
+    def _measure(states: Dict[int, int], state: List[complex], keys: List[int],
+                        all_keys: List[int]) -> Dict[int, int]:
         """Method to measure qubits at given keys.
 
         SHOULD NOT be called individually; only from circuit method (unless for unit testing purposes).
         Modifies quantum state of all qubits given by all_keys.
+        This method implements functionality of _measure method without self object, for parallelized managers.
 
         Args:
+            states (Dict[int, int]): dictionary mapping keys to states.
             state (List[complex]): state to measure.
             keys (List[int]): list of keys to measure.
             all_keys (List[int]): list of all keys corresponding to state.
@@ -322,7 +338,7 @@ class QuantumManagerDensity(QuantumManager):
         else:
             # swap states into correct position
             if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
-                all_keys, swap_mat = self._swap_qubits(all_keys, keys)
+                all_keys, swap_mat = QuantumManager._swap_qubits(all_keys, keys)
                 state = swap_mat @ state @ swap_mat.T
 
             # calculate meas probabilities and projected states
@@ -341,7 +357,7 @@ class QuantumManagerDensity(QuantumManager):
 
         new_state_obj = DensityState(new_state, all_keys)
         for key in all_keys:
-            self.states[key] = new_state_obj
+            states[key] = new_state_obj
 
         return dict(zip(keys, result_digits))
 

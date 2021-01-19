@@ -11,68 +11,52 @@ from typing import List, Dict
 from .quantum_manager import QuantumManagerKet, QuantumManagerDensity, KetState, DensityState
 
 
-class ParallelQuantumManagerKet(QuantumManagerKet):
-    """Class to track and manage quantum states with the ket vector formalism."""
+def p_new_ket(states, least_available, locks, manager, amplitudes=[complex(1), complex(0)]) -> int:
+    key = least_available.value
 
-    def __init__(self, states, least_available, locks, manager):
-        self.states = states
-        self._least_available = least_available
-        self.locks = locks
-        self.manager = manager
+    with least_available.get_lock():
+        least_available.value += 1
 
-    def new(self, amplitudes=[complex(1), complex(0)]) -> int:
-        key = self._least_available.value
+    states[key] = KetState(amplitudes, [key])
+    locks[key] = manager.Lock()
+    return key
 
-        with self._least_available.get_lock():
-            self._least_available.value += 1
+def p_new_density(states, least_available, locks, manager,
+                  state=[[complex(1), complex(0)], [complex(0), complex(0)]]) -> int:        
+    key = least_available.value
 
-        self.states[key] = KetState(amplitudes, [key])
-        self.locks[key] = self.manager.Lock()
-        return key
+    with least_available.get_lock():
+        least_available.value += 1
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
+    states[key] = DensityState(state, [key])
+    locks[key] = manager.Lock()
+    return key
+
+def p_get(states, key: int):
+    return states[key]
+
+def p_run_circuit_ket(states, locks, circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
+    for key in keys:
+        locks[key].acquire()
+    try:
+        ret_dict = QuantumManagerKet._run_circuit_static(states, circuit, keys)
+    finally:
         for key in keys:
-            self.locks[key].acquire()
-        try:
-            ret_dict = super().run_circuit(circuit, keys)
-        finally:
-            for key in keys:
-                self.locks[key].release()
+            locks[key].release()
 
-    def remove(self, key: int) -> None:
-        del self.states[key]
-        del self.locks[key]
+    return ret_dict
 
+def p_set_ket(states, keys: List[int], amplitudes: List[complex]) -> None:
+    new_state = KetState(amplitudes, keys)
+    for key in keys:
+        states[key] = new_state
 
-class ParallelQuantumManagerDensity(QuantumManagerDensity):
-    """Class to track and manage states with the density matrix formalism."""
+def p_set_density(states, keys: List[int], state: List[List[complex]]) -> None:
+    new_state = DensityState(state, keys)
+    for key in keys:
+        states[key] = new_state
 
-    def __init__(self, states, least_available, locks, manager):
-        self.states = states
-        self._least_available = least_available
-        self.locks = locks
-        self.manager = manager
-
-    def new(self, state=[[complex(1), complex(0)], [complex(0), complex(0)]]) -> int:        
-        key = self._least_available.value
-
-        with self._least_available.get_lock():
-            self._least_available.value += 1
-
-        self.states[key] = KetState(amplitudes, [key])
-        self.locks[key] = self.manager.Lock()
-        return key
-
-    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
-        for key in keys:
-            self.locks[key].aquire()
-        try:
-            ret_dict = super().run_circuit(circuit, keys)
-        finally:
-            for key in keys:
-                self.locks[key].release()
-
-    def remove(self, key: int) -> None:
-        del self.states[key]
-        del self.locks[key]
+def p_remove(states, locks, key: int) -> None:
+    del states[key]
+    del locks[key]
 

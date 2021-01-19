@@ -207,7 +207,7 @@ def test_qmanager__measure():
     state = [math.sqrt(1/2), math.sqrt(1/2)]
     for _ in range(NUM_TESTS):
         key = qm.new()
-        res = qm._measure(state, [key], [key])
+        res = QuantumManagerKet._measure(qm.states, state, [key], [key])
         if res[key]:
             meas_1.append(key)
         else:
@@ -271,7 +271,7 @@ def test_qmanager__measure_density():
     state = np.outer(state_single, state_single)
     for _ in range(NUM_TESTS):
         key = qm.new()
-        res = qm._measure(state, [key], [key])
+        res = QuantumManagerDensity._measure(qm.states, state, [key], [key])
         if res[key]:
             meas_1.append(key)
         else:
@@ -289,7 +289,7 @@ def test_qmanager__measure_density():
     state = [[0.5, 0], [0, 0.5]]
     for _ in range(NUM_TESTS):
         key = qm.new()
-        res = qm._measure(state, [key], [key])
+        res = QuantumManagerDensity._measure(qm.states, state, [key], [key])
         if res[key]:
             meas_1.append(key)
         else:

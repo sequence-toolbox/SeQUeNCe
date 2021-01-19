@@ -5,7 +5,7 @@ import numpy as np
 import time
 
 from sequence.kernel.quantum_manager import KetState
-from sequence.kernel.p_quantum_manager import ParallelQuantumManagerKet
+from sequence.kernel.p_quantum_manager import *
 from sequence.kernel.quantum_manager_server import *
 
 
@@ -15,9 +15,7 @@ def setup_environment():
     states = manager.dict()
     locks = manager.dict()
 
-    qm = ParallelQuantumManagerKet(states, least_available, locks, manager)
-
-    return qm
+    return states, least_available, locks, manager
 
 
 def test_new():
@@ -25,19 +23,19 @@ def test_new():
     msg = QuantumManagerMessage(QuantumManagerMsgType.NEW, [])
 
     # setup environment
-    qm = setup_environment()
+    args = setup_environment()
 
     # create dummy socket
     s = Mock()
 
     # run
-    service_request(s, qm, msg)
+    service_request(s, "KET", *args, msg)
 
     # get key
     key_data = s.mock_calls[0][1][0]
     key = loads(key_data)
 
-    assert qm._least_available.value > 0
+    assert args[1].value > 0
     assert key == 0
 
 
@@ -47,14 +45,14 @@ def test_get():
     msg2 = QuantumManagerMessage(QuantumManagerMsgType.GET, [0]) 
 
     # setup environment
-    qm = setup_environment()
+    args = setup_environment()
 
     # create dummy socket
     s = Mock()
 
     # run
     for msg in [msg1, msg2]:
-        service_request(s, qm, msg)
+        service_request(s, "KET", *args, msg)
 
     # get state
     state_data = s.mock_calls[2][1][0]
@@ -72,14 +70,14 @@ def test_set():
     msg3 = QuantumManagerMessage(QuantumManagerMsgType.GET, [0])
 
     # setup environ
-    qm = setup_environment()
+    args = setup_environment()
 
     # create dummy socket
     s = Mock()
 
     # run
     for msg in [msg1, msg2, msg3]:
-        service_request(s, qm, msg)
+        service_request(s, "KET", *args, msg)
 
     # get state
     state_data = s.mock_calls[4][1][0]
@@ -95,16 +93,16 @@ def test_remove():
     msg2 = QuantumManagerMessage(QuantumManagerMsgType.REMOVE, [0])
 
     # setup environ
-    qm = setup_environment()
+    args = setup_environment()
 
     # create dummy socket
     s = Mock()
 
     # run
     for msg in [msg1, msg2]:
-        service_request(s, qm, msg)
+        service_request(s, "KET", *args, msg)
 
-    assert not qm.states
+    assert not args[0]
 
 
 def test_kill_func():
