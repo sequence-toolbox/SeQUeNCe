@@ -15,7 +15,7 @@ from math import sqrt
 from qutip.qip.circuit import QubitCircuit, Gate
 from qutip.qip.operations import gate_sequence_product
 from numpy import log2, array, kron, identity, zeros, arange, outer
-from numpy.random import random_sample, choice
+from numpy.random import default_rng
 
 from .quantum_utils import *
 if TYPE_CHECKING:
@@ -31,10 +31,11 @@ class QuantumManager():
         states (Dict[int, KetState]): mapping of state keys to quantum state objects.
     """
 
-    def __init__(self, formalism):
+    def __init__(self, formalism, seed=None):
         self.states = {}
         self._least_available = 0
         self.formalism = formalism
+        self.rng = default_rng(seed)
 
     @abstractmethod
     def new(self, amplitudes: any) -> int:
@@ -188,7 +189,7 @@ class QuantumManagerKet(QuantumManager):
         if len(keys) == 1:
             if len(all_keys) == 1:
                 prob_0 = measure_state_with_cache_ket(tuple(state))
-                if random_sample() < prob_0:
+                if self.rng.random() < prob_0:
                     result = 0
                 else:
                     result = 1
@@ -198,7 +199,7 @@ class QuantumManagerKet(QuantumManager):
                 num_states = len(all_keys)
                 state_index = all_keys.index(key)
                 state_0, state_1, prob_0 = measure_entangled_state_with_cache_ket(tuple(state), state_index, num_states)
-                if random_sample() < prob_0:
+                if self.rng.random() < prob_0:
                     new_state = array(state_0, dtype=complex)
                     result = 0
                 else:
@@ -219,7 +220,7 @@ class QuantumManagerKet(QuantumManager):
 
             # choose result, set as new state
             possible_results = arange(0, 2 ** len(keys), 1)
-            result = choice(possible_results, p=probabilities)
+            result = self.rng.choice(possible_results, p=probabilities)
             new_state = new_states[result]
 
             for key in keys:
@@ -299,7 +300,7 @@ class QuantumManagerDensity(QuantumManager):
         if len(keys) == 1:
             if len(all_keys) == 1:
                 prob_0 = measure_state_with_cache_density(tuple(map(tuple, state)))
-                if random_sample() < prob_0:
+                if self.rng.random() < prob_0:
                     result = 0
                     new_state = [[1, 0], [0, 0]]
                 else:
@@ -312,7 +313,7 @@ class QuantumManagerDensity(QuantumManager):
                 state_index = all_keys.index(key)
                 state_0, state_1, prob_0 = measure_entangled_state_with_cache_density(tuple(map(tuple, state)),
                         state_index, num_states)
-                if random_sample() < prob_0:
+                if self.rng.random() < prob_0:
                     new_state = array(state_0, dtype=complex)
                     result = 0
                 else:
@@ -332,7 +333,7 @@ class QuantumManagerDensity(QuantumManager):
 
             # choose result, set as new state
             possible_results = arange(0, 2 ** len(keys), 1)
-            result = choice(possible_results, p=probabilities)
+            result = self.rng.choice(possible_results, p=probabilities)
             new_state = new_states[result]
 
         result_digits = [int(x) for x in bin(result)[2:]]
