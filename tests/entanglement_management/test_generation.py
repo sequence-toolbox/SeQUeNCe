@@ -54,10 +54,10 @@ def test_generation_receive_message():
 
     # negotiate message
     msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG",
-                                        emit_time_0=0, emit_time_1=1)
+                                        emit_time=0)
     eg.received_message("e2", msg)
-    assert eg.expected_times[0] == 1 and eg.expected_times[1] == 2
-    assert len(tl.events.data) == 4  # two excites, flip state, end time
+    assert eg.expected_time == 1
+    assert len(tl.events.data) == 2  # emit event and start/update_memory event
 
 
 def test_generation_pop():
@@ -81,11 +81,13 @@ def test_generation_pop():
 
     # BSM result
     middle.bsm_update(None, {'info_type': "BSM_res", 'res': 0, 'time': 100})
-    
+
     assert len(m0.messages) == 2
     assert m0.messages[0][0] == "e0"
     assert m0.messages[1][0] == "e1"
-    assert m0.messages[0][1].msg_type == m0.messages[1][1].msg_type == GenerationMsgType.MEAS_RES
+    assert m0.messages[0][1].msg_type \
+           == m0.messages[1][1].msg_type \
+           == GenerationMsgType.MEAS_RES
 
 
 def test_generation_expire():
@@ -174,7 +176,8 @@ def test_generation_run():
                                   num_memories=NUM_TESTS)
     e1.memory_array.owner = e1
     detectors = [{"efficiency": 1, "count_rate": 1e11}] * 2
-    m0.bsm = make_bsm("m0.bsm", tl, encoding_type="single_atom", detectors=detectors)
+    m0.bsm = make_bsm("m0.bsm", tl, encoding_type="single_atom",
+                      detectors=detectors)
 
     # add middle protocol
     eg_m0 = EntanglementGenerationB(m0, "eg_m0", others=["e0", "e1"])
@@ -263,6 +266,7 @@ def test_generation_fidelity_ket():
     detectors = [{"efficiency": 1, "count_rate": 1e11}] * 2
     m0.bsm = make_bsm("m0.bsm", tl, encoding_type="single_atom",
                       detectors=detectors)
+    m0.bsm.owner = m0
 
     # add middle protocol
     eg_m0 = EntanglementGenerationB(m0, "eg_m0", others=["e0", "e1"])
@@ -298,13 +302,15 @@ def test_generation_fidelity_ket():
 
     tl.run()
 
-    desired = np.array([complex(np.sqrt(1/2)), complex(0), complex(0), complex(np.sqrt(1/2))])
+    desired = np.array([complex(np.sqrt(1 / 2)), complex(0),
+                        complex(0), complex(np.sqrt(1 / 2))])
     correct = 0
     total = 0
     for mem in e0.memory_array:
         if mem.fidelity > 0:
             total += 1
-            mem_state = tl.quantum_manager.get(mem.qstate_key).state
+            qstate = tl.quantum_manager.get(mem.qstate_key)
+            mem_state = qstate.state
             if np.array_equal(desired, mem_state):
                 correct += 1
 
