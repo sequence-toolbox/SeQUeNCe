@@ -74,9 +74,9 @@ class QuantumManagerClient():
 
         key = self._send_message(QuantumManagerMsgType.NEW, args)
         if state:
-            self.qm.new(state=state, key=key)
+            return self.qm.new(state=state, key=key)
         else:
-            self.qm.new(key=key)
+            return self.qm.new(key=key)
 
     def get(self, key: int) -> any:
         if self._check_local([key]):
@@ -156,7 +156,7 @@ class QuantumManagerClient():
         self.io_time[msg_type.name] += time() - tick
 
     def _check_local(self, keys: List[int]):
-        return all(key in self.qm.states.keys() for key in keys)
+        return all([key in self.qm.states.keys() for key in keys])
 
 
 if __name__ == '__main__':
