@@ -38,11 +38,12 @@ class QuantumManager():
         self.rng = default_rng(seed)
 
     @abstractmethod
-    def new(self, amplitudes: any) -> int:
+    def new(self, state: any, key=None) -> int:
         """Method to create a new quantum state.
 
         Args:
             amplitudes: complex amplitudes of new state. Type depends on type of subclass.
+            key: desired key for quantum state. Cannot be existing key.
 
         Returns:
             int: key for new state generated.
@@ -141,10 +142,20 @@ class QuantumManagerKet(QuantumManager):
     def __init__(self):
         super().__init__("KET")
 
-    def new(self, amplitudes=(complex(1), complex(0))) -> int:
-        key = self._least_available
-        self._least_available += 1
-        self.states[key] = KetState(amplitudes, [key])
+    def new(self, state=(complex(1), complex(0)), key=None) -> int:
+        if key is None:
+            while self._least_available in self.states.keys():
+                self._least_available += 1
+ 
+            key = self._least_available
+            self._least_available += 1
+            self.states[key] = KetState(state, [key])
+
+        else:
+            if key in self.states.keys():
+                raise ValueError("Key {} already in use".format(key))
+            self.states[key] = KetState(state, [key])
+        
         return key
 
     def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[

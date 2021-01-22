@@ -4,6 +4,7 @@ from pickle import loads, dumps
 from typing import List
 from time import time
 
+from .quantum_manager import QuantumManagerKet, QuantumManagerDensity
 from .quantum_manager_server import generate_arg_parser, QuantumManagerMsgType, QuantumManagerMessage
 from ..components.circuit import Circuit
 
@@ -31,6 +32,16 @@ class QuantumManagerClient():
         self.connected = True
         self.io_time = defaultdict(lambda: 0)
         self.type_counter = defaultdict(lambda: 0)
+
+        # local quantum manager
+        if formalism == "KET":
+            self.qm = QuantumManagerKet()
+
+        elif formalism == "DENSITY":
+            self.qm = QuantumManagerDensity()
+
+        else:
+            raise Exception("Invalid formalim {} given; should be 'KET' or 'VALID'".format(formalism))
 
     def init(self) -> None:
         """Method to configure client connection.
@@ -61,23 +72,46 @@ class QuantumManagerClient():
         else:
             args = [state]
 
-        return self._send_message(QuantumManagerMsgType.NEW, args)
+        key = self._send_message(QuantumManagerMsgType.NEW, args)
+        if state:
+            self.qm.new(state=state, key=key)
+        else:
+            self.qm.new(key=key)
 
     def get(self, key: int) -> any:
-        self._check_connection()
-        return self._send_message(QuantumManagerMsgType.GET, [key])
+        if self._check_local([key]):
+            return self.qm.get(key)
+
+        else:
+            raise NotImplementedError()
+
+        # self._check_connection()
+        # return self._send_message(QuantumManagerMsgType.GET, [key])
 
     def run_circuit(self, circuit: "Circuit", keys: List[int]) -> any:
-        self._check_connection()
-        return self._send_message(QuantumManagerMsgType.RUN, [circuit, keys])
+        if self._check_local(keys):
+            return self.qm.run_circuit(circuit, keys)
+
+        else:
+            raise NotImplementedError()
+
+        # self._check_connection()
+        # return self._send_message(QuantumManagerMsgType.RUN, [circuit, keys])
 
     def set(self, keys: List[int], amplitudes: any) -> None:
-        self._check_connection()
-        self._send_message(QuantumManagerMsgType.SET, [keys, amplitudes])
+        if self._check_local(keys):
+            self.qm.set(keys, amplitudes)
+
+        else:
+            raise NotImplementedError()
+
+        # self._check_connection()
+        # self._send_message(QuantumManagerMsgType.SET, [keys, amplitudes])
 
     def remove(self, key: int) -> None:
         self._check_connection()
         self._send_message(QuantumManagerMsgType.REMOVE, [key])
+        self.qm.remove(key)
 
     def close(self) -> None:
         """Method to close communication with server.
@@ -120,6 +154,9 @@ class QuantumManagerClient():
             return received_msg
 
         self.io_time[msg_type.name] += time() - tick
+
+    def _check_local(self, keys: List[int]):
+        return all(key in self.qm.states.keys() for key in keys)
 
 
 if __name__ == '__main__':

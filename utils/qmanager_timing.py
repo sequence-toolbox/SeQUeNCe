@@ -30,7 +30,7 @@ def client_function(ip, port):
     client.close()
 
 
-NUM_TRIALS = 5
+NUM_TRIALS = 10
 NUM_CLIENTS = 10
 
 parser = generate_arg_parser()
