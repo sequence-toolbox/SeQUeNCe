@@ -15,18 +15,19 @@ class ParallelQuantumManagerKet(QuantumManagerKet):
     """Class to track and manage quantum states with the ket vector formalism."""
 
     def __init__(self, states, least_available, locks, manager):
+        super().__init__()
         self.states = states
         self._least_available = least_available
         self.locks = locks
         self.manager = manager
 
-    def new(self, amplitudes=[complex(1), complex(0)]) -> int:
+    def new(self, state=(complex(1), complex(0))) -> int:
         key = self._least_available.value
 
         with self._least_available.get_lock():
             self._least_available.value += 1
 
-        self.states[key] = KetState(amplitudes, [key])
+        self.states[key] = KetState(state, [key])
         self.locks[key] = self.manager.Lock()
         return key
 
@@ -35,6 +36,7 @@ class ParallelQuantumManagerKet(QuantumManagerKet):
             self.locks[key].acquire()
         try:
             ret_dict = super().run_circuit(circuit, keys)
+            return ret_dict
         finally:
             for key in keys:
                 self.locks[key].release()
@@ -48,6 +50,7 @@ class ParallelQuantumManagerDensity(QuantumManagerDensity):
     """Class to track and manage states with the density matrix formalism."""
 
     def __init__(self, states, least_available, locks, manager):
+        super().__init__()
         self.states = states
         self._least_available = least_available
         self.locks = locks
@@ -59,7 +62,7 @@ class ParallelQuantumManagerDensity(QuantumManagerDensity):
         with self._least_available.get_lock():
             self._least_available.value += 1
 
-        self.states[key] = KetState(amplitudes, [key])
+        self.states[key] = DensityState(state, [key])
         self.locks[key] = self.manager.Lock()
         return key
 
@@ -68,6 +71,7 @@ class ParallelQuantumManagerDensity(QuantumManagerDensity):
             self.locks[key].aquire()
         try:
             ret_dict = super().run_circuit(circuit, keys)
+            return ret_dict
         finally:
             for key in keys:
                 self.locks[key].release()

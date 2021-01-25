@@ -38,7 +38,7 @@ class QuantumManager():
         self.rng = default_rng(seed)
 
     @abstractmethod
-    def new(self, state: any, key=None) -> int:
+    def new(self, state: any) -> int:
         """Method to create a new quantum state.
 
         Args:
@@ -142,20 +142,10 @@ class QuantumManagerKet(QuantumManager):
     def __init__(self):
         super().__init__("KET")
 
-    def new(self, state=(complex(1), complex(0)), key=None) -> int:
-        if key is None:
-            while self._least_available in self.states.keys():
-                self._least_available += 1
- 
-            key = self._least_available
-            self._least_available += 1
-            self.states[key] = KetState(state, [key])
-
-        else:
-            if key in self.states.keys():
-                raise ValueError("Key {} already in use".format(key))
-            self.states[key] = KetState(state, [key])
-        
+    def new(self, state=(complex(1), complex(0))) -> int:
+        key = self._least_available
+        self._least_available += 1
+        self.states[key] = KetState(state, [key])
         return key
 
     def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[
@@ -182,7 +172,14 @@ class QuantumManagerKet(QuantumManager):
         for key in keys:
             self.states[key] = new_state
 
-    def _measure(self, state: List[complex], keys: List[int], all_keys: List[int]) -> Dict[int, int]:
+    def set_to_zero(self, key: int):
+        self.set([key], [complex(1), complex(0)])
+
+    def set_to_one(self, key: int):
+        self.set([key], [complex(0), complex(1)])
+
+    def _measure(self, state: List[complex], keys: List[int],
+                 all_keys: List[int]) -> Dict[int, int]:
         """Method to measure qubits at given keys.
 
         SHOULD NOT be called individually; only from circuit method (unless for unit testing purposes).
@@ -292,8 +289,14 @@ class QuantumManagerDensity(QuantumManager):
         for key in keys:
             self.states[key] = new_state
 
+    def set_to_zero(self, key: int):
+        self.set([key], [[complex(1), complex(0)], [complex(0), complex(0)]])
 
-    def _measure(self, state: List[List[complex]], keys: List[int], all_keys: List[int]) -> Dict[int, int]:
+    def set_to_one(self, key: int):
+        self.set([key], [[complex(0), complex(0)], [complex(0), complex(1)]])
+
+    def _measure(self, state: List[List[complex]], keys: List[int],
+                 all_keys: List[int]) -> Dict[int, int]:
         """Method to measure qubits at given keys.
 
         SHOULD NOT be called individually; only from circuit method (unless for unit testing purposes).

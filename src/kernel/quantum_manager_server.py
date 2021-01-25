@@ -7,8 +7,7 @@ from pickle import loads, dumps
 import multiprocessing
 import threading
 
-from sequence.kernel.p_quantum_manager import ParallelQuantumManagerKet
-from sequence.kernel.quantum_manager import QuantumManagerKet
+from .p_quantum_manager import ParallelQuantumManagerKet
 
 
 def valid_port(port):
@@ -52,49 +51,53 @@ class QuantumManagerMessage():
         return str(self.type) + ' ' + str(self.args)
 
 
-def start_session(comm: socket, states, least_available, locks, manager):
+def start_session(msg: QuantumManagerMessage, comm: socket, states,
+                  least_available, locks, manager, locations):
+    # does not need all states and managers;
+    # we could copy part of state to the manager and update the global manager
+    # after operations
     qm = ParallelQuantumManagerKet(states, least_available, locks, manager)
+    return_val = None
 
-    # send connected message
-    msg = QuantumManagerMessage(QuantumManagerMsgType.CONNECTED, [])
-    data = dumps(msg)
+    if msg.type == QuantumManagerMsgType.CLOSE:
+        comm.close()
+        return
+
+    elif msg.type == QuantumManagerMsgType.NEW:
+        assert len(msg.args) == 2
+        state, location = msg.args
+        return_val = qm.new(state)
+        locations[return_val] = location
+
+    elif msg.type == QuantumManagerMsgType.GET:
+        assert len(msg.args) == 1
+        return_val = qm.get(*msg.args)
+
+    elif msg.type == QuantumManagerMsgType.RUN:
+        assert len(msg.args) == 3
+        updated_qubits, circuit, keys = msg.args
+        for state in updated_qubits:
+            qm.set(state.keys, state.state)
+
+        return_val = qm.run_circuit(circuit, keys)
+
+    elif msg.type == QuantumManagerMsgType.SET:
+        assert len(msg.args) == 2
+        qm.set(*msg.args)
+
+    elif msg.type == QuantumManagerMsgType.REMOVE:
+        assert len(msg.args) == 1
+        qm.remove(*msg.args)
+
+    else:
+        raise Exception(
+            "Quantum manager session received invalid message type {}".format(
+                msg.type))
+
+    # send return value
+    data = dumps(return_val)
     comm.sendall(data)
-
-    while True:
-        data = comm.recv(1024)
-        msg = loads(data)
-        return_val = None
-
-        if msg.type == QuantumManagerMsgType.CLOSE:
-            comm.close()
-            break
-
-        elif msg.type == QuantumManagerMsgType.NEW:
-            assert len(msg.args) <= 1
-            return_val = qm.new(*msg.args)
-
-        elif msg.type == QuantumManagerMsgType.GET:
-            assert len(msg.args) == 1
-            return_val = qm.get(*msg.args)
-
-        elif msg.type == QuantumManagerMsgType.SET:
-            assert len(msg.args) == 2
-            qm.set(*msg.args)
-
-        elif msg.type == QuantumManagerMsgType.RUN:
-            assert len(msg.args) == 2
-            return_val = qm.run_circuit(*msg.args)
-
-        elif msg.type == QuantumManagerMsgType.REMOVE:
-            assert len(msg.args) == 1
-            qm.remove(*msg.args)
-
-        else:
-            raise Exception("Quantum manager session received invalid message type {}".format(msg.type))
-
-        # send return value
-        data = dumps(return_val)
-        comm.sendall(data)
+    comm.close()
 
 
 def start_server(ip, port):
@@ -110,6 +113,7 @@ def start_server(ip, port):
     manager = multiprocessing.Manager()
     states = manager.dict()
     locks = manager.dict()
+    locations = manager.dict()
 
     while True:
         c, addr = s.accept()
@@ -119,14 +123,16 @@ def start_server(ip, port):
 
         if msg.type == QuantumManagerMsgType.TERMINATE:
             break
-
-        elif msg.type == QuantumManagerMsgType.CONNECT:
-            process = multiprocessing.Process(target=start_session, args=(c, states, _least_available, locks, manager))
+        else:
+            process = multiprocessing.Process(target=start_session, args=(msg,
+                                                                          c,
+                                                                          states,
+                                                                          _least_available,
+                                                                          locks,
+                                                                          manager,
+                                                                          locations))
             processes.append(process)
             process.start()
-
-        else:
-            raise Exception('Unknown message type received by quantum manager server')
 
     for p in processes:
         p.terminate()

@@ -3,6 +3,7 @@ from socket import socket
 from pickle import loads, dumps
 from typing import List
 from time import time
+from mpi4py import MPI
 
 from .quantum_manager import QuantumManagerKet, QuantumManagerDensity
 from .quantum_manager_server import generate_arg_parser, QuantumManagerMsgType, QuantumManagerMessage
@@ -27,9 +28,9 @@ class QuantumManagerClient():
             port: port of quantum manager server.
         """
         self.formalism = formalism
-        self.s = socket()
-        self.s.connect((ip, port))
-        self.connected = True
+        self.ip = ip
+        self.port = port
+        self.managed_qubits = set()
         self.io_time = defaultdict(lambda: 0)
         self.type_counter = defaultdict(lambda: 0)
 
@@ -41,7 +42,14 @@ class QuantumManagerClient():
             self.qm = QuantumManagerDensity()
 
         else:
-            raise Exception("Invalid formalim {} given; should be 'KET' or 'VALID'".format(formalism))
+            raise Exception(
+                "Invalid formalim {} given; should be 'KET' or 'DENSITY'".format(
+                    formalism))
+
+    def get_socket_to_server(self) -> "socket":
+        s = socket()
+        s.connect((self.ip, self.port))
+        return s
 
     def init(self) -> None:
         """Method to configure client connection.
@@ -56,7 +64,7 @@ class QuantumManagerClient():
         assert msg.type == QuantumManagerMsgType.CONNECTED, "QuantumManagerClient failed connection."
         self.connected = True
 
-    def new(self, state=None) -> int:
+    def new(self, state=(complex(1), complex(0))) -> int:
         """Method to get a new state from server.
 
         Args:
@@ -65,43 +73,50 @@ class QuantumManagerClient():
         Returns:
             int: key for the new state generated.
         """
-        self._check_connection()
+        # self._check_connection()
 
-        if state is None:
-            args = []
-        else:
-            args = [state]
-
+        args = [state, MPI.COMM_WORLD.Get_rank()]
         key = self._send_message(QuantumManagerMsgType.NEW, args)
-        if state:
-            return self.qm.new(state=state, key=key)
-        else:
-            return self.qm.new(key=key)
+        self.qm.set([key], state)
+        self.move_manage_to_client(key)
+        return key
 
     def get(self, key: int) -> any:
         if self._check_local([key]):
             return self.qm.get(key)
-
         else:
-            raise NotImplementedError()
-
-        # self._check_connection()
-        # return self._send_message(QuantumManagerMsgType.GET, [key])
+            state = self._send_message(QuantumManagerMsgType.GET, [key])
+            return state
 
     def run_circuit(self, circuit: "Circuit", keys: List[int]) -> any:
         if self._check_local(keys):
             return self.qm.run_circuit(circuit, keys)
-
         else:
-            raise NotImplementedError()
+            updated_qubits = []
+            visited_qubits = set()
+            for key in keys:
+                if self.is_managed_by_server(key) or key in visited_qubits:
+                    continue
+                state = self.qm.get(key)
+                for state_key in state.keys:
+                    visited_qubits.add(state_key)
+                    assert not self.is_managed_by_server(state_key)
+                    self.move_manage_to_server(state_key)
+                updated_qubits.append(state)
 
-        # self._check_connection()
-        # return self._send_message(QuantumManagerMsgType.RUN, [circuit, keys])
+            ret_val = self._send_message(QuantumManagerMsgType.RUN,
+                                         [updated_qubits, circuit, keys])
+            for measured_q in ret_val:
+                self.move_manage_to_client(measured_q)
+                if ret_val[measured_q] == 1:
+                    self.qm.set_to_one(measured_q)
+                else:
+                    self.qm.set_to_zero(measured_q)
+            return ret_val
 
     def set(self, keys: List[int], amplitudes: any) -> None:
         if self._check_local(keys):
             self.qm.set(keys, amplitudes)
-
         else:
             raise NotImplementedError()
 
@@ -132,8 +147,18 @@ class QuantumManagerClient():
             Will set the `connected` attribute to False.
         """
         self._check_connection()
-        self._send_message(QuantumManagerMsgType.TERMINATE, [], expecting_receive=False)
+        self._send_message(QuantumManagerMsgType.TERMINATE, [],
+                           expecting_receive=False)
         self.connected = False
+
+    def is_managed_by_server(self, qubit_key: int) -> bool:
+        return not qubit_key in self.managed_qubits
+
+    def move_manage_to_server(self, qubit_key: int):
+        self.managed_qubits.remove(qubit_key)
+
+    def move_manage_to_client(self, qubit_key: int):
+        self.managed_qubits.add(qubit_key)
 
     def _check_connection(self):
         assert self.connected, "must run init method before attempting communications"
@@ -145,18 +170,21 @@ class QuantumManagerClient():
 
         msg = QuantumManagerMessage(msg_type, args)
         data = dumps(msg)
-        self.s.sendall(data)
+        s = self.get_socket_to_server()
+        s.sendall(data)
 
         if expecting_receive:
-            received_data = self.s.recv(1024)
+            received_data = s.recv(1024)
+            s.close()
             received_msg = loads(received_data)
             self.io_time[msg_type.name] += time() - tick
             return received_msg
 
         self.io_time[msg_type.name] += time() - tick
+        s.close()
 
     def _check_local(self, keys: List[int]):
-        return all([key in self.qm.states.keys() for key in keys])
+        return not any([self.is_managed_by_server(key) for key in keys])
 
 
 if __name__ == '__main__':
