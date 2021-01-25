@@ -13,59 +13,56 @@ def setup_environment():
     manager = multiprocessing.Manager()
     states = manager.dict()
     locks = manager.dict()
+    locations = manager.dict()
 
-    return states, least_available, locks, manager
+    return states, least_available, locks, manager, locations
 
 
-def close():
-    msg = QuantumManagerMessage(QuantumManagerMsgType.CLOSE, [])
-    data = dumps(msg)
-    return data
+def new_state():
+    return [complex(1), complex(0)]
 
 
 def test_new():
     # create new message
-    msg = QuantumManagerMessage(QuantumManagerMsgType.NEW, [])
-    data = dumps(msg)
+    msg = QuantumManagerMessage(QuantumManagerMsgType.NEW, [], [new_state(), 0])
 
     # setup environment
-    states, least_available, locks, manager = setup_environment()
+    environment = setup_environment()
 
     # create dummy socket
     s = Mock()
-    s.recv.side_effect = [data, close()]
 
     # run
-    start_session(s, states, least_available, locks, manager)
+    start_session(msg, s, *environment)
 
     # get key
-    key_data = s.mock_calls[-3][1][0]
+    key_data = s.mock_calls[0][1][0]
     key = loads(key_data)
 
+    least_available = environment[1]
     assert least_available.value > 0
     assert key == 0
 
 
 def test_get():
     # create messages
-    msg1 = QuantumManagerMessage(QuantumManagerMsgType.NEW, [])
-    msg2 = QuantumManagerMessage(QuantumManagerMsgType.GET, [0]) 
-    data1 = dumps(msg1)
-    data2 = dumps(msg2)
+    msg1 = QuantumManagerMessage(QuantumManagerMsgType.NEW, [], [new_state(), 0])
+    msg2 = QuantumManagerMessage(QuantumManagerMsgType.GET, [0], [])
 
     # setup environ
-    states, least_available, locks, manager = setup_environment()
+    environment = setup_environment()
 
     # create dummy socket
     s = Mock()
-    s.recv.side_effect = [data1, data2, close()]
 
     # run
-    start_session(s, states, least_available, locks, manager)
+    for msg in [msg1, msg2]:
+        start_session(msg, s, *environment)
 
     # get state
-    state_data = s.mock_calls[-3][1][0]
+    state_data = s.mock_calls[2][1][0]
     state = loads(state_data)
+    print(type(state_data))
 
     assert type(state) is KetState
 
@@ -74,25 +71,21 @@ def test_set():
     desired_state = [complex(0), complex(1)]
 
     # create messages
-    msg1 = QuantumManagerMessage(QuantumManagerMsgType.NEW, [])
-    msg2 = QuantumManagerMessage(QuantumManagerMsgType.SET, [[0], desired_state])
-    msg3 = QuantumManagerMessage(QuantumManagerMsgType.GET, [0])
-    data1 = dumps(msg1)
-    data2 = dumps(msg2)
-    data3 = dumps(msg3)
+    msg1 = QuantumManagerMessage(QuantumManagerMsgType.NEW, [], [new_state(), 0])
+    msg2 = QuantumManagerMessage(QuantumManagerMsgType.SET, [0], [desired_state])
+    msg3 = QuantumManagerMessage(QuantumManagerMsgType.GET, [0], [])
 
     # setup environ
-    states, least_available, locks, manager = setup_environment()
+    environment = setup_environment()
 
     # create dummy socket
     s = Mock()
-    s.recv.side_effect = [data1, data2, data3, close()]
-
     # run
-    start_session(s, states, least_available, locks, manager)
+    for msg in [msg1, msg2, msg3]:
+        start_session(msg, s, *environment)
 
     # get state
-    state_data = s.mock_calls[-3][1][0]
+    state_data = s.mock_calls[3][1][0]
     state = loads(state_data)
 
     assert type(state) is KetState
@@ -101,21 +94,20 @@ def test_set():
 
 def test_remove():
     # create messages
-    msg1 = QuantumManagerMessage(QuantumManagerMsgType.NEW, [])
-    msg2 = QuantumManagerMessage(QuantumManagerMsgType.REMOVE, [0])
-    data1 = dumps(msg1)
-    data2 = dumps(msg2)
+    msg1 = QuantumManagerMessage(QuantumManagerMsgType.NEW, [], [new_state(), 0])
+    msg2 = QuantumManagerMessage(QuantumManagerMsgType.REMOVE, [0], [])
 
     # setup environ
-    states, least_available, locks, manager = setup_environment()
+    environment = setup_environment()
 
     # create dummy socket
     s = Mock()
-    s.recv.side_effect = [data1, data2, close()]
 
     # run
-    start_session(s, states, least_available, locks, manager)
+    for msg in [msg1, msg2]:
+        start_session(msg, s, *environment)
 
+    states = environment[0]
     assert not states
 
 

@@ -10,7 +10,6 @@ from sequence.components.circuit import Circuit
 
 def client_function(ip, port):
     client = QuantumManagerClient("KET", ip, port)
-    client.init()
 
     # send request for new state
     key = client.new()
@@ -25,9 +24,6 @@ def client_function(ip, port):
 
     # get state again to verify
     ket_vec = client.get(key)
-
-    # disconnect
-    client.close()
 
 
 NUM_TRIALS = 10

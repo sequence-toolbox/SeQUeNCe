@@ -36,15 +36,21 @@ class QuantumManagerMsgType(Enum):
     SET = 2
     RUN = 3
     REMOVE = 4
-    CLOSE = 5
-    CONNECT = 6
-    TERMINATE = 7
-    CONNECTED = 8
+    TERMINATE = 5
 
 
 class QuantumManagerMessage():
-    def __init__(self, type:QuantumManagerMsgType, args:'List[Any]'):
-        self.type = type
+    """Message for quantum manager communication.
+
+    Attributes:
+        type (Enum): type of message.
+        keys (List[int]): list of ALL keys serviced by request; used to acquire/set shared locks.
+        args (List[any]): list of other arguments for request
+    """
+
+    def __init__(self, msg_type: QuantumManagerMsgType, keys: 'List[int]', args: 'List[Any]'):
+        self.type = msg_type
+        self.keys = keys
         self.args = args
 
     def __repr__(self):
@@ -53,25 +59,29 @@ class QuantumManagerMessage():
 
 def start_session(msg: QuantumManagerMessage, comm: socket, states,
                   least_available, locks, manager, locations):
-    # does not need all states and managers;
+    # TODO: does not need all states and managers;
     # we could copy part of state to the manager and update the global manager
     # after operations
-    qm = ParallelQuantumManagerKet(states, least_available, locks, manager)
+
+    # TODO: create different quantum managers based on formalism
+    qm = ParallelQuantumManagerKet(states, least_available)
     return_val = None
 
-    if msg.type == QuantumManagerMsgType.CLOSE:
-        comm.close()
-        return
+    # acquire all locks used
+    for key in msg.keys:
+        locks[key].acquire()
 
-    elif msg.type == QuantumManagerMsgType.NEW:
+    if msg.type == QuantumManagerMsgType.NEW:
         assert len(msg.args) == 2
         state, location = msg.args
         return_val = qm.new(state)
+        locks[return_val] = manager.Lock()
         locations[return_val] = location
 
     elif msg.type == QuantumManagerMsgType.GET:
-        assert len(msg.args) == 1
-        return_val = qm.get(*msg.args)
+        assert len(msg.keys) == 1
+        assert len(msg.args) == 0
+        return_val = qm.get(msg.keys[0])
 
     elif msg.type == QuantumManagerMsgType.RUN:
         assert len(msg.args) == 3
@@ -82,21 +92,31 @@ def start_session(msg: QuantumManagerMessage, comm: socket, states,
         return_val = qm.run_circuit(circuit, keys)
 
     elif msg.type == QuantumManagerMsgType.SET:
-        assert len(msg.args) == 2
-        qm.set(*msg.args)
+        assert len(msg.args) == 1
+        qm.set(msg.keys, *msg.args)
 
     elif msg.type == QuantumManagerMsgType.REMOVE:
-        assert len(msg.args) == 1
-        qm.remove(*msg.args)
+        assert len(msg.keys) == 1
+        assert len(msg.args) == 0
+        qm.remove(msg.keys[0])
+        del locks[msg.keys[0]]
+        del locations[msg.keys[0]]
 
     else:
         raise Exception(
             "Quantum manager session received invalid message type {}".format(
                 msg.type))
 
+    # release all locks
+    if msg.type != QuantumManagerMsgType.REMOVE:
+        for key in msg.keys:
+            locks[key].release()
+
     # send return value
-    data = dumps(return_val)
-    comm.sendall(data)
+    if return_val is not None:
+        data = dumps(return_val)
+        comm.sendall(data)
+
     comm.close()
 
 
@@ -109,7 +129,7 @@ def start_server(ip, port):
     print("connected:", ip, port)
 
     # initialize shared data
-    _least_available = multiprocessing.Value('i', 0)
+    least_available = multiprocessing.Value('i', 0)
     manager = multiprocessing.Manager()
     states = manager.dict()
     locks = manager.dict()
@@ -124,13 +144,8 @@ def start_server(ip, port):
         if msg.type == QuantumManagerMsgType.TERMINATE:
             break
         else:
-            process = multiprocessing.Process(target=start_session, args=(msg,
-                                                                          c,
-                                                                          states,
-                                                                          _least_available,
-                                                                          locks,
-                                                                          manager,
-                                                                          locations))
+            args = (msg, c, states, least_available, locks, manager, locations)
+            process = multiprocessing.Process(target=start_session, args=args)
             processes.append(process)
             process.start()
 
@@ -140,7 +155,7 @@ def start_server(ip, port):
 def kill_server(ip, port):
     s = socket.socket()
     s.connect((ip, port))
-    msg = QuantumManagerMessage(QuantumManagerMsgType.TERMINATE, [])
+    msg = QuantumManagerMessage(QuantumManagerMsgType.TERMINATE, [], [])
     data = dumps(msg)
     s.sendall(data)
 

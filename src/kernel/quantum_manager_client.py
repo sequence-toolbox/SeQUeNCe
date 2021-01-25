@@ -51,19 +51,6 @@ class QuantumManagerClient():
         s.connect((self.ip, self.port))
         return s
 
-    def init(self) -> None:
-        """Method to configure client connection.
-
-        Must be called before any other methods are used.
-
-        Side Effects:
-            Will set the `connected` attribute to True.
-        """
-
-        msg = self._send_message(QuantumManagerMsgType.CONNECT, [])
-        assert msg.type == QuantumManagerMsgType.CONNECTED, "QuantumManagerClient failed connection."
-        self.connected = True
-
     def new(self, state=(complex(1), complex(0))) -> int:
         """Method to get a new state from server.
 
@@ -76,7 +63,7 @@ class QuantumManagerClient():
         # self._check_connection()
 
         args = [state, MPI.COMM_WORLD.Get_rank()]
-        key = self._send_message(QuantumManagerMsgType.NEW, args)
+        key = self._send_message(QuantumManagerMsgType.NEW, [], args)
         self.qm.set([key], state)
         self.move_manage_to_client(key)
         return key
@@ -85,12 +72,13 @@ class QuantumManagerClient():
         if self._check_local([key]):
             return self.qm.get(key)
         else:
-            state = self._send_message(QuantumManagerMsgType.GET, [key])
+            state = self._send_message(QuantumManagerMsgType.GET, [key], [])
             return state
 
     def run_circuit(self, circuit: "Circuit", keys: List[int]) -> any:
         if self._check_local(keys):
             return self.qm.run_circuit(circuit, keys)
+
         else:
             updated_qubits = []
             visited_qubits = set()
@@ -104,7 +92,7 @@ class QuantumManagerClient():
                     self.move_manage_to_server(state_key)
                 updated_qubits.append(state)
 
-            ret_val = self._send_message(QuantumManagerMsgType.RUN,
+            ret_val = self._send_message(QuantumManagerMsgType.RUN, list(visited_qubits),
                                          [updated_qubits, circuit, keys])
             for measured_q in ret_val:
                 self.move_manage_to_client(measured_q)
@@ -124,20 +112,8 @@ class QuantumManagerClient():
         # self._send_message(QuantumManagerMsgType.SET, [keys, amplitudes])
 
     def remove(self, key: int) -> None:
-        self._check_connection()
-        self._send_message(QuantumManagerMsgType.REMOVE, [key])
+        self._send_message(QuantumManagerMsgType.REMOVE, [key], [])
         self.qm.remove(key)
-
-    def close(self) -> None:
-        """Method to close communication with server.
-
-        Side Effects:
-            Will set the `connected` attribute to False
-        """
-
-        self._check_connection()
-        self._send_message(QuantumManagerMsgType.CLOSE, [], expecting_receive=False)
-        self.connected = False
 
     def kill(self) -> None:
         """Method to terminate the connected server.
@@ -147,9 +123,8 @@ class QuantumManagerClient():
             Will set the `connected` attribute to False.
         """
         self._check_connection()
-        self._send_message(QuantumManagerMsgType.TERMINATE, [],
+        self._send_message(QuantumManagerMsgType.TERMINATE, [], [],
                            expecting_receive=False)
-        self.connected = False
 
     def is_managed_by_server(self, qubit_key: int) -> bool:
         return not qubit_key in self.managed_qubits
@@ -160,15 +135,12 @@ class QuantumManagerClient():
     def move_manage_to_client(self, qubit_key: int):
         self.managed_qubits.add(qubit_key)
 
-    def _check_connection(self):
-        assert self.connected, "must run init method before attempting communications"
-
-    def _send_message(self, msg_type, args: List,
+    def _send_message(self, msg_type, keys: List, args: List,
                       expecting_receive=True) -> any:
         self.type_counter[msg_type.name] += 1
         tick = time()
 
-        msg = QuantumManagerMessage(msg_type, args)
+        msg = QuantumManagerMessage(msg_type, keys, args)
         data = dumps(msg)
         s = self.get_socket_to_server()
         s.sendall(data)
@@ -185,27 +157,4 @@ class QuantumManagerClient():
 
     def _check_local(self, keys: List[int]):
         return not any([self.is_managed_by_server(key) for key in keys])
-
-
-if __name__ == '__main__':
-    parser = generate_arg_parser()
-    args = parser.parse_args()
-
-    client = QuantumManagerClient(args.ip, args.port)
-    client.init()
-
-    # send request for new state
-    key = client.new()
-
-    # send request to get state
-    ket_vec = client.get(key)
-    print("|0> state:", ket_vec.state)
-
-    # run Hadamard gate
-    circ = Circuit(1)
-    circ.h(0)
-    client.run_circuit(circ, [key])
-
-    ket_vec = client.get(key)
-    print("|+> state:", ket_vec.state)
 
