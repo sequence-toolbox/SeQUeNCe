@@ -1,5 +1,6 @@
 from typing import Dict
 import numpy as np
+import scipy as sp
 import math
 
 from sequence.components.memory import Memory, MemoryArray
@@ -185,3 +186,48 @@ def test_Memory__schedule_expiration():
         if event.is_invalid():
             counter += 1
     assert counter == 1
+    
+def test_Memory__schedule_expiration_random():
+    NUM_TRIALS = 200
+    coherence_period_avg = 1
+    coherence_period_stdev = 0.15
+    tl = Timeline()
+    mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, 
+                 coherence_time=(coherence_period_avg,coherence_period_stdev), 
+                 wavelength=500)
+    parent = DumbParent(mem)
+    
+    times_of_expiration_calculated = [0]
+    np.random.seed(2)
+    for i in range( NUM_TRIALS ):
+        times_of_expiration_calculated.append( times_of_expiration_calculated[-1]
+                                              + int(mem.coherence_time_distribution()*1e12) )
+    times_of_expiration_calculated.pop(0)
+    
+    np.random.seed(2)
+    process = Process(mem, "update_state", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]])
+    for i in range(NUM_TRIALS):
+        event = Event(tl.now(), process)
+        tl.schedule(event)        
+        tl.init()
+        tl.run()
+        assert times_of_expiration_calculated[i] == tl.now()
+        
+    sumX = times_of_expiration_calculated[0]
+    sumXX = times_of_expiration_calculated[0]**2
+    for i in range( 1, len( times_of_expiration_calculated ) ):
+        x = times_of_expiration_calculated[i]-times_of_expiration_calculated[i-1]
+        sumX += x
+        sumXX += x*x
+    
+    avg_simulated = sumX / NUM_TRIALS * 1e-12
+    stdev_simulated = np.sqrt( ( sumXX - sumX * sumX * 1.0/NUM_TRIALS ) / NUM_TRIALS )*1e-12
+    print( 'input avg. =', coherence_period_avg )
+    print( 'input st. dev. =', coherence_period_stdev )
+    print( 'simulated avg. =', avg_simulated )
+    print( 'simulated st. dev. =', stdev_simulated )
+    #check that values in series are different
+    assert stdev_simulated > 0.0
+    #probability of error below is less then 0.3%
+    assert abs( avg_simulated - coherence_period_avg ) < 3 * coherence_period_stdev / np.sqrt( NUM_TRIALS )
+

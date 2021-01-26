@@ -9,6 +9,7 @@ from math import sqrt, inf
 from typing import Any, List, TYPE_CHECKING, Dict
 
 from numpy import random
+from scipy import stats
 
 if TYPE_CHECKING:
     from ..entanglement_management.entanglement_protocol import EntanglementProtocol
@@ -107,6 +108,7 @@ class Memory(Entity):
         frequency (float): maximum frequency at which memory can be excited.
         efficiency (float): probability of emitting a photon when excited.
         coherence_time (float): average usable lifetime of memory (in seconds).
+                                or ( time_average(float), time_stdev(float) ) tuple
         wavelength (float): wavelength (in nm) of emitted photons.
         qstate (QuantumState): quantum state of memory.
         entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
@@ -116,7 +118,7 @@ class Memory(Entity):
     _meas_circuit.measure(0)
 
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
-                 efficiency: float, coherence_time: int, wavelength: int):
+                 efficiency: float, coherence_time: Any, wavelength: int):
         """Constructor for the Memory class.
 
         Args:
@@ -125,7 +127,8 @@ class Memory(Entity):
             fidelity (float): fidelity of memory.
             frequency (float): maximum frequency of excitation for memory.
             efficiency (float): efficiency of memories.
-            coherence_time (float): average time (in s) that memory state is valid.
+            coherence_time (float): average time (in s) that memory state is valid
+                                    or ( time_average(float), time_stdev(float) ) tuple
             wavelength (int): wavelength (in nm) of photons emitted by memories.
             qstate_key (int): key for associated quantum state in timeline's quantum manager.
         """
@@ -138,7 +141,23 @@ class Memory(Entity):
         self.raw_fidelity = fidelity
         self.frequency = frequency
         self.efficiency = efficiency
-        self.coherence_time = coherence_time  # coherence time in seconds
+        # coherence time in seconds
+        if not type( coherence_time ) is tuple:
+            self.coherence_time = coherence_time
+            self.random_coherence_time = False
+        else:
+            self.coherence_time = coherence_time[0]
+            self.coherence_time_stdev = coherence_time[1]
+            self.random_coherence_time = ( self.coherence_time_stdev > 0.0 and
+                                          self.coherence_time > 0.0 )
+            
+        if self.random_coherence_time:
+            self.coherence_time_distribution = lambda: stats.truncnorm.rvs(
+                -0.95 * self.coherence_time / self.coherence_time_stdev,
+                19.0 * self.coherence_time / self.coherence_time_stdev,
+                self.coherence_time,
+                self.coherence_time_stdev )
+        
         self.wavelength = wavelength
         self.qstate_key = timeline.quantum_manager.new()
 
@@ -257,8 +276,13 @@ class Memory(Entity):
     def _schedule_expiration(self) -> None:
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
+            
+        if not self.random_coherence_time:
+            coherence_period = self.coherence_time
+        else:
+            coherence_period = self.coherence_time_distribution()
 
-        decay_time = self.timeline.now() + int(self.coherence_time * 1e12)
+        decay_time = self.timeline.now() + int(coherence_period * 1e12)
         process = Process(self, "expire", [])
         event = Event(decay_time, process)
         self.timeline.schedule(event)
