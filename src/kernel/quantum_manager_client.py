@@ -118,7 +118,7 @@ class QuantumManagerClient():
         else:
             location = MPI.COMM_WORLD.Get_rank()
             ret_val = self._send_message(QuantumManagerMsgType.SET, keys,
-                                         [keys, amplitudes, location])
+                                         [amplitudes, location])
             for qubit_key in ret_val:
                 dst = ret_val[qubit_key]
                 event = QuantumManagerEvent(dst, "move_manage_to_server",

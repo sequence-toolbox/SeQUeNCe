@@ -67,10 +67,6 @@ def start_session(msg: QuantumManagerMessage, comm: socket, states,
     qm = ParallelQuantumManagerKet(states, least_available)
     return_val = None
 
-    # acquire all locks used
-    for key in msg.keys:
-        locks[key].acquire()
-
     if msg.type == QuantumManagerMsgType.NEW:
         assert len(msg.args) == 2
         state, location = msg.args
@@ -92,11 +88,11 @@ def start_session(msg: QuantumManagerMessage, comm: socket, states,
         return_val = qm.run_circuit(circuit, keys)
 
     elif msg.type == QuantumManagerMsgType.SET:
-        assert len(msg.args) == 3
-        keys, amplitudes, source = msg.args
-        qm.set(keys, amplitudes)
+        assert len(msg.args) == 2
+        amplitudes, source = msg.args
+        qm.set(msg.keys, amplitudes)
         return_val = {}
-        for key in keys:
+        for key in msg.keys:
             if locations[key] != source:
                 return_val[key] = locations[key]
 
@@ -145,6 +141,9 @@ def start_server(ip, port):
 
         raw_msg = c.recv(1024)
         msg = loads(raw_msg)
+
+        for key in msg.keys:
+            locks[key].acquire
 
         if msg.type == QuantumManagerMsgType.TERMINATE:
             break

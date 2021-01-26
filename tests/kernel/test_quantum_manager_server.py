@@ -57,6 +57,9 @@ def test_get():
 
     # run
     for msg in [msg1, msg2]:
+        locks = environment[2]
+        for key in msg.keys:
+            locks[key].acquire()
         start_session(msg, s, *environment)
 
     # get state
@@ -72,7 +75,7 @@ def test_set():
 
     # create messages
     msg1 = QuantumManagerMessage(QuantumManagerMsgType.NEW, [], [new_state(), 0])
-    msg2 = QuantumManagerMessage(QuantumManagerMsgType.SET, [0], [desired_state])
+    msg2 = QuantumManagerMessage(QuantumManagerMsgType.SET, [0], [desired_state, 0])
     msg3 = QuantumManagerMessage(QuantumManagerMsgType.GET, [0], [])
 
     # setup environ
@@ -82,10 +85,13 @@ def test_set():
     s = Mock()
     # run
     for msg in [msg1, msg2, msg3]:
+        locks = environment[2]
+        for key in msg.keys:
+            locks[key].acquire()
         start_session(msg, s, *environment)
 
     # get state
-    state_data = s.mock_calls[3][1][0]
+    state_data = s.mock_calls[4][1][0]
     state = loads(state_data)
 
     assert type(state) is KetState
@@ -105,6 +111,9 @@ def test_remove():
 
     # run
     for msg in [msg1, msg2]:
+        locks = environment[2]
+        for key in msg.keys:
+            locks[key].acquire()
         start_session(msg, s, *environment)
 
     states = environment[0]
