@@ -92,8 +92,13 @@ def start_session(msg: QuantumManagerMessage, comm: socket, states,
         return_val = qm.run_circuit(circuit, keys)
 
     elif msg.type == QuantumManagerMsgType.SET:
-        assert len(msg.args) == 1
-        qm.set(msg.keys, *msg.args)
+        assert len(msg.args) == 3
+        keys, amplitudes, source = msg.args
+        qm.set(keys, amplitudes)
+        return_val = {}
+        for key in keys:
+            if locations[key] != source:
+                return_val[key] = locations[key]
 
     elif msg.type == QuantumManagerMsgType.REMOVE:
         assert len(msg.keys) == 1

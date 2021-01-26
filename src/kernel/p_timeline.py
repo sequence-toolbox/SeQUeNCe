@@ -1,12 +1,11 @@
 from mpi4py import MPI
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Any
 from time import time
 
+from .event import Event
 from .eventlist import EventList
 from .quantum_manager_client import QuantumManagerClient
-
-if TYPE_CHECKING:
-    from .event import Event
+from .quantum_manager_event import QuantumManagerEvent
 
 
 class ParallelTimeline():
@@ -23,7 +22,7 @@ class ParallelTimeline():
         self.lookahead = lookahead
         self.execute_flag = False
         self.quantum_manager = QuantumManagerClient(formalism, qm_ip, qm_port)
-        self.quantum_manager.init()
+        self.quantum_manager.set_timeline(self)
 
         self.sync_counter = 0
         self.event_counter = 0
@@ -43,8 +42,14 @@ class ParallelTimeline():
     def now(self):
         return self.time
 
-    def schedule(self, event:'Event'):
-        if type(event.process.owner) is str:
+    def schedule(self, event: 'Event'):
+        if isinstance(event, QuantumManagerEvent):
+            if event.dst == self.id:
+                event.process.owner = self.quantum_manager
+                event.process.run()
+            else:
+                self.event_buffer[event.dst].append(event)
+        elif type(event.process.owner) is str:
             if event.process.owner in self.foreign_entities:
                 tl_id = self.foreign_entities[event.process.owner]
                 self.event_buffer[tl_id].append(event)
