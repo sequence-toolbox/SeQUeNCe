@@ -1,6 +1,5 @@
 from typing import Dict
 import numpy as np
-import scipy as sp
 import math
 
 from sequence.components.memory import Memory, MemoryArray
@@ -222,10 +221,12 @@ def test_Memory__schedule_expiration_random():
     
     avg_simulated = sumX / NUM_TRIALS * 1e-12
     stdev_simulated = np.sqrt( ( sumXX - sumX * sumX * 1.0/NUM_TRIALS ) / NUM_TRIALS )*1e-12
-    print( 'input avg. =', coherence_period_avg )
-    print( 'input st. dev. =', coherence_period_stdev )
-    print( 'simulated avg. =', avg_simulated )
-    print( 'simulated st. dev. =', stdev_simulated )
+
+    #print( 'input avg. =', coherence_period_avg )
+    #print( 'input st. dev. =', coherence_period_stdev )
+    #print( 'simulated avg. =', avg_simulated )
+    #print( 'simulated st. dev. =', stdev_simulated )
+
     #check that values in series are different
     assert stdev_simulated > 0.0
     #probability of error below is less then 0.3%
