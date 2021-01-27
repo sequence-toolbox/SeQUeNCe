@@ -143,7 +143,7 @@ def start_server(ip, port):
         msg = loads(raw_msg)
 
         for key in msg.keys:
-            locks[key].acquire
+            locks[key].acquire()
 
         if msg.type == QuantumManagerMsgType.TERMINATE:
             break
