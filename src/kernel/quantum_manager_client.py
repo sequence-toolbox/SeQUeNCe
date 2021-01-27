@@ -86,7 +86,6 @@ class QuantumManagerClient():
     def run_circuit(self, circuit: "Circuit", keys: List[int]) -> any:
         if self._check_local(keys):
             return self.qm.run_circuit(circuit, keys)
-
         else:
             updated_qubits = []
             visited_qubits = set()
@@ -115,6 +114,10 @@ class QuantumManagerClient():
     def set(self, keys: List[int], amplitudes: any) -> None:
         if self._check_local(keys):
             self.qm.set(keys, amplitudes)
+        elif all([(key in self.qm.states) for key in keys]):
+            for key in keys:
+                self.move_manage_to_client(key)
+            self.qm.set(keys, amplitudes)
         else:
             location = MPI.COMM_WORLD.Get_rank()
             ret_val = self._send_message(QuantumManagerMsgType.SET, keys,
@@ -136,7 +139,6 @@ class QuantumManagerClient():
             Will end all processes of remote server.
             Will set the `connected` attribute to False.
         """
-        self._check_connection()
         self._send_message(QuantumManagerMsgType.TERMINATE, [], [],
                            expecting_receive=False)
 
@@ -171,4 +173,3 @@ class QuantumManagerClient():
 
     def _check_local(self, keys: List[int]):
         return not any([self.is_managed_by_server(key) for key in keys])
-
