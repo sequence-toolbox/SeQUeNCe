@@ -33,7 +33,7 @@ def test_new():
     s = Mock()
 
     # run
-    start_session(msg, s, *environment)
+    start_session("KET", msg, s, *environment)
 
     # get key
     key_data = s.mock_calls[0][1][0]
@@ -60,7 +60,7 @@ def test_get():
         locks = environment[2]
         for key in msg.keys:
             locks[key].acquire()
-        start_session(msg, s, *environment)
+        start_session("KET", msg, s, *environment)
 
     # get state
     state_data = s.mock_calls[2][1][0]
@@ -88,7 +88,7 @@ def test_set():
         locks = environment[2]
         for key in msg.keys:
             locks[key].acquire()
-        start_session(msg, s, *environment)
+        start_session("KET", msg, s, *environment)
 
     # get state
     state_data = s.mock_calls[4][1][0]
@@ -114,7 +114,7 @@ def test_remove():
         locks = environment[2]
         for key in msg.keys:
             locks[key].acquire()
-        start_session(msg, s, *environment)
+        start_session("KET", msg, s, *environment)
 
     states = environment[0]
     assert not states

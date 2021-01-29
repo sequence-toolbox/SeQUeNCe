@@ -57,14 +57,19 @@ class QuantumManagerMessage():
         return str(self.type) + ' ' + str(self.args)
 
 
-def start_session(msg: QuantumManagerMessage, comm: socket, states,
+def start_session(formalism: str, msg: QuantumManagerMessage, comm: socket, states,
                   least_available, locks, manager, locations):
     # TODO: does not need all states and managers;
     # we could copy part of state to the manager and update the global manager
     # after operations
 
-    # TODO: create different quantum managers based on formalism
-    qm = ParallelQuantumManagerKet(states, least_available)
+    local_states = {k:states[k] for k in msg.keys}
+
+    if formalism == "KET":
+        qm = ParallelQuantumManagerKet(local_states, least_available)
+    elif formalism == "DENSITY":
+        qm = ParallelQuantumManagerDensity(local_states, least_available)
+
     return_val = None
 
     if msg.type == QuantumManagerMsgType.NEW:
@@ -99,17 +104,20 @@ def start_session(msg: QuantumManagerMessage, comm: socket, states,
     elif msg.type == QuantumManagerMsgType.REMOVE:
         assert len(msg.keys) == 1
         assert len(msg.args) == 0
-        qm.remove(msg.keys[0])
-        del locks[msg.keys[0]]
-        del locations[msg.keys[0]]
+        key = msg.keys[0]
+        del states[key]
+        del locks[key]
+        del locations[key]
 
     else:
         raise Exception(
             "Quantum manager session received invalid message type {}".format(
                 msg.type))
 
+
     # release all locks
     if msg.type != QuantumManagerMsgType.REMOVE:
+        states.update(local_states)
         for key in msg.keys:
             locks[key].release()
 
@@ -121,7 +129,7 @@ def start_session(msg: QuantumManagerMessage, comm: socket, states,
     comm.close()
 
 
-def start_server(ip, port):
+def start_server(ip, port, formalism="KET"):
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((ip, port))
@@ -148,7 +156,7 @@ def start_server(ip, port):
         if msg.type == QuantumManagerMsgType.TERMINATE:
             break
         else:
-            args = (msg, c, states, least_available, locks, manager, locations)
+            args = (formalism, msg, c, states, least_available, locks, manager, locations)
             process = multiprocessing.Process(target=start_session, args=args)
             processes.append(process)
             process.start()
