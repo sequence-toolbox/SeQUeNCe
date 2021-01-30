@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import numpy as np
 import pytest
 
@@ -12,6 +12,8 @@ np.random.seed(0)
 
 ENTANGLED = 'ENTANGLED'
 RAW = 'RAW'
+
+MEMORY_TYPES = ['kept', 'meas']
 
 HALF_MICRON = 500
 ONE_MILLISECOND = 1e9
@@ -40,35 +42,43 @@ class FakeResourceManager():
             memory.reset()
 
 class FakeNode(Node):
-    def __init__(self, name, tl, **kwargs):
-        Node.__init__(self, name, tl)
-        self.msg_log = []
+    def __init__(self, name, timeline, **kwargs):
+        Node.__init__(self, name, timeline)
+        self.message_log = []
         self.resource_manager = FakeResourceManager(self)
 
-    def receive_message(self, src: str, msg: "Message"):
-        self.msg_log.append((self.timeline.now(), src, msg))
+    def receive_message(self, src: str, message: "Message"):
+        self.message_log.append((self.timeline.now(), src, message))
         for protocol in self.protocols:
-            if protocol.name == msg.receiver:
-                protocol.received_message(src, msg)
+            if protocol.name == message.receiver:
+                protocol.received_message(src, message)
 
 
 def test_BBPSSWMessage():
-    msg = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, "another", meas_res=0)
-    assert msg.msg_type == BBPSSWMsgType.PURIFICATION_RES
-    assert msg.receiver == "another"
-    assert msg.meas_res == 0
+    message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, "another", meas_res=0)
+    assert message.msg_type == BBPSSWMsgType.PURIFICATION_RES
+    assert message.receiver == "another"
+    assert message.meas_res == 0
     with pytest.raises(Exception):
         BBPSSWMessage("unknown type")
 
 
-def create_memories_by_type(tl: Timeline, states, fidelity: float = 1.0) -> Dict[str, List[Memory]]:
-    memory_types = ['kept', 'meas']
+def assert_error_detected(timeline: Timeline, kept_memories: List[Memory], ep: List[EntanglementProtocol]) -> None:
+    assert all(memory.entangled_memory == {'node_id': None, 'memo_id': None} for memory in kept_memories)
+    assert ep[0].meas_res != ep[1].meas_res
+
+    kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+    assert id(kets[0]) != id(kets[1])
+    assert all(len(ket.keys) == 1 for ket in kets)
+
+
+def create_memories_by_type(timeline: Timeline, states, fidelity: float = 1.0) -> Dict[str, List[Memory]]:
     memories_by_type = {
         memory_type: [
-            Memory(f'{memory_type}{i}', tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
+            Memory(f'{memory_type}{i}', timeline, fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
             for i in range(2)
         ]
-        for memory_type in memory_types
+        for memory_type in MEMORY_TYPES
     }
 
     for memory_type, memories in memories_by_type.items():
@@ -79,18 +89,18 @@ def create_memories_by_type(tl: Timeline, states, fidelity: float = 1.0) -> Dict
 
     for i, memories in enumerate(memories_by_type.values()):
         qstate_keys = [memory.qstate_key for memory in memories]
-        tl.quantum_manager.set(qstate_keys, states[i])
+        timeline.quantum_manager.set(qstate_keys, states[i])
 
     return memories_by_type
 
 
-def create_nodes(tl: Timeline) -> List[FakeNode]:
-    a = [FakeNode(f'a{i}', tl) for i in range(2)]
-    cc = [ClassicalChannel(f'cc{i}', tl, 0, 1e5) for i in range(2)]
+def create_nodes(timeline: Timeline) -> List[FakeNode]:
+    a = [FakeNode(f'a{i}', timeline) for i in range(2)]
+    classical_channels = [ClassicalChannel(f'cc{i}', timeline, 0, 1e5) for i in range(2)]
 
-    for i, channel in enumerate(cc):
-        channel.delay = ONE_MILLISECOND
-        channel.set_ends(a[i], a[not i])
+    for i, classical_channel in enumerate(classical_channels):
+        classical_channel.delay = ONE_MILLISECOND
+        classical_channel.set_ends(a[i], a[not i])
 
     return a
 
@@ -110,49 +120,41 @@ def create_protocols(a: FakeNode, memories_by_type: Dict[str, List[Memory]]) -> 
     return ep
 
 
-def create_scenario(state0, state1, seed):
-    tl = Timeline()
-    tl.seed(seed)
-    a = create_nodes(tl)
+def create_scenario(state0: List[float], state1: List[float], seed) \
+        -> Tuple[Timeline, List[Memory], List[EntanglementProtocol]]:
+    timeline = Timeline()
+    timeline.seed(seed)
+    a = create_nodes(timeline)
 
-    tl.init()
+    timeline.init()
 
     states = [state0, state1]
-    memories_by_type = create_memories_by_type(tl, states)
+    memories_by_type = create_memories_by_type(timeline, states)
     ep = create_protocols(a, memories_by_type)
 
-    tl.run()
+    timeline.run()
 
     assert all(memory.entangled_memory == {'node_id': None, 'memo_id': None} for memory in memories_by_type['meas'])
 
-    return tl, memories_by_type['kept'], ep
+    return timeline, memories_by_type['kept'], ep
 
 
-def complex_array_equal(arr1, arr2, precision=5):
+def complex_array_equal(arr1, arr2, precision: int = 5) -> bool:
     return all(abs(c1 - c2) < 2 ** -precision for c1, c2 in zip(arr1, arr2))
 
 
-def correct_order(state, keys):
+def correct_order(state: List[float], keys) -> np.array:
     if keys[0] > keys[1]:
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ state
 
 
-def get_probabilities_from(fidelity):
+def get_probabilities_from(fidelity: float) -> List[float]:
     return [fidelity] + 3 * [(1 - fidelity) / 3]
 
 
-def get_random_bell_states_from_phi_plus(fidelity):
+def get_random_bell_states_from_phi_plus(fidelity: float) -> List[List[float]]:
     probabilities = get_probabilities_from(fidelity)
     return [BELL_STATES[np.random.choice(list(BELL_STATES.keys()), 1, p=probabilities)[0]] for _ in range(2)]
-
-
-def assert_error_detected(tl, kept_memories, ep):
-    assert all(memory.entangled_memory == {'node_id': None, 'memo_id': None} for memory in kept_memories)
-    assert ep[0].meas_res != ep[1].meas_res
-
-    kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
-    assert id(kets[0]) != id(kets[1])
-    assert all(len(ket.keys) == 1 for ket in kets)
 
 
 def test_BBPSSW_phi_plus_phi_plus():
@@ -169,12 +171,12 @@ def test_BBPSSW_phi_plus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(phi_plus, phi_plus, i)
+        timeline, kept_memories, ep = create_scenario(phi_plus, phi_plus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
         if ep[0].meas_res == 0:
             counter += 1
-        kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+        kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
         assert id(kets[0]) == id(kets[1])
         assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
         state = correct_order(kets[0].state, kets[0].keys)
@@ -199,10 +201,10 @@ def test_BBPSSW_phi_plus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(phi_plus, phi_minus, i)
+        timeline, kept_memories, ep = create_scenario(phi_plus, phi_minus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
-        kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+        kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
         assert id(kets[0]) == id(kets[1])
         assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
         state = correct_order(kets[0].state, kets[0].keys)
@@ -229,11 +231,11 @@ def test_BBPSSW_phi_minus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(phi_minus, phi_plus, i)
+        timeline, kept_memories, ep = create_scenario(phi_minus, phi_plus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+        kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
         assert id(kets[0]) == id(kets[1])
         assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
         state = correct_order(kets[0].state, kets[0].keys)
@@ -241,8 +243,7 @@ def test_BBPSSW_phi_minus_phi_plus():
         assert complex_array_equal(phi_minus, state)
         if ep[0].meas_res == 0:
             counter += 1
-        else:
-            pass
+
 
     assert abs(counter - 50) < 10
 
@@ -261,11 +262,11 @@ def test_BBPSSW_phi_minus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(phi_minus, phi_minus, i)
+        timeline, kept_memories, ep = create_scenario(phi_minus, phi_minus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+        kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
         assert id(kets[0]) == id(kets[1])
         assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
         state = correct_order(kets[0].state, kets[0].keys)
@@ -293,8 +294,8 @@ def test_BBPSSW_phi_plus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(phi_plus, psi_plus, i)
-        assert_error_detected(tl, kept_memories, ep)
+        timeline, kept_memories, ep = create_scenario(phi_plus, psi_plus, i)
+        assert_error_detected(timeline, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -316,8 +317,8 @@ def test_BBPSSW_phi_plus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(phi_plus, psi_minus, i)
-        assert_error_detected(tl, kept_memories, ep)
+        timeline, kept_memories, ep = create_scenario(phi_plus, psi_minus, i)
+        assert_error_detected(timeline, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -327,8 +328,8 @@ def test_BBPSSW_phi_plus_psi_minus():
 def error_detected():
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(phi_plus, psi_minus, i)
-        assert_error_detected(tl, kept_memories, ep)
+        timeline, kept_memories, ep = create_scenario(phi_plus, psi_minus, i)
+        assert_error_detected(timeline, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -349,8 +350,8 @@ def test_BBPSSW_phi_minus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(phi_minus, psi_plus, i)
-        assert_error_detected(tl, kept_memories, ep)
+        timeline, kept_memories, ep = create_scenario(phi_minus, psi_plus, i)
+        assert_error_detected(timeline, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -371,8 +372,8 @@ def test_BBPSSW_phi_minus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(phi_minus, psi_minus, i)
-        assert_error_detected(tl, kept_memories, ep)
+        timeline, kept_memories, ep = create_scenario(phi_minus, psi_minus, i)
+        assert_error_detected(timeline, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -394,8 +395,8 @@ def test_BBPSSW_psi_plus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(psi_plus, phi_plus, i)
-        assert_error_detected(tl, kept_memories, ep)
+        timeline, kept_memories, ep = create_scenario(psi_plus, phi_plus, i)
+        assert_error_detected(timeline, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -417,8 +418,8 @@ def test_BBPSSW_psi_plus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(psi_plus, phi_minus, i)
-        assert_error_detected(tl, kept_memories, ep)
+        timeline, kept_memories, ep = create_scenario(psi_plus, phi_minus, i)
+        assert_error_detected(timeline, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -439,8 +440,8 @@ def test_BBPSSW_psi_minus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(psi_minus, phi_plus, i)
-        assert_error_detected(tl, kept_memories, ep)
+        timeline, kept_memories, ep = create_scenario(psi_minus, phi_plus, i)
+        assert_error_detected(timeline, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -462,8 +463,8 @@ def test_BBPSSW_psi_minus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(psi_minus, phi_minus, i)
-        assert_error_detected(tl, kept_memories, ep)
+        timeline, kept_memories, ep = create_scenario(psi_minus, phi_minus, i)
+        assert_error_detected(timeline, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -485,11 +486,11 @@ def test_BBPSSW_psi_plus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(psi_plus, psi_plus, i)
+        timeline, kept_memories, ep = create_scenario(psi_plus, psi_plus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+        kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
         assert id(kets[0]) == id(kets[1])
         assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
 
@@ -497,8 +498,7 @@ def test_BBPSSW_psi_plus_psi_plus():
         assert complex_array_equal(psi_plus, state)
         if ep[0].meas_res == 0:
             counter += 1
-        else:
-            pass
+
 
     assert abs(counter - 50) < 10
 
@@ -517,11 +517,11 @@ def test_BBPSSW_psi_plus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(psi_plus, psi_minus, i)
+        timeline, kept_memories, ep = create_scenario(psi_plus, psi_minus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+        kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
         assert id(kets[0]) == id(kets[1])
         assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
 
@@ -550,11 +550,11 @@ def test_BBPSSW_psi_minus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(psi_minus, psi_plus, i)
+        timeline, kept_memories, ep = create_scenario(psi_minus, psi_plus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+        kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
         assert id(kets[0]) == id(kets[1])
         assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
 
@@ -583,11 +583,11 @@ def test_BBPSSW_psi_minus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept_memories, ep = create_scenario(psi_minus, psi_minus, i)
+        timeline, kept_memories, ep = create_scenario(psi_minus, psi_minus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+        kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
         assert id(kets[0]) == id(kets[1])
         assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
         state = correct_order(kets[0].state, kets[0].keys)
@@ -601,18 +601,18 @@ def test_BBPSSW_psi_minus_psi_minus():
 
 
 def test_BBPSSW_fidelity():
-    tl = Timeline()
-    a = create_nodes(tl)
+    timeline = Timeline()
+    a = create_nodes(timeline)
 
-    tl.init()
+    timeline.init()
 
     for i in range(1000):
         fidelity = np.random.uniform(0.5, 1)
         states = get_random_bell_states_from_phi_plus(fidelity)
-        memories_by_type = create_memories_by_type(tl, states, fidelity)
+        memories_by_type = create_memories_by_type(timeline, states, fidelity)
         ep = create_protocols(a, memories_by_type)
 
-        tl.run()
+        timeline.run()
 
         assert all(a[i].resource_manager.log[-2] == (memories_by_type['meas'][i], RAW) for i in range(2))
         assert all(memory.fidelity == 0 for memory in memories_by_type['meas'])
@@ -627,20 +627,20 @@ def test_BBPSSW_fidelity():
 
 
 def test_BBPSSW_success_rate():
-    tl = Timeline()
-    a = create_nodes(tl)
+    timeline = Timeline()
+    a = create_nodes(timeline)
 
-    tl.init()
+    timeline.init()
     counters = [0, 0]
     fidelity = 0.8
 
     for i in range(1000):
         states = get_random_bell_states_from_phi_plus(fidelity)
-        memories_by_type = create_memories_by_type(tl, states, fidelity)
+        memories_by_type = create_memories_by_type(timeline, states, fidelity)
         ep = create_protocols(a, memories_by_type)
 
         counters[ep[0].meas_res != ep[1].meas_res] += 1
 
-        tl.run()
+        timeline.run()
 
     assert abs(counters[0] / sum(counters) - BBPSSW.success_probability(fidelity)) < 0.1
