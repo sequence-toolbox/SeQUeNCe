@@ -125,7 +125,7 @@ def create_scenario(state0, state1, seed):
 
     assert all(memory.entangled_memory == {'node_id': None, 'memo_id': None} for memory in memories_by_type['meas'])
 
-    return tl, memories_by_type['kept'], memories_by_type['meas'], ep
+    return tl, memories_by_type['kept'], ep
 
 
 def complex_array_equal(arr1, arr2, precision=5):
@@ -139,6 +139,20 @@ def correct_order(state, keys):
 
 def get_probabilities_from(fidelity):
     return [fidelity] + 3 * [(1 - fidelity) / 3]
+
+
+def get_random_bell_states_from_phi_plus(fidelity):
+    probabilities = get_probabilities_from(fidelity)
+    return [BELL_STATES[np.random.choice(list(BELL_STATES.keys()), 1, p=probabilities)[0]] for _ in range(2)]
+
+
+def assert_error_detected(tl, kept_memories, ep):
+    assert all(memory.entangled_memory == {'node_id': None, 'memo_id': None} for memory in kept_memories)
+    assert ep[0].meas_res != ep[1].meas_res
+
+    kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+    assert id(kets[0]) != id(kets[1])
+    assert all(len(ket.keys) == 1 for ket in kets)
 
 
 def test_BBPSSW_phi_plus_phi_plus():
@@ -155,19 +169,17 @@ def test_BBPSSW_phi_plus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept, meas, ep = create_scenario(phi_plus, phi_plus, i)
-        assert kept[0].entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
-        assert kept[1].entangled_memory == {'node_id': 'a0', 'memo_id': 'kept0'}
+        tl, kept_memories, ep = create_scenario(phi_plus, phi_plus, i)
+        assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
         if ep[0].meas_res == 0:
             counter += 1
-        ket0 = tl.quantum_manager.get(kept[0].qstate_key)
-        ket1 = tl.quantum_manager.get(kept[1].qstate_key)
-        assert id(ket0) == id(ket1)
-        assert kept[0].qstate_key in ket0.keys and kept[1].qstate_key in ket0.keys
-        state = correct_order(ket0.state, ket0.keys)
+        kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+        assert id(kets[0]) == id(kets[1])
+        assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
+        state = correct_order(kets[0].state, kets[0].keys)
         assert complex_array_equal(phi_plus, state)
-        # assert kept[0] and kept[1] point to the same Ketstate
+        # assert kept_memories[0] and kept_memories[1] point to the same ketsstate
         # assert the state is phi+
     assert abs(counter - 50) < 10
 
@@ -187,15 +199,13 @@ def test_BBPSSW_phi_plus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept, meas, ep = create_scenario(phi_plus, phi_minus, i)
-        assert kept[0].entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
-        assert kept[1].entangled_memory == {'node_id': 'a0', 'memo_id': 'kept0'}
+        tl, kept_memories, ep = create_scenario(phi_plus, phi_minus, i)
+        assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
-        ket0 = tl.quantum_manager.get(kept[0].qstate_key)
-        ket1 = tl.quantum_manager.get(kept[1].qstate_key)
-        assert id(ket0) == id(ket1)
-        assert kept[0].qstate_key in ket0.keys and kept[1].qstate_key in ket0.keys
-        state = correct_order(ket0.state, ket0.keys)
+        kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+        assert id(kets[0]) == id(kets[1])
+        assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
+        state = correct_order(kets[0].state, kets[0].keys)
         if ep[0].meas_res == 0:
             counter += 1
             assert complex_array_equal(phi_minus, state)
@@ -219,16 +229,14 @@ def test_BBPSSW_phi_minus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept, meas, ep = create_scenario(phi_minus, phi_plus, i)
-        assert kept[0].entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
-        assert kept[1].entangled_memory == {'node_id': 'a0', 'memo_id': 'kept0'}
+        tl, kept_memories, ep = create_scenario(phi_minus, phi_plus, i)
+        assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        ket0 = tl.quantum_manager.get(kept[0].qstate_key)
-        ket1 = tl.quantum_manager.get(kept[1].qstate_key)
-        assert id(ket0) == id(ket1)
-        assert kept[0].qstate_key in ket0.keys and kept[1].qstate_key in ket0.keys
-        state = correct_order(ket0.state, ket0.keys)
+        kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+        assert id(kets[0]) == id(kets[1])
+        assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
+        state = correct_order(kets[0].state, kets[0].keys)
 
         assert complex_array_equal(phi_minus, state)
         if ep[0].meas_res == 0:
@@ -253,16 +261,14 @@ def test_BBPSSW_phi_minus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept, meas, ep = create_scenario(phi_minus, phi_minus, i)
-        assert kept[0].entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
-        assert kept[1].entangled_memory == {'node_id': 'a0', 'memo_id': 'kept0'}
+        tl, kept_memories, ep = create_scenario(phi_minus, phi_minus, i)
+        assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        ket0 = tl.quantum_manager.get(kept[0].qstate_key)
-        ket1 = tl.quantum_manager.get(kept[1].qstate_key)
-        assert id(ket0) == id(ket1)
-        assert kept[0].qstate_key in ket0.keys and kept[1].qstate_key in ket0.keys
-        state = correct_order(ket0.state, ket0.keys)
+        kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+        assert id(kets[0]) == id(kets[1])
+        assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
+        state = correct_order(kets[0].state, kets[0].keys)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -287,14 +293,8 @@ def test_BBPSSW_phi_plus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept, meas, ep = create_scenario(phi_plus, psi_plus, i)
-        assert kept[0].entangled_memory == kept[1].entangled_memory == {'node_id': None, 'memo_id': None}
-        assert ep[0].meas_res != ep[1].meas_res
-
-        ket0 = tl.quantum_manager.get(kept[0].qstate_key)
-        ket1 = tl.quantum_manager.get(kept[1].qstate_key)
-        assert id(ket0) != id(ket1)
-        assert len(ket0.keys) == len(ket1.keys) == 1
+        tl, kept_memories, ep = create_scenario(phi_plus, psi_plus, i)
+        assert_error_detected(tl, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -316,14 +316,19 @@ def test_BBPSSW_phi_plus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept, meas, ep = create_scenario(phi_plus, psi_minus, i)
-        assert kept[0].entangled_memory == kept[1].entangled_memory == {'node_id': None, 'memo_id': None}
-        assert ep[0].meas_res != ep[1].meas_res
+        tl, kept_memories, ep = create_scenario(phi_plus, psi_minus, i)
+        assert_error_detected(tl, kept_memories, ep)
 
-        ket0 = tl.quantum_manager.get(kept[0].qstate_key)
-        ket1 = tl.quantum_manager.get(kept[1].qstate_key)
-        assert id(ket0) != id(ket1)
-        assert len(ket0.keys) == len(ket1.keys) == 1
+        if ep[0].meas_res == 0:
+            counter += 1
+    assert abs(counter - 50) < 10
+
+
+def error_detected():
+    counter = 0
+    for i in range(100):
+        tl, kept_memories, ep = create_scenario(phi_plus, psi_minus, i)
+        assert_error_detected(tl, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -344,14 +349,8 @@ def test_BBPSSW_phi_minus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept, meas, ep = create_scenario(phi_minus, psi_plus, i)
-        assert kept[0].entangled_memory == kept[1].entangled_memory == {'node_id': None, 'memo_id': None}
-        assert ep[0].meas_res != ep[1].meas_res
-
-        ket0 = tl.quantum_manager.get(kept[0].qstate_key)
-        ket1 = tl.quantum_manager.get(kept[1].qstate_key)
-        assert id(ket0) != id(ket1)
-        assert len(ket0.keys) == len(ket1.keys) == 1
+        tl, kept_memories, ep = create_scenario(phi_minus, psi_plus, i)
+        assert_error_detected(tl, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -372,14 +371,8 @@ def test_BBPSSW_phi_minus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept, meas, ep = create_scenario(phi_minus, psi_minus, i)
-        assert kept[0].entangled_memory == kept[1].entangled_memory == {'node_id': None, 'memo_id': None}
-        assert ep[0].meas_res != ep[1].meas_res
-
-        ket0 = tl.quantum_manager.get(kept[0].qstate_key)
-        ket1 = tl.quantum_manager.get(kept[1].qstate_key)
-        assert id(ket0) != id(ket1)
-        assert len(ket0.keys) == len(ket1.keys) == 1
+        tl, kept_memories, ep = create_scenario(phi_minus, psi_minus, i)
+        assert_error_detected(tl, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -401,14 +394,8 @@ def test_BBPSSW_psi_plus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept, meas, ep = create_scenario(psi_plus, phi_plus, i)
-        assert kept[0].entangled_memory == kept[1].entangled_memory == {'node_id': None, 'memo_id': None}
-        assert ep[0].meas_res != ep[1].meas_res
-
-        ket0 = tl.quantum_manager.get(kept[0].qstate_key)
-        ket1 = tl.quantum_manager.get(kept[1].qstate_key)
-        assert id(ket0) != id(ket1)
-        assert len(ket0.keys) == len(ket1.keys) == 1
+        tl, kept_memories, ep = create_scenario(psi_plus, phi_plus, i)
+        assert_error_detected(tl, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -430,14 +417,8 @@ def test_BBPSSW_psi_plus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept, meas, ep = create_scenario(psi_plus, phi_minus, i)
-        assert kept[0].entangled_memory == kept[1].entangled_memory == {'node_id': None, 'memo_id': None}
-        assert ep[0].meas_res != ep[1].meas_res
-
-        ket0 = tl.quantum_manager.get(kept[0].qstate_key)
-        ket1 = tl.quantum_manager.get(kept[1].qstate_key)
-        assert id(ket0) != id(ket1)
-        assert len(ket0.keys) == len(ket1.keys) == 1
+        tl, kept_memories, ep = create_scenario(psi_plus, phi_minus, i)
+        assert_error_detected(tl, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -458,14 +439,8 @@ def test_BBPSSW_psi_minus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept, meas, ep = create_scenario(psi_minus, phi_plus, i)
-        assert kept[0].entangled_memory == kept[1].entangled_memory == {'node_id': None, 'memo_id': None}
-        assert ep[0].meas_res != ep[1].meas_res
-
-        ket0 = tl.quantum_manager.get(kept[0].qstate_key)
-        ket1 = tl.quantum_manager.get(kept[1].qstate_key)
-        assert id(ket0) != id(ket1)
-        assert len(ket0.keys) == len(ket1.keys) == 1
+        tl, kept_memories, ep = create_scenario(psi_minus, phi_plus, i)
+        assert_error_detected(tl, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -487,14 +462,8 @@ def test_BBPSSW_psi_minus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept, meas, ep = create_scenario(psi_minus, phi_minus, i)
-        assert kept[0].entangled_memory == kept[1].entangled_memory == {'node_id': None, 'memo_id': None}
-        assert ep[0].meas_res != ep[1].meas_res
-
-        ket0 = tl.quantum_manager.get(kept[0].qstate_key)
-        ket1 = tl.quantum_manager.get(kept[1].qstate_key)
-        assert id(ket0) != id(ket1)
-        assert len(ket0.keys) == len(ket1.keys) == 1
+        tl, kept_memories, ep = create_scenario(psi_minus, phi_minus, i)
+        assert_error_detected(tl, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -516,17 +485,15 @@ def test_BBPSSW_psi_plus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept, meas, ep = create_scenario(psi_plus, psi_plus, i)
-        assert kept[0].entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
-        assert kept[1].entangled_memory == {'node_id': 'a0', 'memo_id': 'kept0'}
+        tl, kept_memories, ep = create_scenario(psi_plus, psi_plus, i)
+        assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        ket0 = tl.quantum_manager.get(kept[0].qstate_key)
-        ket1 = tl.quantum_manager.get(kept[1].qstate_key)
-        assert id(ket0) == id(ket1)
-        assert kept[0].qstate_key in ket0.keys and kept[1].qstate_key in ket0.keys
+        kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+        assert id(kets[0]) == id(kets[1])
+        assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
 
-        state = correct_order(ket0.state, ket0.keys)
+        state = correct_order(kets[0].state, kets[0].keys)
         assert complex_array_equal(psi_plus, state)
         if ep[0].meas_res == 0:
             counter += 1
@@ -550,17 +517,15 @@ def test_BBPSSW_psi_plus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept, meas, ep = create_scenario(psi_plus, psi_minus, i)
-        assert kept[0].entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
-        assert kept[1].entangled_memory == {'node_id': 'a0', 'memo_id': 'kept0'}
+        tl, kept_memories, ep = create_scenario(psi_plus, psi_minus, i)
+        assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        ket0 = tl.quantum_manager.get(kept[0].qstate_key)
-        ket1 = tl.quantum_manager.get(kept[1].qstate_key)
-        assert id(ket0) == id(ket1)
-        assert kept[0].qstate_key in ket0.keys and kept[1].qstate_key in ket0.keys
+        kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+        assert id(kets[0]) == id(kets[1])
+        assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
 
-        state = correct_order(ket0.state, ket0.keys)
+        state = correct_order(kets[0].state, kets[0].keys)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -585,17 +550,15 @@ def test_BBPSSW_psi_minus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept, meas, ep = create_scenario(psi_minus, psi_plus, i)
-        assert kept[0].entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
-        assert kept[1].entangled_memory == {'node_id': 'a0', 'memo_id': 'kept0'}
+        tl, kept_memories, ep = create_scenario(psi_minus, psi_plus, i)
+        assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        ket0 = tl.quantum_manager.get(kept[0].qstate_key)
-        ket1 = tl.quantum_manager.get(kept[1].qstate_key)
-        assert id(ket0) == id(ket1)
-        assert kept[0].qstate_key in ket0.keys and kept[1].qstate_key in ket0.keys
+        kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+        assert id(kets[0]) == id(kets[1])
+        assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
 
-        state = correct_order(ket0.state, ket0.keys)
+        state = correct_order(kets[0].state, kets[0].keys)
         assert complex_array_equal(psi_minus, state)
         if ep[0].meas_res == 0:
             counter += 1
@@ -620,16 +583,14 @@ def test_BBPSSW_psi_minus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept, meas, ep = create_scenario(psi_minus, psi_minus, i)
-        assert kept[0].entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
-        assert kept[1].entangled_memory == {'node_id': 'a0', 'memo_id': 'kept0'}
+        tl, kept_memories, ep = create_scenario(psi_minus, psi_minus, i)
+        assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        ket0 = tl.quantum_manager.get(kept[0].qstate_key)
-        ket1 = tl.quantum_manager.get(kept[1].qstate_key)
-        assert id(ket0) == id(ket1)
-        assert kept[0].qstate_key in ket0.keys and kept[1].qstate_key in ket0.keys
-        state = correct_order(ket0.state, ket0.keys)
+        kets = [tl.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+        assert id(kets[0]) == id(kets[1])
+        assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
+        state = correct_order(kets[0].state, kets[0].keys)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -647,8 +608,7 @@ def test_BBPSSW_fidelity():
 
     for i in range(1000):
         fidelity = np.random.uniform(0.5, 1)
-        probabilities = get_probabilities_from(fidelity)
-        states = [BELL_STATES[np.random.choice(list(BELL_STATES.keys()), 1, p=probabilities)[0]] for _ in range(2)]
+        states = get_random_bell_states_from_phi_plus(fidelity)
         memories_by_type = create_memories_by_type(tl, states, fidelity)
         ep = create_protocols(a, memories_by_type)
 
@@ -675,8 +635,7 @@ def test_BBPSSW_success_rate():
     fidelity = 0.8
 
     for i in range(1000):
-        probabilities = get_probabilities_from(fidelity)
-        states = [BELL_STATES[np.random.choice(list(BELL_STATES.keys()), 1, p=probabilities)[0]] for _ in range(2)]
+        states = get_random_bell_states_from_phi_plus(fidelity)
         memories_by_type = create_memories_by_type(tl, states, fidelity)
         ep = create_protocols(a, memories_by_type)
 
