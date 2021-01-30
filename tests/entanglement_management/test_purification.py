@@ -657,14 +657,13 @@ def test_BBPSSW_fidelity():
         assert all(a[i].resource_manager.log[-2] == (memories_by_type['meas'][i], RAW) for i in range(2))
         assert all(memory.fidelity == 0 for memory in memories_by_type['meas'])
 
-        if ep[0].meas_res == ep[1].meas_res:
-            assert all(memory.fidelity == BBPSSW.improved_fidelity(fidelity) for memory in memories_by_type['kept'])
-            assert all(memory.entangled_memory["node_id"] == f'a{(i + 1) % 2}' for i, memory in enumerate(memories_by_type['kept']))
-            assert all(a[i].resource_manager.log[-1] == (memories_by_type['kept'][i], ENTANGLED) for i in range(2))
-        else:
-            assert all(memory.fidelity == 0 for memory in memories_by_type['kept'])
-            assert all(memory.entangled_memory["node_id"] is None for memory in memories_by_type['kept'])
-            assert all(a[i].resource_manager.log[-1] == (memories_by_type['kept'][i], RAW) for i in range(2))
+        pure = ep[0].meas_res == ep[1].meas_res
+        kept_fidelity = BBPSSW.improved_fidelity(fidelity) if pure else 0
+        assert all(memory.fidelity == kept_fidelity for memory in memories_by_type['kept'])
+        memory_state = ENTANGLED if pure else RAW
+        assert all(node.resource_manager.log[-1] == (memory, memory_state) for node, memory in zip(a, memories_by_type['kept']))
+        assert all(memory.entangled_memory["node_id"] == (f'a{(i + 1) % 2}' if pure else None) for i, memory in
+                   enumerate(memories_by_type['kept']))
 
 
 def test_BBPSSW_success_rate():
