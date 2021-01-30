@@ -63,21 +63,19 @@ def test_BBPSSWMessage():
         BBPSSWMessage("unknown type")
 
 
-def assert_error_detected(timeline: Timeline, kept_memories: List[Memory], ep: List[EntanglementProtocol]) -> None:
+def assert_error_detected(kets: list, kept_memories: List[Memory], ep: List[EntanglementProtocol]) -> None:
     assert all(memory.entangled_memory == {'node_id': None, 'memo_id': None} for memory in kept_memories)
     assert ep[0].meas_res != ep[1].meas_res
 
-    kets = get_kets_from(timeline, kept_memories)
     assert id(kets[0]) != id(kets[1])
     assert all(len(ket.keys) == 1 for ket in kets)
 
 
-def get_kets_from(timeline: Timeline, kept_memories: List[Memory]):
+def get_kets_from(timeline: Timeline, kept_memories: List[Memory]) -> list:
     return [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
 
 
-def get_correct_order_state_from(timeline: Timeline, kept_memories: List[Memory]) -> np.array:
-    kets = get_kets_from(timeline, kept_memories)
+def get_correct_order_state_from(kets: list, kept_memories: List[Memory]) -> np.array:
     assert id(kets[0]) == id(kets[1])
     assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
 
@@ -141,15 +139,21 @@ def create_protocols(a: FakeNode, memories_by_type: Dict[str, List[Memory]]) -> 
     return ep
 
 
-def create_scenario(state0: List[float], state1: List[float], seed) \
-        -> Tuple[Timeline, List[Memory], List[EntanglementProtocol]]:
+def prepare_timeline_with_nodes(seed = None) -> Tuple[Timeline, List[FakeNode]]:
     timeline = Timeline()
-    timeline.seed(seed)
+
+    if seed is not None:
+        timeline.seed(seed)
+
     a = create_nodes(timeline)
 
     timeline.init()
 
-    states = [state0, state1]
+    return timeline, a
+
+
+def run(timeline: Timeline, a: List[FakeNode], states: List[List[float]]) \
+        -> Tuple[list, List[Memory], List[EntanglementProtocol]]:
     memories_by_type = create_memories_by_type(timeline, states)
     ep = create_protocols(a, memories_by_type)
 
@@ -157,7 +161,17 @@ def create_scenario(state0: List[float], state1: List[float], seed) \
 
     assert all(memory.entangled_memory == {'node_id': None, 'memo_id': None} for memory in memories_by_type['meas'])
 
-    return timeline, memories_by_type['kept'], ep
+    kets = get_kets_from(timeline, memories_by_type['kept'])
+
+    return kets, memories_by_type['kept'], ep
+
+
+def create_scenario(state0: List[float], state1: List[float], seed) \
+        -> Tuple[Timeline, List[Memory], List[EntanglementProtocol]]:
+    timeline, a = prepare_timeline_with_nodes(seed)
+    states = [state0, state1]
+
+    return run(timeline, a, states)
 
 
 def get_probabilities_from(fidelity: float) -> List[float]:
@@ -183,12 +197,12 @@ def test_BBPSSW_phi_plus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(phi_plus, phi_plus, i)
+        kets, kept_memories, ep = create_scenario(phi_plus, phi_plus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
         if ep[0].meas_res == 0:
             counter += 1
-        state = get_correct_order_state_from(timeline, kept_memories)
+        state = get_correct_order_state_from(kets, kept_memories)
         assert complex_array_equal(phi_plus, state)
         # assert kept_memories[0] and kept_memories[1] point to the same ketsstate
         # assert the state is phi+
@@ -210,10 +224,10 @@ def test_BBPSSW_phi_plus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(phi_plus, phi_minus, i)
+        kets, kept_memories, ep = create_scenario(phi_plus, phi_minus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
-        state = get_correct_order_state_from(timeline, kept_memories)
+        state = get_correct_order_state_from(kets, kept_memories)
         if ep[0].meas_res == 0:
             counter += 1
             assert complex_array_equal(phi_minus, state)
@@ -237,11 +251,11 @@ def test_BBPSSW_phi_minus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(phi_minus, phi_plus, i)
+        kets, kept_memories, ep = create_scenario(phi_minus, phi_plus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        state = get_correct_order_state_from(timeline, kept_memories)
+        state = get_correct_order_state_from(kets, kept_memories)
 
         assert complex_array_equal(phi_minus, state)
         if ep[0].meas_res == 0:
@@ -264,11 +278,11 @@ def test_BBPSSW_phi_minus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(phi_minus, phi_minus, i)
+        kets, kept_memories, ep = create_scenario(phi_minus, phi_minus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        state = get_correct_order_state_from(timeline, kept_memories)
+        state = get_correct_order_state_from(kets, kept_memories)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -293,8 +307,8 @@ def test_BBPSSW_phi_plus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(phi_plus, psi_plus, i)
-        assert_error_detected(timeline, kept_memories, ep)
+        kets, kept_memories, ep = create_scenario(phi_plus, psi_plus, i)
+        assert_error_detected(kets, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -316,8 +330,8 @@ def test_BBPSSW_phi_plus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(phi_plus, psi_minus, i)
-        assert_error_detected(timeline, kept_memories, ep)
+        kets, kept_memories, ep = create_scenario(phi_plus, psi_minus, i)
+        assert_error_detected(kets, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -328,8 +342,8 @@ def test_BBPSSW_phi_plus_psi_minus():
 def error_detected():
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(phi_plus, psi_minus, i)
-        assert_error_detected(timeline, kept_memories, ep)
+        kets, kept_memories, ep = create_scenario(phi_plus, psi_minus, i)
+        assert_error_detected(kets, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -351,8 +365,8 @@ def test_BBPSSW_phi_minus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(phi_minus, psi_plus, i)
-        assert_error_detected(timeline, kept_memories, ep)
+        kets, kept_memories, ep = create_scenario(phi_minus, psi_plus, i)
+        assert_error_detected(kets, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -374,8 +388,8 @@ def test_BBPSSW_phi_minus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(phi_minus, psi_minus, i)
-        assert_error_detected(timeline, kept_memories, ep)
+        kets, kept_memories, ep = create_scenario(phi_minus, psi_minus, i)
+        assert_error_detected(kets, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -397,8 +411,8 @@ def test_BBPSSW_psi_plus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(psi_plus, phi_plus, i)
-        assert_error_detected(timeline, kept_memories, ep)
+        kets, kept_memories, ep = create_scenario(psi_plus, phi_plus, i)
+        assert_error_detected(kets, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -420,8 +434,8 @@ def test_BBPSSW_psi_plus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(psi_plus, phi_minus, i)
-        assert_error_detected(timeline, kept_memories, ep)
+        kets, kept_memories, ep = create_scenario(psi_plus, phi_minus, i)
+        assert_error_detected(kets, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -443,8 +457,8 @@ def test_BBPSSW_psi_minus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(psi_minus, phi_plus, i)
-        assert_error_detected(timeline, kept_memories, ep)
+        kets, kept_memories, ep = create_scenario(psi_minus, phi_plus, i)
+        assert_error_detected(kets, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -466,8 +480,8 @@ def test_BBPSSW_psi_minus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(psi_minus, phi_minus, i)
-        assert_error_detected(timeline, kept_memories, ep)
+        kets, kept_memories, ep = create_scenario(psi_minus, phi_minus, i)
+        assert_error_detected(kets, kept_memories, ep)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -489,11 +503,11 @@ def test_BBPSSW_psi_plus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(psi_plus, psi_plus, i)
+        kets, kept_memories, ep = create_scenario(psi_plus, psi_plus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        state = get_correct_order_state_from(timeline, kept_memories)
+        state = get_correct_order_state_from(kets, kept_memories)
         assert complex_array_equal(psi_plus, state)
         if ep[0].meas_res == 0:
             counter += 1
@@ -516,11 +530,11 @@ def test_BBPSSW_psi_plus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(psi_plus, psi_minus, i)
+        kets, kept_memories, ep = create_scenario(psi_plus, psi_minus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        state = get_correct_order_state_from(timeline, kept_memories)
+        state = get_correct_order_state_from(kets, kept_memories)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -545,11 +559,11 @@ def test_BBPSSW_psi_minus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(psi_minus, psi_plus, i)
+        kets, kept_memories, ep = create_scenario(psi_minus, psi_plus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        state = get_correct_order_state_from(timeline, kept_memories)
+        state = get_correct_order_state_from(kets, kept_memories)
         assert complex_array_equal(psi_minus, state)
         if ep[0].meas_res == 0:
             counter += 1
@@ -574,11 +588,11 @@ def test_BBPSSW_psi_minus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        timeline, kept_memories, ep = create_scenario(psi_minus, psi_minus, i)
+        kets, kept_memories, ep = create_scenario(psi_minus, psi_minus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        state = get_correct_order_state_from(timeline, kept_memories)
+        state = get_correct_order_state_from(kets, kept_memories)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -589,10 +603,7 @@ def test_BBPSSW_psi_minus_psi_minus():
 
 
 def test_BBPSSW_fidelity():
-    timeline = Timeline()
-    a = create_nodes(timeline)
-
-    timeline.init()
+    timeline, a = prepare_timeline_with_nodes()
 
     for i in range(1000):
         fidelity = np.random.uniform(0.5, 1)
@@ -616,10 +627,7 @@ def test_BBPSSW_fidelity():
 
 
 def test_BBPSSW_success_rate():
-    timeline = Timeline()
-    a = create_nodes(timeline)
-
-    timeline.init()
+    timeline, a = prepare_timeline_with_nodes()
     counters = [0, 0]
     fidelity = 0.8
 
