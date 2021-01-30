@@ -82,10 +82,10 @@ def create_memories_by_type(timeline: Timeline, states, fidelity: float = 1.0) -
     }
 
     for memory_type, memories in memories_by_type.items():
-        for i in range(2):
+        for i, memory in enumerate(memories):
             other_index = (i + 1) % 2
-            memories[i].entangled_memory = {'node_id': f'a{other_index}', 'memo_id': f'{memory_type}{other_index}'}
-            memories[i].fidelity = fidelity
+            memory.entangled_memory = {'node_id': f'a{other_index}', 'memo_id': f'{memory_type}{other_index}'}
+            memory.fidelity = fidelity
 
     for i, memories in enumerate(memories_by_type.values()):
         qstate_keys = [memory.qstate_key for memory in memories]
@@ -244,7 +244,6 @@ def test_BBPSSW_phi_minus_phi_plus():
         if ep[0].meas_res == 0:
             counter += 1
 
-
     assert abs(counter - 50) < 10
 
 
@@ -322,6 +321,7 @@ def test_BBPSSW_phi_plus_psi_minus():
 
         if ep[0].meas_res == 0:
             counter += 1
+
     assert abs(counter - 50) < 10
 
 
@@ -333,6 +333,7 @@ def error_detected():
 
         if ep[0].meas_res == 0:
             counter += 1
+
     assert abs(counter - 50) < 10
 
 
@@ -355,6 +356,7 @@ def test_BBPSSW_phi_minus_psi_plus():
 
         if ep[0].meas_res == 0:
             counter += 1
+
     assert abs(counter - 50) < 10
 
 
@@ -423,6 +425,7 @@ def test_BBPSSW_psi_plus_phi_minus():
 
         if ep[0].meas_res == 0:
             counter += 1
+
     assert abs(counter - 50) < 10
 
 
@@ -614,16 +617,17 @@ def test_BBPSSW_fidelity():
 
         timeline.run()
 
-        assert all(a[i].resource_manager.log[-2] == (memories_by_type['meas'][i], RAW) for i in range(2))
+        assert all(node.resource_manager.log[-2] == (memory, RAW) for node, memory in zip(a, memories_by_type['meas']))
         assert all(memory.fidelity == 0 for memory in memories_by_type['meas'])
 
         pure = ep[0].meas_res == ep[1].meas_res
         kept_fidelity = BBPSSW.improved_fidelity(fidelity) if pure else 0
+
         assert all(memory.fidelity == kept_fidelity for memory in memories_by_type['kept'])
-        memory_state = ENTANGLED if pure else RAW
-        assert all(node.resource_manager.log[-1] == (memory, memory_state) for node, memory in zip(a, memories_by_type['kept']))
-        assert all(memory.entangled_memory["node_id"] == (f'a{(i + 1) % 2}' if pure else None) for i, memory in
-                   enumerate(memories_by_type['kept']))
+        assert all(node.resource_manager.log[-1] == (memory, ENTANGLED if pure else RAW)
+                   for node, memory in zip(a, memories_by_type['kept']))
+        assert all(memory.entangled_memory["node_id"] == (f'a{(i + 1) % 2}' if pure else None)
+                   for i, memory in enumerate(memories_by_type['kept']))
 
 
 def test_BBPSSW_success_rate():
@@ -639,8 +643,8 @@ def test_BBPSSW_success_rate():
         memories_by_type = create_memories_by_type(timeline, states, fidelity)
         ep = create_protocols(a, memories_by_type)
 
-        counters[ep[0].meas_res != ep[1].meas_res] += 1
-
         timeline.run()
+
+        counters[ep[0].meas_res != ep[1].meas_res] += 1
 
     assert abs(counters[0] / sum(counters) - BBPSSW.success_probability(fidelity)) < 0.1
