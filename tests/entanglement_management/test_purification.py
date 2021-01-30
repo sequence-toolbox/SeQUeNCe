@@ -67,9 +67,30 @@ def assert_error_detected(timeline: Timeline, kept_memories: List[Memory], ep: L
     assert all(memory.entangled_memory == {'node_id': None, 'memo_id': None} for memory in kept_memories)
     assert ep[0].meas_res != ep[1].meas_res
 
-    kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+    kets = get_kets_from(timeline, kept_memories)
     assert id(kets[0]) != id(kets[1])
     assert all(len(ket.keys) == 1 for ket in kets)
+
+
+def get_kets_from(timeline: Timeline, kept_memories: List[Memory]):
+    return [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
+
+
+def get_correct_order_state_from(timeline: Timeline, kept_memories: List[Memory]) -> np.array:
+    kets = get_kets_from(timeline, kept_memories)
+    assert id(kets[0]) == id(kets[1])
+    assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
+
+    return correct_order(kets[0].state, kets[0].keys)
+
+
+def complex_array_equal(arr1, arr2, precision: int = 5) -> bool:
+    return all(abs(c1 - c2) < 2 ** -precision for c1, c2 in zip(arr1, arr2))
+
+
+def correct_order(state: List[float], keys) -> np.array:
+    if keys[0] > keys[1]:
+        return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ state
 
 
 def create_memories_by_type(timeline: Timeline, states, fidelity: float = 1.0) -> Dict[str, List[Memory]]:
@@ -139,15 +160,6 @@ def create_scenario(state0: List[float], state1: List[float], seed) \
     return timeline, memories_by_type['kept'], ep
 
 
-def complex_array_equal(arr1, arr2, precision: int = 5) -> bool:
-    return all(abs(c1 - c2) < 2 ** -precision for c1, c2 in zip(arr1, arr2))
-
-
-def correct_order(state: List[float], keys) -> np.array:
-    if keys[0] > keys[1]:
-        return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ state
-
-
 def get_probabilities_from(fidelity: float) -> List[float]:
     return [fidelity] + 3 * [(1 - fidelity) / 3]
 
@@ -176,10 +188,7 @@ def test_BBPSSW_phi_plus_phi_plus():
         assert ep[0].meas_res == ep[1].meas_res
         if ep[0].meas_res == 0:
             counter += 1
-        kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
-        assert id(kets[0]) == id(kets[1])
-        assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
-        state = correct_order(kets[0].state, kets[0].keys)
+        state = get_correct_order_state_from(timeline, kept_memories)
         assert complex_array_equal(phi_plus, state)
         # assert kept_memories[0] and kept_memories[1] point to the same ketsstate
         # assert the state is phi+
@@ -204,10 +213,7 @@ def test_BBPSSW_phi_plus_phi_minus():
         timeline, kept_memories, ep = create_scenario(phi_plus, phi_minus, i)
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
-        kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
-        assert id(kets[0]) == id(kets[1])
-        assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
-        state = correct_order(kets[0].state, kets[0].keys)
+        state = get_correct_order_state_from(timeline, kept_memories)
         if ep[0].meas_res == 0:
             counter += 1
             assert complex_array_equal(phi_minus, state)
@@ -235,10 +241,7 @@ def test_BBPSSW_phi_minus_phi_plus():
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
-        assert id(kets[0]) == id(kets[1])
-        assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
-        state = correct_order(kets[0].state, kets[0].keys)
+        state = get_correct_order_state_from(timeline, kept_memories)
 
         assert complex_array_equal(phi_minus, state)
         if ep[0].meas_res == 0:
@@ -265,10 +268,7 @@ def test_BBPSSW_phi_minus_phi_minus():
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
-        assert id(kets[0]) == id(kets[1])
-        assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
-        state = correct_order(kets[0].state, kets[0].keys)
+        state = get_correct_order_state_from(timeline, kept_memories)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -493,11 +493,7 @@ def test_BBPSSW_psi_plus_psi_plus():
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
-        assert id(kets[0]) == id(kets[1])
-        assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
-
-        state = correct_order(kets[0].state, kets[0].keys)
+        state = get_correct_order_state_from(timeline, kept_memories)
         assert complex_array_equal(psi_plus, state)
         if ep[0].meas_res == 0:
             counter += 1
@@ -524,11 +520,7 @@ def test_BBPSSW_psi_plus_psi_minus():
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
-        assert id(kets[0]) == id(kets[1])
-        assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
-
-        state = correct_order(kets[0].state, kets[0].keys)
+        state = get_correct_order_state_from(timeline, kept_memories)
 
         if ep[0].meas_res == 0:
             counter += 1
@@ -557,11 +549,7 @@ def test_BBPSSW_psi_minus_psi_plus():
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
-        assert id(kets[0]) == id(kets[1])
-        assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
-
-        state = correct_order(kets[0].state, kets[0].keys)
+        state = get_correct_order_state_from(timeline, kept_memories)
         assert complex_array_equal(psi_minus, state)
         if ep[0].meas_res == 0:
             counter += 1
@@ -590,10 +578,7 @@ def test_BBPSSW_psi_minus_psi_minus():
         assert all(memory.entangled_memory == {'node_id': f'a{(i + 1) % 2}', 'memo_id': f'kept{(i + 1) % 2}'} for i, memory in enumerate(kept_memories))
         assert ep[0].meas_res == ep[1].meas_res
 
-        kets = [timeline.quantum_manager.get(memory.qstate_key) for memory in kept_memories]
-        assert id(kets[0]) == id(kets[1])
-        assert all(memory.qstate_key in kets[0].keys for memory in kept_memories)
-        state = correct_order(kets[0].state, kets[0].keys)
+        state = get_correct_order_state_from(timeline, kept_memories)
 
         if ep[0].meas_res == 0:
             counter += 1
