@@ -98,10 +98,10 @@ class QuantumManagerClient():
                     assert not self.is_managed_by_server(state_key)
                     self.move_manage_to_server(state_key)
                 updated_qubits.append(state)
-            # todo: move qubit to client if all keys of entangled qubits belong
+            # TODO: move qubit to client if all keys of entangled qubits belong
             #       to the client
             ret_val = self._send_message(QuantumManagerMsgType.RUN,
-                                         list(visited_qubits),
+                                         keys,
                                          [updated_qubits, circuit, keys])
             for measured_q in ret_val:
                 self.move_manage_to_client(measured_q)
