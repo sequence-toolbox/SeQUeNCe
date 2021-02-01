@@ -7,7 +7,8 @@ from pickle import loads, dumps
 import multiprocessing
 import threading
 
-from .p_quantum_manager import ParallelQuantumManagerKet
+from .p_quantum_manager import ParallelQuantumManagerKet, \
+    ParallelQuantumManagerDensity
 
 
 def valid_port(port):
@@ -114,7 +115,6 @@ def start_session(formalism: str, msg: QuantumManagerMessage, comm: socket, stat
             "Quantum manager session received invalid message type {}".format(
                 msg.type))
 
-
     # release all locks
     if msg.type != QuantumManagerMsgType.REMOVE:
         states.update(local_states)
@@ -149,6 +149,13 @@ def start_server(ip, port, formalism="KET"):
 
         raw_msg = c.recv(1024)
         msg = loads(raw_msg)
+
+        all_keys = set()
+        for key in msg.keys:
+            state = states[key]
+            for k in state.keys:
+                all_keys.add(k)
+        msg.keys = list(all_keys)
 
         for key in msg.keys:
             locks[key].acquire()
