@@ -277,10 +277,7 @@ class Memory(Entity):
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
             
-        if not self.random_coherence_time:
-            coherence_period = self.coherence_time
-        else:
-            coherence_period = self.coherence_time_distribution()
+        coherence_period = self.coherence_time_distribution() if self.random_coherence_time else self.coherence_time
 
         decay_time = self.timeline.now() + int(coherence_period * 1e12)
         process = Process(self, "expire", [])
@@ -317,4 +314,3 @@ class Memory(Entity):
     def detach(self, observer: 'EntanglementProtocol'):
         if observer in self._observers:
             self._observers.remove(observer)
-
