@@ -204,7 +204,7 @@ def test_Memory__schedule_expiration_random():
     times_of_expiration_calculated.pop(0)
     
     np.random.seed(2)
-    process = Process(mem, "update_state", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]])
+    process = Process(mem, "update_state", [2 * [complex(math.sqrt(1/2))]])
     for i in range(NUM_TRIALS):
         event = Event(tl.now(), process)
         tl.schedule(event)        
@@ -231,4 +231,3 @@ def test_Memory__schedule_expiration_random():
     assert stdev_simulated > 0.0
     #probability of error below is less then 0.3%
     assert abs( avg_simulated - coherence_period_avg ) < 3 * coherence_period_stdev / np.sqrt( NUM_TRIALS )
-
