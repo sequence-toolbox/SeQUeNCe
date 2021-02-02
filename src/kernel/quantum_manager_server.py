@@ -6,6 +6,7 @@ from ipaddress import ip_address
 from pickle import loads, dumps
 import multiprocessing
 import threading
+from typing import List
 
 from .p_quantum_manager import ParallelQuantumManagerKet, \
     ParallelQuantumManagerDensity
@@ -58,13 +59,14 @@ class QuantumManagerMessage():
         return str(self.type) + ' ' + str(self.args)
 
 
-def start_session(formalism: str, msg: QuantumManagerMessage, comm: socket, states,
+def start_session(formalism: str, msg: QuantumManagerMessage,
+                  all_keys: List[int], comm: socket, states,
                   least_available, locks, manager, locations):
     # TODO: does not need all states and managers;
     # we could copy part of state to the manager and update the global manager
     # after operations
 
-    local_states = {k:states[k] for k in msg.keys}
+    local_states = {k: states[k] for k in all_keys}
 
     if formalism == "KET":
         qm = ParallelQuantumManagerKet(local_states, least_available)
@@ -81,26 +83,18 @@ def start_session(formalism: str, msg: QuantumManagerMessage, comm: socket, stat
         locations[return_val] = location
 
     elif msg.type == QuantumManagerMsgType.GET:
-        assert len(msg.keys) == 1
         assert len(msg.args) == 0
         return_val = qm.get(msg.keys[0])
 
     elif msg.type == QuantumManagerMsgType.RUN:
-        assert len(msg.args) == 3
-        updated_qubits, circuit, keys = msg.args
-        for state in updated_qubits:
-            qm.set(state.keys, state.state)
-
+        assert len(msg.args) == 2
+        circuit, keys = msg.args
         return_val = qm.run_circuit(circuit, keys)
 
     elif msg.type == QuantumManagerMsgType.SET:
-        assert len(msg.args) == 2
-        amplitudes, source = msg.args
+        assert len(msg.args) == 1
+        amplitudes = msg.args[0]
         qm.set(msg.keys, amplitudes)
-        return_val = {}
-        for key in msg.keys:
-            if locations[key] != source:
-                return_val[key] = locations[key]
 
     elif msg.type == QuantumManagerMsgType.REMOVE:
         assert len(msg.keys) == 1
@@ -118,14 +112,16 @@ def start_session(formalism: str, msg: QuantumManagerMessage, comm: socket, stat
     # release all locks
     if msg.type != QuantumManagerMsgType.REMOVE:
         states.update(local_states)
-        for key in msg.keys:
+        for key in all_keys:
             locks[key].release()
 
     # send return value
-    if return_val is not None:
-        data = dumps(return_val)
-        comm.sendall(data)
+    # if return_val is not None:
+    #     data = dumps(return_val)
+    #     comm.sendall(data)
 
+    data = dumps(return_val)
+    comm.sendall(data)
     comm.close()
 
 
@@ -146,7 +142,6 @@ def start_server(ip, port, formalism="KET"):
 
     while True:
         c, addr = s.accept()
-
         raw_msg = c.recv(1024)
         msg = loads(raw_msg)
 
@@ -155,21 +150,22 @@ def start_server(ip, port, formalism="KET"):
             state = states[key]
             for k in state.keys:
                 all_keys.add(k)
-        msg.keys = list(all_keys)
 
-        for key in msg.keys:
+        for key in all_keys:
             locks[key].acquire()
 
         if msg.type == QuantumManagerMsgType.TERMINATE:
             break
         else:
-            args = (formalism, msg, c, states, least_available, locks, manager, locations)
+            args = (
+            formalism, msg, all_keys, c, states, least_available, locks,
+            manager, locations)
             process = multiprocessing.Process(target=start_session, args=args)
-            processes.append(process)
+            # processes.append(process)
             process.start()
 
-    for p in processes:
-        p.terminate()
+    # for p in processes:
+    #     p.terminate()
 
 def kill_server(ip, port):
     s = socket.socket()

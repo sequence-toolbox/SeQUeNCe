@@ -1,7 +1,7 @@
 from collections import defaultdict
 from socket import socket
 from pickle import loads, dumps
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Any
 from time import time
 from mpi4py import MPI
 
@@ -10,7 +10,8 @@ if TYPE_CHECKING:
 
 from .quantum_manager_event import QuantumManagerEvent
 from .quantum_manager import QuantumManagerKet, QuantumManagerDensity
-from .quantum_manager_server import generate_arg_parser, QuantumManagerMsgType, QuantumManagerMessage
+from .quantum_manager_server import generate_arg_parser, QuantumManagerMsgType, \
+    QuantumManagerMessage
 from ..components.circuit import Circuit
 
 
@@ -68,12 +69,12 @@ class QuantumManagerClient():
         Returns:
             int: key for the new state generated.
         """
-        # self._check_connection()
-
         args = [state, MPI.COMM_WORLD.Get_rank()]
         key = self._send_message(QuantumManagerMsgType.NEW, [], args)
+        # below code cannot be removed because the assertion in the
+        # move_manage_to_client function
         self.qm.set([key], state)
-        self.move_manage_to_client(key)
+        self.move_manage_to_client([key], state)
         return key
 
     def get(self, key: int) -> any:
@@ -87,46 +88,41 @@ class QuantumManagerClient():
         if self._check_local(keys):
             return self.qm.run_circuit(circuit, keys)
         else:
-            updated_qubits = []
             visited_qubits = set()
             for key in keys:
-                if self.is_managed_by_server(key) or key in visited_qubits:
+                if key in visited_qubits:
                     continue
-                state = self.qm.get(key)
-                for state_key in state.keys:
-                    visited_qubits.add(state_key)
-                    assert not self.is_managed_by_server(state_key)
-                    self.move_manage_to_server(state_key)
-                updated_qubits.append(state)
-            # TODO: move qubit to client if all keys of entangled qubits belong
+                if self.is_managed_by_server(key):
+                    visited_qubits.add(key)
+                else:
+                    state = self.qm.get(key)
+                    for state_key in state.keys:
+                        visited_qubits.add(state_key)
+                        assert not self.is_managed_by_server(state_key)
+                    self.move_manage_to_server(state.keys[0])
+            # todo: move qubit to client if all keys of entangled qubits belong
             #       to the client
             ret_val = self._send_message(QuantumManagerMsgType.RUN,
-                                         keys,
-                                         [updated_qubits, circuit, keys])
+                                         list(visited_qubits),
+                                         [circuit, keys])
             for measured_q in ret_val:
-                self.move_manage_to_client(measured_q)
+                if not measured_q in self.qm.states:
+                    continue
                 if ret_val[measured_q] == 1:
-                    self.qm.set_to_one(measured_q)
+                    self.move_manage_to_client([measured_q], [0, 1])
                 else:
-                    self.qm.set_to_zero(measured_q)
+                    self.move_manage_to_client([measured_q], [1, 0])
             return ret_val
 
     def set(self, keys: List[int], amplitudes: any) -> None:
         if self._check_local(keys):
             self.qm.set(keys, amplitudes)
-        elif all([(key in self.qm.states) for key in keys]):
-            for key in keys:
-                self.move_manage_to_client(key)
-            self.qm.set(keys, amplitudes)
+        elif all(key in self.qm.states for key in keys):
+            self.move_manage_to_client(keys, amplitudes)
         else:
-            location = MPI.COMM_WORLD.Get_rank()
-            ret_val = self._send_message(QuantumManagerMsgType.SET, keys,
-                                         [amplitudes, location])
-            for qubit_key in ret_val:
-                dst = ret_val[qubit_key]
-                event = QuantumManagerEvent(dst, "move_manage_to_server",
-                                            [qubit_key])
-                self.timeline.schedule(event)
+            for key in keys:
+                self.move_manage_to_server(key, sync_state=False)
+            self._send_message(QuantumManagerMsgType.SET, keys, [amplitudes])
 
     def remove(self, key: int) -> None:
         self._send_message(QuantumManagerMsgType.REMOVE, [key], [])
@@ -143,13 +139,24 @@ class QuantumManagerClient():
                            expecting_receive=False)
 
     def is_managed_by_server(self, qubit_key: int) -> bool:
-        return not qubit_key in self.managed_qubits
+        return qubit_key not in self.managed_qubits
 
-    def move_manage_to_server(self, qubit_key: int):
-        self.managed_qubits.remove(qubit_key)
+    def move_manage_to_server(self, qubit_key: int, sync_state=True):
+        if self.is_managed_by_server(qubit_key):
+            return
+        if qubit_key in self.qm.states:
+            state = self.qm.get(qubit_key)
+            for key in state.keys:
+                self.managed_qubits.remove(key)
+            if sync_state:
+                self._send_message(QuantumManagerMsgType.SET, state.keys,
+                                   [state.state])
 
-    def move_manage_to_client(self, qubit_key: int):
-        self.managed_qubits.add(qubit_key)
+    def move_manage_to_client(self, qubit_keys: List[int], amplitute: Any):
+        assert all(qubit_key in self.qm.states for qubit_key in qubit_keys)
+        for key in qubit_keys:
+            self.managed_qubits.add(key)
+        self.qm.set(qubit_keys, amplitute)
 
     def _send_message(self, msg_type, keys: List, args: List,
                       expecting_receive=True) -> any:

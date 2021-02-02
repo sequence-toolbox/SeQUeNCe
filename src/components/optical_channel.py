@@ -156,6 +156,10 @@ class QuantumChannel(OpticalChannel):
 
         # check if photon kept
         if (self.sender.generator.random() > self.loss) or qubit.is_null:
+            if self._receiver_on_other_tl():
+                self.timeline.quantum_manager.move_manage_to_server(
+                    qubit.qstate_key)
+
             if qubit.is_null:
                 qubit.add_loss(self.loss)
 
@@ -203,6 +207,9 @@ class QuantumChannel(OpticalChannel):
         # calculate time
         time = int(time_bin * (1e12 / self.frequency))
         return time
+
+    def _receiver_on_other_tl(self) -> bool:
+        return self.timeline.get_entity_by_name(self.receiver) is None
 
 
 class ClassicalChannel(OpticalChannel):
