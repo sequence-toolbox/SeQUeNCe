@@ -20,9 +20,14 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     if not os.path.exists(log_path) and rank == 0:
         os.mkdir(log_path)
 
+    # network/hardware params
     CC_DELAY = 1e9
     MEMO_SIZE = 50
     RAW_FIDELITY = 0.99
+
+    # app params
+    APP_START = 1e12
+    APP_END = 2e12
 
     tl = ParallelTimeline(lookahead=lookahead, stop_time=stop_time,
                           qm_ip=qm_ip, qm_port=qm_port)
@@ -128,7 +133,7 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
             app = RequestApp(node)
             apps.append(app)
             responder = "Node_%d" % ((index + 3) % ring_size)
-            app.start(responder, 10e12, 20e12, MEMO_SIZE // 2, 0.9)
+            app.start(responder, APP_START, APP_END, MEMO_SIZE // 2, 0.9)
 
     tl.init()
 
@@ -137,8 +142,6 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     tick = time()
     tl.run()
     execution_time = time() - tick
-
-    tl.quantum_manager.close()
 
     if kill:
         kill_server(qm_ip, qm_port)
