@@ -91,7 +91,7 @@ def test_QuantumChannel_transmit():
     receiver = FakeNode("receiver", tl)
     sender.set_seed(0)
     receiver.set_seed(1)
-    qc.set_ends(sender, receiver)
+    qc.set_ends(sender, receiver.name)
     tl.init()
 
     for i in range(1000):

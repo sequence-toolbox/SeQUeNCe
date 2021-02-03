@@ -55,6 +55,7 @@ def test_BBPSSWMessage():
 
 def create_scenario(state1, state2, seed_index):
     tl = Timeline()
+    tl.show_progress = False
     a1 = FakeNode("a1", tl)
     a2 = FakeNode("a2", tl)
     a1.set_seed(2*seed_index)
@@ -190,7 +191,9 @@ def test_BBPSSW_phi_minus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(phi_minus, phi_plus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(phi_minus,
+                                                                   phi_plus,
+                                                                   i + 1)
         assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
         assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
         assert ep1.meas_res == ep2.meas_res
@@ -224,7 +227,9 @@ def test_BBPSSW_phi_minus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(phi_minus, phi_minus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(phi_minus,
+                                                                   phi_minus,
+                                                                   i + 1)
         assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
         assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
         assert ep1.meas_res == ep2.meas_res
@@ -372,7 +377,9 @@ def test_BBPSSW_psi_plus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(psi_plus, phi_plus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(psi_plus,
+                                                                   phi_plus,
+                                                                   i + 1)
         assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
         assert ep1.meas_res != ep2.meas_res
 
@@ -401,7 +408,9 @@ def test_BBPSSW_psi_plus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(psi_plus, phi_minus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(psi_plus,
+                                                                   phi_minus,
+                                                                   i + 1)
         assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
         assert ep1.meas_res != ep2.meas_res
 
@@ -429,7 +438,9 @@ def test_BBPSSW_psi_minus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(psi_minus, phi_plus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(psi_minus,
+                                                                   phi_plus,
+                                                                   i + 1)
         assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
         assert ep1.meas_res != ep2.meas_res
 
