@@ -32,8 +32,9 @@ def test_new():
     # create dummy socket
     s = Mock()
 
+    all_keys = []
     # run
-    start_session("KET", msg, s, *environment)
+    start_session("KET", msg, all_keys, s, *environment)
 
     # get key
     key_data = s.mock_calls[0][1][0]
@@ -60,7 +61,8 @@ def test_get():
         locks = environment[2]
         for key in msg.keys:
             locks[key].acquire()
-        start_session("KET", msg, s, *environment)
+        all_keys = msg.keys
+        start_session("KET", msg, all_keys, s, *environment)
 
     # get state
     state_data = s.mock_calls[2][1][0]
@@ -74,8 +76,10 @@ def test_set():
     desired_state = [complex(0), complex(1)]
 
     # create messages
-    msg1 = QuantumManagerMessage(QuantumManagerMsgType.NEW, [], [new_state(), 0])
-    msg2 = QuantumManagerMessage(QuantumManagerMsgType.SET, [0], [desired_state, 0])
+    msg1 = QuantumManagerMessage(QuantumManagerMsgType.NEW, [],
+                                 [new_state(), 0])
+    msg2 = QuantumManagerMessage(QuantumManagerMsgType.SET, [0],
+                                 [desired_state])
     msg3 = QuantumManagerMessage(QuantumManagerMsgType.GET, [0], [])
 
     # setup environ
@@ -88,7 +92,8 @@ def test_set():
         locks = environment[2]
         for key in msg.keys:
             locks[key].acquire()
-        start_session("KET", msg, s, *environment)
+        all_keys = msg.keys
+        start_session("KET", msg, all_keys, s, *environment)
 
     # get state
     state_data = s.mock_calls[4][1][0]
@@ -114,7 +119,8 @@ def test_remove():
         locks = environment[2]
         for key in msg.keys:
             locks[key].acquire()
-        start_session("KET", msg, s, *environment)
+        all_keys = msg.keys
+        start_session("KET", msg, all_keys, s, *environment)
 
     states = environment[0]
     assert not states

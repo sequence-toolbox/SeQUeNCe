@@ -44,7 +44,7 @@ class Timeline:
         quantum_manager (QuantumManager): quantum state manager.
     """
 
-    def __init__(self, stop_time=inf, formalism='ket_vector'):
+    def __init__(self, stop_time=inf, formalism='KET'):
         """Constructor for timeline.
 
         Args:
@@ -58,9 +58,9 @@ class Timeline:
         self.run_counter = 0
         self.show_progress = True
 
-        if formalism == 'ket_vector':
+        if formalism == 'KET':
             self.quantum_manager = QuantumManagerKet()
-        elif formalism == 'density_matrix':
+        elif formalism == 'DENSITY':
             self.quantum_manager = QuantumManagerDensity()
         else:
             raise ValueError("Invalid formalism {}".format(formalism))
@@ -73,7 +73,7 @@ class Timeline:
     def schedule(self, event: "Event") -> None:
         """Method to schedule an event."""
         if type(event.process.owner) is str:
-            event.process.owner = self.entities[event.process.owner]
+            event.process.owner = self.get_entity_by_name(event.process.owner)
         self.schedule_counter += 1
         return self.events.push(event)
 
@@ -139,4 +139,7 @@ class Timeline:
         self.entities.pop(name)
 
     def get_entity_by_name(self, name: str) -> "Entity":
-        return self.entities[name]
+        if name in self.entities:
+            return self.entities[name]
+        else:
+            return None

@@ -2,69 +2,42 @@ from mpi4py import MPI
 from typing import TYPE_CHECKING, List, Any
 from time import time
 
+from .timeline import Timeline
 from .event import Event
-from .eventlist import EventList
 from .quantum_manager_client import QuantumManagerClient
-from .quantum_manager_event import QuantumManagerEvent
 
 
-class ParallelTimeline():
+class ParallelTimeline(Timeline):
 
     def __init__(self, lookahead: int, stop_time=float('inf'), formalism='KET',
                  qm_ip="127.0.0.1", qm_port="6789"):
-        self.stop_time = stop_time
+        super(ParallelTimeline, self).__init__(stop_time, formalism)
         self.id = MPI.COMM_WORLD.Get_rank()
-        self.entities = {}
-        self.time = 0
         self.foreign_entities = {}
         self.event_buffer = [[] for _ in range(MPI.COMM_WORLD.Get_size())]
-        self.events = EventList()
         self.lookahead = lookahead
-        self.execute_flag = False
         self.quantum_manager = QuantumManagerClient(formalism, qm_ip, qm_port)
         self.quantum_manager.set_timeline(self)
+        self.show_progress = False
 
         self.sync_counter = 0
         self.event_counter = 0
-        self.schedule_counter = 0
         self.exchange_counter = 0
         self.computing_time = 0
         self.communication_time1 = 0
         self.communication_time2 = 0
         self.communication_time3 = 0
 
-    def get_entity_by_name(self, name: str):
-        if name in self.entities:
-            return self.entities[name]
-        else:
-            return None
-
-    def now(self):
-        return self.time
-
     def schedule(self, event: 'Event'):
-        if isinstance(event, QuantumManagerEvent):
-            if event.dst == self.id:
-                event.process.owner = self.quantum_manager
-                event.process.run()
-            else:
-                self.event_buffer[event.dst].append(event)
-        elif type(event.process.owner) is str:
-            if event.process.owner in self.foreign_entities:
-                tl_id = self.foreign_entities[event.process.owner]
-                self.event_buffer[tl_id].append(event)
-            else:
-                event.process.owner = self.entities[event.process.owner]
-                self.events.push(event)
+        if type(event.process.owner) is str \
+                and event.process.owner in self.foreign_entities:
+            tl_id = self.foreign_entities[event.process.owner]
+            self.event_buffer[tl_id].append(event)
+            self.schedule_counter += 1
         else:
-            self.events.push(event)
-        self.schedule_counter += 1
+            super(ParallelTimeline, self).schedule(event)
 
-    def init(self):
-        for entity in self.entities.values():
-            entity.init()
-
-    def top_time(self):
+    def top_time(self) -> float:
         if len(self.events) > 0:
             return self.events.top().time
         else:
@@ -108,9 +81,6 @@ class ParallelTimeline():
                 event.process.run()
                 self.event_counter += 1
             self.computing_time += time() - tick
-
-    def remove_event(self, event: "Event") -> None:
-        self.events.remove(event)
 
     def add_foreign_entity(self, entity_name: str, foreign_id: int):
         self.foreign_entities[entity_name] = foreign_id
