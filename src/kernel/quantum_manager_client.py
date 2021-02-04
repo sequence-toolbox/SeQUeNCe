@@ -102,6 +102,12 @@ class QuantumManagerClient():
                     self.move_manage_to_server(state.keys[0])
             # todo: move qubit to client if all keys of entangled qubits belong
             #       to the client
+            if len(circuit.measured_qubits) == 0:
+                self._send_message(QuantumManagerMsgType.RUN,
+                                   list(visited_qubits),
+                                   [circuit, keys], False)
+                return {}
+
             ret_val = self._send_message(QuantumManagerMsgType.RUN,
                                          list(visited_qubits),
                                          [circuit, keys])
@@ -122,7 +128,8 @@ class QuantumManagerClient():
         else:
             for key in keys:
                 self.move_manage_to_server(key, sync_state=False)
-            self._send_message(QuantumManagerMsgType.SET, keys, [amplitudes])
+            self._send_message(QuantumManagerMsgType.SET, keys, [amplitudes],
+                               False)
 
     def remove(self, key: int) -> None:
         self._send_message(QuantumManagerMsgType.REMOVE, [key], [])
@@ -150,7 +157,7 @@ class QuantumManagerClient():
                 self.managed_qubits.remove(key)
             if sync_state:
                 self._send_message(QuantumManagerMsgType.SET, state.keys,
-                                   [state.state])
+                                   [state.state], False)
 
     def move_manage_to_client(self, qubit_keys: List[int], amplitute: Any):
         assert all(qubit_key in self.qm.states for qubit_key in qubit_keys)

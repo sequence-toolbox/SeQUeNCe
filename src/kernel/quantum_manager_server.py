@@ -1,12 +1,11 @@
-from copy import copy
 from enum import Enum, auto
 import socket
 import argparse
 from ipaddress import ip_address
 from pickle import loads, dumps
 import multiprocessing
-import threading
 from typing import List
+from time import time
 
 from .p_quantum_manager import ParallelQuantumManagerKet, \
     ParallelQuantumManagerDensity
@@ -90,6 +89,8 @@ def start_session(formalism: str, msg: QuantumManagerMessage,
         assert len(msg.args) == 2
         circuit, keys = msg.args
         return_val = qm.run_circuit(circuit, keys)
+        if len(return_val) == 0:
+            return_val = None
 
     elif msg.type == QuantumManagerMsgType.SET:
         assert len(msg.args) == 1
@@ -116,16 +117,16 @@ def start_session(formalism: str, msg: QuantumManagerMessage,
             locks[key].release()
 
     # send return value
-    # if return_val is not None:
-    #     data = dumps(return_val)
-    #     comm.sendall(data)
+    if return_val is not None:
+        data = dumps(return_val)
+        comm.sendall(data)
 
-    data = dumps(return_val)
-    comm.sendall(data)
     comm.close()
 
 
 def start_server(ip, port, formalism="KET"):
+    lock_time = 0
+
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((ip, port))
@@ -151,18 +152,23 @@ def start_server(ip, port, formalism="KET"):
             for k in state.keys:
                 all_keys.add(k)
 
+        tick = time()
         for key in all_keys:
             locks[key].acquire()
+        lock_time += time() - tick
 
         if msg.type == QuantumManagerMsgType.TERMINATE:
             break
         else:
             args = (
-            formalism, msg, all_keys, c, states, least_available, locks,
-            manager, locations)
+                formalism, msg, all_keys, c, states, least_available, locks,
+                manager, locations)
             process = multiprocessing.Process(target=start_session, args=args)
             # processes.append(process)
             process.start()
+
+    with open("server.log", "w") as fh:
+        fh.write("lock_time: {}\n".format(lock_time))
 
     # for p in processes:
     #     p.terminate()
