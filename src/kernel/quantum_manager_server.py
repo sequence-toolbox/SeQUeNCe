@@ -66,7 +66,8 @@ def start_session(formalism: str, msg: QuantumManagerMessage,
     # we could copy part of state to the manager and update the global manager
     # after operations
 
-    local_states = {k: states[k] for k in all_keys}
+    # local_states = {k: states[k] for k in all_keys}
+    local_states = states
 
     if formalism == "KET":
         qm = ParallelQuantumManagerKet(local_states, least_available)
