@@ -126,7 +126,7 @@ def start_session(formalism: str, msg: QuantumManagerMessage,
 
 
 def start_server(ip, port, formalism="KET"):
-    lock_time = 0
+    lock_time = {}
 
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -156,7 +156,10 @@ def start_server(ip, port, formalism="KET"):
         tick = time()
         for key in all_keys:
             locks[key].acquire()
-        lock_time += time() - tick
+        elapse = time() - tick
+        if msg.type not in lock_time:
+            lock_time[msg.type] = 0
+        lock_time[msg.type] += elapse
 
         if msg.type == QuantumManagerMsgType.TERMINATE:
             break
@@ -169,7 +172,9 @@ def start_server(ip, port, formalism="KET"):
             process.start()
 
     with open("server.log", "w") as fh:
-        fh.write("lock_time: {}\n".format(lock_time))
+        for type in lock_time:
+            fh.write("{}: {}\n".format(type, lock_time[type]))
+        fh.write("total time: {}\n".format(sum(lock_time.values())))
 
     # for p in processes:
     #     p.terminate()
