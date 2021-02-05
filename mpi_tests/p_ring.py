@@ -11,6 +11,46 @@ from json import dump
 import os
 import pandas as pd
 from time import time
+import numpy as np
+
+SQRT_HALF = 0.5 ** 0.5
+desired_state = [SQRT_HALF, 0, 0, SQRT_HALF]
+
+
+def complex_array_equal(arr1, arr2, precision=5):
+    for c1, c2 in zip(arr1, arr2):
+        if abs(c1 - c2) >= 2 ** -precision:
+            return False
+    return True
+
+
+class CustomizedApp(RequestApp):
+    def __init__(self, node: "QuantumRouter"):
+        super(CustomizedApp, self).__init__(node)
+        self.desired_state_counter = 0
+        self.undesired_state_counter = 0
+        self.counter = 0
+        self.undesired_state = set()
+
+    def get_memory(self, info: "MemoryInfo") -> None:
+        if info.state != "ENTANGLED":
+            return
+
+        if info.index in self.memo_to_reserve:
+            reservation = self.memo_to_reserve[info.index]
+            if info.remote_node == reservation.initiator \
+                    and info.fidelity >= reservation.fidelity:
+                state = self.node.timeline.quantum_manager.get(
+                    info.memory.qstate_key)
+                assert len(state.keys) == 2
+                self.node.resource_manager.update(None, info.memory, "RAW")
+            elif info.remote_node == reservation.responder \
+                    and info.fidelity >= reservation.fidelity:
+                self.memory_counter += 1
+                state = self.node.timeline.quantum_manager.get(
+                    info.memory.qstate_key)
+                assert len(state.keys) == 2
+                self.node.resource_manager.update(None, info.memory, "RAW")
 
 
 def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
@@ -23,7 +63,8 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     # network/hardware params
     CC_DELAY = 1e9
     MEMO_SIZE = 50
-    RAW_FIDELITY = 0.99
+    RAW_FIDELITY = 0.9
+    ATTENUATION = 0.0002
 
     # app params
     APP_START = 1e12
@@ -83,14 +124,14 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
         bsm_index = int(src.name.replace("Node_", ""))
         bsm_name = "BSM_%d" % bsm_index
         qc = QuantumChannel("qc_%s_%s" % (src.name, bsm_name),
-                            tl, 0.0002, lookahead * 2e-4)
+                            tl, ATTENUATION, lookahead * 2e-4)
         qc.set_ends(src, bsm_name)
         router_name = "Node_%d" % ((bsm_index - 1) % ring_size)
         src.add_bsm_node(bsm_name, router_name)
 
         bsm_name = "BSM_%d" % ((bsm_index + 1) % ring_size)
         qc = QuantumChannel("qc_%s_%s" % (src.name, bsm_name),
-                            tl, 0.0002, lookahead * 2e-4)
+                            tl, ATTENUATION, lookahead * 2e-4)
         qc.set_ends(src, bsm_name)
         router_name = "Node_%d" % ((bsm_index + 1) % ring_size)
         src.add_bsm_node(bsm_name, router_name)
@@ -118,22 +159,14 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
 
                 node.network_manager.protocol_stack[0].add_forwarding_rule(dst,
                                                                            bsm_name)
-
-        # for dst in node.network_manager.protocol_stack[0].forwarding_table:
-        #     print(node.name, '->', dst, node.network_manager.protocol_stack[0].forwarding_table[dst])
-    for node in routers:
-        print(node.map_to_middle_node)
     apps = []
     for node in routers:
         index = int(node.name.replace("Node_", ""))
-        if index % 4 == 1:
-            app_node_name = node.name
-            others = router_names[:]
-            others.remove(app_node_name)
-            app = RequestApp(node)
+        app = RequestApp(node)
+        if index % 2 == 1:
             apps.append(app)
-            responder = "Node_%d" % ((index + 3) % ring_size)
-            app.start(responder, APP_START, APP_END, MEMO_SIZE // 2, 0.9)
+            responder = "Node_%d" % ((index + 2) % ring_size)
+            app.start(responder, 10e12, 11e12, MEMO_SIZE // 2, 0.82)
 
     tl.init()
 
@@ -143,10 +176,8 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     tl.run()
     execution_time = time() - tick
 
-    if kill:
+    if kill and tl.id == 0:
         kill_server(qm_ip, qm_port)
-
-    print(tl.now(), len(tl.events))
 
     # write network information into log_path/net_info.json file
     if rank == 0:
@@ -168,6 +199,7 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     fidelities = []
     paths = []
     throughputs = []
+
     for app in apps:
         initiators.append(app.node.name)
         responders.append(app.responder)

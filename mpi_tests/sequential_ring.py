@@ -4,6 +4,7 @@ from sequence.topology.node import QuantumRouter, BSMNode
 from sequence.components.optical_channel import ClassicalChannel, \
     QuantumChannel
 from sequence.app.random_request import RandomRequestApp
+from sequence.app.request_app import RequestApp
 import sequence.utils.log as log
 
 from json import dump
@@ -20,7 +21,8 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int,
 
     CC_DELAY = 1e9
     MEMO_SIZE = 50
-    RAW_FIDELITY = 0.99
+    RAW_FIDELITY = 0.9
+    ATTENUATION = 0.0002
 
     tl = Timeline(stop_time=stop_time)
 
@@ -64,14 +66,14 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int,
         bsm_index = int(src.name.replace("Node_", ""))
         bsm_name = "BSM_%d" % bsm_index
         qc = QuantumChannel("qc_%s_%s" % (src.name, bsm_name),
-                            tl, 0.0002, lookahead * 2e-4)
+                            tl, ATTENUATION, lookahead * 2e-4)
         qc.set_ends(src, bsm_name)
         router_name = "Node_%d" % ((bsm_index + 1) % ring_size)
         src.add_bsm_node(bsm_name, router_name)
 
         bsm_name = "BSM_%d" % ((bsm_index - 1) % ring_size)
         qc = QuantumChannel("qc_%s_%s" % (src.name, bsm_name),
-                            tl, 0.0002, lookahead * 2e-4)
+                            tl, ATTENUATION, lookahead * 2e-4)
         qc.set_ends(src, bsm_name)
         router_name = "Node_%d" % ((bsm_index - 1) % ring_size)
         src.add_bsm_node(bsm_name, router_name)
@@ -96,19 +98,14 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int,
                 node.network_manager.protocol_stack[0].add_forwarding_rule(dst,
                                                                            bsm_name)
 
-        # for dst in node.network_manager.protocol_stack[0].forwarding_table:
-        #     print(node.name, '->', dst, node.network_manager.protocol_stack[0].forwarding_table[dst])
-
     apps = []
     for i, node in enumerate(routers):
-        seed = int(node.name.replace("Node_", ""))
-        app_node_name = node.name
-        others = router_names[:]
-        others.remove(app_node_name)
-        app = RandomRequestApp(node, others, seed, 1e13, 2e13, 10, 25, 0.8,
-                               1.0)
-        apps.append(app)
-        app.start()
+        index = int(node.name.replace("Node_", ""))
+        app = RequestApp(node)
+        if index % 2 == 1:
+            apps.append(app)
+            responder = "Node_%d" % ((index + 2) % ring_size)
+            app.start(responder, 10e12, 11e12, MEMO_SIZE // 2, 0.82)
 
     tl.init()
 
