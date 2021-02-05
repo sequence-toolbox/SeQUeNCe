@@ -157,6 +157,14 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int,
     df = pd.DataFrame(traffic_info)
     df.to_csv(log_path + "/traffic.csv")
 
+    perf_info = {'prepare_time': prepare_time,
+                 'execution_time': execution_time,
+                 'run_counter': tl.run_counter,
+                 'schedule_counter': tl.schedule_counter}
+
+    with open('%s/perf.json' % (log_path), 'w') as fh:
+        dump(perf_info, fh)
+
 
 if __name__ == "__main__":
     import argparse
