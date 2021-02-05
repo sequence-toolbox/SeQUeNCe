@@ -68,14 +68,14 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int,
         qc = QuantumChannel("qc_%s_%s" % (src.name, bsm_name),
                             tl, ATTENUATION, lookahead * 2e-4)
         qc.set_ends(src, bsm_name)
-        router_name = "Node_%d" % ((bsm_index + 1) % ring_size)
+        router_name = "Node_%d" % ((bsm_index - 1) % ring_size)
         src.add_bsm_node(bsm_name, router_name)
 
-        bsm_name = "BSM_%d" % ((bsm_index - 1) % ring_size)
+        bsm_name = "BSM_%d" % ((bsm_index + 1) % ring_size)
         qc = QuantumChannel("qc_%s_%s" % (src.name, bsm_name),
                             tl, ATTENUATION, lookahead * 2e-4)
         qc.set_ends(src, bsm_name)
-        router_name = "Node_%d" % ((bsm_index - 1) % ring_size)
+        router_name = "Node_%d" % ((bsm_index + 1) % ring_size)
         src.add_bsm_node(bsm_name, router_name)
 
     for node in routers:
