@@ -77,7 +77,7 @@ class ResourceReservationProtocol(StackProtocol):
         timecards (List[MemoryTimeCard]): list of reservation cards for all memories on node.
         es_success_probability (float): sets `success_probability` of `EntanglementSwappingA` protocols created by rules.
         es_degredation (float): sets `degredation` of `EntanglementSwappingA` protocols created by rules.
-        accepted_reservation (List[Reservation]): list of all approved reservation requests.
+        accepted_reservations (List[Reservation]): list of all approved reservation requests.
     """
 
     def __init__(self, own: "QuantumRouter", name: str):
@@ -92,7 +92,7 @@ class ResourceReservationProtocol(StackProtocol):
         self.timecards = [MemoryTimeCard(i) for i in range(len(own.memory_array))]
         self.es_success_probability = 1
         self.es_degradation = 0.95
-        self.accepted_reservation = []
+        self.accepted_reservations = []
 
     def push(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float):
         """Method to receive reservation requests from higher level protocol.
@@ -486,7 +486,7 @@ class ResourceReservationProtocol(StackProtocol):
             reservation (Reservation): reservation that created the rules.
         """
 
-        self.accepted_reservation.append(reservation)
+        self.accepted_reservations.append(reservation)
 
         for card in self.timecards:
             if reservation in card.reservations:
