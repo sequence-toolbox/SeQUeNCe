@@ -204,7 +204,7 @@ def test_MemoryWithRandomCoherenceTime__schedule_expiration():
     times_of_expiration_calculated.pop(0)
     
     np.random.seed(2)
-    process = Process(mem, "update_state", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]])
+    process = Process(mem, "update_state", [2 * [complex(math.sqrt(1/2))]])
     for i in range(NUM_TRIALS):
         event = Event(tl.now(), process)
         tl.schedule(event)        
@@ -219,11 +219,16 @@ def test_MemoryWithRandomCoherenceTime__schedule_expiration():
         period_sum += period
         period_squared_sum += period*period
     
+<<<<<<< HEAD
     avg_simulated = period_sum / NUM_TRIALS * 1e-12
     stdev_simulated = np.sqrt( ( period_squared_sum - period_sum * period_sum * 1.0/NUM_TRIALS ) / NUM_TRIALS )*1e-12
+=======
+    avg_simulated = sumX / NUM_TRIALS * 1e-12
+    stdev_simulated = np.sqrt( ( sumXX - sumX * sumX * 1.0/NUM_TRIALS ) / NUM_TRIALS )*1e-12
+
+>>>>>>> 2f52b6f3ba8650994c6fd47690a1ab92d2d23f0f
 
     #check that values in series are different
     assert stdev_simulated > 0.0
     #probability of error below is less then 0.3%
     assert abs( avg_simulated - coherence_period_avg ) < 3 * coherence_period_stdev / np.sqrt( NUM_TRIALS )
-

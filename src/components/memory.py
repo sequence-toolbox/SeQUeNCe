@@ -257,6 +257,11 @@ class Memory(Entity):
     def _schedule_expiration(self) -> None:
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
+<<<<<<< HEAD
+=======
+            
+        coherence_period = self.coherence_time_distribution() if self.random_coherence_time else self.coherence_time
+>>>>>>> 2f52b6f3ba8650994c6fd47690a1ab92d2d23f0f
 
         decay_time = self.timeline.now() + int(self.coherence_time * 1e12)
         process = Process(self, "expire", [])
@@ -293,6 +298,7 @@ class Memory(Entity):
     def detach(self, observer: 'EntanglementProtocol'):
         if observer in self._observers:
             self._observers.remove(observer)
+<<<<<<< HEAD
 
 class MemoryWithRandomCoherenceTime(Memory):
     """Individual single-atom memory.
@@ -360,3 +366,5 @@ class MemoryWithRandomCoherenceTime(Memory):
         self.expiration_event = event
 
 
+=======
+>>>>>>> 2f52b6f3ba8650994c6fd47690a1ab92d2d23f0f
