@@ -387,14 +387,15 @@ class ResourceReservationProtocol(StackProtocol):
 
     @staticmethod
     def _initialize_ep_rule_action_requirement(protocols: List, memories_info: List[MemoryInfo]) -> List:
-        _protocols = []
-        for protocol in protocols:
-            if isinstance(protocol, BBPSSW):
-                for j, memory_info in enumerate(memories_info):
-                    if protocol.kept_memo.name == memory_info.remote_memo:
-                        _protocols.insert(j, protocol)
+        purification_protocols = [protocol for protocol in protocols if isinstance(protocol, BBPSSW)]
 
-        return _protocols
+        new_protocols = []
+        for protocol in purification_protocols:
+            for j, memory_info in enumerate(memories_info):
+                if protocol.kept_memo.name == memory_info.remote_memo:
+                    new_protocols.insert(j, protocol)
+
+        return new_protocols
 
     @staticmethod
     def _configure_ep_rule_action_requirement(original_protocols, new_protocols) -> None:
@@ -488,10 +489,10 @@ class ResourceReservationProtocol(StackProtocol):
                 activation_arguments = [None, self.own.memory_array[card.memory_index], "RAW"]
                 self._schedule_event(reservation.end_time, 'update', activation_arguments, 1)
 
-        for rule in rules:
-            activation_times = {'load': reservation.start_time, 'expire': reservation.end_time}
-            priorities = {'load': inf, 'expire': 0}
+        activation_times = {'load': reservation.start_time, 'expire': reservation.end_time}
+        priorities = {'load': inf, 'expire': 0}
 
+        for rule in rules:
             for activation_method, reservation_time in activation_times.items():
                 self._schedule_event(reservation_time, activation_method, [rule], priorities[activation_method])
 
