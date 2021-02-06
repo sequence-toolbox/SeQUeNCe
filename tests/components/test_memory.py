@@ -2,7 +2,7 @@ from typing import Dict
 import numpy as np
 import math
 
-from sequence.components.memory import Memory, MemoryArray
+from sequence.components.memory import Memory, MemoryArray, MemoryWithRandomCoherenceTime
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
@@ -186,13 +186,13 @@ def test_Memory__schedule_expiration():
             counter += 1
     assert counter == 1
     
-def test_Memory__schedule_expiration_random():
+def test_MemoryWithRandomCoherenceTime__schedule_expiration():
     NUM_TRIALS = 200
     coherence_period_avg = 1
     coherence_period_stdev = 0.15
     tl = Timeline()
-    mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, 
-                 coherence_time=(coherence_period_avg,coherence_period_stdev), 
+    mem = MemoryWithRandomCoherenceTime("mem", tl, fidelity=1, frequency=0, efficiency=1, 
+                 coherence_time=coherence_period_avg, coherence_time_stdev=coherence_period_stdev, 
                  wavelength=500)
     parent = DumbParent(mem)
     
@@ -212,20 +212,15 @@ def test_Memory__schedule_expiration_random():
         tl.run()
         assert times_of_expiration_calculated[i] == tl.now()
         
-    sumX = times_of_expiration_calculated[0]
-    sumXX = times_of_expiration_calculated[0]**2
+    period_sum = times_of_expiration_calculated[0]
+    period_squared_sum = times_of_expiration_calculated[0]**2
     for i in range( 1, len( times_of_expiration_calculated ) ):
-        x = times_of_expiration_calculated[i]-times_of_expiration_calculated[i-1]
-        sumX += x
-        sumXX += x*x
+        period = times_of_expiration_calculated[i]-times_of_expiration_calculated[i-1]
+        period_sum += period
+        period_squared_sum += period*period
     
-    avg_simulated = sumX / NUM_TRIALS * 1e-12
-    stdev_simulated = np.sqrt( ( sumXX - sumX * sumX * 1.0/NUM_TRIALS ) / NUM_TRIALS )*1e-12
-
-    #print( 'input avg. =', coherence_period_avg )
-    #print( 'input st. dev. =', coherence_period_stdev )
-    #print( 'simulated avg. =', avg_simulated )
-    #print( 'simulated st. dev. =', stdev_simulated )
+    avg_simulated = period_sum / NUM_TRIALS * 1e-12
+    stdev_simulated = np.sqrt( ( period_squared_sum - period_sum * period_sum * 1.0/NUM_TRIALS ) / NUM_TRIALS )*1e-12
 
     #check that values in series are different
     assert stdev_simulated > 0.0
