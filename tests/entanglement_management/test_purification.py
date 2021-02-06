@@ -114,20 +114,20 @@ def create_memories_by_type(timeline: Timeline, states, fidelity: float = 1.0) -
 
 
 def create_nodes(timeline: Timeline) -> List[FakeNode]:
-    a = [FakeNode(f'a{i}', timeline) for i in range(2)]
+    nodes = [FakeNode(f'a{i}', timeline) for i in range(2)]
     classical_channels = [ClassicalChannel(f'cc{i}', timeline, 0, 1e5) for i in range(2)]
 
     for i, classical_channel in enumerate(classical_channels):
         classical_channel.delay = ONE_MILLISECOND
-        classical_channel.set_ends(a[i], a[not i])
+        classical_channel.set_ends(nodes[i], nodes[not i])
 
-    return a
+    return nodes
 
 
-def create_protocols(a: FakeNode, memories_by_type: Dict[str, List[Memory]]) -> List[EntanglementProtocol]:
-    ep = [BBPSSW(a[i], f'a{i}.ep{i}', memories_by_type['kept'][i], memories_by_type['meas'][i]) for i in range(2)]
+def create_protocols(nodes: List[FakeNode], memories_by_type: Dict[str, List[Memory]]) -> List[EntanglementProtocol]:
+    ep = [BBPSSW(nodes[i], f'a{i}.ep{i}', memories_by_type['kept'][i], memories_by_type['meas'][i]) for i in range(2)]
 
-    for node, protocol in zip(a, ep):
+    for node, protocol in zip(nodes, ep):
         node.protocols.append(protocol)
 
     for i, protocol in enumerate(ep):
@@ -145,17 +145,17 @@ def prepare_timeline_with_nodes(seed = None) -> Tuple[Timeline, List[FakeNode]]:
     if seed is not None:
         timeline.seed(seed)
 
-    a = create_nodes(timeline)
+    nodes = create_nodes(timeline)
 
     timeline.init()
 
-    return timeline, a
+    return timeline, nodes
 
 
-def run(timeline: Timeline, a: List[FakeNode], states: List[List[float]]) \
+def run(timeline: Timeline, nodes: List[FakeNode], states: List[List[float]]) \
         -> Tuple[list, List[Memory], List[EntanglementProtocol]]:
     memories_by_type = create_memories_by_type(timeline, states)
-    ep = create_protocols(a, memories_by_type)
+    ep = create_protocols(nodes, memories_by_type)
 
     timeline.run()
 
@@ -168,10 +168,10 @@ def run(timeline: Timeline, a: List[FakeNode], states: List[List[float]]) \
 
 def create_scenario(state0: List[float], state1: List[float], seed) \
         -> Tuple[Timeline, List[Memory], List[EntanglementProtocol]]:
-    timeline, a = prepare_timeline_with_nodes(seed)
+    timeline, nodes = prepare_timeline_with_nodes(seed)
     states = [state0, state1]
 
-    return run(timeline, a, states)
+    return run(timeline, nodes, states)
 
 
 def get_probabilities_from(fidelity: float) -> List[float]:
@@ -603,17 +603,17 @@ def test_BBPSSW_psi_minus_psi_minus():
 
 
 def test_BBPSSW_fidelity():
-    timeline, a = prepare_timeline_with_nodes()
+    timeline, nodes = prepare_timeline_with_nodes()
 
     for i in range(1000):
         fidelity = np.random.uniform(0.5, 1)
         states = get_random_bell_states_from_phi_plus(fidelity)
         memories_by_type = create_memories_by_type(timeline, states, fidelity)
-        ep = create_protocols(a, memories_by_type)
+        ep = create_protocols(nodes, memories_by_type)
 
         timeline.run()
 
-        assert all(node.resource_manager.log[-2] == (memory, RAW) for node, memory in zip(a, memories_by_type['meas']))
+        assert all(node.resource_manager.log[-2] == (memory, RAW) for node, memory in zip(nodes, memories_by_type['meas']))
         assert all(memory.fidelity == 0 for memory in memories_by_type['meas'])
 
         pure = ep[0].meas_res == ep[1].meas_res
@@ -621,20 +621,20 @@ def test_BBPSSW_fidelity():
 
         assert all(memory.fidelity == kept_fidelity for memory in memories_by_type['kept'])
         assert all(node.resource_manager.log[-1] == (memory, ENTANGLED if pure else RAW)
-                   for node, memory in zip(a, memories_by_type['kept']))
+                   for node, memory in zip(nodes, memories_by_type['kept']))
         assert all(memory.entangled_memory["node_id"] == (f'a{(i + 1) % 2}' if pure else None)
                    for i, memory in enumerate(memories_by_type['kept']))
 
 
 def test_BBPSSW_success_rate():
-    timeline, a = prepare_timeline_with_nodes()
+    timeline, nodes = prepare_timeline_with_nodes()
     counters = [0, 0]
     fidelity = 0.8
 
     for i in range(1000):
         states = get_random_bell_states_from_phi_plus(fidelity)
         memories_by_type = create_memories_by_type(timeline, states, fidelity)
-        ep = create_protocols(a, memories_by_type)
+        ep = create_protocols(nodes, memories_by_type)
 
         timeline.run()
 
