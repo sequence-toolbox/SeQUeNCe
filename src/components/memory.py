@@ -94,6 +94,7 @@ class MemoryArray(Entity):
     def set_node(self, node: "QuantumRouter") -> None:
         self.owner = node
 
+
 class Memory(Entity):
     """Individual single-atom memory.
 
@@ -107,6 +108,7 @@ class Memory(Entity):
         frequency (float): maximum frequency at which memory can be excited.
         efficiency (float): probability of emitting a photon when excited.
         coherence_time (float): average usable lifetime of memory (in seconds).
+                                or ( time_average(float), time_stdev(float) ) tuple
         wavelength (float): wavelength (in nm) of emitted photons.
         qstate (QuantumState): quantum state of memory.
         entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
@@ -116,7 +118,7 @@ class Memory(Entity):
     _meas_circuit.measure(0)
 
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
-                 efficiency: float, coherence_time: int, wavelength: int):
+                 efficiency: float, coherence_time: Any, wavelength: int):
         """Constructor for the Memory class.
 
         Args:
@@ -125,7 +127,8 @@ class Memory(Entity):
             fidelity (float): fidelity of memory.
             frequency (float): maximum frequency of excitation for memory.
             efficiency (float): efficiency of memories.
-            coherence_time (float): average time (in s) that memory state is valid.
+            coherence_time (float): average time (in s) that memory state is valid
+                                    or ( time_average(float), time_stdev(float) ) tuple
             wavelength (int): wavelength (in nm) of photons emitted by memories.
             qstate_key (int): key for associated quantum state in timeline's quantum manager.
         """
@@ -138,7 +141,23 @@ class Memory(Entity):
         self.raw_fidelity = fidelity
         self.frequency = frequency
         self.efficiency = efficiency
-        self.coherence_time = coherence_time  # coherence time in seconds
+        # coherence time in seconds
+        if not type( coherence_time ) is tuple:
+            self.coherence_time = coherence_time
+            self.random_coherence_time = False
+        else:
+            self.coherence_time = coherence_time[0]
+            self.coherence_time_stdev = coherence_time[1]
+            self.random_coherence_time = ( self.coherence_time_stdev > 0.0 and
+                                          self.coherence_time > 0.0 )
+            
+        if self.random_coherence_time:
+            self.coherence_time_distribution = lambda: stats.truncnorm.rvs(
+                -0.95 * self.coherence_time / self.coherence_time_stdev,
+                19.0 * self.coherence_time / self.coherence_time_stdev,
+                self.coherence_time,
+                self.coherence_time_stdev )
+        
         self.wavelength = wavelength
         self.qstate_key = timeline.quantum_manager.new()
 
@@ -257,13 +276,10 @@ class Memory(Entity):
     def _schedule_expiration(self) -> None:
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
-<<<<<<< HEAD
-=======
             
         coherence_period = self.coherence_time_distribution() if self.random_coherence_time else self.coherence_time
->>>>>>> 2f52b6f3ba8650994c6fd47690a1ab92d2d23f0f
 
-        decay_time = self.timeline.now() + int(self.coherence_time * 1e12)
+        decay_time = self.timeline.now() + int(coherence_period * 1e12)
         process = Process(self, "expire", [])
         event = Event(decay_time, process)
         self.timeline.schedule(event)
@@ -298,73 +314,3 @@ class Memory(Entity):
     def detach(self, observer: 'EntanglementProtocol'):
         if observer in self._observers:
             self._observers.remove(observer)
-<<<<<<< HEAD
-
-class MemoryWithRandomCoherenceTime(Memory):
-    """Individual single-atom memory.
-
-    This class models a single-atom memory, where the quantum state is stored as the spin of a single ion.
-    This class will replace the older implementation once completed.
-
-    Attributes:
-        name (str): label for memory instance.
-        timeline (Timeline): timeline for simulation.
-        fidelity (float): (current) fidelity of memory.
-        frequency (float): maximum frequency at which memory can be excited.
-        efficiency (float): probability of emitting a photon when excited.
-        coherence_time (float): average usable lifetime of memory (in seconds).
-        coherence_time_stdev (float): standard deviation of coherence time
-        wavelength (float): wavelength (in nm) of emitted photons.
-        qstate (QuantumState): quantum state of memory.
-        entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
-    """
-
-    def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
-                 efficiency: float, coherence_time: float, coherence_time_stdev: float, wavelength: int):
-        """Constructor for the Memory class.
-
-        Args:
-            name (str): name of the memory instance.
-            timeline (Timeline): simulation timeline.
-            fidelity (float): fidelity of memory.
-            frequency (float): maximum frequency of excitation for memory.
-            efficiency (float): efficiency of memories.
-            coherence_time (float): average time (in s) that memory state is valid
-            coherence_time_stdev (float): standard deviation of coherence time
-            wavelength (int): wavelength (in nm) of photons emitted by memories.
-            qstate_key (int): key for associated quantum state in timeline's quantum manager.
-        """
-
-        super(MemoryWithRandomCoherenceTime, self).__init__(name, timeline, fidelity, frequency, 
-                         efficiency, coherence_time, wavelength)
-        
-        # coherence time standard deviation in seconds
-        self.coherence_time_stdev = coherence_time_stdev
-        self.random_coherence_time = ( coherence_time_stdev > 0.0 and
-                                      self.coherence_time > 0.0 )
-        
-    def coherence_time_distribution(self) -> None:
-        return stats.truncnorm.rvs(
-            -0.95 * self.coherence_time / self.coherence_time_stdev,
-            19.0 * self.coherence_time / self.coherence_time_stdev,
-            self.coherence_time,
-            self.coherence_time_stdev )        
-
-    def _schedule_expiration(self) -> None:
-        if self.expiration_event is not None:
-            self.timeline.remove_event(self.expiration_event)
-            
-        coherence_period = ( self.coherence_time_distribution() 
-                            if self.random_coherence_time else 
-                            self.coherence_time )
-
-        decay_time = self.timeline.now() + int(coherence_period * 1e12)
-        process = Process(self, "expire", [])
-        event = Event(decay_time, process)
-        self.timeline.schedule(event)
-
-        self.expiration_event = event
-
-
-=======
->>>>>>> 2f52b6f3ba8650994c6fd47690a1ab92d2d23f0f
