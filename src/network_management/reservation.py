@@ -21,6 +21,9 @@ from ..message import Message
 from ..protocol import StackProtocol
 from ..resource_management.rule_manager import Rule
 
+ENTANGLED = 'ENTANGLED'
+RAW = 'RAW'
+
 
 class RSVPMsgType(Enum):
     """Defines possible message types for the reservation protocol."""
@@ -218,7 +221,7 @@ class ResourceReservationProtocol(StackProtocol):
         index = path.index(self.own.name)
         if index > 0:
             def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager"):
-                if memory_info.state == "RAW" and memory_info.index in memory_indices[:reservation.memory_size]:
+                if memory_info.state == RAW and memory_info.index in memory_indices[:reservation.memory_size]:
                     return [memory_info]
                 else:
                     return []
@@ -266,10 +269,10 @@ class ResourceReservationProtocol(StackProtocol):
         if index > 0:
             def ep_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager"):
                 if (memory_info.index in memory_indices[:reservation.memory_size]
-                        and memory_info.state == "ENTANGLED" and memory_info.fidelity < reservation.fidelity):
+                        and memory_info.state == ENTANGLED and memory_info.fidelity < reservation.fidelity):
                     for info in manager:
                         if (info != memory_info and info.index in memory_indices[:reservation.memory_size]
-                                and info.state == "ENTANGLED" and info.remote_node == memory_info.remote_node
+                                and info.state == ENTANGLED and info.remote_node == memory_info.remote_node
                                 and info.fidelity == memory_info.fidelity):
                             assert memory_info.remote_memo != info.remote_memo
                             return [memory_info, info]
@@ -378,7 +381,7 @@ class ResourceReservationProtocol(StackProtocol):
         start_index = 0 if own_node_path_index == 0 else reservation.memory_size
 
         def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager"):
-            if memory_info.state == "RAW" and memory_info.index in memory_indices[start_index]:
+            if memory_info.state == RAW and memory_info.index in memory_indices[start_index]:
                 return [memory_info]
             else:
                 return []
@@ -433,7 +436,7 @@ class ResourceReservationProtocol(StackProtocol):
 
         def ep_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager"):
             if (memory_info.index in memory_indices[start_index:]
-                    and memory_info.state == "ENTANGLED" and memory_info.fidelity < reservation.fidelity):
+                    and memory_info.state == ENTANGLED and memory_info.fidelity < reservation.fidelity):
                 return [memory_info]
             return []
 
@@ -453,7 +456,7 @@ class ResourceReservationProtocol(StackProtocol):
     def _es_rule_condition_met_for(memory_info: "MemoryInfo",
                                   memory_indices: List[int],
                                   reservation: "Reservation") -> bool:
-        return memory_info.state == "ENTANGLED" \
+        return memory_info.state == ENTANGLED \
                and memory_info.index in memory_indices \
                and memory_info.fidelity >= reservation.fidelity
 
@@ -484,21 +487,31 @@ class ResourceReservationProtocol(StackProtocol):
         """
 
         self.accepted_reservation.append(reservation)
+
         for card in self.timecards:
             if reservation in card.reservations:
-                activation_arguments = [None, self.own.memory_array[card.memory_index], "RAW"]
-                self._schedule_event(reservation.end_time, 'update', activation_arguments, 1)
-
-        activation_times = {'load': reservation.start_time, 'expire': reservation.end_time}
-        priorities = {'load': inf, 'expire': 0}
+                activation_arguments = [None, self.own.memory_array[card.memory_index], RAW]
+                activation_method = 'update'
+                self._schedule_event(reservation, activation_method, activation_arguments)
 
         for rule in rules:
-            for activation_method, reservation_time in activation_times.items():
-                self._schedule_event(reservation_time, activation_method, [rule], priorities[activation_method])
+            activation_arguments = [rule]
+            for activation_method in ('load', 'expire'):
+                self._schedule_event(reservation, activation_method, activation_arguments)
 
-    def _schedule_event(self, reservation_time, activation_method, activation_arguments, priority) -> None:
+    def _schedule_event(self, reservation: "Reservation", activation_method: str, activation_arguments: List) -> None:
+        activations = {
+            'load': {'priority': inf, 'time': reservation.start_time},
+            'expire': {'priority': 0, 'time': reservation.end_time},
+            'update': {'priority': 1, 'time': reservation.start_time}
+        }
+
+        priority = activations[activation_method]['priority']
+        reservation_time = activations[activation_method]['time']
+
         process = Process(self.own.resource_manager, activation_method, activation_arguments)
         event = Event(reservation_time, process, priority)
+
         self.own.timeline.schedule(event)
 
     def received_message(self, src, msg):
