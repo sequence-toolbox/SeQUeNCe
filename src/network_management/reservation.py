@@ -350,7 +350,7 @@ class ResourceReservationProtocol(StackProtocol):
                                                  protocol_name,
                                                  memories[0],
                                                  memories[1],
-                                                 success_probability=self.es_success_probability,
+                                                 success_prob=self.es_success_probability,
                                                  degradation=self.es_degradation)
                 destinations = [info.remote_node for info in memories_info]
 
@@ -562,8 +562,19 @@ class Reservation():
         assert self.memory_size > 0
 
     def __str__(self):
-        return "Reservation: initiator=%s, responder=%s, start_time=%d, end_time=%d, memory_size=%d, target_fidelity=%.2f" % (
-            self.initiator, self.responder, self.start_time, self.end_time, self.memory_size, self.fidelity)
+        reservation_parameters = {
+            'initiator': self.initiator,
+            'responder': self.responder,
+            'start_time': self.start_time,
+            'end_time': self.end_time,
+            'memory_size': self.memory_size,
+            'target_fidelity': f'{self.fidelity:.2f}'
+        }
+
+        formatted_parameters_string = ', '.join([f'{parameter}={value}'
+                                                 for parameter, value in reservation_parameters.items()])
+
+        return f'Reservation: {formatted_parameters_string}'
 
 
 class MemoryTimeCard():
