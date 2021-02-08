@@ -297,8 +297,12 @@ class Memory(Entity):
 class MemoryWithRandomCoherenceTime(Memory):
     """Individual single-atom memory.
 
-    This class models a single-atom memory, where the quantum state is stored as the spin of a single ion.
-    This class will replace the older implementation once completed.
+    This class inherits Memory class and provides possibility to use stochastic model of
+    coherence time. This means that loss of entanglement of the memory with a photon occurs
+    at random time given by truncated normal distribution with average value set by
+    'coherence_time' input parameter and with standard deviation set by 'coherence_time_stdev'
+    input parameter. If coherence_time_stdev <= 0.0 is passed, the class behaves exactly as
+    original Memory class.
 
     Attributes:
         name (str): label for memory instance.
