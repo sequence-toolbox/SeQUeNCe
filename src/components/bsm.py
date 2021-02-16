@@ -16,6 +16,7 @@ from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..utils.encoding import *
+from ..utils import log
 
 if TYPE_CHECKING:
     from ..kernel.quantum_manager import QuantumManager, State
@@ -440,6 +441,7 @@ class SingleAtomBSM(BSM):
         """
 
         super().get(photon)
+        log.logger.debug(self.name + " received photon")
 
         if len(self.photons) == 2:
             qm = self.timeline.quantum_manager
@@ -449,11 +451,15 @@ class SingleAtomBSM(BSM):
             state0, state1 = qm.get(key0), qm.get(key1)
             meas0, meas1 = [qm.run_circuit(self._meas_circuit, [key])[key]
                             for key in keys]
+
+            log.logger.debug(self.name + " measured photons as {}, {}".format(meas0, meas1))
+
             if meas0 ^ meas1:
                 detector_num = self.get_generator().choice([0, 1])
                 if len(state0.keys) == 1:
                     # if we're in stage 1: we set state to psi+/psi- to mark the
                     # first triggered detector
+                    log.logger.info(self.name + " passed stage 1")
                     if detector_num == 0:
                         _set_pure_state(keys, BSM._psi_minus, qm)
                     else:
@@ -461,6 +467,7 @@ class SingleAtomBSM(BSM):
                 elif len(state0.keys) == 2:
                     # if we're in stage 2: check if the same detector is triggered
                     # twice to assign state to psi+ or psi-
+                    log.logger.info(self.name + " passed stage 2")
                     if _eq_psi_plus(state0, qm.formalism) ^ detector_num:
                         _set_state_with_fidelity(keys, BSM._psi_minus,
                                                  p0.fidelity,

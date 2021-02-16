@@ -62,7 +62,7 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
 
     # network/hardware params
     CC_DELAY = 1e9
-    MEMO_SIZE = 50
+    MEMO_SIZE = 2
     RAW_FIDELITY = 0.9
     ATTENUATION = 0.0002
 
@@ -73,10 +73,10 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     tl = ParallelTimeline(lookahead=lookahead, stop_time=stop_time,
                           qm_ip=qm_ip, qm_port=qm_port)
 
-    # log.set_logger(__name__, tl, "mpi_%d.log" % rank)
-    # log.set_logger_level("INFO")
-    # log.track_module('node')
-    # log.track_module('network_manager')
+    log.set_logger(__name__, tl, "mpi_%d.log" % rank)
+    log.set_logger_level("DEBUG")
+    log.track_module('generation')
+    log.track_module('bsm')
 
     routers = []
     bsm_nodes = []

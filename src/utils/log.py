@@ -21,7 +21,7 @@ def _init_logger():
 
 
 logger = _init_logger()
-LOG_FORMAT = '%(asctime)-15s\t%(simtime)s\t%(levelname)-8s\t%(module)s:\t%(message)s'
+LOG_FORMAT = '%(asctime)-15s\t%(simtime)i\t%(levelname)-8s\t%(module)s:\t%(message)s'
 _log_modules = []
 
 
