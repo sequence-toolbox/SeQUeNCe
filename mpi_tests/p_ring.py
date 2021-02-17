@@ -62,13 +62,9 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
 
     # network/hardware params
     CC_DELAY = 1e9
-    MEMO_SIZE = 2
+    MEMO_SIZE = 50
     RAW_FIDELITY = 0.9
     ATTENUATION = 0.0002
-
-    # app params
-    APP_START = 1e12
-    APP_END = 2e12
 
     tl = ParallelTimeline(lookahead=lookahead, stop_time=stop_time,
                           qm_ip=qm_ip, qm_port=qm_port)

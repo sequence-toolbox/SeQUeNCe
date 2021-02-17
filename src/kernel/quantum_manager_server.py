@@ -60,20 +60,28 @@ class QuantumManagerMessage():
 
 def start_session(formalism: str, msg: QuantumManagerMessage,
                   all_keys: List[int], comm: socket, states,
-                  least_available, locks, manager, locations):
+                  least_available, locks, manager, locations,
+                  timing_dict_ops=0, timing_qm_setup=0, timing_comp={}):
     # TODO: does not need all states and managers;
     # we could copy part of state to the manager and update the global manager
     # after operations
 
+    tick = time()
     local_states = {k: states[k] for k in all_keys}
-    # local_states = states
+    timing_dict_ops.value += (time() - tick)
 
+    tick = time()
     if formalism == "KET":
         qm = ParallelQuantumManagerKet(local_states, least_available)
     elif formalism == "DENSITY":
         qm = ParallelQuantumManagerDensity(local_states, least_available)
+    timing_qm_setup.value += (time() - tick)
 
     return_val = None
+
+    if msg.type not in timing_comp:
+        timing_comp[msg.type] = 0
+    tick = time()
 
     if msg.type == QuantumManagerMsgType.NEW:
         assert len(msg.args) == 2
@@ -111,9 +119,13 @@ def start_session(formalism: str, msg: QuantumManagerMessage,
             "Quantum manager session received invalid message type {}".format(
                 msg.type))
 
+    timing_comp[msg.type] += (time() - tick)
+
     # release all locks
     if msg.type != QuantumManagerMsgType.REMOVE:
+        tick = time()
         states.update(local_states)
+        timing_dict_ops.value += (time() - tick)
         for key in all_keys:
             locks[key].release()
 
@@ -127,6 +139,7 @@ def start_session(formalism: str, msg: QuantumManagerMessage,
 
 def start_server(ip, port, formalism="KET"):
     lock_time = {}
+    start_time = {}
 
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -142,39 +155,65 @@ def start_server(ip, port, formalism="KET"):
     locks = manager.dict()
     locations = manager.dict()
 
+    timing_dict_ops = multiprocessing.Value('d', 0)
+    timing_qm_setup = multiprocessing.Value('d', 0)
+    timing_comp = manager.dict()
+    
     while True:
         c, addr = s.accept()
         raw_msg = c.recv(1024)
         msg = loads(raw_msg)
 
+        # get list of all keys necessary to service request
         all_keys = set()
         for key in msg.keys:
             state = states[key]
             for k in state.keys:
                 all_keys.add(k)
 
+        # acquire all necessary locks and record timing
+        if msg.type not in lock_time:
+            lock_time[msg.type] = 0
         tick = time()
         for key in all_keys:
             locks[key].acquire()
-        elapse = time() - tick
-        if msg.type not in lock_time:
-            lock_time[msg.type] = 0
-        lock_time[msg.type] += elapse
+        lock_time[msg.type] += (time() - tick)
 
         if msg.type == QuantumManagerMsgType.TERMINATE:
             break
         else:
+            # generate a new process to handle request
+            if msg.type not in start_time:
+                start_time[msg.type] = 0
+            tick = time()
             args = (
                 formalism, msg, all_keys, c, states, least_available, locks,
-                manager, locations)
+                manager, locations,
+                timing_dict_ops, timing_qm_setup, timing_comp)
             process = multiprocessing.Process(target=start_session, args=args)
             # processes.append(process)
             process.start()
+            start_time[msg.type] += (time() - tick)
 
+    # record timing information
     with open("server.log", "w") as fh:
-        for type in lock_time:
-            fh.write("{}: {}\n".format(type, lock_time[type]))
-        fh.write("total time: {}\n".format(sum(lock_time.values())))
+        fh.write("lock timing:\n")
+        for msg_type in lock_time:
+            fh.write("\t{}: {}\n".format(msg_type, lock_time[msg_type]))
+        fh.write("\ttotal lock time: {}\n".format(sum(lock_time.values())))
+
+        fh.write("process startup timing:\n")
+        for msg_type in start_time:
+            fh.write("\t{}: {}\n".format(msg_type, start_time[msg_type]))
+        fh.write("\ttotal startup time: {}\n".format(sum(start_time.values())))
+
+        fh.write("dictionary operations: {}\n".format(timing_dict_ops.value))
+        fh.write("quantum manager setup: {}\n".format(timing_qm_setup.value))
+
+        fh.write("computation timing:\n")
+        for msg_type in timing_comp:
+            fh.write("\t{}: {}\n".format(msg_type, timing_comp[msg_type]))
+        fh.write("\ttotal computation timing: {}\n".format(sum(timing_comp.values())))
 
     # for p in processes:
     #     p.terminate()
