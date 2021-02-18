@@ -65,14 +65,15 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     MEMO_SIZE = 50
     RAW_FIDELITY = 0.9
     ATTENUATION = 0.0002
+    SWAP_DEG_RATE = 1
 
     tl = ParallelTimeline(lookahead=lookahead, stop_time=stop_time,
                           qm_ip=qm_ip, qm_port=qm_port)
 
-    log.set_logger(__name__, tl, "mpi_%d.log" % rank)
-    log.set_logger_level("DEBUG")
-    log.track_module('generation')
-    log.track_module('bsm')
+    # log.set_logger(__name__, tl, "mpi_%d.log" % rank)
+    # log.set_logger_level("DEBUG")
+    # log.track_module('generation')
+    # log.track_module('bsm')
 
     routers = []
     bsm_nodes = []
@@ -155,6 +156,11 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
 
                 node.network_manager.protocol_stack[0].add_forwarding_rule(dst,
                                                                            bsm_name)
+
+    for node in routers:
+        node.network_manager.protocol_stack[1].set_swapping_degradation(
+            SWAP_DEG_RATE)
+
     apps = []
     for node in routers:
         index = int(node.name.replace("Node_", ""))

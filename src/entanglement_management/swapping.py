@@ -70,7 +70,8 @@ class EntanglementSwappingA(EntanglementProtocol):
     """Entanglement swapping protocol for middle router.
 
     The entanglement swapping protocol is an asymmetric protocol.
-    EntanglementSwappingA should be instantiated on the middle node, where it measures a memory from each pair to be swapped.
+    EntanglementSwappingA should be instantiated on the middle node, where it
+    measures a memory from each pair to be swapped.
     Results of measurement and swapping are sent to the end routers.
 
     Variables:

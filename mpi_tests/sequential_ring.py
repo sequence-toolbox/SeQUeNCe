@@ -23,6 +23,7 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int,
     MEMO_SIZE = 50
     RAW_FIDELITY = 0.9
     ATTENUATION = 0.0002
+    SWAP_DEG_RATE = 1
 
     tl = Timeline(stop_time=stop_time)
 
@@ -97,6 +98,10 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int,
 
                 node.network_manager.protocol_stack[0].add_forwarding_rule(dst,
                                                                            bsm_name)
+
+    for node in routers:
+        node.network_manager.protocol_stack[1].set_swapping_degradation(
+            SWAP_DEG_RATE)
 
     apps = []
     for i, node in enumerate(routers):
