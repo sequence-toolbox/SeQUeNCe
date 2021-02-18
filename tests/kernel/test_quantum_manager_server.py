@@ -2,7 +2,6 @@ import multiprocessing
 from pickle import loads, dumps
 from  unittest.mock import Mock
 import numpy as np
-import time
 
 from sequence.kernel.quantum_manager import KetState
 from sequence.kernel.quantum_manager_server import *
@@ -96,7 +95,8 @@ def test_set():
         start_session("KET", msg, all_keys, s, *environment)
 
     # get state
-    state_data = s.mock_calls[4][1][0]
+    print(s.mock_calls)
+    state_data = s.mock_calls[3][1][0]
     state = loads(state_data)
 
     assert type(state) is KetState
@@ -127,14 +127,16 @@ def test_remove():
 
 
 def test_kill_func():
+    from time import sleep
+
     host = socket.gethostbyname('localhost')
     port = 65432
 
     p = multiprocessing.Process(target=start_server, args=(host, port))
     p.start()
-    time.sleep(1)
+    sleep(1)
     kill_server(host, port)
-    time.sleep(1)
+    sleep(1)
 
     is_done = not p.is_alive()
     p.terminate()  # just in case server hasn't terminated

@@ -61,7 +61,9 @@ class QuantumManagerMessage():
 def start_session(formalism: str, msg: QuantumManagerMessage,
                   all_keys: List[int], comm: socket, states,
                   least_available, locks, manager, locations,
-                  timing_dict_ops=0, timing_qm_setup=0, timing_comp={}):
+                  timing_dict_ops=multiprocessing.Value('d', 0),
+                  timing_qm_setup=multiprocessing.Value('d', 0),
+                  timing_comp={}):
     # TODO: does not need all states and managers;
     # we could copy part of state to the manager and update the global manager
     # after operations
