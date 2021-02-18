@@ -186,7 +186,7 @@ def start_server(ip, port, formalism="KET"):
         else:
             # generate a new process to handle request
             if msg.type not in start_time:
-                start_time[msg.type] = 0
+                start_time[msg.type] = [0, 0]
             tick = time()
             args = (
                 formalism, msg, all_keys, c, states, least_available, locks,
@@ -195,7 +195,8 @@ def start_server(ip, port, formalism="KET"):
             process = multiprocessing.Process(target=start_session, args=args)
             # processes.append(process)
             process.start()
-            start_time[msg.type] += (time() - tick)
+            start_time[msg.type][0] += 1
+            start_time[msg.type][1] += (time() - tick)
 
     # record timing information
     with open("server.log", "w") as fh:
@@ -206,8 +207,9 @@ def start_server(ip, port, formalism="KET"):
 
         fh.write("process startup timing:\n")
         for msg_type in start_time:
-            fh.write("\t{}: {}\n".format(msg_type, start_time[msg_type]))
-        fh.write("\ttotal startup time: {}\n".format(sum(start_time.values())))
+            fh.write("\t{}: {} in {}\n".format(msg_type, start_time[msg_type][0], start_time[msg_type][1]))
+        fh.write("\ttotal startup time: {} in {}\n".format(sum(procs for procs, _ in start_time.values()),
+                                                           sum(time for _, time in start_time.values())))
 
         fh.write("dictionary operations: {}\n".format(timing_dict_ops.value))
         fh.write("quantum manager setup: {}\n".format(timing_qm_setup.value))
