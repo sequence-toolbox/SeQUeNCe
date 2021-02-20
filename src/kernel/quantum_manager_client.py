@@ -4,6 +4,7 @@ from pickle import loads, dumps
 from typing import List, TYPE_CHECKING, Any
 from time import time
 from mpi4py import MPI
+from uuid import uuid4
 
 if TYPE_CHECKING:
     from .p_timeline import ParallelTimeline
@@ -69,8 +70,7 @@ class QuantumManagerClient():
         Returns:
             int: key for the new state generated.
         """
-        args = [state, MPI.COMM_WORLD.Get_rank()]
-        key = self._send_message(QuantumManagerMsgType.NEW, [], args)
+        key = uuid4().int
         # below code cannot be removed because the assertion in the
         # move_manage_to_client function
         self.qm.set([key], state)

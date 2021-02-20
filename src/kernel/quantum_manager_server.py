@@ -60,7 +60,7 @@ class QuantumManagerMessage():
 
 def start_session(formalism: str, msg: QuantumManagerMessage,
                   all_keys: List[int], comm: socket, states,
-                  least_available, locks, manager, locations,
+                  least_available, locks,
                   timing_dict_ops=multiprocessing.Value('d', 0),
                   timing_qm_setup=multiprocessing.Value('d', 0),
                   timing_comp={}):
@@ -69,7 +69,13 @@ def start_session(formalism: str, msg: QuantumManagerMessage,
     # after operations
 
     tick = time()
-    local_states = {k: states[k] for k in all_keys}
+    local_states = {}
+    for k in all_keys:
+        if k in states:
+            local_states[k] = states[k]
+        else:
+            local_states[k] = None
+
     timing_dict_ops.value += (time() - tick)
 
     tick = time()
@@ -85,14 +91,7 @@ def start_session(formalism: str, msg: QuantumManagerMessage,
         timing_comp[msg.type] = 0
     tick = time()
 
-    if msg.type == QuantumManagerMsgType.NEW:
-        assert len(msg.args) == 2
-        state, location = msg.args
-        return_val = qm.new(state)
-        locks[return_val] = manager.Lock()
-        locations[return_val] = location
-
-    elif msg.type == QuantumManagerMsgType.GET:
+    if msg.type == QuantumManagerMsgType.GET:
         assert len(msg.args) == 0
         return_val = qm.get(msg.keys[0])
 
@@ -114,7 +113,6 @@ def start_session(formalism: str, msg: QuantumManagerMessage,
         key = msg.keys[0]
         del states[key]
         del locks[key]
-        del locations[key]
 
     else:
         raise Exception(
@@ -155,12 +153,11 @@ def start_server(ip, port, formalism="KET"):
     manager = multiprocessing.Manager()
     states = manager.dict()
     locks = manager.dict()
-    locations = manager.dict()
 
     timing_dict_ops = multiprocessing.Value('d', 0)
     timing_qm_setup = multiprocessing.Value('d', 0)
     timing_comp = manager.dict()
-    
+
     while True:
         c, addr = s.accept()
         raw_msg = c.recv(1024)
@@ -169,16 +166,22 @@ def start_server(ip, port, formalism="KET"):
         # get list of all keys necessary to service request
         all_keys = set()
         for key in msg.keys:
-            state = states[key]
-            for k in state.keys:
-                all_keys.add(k)
+            if key in states:
+                state = states[key]
+                for k in state.keys:
+                    all_keys.add(k)
+            else:
+                all_keys.add(key)
 
         # acquire all necessary locks and record timing
         if msg.type not in lock_time:
             lock_time[msg.type] = 0
         tick = time()
         for key in all_keys:
+            if key not in locks:
+                locks[key] = manager.Lock()
             locks[key].acquire()
+
         lock_time[msg.type] += (time() - tick)
 
         if msg.type == QuantumManagerMsgType.TERMINATE:
@@ -190,7 +193,6 @@ def start_server(ip, port, formalism="KET"):
             tick = time()
             args = (
                 formalism, msg, all_keys, c, states, least_available, locks,
-                manager, locations,
                 timing_dict_ops, timing_qm_setup, timing_comp)
             process = multiprocessing.Process(target=start_session, args=args)
             # processes.append(process)
