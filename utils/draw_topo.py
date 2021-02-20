@@ -14,7 +14,7 @@ from sequence.topology.node import BSMNode
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('config_file')
+parser.add_argument('config_file', help="path to json file defining network")
 # TODO: add support for middle node not viewing
 # parser.add_argument('-m', dest='draw_middle', action='store_true')
 
