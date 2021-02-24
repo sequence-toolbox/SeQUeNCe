@@ -195,10 +195,19 @@ def start_server(ip, port, formalism="KET"):
                 formalism, msg, all_keys, c, states, least_available, locks,
                 timing_dict_ops, timing_qm_setup, timing_comp)
             process = multiprocessing.Process(target=start_session, args=args)
-            # processes.append(process)
+            processes.append(process)
             process.start()
             start_time[msg.type][0] += 1
             start_time[msg.type][1] += (time() - tick)
+
+        _processes = []
+        for p in processes:
+            if p.is_alive():
+                _processes.append(p)
+        processes = _processes
+
+    for p in processes:
+        p.join()
 
     # record timing information
     with open("server.log", "w") as fh:
