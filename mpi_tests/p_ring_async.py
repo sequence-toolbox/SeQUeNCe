@@ -22,7 +22,7 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
 
     CC_DELAY = 1e9
     MEMO_SIZE = 50
-    RAW_FIDELITY = 0.99
+    RAW_FIDELITY = 1
     DISTANCE = 1000
 
     if rank != mpi_size - 1:
@@ -136,14 +136,11 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
         apps = []
         for node in routers:
             index = int(node.name.replace("Node_", ""))
+            app = RequestApp(node)
             if index % 4 == 1:
-                app_node_name = node.name
-                others = router_names[:]
-                others.remove(app_node_name)
-                app = RequestApp(node)
                 apps.append(app)
                 responder = "Node_%d" % ((index + 3) % ring_size)
-                app.start(responder, 10e12, 20e12, MEMO_SIZE // 2, 0.9)
+                app.start(responder, 10e12, 10.2e12, MEMO_SIZE // 2, 0.9)
     else:
         mpi_size -= 1
         tl = AsyncParallelTimeline(lookahead=lookahead, stop_time=stop_time,
@@ -195,8 +192,6 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     tick = time()
     tl.run()
     execution_time = time() - tick
-
-    tl.quantum_manager.close()
 
     if kill:
         kill_server(qm_ip, qm_port)
