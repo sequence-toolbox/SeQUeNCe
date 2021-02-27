@@ -14,6 +14,7 @@ from .quantum_manager import QuantumManagerKet, QuantumManagerDensity
 from .quantum_manager_server import generate_arg_parser, QuantumManagerMsgType, \
     QuantumManagerMessage
 from ..components.circuit import Circuit
+from ..utils.communication import send_msg_with_length, recv_msg_with_length
 
 
 class QuantumManagerClient():
@@ -36,10 +37,15 @@ class QuantumManagerClient():
         self.formalism = formalism
         self.ip = ip
         self.port = port
+        self.socket = socket()
         self.managed_qubits = set()
         self.io_time = defaultdict(lambda: 0)
         self.type_counter = defaultdict(lambda: 0)
         self.timeline = None
+
+        self.socket.connect((self.ip, self.port))
+        self.socket.settimeout(20)
+        self._send_message(QuantumManagerMsgType.CONNECT, [], [])
 
         # local quantum manager
         if formalism == "KET":
@@ -57,9 +63,11 @@ class QuantumManagerClient():
         self.timeline = tl
 
     def get_socket_to_server(self) -> "socket":
-        s = socket()
-        s.connect((self.ip, self.port))
-        return s
+        return self.socket
+
+    def disconnect_from_server(self):
+        self._send_message(QuantumManagerMsgType.CLOSE, [], [],
+                           expecting_receive=False)
 
     def new(self, state=(complex(1), complex(0))) -> int:
         """Method to get a new state from server.
@@ -171,19 +179,14 @@ class QuantumManagerClient():
         tick = time()
 
         msg = QuantumManagerMessage(msg_type, keys, args)
-        data = dumps(msg)
-        s = self.get_socket_to_server()
-        s.sendall(data)
+        send_msg_with_length(self.socket, msg)
 
         if expecting_receive:
-            received_data = s.recv(1024)
-            s.close()
-            received_msg = loads(received_data)
+            received_msg = recv_msg_with_length(self.socket)
             self.io_time[msg_type.name] += time() - tick
             return received_msg
 
         self.io_time[msg_type.name] += time() - tick
-        s.close()
 
     def _check_local(self, keys: List[int]):
         return not any([self.is_managed_by_server(key) for key in keys])
