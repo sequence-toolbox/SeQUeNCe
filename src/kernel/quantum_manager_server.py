@@ -3,6 +3,7 @@ import socket
 import argparse
 from ipaddress import ip_address
 from pickle import loads, dumps
+import select
 import multiprocessing
 from typing import List
 from time import time
@@ -70,16 +71,6 @@ def start_session(formalism: str, comm: socket, states, locks, manager,
                   timing_comp={}, timing_lock={}):
     # we could copy part of state to the manager and update the global manager
     # after operations
-    comm.settimeout(20)
-    tick = time()
-    if formalism == "KET":
-        qm = ParallelQuantumManagerKet({})
-    elif formalism == "DENSITY":
-        qm = ParallelQuantumManagerDensity({})
-    timing_qm_setup.value += time() - tick
-
-    msg = QuantumManagerMessage(QuantumManagerMsgType.CONNECTED, [], [])
-    send_msg_with_length(comm, msg)
 
     while True:
         msg = recv_msg_with_length(comm)
@@ -172,56 +163,83 @@ def start_session(formalism: str, comm: socket, states, locks, manager,
             send_msg_with_length(comm, return_val)
 
 
-def start_server(ip, port, formalism="KET", log_file="server.log"):
+def start_server(ip, port, client_num=4, formalism="KET",
+                 log_file="server.log"):
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((ip, port))
     s.listen()
-    processes = []
     print("listening at:", ip, port)
 
+    timing_comp = {}
+
     # initialize shared data
-    manager = multiprocessing.Manager()
-    states = manager.dict()
-    locks = manager.dict()
+    if formalism == "KET":
+        qm = ParallelQuantumManagerKet({})
+    elif formalism == "DENSITY":
+        qm = ParallelQuantumManagerDensity({})
 
-    timing_dict_ops = multiprocessing.Value('d', 0)
-    timing_qm_setup = multiprocessing.Value('d', 0)
-    timing_comp = manager.dict()
-    timing_lock = manager.dict()
-
-    while True:
+    sockets = []
+    for _ in range(client_num):
         c, addr = s.accept()
-        msg = recv_msg_with_length(c)
+        sockets.append(c)
 
-        if msg.type == QuantumManagerMsgType.TERMINATE:
-            break
-        elif msg.type == QuantumManagerMsgType.CONNECT:
-            args = (formalism, c, states, locks, manager,
-                    timing_dict_ops, timing_qm_setup, timing_comp, timing_lock)
-            process = multiprocessing.Process(target=start_session, args=args)
-            processes.append(process)
-            process.start()
+    while sockets:
+        readable, writeable, exceptional = select.select(sockets, [], [], 1)
+        for s in readable:
+            msg = recv_msg_with_length(s)
+            return_val = None
 
-        _processes = []
-        for p in processes:
-            if p.is_alive():
-                _processes.append(p)
-        processes = _processes
+            tick = time()
+            if msg.type == QuantumManagerMsgType.CLOSE:
+                s.close()
+                sockets.remove(s)
+                print(measure_state_with_cache_ket.cache_info())
+                print(measure_multiple_with_cache_ket.cache_info())
+                print(measure_entangled_state_with_cache_ket.cache_info())
+                break
 
-    for p in processes:
-        p.join()
+            elif msg.type == QuantumManagerMsgType.GET:
+                assert len(msg.args) == 0
+                return_val = qm.get(msg.keys[0])
 
-    # record timing information
+            elif msg.type == QuantumManagerMsgType.RUN:
+                assert len(msg.args) == 2
+                circuit, keys = msg.args
+                return_val = qm.run_circuit(circuit, keys)
+                if len(return_val) == 0:
+                    return_val = None
+
+            elif msg.type == QuantumManagerMsgType.SET:
+                assert len(msg.args) == 1
+                amplitudes = msg.args[0]
+                qm.set(msg.keys, amplitudes)
+
+            elif msg.type == QuantumManagerMsgType.REMOVE:
+                assert len(msg.keys) == 1
+                assert len(msg.args) == 0
+                key = msg.keys[0]
+                qm.remove(key)
+
+            elif msg.type == QuantumManagerMsgType.TERMINATE:
+                for s in sockets:
+                    s.close()
+                sockets = []
+            else:
+                raise Exception(
+                    "Quantum manager session received invalid message type {}".format(
+                        msg.type))
+
+            # send return value
+            if return_val is not None:
+                send_msg_with_length(s, return_val)
+
+            if not msg.type in timing_comp:
+                timing_comp[msg.type] = 0
+            timing_comp[msg.type] += time() - tick
+
+    # # record timing information
     with open(log_file, "w") as fh:
-        fh.write("lock timing:\n")
-        for msg_type in timing_lock:
-            fh.write("\t{}: {}\n".format(msg_type, timing_lock[msg_type]))
-        fh.write("\ttotal lock time: {}\n".format(sum(timing_lock.values())))
-
-        fh.write("dictionary operations: {}\n".format(timing_dict_ops.value))
-        fh.write("quantum manager setup: {}\n".format(timing_qm_setup.value))
-
         fh.write("computation timing:\n")
         for msg_type in timing_comp:
             fh.write("\t{}: {}\n".format(msg_type, timing_comp[msg_type]))

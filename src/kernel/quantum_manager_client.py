@@ -45,7 +45,6 @@ class QuantumManagerClient():
 
         self.socket.connect((self.ip, self.port))
         self.socket.settimeout(20)
-        self._send_message(QuantumManagerMsgType.CONNECT, [], [])
 
         # local quantum manager
         if formalism == "KET":
