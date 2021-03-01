@@ -201,13 +201,22 @@ class RouterNetTopo(Topo):
                 graph.add_node(node[Topo.NAME])
 
         costs = {}
-        for qc in self.qchannels:
-            router, bsm = qc.sender.name, qc.receiver
-            if not bsm in costs:
-                costs[bsm] = [router, qc.distance]
-            else:
-                costs[bsm] = [router] + costs[bsm]
-                costs[bsm][-1] += qc.distance
+        if config[self.IS_PARALLEL]:
+            for qc in config[self.ALL_Q_CHANNEL]:
+                router, bsm = qc[self.SRC], qc[self.DST]
+                if not bsm in costs:
+                    costs[bsm] = [router, qc[self.DISTANCE]]
+                else:
+                    costs[bsm] = [router] + costs[bsm]
+                    costs[bsm][-1] += qc[self.DISTANCE]
+        else:
+            for qc in self.qchannels:
+                router, bsm = qc.sender.name, qc.receiver
+                if not bsm in costs:
+                    costs[bsm] = [router, qc.distance]
+                else:
+                    costs[bsm] = [router] + costs[bsm]
+                    costs[bsm][-1] += qc.distance
 
         graph.add_weighted_edges_from(costs.values())
         for router in self.nodes[self.QUANTUM_ROUTER]:
