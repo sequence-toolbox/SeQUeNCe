@@ -11,9 +11,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('linear_size', type=int, help='number of network nodes')
 parser.add_argument('memo_size', type=int, help='number of memories per node')
 parser.add_argument('qc_length', type=float,
-                    help='distance between ring nodes (in km)')
+                    help='distance between nodes (in km)')
 parser.add_argument('qc_atten', type=float,
-                    help='quantum channel attenuation (in dB/km)')
+                    help='quantum channel attenuation (in dB/m)')
 parser.add_argument('cc_delay', type=float,
                     help='classical channel delay (in ms)')
 parser.add_argument('-o', '--output', type=str, default='out.json',
