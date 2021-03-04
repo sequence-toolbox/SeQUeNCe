@@ -194,9 +194,6 @@ def start_server(ip, port, client_num=4, formalism="KET",
             if msg.type == QuantumManagerMsgType.CLOSE:
                 s.close()
                 sockets.remove(s)
-                print(measure_state_with_cache_ket.cache_info())
-                print(measure_multiple_with_cache_ket.cache_info())
-                print(measure_entangled_state_with_cache_ket.cache_info())
                 break
 
             elif msg.type == QuantumManagerMsgType.GET:
