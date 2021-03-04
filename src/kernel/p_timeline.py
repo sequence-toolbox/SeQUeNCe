@@ -60,6 +60,7 @@ class ParallelTimeline(Timeline):
             tick = time()
             min_time = MPI.COMM_WORLD.allreduce(self.top_time(),
                                                 op=MPI.MIN)
+            assert min_time >= self.time
             self.communication_time3 += time() - tick
 
             if min_time >= self.stop_time:
