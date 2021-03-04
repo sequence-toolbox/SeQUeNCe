@@ -15,15 +15,16 @@ from time import time
 
 def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
                  mpi_size: int, qm_ip: str, qm_port: int, log_path: str):
-    kill = True
     tick = time()
     if not os.path.exists(log_path) and rank == 0:
         os.mkdir(log_path)
 
     CC_DELAY = 1e9
     MEMO_SIZE = 50
-    RAW_FIDELITY = 1
+    RAW_FIDELITY = 0.9
     DISTANCE = 1000
+    ATTENUATION = 0.0002
+    SWAP_DEG_RATE = 1
 
     if rank != mpi_size - 1:
         mpi_size -= 1
@@ -31,9 +32,9 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
                               qm_ip=qm_ip, qm_port=qm_port)
 
         # log.set_logger(__name__, tl, "mpi_%d.log" % rank)
-        # log.set_logger_level("INFO")
+        # log.set_logger_level("DEBUG")
+        # log.track_module('generation')
         # log.track_module('node')
-        # log.track_module('network_manager')
 
         routers = []
         bsm_nodes = []
@@ -76,27 +77,27 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
                 dst_name = "Node_%d" % dst_index
                 if dst_name != src.name:
                     cc = ClassicalChannel("cc_%s_%s" % (src.name, dst_name),
-                                          tl, 20000, CC_DELAY // 2)
+                                          tl, 20000, CC_DELAY)
                     cc.set_ends(src, dst_name)
 
                 dst_name = "BSM_%d" % dst_index
                 if dst_name != src.name:
                     cc = ClassicalChannel("cc_%s_%s" % (src.name, dst_name),
-                                          tl, 20000, CC_DELAY // 2)
+                                          tl, 20000, CC_DELAY)
                     cc.set_ends(src, dst_name)
 
         for src in routers:
             bsm_index = int(src.name.replace("Node_", ""))
             bsm_name = "BSM_%d" % bsm_index
             qc = QuantumChannel("qc_%s_%s" % (src.name, bsm_name),
-                                tl, 0.0002, DISTANCE)
+                                tl, ATTENUATION, DISTANCE)
             qc.set_ends(src, bsm_name)
             router_name = "Node_%d" % ((bsm_index - 1) % ring_size)
             src.add_bsm_node(bsm_name, router_name)
 
             bsm_name = "BSM_%d" % ((bsm_index + 1) % ring_size)
             qc = QuantumChannel("qc_%s_%s" % (src.name, bsm_name),
-                                tl, 0.0002, DISTANCE)
+                                tl, ATTENUATION, DISTANCE)
             qc.set_ends(src, bsm_name)
             router_name = "Node_%d" % ((bsm_index + 1) % ring_size)
             src.add_bsm_node(bsm_name, router_name)
@@ -124,7 +125,7 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
                                         (node_index - 1) % ring_size)
                         else:
                             bsm_name = "Node_%d" % (
-                                        (node_index + 1) % ring_size)
+                                    (node_index + 1) % ring_size)
 
                     node.network_manager.protocol_stack[0].add_forwarding_rule(
                         dst,
@@ -133,18 +134,28 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
             # for dst in node.network_manager.protocol_stack[0].forwarding_table:
             #     print(node.name, '->', dst, node.network_manager.protocol_stack[0].forwarding_table[dst])
 
+        for node in routers:
+            node.network_manager.protocol_stack[1].set_swapping_degradation(
+                SWAP_DEG_RATE)
+
         apps = []
         for node in routers:
             index = int(node.name.replace("Node_", ""))
             app = RequestApp(node)
-            if index % 4 == 1:
+            if index % 2 == 1:
                 apps.append(app)
-                responder = "Node_%d" % ((index + 3) % ring_size)
-                app.start(responder, 10e12, 10.2e12, MEMO_SIZE // 2, 0.9)
+                responder = "Node_%d" % ((index + 2) % ring_size)
+                app.start(responder, 10e12, 11e12, MEMO_SIZE // 2, 0.82)
     else:
         mpi_size -= 1
         tl = AsyncParallelTimeline(lookahead=lookahead, stop_time=stop_time,
                                    qm_ip=qm_ip, qm_port=qm_port)
+
+        # log.set_logger(__name__, tl, "mpi_%d.log" % rank)
+        # log.set_logger_level("DEBUG")
+        # log.track_module('generation')
+        # log.track_module('node')
+
         apps = []
         routers = []
         bsm_nodes = []
@@ -193,10 +204,8 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     tl.run()
     execution_time = time() - tick
 
-    if kill:
-        kill_server(qm_ip, qm_port)
-
-    print(tl.now(), len(tl.events))
+    tl.quantum_manager.disconnect_from_server()
+    # print(tl.now(), len(tl.events))
 
     # write network information into log_path/net_info.json file
     if rank == 0:
