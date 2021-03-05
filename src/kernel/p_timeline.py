@@ -89,7 +89,7 @@ class ParallelTimeline(Timeline):
 
 class AsyncParallelTimeline(ParallelTimeline):
     def top_time(self):
-        return float('inf')
+        return super(AsyncParallelTimeline, self).top_time() + self.lookahead
 
     def run(self):
         while self.time < self.stop_time:
