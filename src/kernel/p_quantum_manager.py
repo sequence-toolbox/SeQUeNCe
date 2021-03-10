@@ -14,19 +14,9 @@ from .quantum_manager import QuantumManagerKet, QuantumManagerDensity, KetState,
 class ParallelQuantumManagerKet(QuantumManagerKet):
     """Class to track and manage quantum states with the ket vector formalism."""
 
-    def __init__(self, states, least_available):
+    def __init__(self, states):
         super().__init__()
         self.states = states
-        self._least_available = least_available
-
-    def new(self, state=(complex(1), complex(0))) -> int:
-        key = self._least_available.value
-
-        with self._least_available.get_lock():
-            self._least_available.value += 1
-
-        self.states[key] = KetState(state, [key])
-        return key
 
     def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
         ret_dict = super().run_circuit(circuit, keys)
@@ -39,19 +29,9 @@ class ParallelQuantumManagerKet(QuantumManagerKet):
 class ParallelQuantumManagerDensity(QuantumManagerDensity):
     """Class to track and manage states with the density matrix formalism."""
 
-    def __init__(self, states, least_available):
+    def __init__(self, states):
         super().__init__()
         self.states = states
-        self._least_available = least_available
-
-    def new(self, state=[[complex(1), complex(0)], [complex(0), complex(0)]]) -> int:        
-        key = self._least_available.value
-
-        with self._least_available.get_lock():
-            self._least_available.value += 1
-
-        self.states[key] = DensityState(state, [key])
-        return key
 
     def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
         ret_dict = super().run_circuit(circuit, keys)

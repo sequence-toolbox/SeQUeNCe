@@ -108,13 +108,13 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
             dst_name = "Node_%d" % dst_index
             if dst_name != src.name:
                 cc = ClassicalChannel("cc_%s_%s" % (src.name, dst_name),
-                                      tl, 20000, CC_DELAY // 2)
+                                      tl, 20000, CC_DELAY)
                 cc.set_ends(src, dst_name)
 
             dst_name = "BSM_%d" % dst_index
             if dst_name != src.name:
                 cc = ClassicalChannel("cc_%s_%s" % (src.name, dst_name),
-                                      tl, 20000, CC_DELAY // 2)
+                                      tl, 20000, CC_DELAY)
                 cc.set_ends(src, dst_name)
 
     for src in routers:
@@ -178,8 +178,10 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     tl.run()
     execution_time = time() - tick
 
-    if kill and tl.id == 0:
-        kill_server(qm_ip, qm_port)
+    tl.quantum_manager.disconnect_from_server()
+
+    # if kill and tl.id == 0:
+    #     kill_server(qm_ip, qm_port)
 
     # write network information into log_path/net_info.json file
     if rank == 0:

@@ -129,11 +129,15 @@ class QuantumManager():
         num_qubits = log2(len(amplitudes))
         assert num_qubits.is_integer(), "Length of amplitudes should be 2 ** n, where n is the number of keys"
         num_qubits = int(num_qubits)
-        assert num_qubits == len(keys), "Length of amplitudes should be 2 ** n, where n is the number of keys"
+        assert num_qubits == len(
+            keys), "Length of amplitudes should be 2 ** n, where n is the number of keys"
 
     def remove(self, key: int) -> None:
         """Method to remove state stored at key."""
         del self.states[key]
+
+    def set_states(self, states: Dict):
+        self.states = states
 
 
 class QuantumManagerKet(QuantumManager):
