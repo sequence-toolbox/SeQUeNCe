@@ -1,6 +1,6 @@
 import argparse
 import sys
-import json5
+import json
 import pandas as pd
 
 from sequence.kernel.quantum_manager_server import valid_ip, valid_port
@@ -116,5 +116,5 @@ else:
 
 # write final json
 output_file = open(args.output, 'w')
-json5.dump(output_dict, output_file, indent=4)
+json.dump(output_dict, output_file, indent=4)
 

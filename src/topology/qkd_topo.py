@@ -1,4 +1,4 @@
-import json5
+import json
 
 from .topology import Topology as Topo
 from .node import QKDNode
@@ -21,7 +21,7 @@ class QKDTopo(Topo):
     QKD_NODE = "QKDNode"
 
     def _load(self, filename):
-        topo_config = json5.load(open(filename))
+        topo_config = json.load(open(filename))
         self._add_timeline(topo_config)
         self._add_nodes(topo_config)
         self._add_qchannels(topo_config)

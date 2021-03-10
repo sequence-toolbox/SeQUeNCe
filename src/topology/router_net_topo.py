@@ -1,4 +1,4 @@
-from json5 import load
+from json import load
 from mpi4py import MPI
 from networkx import Graph, single_source_dijkstra_path
 from numpy import mean

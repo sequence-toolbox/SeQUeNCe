@@ -1,5 +1,5 @@
 import argparse
-import json5
+import json
 import csv
 import pandas as pd
 
@@ -120,4 +120,4 @@ else:
 
 # write final json
 output_file = open(args.output, 'w')
-json5.dump(output_dict, output_file, indent=4)
+json.dump(output_dict, output_file, indent=4)

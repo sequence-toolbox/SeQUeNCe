@@ -6,7 +6,7 @@ Graphviz library must be installed
 
 import argparse
 from graphviz import Graph
-from json5 import load
+from json import load
 
 from sequence.topology.router_net_topo import RouterNetTopo
 from sequence.topology.qkd_topo import QKDTopo
