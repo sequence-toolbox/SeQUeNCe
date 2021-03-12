@@ -10,93 +10,96 @@ from sequence.topology.router_net_topo import RouterNetTopo
 
 # parse args
 parser = argparse.ArgumentParser()
-parser.add_argument('ring_size', type=int, help='number of network nodes')
-parser.add_argument('memo_size', type=int, help='number of memories per node')
-parser.add_argument('qc_length', type=float,
-                    help='distance between ring nodes (in km)')
-parser.add_argument('qc_atten', type=float,
-                    help='quantum channel attenuation (in dB/m)')
-parser.add_argument('cc_delay', type=float,
-                    help='classical channel delay (in ms)')
+parser.add_argument('star_size', type=int, help='number of non-center network nodes')
+parser.add_argument('memo_size', type=int, help='number of memories per end node')
+parser.add_argument('memo_size_center', type=int, help='number of memories on center node')
+parser.add_argument('qc_length', type=float, help='distance between star nodes and center (in km)')
+parser.add_argument('qc_atten', type=float, help='quantum channel attenuation (in dB/m)')
+parser.add_argument('cc_delay', type=float, help='classical channel delay (in ms)')
 parser.add_argument('-o', '--output', type=str, default='out.json', help='name of output config file')
 parser.add_argument('-s', '--stop', type=float, default=float('inf'), help='stop time (in s)')
 parser.add_argument('-p', '--parallel', nargs=5,
     help='optional parallel arguments: server ip, server port, num. processes, sync/async, lookahead')
-parser.add_argument('-n', '--nodes', type=str, help='path to csv file to provide process for each node') 
+parser.add_argument('-n', '--nodes', type=str,
+    help='path to csv file to provide process for each node. First node is the center.')
 
 args = parser.parse_args()
 output_dict = {}
 
-# get csv file (if present)
+# get csv file
 if args.nodes:
     # TODO: add length/proc assertions
     df = pd.read_csv(args.nodes)
     node_procs = {}
     for name, group in zip(df['name'], df['group']):
         node_procs[name] = group
+
 else:
     node_procs = None
 
 # generate router nodes
 if args.parallel and node_procs:
     node_names = list(node_procs.keys())
+    center_name = node_names.pop(0)
 else:
-    node_names = ["router_" + str(i) for i in range(args.ring_size)]
+    center_name = "router_center"
+    node_names = ["router_" + str(i) for i in range(args.star_size)]
 nodes = [{Topology.NAME: name,
           Topology.TYPE: RouterNetTopo.QUANTUM_ROUTER,
           Topology.SEED: i,
           RouterNetTopo.MEMO_ARRAY_SIZE: args.memo_size}
           for i, name in enumerate(node_names)]
-# TODO: memory fidelity?
+nodes.append({Topology.NAME: center_name,
+              Topology.TYPE: RouterNetTopo.QUANTUM_ROUTER,
+              Topology.SEED: args.star_size,
+              RouterNetTopo.MEMO_ARRAY_SIZE: args.memo_size_center})
 if args.parallel:
+    combined = node_names + [center_name]
     if node_procs:
-        for i in range(args.ring_size):
+        for i in range(args.star_size + 1):
             name = nodes[i][Topology.NAME]
             nodes[i][RouterNetTopo.GROUP] = node_procs[name]
     else:
-        for i in range(args.ring_size):
-            nodes[i][RouterNetTopo.GROUP] = int(i // (args.ring_size / int(args.parallel[2])))
+        for i in range(args.star_size + 1):
+            nodes[i][RouterNetTopo.GROUP] = int(i // ((args.star_size + 1) / int(args.parallel[2])))
 
-# generate quantum links and bsm connections
+# generate quantum links
 qchannels = []
 cchannels = []
-bsm_names = ["BSM_{}_{}".format(i % args.ring_size, (i+1) % args.ring_size)
-             for i in range(args.ring_size)]
+bsm_names = ["BSM_" + str(i) for i in range(args.star_size)]
 bsm_nodes = [{Topology.NAME: bsm_name,
               Topology.TYPE: RouterNetTopo.BSM_NODE,
               Topology.SEED: i}
               for i, bsm_name in enumerate(bsm_names)]
 if args.parallel:
-    for i in range(args.ring_size):
-        bsm_nodes[i][RouterNetTopo.GROUP] = int(i // (args.ring_size / int(args.parallel[2])))
+    for i in range(args.star_size):
+        bsm_nodes[i][RouterNetTopo.GROUP] = nodes[i][RouterNetTopo.GROUP]
 
-
-
-for i, bsm_name in enumerate(bsm_names):
+for node_name, bsm_name in zip(node_names, bsm_names):
     # qchannels
-    qchannels.append({Topology.SRC: node_names[i % args.ring_size],
+    qchannels.append({Topology.SRC: node_name,
                       Topology.DST: bsm_name,
                       Topology.DISTANCE: args.qc_length * 500,
                       Topology.ATTENUATION: args.qc_atten})
-    qchannels.append({Topology.SRC: node_names[(i+1) % args.ring_size],
+    qchannels.append({Topology.SRC: center_name,
                       Topology.DST: bsm_name,
                       Topology.DISTANCE: args.qc_length * 500,
                       Topology.ATTENUATION: args.qc_atten})
     # cchannels
-    cchannels.append({Topology.SRC: node_names[i % args.ring_size],
+    cchannels.append({Topology.SRC: node_name,
                       Topology.DST: bsm_name,
                       Topology.DELAY: args.cc_delay * 1e9})
-    cchannels.append({Topology.SRC: node_names[(i+1) % args.ring_size],
+    cchannels.append({Topology.SRC: center_name,
                       Topology.DST: bsm_name,
                       Topology.DELAY: args.cc_delay * 1e9})
 
-nodes += bsm_nodes
-output_dict[Topology.ALL_NODE] = nodes
+output_dict[Topology.ALL_NODE] = nodes + bsm_nodes
 output_dict[Topology.ALL_Q_CHANNEL] = qchannels
 
 # generate classical links
-for node1 in node_names:
-    for node2 in node_names:
+combined_nodes = node_names + [center_name]
+for node1 in combined_nodes:
+    for node2 in combined_nodes:
         if node1 == node2:
             continue
         cchannels.append({Topology.SRC: node1,
