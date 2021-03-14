@@ -3,13 +3,11 @@ from socket import socket
 from pickle import loads, dumps
 from typing import List, TYPE_CHECKING, Any
 from time import time
-from mpi4py import MPI
 from uuid import uuid4
 
 if TYPE_CHECKING:
     from .p_timeline import ParallelTimeline
 
-from .quantum_manager_event import QuantumManagerEvent
 from .quantum_manager import QuantumManagerKet, QuantumManagerDensity
 from .quantum_manager_server import generate_arg_parser, QuantumManagerMsgType, \
     QuantumManagerMessage

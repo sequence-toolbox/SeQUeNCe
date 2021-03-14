@@ -4,15 +4,12 @@ import argparse
 from ipaddress import ip_address
 from pickle import loads, dumps
 import select
-import multiprocessing
 from typing import List
 from time import time
 
 from .p_quantum_manager import ParallelQuantumManagerKet, \
     ParallelQuantumManagerDensity
 from ..utils.communication import send_msg_with_length, recv_msg_with_length
-from .quantum_manager import measure_state_with_cache_ket, \
-    measure_entangled_state_with_cache_ket, measure_multiple_with_cache_ket
 
 
 def valid_port(port):
@@ -63,104 +60,6 @@ class QuantumManagerMessage():
 
     def __repr__(self):
         return str(self.type) + ' ' + str(self.args)
-
-
-def start_session(formalism: str, comm: socket, states, locks, manager,
-                  timing_dict_ops=multiprocessing.Value('d', 0),
-                  timing_qm_setup=multiprocessing.Value('d', 0),
-                  timing_comp={}, timing_lock={}):
-    # we could copy part of state to the manager and update the global manager
-    # after operations
-
-    while True:
-        msg = recv_msg_with_length(comm)
-        return_val = None
-
-        if msg.type not in timing_comp:
-            timing_comp[msg.type] = 0
-        if msg.type not in timing_lock:
-            timing_lock[msg.type] = 0
-
-        all_keys = set()
-        for key in msg.keys:
-            if key in states:
-                state = states[key]
-                for k in state.keys:
-                    all_keys.add(k)
-            else:
-                all_keys.add(key)
-
-        # acquire all necessary locks and record timing
-        tick = time()
-        for key in sorted(all_keys):
-            if key not in locks:
-                locks[key] = manager.Lock()
-            locks[key].acquire()
-        timing_lock[msg.type] += time() - tick
-
-        tick = time()
-        local_states = {}
-        for k in all_keys:
-            if k in states:
-                local_states[k] = states[k]
-            else:
-                local_states[k] = None
-
-        qm.set_states(local_states)
-        timing_qm_setup.value += time() - tick
-
-        tick = time()
-        if msg.type == QuantumManagerMsgType.CLOSE:
-            comm.close()
-            print(measure_state_with_cache_ket.cache_info())
-            print(measure_multiple_with_cache_ket.cache_info())
-            print(measure_entangled_state_with_cache_ket.cache_info())
-
-            break
-
-        elif msg.type == QuantumManagerMsgType.GET:
-            assert len(msg.args) == 0
-            return_val = qm.get(msg.keys[0])
-
-        elif msg.type == QuantumManagerMsgType.RUN:
-            assert len(msg.args) == 2
-            circuit, keys = msg.args
-            return_val = qm.run_circuit(circuit, keys)
-            if len(return_val) == 0:
-                return_val = None
-
-        elif msg.type == QuantumManagerMsgType.SET:
-            assert len(msg.args) == 1
-            amplitudes = msg.args[0]
-            qm.set(msg.keys, amplitudes)
-
-        elif msg.type == QuantumManagerMsgType.REMOVE:
-            assert len(msg.keys) == 1
-            assert len(msg.args) == 0
-            key = msg.keys[0]
-            del states[key]
-            del locks[key]
-            all_keys.remove(key)
-
-        else:
-            raise Exception(
-                "Quantum manager session received invalid message type {}".format(
-                    msg.type))
-        timing_comp[msg.type] += (time() - tick)
-
-        # release all locks
-        if msg.type != QuantumManagerMsgType.REMOVE \
-                or msg.type != QuantumManagerMsgType.GET:
-            tick = time()
-            states.update(local_states)
-            timing_dict_ops.value += (time() - tick)
-
-        for key in all_keys:
-            locks[key].release()
-
-        # send return value
-        if return_val is not None:
-            send_msg_with_length(comm, return_val)
 
 
 def start_server(ip, port, client_num=4, formalism="KET",
