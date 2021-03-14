@@ -37,6 +37,8 @@ def main(config_file: str, src: str, dst: str, start_t: int, end_t: int,
     tl.run()
     execution_time = time() - tick
 
+    tl.quantum_manager.disconnect_from_server()
+
     if src_app:
         traffic_info = {"Initiator": src, "Responder": dst,
                         "Start_time": start_t, "End_time": end_t,
@@ -48,30 +50,29 @@ def main(config_file: str, src: str, dst: str, start_t: int, end_t: int,
         df.to_csv(log_path + "/linear_traffic.csv")
 
     # write information of parallelization performance into log_path/perf.json file
-    # sync_time = execution_time - tl.computing_time - tl.communication_time1 - tl.communication_time2 - tl.communication_time3
-    # perf_info = {'prepare_time': prepare_time,
-    #              'execution_time': execution_time,
-    #              'computing_time': tl.computing_time,
-    #              'communication_time': tl.communication_time1 + tl.communication_time2 + tl.communication_time3,
-    #              'communication_time1': tl.communication_time1,
-    #              'communication_time2': tl.communication_time2,
-    #              'communication_time3': tl.communication_time3,
-    #              'sync_time': sync_time,
-    #              'sync_counter': tl.sync_counter,
-    #              'event_counter': tl.event_counter,
-    #              'schedule_counter': tl.schedule_counter,
-    #              'exchange_counter': tl.exchange_counter}
-    # for msg_type in tl.quantum_manager.io_time:
-    #     perf_info['%s_counter' % msg_type] = tl.quantum_manager.type_counter[
-    #         msg_type]
-    #     perf_info['%s_io_time' % msg_type] = tl.quantum_manager.io_time[
-    #         msg_type]
-    #
-    # with open('%s/linear_perf_%d.json' % (log_path, tl.id), 'w') as fh:
-    #     dump(perf_info, fh)
+    sync_time = execution_time - tl.computing_time - tl.communication_time1 - tl.communication_time2 - tl.communication_time3
+    perf_info = {'prepare_time': prepare_time,
+                 'execution_time': execution_time,
+                 'computing_time': tl.computing_time,
+                 'communication_time': tl.communication_time1 + tl.communication_time2 + tl.communication_time3,
+                 'communication_time1': tl.communication_time1,
+                 'communication_time2': tl.communication_time2,
+                 'communication_time3': tl.communication_time3,
+                 'sync_time': sync_time,
+                 'sync_counter': tl.sync_counter,
+                 'event_counter': tl.event_counter,
+                 'schedule_counter': tl.schedule_counter,
+                 'exchange_counter': tl.exchange_counter}
+    for msg_type in tl.quantum_manager.io_time:
+        perf_info['%s_counter' % msg_type] = tl.quantum_manager.type_counter[
+            msg_type]
+        perf_info['%s_io_time' % msg_type] = tl.quantum_manager.io_time[
+            msg_type]
+
+    with open('%s/linear_perf_%d.json' % (log_path, tl.id), 'w') as fh:
+        dump(perf_info, fh)
 
 
 if __name__ == "__main__":
-    # main("linear_topo.json", "router0", "router3", 1e12, 1.1e12, 10, 0.9, "./")
-    main("128_linear_seq.json", "router_0", "router_127", 1e12, 1.1e12,
+    main("linear_512_4.json", "router_0", "router_511", 100e12, 100.1e12,
          50, 0.9, "./")
