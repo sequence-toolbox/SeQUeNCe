@@ -86,53 +86,54 @@ def start_server(ip, port, client_num=4, formalism="KET",
     while sockets:
         readable, writeable, exceptional = select.select(sockets, [], [], 1)
         for s in readable:
-            msg = recv_msg_with_length(s)
-            return_val = None
+            msgs = recv_msg_with_length(s)
+            for msg in msgs:
+                return_val = None
 
-            tick = time()
-            if msg.type == QuantumManagerMsgType.CLOSE:
-                s.close()
-                sockets.remove(s)
-                break
-
-            elif msg.type == QuantumManagerMsgType.GET:
-                assert len(msg.args) == 0
-                return_val = qm.get(msg.keys[0])
-
-            elif msg.type == QuantumManagerMsgType.RUN:
-                assert len(msg.args) == 2
-                circuit, keys = msg.args
-                return_val = qm.run_circuit(circuit, keys)
-                if len(return_val) == 0:
-                    return_val = None
-
-            elif msg.type == QuantumManagerMsgType.SET:
-                assert len(msg.args) == 1
-                amplitudes = msg.args[0]
-                qm.set(msg.keys, amplitudes)
-
-            elif msg.type == QuantumManagerMsgType.REMOVE:
-                assert len(msg.keys) == 1
-                assert len(msg.args) == 0
-                key = msg.keys[0]
-                qm.remove(key)
-
-            elif msg.type == QuantumManagerMsgType.TERMINATE:
-                for s in sockets:
+                tick = time()
+                if msg.type == QuantumManagerMsgType.CLOSE:
                     s.close()
-                sockets = []
-            else:
-                raise Exception(
-                    "Quantum manager session received invalid message type {}".format(
-                        msg.type))
+                    sockets.remove(s)
+                    break
 
-            # send return value
-            if return_val is not None:
-                send_msg_with_length(s, return_val)
+                elif msg.type == QuantumManagerMsgType.GET:
+                    assert len(msg.args) == 0
+                    return_val = qm.get(msg.keys[0])
 
-            if not msg.type in timing_comp:
-                timing_comp[msg.type] = 0
-            timing_comp[msg.type] += time() - tick
+                elif msg.type == QuantumManagerMsgType.RUN:
+                    assert len(msg.args) == 2
+                    circuit, keys = msg.args
+                    return_val = qm.run_circuit(circuit, keys)
+                    if len(return_val) == 0:
+                        return_val = None
+
+                elif msg.type == QuantumManagerMsgType.SET:
+                    assert len(msg.args) == 1
+                    amplitudes = msg.args[0]
+                    qm.set(msg.keys, amplitudes)
+
+                elif msg.type == QuantumManagerMsgType.REMOVE:
+                    assert len(msg.keys) == 1
+                    assert len(msg.args) == 0
+                    key = msg.keys[0]
+                    qm.remove(key)
+
+                elif msg.type == QuantumManagerMsgType.TERMINATE:
+                    for s in sockets:
+                        s.close()
+                    sockets = []
+                else:
+                    raise Exception(
+                        "Quantum manager session received invalid message type {}".format(
+                            msg.type))
+
+                # send return value
+                if return_val is not None:
+                    send_msg_with_length(s, return_val)
+
+                if not msg.type in timing_comp:
+                    timing_comp[msg.type] = 0
+                timing_comp[msg.type] += time() - tick
 
     # # record timing information
     with open(log_file, "w") as fh:

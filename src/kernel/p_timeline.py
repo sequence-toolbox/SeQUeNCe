@@ -81,6 +81,7 @@ class ParallelTimeline(Timeline):
                 self.time = event.time
                 event.process.run()
                 self.event_counter += 1
+            self.quantum_manager.flush_message_buffer()
             self.computing_time += time() - tick
 
     def add_foreign_entity(self, entity_name: str, foreign_id: int):

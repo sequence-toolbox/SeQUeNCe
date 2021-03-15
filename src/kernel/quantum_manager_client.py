@@ -37,9 +37,10 @@ class QuantumManagerClient():
         self.port = port
         self.socket = socket()
         self.managed_qubits = set()
-        self.io_time = defaultdict(lambda: 0)
+        self.io_time = 0
         self.type_counter = defaultdict(lambda: 0)
         self.timeline = None
+        self.message_buffer = []
 
         self.socket.connect((self.ip, self.port))
         self.socket.settimeout(20)
@@ -173,17 +174,22 @@ class QuantumManagerClient():
     def _send_message(self, msg_type, keys: List, args: List,
                       expecting_receive=True) -> any:
         self.type_counter[msg_type.name] += 1
-        tick = time()
 
         msg = QuantumManagerMessage(msg_type, keys, args)
-        send_msg_with_length(self.socket, msg)
+        self.message_buffer.append(msg)
 
         if expecting_receive:
+            self.flush_message_buffer()
+            tick = time()
             received_msg = recv_msg_with_length(self.socket)
-            self.io_time[msg_type.name] += time() - tick
+            self.io_time += time() - tick
             return received_msg
 
-        self.io_time[msg_type.name] += time() - tick
+    def flush_message_buffer(self):
+        tick = time()
+        send_msg_with_length(self.socket, self.message_buffer)
+        self.io_time += time() - tick
+        self.message_buffer = []
 
     def _check_local(self, keys: List[int]):
         return not any([self.is_managed_by_server(key) for key in keys])
