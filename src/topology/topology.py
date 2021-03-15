@@ -5,6 +5,7 @@ manage a network's structure.
 Topology instances automatically perform many useful network functions.
 """
 from abc import abstractmethod
+from collections import defaultdict
 from typing import TYPE_CHECKING, Dict
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -50,7 +51,7 @@ class Topology():
         Args:
             conf_file_name (str): the name of configuration file
         """
-        self.nodes = {}
+        self.nodes = defaultdict(lambda: [])
         self.qchannels = []
         self.cchannels = []
         self.tl = None
