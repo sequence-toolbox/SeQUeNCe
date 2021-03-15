@@ -10,14 +10,16 @@ from .quantum_manager_client import QuantumManagerClient
 class ParallelTimeline(Timeline):
 
     def __init__(self, lookahead: int, stop_time=float('inf'), formalism='KET',
-                 qm_ip="127.0.0.1", qm_port="6789"):
+                 qm_ip=None, qm_port=None):
         super(ParallelTimeline, self).__init__(stop_time, formalism)
         self.id = MPI.COMM_WORLD.Get_rank()
         self.foreign_entities = {}
         self.event_buffer = [[] for _ in range(MPI.COMM_WORLD.Get_size())]
         self.lookahead = lookahead
-        self.quantum_manager = QuantumManagerClient(formalism, qm_ip, qm_port)
-        self.quantum_manager.set_timeline(self)
+        if qm_ip is not None and qm_port is not None:
+            self.quantum_manager = QuantumManagerClient(formalism, qm_ip,
+                                                        qm_port)
+            self.quantum_manager.set_timeline(self)
         self.show_progress = False
 
         self.sync_counter = 0
