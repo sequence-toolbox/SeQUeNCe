@@ -10,7 +10,8 @@ from sequence.topology.router_net_topo import RouterNetTopo
 
 # parse args
 parser = argparse.ArgumentParser()
-parser.add_argument('tree_size', type=int, help='number of network nodes')
+parser.add_argument('depth', type=int, help='depth of tree network')
+parser.add_argument('branches', type=int, help='number of branches per node')
 parser.add_argument('memo_size', type=int, help='number of memories per node')
 parser.add_argument('qc_length', type=float, help='distance between ring nodes (in km)')
 parser.add_argument('qc_atten', type=float, help='quantum channel attenuation (in dB/m)')
@@ -38,7 +39,8 @@ else:
 if args.parallel and node_procs:
     node_names = list(node_procs.keys())
 else:
-    node_names = ["router_" + str(i) for i in range(args.tree_size)]
+    tree_size = (args.branches**(args.depth+1)-1) // (args.branches-1)
+    node_names = ["router_" + str(i) for i in range(tree_size)]
 nodes = [{Topology.NAME: name,
           Topology.TYPE: RouterNetTopo.QUANTUM_ROUTER,
           Topology.SEED: i,
@@ -57,40 +59,41 @@ if args.parallel:
 # generate quantum links and bsm connections
 def add_branches(node_names, nodes, index, bsm_names, bsm_nodes, qchannels, cchannels):
     node1 = node_names[index]
-    index_left = 2*index+1
-    index_right = 2*index+2
+    branch_indices = [args.branches*index+i for i in range(1, args.branches+1)]
 
-    for i in [index_left, index_right]:
-        if i < len(node_names):
-            node2 = node_names[i]
-            bsm_name = "BSM_{}_{}".format(node1, node2)
-            bsm_names.append(bsm_name)
-            bsm_node = {Topology.NAME: bsm_name,
-                        Topology.TYPE: RouterNetTopo.BSM_NODE,
-                        Topology.SEED: i}
-            if args.parallel:
-                bsm_node[RouterNetTopo.GROUP] = nodes[i][RouterNetTopo.GROUP]
-            bsm_nodes.append(bsm_node)
-            
-            # qchannels
-            qchannels.append({Topology.SRC: node1,
-                              Topology.DST: bsm_name,
-                              Topology.DISTANCE: args.qc_length * 500,
-                              Topology.ATTENUATION: args.qc_atten})
-            qchannels.append({Topology.SRC: node2,
-                              Topology.DST: bsm_name,
-                              Topology.DISTANCE: args.qc_length * 500,
-                              Topology.ATTENUATION: args.qc_atten})
-            # cchannels
-            cchannels.append({Topology.SRC: bsm_name,
-                              Topology.DST: node1,
-                              Topology.DELAY: args.cc_delay * 1e9})
-            cchannels.append({Topology.SRC: bsm_name,
-                              Topology.DST: node2,
-                              Topology.DELAY: args.cc_delay * 1e9})
+    if branch_indices[0] >= len(node_names):
+        return bsm_names, bsm_nodes, qchannels, cchannels
 
-            bsm_names, bsm_nodes, qchannels, cchannels = \
-                    add_branches(node_names, nodes, i, bsm_names, bsm_nodes, qchannels, cchannels)
+    for i in branch_indices:
+        node2 = node_names[i]
+        bsm_name = "BSM_{}_{}".format(node1, node2)
+        bsm_names.append(bsm_name)
+        bsm_node = {Topology.NAME: bsm_name,
+                    Topology.TYPE: RouterNetTopo.BSM_NODE,
+                    Topology.SEED: i}
+        if args.parallel:
+            bsm_node[RouterNetTopo.GROUP] = nodes[i][RouterNetTopo.GROUP]
+        bsm_nodes.append(bsm_node)
+        
+        # qchannels
+        qchannels.append({Topology.SRC: node1,
+                          Topology.DST: bsm_name,
+                          Topology.DISTANCE: args.qc_length * 500,
+                          Topology.ATTENUATION: args.qc_atten})
+        qchannels.append({Topology.SRC: node2,
+                          Topology.DST: bsm_name,
+                          Topology.DISTANCE: args.qc_length * 500,
+                          Topology.ATTENUATION: args.qc_atten})
+        # cchannels
+        cchannels.append({Topology.SRC: bsm_name,
+                          Topology.DST: node1,
+                          Topology.DELAY: args.cc_delay * 1e9})
+        cchannels.append({Topology.SRC: bsm_name,
+                          Topology.DST: node2,
+                          Topology.DELAY: args.cc_delay * 1e9})
+
+        bsm_names, bsm_nodes, qchannels, cchannels = \
+                add_branches(node_names, nodes, i, bsm_names, bsm_nodes, qchannels, cchannels)
     return bsm_names, bsm_nodes, qchannels, cchannels
 
 bsm_names, bsm_nodes, qchannels, cchannels = \
