@@ -164,6 +164,9 @@ class QSDetectorPolarization(QSDetector):
         """Implementation of Entity interface (see base class)."""
 
         assert len(self.detectors) == 2
+        for d in self.detectors:
+            d.owner = self.owner
+        self.splitter.owner = self.owner
 
     def get(self, photon: "Photon") -> None:
         """Method to receive a photon for measurement.
@@ -223,7 +226,9 @@ class QSDetectorTimeBin(QSDetector):
     def init(self):
         """Implementation of Entity interface (see base class)."""
 
-        pass
+        self.interferometer.owner = self.owner
+        for d in self.detectors:
+            d.owner = self.owner
 
     def get(self, photon):
         """Method to receive a photon for measurement.

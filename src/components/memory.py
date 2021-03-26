@@ -110,9 +110,6 @@ class Memory(Entity):
         entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
     """
 
-    _meas_circuit = Circuit(1)
-    _meas_circuit.measure(0)
-
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
                  efficiency: float, coherence_time: int, wavelength: int):
         """Constructor for the Memory class.

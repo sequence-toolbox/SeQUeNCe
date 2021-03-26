@@ -89,9 +89,9 @@ class QuantumManagerClient():
             state = self._send_message(QuantumManagerMsgType.GET, [key], [])
             return state
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> any:
+    def run_circuit(self, circuit: "Circuit", keys: List[int], meas_samp=None) -> any:
         if self._check_local(keys):
-            return self.qm.run_circuit(circuit, keys)
+            return self.qm.run_circuit(circuit, keys, meas_samp)
         else:
             visited_qubits = set()
             for key in keys:
@@ -115,7 +115,7 @@ class QuantumManagerClient():
 
             ret_val = self._send_message(QuantumManagerMsgType.RUN,
                                          list(visited_qubits),
-                                         [circuit, keys])
+                                         [circuit, keys, meas_samp])
             for measured_q in ret_val:
                 if not measured_q in self.qm.states:
                     continue

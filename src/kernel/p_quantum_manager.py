@@ -18,8 +18,8 @@ class ParallelQuantumManagerKet(QuantumManagerKet):
         super().__init__()
         self.states = states
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
-        ret_dict = super().run_circuit(circuit, keys)
+    def run_circuit(self, circuit: "Circuit", keys: List[int], meas_samp=None) -> Dict[int, int]:
+        ret_dict = super().run_circuit(circuit, keys, meas_samp)
         return ret_dict
 
     def remove(self, key: int) -> None:
@@ -33,8 +33,8 @@ class ParallelQuantumManagerDensity(QuantumManagerDensity):
         super().__init__()
         self.states = states
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
-        ret_dict = super().run_circuit(circuit, keys)
+    def run_circuit(self, circuit: "Circuit", keys: List[int], meas_samp=None) -> Dict[int, int]:
+        ret_dict = super().run_circuit(circuit, keys, meas_samp)
         return ret_dict
 
     def remove(self, key: int) -> None:

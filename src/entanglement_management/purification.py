@@ -145,8 +145,10 @@ class BBPSSW(EntanglementProtocol):
         assert kept_memo_ent == meas_memo_ent, "mismatch of entangled memories {}, {} on node {}".format(kept_memo_ent, meas_memo_ent, self.own.name)
         assert self.kept_memo.fidelity == self.meas_memo.fidelity > 0.5
 
+        meas_samp = self.own.generator.random()
         self.meas_res = self.own.timeline.quantum_manager.run_circuit(self.circuit, [self.kept_memo.qstate_key,
-                                                                                     self.meas_memo.qstate_key])
+                                                                                     self.meas_memo.qstate_key],
+                                                                      meas_samp)
         self.meas_res = self.meas_res[self.meas_memo.qstate_key]
         dst = self.kept_memo.entangled_memory["node_id"]
 
