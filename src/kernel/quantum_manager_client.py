@@ -186,10 +186,11 @@ class QuantumManagerClient():
             return received_msg
 
     def flush_message_buffer(self):
-        tick = time()
-        send_msg_with_length(self.socket, self.message_buffer)
-        self.io_time += time() - tick
-        self.message_buffer = []
+        if len(self.message_buffer) > 0:
+            tick = time()
+            send_msg_with_length(self.socket, self.message_buffer)
+            self.io_time += time() - tick
+            self.message_buffer = []
 
     def _check_local(self, keys: List[int]):
         return not any([self.is_managed_by_server(key) for key in keys])
