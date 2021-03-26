@@ -66,6 +66,7 @@ class QuantumManagerClient():
     def disconnect_from_server(self):
         self._send_message(QuantumManagerMsgType.CLOSE, [], [],
                            expecting_receive=False)
+        self.flush_message_buffer()
 
     def new(self, state=(complex(1), complex(0))) -> int:
         """Method to get a new state from server.
