@@ -21,32 +21,9 @@ def new_state():
     return [complex(1), complex(0)]
 
 
-def test_new():
-    # create new message
-    msg = QuantumManagerMessage(QuantumManagerMsgType.NEW, [], [new_state(), 0])
-
-    # setup environment
-    environment = setup_environment()
-
-    # create dummy socket
-    s = Mock()
-
-    all_keys = []
-    # run
-    start_session("KET", msg, all_keys, s, *environment)
-
-    # get key
-    key_data = s.mock_calls[0][1][0]
-    key = loads(key_data)
-
-    least_available = environment[1]
-    assert least_available.value > 0
-    assert key == 0
-
-
 def test_get():
     # create messages
-    msg1 = QuantumManagerMessage(QuantumManagerMsgType.NEW, [], [new_state(), 0])
+    msg1 = QuantumManagerMessage(QuantumManagerMsgType.SET, [0], [new_state()])
     msg2 = QuantumManagerMessage(QuantumManagerMsgType.GET, [0], [])
 
     # setup environ

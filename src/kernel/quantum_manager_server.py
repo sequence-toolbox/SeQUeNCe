@@ -102,7 +102,7 @@ def start_server(ip, port, client_num=4, formalism="KET",
             elif msg.type == QuantumManagerMsgType.RUN:
                 assert len(msg.args) == 2 or len(msg.args) == 3
                 # circuit, keys = msg.args
-                return_val = qm.run_circuit(*args)
+                return_val = qm.run_circuit(*msg.args)
                 if len(return_val) == 0:
                     return_val = None
 

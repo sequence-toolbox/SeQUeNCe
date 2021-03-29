@@ -27,6 +27,11 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int,
 
     tl = Timeline(stop_time=stop_time)
 
+    # log.set_logger(__name__, tl, "sequential.log")
+    # log.set_logger_level("DEBUG")
+    # log.track_module('generation')
+    # log.track_module('bsm')
+
     routers = []
     bsm_nodes = []
     router_names = []
@@ -54,13 +59,13 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int,
             dst_name = "Node_%d" % dst_index
             if dst_name != src.name:
                 cc = ClassicalChannel("cc_%s_%s" % (src.name, dst_name),
-                                      tl, 20000, CC_DELAY // 2)
+                                      tl, 20000, CC_DELAY)
                 cc.set_ends(src, dst_name)
 
             dst_name = "BSM_%d" % dst_index
             if dst_name != src.name:
                 cc = ClassicalChannel("cc_%s_%s" % (src.name, dst_name),
-                                      tl, 20000, CC_DELAY // 2)
+                                      tl, 20000, CC_DELAY)
                 cc.set_ends(src, dst_name)
 
     for src in routers:
