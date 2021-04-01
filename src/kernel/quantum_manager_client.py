@@ -193,5 +193,9 @@ class QuantumManagerClient():
             self.io_time += time() - tick
             self.message_buffer = []
 
+    def flush_before_sync(self):
+        if len(self.message_buffer) > 0:
+            self._send_message(QuantumManagerMsgType.SYNC, [], [])
+
     def _check_local(self, keys: List[int]):
         return not any([self.is_managed_by_server(key) for key in keys])

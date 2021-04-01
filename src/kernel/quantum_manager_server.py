@@ -42,6 +42,7 @@ class QuantumManagerMsgType(Enum):
     CLOSE = 5
     CONNECT = 6
     CONNECTED = 7
+    SYNC = 8
 
 
 class QuantumManagerMessage():
@@ -127,6 +128,10 @@ def start_server(ip, port, client_num=4, formalism="KET",
                     for s in sockets:
                         s.close()
                     sockets = []
+
+                elif msg.type == QuantumManagerMsgType.SYNC:
+                    return_val = True
+
                 else:
                     raise Exception(
                         "Quantum manager session received invalid message type {}".format(
