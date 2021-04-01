@@ -449,7 +449,8 @@ class SingleAtomBSM(BSM):
             key0, key1 = p0.qstate_key, p1.qstate_key
             keys = [key0, key1]
             state0, state1 = qm.get(key0), qm.get(key1)
-            meas0, meas1 = [qm.run_circuit(self._meas_circuit, [key])[key]
+            meas0, meas1 = [qm.run_circuit(self._meas_circuit, [key],
+                                           self.get_generator().random())[key]
                             for key in keys]
 
             log.logger.debug(self.name + " measured photons as {}, {}".format(meas0, meas1))

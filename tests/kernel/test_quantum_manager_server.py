@@ -1,144 +1,69 @@
+import socket
 import multiprocessing
+import os
+from time import sleep
 from pickle import loads, dumps
 from  unittest.mock import Mock
 import numpy as np
 
 from sequence.kernel.quantum_manager import KetState
 from sequence.kernel.quantum_manager_server import *
+from sequence.kernel.quantum_manager_client import QuantumManagerClient
 
 
-def setup_environment():
-    least_available = multiprocessing.Value('i', 0)
-    manager = multiprocessing.Manager()
-    states = manager.dict()
-    locks = manager.dict()
-    locations = manager.dict()
-
-    return states, least_available, locks, manager, locations
+def get_open_port():
+    s = socket.socket()
+    s.bind(('', 0))
+    port = s.getsockname()[1]
+    s.close()
+    return port
 
 
-def new_state():
-    return [complex(1), complex(0)]
+def test_set_get():
+    state1 = [complex(1), complex(0)]
+    state2 = [complex(1), complex(0), complex(0), complex(0)]
 
-
-def test_new():
-    # create new message
-    msg = QuantumManagerMessage(QuantumManagerMsgType.NEW, [], [new_state(), 0])
-
-    # setup environment
-    environment = setup_environment()
-
-    # create dummy socket
-    s = Mock()
-
-    all_keys = []
-    # run
-    start_session("KET", msg, all_keys, s, *environment)
-
-    # get key
-    key_data = s.mock_calls[0][1][0]
-    key = loads(key_data)
-
-    least_available = environment[1]
-    assert least_available.value > 0
-    assert key == 0
-
-
-def test_get():
-    # create messages
-    msg1 = QuantumManagerMessage(QuantumManagerMsgType.NEW, [], [new_state(), 0])
-    msg2 = QuantumManagerMessage(QuantumManagerMsgType.GET, [0], [])
-
-    # setup environ
-    environment = setup_environment()
-
-    # create dummy socket
-    s = Mock()
-
-    # run
-    for msg in [msg1, msg2]:
-        locks = environment[2]
-        for key in msg.keys:
-            locks[key].acquire()
-        all_keys = msg.keys
-        start_session("KET", msg, all_keys, s, *environment)
-
-    # get state
-    state_data = s.mock_calls[2][1][0]
-    state = loads(state_data)
-    print(type(state_data))
-
-    assert type(state) is KetState
-
-
-def test_set():
-    desired_state = [complex(0), complex(1)]
-
-    # create messages
-    msg1 = QuantumManagerMessage(QuantumManagerMsgType.NEW, [],
-                                 [new_state(), 0])
-    msg2 = QuantumManagerMessage(QuantumManagerMsgType.SET, [0],
-                                 [desired_state])
-    msg3 = QuantumManagerMessage(QuantumManagerMsgType.GET, [0], [])
-
-    # setup environ
-    environment = setup_environment()
-
-    # create dummy socket
-    s = Mock()
-    # run
-    for msg in [msg1, msg2, msg3]:
-        locks = environment[2]
-        for key in msg.keys:
-            locks[key].acquire()
-        all_keys = msg.keys
-        start_session("KET", msg, all_keys, s, *environment)
-
-    # get state
-    print(s.mock_calls)
-    state_data = s.mock_calls[3][1][0]
-    state = loads(state_data)
-
-    assert type(state) is KetState
-    assert np.array_equal(state.state, np.array(desired_state))
-
-
-def test_remove():
-    # create messages
-    msg1 = QuantumManagerMessage(QuantumManagerMsgType.NEW, [], [new_state(), 0])
-    msg2 = QuantumManagerMessage(QuantumManagerMsgType.REMOVE, [0], [])
-
-    # setup environ
-    environment = setup_environment()
-
-    # create dummy socket
-    s = Mock()
-
-    # run
-    for msg in [msg1, msg2]:
-        locks = environment[2]
-        for key in msg.keys:
-            locks[key].acquire()
-        all_keys = msg.keys
-        start_session("KET", msg, all_keys, s, *environment)
-
-    states = environment[0]
-    assert not states
-
-
-def test_kill_func():
-    from time import sleep
-
-    host = socket.gethostbyname('localhost')
-    port = 65432
-
-    p = multiprocessing.Process(target=start_server, args=(host, port))
+    # setup server/client
+    port = get_open_port()
+    p = multiprocessing.Process(target=start_server, args=('127.0.0.1', port, 1))
     p.start()
     sleep(1)
-    kill_server(host, port)
+
+    client = QuantumManagerClient("KET", '127.0.0.1', port)
+
+    # single state
+    client.set([0], state1)
+    assert not client.qm.states
+    return_state1 = client.get(0)
+
+    # set and read entangled state
+    client.set([0, 1], state2)
+    assert not client.qm.states
+    return_state2 = client.get(0)
+
+    p.terminate()
+
+    assert type(return_state1) is KetState
+    assert type(return_state2) is KetState
+    assert np.array_equal(return_state1.state, np.array(state1))
+    assert np.array_equal(return_state2.state, np.array(state2))
+
+
+def test_close_func():
+    port = get_open_port()
+    p = multiprocessing.Process(target=start_server, args=('127.0.0.1', port, 1))
+    p.start()
+    sleep(1)
+
+    client = QuantumManagerClient("KET", '127.0.0.1', port)
+    client.disconnect_from_server()
     sleep(1)
 
     is_done = not p.is_alive()
     p.terminate()  # just in case server hasn't terminated
+    try:
+        os.remove('server.log')
+    except:
+        pass
     assert is_done
 
