@@ -58,16 +58,17 @@ def main(config_file: str, src: str, dst: str, start_t: int, end_t: int,
                  'communication_time1': tl.communication_time1,
                  'communication_time2': tl.communication_time2,
                  'communication_time3': tl.communication_time3,
+                 'io_time': tl.quantum_manager.io_time,
                  'sync_time': sync_time,
                  'sync_counter': tl.sync_counter,
                  'event_counter': tl.event_counter,
                  'schedule_counter': tl.schedule_counter,
                  'exchange_counter': tl.exchange_counter}
-    for msg_type in tl.quantum_manager.io_time:
-        perf_info['%s_counter' % msg_type] = tl.quantum_manager.type_counter[
-            msg_type]
-        perf_info['%s_io_time' % msg_type] = tl.quantum_manager.io_time[
-            msg_type]
+    # for msg_type in tl.quantum_manager.io_time:
+    #     perf_info['%s_counter' % msg_type] = tl.quantum_manager.type_counter[
+    #         msg_type]
+    #     perf_info['%s_io_time' % msg_type] = tl.quantum_manager.io_time[
+    #         msg_type]
 
     with open('%s/linear_perf_%d.json' % (log_path, tl.id), 'w') as fh:
         dump(perf_info, fh)

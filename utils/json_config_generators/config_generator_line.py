@@ -59,10 +59,9 @@ if args.parallel:
             nodes[i][RouterNetTopo.GROUP] = int(
                 i // (args.linear_size / int(args.parallel[2])))
 
-output_dict[Topology.ALL_NODE] = nodes
-
 # generate quantum links
 qchannels = []
+cchannels = []
 bsm_names = ["BSM_{}_{}".format(i, i + 1)
              for i in range(args.linear_size - 1)]
 bsm_nodes = [{Topology.NAME: bsm_name,
@@ -73,7 +72,6 @@ if args.parallel:
     for i in range(args.linear_size - 1):
         bsm_nodes[i][RouterNetTopo.GROUP] = int(
             i // (args.linear_size / int(args.parallel[2])))
-nodes += bsm_nodes
 
 for i, bsm_name in enumerate(bsm_names):
     # qchannels
@@ -85,13 +83,20 @@ for i, bsm_name in enumerate(bsm_names):
                       Topology.DST: bsm_name,
                       Topology.DISTANCE: args.qc_length * 500,
                       Topology.ATTENUATION: args.qc_atten})
+    # cchannels
+    cchannels.append({Topology.SRC: bsm_name,
+                      Topology.DST: node_names[i],
+                      Topology.DELAY: args.cc_delay * 1e9})
+    cchannels.append({Topology.SRC: bsm_name,
+                      Topology.DST: node_names[i + 1],
+                      Topology.DELAY: args.cc_delay * 1e9})
+nodes += bsm_nodes
+output_dict[Topology.ALL_NODE] = nodes
 output_dict[Topology.ALL_Q_CHANNEL] = qchannels
 
 # generate classical links
-cchannels = []
-combined_nodes = node_names + bsm_names
-for node1 in combined_nodes:
-    for node2 in combined_nodes:
+for node1 in node_names:
+    for node2 in node_names:
         if node1 == node2:
             continue
         cchannels.append({Topology.SRC: node1,
@@ -121,3 +126,4 @@ else:
 # write final json
 output_file = open(args.output, 'w')
 json.dump(output_dict, output_file, indent=4)
+
