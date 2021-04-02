@@ -62,7 +62,7 @@ def test_close_func():
     is_done = not p.is_alive()
     p.terminate()  # just in case server hasn't terminated
     try:
-        os.remove('server.log')
+        os.remove('server_log.json')
     except:
         pass
     assert is_done
