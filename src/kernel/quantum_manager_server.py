@@ -1,3 +1,9 @@
+"""This module defines the function to use for the quantum manager server.
+
+This function should be started on a separate process for parallel simulation,
+    using the `mpi_tests/qm_server.py` script or similar.
+Additionally defined are utility functions for socket connections and the messages used by the client/server.
+"""
 from enum import Enum, auto
 import socket
 import argparse
@@ -27,6 +33,7 @@ def valid_ip(ip):
 
 
 def generate_arg_parser():
+    # TODO: delete?
     parser = argparse.ArgumentParser(description='The server of quantum manager')
     parser.add_argument('ip', type=valid_ip, help='listening IP address')
     parser.add_argument('port', type=valid_port, help='listening port number')
@@ -49,8 +56,8 @@ class QuantumManagerMessage():
 
     Attributes:
         type (Enum): type of message.
-        keys (List[int]): list of ALL keys serviced by request; used to acquire/set shared locks.
-        args (List[any]): list of other arguments for request
+        keys (List[int]): list of ALL keys serviced by request.
+        args (List[any]): list of other arguments for the request.
     """
 
     def __init__(self, msg_type: QuantumManagerMsgType, keys: 'List[int]', args: 'List[Any]'):
@@ -62,8 +69,21 @@ class QuantumManagerMessage():
         return str(self.type) + ' ' + str(self.args)
 
 
-def start_server(ip, port, client_num=4, formalism="KET",
+def start_server(ip: str, port: int, client_num, formalism="KET",
                  log_file="server_log.json"):
+    """Main function to run quantum manager server.
+
+    Will run until all clients have disconnected or `TERMINATE` message received.
+    Will block processing until all clients connected.
+
+    Args:
+        ip (str): ip address server should bind to.
+        port (int): port server should bind to.
+        client_num (int): number of remote clients that should be connected (one per process).
+        formalism (str): formalism to use for quantum manager (default `"KET"` for ket vector).
+        log_file (str): output log file to store server information (default `"server_log.json"`).
+    """
+
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((ip, port))
@@ -148,9 +168,3 @@ def start_server(ip, port, client_num=4, formalism="KET",
     with open(log_file, 'w') as fh:
         dump(data, fh)
 
-
-def kill_server(ip, port):
-    s = socket.socket()
-    s.connect((ip, port))
-    msg = QuantumManagerMessage(QuantumManagerMsgType.TERMINATE, [], [])
-    send_msg_with_length(s, msg)
