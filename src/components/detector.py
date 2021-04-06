@@ -253,3 +253,4 @@ class QSDetectorTimeBin(QSDetector):
 
     def update_interferometer_params(self, arg_name: str, value: Any) -> None:
         self.interferometer.__setattr__(arg_name, value)
+
