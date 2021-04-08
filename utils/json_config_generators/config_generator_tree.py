@@ -71,7 +71,7 @@ def add_branches(node_names, nodes, index, bsm_names, bsm_nodes, qchannels, ccha
             if args.parallel:
                 bsm_node[RouterNetTopo.GROUP] = nodes[i][RouterNetTopo.GROUP]
             bsm_nodes.append(bsm_node)
-            
+
             # qchannels
             qchannels.append({Topology.SRC: node1,
                               Topology.DST: bsm_name,
@@ -82,6 +82,12 @@ def add_branches(node_names, nodes, index, bsm_names, bsm_nodes, qchannels, ccha
                               Topology.DISTANCE: args.qc_length * 500,
                               Topology.ATTENUATION: args.qc_atten})
             # cchannels
+            cchannels.append({Topology.SRC: node1,
+                              Topology.DST: bsm_name,
+                              Topology.DELAY: args.cc_delay * 1e9})
+            cchannels.append({Topology.SRC: node2,
+                              Topology.DST: bsm_name,
+                              Topology.DELAY: args.cc_delay * 1e9})
             cchannels.append({Topology.SRC: bsm_name,
                               Topology.DST: node1,
                               Topology.DELAY: args.cc_delay * 1e9})
@@ -90,7 +96,8 @@ def add_branches(node_names, nodes, index, bsm_names, bsm_nodes, qchannels, ccha
                               Topology.DELAY: args.cc_delay * 1e9})
 
             bsm_names, bsm_nodes, qchannels, cchannels = \
-                    add_branches(node_names, nodes, i, bsm_names, bsm_nodes, qchannels, cchannels)
+                add_branches(node_names, nodes, i, bsm_names, bsm_nodes,
+                             qchannels, cchannels)
     return bsm_names, bsm_nodes, qchannels, cchannels
 
 bsm_names, bsm_nodes, qchannels, cchannels = \

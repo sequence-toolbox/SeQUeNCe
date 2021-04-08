@@ -76,16 +76,22 @@ for i, bsm_name in enumerate(bsm_names):
                       Topology.DST: bsm_name,
                       Topology.DISTANCE: args.qc_length * 500,
                       Topology.ATTENUATION: args.qc_atten})
-    qchannels.append({Topology.SRC: node_names[(i+1) % args.ring_size],
+    qchannels.append({Topology.SRC: node_names[(i + 1) % args.ring_size],
                       Topology.DST: bsm_name,
                       Topology.DISTANCE: args.qc_length * 500,
                       Topology.ATTENUATION: args.qc_atten})
     # cchannels
+    cchannels.append({Topology.SRC: node_names[i % args.ring_size],
+                      Topology.DST: bsm_name,
+                      Topology.DELAY: args.cc_delay * 1e9})
+    cchannels.append({Topology.SRC: node_names[(i + 1) % args.ring_size],
+                      Topology.DST: bsm_name,
+                      Topology.DELAY: args.cc_delay * 1e9})
     cchannels.append({Topology.SRC: bsm_name,
                       Topology.DST: node_names[i % args.ring_size],
                       Topology.DELAY: args.cc_delay * 1e9})
     cchannels.append({Topology.SRC: bsm_name,
-                      Topology.DST: node_names[(i+1) % args.ring_size],
+                      Topology.DST: node_names[(i + 1) % args.ring_size],
                       Topology.DELAY: args.cc_delay * 1e9})
 
 nodes += bsm_nodes

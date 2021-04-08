@@ -79,18 +79,24 @@ for i, node1 in enumerate(node_names):
                           Topology.DISTANCE: args.qc_length * 500,
                           Topology.ATTENUATION: args.qc_atten})
         # cchannels
+        cchannels.append({Topology.SRC: node1,
+                          Topology.DST: bsm_name,
+                          Topology.DELAY: args.cc_delay * 1e9})
+        cchannels.append({Topology.SRC: node2,
+                          Topology.DST: bsm_name,
+                          Topology.DELAY: args.cc_delay * 1e9})
         cchannels.append({Topology.SRC: bsm_name,
                           Topology.DST: node1,
-                          Topology.DELAY: args.cc_delay})
+                          Topology.DELAY: args.cc_delay * 1e9})
         cchannels.append({Topology.SRC: bsm_name,
                           Topology.DST: node2,
-                          Topology.DELAY: args.cc_delay})
+                          Topology.DELAY: args.cc_delay * 1e9})
         cchannels.append({Topology.SRC: node1,
                           Topology.DST: node2,
-                          Topology.DELAY: args.cc_delay})
+                          Topology.DELAY: args.cc_delay * 1e9})
         cchannels.append({Topology.SRC: node2,
                           Topology.DST: node1,
-                          Topology.DELAY: args.cc_delay})
+                          Topology.DELAY: args.cc_delay * 1e9})
         seed += 1
 
 nodes += bsm_nodes

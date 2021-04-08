@@ -86,6 +86,12 @@ for node_name, bsm_name in zip(node_names, bsm_names):
                       Topology.DISTANCE: args.qc_length * 500,
                       Topology.ATTENUATION: args.qc_atten})
     # cchannels
+    cchannels.append({Topology.SRC: node_name,
+                      Topology.DST: bsm_name,
+                      Topology.DELAY: args.cc_delay * 1e9})
+    cchannels.append({Topology.SRC: center_name,
+                      Topology.DST: bsm_name,
+                      Topology.DELAY: args.cc_delay * 1e9})
     cchannels.append({Topology.SRC: bsm_name,
                       Topology.DST: node_name,
                       Topology.DELAY: args.cc_delay * 1e9})
