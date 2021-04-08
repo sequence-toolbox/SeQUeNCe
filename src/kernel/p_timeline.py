@@ -1,5 +1,4 @@
 from mpi4py import MPI
-from typing import TYPE_CHECKING, List, Any
 from time import time
 
 from .timeline import Timeline
@@ -23,7 +22,6 @@ class ParallelTimeline(Timeline):
         self.show_progress = False
 
         self.sync_counter = 0
-        self.event_counter = 0
         self.exchange_counter = 0
         self.computing_time = 0
         self.communication_time1 = 0
@@ -82,7 +80,7 @@ class ParallelTimeline(Timeline):
                     event.process.owner)
                 self.time = event.time
                 event.process.run()
-                self.event_counter += 1
+                self.run_counter += 1
             self.quantum_manager.flush_before_sync()
             self.computing_time += time() - tick
 
@@ -129,5 +127,5 @@ class AsyncParallelTimeline(ParallelTimeline):
                     event.process.owner)
                 self.time = event.time
                 event.process.run()
-                self.event_counter += 1
+                self.run_counter += 1
             self.computing_time += time() - tick
