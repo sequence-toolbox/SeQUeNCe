@@ -6,7 +6,6 @@ Useful for testing network properties and throughputs.
 
 from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:
-    from ..resource_management.memory_manager import MemoryInfo
     from ..network_management.reservation import Reservation
 
 from numpy import random
@@ -159,7 +158,7 @@ class RandomRequestApp(RequestApp):
             self.reserves.append([self.responder, self.start_t, self.end_t,
                                   self.memo_size, self.fidelity])
             self.paths.append(self.path)
-            event = Event(self.start_t + 1, process)
+            event = Event(self.end_t + 1, process)
             self.node.timeline.schedule(event)
             self.wait_time.append(self.start_t - self.request_time)
         else:
