@@ -386,6 +386,28 @@ class State():
     def __str__(self):
         return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])
 
+    def deserialize(self, json_data):
+        self.keys = json_data["keys"]
+        self.state = []
+        for i in range(0, len(json_data["state"]), 2):
+            complex_val = complex(json_data["state"][i],
+                                  json_data["state"][i + 1])
+            self.state.append(complex_val)
+
+    def serialize(self) -> Dict:
+        res = {"keys": self.keys}
+        state = []
+        for cplx_n in self.state:
+            if type(cplx_n) == float:
+                state.append(cplx_n)
+                state.append(0)
+            else:
+                state.append(cplx_n.real)
+                state.append(cplx_n.imag)
+
+        res["state"] = state
+        return res
+
 
 class KetState(State):
     """Class inheriting State class to represent an individual quantum state

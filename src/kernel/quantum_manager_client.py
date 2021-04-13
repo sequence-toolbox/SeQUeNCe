@@ -1,6 +1,5 @@
 from collections import defaultdict
 from socket import socket
-from pickle import loads, dumps
 from typing import List, TYPE_CHECKING, Any
 from time import time
 from uuid import uuid4
@@ -8,8 +7,8 @@ from uuid import uuid4
 if TYPE_CHECKING:
     from .p_timeline import ParallelTimeline
 
-from .quantum_manager import QuantumManagerKet, QuantumManagerDensity
-from .quantum_manager_server import generate_arg_parser, QuantumManagerMsgType, \
+from .quantum_manager import QuantumManagerKet, QuantumManagerDensity, KetState
+from .quantum_manager_server import QuantumManagerMsgType, \
     QuantumManagerMessage
 from ..components.circuit import Circuit
 from ..utils.communication import send_msg_with_length, recv_msg_with_length
@@ -88,7 +87,10 @@ class QuantumManagerClient():
         if self._check_local([key]):
             return self.qm.get(key)
         else:
-            state = self._send_message(QuantumManagerMsgType.GET, [key], [])
+            state_raw = self._send_message(QuantumManagerMsgType.GET, [key],
+                                           [])
+            state = KetState([0, 1], [0])
+            state.deserialize(state_raw)
             return state
 
     def run_circuit(self, circuit: "Circuit", keys: List[int], meas_samp=None) -> any:
@@ -115,9 +117,14 @@ class QuantumManagerClient():
                                    [circuit, keys], False)
                 return {}
 
-            ret_val = self._send_message(QuantumManagerMsgType.RUN,
-                                         list(visited_qubits),
-                                         [circuit, keys, meas_samp])
+            ret_val_raw = self._send_message(QuantumManagerMsgType.RUN,
+                                             list(visited_qubits),
+                                             [circuit, keys, meas_samp])
+
+            ret_val = {}
+            for key in ret_val_raw:
+                ret_val[int(key, 16)] = ret_val_raw[key]
+
             for measured_q in ret_val:
                 if not measured_q in self.qm.states:
                     continue
@@ -189,7 +196,8 @@ class QuantumManagerClient():
     def flush_message_buffer(self):
         if len(self.message_buffer) > 0:
             tick = time()
-            send_msg_with_length(self.socket, self.message_buffer)
+            msgs = [msg.serialize() for msg in self.message_buffer]
+            send_msg_with_length(self.socket, msgs)
             self.io_time += time() - tick
             self.message_buffer = []
 
