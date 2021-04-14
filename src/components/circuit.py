@@ -122,9 +122,8 @@ class Circuit():
     def serialize(self) -> Dict:
         gates = [{"name": g_name, "indices": indices}
                  for g_name, indices in self.gates]
-        measured_qubits = [hex(q) for q in self.measured_qubits]
         return {"size": self.size, "gates": gates,
-                "measured_qubits": measured_qubits}
+                "measured_qubits": self.measured_qubits}
 
     def deserialize(self, json_data):
         self.size = json_data["size"]
@@ -132,7 +131,7 @@ class Circuit():
             name, indices = gate["name"], gate["indices"]
             self.gates.append([name, indices])
         for q in json_data["measured_qubits"]:
-            self.measured_qubits.append(int(q, 16))
+            self.measured_qubits = json_data["measured_qubits"]
         self._cache = None
 
     @validator
