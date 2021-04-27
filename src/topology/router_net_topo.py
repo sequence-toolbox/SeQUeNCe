@@ -1,6 +1,6 @@
 from json import load
 from mpi4py import MPI
-from networkx import Graph, single_source_dijkstra_path
+from networkx import Graph, dijkstra_path
 from numpy import mean
 
 from .topology import Topology as Topo
@@ -219,12 +219,15 @@ class RouterNetTopo(Topo):
                     costs[bsm][-1] += qc.distance
 
         graph.add_weighted_edges_from(costs.values())
-        for router in self.nodes[self.QUANTUM_ROUTER]:
-            paths = single_source_dijkstra_path(graph, router.name)
-            for dst in paths:
-                if dst == router.name:
+        for src in self.nodes[self.QUANTUM_ROUTER]:
+            for dst_name in graph.nodes:
+                if src.name == dst_name:
                     continue
-                next_hop = paths[dst][1]
+                if dst_name > src.name:
+                    path = dijkstra_path(graph, src.name, dst_name)
+                else:
+                    path = dijkstra_path(graph, dst_name, src.name)[::-1]
+                next_hop = path[1]
                 # routing protocol locates at the bottom of the protocol stack
-                routing_protocol = router.network_manager.protocol_stack[0]
-                routing_protocol.add_forwarding_rule(dst, next_hop)
+                routing_protocol = src.network_manager.protocol_stack[0]
+                routing_protocol.add_forwarding_rule(dst_name, next_hop)
