@@ -34,8 +34,10 @@ class RSVPMsgType(Enum):
 
 class ResourceReservationMessage(Message):
     """Message used by resource reservation protocol.
+
     This message contains all information passed between reservation protocol instances.
     Messages of different types contain different information.
+
     Attributes:
         msg_type (GenerationMsgType): defines the message type.
         receiver (str): name of destination protocol instance.
@@ -62,10 +64,12 @@ class ResourceReservationMessage(Message):
 
 class ResourceReservationProtocol(StackProtocol):
     """ReservationProtocol for  node resources.
+
     The reservation protocol receives network entanglement requests and attempts to reserve local resources.
     If successful, it will forward the request to another node in the entanglement path and create local rules.
     These rules are passed to the node's resource manager.
     If unsuccessful, the protocol will notify the network manager of failure.
+
     Attributes:
         own (QuantumRouter): node that protocol instance is attached to.
         name (str): label for protocol instance.
@@ -90,15 +94,18 @@ class ResourceReservationProtocol(StackProtocol):
 
     def push(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float):
         """Method to receive reservation requests from higher level protocol.
+
         Will evaluate request and determine if node can meet it.
         If it can, it will push the request down to a lower protocol.
         Otherwise, it will pop the request back up.
+
         Args:
             responder (str): node that entanglement is requested with.
             start_time (int): simulation time at which entanglement should start.
             end_time (int): simulation time at which entanglement should cease.
             memory_size (int): number of memories to be entangled.
             target_fidelity (float): desired fidelity of entanglement.
+
         Side Effects:
             May push/pop to lower/upper attached protocols (or network manager).
         """
@@ -115,10 +122,12 @@ class ResourceReservationProtocol(StackProtocol):
 
     def pop(self, src: str, msg: "ResourceReservationMessage"):
         """Method to receive messages from lower protocols.
+
         Messages may be of 3 types, causing different network manager behavior:
         1. REQUEST: requests are evaluated, and forwarded along the path if accepted. Otherwise a REJECT message is sent back.
         2. REJECT: any reserved resources are released and the message forwarded back towards the initializer.
         3. APPROVE: rules are created to achieve the approved request. The message is forwarded back towards the initializer.
+
         Args:
             src (str): source node of the message.
             msg (ResourceReservationMessage): message received.
@@ -163,8 +172,10 @@ class ResourceReservationProtocol(StackProtocol):
 
     def schedule(self, reservation: "Reservation") -> bool:
         """Method to attempt reservation request.
+
         Args:
             reservation (Reservation): reservation to approve or reject.
+
         Returns:
             bool: if reservation can be met or not.
         """
@@ -189,10 +200,13 @@ class ResourceReservationProtocol(StackProtocol):
 
     def create_rules(self, path: List[str], reservation: "Reservation") -> List["Rule"]:
         """Method to create rules for a successful request.
+
         Rules are used to direct the flow of information/entanglement in the resource manager.
+
         Args:
             path (List[str]): list of node names in entanglement path.
             reservation (Reservation): approved reservation.
+
         Returns:
             List[Rule]: list of rules created by the method.
         """
@@ -460,8 +474,10 @@ class ResourceReservationProtocol(StackProtocol):
 
     def load_rules(self, rules: List["Rule"], reservation: "Reservation") -> None:
         """Method to add created rules to resource manager.
+
         This method will schedule the resource manager to load all rules at the reservation start time.
         The rules will be set to expire at the reservation end time.
+
         Args:
             rules (List[Rules]): rules to add.
             reservation (Reservation): reservation that created the rules.
@@ -511,6 +527,7 @@ class ResourceReservationProtocol(StackProtocol):
 
 class Reservation():
     """Tracking of reservation parameters for the network manager.
+
     Attributes:
         initiator (str): name of the node that created the reservation request.
         responder (str): name of distant node with witch entanglement is requested.
@@ -522,6 +539,7 @@ class Reservation():
     def __init__(self, initiator: str, responder: str, start_time: int, end_time: int, memory_size: int,
                  fidelity: float):
         """Constructor for the reservation class.
+
         Args:
             initiator (str): node initiating the request.
             responder (str): node with which entanglement is requested.
@@ -558,6 +576,7 @@ class Reservation():
 
 class MemoryTimeCard():
     """Class for tracking reservations on a specific memory.
+
     Attributes:
         memory_index (int): index of memory being tracked (in memory array).
         reservations (List[Reservation]): list of reservations for the memory.
@@ -565,6 +584,7 @@ class MemoryTimeCard():
 
     def __init__(self, memory_index: int):
         """Constructor for time card class.
+
         Args:
             memory_index (int): index of memory to track.
         """
@@ -574,9 +594,12 @@ class MemoryTimeCard():
 
     def add(self, reservation: "Reservation") -> bool:
         """Method to add reservation.
+
         Will use `schedule_reservation` method to determine index to insert reservation.
+
         Args:
             reservation (Reservation): reservation to add.
+
         Returns:
             bool: whether or not reservation was inserted successfully.
         """
@@ -590,8 +613,10 @@ class MemoryTimeCard():
 
     def remove(self, reservation: "Reservation") -> bool:
         """Method to remove a reservation.
+
         Args:
             reservation (Reservation): reservation to remove.
+
         Returns:
             bool: if reservation was already on the memory or not.
         """
@@ -605,12 +630,15 @@ class MemoryTimeCard():
 
     def schedule_reservation(self, reservation: "Reservation") -> int:
         """Method to add reservation to a memory.
+
         Will return index at which reservation can be inserted into memory reservation list.
         If no space found for reservation, will raise an exception.
         Args:
             reservation (Reservation): reservation to schedule.
+
         Returns:
             int: index to insert reservation in reservation list.
+
         Raises:
             Exception: no valid index to insert reservation.
         """
@@ -630,8 +658,9 @@ class MemoryTimeCard():
         return start
 
 
-class QCap():
+class QCap:
     """Class to collect local information for the reservation protocol
+
     Attributes:
         node (str): name of current node.
     """
