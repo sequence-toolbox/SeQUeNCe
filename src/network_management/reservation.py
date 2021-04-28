@@ -283,7 +283,7 @@ class ResourceReservationProtocol(StackProtocol):
                 def requirement(protocols):
                     new_protocols = self._initialize_ep_rule_action_requirement(protocols, memories_info)
 
-                    if len(new_protocols) != 2:
+                    if len(new_protocols) < 2:
                         return None
 
                     self._configure_ep_rule_action_requirement(protocols, new_protocols)
@@ -390,8 +390,8 @@ class ResourceReservationProtocol(StackProtocol):
     @staticmethod
     def _initialize_ep_rule_action_requirement(protocols: List, memories_info: List["MemoryInfo"]) -> List:
         purification_protocols = [protocol for protocol in protocols if isinstance(protocol, BBPSSW)]
-
         new_protocols = []
+
         for protocol in purification_protocols:
             for j, memory_info in enumerate(memories_info):
                 if protocol.kept_memo.name == memory_info.remote_memo:
@@ -401,12 +401,14 @@ class ResourceReservationProtocol(StackProtocol):
 
     @staticmethod
     def _configure_ep_rule_action_requirement(original_protocols, new_protocols) -> None:
-        original_protocols.remove(new_protocols[1])
-        new_protocols[1].rule.protocols.remove(new_protocols[1])
-        new_protocols[1].kept_memo.detach(new_protocols[1])
-        new_protocols[0].meas_memo = new_protocols[1].kept_memo
+        for protocol in new_protocols[1:]:
+            original_protocols.remove(protocol)
+            protocol.rule.protocols.remove(protocol)
+            protocol.kept_memo.detach(protocol)
+            new_protocols[0].meas_memo = protocol.kept_memo
+
         new_protocols[0].memories = [new_protocols[0].kept_memo, new_protocols[0].meas_memo]
-        new_protocols[0].name = new_protocols[0].name + "." + new_protocols[0].meas_memo.name
+        new_protocols[0].name = f'{new_protocols[0].name}.{new_protocols[0].meas_memo.name}'
         new_protocols[0].meas_memo.attach(new_protocols[0])
         new_protocols[0].t0 = new_protocols[0].kept_memo.timeline.now()
 
@@ -465,9 +467,11 @@ class ResourceReservationProtocol(StackProtocol):
 
         for memory_info in memories_info[:2]:
             def requirement(protocols):
-                for protocol in protocols:
-                    if isinstance(protocol, EntanglementSwappingB) \
-                            and protocol.memory.name == memory_info.remote_memo:
+                entanglement_swapping_protocols = [protocol for protocol in protocols
+                                                   if isinstance(protocol, EntanglementSwappingB)]
+
+                for protocol in entanglement_swapping_protocols:
+                    if protocol.memory.name == memory_info.remote_memo:
                         return protocol
 
             requirements.append(requirement)
@@ -495,6 +499,7 @@ class ResourceReservationProtocol(StackProtocol):
 
         for rule in rules:
             activation_arguments = [rule]
+
             for activation_method in ('load', 'expire'):
                 self._schedule_event(reservation, activation_method, activation_arguments)
 
@@ -606,9 +611,10 @@ class MemoryTimeCard:
             bool: whether or not reservation was inserted successfully.
         """
 
-        pos = self.schedule_reservation(reservation)
-        if pos >= 0:
-            self.reservations.insert(pos, reservation)
+        position = self.schedule_reservation(reservation)
+
+        if position >= 0:
+            self.reservations.insert(position, reservation)
             return True
         else:
             return False
@@ -624,8 +630,8 @@ class MemoryTimeCard:
         """
 
         try:
-            pos = self.reservations.index(reservation)
-            self.reservations.pop(pos)
+            position = self.reservations.index(reservation)
+            self.reservations.pop(position)
             return True
         except ValueError:
             return False
@@ -646,8 +652,10 @@ class MemoryTimeCard:
         """
 
         start, end = 0, len(self.reservations) - 1
+
         while start <= end:
             middle = (start + end) // 2
+
             if self.reservations[middle].start_time > reservation.end_time:
                 end = middle - 1
             elif self.reservations[middle].end_time < reservation.start_time:
@@ -657,6 +665,7 @@ class MemoryTimeCard:
                 return -1
             else:
                 raise Exception("Unexpected status")
+
         return start
 
 
