@@ -233,13 +233,12 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
                  'communication_time3': tl.communication_time3,
                  'sync_time': sync_time,
                  'sync_counter': tl.sync_counter,
-                 'event_counter': tl.event_counter,
+                 'io_time': tl.quantum_manager.io_time,
+                 'run_counter': tl.run_counter,
                  'schedule_counter': tl.schedule_counter,
                  'exchange_counter': tl.exchange_counter}
-    for msg_type in tl.quantum_manager.io_time:
+    for msg_type in tl.quantum_manager.type_counter:
         perf_info['%s_counter' % msg_type] = tl.quantum_manager.type_counter[
-            msg_type]
-        perf_info['%s_io_time' % msg_type] = tl.quantum_manager.io_time[
             msg_type]
 
     with open('%s/perf_%d.json' % (log_path, rank), 'w') as fh:
