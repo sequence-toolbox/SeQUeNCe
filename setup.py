@@ -13,6 +13,7 @@ setup(
     package_dir={'sequence': 'src'},
     install_requires=[
         'numpy',
+	'matplotlib',
         'json5',
         'pandas',
         'qutip'
