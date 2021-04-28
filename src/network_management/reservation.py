@@ -1,4 +1,5 @@
 """Definition of Reservation protocol and related tools.
+
 This module provides a definition for the reservation protocol used by the network manager.
 This includes the Reservation, MemoryTimeCard, and QCap classes, which are used by the network manager to track reservations.
 Also included is the definition of the message type used by the reservation protocol.
@@ -81,6 +82,7 @@ class ResourceReservationProtocol(StackProtocol):
 
     def __init__(self, own: "QuantumRouter", name: str):
         """Constructor for the reservation protocol class.
+
         Args:
             own (QuantumRouter): node to attach protocol to.
             name (str): label for reservation protocol instance.
@@ -574,7 +576,7 @@ class Reservation():
         return f'Reservation: {formatted_parameters_string}'
 
 
-class MemoryTimeCard():
+class MemoryTimeCard:
     """Class for tracking reservations on a specific memory.
 
     Attributes:
