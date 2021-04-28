@@ -98,19 +98,19 @@ def get_hop_to_others(graph: Dict, node: str):
 
 
 def main(config_file: str, log_path: str):
-    MIN_DURATION = int(1e12)
-    MAX_DURATION = int(2e12)
+    MIN_DURATION = int(30e9)
+    MAX_DURATION = int(31e9)
     MIN_SIZE = 10
     MAX_SIZE = 25
     MIN_FIDELITY = 0.9
     MAX_FIDELITY = 0.95
     START_PROBABILITY = 0.5
-    EXP_SCALE = 1.5
+    EXP_SCALE = 1
     SLEEP_TIME = 1e12
 
-    RAW_FIDELITY = 1
-    STOP_TIME = 1e13
-    SWAP_DEG_RATE = 1
+    RAW_FIDELITY = 0.99
+    STOP_TIME = 10e12
+    SWAP_DEG_RATE = 0.99
 
     mpi_rank = MPI.COMM_WORLD.Get_rank()
     mpi_size = MPI.COMM_WORLD.Get_size()
@@ -206,13 +206,16 @@ def main(config_file: str, log_path: str):
             'communication_time3': tl.communication_time3,
             'sync_time': sync_time,
             'sync_counter': tl.sync_counter,
-            'exchange_counter': tl.exchange_counter
+            'exchange_counter': tl.exchange_counter,
+            'io_time': tl.quantum_manager.io_time
         }
-        perf_info.update(parallel_perf_info)
 
-    for msg_type in tl.quantum_manager.type_counter:
-        perf_info['%s_counter' % msg_type] = tl.quantum_manager.type_counter[
-            msg_type]
+        for msg_type in tl.quantum_manager.type_counter:
+            parallel_perf_info['%s_counter' % msg_type] = \
+            tl.quantum_manager.type_counter[
+                msg_type]
+
+        perf_info.update(parallel_perf_info)
 
     with open('%s/perf_%d.json' % (log_path, mpi_rank), 'w') as fh:
         dump(perf_info, fh)
