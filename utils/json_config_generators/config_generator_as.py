@@ -81,6 +81,9 @@ def get_partition(graph, GROUP_NUM):
         index = i // (net_size // GROUP_NUM)
         group[index].append(router_name_func(i))
 
+    if GROUP_NUM == 1:
+        return group
+
     ini_state = State(group, 0.5)
     partition = Partition(ini_state)
     auto_schedule = partition.auto(minutes=1)
