@@ -60,7 +60,10 @@ if args.nodes:
         node_procs[name] = group
         router_names.append(name)
 else:
-    group_size = NODE_NUM / int(args.parallel[2])
+    PROC_NUM = 1
+    if args.parallel:
+        PROC_NUM = int(args.parallel[2])
+    group_size = NODE_NUM / PROC_NUM
     for i in range(NODE_NUM):
         name = router_name_func(i)
         node_procs[name] = int(i // group_size)
