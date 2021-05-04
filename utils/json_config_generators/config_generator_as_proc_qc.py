@@ -84,7 +84,7 @@ def get_partition(graph, GROUP_NUM):
 
     ini_state = State(group)
     partition = Partition(ini_state)
-    auto_schedule = partition.auto(minutes=0.1)
+    auto_schedule = partition.auto(minutes=2)
 
     partition.set_schedule(auto_schedule)
     state, energy = partition.anneal()
@@ -126,10 +126,11 @@ FLOW_MEMO_SIZE = args.memo_size
 QC_LEN = args.qc_length
 QC_ATT = args.qc_atten
 CC_DELAY = args.cc_delay
-IP = args.parallel[0]
-PORT = int(args.parallel[1])
-LOOKAHEAD = int(args.parallel[4])
-assert int(args.parallel[2]) == GROUP_NUM
+if args.parallel:
+    IP = args.parallel[0]
+    PORT = int(args.parallel[1])
+    LOOKAHEAD = int(args.parallel[4])
+    assert int(args.parallel[2]) == GROUP_NUM
 
 graph = nx.random_internet_as_graph(NET_SIZE, NET_SEED)
 paths = []
@@ -158,7 +159,7 @@ for hop_num in range(MAX_HOP - 1, -1, -1):
     flow_num = FLOW_NUMS[hop_num]
     for f_index in range(flow_num):
         while len(paths[hop_num]) > 0:
-            sample_index = np.random.choice(list(range(len(paths[hop_num]))))
+            sample_index = random.choice(list(range(len(paths[hop_num]))))
             sample_path = paths[hop_num][sample_index]
             paths[hop_num].remove(sample_path)
 
@@ -186,7 +187,7 @@ while unused_nodes:
     if unused_nodes:
         n2 = unused_nodes.pop()
     else:
-        samples = np.random.choice(list(range(NET_SIZE)), 2)
+        samples = random.choice(list(range(NET_SIZE)), 2)
         if samples[0] != n1:
             n2 = samples[0]
         else:
