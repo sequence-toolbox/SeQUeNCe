@@ -133,7 +133,7 @@ We must also schedule an excite event for the memory. Let's put it at time 0:
 from sequence.kernel.process import Process
 from sequence.kernel.event import Event
 
-process = Process(node1.memory, "excite", [])
+process = Process(node1.memory, "excite", ['node2'])
 event = Event(0, process)
 tl.schedule(event)
 ```
