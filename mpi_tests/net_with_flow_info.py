@@ -118,13 +118,10 @@ def main(config_file: str, flow_info_file: str, log_path: str):
                  'schedule_counter': tl.schedule_counter}
 
     if mpi_size > 1:
-        sync_time = execution_time - tl.computing_time - tl.communication_time1 - tl.communication_time2 - tl.communication_time3
+        sync_time = execution_time - tl.computing_time
         parallel_perf_info = {
             'computing_time': tl.computing_time,
-            'communication_time': tl.communication_time1 + tl.communication_time2 + tl.communication_time3,
-            'communication_time1': tl.communication_time1,
-            'communication_time2': tl.communication_time2,
-            'communication_time3': tl.communication_time3,
+            'communication_time': tl.communication_time,
             'sync_time': sync_time,
             'sync_counter': tl.sync_counter,
             'exchange_counter': tl.exchange_counter,

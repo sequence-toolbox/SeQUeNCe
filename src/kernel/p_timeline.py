@@ -21,16 +21,17 @@ class ParallelTimeline(Timeline):
             self.quantum_manager.set_timeline(self)
         self.show_progress = False
 
+        self.buffer_min_ts = float('inf')
+
         self.sync_counter = 0
         self.exchange_counter = 0
         self.computing_time = 0
-        self.communication_time1 = 0
-        self.communication_time2 = 0
-        self.communication_time3 = 0
+        self.communication_time = 0
 
     def schedule(self, event: 'Event'):
         if type(event.process.owner) is str \
                 and event.process.owner in self.foreign_entities:
+            self.buffer_min_ts = min(self.buffer_min_ts, event.time)
             tl_id = self.foreign_entities[event.process.owner]
             self.event_buffer[tl_id].append(event)
             self.schedule_counter += 1
@@ -46,22 +47,23 @@ class ParallelTimeline(Timeline):
     def run(self):
         while self.time < self.stop_time:
             tick = time()
+            min_time = min(self.buffer_min_ts, self.top_time())
+            for buf in self.event_buffer:
+                buf.append(min_time)
             inbox = MPI.COMM_WORLD.alltoall(self.event_buffer)
-            self.communication_time2 += time() - tick
+            self.communication_time += time() - tick
 
             for buff in self.event_buffer:
                 buff.clear()
+            self.buffer_min_ts = float('inf')
 
             for events in inbox:
+                min_time = min(min_time, events.pop())
                 for event in events:
                     self.exchange_counter += 1
                     self.schedule(event)
 
-            tick = time()
-            min_time = MPI.COMM_WORLD.allreduce(self.top_time(),
-                                                op=MPI.MIN)
             assert min_time >= self.time
-            self.communication_time3 += time() - tick
 
             if min_time >= self.stop_time:
                 break
