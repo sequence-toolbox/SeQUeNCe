@@ -14,6 +14,8 @@ class SimpleManager():
     def update(self, protocol, memory, state):
         if state == 'RAW':
             self.raw_counter += 1
+            memory.entangled_memory['node_id'] = None
+            memory.entangled_memory['memo_id'] = None
         else:
             self.ent_counter += 1
 
