@@ -150,7 +150,7 @@ def pair_protocol(p1: EntanglementProtocol, p2: EntanglementProtocol):
 
 node1.create_protocol('bsm_node', 'node2')
 node2.create_protocol('bsm_node', 'node1')
-pair_protocol(node1, node2)
+pair_protocol(node1.protocols[0], node2.protocols[0])
 
 print('before', node1.memory.entangled_memory, node1.memory.fidelity)
 # "before node1.memo {'node_id': None, 'memo_id': None} 0"
