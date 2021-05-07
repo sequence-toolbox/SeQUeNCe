@@ -256,7 +256,7 @@ We'll next create rules for entanglement purification. Our rule conditions will 
 ```python
 from sequence.entanglement_management.purification import BBPSSW
 
-def add_ep_rules(index: int, path: List[QuantumRouter], target_fidelity: float):
+def add_ep_rules(index: int, path: List[RouterNode], target_fidelity: float):
     node_names = [node.name for node in path]
     node_mems = [[10, 20], [10, 30], [0, 10]]
 
@@ -348,7 +348,7 @@ Also note that the code to generate swapping rules is much longer than our previ
 ```python
 from sequence.entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 
-def add_es_rules(index: int, path: List[QuantumRouter], target_fidelity: float, succ_prob: float, degradation: float):
+def add_es_rules(index: int, path: List[RouterNode], target_fidelity: float, succ_prob: float, degradation: float):
     node_names = [node.name for node in path]
     node_mems = [[10, 20], [10, 30], [0, 10]]
 
