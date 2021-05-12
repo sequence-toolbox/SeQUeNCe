@@ -10,6 +10,9 @@ def main(config_file: str, src: str, dst: str, start_t: int, end_t: int,
          memo_size: int, fidelity: float, log_path: str):
     RAW_FIDELITY = 1
     SWAP_DEG_RATE = 1
+    MEMO_FREQ = 2e4
+    MEMO_EFF = 0.75
+    MEMO_TIME = 1.3
     topo = RouterNetTopo(config_file)
     tl = topo.get_timeline()
     tl.stop_time = end_t + 1
@@ -17,6 +20,10 @@ def main(config_file: str, src: str, dst: str, start_t: int, end_t: int,
 
     for router in routers:
         router.memory_array.update_memory_params('raw_fidelity', RAW_FIDELITY)
+        router.memory_array.update_memory_params('frequency', MEMO_FREQ)
+        router.memory_array.update_memory_params('efficiency', MEMO_EFF)
+        router.memory_array.update_memory_params('coherence_time', MEMO_TIME)
+
         router.network_manager.protocol_stack[1].set_swapping_degradation(
             SWAP_DEG_RATE)
 
@@ -50,14 +57,11 @@ def main(config_file: str, src: str, dst: str, start_t: int, end_t: int,
         df.to_csv(log_path + "/linear_traffic.csv")
 
     # write information of parallelization performance into log_path/perf.json file
-    sync_time = execution_time - tl.computing_time - tl.communication_time1 - tl.communication_time2 - tl.communication_time3
+    sync_time = execution_time - tl.computing_time - tl.communication_time
     perf_info = {'prepare_time': prepare_time,
                  'execution_time': execution_time,
                  'computing_time': tl.computing_time,
-                 'communication_time': tl.communication_time1 + tl.communication_time2 + tl.communication_time3,
-                 'communication_time1': tl.communication_time1,
-                 'communication_time2': tl.communication_time2,
-                 'communication_time3': tl.communication_time3,
+                 'communication_time': tl.communication_time,
                  'io_time': tl.quantum_manager.io_time,
                  'sync_time': sync_time,
                  'sync_counter': tl.sync_counter,
