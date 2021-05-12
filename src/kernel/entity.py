@@ -84,3 +84,5 @@ class Entity(ABC):
         else:
             return default_rng()
 
+    def change_timeline(self, timeline: "Timeline"):
+        self.timeline = timeline

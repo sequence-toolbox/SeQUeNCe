@@ -210,6 +210,12 @@ class BSMNode(Node):
 
         self.eg.others.append(other.name)
 
+    def change_timeline(self, timeline: "Timeline"):
+        self.timeline = timeline
+        self.bsm.change_timeline(timeline)
+        for cc in self.cchannels.values():
+            cc.change_timeline(timeline)
+
 
 class QuantumRouter(Node):
     """Node for entanglement distribution networks.

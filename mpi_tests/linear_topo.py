@@ -1,6 +1,6 @@
 import pandas as pd
 from time import time
-from json5 import dump
+from json import dump, load
 
 from sequence.topology.router_net_topo import RouterNetTopo
 from sequence.app.request_app import RequestApp
@@ -16,6 +16,7 @@ def main(config_file: str, src: str, dst: str, start_t: int, end_t: int,
     topo = RouterNetTopo(config_file)
     tl = topo.get_timeline()
     tl.stop_time = end_t + 1
+    tl.lookahead = 5e8
     routers = topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER)
 
     for router in routers:
@@ -26,6 +27,25 @@ def main(config_file: str, src: str, dst: str, start_t: int, end_t: int,
 
         router.network_manager.protocol_stack[1].set_swapping_degradation(
             SWAP_DEG_RATE)
+
+    with open(config_file, 'r') as fh:
+        data = load(fh)
+        qcs = data[RouterNetTopo.ALL_Q_CHANNEL]
+        q_links = {}
+        for qc in qcs:
+            _src, _dst = qc[RouterNetTopo.SRC], qc[RouterNetTopo.DST]
+            if _dst in q_links:
+                q_links[_dst].append(_src)
+            else:
+                q_links[_dst] = [_src]
+
+        for bsm_node, router_pair in q_links.items():
+            n1, n2 = router_pair
+            if tl.foreign_entities.get(n1, tl.id) != tl.foreign_entities.get(
+                    n2, tl.id):
+                tl.async_entities.add(bsm_node)
+                if bsm_node in tl.entities:
+                    tl.move_entity_to_async_tl(bsm_node)
 
     src_app = None
     for r in routers:
@@ -65,7 +85,7 @@ def main(config_file: str, src: str, dst: str, start_t: int, end_t: int,
                  'io_time': tl.quantum_manager.io_time,
                  'sync_time': sync_time,
                  'sync_counter': tl.sync_counter,
-                 'event_counter': tl.event_counter,
+                 'event_counter': tl.run_counter + tl.async_tl.run_counter,
                  'schedule_counter': tl.schedule_counter,
                  'exchange_counter': tl.exchange_counter}
     # for msg_type in tl.quantum_manager.io_time:
@@ -79,5 +99,5 @@ def main(config_file: str, src: str, dst: str, start_t: int, end_t: int,
 
 
 if __name__ == "__main__":
-    main("linear_512_4.json", "router_0", "router_511", 100e12, 100.1e12,
-         50, 0.9, "./")
+    main("linear_32.json", "router_0", "router_31", 100e12, 100.1e12,
+         50, 0.9, "old/")

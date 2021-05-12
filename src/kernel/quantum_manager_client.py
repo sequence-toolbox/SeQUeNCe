@@ -38,7 +38,6 @@ class QuantumManagerClient():
         self.managed_qubits = set()
         self.io_time = 0
         self.type_counter = defaultdict(lambda: 0)
-        self.timeline = None
         self.message_buffer = []
 
         self.socket.connect((self.ip, self.port))
@@ -55,9 +54,6 @@ class QuantumManagerClient():
             raise Exception(
                 "Invalid formalim {} given; should be 'KET' or 'DENSITY'".format(
                     formalism))
-
-    def set_timeline(self, tl: "ParallelTimeline"):
-        self.timeline = tl
 
     def get_socket_to_server(self) -> "socket":
         return self.socket
