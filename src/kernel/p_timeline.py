@@ -57,7 +57,6 @@ class ParallelTimeline(Timeline):
             return float('inf')
 
     def run(self):
-        last_sync_time = 0
         while self.time < self.stop_time:
             tick = time()
             min_time = min(self.buffer_min_ts, self.top_time(),
@@ -88,10 +87,9 @@ class ParallelTimeline(Timeline):
             self.time = min_time
 
             tick = time()
-            events = self.async_tl.run(last_sync_time)
+            events = self.async_tl.run(sync_time)
             for event in events:
                 self.schedule(event)
-            last_sync_time = sync_time
             while len(self.events) > 0 and self.events.top().time < sync_time:
                 event = self.events.pop()
                 if event.is_invalid():
