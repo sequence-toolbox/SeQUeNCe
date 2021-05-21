@@ -10,12 +10,22 @@ from sys import stdout
 from time import time_ns, sleep
 from typing import TYPE_CHECKING
 
+from numpy import random
+
 if TYPE_CHECKING:
     from .event import Event
 
 from .eventlist import EventList
 from ..utils import log
 from .quantum_manager import QuantumManagerKet, QuantumManagerDensity
+
+CARRIAGE_RETURN = '\r'
+SLEEP_SECONDS = 3
+
+NANOSECONDS_PER_MILLISECOND = 1e6
+PICOSECONDS_PER_NANOSECOND = MILLISECONDS_PER_SECOND = 1e3
+SECONDS_PER_MINUTE = MINUTES_PER_HOUR = 60
+
 
 class Timeline:
     """Class for a simulation timeline.
@@ -63,7 +73,7 @@ class Timeline:
         elif formalism == 'density_matrix':
             self.quantum_manager = QuantumManagerDensity()
         else:
-            raise ValueError("Invalid formalism {}".format(formalism))
+            raise ValueError(f"Invalid formalism {formalism}")
 
     def now(self) -> int:
         """Returns current simulation time."""
@@ -74,7 +84,7 @@ class Timeline:
         """Method to schedule an event."""
 
         self.schedule_counter += 1
-        return self.events.push(event)
+        self.events.push(event)
 
     def init(self) -> None:
         """Method to initialize all simulated entities."""
@@ -100,26 +110,32 @@ class Timeline:
         # log = {}
         while len(self.events) > 0:
             event = self.events.pop()
+
             if event.time >= self.stop_time:
                 self.schedule(event)
                 break
-            assert self.time <= event.time, "invalid event time for process scheduled on " + str(event.process.owner)
+
+            assert self.time <= event.time, f"invalid event time for process scheduled on {event.process.owner}"
+
             if event.is_invalid():
                 continue
+
             self.time = event.time
             # if not event.process.activation in log:
             #     log[event.process.activation] = 0
             # log[event.process.activation]+=1
+
             event.process.run()
+
             self.run_counter += 1
 
         # print('number of event', self.event_counter)
         # print('log:',log)
 
         self.is_running = False
-        elapse = time_ns() - tick
+        time_elapsed = time_ns() - tick
         log.logger.info("Timeline end simulation. Execution Time: %d ns; Scheduled Event: %d; Executed Event: %d" %
-                        (elapse, self.schedule_counter, self.run_counter))
+                        (time_elapsed, self.schedule_counter, self.run_counter))
 
     def stop(self) -> None:
         """Method to stop simulation."""
@@ -142,7 +158,6 @@ class Timeline:
     def seed(self, seed: int) -> None:
         """Sets random seed for simulation."""
 
-        from numpy import random
         random.seed(seed)
 
     def progress_bar(self):
@@ -151,35 +166,46 @@ class Timeline:
         Progress bar will display the execution time of simulation, as well as the current simulation time.
         """
 
-        def print_time():
-            start_time = time_ns()
-            while self.is_running:
-                exe_time = self.ns_to_human_time(time_ns() - start_time)
-                sim_time = self.ns_to_human_time(self.time / 1e3)
-                if self.stop_time == float('inf'):
-                    stop_time = 'NaN'
-                else:
-                    stop_time = self.ns_to_human_time(self.stop_time / 1e3)
-                process_bar = f'\rexecution time: {exe_time};     simulation time: {sim_time} / {stop_time}'
-                print(f'{process_bar}', end="\r")
-                stdout.flush()
-                sleep(3)
-
         start_new_thread(print_time, ())
 
-    def ns_to_human_time(self, nanosec: int) -> str:
-        if nanosec >= 1e6:
-            ms = nanosec / 1e6
-            if ms >= 1e3:
-                second = ms / 1e3
-                if second >= 60:
-                    minute = second // 60
-                    second = second % 60
-                    if minute >= 60:
-                        hour = minute // 60
-                        minute = minute % 60
-                        return '%d hour: %d min: %.2f sec' % (hour, minute, second)
-                    return '%d min: %.2f sec' % (minute, second)
-                return '%.2f sec' % (second)
-            return "%d ms" % (ms)
+    def print_time():
+        start_time = time_ns()
+
+        while self.is_running:
+            execution_time = self.ns_to_human_time(time_ns() - start_time)
+            simulation_time = self.ns_to_human_time(self.convert_to_nanoseconds(self.time))
+            stop_time = 'NaN' if self.stop_time == float('inf') else self.ns_to_human_time(self.convert_to_nanoseconds(self.stop_time))
+            process_bar = f'{CARRIAGE_RETURN}execution time: {execution_time};     simulation time: {simulation_time} / {stop_time}'
+
+            print(f'{process_bar}', end=CARRIAGE_RETURN)
+            stdout.flush()
+            sleep(SLEEP_SECONDS)
+
+    def ns_to_human_time(self, nanoseconds: int) -> str:
+        if nanoseconds >= NANOSECONDS_PER_MILLISECOND:
+            milliseconds = nanoseconds / NANOSECONDS_PER_MILLISECOND
+
+            if milliseconds >= MILLISECONDS_PER_SECOND:
+                seconds = milliseconds / MILLISECONDS_PER_SECOND
+
+                if seconds >= SECONDS_PER_MINUTE:
+                    minute = seconds // SECONDS_PER_MINUTE
+                    seconds %= SECONDS_PER_MINUTE
+
+                    if minutes >= MINUTES_PER_HOUR:
+                        hours = minutes // MINUTES_PER_HOUR
+                        minutes %= MINUTES_PER_HOUR
+
+                        return '%d hour: %d min: %.2f sec' % (hours, minutes, seconds)
+
+                    return '%d min: %.2f sec' % (minutes, seconds)
+
+                return '%.2f sec' % (seconds)
+
+            return f"%d ms" % (milliseconds)
+
         return '0 ms'
+
+    @staticmethod
+    def convert_to_nanoseconds(picoseconds: int) -> int:
+        return picoseconds / PICOSECONDS_PER_NANOSECOND
