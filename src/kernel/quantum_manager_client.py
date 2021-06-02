@@ -207,11 +207,9 @@ class QuantumManagerClient():
 
         msg = QuantumManagerMessage(msg_type, keys, args)
         self.message_buffer.append(msg)
-        self.flush_message_buffer()
 
         if expecting_receive:
-            # TRAFFIC COMPRESS
-            # self.flush_message_buffer()
+            self.flush_message_buffer()
             tick = time()
             received_msg = recv_msg_with_length(self.socket)
             self.io_time += time() - tick
