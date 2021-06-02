@@ -199,7 +199,7 @@ class BBPSSW(EntanglementProtocol):
         pass
 
     @staticmethod
-    @lru_cache(maxsize=128)
+    # @lru_cache(maxsize=128)
     def success_probability(F: float) -> float:
         """Method to calculate probability of purification success.
         
@@ -212,7 +212,7 @@ class BBPSSW(EntanglementProtocol):
         return F ** 2 + 2 * F * (1 - F) / 3 + 5 * ((1 - F) / 3) ** 2
 
     @staticmethod
-    @lru_cache(maxsize=128)
+    # @lru_cache(maxsize=128)
     def improved_fidelity(F: float) -> float:
         """Method to calculate fidelity after purification.
         

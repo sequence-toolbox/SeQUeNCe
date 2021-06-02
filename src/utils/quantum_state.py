@@ -206,7 +206,7 @@ class QuantumState():
         return res
 
 
-@lru_cache(maxsize=1000)
+# @lru_cache(maxsize=1000)
 def _measure_state_with_cache(state: Tuple[complex, complex], basis: Tuple[Tuple[complex]]) -> float:
     state = array(state)
     u = array(basis[0], dtype=complex)
@@ -219,7 +219,8 @@ def _measure_state_with_cache(state: Tuple[complex, complex], basis: Tuple[Tuple
     prob_0 = (state.conj().transpose() @ M0.conj().transpose() @ M0 @ state).real
     return prob_0
 
-@lru_cache(maxsize=1000)
+
+# @lru_cache(maxsize=1000)
 def _measure_entangled_state_with_cache(state: Tuple[complex], basis:Tuple[Tuple[complex]],
                                         state_index: int, num_states: int) -> Tuple[
         Tuple[complex], Tuple[complex], float]:
@@ -256,7 +257,8 @@ def _measure_entangled_state_with_cache(state: Tuple[complex], basis:Tuple[Tuple
 
     return (state0, state1, prob_0)
 
-@lru_cache(maxsize=1000)
+
+# @lru_cache(maxsize=1000)
 def _measure_multiple_with_cache(state: Tuple[Tuple[complex]], basis: Tuple[Tuple[complex]], length_diff: int) -> Tuple[
         Tuple[Tuple[complex]], Tuple[float]]:
     state = array(state)

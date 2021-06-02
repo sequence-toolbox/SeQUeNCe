@@ -76,70 +76,96 @@ class QuantumManagerClient():
         # below code cannot be removed because the assertion in the
         # move_manage_to_client function
         self.qm.set([key], state)
-        self.move_manage_to_client([key], state)
+        # LOCAL COMPUTING CODE
+        # self.move_manage_to_client([key], state)
         return key
 
     def get(self, key: int) -> any:
-        if self._check_local([key]):
-            return self.qm.get(key)
-        else:
-            state_raw = self._send_message(QuantumManagerMsgType.GET, [key],
-                                           [])
-            state = KetState([0, 1], [0])
-            state.deserialize(state_raw)
-            return state
+        # LOCAL COMPUTING CODE
+        # if self._check_local([key]):
+        #     return self.qm.get(key)
+        # else:
+        #     state_raw = self._send_message(QuantumManagerMsgType.GET, [key],
+        #                                    [])
+        #     state = KetState([0, 1], [0])
+        #     state.deserialize(state_raw)
+        #     return state
+        state_raw = self._send_message(QuantumManagerMsgType.GET, [key], [])
+        state = KetState([0, 1], [0])
+        state.deserialize(state_raw)
+        return state
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int], meas_samp=None) -> any:
-        if self._check_local(keys):
-            return self.qm.run_circuit(circuit, keys, meas_samp)
-        else:
-            visited_qubits = set()
-            for key in keys:
-                if key in visited_qubits:
-                    continue
-                if self.is_managed_by_server(key):
-                    visited_qubits.add(key)
-                else:
-                    state = self.qm.get(key)
-                    for state_key in state.keys:
-                        visited_qubits.add(state_key)
-                        assert not self.is_managed_by_server(state_key)
-                    self.move_manage_to_server(state.keys[0])
-            # todo: move qubit to client if all keys of entangled qubits belong
-            #       to the client
-            if len(circuit.measured_qubits) == 0:
-                self._send_message(QuantumManagerMsgType.RUN,
-                                   list(visited_qubits),
-                                   [circuit, keys], False)
-                return {}
+    def run_circuit(self, circuit: "Circuit", keys: List[int],
+                    meas_samp=None) -> any:
+        # LOCAL COMPUTING CODE
+        # if self._check_local(keys):
+        #     return self.qm.run_circuit(circuit, keys, meas_samp)
+        # else:
+        #     visited_qubits = set()
+        #     for key in keys:
+        #         if key in visited_qubits:
+        #             continue
+        #         if self.is_managed_by_server(key):
+        #             visited_qubits.add(key)
+        #         else:
+        #             state = self.qm.get(key)
+        #             for state_key in state.keys:
+        #                 visited_qubits.add(state_key)
+        #                 assert not self.is_managed_by_server(state_key)
+        #             self.move_manage_to_server(state.keys[0])
+        #     # todo: move qubit to client if all keys of entangled qubits belong
+        #     #       to the client
+        #     if len(circuit.measured_qubits) == 0:
+        #         self._send_message(QuantumManagerMsgType.RUN,
+        #                            list(visited_qubits),
+        #                            [circuit, keys], False)
+        #         return {}
+        #
+        #     ret_val_raw = self._send_message(QuantumManagerMsgType.RUN,
+        #                                      list(visited_qubits),
+        #                                      [circuit, keys, meas_samp])
+        #
+        #     ret_val = {}
+        #     for key in ret_val_raw:
+        #         ret_val[int(key, 16)] = ret_val_raw[key]
+        #
+        #     for measured_q in ret_val:
+        #         if not measured_q in self.qm.states:
+        #             continue
+        #         if ret_val[measured_q] == 1:
+        #             self.move_manage_to_client([measured_q], [0, 1])
+        #         else:
+        #             self.move_manage_to_client([measured_q], [1, 0])
+        #     return ret_val
 
-            ret_val_raw = self._send_message(QuantumManagerMsgType.RUN,
-                                             list(visited_qubits),
-                                             [circuit, keys, meas_samp])
+        if len(circuit.measured_qubits) == 0:
+            self._send_message(QuantumManagerMsgType.RUN,
+                               list(keys),
+                               [circuit, keys], False)
+            return {}
 
-            ret_val = {}
-            for key in ret_val_raw:
-                ret_val[int(key, 16)] = ret_val_raw[key]
+        ret_val_raw = self._send_message(QuantumManagerMsgType.RUN,
+                                         list(keys),
+                                         [circuit, keys, meas_samp])
 
-            for measured_q in ret_val:
-                if not measured_q in self.qm.states:
-                    continue
-                if ret_val[measured_q] == 1:
-                    self.move_manage_to_client([measured_q], [0, 1])
-                else:
-                    self.move_manage_to_client([measured_q], [1, 0])
-            return ret_val
+        ret_val = {}
+        for key in ret_val_raw:
+            ret_val[int(key, 16)] = ret_val_raw[key]
+        return ret_val
 
     def set(self, keys: List[int], amplitudes: any) -> None:
-        if self._check_local(keys):
-            self.qm.set(keys, amplitudes)
-        elif all(key in self.qm.states for key in keys):
-            self.move_manage_to_client(keys, amplitudes)
-        else:
-            for key in keys:
-                self.move_manage_to_server(key, sync_state=False)
-            self._send_message(QuantumManagerMsgType.SET, keys, [amplitudes],
-                               False)
+        # LOCAL COMPUTING CODE
+        # if self._check_local(keys):
+        #     self.qm.set(keys, amplitudes)
+        # elif all(key in self.qm.states for key in keys):
+        #     self.move_manage_to_client(keys, amplitudes)
+        # else:
+        #     for key in keys:
+        #         self.move_manage_to_server(key, sync_state=False)
+        #     self._send_message(QuantumManagerMsgType.SET, keys, [amplitudes],
+        #                        False)
+        self._send_message(QuantumManagerMsgType.SET, keys, [amplitudes],
+                           False)
 
     def remove(self, key: int) -> None:
         self._send_message(QuantumManagerMsgType.REMOVE, [key], [])
@@ -181,9 +207,11 @@ class QuantumManagerClient():
 
         msg = QuantumManagerMessage(msg_type, keys, args)
         self.message_buffer.append(msg)
+        self.flush_message_buffer()
 
         if expecting_receive:
-            self.flush_message_buffer()
+            # TRAFFIC COMPRESS
+            # self.flush_message_buffer()
             tick = time()
             received_msg = recv_msg_with_length(self.socket)
             self.io_time += time() - tick
@@ -198,8 +226,10 @@ class QuantumManagerClient():
             self.message_buffer = []
 
     def flush_before_sync(self):
-        if len(self.message_buffer) > 0:
-            self._send_message(QuantumManagerMsgType.SYNC, [], [])
+        # LOCAL COMPUTING CODE
+        # if len(self.message_buffer) > 0:
+        #     self._send_message(QuantumManagerMsgType.SYNC, [], [])
+        _ = self._send_message(QuantumManagerMsgType.SYNC, [], [])
 
     def _check_local(self, keys: List[int]):
         return not any([self.is_managed_by_server(key) for key in keys])

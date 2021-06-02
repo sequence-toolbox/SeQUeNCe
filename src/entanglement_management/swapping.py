@@ -223,7 +223,7 @@ class EntanglementSwappingA(EntanglementProtocol):
 
         return self.success_prob
 
-    @lru_cache(maxsize=128)
+    # @lru_cache(maxsize=128)
     def updated_fidelity(self, f1: float, f2: float) -> float:
         """A simple model updating fidelity of entanglement.
 

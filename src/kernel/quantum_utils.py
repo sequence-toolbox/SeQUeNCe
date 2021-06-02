@@ -10,7 +10,7 @@ from math import sqrt
 from numpy import array, kron, identity, zeros, trace 
 
 
-@lru_cache(maxsize=1000)
+# @lru_cache(maxsize=1000)
 def measure_state_with_cache_ket(state: Tuple[complex, ...]) -> float:
     state = array(state)
     M0 = array([[1, 0], [0, 0]], dtype=complex)
@@ -20,7 +20,7 @@ def measure_state_with_cache_ket(state: Tuple[complex, ...]) -> float:
     return prob_0
 
 
-@lru_cache(maxsize=1000)
+# @lru_cache(maxsize=1000)
 def measure_entangled_state_with_cache_ket(state: Tuple[complex], state_index: int, num_states: int) -> Tuple[
         Tuple[complex], Tuple[complex], float]:
     state = array(state)
@@ -52,7 +52,7 @@ def measure_entangled_state_with_cache_ket(state: Tuple[complex], state_index: i
     return (state0, state1, prob_0)
 
 
-@lru_cache(maxsize=1000)
+# @lru_cache(maxsize=1000)
 def measure_multiple_with_cache_ket(state: Tuple[complex], num_states: int, length_diff: int) -> Tuple[
         Tuple[Tuple[complex]], Tuple[float]]:
     state = array(state)
@@ -82,7 +82,7 @@ def measure_multiple_with_cache_ket(state: Tuple[complex], num_states: int, leng
     return (tuple(return_states), tuple(probabilities))
 
 
-@lru_cache(maxsize=1000)
+# @lru_cache(maxsize=1000)
 def measure_state_with_cache_density(state: Tuple[tuple, ...]) -> float:
     state = array(state)
     M0 = array([[1, 0], [0, 0]], dtype=complex)
@@ -92,7 +92,7 @@ def measure_state_with_cache_density(state: Tuple[tuple, ...]) -> float:
     return prob_0
 
 
-@lru_cache(maxsize=1000)
+# @lru_cache(maxsize=1000)
 def measure_entangled_state_with_cache_density(state: Tuple[tuple, ...],
                                                state_index: int,
                                                num_states: int) -> Tuple[
@@ -126,7 +126,7 @@ def measure_entangled_state_with_cache_density(state: Tuple[tuple, ...],
     return (state0, state1, prob_0)
 
 
-@lru_cache(maxsize=1000)
+# @lru_cache(maxsize=1000)
 def measure_multiple_with_cache_density(state: Tuple[tuple, ...],
                                         num_states: int, length_diff: int) -> \
 Tuple[

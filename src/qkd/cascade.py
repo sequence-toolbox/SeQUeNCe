@@ -242,7 +242,7 @@ class Cascade(StackProtocol):
 
             log.logger.debug(self.name + ' state={} receive_key, key={}'.format(self.state, key))
 
-            @lru_cache(maxsize=128)
+            # @lru_cache(maxsize=128)
             def get_k1(p, lower, upper):
                 while lower <= upper:
                     k1 = int((lower + upper) / 2)
@@ -255,7 +255,7 @@ class Cascade(StackProtocol):
 
                 return lower - 1
 
-            @lru_cache(maxsize=128)
+            # @lru_cache(maxsize=128)
             def get_diff_bit_num(key1, key2):
                 val = key1^key2
                 counter = 0
