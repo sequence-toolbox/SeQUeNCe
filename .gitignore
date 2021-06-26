@@ -128,3 +128,6 @@ dmypy.json
 
 # csv files
 *.csv
+
+#vscode-workspace
+sequence_gui_testing.code-workspace

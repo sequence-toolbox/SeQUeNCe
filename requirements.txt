@@ -1,5 +1,13 @@
 numpy
 matplotlib
+dash
+dash-core-components
+dash-html-components
+dash-bootstrap-components
+networkx
+dash-table
+dash-cytoscape
+plotly
 json5==0.8.4
 pandas==0.24.2
 qutip==4.6.0.dev
