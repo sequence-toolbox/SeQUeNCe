@@ -21,6 +21,9 @@ from .menus import getFreqUnits, getTimeUnits
 DEFAULT_COLOR = '#97C2FC'
 DIRECTORY, _ = os.path.split(__file__)
 
+"""
+Constant containing all available class in the GUI
+"""
 TYPES = [
     'Quantum_Repeater',
     'Quantum_Router',
@@ -28,9 +31,14 @@ TYPES = [
     'Detector',
     'QuantumErrorCorrection',
     'BSM_node',
-    'Temp'
+    'Temp',
+    'Memory',
+    'Protocol'
 ]
 
+"""
+Mapping of all types in the GUI to their representative colors
+"""
 TYPE_COLORS = {
     'Quantum_Repeater':'#4D9DE0',
     'Quantum_Router':'#E15554',
@@ -43,6 +51,11 @@ TYPE_COLORS = {
     'Temp':'#084C61'
 }
 
+"""
+returns a dictionary mapping each GUI node type
+to its corresponding image in the current directory
+structure
+"""
 def genImages():
     images = {
         'Quantum_Repeater':'repeater.png',
@@ -58,6 +71,9 @@ def genImages():
         images[key] = path
     return images
 
+"""
+dictionary returned by running the genImages() function
+"""
 TYPE_IMAGES = genImages()
 
 ### HTML TEMPLATES ###
@@ -191,6 +207,8 @@ make_new_template = dbc.Form(
         dbc.FormGroup(
             id='template_properties'
         ),
+        dbc.Button('Save', color='primary', id='save_template', block=True),
+        html.P(id='save_state', style={'color': 'blue'})
     ]
 )
 

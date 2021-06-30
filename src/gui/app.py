@@ -2,7 +2,7 @@
 A Class which contains all of the logic and data for the GUI
 """
 
-import dash, os, json
+import dash, os, json5
 from .menus import *
 from .simulator_bindings import gui_sim
 import pandas as pd
@@ -14,8 +14,8 @@ import networkx as nx
 from collections import OrderedDict
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
-from .graph_comp import GraphNode, default_temp
-from .layout import get_app_layout, getNodeImage, DEFAULT_COLOR, TYPE_COLORS, TYPE_IMAGES
+from .graph_comp import GraphNode
+from .layout import get_app_layout, getNodeImage, DEFAULT_COLOR, TYPE_COLORS, TYPE_IMAGES, TYPES
 
 EDGE_DICT_ORDER = OrderedDict({'source' : '', 'target' : '', 'distance' : '', 'attenuation' : '', 'link_type':''})
 
@@ -83,13 +83,22 @@ def get_graph_table_edges(graph):
 class Quantum_GUI:
     def __init__(self, graph_in, templates=None, delays=None, tdm=None):
         self.data = graph_in
-        self.templates = templates
         self.net_delay_times = delays
         self.qc_tdm = tdm
-        if self.templates is None:
-            self.templates = default_temp.copy()
-        else:
-            self.templates.update(default_temp)
+        self.defaults = {}
+        with open(DIRECTORY + '/default_params.json', 'r') as json_file:
+            defaults = json5.load(json_file)
+        if templates is None:
+            if(os.path.exists(DIRECTORY + '/user_templates.json')):
+                with open(DIRECTORY + '/user_templates.json', 'r') as json_file:
+                    self.templates = json5.load(json_file)
+            else:
+                user_defaults = {}
+                for x in TYPES:
+                    user_defaults[x] = {}
+                self.templates = user_defaults
+                with open(DIRECTORY + '/user_templates.json', 'w') as outfile: 
+                    json5.dump(user_defaults, outfile, quote_keys=True, sort_keys=True, indent=4, trailing_commas=False)
 
     @property
     def data(self):
@@ -103,6 +112,17 @@ class Quantum_GUI:
         self._node_table = nodes[0].to_dict('records')
         self._edge_columns = edges[1]
         self._node_columns = nodes[1]
+
+    @property
+    def templates(self):
+        return self._templates
+    @templates.setter
+    def templates(self, templates_in):
+        self._templates = templates_in
+        print('test save')
+
+        with open(DIRECTORY+'/'+'user_templates.json', 'w') as outfile: 
+            json5.dump(templates_in, outfile, quote_keys=True, sort_keys=True, indent=4, trailing_commas=False)
 
     @property
     def edge_table(self):
@@ -174,9 +194,9 @@ class Quantum_GUI:
 
         return [nx.readwrite.cytoscape_data(self.data)['elements'], '']
 
-    # Takes the 'children' value from a callback, where the order of the children
-    # is label, input, ... label, input and returns it as a python dictionary
-    def parse_children_to_data(self, from_node, to_node, type_in, children):
+    # Takes the 'children' value from a callback and returns it as a 
+    # python dictionary that follows the format of a node in the graph
+    def parse_children_to_node_data(self, from_node, to_node, type_in, children):
         if((from_node is None) or (to_node is None) or (children is None)):
             raise PreventUpdate
         output = EDGE_DICT_ORDER.copy()
@@ -190,6 +210,33 @@ class Quantum_GUI:
         output['target']=to_node[4:]
         output['link_type']=type_in
         return output
+
+    def parse_children_to_form_data(self, children):
+        values = {}
+
+        if children is not None:
+            for x in children:
+                try:
+                    if(x['props']['className']=='compound'):
+                        parsed_val = 1
+                        key = ''
+                        for y in x['props']['children']:
+                            try:
+                                key = y['props']['children']['props']['className']
+                            except:
+                                continue
+                            parsed_val*=float(y['props']['children']['props']['value'])
+                        values[key]=parsed_val
+                except:
+                    continue
+                if(x['type']=='Input'):
+                    values[x['props']['className']]=x['props']['value']
+
+            template_name = values['name']
+            del values['name']
+            output = {template_name:values}
+            return output
+        return('No Input')
 
     def _callback_delete_node(self, graph_data, remove_node_list):
         
@@ -246,7 +293,7 @@ class Quantum_GUI:
                     err_msg = info[1]
                     return [graph_data, err_msg, dash.no_update]
                 elif input_id == 'add_edge':
-                    info = self._callback_add_edge(from_node[6:], to_node[4:], self.parse_children_to_data(from_node, to_node, edge_type, properties))
+                    info = self._callback_add_edge(from_node[6:], to_node[4:], self.parse_children_to_node_data(from_node, to_node, edge_type, properties))
                     graph_data = info[0]
                     err_msg = info[1]
                     return [graph_data, dash.no_update, err_msg]
@@ -301,52 +348,41 @@ class Quantum_GUI:
                 State('select_node_2','active')
             ])
         def update_selected_nodes(tapped_node, toggle1, toggle2):
-            ctx = dash.callback_context
-            if not ctx.triggered:
-                return [dash.no_update, dash.no_update]
+            if toggle1:
+                return ['From: '+tapped_node['label'], dash.no_update]
+            elif toggle2:
+                return [dash.no_update, 'To: '+tapped_node['label']]
             else:
-                if toggle1:
-                    return ['From: '+tapped_node['label'], dash.no_update]
-                elif toggle2:
-                    return [dash.no_update, 'To: '+tapped_node['label']]
-                else:
-                    return [dash.no_update, dash.no_update]
+                return [dash.no_update, dash.no_update]
 
         @app.callback(
             Output('edge_properties', 'children'),
             Input('edge_type_menu', 'value'),
         )
         def make_edge_properties_menu(edgeType):
-            ctx = dash.callback_context
-            if not ctx.triggered:
+            if edgeType == 'Quantum':
                 return quantum_edge
+            elif edgeType == 'Classical':
+                return classic_edge
             else:
-                if edgeType == 'Quantum':
-                    return quantum_edge
-                elif edgeType == 'Classical':
-                    return classic_edge
-                else:
-                    return dash.no_update
+                return dash.no_update
 
         @app.callback(
             Output('template_properties', 'children'),
+            Output('save_state', 'children'),
             Input('template_type_menu', 'value'),
         )
         def make_template_properties_menu(edgeType):
-            ctx = dash.callback_context
-            if not ctx.triggered:
-                return router_template
+            if edgeType == 'Quantum_Router':
+                return [router_template, '']
+            elif edgeType == 'Protocol':
+                return [protocol_template, '']
+            elif edgeType == 'Memory':
+                return [quantum_memory_template, '']
+            elif edgeType == 'Detector':
+                return [detector_template, '']
             else:
-                if edgeType == 'Quantum_Router':
-                    return router_template
-                elif edgeType == 'Protocol':
-                    return protocol_template
-                elif edgeType == 'Memory':
-                    return quantum_memory_template
-                elif edgeType == 'Detector':
-                    return detector_template
-                else:
-                    return dash.no_update
+                return [dash.no_update, dash.no_update]
 
         @app.callback(
             Output('results_out', 'children'),
@@ -357,20 +393,35 @@ class Quantum_GUI:
             ]
         )
         def run_sim(clicks, units, time):
-            ctx = dash.callback_context
-            if not ctx.triggered:
+            if time is None or units is None:
+                return dash.no_update
+            else:
+                simulation = gui_sim(int(time), int(units), 'test', self)
+                simulation.random_request_simulation()
+                results = open(DIRECTORY+'/'+'test.txt', 'r')
+                output = results.read()
+                #print(output)
+                results.close()
+                return output
+
+        @app.callback(
+            Output('save_state', 'children'),
+            Input('save_template', 'n_clicks'),
+            state=[
+                State('template_properties', 'children'),
+                State('template_type_menu', 'value')
+            ]
+        )
+        def save_template(clicks, template, template_type):
+            if template is None:
                 return ''
             else:
-                if time is None or units is None:
-                    return dash.no_update
-                else:
-                    simulation = gui_sim(int(time), int(units), 'test', self)
-                    simulation.random_request_simulation()
-                    results = open(DIRECTORY+'/'+'test.txt', 'r')
-                    output = results.read()
-                    #print(output)
-                    results.close()
-                    return output
+                new_templates = self.templates.copy()
+                parsed = self.parse_children_to_form_data(template)
+                new_templates[template_type].update(parsed)
+                print(new_templates)
+                self.templates = new_templates
+                return 'Template Saved'
                     
         return app
 

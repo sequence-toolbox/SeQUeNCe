@@ -48,49 +48,55 @@ quantum_edge = [
 ]
 
 router_template = [
+    dbc.Label('Template Name'),
+    dbc.Input(id='detector_name', className='name', placeholder='default_detector'),
     dbc.Label('Memory Size'),
-    dbc.Input(id='mem_size', placeholder='Memory Array Size'),
+    dbc.Input(id='mem_size', className='memo_size', placeholder='Memory Array Size'),
     dbc.Label('Memory Type'),
-    dbc.Input(id='mem_type', placeholder='Memory Type'),
-    dbc.Label('Detector Type'),
-    dbc.Input(id='detector_type', placeholder='Detector Type'),
+    dbc.Input(id='mem_type', className='mem_type',placeholder='Memory Type'),
 ]
 
 quantum_memory_template = [
+    dbc.Label('Template Name'),
+    dbc.Input(id='q_mem_name', className='name', placeholder='default_detector'),
     dbc.Label('Coherence Time'),
     dbc.FormGroup(
         [
-            dbc.Col(dbc.Input(id='coh_time_in', placeholder='1.3e12'), width=10),
+            dbc.Col(dbc.Input(id='coh_time_in', className='coherence_time', placeholder='1.3e12'), width=10),
             dbc.Col(getTimeUnits('coh'), width=2)
         ],
-        row=True
+        row=True,
+        className='compound'
     ),
-
+    
     dbc.Label('Frequency'),
     dbc.FormGroup(
         [
-            dbc.Col(dbc.Input(id='mem_freq_in', placeholder='2000'),width=10),
+            dbc.Col(dbc.Input(id='mem_freq_in', className='frequency', placeholder='2000'),width=10),
             dbc.Col(getFreqUnits('mem'), width=2)
         ],
-        row=True
+        row=True,
+        className='compound'
     ),
 
     dbc.Label('Efficiency'),
-    dbc.Input(id='mem_eff_in', placeholder='0.75'),
+    dbc.Input(id='mem_eff_in', className='efficiency', placeholder='0.75'),
 
-    dbc.Label('Cooperativity'),
-    dbc.Input(id='mem_coop_in', placeholder='500'),
+    dbc.Label('Fidelity'),
+    dbc.Input(id='fidelity_in', className='fidelity', placeholder='500'),
 ]
 
 detector_template = [
+    dbc.Label('Template Name'),
+    dbc.Input(id='detector_name', className='name',placeholder='default_detector'),
     dbc.Label('Dark Count Rate'),
-    dbc.Input(id='dark_count_in', placeholder='0'),
+    dbc.Input(id='dark_count_in', className='dark_count',placeholder='0'),
     dbc.Label('Efficiency'),
     dbc.Input(id='detector_efficiency_in', placeholder='0.8'),
     dbc.Label('Count Rate'),
-    dbc.Input(id='count_rate_in', placeholder='5.7e'),
+    dbc.Input(id='count_rate_in', className='count_rate',placeholder='5.7e'),
     dbc.Label('Resolution'),
-    dbc.Input(id='resolution_in', placeholder='1e2')
+    dbc.Input(id='resolution_in', className='efficiency',placeholder='1e2')
 ]
 
 bsm_template = [

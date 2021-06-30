@@ -6,9 +6,9 @@ and GUI components
 import time, os
 import pandas as pd
 import sequence.topology.node as seq_node
-from sequence.kernel.timeline import Timeline
-from sequence.topology.topology import Topology
-from sequence.app.random_request import RandomRequestApp
+from ..kernel.timeline import Timeline
+from ..topology.topology import Topology
+from ..app.random_request import RandomRequestApp
 
 class gui_sim():
     def __init__(self, sim_time:int, time_scale:int, sim_name, config):
