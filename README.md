@@ -20,6 +20,15 @@ $ make install
 ```
 This will install the sequence library as well as the numpy, json5, and pandas dependancies.
 
+## Running the GUI
+Once SeQUeNCe has been installed as described above, simply run the run.py script found in the root of the project directory
+```
+$ python run.py
+```
+or
+```
+$ python3 run.py
+```
 ## Usage Examples
 Many examples of SeQUeNCe in action can be found in the example folder. These include both quantum key distribution and entanglement distribution examples.
 
