@@ -87,7 +87,7 @@ class Quantum_GUI:
         self.qc_tdm = tdm
         self.defaults = {}
         with open(DIRECTORY + '/default_params.json', 'r') as json_file:
-            defaults = json5.load(json_file)
+            self.defaults = json5.load(json_file)
         if templates is None:
             if(os.path.exists(DIRECTORY + '/user_templates.json')):
                 with open(DIRECTORY + '/user_templates.json', 'r') as json_file:
@@ -119,7 +119,6 @@ class Quantum_GUI:
     @templates.setter
     def templates(self, templates_in):
         self._templates = templates_in
-        print('test save')
 
         with open(DIRECTORY+'/'+'user_templates.json', 'w') as outfile: 
             json5.dump(templates_in, outfile, quote_keys=True, sort_keys=True, indent=4, trailing_commas=False)
@@ -424,6 +423,3 @@ class Quantum_GUI:
                 return 'Template Saved'
                     
         return app
-
-
-        

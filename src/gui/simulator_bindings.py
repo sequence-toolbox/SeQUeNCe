@@ -15,19 +15,27 @@ class gui_sim():
         self.sim_name=sim_name
         self.timeline = Timeline(sim_time * time_scale)
         self.timeline.seed(0)
+        self.timeline.show_progress = True
         self.topology = Topology(sim_name, self.timeline)
+        self.sim_templates = config.defaults.copy()
+        temp = config.templates.copy()
+
+        for key, val in temp.items():
+            if val is not None:
+                self.sim_templates.update(val)
         
+        print(self.sim_templates)
         nodes = list(config.data.nodes.data())
 
         for node in nodes:
             node_name = node[1]['data']['name']
             node_type = node[1]['data']['type']
-            node_temp = config.templates[node[1]['data']['template']].copy()
+            node_temp = self.sim_templates[node[1]['data']['template']].copy()
             
             if node_type == "QKDNode":
                 node_in = seq_node.QKDNode(node_name, self.timeline, **node_temp)
             elif node_type == "Quantum_Router":
-                mem_config = config.templates[node_temp.pop('mem_type')].copy()
+                mem_config = self.sim_templates[node_temp.pop('mem_type')].copy()
                 node_in = seq_node.QuantumRouter(node_name, self.timeline, **node_temp)
                 for key, val in mem_config.items():
                     node_in.memory_array.update_memory_params(key, val)
@@ -62,12 +70,12 @@ class gui_sim():
                 cchannel_params = {"delay": delay, "distance": 1e3}
                 self.topology.add_classical_channel(labels[i], labels[j], **cchannel_params)
 
-        bsm_hard = config.templates['default_detector']
+        bsm_hard = self.sim_templates['default_detector']
         for node in self.topology.get_nodes_by_type("BSMNode"):
             for key, val in bsm_hard.items():
                 node.bsm.update_detectors_params(key, val)
 
-        entanglement = config.templates['default_entanglement']
+        entanglement = self.sim_templates['default_entanglement']
         for node in self.topology.get_nodes_by_type("QuantumRouter"):
             node.network_manager.protocol_stack[1].set_swapping_success_rate(entanglement['succ_prob'])
             node.network_manager.protocol_stack[1].set_swapping_degradation(entanglement['degredation'])

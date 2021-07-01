@@ -166,9 +166,9 @@ class Timeline:
         Progress bar will display the execution time of simulation, as well as the current simulation time.
         """
 
-        start_new_thread(print_time, ())
+        start_new_thread(self.print_time, ())
 
-    def print_time():
+    def print_time(self):
         start_time = time_ns()
 
         while self.is_running:
@@ -189,7 +189,7 @@ class Timeline:
                 seconds = milliseconds / MILLISECONDS_PER_SECOND
 
                 if seconds >= SECONDS_PER_MINUTE:
-                    minute = seconds // SECONDS_PER_MINUTE
+                    minutes = seconds // SECONDS_PER_MINUTE
                     seconds %= SECONDS_PER_MINUTE
 
                     if minutes >= MINUTES_PER_HOUR:

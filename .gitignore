@@ -131,3 +131,6 @@ dmypy.json
 
 #vscode-workspace
 sequence_gui_testing.code-workspace
+
+#gui-testing
+src/gui/test_run.py
