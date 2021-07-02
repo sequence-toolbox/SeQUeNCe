@@ -40,7 +40,7 @@ The shell prompt should now show the name of the virtual environment.
 We can now download and install the simulator. The code can be cloned easily using `git`, and installed with the native python installer `pip`:
 
 ```shell script
-$ git clone https://xgitlab.cels.anl.gov/xiaoliang/sequence-python.git
+$ git clone https://github.com/sequence-toolbox/SeQUeNCe.git
 $ cd Sequence-python
 $ pip install .
 ```

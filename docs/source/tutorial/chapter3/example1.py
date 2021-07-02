@@ -70,10 +70,9 @@ for i in range(1000):
     node1.memory.reset()
     node2.memory.reset()
 
+    tl.init()
     node1.protocols[0].start()
     node2.protocols[0].start()
-
-    tl.init()
     tl.run()
 
 print(node1.resource_manager.ent_counter, ':', node1.resource_manager.raw_counter)
