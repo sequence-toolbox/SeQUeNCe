@@ -151,7 +151,7 @@ def pair_protocol(p1: EntanglementProtocol, p2: EntanglementProtocol):
 
 node1.create_protocol('bsm_node', 'node2')
 node2.create_protocol('bsm_node', 'node1')
-pair_protocol(node1, node2)
+pair_protocol(node1.protocols[0], node2.protocols[0])
 
 print('before', node1.memory.entangled_memory, node1.memory.fidelity)
 # "before node1.memo {'node_id': None, 'memo_id': None} 0"
@@ -285,8 +285,8 @@ def entangle_memory(memo1: Memory, memo2: Memory, fidelity: float):
     memo1.fidelity = memo2.fidelity = fidelity
 
 
-entangle_memory(node1.left_memo, node2.left_memo, 0.9)
-entangle_memory(node1.right_memo, node2.right_memo, 0.9)
+entangle_memory(node1.kept_memo, node2.kept_memo, 0.9)
+entangle_memory(node1.meas_memo, node2.meas_memo, 0.9)
 ```
 
 ### Step 4: Configure and Start BBPSSW Protocol
@@ -309,11 +309,11 @@ node1.protocols[0].start()
 node2.protocols[0].start()
 tl.run()
 
-print(node1.left_memo.entangled_memory, node2.left_memo.fidelity)
+print(node1.kept_memo.entangled_memory, node2.kept_memo.fidelity)
 # 'node1.kept_memo {'node_id': 'node2', 'memo_id': 'node2.kept_memo'} 0.9263959390862945'
 # or 'node1.kept_memo {'node_id': 'node2', 'memo_id': 'node2.kept_memo'} 0.9'
 
-print(node1.right_memo.entangled_memory, node2.right_memo.fidelity)
+print(node1.meas_memo.entangled_memory, node2.meas_memo.fidelity)
 # 'node1.meas_memo {'node_id': 'node2', 'memo_id': node2.meas_memo'} 0.9'
 ```
 
@@ -336,8 +336,8 @@ We can run the purification protocol multiple times to observe the state of memo
 ```python
 tl.init()
 for i in range(10):
-    entangle_memory(node1.left_memo, node2.left_memo, 0.9)
-    entangle_memory(node1.right_memo, node2.right_memo, 0.9)
+    entangle_memory(node1.kept_memo, node2.kept_memo, 0.9)
+    entangle_memory(node1.meas_memo, node2.meas_memo, 0.9)
 
     node1.create_protocol()
     node2.create_protocol()
@@ -348,8 +348,8 @@ for i in range(10):
     node2.protocols[0].start()
     tl.run()
 
-    print(node1.left_memo.entangled_memory, node2.left_memo.fidelity)
-    print(node1.right_memo.entangled_memory, node2.right_memo.fidelity)
+    print(node1.kept_memo.entangled_memory, node2.kept_memo.fidelity)
+    print(node1.meas_memo.entangled_memory, node2.meas_memo.fidelity)
 ```
 
 ## Example: Use `EntanglementSwappingA` and `EntanglementSwappingB` to Extend Entanglement

@@ -119,8 +119,8 @@ print(tl.time, store.open)
 
 ```python
 tl.time = 0
-tl.schedule(open_event)
 tl.schedule(close_event)
+tl.schedule(open_event)
 tl.run()
 print(tl.time, store.open)
 ```

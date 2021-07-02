@@ -133,7 +133,7 @@ We must also schedule an excite event for the memory, which will send a photon t
 from sequence.kernel.process import Process
 from sequence.kernel.event import Event
 
-process = Process(node1.memory, "excite", ["node2"])
+process = Process(node1.memory, "excite", ['node2'])
 event = Event(0, process)
 tl.schedule(event)
 ```
@@ -165,11 +165,11 @@ from sequence.kernel.event import Event
 
 time_bin = int(1e12 / FREQUENCY)
 
-process1 = Process(node1.memory, "set_plus", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]])
+process1 = Process(node1.memory, "update_state", [[complex(math.sqrt(1 / 2)), complex(math.sqrt(1 / 2))]])
 process2 = Process(node1.memory, "excite", ["node2"])
 for i in range(NUM_TRIALS):
     event1 = Event(i * time_bin, process1)
-    event1 = Event(i * time_bin + (time_bin / 2), process2)
+    event2 = Event(i * time_bin + (time_bin / 2), process2)
     tl.schedule(event1)
     tl.schedule(event2)
 ```
@@ -314,4 +314,4 @@ tl.init()
 tl.run()
 ```
 
-In the output, we see that the `PING` message is received on node 2 first, followed by a `PONG` message received on node 2. The reception times of the messages are at 1 ms and 2 ms of simulation time, respectively, as determined by our classical channel delay.
+In the output, we see that the `PING` message is received on node 2 first, followed by a `PONG` message received on node 1. The reception times of the messages are at 1 ms and 2 ms of simulation time, respectively, as determined by our classical channel delay.

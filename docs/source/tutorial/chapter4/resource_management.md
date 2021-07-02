@@ -131,9 +131,9 @@ m23 = BSMNode("m23", tl, ["r2", "r3"])
 # create all-to-all classical connections
 cc_delay = 1e9
 node_list = [r1, r2, r3, m12, m23]
-for i, node1 in enumerate(node_list):
-    for node2 in node_list[i+1:]:
-        cc = ClassicalChannel("cc_%s_%s"%(node1.name, node2.name), tl, 1e3, delay=cc_delay)
+for node1 in node_list:
+    for node2 in node_list:
+        cc = ClassicalChannel("cc_%s_%s" % (node1.name, node2.name), tl, 1e3, delay=cc_delay)
         cc.set_ends(node1, node2)
 
 # create quantum channels linking r1 and r2 to m1
@@ -256,7 +256,7 @@ We'll next create rules for entanglement purification. Our rule conditions will 
 ```python
 from sequence.entanglement_management.purification import BBPSSW
 
-def add_ep_rules(index: int, path: List[QuantumRouter], target_fidelity: float):
+def add_ep_rules(index: int, path: List[RouterNode], target_fidelity: float):
     node_names = [node.name for node in path]
     node_mems = [[10, 20], [10, 30], [0, 10]]
 
@@ -348,7 +348,7 @@ Also note that the code to generate swapping rules is much longer than our previ
 ```python
 from sequence.entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 
-def add_es_rules(index: int, path: List[QuantumRouter], target_fidelity: float, succ_prob: float, degradation: float):
+def add_es_rules(index: int, path: List[RouterNode], target_fidelity: float, succ_prob: float, degradation: float):
     node_names = [node.name for node in path]
     node_mems = [[10, 20], [10, 30], [0, 10]]
 
