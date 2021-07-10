@@ -31,7 +31,7 @@ class QuantumState():
 
     Attributes:
         state (Tuple[complex]): list of complex coefficients in Z-basis.
-        entangled_states (List[QuantumState]): list of entangled states (indludng self).
+        entangled_states (List[QuantumState]): list of entangled states (including self).
     """
 
     def __init__(self):
