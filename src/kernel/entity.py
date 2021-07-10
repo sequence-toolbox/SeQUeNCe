@@ -48,7 +48,7 @@ class Entity(ABC):
         pass
 
     def attach(self, observer: Any):
-        """Method to add an ovserver (to receive hardware updates)."""
+        """Method to add an observer (to receive hardware updates)."""
 
         if not observer in self._observers:
             self._observers.append(observer)
