@@ -8,6 +8,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
 
+
 def getFreqUnits(id_extra):
     return dcc.Dropdown(
         id='frequency_units_'+id_extra,
@@ -17,8 +18,9 @@ def getFreqUnits(id_extra):
             {'label': 'hz', 'value': 1},
         ],
         value=1,
-        style={'margin-bottom':'15px'}
+        style={'margin-bottom': '15px'}
     )
+
 
 def getTimeUnits(id_extra):
     return dcc.Dropdown(
@@ -30,8 +32,9 @@ def getTimeUnits(id_extra):
             {'label': 'ps', 'value': 1},
         ],
         value=1,
-        style={'margin-bottom':'15px'}
+        style={'margin-bottom': '15px'}
     )
+
 
 classic_edge = [
     dbc.Label("Distance"),
@@ -49,30 +52,56 @@ quantum_edge = [
 
 router_template = [
     dbc.Label('Template Name'),
-    dbc.Input(id='detector_name', className='name', placeholder='default_detector'),
+    dbc.Input(
+        id='detector_name',
+        className='name',
+        placeholder='default_detector'
+    ),
     dbc.Label('Memory Size'),
-    dbc.Input(id='mem_size', className='memo_size', placeholder='Memory Array Size'),
+    dbc.Input(
+        id='mem_size',
+        className='memo_size',
+        placeholder='Memory Array Size'
+    ),
     dbc.Label('Memory Type'),
-    dbc.Input(id='mem_type', className='mem_type',placeholder='Memory Type'),
+    dbc.Input(
+        id='mem_type',
+        className='mem_type',
+        placeholder='Memory Type'
+    ),
 ]
 
 quantum_memory_template = [
     dbc.Label('Template Name'),
-    dbc.Input(id='q_mem_name', className='name', placeholder='default_detector'),
+    dbc.Input(
+        id='q_mem_name',
+        className='name',
+        placeholder='default_detector'
+    ),
     dbc.Label('Coherence Time'),
     dbc.FormGroup(
         [
-            dbc.Col(dbc.Input(id='coh_time_in', className='coherence_time', placeholder='1.3e12'), width=10),
+            dbc.Col(dbc.Input(
+                id='coh_time_in',
+                className='coherence_time',
+                placeholder='1.3e12'),
+                width=10
+            ),
             dbc.Col(getTimeUnits('coh'), width=2)
         ],
         row=True,
         className='compound'
     ),
-    
+
     dbc.Label('Frequency'),
     dbc.FormGroup(
         [
-            dbc.Col(dbc.Input(id='mem_freq_in', className='frequency', placeholder='2000'),width=10),
+            dbc.Col(dbc.Input(
+                id='mem_freq_in',
+                className='frequency',
+                placeholder='2000'),
+                width=10
+            ),
             dbc.Col(getFreqUnits('mem'), width=2)
         ],
         row=True,
@@ -88,15 +117,34 @@ quantum_memory_template = [
 
 detector_template = [
     dbc.Label('Template Name'),
-    dbc.Input(id='detector_name', className='name',placeholder='default_detector'),
+    dbc.Input(
+        id='detector_name',
+        className='name',
+        placeholder='default_detector'
+    ),
     dbc.Label('Dark Count Rate'),
-    dbc.Input(id='dark_count_in', className='dark_count',placeholder='0'),
+    dbc.Input(
+        id='dark_count_in',
+        className='dark_count',
+        placeholder='0'
+    ),
     dbc.Label('Efficiency'),
-    dbc.Input(id='detector_efficiency_in', placeholder='0.8'),
+    dbc.Input(
+        id='detector_efficiency_in',
+        placeholder='0.8'
+    ),
     dbc.Label('Count Rate'),
-    dbc.Input(id='count_rate_in', className='count_rate',placeholder='5.7e'),
+    dbc.Input(
+        id='count_rate_in',
+        className='count_rate',
+        placeholder='5.7e'
+    ),
     dbc.Label('Resolution'),
-    dbc.Input(id='resolution_in', className='efficiency',placeholder='1e2')
+    dbc.Input(
+        id='resolution_in',
+        className='efficiency',
+        placeholder='1e2'
+    )
 ]
 
 bsm_template = [

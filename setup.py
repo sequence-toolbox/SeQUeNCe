@@ -18,7 +18,7 @@ setup(
         'json5',
         'pandas',
         'qutip',
-        'dash',
+        'dash>=1.20.0',
         'dash-core-components',
         'dash-html-components',
         'dash-bootstrap-components',
