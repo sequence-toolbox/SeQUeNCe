@@ -1,3 +1,5 @@
+"""A simple script to get an open port for communication"""
+
 import socket
 
 s = socket.socket()

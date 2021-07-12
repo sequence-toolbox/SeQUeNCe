@@ -1,3 +1,8 @@
+from json import dump
+import os
+import pandas as pd
+from time import time
+
 from sequence.kernel.p_timeline import ParallelTimeline, AsyncParallelTimeline
 from sequence.kernel.quantum_manager_server import kill_server
 from sequence.topology.node import QuantumRouter, BSMNode
@@ -7,10 +12,6 @@ from sequence.app.random_request import RandomRequestApp
 from sequence.app.request_app import RequestApp
 import sequence.utils.log as log
 
-from json import dump
-import os
-import pandas as pd
-from time import time
 
 
 def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
@@ -269,10 +270,10 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
         dump(perf_info, fh)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
+    import argparse
     from mpi4py import MPI
     from sequence.kernel.quantum_manager_server import valid_port, valid_ip
-    import argparse
 
     rank = MPI.COMM_WORLD.Get_rank()
     size = MPI.COMM_WORLD.Get_size()
@@ -301,3 +302,4 @@ if __name__ == "__main__":
 
     ring_network(args.ring_size, args.lookahead, args.stop_time * 1e12, rank,
                  size, args.ip, args.port, args.log_path)
+

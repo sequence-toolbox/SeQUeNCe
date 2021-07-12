@@ -1,10 +1,12 @@
-if __name__ == '__main__':
-    from mpi4py import MPI
-    from sys import argv
-    from sequence.kernel.p_timeline import ParallelTimeline
-    from sequence.utils.phold import PholdNode
-    from numpy.random import seed
+from sys import argv
+from mpi4py import MPI
+from numpy.random import seed
 
+from sequence.kernel.p_timeline import ParallelTimeline
+from sequence.utils.phold import PholdNode
+
+
+if __name__ == '__main__':
     total_node = int(argv[1])
     init_work = int(argv[2])
     lookahead = int(argv[3])

@@ -1,10 +1,11 @@
 import json
 from time import time
 import pandas as pd
-from sequence.app.request_app import RequestApp
-from sequence.topology.router_net_topo import RouterNetTopo
 from mpi4py import MPI
 from json import load, dump
+
+from sequence.app.request_app import RequestApp
+from sequence.topology.router_net_topo import RouterNetTopo
 
 
 def main(config_file: str, flow_info_file: str, log_path: str):
@@ -146,3 +147,4 @@ if __name__ == "__main__":
     flow_info_file_name = sys.argv[2]
     log_path = sys.argv[3]
     main(config_file_name, flow_info_file_name, log_path)
+

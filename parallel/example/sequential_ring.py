@@ -1,3 +1,8 @@
+from json import dump
+import os
+import pandas as pd
+from time import time
+
 from sequence.kernel.timeline import Timeline
 from sequence.kernel.quantum_manager_server import kill_server
 from sequence.topology.node import QuantumRouter, BSMNode
@@ -6,11 +11,6 @@ from sequence.components.optical_channel import ClassicalChannel, \
 from sequence.app.random_request import RandomRequestApp
 from sequence.app.request_app import RequestApp
 import sequence.utils.log as log
-
-from json import dump
-import os
-import pandas as pd
-from time import time
 
 
 def ring_network(ring_size: int, lookahead: int, stop_time: int,
@@ -196,3 +196,4 @@ if __name__ == "__main__":
 
     ring_network(args.ring_size, args.lookahead, args.stop_time * 1e12,
                  args.log_path)
+

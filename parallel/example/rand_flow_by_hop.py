@@ -1,15 +1,16 @@
 from collections import defaultdict
 from time import time
+from typing import Dict, List, TYPE_CHECKING
+from mpi4py import MPI
+from json import load, dump
 import pandas as pd
+
 from sequence.kernel.process import Process
 from sequence.kernel.event import Event
 from sequence.app.random_request import RandomRequestApp
 from sequence.app.request_app import RequestApp
 from sequence.topology.router_net_topo import RouterNetTopo
 import sequence.utils.log as log
-from mpi4py import MPI
-from json import load, dump
-from typing import Dict, List, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from sequence.topology.node import QuantumRouter
@@ -227,3 +228,4 @@ if __name__ == "__main__":
     config_file_name = sys.argv[1]
     log_path = sys.argv[2]
     main(config_file_name, log_path)
+

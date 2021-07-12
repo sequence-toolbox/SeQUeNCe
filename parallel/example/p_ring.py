@@ -1,5 +1,10 @@
+from json import dump
+import os
+import pandas as pd
+from time import time
+import numpy as np
+
 from sequence.kernel.p_timeline import ParallelTimeline
-from sequence.kernel.quantum_manager_server import kill_server
 from sequence.topology.node import QuantumRouter, BSMNode
 from sequence.components.optical_channel import ClassicalChannel, \
     QuantumChannel
@@ -7,11 +12,6 @@ from sequence.app.random_request import RandomRequestApp
 from sequence.app.request_app import RequestApp
 import sequence.utils.log as log
 
-from json import dump
-import os
-import pandas as pd
-from time import time
-import numpy as np
 
 SQRT_HALF = 0.5 ** 0.5
 desired_state = [SQRT_HALF, 0, 0, SQRT_HALF]
@@ -55,7 +55,6 @@ class CustomizedApp(RequestApp):
 
 def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
                  mpi_size: int, qm_ip: str, qm_port: int, log_path: str):
-    kill = True
     tick = time()
     if not os.path.exists(log_path) and rank == 0:
         os.mkdir(log_path)
@@ -180,9 +179,6 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
 
     tl.quantum_manager.disconnect_from_server()
 
-    # if kill and tl.id == 0:
-    #     kill_server(qm_ip, qm_port)
-
     # write network information into log_path/net_info.json file
     if rank == 0:
         net_info = {'topology': 'ring', 'size': ring_size,
@@ -243,9 +239,9 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
 
 
 if __name__ == "__main__":
+    import argparse
     from mpi4py import MPI
     from sequence.kernel.quantum_manager_server import valid_port, valid_ip
-    import argparse
 
     rank = MPI.COMM_WORLD.Get_rank()
     size = MPI.COMM_WORLD.Get_size()
@@ -274,3 +270,4 @@ if __name__ == "__main__":
 
     ring_network(args.ring_size, args.lookahead, args.stop_time * 1e12, rank,
                  size, args.ip, args.port, args.log_path)
+
