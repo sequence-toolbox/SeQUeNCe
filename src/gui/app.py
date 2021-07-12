@@ -757,8 +757,9 @@ class Quantum_GUI:
                     return [dash.no_update, new_runtime, new_simtime, '']
                 else:
                     self.simulation.write_to_file()
-                    sim_results = ''
-                    with open(DIRECTORY + '/test.txt', 'r') as outfile:
+                    sim_results = self.simulation.sim_name + '_results.txt'
+
+                    with open(DIRECTORY + '/'+sim_results, 'r') as outfile:
                         sim_results = outfile.read()
                     outfile.close()
                     return [True, dash.no_update, dash.no_update, sim_results]
