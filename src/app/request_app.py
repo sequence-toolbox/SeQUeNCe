@@ -132,7 +132,8 @@ class RequestApp():
         self.schedule_reservation(reservation)
 
     def schedule_reservation(self, reservation: "Reservation") -> None:
-        self.path = reservation.path
+        if reservation.initiator == self.node.name:
+            self.path = reservation.path
         for card in self.node.network_manager.protocol_stack[1].timecards:
             if reservation in card.reservations:
                 process = Process(self, "add_memo_reserve_map",

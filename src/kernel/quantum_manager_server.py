@@ -4,6 +4,7 @@ This function should be started on a separate process for parallel simulation,
     using the `mpi_tests/qm_server.py` script or similar.
 Additionally defined are utility functions for socket connections and the messages used by the client/server.
 """
+
 from enum import Enum, auto
 import socket
 import argparse
@@ -12,10 +13,10 @@ from json import dump
 import select
 from typing import List
 from time import time
-
 from .p_quantum_manager import ParallelQuantumManagerKet, \
     ParallelQuantumManagerDensity
 from ..utils.communication import send_msg_with_length, recv_msg_with_length
+from ..components.circuit import Circuit
 
 
 def valid_port(port):
@@ -49,6 +50,7 @@ class QuantumManagerMsgType(Enum):
     CLOSE = 5
     CONNECT = 6
     CONNECTED = 7
+    SYNC = 8
 
 
 class QuantumManagerMessage():
@@ -60,13 +62,68 @@ class QuantumManagerMessage():
         args (List[any]): list of other arguments for the request.
     """
 
-    def __init__(self, msg_type: QuantumManagerMsgType, keys: 'List[int]', args: 'List[Any]'):
+    def __init__(self, msg_type: QuantumManagerMsgType, keys: 'List[int]',
+                 args: 'List[Any]'):
         self.type = msg_type
         self.keys = keys
         self.args = args
 
     def __repr__(self):
         return str(self.type) + ' ' + str(self.args)
+
+    def serialize(self):
+        hex_keys = [hex(key) for key in self.keys]
+
+        args = {}
+        if self.type == QuantumManagerMsgType.SET:
+            amplitudes = []
+            for cplx_n in self.args[0]:
+                if type(cplx_n) == float:
+                    amplitudes.append(cplx_n)
+                    amplitudes.append(0)
+                else:
+                    amplitudes.append(cplx_n.real)
+                    amplitudes.append(cplx_n.imag)
+
+            args["amplitudes"] = amplitudes
+
+        elif self.type == QuantumManagerMsgType.RUN:
+            args["circuit"] = self.args[0].serialize()
+            args["keys"] = [hex(key) for key in self.args[1]]
+            args["meas_samp"] = -1
+            if len(self.args) > 2:
+                args["meas_samp"] = self.args[2]
+
+        return {"type": self.type.name, "keys": hex_keys, "args": args}
+
+    def deserialize(self, j_data):
+        self.keys = j_data["keys"]
+
+        if j_data["type"] == "GET":
+            self.type = QuantumManagerMsgType.GET
+
+        elif j_data["type"] == "SET":
+            self.type = QuantumManagerMsgType.SET
+            cmplx_n_list = []
+            for i in range(0, len(j_data["args"]["amplitudes"]), 2):
+                cmplx = complex(j_data["args"]["amplitudes"][i],
+                                j_data["args"]["amplitudes"][i + 1])
+                cmplx_n_list.append(cmplx)
+            self.args = [cmplx_n_list]
+        elif j_data["type"] == "RUN":
+            self.type = QuantumManagerMsgType.RUN
+            # use hex string as key temporarily
+            c_raw = j_data["args"]["circuit"]
+            circuit = Circuit(1)
+            circuit.deserialize(c_raw)
+            keys = j_data["args"]["keys"]
+            meas_samp = j_data["args"]["meas_samp"]
+            self.args = [circuit, keys, meas_samp]
+
+        elif j_data["type"] == "CLOSE":
+            self.type = QuantumManagerMsgType.CLOSE
+        elif j_data["type"] == "SYNC":
+            self.type = QuantumManagerMsgType.SYNC
 
 
 def start_server(ip: str, port: int, client_num, formalism="KET",
@@ -113,7 +170,9 @@ def start_server(ip: str, port: int, client_num, formalism="KET",
             traffic_counter += 1
             msg_counter += len(msgs)
 
-            for msg in msgs:
+            for m_raw in msgs:
+                msg = QuantumManagerMessage(None, [], [])
+                msg.deserialize(m_raw)
                 return_val = None
 
                 tick = time()
@@ -124,18 +183,19 @@ def start_server(ip: str, port: int, client_num, formalism="KET",
 
                 elif msg.type == QuantumManagerMsgType.GET:
                     assert len(msg.args) == 0
-                    return_val = qm.get(msg.keys[0])
+                    state = qm.get(msg.keys[0])
+                    return_val = state.serialize()
 
                 elif msg.type == QuantumManagerMsgType.RUN:
                     assert len(msg.args) == 2 or len(msg.args) == 3
-                    return_val = qm.run_circuit(*msg.args)
+                    circuit, keys, meas_samp = msg.args
+                    return_val = qm.run_circuit(circuit, keys, meas_samp)
                     if len(return_val) == 0:
                         return_val = None
 
                 elif msg.type == QuantumManagerMsgType.SET:
                     assert len(msg.args) == 1
-                    amplitudes = msg.args[0]
-                    qm.set(msg.keys, amplitudes)
+                    qm.set(msg.keys, msg.args[0])
 
                 elif msg.type == QuantumManagerMsgType.REMOVE:
                     assert len(msg.keys) == 1
@@ -147,6 +207,10 @@ def start_server(ip: str, port: int, client_num, formalism="KET",
                     for s in sockets:
                         s.close()
                     sockets = []
+
+                elif msg.type == QuantumManagerMsgType.SYNC:
+                    return_val = True
+
                 else:
                     raise Exception(
                         "Quantum manager session received invalid message type {}".format(

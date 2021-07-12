@@ -223,23 +223,19 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     df.to_csv(log_path + "/traffic_%d.csv" % rank)
 
     # write information of parallelization performance into log_path/perf.json file
-    sync_time = execution_time - tl.computing_time - tl.communication_time1 - tl.communication_time2 - tl.communication_time3
+    sync_time = execution_time - tl.computing_time - tl.communication_time
     perf_info = {'prepare_time': prepare_time,
                  'execution_time': execution_time,
                  'computing_time': tl.computing_time,
-                 'communication_time': tl.communication_time1 + tl.communication_time2 + tl.communication_time3,
-                 'communication_time1': tl.communication_time1,
-                 'communication_time2': tl.communication_time2,
-                 'communication_time3': tl.communication_time3,
+                 'communication_time': tl.communication_time,
                  'sync_time': sync_time,
                  'sync_counter': tl.sync_counter,
-                 'event_counter': tl.event_counter,
+                 'io_time': tl.quantum_manager.io_time,
+                 'run_counter': tl.run_counter,
                  'schedule_counter': tl.schedule_counter,
                  'exchange_counter': tl.exchange_counter}
-    for msg_type in tl.quantum_manager.io_time:
+    for msg_type in tl.quantum_manager.type_counter:
         perf_info['%s_counter' % msg_type] = tl.quantum_manager.type_counter[
-            msg_type]
-        perf_info['%s_io_time' % msg_type] = tl.quantum_manager.io_time[
             msg_type]
 
     with open('%s/perf_%d.json' % (log_path, rank), 'w') as fh:

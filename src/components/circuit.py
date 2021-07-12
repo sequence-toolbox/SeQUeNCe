@@ -4,7 +4,7 @@ This module introduces the QuantumCircuit class. The qutip library is used to ca
 """
 
 from math import e, pi
-from typing import List
+from typing import List, Dict
 
 import numpy as np
 from qutip.qip.circuit import QubitCircuit
@@ -118,6 +118,21 @@ class Circuit():
             self._cache = gate_sequence_product(qc.propagators()).full()
             return self._cache
         return self._cache
+
+    def serialize(self) -> Dict:
+        gates = [{"name": g_name, "indices": indices}
+                 for g_name, indices in self.gates]
+        return {"size": self.size, "gates": gates,
+                "measured_qubits": self.measured_qubits}
+
+    def deserialize(self, json_data):
+        self.size = json_data["size"]
+        for gate in json_data["gates"]:
+            name, indices = gate["name"], gate["indices"]
+            self.gates.append([name, indices])
+        for q in json_data["measured_qubits"]:
+            self.measured_qubits = json_data["measured_qubits"]
+        self._cache = None
 
     @validator
     def h(self, qubit: int):

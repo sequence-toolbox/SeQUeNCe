@@ -1,6 +1,5 @@
 import argparse
 import json
-import csv
 import pandas as pd
 
 from sequence.topology.topology import Topology
@@ -40,12 +39,14 @@ else:
 
 # generate router nodes
 if args.parallel and node_procs:
-    node_names = list(node_procs.keys())
+    node_names = list(
+        node_procs.keys())  # will node_procs.keys() return keys with random order?
 else:
     node_names = ["router_" + str(i) for i in range(args.linear_size)]
 nodes = [{Topology.NAME: name,
           Topology.TYPE: RouterNetTopo.QUANTUM_ROUTER,
           Topology.SEED: i,
+          # since the order is random, the seed may set different
           RouterNetTopo.MEMO_ARRAY_SIZE: args.memo_size}
          for i, name in enumerate(node_names)]
 # TODO: memory fidelity?
@@ -84,12 +85,15 @@ for i, bsm_name in enumerate(bsm_names):
                       Topology.DISTANCE: args.qc_length * 500,
                       Topology.ATTENUATION: args.qc_atten})
     # cchannels
-    cchannels.append({Topology.SRC: bsm_name,
-                      Topology.DST: node_names[i],
-                      Topology.DELAY: args.cc_delay * 1e9})
-    cchannels.append({Topology.SRC: bsm_name,
-                      Topology.DST: node_names[i + 1],
-                      Topology.DELAY: args.cc_delay * 1e9})
+    for node in [node_names[i], node_names[i + 1]]:
+        cchannels.append({Topology.SRC: bsm_name,
+                          Topology.DST: node,
+                          Topology.DELAY: args.cc_delay * 1e9})
+
+        cchannels.append({Topology.SRC: node,
+                          Topology.DST: bsm_name,
+                          Topology.DELAY: args.cc_delay * 1e9})
+
 nodes += bsm_nodes
 output_dict[Topology.ALL_NODE] = nodes
 output_dict[Topology.ALL_Q_CHANNEL] = qchannels
