@@ -133,7 +133,7 @@ class Quantum_GUI:
                         trailing_commas=False
                     )
                 outfile.close()
-        self.simulation = GUI_Sim(0, 0, 'init', self)
+        self.simulation = GUI_Sim(0, 0, 'NOTSET', 'init', self)
         self.sim_params = None
 
         nodes = list(self.data.edges.data())
@@ -632,7 +632,7 @@ class Quantum_GUI:
                     return [dash.no_update, 'To: '+tapped_node['label'], out]
                 else:
                     return [dash.no_update, dash.no_update, out]
-            else:
+            elif input_id == 'tapEdgeData':
                 parsed = json5.loads(tapped_edge['data'])
                 out = json5.dumps(
                     parsed,
@@ -699,30 +699,33 @@ class Quantum_GUI:
             ],
             [
                 Input('run_sim', 'n_clicks'),
-                Input('running', 'n_intervals')
+                Input('running', 'n_intervals'),
             ],
             state=[
                 State('runtime', 'children'),
-                State('simtime', 'children'),
                 State('time_units_sim', 'value'),
-                State('sim_time_in', 'value')
+                State('sim_time_in', 'value'),
+                State('logging_verbosity', 'value'),
+                State('sim_name', 'value')
             ]
         )
-        def run_sim(clicks, n, runtime, simtime, units, time_to_run):
+        def run_sim(clicks, n, runtime, units, time_to_run, logging, sim_name):
             ctx = dash.callback_context
             input_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
             if input_id == 'run_sim':
-                if time_to_run is None or units is None:
+                if time_to_run is None or units is None or sim_name is None:
                     return [dash.no_update, '', '', '']
                 else:
                     if(not self.simulation.timeline.is_running):
                         self.simulation = GUI_Sim(
                             int(time_to_run),
                             int(units),
-                            'test',
+                            logging,
+                            sim_name,
                             self
                         )
+                        self.simulation.init_logging()
                         self.simulation.random_request_simulation()
                         func = self.simulation.timeline.run
                         toRun = threading.Thread(
@@ -731,7 +734,7 @@ class Quantum_GUI:
                         )
                         toRun.start()
                         print('start')
-                        return [False, '', '', '']
+                        return [False, '00:00:00', '', '']
                     else:
                         self.simulation.timeline.stop()
                         print('stop')
@@ -747,7 +750,6 @@ class Quantum_GUI:
                         ).total_seconds()
                     )
                     current_time += 1
-                    print(current_time)
                     str_time = time.gmtime(current_time)
                     new_runtime = time.strftime('%H:%M:%S', str_time)
                     new_simtime = self.simulation.getSimTime()

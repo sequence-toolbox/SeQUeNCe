@@ -3,6 +3,7 @@ A Class which serves as the interface between the SeQUeNCe simulator
 and GUI components
 """
 
+from layout import DIRECTORY
 import time
 import os
 import pandas as pd
@@ -10,18 +11,26 @@ from ..topology.node import *
 from ..kernel.timeline import Timeline
 from ..topology.topology import Topology
 from ..app.random_request import RandomRequestApp
+from ..utils.log import *
 
 
 class GUI_Sim():
-    def __init__(self, sim_time: int, time_scale: int, sim_name, config):
+    def __init__(
+        self,
+        sim_time: int,
+        time_scale: int,
+        logging: str,
+        sim_name,
+        config
+    ):
         self.sim_name = sim_name
         self.timeline = Timeline(sim_time * time_scale)
         self.timeline.seed(0)
-        # self.timeline.show_progress = True
         self.topology = Topology(sim_name, self.timeline)
         self.sim_templates = config.defaults.copy()
         self.apps = []
         temp = config.templates.copy()
+        self.logging = logging
 
         for key, val in temp.items():
             self.sim_templates.update(val)
@@ -112,6 +121,14 @@ class GUI_Sim():
                     dst,
                     next_node)
 
+    def init_logging(self):
+        set_logger(
+            'sim_logging',
+            self.timeline,
+            DIRECTORY+'/'+self.sim_name+'_log.txt'
+        )
+        set_logger_level(self.logging)
+
     def random_request_simulation(self):
 
         # construct random request applications
@@ -147,7 +164,7 @@ class GUI_Sim():
 
     def write_to_file(self):
         tick = time.time()
-        output = open(os.path.split(__file__)[0]+'/'+self.sim_name+'.txt', "w")
+        output = open(DIRECTORY+'/'+self.sim_name+'_results.txt', "w")
         output.write("execution time %.2f sec" % (time.time() - tick))
 
         for app in self.apps:

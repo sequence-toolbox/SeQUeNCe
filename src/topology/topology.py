@@ -238,7 +238,7 @@ class Topology():
         # edit graph
         self._cc_graph[node1][node2] = cchannel.delay 
 
-    def get_nodes_by_type(self, node_type: str) -> [Node]:
+    def get_nodes_by_type(self, node_type: str) -> "list[Node]":
         return [node for name, node in self.nodes.items() if type(node).__name__ == node_type]
 
     def generate_forwarding_table(self, starting_node: str) -> dict:

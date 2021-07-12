@@ -457,10 +457,26 @@ simulation_menu = dbc.Form(
             [
                 dbc.Row(
                     [
+                        dbc.Col(
+                            dbc.Label('Simulation Name'),
+                            width=2
+                        ),
+                        dbc.Col(dbc.Input(
+                            id='sim_name',
+                            placeholder='Ex: Test_1'
+                        ), width=10)
+                    ]
+                ),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            dbc.Label('Time'),
+                            width=2
+                        ),
                         dbc.Col(dbc.Input(
                             id='sim_time_in',
                             placeholder='Enter simulation time'
-                        ), width=10),
+                        ), width=8),
                         dbc.Col(getTimeUnits('sim'), width=2),
                     ]
                 ),
@@ -478,6 +494,7 @@ simulation_menu = dbc.Form(
                                     {"label": 'Debug', 'value': 'DEBUG'},
                                     {'label': 'None', 'value': 'NOTSET'},
                                 ],
+                                value='NOTSET',
                                 inline=True
                             ),
                             width=12,
