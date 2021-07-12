@@ -694,7 +694,8 @@ class Quantum_GUI:
             [
                 Output('running', 'disabled'),
                 Output('runtime', 'children'),
-                Output('simtime', 'children')
+                Output('simtime', 'children'),
+                Output('results_out', 'children')
             ],
             [
                 Input('run_sim', 'n_clicks'),
@@ -713,7 +714,7 @@ class Quantum_GUI:
 
             if input_id == 'run_sim':
                 if time_to_run is None or units is None:
-                    return [dash.no_update, '', '']
+                    return [dash.no_update, '', '', '']
                 else:
                     if(not self.simulation.timeline.is_running):
                         self.simulation = GUI_Sim(
@@ -730,11 +731,11 @@ class Quantum_GUI:
                         )
                         toRun.start()
                         print('start')
-                        return [False, '00:00:00', '00:00:00.000']
+                        return [False, '', '', '']
                     else:
                         self.simulation.timeline.stop()
                         print('stop')
-                        return [True, '', '']
+                        return [True, '', '', '']
             elif input_id == 'running':
                 if self.simulation.timeline.is_running:
                     h, m, s = runtime.split(':')
@@ -751,11 +752,16 @@ class Quantum_GUI:
                     new_runtime = time.strftime('%H:%M:%S', str_time)
                     new_simtime = self.simulation.getSimTime()
 
-                    return [dash.no_update, new_runtime, new_simtime]
+                    return [dash.no_update, new_runtime, new_simtime, '']
                 else:
-                    return [True, dash.no_update, dash.no_update]
+                    self.simulation.write_to_file()
+                    sim_results = ''
+                    with open(DIRECTORY + '/test.txt', 'r') as outfile:
+                        sim_results = outfile.read()
+                    outfile.close()
+                    return [True, dash.no_update, dash.no_update, sim_results]
             else:
-                return [True, '', '']
+                return [True, '', '', '']
 
         @app.callback(
             Output("download", "data"),
