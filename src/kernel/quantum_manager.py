@@ -28,9 +28,10 @@ class QuantumManager():
 
     Attributes:
         states (Dict[int, KetState]): mapping of state keys to quantum state objects.
+        formalism (str): formalism used for local quantum state representation.
     """
 
-    def __init__(self, formalism, seed=None):
+    def __init__(self, formalism):
         self.states = {}
         self._least_available = 0
         self.formalism = formalism
@@ -40,8 +41,7 @@ class QuantumManager():
         """Method to create a new quantum state.
 
         Args:
-            amplitudes: complex amplitudes of new state. Type depends on type of subclass.
-            key: desired key for quantum state. Cannot be existing key.
+            state (any): complex amplitudes of new state. Type depends on type of subclass.
 
         Returns:
             int: key for new state generated.
@@ -60,7 +60,7 @@ class QuantumManager():
         return self.states[key]
 
     @abstractmethod
-    def run_circuit(self, circuit: "Circuit", keys: List[int], meas_samp=None) -> int:
+    def run_circuit(self, circuit: "Circuit", keys: List[int], meas_samp=None) -> Dict[int, int]:
         """Method to run a circuit on a given set of quantum states.
 
         Args:
@@ -123,7 +123,7 @@ class QuantumManager():
 
         Args:
             keys (List[int]): key(s) of state(s) to change.
-            amplitudes: Amplitudes to set state to, type determined by type of subclass.
+            amplitudes (any): Amplitudes to set state to, type determined by type of subclass.
         """
 
         num_qubits = log2(len(amplitudes))
@@ -192,6 +192,7 @@ class QuantumManagerKet(QuantumManager):
             state (List[complex]): state to measure.
             keys (List[int]): list of keys to measure.
             all_keys (List[int]): list of all keys corresponding to state.
+            meas_samp (float): random sample used for measurement result.
 
         Returns:
             Dict[int, int]: mapping of measured keys to measurement results.
@@ -228,11 +229,6 @@ class QuantumManagerKet(QuantumManager):
             # calculate meas probabilities and projected states
             len_diff = len(all_keys) - len(keys)
             new_states, probabilities = measure_multiple_with_cache_ket(tuple(state), len(keys), len_diff)
-
-            # choose result, set as new state
-            # possible_results = arange(0, 2 ** len(keys), 1)
-            # result = self.rng.choice(possible_results, p=probabilities)
-            # new_state = new_states[result]
 
             for i in range(int(2 ** len(keys))):
                 if meas_samp < sum(probabilities[:i+1]):
@@ -314,6 +310,7 @@ class QuantumManagerDensity(QuantumManager):
             state (List[complex]): state to measure.
             keys (List[int]): list of keys to measure.
             all_keys (List[int]): list of all keys corresponding to state.
+            meas_samp (float): random sample used for measurement result.
 
         Returns:
             Dict[int, int]: mapping of measured keys to measurement results.
@@ -377,7 +374,12 @@ class QuantumManagerDensity(QuantumManager):
 
 
 class State():
-    """Class to represent state of qubits."""
+    """Class to represent state of qubits.
+
+    Attributes:
+        state (any): internal representation of qubit state. Varies based on formalism.
+        keys (list[int]): associated keys for a quantum manager.
+    """
 
     def __init__(self, state, keys):
         self.state = state
@@ -443,7 +445,8 @@ class DensityState(State):
         """Constructor for density state class.
 
         Args:
-            state (List[List[complex]]): density matrix elements given as a list. If the list is one-dimensional, will be converted to matrix with outer product operation.
+            state (List[List[complex]]): density matrix elements given as a list.
+                If the list is one-dimensional, will be converted to matrix with the outer product operation.
             keys (List[int]): list of keys to this state in quantum manager.
         """
 

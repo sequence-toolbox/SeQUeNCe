@@ -205,7 +205,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             May update memory state in the attached node's resource manager.
         """
 
-        # to avoid start after remove protocol
+        # to avoid start after protocol removed
         if self not in self.own.protocols:
             return
 

@@ -412,6 +412,7 @@ class SingleAtomBSM(BSM):
         detectors (List[Detector]): list of attached photon detection devices
         resolution (int): maximum time resolution achievable with attached detectors  
     """
+
     _meas_circuit = Circuit(1)
     _meas_circuit.measure(0)
 
@@ -510,3 +511,4 @@ class SingleAtomBSM(BSM):
         info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res,
                 'time': time}
         self.notify(info)
+

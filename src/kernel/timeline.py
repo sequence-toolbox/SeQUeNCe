@@ -36,20 +36,23 @@ class Timeline:
 
     Attributes:
         events (EventList): the event list of timeline.
-        entities (Dict[str]:Entity): the dictionary map name to the object of Entity
+        entities (Dict[str]:Entity): mapping of entity names to `Entity` class objects.
         time (int): current simulation time (picoseconds).
         stop_time (int): the stop (simulation) time of the simulation.
-        schedule_counter (int): the counter of scheduled events
-        run_counter (int): the counter of executed events
+        schedule_counter (int): the counter of scheduled events.
+        run_counter (int): the counter of executed events.
+        show_progress (bool): indicates if timeline should show progress bar.
         quantum_manager (QuantumManager): quantum state manager.
     """
 
     def __init__(self, stop_time=inf, formalism='KET'):
-        """Constructor for timeline.
+        """Constructor for the Timeline class.
 
         Args:
             stop_time (int): stop time (in ps) of simulation (default inf).
+            formalism (str): formalism to use for the quantum manager (default `'KET'` for ket vector).
         """
+
         self.events = EventList()
         self.entities = {}
         self.time = 0
@@ -72,6 +75,7 @@ class Timeline:
 
     def schedule(self, event: "Event") -> None:
         """Method to schedule an event."""
+
         if type(event.process.owner) is str:
             event.process.owner = self.get_entity_by_name(event.process.owner)
         self.schedule_counter += 1
@@ -79,6 +83,7 @@ class Timeline:
 
     def init(self) -> None:
         """Method to initialize all simulated entities."""
+
         log.logger.info("Timeline initial network")
 
         for entity in self.entities.values():
@@ -91,6 +96,7 @@ class Timeline:
         Events are continuously popped and executed, until the simulation time limit is reached or events are exhausted.
         A progress bar may also be displayed, if the `show_progress` flag is set.
         """
+        
         log.logger.info("Timeline start simulation")
         tick = time_ns()
 
@@ -119,6 +125,7 @@ class Timeline:
 
     def stop(self) -> None:
         """Method to stop simulation."""
+
         log.logger.info("Timeline is stopped")
         self.stop_time = self.now()
 
@@ -143,3 +150,4 @@ class Timeline:
             return self.entities[name]
         else:
             return None
+

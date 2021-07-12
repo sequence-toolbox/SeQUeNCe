@@ -1,3 +1,9 @@
+"""This module defines the QuantumManagerClient class.
+
+This client provides the same interface as the QuantumManager class for manipulating qubits.
+Qubits only managed by the local process are stored within a QuantumManager class instance.
+Qubits managed or accessed between processes are stored on a remote quantum manager server.
+"""
 from collections import defaultdict
 from socket import socket
 from typing import List, TYPE_CHECKING, Any
@@ -8,29 +14,35 @@ if TYPE_CHECKING:
     from .p_timeline import ParallelTimeline
 
 from .quantum_manager import QuantumManagerKet, QuantumManagerDensity, KetState
-from .quantum_manager_server import QuantumManagerMsgType, \
-    QuantumManagerMessage
+from .quantum_manager_server import QuantumManagerMsgType, QuantumManagerMessage
 from ..components.circuit import Circuit
 from ..utils.communication import send_msg_with_length, recv_msg_with_length
 
 
 class QuantumManagerClient():
-    """Class to pocess interactions with multiprocessing quantum manager server.
+    """Class to pocess interactions with remote quantum manager server.
 
     Unless otherwise noted, the operation of all functions are the same as those of the QuantumManagerClass.
 
     Attributes:
-        s (socket): socket for communication with server.
-        connected (bool): denotes if client has been properly connected with remote server.
+        formalism (str): formalism to use for quantum manager (must match server).
+        ip (str): ip address of quantum manager server.
+        port (int): port of quantum manager server.
+        socket (socket): socket for communication with server.
+        managed_qubits (set): keys for all qubits managed locally by client.
+        timeline (ParallelTimeline): local timeline.
+        message_buffer (List): list of messages to send to quantum manager server.
     """
 
     def __init__(self, formalism: str, ip: str, port: int):
         """Constructor for QuantumManagerClient class.
 
         Args:
-            ip: ip of quantum manager server.
-            port: port of quantum manager server.
+            formalism (str): formalism to use for quantum manager.
+            ip (str): ip of quantum manager server.
+            port (int): port of quantum manager server.
         """
+
         self.formalism = formalism
         self.ip = ip
         self.port = port
@@ -63,21 +75,21 @@ class QuantumManagerClient():
         return self.socket
 
     def disconnect_from_server(self):
+        """Closes socket connection with quantum manager server.
+
+        Uses a message of type `QuantumManagerServer.CLOSE`.
+
+        Side Effects:
+            closes socket attribute connection.
+        """
+
         self._send_message(QuantumManagerMsgType.CLOSE, [], [],
                            expecting_receive=False)
         self.flush_message_buffer()
 
     def new(self, state=(complex(1), complex(0))) -> int:
-        """Method to get a new state from server.
-
-        Args:
-            state (List): if None, state will be in default state. Otherwise, must match formalism of server.
-
-        Returns:
-            int: key for the new state generated.
-        """
         key = uuid4().int
-        # below code cannot be removed because the assertion in the
+        # below code cannot be removed because of the assertion in the
         # move_manage_to_client function
         self.qm.set([key], state)
         self.move_manage_to_client([key], state)
@@ -152,10 +164,12 @@ class QuantumManagerClient():
     def kill(self) -> None:
         """Method to terminate the connected server.
 
+        Uses a message of type `QuantumManagerMsgType.TERMINATE`.
+
         Side Effects:
-            Will end all processes of remote server.
-            Will set the `connected` attribute to False.
+            Will end all processes on the remote server.
         """
+
         self._send_message(QuantumManagerMsgType.TERMINATE, [], [],
                            expecting_receive=False)
 
@@ -163,6 +177,13 @@ class QuantumManagerClient():
         return qubit_key not in self.managed_qubits
 
     def move_manage_to_server(self, qubit_key: int, sync_state=True):
+        """Move management of a qubit from the local quantum manager to quantum manager server.
+
+        Args:
+            qubit_key (int): qubit key to move.
+            sync_state (bool): indicates if server state should be set to match local (default `True`).
+        """
+
         if self.is_managed_by_server(qubit_key):
             return
         if qubit_key in self.qm.states:
@@ -181,6 +202,18 @@ class QuantumManagerClient():
 
     def _send_message(self, msg_type, keys: List, args: List,
                       expecting_receive=True) -> any:
+        """Sends a message to the remote quantum manager server.
+
+        Args:
+            msg_type (QuantumManagerMsgType): type of message to send.
+            keys (List[int]): list of all keys affected by message process.
+            args (List[any]): any other arguments used for the message.
+            expecting_receive (bool): indicates if client should block until response received (default `True`).
+
+        Returns:
+            any: result of process on quantum manager server (if `expecting_receive` is `True`).
+        """
+
         self.type_counter[msg_type.name] += 1
 
         msg = QuantumManagerMessage(msg_type, keys, args)
@@ -207,3 +240,4 @@ class QuantumManagerClient():
 
     def _check_local(self, keys: List[int]):
         return not any([self.is_managed_by_server(key) for key in keys])
+
