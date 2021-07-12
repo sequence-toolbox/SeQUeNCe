@@ -42,6 +42,9 @@ These examples include:
 
 ## Additional Tools
 
+### Parallel Simulation
+SeQUeNCe is able to run simulations as parallel programs using MPI. For large simulations, this may provide a significant performance benefit. Please visit the [SeQUeNCe documentation website](https://sequence-toolbox.github.io/) for more information on how to set up and run parallelized simulations.
+
 ### Network Visualization
 The example directory contains an example json file `starlight.json` to specify a network topology, and the utils directory contains the script `draw_topo.py` to visualize json files. To use this script, the Graphviz library must be installed. Installation information can be found on the [Graphviz website](https://www.graphviz.org/download/).
 
