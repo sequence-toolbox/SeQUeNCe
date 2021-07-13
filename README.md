@@ -1,5 +1,7 @@
 # SeQUeNCe: Simulator of QUantum Network Communication
 
+This fork of SeQUeNCe contains the in-development version of the SeQUeNCe GUI. As of Summer 2021, it is in active development at Argonne National Laboratory as part of the DOE SULI program.
+
 SeQUeNCe is an open source, discrete-event simulator for quantum networks. As described in our [paper](http://arxiv.org/abs/2009.12000), the simulator includes 5 modules on top of a simulation kernel:
 * Hardware
 * Entanglement Management
