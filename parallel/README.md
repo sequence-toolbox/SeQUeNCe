@@ -18,14 +18,14 @@ At this point, programs using the Python version of the Quantum Manager Server a
 Instructions on how to install CMake can be found on the [CMake website](https://cmake.org/install/). If you have CMake already installed on your system, make sure it is version 3.10 or later using `$ cmake --version`.
 
 ### Eigen
-Eigen is a library for adding linear algebra tools to C++. The library may be downloaded from the [Eigen wiki](http://eigen.tuxfamily.org/index.php?title=Main_Page#Download). Once downladed, create another directory named 'build\_dir' and build the library using cmake:
+Eigen is a library for adding linear algebra tools to C++. The library may be downloaded from the [Eigen wiki](http://eigen.tuxfamily.org/index.php?title=Main_Page#Download). Once downladed, create another directory named `build_dir` and build the library using cmake:
 ```
 $ mkdir build_dir
 $ cd build_dir
 $ cmake source_dir
 $ make install
 ```
-The "make install" step may require administrator privileges. For future reference, these instructions may be viewed in the `INSTALL` file included with the Eigen library download.
+Where `source_dir` is the path to the downloaded Eigen files. The `make install` step may require administrator privileges. For future reference, these instructions may be viewed in the `INSTALL` file included with the Eigen library download.
 
 ## Quantum Manager Server
 Before running a parallel simulation script, a quantum manager server must be started to service requests from the simulation clients. SeQUeNCe includes a server program written in Python for ease of use and customization, as well as a version written in C++ for improved performance. Both programs communicate with the simulation clients using sockets. A description of how to run the server can be found on the [documentation page](https://sequence-toolbox.github.io/).
