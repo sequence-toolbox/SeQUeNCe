@@ -1,3 +1,5 @@
+"""This module defines common functions for the config generation files."""
+
 import pandas as pd
 
 from sequence.topology.topology import Topology

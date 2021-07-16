@@ -1,3 +1,28 @@
+"""This module generates JSON config files for networks in a caveman graph configuration.
+
+More information may be found here: https://mathworld.wolfram.com/CavemanGraph.html
+Help information may also be obtained using the `-h` flag.
+
+Args:
+    l (int): number of cliques (clusters) in the graph.
+    k (int): number of nodes per clique.
+    memo_size (int): number of memories per node.
+    qc_length (float): distance between nodes (in km).
+    qc_atten (float): quantum channel attenuation (in dB/m).
+    cc_delay (float): classical channel delay (in ms).
+
+Optional Args:
+    -o --output (str): name of the output file (default out.json).
+    -s --stop (float): simulation stop time (in s) (default infinity).
+    -p --parallel: sets simulation as parallel and requires addition args:
+        server ip (str): IP address of quantum manager server.
+        server port (int): port quantum manager server is attached to.
+        num. processes (int): number of processes to use for simulation.
+        sync/async (bool): denotes if timelines should be synchronous (true) or not (false).
+        lookahead (int): simulation lookahead time for timelines (in ps).
+    -n --nodes (str): path to csv file providing process information for nodes.
+"""
+
 import networkx as nx
 import argparse
 import json
@@ -19,8 +44,6 @@ def bsm_name_func(i, j):
 parser = argparse.ArgumentParser()
 parser.add_argument('l', type=int, help="l (int) – Number of cliques")
 parser.add_argument('k', type=int, help="k (int) – Size of cliques")
-parser.add_argument('group_n', type=int, help="group_n (int) - Number of "
-                                              "groups for parallel simulation")
 parser.add_argument('memo_size', type=int, help='number of memories per node')
 parser.add_argument('qc_length', type=float,
                     help='distance between nodes (in km)')

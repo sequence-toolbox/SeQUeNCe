@@ -1,3 +1,26 @@
+"""This module generates JSON config files for networks in a linear configuration.
+
+Help information may also be obtained using the `-h` flag.
+
+Args:
+    linear_size (int): number of nodes in the graph.
+    memo_size (int): number of memories per node.
+    qc_length (float): distance between nodes (in km).
+    qc_atten (float): quantum channel attenuation (in dB/m).
+    cc_delay (float): classical channel delay (in ms).
+
+Optional Args:
+    -o --output (str): name of the output file (default out.json).
+    -s --stop (float): simulation stop time (in s) (default infinity).
+    -p --parallel: sets simulation as parallel and requires addition args:
+        server ip (str): IP address of quantum manager server.
+        server port (int): port quantum manager server is attached to.
+        num. processes (int): number of processes to use for simulation.
+        sync/async (bool): denotes if timelines should be synchronous (true) or not (false).
+        lookahead (int): simulation lookahead time for timelines (in ps).
+    -n --nodes (str): path to csv file providing process information for nodes.
+"""
+
 import argparse
 import json
 import pandas as pd

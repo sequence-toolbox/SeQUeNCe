@@ -7,9 +7,37 @@ from .quantum_manager_client import QuantumManagerClient
 
 
 class ParallelTimeline(Timeline):
+    """Class for a simulation timeline with parallel computation.
+
+    The Parallel Timeline acts behaves similarly to the Timeline class, maintianing and executing a queue of events.
+    There is one Parallel Timeline per simulation process.
+    Each timeline controls a subset of the simulated network nodes.
+    For events executed on nodes belonging to other timelines, an event buffer is maintained.
+    These buffers are exchanged between timelines at regular synchronization intervals.
+    All Parallel Timelines in a simulation communicate with a Quantum Manager Server for shared quantum states.
+
+    Attributes:
+        id (int): rank of MPI process running the Parallel Timeline instance.
+        foreign_entities (Dict[str, int]): mapping of object names on other processes to process id.
+        event_buffer(List[List[Event]]): stores events for execution on foreign entities; swapped during synchronization.
+        lookahead (int): defines width of time window for execution (simulation time between synchronization).
+        quantum_manager (QuantumManagerClient): local quantum manager client to communicate with server.
+    """
 
     def __init__(self, lookahead: int, stop_time=float('inf'), formalism='KET',
                  qm_ip=None, qm_port=None):
+        """Constructor for the ParallelTimeline class.
+
+        Also creates a quantum manager client, unless `qm_ip` and `qm_port` are both set to None.
+
+        Args:
+            lookahead (int): sets the timeline lookahead time. 
+            stop_time (int): stop (simulation) time of simulation (default inf).
+            formalism (str): formalism to use for storing quantum states (default 'KET').
+            qm_ip (str): IP address for the quantum manager server (default None).
+            qm_port (int): port to connect to for quantum manager server (default None).
+        """
+
         super(ParallelTimeline, self).__init__(stop_time, formalism)
         self.id = MPI.COMM_WORLD.Get_rank()
         self.foreign_entities = {}
@@ -29,6 +57,8 @@ class ParallelTimeline(Timeline):
         self.communication_time = 0
 
     def schedule(self, event: 'Event'):
+        """Method to schedule an event."""
+
         if type(event.process.owner) is str \
                 and event.process.owner in self.foreign_entities:
             self.buffer_min_ts = min(self.buffer_min_ts, event.time)
@@ -39,6 +69,12 @@ class ParallelTimeline(Timeline):
             super(ParallelTimeline, self).schedule(event)
 
     def top_time(self) -> float:
+        """Method to get the timestamp of the soonest event in the local queue.
+
+        Used for the conservative synchronization algorithm.
+        If the event queue is empty, returns infinity.
+        """
+
         if len(self.events) > 0:
             return self.events.top().time
         else:
@@ -87,6 +123,13 @@ class ParallelTimeline(Timeline):
             self.computing_time += time() - tick
 
     def add_foreign_entity(self, entity_name: str, foreign_id: int):
+        """Adds the name of an entity on another parallel timeline.
+
+        Args:
+            entity_name (str): name of the entity on another parallel timeline.
+            foreign_id (int): id of the process containing the entity.
+        """
+
         self.foreign_entities[entity_name] = foreign_id
 
 

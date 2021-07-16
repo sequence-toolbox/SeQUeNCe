@@ -1,7 +1,7 @@
 """This module defines the function to use for the quantum manager server.
 
-This function should be started on a separate process for parallel simulation,
-    using the `mpi_tests/qm_server.py` script or similar.
+This function should be started on a separate process for parallel simulation, \
+        using the `mpi_tests/qm_server.py` script or similar.
 Additionally defined are utility functions for socket connections and the messages used by the client/server.
 """
 
@@ -9,10 +9,11 @@ from enum import Enum, auto
 import socket
 import argparse
 from ipaddress import ip_address
-from json import dump
 import select
 from typing import List
 from time import time
+from json import dump
+
 from .p_quantum_manager import ParallelQuantumManagerKet, \
     ParallelQuantumManagerDensity
 from ..utils.communication import send_msg_with_length, recv_msg_with_length
@@ -72,6 +73,15 @@ class QuantumManagerMessage():
         return str(self.type) + ' ' + str(self.args)
 
     def serialize(self):
+        """Serializes the data stored in the message.
+
+        Returns:
+            Dict[str, any]: A dictionary with the following keys:
+            - "type": name of the type for the message.
+            - "keys": keys for all modified qubits in the quantum state manager, in hex format.
+            - "args": JSON-like serialized version of arguments
+        """
+
         hex_keys = [hex(key) for key in self.keys]
 
         args = {}
@@ -97,6 +107,12 @@ class QuantumManagerMessage():
         return {"type": self.type.name, "keys": hex_keys, "args": args}
 
     def deserialize(self, j_data):
+        """Method to reconstruct a message from serialized data.
+
+        Args:
+            j_data: serialized QuantumManagerMessage data.
+        """
+
         self.keys = j_data["keys"]
 
         if j_data["type"] == "GET":
