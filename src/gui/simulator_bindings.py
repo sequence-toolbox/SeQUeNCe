@@ -3,11 +3,12 @@ A Class which serves as the interface between the SeQUeNCe simulator
 and GUI components
 """
 
-from layout import DIRECTORY
+
 import time
 import os
 import pandas as pd
 from ..topology.node import *
+from .layout import DIRECTORY
 from ..kernel.timeline import Timeline
 from ..topology.topology import Topology
 from ..app.random_request import RandomRequestApp

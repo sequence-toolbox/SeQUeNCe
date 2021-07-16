@@ -8,6 +8,69 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
 
+def getInputField(value_in:str, label:str, input_id:str):
+    return dbc.Row(
+        [
+            dbc.Col(dbc.Label(label), width=2),
+            dbc.Col(dbc.Input(
+                id=input_id, 
+                value=value_in), 
+                width= 10)
+        ]
+    )
+
+def makeDropdownOptions(possible_inputs):
+    out = []
+    for x in possible_inputs:
+        out.append([{'label',x},{'value',x}])
+    return out
+
+def getDropdownField(value_in:str, all_vals:"list[str]", label:str, input_id:str):
+    opts = makeDropdownOptions(all_vals)
+    return dbc.Row(
+        [
+            dbc.Col(dbc.Label(label), width=2),
+            dbc.Col(dcc.Dropdown(
+                id=input_id,
+                options=opts,
+                value=value_in
+            ),width=10),
+        ]
+    )
+
+def getSelectedNodeMenu(values, templates):
+    return dbc.Form(
+        [
+            getInputField(values['name'], 'Name:', 'selected_name'),
+            getDropdownField(
+                values['template'],
+                templates, 'Template:',
+                'selected_template'
+            ),
+            getDropdownField(
+                values['type'],
+                templates, 'Node Type:',
+                'selected_node_type'
+            )
+        ]
+    )
+
+def getSelectedEdgeMenu(values, templates):
+    return dbc.Form(
+        [
+            getInputField(values['name'], 'Name:', 'selected_name'),
+            getDropdownField(
+                values['template'],
+                templates, 'Template:',
+                'selected_template'
+            ),
+            getDropdownField(
+                values['type'],
+                templates, 'Node Type:',
+                'selected_node_type'
+            )
+        ]
+    )
 
 def getFreqUnits(id_extra):
     return dcc.Dropdown(
