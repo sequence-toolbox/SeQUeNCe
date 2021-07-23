@@ -5,7 +5,6 @@ import networkx as nx
 import pandas as pd
 import numpy as np
 from .app import Quantum_GUI
-from .simulator_bindings import GUI_Sim
 from .graph_comp import GraphNode
 
 

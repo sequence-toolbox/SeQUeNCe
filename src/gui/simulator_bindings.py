@@ -3,17 +3,16 @@ A Class which serves as the interface between the SeQUeNCe simulator
 and GUI components
 """
 
-
 import time
 import os
 import pandas as pd
 from ..topology.node import *
-from .layout import DIRECTORY
 from ..kernel.timeline import Timeline
 from ..topology.topology import Topology
 from ..app.random_request import RandomRequestApp
 from ..utils.log import *
 
+DIRECTORY, _ = os.path.split(__file__)
 
 class GUI_Sim():
     def __init__(
