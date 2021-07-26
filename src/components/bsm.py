@@ -12,6 +12,7 @@ from numpy import random, outer, add, zeros
 from .circuit import Circuit
 from .detector import Detector
 from .photon import Photon
+from .memory import Memory
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
@@ -60,6 +61,7 @@ def _set_memory_with_fidelity(memories: List["Memory"], desired_state):
         #state = zeros((4, 4))
         #for mult, pure in zip(multipliers, possible_states):
         #    state = add(state, mult*outer(pure, pure))
+        # STATE VARIABLE DOES NOT EXIST IN THIS CONTEXT
         qm.set(keys, state)
 
     else:

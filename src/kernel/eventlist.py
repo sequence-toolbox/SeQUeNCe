@@ -4,7 +4,7 @@ This module defines the EventList class, used by the timeline to order and execu
 EventList is implemented as a min heap ordered by simulation time.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from .event import Event

@@ -7,7 +7,7 @@ from sequence.kernel.timeline import Timeline
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
-from sequence.topology.node import QKDNode
+from sequence.topology.node import QKDNode, Node
 from sequence.protocol import StackProtocol
 from sequence.utils.encoding import *
 

@@ -8,6 +8,7 @@ from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 from sequence.topology.node import QuantumRouter
+from sequence.message import Message
 
 
 class DumbReceiver():

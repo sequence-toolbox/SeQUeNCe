@@ -2,16 +2,16 @@ from numpy import random
 from typing import List, TYPE_CHECKING
 
 from sequence.kernel.timeline import Timeline
-from sequence.kernel.event import Event
-from sequence.kernel.process import Process
 from sequence.topology.node import BSMNode, Node
-from sequence.components.memory import MemoryArray
+from sequence.components.memory import MemoryArray, 
 from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.entanglement_management.generation import EntanglementGenerationA
 from sequence.entanglement_management.purification import BBPSSW
 from sequence.entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 from sequence.resource_management.resource_manager import ResourceManager
 from sequence.resource_management.rule_manager import Rule
+from sequence.message import Message
+from sequence.resource_management.memory_manager import MemoryInfo, MemoryManager
 
 
 ## Custom Node

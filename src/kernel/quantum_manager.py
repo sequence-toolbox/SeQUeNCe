@@ -18,6 +18,8 @@ from numpy import log2, array, kron, identity, zeros, arange, outer
 from numpy.random import random_sample, choice
 
 from .quantum_utils import *
+from ..components.circuit import Circuit
+from ..utils.quantum_state import QuantumState
 
 
 class QuantumManager():
@@ -46,14 +48,14 @@ class QuantumManager():
         """
         pass
 
-    def get(self, key: int) -> "State":
+    def get(self, key: int) -> "QuantumState":
         """Method to get quantum state stored at an index.
 
         Args:
             key (int): key for quantum state.
 
         Returns:
-            State: quantum state at supplied key.
+            QuantumState: quantum state at supplied key.
         """
         return self.states[key]
 

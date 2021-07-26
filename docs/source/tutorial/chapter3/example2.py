@@ -8,6 +8,7 @@ from sequence.topology.node import Node
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.entanglement_management.purification import BBPSSW
+from sequence.message import Message
 
 class SimpleManager():
     def __init__(self):

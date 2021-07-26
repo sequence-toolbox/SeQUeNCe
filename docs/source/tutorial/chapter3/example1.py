@@ -7,6 +7,7 @@ from sequence.components.memory import Memory
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.entanglement_management.generation import EntanglementGenerationA
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
+from sequence.message import Message
 
 
 class SimpleManager():

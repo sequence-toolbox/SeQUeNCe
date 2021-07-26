@@ -4,6 +4,8 @@ from sequence.kernel.timeline import Timeline
 from sequence.kernel.process import Process
 from sequence.kernel.event import Event
 from sequence.topology.topology import Topology
+from sequence.resource_management.memory_manager import MemoryInfo
+from sequence.network_management.reservation import Reservation
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:

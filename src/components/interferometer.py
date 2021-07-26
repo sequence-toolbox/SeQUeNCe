@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..components.photon import Photon
-    from ..components.detectors import Detector
+    from ..components.detector import Detector
 
 from ..kernel.process import Process
 from ..kernel.entity import Entity
@@ -86,6 +86,7 @@ class Interferometer(Entity):
                 time = 2 * self.path_difference
 
         if random.random_sample() < self.phase_error:
+            # MULTIPLY FUNCTION DOES NOT EXIST IN THIS CONTEXT
             quantum_state.state = list(multiply([1, -1], quantum_state))
 
         if quantum_state.state == (complex(sqrt(1/2)), complex(sqrt(1/2))):  # Early + Late

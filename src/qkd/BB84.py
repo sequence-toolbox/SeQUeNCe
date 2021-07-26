@@ -15,6 +15,7 @@ from ..protocol import StackProtocol
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..utils import log
+from ..topology.node import QKDNode
 
 
 def pair_bb84_protocols(sender: "BB84", receiver: "BB84") -> None:

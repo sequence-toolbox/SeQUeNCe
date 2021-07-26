@@ -14,7 +14,7 @@ from numpy import random
 from ..message import Message
 from ..protocol import StackProtocol
 from ..utils import log
-
+from ..topology.node import QKDNode
 
 def pair_cascade_protocols(sender: "Cascade", receiver: "Cascade") -> None:
     """Method to pair cascade protocol instance.

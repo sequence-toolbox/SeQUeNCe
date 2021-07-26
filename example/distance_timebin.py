@@ -7,7 +7,7 @@ from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
 from sequence.protocol import StackProtocol
 from sequence.qkd.BB84 import pair_bb84_protocols
-from sequence.topology.node import QKDNode
+from sequence.topology.node import QKDNode, Node
 from sequence.utils.encoding import time_bin
 
 
