@@ -12,7 +12,6 @@ import shutil
 import pandas as pd
 import numpy as np
 import dash_core_components as dcc
-import dash_html_components as html
 import dash_bootstrap_components as dbc
 import networkx as nx
 from collections import OrderedDict
@@ -52,60 +51,59 @@ EDGE_TABLE_COLUMNS = [
 DIRECTORY, _ = os.path.split(__file__)
 TEMPLATES = '/user_templates.json'
 
-"""Class which holds the methods and properties of the SeQUeNCe GUI
-
-    The Quantum_GUI can be instantiated without specifiying any parameters.
-    Using no parameters creates an instance of the GUI with only the default
-    node templates and nothing else. The GUI can also be instantiated with a
-    number of additional parameters, described within the attributes section
-    The Quantum_GUI manages graphical user elements. The structure of the
-    data used can be divided into three categories, templates, topology, and
-    simulations. The composition of each is in terms of Quantum_GUI elements
-    is ...
-
-    templates
-        - templates
-    topology
-        - data
-        - cc_delays
-        - qc_tdm
-    simulation
-        - sim_params
-
-    To monitor the progress of simulation, the Timeline.show_progress
-    attribute can be modified to show/hide a progress bar.
-
-    Attributes:
-        data (Graph or DiGraph):
-            A NetworkX Graph of DiGraph object with attributes node, label,
-            node_type, and data. The data attribute can be set to store any
-            number of node attributes, though the gui uses the __dict__
-            of GraphNode (defined in graph_comp.py) for consistency.
-        cc_delays (DataFrame):
-            Pandas DataFrame which represents an adjacency matrix of classical
-            channel time delays.
-        qc_tdm (DataFrame):
-            Pandas DataFrame which represents an adjacency matrix of
-            quantum channel tdm frames.
-        defaults (Dict):
-            Dictionary containing the default values of all node types.
-        templates (Dict):
-            Dictionary containing any user defined templates, loaded
-            from file or given as parameter.
-        edge_table (List[Dict]):
-            A list of dictionaries which represents a table listing all edges
-            in the current network. Should not be directly set
-        node_table (List[Dict]):
-            A list of dictionaries which represents a table listing all nodes
-            in the current network. Should not be directly set
-        edge_columns (List[String]):
-            A list containing the column heading for the edge_table
-        node_columns (List[String]):
-            A list containing the column heading for the node_table
-"""
-
 
 class Quantum_GUI:
+    """Class which holds the methods and properties of the SeQUeNCe GUI
+
+        The Quantum_GUI can be instantiated without specifiying any parameters.
+        Using no parameters creates an instance of the GUI with only the
+        default node templates and nothing else. The GUI can also be
+        instantiated with a number of additional parameters, described
+        within the attributes section. The Quantum_GUI manages graphical
+        user elements. The structure of the data used can be divided into three
+        categories, templates, topology, and simulations.
+        The composition of each is in terms of Quantum_GUI elements is ...
+
+        templates
+            - templates
+        topology
+            - data
+            - cc_delays
+            - qc_tdm
+        simulation
+            - sim_params
+
+        To monitor the progress of simulation, the Timeline.show_progress
+        attribute can be modified to show/hide a progress bar.
+
+        Attributes:
+            data (Graph or DiGraph):
+                A NetworkX Graph of DiGraph object with attributes node, label,
+                node_type, and data. The data attribute can be set to store any
+                number of node attributes, though the gui uses the __dict__
+                of GraphNode (defined in graph_comp.py) for consistency.
+            cc_delays (DataFrame):
+                Pandas DataFrame which represents an adjacency matrix of
+                classical channel time delays.
+            qc_tdm (DataFrame):
+                Pandas DataFrame which represents an adjacency matrix of
+                quantum channel tdm frames.
+            defaults (Dict):
+                Dictionary containing the default values of all node types.
+            templates (Dict):
+                Dictionary containing any user defined templates, loaded
+                from file or given as parameter.
+            edge_table (List[Dict]):
+                A list of dictionaries which represents a table listing all
+                edges in the current network. Should not be directly set
+            node_table (List[Dict]):
+                A list of dictionaries which represents a table listing all
+                nodes in the current network. Should not be directly set
+            edge_columns (List[String]):
+                A list containing the column heading for the edge_table
+            node_columns (List[String]):
+                A list containing the column heading for the node_table
+    """
     def __init__(self, graph_in, templates=None, delays=None, tdm=None):
         self.data = graph_in
         self.cc_delays = delays
@@ -188,6 +186,15 @@ class Quantum_GUI:
         return self._node_columns
 
     def convert_columns(self, columns, case_norm=True):
+        """Function which takes a list of columns and coverts them into a
+        dictionary format for their use in a Dash DataTable.
+
+        Arguments:
+            columns (List[str]):
+                columns to convert to datatable column dictionary
+            case_norm (Boolean):
+                whether or not to capitalize the columns displayed
+        """
         column_data = []
         for column in columns:
             to_add = {}
@@ -203,6 +210,12 @@ class Quantum_GUI:
 
     # returns the data and columns for the nodes table
     def get_graph_table_nodes(self, graph):
+        """Function which returns the node and column data for use in a Dash
+        DataTable.
+
+        Arguments:
+            graph (DiGraph): graph to construct data from
+        """
         nodes = list(graph.nodes.data())
         columns = NODE_TABLE_COLUMNS
         table_data = pd.DataFrame(columns=columns)
@@ -225,6 +238,13 @@ class Quantum_GUI:
 
     # returns the data and columns for the edges table
     def get_graph_table_edges(self, graph):
+        """Function which returns the edge and column data for use in a Dash
+        DataTable.
+
+        Arguments:
+            graph (DiGraph):
+                graph to construct data from
+        """
         edges = list(graph.edges.data())
         columns = EDGE_TABLE_COLUMNS
         table_data = pd.DataFrame(columns=columns)
@@ -245,6 +265,13 @@ class Quantum_GUI:
         return [table_data, column_data]
 
     def colorImageGraph(self, graph_in):
+        """Function which takes any graph containing sequence components
+        and returns a new colored graph based on predefined constants.
+
+        Arguments:
+            graph_in (DiGraph):
+                graph to construct data from
+        """
         colored_graph = graph_in.copy()
         nodes = list(colored_graph.nodes.data())
         edges = list(colored_graph.edges.data())
@@ -263,6 +290,9 @@ class Quantum_GUI:
         return colored_graph
 
     def graphToTopology(self):
+        """Function which serializes the class's current data field to a
+        dictionary for export or other use.
+        """
         graph = self.data.copy()
         nodes = list(graph.nodes.data())
         edges = list(graph.edges.data())
@@ -296,14 +326,28 @@ class Quantum_GUI:
             'qconnections': qconnections,
             'cchannels_table': {
                 'type': 'RT',
-                'labels': list(self.cc_delays.columns),
-                'table': self.cc_delays.to_numpy().tolist()
+                'labels': list(c_delay.columns),
+                'table': c_delay.to_numpy().tolist()
+            },
+            'qchannels_table': {
+                'type': 'RT',
+                'labels': list(q_delay.columns),
+                'table': q_delay.to_numpy().tolist()
             }
         }
 
         return output
 
     def _callback_add_node(self, add_node_name, add_node_type):
+        """Function which adds a node with the given name and type
+        to the current graph.
+
+        Arguments:
+            add_node_name (str):
+                an str identifier for the node (must be unique)
+            add_node_type (str):
+                the type of the node to be added (must be of recognized type)
+        """
         if add_node_name is None:
             raise PreventUpdate
 
@@ -326,13 +370,19 @@ class Quantum_GUI:
         self.data = new_graph
         return [nx.readwrite.cytoscape_data(self.data)['elements'], '']
 
-    def edit_node(self, data):
-        new_graph = self.data.copy()
-        nx.set_node_attributes(new_graph, )
-        self.data = new_graph
-        return [nx.readwrite.cytoscape_data(self.data)['elements'], '']
-
     def _callback_add_edge(self, node_from, node_to, attributes):
+        """Function which adds a new edge between two existing nodes
+        with the given source, destination, and attributes.
+
+        Arguments:
+            node_from (str):
+                an str identifier for the source of the edge (must exist)
+            node_to (str):
+                an str identifier for the destination of the edge (must exist)
+            attributes (List):
+                a list of attributes of the given edge
+                (must be json serializable)
+        """
         # Check if input was given, if not, silently do nothing
         if((node_from is None) or (node_to is None)):
             raise PreventUpdate
@@ -347,9 +397,30 @@ class Quantum_GUI:
 
         return [nx.readwrite.cytoscape_data(self.data)['elements'], '']
 
+    def edit_node(self, data_in):
+        new_graph = self.data.copy()
+        nx.set_node_attributes(new_graph, )
+        self.data = new_graph
+        return [nx.readwrite.cytoscape_data(self.data)['elements'], '']
+
     # Takes the 'children' value from a callback and returns it as a
     # python dictionary that follows the format of a node in the graph
-    def parse_to_node_data(self, from_node, to_node, type_in, children):
+    def parse_edge(self, from_node, to_node, type_in, children):
+        """Function which parses input for a new edge given by the user
+        and returns it as a python dictionary that follows the format of
+        a Cytoscape edge
+
+        Arguments:
+            from_node (str):
+                an str identifier for the source of the edge (must exist)
+            to_node (str):
+                an str identifier for the destination of the edge (must exist)
+            type_in (str):
+                a str (Classical or Quantum) which identifies the type
+                of edge
+            children (Dict[any,any]):
+                raw user input read from the edge_properties form in menu
+        """
         if((from_node is None) or (to_node is None) or (children is None)):
             raise PreventUpdate
         output = EDGE_DICT_ORDER.copy()
@@ -363,7 +434,15 @@ class Quantum_GUI:
         output['link_type'] = type_in
         return output
 
-    def parse_to_form_data(self, children):
+    def parse_node(self, children):
+        """Function which parses input given by the user for a new node
+        and returns it as a python dictionary that follows the format of
+        a Cytoscape node
+
+        Arguments:
+            children (Dict[any,any]):
+                raw user input read from the edge_properties form in menu
+        """
         values = {}
 
         if children is not None:
@@ -386,7 +465,7 @@ class Quantum_GUI:
                 if(x['type'] == 'Input' or x['type'] == 'Dropdown'):
                     values[x['props']['className']] = x['props']['value']
 
-            print(values)
+            # print(values)
             template_name = values['name']
             del values['name']
             output = {template_name: values}
@@ -394,6 +473,12 @@ class Quantum_GUI:
         return('No Input')
 
     def parse_edit(self, children):
+        """Function which parses input from the edit menu
+
+        Arguments:
+            children (Dict[any,any]):
+                raw user input read from the edge_properties form in menu
+        """
         output = {}
         data = children['props']['children']
         for x in data:
@@ -402,6 +487,8 @@ class Quantum_GUI:
         return output
 
     def cleanDirectory(self):
+        """Function which clears the program root directory of temporary files
+        """
         if os.path.exists(DIRECTORY+'/sequence_data.zip'):
             os.remove(DIRECTORY+'/sequence_data.zip')
         if os.path.exists(DIRECTORY+'/templates.json'):
@@ -413,6 +500,13 @@ class Quantum_GUI:
         return
 
     def saveAll(self, path):
+        """Function which saves all parts of the gui to a file
+        (Topology, Templates, and Simulations)
+
+        Arguments:
+            path (str):
+                file path to where output should be saved
+        """
         new_path = path + '/data'
         if not os.path.exists(DIRECTORY+'/data'):
             os.mkdir(DIRECTORY+'/data')
@@ -423,6 +517,12 @@ class Quantum_GUI:
         return new_path
 
     def saveTopology(self, path):
+        """Function which saves the topology of the GUI
+
+        Arguments:
+            path (str):
+                file path to where output should be saved
+        """
         with open(path+'/topology.json', 'w') as outfile:
             json5.dump(
                 self.graphToTopology(),
@@ -436,6 +536,12 @@ class Quantum_GUI:
         return(path+'/topology.json')
 
     def saveSimulation(self, path):
+        """Function which saves the simulation parameters of the GUI
+
+        Arguments:
+            path (str):
+                file path to where output should be saved
+        """
         with open(path+'/simulation.json', 'w') as outfile:
             json5.dump(
                 self.sim_params,
@@ -449,6 +555,12 @@ class Quantum_GUI:
         return(path+'/simulation.json')
 
     def saveTemplates(self, path):
+        """Function which saves the templates of the GUI
+
+        Arguments:
+            path (str):
+                file path to where output should be saved
+        """
         with open(path+'/templates.json', 'w') as outfile:
             json5.dump(
                 self.templates,
@@ -461,18 +573,14 @@ class Quantum_GUI:
         outfile.close()
         return(path+'/templates.json')
 
-    def _callback_delete_node(self, graph_data, remove_node_list):
-
-        return graph_data
-
-    def edit_graph(self, new_data, type):
-        if type == 'node':
-
-            return
-        else:
-            return
-
     def get_app(self, vis_opts=None):
+        """Function which builds an instance of the GUI as a
+        Dash app
+
+        Arguments
+            vis_opts (Dict[str,any]):
+                optional visualization parameters for the network graph
+        """
         # create the app
         CSS = [
             dbc.themes.BOOTSTRAP,
@@ -575,7 +683,7 @@ class Quantum_GUI:
                     info = self._callback_add_edge(
                         from_node,
                         to_node,
-                        self.parse_to_node_data(
+                        self.parse_edge(
                             from_node,
                             to_node,
                             edge_type,
@@ -818,7 +926,7 @@ class Quantum_GUI:
                     return [dash.no_update, '']
                 else:
                     new_templates = self.templates.copy()
-                    parsed = self.parse_to_form_data(template)
+                    parsed = self.parse_node(template)
                     new_templates[template_type].update(parsed)
                     self.templates = new_templates
                     return [dash.no_update, 'Template Saved']
