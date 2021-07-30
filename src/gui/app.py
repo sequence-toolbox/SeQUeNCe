@@ -12,6 +12,7 @@ import shutil
 import pandas as pd
 import numpy as np
 import dash_core_components as dcc
+import dash_html_components as html
 import dash_bootstrap_components as dbc
 import networkx as nx
 from collections import OrderedDict
@@ -20,8 +21,8 @@ from dash.dependencies import Input, Output, State
 from .simulator_bindings import GUI_Sim
 from .menus import *
 from .graph_comp import GraphNode
-from .layout import get_app_layout, getNodeImage
-from .layout import DEFAULT_COLOR, TYPE_COLORS, TYPE_IMAGES, TYPES
+from .layout import get_app_layout
+from .layout import TYPE_COLORS, TYPES
 from .css_styles import *
 
 EDGE_DICT_ORDER = OrderedDict(
@@ -466,9 +467,7 @@ class Quantum_GUI:
                     values[x['props']['className']] = x['props']['value']
 
             # print(values)
-            template_name = values['name']
-            del values['name']
-            output = {template_name: values}
+            output = values
             return output
         return('No Input')
 
@@ -573,9 +572,12 @@ class Quantum_GUI:
         outfile.close()
         return(path+'/templates.json')
 
-    def get_app(self, vis_opts=None):
+    def get_app(self):
         """Function which builds an instance of the GUI as a
         Dash app
+
+        Note: All callback functions are defined within the the get_app
+        function
 
         Arguments
             vis_opts (Dict[str,any]):
@@ -592,7 +594,9 @@ class Quantum_GUI:
         app = dash.Dash(
             __name__,
             external_stylesheets=CSS,
-            external_scripts=external_scripts
+            external_scripts=external_scripts,
+            title='SeQUeNCe',
+            suppress_callback_exceptions=True
         )
 
         # define layout
@@ -619,7 +623,6 @@ class Quantum_GUI:
             table_graph,
             table_delays,
             table_tdm,
-            vis_opts=vis_opts
         )
 
         @app.callback(
@@ -627,6 +630,8 @@ class Quantum_GUI:
                 Output('graph', 'elements'),
                 Output('make_node_error', 'children'),
                 Output('make_edge_error', 'children'),
+                Output('all_nodes', 'data'),
+                Output('legend', 'children')
             ],
             [
                 Input('add_node', 'n_clicks'),
@@ -640,11 +645,11 @@ class Quantum_GUI:
                 State('node_to_add_name', 'value'),
                 State('type_menu', 'value'),
                 State('edge_properties', 'children'),
-                State('from_node', 'children'),
-                State('to_node', 'children'),
+                State('from_node', 'value'),
+                State('to_node', 'value'),
                 State('edge_type_menu', 'value'),
-                State('selected_element', 'children')
-
+                State('selected_element', 'children'),
+                State('last_clicked', 'data')
             ]
         )
         def edit_graph(
@@ -660,13 +665,24 @@ class Quantum_GUI:
             from_node,
             to_node,
             edge_type,
-            selected
+            selected,
+            last_clicked
         ):
             ctx = dash.callback_context
             if not ctx.triggered:
                 # print("No trigger")
                 data = nx.readwrite.cytoscape_data(self.data)['elements']
-                return [data, '', '']
+                nodes = list(self.data.nodes())
+                legend_vals = list(self.data.nodes.data())
+                legend_vals = [x[1]['node_type'] for x in legend_vals]
+                legend = makeLegend(set(legend_vals))
+                return [
+                    data,
+                    '',
+                    '',
+                    nodes,
+                    legend
+                ]
             else:
                 input_id = ctx.triggered[0]['prop_id'].split('.')[0]
                 # print(input_id)
@@ -674,10 +690,16 @@ class Quantum_GUI:
                     info = self._callback_add_node(node_name, node_to_add_type)
                     graph_data = info[0]
                     err_msg = info[1]
+                    nodes = list(self.data.nodes())
+                    legend_vals = list(self.data.nodes.data())
+                    legend_vals = [x[1]['node_type'] for x in legend_vals]
+                    legend = makeLegend(set(legend_vals))
                     return [
                         graph_data,
                         err_msg,
                         dash.no_update,
+                        nodes,
+                        legend
                     ]
                 elif input_id == 'add_edge':
                     info = self._callback_add_edge(
@@ -692,51 +714,83 @@ class Quantum_GUI:
                     )
                     graph_data = info[0]
                     err_msg = info[1]
+                    nodes = list(self.data.nodes())
+                    legend_vals = list(self.data.nodes.data())
+                    legend_vals = [x[1]['node_type'] for x in legend_vals]
+                    legend = makeLegend(set(legend_vals))
                     return [
                         graph_data,
                         dash.no_update,
                         err_msg,
+                        nodes,
+                        legend
                     ]
                 elif input_id == 'new_network':
                     self.data = nx.empty_graph(create_using=nx.DiGraph())
+                    nodes = list(self.data.nodes())
+                    legend_vals = list(self.data.nodes.data())
+                    legend_vals = [x[1]['node_type'] for x in legend_vals]
+                    legend = makeLegend(set(legend_vals))
                     return [
                         nx.readwrite.cytoscape_data(self.data)['elements'],
                         '',
                         '',
+                        nodes,
+                        legend
                     ]
                 elif input_id == 'refresh':
+                    nodes = list(self.data.nodes())
+                    legend_vals = list(self.data.nodes.data())
+                    legend_vals = [x[1]['node_type'] for x in legend_vals]
+                    legend = makeLegend(set(legend_vals))
                     return [
                         nx.readwrite.cytoscape_data(self.data)['elements'],
                         dash.no_update,
                         dash.no_update,
+                        nodes,
+                        legend
                     ]
                 elif input_id == 'submit_edit':
                     # print(selected)
                     edited = self.parse_edit(selected)
                     if 'source' in edited:
-                        info = self._callback_add_edge(
-                            edited['source'],
-                            edited['target'],
-                            {k: edited[k] for k in EDGE_DICT_ORDER}
-                        )
-                        graph_data = info[0]
-                        err_msg = info[1]
+                        src = last_clicked['source']
+                        trgt = last_clicked['target']
+                        new_data = {k: edited[k] for k in EDGE_DICT_ORDER}
+                        self.data.edges[src][trgt]['data'] = new_data
+                        gd = nx.readwrite.cytoscape_data(self.data)['elements']
+                        err_msg = ''
+                        nodes = list(self.data.nodes())
+                        legend_vals = list(self.data.nodes.data())
+                        legend_vals = [x[1]['node_type'] for x in legend_vals]
+                        legend = makeLegend(set(legend_vals))
                         return [
-                            graph_data,
+                            gd,
                             dash.no_update,
                             err_msg,
+                            nodes,
+                            legend
                         ]
                     else:
-                        info = self._callback_add_node(
-                            edited['name'],
-                            edited['type']
+                        old_name = last_clicked['name']
+                        self.data.nodes[old_name]['data'] = edited
+                        self.data.nodes[old_name]['node_type'] = edited['type']
+                        self.data = nx.relabel_nodes(
+                            self.data,
+                            {old_name: edited['name']}
                         )
-                        graph_data = info[0]
-                        err_msg = info[1]
+                        gd = nx.readwrite.cytoscape_data(self.data)['elements']
+                        err_msg = ''
+                        nodes = list(self.data.nodes())
+                        legend_vals = list(self.data.nodes.data())
+                        legend_vals = [x[1]['node_type'] for x in legend_vals]
+                        legend = makeLegend(set(legend_vals))
                         return [
-                            graph_data,
+                            gd,
                             err_msg,
                             dash.no_update,
+                            nodes,
+                            legend
                         ]
                 elif input_id == 'delete_button':
                     to_delete = self.parse_edit(selected)
@@ -751,10 +805,17 @@ class Quantum_GUI:
                         target = to_delete['target']
                         new_graph.remove_edge(source, target)
                         self.data = new_graph
+
+                    nodes = list(self.data.nodes())
+                    legend_vals = list(self.data.nodes.data())
+                    legend_vals = [x[1]['node_type'] for x in legend_vals]
+                    legend = makeLegend(set(legend_vals))
                     return [
                         nx.readwrite.cytoscape_data(self.data)['elements'],
                         '',
                         '',
+                        nodes,
+                        legend
                     ]
 
         @app.callback(
@@ -778,114 +839,38 @@ class Quantum_GUI:
         # EDIT #
         @app.callback(
             Output('selected_element', 'children'),
-            Output('from_node', 'children'),
-            Output('to_node', 'children'),
-            Output('select_button', 'data'),
             Output('graph', 'tapNodeData'),
             Output('graph', 'tapEdgeData'),
+            Output('last_clicked', 'data'),
             Input('graph', 'tapNodeData'),
             Input('graph', 'tapEdgeData'),
-            Input('select_node_1', 'n_clicks'),
-            Input('select_node_2', 'n_clicks'),
-            state=[
-                State('select_button', 'data')
-            ],
         )
-        def update_selection(tapped_node, tapped_edge, node1, node2, toggle):
+        def update_selection(tapped_node, tapped_edge):
             ctx = dash.callback_context
             input_id = ctx.triggered[0]['prop_id'].split('.')[1]
-            if input_id == 'select_node_1':
-                if toggle == 'FROM':
-                    return [
-                        dash.no_update,
-                        dash.no_update,
-                        '',
-                        'NONE',
-                        dash.no_update,
-                        dash.no_update
-                    ]
-                else:
-                    return [
-                        dash.no_update,
-                        '',
-                        dash.no_update,
-                        'FROM',
-                        dash.no_update,
-                        dash.no_update
-                    ]
-            elif input_id == 'select_node_2':
-                if toggle == 'TO':
-                    return [
-                        dash.no_update,
-                        dash.no_update,
-                        '',
-                        'NONE',
-                        dash.no_update,
-                        dash.no_update
-                    ]
-                else:
-                    return [
-                        dash.no_update,
-                        dash.no_update,
-                        '',
-                        'TO',
-                        dash.no_update,
-                        dash.no_update
-                    ]
+
+            if tapped_node is None and tapped_edge is None:
+                raise PreventUpdate
             elif input_id == 'tapNodeData':
                 parsed = json5.loads(tapped_node['data'])
-                print(self.templates)
-                print(tapped_node)
                 out = getSelectedNodeMenu(
                     parsed,
                     self.templates[tapped_node['data']['type']]
                 )
-                if toggle == 'FROM':
-                    return [
-                        out,
-                        tapped_node['label'],
-                        dash.no_update,
-                        'NONE',
-                        None,
-                        None
-                    ]
-                elif toggle == 'TO':
-                    return [
-                        out,
-                        dash.no_update,
-                        tapped_node['label'],
-                        'NONE',
-                        None,
-                        None
-                    ]
-                else:
-                    return [out, '', '', 'NONE', None, None]
+                val = tapped_node['data'].copy()
+                return [out, None, None, val]
             elif input_id == 'tapEdgeData':
                 parsed = json5.loads(tapped_edge['data'])
-                # print('Edge: '+str(parsed))
                 out = getSelectedEdgeMenu(
                     parsed,
-                    TYPES,
+                    self.data.nodes,
                     ['Quantum', 'Classical']
                 )
-                return [
-                    out,
-                    dash.no_update,
-                    dash.no_update,
-                    dash.no_update,
-                    None,
-                    None
-                ]
+                val = tapped_edge['data'].copy()
+                return [out, None, None, val]
             else:
-                # print('init selections')
-                return [
-                    '',
-                    '',
-                    '',
-                    'NONE',
-                    dash.no_update,
-                    dash.no_update
-                ]
+                out = html.Pre('Select a graph element to view')
+                return [out, dash.no_update, dash.no_update, dash.no_update]
 
         @app.callback(
             Output('edge_properties', 'children'),
@@ -902,36 +887,40 @@ class Quantum_GUI:
         @app.callback(
             Output('template_properties', 'children'),
             Output('save_state', 'children'),
+            Output('comp_temp', 'data'),
             Input('template_type_menu', 'value'),
             Input('save_template', 'n_clicks'),
             state=[
                 State('template_properties', 'children'),
-                State('template_type_menu', 'value')
+                State('template_type_menu', 'value'),
+                State('template_name', 'value')
             ]
         )
-        def template_menu(edgeType, save_click, template, template_type):
+        def template_menu(edgeType, save_click, temp, temp_type, temp_name):
             ctx = dash.callback_context
             input_id = ctx.triggered[0]['prop_id'].split('.')[0]
             if input_id == 'template_type_menu':
                 if edgeType == 'Quantum_Router':
-                    return [router_template, '']
+                    opts = list(self.templates['Memory'].keys())
+                    return [router_template, '', opts]
                 elif edgeType == 'Protocol':
-                    return [protocol_template, '']
+                    return [protocol_template, '', '']
                 elif edgeType == 'Memory':
-                    return [quantum_memory_template, '']
+                    return [quantum_memory_template, '', '']
                 elif edgeType == 'Detector':
-                    return [detector_template, '']
+                    return [detector_template, '', '']
             elif input_id == 'save_template':
-                if template is None:
-                    return [dash.no_update, '']
+                if temp is None or temp_name is None:
+                    return [dash.no_update, '', '']
                 else:
                     new_templates = self.templates.copy()
-                    parsed = self.parse_node(template)
-                    new_templates[template_type].update(parsed)
+                    parsed = {temp_name: self.parse_node(temp)}
+                    new_templates[temp_type].update(parsed)
                     self.templates = new_templates
-                    return [dash.no_update, 'Template Saved']
+                    return [dash.no_update, 'Template Saved', '']
             else:
-                return [router_template, '']
+                opts = list(self.templates['Memory'].keys())
+                return [router_template, '', opts]
 
         @app.callback(
             [
@@ -1074,5 +1063,40 @@ class Quantum_GUI:
                 styles.append(REFRESH)
 
             return styles
+
+        @app.callback(
+            Output("from_node", "options"),
+            Output("to_node", "options"),
+            Input('all_nodes', 'data'),
+        )
+        def updateNodeMenus(nodes):
+            options = makeDropdownOptions(nodes)
+            return [options, options]
+
+        @app.callback(
+            Output("selected_template", "options"),
+            Input('selected_node_type', 'value'),
+        )
+        def updateNodeTypeMenu(type_in):
+            templates = list(self.templates[type_in].keys())
+            return makeDropdownOptions(templates)
+
+        @app.callback(
+            Output("add_template_menu", "options"),
+            Output("add_template_menu", "value"),
+            Input('type_menu', 'value'),
+        )
+        def updateNodeTempMenu(type_in):
+            templates = list(self.templates[type_in].keys())
+            return [makeDropdownOptions(templates), templates[0]]
+
+        @app.callback(
+            Output("mem_type", "options"),
+            Output("mem_type", "value"),
+            Input('comp_temp', 'data'),
+            prevent_initial_call=True,
+        )
+        def updateMemTypeMenu(data):
+            return [makeDropdownOptions(data), data[0]]
 
         return app

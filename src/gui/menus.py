@@ -13,6 +13,67 @@ import dash_cytoscape as cyto
 import dash_table
 from .css_styles import *
 
+
+"""
+Mapping of all types in the GUI to their representative colors
+"""
+TYPE_COLORS = {
+    'Quantum_Repeater': '#4D9DE0',
+    'Quantum_Router': '#E15554',
+    'Photon_Source': '#E1BC29',
+    'Detector': '#3BB273',
+    'QuantumErrorCorrection': '#7768AE ',
+    'BSM_node': '#FFC857',
+    'Quantum': '#8634eb',
+    'Classical': '#345feb',
+    'Memory': '#8a34ab',
+    'Temp': '#084C61',
+}
+
+
+"""
+Default node type options for dropdown menus
+"""
+
+OPTIONS = [
+    {
+        'label': 'Quantum Router',
+        'value': 'Quantum_Router'
+    },
+    {
+        'label': 'Quantum Memory',
+        'value': 'Memory'
+    },
+    {
+        'label': 'Detector',
+        'value': 'Detector'
+    },
+    # {
+    #     'label': 'Protocol',
+    #     'value': 'Protocol'
+    # },
+    {
+        'label': 'Quantum Repeater',
+        'value': 'Quantum_Repeater'
+    },
+    {
+        'label': 'BSM Node',
+        'value': 'BSM_node'
+    },
+    # {
+    #     'label': 'Quantum Error Correction',
+    #     'value': 'QuantumErrorCorrection'
+    # },
+    {
+        'label': 'Photon Source',
+        'value': 'Photon_Source'
+    },
+    # {
+    #     'label': 'Temp',
+    #     'value': 'Temp'
+    # }
+]
+
 DIRECTORY, _ = os.path.split(__file__)
 
 MENUS = [
@@ -24,18 +85,27 @@ MENUS = [
 ]
 
 
-def getInputField(value_in: str, label: str, input_id: str, out_type: str):
+def getInputField(
+    value_in: str,
+    label: str,
+    input_id: str,
+    out_type: str,
+    style_in=None,
+    place=None
+):
     return dbc.Row(
         [
-            dbc.Col(dbc.Label(label), width=3),
+            dbc.Col(dbc.Label(label), width=4),
             dbc.Col(dbc.Input(
                 id=input_id,
                 value=value_in,
-                className=out_type
+                className=out_type,
+                placeholder=place
                 ),
-                width=9
-            )
-        ]
+                width=8
+            ),
+        ],
+        style=style_in
     )
 
 
@@ -51,31 +121,35 @@ def getDropdownField(
     all_vals: "list[str]",
     label: str,
     input_id: str,
-    out_type: str
+    out_type: str,
+    style_in=None
 ):
 
-    opts = makeDropdownOptions(all_vals)
     return dbc.Row(
         [
-            dbc.Col(dbc.Label(label), width=3),
+            dbc.Col(dbc.Label(label), width=4),
             dbc.Col(dcc.Dropdown(
                 id=input_id,
-                options=opts,
+                options=all_vals,
                 value=value_in,
                 className=out_type
-            ), width=9),
-        ]
+            ), width=8),
+        ],
+        style=style_in
     )
 
 
-def getLogo():
-    image_filename = os.path.join(DIRECTORY, 'assets', 'sequence.jpg')
+def getLogo(filename, width, link=None):
+    image_filename = os.path.join(DIRECTORY, 'assets', filename)
     encoded_image = base64.b64encode(open(image_filename, 'rb').read())
-    return html.Img(
+    image = html.Img(
         src='data:image/png;base64,{}'.format(encoded_image.decode()),
-        width='80px',
-        style={'border-radius': '20%'}
-    ),
+        width=width,
+        style={'border-radius': '20%'})
+    if link is None:
+        return image
+    else:
+        return html.A(image, href=link)
 
 
 def getSelectedNodeMenu(values, templates):
@@ -90,22 +164,23 @@ def getSelectedNodeMenu(values, templates):
     )
     out.append(
         getDropdownField(
-            values['template'],
-            templates,
-            'Template:',
-            'selected_template',
-            'template'
-        )
-    )
-    out.append(
-        getDropdownField(
             values['type'],
-            templates,
+            OPTIONS,
             'Node Type:',
             'selected_node_type',
             'type'
         )
     )
+    out.append(
+        getDropdownField(
+            values['template'],
+            makeDropdownOptions(templates),
+            'Template:',
+            'selected_template',
+            'template'
+        )
+    )
+
     return dbc.Form(out)
 
 
@@ -114,19 +189,22 @@ def getSelectedEdgeMenu(values, nodes, link_types):
         [
             getDropdownField(
                 values['source'],
-                nodes, 'Source:',
+                makeDropdownOptions(nodes),
+                'Source:',
                 'selected_source',
                 'source'
             ),
             getDropdownField(
                 values['target'],
-                nodes, 'Target:',
+                makeDropdownOptions(nodes),
+                'Target:',
                 'selected_target',
                 'target'
             ),
             getDropdownField(
                 values['link_type'],
-                link_types, 'Link Type:',
+                makeDropdownOptions(link_types),
+                'Link Type:',
                 'selected_link_type',
                 'link_type'
             ),
@@ -173,26 +251,36 @@ def getTimeUnits(id_extra):
 
 
 classic_edge = [
-    dbc.Label("Distance"),
-    dbc.Input(id='distance_input', value=""),
-    dbc.Label("Attenuation"),
-    dbc.Input(id="attenuation_input", value=""),
+    getInputField(
+        '',
+        'Distance:',
+        'distance_input',
+        ''
+    ),
+    getInputField(
+        '',
+        'Attenuation:',
+        'attenuation_input',
+        ''
+    )
 ]
 
 quantum_edge = [
-    dbc.Label("Distance"),
-    dbc.Input(id='distance_input', value=""),
-    dbc.Label("Attenuation"),
-    dbc.Input(id="attenuation_input", value=""),
+    getInputField(
+        '',
+        'Distance:',
+        'distance_input',
+        ''
+    ),
+    getInputField(
+        '',
+        'Attenuation:',
+        'attenuation_input',
+        ''
+    )
 ]
 
 router_template = [
-    dbc.Label('Template Name'),
-    dbc.Input(
-        id='detector_name',
-        className='name',
-        placeholder='default_detector'
-    ),
     dbc.Label('Memory Size'),
     dbc.Input(
         id='mem_size',
@@ -200,10 +288,11 @@ router_template = [
         placeholder='Memory Array Size'
     ),
     dbc.Label('Memory Type'),
-    dbc.Input(
+    dcc.Dropdown(
         id='mem_type',
         className='mem_type',
-        placeholder='Memory Type'
+        value='',
+        options=[]
     ),
 ]
 
@@ -250,12 +339,6 @@ quantum_memory_template = [
 ]
 
 detector_template = [
-    dbc.Label('Template Name'),
-    dbc.Input(
-        id='detector_name',
-        className='name',
-        placeholder='default_detector'
-    ),
     dbc.Label('Dark Count Rate'),
     dbc.Input(
         id='dark_count_in',
@@ -292,49 +375,6 @@ protocol_template = [
 
 # New #
 
-"""
-Default node type options for dropdown menus
-"""
-
-OPTIONS = [
-    {
-        'label': 'Quantum Router',
-        'value': 'Quantum_Router'
-    },
-    {
-        'label': 'Quantum Memory',
-        'value': 'Memory'
-    },
-    {
-        'label': 'Detector',
-        'value': 'Detector'
-    },
-    {
-        'label': 'Protocol',
-        'value': 'Protocol'
-    },
-    {
-        'label': 'Quantum Repeater',
-        'value': 'Quantum_Repeater'
-    },
-    {
-        'label': 'BSM Node',
-        'value': 'BSM_node'
-    },
-    {
-        'label': 'Quantum Error Correction',
-        'value': 'QuantumErrorCorrection'
-    },
-    {
-        'label': 'Photon Source',
-        'value': 'Photon_Source'
-    },
-    {
-        'label': 'Temp',
-        'value': 'Temp'
-    }
-]
-
 tab_ids = [f"tab-{i}" for i in range(9)]
 
 
@@ -342,21 +382,30 @@ add_node_form = html.Div(
     dbc.Form(
         [
             html.H3('Add Node'),
-            dbc.Label('Name'),
-            dbc.Input(
-                id='node_to_add_name',
-                type='Name',
-                placeholder='Enter node Name'
+            getInputField(
+                '',
+                'Name:',
+                'node_to_add_name',
+                '',
+                place='Enter Node ID'
             ),
-            html.P(id='make_node_error', style={'color': 'red'}),
-            dbc.Label('Type'),
-            dcc.Dropdown(
-                id='type_menu',
-                options=OPTIONS,
-                value='Quantum_Router',
-                style={'margin-bottom': '15px'}
+            getDropdownField(
+                'Quantum_Router',
+                OPTIONS,
+                'Type:',
+                'type_menu',
+                ''
             ),
-            dbc.Button('Add Node', color='primary', id='add_node', block=True)
+            getDropdownField(
+                '',
+                [],
+                'Template:',
+                'add_template_menu',
+                '',
+                style_in={'margin-bottom': '10px'}
+            ),
+            dbc.Button('Add Node', color='primary', id='add_node', block=True),
+            html.P(id='make_node_error', style={'color': 'red'})
         ]
     ),
     style=MENU_STYLE,
@@ -365,39 +414,36 @@ add_node_form = html.Div(
 
 add_edge = html.Div(
     [
-        dbc.Row(
-            [
-                dbc.Col(dbc.Label('Node 1', html_for='from_node'), width=3),
-                dbc.Col(dbc.Label(id='from_node')),
-                dbc.Col(dbc.Button(
-                    'select',
-                    color='primary',
-                    id='select_node_1',
-                    block=True,
-                    outline=False
-                ), width=4)
-            ],
+        html.H3('Add Edge'),
+        getDropdownField(
+            '',
+            [],
+            'From:',
+            'from_node',
+            ''
         ),
-        dbc.Row(
-            [
-                dbc.Col(dbc.Label('Node 2', html_for='to_node'), width=3),
-                dbc.Col(dbc.Label(id='to_node')),
-                dbc.Col(dbc.Button(
-                    'select',
-                    color='primary',
-                    id='select_node_2',
-                    block=True,
-                    outline=False
-                ), width=4)
-            ],
+        getDropdownField(
+            '',
+            [],
+            'To:',
+            'to_node',
+            ''
         ),
-        dcc.Dropdown(
-            id='edge_type_menu',
-            options=[
-                {'label': 'Quantum Connection', 'value': 'Quantum'},
-                {'label': 'Classical Connection', 'value': 'Classical'},
+        getDropdownField(
+            '',
+            [
+                {
+                    'label': 'Quantum Connection',
+                    'value': 'Quantum'
+                },
+                {
+                    'label': 'Classical Connection',
+                    'value': 'Classical'
+                },
             ],
-            value='Quantum'
+            'Link Type:',
+            'edge_type_menu',
+            'Quantum'
         ),
         dbc.FormGroup(
             id='edge_properties'
@@ -415,7 +461,15 @@ delete_menu = html.Div(
             html.H3('Delete'),
             dbc.FormGroup(
                 [
-                    dbc.Button('Delete', color='primary', id='delete_button'),
+                    html.P(
+                        'Select an element and press the button to remove it'
+                    ),
+                    dbc.Button(
+                        'Delete',
+                        color='primary',
+                        id='delete_button',
+                        block=True
+                    ),
                 ]
             )
         ],
@@ -429,12 +483,19 @@ make_new_template = html.Div(
     dbc.Form(
         [
             html.H3('Template'),
-            dbc.Label('Template Type'),
-            dcc.Dropdown(
-                id='template_type_menu',
-                options=OPTIONS,
-                value='Quantum_Router',
-                style={'margin-bottom': '15px'}
+            getInputField(
+                '',
+                'ID:',
+                'template_name',
+                '',
+                place='Enter ID'
+            ),
+            getDropdownField(
+                'Quantum_Router',
+                OPTIONS,
+                'Type:',
+                'template_type_menu',
+                ''
             ),
             dbc.FormGroup(
                 id='template_properties'
@@ -458,21 +519,28 @@ def getTopoTable(data, columns):
         dbc.Form(
             [
                 html.H3('View'),
-                dbc.Form(
-                    dbc.ButtonGroup(
-                        [
-                            dbc.Button(
-                                'Nodes',
-                                id='toggle_nodes',
-                                color='primary'
-                            ),
-                            dbc.Button(
-                                'Edges',
-                                id='toggle_edges',
-                                color='primary'
-                            )
-                        ]
-                    )
+                dbc.ButtonGroup(
+                    [
+                        dbc.Button(
+                            'Nodes',
+                            id='toggle_nodes',
+                            color='primary',
+                            style={
+                                'padding': '5px 65px',
+                            }
+                        ),
+                        dbc.Button(
+                            'Edges',
+                            id='toggle_edges',
+                            color='primary',
+                            style={
+                                'padding': '5px 65px'
+                            }
+                        )
+                    ],
+                    style={
+                        'margin-bottom': '10px',
+                    }
                 ),
                 dbc.Form(
                     [
@@ -488,6 +556,7 @@ def getTopoTable(data, columns):
                                 'overflowX': 'auto'
                             },
                             style_cell={'minWidth': 150, 'width': 150},
+                            filter_action='native',
                             editable=True
                         )
                     ]
@@ -517,7 +586,8 @@ def delay_menu(data, columns):
                         'overflowX': 'auto'
                     },
                     style_cell={'minWidth': 150, 'width': 150},
-                    editable=True
+                    editable=True,
+                    filter_action='native',
                 )
             ]
         ),
@@ -544,7 +614,8 @@ def tdm_menu(data, columns):
                         'overflowX': 'auto'
                     },
                     style_cell={'minWidth': 150, 'width': 150},
-                    editable=True
+                    editable=True,
+                    filter_action='native',
                 )
             ]
         ),
@@ -583,6 +654,55 @@ def CCD_menu(delay_data, delay_columns):
     return delay_menu(new_delay_data, delay_columns)
 
 
+def makeLegend(values):
+    if values is None:
+        return html.Div(
+            hidden=True,
+        )
+    out = []
+    for x in values:
+        out.append(dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        html.Span(
+                            className='dot',
+                            style={
+                                'background-color': TYPE_COLORS[x],
+                                'height': '25px',
+                                'width': '25px',
+                                'border-radius': '50%',
+                                'display': 'inline-block',
+                                'outline-style': 'solid',
+                                'outline-color': '#fff',
+                                'border': '2px solid black'
+                            }
+                        ),
+                        dbc.Label(
+                            x,
+                            style={
+                                'position': 'relative',
+                                "top": '-5px',
+                                "left": '7px',
+                            }
+                        ),
+                    ],
+                ),
+            ],
+            style={
+                'margin': '5px 0px'
+            }
+        ))
+    legend = html.Form(
+        children=out,
+        style={
+            "width": "auto",
+            "height": "auto",
+        }
+    )
+    return legend
+
+
 selection_menu = html.Div(
     [
         html.H3('Edit'),
@@ -591,7 +711,10 @@ selection_menu = html.Div(
             'Submit',
             id='submit_edit',
             block=True,
-            color='primary'
+            color='primary',
+            style={
+                'margin-top': '10px'
+            }
         )
     ],
     id=tab_ids[7],
@@ -688,7 +811,7 @@ navbar = dbc.Navbar(
         html.A(
             dbc.Row(
                 [
-                    dbc.Col(getLogo()),
+                    dbc.Col(getLogo('sequence.jpg', '80px')),
                     dbc.Col(dbc.NavbarBrand(
                         "SeQUeNCe",
                         className="ml-2",
@@ -714,22 +837,22 @@ navbar = dbc.Navbar(
                     id='new_network',
                     style={
                         'color': 'white'
-                    }
+                    },
                 ),
-                dbc.NavLink(
-                    'Save',
-                    id='save_network',
-                    style={
-                        'color': 'white'
-                    }
-                ),
-                dbc.NavLink(
-                    'Load',
-                    id='load_network',
-                    style={
-                        'color': 'white'
-                    }
-                ),
+                # dbc.NavLink(
+                #     'Save',
+                #     id='save_network',
+                #     style={
+                #         'color': 'white'
+                #     }
+                # ),
+                # dbc.NavLink(
+                #     'Load',
+                #     id='load_network',
+                #     style={
+                #         'color': 'white'
+                #     }
+                # ),
                 dbc.DropdownMenu(
                     [
                         dbc.DropdownMenuItem('All', id='export_all'),
@@ -748,8 +871,14 @@ navbar = dbc.Navbar(
                 ),
                 dbc.DropdownMenu(
                     children=[
-                        dbc.DropdownMenuItem("Help"),
-                        dbc.DropdownMenuItem("Report Issue"),
+                        dbc.DropdownMenuItem(
+                            "Help",
+                            href='https://sequence-toolbox.github.io/',
+                        ),
+                        dbc.DropdownMenuItem(
+                            'Report Issue',
+                            href='https://github.com/sequence-toolbox/SeQUeNCe/issues',  # nopep8
+                        ),
                     ],
                     nav=True,
                     group=True,
@@ -787,10 +916,11 @@ def get_network(elements_in):
             {
                 'selector': 'node',
                 'style': {
-                    'width': 100,
-                    'height': 100,
+                    'width': 50,
+                    'height': 50,
                     'content': 'data(name)',
                     'text-valign': 'center',
+                    'font-size': '8',
                     'color': 'black',
                     # 'background-image': 'data(image)',
                     'background-color': 'data(color)'
@@ -799,9 +929,10 @@ def get_network(elements_in):
             {
                 'selector': 'edge',
                 'style': {
-                    'width': 20,
-                    'mid-target-arrow-shape': 'vee',
-                    'mid-target-arrow-color': '#9dbaea'
+                    'curve-style': 'bezier',
+                    'width': 5,
+                    'arrow-scale': 1,
+                    # 'target-arrow-shape': 'vee',
                 }
             },
         ]

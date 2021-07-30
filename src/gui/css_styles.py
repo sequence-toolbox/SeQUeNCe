@@ -154,3 +154,10 @@ PAGE = {
     'overflow': 'hidden',
     "transition": "all 0.25s",
 }
+
+LEGEND_STYLE = {
+    "position": "absolute",
+    "top": '75px',
+    "right": '10px',
+    'z-index': '2',
+}

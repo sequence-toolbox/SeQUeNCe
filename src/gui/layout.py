@@ -6,8 +6,6 @@ dash web app
 
 import os
 import base64
-from dash_core_components.Store import Store
-from dash_core_components.Tabs import Tabs
 import networkx as nx
 import dash_core_components as dcc
 import dash_html_components as html
@@ -60,13 +58,13 @@ def getSidebar(graph, delays, tdm):
                         add_node_form,
                         'Add Node',
                         '1',
-                        'bi bi-node-plus'
+                        'bi bi-plus-circle'
                     ),
                     make_item(
                         add_edge,
                         'Add Edge',
                         '2',
-                        'bi bi-bezier2'
+                        'bi bi-share-fill'
                     ),
                     make_item(
                         delete_menu,
@@ -114,7 +112,21 @@ def getSidebar(graph, delays, tdm):
                 id='tabs',
                 value='1'
             ),
-            # html.Div(style=MENU_STYLE, id='menu')
+            html.Div(
+                getLogo(
+                    'argonne.png',
+                    '150px',
+                    'https://www.anl.gov/mcs/quantum-computing'
+
+                ),
+                id='argonne',
+                style={
+                    'position': 'absolute',
+                    'bottom': '150px',
+                    'left': '15px',
+                    'overflow': 'auto'
+                }
+            )
         ],
         id="sidebar_select",
         style=SIDEBAR_SELECT_STYLE,
@@ -139,7 +151,7 @@ def graph_element(graph):
             ),
             html.Div(
                 [
-                    get_network(graph)
+                    get_network(graph),
                 ],
                 id="page-content",
                 style=GRAPH_DIV_STYLE,
@@ -162,27 +174,12 @@ TYPES = [
     'Quantum_Router',
     'Photon_Source',
     'Detector',
-    'QuantumErrorCorrection',
+    # 'QuantumErrorCorrection',
     'BSM_node',
-    'Temp',
+    # 'Temp',
     'Memory',
-    'Protocol'
+    # 'Protocol'
 ]
-
-"""
-Mapping of all types in the GUI to their representative colors
-"""
-TYPE_COLORS = {
-    'Quantum_Repeater': '#4D9DE0',
-    'Quantum_Router': '#E15554',
-    'Photon_Source': '#E1BC29',
-    'Detector': '#3BB273',
-    'QuantumErrorCorrection': '#7768AE ',
-    'BSM_node': '#FFC857',
-    'Quantum': '#8634eb',
-    'Classical': '#345feb',
-    'Temp': '#084C61'
-}
 
 
 """
@@ -227,7 +224,6 @@ def get_app_layout(
     graph_table,
     delay_table,
     tdm_table,
-    vis_opts=None
 ):
     graph = nx.readwrite.cytoscape_data(graph_data)['elements']
     return html.Div(
@@ -235,7 +231,9 @@ def get_app_layout(
             dcc.Download(id='download'),
             html.Div(hidden=True, id='hidden_processing'),
             dcc.Store(id='side_click'),
-            dcc.Store(id='select_button'),
+            dcc.Store(id='all_nodes'),
+            dcc.Store(id='comp_temp'),
+            dcc.Store(id='last_clicked'),
             navbar,
             html.Div(
                 [
@@ -247,6 +245,10 @@ def get_app_layout(
                         style=SIDEBAR_STYLE
                     ),
                     graph_element(graph),
+                    html.Div(
+                        id='legend',
+                        style=LEGEND_STYLE
+                    )
                 ],
                 style=PAGE
             )

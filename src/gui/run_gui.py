@@ -1,6 +1,5 @@
 import json
 import os
-import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
 import numpy as np
@@ -9,7 +8,17 @@ from .graph_comp import GraphNode
 
 
 class run_gui():
-    def __init__(self, path_to_topology=None):
+    def __init__(self):
+        graph = nx.DiGraph()
+        tdm_table = pd.DataFrame()
+        delay_table = pd.DataFrame()
+        self.gui = Quantum_GUI(
+            graph,
+            delays=delay_table,
+            tdm=tdm_table
+        ).get_app()
+
+    def load_graph(self, path_to_topology=None):
         # JSON
         if path_to_topology is None:
             DIRECTORY, _ = os.path.split(__file__)
@@ -72,11 +81,8 @@ class run_gui():
 
         ###############################################
 
-        self.gui = Quantum_GUI(graph, delays=delay_table, tdm=tdm_table)
-
-    def make_app(self):
-        return self.gui.get_app()
-
-
-if __name__ == '__main__':
-    run_gui()
+        self.gui = Quantum_GUI(
+            graph,
+            delays=delay_table,
+            tdm=tdm_table
+        ).get_app()
