@@ -133,11 +133,11 @@ def getSidebar(graph, delays, tdm):
     )
 
 
-def graph_element(graph):
+def graph_element(graph, name):
     return html.Div(
         [
             html.H4(
-                "Project Name",
+                name,
                 id='project_name',
                 className="display-4",
                 style=PROJECT
@@ -224,6 +224,7 @@ def get_app_layout(
     graph_table,
     delay_table,
     tdm_table,
+    name
 ):
     graph = nx.readwrite.cytoscape_data(graph_data)['elements']
     return html.Div(
@@ -233,6 +234,7 @@ def get_app_layout(
             dcc.Store(id='side_click'),
             dcc.Store(id='all_nodes'),
             dcc.Store(id='comp_temp'),
+            dcc.Store(id='detec_opts'),
             dcc.Store(id='last_clicked'),
             navbar,
             html.Div(
@@ -244,7 +246,7 @@ def get_app_layout(
                         id='sidebar',
                         style=SIDEBAR_STYLE
                     ),
-                    graph_element(graph),
+                    graph_element(graph, name),
                     html.Div(
                         id='legend',
                         style=LEGEND_STYLE

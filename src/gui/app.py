@@ -572,7 +572,7 @@ class Quantum_GUI:
         outfile.close()
         return(path+'/templates.json')
 
-    def get_app(self):
+    def get_app(self, name):
         """Function which builds an instance of the GUI as a
         Dash app
 
@@ -623,6 +623,7 @@ class Quantum_GUI:
             table_graph,
             table_delays,
             table_tdm,
+            name
         )
 
         @app.callback(
@@ -888,6 +889,7 @@ class Quantum_GUI:
             Output('template_properties', 'children'),
             Output('save_state', 'children'),
             Output('comp_temp', 'data'),
+            Output('detec_opts', 'data'),
             Input('template_type_menu', 'value'),
             Input('save_template', 'n_clicks'),
             state=[
@@ -902,16 +904,19 @@ class Quantum_GUI:
             if input_id == 'template_type_menu':
                 if edgeType == 'Quantum_Router':
                     opts = list(self.templates['Memory'].keys())
-                    return [router_template, '', opts]
+                    return [router_template, '', opts, dash.no_update]
                 elif edgeType == 'Protocol':
-                    return [protocol_template, '', '']
+                    return [protocol_template, '', '', dash.no_update]
                 elif edgeType == 'Memory':
-                    return [quantum_memory_template, '', '']
+                    return [quantum_memory_template, '', '', dash.no_update]
                 elif edgeType == 'Detector':
-                    return [detector_template, '', '']
+                    return [detector_template, '', '', dash.no_update]
+                elif edgeType == 'BSM_node':
+                    opts = list(self.templates['Detector'].keys())
+                    return [bsm_template, '', '', opts]
             elif input_id == 'save_template':
                 if temp is None or temp_name is None:
-                    return [dash.no_update, '', '']
+                    return [dash.no_update, '', '', '']
                 else:
                     new_templates = self.templates.copy()
                     parsed = {temp_name: self.parse_node(temp)}
@@ -920,7 +925,7 @@ class Quantum_GUI:
                     return [dash.no_update, 'Template Saved', '']
             else:
                 opts = list(self.templates['Memory'].keys())
-                return [router_template, '', opts]
+                return [router_template, '', opts, dash.no_update]
 
         @app.callback(
             [
@@ -1096,7 +1101,15 @@ class Quantum_GUI:
             Input('comp_temp', 'data'),
             prevent_initial_call=True,
         )
-        def updateMemTypeMenu(data):
+        def updateTypeMenu(data):
             return [makeDropdownOptions(data), data[0]]
+
+        @app.callback(
+            Output("detec_type", "options"),
+            Input('detec_opts', 'data'),
+            prevent_initial_call=True,
+        )
+        def updateTypeMenu(data):
+            return makeDropdownOptions(data)
 
         return app

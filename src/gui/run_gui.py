@@ -8,15 +8,16 @@ from .graph_comp import GraphNode
 
 
 class run_gui():
-    def __init__(self):
+    def __init__(self, name):
         graph = nx.DiGraph()
         tdm_table = pd.DataFrame()
         delay_table = pd.DataFrame()
+        self.name = name
         self.gui = Quantum_GUI(
             graph,
             delays=delay_table,
             tdm=tdm_table
-        ).get_app()
+        ).get_app(name)
 
     def load_graph(self, path_to_topology=None):
         # JSON
@@ -77,7 +78,7 @@ class run_gui():
                 }
             )
 
-        input = nx.readwrite.cytoscape_data(graph)['elements']
+        # input = nx.readwrite.cytoscape_data(graph)['elements']
 
         ###############################################
 
@@ -85,4 +86,4 @@ class run_gui():
             graph,
             delays=delay_table,
             tdm=tdm_table
-        ).get_app()
+        ).get_app(self.name)
