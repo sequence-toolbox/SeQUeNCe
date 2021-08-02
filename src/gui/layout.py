@@ -121,9 +121,9 @@ def getSidebar(graph, delays, tdm):
                 ),
                 id='argonne',
                 style={
-                    'position': 'absolute',
-                    'bottom': '150px',
-                    'left': '15px',
+                    'position': 'relative',
+                    'bottom': '-20px',
+                    'left': '0px',
                     'overflow': 'auto'
                 }
             )
