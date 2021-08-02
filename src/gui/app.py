@@ -904,13 +904,13 @@ class Quantum_GUI:
             if input_id == 'template_type_menu':
                 if edgeType == 'Quantum_Router':
                     opts = list(self.templates['Memory'].keys())
-                    return [router_template, '', opts, dash.no_update]
+                    return [router_template, '', opts, '']
                 elif edgeType == 'Protocol':
-                    return [protocol_template, '', '', dash.no_update]
+                    return [protocol_template, '', '', '']
                 elif edgeType == 'Memory':
-                    return [quantum_memory_template, '', '', dash.no_update]
+                    return [quantum_memory_template, '', '', '']
                 elif edgeType == 'Detector':
-                    return [detector_template, '', '', dash.no_update]
+                    return [detector_template, '', '', '']
                 elif edgeType == 'BSM_node':
                     opts = list(self.templates['Detector'].keys())
                     return [bsm_template, '', '', opts]
@@ -922,10 +922,10 @@ class Quantum_GUI:
                     parsed = {temp_name: self.parse_node(temp)}
                     new_templates[temp_type].update(parsed)
                     self.templates = new_templates
-                    return [dash.no_update, 'Template Saved', '']
+                    return [dash.no_update, 'Template Saved', '', '']
             else:
                 opts = list(self.templates['Memory'].keys())
-                return [router_template, '', opts, dash.no_update]
+                return [router_template, '', opts, '']
 
         @app.callback(
             [
