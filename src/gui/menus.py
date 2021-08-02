@@ -76,15 +76,6 @@ OPTIONS = [
 
 DIRECTORY, _ = os.path.split(__file__)
 
-MENUS = [
-    'Delete',
-    'Template',
-    'View',
-    'Latency',
-    'Multiplexing'
-]
-
-
 def getInputField(
     value_in: str,
     label: str,

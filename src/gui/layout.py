@@ -67,6 +67,12 @@ def getSidebar(graph, delays, tdm):
                         'bi bi-share-fill'
                     ),
                     make_item(
+                        selection_menu,
+                        'Edit',
+                        '8',
+                        'bi bi-pencil-square'
+                    ),
+                    make_item(
                         delete_menu,
                         'Delete',
                         '3',
@@ -95,12 +101,6 @@ def getSidebar(graph, delays, tdm):
                         'Multiplexing',
                         '7',
                         'bi bi-clock-history'
-                    ),
-                    make_item(
-                        selection_menu,
-                        'Edit',
-                        '8',
-                        'bi bi-pencil-square'
                     ),
                     make_item(
                         simulation_menu,
