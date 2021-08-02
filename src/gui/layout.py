@@ -24,7 +24,7 @@ def make_item(menu, label, num, icon):
             'background-color': 'transparent',
             'text-align': 'left',
             'font-size': '18px',
-            'padding-left': '-20px',
+            'padding-right': '10px',
             'overflowX': 'hidden'
         }
     )
@@ -86,13 +86,13 @@ def getSidebar(graph, delays, tdm):
                     ),
                     make_item(
                         CCD_menu(delays[0], delays[1]),
-                        'CCD',
+                        'Latency',
                         '6',
                         'bi bi-clock'
                     ),
                     make_item(
                         TDM_menu(tdm[0], tdm[1]),
-                        'TDM',
+                        'Multiplexing',
                         '7',
                         'bi bi-clock-history'
                     ),

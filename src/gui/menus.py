@@ -80,8 +80,8 @@ MENUS = [
     'Delete',
     'Template',
     'View',
-    'CCD',
-    'TDM'
+    'Latency',
+    'Multiplexing'
 ]
 
 
