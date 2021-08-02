@@ -53,12 +53,12 @@ OPTIONS = [
     #     'value': 'Protocol'
     # },
     {
-        'label': 'Quantum Repeater',
-        'value': 'Quantum_Repeater'
-    },
-    {
         'label': 'BSM Node',
         'value': 'BSM_node'
+    },
+    {
+        'label': 'Quantum Repeater',
+        'value': 'Quantum_Repeater'
     },
     # {
     #     'label': 'Quantum Error Correction',
@@ -297,12 +297,6 @@ router_template = [
 ]
 
 quantum_memory_template = [
-    dbc.Label('Template Name'),
-    dbc.Input(
-        id='q_mem_name',
-        className='name',
-        placeholder='default_detector'
-    ),
     dbc.Label('Coherence Time'),
     dbc.Row(
         [
@@ -348,18 +342,19 @@ detector_template = [
     dbc.Label('Efficiency'),
     dbc.Input(
         id='detector_efficiency_in',
+        className='efficiency',
         placeholder='0.8'
     ),
     dbc.Label('Count Rate'),
     dbc.Input(
         id='count_rate_in',
         className='count_rate',
-        placeholder='5.7e'
+        placeholder='5.7e3'
     ),
     dbc.Label('Resolution'),
     dbc.Input(
         id='resolution_in',
-        className='efficiency',
+        className='resolution',
         placeholder='1e2'
     )
 ]
