@@ -18,7 +18,7 @@ from ..components.optical_channel import QuantumChannel, ClassicalChannel
 class Topology():
     """Class for managing network topologies.
 
-    The topology class provies a simple interface for managing the nodes and connections in a network.
+    The topology class provides a simple interface for managing the nodes and connections in a network.
     A network may also be generated using an external json file.
 
     Attributes:

@@ -40,7 +40,7 @@ class Node(Entity):
         name (str): label for node instance.
         timeline (Timeline): timeline for simulation.
         cchannels (Dict[str, ClassicalChannel]): mapping of destination node names to classical channel instances.
-        qchannels (Dict[str, ClassicalChannel]): mapping of destination node names to quantum channel instances.
+        qchannels (Dict[str, QuantumChannel]): mapping of destination node names to quantum channel instances.
         protocols (List[Protocol]): list of attached protocols.
     """
 
