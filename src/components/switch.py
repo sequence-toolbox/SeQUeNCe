@@ -1,7 +1,8 @@
 """Model for simulation of an optical switch.
 
 This module defines the Switch class for directing the flow of photons.
-The switch is usually created as part of a time bin QSDetector object, but may be used individually.
+The switch is usually created as part of a time bin QSDetector object, and will only accept time bin photons.
+A more general switch class is in development.
 """
 
 from typing import TYPE_CHECKING, List
@@ -25,8 +26,6 @@ class Switch(Entity):
         start_time (int): simulation start time (in ps) for transmission.
         frequency (float): frequency with whitch to switch destinations.
         basis_list (List[int]): 0/1 list denoting which receiver to rout photons to each period.
-        interferometer (Interferometer): linked interferometer to receive photons in basis 1.
-        detector (Detector): linked SPD to receive photons in basis 0.
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
@@ -41,55 +40,46 @@ class Switch(Entity):
         self.start_time = 0
         self.frequency = 0
         self.basis_list = []
-        self.interferometer = None
-        self.detector = None
 
     def init(self) -> None:
         """Implementation of Entity interface (see base class)."""
 
         pass
 
-    def set_detector(self, detector: "Detector") -> None:
-        self.detector = detector
-
-    def set_interferometer(self, interferometer: "Interferometer") -> None:
-        self.interferometer = interferometer
-
-    def set_basis_list(self, basis_list: "List[int]", start_time: int, frequency: int) -> None:
+    def set_basis_list(self, basis_list: "List[int]", start_time: int, frequency: float) -> None:
         self.basis_list = basis_list
         self.start_time = start_time
         self.frequency = frequency
 
-    def get(self, photon: "Photon") -> None:
+    def get(self, photon, **kwargs) -> None:
         """Method to receive photon for transmission
 
         Args:
             photon (Photon): photon to transmit.
 
         Side Effects:
-            May call `get` method of attached detector or interferometer.
+            May call `get` method of attached receivers.
         """
 
         index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
         if index < 0 or index >= len(self.basis_list):
             return
 
+        receiver = self._receivers[self.basis_list[index]]
+
         if self.basis_list[index] == 0:
-            receiver = self.detector
-            # check if receiver is detector, if we're using time bin, and if the photon is "late" to schedule measurement
             assert photon.encoding_type["name"] == "time_bin"
             if Photon.measure(photon.encoding_type["bases"][0], photon):
                 time = self.timeline.now() + photon.encoding_type["bin_separation"]
-                process = Process(receiver, "get", [])
+                process = Process(receiver, "get", [photon])
                 event = Event(time, process)
                 self.timeline.schedule(event)
             else:
                 time = self.timeline.now()
-                process = Process(receiver, "get", [])
+                process = Process(receiver, "get", [photon])
                 event = Event(time, process)
                 self.timeline.schedule(event)
         else:
-            receiver = self.interferometer
             time = self.timeline.now()
             process = Process(receiver, "get", [photon])
             event = Event(time, process)

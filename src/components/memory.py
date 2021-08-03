@@ -54,13 +54,14 @@ class MemoryArray(Entity):
 
         Entity.__init__(self, name, timeline)
         self.memories = []
-        self.owner = None
 
         for i in range(num_memories):
             memory = Memory(self.name + "[%d]" % i, timeline, fidelity, frequency, efficiency, coherence_time,
                             wavelength)
             memory.attach(self)
             self.memories.append(memory)
+            memory.owner = self.owner
+            memory.set_memory_array(self)
 
     def __getitem__(self, key):
         return self.memories[key]
@@ -74,9 +75,7 @@ class MemoryArray(Entity):
         Set the owner of memory as the owner of memory array.
         """
 
-        for mem in self.memories:
-            mem.owner = self.owner
-            mem.set_memory_array(self)
+        pass
 
     def memory_expire(self, memory: "Memory"):
         """Method to receive expiration events from memories.
@@ -91,8 +90,8 @@ class MemoryArray(Entity):
         for memory in self.memories:
             memory.__setattr__(arg_name, value)
 
-    def set_node(self, node: "QuantumRouter") -> None:
-        self.owner = node
+    # def set_node(self, node: "QuantumRouter") -> None:
+    #     self.owner = node
 
 class Memory(Entity):
     """Individual single-atom memory.
@@ -116,7 +115,7 @@ class Memory(Entity):
     _meas_circuit.measure(0)
 
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
-                 efficiency: float, coherence_time: int, wavelength: int):
+                 efficiency: float, coherence_time: float, wavelength: int):
         """Constructor for the Memory class.
 
         Args:
@@ -163,7 +162,7 @@ class Memory(Entity):
     def set_memory_array(self, memory_array: MemoryArray):
         self.memory_array = memory_array
 
-    def excite(self, dst="") -> None:
+    def excite(self) -> None:
         """Method to excite memory and potentially emit a photon.
 
         If it is possible to emit a photon, the photon may be marked as null based on the state of the memory.
@@ -196,9 +195,10 @@ class Memory(Entity):
             period = 1e12 / self.frequency
             self.next_excite_time = self.timeline.now() + period
 
-        # send to node
+        # send to receiver
         if (state == 0) or (random.random_sample() < self.efficiency):
-            self.owner.send_qubit(dst, photon)
+            # self.owner.send_qubit(dst, photon)
+            self._receivers[0].get(photon)
             self.excited_photon = photon
 
     def expire(self) -> None:
@@ -294,6 +294,7 @@ class Memory(Entity):
         if observer in self._observers:
             self._observers.remove(observer)
 
+
 class MemoryWithRandomCoherenceTime(Memory):
     """Individual single-atom memory.
 
@@ -338,23 +339,23 @@ class MemoryWithRandomCoherenceTime(Memory):
         
         # coherence time standard deviation in seconds
         self.coherence_time_stdev = coherence_time_stdev
-        self.random_coherence_time = ( coherence_time_stdev > 0.0 and
-                                      self.coherence_time > 0.0 )
+        self.random_coherence_time = (coherence_time_stdev > 0.0 and
+                                      self.coherence_time > 0.0)
         
     def coherence_time_distribution(self) -> None:
         return stats.truncnorm.rvs(
             -0.95 * self.coherence_time / self.coherence_time_stdev,
             19.0 * self.coherence_time / self.coherence_time_stdev,
             self.coherence_time,
-            self.coherence_time_stdev )        
+            self.coherence_time_stdev)
 
     def _schedule_expiration(self) -> None:
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
             
-        coherence_period = ( self.coherence_time_distribution() 
+        coherence_period = (self.coherence_time_distribution()
                             if self.random_coherence_time else 
-                            self.coherence_time )
+                            self.coherence_time)
 
         decay_time = self.timeline.now() + int(coherence_period * 1e12)
         process = Process(self, "expire", [])
@@ -362,5 +363,3 @@ class MemoryWithRandomCoherenceTime(Memory):
         self.timeline.schedule(event)
 
         self.expiration_event = event
-
-

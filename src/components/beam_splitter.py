@@ -11,6 +11,7 @@ from numpy.random import random_sample
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
+    from typing import List
 
 from .photon import Photon
 from ..utils.encoding import polarization
@@ -27,7 +28,6 @@ class BeamSplitter(Entity):
         name (str): label for beamsplitter instance.
         timeline (Timeline): timeline for simulation.
         fidelity (float): probability of transmitting a received photon.
-        receivers (List[Entities]): entities to receive transmitted photons.
         start_time (int): start time (in ps) of photon interaction.
         frequency (float): frequency with which to switch measurement bases.
         basis_list (List[int]): 0/1 indices of measurement bases over time.
@@ -46,7 +46,6 @@ class BeamSplitter(Entity):
 
         Entity.__init__(self, name, timeline)  # Splitter is part of the QSDetector, and does not have its own name
         self.fidelity = fidelity
-        self.receivers = []
         # for BB84
         self.start_time = 0
         self.frequency = 0
@@ -55,16 +54,16 @@ class BeamSplitter(Entity):
     def init(self) -> None:
         """Implementation of Entity interface (see base class)."""
 
-        pass
+        assert len(self._receivers) == 2, "BeamSplitter should only be attached to 2 outputs."
 
-    def get(self, photon: "Photon") -> None:
+    def get(self, photon, **kwargs) -> None:
         """Method to receive a photon for measurement.
 
         Args:
             photon (Photon): photon to measure (must have polarization encoding)
 
         Side Effects:
-            May call get method of one receiver from the receivers attribute if start_time, frequency, and basis_list attributes are set up properly.
+            May call get method of one receiver.
         """
 
         assert photon.encoding_type["name"] == "polarization"
@@ -76,18 +75,11 @@ class BeamSplitter(Entity):
                 return
 
             res = Photon.measure(polarization["bases"][self.basis_list[index]], photon)
-            self.receivers[res].get()
+            self._receivers[res].get(photon)
 
-    def set_basis_list(self, basis_list: "List[int]", start_time: int, frequency: int) -> None:
+    def set_basis_list(self, basis_list: "List[int]", start_time: int, frequency: float) -> None:
         """Sets the basis_list, start_time, and frequency attributes."""
 
         self.basis_list = basis_list
         self.start_time = start_time
         self.frequency = frequency
-
-    def set_receiver(self, index: int, receiver: "Entity") -> None:
-        """Sets the receivers attribute at the specified index."""
-
-        if index > len(self.receivers):
-            raise Exception("index is larger than the length of receivers")
-        self.receivers.insert(index, receiver)

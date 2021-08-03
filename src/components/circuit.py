@@ -164,7 +164,7 @@ class Circuit():
         """Method to apply Control-X gate on three qubits.
 
         Args:
-            control1 (int): the index of control1 in the circuit.
+            control (int): the index of control1 in the circuit.
             target (int): the index of target in the circuit.
         """
 
