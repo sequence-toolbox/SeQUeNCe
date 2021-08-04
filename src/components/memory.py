@@ -93,6 +93,10 @@ class MemoryArray(Entity):
     # def set_node(self, node: "QuantumRouter") -> None:
     #     self.owner = node
 
+    def add_receiver(self, receiver: "Entity"):
+        for m in self.memories:
+            m.add_receiver(receiver)
+
 class Memory(Entity):
     """Individual single-atom memory.
 

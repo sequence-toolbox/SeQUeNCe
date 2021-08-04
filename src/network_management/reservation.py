@@ -76,16 +76,18 @@ class ResourceReservationProtocol(StackProtocol):
         accepted_reservation (List[Reservation]): list of all approved reservation requests.
     """
 
-    def __init__(self, own: "QuantumRouter", name: str):
+    def __init__(self, own: "QuantumRouter", name: str, memory_array_name: str):
         """Constructor for the reservation protocol class.
 
         Args:
             own (QuantumRouter): node to attach protocol to.
             name (str): label for reservation protocol instance.
+            memory_array_name (str): name of the memory array component on own.
         """
 
         super().__init__(own, name)
-        self.timecards = [MemoryTimeCard(i) for i in range(len(own.memory_array))]
+        memo_arr = own.components[memory_array_name]
+        self.timecards = [MemoryTimeCard(i) for i in range(len(memo_arr))]
         self.es_succ_prob = 1
         self.es_degradation = 0.95
         self.accepted_reservation = []
