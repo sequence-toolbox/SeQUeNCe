@@ -11,7 +11,7 @@ from sequence.entanglement_management.generation import *
 from sequence.topology.node import Node
 
 
-class ResourceManager():
+class ResourceManager:
     def __init__(self):
         self.log = []
 
@@ -19,11 +19,24 @@ class ResourceManager():
         self.log.append((memory, state))
 
 
-class FakeNode(Node):
+class FakeRouter(Node):
     def __init__(self, name, tl, **kwargs):
-        Node.__init__(self, name, tl)
-        self.msg_log = []
+        super().__init__(name, tl)
         self.resource_manager = ResourceManager()
+        self.memory_array = None
+
+    def init(self):
+        self.memory_array.add_receiver(self)
+
+    def get(self, photon, **kwargs):
+        dst = kwargs["dst"]
+        self.send_qubit(dst, photon)
+
+
+class FakeBSMNode(Node):
+    def __init__(self, name, tl, **kwargs):
+        super().__init__(name, tl)
+        self.msg_log = []
 
     def receive_message(self, src: str, msg: "Message"):
         self.msg_log.append((self.timeline.now(), src, msg))
@@ -44,7 +57,7 @@ def test_generation_message():
 def test_generation_receive_message():
     tl = Timeline()
     node = Node("e1", tl)
-    m0 = FakeNode("m1", tl)
+    m0 = FakeBSMNode("m1", tl)
     qc = QuantumChannel("qc_nodem1", tl, 0, 1e3)
     qc.set_ends(node, m0)
     node.memory_array = MemoryArray("", tl)
@@ -80,7 +93,7 @@ def test_generation_pop():
     middle = EntanglementGenerationB(m0, "middle", others=["e0", "e1"])
 
     # BSM result
-    middle.bsm_update(None, {'info_type': "BSM_res", 'res': 0, 'time': 100})
+    middle.bsm_update(m0.bsm, {'info_type': "BSM_res", 'res': 0, 'time': 100})
     
     assert len(m0.messages) == 2
     assert m0.messages[0][0] == "e0"
@@ -89,7 +102,7 @@ def test_generation_pop():
 
 
 def test_generation_expire():
-    class DumbBSM():
+    class DumbBSM:
         def __init__(self):
             pass
 
@@ -97,9 +110,9 @@ def test_generation_expire():
             pass
 
     tl = Timeline(1e12)
-    e0 = Node("e0", tl)
-    e1 = Node("e1", tl)
-    m0 = FakeNode("m0", tl)
+    e0 = FakeRouter("e0", tl)
+    e1 = FakeRouter("e1", tl)
+    m0 = FakeBSMNode("m0", tl)
 
     qc0 = QuantumChannel("qc_e0m0", tl, 0, 1e3)
     qc1 = QuantumChannel("qc_e1m0", tl, 0, 1e3)
@@ -137,6 +150,7 @@ def test_generation_expire():
     event = Event(0, process)
     tl.schedule(event)
 
+    tl.init()
     tl.run()
 
     assert e0.memory_array[0].expiration_event.time > 1e12
@@ -148,9 +162,9 @@ def test_generation_run():
 
     tl = Timeline()
 
-    e0 = FakeNode("e0", tl)
-    m0 = FakeNode("m0", tl)
-    e1 = FakeNode("e1", tl)
+    e0 = FakeRouter("e0", tl)
+    m0 = FakeBSMNode("m0", tl)
+    e1 = FakeRouter("e1", tl)
 
     # add connections
     qc0 = QuantumChannel("qc_e0m0", tl, 0, 1e3)
@@ -232,9 +246,9 @@ def test_generation_fidelity_ket():
 
     tl = Timeline()
 
-    e0 = FakeNode("e0", tl)
-    m0 = FakeNode("m0", tl)
-    e1 = FakeNode("e1", tl)
+    e0 = FakeRouter("e0", tl)
+    m0 = FakeBSMNode("m0", tl)
+    e1 = FakeRouter("e1", tl)
 
     # add connections
     qc0 = QuantumChannel("qc_e0m0", tl, 0, 1e3)
@@ -290,6 +304,7 @@ def test_generation_fidelity_ket():
         event = Event(i * 1e12, process)
         tl.schedule(event)
 
+    tl.init()
     tl.run()
 
     desired = np.array([complex(np.sqrt(1/2)), complex(0), complex(0), complex(np.sqrt(1/2))])

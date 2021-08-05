@@ -166,7 +166,7 @@ class Memory(Entity):
     def set_memory_array(self, memory_array: MemoryArray):
         self.memory_array = memory_array
 
-    def excite(self) -> None:
+    def excite(self, dst="") -> None:
         """Method to excite memory and potentially emit a photon.
 
         If it is possible to emit a photon, the photon may be marked as null based on the state of the memory.
@@ -202,7 +202,7 @@ class Memory(Entity):
         # send to receiver
         if (state == 0) or (random.random_sample() < self.efficiency):
             # self.owner.send_qubit(dst, photon)
-            self._receivers[0].get(photon)
+            self._receivers[0].get(photon, dst=dst)
             self.excited_photon = photon
 
     def expire(self) -> None:

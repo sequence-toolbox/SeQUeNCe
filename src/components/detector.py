@@ -231,7 +231,7 @@ class QSDetectorTimeBin(QSDetector):
 
         pass
 
-    def get(self, photon):
+    def get(self, photon, **kwargs):
         """Method to receive a photon for measurement.
 
         Forwards the photon to the internal fiber switch.

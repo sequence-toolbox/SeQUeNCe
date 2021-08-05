@@ -37,18 +37,20 @@ class RandomRequestApp():
         memo_to_reserve (Dict[int, Reservation]): mapping of memory index to corresponding reservation.
     """
 
-    def __init__(self, node: "QuantumRouter", others: List[str], seed: int):
+    def __init__(self, node: "QuantumRouter", others: List[str], seed: int, memory_array_name: str):
         """Constructor for the random application class.
 
         Args:
             node (QuantumRouter): node that application is attached to.
             others (List[str]): list of names for other available routers.
             seed (int): seed for internal random number generator.
+            memo_name (str): name of quantum memory on local node
         """
 
         self.node = node
         self.node.set_app(self)
         self.others = others
+        self.memo_arr = node.components[memory_array_name]
         self.rg = random.default_rng(seed)
 
         self.cur_reserve = []
@@ -81,7 +83,7 @@ class RandomRequestApp():
         responder = self.rg.choice(self.others)
         start_time = self.node.timeline.now() + self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
         end_time = start_time + self.rg.integers(10, 20) * 1e12  # start time + (10 second - 20 second)
-        memory_size = self.rg.integers(10, len(self.node.memory_array) // 2)  # 10 - max_memory_size / 2
+        memory_size = self.rg.integers(10, len(self.memo_arr) // 2)  # 10 - max_memory_size / 2
         fidelity = self.rg.uniform(0.8, 1)
         self.cur_reserve = [responder, start_time, end_time, memory_size, fidelity]
         self.node.reserve_net_resource(responder, start_time, end_time, memory_size, fidelity)
@@ -100,7 +102,7 @@ class RandomRequestApp():
 
         start_time = self.node.timeline.now() + self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
         end_time = start_time + self.rg.integers(10, 20) * 1e12  # start time + (10 second - 20 second)
-        memory_size = self.rg.integers(10, len(self.node.memory_array) // 2)  # 10 - max_memory_size / 2
+        memory_size = self.rg.integers(10, len(self.memo_arr) // 2)  # 10 - max_memory_size / 2
         self.node.reserve_net_resource(responder, start_time, end_time, memory_size, fidelity)
         self.cur_reserve = [responder, start_time, end_time, memory_size, fidelity]
 

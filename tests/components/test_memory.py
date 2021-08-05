@@ -13,7 +13,7 @@ class DumbReceiver:
     def __init__(self):
         self.photon_list = []
 
-    def get(self, photon):
+    def get(self, photon, **kwargs):
         self.photon_list.append(photon)
 
 

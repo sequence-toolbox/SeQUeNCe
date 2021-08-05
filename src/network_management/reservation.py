@@ -86,8 +86,8 @@ class ResourceReservationProtocol(StackProtocol):
         """
 
         super().__init__(own, name)
-        memo_arr = own.components[memory_array_name]
-        self.timecards = [MemoryTimeCard(i) for i in range(len(memo_arr))]
+        self.memo_arr = own.components[memory_array_name]
+        self.timecards = [MemoryTimeCard(i) for i in range(len(self.memo_arr))]
         self.es_succ_prob = 1
         self.es_degradation = 0.95
         self.accepted_reservation = []
@@ -464,7 +464,7 @@ class ResourceReservationProtocol(StackProtocol):
         for card in self.timecards:
             if reservation in card.reservations:
                 process = Process(self.own.resource_manager, "update",
-                                  [None, self.own.memory_array[card.memory_index], "RAW"])
+                                  [None, self.memo_arr[card.memory_index], "RAW"])
                 event = Event(reservation.end_time, process, 1)
                 self.own.timeline.schedule(event)
 

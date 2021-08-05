@@ -211,7 +211,7 @@ def test_single_atom_get():
             mem1.add_receiver(self)
             mem2.add_receiver(self)
 
-        def get(self, photon):
+        def get(self, photon, **kwargs):
             self.bsm.get(photon)
 
     tl = Timeline()

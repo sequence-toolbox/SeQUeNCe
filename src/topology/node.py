@@ -43,7 +43,7 @@ class Node(Entity):
         qchannels (Dict[str, QuantumChannel]): mapping of destination node names to quantum channel instances.
         protocols (List[Protocol]): list of attached protocols.
         components (Dict[str, Entity]): mapping of local component names to objects.
-        receiver_name (str): name of component that first receives incoming qubits.
+        first_component_name (str): name of component that first receives incoming qubits.
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
@@ -59,7 +59,7 @@ class Node(Entity):
         self.qchannels = {}  # mapping of destination node names to quantum channels
         self.protocols = []
         self.components = {}
-        self.receiver_name = None
+        self.first_component_name = None
 
     def init(self) -> None:
         pass
@@ -74,8 +74,8 @@ class Node(Entity):
         self.components[component.name] = component
         component.owner = self
 
-    def designate_receiver(self, name: str):
-        self.receiver_name = name
+    def set_first_component(self, name: str):
+        self.first_component_name = name
 
     def assign_cchannel(self, cchannel: "ClassicalChannel", another: str) -> None:
         """Method to assign a classical channel to the node.
@@ -154,7 +154,7 @@ class Node(Entity):
             qubit (any): transmitted qubit.
         """
 
-        self.components[self.receiver_name].get(qubit)
+        self.components[self.first_component_name].get(qubit)
 
 
 class BSMNode(Node):
@@ -187,7 +187,7 @@ class BSMNode(Node):
 
         bsm.attach(self.eg)
         self.add_component(bsm)
-        self.designate_receiver(bsm_name)
+        self.set_first_component(bsm_name)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         # signal to protocol that we've received a message
@@ -282,8 +282,10 @@ class QuantumRouter(Node):
 
     def get(self, photon: "Photon", **kwargs):
         """Receives photon from last hardware element (in this case, quantum memory)."""
-        # TODO
-        pass
+        dst = kwargs.get("dst", None)
+        if dst is None:
+            raise ValueError("Destination should be supplied for 'get' method on QuantumRouter")
+        self.send_qubit(dst, photon)
 
     def memory_expire(self, memory: "Memory") -> None:
         """Method to receive expired memories.
@@ -388,7 +390,7 @@ class QKDNode(Node):
         else:
             raise Exception("invalid encoding {} given for QKD node {}".format(encoding["name"], name))
         self.add_component(qsdetector)
-        self.designate_receiver(qsd_name)
+        self.set_first_component(qsd_name)
 
         self.protocol_stack = [None] * 5
 
@@ -533,7 +535,7 @@ class QKDNode(Node):
             basis_list (List[int]): list of bases to measure in.
             start_time (int): time to start measurement.
             frequency (float): frequency with which to measure.
-            component (QSDetector): measurement component to edit.
+            component_name (str): measurement component to edit.
         """
 
         component = self.components[component_name]
