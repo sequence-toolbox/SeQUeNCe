@@ -7,18 +7,17 @@ from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
-from sequence.topology.node import QuantumRouter
 
 
-class DumbReceiver():
+class DumbReceiver:
     def __init__(self):
         self.photon_list = []
 
-    def send_qubit(self, dst, photon):
+    def get(self, photon, **kwargs):
         self.photon_list.append(photon)
 
 
-class DumbParent():
+class DumbParent:
     def __init__(self, memory):
         memory.attach(self)
         self.pop_log = []
@@ -37,11 +36,11 @@ def test_MemoryArray_init():
 
 
 def test_MemoryArray_expire():
-    class FakeNode(QuantumRouter):
+    class FakeNode():
         def __init__(self, tl):
-            super().__init__("fake", tl)
+            self.timeline = tl
             self.ma = MemoryArray("ma", tl)
-            self.ma.set_node(self)
+            self.ma.owner = self
             self.is_expired = False
             self.expired_memory = -1
 
@@ -75,7 +74,7 @@ def test_Memory_excite():
     tl = Timeline()
     rec = DumbReceiver()
     mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
-    mem.owner = rec
+    mem.add_receiver(rec)
 
     # test with perfect efficiency
 

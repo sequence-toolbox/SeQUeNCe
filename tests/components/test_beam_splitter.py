@@ -11,6 +11,8 @@ random.seed(1)
 def test_BeamSplitter_init():
     tl = Timeline()
     bs = BeamSplitter("bs", tl)
+    bs.add_receiver(None)
+    bs.add_receiver(None)
     tl.init()
 
 
@@ -19,29 +21,29 @@ class Receiver():
         self.timeline = tl
         self.log = []
 
-    def get(self):
+    def get(self, photon):
         self.log.append((self.timeline.now()))
 
 
-def test_BeamSplitter_set_receiver():
-    tl = Timeline()
-    bs = BeamSplitter("bs", tl)
-    receiver = Receiver(tl)
-    bs.set_receiver(0, receiver)
-    receiver = Receiver(tl)
-    bs.set_receiver(1, receiver)
-    receiver = Receiver(tl)
-    with pytest.raises(Exception):
-        bs.set_receiver(5, receiver)
+# def test_BeamSplitter_set_receiver():
+#     tl = Timeline()
+#     bs = BeamSplitter("bs", tl)
+#     receiver = Receiver(tl)
+#     bs.add_receiver(receiver)
+#     receiver = Receiver(tl)
+#     bs.add_receiver(receiver)
+#     # receiver = Receiver(tl)
+#     # with pytest.raises(Exception):
+#     #     bs.set_receiver(5, receiver)
 
 
 def test_BeamSplitter_get():
     tl = Timeline()
     bs = BeamSplitter("bs", tl)
     receiver0 = Receiver(tl)
-    bs.set_receiver(0, receiver0)
+    bs.add_receiver(receiver0)
     receiver1 = Receiver(tl)
-    bs.set_receiver(1, receiver1)
+    bs.add_receiver(receiver1)
 
     frequency = 8e7
     start_time = 0
@@ -66,7 +68,7 @@ def test_BeamSplitter_get():
     for i in range(basis_len):
         time = 1e12 / frequency * i
         r_i = bits[i]
-        assert time in bs.receivers[r_i].log
+        assert time in bs._receivers[r_i].log
 
     # x-basis states, measurement
     receiver0.log = []
@@ -89,7 +91,7 @@ def test_BeamSplitter_get():
     for i in range(basis_len):
         time = 1e12 / frequency * i
         r_i = bits2[i]
-        assert time in bs.receivers[r_i].log
+        assert time in bs._receivers[r_i].log
 
     # z-basis states, x-basis measurement
     receiver0.log = []
@@ -114,7 +116,7 @@ def test_BeamSplitter_get():
     for i in range(basis_len):
         time = 1e12 / frequency * i
         r_i = bits[i]
-        if time in bs.receivers[r_i].log:
+        if time in bs._receivers[r_i].log:
             true_counter += 1
         else:
             false_counter += 1

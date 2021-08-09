@@ -75,7 +75,7 @@ class ResourceManager():
         waiting_protocols (List[Protocol]): list of protocols awaiting a request from a remote protocol.
     """
 
-    def __init__(self, owner: "QuantumRouter"):
+    def __init__(self, owner: "QuantumRouter", memory_array_name: str):
         """Constructor for resource manager.
         
         Args:
@@ -84,7 +84,7 @@ class ResourceManager():
 
         self.name = "resource_manager"
         self.owner = owner
-        self.memory_manager = MemoryManager(owner.memory_array)
+        self.memory_manager = MemoryManager(owner.components[memory_array_name])
         self.memory_manager.set_resource_manager(self)
         self.rule_manager = RuleManager()
         self.rule_manager.set_resource_manager(self)

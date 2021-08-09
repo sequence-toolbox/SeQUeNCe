@@ -5,12 +5,13 @@ Interferometers are usually instantiated as part of a QSDetector object, defined
 """
 
 from math import sqrt
-from numpy import random
+from numpy import random, multiply
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..components.photon import Photon
-    from ..components.detectors import Detector
+    from ..components.detector import Detector
 
 from ..kernel.process import Process
 from ..kernel.entity import Entity
@@ -27,7 +28,6 @@ class Interferometer(Entity):
         timeline (Timeline): timeline for simulation
         path_difference (int): difference (in ps) of photon transit time in interferometer branches
         phase_error (float): phase error applied to measurement
-        receivers (List[Entities]): entities to receive transmitted photons
     """
 
     def __init__(self, name: str, timeline: "Timeline", path_diff, phase_error=0):
@@ -40,24 +40,16 @@ class Interferometer(Entity):
             phase_error (float): phase error applied to measurement (default 0).
         """
 
-        Entity.__init__(self, "", timeline)
+        Entity.__init__(self, name, timeline)
         self.path_difference = path_diff  # time difference in ps
         self.phase_error = phase_error  # chance of measurement error in phase
-        self.receivers = []
 
     def init(self) -> None:
         """See base class."""
 
-        assert len(self.receivers) == 2
+        assert len(self._receivers) == 2, "Interferometer should only be attached to 2 outputs."
 
-    def set_receiver(self, index: int, receiver: "Detector") -> None:
-        """Sets the receivers attribute at the specified index."""
-
-        if index > len(self.receivers):
-            raise Exception("index is larger than the length of receivers")
-        self.receivers.insert(index, receiver)
-
-    def get(self, photon: "Photon") -> None:
+    def get(self, photon: "Photon", **kwargs) -> None:
         """Method to receive a photon for measurement.
 
         Arguments:
@@ -107,6 +99,6 @@ class Interferometer(Entity):
             else:
                 return
 
-        process = Process(self.receivers[detector_num], "get", [])
+        process = Process(self._receivers[detector_num], "get", [])
         event = Event(self.timeline.now() + time, process)
         self.timeline.schedule(event)

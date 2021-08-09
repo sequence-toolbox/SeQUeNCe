@@ -2,6 +2,7 @@ from sequence.app.random_request import RandomRequestApp
 from sequence.kernel.timeline import Timeline
 from sequence.network_management.reservation import Reservation
 from sequence.topology.node import QuantumRouter
+from sequence.components.memory import MemoryArray
 
 
 class FakeNode(QuantumRouter):
@@ -14,10 +15,17 @@ class FakeNode(QuantumRouter):
         self.reserve_log.append(responder)
 
 
+def get_memo_name(node):
+    for name in node.components.keys():
+        if type(node.components[name]) is MemoryArray:
+            return name
+    raise Exception("no memory array on node {}".format(node.name))
+
+
 def test_RandomRequestApp_update_last_rsvp_metrics():
     tl = Timeline()
     node = QuantumRouter("n1", tl)
-    app = RandomRequestApp(node, [], 0)
+    app = RandomRequestApp(node, [], 0, get_memo_name(node))
     app._update_last_rsvp_metrics()
     assert len(app.get_throughput()) == 0
     app.cur_reserve = ["n2", 1e13, 2e13, 5, 0.9]
@@ -35,7 +43,7 @@ def test_RandomRequestApp_update_last_rsvp_metrics():
 def test_RandomRequestApp_start():
     tl = Timeline()
     node = FakeNode("n1", tl)
-    app = RandomRequestApp(node, ["n2", "n3"], 0)
+    app = RandomRequestApp(node, ["n2", "n3"], 0, get_memo_name(node))
     for _ in range(1000):
         app.start()
         assert app.cur_reserve[0] == node.reserve_log[-1]
@@ -51,7 +59,7 @@ def test_RandomRequestApp_get_reserve_res():
     tl = Timeline()
     tl.time = 6
     node = FakeNode("n1", tl)
-    app = RandomRequestApp(node, ["n2", "n3"], 0)
+    app = RandomRequestApp(node, ["n2", "n3"], 0, get_memo_name(node))
     app.cur_reserve = ["n3", 10, 20, 5, 0.9]
     reservation = Reservation("n1", "n3", 10, 20, 5, 0.9)
     for i, card in enumerate(node.network_manager.protocol_stack[1].timecards):
@@ -66,7 +74,7 @@ def test_RandomRequestApp_get_reserve_res():
     tl = Timeline()
     tl.time = 6
     node = FakeNode("n1", tl)
-    app = RandomRequestApp(node, ["n2", "n3"], 0)
+    app = RandomRequestApp(node, ["n2", "n3"], 0, get_memo_name(node))
     app.cur_reserve = ["n3", 10, 20, 5, 0.9]
     reservation = Reservation("n1", "n3", 10, 20, 5, 0.9)
     app.request_time = 5
@@ -84,7 +92,7 @@ def test_RandomRequestApp_get_reserve_res():
 def test_RandomRequestApp_get_memory():
     tl = Timeline(1)
     node = FakeNode("n1", tl)
-    app = RandomRequestApp(node, ["n2", "n3"], 0)
+    app = RandomRequestApp(node, ["n2", "n3"], 0, get_memo_name(node))
     app.cur_reserve = ["n2", 0, 100, 2, 0.85]
     reservation = Reservation("n1", "n2", 0, 100, 2, 0.85)
     counter = 0
@@ -97,33 +105,36 @@ def test_RandomRequestApp_get_memory():
 
     tl.run()
 
-    node.memory_array[0].entangled_memory["node_id"] = "n2"
-    node.memory_array[0].entangled_memory["memo_id"] = "1"
-    node.memory_array[0].fidelity = 0.9
-    node.resource_manager.update(None, node.memory_array[0], "ENTANGLED")
+    memo_name = get_memo_name(node)
+    memo_arr = node.components[memo_name]
+
+    memo_arr[0].entangled_memory["node_id"] = "n2"
+    memo_arr[0].entangled_memory["memo_id"] = "1"
+    memo_arr[0].fidelity = 0.9
+    node.resource_manager.update(None, memo_arr[0], "ENTANGLED")
     app.get_memory(node.resource_manager.memory_manager[0])
     assert node.resource_manager.memory_manager[0].state == "RAW"
-    assert node.memory_array[0].entangled_memory["node_id"] == None
-    assert node.memory_array[0].fidelity == 0
+    assert memo_arr[0].entangled_memory["node_id"] == None
+    assert memo_arr[0].fidelity == 0
 
-    node.memory_array[1].entangled_memory["node_id"] = "n3"
-    node.memory_array[1].entangled_memory["memo_id"] = "1"
-    node.memory_array[1].fidelity = 0.9
-    node.resource_manager.update(None, node.memory_array[1], "ENTANGLED")
+    memo_arr[1].entangled_memory["node_id"] = "n3"
+    memo_arr[1].entangled_memory["memo_id"] = "1"
+    memo_arr[1].fidelity = 0.9
+    node.resource_manager.update(None, memo_arr[1], "ENTANGLED")
     app.get_memory(node.resource_manager.memory_manager[1])
     assert node.resource_manager.memory_manager[1].state == "ENTANGLED"
 
-    node.memory_array[2].entangled_memory["node_id"] = "n2"
-    node.memory_array[2].entangled_memory["memo_id"] = "1"
-    node.memory_array[2].fidelity = 0.84
-    node.resource_manager.update(None, node.memory_array[2], "ENTANGLED")
+    memo_arr[2].entangled_memory["node_id"] = "n2"
+    memo_arr[2].entangled_memory["memo_id"] = "1"
+    memo_arr[2].fidelity = 0.84
+    node.resource_manager.update(None, memo_arr[2], "ENTANGLED")
     app.get_memory(node.resource_manager.memory_manager[2])
     assert node.resource_manager.memory_manager[2].state == "ENTANGLED"
 
-    node.memory_array[3].entangled_memory["node_id"] = "n2"
-    node.memory_array[3].entangled_memory["memo_id"] = "1"
-    node.memory_array[3].fidelity = 0.9
-    node.resource_manager.update(None, node.memory_array[3], "ENTANGLED")
+    memo_arr[3].entangled_memory["node_id"] = "n2"
+    memo_arr[3].entangled_memory["memo_id"] = "1"
+    memo_arr[3].fidelity = 0.9
+    node.resource_manager.update(None, memo_arr[3], "ENTANGLED")
     app.get_memory(node.resource_manager.memory_manager[3])
     assert node.resource_manager.memory_manager[3].state == "ENTANGLED"
 
@@ -139,7 +150,7 @@ def test_RandomRequestApp_get_other_reservation():
         card.add(reservation)
         counter += 1
 
-    app = RandomRequestApp(node, [], 0)
+    app = RandomRequestApp(node, [], 0, get_memo_name(node))
     app.get_other_reservation(reservation)
     assert len(app.memo_to_reserve) == 0
     tl.stop_time = 11

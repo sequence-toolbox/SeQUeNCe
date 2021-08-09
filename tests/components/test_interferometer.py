@@ -22,8 +22,8 @@ def create_intf(quantum_state):
     intfm = Interferometer("interferometer", tl, time_bin["bin_separation"])
     d0 = Receiver("d0", tl)
     d1 = Receiver("d1", tl)
-    intfm.set_receiver(0, d0)
-    intfm.set_receiver(1, d1)
+    intfm.add_receiver(d0)
+    intfm.add_receiver(d1)
     tl.init()
     for i in range(NUM_TRIALS):
         tl.time = i * 1e6
@@ -32,7 +32,7 @@ def create_intf(quantum_state):
     tl.time = 0
     tl.run()
 
-    return intfm.receivers[0].log, intfm.receivers[1].log
+    return intfm._receivers[0].log, intfm._receivers[1].log
 
 
 def test_Interferometer_get():

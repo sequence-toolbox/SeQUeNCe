@@ -54,10 +54,11 @@ class Detector(Entity):
         """Implementation of Entity interface (see base class)."""
         self.add_dark_count()
 
-    def get(self, dark_get=False) -> None:
+    def get(self, photon=None, dark_get=False) -> None:
         """Method to receive a photon for measurement.
 
         Args:
+            photon (Photon): photon to detect (currently unused)
             dark_get (bool): Signifies if the call is the result of a false positive dark count event.
                 If true, will ignore probability calculations (default false).
 
@@ -88,7 +89,7 @@ class Detector(Entity):
             time = time_to_next + self.timeline.now()  # time of next dark count
 
             process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
-            process2 = Process(self, "get", [True])
+            process2 = Process(self, "get", [None, True])
             event1 = Event(time, process1)
             event2 = Event(time, process2)
             self.timeline.schedule(event1)
@@ -121,12 +122,13 @@ class QSDetector(Entity, ABC):
         self.detectors[detector_id].__setattr__(arg_name, value)
 
     @abstractmethod
-    def get(self, photon: "Photon") -> None:
+    def get(self, photon: "Photon", **kwargs) -> None:
         """Abstract method for receiving photons for measurement."""
 
         pass
 
     def trigger(self, detector: Detector, info: Dict[str, Any]) -> None:
+        # TODO: rewrite
         detector_index = self.detectors.index(detector)
         self.trigger_times[detector_index].append(info['time'])
 
@@ -154,12 +156,13 @@ class QSDetectorPolarization(QSDetector):
 
     def __init__(self, name: str, timeline: "Timeline"):
         QSDetector.__init__(self, name, timeline)
-        self.detectors = [Detector(name + ".detector" + str(i), timeline) for i in range(2)]
+        for i in range(2):
+            d = Detector(name + ".detector" + str(i), timeline)
+            self.detectors.append(d)
+            d.attach(self)
         self.splitter = BeamSplitter(name + ".splitter", timeline)
-        self.splitter.set_receiver(0, self.detectors[0])
-        self.splitter.set_receiver(1, self.detectors[1])
-        self.components = [self.splitter, self.detectors[0], self.detectors[1]]
-        [component.attach(self) for component in self.components]
+        self.splitter.add_receiver(self.detectors[0])
+        self.splitter.add_receiver(self.detectors[1])
         self.trigger_times = [[], []]
 
     def init(self) -> None:
@@ -167,7 +170,7 @@ class QSDetectorPolarization(QSDetector):
 
         assert len(self.detectors) == 2
 
-    def get(self, photon: "Photon") -> None:
+    def get(self, photon: "Photon", **kwargs) -> None:
         """Method to receive a photon for measurement.
 
         Forwards the photon to the internal polariaztion beamsplitter.
@@ -182,7 +185,8 @@ class QSDetectorPolarization(QSDetector):
         self.splitter.get(photon)
 
     def get_photon_times(self):
-        times, self.trigger_times = self.trigger_times, [[], []]
+        times = self.trigger_times
+        self.trigger_times = [[], []]
         return times
 
     def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
@@ -212,11 +216,11 @@ class QSDetectorTimeBin(QSDetector):
         QSDetector.__init__(self, name, timeline)
         self.switch = Switch(name + ".switch", timeline)
         self.detectors = [Detector(name + ".detector" + str(i), timeline) for i in range(3)]
-        self.switch.set_detector(self.detectors[0])
+        self.switch.add_receiver(self.detectors[0])
         self.interferometer = Interferometer(name + ".interferometer", timeline, time_bin["bin_separation"])
-        self.interferometer.set_receiver(0, self.detectors[1])
-        self.interferometer.set_receiver(1, self.detectors[2])
-        self.switch.set_interferometer(self.interferometer)
+        self.interferometer.add_receiver(self.detectors[1])
+        self.interferometer.add_receiver(self.detectors[2])
+        self.switch.add_receiver(self.interferometer)
 
         self.components = [self.switch, self.interferometer] + self.detectors
         [component.attach(self) for component in self.components]
@@ -227,7 +231,7 @@ class QSDetectorTimeBin(QSDetector):
 
         pass
 
-    def get(self, photon):
+    def get(self, photon, **kwargs):
         """Method to receive a photon for measurement.
 
         Forwards the photon to the internal fiber switch.

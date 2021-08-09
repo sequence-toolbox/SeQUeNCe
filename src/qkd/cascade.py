@@ -67,7 +67,7 @@ class CascadeMessage(Message):
 
     def __init__(self, msg_type: Enum, receiver: str, **kwargs):
         super().__init__(msg_type, receiver)
-        self.owner_type = Cascade
+        self.protocol_type = Cascade
         if msg_type is CascadeMsgType.KEY:
             self.key = kwargs["key"]
         elif msg_type is CascadeMsgType.PARAMS:

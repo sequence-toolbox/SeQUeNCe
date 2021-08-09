@@ -208,10 +208,10 @@ def test_single_atom_get():
     class PhotonSendWrapper():
         def __init__(self, mem1, mem2, bsm):
             self.bsm = bsm
-            mem1.owner = self
-            mem2.owner = self
+            mem1.add_receiver(self)
+            mem2.add_receiver(self)
 
-        def send_qubit(self, dst, photon):
+        def get(self, photon, **kwargs):
             self.bsm.get(photon)
 
     tl = Timeline()
@@ -223,7 +223,7 @@ def test_single_atom_get():
     mem_1 = Memory("mem_1", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
     mem_2 = Memory("mem_2", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
 
-    pw = PhotonSendWrapper(mem_1, mem_2, bsm)
+    _ = PhotonSendWrapper(mem_1, mem_2, bsm)
 
     # initially opposite states
     tl.time = 0

@@ -92,7 +92,6 @@ class EntanglementGenerationA(EntanglementProtocol):
     _z_circuit = Circuit(1)
     _z_circuit.z(0)
 
-
     def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory"):
         """Constructor for entanglement generation A class.
 
@@ -217,7 +216,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             self.memory.update_state(EntanglementGenerationA._plus_state)
         else:
             self.own.timeline.quantum_manager.run_circuit(EntanglementGenerationA._flip_circuit, [self._qstate_key])
-        self.memory.excite(self.middle)
+        self.memory.excite(dst=self.middle)
 
     def received_message(self, src: str, msg: EntanglementGenerationMessage) -> None:
         """Method to receive messages.
@@ -238,7 +237,8 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         msg_type = msg.msg_type
 
-        log.logger.debug(self.own.name + " EG protocol received_message of type {} from node {}, round={}".format(msg.msg_type, src, self.ent_round))
+        log.logger.debug(self.own.name + " EG protocol received_message of type {} from node {}, round={}".format(
+            msg.msg_type, src, self.ent_round))
 
         if msg_type is GenerationMsgType.NEGOTIATE:
             # configure params
@@ -432,7 +432,7 @@ class EntanglementGenerationB(EntanglementProtocol):
 
         res = info["res"]
         time = info["time"]
-        resolution = self.own.bsm.resolution
+        resolution = bsm.resolution
 
         log.logger.debug(self.own.name + " measured result {} at time {} with resolution {}".format(res, time, resolution))
 

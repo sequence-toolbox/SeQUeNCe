@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Dict
 
 if TYPE_CHECKING:
     from .timeline import Timeline
+    from ..components.photon import Photon
 
 
 class Entity(ABC):
@@ -17,7 +18,9 @@ class Entity(ABC):
         name (str): name of the entity.
         timeline (Timeline): the simulation timeline for the entity.
         owner (Entity): another entity that owns or aggregates the current entity.
-        _observer (List): a list of observers for the entity.
+        _observers (List): a list of observers for the entity.
+        _receivers (List[Entity]): a list of entities that receive photons from current component
+        _components (Dict[str, Entity]): dictionary of sub-components; keys are component names
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
@@ -34,7 +37,10 @@ class Entity(ABC):
             self.name = name
         self.timeline = timeline
         self.owner = None
+
+        self._receivers = []
         self._observers = []
+
         timeline.entities.append(self)
 
     @abstractmethod
@@ -47,10 +53,13 @@ class Entity(ABC):
 
         pass
 
+    def add_receiver(self, receiver: "Entity"):
+        self._receivers.append(receiver)
+
     def attach(self, observer: Any):
         """Method to add an observer (to receive hardware updates)."""
 
-        if not observer in self._observers:
+        if observer not in self._observers:
             self._observers.append(observer)
 
     def detach(self, observer: Any):
@@ -63,6 +72,19 @@ class Entity(ABC):
 
         for observer in self._observers:
             observer.update(self, info)
+
+    def get(self, photon: "Photon", **kwargs):
+        """Method for an entity to receive a photon.
+
+        If entity is a node, may forward to external quantum channel.
+        Must be overwritten to be used, or will raise exception.
+
+        Args:
+            photon (Photon): photon received by the entity.
+            **kwargs: other arguments required by a particular hardware component.
+        """
+
+        raise Exception("get method called on non-receiving class.")
 
     def remove_from_timeline(self):
         """Method to remove entity from attached timeline.

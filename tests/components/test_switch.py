@@ -9,26 +9,26 @@ FREQ = 1e6
 
 
 def create_switch(basis_list, photons):
-    class Receiver():
+    class Receiver:
         def __init__(self, tl):
             self.timeline = tl
             self.log = []
 
-        def get(self, photon=None):
+        def get(self, photon):
             self.log.append((self.timeline.now(), photon))
 
     tl = Timeline()
     sw = Switch("sw", tl)
     r1 = Receiver(tl)
     r2 = Receiver(tl)
-    sw.set_detector(r1)
-    sw.set_interferometer(r2)
+    sw.add_receiver(r1)
+    sw.add_receiver(r2)
     sw.set_basis_list(basis_list, 0, FREQ)
 
     tl.init()
     for i, photon in enumerate(photons):
-        tl.time = 1e12 / FREQ * i
-        sw.get(photons[i])
+        tl.time = (1e12 / FREQ) * i
+        sw.get(photon)
     tl.time = 0
     tl.run()
 
@@ -41,9 +41,8 @@ def test_Switch_get():
     log1, log2 = create_switch([0] * 2, photons)
     expects = [0, 1e12 / FREQ + time_bin["bin_separation"]]
     for i, log in enumerate(log1):
-        time, photon = log
+        time = log[0]
         assert time == expects[i]
-        assert photon is None
     assert len(log2) == 0
 
     # z-basis measure |e+l> and |e-l>
@@ -54,7 +53,6 @@ def test_Switch_get():
     counter1 = 0
     counter2 = 0
     for time, photon in log1:
-        assert photon is None
         time = time % (1e12 / FREQ)
         if time == 0:
             counter1 += 1

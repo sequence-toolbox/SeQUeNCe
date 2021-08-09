@@ -10,6 +10,5 @@ class Message(ABC):
     def __init__(self, msg_type: Enum, receiver: str):
         self.msg_type = msg_type
         self.receiver = receiver
+        self.protocol_type = None
         self.payload = None
-
-

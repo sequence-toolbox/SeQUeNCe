@@ -13,7 +13,9 @@ The simulator requires at least version 3.7 of Python. This can be found at the 
 The simulator requires the following Python libraries:
 * `numpy`, for mathematical computing tasks
 * `json5` version 0.8.4, for interpretation of json configuration files
-* `pandas` version 0.24.2, for data processing
+* `pandas`, for data processing
+* `matplotlib`, for generating graphics
+* `qutip` version 4.6.0 or later, for quantum circuit management
 
 These will be installed automatically with the simulator if they are not already present. Also note that the `sequence` library found on PyPI cannot be installed, as it will conflict with the simulator library.
 

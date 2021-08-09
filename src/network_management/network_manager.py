@@ -133,7 +133,7 @@ class NetworkManager():
         self.protocol_stack[-1].push(responder, start_time, end_time, memory_size, target_fidelity)
 
 
-def NewNetworkManager(owner: "QuantumRouter") -> "NetworkManager":
+def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str) -> "NetworkManager":
     """Function to create a new network manager.
 
     Will create a network manager with default protocol stack.
@@ -141,6 +141,7 @@ def NewNetworkManager(owner: "QuantumRouter") -> "NetworkManager":
 
     Args:
         owner (QuantumRouter): node to attach network manager to.
+        memory_array_name (str): name of the memory array component on owner.
 
     Returns:
         NetworkManager: network manager object created.
@@ -148,7 +149,7 @@ def NewNetworkManager(owner: "QuantumRouter") -> "NetworkManager":
 
     manager = NetworkManager(owner, [])
     routing = StaticRoutingProtocol(owner, owner.name + ".StaticRoutingProtocol", {})
-    rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP")
+    rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP", memory_array_name)
     routing.upper_protocols.append(rsvp)
     rsvp.lower_protocols.append(routing)
     manager.load_stack([routing, rsvp])

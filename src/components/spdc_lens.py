@@ -17,29 +17,26 @@ class SPDCLens(Entity):
         name (str): label for SPDCLens instance.
         timeline (Timeline): timeline for simulation.
         rate (float): probability of successful down conversion.
-        direct_receiver (Entity): entity to receive entangled photons.
     """
 
-    def __init__(self, name, timeline, rate=1, direct_receiver=None):
+    def __init__(self, name, timeline, rate=1):
         """Constructor for the spdc lens class.
 
         Args:
             name (str): name of the spdc lens instance.
             timeline (Timeline): simulation timeline.
-            rate (float): probability of successfull down conversion (default 1).
-            direct_receiver (Entity): entity to receive down-converted photons (default None).
+            rate (float): probability of successful down conversion (default 1).
         """
 
         Entity.__init__(self, name, timeline)
         self.rate = rate
-        self.direct_receiver = direct_receiver
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
 
         pass
 
-    def get(self, photon):
+    def get(self, photon, **kwargs):
         """Method to receive a photon for transmission.
 
         Based on rate probability, may split photon into two entangled photons.
@@ -59,8 +56,5 @@ class SPDCLens(Entity):
             photon.entangle(new_photon)
             photon.set_state((state[0], complex(0), complex(0), state[1]))
 
-            self.direct_receiver.get(photon)
-            self.direct_receiver.get(new_photon)
-
-    def assign_receiver(self, receiver):
-        self.direct_receiver = receiver
+            self._receivers[0].get(photon)
+            self._receivers[1].get(new_photon)

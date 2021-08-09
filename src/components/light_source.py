@@ -67,7 +67,7 @@ class LightSource(Entity):
         pass
 
     # for general use
-    def emit(self, state_list, dst: str) -> None:
+    def emit(self, state_list) -> None:
         """Method to emit photons.
 
         Will emit photons for a length of time determined by the `state_list` parameter.
@@ -75,7 +75,6 @@ class LightSource(Entity):
 
         Arguments:
             state_list (List[List[complex]]): list of complex coefficient arrays to send as photon-encoded qubits.
-            dst (str): name of destination node to receive photons.
         """
 
         time = self.timeline.now()
@@ -94,10 +93,14 @@ class LightSource(Entity):
                                     location=self.owner,
                                     encoding_type=self.encoding_type,
                                     quantum_state=state)
-                process = Process(self.owner, "send_qubit", [dst, new_photon])
+                # process = Process(self.owner, "send_qubit", [dst, new_photon])
+                # event = Event(time, process)
+                # self.owner.timeline.schedule(event)
+                process = Process(self._receivers[0], "get", [new_photon])
                 event = Event(time, process)
-                self.owner.timeline.schedule(event)
+                self.timeline.schedule(event)
                 self.photon_counter += 1
+
             time += period
 
 
@@ -111,7 +114,7 @@ class SPDCSource(LightSource):
         name (str): label for beamsplitter instance
         timeline (Timeline): timeline for simulation
         frequency (float): frequency (in Hz) of photon creation.
-        wavelengths (float): wavelengths (in nm) of emitted entangled photons.
+        wavelengths (List[float]): wavelengths (in nm) of emitted entangled photons.
         linewidth (float): st. dev. in photon wavelength (in nm).
         mean_photon_num (float): mean number of photons emitted each period.
         encoding_type (Dict): encoding scheme of emitted photons (as defined in the encoding module).
@@ -121,12 +124,15 @@ class SPDCSource(LightSource):
         another_receiver (Entity): device to receive another entangled photon.
     """
 
-    def __init__(self, name, timeline, direct_receiver=None, another_receiver=None, wavelengths=[], frequency=8e7, wavelength=1550,
-                 bandwidth=0, mean_photon_num=0.1, encoding_type=polarization, phase_error=0):
-        super().__init__(name, timeline, frequency, wavelength, bandwidth, mean_photon_num, encoding_type, phase_error)
-        self.direct_receiver = direct_receiver
-        self.another_receiver = another_receiver
+    def __init__(self, name, timeline, wavelengths=None, frequency=8e7, bandwidth=0, mean_photon_num=0.1,
+                 encoding_type=polarization, phase_error=0):
+        super().__init__(name, timeline, frequency, 0, bandwidth, mean_photon_num, encoding_type, phase_error)
+        if wavelengths is None:
+            wavelengths = [1550, 1550]
         self.wavelengths = wavelengths
+
+    def init(self):
+        assert len(self._receivers) == 2, "SPDC source must connect to 2 receivers."
 
     def emit(self, state_list):
         """Method to emit photons.
@@ -149,18 +155,18 @@ class SPDCSource(LightSource):
             for _ in range(num_photon_pairs):
                 new_photon0 = Photon(None,
                                      wavelength=self.wavelengths[0],
-                                     location=self.direct_receiver,
+                                     location=self,
                                      encoding_type=self.encoding_type)
                 new_photon1 = Photon(None,
                                      wavelength=self.wavelengths[1],
-                                     location=self.direct_receiver,
+                                     location=self,
                                      encoding_type=self.encoding_type)
 
                 new_photon0.entangle(new_photon1)
                 new_photon0.set_state((state[0], complex(0), complex(0), state[1]))
 
-                process0 = Process(self.direct_receiver, "get", [new_photon0])
-                process1 = Process(self.another_receiver, "get", [new_photon1])
+                process0 = Process(self._receivers[0], "get", [new_photon0])
+                process1 = Process(self._receivers[1], "get", [new_photon1])
                 event0 = Event(int(round(time)), process0)
                 event1 = Event(int(round(time)), process1)
                 self.timeline.schedule(event0)
@@ -169,6 +175,3 @@ class SPDCSource(LightSource):
                 self.photon_counter += 1
 
             time += 1e12 / self.frequency
-
-    def assign_another_receiver(self, receiver):
-        self.another_receiver = receiver
