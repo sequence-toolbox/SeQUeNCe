@@ -97,6 +97,7 @@ class MemoryArray(Entity):
         for m in self.memories:
             m.add_receiver(receiver)
 
+
 class Memory(Entity):
     """Individual single-atom memory.
 
@@ -298,6 +299,7 @@ class Memory(Entity):
         if observer in self._observers:
             self._observers.remove(observer)
 
+
 class AbsorptiveMemory(Entity):
     """Atomic ensemble absorptive memory.
 
@@ -322,6 +324,7 @@ class AbsorptiveMemory(Entity):
         photon_counter (int): counts number of detection events.
         overlap_error (float): error due to photon overlap in one temporal mode, will degrade fidelity.
     """
+
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float, absorption_efficiency: float,
                  efficiency: Callable, mode_number: int, coherence_time: int, wavelength: int, overlap_error: float):
         """Constructor for the AbsorptiveMemory class.
@@ -388,7 +391,7 @@ class AbsorptiveMemory(Entity):
 
         self.memory_array = memory_array
 
-    def get(self, photon: "Photon"):
+    def get(self, photon: "Photon", **kwargs):
         """Method to receive a photon to store in the absorptive memory"""
         
         now = -1
@@ -408,7 +411,7 @@ class AbsorptiveMemory(Entity):
         # determine which temporal mode the photon is stored in
         absorb_time = now - self.absorb_start_time
         index = int(absorb_time / self.mode_bin)
-        if index < 0 or index >= len(self.mode_number):
+        if index < 0 or index >= self.mode_number:
             return
         
         # keep one photon per mode since most hardware cannot resolve photon number
@@ -421,7 +424,7 @@ class AbsorptiveMemory(Entity):
             self.stored_photons[index]["number"] += 1
             self.stored_photons[index]["degradation"] = True
 
-    def retrieve(self, photon: "Photon", dst=""):
+    def retrieve(self, dst=""):
         """Method to re-emit all stored photons in a reverse sequence on demand.
         Efficiency is a function of time.
         """
@@ -431,7 +434,8 @@ class AbsorptiveMemory(Entity):
             return
 
         now = self.timeline.now()
-        total_time = self.mode_number * self.mode_bin # total time of absorption events before transferring into spinwave state
+        # total time of absorption events before transferring into spinwave state
+        total_time = self.mode_number * self.mode_bin
         store_time = now - self.absorb_start_time - total_time
 
         for index in range(self.mode_number):
@@ -439,9 +443,11 @@ class AbsorptiveMemory(Entity):
                 if random.random_sample() < self.efficiency(store_time):
                     photon = self.stored_photons[index]["photon"]
                     absorb_time = self.stored_photons[index]["time"]
-                    emit_time = total_time - absorb_time # reversed sequence of re-emission
+                    emit_time = total_time - absorb_time  # reversed sequence of re-emission
 
-                    process = Process(self.owner, "send_qubit", [dst, photon])
+                    # process = Process(self.owner, "send_qubit", [dst, photon])
+                    # self._receivers[0].get(photon, dst)
+                    process = Process(self._receivers[0], "get", [photon, {"dst": dst}])
                     event = Event(self.timeline.now() + emit_time, process)
                     self.timeline.schedule(event)
 
@@ -521,6 +527,7 @@ class AbsorptiveMemory(Entity):
     def detach(self, observer: 'EntanglementProtocol'):
         if observer in self._observers:
             self._observers.remove(observer)
+
 
 class MemoryWithRandomCoherenceTime(Memory):
     """Individual single-atom memory.
