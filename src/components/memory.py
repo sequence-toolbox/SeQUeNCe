@@ -6,7 +6,7 @@ Photons should be routed to a BSM device for entanglement generation, or through
 """
 
 from math import sqrt, inf
-from typing import Any, List, TYPE_CHECKING, Dict
+from typing import Any, List, TYPE_CHECKING, Dict, Callable
 
 from numpy import random
 from scipy import stats
@@ -298,6 +298,229 @@ class Memory(Entity):
         if observer in self._observers:
             self._observers.remove(observer)
 
+class AbsorptiveMemory(Entity):
+    """Atomic ensemble absorptive memory.
+
+    This class models an AFC absorptive memory, where the quantum state is stored as collective excitation of atomic ensemble.
+    Note that sequence of photon retrieval is reversed compared to absorption sequence.
+    This class will not support qubit state manipulation.
+
+    Attributes:
+        name (str): label for memory instance.
+        timeline (Timeline): timeline for simulation.
+        fidelity (float): (current) fidelity of memory's entanglement.
+        frequency (float): maximum frequency of absorption for memory (total frequency bandwidth of AFC memory).
+        absorption_efficiency (float): probability of absorbing a photon when arriving at the memory.
+        efficiency (Callable): probability of emitting a photon as a function of storage time.
+        mode_number (int): number of temporal modes available for storing photons, i.e. number of peaks in Atomic Frequency Comb.
+        coherence_time (float): average usable lifetime of memory (in seconds).
+        wavelength (float): wavelength (in nm) of absorbed and emitted photons.
+        entangled_memory (Dict[str, Any]): tracks entanglement state of memory with a memory.
+        absorb_start_time (int): start time (in ps) of photon absorption.
+        retrieve_start_time (int): start time (in ps) of photon retrieval.
+        stored_photons (Dict[int, Any]): photons stored in memory temporal modes.
+        photon_counter (int): counts number of detection events.
+        overlap_error (float): error due to photon overlap in one temporal mode, will degrade fidelity.
+    """
+    def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float, absorption_efficiency: float,
+                 efficiency: Callable, mode_number: int, coherence_time: int, wavelength: int, overlap_error: float):
+        """Constructor for the AbsorptiveMemory class.
+
+        Args:
+            name (str): name of the memory instance.
+            timeline (Timeline): simulation timeline.
+            fidelity (float): fidelity of memory.
+            frequency (float): maximum frequency of absorption for memory (total frequency bandwidth of AFC memory).
+            absorption_efficiency (float): probability of absorbing a photon when arriving at the memory.
+            efficiency (float): probability of emitting a photon as a function of storage time.
+            mode_number (int): number of modes supported for storing photons.
+            coherence_time (float): average time (in s) that memory state is valid.
+            wavelength (int): wavelength (in nm) of photons emitted by memories.
+        """
+
+        super().__init__(name, timeline)
+        assert 0 <= fidelity <= 1
+        assert 0 <= absorption_efficiency <= 1
+
+        self.fidelity = 0
+        self.raw_fidelity = fidelity
+        self.frequency = frequency
+        self.absorption_efficiency = absorption_efficiency
+        self.efficiency = efficiency
+        self.mode_number = mode_number
+        self.coherence_time = coherence_time # coherence time in seconds
+        self.wavelength = wavelength
+        self.mode_bin = 1e12 / self.frequency # time bin for each separate temporal mode
+        self.photon_counter = 0
+        self.absorb_start_time = 0
+        self.retrieve_start_time = 0
+        self.overlap_error = overlap_error
+        self.memory_array = None
+
+        # keep track of previous BSM result (for entanglement generation)
+        # -1 = no result, 0/1 give detector number
+        self.previous_bsm = -1
+
+        # keep track of entanglement with memory
+        # no need to keep track of entanglement with photons, as entanglement information of photons are carried by themselves
+        self.entangled_memory = {'node_id': None, 'memo_id': None}
+
+        # keep track of current memory write (ignore expiration of past states)
+        self.expiration_event = None
+        self.excited_photons = []
+
+        # initialization of stored_photons dictionary
+        self.stored_photons = {}
+        for idx in range(self.mode_number):
+            self.stored_photons[idx] = None
+
+    def init(self):
+        """Implementation of Entity interface (see base class)."""
+
+        pass
+
+    def set_memory_array(self, memory_array: MemoryArray):
+        """Method to set the memory array to which the memory belongs
+        
+        Args:
+            memory_array (MemoryArray): memory array to which the memory belongs
+        """
+
+        self.memory_array = memory_array
+
+    def get(self, photon: "Photon"):
+        """Method to receive a photon to store in the absorptive memory"""
+        
+        now = -1
+        # require resonant absorption of photons
+        if photon.wavelength == self.wavelength and random.random_sample() < self.absorption_efficiency:
+            self.photon_counter += 1
+            now = self.timeline.now()
+
+        # determine absorb_start_time
+        if self.photon_counter == 1:
+            self.absorb_start_time = now
+        
+        # schedule expiration at absorb_start_time
+        if self.coherence_time > 0 and self.absorb_start_time == now:
+            self._schedule_expiration()
+
+        # determine which temporal mode the photon is stored in
+        absorb_time = now - self.absorb_start_time
+        index = int(absorb_time / self.mode_bin)
+        if index < 0 or index >= len(self.mode_number):
+            return
+        
+        # keep one photon per mode since most hardware cannot resolve photon number
+        # photon_counter might be larger than mode_number, multi-photon events counted by "number"
+        # if "degradation" is True, memory fidelity will be corrected by overlap_error
+        if self.stored_photons[index] is None:
+            self.stored_photons[index] = {"photon": photon, "time": absorb_time, "number": 1, "degradation": False}
+            self.excited_photons.append(photon)
+        else:
+            self.stored_photons[index]["number"] += 1
+            self.stored_photons[index]["degradation"] = True
+
+    def retrieve(self, photon: "Photon", dst=""):
+        """Method to re-emit all stored photons in a reverse sequence on demand.
+        Efficiency is a function of time.
+        """
+
+        # do nothing if there is no photon stored
+        if len(self.excited_photons) == 0:
+            return
+
+        now = self.timeline.now()
+        total_time = self.mode_number * self.mode_bin # total time of absorption events before transferring into spinwave state
+        store_time = now - self.absorb_start_time - total_time
+
+        for index in range(self.mode_number):
+            if self.stored_photons[index] is not None:
+                if random.random_sample() < self.efficiency(store_time):
+                    photon = self.stored_photons[index]["photon"]
+                    absorb_time = self.stored_photons[index]["time"]
+                    emit_time = total_time - absorb_time # reversed sequence of re-emission
+
+                    process = Process(self.owner, "send_qubit", [dst, photon])
+                    event = Event(self.timeline.now() + emit_time, process)
+                    self.timeline.schedule(event)
+
+    def expire(self) -> None:
+        """Method to handle memory expiration.
+
+        Side Effects:
+            Will notify upper entities of expiration via the `pop` interface.
+            Will modify the quantum state of the memory.
+        """
+
+        if self.excited_photons:
+            for i in range(len(self.excited_photons)):
+                self.excited_photons[i].is_null = True
+
+        self.reset()
+        # pop expiration message
+        self.notify(self)
+
+    def reset(self) -> None:
+        """Method to clear quantum memory.
+
+        Will reset memory state to no photon stored and will clear entanglement information.
+
+        Side Effects:
+            Will modify internal parameters and photon storage information.
+        """
+
+        self.fidelity = 0
+        self.entangled_memory = {'node_id': None, 'memo_id': None}
+        self.photon_counter = 0
+        self.absorb_start_time = 0
+        self.excited_photons = []
+
+        if self.expiration_event is not None:
+            self.timeline.remove_event(self.expiration_event)
+            self.expiration_event = None
+
+    def _schedule_expiration(self) -> None:
+        if self.expiration_event is not None:
+            self.timeline.remove_event(self.expiration_event)
+
+        decay_time = self.timeline.now() + int(self.coherence_time * 1e12)
+        process = Process(self, "expire", [])
+        event = Event(decay_time, process)
+        self.timeline.schedule(event)
+
+        self.expiration_event = event
+
+    def update_expire_time(self, time: int):
+        """Method to change time of expiration.
+
+        Should not normally be called by protocols.
+
+        Args:
+            time (int): new expiration time.
+        """
+
+        time = max(time, self.timeline.now())
+        if self.expiration_event is None:
+            if time >= self.timeline.now():
+                process = Process(self, "expire", [])
+                event = Event(time, process)
+                self.timeline.schedule(event)
+        else:
+            self.timeline.update_event_time(self.expiration_event, time)
+
+    def get_expire_time(self) -> int:
+        """Method to get the simulation time when the memory is expired"""
+
+        return self.expiration_event.time if self.expiration_event else inf
+
+    def notify(self, msg: Dict[str, Any]):
+        for observer in self._observers:
+            observer.memory_expire(self)
+
+    def detach(self, observer: 'EntanglementProtocol'):
+        if observer in self._observers:
+            self._observers.remove(observer)
 
 class MemoryWithRandomCoherenceTime(Memory):
     """Individual single-atom memory.

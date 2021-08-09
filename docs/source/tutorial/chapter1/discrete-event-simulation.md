@@ -34,14 +34,14 @@ from sequence.kernel.timeline import Timeline
 
 class Store(object):
     def __init__(self, tl: Timeline):
-        self.open = False
+        self.opening = False
         self.timeline = tl
 
     def open(self) -> None:
-        self.open = True
+        self.opening = True
 
     def close(self) -> None:
-        self.open = False
+        self.opening = False
 ```
 
 The `Store` class has two attributes: `open` and `timeline`. 
@@ -143,17 +143,17 @@ from sequence.kernel.process import Process
 
 class Store(object):
     def __init__(self, tl: Timeline):
-        self.open = False
+        self.opening = False
         self.timeline = tl
 
     def open(self) -> None:
-        self.open = True
+        self.opening = True
         process = Process(self, 'close', [])
         event = Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
 
     def close(self) -> None:
-        self.open = False
+        self.opening = False
         process = Process(self, 'open', [])
         event = Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
@@ -196,7 +196,7 @@ For the second method, we can call `Timeline.stop()` in the `Store.open()` and `
     def open(self) -> None:
         if self.timeline.now() >= 60:
             self.timeline.stop()
-        self.open = True
+        self.opening = True
         process = Process(self, 'close', [])
         event = Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
@@ -204,7 +204,7 @@ For the second method, we can call `Timeline.stop()` in the `Store.open()` and `
     def close(self) -> None:
         if self.timeline.now() >= 60:
             self.timeline.stop()
-        self.open = False
+        self.opening = False
         process = Process(self, 'open', [])
         event = Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
@@ -215,7 +215,7 @@ with the above methods, we can observe the state of store after a specfic time.
 
 ```python
 for t in [15, 32, 52]:
-    tl = Timeline(32)
+    tl = Timeline(t)
     store = Store(tl)
     print(tl.now())
     
