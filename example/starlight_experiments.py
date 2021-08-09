@@ -1,8 +1,17 @@
 import pandas as pd
 from sequence.app.random_request import RandomRequestApp
 from sequence.kernel.timeline import Timeline
-from sequence.topology.node import QuantumRouter, BSMNode
+from sequence.topology.node import Node, QuantumRouter, BSMNode
 from sequence.topology.topology import Topology
+
+
+def get_component(node: Node, component_type: str):
+    for comp in node.components.values():
+        if type(comp).__name__ == component_type:
+            return comp
+
+    raise ValueError("No component of type {} on node {}".format(component_type, node.name))
+
 
 if __name__ == "__main__":
     # Experiment params and config
@@ -11,6 +20,7 @@ if __name__ == "__main__":
 
     tl = Timeline(runtime)
     tl.seed(1)
+    tl.show_progress = True
 
     network_topo = Topology("network_topo", tl)
     network_topo.load_config(network_config_file)
@@ -22,10 +32,11 @@ if __name__ == "__main__":
     MEMO_FIDELITY = 0.9349367588934053
     for name, node in network_topo.nodes.items():
         if isinstance(node, QuantumRouter):
-            node.memory_array.update_memory_params("frequency", MEMO_FREQ)
-            node.memory_array.update_memory_params("coherence_time", MEMO_EXPIRE)
-            node.memory_array.update_memory_params("efficiency", MEMO_EFFICIENCY)
-            node.memory_array.update_memory_params("raw_fidelity", MEMO_FIDELITY)
+            memory_array = node.get_components_by_type("MemoryArray")[0]  # assume only 1 memory array
+            memory_array.update_memory_params("frequency", MEMO_FREQ)
+            memory_array.update_memory_params("coherence_time", MEMO_EXPIRE)
+            memory_array.update_memory_params("efficiency", MEMO_EFFICIENCY)
+            memory_array.update_memory_params("raw_fidelity", MEMO_FIDELITY)
 
     # set detector parameters
     DETECTOR_EFFICIENCY = 0.8
@@ -33,9 +44,10 @@ if __name__ == "__main__":
     DETECTOR_RESOLUTION = 100
     for name, node in network_topo.nodes.items():
         if isinstance(node, BSMNode):
-            node.bsm.update_detectors_params("efficiency", DETECTOR_EFFICIENCY)
-            node.bsm.update_detectors_params("count_rate", DETECTOR_COUNT_RATE)
-            node.bsm.update_detectors_params("time_resolution", DETECTOR_RESOLUTION)
+            bsm = node.get_components_by_type("SingleAtomBSM")[0]
+            bsm.update_detectors_params("efficiency", DETECTOR_EFFICIENCY)
+            bsm.update_detectors_params("count_rate", DETECTOR_COUNT_RATE)
+            bsm.update_detectors_params("time_resolution", DETECTOR_RESOLUTION)
 
     # set quantum channel parameters
     ATTENUATION = 0.0002
@@ -52,17 +64,19 @@ if __name__ == "__main__":
             node.network_manager.protocol_stack[1].set_swapping_success_rate(SWAP_SUCC_PROB)
             node.network_manager.protocol_stack[1].set_swapping_degradation(SWAP_DEGRADATION)
 
-    nodes_name = []
-    for name, node in network_topo.nodes.items():
-        if isinstance(node, QuantumRouter):
-            nodes_name.append(name)
+    qr_nodes = network_topo.get_nodes_by_type("QuantumRouter")
+    node_names = [qr.name for qr in qr_nodes]
+    # for name, node in network_topo.nodes.items():
+    #     if isinstance(node, QuantumRouter):
+    #         nodes_name.append(name)
 
     apps = []
-    for i, name in enumerate(nodes_name):
-        app_node_name = name
-        others = nodes_name[:]
-        others.remove(app_node_name)
-        app = RandomRequestApp(network_topo.nodes[app_node_name], others, i)
+    for i, (name, node) in enumerate(zip(node_names, qr_nodes)):
+        memory_array = node.get_components_by_type("MemoryArray")[0]
+        memo_arr_name = memory_array.name
+        others = node_names[:]
+        others.remove(name)
+        app = RandomRequestApp(node, others, i, memo_arr_name)
         apps.append(app)
         app.start()
 

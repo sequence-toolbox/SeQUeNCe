@@ -156,6 +156,9 @@ class Node(Entity):
 
         self.components[self.first_component_name].get(qubit)
 
+    def get_components_by_type(self, component_type: str) -> [Entity]:
+        return [comp for comp in self.components.values() if type(comp).__name__ == component_type]
+
 
 class BSMNode(Node):
     """Bell state measurement node.
