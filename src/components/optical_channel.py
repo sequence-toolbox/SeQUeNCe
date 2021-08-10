@@ -123,7 +123,8 @@ class QuantumChannel(OpticalChannel):
             Receiver node may receive the qubit (via the `receive_qubit` method).
         """
 
-        assert self.delay != 0 and self.loss != 1, "QuantumChannel init() function has not been run for {}".format(self.name)
+        assert self.delay != 0 and self.loss != 1, \
+            "QuantumChannel init() function has not been run for {}".format(self.name)
         assert source == self.sender
 
         # remove lowest time bin

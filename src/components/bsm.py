@@ -55,11 +55,11 @@ def _set_memory_with_fidelity(memories: List["Memory"], desired_state):
         qm.set(keys, possible_states[state_ind])
 
     elif qm.formalism == "DENSITY":
-        #multipliers = [(1-fidelity)/3] * 4
-        #multipliers[possible_states.index(desired_state)] = fidelity
-        #state = zeros((4, 4))
-        #for mult, pure in zip(multipliers, possible_states):
-        #    state = add(state, mult*outer(pure, pure))
+        multipliers = [(1-fidelity)/3] * 4
+        multipliers[possible_states.index(desired_state)] = fidelity
+        state = zeros((4, 4))
+        for mult, pure in zip(multipliers, possible_states):
+            state = add(state, mult*outer(pure, pure))
         qm.set(keys, state)
 
     else:

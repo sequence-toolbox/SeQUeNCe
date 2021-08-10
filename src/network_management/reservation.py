@@ -72,7 +72,7 @@ class ResourceReservationProtocol(StackProtocol):
         name (str): label for protocol instance.
         timecards (List[MemoryTimeCard]): list of reservation cards for all memories on node.
         es_succ_prob (float): sets `success_probability` of `EntanglementSwappingA` protocols created by rules.
-        es_degredation (float): sets `degredation` of `EntanglementSwappingA` protocols created by rules.
+        es_degradation (float): sets `degredation` of `EntanglementSwappingA` protocols created by rules.
         accepted_reservation (List[Reservation]): list of all approved reservation requests.
     """
 

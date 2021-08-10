@@ -164,11 +164,11 @@ class BSMNode(Node):
     """Bell state measurement node.
 
     This node provides bell state measurement and the EntanglementGenerationB protocol for entanglement generation.
+    Creates a SingleAtomBSM object within local components.
 
     Attributes:
         name (str): label for node instance.
         timeline (Timeline): timeline for simulation.
-        bsm (SingleAtomBSM): BSM instance object.
         eg (EntanglementGenerationB): entanglement generation protocol instance.
     """
 
@@ -201,7 +201,7 @@ class BSMNode(Node):
 
         # if we reach here, we didn't successfully receive the message in any protocol
         print(src, msg)
-        raise Exception("Unkown protocol")
+        raise Exception("Unknown protocol")
 
     def eg_add_others(self, other):
         """Method to add other protocols to entanglement generation protocol.
@@ -223,8 +223,6 @@ class QuantumRouter(Node):
     By default, a quantum memory array is included in the components of this node.
 
     Attributes:
-        name (str): label for node instance.
-        timeline (Timeline): timeline for simulation.
         resource_manager (ResourceManager): resource management module.
         network_manager (NetworkManager): network management module.
         map_to_middle_node (Dict[str, str]): mapping of router names to intermediate bsm node names.
@@ -363,7 +361,7 @@ class QKDNode(Node):
         timeline (Timeline): timeline for simulation.
         encoding (Dict[str, Any]): encoding type for qkd qubits (from encoding module).
         destination (str): name of destination node for photons
-        protocol_stack (List[StackProtocol]): protocols for qkdd process.
+        protocol_stack (List[StackProtocol]): protocols for QKD process.
     """
 
     def __init__(self, name: str, timeline: "Timeline", encoding=polarization, stack_size=5):

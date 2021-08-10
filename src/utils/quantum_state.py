@@ -24,7 +24,7 @@ def swap_bits(num, pos1, pos2):
     return num ^ x
 
 
-class QuantumState():
+class QuantumState:
     """Class to manage a quantum state.
 
     Tracks quantum state coefficients (in Z-basis) and entangled states.
@@ -155,7 +155,7 @@ class QuantumState():
 
         Args:
             basis (List[List[complex]]): list of basis vectors.
-            states (List[QuantumState]): list of quantum state objects to meausre.
+            states (List[QuantumState]): list of quantum state objects to measure.
 
         Returns:
             int: measurement result in given basis.
@@ -210,17 +210,16 @@ class QuantumState():
 def _measure_state_with_cache(state: Tuple[complex, complex], basis: Tuple[Tuple[complex]]) -> float:
     state = array(state)
     u = array(basis[0], dtype=complex)
-    v = array(basis[1], dtype=complex)
     # measurement operator
     M0 = outer(u.conj(), u)
-    M1 = outer(v.conj(), v)
 
     # probability of measuring basis[0]
     prob_0 = (state.conj().transpose() @ M0.conj().transpose() @ M0 @ state).real
     return prob_0
 
+
 @lru_cache(maxsize=1000)
-def _measure_entangled_state_with_cache(state: Tuple[complex], basis:Tuple[Tuple[complex]],
+def _measure_entangled_state_with_cache(state: Tuple[complex], basis: Tuple[Tuple[complex]],
                                         state_index: int, num_states: int) -> Tuple[
         Tuple[complex], Tuple[complex], float]:
     state = array(state)
@@ -254,11 +253,12 @@ def _measure_entangled_state_with_cache(state: Tuple[complex], basis:Tuple[Tuple
     else:
         state0 = (projector0 @ state) / sqrt(prob_0)
 
-    return (state0, state1, prob_0)
+    return state0, state1, prob_0
+
 
 @lru_cache(maxsize=1000)
-def _measure_multiple_with_cache(state: Tuple[Tuple[complex]], basis: Tuple[Tuple[complex]], length_diff: int) -> Tuple[
-        Tuple[Tuple[complex]], Tuple[float]]:
+def _measure_multiple_with_cache(state: Tuple[complex], basis: Tuple[Tuple[complex]], length_diff: int)\
+        -> Tuple[Tuple[Tuple[complex]], Tuple[float]]:
     state = array(state)
     # construct measurement operators, projectors, and probabilities of measurement
     projectors = [None] * len(basis)
@@ -279,4 +279,4 @@ def _measure_multiple_with_cache(state: Tuple[Tuple[complex]], basis: Tuple[Tupl
             new_state = tuple(new_state)
             return_states[i] = new_state
 
-    return (tuple(return_states), tuple(probabilities))
+    return tuple(return_states), tuple(probabilities)

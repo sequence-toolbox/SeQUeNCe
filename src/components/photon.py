@@ -8,7 +8,7 @@ from ..utils.encoding import polarization
 from ..utils.quantum_state import QuantumState
 
 
-class Photon():
+class Photon:
     """Class for a single photon.
 
     Attributes:

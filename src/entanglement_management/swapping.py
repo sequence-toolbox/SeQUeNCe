@@ -60,10 +60,8 @@ class EntanglementSwappingMessage(Message):
 
     def __str__(self):
         if self.msg_type == SwappingMsgType.SWAP_RES:
-            return "EntanglementSwappingMessage: msg_type: %s; local_memo: %d; fidelity: %.2f; " \
-                   "remote_node: %s; remote_memo: %d; " % (self.msg_type, self.local_memo,
-                                                           self.fidelity, self.remote_node,
-                                                           self.remote_memo)
+            return "EntanglementSwappingMessage: msg_type: %s; fidelity: %.2f; remote_node: %s; remote_memo: %d; " % (
+                self.msg_type, self.fidelity, self.remote_node, self.remote_memo)
 
 
 class EntanglementSwappingA(EntanglementProtocol):
@@ -77,12 +75,19 @@ class EntanglementSwappingA(EntanglementProtocol):
         EntanglementSwappingA.circuit (Circuit): circuit that does swapping operations.
 
     Attributes:
-        own (QuantumRouter): node that protocol instance is attached to.
-        name (str): label for protocol instance.
-        left_memo (Memory): a memory from one pair to be swapped.
-        right_memo (Memory): a memory from the other pair to be swapped.
-        success_prob (float): probability of a successful swapping operation.
-        degradation (float): degradation factor of memory fidelity after the swapping operation.
+        own (Node): node that protocol is attached to.
+        name (str): label for swapping protocol instance.
+        left_memo (Memory): memory entangled with a memory on one distant node.
+        right_memo (Memory): memory entangled with a memory on the other distant node.
+        left_node (str): name of node that contains memory entangling with left_memo.
+        left_remote_memo (str): name of memory that entangles with left_memo.
+        right_node (str): name of node that contains memory entangling with right_memo.
+        right_remote_memo (str): name of memory that entangles with right_memo.
+        success_prob (float): probability of a successful swapping operation (default 1).
+        degradation (float): degradation factor of memory fidelity after swapping (default 0.95).
+        is_success (bool): flag to show the result of swapping
+        left_protocol (EntanglementSwappingB): pointer of left protocol (may be removed in the future).
+        right_protocol (EntanglementSwappingB): pointer of right protocol (may be removed in the future).
     """
 
     circuit = Circuit(2)
@@ -96,19 +101,12 @@ class EntanglementSwappingA(EntanglementProtocol):
         """Constructor for entanglement swapping A protocol.
 
         Args:
-            own (Node): node that protocol is attached to.
-            name (str): label for swapping protocol instance.
-            left_memo (Memory): memory entangled with a memory on one distant node.
-            right_memo (Memory): memory entangled with a memory on the other distant node.
-            left_node (str): name of node that contains memory entangling with left_memo.
-            left_remote_memo (str): name of memory that entangles with left_memo.
-            right_node (str): name of node that contains memory entangling with right_memo.
-            right_remote_memo (str): name of memory that entangles with right_memo.
-            success_prob (float): probability of a successful swapping operation (default 1).
-            degradation (float): degradation factor of memory fidelity after swapping (default 0.95).
-            is_success (bool): flag to show the result of swapping
-            left_protocol (EntanglementSwappingB): pointer of left protocol (may be removed in the future).
-            right_protocol (EntanglementSwappingB): pointer of right protocol (may be removed in the future).
+            own (QuantumRouter): node that protocol instance is attached to.
+            name (str): label for protocol instance.
+            left_memo (Memory): a memory from one pair to be swapped.
+            right_memo (Memory): a memory from the other pair to be swapped.
+            success_prob (float): probability of a successful swapping operation.
+            degradation (float): degradation factor of memory fidelity after the swapping operation.
         """
 
         assert left_memo != right_memo
@@ -260,14 +258,14 @@ class EntanglementSwappingB(EntanglementProtocol):
     EntanglementSwappingB should be instantiated on the end nodes, where it waits for swapping results from the middle node.
 
     Variables:
-            EntanglementSwappingB.x_cir (Circuit): circuit that corrects state with an x gate.
-            EntanglementSwappingB.z_cir (Circuit): circuit that corrects state with z gate.
-            EntanglementSwappingB.x_z_cir (Circuit): circuit that corrects state with an x and z gate.
+        EntanglementSwappingB.x_cir (Circuit): circuit that corrects state with an x gate.
+        EntanglementSwappingB.z_cir (Circuit): circuit that corrects state with z gate.
+        EntanglementSwappingB.x_z_cir (Circuit): circuit that corrects state with an x and z gate.
 
     Attributes:
         own (QuantumRouter): node that protocol instance is attached to.
-        name (str): label for protocol instance.
-        hold_memory (Memory): quantum memory to be swapped.
+        memory (Memory): memory to swap
+        another (EntanglementSwappingA): another protocol to communicate with for swapping
     """
 
     x_cir = Circuit(1)
@@ -302,7 +300,7 @@ class EntanglementSwappingB(EntanglementProtocol):
         """Method to set one other protocol.
 
         Args:
-            other (EntanglementSwappingA): protocol to set as other.
+            another (EntanglementSwappingA): protocol to set as other.
         """
 
         self.another = another

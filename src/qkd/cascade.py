@@ -8,6 +8,10 @@ Also included in this module are a function to pair protocol instances (required
 import math
 from enum import Enum, auto
 from functools import lru_cache
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..topology.node import QKDNode
 
 from numpy import random
 
@@ -124,7 +128,7 @@ class Cascade(StackProtocol):
         frame_num (int): frame number.
         run_time (int): time to run protocol.
         bits (List[int]): bits to operate on (received from BB84).
-        tl (int): cascade parameter.
+        t1 (int): cascade parameter.
         t2 (int): cascade parameter.
         k1 (int): cascade parameter.
         checksum_tables (List[List[int]]): lists of generated checksums.
@@ -257,13 +261,13 @@ class Cascade(StackProtocol):
 
             @lru_cache(maxsize=128)
             def get_diff_bit_num(key1, key2):
-                val = key1^key2
+                val = key1 ^ key2
                 counter = 0
                 i = 0
-                while val>>i:
-                    if (val>>i)&1:
+                while val >> i:
+                    if (val >> i) & 1:
                         counter += 1
-                    i+=1
+                    i += 1
                 return counter
 
             p = get_diff_bit_num(key, self.bits[0]) / 10000
@@ -372,7 +376,8 @@ class Cascade(StackProtocol):
                         _block = index_to_block_id[_pass][pos]
                         checksum_table[_pass][_block] ^= 1
 
-                    if not self.check_checksum(key_id): return
+                    if not self.check_checksum(key_id):
+                        return
 
                 else:
                     self.interactive_binary_search(key_id, pass_id, block_id, start, end)
@@ -387,7 +392,7 @@ class Cascade(StackProtocol):
             key_id = msg.key_id
 
             for i in range(int(self.frame_len / self.keylen)):
-                self.valid_keys.append((self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1))
+                self.valid_keys.append((self.bits[key_id] >> (i*self.keylen)) & ((1 << self.keylen)-1))
                 if self.frame_num > 0:
                     log.logger.info(self.name + ' state={} got valid key'.format(self.state))
                     self._pop(key=self.valid_keys[-1])
@@ -407,7 +412,7 @@ class Cascade(StackProtocol):
         Args:
             keylen (int): length of key to generate.
             frame_num (int): number of keys to generate (default inf).
-            runtime (int): max simulation time allowed for key generation (default inf).
+            run_time (int): max simulation time allowed for key generation (default inf).
         """
 
         log.logger.info(self.name + ' state={} generate_key, keylen={}, keynum={}'.format(self.state, keylen, frame_num))
@@ -515,16 +520,16 @@ class Cascade(StackProtocol):
         cur_key = key_id
         another_checksum = self.another_checksums[cur_key]
         block_id_to_index = self.block_id_to_index_lists[cur_key]
-        for _pass in range(1,len(another_checksum)):
+        for _pass in range(1, len(another_checksum)):
             for _block in range(len(another_checksum[_pass])):
                 if self.checksum_tables[cur_key][_pass][_block] != self.another_checksums[cur_key][_pass][_block]:
-                    log.logger.debug(self.name + ' state={} two checksums are different'.format(self.state, [cur_key,_pass,_block]))
+                    log.logger.debug(self.name + ' state={} two checksums are different'.format(self.state, [cur_key, _pass, _block]))
                     block_size = len(block_id_to_index[_pass][_block])
                     self.interactive_binary_search(cur_key, _pass, _block, 0, block_size)
                     return False
 
         for i in range(int(self.frame_len / self.keylen)):
-            self.valid_keys.append((self.bits[key_id]>>(i*self.keylen)) & ((1<<self.keylen)-1))
+            self.valid_keys.append((self.bits[key_id] >> (i*self.keylen)) & ((1 << self.keylen)-1))
             if self.frame_num > 0:
                 log.logger.info(self.name + ' state={} got_valid_key'.format(self.state))
                 self._pop(key=self.valid_keys[-1])
@@ -544,8 +549,7 @@ class Cascade(StackProtocol):
 
         self.state = 2
     
-    def interactive_binary_search(self, key_id: int, pass_id: int, block_id: int,
-            start: int, end: int) -> None:
+    def interactive_binary_search(self, key_id: int, pass_id: int, block_id: int, start: int, end: int) -> None:
         """Method to search for errors in key.
 
         Split block[start:end] to block[start:(start+end)/2], block[(start+end)/2,end].
@@ -595,29 +599,29 @@ class Cascade(StackProtocol):
             counter = 0
             for i in range(len(self.t1)):
                 if self.t2[i] != -1:
-                    self.latency+=self.t2[i]-self.t1[i]
-                    counter+=1
-            if counter>0: self.latency /= counter
-            else: self.latency = None
+                    self.latency += self.t2[i]-self.t1[i]
+                    counter += 1
+            if counter > 0:
+                self.latency /= counter
+            else:
+                self.latency = None
             self.another.latency = self.latency
 
         if self.own.timeline.now() - self.start_time:
             self.throughput = 1e12 * len(self.valid_keys) * self.keylen / (self.own.timeline.now() - self.start_time)
-            self.privacy_throughput = 1e12 * (len(self.valid_keys) * (self.keylen) - int(len(self.valid_keys)/40) * self.secure_params - self.disclosed_bits_counter) / (self.own.timeline.now() - self.start_time)
+            self.privacy_throughput = 1e12 * (len(self.valid_keys) * self.keylen - int(len(self.valid_keys)/40) * self.secure_params - self.disclosed_bits_counter) / (self.own.timeline.now() - self.start_time)
 
         counter = 0
         for j in range(min(len(self.valid_keys), len(self.another.valid_keys))):
             i = 0
             val = self.valid_keys[j] ^ self.another.valid_keys[j]
-            while val>>i:
-                if (val>>i)&1 == 1:
+            while val >> i:
+                if (val >> i) & 1 == 1:
                     counter += 1
-                i+=1
+                i += 1
 
         if len(self.valid_keys) > 1:
             self.error_bit_rate = counter / (self.keylen * (len(self.valid_keys)))
         else:
             self.error_bit_rate = 0
         self.time_cost = self.end_time - self.start_time
-
-

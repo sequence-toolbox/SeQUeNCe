@@ -14,6 +14,7 @@ from typing import List, TYPE_CHECKING, Dict, Any
 
 if TYPE_CHECKING:
     from ..components.memory import Memory
+    from ..components.bsm import SingleAtomBSM
     from ..topology.node import Node
 
 from .entanglement_protocol import EntanglementProtocol
@@ -284,7 +285,8 @@ class EntanglementGenerationA(EntanglementProtocol):
             self.own.timeline.schedule(event)
             self.scheduled_events.append(event)
 
-            log.logger.debug(self.own.name + " scheduled emit times [{}, {}] and end time {}".format(emit_time_0, emit_time_1, end_time))
+            log.logger.debug(self.own.name + " scheduled emit times [{}, {}] and end time {}".format(
+                emit_time_0, emit_time_1, end_time))
 
             # send negotiate_ack
             another_emit_time_0 = emit_time_0 + self.qc_delay - another_delay
@@ -434,7 +436,8 @@ class EntanglementGenerationB(EntanglementProtocol):
         time = info["time"]
         resolution = bsm.resolution
 
-        log.logger.debug(self.own.name + " measured result {} at time {} with resolution {}".format(res, time, resolution))
+        log.logger.debug(self.own.name + " measured result {} at time {} with resolution {}".format(
+            res, time, resolution))
 
         for i, node in enumerate(self.others):
             message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES, None, res=res, time=time,
@@ -453,6 +456,5 @@ class EntanglementGenerationB(EntanglementProtocol):
     def is_ready(self) -> bool:
         return True
 
-    def memory_expire(self) -> None:
+    def memory_expire(self, memory) -> None:
         raise Exception("EntanglementGenerationB protocol '{}' should not have memory_expire".format(self.name))
-

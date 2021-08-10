@@ -365,7 +365,8 @@ class AbsorptiveMemory(Entity):
         self.previous_bsm = -1
 
         # keep track of entanglement with memory
-        # no need to keep track of entanglement with photons, as entanglement information of photons are carried by themselves
+        # no need to keep track of entanglement with photons,
+        # as entanglement information of photons are carried by themselves
         self.entangled_memory = {'node_id': None, 'memo_id': None}
 
         # keep track of current memory write (ignore expiration of past states)

@@ -15,7 +15,7 @@ from .node import *
 from ..components.optical_channel import QuantumChannel, ClassicalChannel
 
 
-class Topology():
+class Topology:
     """Class for managing network topologies.
 
     The topology class provides a simple interface for managing the nodes and connections in a network.
@@ -247,7 +247,7 @@ class Topology():
         Generates a mapping of destination nodes to next node for routing using Dijkstra's algorithm.
 
         Args:
-            node (str): name of node for which to generate table.
+            starting_node (str): name of node for which to generate table.
         """
 
         # set up priority queue and track previous nodes
@@ -273,7 +273,8 @@ class Topology():
             nodes.remove(current)
 
         # find forwarding neighbor for each destination
-        next_node = {k: v for k, v in previous.items() if v} # remove nodes whose previous is None (starting, not connected)
+        # remove nodes whose previous is None (starting, not connected)
+        next_node = {k: v for k, v in previous.items() if v}
         for node, prev in next_node.items():
             if prev is starting_node:
                 next_node[node] = node
@@ -287,5 +288,3 @@ class Topology():
     def populate_protocols(self):
         # TODO: add higher-level protocols not added by nodes
         raise NotImplementedError("populate_protocols has not been added")
-
-
