@@ -1,4 +1,3 @@
-import pytest
 from numpy import random
 from sequence.components.beam_splitter import BeamSplitter
 from sequence.components.photon import Photon
@@ -62,7 +61,7 @@ def test_BeamSplitter_get():
         tl.time = time
         bit = random.randint(2)
         bits.append(bit)
-        photon = Photon(str(i), quantum_state=polarization["bases"][0][bit])
+        photon = Photon(str(i), tl, quantum_state=polarization["bases"][0][bit])
         bs.get(photon)
 
     for i in range(basis_len):
@@ -85,7 +84,7 @@ def test_BeamSplitter_get():
         tl.time = time
         bit = random.randint(2)
         bits2.append(bit)
-        photon = Photon(str(i), quantum_state=polarization["bases"][1][bit])
+        photon = Photon(str(i), tl, quantum_state=polarization["bases"][1][bit])
         bs.get(photon)
 
     for i in range(basis_len):
@@ -108,7 +107,7 @@ def test_BeamSplitter_get():
         tl.time = time
         bit = random.randint(2)
         bits.append(bit)
-        photon = Photon(str(i), quantum_state=polarization["bases"][0][bit])
+        photon = Photon(str(i), tl, quantum_state=polarization["bases"][0][bit])
         bs.get(photon)
 
     print(len(receiver1.log), len(receiver0.log))

@@ -60,6 +60,8 @@ class Switch(Entity):
             May call `get` method of attached receivers.
         """
 
+        assert photon.encoding_type["name"] == "time_bin"
+
         index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
         if index < 0 or index >= len(self.basis_list):
             return
@@ -67,7 +69,6 @@ class Switch(Entity):
         receiver = self._receivers[self.basis_list[index]]
 
         if self.basis_list[index] == 0:
-            assert photon.encoding_type["name"] == "time_bin"
             if Photon.measure(photon.encoding_type["bases"][0], photon):
                 time = self.timeline.now() + photon.encoding_type["bin_separation"]
                 process = Process(receiver, "get", [photon])

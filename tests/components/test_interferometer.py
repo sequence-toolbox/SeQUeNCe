@@ -27,7 +27,7 @@ def create_intf(quantum_state):
     tl.init()
     for i in range(NUM_TRIALS):
         tl.time = i * 1e6
-        photon = Photon(str(i), quantum_state=quantum_state)
+        photon = Photon(str(i), tl, encoding_type=time_bin, quantum_state=quantum_state)
         intfm.get(photon)
     tl.time = 0
     tl.run()

@@ -5,19 +5,19 @@ Also defined is a function to automatically construct a BSM of a specified type.
 """
 
 from abc import abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..components.memory import Memory
 
 from numpy import random, outer, add, zeros
 
-from .circuit import Circuit
 from .detector import Detector
 from .photon import Photon
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
-from ..kernel.quantum_manager import QuantumManagerKet, QuantumManagerDensity
 from ..utils.encoding import *
-from ..utils.quantum_state import QuantumState
 
 
 def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=[]):
@@ -38,7 +38,7 @@ def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=
     elif encoding_type == "single_atom":
         return SingleAtomBSM(name, timeline, phase_error, detectors)
     else:
-        raise Exception("invalid encoding {} given for BSM {}".format(encoding_type, name))
+        raise Exception("invalid encoding '{}' given for BSM '{}'".format(encoding_type, name))
 
 
 def _set_memory_with_fidelity(memories: List["Memory"], desired_state):
@@ -93,6 +93,7 @@ class BSM(Entity):
         """
 
         super().__init__(name, timeline)
+        self.encoding = ""
         self.phase_error = phase_error
         self.photons = []
         self.photon_arrival_time = -1
@@ -129,6 +130,11 @@ class BSM(Entity):
         Arguments:
             photon (Photon): photon to measure.
         """
+
+        assert photon.encoding_type["name"] == self.encoding, \
+            "BSM expecting photon with encoding '{}' received photon with encoding '{}'".format(
+                self.encoding, photon.encoding_type["name"])
+
         # check if photon arrived later than current photon
         if self.photon_arrival_time < self.timeline.now():
             # clear photons
@@ -184,6 +190,7 @@ class PolarizationBSM(BSM):
         """
 
         super().__init__(name, timeline, phase_error, detectors)
+        self.encoding = "polarization"
         self.last_res = [-2 * self.resolution, -1]
         assert len(self.detectors) == 4
 
@@ -279,6 +286,7 @@ class TimeBinBSM(BSM):
         """
 
         super().__init__(name, timeline, phase_error, detectors)
+        self.encoding = "time_bin"
         self.encoding_type = time_bin
         self.last_res = [-1, -1]
         assert len(self.detectors) == 2
@@ -394,6 +402,7 @@ class SingleAtomBSM(BSM):
         if detectors == []:
             detectors = [{}, {}]
         super().__init__(name, timeline, phase_error, detectors)
+        self.encoding = "single_atom"
         assert len(self.detectors) == 2
 
     def get(self, photon, **kwargs):
@@ -408,10 +417,9 @@ class SingleAtomBSM(BSM):
 
         super().get(photon)
 
-        memory = photon.memory
-
         # check if we're in first stage. If we are and not null, send photon to random detector
         if not photon.is_null:
+            memory = photon.encoding_type["memory"]
             detector_num = random.choice([0, 1])
             memory.previous_bsm = detector_num
             self.detectors[detector_num].get()
@@ -422,8 +430,8 @@ class SingleAtomBSM(BSM):
             is_valid = null_0 ^ null_1
             
             if is_valid:
-                memory_0 = self.photons[0].memory
-                memory_1 = self.photons[1].memory
+                memory_0 = self.photons[0].encoding_type["memory"]
+                memory_1 = self.photons[1].encoding_type["memory"]
                 
                 # if we're in stage 1: null photon will need bsm assigned
                 if null_0 and memory_0.previous_bsm == -1:

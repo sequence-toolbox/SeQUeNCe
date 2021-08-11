@@ -87,12 +87,12 @@ def test_Node_send_qubit():
     tl.init()
 
     for i in range(1000):
-        photon = Photon(str(i))
+        photon = Photon(str(i), tl)
         node1.send_qubit("node2", photon)
         tl.time += 1
 
     for i in range(1000):
-        photon = Photon(str(i))
+        photon = Photon(str(i), tl)
         node2.send_qubit("node1", photon)
         tl.time += 1
 

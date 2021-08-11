@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..components.photon import Photon
-    from ..components.detector import Detector
 
 from ..kernel.process import Process
 from ..kernel.entity import Entity
@@ -53,7 +52,7 @@ class Interferometer(Entity):
         """Method to receive a photon for measurement.
 
         Arguments:
-            photon (Photon): photon to measure (must have polarization encoding)
+            photon (Photon): photon to measure (must have time bin encoding)
 
         Returns:
             None
@@ -61,6 +60,12 @@ class Interferometer(Entity):
         Side Effects:
             May call get method of one attached receiver from the receivers attribute.
         """
+
+        assert photon.encoding_type["name"] == "time_bin", \
+            "Invalid photon encoding {} received by interferometer".format(photon.encoding_type["name"])
+        if photon.use_qm:
+            raise NotImplementedError("Interferometer usage not configured for quantum manager.")
+
         detector_num = random.choice([0, 1])
         quantum_state = photon.quantum_state
         time = 0

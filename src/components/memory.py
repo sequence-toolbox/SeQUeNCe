@@ -5,7 +5,8 @@ Memories will attempt to send photons through the `send_qubit` interface of node
 Photons should be routed to a BSM device for entanglement generation, or through optical hardware for purification and swapping.
 """
 
-from math import sqrt, inf
+from copy import copy
+from math import inf
 from typing import Any, List, TYPE_CHECKING, Dict, Callable
 
 from numpy import random
@@ -14,7 +15,6 @@ from scipy import stats
 if TYPE_CHECKING:
     from ..entanglement_management.entanglement_protocol import EntanglementProtocol
     from ..kernel.timeline import Timeline
-    from ..topology.node import QuantumRouter
 
 from .photon import Photon
 from .circuit import Circuit
@@ -112,7 +112,7 @@ class Memory(Entity):
         efficiency (float): probability of emitting a photon when excited.
         coherence_time (float): average usable lifetime of memory (in seconds).
         wavelength (float): wavelength (in nm) of emitted photons.
-        qstate (QuantumState): quantum state of memory.
+        qstate_key (int): key for associated quantum state in timeline's quantum manager.
         entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
     """
 
@@ -145,8 +145,11 @@ class Memory(Entity):
         self.coherence_time = coherence_time  # coherence time in seconds
         self.wavelength = wavelength
         self.qstate_key = timeline.quantum_manager.new()
-
         self.memory_array = None
+
+        # for photons
+        self.encoding = copy(single_atom)
+        self.encoding["memory"] = self
 
         # keep track of previous BSM result (for entanglement generation)
         # -1 = no result, 0/1 give detector number
@@ -189,10 +192,7 @@ class Memory(Entity):
         state = res[self.qstate_key]
 
         # create photon and check if null
-        photon = Photon("", wavelength=self.wavelength, location=self,
-                        encoding_type=single_atom)
-        photon.memory = self
-        photon.qstate_key = self.qstate_key
+        photon = Photon("", self.timeline, wavelength=self.wavelength, location=self, encoding_type=self.encoding)
         if state == 0:
             photon.is_null = True
 
@@ -549,7 +549,7 @@ class MemoryWithRandomCoherenceTime(Memory):
         coherence_time (float): average usable lifetime of memory (in seconds).
         coherence_time_stdev (float): standard deviation of coherence time
         wavelength (float): wavelength (in nm) of emitted photons.
-        qstate (QuantumState): quantum state of memory.
+        qstate_key (int): key for associated quantum state in timeline's quantum manager.
         entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
     """
 
@@ -566,7 +566,6 @@ class MemoryWithRandomCoherenceTime(Memory):
             coherence_time (float): average time (in s) that memory state is valid
             coherence_time_stdev (float): standard deviation of coherence time
             wavelength (int): wavelength (in nm) of photons emitted by memories.
-            qstate_key (int): key for associated quantum state in timeline's quantum manager.
         """
 
         super(MemoryWithRandomCoherenceTime, self).__init__(name, timeline, fidelity, frequency, 
