@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 from ..components.circuit import Circuit
 from ..utils.encoding import polarization
-from ..utils.quantum_state import QuantumState
+from ..kernel.quantum_state import FreeQuantumState
 
 
 class Photon:
@@ -59,7 +59,7 @@ class Photon:
         if self.use_qm:
             self.quantum_state = timeline.quantum_manager.new()
         else:
-            self.quantum_state = QuantumState()
+            self.quantum_state = FreeQuantumState()
             self.quantum_state.state = quantum_state
 
     def __del__(self):
@@ -129,4 +129,4 @@ class Photon:
         if photons[0].use_qm:
             raise NotImplementedError("Photon.measure_multiple() not implemented for quantum manager.")
 
-        return QuantumState.measure_multiple(basis, [photons[0].quantum_state, photons[1].quantum_state])
+        return FreeQuantumState.measure_multiple(basis, [photons[0].quantum_state, photons[1].quantum_state])

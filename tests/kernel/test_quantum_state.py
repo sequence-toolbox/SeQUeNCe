@@ -1,10 +1,10 @@
-from sequence.utils.quantum_state import QuantumState
+from sequence.kernel.quantum_state import FreeQuantumState
 from sequence.utils.encoding import polarization
 from math import sqrt
 
 
 def test_measure():
-    qs = QuantumState()
+    qs = FreeQuantumState()
     states = [(complex(1), complex(0)),
               (complex(0), complex(1)),
               (complex(sqrt(1 / 2)), complex(sqrt(1 / 2))),
@@ -42,7 +42,7 @@ def test_measure():
 
 
 def test_measure_entangled():
-    qs1 = QuantumState()
+    qs1 = FreeQuantumState()
     states = [(complex(1), complex(0)),
               (complex(0), complex(1)),
               (complex(sqrt(1 / 2)), complex(sqrt(1 / 2))),
@@ -58,7 +58,7 @@ def test_measure_entangled():
         counter = 0
         for _ in range(100):
             qs1.set_state_single(s)
-            qs2 = QuantumState()
+            qs2 = FreeQuantumState()
             qs1.entangle(qs2)
             res = qs1.measure(b)
             if res:
@@ -75,7 +75,7 @@ def test_measure_entangled():
         counter = 0
         for _ in range(1000):
             qs1.set_state_single(s)
-            qs2 = QuantumState()
+            qs2 = FreeQuantumState()
             qs1.entangle(qs2)
             res = qs1.measure(b)
             if res:

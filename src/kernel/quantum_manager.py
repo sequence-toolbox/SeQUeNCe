@@ -12,12 +12,14 @@ from typing import List, Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..components.circuit import Circuit
+    from .quantum_state import State
 
 from qutip.qip.circuit import QubitCircuit, Gate
 from qutip.qip.operations import gate_sequence_product
-from numpy import log2, arange, outer
+from numpy import log2, arange
 from numpy.random import random_sample, choice
 
+from .quantum_state import KetState, DensityState
 from .quantum_utils import *
 
 
@@ -351,60 +353,4 @@ class QuantumManagerDensity(QuantumManager):
         return dict(zip(keys, result_digits))
 
 
-class KetState:
-    """Class to represent an individual quantum state as a ket vector.
 
-    Attributes:
-        state (np.array): state vector. Should be of length 2 ** len(keys).
-        keys (List[int]): list of keys (qubits) associated with this state.
-    """
-
-    def __init__(self, amplitudes: List[complex], keys: List[int]):
-        # check formatting
-        assert all([abs(a) <= 1.01 for a in amplitudes]), "Illegal value with abs > 1 in ket vector"
-        assert abs(sum([a ** 2 for a in amplitudes]) - 1) < 1e-5, "Squared amplitudes do not sum to 1" 
-        num_qubits = log2(len(amplitudes))
-        assert num_qubits.is_integer(), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
-        assert num_qubits == len(keys), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
-
-        self.state = array(amplitudes, dtype=complex)
-        self.keys = keys
-
-    def __str__(self):
-        return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])
-
-
-class DensityState:
-    """Class to represent an individual quantum state as a density matrix.
-
-    Attributes:
-        state (np.array): density matrix values. NxN matrix with N = 2 ** len(keys).
-        keys (List[int]): list of keys (qubits) associated with this state.
-    """
-
-    def __init__(self, state: List[List[complex]], keys: List[int]):
-        """Constructor for density state class.
-
-        Args:
-            state (List[List[complex]]): density matrix elements given as a list.
-                If the list is one-dimensional, will be converted to matrix with outer product operation.
-            keys (List[int]): list of keys to this state in quantum manager.
-        """
-
-        state = array(state, dtype=complex)
-        if state.ndim == 1:
-            state = outer(state.conj(), state)
-
-        # check formatting
-        assert abs(trace(array(state)) - 1) < 0.1, "density matrix trace must be 1"
-        for row in state:
-            assert len(state) == len(row), "density matrix must be square"
-        num_qubits = log2(len(state))
-        assert num_qubits.is_integer(), "Dimensions of density matrix should be 2 ** n, where n is the number of qubits"
-        assert num_qubits == len(keys), "Dimensions of density matrix should be 2 ** n, where n is the number of qubits"
-
-        self.state = state
-        self.keys = keys
-
-    def __str__(self):
-        return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])

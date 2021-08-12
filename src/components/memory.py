@@ -22,7 +22,6 @@ from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..utils.encoding import single_atom
-from ..utils.quantum_state import QuantumState
 
 
 # array of single atom memories
@@ -226,7 +225,7 @@ class Memory(Entity):
     def reset(self) -> None:
         """Method to clear quantum memory.
 
-        Will reset quantum state to \|0> and will clear entanglement information.
+        Will reset quantum state to |0> and will clear entanglement information.
 
         Side Effects:
             Will modify internal parameters and quantum state.
@@ -320,7 +319,7 @@ class AbsorptiveMemory(Entity):
         entangled_memory (Dict[str, Any]): tracks entanglement state of memory with a memory.
         absorb_start_time (int): start time (in ps) of photon absorption.
         retrieve_start_time (int): start time (in ps) of photon retrieval.
-        stored_photons (Dict[int, Any]): photons stored in memory temporal modes.
+        stored_photons (Dict[str, Any]): photons stored in memory temporal modes.
         photon_counter (int): counts number of detection events.
         overlap_error (float): error due to photon overlap in one temporal mode, will degrade fidelity.
     """

@@ -2,14 +2,14 @@ import math
 
 import numpy
 
-numpy.random.seed(0)
-
 from sequence.components.memory import MemoryArray
 from sequence.components.bsm import SingleAtomBSM
 from sequence.kernel.timeline import Timeline
 from sequence.resource_management.resource_manager import *
 from sequence.resource_management.rule_manager import Rule
 from sequence.topology.node import Node
+
+numpy.random.seed(0)
 
 
 class FakeNode(Node):
@@ -48,7 +48,7 @@ class FakeProtocol:
         self.is_started = True
 
 
-class TestNode(Node):
+class FakeNode2(Node):
     def __init__(self, name, tl):
         Node.__init__(self, name, tl)
         memo_array_name = name + ".MemoryArray"
@@ -311,7 +311,7 @@ def test_ResourceManager1():
 
     tl = Timeline()
 
-    node1, node2 = TestNode("node1", tl), TestNode("node2", tl)
+    node1, node2 = FakeNode2("node1", tl), FakeNode2("node2", tl)
     mid_node = BSMNode("mid_node", tl, [node1.name, node2.name])
 
     bsm = None
@@ -400,7 +400,7 @@ def test_ResourceManager2():
 
     tl = Timeline()
 
-    node1, node2 = TestNode("node1", tl), TestNode("node2", tl)
+    node1, node2 = FakeNode2("node1", tl), FakeNode2("node2", tl)
     mid_node = BSMNode("mid_node", tl, [node1.name, node2.name])
 
     bsm = None
