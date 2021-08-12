@@ -42,8 +42,11 @@ class Photon:
             location (Entity): location of the photon (default None).
             encoding_type (Dict[str, Any]): encoding type of photon (from encoding module) (default polarization).
             quantum_state (Tuple[complex]): complex coefficients for photon's quantum state (default [1, 0]).
-            use_qm (bool): determines if the
+            use_qm (bool): determines if the quantum state is obtained from the quantum manager or stored locally.
         """
+
+        if encoding_type["name"] == "absorptive" and not use_qm:
+            raise ValueError("Photons with 'absorptive' encoding scheme must use quantum manager.")
 
         self.name = name
         self.timeline = timeline
@@ -63,7 +66,7 @@ class Photon:
             self.quantum_state.state = quantum_state
 
     def __del__(self):
-        if type(self.quantum_state) is int:
+        if self.use_qm:
             self.timeline.quantum_manager.remove(self.quantum_state)
 
     def entangle(self, photon):
@@ -76,7 +79,7 @@ class Photon:
         if self.use_qm:
             qm = self.timeline.quantum_manager
             all_keys = qm.get(self.quantum_state).keys + \
-                       photon.timeline.quantum_manager.get(self.quantum_state).keys
+                self.timeline.quantum_manager.get(photon.quantum_state).keys
             qm.run_circuit(Photon._entangle_circuit, all_keys)
         else:
             self.quantum_state.entangle(photon.quantum_state)
@@ -109,7 +112,8 @@ class Photon:
         if photon.use_qm:
             qm = photon.timeline.quantum_manager
             key = photon.quantum_state
-            return qm.run_circuit(Photon._measure_circuit, [key])
+            res = qm.run_circuit(Photon._measure_circuit, [key])
+            return res[photon.quantum_state]
         else:
             return photon.quantum_state.measure(basis)
 

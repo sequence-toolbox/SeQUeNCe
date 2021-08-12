@@ -3,6 +3,8 @@ from sequence.components.bsm import *
 from sequence.components.memory import *
 from sequence.components.circuit import Circuit
 from sequence.kernel.timeline import Timeline
+from sequence.kernel.process import Process
+from sequence.kernel.event import Event
 from sequence.utils.encoding import *
 
 
@@ -254,3 +256,71 @@ def test_single_atom_get():
     assert tl.quantum_manager.get(mem_1.qstate_key) is tl.quantum_manager.get(mem_2.qstate_key)
 
 
+def test_absorptive_get():
+    from sequence.components.circuit import Circuit
+    from sequence.components.detector import Detector
+
+    class Measurer:
+        def __init__(self, detector):
+            self.detector = detector
+
+        def get(self, photon, **kwargs):
+            res = Photon.measure(None, photon)
+            if res:
+                self.detector.get()
+
+    class DetectorMonitor:
+        def __init__(self, detector: Detector):
+            detector.attach(self)
+            self.times = []
+
+        def trigger(self, detector, info):
+            self.times.append(info["time"])
+
+    NUM_TRIALS = 1000
+    PERIOD = 1e6
+
+    tl = Timeline()
+    tl.seed(0)
+    detectors = [{"efficiency": 1}] * 2
+    bsm = make_bsm("bsm", tl, encoding_type="absorptive", detectors=detectors)
+    d0 = Detector("d0", tl, 1)
+    d1 = Detector("d1", tl, 1)
+    m0 = Measurer(d0)
+    m1 = Measurer(d1)
+    monitor0 = DetectorMonitor(d0)
+    monitor1 = DetectorMonitor(d1)
+
+    tl.init()
+    photons0 = [None, None]
+    photons1 = [None, None]
+
+    # simulate sending photon pairs
+    for i in range(NUM_TRIALS):
+        tl.time = i * PERIOD
+
+        # pair 0 (null)
+        photons0[0] = Photon("", tl, encoding_type=absorptive, location=0, use_qm=True)
+        photons0[1] = Photon("", tl, encoding_type=absorptive, location=0, use_qm=True)
+        photons0[0].is_null = True
+        photons0[1].is_null = True
+        photons0[0].entangle(photons0[1])
+        photons0[0].set_state((complex(1), complex(0), complex(0), complex(0)))
+
+        # pair 1 (not null)
+        photons1[0] = Photon("", tl, encoding_type=absorptive, location=1, use_qm=True)
+        photons1[1] = Photon("", tl, encoding_type=absorptive, location=1, use_qm=True)
+        photons1[0].entangle(photons1[1])
+        photons1[0].set_state((complex(0), complex(0), complex(0), complex(1)))
+
+        # send part of each pair to bsm
+        bsm.get(photons0[0])
+        bsm.get(photons1[0])
+
+        # detect other part
+        m0.get(photons0[1])
+        m1.get(photons1[1])
+
+    assert len(set(monitor0.times) & set(monitor1.times)) == 0
+    assert len(monitor0.times + monitor1.times) == NUM_TRIALS
+    assert abs(len(monitor0.times)/len(monitor1.times) - 1) < 0.1

@@ -37,6 +37,8 @@ def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=
         return TimeBinBSM(name, timeline, phase_error, detectors)
     elif encoding_type == "single_atom":
         return SingleAtomBSM(name, timeline, phase_error, detectors)
+    elif encoding_type == "absorptive":
+        return AbsorptiveBSM(name, timeline, phase_error, detectors)
     else:
         raise Exception("invalid encoding '{}' given for BSM '{}'".format(encoding_type, name))
 
@@ -93,7 +95,7 @@ class BSM(Entity):
         """
 
         super().__init__(name, timeline)
-        self.encoding = ""
+        self.encoding = "None"
         self.phase_error = phase_error
         self.photons = []
         self.photon_arrival_time = -1
@@ -447,6 +449,74 @@ class SingleAtomBSM(BSM):
                         desired_state = BSM._psi_plus
 
                     _set_memory_with_fidelity([memory_0, memory_1], desired_state)
+
+    def trigger(self, detector: Detector, info: Dict[str, Any]):
+        """See base class.
+
+        This method adds additional side effects not present in the base class.
+
+        Side Effects:
+            May send a further message to any attached entities.
+        """
+
+        detector_num = self.detectors.index(detector)
+        time = info["time"]
+
+        res = detector_num
+        info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
+        self.notify(info)
+
+
+class AbsorptiveBSM(BSM):
+    """Class modeling a BSM device for absorptive quantum memories.
+
+    Measures photons and manages entanglement state of entangled photons.
+
+    Attributes:
+        name (str): label for BSM instance
+        timeline (Timeline): timeline for simulation
+        detectors (List[Detector]): list of attached photon detection devices (length 2).
+    """
+
+    def __init__(self, name, timeline, phase_error=0, detectors=[]):
+        """Constructor for the AbsorptiveBSM class."""
+
+        if detectors == []:
+            detectors = [{}, {}]
+        super().__init__(name, timeline, phase_error, detectors)
+        self.encoding = "absorptive"
+        assert len(self.detectors) == 2
+
+    def get(self, photon, **kwargs):
+        """"""
+
+        super().get(photon)
+
+        # check if we're in first stage. If we are and not null, send photon to random detector
+        if not photon.is_null:
+            detector_num = random.choice([0, 1])
+            self.detectors[detector_num].get()
+
+        if len(self.photons) == 2:
+            null_0 = self.photons[0].is_null
+            null_1 = self.photons[1].is_null
+            is_valid = null_0 ^ null_1
+
+            if is_valid:
+                # get other photons to entangle
+                key_0 = self.photons[0].quantum_state
+                key_1 = self.photons[1].quantum_state
+                state_0 = self.timeline.quantum_manager.get(key_0)
+                state_1 = self.timeline.quantum_manager.get(key_1)
+                other_keys_0 = state_0.keys[:]
+                other_keys_1 = state_1.keys[:]
+                other_keys_0.remove(key_0)
+                other_keys_1.remove(key_1)
+                assert len(other_keys_0) == 1 and len(other_keys_1) == 1
+
+                # set to Psi^+ state
+                combined = other_keys_0 + other_keys_1
+                self.timeline.quantum_manager.set(combined, BSM._psi_plus)
 
     def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.
