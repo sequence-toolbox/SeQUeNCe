@@ -5,9 +5,13 @@ from sequence.components.detector import QSDetector, Detector
 from sequence.components.light_source import SPDCSource
 from sequence.components.memory import AbsorptiveMemory
 from sequence.components.photon import Photon
+from sequence.kernel.event import Event
+from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.topology.topology import Topology
+from sequence.protocol import Protocol
+from sequence.utils.encoding import absorptive
 
 
 # define constants
@@ -18,6 +22,7 @@ COHERENCE_TIME = 1
 TELECOM_WAVELENGTH = 1000
 WAVELENGTH = 500
 OVERLAP_ERR = 0
+DELAY_TIME = 1e6
 
 
 # for absorptive quantum memory
@@ -25,6 +30,7 @@ def efficiency(_: int) -> float:
     return 1.0
 
 
+# hardware class to measure photons on measurement node
 class CoherenceDetector(QSDetector):
     def __init__(self, name: str, timeline: "Timeline", src_list: List[str]):
         super().__init__(name, timeline)
@@ -33,6 +39,9 @@ class CoherenceDetector(QSDetector):
             d = Detector(name + ".detector" + str(i), timeline)
             self.detectors.append(d)
             d.attach(self)
+
+    def init(self):
+        pass
 
     def get(self, photon: "Photon", **kwargs):
         src = kwargs["src"]
@@ -46,13 +55,57 @@ class CoherenceDetector(QSDetector):
         pass
 
 
+# protocol to control photon emission on end node
+class EmitProtocol(Protocol):
+    def __init__(self, own: "EndNode", name: str, other_node: str,
+                 num_qubits: int, storage_time: int, source_name: str, memory_name: str):
+        """Constructor for Emission protocol.
+
+        Args:
+            own (EndNode): node on which the protocol is located.
+            name (str): name of the protocol instance.
+            other_node (str): name of the other node entangling photons
+            num_qubits (int): number of qubits to send in one execution.
+            storage_time (int): length of time to wait before releasing photons in local memory.
+            source_name (str): name of the light source on the node.
+            memory_name (str): name of the memory on the node.
+        """
+
+        super().__init__(own, name)
+        self.other_node = other_node
+        self.num_qubits = num_qubits
+        self.storage_time = storage_time
+        self.source_name = source_name
+        self.memory_name = memory_name
+
+    def start(self):
+        states = [None] * self.num_qubits  # TODO: rewrite spdc class
+        source = self.own.components[self.source_name]
+        source.emit(states)
+
+        future_time = self.own.timeline.now() + self.storage_time
+        memory = self.own.components[self.memory_name]
+        process = Process(memory, "retrieve", [self.own.bsm_name])
+        event = Event(future_time, process)
+        self.own.timeline.schedule(event)
+
+    def received_message(self, src: str, msg):
+        pass
+
+
 class EndNode(Node):
-    def __init__(self, name: str, timeline: "Timeline"):
+    def __init__(self, name: str, timeline: "Timeline", other_node: str, bsm_node: str,
+                 num_qubits: int, storage_time: int):
         super().__init__(name, timeline)
 
+        self.bsm_name = bsm_node
+
         # hardware setup
-        spdc = SPDCSource(name + ".spdc_source", timeline, wavelengths=[TELECOM_WAVELENGTH, WAVELENGTH])
-        memory = AbsorptiveMemory(name + ".memory", timeline, fidelity=0.85, frequency=FREQUENCY,
+        spdc_name = name + ".spdc_source"
+        memo_name = name + ".memory"
+        spdc = SPDCSource(spdc_name, timeline, wavelengths=[TELECOM_WAVELENGTH, WAVELENGTH],
+                          frequency=FREQUENCY, encoding_type=absorptive)
+        memory = AbsorptiveMemory(memo_name, timeline, fidelity=0.85, frequency=FREQUENCY,
                                   absorption_efficiency=ABS_EFFICIENCY, mode_number=MODE_NUM,
                                   coherence_time=COHERENCE_TIME, wavelength=WAVELENGTH, overlap_error=OVERLAP_ERR,
                                   efficiency=efficiency)
@@ -62,9 +115,16 @@ class EndNode(Node):
         spdc.add_receiver(memory)
         memory.add_receiver(self)
 
+        # protocols
+        self.emit_protocol = EmitProtocol(self, name + ".emit_protocol", other_node,
+                                          num_qubits, storage_time, spdc_name, memo_name)
+
     def get(self, photon: "Photon", **kwargs):
-        # TODO: define
-        pass
+        dst = kwargs.get("dst")
+        if dst == "":
+            self.send_qubit(dst, photon)
+        else:
+            self.send_qubit(self.bsm_name, photon)
 
 
 class EntangleNode(Node):
@@ -99,19 +159,33 @@ if __name__ == "__main__":
     erc_name = "Eckhardt Research Center"
     erc_2_name = "Eckhardt Research Center 2"
 
-    anl = EndNode(anl_name, tl)
-    hc = EndNode(hc_name, tl)
+    anl = EndNode(anl_name, tl, hc_name, erc_name, MODE_NUM, DELAY_TIME)
+    hc = EndNode(hc_name, tl, anl_name, erc_name, MODE_NUM, DELAY_TIME)
     erc = EntangleNode(erc_name, tl)
     erc_2 = MeasureNode(erc_2_name, tl, [anl_name, hc_name])
 
     topo = Topology("Experiment Topo", tl)
     for node in [anl, hc, erc, erc_2]:
         topo.add_node(node)
-    topo.add_quantum_channel(anl_name, erc_name)
-    topo.add_quantum_channel(hc_name, erc_name)
-    topo.add_quantum_channel(anl_name, erc_2_name)
-    topo.add_quantum_channel(hc_name, erc_2_name)
+    topo.add_quantum_channel(anl_name, erc_name, distance=1e3, attenuation=0.002)
+    topo.add_quantum_channel(hc_name, erc_name, distance=1e3, attenuation=0.002)
+    topo.add_quantum_channel(anl_name, erc_2_name, distance=1e3, attenuation=0.002)
+    topo.add_quantum_channel(hc_name, erc_2_name, distance=1e3, attenuation=0.002)
 
     tl.init()
-    # TODO: add mechanism to start SPDC source/measurement
+
+    # calculate when to start protocol
+    delay_anl = topo.nodes[anl_name].qchannels[erc_name].delay
+    delay_hc = topo.nodes[hc_name].qchannels[erc_name].delay
+
+    time_anl = max(delay_anl, delay_hc) - delay_anl
+    process = Process(anl.emit_protocol, "start", [])
+    event = Event(time_anl, process)
+    tl.schedule(event)
+
+    time_hc = max(delay_anl, delay_hc) - delay_hc
+    process = Process(hc.emit_protocol, "start", [])
+    event = Event(time_hc, process)
+    tl.schedule(event)
+
     tl.run()
