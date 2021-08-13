@@ -6,14 +6,13 @@ QSDetector is defined as an abstract template and as implementaions for polariza
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from numpy import random
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..components.photon import Photon
-    from typing import List
 
 from ..components.beam_splitter import BeamSplitter
 from ..components.switch import Switch
@@ -136,7 +135,7 @@ class QSDetector(Entity, ABC):
         return self.trigger_times
 
     @abstractmethod
-    def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: int) -> None:
         pass
 
 
@@ -189,7 +188,7 @@ class QSDetectorPolarization(QSDetector):
         self.trigger_times = [[], []]
         return times
 
-    def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: int) -> None:
         self.splitter.set_basis_list(basis_list, start_time, frequency)
 
     def update_splitter_params(self, arg_name: str, value: Any) -> None:
@@ -249,7 +248,7 @@ class QSDetectorTimeBin(QSDetector):
         times, self.trigger_times = self.trigger_times, [[], [], []]
         return times
 
-    def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: int) -> None:
         self.switch.set_basis_list(basis_list, start_time, frequency)
 
     def update_interferometer_params(self, arg_name: str, value: Any) -> None:
