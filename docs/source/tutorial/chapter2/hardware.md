@@ -5,7 +5,7 @@ In this tutorial we will show some of the tools available in the hardware module
 * Gain familiarity with the sequence `topology.node` module
 * See how networks may be built with sequence
 
-To achieve this, we will construct a couple simple networks and show their functionality. We will also create a custom “protocol” to measure detection events as well as custom node types to hold all of our hardware.
+To achieve this, we will construct a couple simple networks and show their functionality. We will also create custom “protocols” to control and monitor hardware, as well as custom node types to hold all of our components.
 
 
 ## Example: Optical Hardware
@@ -23,7 +23,7 @@ The hardware used in this tutorial is a single atom quantum memory and a single 
 
 To begin, we create our custom node classes. We will make two types - a `SenderNode` to hold the memory and send photons and a `ReceiverNode` to receive and detect photons. Both of our node types will inherit from `Node`, the basic node class from sequence, and we invoke the parent constructor for `Node`. In general, entities (such as nodes and hardware) require a string `name` and a `Timeline` in their constructor, as well as necessary parameters (for more details on timelines, see Tutorial 1).
 
-Next, we create all of our hardware elements on each node. The detector is created easily, as no specific parameters are required (but we wish to set the `efficiency` to 1 to prevent errors). We’ll put the detector class on the receiver node.
+We will now create our hardware. The detector is created easily, as no specific parameters are required (but we wish to set the `efficiency` to 1 to prevent errors).
 
 The required parameters for memories are more numerous and are listed here:
 * `fidelity`: fidelity of entanglement. This is usually set to 0 when unentangled, but can be set to other values as it is usually replaced when entangled.
@@ -32,7 +32,10 @@ The required parameters for memories are more numerous and are listed here:
 * `coherence_time`: the time for which a memory state (other than down) is viable, given in seconds.
 * `wavelength`: the wavelength of emitted photons.
 
-We will add our memory to the sender node class.
+Next, we will add each component to the proper node using the `add_component` method.
+This method adds the component to the node's `components` dictionary, which maps component names to objects.
+It may be accessed by outside protocols to monitor components or get their current state.
+We'll put the detector on the receiver node, and the memory on the sender node.
 
 ```python
 from sequence.kernel.timeline import Timeline
@@ -41,30 +44,58 @@ from sequence.components.memory import Memory
 from sequence.components.detector import Detector
 
 class SenderNode(Node):
-    def __init__(self, name: str, timeline: Timeline):
+    def __init__(self, name, timeline):
         super().__init__(name, timeline)
-        from sequence.components.memory import Memory
-        self.memory = Memory(‘node1.memory’, tl, fidelity=0, frequency=0,
-                             efficiency=1, coherence_time=0, wavelength=500)
-        self.memory.owner = self
+        
+        memory_name = name + ".memory"
+        memory = Memory(memory_name, timeline, fidelity=1, frequency=0,
+                        efficiency=1, coherence_time=0, wavelength=500)
+        self.add_component(memory)
+        memory.add_receiver(self)
+
+    def get(self, photon, **kwargs):
+        self.send_qubit(kwargs['dst'], photon)
 
 class ReceiverNode(Node):
-    def __init__(self, name: str, timeline: Timeline):
+    def __init__(self, name, timeline):
         super().__init__(name, timeline)
-        self.detector = Detector(‘node2.detector’, tl, efficiency=1)
-        self.detector.owner = self
 
-    def receive_qubit(self, src: str, qubit) -> None:
+        detector_name = name + ".detector"
+        detector = Detector(detector_name, timeline, efficiency=1)
+        self.add_component(detector)
+        self.set_first_component(detector_name)
+        detector.owner = self
+
+    def receive_qubit(self, src, qubit):
         if not qubit.is_null:
-            self.detector.get()
+            self.components[self.first_component_name].get()
 ```
 
-Notice that we also needed to change the `receive_qubit` method of the base `Node` class. This method is invoked by the quantum channel when transmitting photons, and by default is set to do nothing. For this method, the `src` input specifies the name of the node sending the qubit. In our case, we don’t care about the source node, so we can ignore it. The `qubit` input is the transmitted photon. For single atom memories, this photon may be in a null state, signified with a true value for the `is_null` attribute. A photon may be marked as null if it is somehow lost or should not have been emitted by the memory originally (if the memory is in the up state or has low fidelity). In this case, we must ignore the photon and not record it. Otherwise, it is sent to the detector for measurement. The detector uses the `get` method to receive photons, and this interface is shared by many other optical hardware elements.
+You may notice that the initialization methods make use of a few additional functions, and methods have been added to the node classes.
+These are to establish the internal hardware connections on the node.
+The first of these methods is the `Entity.get` method.
+All physical simulation elements, including optical hardware and nodes, inherit from this class.
+The `get` method is used to receive photons from another entity which may be further processed.
+The `add_receiver` method similarly designates another component (or components) to receive photons from the current entity.
+In our case, we wish to set the memory's receiver as the `SenderNode`, so that the node may receive emitted photons and direct them to an inter-node quantum channel using `send_qubit`.
+This is performed in the `SenderNode.get` method.
+At the other end of the channel, the `receive_qubit` method is called by a quantum channel on the receiving node of a transmission.
+For this method, the `src` input specifies the name of the node sending the qubit.
+In our case, we don’t care about the source node, so we can ignore it.
+The `qubit` input is the transmitted photon. For single atom memories, this photon may be in a null state, signified with a true value for the `is_null` attribute.
+A photon may be marked as null if it is somehow lost or should not have been emitted by the memory originally (if the memory is in the up state or has low fidelity).
+In this case, we must ignore the photon and not record it.
+Otherwise, it is sent to the detector for measurement.
+This is done using the `first_component_name` attribute, which designates a component on a node to receive all incoming photons.
 
+### Step 2: Custom Counting Protocol
 
-### Step 2: Custom Protocol
-
-Next, we will create our custom protocol using a custom class. Let’s denote this class as `Counter`, as we will be counting photons detection. The initializing method is very simple, only setting the count to 0. We then proceed to the trigger function, which will handle information from the detector. Normally, the detector will pass two arguments through this function (a reference to the specific detector and info including the detection time), but we are not concerned with these. We only wish to increment our counter.
+Next, we will create our custom protocols using custom classes.
+Let’s denote the first class as `Counter`, as we will be counting photon detection.
+The initializing method is very simple, only setting the count to 0.
+We then proceed to the trigger function, which will handle information from the detector.
+Normally, the detector will pass two arguments through this function (a reference to the specific detector and info including the detection time), but we are not concerned with these.
+We only wish to increment our counter.
 
 ```python
 class Counter():
@@ -74,6 +105,28 @@ class Counter():
     def trigger(self, detector, info):
         self.count += 1
 ```
+
+We then add this counter protocol to our receiver node, by modifying the initialization method.
+To have the counter monitor the detector, we invoke the `Entity.attach` method.
+This method ensures that any updates (such as detection events) from an entity are passed to the object specified in the method arguments.
+
+```python
+class ReceiverNode(Node):
+    def __init__(self, name, timeline):
+        super().__init__(name, timeline)
+
+        detector_name = name + ".detector"
+        detector = Detector(detector_name, timeline, efficiency=1)
+        self.add_component(detector)
+        self.set_first_component(detector_name)
+        detector.owner = self
+
+        self.counter = Counter()
+        detector.attach(self.counter)
+```
+
+The second protocol class is slightly more complicated, and will be activating the quantum memory.
+We will define it later in the tutorial.
 
 ### Step 3: Build the Network
 
