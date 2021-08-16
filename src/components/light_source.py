@@ -176,6 +176,8 @@ class SPDCSource(LightSource):
                     new_photon0.set_state((complex(1), complex(0), complex(0), complex(0)))
                     self.send_photons(time, [new_photon0, new_photon1])
 
+                time += 1e12 / self.frequency
+
         else:
             for state in state_list:
                 num_photon_pairs = random.poisson(self.mean_photon_num)

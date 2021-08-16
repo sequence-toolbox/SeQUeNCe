@@ -435,7 +435,7 @@ class AbsorptiveMemory(Entity):
 
         now = self.timeline.now()
         # total time of absorption events before transferring into spinwave state
-        total_time = self.mode_number * self.mode_bin
+        total_time = (self.mode_number - 1) * self.mode_bin
         store_time = now - self.absorb_start_time - total_time
 
         for index in range(self.mode_number):
