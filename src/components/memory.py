@@ -447,7 +447,7 @@ class AbsorptiveMemory(Entity):
 
                     # process = Process(self.owner, "send_qubit", [dst, photon])
                     # self._receivers[0].get(photon, dst)
-                    process = Process(self._receivers[0], "get", [photon, {"dst": dst}])
+                    process = Process(self._receivers[0], "get", [photon], {"dst": dst})
                     event = Event(self.timeline.now() + emit_time, process)
                     self.timeline.schedule(event)
 

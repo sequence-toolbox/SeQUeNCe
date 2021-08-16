@@ -16,10 +16,11 @@ class Process:
         act_params (List[Any]): the arguments of object.
     """
 
-    def __init__(self, owner: Any, activation_method: str, act_params: List[Any]):
+    def __init__(self, owner: Any, activation_method: str, act_params: List[Any], act_kwargs={}):
         self.owner = owner
         self.activation = activation_method
         self.act_params = act_params
+        self.act_kwargs = act_kwargs
 
     def run(self) -> None:
         """Method to execute process.
@@ -27,4 +28,4 @@ class Process:
         Will run the `activation_method` method of `owner` with `act_params` passed as args.
         """
 
-        return getattr(self.owner, self.activation)(*self.act_params)
+        return getattr(self.owner, self.activation)(*self.act_params, **self.act_kwargs)
