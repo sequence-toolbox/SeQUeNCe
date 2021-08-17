@@ -18,7 +18,7 @@ Or, using the included makefile,
 ```
 $ make install
 ```
-This will install the sequence library as well as the numpy, json5, and pandas dependancies.
+This will install the sequence library as well as the package dependencies.
 
 ## Usage Examples
 Many examples of SeQUeNCe in action can be found in the example folder. These include both quantum key distribution and entanglement distribution examples.
