@@ -11,19 +11,21 @@ def set_parameters(topology: Topology):
     MEMO_EFFICIENCY = 1
     MEMO_FIDELITY = 0.9349367588934053
     for node in topology.get_nodes_by_type("QuantumRouter"):
-        node.memory_array.update_memory_params("frequency", MEMO_FREQ)
-        node.memory_array.update_memory_params("coherence_time", MEMO_EXPIRE)
-        node.memory_array.update_memory_params("efficiency", MEMO_EFFICIENCY)
-        node.memory_array.update_memory_params("raw_fidelity", MEMO_FIDELITY)
+        memory_array = node.get_components_by_type("MemoryArray")[0]
+        memory_array.update_memory_params("frequency", MEMO_FREQ)
+        memory_array.update_memory_params("coherence_time", MEMO_EXPIRE)
+        memory_array.update_memory_params("efficiency", MEMO_EFFICIENCY)
+        memory_array.update_memory_params("raw_fidelity", MEMO_FIDELITY)
 
     # set detector parameters
     DETECTOR_EFFICIENCY = 0.9
     DETECTOR_COUNT_RATE = 5e7
     DETECTOR_RESOLUTION = 100
     for node in topology.get_nodes_by_type("BSMNode"):
-        node.bsm.update_detectors_params("efficiency", DETECTOR_EFFICIENCY)
-        node.bsm.update_detectors_params("count_rate", DETECTOR_COUNT_RATE)
-        node.bsm.update_detectors_params("time_resolution", DETECTOR_RESOLUTION)
+        bsm = node.get_components_by_type("SingleAtomBSM")[0]
+        bsm.update_detectors_params("efficiency", DETECTOR_EFFICIENCY)
+        bsm.update_detectors_params("count_rate", DETECTOR_COUNT_RATE)
+        bsm.update_detectors_params("time_resolution", DETECTOR_RESOLUTION)
         
     # set entanglement swapping parameters
     SWAP_SUCC_PROB = 0.90
