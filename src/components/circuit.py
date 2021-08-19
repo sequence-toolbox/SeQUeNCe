@@ -45,8 +45,9 @@ def t_gate():
 def validator(func):
     def wrapper(self, *args, **kwargs):
         for q in args:
-            assert q < self.size, 'qubit index out of range'
-            assert q not in self.measured_qubits, 'qubit has been measured'
+            if type(q) is int:
+                assert q < self.size, 'qubit index out of range'
+                assert q not in self.measured_qubits, 'qubit has been measured'
         if func.__name__ != 'measure':
             self._cache = None
         return func(self, *args, **kwargs)
@@ -54,7 +55,7 @@ def validator(func):
     return wrapper
 
 
-class Circuit():
+class Circuit:
     """Class for a quantum circuit.
 
     Attributes:
@@ -94,7 +95,7 @@ class Circuit():
                              "S": s_gate,
                              "T": t_gate}
             for gate in self.gates:
-                name, indices = gate
+                name, indices, arg = gate
                 if name == 'h':
                     qc.add_gate('SNOT', indices[0])
                 elif name == 'x':
@@ -113,6 +114,8 @@ class Circuit():
                     qc.add_gate('T', indices[0])
                 elif name == 's':
                     qc.add_gate('S', indices[0])
+                elif name == 'phase':
+                    qc.add_gate('PHASEGATE', indices[0], arg_value=arg)
                 else:
                     raise NotImplementedError
             self._cache = gate_sequence_product(qc.propagators()).full()
@@ -127,7 +130,7 @@ class Circuit():
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(['h', [qubit]])
+        self.gates.append(['h', [qubit], None])
 
     @validator
     def x(self, qubit: int):
@@ -137,7 +140,7 @@ class Circuit():
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(['x', [qubit]])
+        self.gates.append(['x', [qubit], None])
 
     @validator
     def y(self, qubit: int):
@@ -147,7 +150,7 @@ class Circuit():
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(['y', [qubit]])
+        self.gates.append(['y', [qubit], None])
 
     @validator
     def z(self, qubit: int):
@@ -157,7 +160,7 @@ class Circuit():
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(['z', [qubit]])
+        self.gates.append(['z', [qubit], None])
 
     @validator
     def cx(self, control: int, target: int):
@@ -168,7 +171,7 @@ class Circuit():
             target (int): the index of target in the circuit.
         """
 
-        self.gates.append(['cx', [control, target]])
+        self.gates.append(['cx', [control, target], None])
 
     @validator
     def ccx(self, control1: int, control2: int, target: int):
@@ -180,7 +183,7 @@ class Circuit():
             target (int): the index of target in the circuit.
         """
 
-        self.gates.append(['ccx', [control1, control2, target]])
+        self.gates.append(['ccx', [control1, control2, target], None])
 
     @validator
     def swap(self, qubit1: int, qubit2: int):
@@ -191,7 +194,7 @@ class Circuit():
             qubit2 (int): the index of qubit2 in the circuit.
         """
 
-        self.gates.append(['swap', [qubit1, qubit2]])
+        self.gates.append(['swap', [qubit1, qubit2], None])
 
     @validator
     def t(self, qubit: int):
@@ -201,7 +204,7 @@ class Circuit():
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(['t', [qubit]])
+        self.gates.append(['t', [qubit], None])
 
     @validator
     def s(self, qubit: int):
@@ -211,7 +214,18 @@ class Circuit():
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(['s', [qubit]])
+        self.gates.append(['s', [qubit], None])
+
+    @validator
+    def phase(self, qubit: int, theta: float):
+        """Method to apply a phase gate to a qubit.
+
+        Args:
+            qubit (int): index of the qubit in the circuit.
+            theta (float): phase to apply
+        """
+
+        self.gates.append(['phase', [qubit], theta])
 
     @validator
     def measure(self, qubit: int):
@@ -222,4 +236,3 @@ class Circuit():
         """
 
         self.measured_qubits.append(qubit)
-
