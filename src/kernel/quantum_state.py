@@ -1,12 +1,11 @@
-"""Definition of the quantum state class.
+"""Definition of the quantum state classes.
 
-This module defines the FreeQuantumState class, used by photons to track internal quantum states.
-The class provides interfaces for measurement and entanglement.
-For memories with an internal quantum state and certain photons, such as those stored in a memory or in parallel
-simulation, this class should not be used.
-Quantum states stored in a quantum manager class should be used instead.
+This module defines the classes used to track quantum states in SeQUeNCe.
+These include 2 classes used by a quantum manager, and one used for individual photons:
 
-This module uses the ket vector formalism for storing and manipulating states.
+1. The `KetState` class represents the ket vector formalism and is used by a quantum manager.
+2. The `DensityState` class represents the density matrix formalism and is also used by a quantum manager.
+3. The `FreeQuantumState` class uses the ket vector formalism, and is used by individual photons (not the quantum manager).
 """
 
 from abc import ABC
@@ -111,10 +110,15 @@ class DensityState(State):
         return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])
 
 
-class FreeQuantumState:
-    """Class to manage a quantum state.
+class FreeQuantumState(State):
+    """Class used by photons to track internal quantum states.
 
-    Tracks quantum state coefficients (in Z-basis) and entangled states.
+    This is an alternative to tracking states in a dedicated quantum manager, which adds simulation overhead.
+    It defines several operations, including entanglement and measurement.
+    For memories with an internal quantum state and certain photons, such as those stored in a memory or in parallel
+    simulation, this class should not be used.
+    Quantum states stored in a quantum manager class should be used instead.
+    This module uses the ket vector formalism for storing and manipulating states.
 
     Attributes:
         state (Tuple[complex]): list of complex coefficients in Z-basis.
@@ -122,6 +126,7 @@ class FreeQuantumState:
     """
 
     def __init__(self):
+        super().__init__()
         self.state = (complex(1), complex(0))
         self.entangled_states = [self]
 

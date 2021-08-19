@@ -8,4 +8,3 @@ Utilities for SeQUeNCe.
 
     encoding
     log
-    quantum_state
