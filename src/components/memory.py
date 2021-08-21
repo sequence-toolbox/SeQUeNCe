@@ -301,12 +301,11 @@ class Memory(Entity):
 class AbsorptiveMemory(Entity):
     """Atomic ensemble absorptive memory.
 
-    This class models an AFC absorptive memory, where the quantum state is stored as collective excitation of atomic ensemble.
-    Note that sequence of photon retrieval is reversed compared to absorption sequence.
+    This class models an AFC(-spinwave) absorptive memory, where the quantum state is stored as collective excitation of atomic ensemble.
+    Retrieved photon sequence might be reversed (only for AFC spinwave), which is physically determine by RF pulses used during spinwave.
     This class will not support qubit state manipulation.
-    Before invoking methods like "get" and "retrieve", need to call "prepare" first to prepare the AFC, will take finite simulation time.
+    Before invoking methods like "get" and "retrieve", must call "prepare" first to prepare the AFC, will take finite simulation time.
     Rephasing time (predetermined storage time for AFC type) is given by temporal mode number and length of each temporal mode bin.
-    Note that for AFC type, is_reversed must be False.
 
     Attributes:
         name (str): label for memory instance.
@@ -342,7 +341,7 @@ class AbsorptiveMemory(Entity):
             fidelity (float): fidelity of memory.
             frequency (float): maximum frequency of absorption for memory (total frequency bandwidth of AFC memory).
             absorption_efficiency (float): probability of absorbing a photon when arriving at the memory.
-            efficiency (float): probability of emitting a photon as a function of storage time.
+            efficiency (Callable): probability of emitting a photon as a function of storage time.
             mode_number (int): number of modes supported for storing photons.
             coherence_time (float): average time (in s) that memory state is valid.
             wavelength (int): wavelength (in nm) of photons emitted by memories.
@@ -374,6 +373,8 @@ class AbsorptiveMemory(Entity):
         self.prepare_time = prepare_time
         self.is_perpared = False
         self.destination = destination
+        self.is_reversed = is_reversed
+        self.is_spinwave = is_spinwave
 
         # keep track of previous BSM result (for entanglement generation)
         # -1 = no result, 0/1 give detector number
@@ -488,10 +489,16 @@ class AbsorptiveMemory(Entity):
                     photon = self.stored_photons[index]["photon"]
                     absorb_time = self.stored_photons[index]["time"]
 
-                    if self.is_reversed == True:
-                        emit_time = self.total_time - absorb_time # reversed order of re-emission
+                    if self.is_spinwave ==True:
+                        if self.is_reversed == True:
+                            raise Exception("AFC memory can only have normal order of re-emission") # no reversed for AFC
+                        else:
+                            emit_time = absorb_time # normal order of re-emission
                     else:
-                        emit_time = absorb_time # normal order of re-emission
+                        if self.is_reversed == True:
+                            emit_time = self.total_time - absorb_time # reversed order of re-emission
+                        else:
+                            emit_time = absorb_time # normal order of re-emission
                     
                     if self.destination is not None:
                         dst = self.destination
