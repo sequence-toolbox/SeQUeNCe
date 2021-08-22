@@ -328,7 +328,7 @@ class AbsorptiveMemory(Entity):
         is_reversed (Bool): determines re-emission sequence, physically determined by RF pulses during spinwave, default False.
         is_perpared (Bool): determines if AFC is successfully prepared.
         prepare_time (float): time to prepare AFC (in milliseconds).
-        destination (str): predetermined destination of re-emission.
+        destination (str): name of predetermined re-emission destination node, default None.
     """
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float, absorption_efficiency: float,
                  efficiency: Callable, mode_number: int, coherence_time: int, wavelength: int, overlap_error: float,
@@ -348,7 +348,7 @@ class AbsorptiveMemory(Entity):
             prepare_time (float): time to prepare AFC (in microseconds).
             is_spinwave (Bool): determines if the memory is AFC or AFC-spinwave, default False.
             is_reversed (Bool): determines re-emission sequence, physically determined by RF pulses during spinwave, default False.
-            destination (str): predetermined destination of re-emission.
+            destination (str): name of predetermined re-emission destination node, default None.
         """
 
         super().__init__(name, timeline)
