@@ -508,16 +508,12 @@ class AbsorptiveMemory(Entity):
                     photon = self.stored_photons[index]["photon"]
                     absorb_time = self.stored_photons[index]["time"]
 
-                    if self.is_spinwave:
-                        if self.is_reversed:
-                            raise Exception("AFC memory can only have normal order of re-emission") # no reversed for AFC
-                        else:
-                            emit_time = absorb_time # normal order of re-emission
+                    if self.is_reversed:
+                        if self.is_spinwave:
+                            raise Exception("AFC memory can only have normal order of re-emission")
+                        emit_time = self.total_time - self.mode_bin - absorb_time  # reversed order of re-emission
                     else:
-                        if self.is_reversed:
-                            emit_time = self.total_time - self.mode_bin - absorb_time  # reversed order of re-emission
-                        else:
-                            emit_time = absorb_time  # normal order of re-emission
+                        emit_time = absorb_time  # normal order of re-emission
                     
                     if self.destination is not None:
                         dst = self.destination
