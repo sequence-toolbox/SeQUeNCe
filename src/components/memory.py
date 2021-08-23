@@ -302,6 +302,10 @@ class Memory(Entity):
 class AbsorptiveMemory(Entity):
     """Atomic ensemble absorptive memory.
 
+    This class models an AFC(-spinwave) absorptive memory, where the quantum state is stored as collective excitation of atomic ensemble.
+    Retrieved photon sequence might be reversed (only for AFC spinwave), which is physically determine by RF pulses used during spinwave.
+    This class will not support qubit state manipulation.
+    Before invoking methods like "get" and "retrieve", must call "prepare" first to prepare the AFC, will take finite simulation time.
     This class models an AFC absorptive memory, where the quantum state is stored as collective excitation of an atomic ensemble.
     This class does not support qubit state manipulation, individual photons should be manipulated instead.
     Before invoking methods like "get" and "retrieve", need to call "prepare" first to prepare the AFC, will take finite simulation time.
@@ -329,7 +333,7 @@ class AbsorptiveMemory(Entity):
         is_reversed (Bool): determines re-emission sequence, physically determined by RF pulses during spinwave, default False.
         is_prepared (Bool): determines if AFC is successfully prepared.
         memory_array (MemoryArray): memory array aggregating current memory.
-        destination (str): predetermined destination of re-emission.
+        destination (str): name of predetermined re-emission destination node, default None.
         entangled_memory (Dict[str, Any]): tracks entanglement state of memory with a memory.
         stored_photons (Dict[int, Any]): photons stored in memory temporal modes.
     """
@@ -345,7 +349,7 @@ class AbsorptiveMemory(Entity):
             fidelity (float): fidelity of memory.
             frequency (float): maximum frequency of absorption for memory (total frequency bandwidth of AFC memory).
             absorption_efficiency (float): probability of absorbing a photon when arriving at the memory.
-            efficiency (float): probability of emitting a photon as a function of storage time.
+            efficiency (Callable): probability of emitting a photon as a function of storage time.
             mode_number (int): number of modes supported for storing photons.
             coherence_time (float): average time (in s) that memory state is valid.
             wavelength (int): wavelength (in nm) of photons emitted by memories.
@@ -353,7 +357,7 @@ class AbsorptiveMemory(Entity):
             prepare_time (float): time to prepare AFC (in ps).
             is_spinwave (Bool): determines if the memory is AFC or AFC-spinwave (default False).
             is_reversed (Bool): determines re-emission sequence, physically determined by RF pulses during spinwave (default False).
-            destination (str): predetermined destination of re-emission (default None).
+            destination (str): name of predetermined re-emission destination node (default None).
         """
 
         super().__init__(name, timeline)
@@ -459,7 +463,7 @@ class AbsorptiveMemory(Entity):
                 process = Process(self, "retrieve", [])
                 event = Event(self.absorb_start_time + self.total_time, process)
                 self.timeline.schedule(event)
-        
+
         # schedule expiration at absorb_start_time
         if self.coherence_time > 0 and self.absorb_start_time == now:
             self._schedule_expiration()
@@ -504,10 +508,16 @@ class AbsorptiveMemory(Entity):
                     photon = self.stored_photons[index]["photon"]
                     absorb_time = self.stored_photons[index]["time"]
 
-                    if self.is_reversed:
-                        emit_time = self.total_time - self.mode_bin - absorb_time  # reversed order of re-emission
+                    if self.is_spinwave:
+                        if self.is_reversed:
+                            raise Exception("AFC memory can only have normal order of re-emission") # no reversed for AFC
+                        else:
+                            emit_time = absorb_time # normal order of re-emission
                     else:
-                        emit_time = absorb_time  # normal order of re-emission
+                        if self.is_reversed:
+                            emit_time = self.total_time - self.mode_bin - absorb_time  # reversed order of re-emission
+                        else:
+                            emit_time = absorb_time  # normal order of re-emission
                     
                     if self.destination is not None:
                         dst = self.destination
