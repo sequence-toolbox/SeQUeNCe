@@ -78,14 +78,14 @@ class QuantumManager:
         old_states = []
         all_keys = []
 
-        # go through keys and get all unique qstate objects
+        # go through keys and get all unique quantum state objects
         for key in keys:
             qstate = self.states[key]
             if qstate.keys[0] not in all_keys:
                 old_states.append(qstate.state)
                 all_keys += qstate.keys
 
-        # construct compound state; order qubits
+        # construct compound state
         new_state = [1]
         for state in old_states:
             new_state = kron(new_state, state)
