@@ -2,6 +2,7 @@
 
 In previous chapters, we introduced the usage of hardware models. 
 In this chapter, we will use protocols in the entanglement management module to control these hardware devices and change the entanglement state of quantum memories.
+We will also use a simple manager protocol to control the entanglement generation protocols.
 We will show
 
 * how to use `EntanglementGenerationA` (Barret-Kok generation protocol) to entangle memories on different nodes
@@ -27,14 +28,15 @@ Classical channels and nodes create a complete classical graph, which is not sho
 
 `EntangleGenNode` includes:
 
-* **Hardware**: one quantum memory in the |+&#10217; state, prepared to entangle with the remote memory.
-* **Software**: the `EntanglementGenerationA` prtocol to excite the controlled memory and determine the quantum state via messages from `EntanglementGenerationB`; 
-the `SimpleManager` uses the `update` function to get the state of memory after the procedures in `EntanglementGenerationA`.
+* **Hardware**: one quantum memory in the |+&#10217; state, prepared to entangle with the remote memory on the other node.
+* **Software**: the `EntanglementGenerationA` protocol to excite the controlled memory and determine the quantum state via messages from `EntanglementGenerationB`; 
+a `SimpleManager` which uses the `update` function to get the state of the memory after the procedures in `EntanglementGenerationA`.
 
 ### Step 1: Customize Node 
 
 We can import `BSMNode` from SeQUeNCe package and thus only need to define the `EntangleGenNode` class.
-The code of `EntangleGenNode` class is shown below:
+We also define our `SimpleManager`, which will create entanglement protocol instances and monitor their success.
+The code for the `EntangleGenNode` and `SimpleManager` classes is shown below:
 
 ```python
 from sequence.topology.node import Node
@@ -43,7 +45,9 @@ from sequence.entanglement_management.generation import EntanglementGenerationA
 
 
 class SimpleManager():
-    def __init__(self):
+    def __init__(self, own, memo_name):
+        self.own = own
+        self.memo_name = memo_name
         self.raw_counter = 0
         self.ent_counter = 0
 
@@ -54,26 +58,40 @@ class SimpleManager():
         else:
             self.ent_counter += 1
 
+    def create_protocol(self, middle: str, other: str):
+        self.own.protocols = [EntanglementGenerationA(self.own, '%s.eg' % self.own.name, middle, other,
+                                                      self.own.components[self.memo_name])]
+
 
 class EntangleGenNode(Node):
     def __init__(self, name: str, tl: Timeline):
         super().__init__(name, tl)
-        self.memory = Memory('%s.memo'%name, tl, 0.9, 2000, 1, -1, 500)
-        self.memory.owner = self
-        self.resource_manager = SimpleManager()
-        self.protocols = []
+
+        memo_name = '%s.memo' % name
+        memory = Memory(memo_name, tl, 0.9, 2000, 1, -1, 500)
+        memory.owner = self
+        memory.add_receiver(self)
+        self.add_component(memory)
+
+        self.resource_manager = SimpleManager(self, memo_name)
+
+    def init(self):
+        memory = self.get_components_by_type("Memory")[0]
+        memory.reset()
 
     def receive_message(self, src: str, msg: "Message") -> None:
         self.protocols[0].received_message(src, msg)
 
-    def create_protocol(self, middle: str, other: str):
-        self.protocols = [EntanglementGenerationA(self, '%s.eg'%self.name, middle, other, self.memory)]
+    def get(self, photon, **kwargs):
+        self.send_qubit(kwargs['dst'], photon)
 ```
 
-In this customized `Node` class, we inherit most functions and only overwrite the `receive_message` function.
-A node will use this function to receive the a classical message `msg` from the source node `src`. 
+In this customized `Node` class, we overwrite the `init`, `receive_message`, and `get` methods.
+The `init` method will be used to reset the local memory at the beginning of the simulation.
+The `get` method directs received photons from the memory to the attached quantum channel, as discussed in the previous tutorial.
+Finally, for the `receive_message` method, the node will receive a classical message `msg` from the source node `src`. 
 
-We also add a new function `create_protocol(self, middle: str, other: str)` to create the instance of the generation protocol.
+We also add a function `create_protocol(self, middle: str, other: str)` to the manager to create the local instance of the generation protocol.
 The `middle` and `other` parameters declare the name of the `BSMNode` and `EntangleGenNode`, respectively, used for generating entanglement.
 
 The constructor function of `EntanglementGenerationA` needs five arguments: 
@@ -88,11 +106,8 @@ The constructor function of `EntanglementGenerationA` needs five arguments:
 
 Q: Why is the `SimpleManager` necessary?
 
-A: We have cembedded code that calls the `update` function of a `resource_manager` into our current implementations of entanglement protocols.
-
-Q: Why does the constructor of `EntangleGenNen` set the `Memory.owner` field?
-
-A: The `Memory` class should contain a pointer to a `Node` object, as nodes provide the interface for `QuantumChannel` objects to send photons to the desired destination.
+A: We have embedded code that calls the `update` function of a `resource_manager` into our current implementations of entanglement protocols.
+We also need a protocol to track which hardware components of the local node should be used.
 
 Q: Why is the `EntanglementGenerationA` object placed in the list `EntangleGenNode.protocols`?
 
@@ -116,7 +131,8 @@ node1 = EntangleGenNode('node1', tl)
 node2 = EntangleGenNode('node2', tl)
 bsm_node = BSMNode('bsm_node', tl, ['node1', 'node2'])
 
-bsm_node.bsm.update_detectors_params('efficiency', 1)
+bsm = bsm_node.get_components_by_type("SingleAtomBSM")[0]
+bsm.update_detectors_params('efficiency', 1)
 
 qc1 = QuantumChannel('qc1', tl, attenuation=0, distance=1000)
 qc2 = QuantumChannel('qc2', tl, attenuation=0, distance=1000)
@@ -149,11 +165,13 @@ def pair_protocol(p1: EntanglementProtocol, p2: EntanglementProtocol):
     p2.set_others(p1)
 
 
-node1.create_protocol('bsm_node', 'node2')
-node2.create_protocol('bsm_node', 'node1')
+node1.resource_manager.create_protocol('bsm_node', 'node2')
+node2.resource_manager.create_protocol('bsm_node', 'node1')
 pair_protocol(node1.protocols[0], node2.protocols[0])
 
-print('before', node1.memory.entangled_memory, node1.memory.fidelity)
+memory = node1.get_components_by_type("Memory")[0]
+
+print('before', memory.entangled_memory, memory.fidelity)
 # "before node1.memo {'node_id': None, 'memo_id': None} 0"
 
 tl.init()
@@ -161,7 +179,7 @@ node1.protocols[0].start()
 node2.protocols[0].start()
 tl.run()
 
-print('after', node1.memory.entangled_memory, node1.memory.fidelity)
+print('after', memory.entangled_memory, memory.fidelity)
 # (if the generation fails) "after node1.memo {'node_id': None, 'memo_id': None} 0"
 # (if the generation succeeds) "after node1.memo {'node_id': 'node2', 'memo_id': 'node2.memo'} 0.9"
 ```
@@ -183,12 +201,9 @@ We will use the `Memory.reset()` method to reset the state of quantum memories b
 ```python
 for i in range(1000):
     tl.time = tl.now() + 1e11
-    node1.create_protocol('bsm_node', 'node2')
-    node2.create_protocol('bsm_node', 'node1')
+    node1.resource_manager.create_protocol('bsm_node', 'node2')
+    node2.resource_manager.create_protocol('bsm_node', 'node1')
     pair_protocol(node1.protocols[0], node2.protocols[0])
-
-    node1.memory.reset()
-    node2.memory.reset()
 
     tl.init()
     node1.protocols[0].start()
@@ -214,32 +229,53 @@ The `BBPSSW` purification protocol will consume one entanglement to improve the 
 
 The custom `PurifyNode` class will inherit the `Node` class from SeQUeNCe. 
 Similar to `EntangleGenNode`, we need to define a `SimpleManager` and rewrite the `receive_message` method.
-The `PurifyNode.kept_memo` is the memory whose fidelity will be improved by the purification protocol.
-If the protocol purifies `kept_memo` successfully, we will keep the `kept_memo`.
+The `kept_memo` is the memory whose fidelity will be improved by the purification protocol.
+If the protocol purifies the `kept_memo` successfully, we will keep the `kept_memo`.
 Otherwise, we will discard it.
-The `PurifyNode.meas_memo` is the consumed memory. 
+The `meas_memo` is the consumed memory. 
 We will always discard the `meas_memo` after the completion of the purification protocol.
+We will also rewrite the code for the manager class to reflect our usage of two memories and the new purification protocol.
 
 
 ```python
 from sequence.entanglement_management.purification import BBPSSW
 
 
+class SimpleManager():
+    def __init__(self, own, kept_memo_name, meas_memo_name):
+        self.own = own
+        self.kept_memo_name = kept_memo_name
+        self.meas_memo_name = meas_memo_name
+        self.raw_counter = 0
+        self.ent_counter = 0
+
+    def update(self, protocol, memory, state):
+        if state == 'RAW':
+            self.raw_counter += 1
+            memory.reset()
+        else:
+            self.ent_counter += 1
+
+    def create_protocol(self):
+        kept_memo = self.own.components[self.kept_memo_name]
+        meas_memo = self.own.components[self.meas_memo_name]
+        self.own.protocols = [BBPSSW(self.own, 'purification_protocol', kept_memo, meas_memo)]
+
+
 class PurifyNode(Node):
     def __init__(self, name: str, tl: Timeline):
         super().__init__(name, tl)
-        self.kept_memo = Memory('%s.memoA' % name, tl, 0.9, 2000, 1, -1, 500)
-        self.kept_memo.owner = self
-        self.meas_memo = Memory('%s.memoB' % name, tl, 0.9, 2000, 1, -1, 500)
-        self.meas_memo.owner = self
-        self.resource_manager = SimpleManager()
-        self.protocols = []
+        kept_memo_name = '%s.kept_memo' % name
+        meas_memo_name = '%s.meas_memo' % name
+        kept_memo = Memory('%s.kept_memo' % name, tl, 0.9, 2000, 1, -1, 500)
+        meas_memo = Memory('%s.meas_memo' % name, tl, 0.9, 2000, 1, -1, 500)
+        self.add_component(kept_memo)
+        self.add_component(meas_memo)
+
+        self.resource_manager = SimpleManager(self, kept_memo_name, meas_memo_name)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         self.protocols[0].received_message(src, msg)
-
-    def create_protocol(self):
-        self.protocols = [BBPSSW(self, 'purification_protocol', self.kept_memo, self.meas_memo)]
 ```
 
 The constructor function of BBPSSW requires four arguments:
@@ -285,8 +321,13 @@ def entangle_memory(memo1: Memory, memo2: Memory, fidelity: float):
     memo1.fidelity = memo2.fidelity = fidelity
 
 
-entangle_memory(node1.kept_memo, node2.kept_memo, 0.9)
-entangle_memory(node1.meas_memo, node2.meas_memo, 0.9)
+kept_memo_1 = node1.components[node1.resource_manager.kept_memo_name]
+kept_memo_2 = node2.components[node2.resource_manager.kept_memo_name]
+meas_memo_1 = node1.components[node1.resource_manager.meas_memo_name]
+meas_memo_2 = node2.components[node2.resource_manager.meas_memo_name]
+
+entangle_memory(kept_memo_1, kept_memo_2, 0.9)
+entangle_memory(meas_memo_1, meas_memo_2, 0.9)
 ```
 
 ### Step 4: Configure and Start BBPSSW Protocol
@@ -299,8 +340,8 @@ def pair_protocol(p1, p2):
     p2.set_others(p1)
 
 
-node1.create_protocol()
-node2.create_protocol()
+node1.resource_manager.create_protocol()
+node2.resource_manager.create_protocol()
 
 pair_protocol(node1.protocols[0], node2.protocols[0])
 
@@ -309,11 +350,11 @@ node1.protocols[0].start()
 node2.protocols[0].start()
 tl.run()
 
-print(node1.kept_memo.entangled_memory, node2.kept_memo.fidelity)
+print(kept_memo_1.name, kept_memo_1.entangled_memory, kept_memo_1.fidelity)
 # 'node1.kept_memo {'node_id': 'node2', 'memo_id': 'node2.kept_memo'} 0.9263959390862945'
 # or 'node1.kept_memo {'node_id': 'node2', 'memo_id': 'node2.kept_memo'} 0.9'
 
-print(node1.meas_memo.entangled_memory, node2.meas_memo.fidelity)
+print(meas_memo_1.name, meas_memo_1.entangled_memory, meas_memo_1.fidelity)
 # 'node1.meas_memo {'node_id': 'node2', 'memo_id': node2.meas_memo'} 0.9'
 ```
 
@@ -334,22 +375,22 @@ and `BBPSSW.improved_fidelity(F: float)` to customize the success probability an
 We can run the purification protocol multiple times to observe the state of memory with different purification results.
 
 ```python
-tl.init()
 for i in range(10):
-    entangle_memory(node1.kept_memo, node2.kept_memo, 0.9)
-    entangle_memory(node1.meas_memo, node2.meas_memo, 0.9)
+    entangle_memory(kept_memo_1, kept_memo_2, 0.9)
+    entangle_memory(meas_memo_1, meas_memo_2, 0.9)
 
-    node1.create_protocol()
-    node2.create_protocol()
+    node1.resource_manager.create_protocol()
+    node2.resource_manager.create_protocol()
 
     pair_protocol(node1.protocols[0], node2.protocols[0])
 
+    tl.init()
     node1.protocols[0].start()
     node2.protocols[0].start()
     tl.run()
 
-    print(node1.kept_memo.entangled_memory, node2.kept_memo.fidelity)
-    print(node1.meas_memo.entangled_memory, node2.meas_memo.fidelity)
+    print(kept_memo_1.name, kept_memo_1.entangled_memory, kept_memo_1.fidelity)
+    print(meas_memo_1.name, meas_memo_1.entangled_memory, meas_memo_1.fidelity)
 ```
 
 ## Example: Use `EntanglementSwappingA` and `EntanglementSwappingB` to Extend Entanglement
@@ -374,12 +415,45 @@ After the swapping protocol, the two memories on `SwapNodeA` are no longer entan
 
 ### Step 1: Customized Node
 
-We reuse the `SimpleManager` defined in the previous example to create the `SwapNodeA` and `SwapNodeB` protocols.
+The code below shows the implementation of `SwapNodeA`.
+The `left_memo` is the memory entangled with the memory on the left `SwapNodeB`.
+The `right_memo` is the memory entangled with the memory on the right `SwapNodeB`.
 
-The code below shows the implementation of `SwapNodeA`. 
-The `SwapNodeA.left_memo` is the memory entangled with the memory on the left `SwapNodeB`.
-The `SwapNodeA.right_memo` is the memory entangled with the memory on the right `SwapNodeB`. 
-The `create_protocol()` function creates the `EntanglementSwappingA` protocol instances.
+```python
+class SwapNodeA(Node):
+    def __init__(self, name: str, tl: Timeline):
+        super().__init__(name, tl)
+        left_memo_name = '%s.left_memo' % name
+        right_memo_name = '%s.right_memo' % name
+        left_memo = Memory(left_memo_name, tl, 0.9, 2000, 1, -1, 500)
+        right_memo = Memory(right_memo_name, tl, 0.9, 2000, 1, -1, 500)
+        self.add_component(left_memo)
+        self.add_component(right_memo)
+
+        self.resource_manager = SimpleManager(self, [left_memo_name, right_memo_name])
+
+    def receive_message(self, src: str, msg: "Message") -> None:
+        self.protocols[0].received_message(src, msg)
+```
+
+The code for `SwapNodeB` is identical to `SwapNodeA` but with only one memory:
+
+```python
+class SwapNodeB(Node):
+    def __init__(self, name: str, tl: Timeline):
+        super().__init__(name, tl)
+        memo_name = '%s.memo' % name
+        memo = Memory(memo_name, tl, 0.9, 2000, 1, -1, 500)
+        self.add_component(memo)
+
+        self.resource_manager = SimpleManager(self, [memo_name])
+
+    def receive_message(self, src: str, msg: "Message") -> None:
+        self.protocols[0].received_message(src, msg)
+```
+
+We reuse the `SimpleManager` defined in the previous example to create the `SwapNodeA` and `SwapNodeB` protocols.
+We will thus add a field for storing multiple memory names and generate swapping protocols.
 The `EntanglementSwappingA` constructor requires six arguments:
 
 1. The node that holds the protocol instance
@@ -389,48 +463,41 @@ The `EntanglementSwappingA` constructor requires six arguments:
 5. The success rate of swapping
 6. The degradation rate of swapping
 
+While the constructor for `EntanglementSwappingA` only requires three arguments:
+
+1. The node that holds the protocol instance
+2. The identity of protocol instance
+3. The memory having its entanglement swapped
+
+We will set up the manager so that it automatically creates the right type of swapping potocol depending on the local node.
+
 **Note**: the fidelity of entanglement after swapping is `f1 * f2 * fd`, where `f1`, `f2` denote the fidelity of the two entangled pairs and `fd` denotes the degradation rate.
 
 ```python
 from sequence.entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 
+class SimpleManager():
+    def __init__(self, own, memo_names):
+        self.own = own
+        self.memo_names = memo_names
+        self.raw_counter = 0
+        self.ent_counter = 0
 
-class SwapNodeA(Node):
-    def __init__(self, name: str, tl: Timeline):
-        super().__init__(name, tl)
-        self.left_memo = Memory('%s.left_memo' % name, tl, 0.9, 2000, 1, -1, 500)
-        self.left_memo.owner = self
-        self.right_memo = Memory('%s.right_memo' % name, tl, 0.9, 2000, 1, -1, 500)
-        self.right_memo.owner = self
-        self.resource_manager = SimpleManager()
-        self.protocols = []
-
-    def receive_message(self, src: str, msg: "Message") -> None:
-        self.protocols[0].received_message(src, msg)
-
-    def create_protocol(self):
-        self.protocols = [EntanglementSwappingA(self, 'ESA', self.left_memo, self.right_memo, 1, 0.99)]
-```
-
-The code for `SwapNodeB` has two differences from `SwapNodeA`:
-
-1. `SwapNodeB` only has one quantum memory.
-2. `create_protocol()` function creates an instance of `EntanglementSwappingB`.
-
-```python
-class SwapNodeB(Node):
-    def __init__(self, name: str, tl: Timeline):
-        super().__init__(name, tl)
-        self.memo = Memory('%s.memo' % name, tl, 0.9, 2000, 1, -1, 500)
-        self.memo.owner = self
-        self.resource_manager = SimpleManager()
-        self.protocols = []
-
-    def receive_message(self, src: str, msg: "Message") -> None:
-        self.protocols[0].received_message(src, msg)
+    def update(self, protocol, memory, state):
+        if state == 'RAW':
+            self.raw_counter += 1
+            memory.reset()
+        else:
+            self.ent_counter += 1
 
     def create_protocol(self):
-        self.protocols = [EntanglementSwappingB(self, '%s.ESB'%self.name, self.memo)]
+        if type(self.own) is SwapNodeA:
+            left_memo = self.own.components[self.memo_names[0]]
+            right_memo = self.own.components[self.memo_names[1]]
+            self.own.protocols = [EntanglementSwappingA(self.own, 'ESA', left_memo, right_memo, 1, 0.99)]
+        else:
+            memo = self.own.components[self.memo_names[0]]
+            self.own.protocols = [EntanglementSwappingB(self.own, '%s.ESB' % self.own.name, memo)]
 ```
 
 ### Step 2: Create Network
@@ -459,11 +526,15 @@ Because we set the success probability to 1, we can guaruntee a successful resul
 The fidelity of entanglement after swapping will be `0.9*0.9*0.99=0.8019`.
 
 ```python
-entangle_memory(left_node.memo, mid_node.left_memo, 0.9)
-entangle_memory(right_node.memo, mid_node.right_memo, 0.9)
+left_memo = left_node.components[left_node.resource_manager.memo_names[0]]
+right_memo = right_node.components[right_node.resource_manager.memo_names[0]]
+mid_left_memo = mid_node.components[mid_node.resource_manager.memo_names[0]]
+mid_right_memo = mid_node.components[mid_node.resource_manager.memo_names[1]]
+entangle_memory(left_memo, mid_left_memo, 0.9)
+entangle_memory(right_memo, mid_right_memo, 0.9)
 
 for node in nodes:
-    node.create_protocol()
+    node.resource_manager.create_protocol()
 
 pair_protocol(left_node.protocols[0], mid_node.protocols[0])
 pair_protocol(right_node.protocols[0], mid_node.protocols[0])
@@ -473,18 +544,18 @@ for node in nodes:
     node.protocols[0].start()
 tl.run()
 
-print(left_node.memo.entangled_memory)
+print(left_memo.entangled_memory)
 # {'node_id': 'right', 'memo_id': 'right.memo'}
 
-print(mid_node.left_memo.entangled_memory)
+print(mid_left_memo.entangled_memory)
 # {'node_id': None, 'memo_id': None}
 
-print(mid_node.right_memo.entangled_memory)
+print(mid_right_memo.entangled_memory)
 # {'node_id': None, 'memo_id': None}
 
-print(right_node.memo.entangled_memory)
+print(right_memo.entangled_memory)
 # {'node_id': 'left', 'memo_id': 'left.memo'}
 
-print(left_node.memo.fidelity)
+print(left_memo.fidelity)
 # 0.8019000000000001
 ```

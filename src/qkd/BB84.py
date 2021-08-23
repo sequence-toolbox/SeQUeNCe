@@ -56,7 +56,7 @@ class BB84Message(Message):
         frequency (float): frequency for qubit generation (if `msg_type == BEGIN_PHOTON_PULSE`).
         light_time (float): lenght of time to send qubits (if `msg_type == BEGIN_PHOTON_PULSE`).
         start_time (int): simulation start time of qubit pulse (if `msg_type == BEGIN_PHOTON_PULSE`).
-        wavelenght (float): wavelength (in nm) of photons (if `msg_type == BEGIN_PHOTON_PULSE`).
+        wavelength (float): wavelength (in nm) of photons (if `msg_type == BEGIN_PHOTON_PULSE`).
         bases (List[int]): list of measurement bases (if `msg_type == BASIS_LIST`).
         indices (List[int]): list of indices for matching bases (if `msg_type == MATCHING_INDICES`).
     """
@@ -98,7 +98,7 @@ class BB84(StackProtocol):
         key (int): generated key as an integer.
         key_bits (List[int]): generated key as a list of 0/1 bits.
         another (BB84): other BB84 protocol instance (on opposite node).
-        key_lenghts (List[int]): list of desired key lengths.
+        key_lengths (List[int]): list of desired key lengths.
         self.keys_left_list (List[int]): list of desired number of keys.
         self.end_run_times (List[int]): simulation time for end of each request.
     """
@@ -385,7 +385,7 @@ class BB84(StackProtocol):
                         self.set_key()  # convert from binary list to int
                         self._pop(info=self.key)
                         self.another.set_key()
-                        self.another._pop(info=self.another.key)
+                        self.another._pop(info=self.another.key)  # TODO: why access another node?
 
                         # for metrics
                         if self.latency == 0:

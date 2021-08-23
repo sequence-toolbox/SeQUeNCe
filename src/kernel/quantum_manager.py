@@ -8,19 +8,22 @@ The manager defines an API for interacting with quantum states.
 """
 
 from abc import abstractmethod
-from copy import copy
-from typing import List, Dict, Tuple, TYPE_CHECKING
-from math import sqrt
+from typing import List, Dict, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..components.circuit import Circuit
+    from .quantum_state import State
 
 from qutip.qip.circuit import QubitCircuit, Gate
 from qutip.qip.operations import gate_sequence_product
-from numpy import log2, array, kron, identity, zeros, arange, outer
+from numpy import log2, arange
 from numpy.random import random_sample, choice
 
+from .quantum_state import KetState, DensityState
 from .quantum_utils import *
 
 
-class QuantumManager():
+class QuantumManager:
     """Class to track and manage quantum states (abstract).
 
     All states stored are of a single formalism (by default as a ket vector).
@@ -58,7 +61,7 @@ class QuantumManager():
         return self.states[key]
 
     @abstractmethod
-    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> int:
+    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
         """Method to run a circuit on a given set of quantum states.
 
         Args:
@@ -70,7 +73,6 @@ class QuantumManager():
         """
 
         assert len(keys) == circuit.size, "mismatch between circuit size and supplied qubits"
-
 
     def _prepare_circuit(self, circuit: "Circuit", keys: List[int]):
         old_states = []
@@ -144,7 +146,7 @@ class QuantumManagerKet(QuantumManager):
         self.states[key] = KetState(amplitudes, [key])
         return key
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> int:
+    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
         super().run_circuit(circuit, keys)
         new_state, all_keys, circ_mat = self._prepare_circuit(circuit, keys)
 
@@ -155,7 +157,7 @@ class QuantumManagerKet(QuantumManager):
             new_ket = KetState(new_state, all_keys)
             for key in all_keys:
                 self.states[key] = new_ket
-            return None
+            return {}
         else:
             # measure state (state reassignment done in _measure method)
             keys = [all_keys[i] for i in circuit.measured_qubits]
@@ -252,7 +254,7 @@ class QuantumManagerDensity(QuantumManager):
         self.states[key] = DensityState(state, [key])
         return key
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> int:
+    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
         super().run_circuit(circuit, keys)
         new_state, all_keys, circ_mat = super()._prepare_circuit(circuit, keys)
 
@@ -263,18 +265,28 @@ class QuantumManagerDensity(QuantumManager):
             new_state_obj = DensityState(new_state, all_keys)
             for key in all_keys:
                 self.states[key] = new_state_obj
-            return None
+            return {}
         else:
             # measure state (state reassignment done in _measure method)
             keys = [all_keys[i] for i in circuit.measured_qubits]
             return self._measure(new_state, keys, all_keys)
 
     def set(self, keys: List[int], state: List[List[complex]]) -> None:
+        """Method to set the quantum state at the given keys.
+
+        The `state` argument should be passed as List[List[complex]], where each internal list is a row.
+        However, the `state` may also be given as a one-dimensional pure state.
+        If the list is one-dimensional, will be converted to matrix with the outer product operation.
+
+        Args:
+            keys (List[int]): list of quantum manager keys to modify.
+            state: quantum state to set input keys to.
+        """
+
         super().set(keys, state)
         new_state = DensityState(state, keys)
         for key in keys:
             self.states[key] = new_state
-
 
     def _measure(self, state: List[List[complex]], keys: List[int], all_keys: List[int]) -> Dict[int, int]:
         """Method to measure qubits at given keys.
@@ -305,8 +317,8 @@ class QuantumManagerDensity(QuantumManager):
                 key = keys[0]
                 num_states = len(all_keys)
                 state_index = all_keys.index(key)
-                state_0, state_1, prob_0 = measure_entangled_state_with_cache_density(tuple(map(tuple, state)),
-                        state_index, num_states)
+                state_0, state_1, prob_0 =\
+                    measure_entangled_state_with_cache_density(tuple(map(tuple, state)), state_index, num_states)
                 if random_sample() < prob_0:
                     new_state = array(state_0, dtype=complex)
                     result = 0
@@ -341,60 +353,4 @@ class QuantumManagerDensity(QuantumManager):
         return dict(zip(keys, result_digits))
 
 
-class KetState():
-    """Class to represent an individual quantum state as a ket vector.
-
-    Attributes:
-        state (np.array): state vector. Should be of length 2 ** len(keys).
-        keys (List[int]): list of keys (qubits) associated with this state.
-    """
-
-    def __init__(self, amplitudes: List[complex], keys: List[int]):
-        # check formatting
-        assert all([abs(a) <= 1.01 for a in amplitudes]), "Illegal value with abs > 1 in ket vector"
-        assert abs(sum([a ** 2 for a in amplitudes]) - 1) < 1e-5, "Squared amplitudes do not sum to 1" 
-        num_qubits = log2(len(amplitudes))
-        assert num_qubits.is_integer(), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
-        assert num_qubits == len(keys), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
-
-        self.state = array(amplitudes, dtype=complex)
-        self.keys = keys
-
-    def __str__(self):
-        return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])
-
-
-class DensityState():
-    """Class to represent an individual quantum state as a density matrix.
-
-    Attributes:
-        state (np.array): density matrix values. NxN matrix with N = 2 ** len(keys).
-        keys (List[int]): list of keys (qubits) associated with this state.
-    """
-
-    def __init__(self, state: List[List[complex]], keys: List[int]):
-        """Constructor for density state class.
-
-        Args:
-            state (List[List[complex]]): density matrix elements given as a list. If the list is one-dimensional, will be converted to matrix with outer product operation.
-            keys (List[int]): list of keys to this state in quantum manager.
-        """
-
-        state = array(state, dtype=complex)
-        if state.ndim == 1:
-            state = outer(state.conj(), state)
-
-        # check formatting
-        assert abs(trace(array(state)) - 1) < 0.1, "density matrix trace must be 1"
-        for row in state:
-            assert len(state) == len(row), "density matrix must be square"
-        num_qubits = log2(len(state))
-        assert num_qubits.is_integer(), "Dimensions of density matrix should be 2 ** n, where n is the number of qubits"
-        assert num_qubits == len(keys), "Dimensions of density matrix should be 2 ** n, where n is the number of qubits"
-
-        self.state = state
-        self.keys = keys
-
-    def __str__(self):
-        return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])
 

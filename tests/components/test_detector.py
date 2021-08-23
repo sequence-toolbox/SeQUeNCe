@@ -148,7 +148,7 @@ def test_QSDetectorPolarization():
         tl.time = i * 1e12 / frequency
         basis = basis_list[i]
         bit = random.randint(2)
-        photon = Photon(str(i), quantum_state=polarization["bases"][basis][bit])
+        photon = Photon(str(i), tl, quantum_state=polarization["bases"][basis][bit])
         qsdetector.get(photon)
 
     trigger_times = qsdetector.get_photon_times()
@@ -171,7 +171,7 @@ def test_QSDetectorTimeBin():
         tl.time = i * 1e12 / frequency
         basis = basis_list[i]
         bit = random.randint(2)
-        photon = Photon(str(i), encoding_type=time_bin, quantum_state=time_bin["bases"][basis][bit])
+        photon = Photon(str(i), tl, encoding_type=time_bin, quantum_state=time_bin["bases"][basis][bit])
         qsdetector.get(photon)
 
     tl.time = 0

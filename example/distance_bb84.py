@@ -78,21 +78,6 @@ if __name__ == "__main__":
         error_rate_list.append(mean(bba.error_rates))
         latency_list.append(bba.latency)
 
-        # fh.write(str(distance))
-        # fh.write(' ')
-        # if bba.throughputs:
-        #     fh.write(str(1e-6 * sum(bba.throughputs) / len(bba.throughputs)))
-        # else:
-        #     fh.write(str(None))
-        # fh.write(' ')
-        # if bba.error_rates:
-        #     fh.write(str(sum(bba.error_rates) / len(bba.error_rates)))
-        # else:
-        #     fh.write(str(None))
-        # fh.write(' ')
-        # fh.write(str(bba.latency))
-        # fh.write('\n')
-
     log = {'Distance': dist_list, "Throughput": tp_list, 'Error_rate': error_rate_list, 'Latency': latency_list}
     df = pd.DataFrame(log)
     df.to_csv('distance_bb84.csv')

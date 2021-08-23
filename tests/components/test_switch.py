@@ -8,7 +8,7 @@ random.seed(0)
 FREQ = 1e6
 
 
-def create_switch(basis_list, photons):
+def create_switch(tl, basis_list, photons):
     class Receiver:
         def __init__(self, tl):
             self.timeline = tl
@@ -17,7 +17,6 @@ def create_switch(basis_list, photons):
         def get(self, photon):
             self.log.append((self.timeline.now(), photon))
 
-    tl = Timeline()
     sw = Switch("sw", tl)
     r1 = Receiver(tl)
     r2 = Receiver(tl)
@@ -36,9 +35,10 @@ def create_switch(basis_list, photons):
 
 
 def test_Switch_get():
+    tl = Timeline()
     # z-basis measure |e> and |l>
-    photons = [Photon('', encoding_type=time_bin, quantum_state=time_bin["bases"][0][i]) for i in range(2)]
-    log1, log2 = create_switch([0] * 2, photons)
+    photons = [Photon('', tl, encoding_type=time_bin, quantum_state=time_bin["bases"][0][i]) for i in range(2)]
+    log1, log2 = create_switch(tl, [0] * 2, photons)
     expects = [0, 1e12 / FREQ + time_bin["bin_separation"]]
     for i, log in enumerate(log1):
         time = log[0]
@@ -46,9 +46,9 @@ def test_Switch_get():
     assert len(log2) == 0
 
     # z-basis measure |e+l> and |e-l>
-    photons = [Photon('', encoding_type=time_bin, quantum_state=time_bin["bases"][0][random.randint(2)]) for _ in
+    photons = [Photon('', tl, encoding_type=time_bin, quantum_state=time_bin["bases"][0][random.randint(2)]) for _ in
                range(2000)]
-    log1, log2 = create_switch([0] * 2000, photons)
+    log1, log2 = create_switch(tl, [0] * 2000, photons)
     assert len(log2) == 0
     counter1 = 0
     counter2 = 0
@@ -63,10 +63,10 @@ def test_Switch_get():
     assert abs(counter2 / counter1 - 1) < 0.1
 
     # x-basis get photons
-    photons = [Photon('',
+    photons = [Photon('', tl,
                       encoding_type=time_bin,
                       quantum_state=time_bin["bases"][random.randint(2)][random.randint(2)]) for _ in range(2000)]
-    log1, log2 = create_switch([1] * 2000, photons)
+    log1, log2 = create_switch(tl, [1] * 2000, photons)
     assert len(log1) == 0
     for time, photon in log1:
         time = time % (1e12 / FREQ)

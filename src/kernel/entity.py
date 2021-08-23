@@ -19,8 +19,7 @@ class Entity(ABC):
         timeline (Timeline): the simulation timeline for the entity.
         owner (Entity): another entity that owns or aggregates the current entity.
         _observers (List): a list of observers for the entity.
-        _receivers (List[Entity]): a list of entities that receive photons from current component
-        _components (Dict[str, Entity]): dictionary of sub-components; keys are component names
+        _receivers (List[Entity]): a list of entities that receive photons from current component.
     """
 
     def __init__(self, name: str, timeline: "Timeline"):

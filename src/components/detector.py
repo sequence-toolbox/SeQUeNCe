@@ -6,14 +6,13 @@ QSDetector is defined as an abstract template and as implementaions for polariza
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from numpy import random
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..components.photon import Photon
-    from typing import List
 
 from ..components.beam_splitter import BeamSplitter
 from ..components.switch import Switch
@@ -54,7 +53,7 @@ class Detector(Entity):
         """Implementation of Entity interface (see base class)."""
         self.add_dark_count()
 
-    def get(self, photon=None, dark_get=False) -> None:
+    def get(self, photon=None, **kwargs) -> None:
         """Method to receive a photon for measurement.
 
         Args:
@@ -65,6 +64,8 @@ class Detector(Entity):
         Side Effects:
             May notify upper entities of a detection event.
         """
+
+        dark_get = kwargs.get("dark_get", False)
 
         self.photon_counter += 1
         now = self.timeline.now()
@@ -89,7 +90,7 @@ class Detector(Entity):
             time = time_to_next + self.timeline.now()  # time of next dark count
 
             process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
-            process2 = Process(self, "get", [None, True])
+            process2 = Process(self, "get", [None], {"dark_get": True})
             event1 = Event(time, process1)
             event2 = Event(time, process2)
             self.timeline.schedule(event1)
@@ -136,7 +137,7 @@ class QSDetector(Entity, ABC):
         return self.trigger_times
 
     @abstractmethod
-    def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: int) -> None:
         pass
 
 
@@ -189,7 +190,7 @@ class QSDetectorPolarization(QSDetector):
         self.trigger_times = [[], []]
         return times
 
-    def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: int) -> None:
         self.splitter.set_basis_list(basis_list, start_time, frequency)
 
     def update_splitter_params(self, arg_name: str, value: Any) -> None:
@@ -249,7 +250,7 @@ class QSDetectorTimeBin(QSDetector):
         times, self.trigger_times = self.trigger_times, [[], [], []]
         return times
 
-    def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: int) -> None:
         self.switch.set_basis_list(basis_list, start_time, frequency)
 
     def update_interferometer_params(self, arg_name: str, value: Any) -> None:

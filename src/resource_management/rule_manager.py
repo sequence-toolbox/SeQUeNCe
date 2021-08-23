@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from ..network_management.reservation import Reservation
 
 
-class RuleManager():
+class RuleManager:
     """Class to manage and follow installed rules.
 
     The RuleManager checks available rules when the state of a memory is updated.
@@ -88,7 +88,7 @@ class RuleManager():
         return self.rules[item]
 
 
-class Rule():
+class Rule:
     """Definition of rule for the rule manager.
 
     Rule objects are installed on and interacted with by the rule manager.
@@ -100,6 +100,7 @@ class Rule():
         condition (Callable[["MemoryInfo", "MemoryManager"], List["MemoryInfo"]]): condition required by rule.
         protocols (List[Protocols]): protocols created by rule.
         rule_manager (RuleManager): reference to rule manager object where rule is installed.
+        reservation (Reservation): associated reservation.
     """
 
     def __init__(self, priority: int,
@@ -113,6 +114,7 @@ class Rule():
         self.condition = condition
         self.protocols = []
         self.rule_manager = None
+        self.reservation = None
 
     def set_rule_manager(self, rule_manager: "RuleManager") -> None:
         """Method to assign rule to a rule manager.

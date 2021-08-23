@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
-    from ..components.interferometer import Interferometer
 
 from .photon import Photon
 from ..kernel.entity import Entity
@@ -24,7 +23,7 @@ class Switch(Entity):
         name (str): label for switch instance.
         timeline (Timeline): timeline for simulation.
         start_time (int): simulation start time (in ps) for transmission.
-        frequency (float): frequency with whitch to switch destinations.
+        frequency (float): frequency with which to switch destinations.
         basis_list (List[int]): 0/1 list denoting which receiver to rout photons to each period.
     """
 
@@ -61,6 +60,8 @@ class Switch(Entity):
             May call `get` method of attached receivers.
         """
 
+        assert photon.encoding_type["name"] == "time_bin"
+
         index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
         if index < 0 or index >= len(self.basis_list):
             return
@@ -68,7 +69,6 @@ class Switch(Entity):
         receiver = self._receivers[self.basis_list[index]]
 
         if self.basis_list[index] == 0:
-            assert photon.encoding_type["name"] == "time_bin"
             if Photon.measure(photon.encoding_type["bases"][0], photon):
                 time = self.timeline.now() + photon.encoding_type["bin_separation"]
                 process = Process(receiver, "get", [photon])

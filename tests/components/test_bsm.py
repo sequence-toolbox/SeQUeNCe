@@ -3,6 +3,8 @@ from sequence.components.bsm import *
 from sequence.components.memory import *
 from sequence.components.circuit import Circuit
 from sequence.kernel.timeline import Timeline
+from sequence.kernel.process import Process
+from sequence.kernel.event import Event
 from sequence.utils.encoding import *
 
 
@@ -38,6 +40,7 @@ def test_construct_func():
     assert type(time_bin_bsm) == TimeBinBSM
     assert type(atom_bsm) == SingleAtomBSM
 
+
 def test_init():
     tl = Timeline()
     tl.seed(0)
@@ -47,15 +50,16 @@ def test_init():
 
     assert len(tl.events) == len(detectors) * 2
 
+
 def test_base_get():
     tl = Timeline()
     tl.seed(0)
-    photon1 = Photon("", location=1)
-    photon2 = Photon("", location=2)
-    photon3 = Photon("", location=3)
-    photon1_2 = Photon("", location=1)
-    detectors = [{}] * 2
-    bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors)
+    photon1 = Photon("", tl, location=1)
+    photon2 = Photon("", tl, location=2)
+    photon3 = Photon("", tl, location=3)
+    photon1_2 = Photon("", tl, location=1)
+    detectors = [{}] * 4
+    bsm = make_bsm("bsm", tl, encoding_type="polarization", detectors=detectors)
 
     bsm.get(photon1)
     assert len(bsm.photons) == 1
@@ -73,6 +77,7 @@ def test_base_get():
     bsm.get(photon3)
     assert len(bsm.photons) == 1
 
+
 def test_polarization_get():
     tl = Timeline()
     tl.seed(0)
@@ -82,8 +87,8 @@ def test_polarization_get():
     bsm.attach(parent)
 
     # get 2 photons in orthogonal states (map to Psi+)
-    p1 = Photon("p1", location=1, quantum_state=(complex(1), complex(0)))
-    p2 = Photon("p2", location=2, quantum_state=(complex(0), complex(1)))
+    p1 = Photon("p1", tl, location=1, quantum_state=(complex(1), complex(0)))
+    p2 = Photon("p2", tl, location=2, quantum_state=(complex(0), complex(1)))
     bsm.get(p1)
     bsm.get(p2)
 
@@ -91,8 +96,8 @@ def test_polarization_get():
 
     # get 2 photons in same state (map to Phi+ / can't measure)
     tl.time = 1e6
-    p3 = Photon("p3", location=1, quantum_state=(complex(1), complex(0)))
-    p4 = Photon("p4", location=2, quantum_state=(complex(1), complex(0)))
+    p3 = Photon("p3", tl, location=1, quantum_state=(complex(1), complex(0)))
+    p4 = Photon("p4", tl, location=2, quantum_state=(complex(1), complex(0)))
     bsm.get(p3)
     bsm.get(p4)
 
@@ -134,6 +139,7 @@ def test_polarization_update():
 
     assert len(parent.results) == 2
 
+
 def test_time_bin_get():
     tl = Timeline()
     tl.seed(0)
@@ -144,8 +150,8 @@ def test_time_bin_get():
     detector_list = bsm.detectors
 
     # get 2 photons in orthogonal states (map to Psi+)
-    p1 = Photon("p1", encoding_type=time_bin, location=1, quantum_state=(complex(1), complex(0)))
-    p2 = Photon("p2", encoding_type=time_bin, location=2, quantum_state=(complex(0), complex(1)))
+    p1 = Photon("p1", tl, encoding_type=time_bin, location=1, quantum_state=(complex(1), complex(0)))
+    p2 = Photon("p2", tl, encoding_type=time_bin, location=2, quantum_state=(complex(0), complex(1)))
     process = Process(bsm, "get", [p1])
     event = Event(0, process)
     tl.schedule(event)
@@ -157,8 +163,8 @@ def test_time_bin_get():
     assert len(parent.results) == 1
 
     # get 2 photons in same state (map to Phi+ / can't measure)
-    p3 = Photon("p3", encoding_type=time_bin, location=1, quantum_state=(complex(1), complex(0)))
-    p4 = Photon("p4", encoding_type=time_bin, location=2, quantum_state=(complex(1), complex(0)))
+    p3 = Photon("p3", tl, encoding_type=time_bin, location=1, quantum_state=(complex(1), complex(0)))
+    p4 = Photon("p4", tl, encoding_type=time_bin, location=2, quantum_state=(complex(1), complex(0)))
     process = Process(bsm, "get", [p3])
     event = Event(1e6, process)
     tl.schedule(event)
@@ -203,6 +209,7 @@ def test_time_bin_update():
     bsm.trigger(detector_list[0], {'time': 4e6})
 
     assert len(parent.results) == 2
+
 
 def test_single_atom_get():
     class PhotonSendWrapper():
@@ -249,3 +256,71 @@ def test_single_atom_get():
     assert tl.quantum_manager.get(mem_1.qstate_key) is tl.quantum_manager.get(mem_2.qstate_key)
 
 
+def test_absorptive_get():
+    from sequence.components.circuit import Circuit
+    from sequence.components.detector import Detector
+
+    class Measurer:
+        def __init__(self, detector):
+            self.detector = detector
+
+        def get(self, photon, **kwargs):
+            res = Photon.measure(None, photon)
+            if res:
+                self.detector.get()
+
+    class DetectorMonitor:
+        def __init__(self, detector: Detector):
+            detector.attach(self)
+            self.times = []
+
+        def trigger(self, detector, info):
+            self.times.append(info["time"])
+
+    NUM_TRIALS = 1000
+    PERIOD = 1e6
+
+    tl = Timeline()
+    tl.seed(0)
+    detectors = [{"efficiency": 1}] * 2
+    bsm = make_bsm("bsm", tl, encoding_type="absorptive", detectors=detectors)
+    d0 = Detector("d0", tl, 1)
+    d1 = Detector("d1", tl, 1)
+    m0 = Measurer(d0)
+    m1 = Measurer(d1)
+    monitor0 = DetectorMonitor(d0)
+    monitor1 = DetectorMonitor(d1)
+
+    tl.init()
+    photons0 = [None, None]
+    photons1 = [None, None]
+
+    # simulate sending photon pairs
+    for i in range(NUM_TRIALS):
+        tl.time = i * PERIOD
+
+        # pair 0 (null)
+        photons0[0] = Photon("", tl, encoding_type=absorptive, location=0, use_qm=True)
+        photons0[1] = Photon("", tl, encoding_type=absorptive, location=0, use_qm=True)
+        photons0[0].is_null = True
+        photons0[1].is_null = True
+        photons0[0].entangle(photons0[1])
+        photons0[0].set_state((complex(1), complex(0), complex(0), complex(0)))
+
+        # pair 1 (not null)
+        photons1[0] = Photon("", tl, encoding_type=absorptive, location=1, use_qm=True)
+        photons1[1] = Photon("", tl, encoding_type=absorptive, location=1, use_qm=True)
+        photons1[0].entangle(photons1[1])
+        photons1[0].set_state((complex(0), complex(0), complex(0), complex(1)))
+
+        # send part of each pair to bsm
+        bsm.get(photons0[0])
+        bsm.get(photons1[0])
+
+        # detect other part
+        m0.get(photons0[1])
+        m1.get(photons1[1])
+
+    assert len(set(monitor0.times) & set(monitor1.times)) == 0
+    assert len(monitor0.times + monitor1.times) == NUM_TRIALS
+    assert abs(len(monitor0.times)/len(monitor1.times) - 1) < 0.1

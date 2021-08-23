@@ -1,4 +1,4 @@
-"""Model for simulation of a SPDC Lens.
+"""Model for simulation of an SPDC Lens.
 
 This module defines the SPDCLens class for creation of entangled photons.
 """

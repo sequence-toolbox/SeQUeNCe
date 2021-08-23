@@ -5,19 +5,19 @@ Also defined is a function to automatically construct a BSM of a specified type.
 """
 
 from abc import abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..components.memory import Memory
 
 from numpy import random, outer, add, zeros
 
-from .circuit import Circuit
 from .detector import Detector
 from .photon import Photon
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
-from ..kernel.quantum_manager import QuantumManagerKet, QuantumManagerDensity
 from ..utils.encoding import *
-from ..utils.quantum_state import QuantumState
 
 
 def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=[]):
@@ -37,8 +37,10 @@ def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=
         return TimeBinBSM(name, timeline, phase_error, detectors)
     elif encoding_type == "single_atom":
         return SingleAtomBSM(name, timeline, phase_error, detectors)
+    elif encoding_type == "absorptive":
+        return AbsorptiveBSM(name, timeline, phase_error, detectors)
     else:
-        raise Exception("invalid encoding {} given for BSM {}".format(encoding_type, name))
+        raise Exception("invalid encoding '{}' given for BSM '{}'".format(encoding_type, name))
 
 
 def _set_memory_with_fidelity(memories: List["Memory"], desired_state):
@@ -55,11 +57,11 @@ def _set_memory_with_fidelity(memories: List["Memory"], desired_state):
         qm.set(keys, possible_states[state_ind])
 
     elif qm.formalism == "DENSITY":
-        #multipliers = [(1-fidelity)/3] * 4
-        #multipliers[possible_states.index(desired_state)] = fidelity
-        #state = zeros((4, 4))
-        #for mult, pure in zip(multipliers, possible_states):
-        #    state = add(state, mult*outer(pure, pure))
+        multipliers = [(1-fidelity)/3] * 4
+        multipliers[possible_states.index(desired_state)] = fidelity
+        state = zeros((4, 4))
+        for mult, pure in zip(multipliers, possible_states):
+            state = add(state, mult*outer(pure, pure))
         qm.set(keys, state)
 
     else:
@@ -93,6 +95,7 @@ class BSM(Entity):
         """
 
         super().__init__(name, timeline)
+        self.encoding = "None"
         self.phase_error = phase_error
         self.photons = []
         self.photon_arrival_time = -1
@@ -129,6 +132,11 @@ class BSM(Entity):
         Arguments:
             photon (Photon): photon to measure.
         """
+
+        assert photon.encoding_type["name"] == self.encoding, \
+            "BSM expecting photon with encoding '{}' received photon with encoding '{}'".format(
+                self.encoding, photon.encoding_type["name"])
+
         # check if photon arrived later than current photon
         if self.photon_arrival_time < self.timeline.now():
             # clear photons
@@ -184,6 +192,7 @@ class PolarizationBSM(BSM):
         """
 
         super().__init__(name, timeline, phase_error, detectors)
+        self.encoding = "polarization"
         self.last_res = [-2 * self.resolution, -1]
         assert len(self.detectors) == 4
 
@@ -279,6 +288,7 @@ class TimeBinBSM(BSM):
         """
 
         super().__init__(name, timeline, phase_error, detectors)
+        self.encoding = "time_bin"
         self.encoding_type = time_bin
         self.last_res = [-1, -1]
         assert len(self.detectors) == 2
@@ -394,6 +404,7 @@ class SingleAtomBSM(BSM):
         if detectors == []:
             detectors = [{}, {}]
         super().__init__(name, timeline, phase_error, detectors)
+        self.encoding = "single_atom"
         assert len(self.detectors) == 2
 
     def get(self, photon, **kwargs):
@@ -408,10 +419,9 @@ class SingleAtomBSM(BSM):
 
         super().get(photon)
 
-        memory = photon.memory
-
         # check if we're in first stage. If we are and not null, send photon to random detector
         if not photon.is_null:
+            memory = photon.encoding_type["memory"]
             detector_num = random.choice([0, 1])
             memory.previous_bsm = detector_num
             self.detectors[detector_num].get()
@@ -422,8 +432,8 @@ class SingleAtomBSM(BSM):
             is_valid = null_0 ^ null_1
             
             if is_valid:
-                memory_0 = self.photons[0].memory
-                memory_1 = self.photons[1].memory
+                memory_0 = self.photons[0].encoding_type["memory"]
+                memory_1 = self.photons[1].encoding_type["memory"]
                 
                 # if we're in stage 1: null photon will need bsm assigned
                 if null_0 and memory_0.previous_bsm == -1:
@@ -439,6 +449,74 @@ class SingleAtomBSM(BSM):
                         desired_state = BSM._psi_plus
 
                     _set_memory_with_fidelity([memory_0, memory_1], desired_state)
+
+    def trigger(self, detector: Detector, info: Dict[str, Any]):
+        """See base class.
+
+        This method adds additional side effects not present in the base class.
+
+        Side Effects:
+            May send a further message to any attached entities.
+        """
+
+        detector_num = self.detectors.index(detector)
+        time = info["time"]
+
+        res = detector_num
+        info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
+        self.notify(info)
+
+
+class AbsorptiveBSM(BSM):
+    """Class modeling a BSM device for absorptive quantum memories.
+
+    Measures photons and manages entanglement state of entangled photons.
+
+    Attributes:
+        name (str): label for BSM instance
+        timeline (Timeline): timeline for simulation
+        detectors (List[Detector]): list of attached photon detection devices (length 2).
+    """
+
+    def __init__(self, name, timeline, phase_error=0, detectors=[]):
+        """Constructor for the AbsorptiveBSM class."""
+
+        if detectors == []:
+            detectors = [{}, {}]
+        super().__init__(name, timeline, phase_error, detectors)
+        self.encoding = "absorptive"
+        assert len(self.detectors) == 2
+
+    def get(self, photon, **kwargs):
+        """"""
+
+        super().get(photon)
+
+        # check if we're in first stage. If we are and not null, send photon to random detector
+        if not photon.is_null:
+            detector_num = random.choice([0, 1])
+            self.detectors[detector_num].get()
+
+        if len(self.photons) == 2:
+            null_0 = self.photons[0].is_null
+            null_1 = self.photons[1].is_null
+            is_valid = null_0 ^ null_1
+
+            if is_valid:
+                # get other photons to entangle
+                key_0 = self.photons[0].quantum_state
+                key_1 = self.photons[1].quantum_state
+                state_0 = self.timeline.quantum_manager.get(key_0)
+                state_1 = self.timeline.quantum_manager.get(key_1)
+                other_keys_0 = state_0.keys[:]
+                other_keys_1 = state_1.keys[:]
+                other_keys_0.remove(key_0)
+                other_keys_1.remove(key_1)
+                assert len(other_keys_0) == 1 and len(other_keys_1) == 1
+
+                # set to Psi^+ state
+                combined = other_keys_0 + other_keys_1
+                self.timeline.quantum_manager.set(combined, BSM._psi_plus)
 
     def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.

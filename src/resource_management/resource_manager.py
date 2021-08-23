@@ -203,7 +203,7 @@ class ResourceManager():
         if req_dst is None:
             self.waiting_protocols.append(protocol)
             return
-        if not protocol in self.pending_protocols:
+        if protocol not in self.pending_protocols:
             self.pending_protocols.append(protocol)
         msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST, protocol=protocol,
                                      req_condition_func=req_condition_func)

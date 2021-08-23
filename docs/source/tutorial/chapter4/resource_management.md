@@ -20,7 +20,13 @@ The memory manager is used to track the current state of all quantum memories (i
 
 ### Step 1: Create custom node type
 
-We will first create a custom node type based on the `QuantumRouter` node from SeQUeNCe. Our node will need to include the memory array hardware and a resource manager, as well as some functions to handle normal operations of the node. The first function we will need to edit is the `received_message` method, similar to other tutorials. In this case we will need to add a line to handle messages for the resource manager. We will also need a method `get_idle_memories`, used by the resource manager to interact with any applications present (see tutorial 6). In our case, we can leave this method empty.
+We will first create a custom node type based on the `QuantumRouter` node from SeQUeNCe.
+Our node will need to include the memory array hardware and a resource manager, as well as some functions to handle normal operations of the node.
+The first function we will need to edit is the `received_message` method, similar to other tutorials.
+In this case we will need to add a line to handle messages for the resource manager.
+We will also need a method `get_idle_memories`, used by the resource manager to interact with any applications present (see tutorial 6).
+In our case, we can leave this method empty.
+Finally, we modify the `get` method as in previous tutorials to direct photons from the memory array.
 
 ```python
 from sequence.topology.node import Node
@@ -30,9 +36,12 @@ from sequence.resource_management.resource_manager import ResourceManager
 class RouterNode(Node):
     def __init__(self, name, tl, memo_size=50):
         super().__init__(name, tl)
-        self.memory_array = MemoryArray(name + ".MemoryArray", tl, num_memories=memo_size)
-        self.memory_array.owner = self
-        self.resource_manager = ResourceManager(self)
+        memory_array_name = name + ".MemoryArray"
+        memory_array = MemoryArray(memory_array_name, tl, num_memories=memo_size)
+        memory_array.add_receiver(self)
+        self.add_component(memory_array)
+
+        self.resource_manager = ResourceManager(self, memory_array_name)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         if msg.receiver == "resource_manager":
@@ -50,6 +59,10 @@ class RouterNode(Node):
 
     def get_idle_memory(self, info: "MemoryInfo") -> None:
         pass
+
+    def get(self, photon: "Photon", **kwargs):
+        dst = kwargs['dst']
+        self.send_qubit(dst, photon)
 ```
 
 ### Step 2: Create Rule Conditions for Flow 1
@@ -88,7 +101,8 @@ from sequence.entanglement_management.generation import EntanglementGenerationA
 def eg_rule_action_f1_1(memories_info: List["MemoryInfo"]):
     def req_func(protocols):
         for protocol in protocols:
-            if isinstance(protocol, EntanglementGenerationA) and protocol.other == "r1" and r2.memory_array.memories.index(protocol.memory) < 10:
+            memory_array = r2.get_components_by_type("MemoryArray")[0]
+            if isinstance(protocol, EntanglementGenerationA) and protocol.other == "r1" and memory_array.memories.index(protocol.memory) < 10:
                 return protocol
 
     memories = [info.memory for info in memories_info]
@@ -235,7 +249,9 @@ def add_eg_rules(index: int, path: List[RouterNode], middles: List[BSMNode]):
         def eg_rule_action(memories_info: List["MemoryInfo"]):
             def req_func(protocols):
                 for protocol in protocols:
-                    if isinstance(protocol, EntanglementGenerationA) and protocol.other == node.name and path[index+1].memory_array.memories.index(protocol.memory) in range(node_mems[index+1][0], node_mems[index+1][1]):
+                    memory_array = path[index+1].get_components_by_type("MemoryArray")[0]
+                    if isinstance(protocol, EntanglementGenerationA) and protocol.other == node.name and
+                            memory_array.memories.index(protocol.memory) in range(node_mems[index+1][0], node_mems[index+1][1]):
                         return protocol
 
             memories = [info.memory for info in memories_info]
@@ -265,7 +281,8 @@ def add_ep_rules(index: int, path: List[RouterNode], target_fidelity: float):
 
     if index > 0:
         def ep_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager"):
-            if (memory_info.index in range(mem_range[0], mem_range[1]) and memory_info.state == "ENTANGLED" and memory_info.fidelity < target_fidelity):
+            if (memory_info.index in range(mem_range[0], mem_range[1]) and memory_info.state == "ENTANGLED" and
+                    memory_info.fidelity < target_fidelity):
                 for info in manager:
                     if (info != memory_info and info.index in range(mem_range[0], mem_range[1])[:10]
                             and info.state == "ENTANGLED" and info.remote_node == memory_info.remote_node

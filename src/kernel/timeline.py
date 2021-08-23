@@ -189,7 +189,7 @@ class Timeline:
                 seconds = milliseconds / MILLISECONDS_PER_SECOND
 
                 if seconds >= SECONDS_PER_MINUTE:
-                    minute = seconds // SECONDS_PER_MINUTE
+                    minutes = seconds // SECONDS_PER_MINUTE
                     seconds %= SECONDS_PER_MINUTE
 
                     if minutes >= MINUTES_PER_HOUR:

@@ -66,7 +66,7 @@ class BeamSplitter(Entity):
             May call get method of one receiver.
         """
 
-        assert photon.encoding_type["name"] == "polarization"
+        assert photon.encoding_type["name"] == "polarization", "Beamsplitter should only be used with polarization."
 
         if random_sample() < self.fidelity:
             index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)

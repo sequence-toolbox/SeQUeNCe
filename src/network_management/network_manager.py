@@ -123,7 +123,7 @@ class NetworkManager():
             responder (str): name of node to establish entanglement with.
             start_time (int): simulation start time of entanglement.
             end_time (int): simulation end time of entanglement.
-            memory_size (int): number of entangledd memory pairs to create.
+            memory_size (int): number of entangled memory pairs to create.
             target_fidelity (float): desired fidelity of entanglement.
 
         Side Effects:

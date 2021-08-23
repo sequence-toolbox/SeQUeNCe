@@ -93,7 +93,7 @@ def test_QuantumChannel_transmit():
     tl.init()
 
     for i in range(1000):
-        photon = Photon(str(i))
+        photon = Photon(str(i), tl)
         qc.transmit(photon, sender)
         tl.time = tl.time + 1
 
