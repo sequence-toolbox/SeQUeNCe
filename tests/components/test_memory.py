@@ -1,8 +1,7 @@
-from typing import Dict
 import numpy as np
 import math
 
-from sequence.components.memory import Memory, MemoryArray, MemoryWithRandomCoherenceTime
+from sequence.components.memory import *
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
@@ -20,10 +19,26 @@ class DumbReceiver:
 class DumbParent:
     def __init__(self, memory):
         memory.attach(self)
+        memory.owner = self
+        self.tl = memory.timeline
         self.pop_log = []
+        self.photon_list = []
+        self.photon_arrival_times = []
 
     def memory_expire(self, memory):
         self.pop_log.append(memory)
+
+    def send_qubit(self, dst, photon):
+        self.photon_list.append(photon)
+        self.photon_arrival_times.append(self.tl.now())
+
+    def reset(self):
+        self.photon_list = []
+        self.photon_arrival_times = []
+
+
+def perfect_efficiency(_):
+    return 1
 
 
 def test_MemoryArray_init():
@@ -184,7 +199,138 @@ def test_Memory__schedule_expiration():
         if event.is_invalid():
             counter += 1
     assert counter == 1
-    
+
+
+def test_Absorptive_prepare():
+    PREPARE_TIME = 100
+    tl = Timeline()
+    mem = AbsorptiveMemory("mem", tl, 1, 80e6, 1, perfect_efficiency, 100, 0, 500, 0, PREPARE_TIME)
+
+    tl.init()
+    mem.prepare()
+    assert len(tl.events) == 1
+    event = tl.events.data[0]
+    assert event.time == PREPARE_TIME
+    process = event.process
+    assert process.owner is mem
+    assert process.activation == "_prepare_AFC"
+
+    tl.run()
+    assert mem.is_prepared
+
+
+def test_Absorptive_get_all_bins():
+    PERIOD = 1
+    MODE_NUM = 100
+    tl = Timeline()
+    mem = AbsorptiveMemory("mem", tl, 1, 1e12/PERIOD, 1, perfect_efficiency, MODE_NUM, 0, 500, 0, 100)
+    mem.is_prepared = True
+    tl.init()
+
+    # get first photon
+    photon = Photon("", 500)
+    mem.get(photon)
+    assert mem.absorb_start_time == 0
+    stored = mem.stored_photons[0]
+    assert stored is not None
+    assert stored["photon"] is photon
+
+    # get other photons
+    for i in range(1, MODE_NUM):
+        tl.time += PERIOD
+        photon = Photon("", 500)
+        mem.get(photon)
+        stored = mem.stored_photons[i]
+        assert stored is not None
+        assert stored["photon"] is photon
+
+    assert mem.photon_counter == MODE_NUM
+
+
+def test_Absorpive_get_skip_bins():
+    PERIOD = 1
+    tl = Timeline()
+    mem = AbsorptiveMemory("mem", tl, 1, 1e12/PERIOD, 1, perfect_efficiency, 100, 0, 500, 0, 100)
+    mem.is_prepared = True
+    tl.init()
+
+    # get first photon
+    photon = Photon("", 500)
+    mem.get(photon)
+
+    # get second after two periods
+    tl.time += 2 * PERIOD
+    photon = Photon("", 500)
+    mem.get(photon)
+    assert mem.stored_photons[1] is None
+    stored = mem.stored_photons[2]
+    assert stored is not None
+    assert stored["photon"] is photon
+
+
+def test_Absorptive_retrieve():
+    PERIOD = 1
+    MODE_NUM = 100
+    tl = Timeline()
+    mem = AbsorptiveMemory("mem", tl, 1, 1e12/PERIOD, 1, perfect_efficiency, MODE_NUM, 0, 500, 0, 100)
+    parent = DumbParent(mem)
+    mem.is_prepared = True
+    tl.init()
+
+    mem.absorb_start_time = 0
+    photons = [None] * MODE_NUM
+    for i in range(MODE_NUM):
+        photon = Photon(str(i), 500)
+        photons[i] = photon
+        mem.stored_photons[i] = {"photon": photon, "time": i}
+        mem.excited_photons.append(photon)
+
+    # retrieve photons in forward order
+    mem.retrieve()
+    assert len(tl.events) == MODE_NUM
+    tl.run()
+    assert len(parent.photon_list) == MODE_NUM
+    for i, time in enumerate(parent.photon_arrival_times):
+        assert i == time
+    for i, photon in enumerate(parent.photon_list):
+        assert photons[i] == photon
+
+    # retrieve photons in reverse order
+    mem.is_prepared = True
+    mem.is_reversed = True
+    parent.reset()
+    tl.time = 0
+    mem.retrieve()
+    assert len(tl.events) == MODE_NUM
+    tl.run()
+    assert len(parent.photon_list) == MODE_NUM
+    photon_list = parent.photon_list[:]
+    photon_list.reverse()
+    for i, time in enumerate(parent.photon_arrival_times):
+        assert i == time
+    for i, photon in enumerate(photon_list):
+        assert photons[i] == photon
+
+
+def test_Absorptive_expire():
+    tl = Timeline()
+    mem = AbsorptiveMemory("mem", tl, 1, 80e6, 1, perfect_efficiency, 100, 0, 500, 0, 100)
+    parent = DumbParent(mem)
+
+    process = Process(mem, "expire", [])
+    event = Event(1e12, process)
+    tl.schedule(event)
+    mem.expiration_event = event
+
+    mem._schedule_expiration()
+
+    counter = 0
+    for event in tl.events:
+        if event.is_invalid():
+            counter += 1
+    assert counter == 1
+
+
 def test_MemoryWithRandomCoherenceTime__schedule_expiration():
     NUM_TRIALS = 200
     coherence_period_avg = 1
