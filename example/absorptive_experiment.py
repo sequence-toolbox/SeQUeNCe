@@ -1,6 +1,5 @@
 from typing import List, Dict, Any
 
-import numpy as np
 import matplotlib.pyplot as plt
 
 from sequence.components.bsm import make_bsm
@@ -91,13 +90,6 @@ class EmitProtocol(Protocol):
         source = self.own.components[self.source_name]
         source.emit(states)
 
-        future_time = self.own.timeline.now() + self.storage_time
-        memory = self.own.components[self.memory_name]
-        # retrieve photons and send to coincidence measurement node
-        process = Process(memory, "retrieve", [self.own.meas_name])
-        event = Event(future_time, process)
-        self.own.timeline.schedule(event)
-
     def received_message(self, src: str, msg):
         pass
 
@@ -119,16 +111,18 @@ class EndNode(Node):
         spdc_name = name + ".spdc_source"
         memo_name = name + ".memory"
         spdc = SPDCSource(spdc_name, timeline, wavelengths=[TELECOM_WAVELENGTH, WAVELENGTH],
-                          frequency=FREQUENCY, encoding_type=absorptive)
+                          frequency=FREQUENCY, encoding_type=absorptive, mean_photon_num=0.2)
         memory = AbsorptiveMemory(memo_name, timeline, fidelity=0.85, frequency=FREQUENCY,
                                   absorption_efficiency=ABS_EFFICIENCY, mode_number=MODE_NUM,
                                   coherence_time=COHERENCE_TIME, wavelength=WAVELENGTH, overlap_error=OVERLAP_ERR,
-                                  efficiency=efficiency)
+                                  efficiency=efficiency, prepare_time=0, destination=measure_node)
         self.add_component(spdc)
         self.add_component(memory)
         spdc.add_receiver(self)
         spdc.add_receiver(memory)
         memory.add_receiver(self)
+
+        memory.is_prepared = True
 
         # protocols
         self.emit_protocol = EmitProtocol(self, name + ".emit_protocol", other_node,
@@ -253,10 +247,10 @@ if __name__ == "__main__":
     topo = Topology("Experiment Topo", tl)
     for node in [anl, hc, erc, erc_2]:
         topo.add_node(node)
-    topo.add_quantum_channel(anl_name, erc_name, distance=20, attenuation=0.002)
-    topo.add_quantum_channel(hc_name, erc_name, distance=20, attenuation=0.002)
-    topo.add_quantum_channel(anl_name, erc_2_name, distance=20, attenuation=0.002)
-    topo.add_quantum_channel(hc_name, erc_2_name, distance=20, attenuation=0.002)
+    topo.add_quantum_channel(anl_name, erc_name, distance=20, attenuation=0)
+    topo.add_quantum_channel(hc_name, erc_name, distance=20, attenuation=0)
+    topo.add_quantum_channel(anl_name, erc_2_name, distance=20, attenuation=0)
+    topo.add_quantum_channel(hc_name, erc_2_name, distance=20, attenuation=0)
 
     tl.init()
 
@@ -284,10 +278,11 @@ if __name__ == "__main__":
     meas_res = erc_2.get_diagonal_entries(start_time_meas, MODE_NUM, FREQUENCY)
     meas_res.reverse()  # photons emitted from memory in FILO order
 
+    num_bsm_res = sum(bsm_res)
     meas_res_valid = [m for m, b in zip(meas_res, bsm_res) if b == 1]
-    counts = [0] * 4
+    counts = [0.0] * 4
     for i in range(4):
-        counts[i] = meas_res_valid.count(i)
+        counts[i] = meas_res_valid.count(i) / num_bsm_res
 
     plt.bar(list(range(4)), counts)
     plt.yscale('log')

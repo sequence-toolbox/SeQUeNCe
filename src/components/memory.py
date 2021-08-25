@@ -402,8 +402,6 @@ class AbsorptiveMemory(Entity):
 
         # initialization of stored_photons dictionary
         self.stored_photons = [None] * self.mode_number
-        # for idx in range(self.mode_number):
-        #     self.stored_photons[idx] = None
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
