@@ -1,6 +1,6 @@
 numpy
-pandas==0.24.2
-qutip==4.6.0.dev
+pandas
+qutip>=4.6.0
 tqdm>=4.54.0
 networkx
 mpi4py

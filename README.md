@@ -18,7 +18,10 @@ Or, using the included makefile,
 ```
 $ make install
 ```
-This will install the sequence library as well as the numpy, json5, and pandas dependancies.
+This will install the sequence library as well as the numpy, json5, and pandas dependencies.
+If there is no MPI implementation installed on the current machine, the mpi4py library will not be installed.
+In this case, all sequential simulations may be run, but parallel simulations will not work.
+The mpi4py library may be installed later as described in the parallel documentation.
 
 ## Usage Examples
 Many examples of SeQUeNCe in action can be found in the example folder. These include both quantum key distribution and entanglement distribution examples.
