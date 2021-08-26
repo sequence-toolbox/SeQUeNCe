@@ -120,7 +120,7 @@ class Circuit:
                 else:
                     raise NotImplementedError
             self._cache = gate_sequence_product(qc.propagators()).full()
-            return self._cache
+
         return self._cache
 
     @validator

@@ -1,5 +1,6 @@
-"""This module defines functions to handle cached measurement of quantum states.
+"""This module defines functions and objects to manipulate quantum states.
 
+This includes cached measurement of quantum states, and certain useful operators.
 These should not be used directly, but accessed by a QuantumManager instance or by a quantum state.
 """
 
@@ -7,7 +8,14 @@ from functools import lru_cache
 from typing import Tuple
 from math import sqrt
 
-from numpy import array, kron, identity, zeros, trace, outer
+from numpy import array, kron, identity, zeros, trace, outer, eye
+
+
+a = array([[0, 1], [0, 0]])
+a_dag = array([[0, 0], [1, 0]])
+
+povm_0 = (1/2) * (kron(a_dag @ a, eye(2)) - 1j*kron(a, a_dag) + 1j*kron(a_dag, a) + kron(eye(2), a_dag @ a))
+povm_1 = (1/2) * (kron(a_dag @ a, eye(2)) + 1j*kron(a, a_dag) - 1j*kron(a_dag, a) + kron(eye(2), a_dag @ a))
 
 
 @lru_cache(maxsize=1000)

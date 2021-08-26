@@ -7,13 +7,15 @@ attached receivers (which can be any entity).
 
 from typing import TYPE_CHECKING
 
-from numpy.random import random_sample
+from numpy import trace
+from numpy.random import random_sample, choice
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from typing import List
 
 from .photon import Photon
+from ..kernel.quantum_utils import povm_0
 from ..utils.encoding import polarization
 from ..kernel.entity import Entity
 
@@ -39,8 +41,6 @@ class BeamSplitter(Entity):
         Args:
             name (str): name of the beamsplitter instance.
             timeline (Timeline): simulation timeline.
-
-        Keyword Args:
             fidelity (float): probability of transmitting a received photon (default 1).
         """
 
@@ -83,3 +83,34 @@ class BeamSplitter(Entity):
         self.basis_list = basis_list
         self.start_time = start_time
         self.frequency = frequency
+
+
+class FockBeamSplitter(Entity):
+    """WIP"""
+
+    def __init__(self, name, timeline, fidelity=1):
+        super().__init__(name, timeline)
+        self.fidelity = fidelity
+        self.most_recent_time = -1
+
+    def init(self) -> None:
+        """Implementation of Entity interface (see base class)."""
+
+        assert len(self._receivers) == 2, "BeamSplitter should only be attached to 2 outputs."
+
+    def get(self, photon, **kwargs) -> None:
+        assert photon.encoding_type["name"] == "absorptive"
+        state = self.timeline.quantum_manager.get(photon.quantum_state)
+
+        if not photon.is_null:
+            if len(state.keys) == 4:  # entangled; calculate probability of measurement
+                prob_0 = trace(state.state @ povm_0)
+
+            else:
+                if self.timeline.now() == self.most_recent_time:  # if already measured at this time, return
+                    return
+                prob_0 = 0.5
+
+            detector_num = choice([0, 1], p=[prob_0, 1-prob_0])
+            self.most_recent_time = self.timeline.now()
+            self._receivers[detector_num].get()

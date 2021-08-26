@@ -14,9 +14,10 @@ if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..components.photon import Photon
 
-from ..components.beam_splitter import BeamSplitter
+from ..components.beam_splitter import BeamSplitter, FockBeamSplitter
 from ..components.switch import Switch
 from ..components.interferometer import Interferometer
+from ..components.fiber_stretcher import FiberStretcher
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
@@ -137,7 +138,7 @@ class QSDetector(Entity, ABC):
         return self.trigger_times
 
     @abstractmethod
-    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: int) -> None:
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:
         pass
 
 
@@ -190,7 +191,7 @@ class QSDetectorPolarization(QSDetector):
         self.trigger_times = [[], []]
         return times
 
-    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: int) -> None:
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:
         self.splitter.set_basis_list(basis_list, start_time, frequency)
 
     def update_splitter_params(self, arg_name: str, value: Any) -> None:
@@ -250,8 +251,41 @@ class QSDetectorTimeBin(QSDetector):
         times, self.trigger_times = self.trigger_times, [[], [], []]
         return times
 
-    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: int) -> None:
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:
         self.switch.set_basis_list(basis_list, start_time, frequency)
 
     def update_interferometer_params(self, arg_name: str, value: Any) -> None:
         self.interferometer.__setattr__(arg_name, value)
+
+
+class QSDetectorFockInterference(QSDetector):
+    """WIP"""
+
+    def __init__(self, name: str, timeline: "Timeline"):
+        super().__init__(name, timeline)
+        self.beamsplitter = FockBeamSplitter(name + ".beamsplitter", timeline)
+        for i in range(2):
+            d = Detector(name + ".detector" + str(i), timeline)
+            self.beamsplitter.add_receiver(d)
+            self.detectors.append(d)
+            d.attach(self)
+        self.fiber_stretcher = FiberStretcher(name + ".stretcher", timeline)
+
+        self.trigger_times = [[], []]
+        self.most_recent_time = -1
+
+    def init(self):
+        pass
+
+    def get(self, photon, **kwargs):
+        pass
+
+    def set_basis_list(self, basis_list: List[float], start_time: int, frequency: float) -> None:
+        """Sets the measurement option for the interference detector.
+
+        Args:
+            basis_list (List[float]): list denoting phase setting of fiber stretcher for each period.
+            start_time (int): simulation start time to start using basis_list to set phase.
+            frequency (float): frequency with which to change the phase of the fiber stretcher.
+        """
+        pass
