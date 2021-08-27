@@ -112,8 +112,19 @@ class Photon:
         if photon.use_qm:
             qm = photon.timeline.quantum_manager
             key = photon.quantum_state
-            res = qm.run_circuit(Photon._measure_circuit, [key])
+            all_keys = qm.get(key).keys
+
+            # see if we don't need rearranging:
+            if len(all_keys) == 1 or all_keys.index(key) == 0:
+                res = qm.run_circuit(Photon._measure_circuit, [key])
+            # if we do, run bigger circuit to save time swapping
+            else:
+                circuit = Circuit(len(all_keys))
+                circuit.measure(all_keys.index(key))
+                res = qm.run_circuit(circuit, all_keys)
+
             return res[photon.quantum_state]
+
         else:
             return photon.quantum_state.measure(basis)
 
