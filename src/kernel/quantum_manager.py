@@ -129,19 +129,9 @@ class QuantumManager:
         num_qubits = int(num_qubits)
         assert num_qubits == len(keys), "Length of amplitudes should be 2 ** n, where n is the number of keys"
 
-        for key in keys:
-            if key in self.states:
-                self.remove(key)
-
     def remove(self, key: int) -> None:
         """Method to remove state stored at key."""
-
-        state = self.states[key]
-        state.valid[state.keys.index(key)] = False
-        if not any(state.valid):  # safe to remove state
-            for k in state.keys:
-                if self.states[k] is state:
-                    del self.states[k]
+        del self.states[key]
 
 
 class QuantumManagerKet(QuantumManager):
