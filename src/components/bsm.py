@@ -492,16 +492,24 @@ class AbsorptiveBSM(BSM):
 
         super().get(photon)
 
-        # check if we're in first stage. If we are and not null, send photon to random detector
-        if not photon.is_null:
+        # get other photon, set to measured state
+        key = photon.quantum_state
+        state = self.timeline.quantum_manager.get(key)
+        other_keys = state.keys[:]
+        other_keys.remove(key)
+        if photon.is_null:
+            self.timeline.quantum_manager.set(other_keys, [complex(1), complex(0)])
+        else:
             detector_num = random.choice([0, 1])
             self.detectors[detector_num].get()
+            self.timeline.quantum_manager.set(other_keys, [complex(0), complex(1)])
 
         if len(self.photons) == 2:
             null_0 = self.photons[0].is_null
             null_1 = self.photons[1].is_null
             is_valid = null_0 ^ null_1
 
+            # check if we can set to entangled Psi+ state
             if is_valid:
                 # get other photons to entangle
                 key_0 = self.photons[0].quantum_state
@@ -514,7 +522,7 @@ class AbsorptiveBSM(BSM):
                 other_keys_1.remove(key_1)
                 assert len(other_keys_0) == 1 and len(other_keys_1) == 1
 
-                # set to Psi^+ state
+                # set to Psi+ state
                 combined = other_keys_0 + other_keys_1
                 self.timeline.quantum_manager.set(combined, BSM._psi_plus)
 

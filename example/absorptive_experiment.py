@@ -19,7 +19,7 @@ from sequence.utils.encoding import absorptive
 # define constants
 FREQUENCY = 80e6
 ABS_EFFICIENCY = 1.0
-MODE_NUM = 1000
+MODE_NUM = 10
 COHERENCE_TIME = 1
 TELECOM_WAVELENGTH = 1000
 WAVELENGTH = 500

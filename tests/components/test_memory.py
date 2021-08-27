@@ -19,6 +19,7 @@ class DumbReceiver:
 class DumbParent:
     def __init__(self, memory):
         memory.attach(self)
+        memory.add_receiver(self)
         memory.owner = self
         self.tl = memory.timeline
         self.pop_log = []
@@ -28,7 +29,7 @@ class DumbParent:
     def memory_expire(self, memory):
         self.pop_log.append(memory)
 
-    def send_qubit(self, dst, photon):
+    def get(self, photon, **kwargs):
         self.photon_list.append(photon)
         self.photon_arrival_times.append(self.tl.now())
 
@@ -228,7 +229,7 @@ def test_Absorptive_get_all_bins():
     tl.init()
 
     # get first photon
-    photon = Photon("", 500)
+    photon = Photon("", tl, 500)
     mem.get(photon)
     assert mem.absorb_start_time == 0
     stored = mem.stored_photons[0]
@@ -238,7 +239,7 @@ def test_Absorptive_get_all_bins():
     # get other photons
     for i in range(1, MODE_NUM):
         tl.time += PERIOD
-        photon = Photon("", 500)
+        photon = Photon("", tl, 500)
         mem.get(photon)
         stored = mem.stored_photons[i]
         assert stored is not None
@@ -255,12 +256,12 @@ def test_Absorpive_get_skip_bins():
     tl.init()
 
     # get first photon
-    photon = Photon("", 500)
+    photon = Photon("", tl, 500)
     mem.get(photon)
 
     # get second after two periods
     tl.time += 2 * PERIOD
-    photon = Photon("", 500)
+    photon = Photon("", tl, 500)
     mem.get(photon)
     assert mem.stored_photons[1] is None
     stored = mem.stored_photons[2]
@@ -280,7 +281,7 @@ def test_Absorptive_retrieve():
     mem.absorb_start_time = 0
     photons = [None] * MODE_NUM
     for i in range(MODE_NUM):
-        photon = Photon(str(i), 500)
+        photon = Photon(str(i), tl, 500)
         photons[i] = photon
         mem.stored_photons[i] = {"photon": photon, "time": i}
         mem.excited_photons.append(photon)

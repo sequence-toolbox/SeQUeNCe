@@ -257,7 +257,6 @@ def test_single_atom_get():
 
 
 def test_absorptive_get():
-    from sequence.components.circuit import Circuit
     from sequence.components.detector import Detector
 
     class Measurer:
