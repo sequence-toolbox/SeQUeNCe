@@ -10,4 +10,8 @@ dash-cytoscape
 plotly
 json5==0.8.4
 pandas
+<<<<<<< HEAD
 qutip==4.6.2
+=======
+qutip>=4.6.0
+>>>>>>> 3bb2543d0fb2b6170ecdfa9d7a4f738f36316f38

@@ -239,7 +239,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         msg_type = msg.msg_type
 
-        log.logger.debug(self.own.name + " EG protocol received_message of type {} from node {}, round={}".format(msg.msg_type, src, self.ent_round + 1))
+        log.logger.debug(self.own.name + " EG protocol received_message of type {} from node {}, round={}".format(msg.msg_type, src, self.ent_round))
 
         if msg_type is GenerationMsgType.NEGOTIATE:
             # configure params
@@ -285,6 +285,8 @@ class EntanglementGenerationA(EntanglementProtocol):
             self.own.timeline.schedule(event)
             self.scheduled_events.append(event)
 
+            log.logger.debug(self.own.name + " scheduled emit times [{}, {}] and end time {}".format(emit_time_0, emit_time_1, end_time))
+
             # send negotiate_ack
             another_emit_time_0 = emit_time_0 + self.qc_delay - another_delay
             another_emit_time_1 = emit_time_1 + self.qc_delay - another_delay
@@ -326,6 +328,8 @@ class EntanglementGenerationA(EntanglementProtocol):
             event = Event(end_time, process)
             self.own.timeline.schedule(event)
             self.scheduled_events.append(event)
+
+            log.logger.debug(self.own.name + " scheduled emit times [{}, {}] and end time {}".format(msg.emit_time_0, msg.emit_time_1, end_time))
 
         elif msg_type is GenerationMsgType.MEAS_RES:
             res = msg.res
@@ -430,6 +434,8 @@ class EntanglementGenerationB(EntanglementProtocol):
         res = info["res"]
         time = info["time"]
         resolution = self.own.bsm.resolution
+
+        log.logger.debug(self.own.name + " measured result {} at time {} with resolution {}".format(res, time, resolution))
 
         for i, node in enumerate(self.others):
             message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES, None, res=res, time=time,

@@ -20,7 +20,7 @@ Or, using the included makefile,
 ```
 $ make install
 ```
-This will install the sequence library as well as the numpy, json5, and pandas dependancies.
+This will install the sequence library as well as the package dependencies.
 
 ## Running the GUI
 Once SeQUeNCe has been installed as described above, simply run the run.py script found in the root of the project directory

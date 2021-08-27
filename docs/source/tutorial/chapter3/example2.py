@@ -75,10 +75,9 @@ for i in range(10):
 
     pair_protocol(node1.protocols[0], node2.protocols[0])
 
+    tl.init()
     node1.protocols[0].start()
     node2.protocols[0].start()
-
-    tl.init()
     tl.run()
 
     print(node1.kept_memo.name, node1.kept_memo.entangled_memory, node1.kept_memo.fidelity)

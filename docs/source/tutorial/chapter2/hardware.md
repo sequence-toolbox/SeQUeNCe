@@ -99,11 +99,11 @@ qc = QuantumChannel("qc", tl, attenuation=0, distance=1e3)
 qc.set_ends(node1, node2)
 ```
 
-Lastly, we’ll create the counter for our detector. We only need to define an instance, and add it to the internal protocol list of the detector. When the detector properly detects a photon, it will pop a message to all connected protocols, including our custom class.
+Lastly, we’ll create the counter for our detector. We only need to define an instance, and attach it to the detector When the detector properly detects a photon, it will call the `trigger` method of all attached objects, including our counter.
 
 ```python
 counter = Counter()
-detector.upper_protocols.append(counter)
+node2.detector.attach(counter)
 ```
 
 ### Step 4: Measure Memory Once
@@ -114,7 +114,7 @@ With the network built, we are ready to schedule simulation events and run our e
 node1.memory.update_state([complex(0), complex(1)])
 ```
 
-We set the state of this single memory to a quantum state, given as a complex array of coefficients for the |&#8593;&#10217; and |&#8595;&#10217; states. Let's also change our counter slightly to record the detection time:
+We set the state of this single memory to a quantum state, given as a complex array of coefficients for the |&#8593;&#10217; and |&#8595;&#10217; states. Let's also change our counter slightly to record the detection time. This can be done by accessing the `'time'` field of the detector info:
 
 ```python
 class Counter():
@@ -122,12 +122,12 @@ class Counter():
         self.count = 0
         self.time = None
 
-    def pop(self, **kwargs) -> None:
+    def trigger(self, detector, info):
         self.count += 1
-        self.time = kwargs["time"]
+        self.time = info['time']
 ```
 
-We must also schedule an excite event for the memory. Let's put it at time 0:
+We must also schedule an excite event for the memory, which will send a photon to a connected node supplied as an argument (in this case, we'll use `"node2"`). Let's put it at time 0:
 
 ```python
 from sequence.kernel.process import Process
@@ -154,7 +154,7 @@ print("detection time: {}".format(counter.time))
 
 ### Step 5: Repeated Operation
 
-Next, let's repeatedly set the memeory to the |+&#10217; state and record detection events. To give us a clean state, we'll remove the code we wrote for step 5.
+Next, let's repeatedly set the memeory to the |+&#10217; state and record detection events. To give us a clean state, we'll remove the code we wrote for step 4.
 
 The events we wish to schedule are all for the memory. We want to first set it to a |+&#10217; state with the `update_state` method, and then excite the memory to measure emitted photons with the `excite` method. The `update_state` method will require a plus state as input. The `excite` method needs an argument for the desired destination node, so we'll supply the name of our `node2`. We’ll schedule both of these at a predetermined frequency `FREQUENCY` (given in Hz) for a set number of trials `NUM_TRIALS`.
 

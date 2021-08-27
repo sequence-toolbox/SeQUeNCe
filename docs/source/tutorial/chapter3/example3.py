@@ -91,10 +91,10 @@ for node in nodes:
 
 pair_protocol(left_node.protocols[0], mid_node.protocols[0])
 pair_protocol(right_node.protocols[0], mid_node.protocols[0])
-for node in nodes:
-    node.protocols[0].start()
 
 tl.init()
+for node in nodes:
+    node.protocols[0].start()
 tl.run()
 
 print(left_node.memo.entangled_memory)
