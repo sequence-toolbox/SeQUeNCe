@@ -100,10 +100,11 @@ class FockBeamSplitter(Entity):
 
     def get(self, photon, **kwargs) -> None:
         assert photon.encoding_type["name"] == "absorptive"
-        state = self.timeline.quantum_manager.get(photon.quantum_state)
 
         if not photon.is_null:
-            if len(state.keys) == 4:  # entangled; calculate probability of measurement
+            state = self.timeline.quantum_manager.get(photon.quantum_state)
+
+            if len(state.keys) == 4 and all(state.valid):  # entangled; calculate probability of measurement
                 prob_0 = trace(state.state @ povm_0)
 
             else:

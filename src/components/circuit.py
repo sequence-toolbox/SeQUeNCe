@@ -62,7 +62,6 @@ class Circuit:
         size (int): the number of qubits in the circuit.
         gates (List[str]): a list of commands bound to register.
         measured_qubits (List[int]): a list of indices of measured qubits.
-        _cache (np.ndarray): stores unitary matrix for future output.
     """
 
     def __init__(self, size: int):

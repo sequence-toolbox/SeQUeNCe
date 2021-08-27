@@ -28,6 +28,8 @@ class Photon:
     """
 
     _entangle_circuit = Circuit(2)
+    _measure_circuit = Circuit(1)
+    _measure_circuit.measure(0)
 
     def __init__(self, name: str, timeline: "Timeline", wavelength=0, location=None, encoding_type=polarization,
                  quantum_state=(complex(1), complex(0)), use_qm=False):
@@ -110,16 +112,8 @@ class Photon:
         if photon.use_qm:
             qm = photon.timeline.quantum_manager
             key = photon.quantum_state
-            key_list = qm.get(key).keys
-
-            # create measurement circuit
-            measure_circuit = Circuit(len(key_list))
-            measure_circuit.measure(key_list.index(key))
-
-            # run measurement circuit
-            res = qm.run_circuit(measure_circuit, key_list)
+            res = qm.run_circuit(Photon._measure_circuit, [key])
             return res[photon.quantum_state]
-
         else:
             return photon.quantum_state.measure(basis)
 

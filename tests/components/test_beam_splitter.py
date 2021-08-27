@@ -1,5 +1,5 @@
 from numpy import random
-from sequence.components.beam_splitter import BeamSplitter
+from sequence.components.beam_splitter import BeamSplitter, FockBeamSplitter
 from sequence.components.photon import Photon
 from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import polarization
@@ -22,18 +22,6 @@ class Receiver():
 
     def get(self, photon):
         self.log.append((self.timeline.now()))
-
-
-# def test_BeamSplitter_set_receiver():
-#     tl = Timeline()
-#     bs = BeamSplitter("bs", tl)
-#     receiver = Receiver(tl)
-#     bs.add_receiver(receiver)
-#     receiver = Receiver(tl)
-#     bs.add_receiver(receiver)
-#     # receiver = Receiver(tl)
-#     # with pytest.raises(Exception):
-#     #     bs.set_receiver(5, receiver)
 
 
 def test_BeamSplitter_get():
@@ -120,3 +108,7 @@ def test_BeamSplitter_get():
         else:
             false_counter += 1
     assert true_counter / basis_len - 0.5 < 0.1
+
+
+def test_FockBeamSplitter():
+    pass

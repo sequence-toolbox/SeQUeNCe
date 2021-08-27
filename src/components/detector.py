@@ -12,12 +12,12 @@ from numpy import random
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
-    from ..components.photon import Photon
 
+from ..components.photon import Photon
 from ..components.beam_splitter import BeamSplitter, FockBeamSplitter
 from ..components.switch import Switch
 from ..components.interferometer import Interferometer
-from ..components.fiber_stretcher import FiberStretcher
+from ..components.circuit import Circuit
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
@@ -258,6 +258,49 @@ class QSDetectorTimeBin(QSDetector):
         self.interferometer.__setattr__(arg_name, value)
 
 
+class QSDetectorFockDirect(QSDetector):
+    """QSDetector to directly measure photons in Fock state.
+
+    Used to calculate diagonal density matrix elements.
+
+    Attributes:
+        name (str): label for QSDetector instance.
+        timeline (Timeline): timeline for simulation.
+        src_list (List[int]):
+        detectors (List[Detector]): list of attached detectors (length 2).
+        trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
+    """
+
+    def __init__(self, name: str, timeline: "Timeline", src_list: List[str]):
+        super().__init__(name, timeline)
+        assert len(src_list) == 2
+        self.src_list = src_list
+        for i in range(2):
+            d = Detector(name + ".detector" + str(i), timeline)
+            self.detectors.append(d)
+            d.attach(self)
+        self.trigger_times = [[], []]
+
+    def init(self):
+        pass
+
+    def get(self, photon: "Photon", **kwargs):
+        src = kwargs["src"]
+        res = Photon.measure(None, photon)  # measure (0/1 determines existence of photons in encoding)
+        if res:
+            detector_num = self.src_list.index(src)
+            self.detectors[detector_num].get()
+
+    def get_trigger_times(self) -> List[List[int]]:
+        trigger_times = self.trigger_times
+        self.trigger_times = [[], []]
+        return trigger_times
+
+    # does nothing for this class
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: int) -> None:
+        pass
+
+
 class QSDetectorFockInterference(QSDetector):
     """WIP"""
 
@@ -269,7 +312,9 @@ class QSDetectorFockInterference(QSDetector):
             self.beamsplitter.add_receiver(d)
             self.detectors.append(d)
             d.attach(self)
-        self.fiber_stretcher = FiberStretcher(name + ".stretcher", timeline)
+
+        # default circuit: no phase applied
+        self._circuit = Circuit(2)
 
         self.trigger_times = [[], []]
         self.most_recent_time = -1
@@ -278,14 +323,18 @@ class QSDetectorFockInterference(QSDetector):
         pass
 
     def get(self, photon, **kwargs):
+        # check if we have non-null photon in entangled state
+        if not photon.is_null:
+            state = self.timeline.quantum_manager.get(photon.quantum_state)
+            if len(state.keys) == 4 and all(state.valid):
+                self.timeline.quantum_manager.run_circuit(self._circuit, state.keys)
+
+        self.beamsplitter.get(photon)
+
+    # does nothing for this class
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:
         pass
 
-    def set_basis_list(self, basis_list: List[float], start_time: int, frequency: float) -> None:
-        """Sets the measurement option for the interference detector.
-
-        Args:
-            basis_list (List[float]): list denoting phase setting of fiber stretcher for each period.
-            start_time (int): simulation start time to start using basis_list to set phase.
-            frequency (float): frequency with which to change the phase of the fiber stretcher.
-        """
-        pass
+    def set_phase(self, phase: float):
+        self._circuit = Circuit(2)
+        self._circuit.phase(0, phase)

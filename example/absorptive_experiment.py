@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 import matplotlib.pyplot as plt
 
 from sequence.components.bsm import make_bsm
-from sequence.components.detector import QSDetector, Detector
+from sequence.components.detector import QSDetectorFockDirect, QSDetectorFockInterference
 from sequence.components.light_source import SPDCSource
 from sequence.components.memory import AbsorptiveMemory
 from sequence.components.photon import Photon
@@ -19,7 +19,7 @@ from sequence.utils.encoding import absorptive
 # define constants
 FREQUENCY = 80e6
 ABS_EFFICIENCY = 1.0
-MODE_NUM = 10000
+MODE_NUM = 1000
 COHERENCE_TIME = 1
 TELECOM_WAVELENGTH = 1000
 WAVELENGTH = 500
@@ -30,36 +30,6 @@ DELAY_TIME = 1e6
 # for absorptive quantum memory
 def efficiency(_: int) -> float:
     return 1.0
-
-
-# hardware class to measure photons on measurement node
-class CoherenceDetector(QSDetector):
-    def __init__(self, name: str, timeline: "Timeline", src_list: List[str]):
-        super().__init__(name, timeline)
-        self.src_list = src_list
-        for i in range(2):
-            d = Detector(name + ".detector" + str(i), timeline)
-            self.detectors.append(d)
-            d.attach(self)
-
-    def init(self):
-        pass
-
-    def get(self, photon: "Photon", **kwargs):
-        src = kwargs["src"]
-        detector_num = self.src_list.index(src)
-        res = Photon.measure(None, photon)  # measure (0/1 determines existence of photons in encoding)
-        if res:
-            self.detectors[detector_num].get()
-
-    def trigger(self, detector: Detector, info: Dict[str, Any]) -> None:
-        detector_num = self.detectors.index(detector)
-        info['detector_num'] = detector_num
-        self.notify(info)
-
-    # does nothing for this class
-    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: int) -> None:
-        pass
 
 
 # protocol to control photon emission on end node
@@ -183,23 +153,21 @@ class MeasureNode(Node):
     def __init__(self, name: str, timeline: "Timeline", other_nodes: List[str]):
         super().__init__(name, timeline)
 
-        detector_name = name + ".coherence"
-        detector = CoherenceDetector(detector_name, timeline, other_nodes)
+        self.detector_name = name + ".direct"
+        detector = QSDetectorFockDirect(self.detector_name, timeline, other_nodes)
         self.add_component(detector)
         detector.attach(self)
-        self.set_first_component(detector_name)
+        self.set_first_component(self.detector_name)
 
-        self.resolution = max([d.time_resolution for d in detector.detectors])
-        self.trigger_times = [[], []]
-
+        self.resolution = max([d.time_resolution for d in detector.detectors])  # time resolution of SPDs
         self.receive_times = []
 
     def receive_qubit(self, src: str, qubit) -> None:
         self.receive_times.append(self.timeline.now())
         self.components[self.first_component_name].get(qubit, src=src)
 
-    def update(self, entity, info: Dict[str, Any]) -> None:
-        self.trigger_times[info['detector_num']].append(info['time'])
+    # def update(self, entity, info: Dict[str, Any]) -> None:
+    #     self.trigger_times[info['detector_num']].append(info['time'])
 
     def get_diagonal_entries(self, start_time: int, num_bins: int, frequency: float):
         """Computes distribution of diagonal matrix entries for density matrix.
@@ -213,15 +181,16 @@ class MeasureNode(Node):
             List[int]: list of length (duration * 1e-12 * frequency) with result for each time bin.
         """
 
+        trigger_times = self.components[self.detector_name].get_trigger_times()
         return_res = [0] * num_bins
 
-        for time in self.trigger_times[0]:
+        for time in trigger_times[0]:
             closest_bin = int(round((time - start_time) * frequency * 1e-12))
             expected_time = (float(closest_bin) * 1e12 / frequency) + start_time
             if abs(expected_time - time) < self.resolution and 0 <= closest_bin < num_bins:
                 return_res[closest_bin] += 1
 
-        for time in self.trigger_times[1]:
+        for time in trigger_times[1]:
             closest_bin = int(round((time - start_time) * frequency * 1e-12))
             expected_time = (float(closest_bin) * 1e12 / frequency) + start_time
             if abs(expected_time - time) < self.resolution and 0 <= closest_bin < num_bins:
