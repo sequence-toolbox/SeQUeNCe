@@ -258,7 +258,7 @@ class QuantumManagerDensity(QuantumManager):
         super().run_circuit(circuit, keys)
         new_state, all_keys, circ_mat = super()._prepare_circuit(circuit, keys)
 
-        new_state = circ_mat @ new_state @ circ_mat.T
+        new_state = circ_mat @ new_state @ circ_mat.conj().T
 
         if len(circuit.measured_qubits) == 0:
             # set state, return no measurement result

@@ -1,8 +1,12 @@
-from numpy import random
+from math import sqrt
+
+from numpy import random, pi
+
 from sequence.components.beam_splitter import BeamSplitter, FockBeamSplitter
 from sequence.components.photon import Photon
+from sequence.components.circuit import Circuit
 from sequence.kernel.timeline import Timeline
-from sequence.utils.encoding import polarization
+from sequence.utils.encoding import polarization, absorptive
 
 random.seed(1)
 
@@ -20,8 +24,11 @@ class Receiver():
         self.timeline = tl
         self.log = []
 
-    def get(self, photon):
+    def get(self, photon=None):
         self.log.append((self.timeline.now()))
+
+    def reset(self):
+        self.log = []
 
 
 def test_BeamSplitter_get():
@@ -110,5 +117,83 @@ def test_BeamSplitter_get():
     assert true_counter / basis_len - 0.5 < 0.1
 
 
-def test_FockBeamSplitter():
-    pass
+def test_FockBeamSplitter_get():
+    NUM_TRIALS = 1000
+    psi_minus = [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]
+
+    tl = Timeline(formalism="density_matrix")
+    rec_0 = Receiver(tl)
+    rec_1 = Receiver(tl)
+
+    bs = FockBeamSplitter("bs", tl)
+    bs.add_receiver(rec_0)
+    bs.add_receiver(rec_1)
+
+    tl.init()
+
+    # measure unentangled
+    for _ in range(NUM_TRIALS):
+        p0 = Photon("", tl, encoding_type=absorptive, use_qm=True)
+        p1 = Photon("", tl, encoding_type=absorptive, use_qm=True)
+        p0.is_null = True
+        bs.get(p0)
+        bs.get(p1)
+        tl.time += 1
+
+    assert (len(rec_0.log) / len(rec_1.log)) - 1 < 0.1
+
+    # measure entangled, no phase
+    tl.time = 0
+    rec_0.reset()
+    rec_1.reset()
+    for _ in range(NUM_TRIALS):
+        p0 = Photon("", tl, encoding_type=absorptive, use_qm=True)
+        p1 = Photon("", tl, encoding_type=absorptive, use_qm=True)
+        p0.is_null = True
+        p0.entangle(p1)
+        p0.set_state(psi_minus)
+        bs.get(p0)
+        bs.get(p1)
+        tl.time += 1
+
+    # assert (len(rec_0.log) / len(rec_1.log)) - 1 < 0.1
+
+    # measure entangled, pi/2 phase
+    tl.time = 0
+    rec_0.reset()
+    rec_1.reset()
+    circuit = Circuit(1)
+    circuit.phase(0, pi/2)
+    for _ in range(NUM_TRIALS):
+        p0 = Photon("", tl, encoding_type=absorptive, use_qm=True)
+        p1 = Photon("", tl, encoding_type=absorptive, use_qm=True)
+        p0.is_null = True
+        p0.entangle(p1)
+        p0.set_state(psi_minus)
+        tl.quantum_manager.run_circuit(circuit, [p0.quantum_state])
+
+        bs.get(p0)
+        bs.get(p1)
+        tl.time += 1
+
+    assert len(rec_1.log) == NUM_TRIALS
+
+    # measure entangled, 3pi/2 phase
+    tl.time = 0
+    rec_0.reset()
+    rec_1.reset()
+    circuit = Circuit(1)
+    circuit.phase(0, 3*pi/2)
+    for _ in range(NUM_TRIALS):
+        p0 = Photon("", tl, encoding_type=absorptive, use_qm=True)
+        p1 = Photon("", tl, encoding_type=absorptive, use_qm=True)
+        p0.is_null = True
+        p0.entangle(p1)
+        p0.set_state(psi_minus)
+        tl.quantum_manager.run_circuit(circuit, [p0.quantum_state])
+
+        bs.get(p0)
+        bs.get(p1)
+        tl.time += 1
+
+    assert len(rec_0.log) == NUM_TRIALS
