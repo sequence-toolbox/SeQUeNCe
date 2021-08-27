@@ -110,14 +110,14 @@ class Photon:
         if photon.use_qm:
             qm = photon.timeline.quantum_manager
             key = photon.quantum_state
-            key_list = qm.timeline.quantum_manager.get[key].keys
+            key_list = qm.get(key).keys
 
             # create measurement circuit
             measure_circuit = Circuit(len(key_list))
             measure_circuit.measure(key_list.index(key))
 
             # run measurement circuit
-            res = qm.run_circuit(measure_circuit, [key])
+            res = qm.run_circuit(measure_circuit, key_list)
             return res[photon.quantum_state]
 
         else:

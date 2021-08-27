@@ -37,6 +37,8 @@ class State(ABC):
         state (any): internal representation of the state, may vary by state type.
         entangled_states (List[State]): list of other entangled states, for use when no quantum manager present.
         keys (List[int]): list of keys pointing to the state, for use with a quantum manager.
+        valid (List[bool]): list denoting if corresponding key is still in scope.
+            If all keys become out of scope, will be removed from state manager.
     """
 
     def __init__(self):
@@ -45,6 +47,7 @@ class State(ABC):
         self.state = None
         self.entangled_states = []
         self.keys = []
+        self.valid = []
 
 
 class KetState(State):
@@ -67,6 +70,7 @@ class KetState(State):
 
         self.state = array(amplitudes, dtype=complex)
         self.keys = keys
+        self.valid = [True] * len(keys)
 
     def __str__(self):
         return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])
@@ -105,6 +109,7 @@ class DensityState(State):
 
         self.state = state
         self.keys = keys
+        self.valid = [True] * len(keys)
 
     def __str__(self):
         return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])
