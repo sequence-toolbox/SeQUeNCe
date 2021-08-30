@@ -140,7 +140,7 @@ def test_FockBeamSplitter_get():
         bs.get(p1)
         tl.time += 1
 
-    assert (len(rec_0.log) / len(rec_1.log)) - 1 < 0.1
+    assert abs(len(rec_0.log) / len(rec_1.log)) - 1 < 0.1
 
     # measure entangled, no phase
     tl.time = 0
@@ -156,7 +156,7 @@ def test_FockBeamSplitter_get():
         bs.get(p1)
         tl.time += 1
 
-    # assert (len(rec_0.log) / len(rec_1.log)) - 1 < 0.1
+    assert abs(len(rec_0.log) / len(rec_1.log)) - 1 < 0.1
 
     # measure entangled, pi/2 phase
     tl.time = 0

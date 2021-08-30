@@ -291,7 +291,7 @@ class QSDetectorFockDirect(QSDetector):
             detector_num = self.src_list.index(src)
             self.detectors[detector_num].get()
 
-    def get_trigger_times(self) -> List[List[int]]:
+    def get_photon_times(self) -> List[List[int]]:
         trigger_times = self.trigger_times
         self.trigger_times = [[], []]
         return trigger_times
@@ -317,19 +317,25 @@ class QSDetectorFockInterference(QSDetector):
         self._circuit = Circuit(2)
 
         self.trigger_times = [[], []]
-        self.most_recent_time = -1
 
     def init(self):
         pass
 
     def get(self, photon, **kwargs):
-        # check if we have non-null photon in entangled state
+        # check if we have non-null photon
         if not photon.is_null:
             state = self.timeline.quantum_manager.get(photon.quantum_state)
-            if len(state.keys) == 4 and all(state.valid):
+
+            # if entangled, apply phase gate
+            if len(state.keys) == 2:
                 self.timeline.quantum_manager.run_circuit(self._circuit, state.keys)
 
-        self.beamsplitter.get(photon)
+            self.beamsplitter.get(photon)
+
+    def get_photon_times(self) -> List[List[int]]:
+        trigger_times = self.trigger_times
+        self.trigger_times = [[], []]
+        return trigger_times
 
     # does nothing for this class
     def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:

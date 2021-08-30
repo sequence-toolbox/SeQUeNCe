@@ -104,14 +104,14 @@ class FockBeamSplitter(Entity):
         if not photon.is_null:
             state = self.timeline.quantum_manager.get(photon.quantum_state)
 
-            if len(state.keys) > 1:  # entangled; calculate probability of measurement
-                prob_0 = trace(state.state @ povm_0)
+            if len(state.keys) == 2:  # entangled; calculate probability of measurement
+                prob_0 = trace(state.state @ povm_0).real
                 if prob_0 > 1:
                     prob_0 = 1
                 elif prob_0 < 0:
                     prob_0 = 0
 
-            else:
+            else:  # unentangled; send to a random output
                 if self.timeline.now() == self.most_recent_time:  # if already measured right now, return (HOM effect)
                     return
                 prob_0 = 0.5
