@@ -123,7 +123,8 @@ class BSM(Entity):
     def init(self):
         """Implementation of Entity interface (see base class)."""
 
-        pass
+        self.photons = []
+        self.photon_arrival_time = -1
 
     @abstractmethod
     def get(self, photon, **kwargs):

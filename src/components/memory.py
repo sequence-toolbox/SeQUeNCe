@@ -406,7 +406,7 @@ class AbsorptiveMemory(Entity):
     def init(self):
         """Implementation of Entity interface (see base class)."""
 
-        pass
+        self.photon_counter = 0
 
     def set_memory_array(self, memory_array: MemoryArray):
         """Method to set the memory array to which the memory belongs
@@ -438,6 +438,7 @@ class AbsorptiveMemory(Entity):
             raise Exception("AFC has already been prepared")
         else:
             self.is_prepared = True
+            self.photon_counter = 0
 
     def get(self, photon: "Photon", **kwargs):
         """Method to receive a photon to store in the absorptive memory."""

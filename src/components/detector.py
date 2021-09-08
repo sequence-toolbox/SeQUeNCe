@@ -52,6 +52,8 @@ class Detector(Entity):
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
+        self.next_detection_time = -1
+        self.photon_counter = 0
         self.add_dark_count()
 
     def get(self, photon=None, **kwargs) -> None:

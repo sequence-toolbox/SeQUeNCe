@@ -1,6 +1,8 @@
 from typing import List, Dict, Any
+from pathlib import Path
 
-import matplotlib.pyplot as plt
+from json5 import dump
+import numpy as np
 
 from sequence.components.bsm import make_bsm
 from sequence.components.detector import QSDetectorFockDirect, QSDetectorFockInterference
@@ -24,7 +26,10 @@ COHERENCE_TIME = 1
 TELECOM_WAVELENGTH = 1000
 WAVELENGTH = 500
 OVERLAP_ERR = 0
-DELAY_TIME = 1e6
+
+# experiment settings
+num_direct_trials = 10
+phase_settings = np.linspace(0, 2*np.pi, num=10, endpoint=False)
 
 
 # for absorptive quantum memory
@@ -34,8 +39,7 @@ def efficiency(_: int) -> float:
 
 # protocol to control photon emission on end node
 class EmitProtocol(Protocol):
-    def __init__(self, own: "EndNode", name: str, other_node: str,
-                 num_qubits: int, storage_time: int, source_name: str, memory_name: str):
+    def __init__(self, own: "EndNode", name: str, other_node: str, num_qubits: int, source_name: str, memory_name: str):
         """Constructor for Emission protocol.
 
         Args:
@@ -43,7 +47,7 @@ class EmitProtocol(Protocol):
             name (str): name of the protocol instance.
             other_node (str): name of the other node entangling photons
             num_qubits (int): number of qubits to send in one execution.
-            storage_time (int): length of time to wait before releasing photons in local memory.
+            delay_time (int): time to wait before re-starting execution.
             source_name (str): name of the light source on the node.
             memory_name (str): name of the memory on the node.
         """
@@ -51,11 +55,12 @@ class EmitProtocol(Protocol):
         super().__init__(own, name)
         self.other_node = other_node
         self.num_qubits = num_qubits
-        self.storage_time = storage_time
         self.source_name = source_name
         self.memory_name = memory_name
 
     def start(self):
+        self.own.components[self.memory_name]._prepare_AFC()
+        
         states = [None] * self.num_qubits  # TODO: rewrite spdc class?
         source = self.own.components[self.source_name]
         source.emit(states)
@@ -70,8 +75,7 @@ class EndNode(Node):
     This node stores an SPDC photon source and a quantum memory.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", other_node: str, bsm_node: str, measure_node: str,
-                 num_qubits: int, storage_time: int):
+    def __init__(self, name: str, timeline: "Timeline", other_node: str, bsm_node: str, measure_node: str):
         super().__init__(name, timeline)
 
         self.bsm_name = bsm_node
@@ -92,11 +96,8 @@ class EndNode(Node):
         spdc.add_receiver(memory)
         memory.add_receiver(self)
 
-        memory.is_prepared = True
-
         # protocols
-        self.emit_protocol = EmitProtocol(self, name + ".emit_protocol", other_node,
-                                          num_qubits, storage_time, spdc_name, memo_name)
+        self.emit_protocol = EmitProtocol(self, name + ".emit_protocol", other_node, MODE_NUM, spdc_name, memo_name)
 
     def get(self, photon: "Photon", **kwargs):
         dst = kwargs.get("dst")
@@ -153,26 +154,31 @@ class MeasureNode(Node):
     def __init__(self, name: str, timeline: "Timeline", other_nodes: List[str]):
         super().__init__(name, timeline)
 
-        self.detector_name = name + ".direct"
-        detector = QSDetectorFockDirect(self.detector_name, timeline, other_nodes)
-        self.add_component(detector)
-        detector.attach(self)
-        self.set_first_component(self.detector_name)
+        self.direct_detector_name = name + ".direct"
+        direct_detector = QSDetectorFockDirect(self.direct_detector_name, timeline, other_nodes)
+        self.add_component(direct_detector)
+        direct_detector.attach(self)
+        self.set_first_component(self.direct_detector_name)
 
-        self.resolution = max([d.time_resolution for d in detector.detectors])  # time resolution of SPDs
-        self.receive_times = []
+        self.bs_detector_name = name + ".bs"
+        bs_detector = QSDetectorFockInterference(self.bs_detector_name, tl)
+        self.add_component(bs_detector)
+        bs_detector.add_receiver(self)
+
+        # time resolution of SPDs
+        self.resolution = max([d.time_resolution for d in direct_detector.detectors + bs_detector.detectors])
 
     def receive_qubit(self, src: str, qubit) -> None:
-        self.receive_times.append(self.timeline.now())
         self.components[self.first_component_name].get(qubit, src=src)
 
-    # def update(self, entity, info: Dict[str, Any]) -> None:
-    #     self.trigger_times[info['detector_num']].append(info['time'])
+    def set_phase(self, phase: float):
+        self.components[self.bs_detector_name].set_phase(phase)
 
-    def get_diagonal_entries(self, start_time: int, num_bins: int, frequency: float):
-        """Computes distribution of diagonal matrix entries for density matrix.
+    def get_detector_entries(self, detector_name: str, start_time: int, num_bins: int, frequency: float):
+        """Computes distribution of detection events for density matrix.
 
         Args:
+            detector_name (str): name of detector to get measurements from.
             start_time (int): simulation start time of when photons received.
             num_bins (int): number of arrival bins
             frequency (float): frequency of photon arrival (in Hz).
@@ -181,7 +187,7 @@ class MeasureNode(Node):
             List[int]: list of length (duration * 1e-12 * frequency) with result for each time bin.
         """
 
-        trigger_times = self.components[self.detector_name].get_trigger_times()
+        trigger_times = self.components[detector_name].get_photon_times()
         return_res = [0] * num_bins
 
         for time in trigger_times[0]:
@@ -200,6 +206,13 @@ class MeasureNode(Node):
 
 
 if __name__ == "__main__":
+    # open file to store experiment results
+    Path("results").mkdir(parents=True, exist_ok=True)
+    filename = "results/absorptive.json"
+    fh = open(filename, 'w')
+
+    """Run Simulation"""
+
     tl = Timeline(1e12, 'density_matrix')
     tl.seed(0)
 
@@ -208,8 +221,8 @@ if __name__ == "__main__":
     erc_name = "Eckhardt Research Center"
     erc_2_name = "Eckhardt Research Center 2"
 
-    anl = EndNode(anl_name, tl, hc_name, erc_name, erc_2_name, MODE_NUM, DELAY_TIME)
-    hc = EndNode(hc_name, tl, anl_name, erc_name, erc_2_name, MODE_NUM, DELAY_TIME)
+    anl = EndNode(anl_name, tl, hc_name, erc_name, erc_2_name)
+    hc = EndNode(hc_name, tl, anl_name, erc_name, erc_2_name)
     erc = EntangleNode(erc_name, tl)
     erc_2 = MeasureNode(erc_2_name, tl, [anl_name, hc_name])
 
@@ -223,36 +236,81 @@ if __name__ == "__main__":
 
     tl.init()
 
-    # calculate when to start protocol
+    # calculations for when to start protocol
     delay_anl = topo.nodes[anl_name].qchannels[erc_name].delay
     delay_hc = topo.nodes[hc_name].qchannels[erc_name].delay
-
     time_anl = max(delay_anl, delay_hc) - delay_anl
-    process = Process(anl.emit_protocol, "start", [])
-    event = Event(time_anl, process)
-    tl.schedule(event)
-
     time_hc = max(delay_anl, delay_hc) - delay_hc
-    process = Process(hc.emit_protocol, "start", [])
-    event = Event(time_hc, process)
-    tl.schedule(event)
 
-    tl.run()
-
-    # display metrics
+    # calculations for when to start recording measurements
     start_time_bsm = time_anl + delay_anl
-    start_time_meas = time_anl + DELAY_TIME + delay_anl
+    mem = anl.get_components_by_type("AbsorptiveMemory")[0]
+    total_time = mem.total_time
+    start_time_meas = time_anl + total_time + delay_anl
 
-    bsm_res = erc.get_valid_bins(start_time_bsm, MODE_NUM, FREQUENCY)
-    meas_res = erc_2.get_diagonal_entries(start_time_meas, MODE_NUM, FREQUENCY)
-    meas_res.reverse()  # photons emitted from memory in FILO order
+    results_direct_measurement = []
+    results_bs_measurement = []
 
-    num_bsm_res = sum(bsm_res)
-    meas_res_valid = [m for m, b in zip(meas_res, bsm_res) if b == 1]
-    counts = [0.0] * 4
-    for i in range(4):
-        counts[i] = meas_res_valid.count(i) / num_bsm_res
+    for i in range(num_direct_trials):
+        # start protocol for emitting
+        process = Process(anl.emit_protocol, "start", [])
+        event = Event(time_anl, process)
+        tl.schedule(event)
+        process = Process(hc.emit_protocol, "start", [])
+        event = Event(time_hc, process)
+        tl.schedule(event)
 
-    plt.bar(list(range(4)), counts)
-    plt.yscale('log')
-    plt.show()
+        tl.run()
+        print("finished direct measurement trial {} out of {}".format(i+1, num_direct_trials))
+
+        # collect data
+        bsm_res = erc.get_valid_bins(start_time_bsm, MODE_NUM, FREQUENCY)
+        meas_res = erc_2.get_detector_entries(erc_2.direct_detector_name, start_time_meas, MODE_NUM, FREQUENCY)
+        num_bsm_res = sum(bsm_res)
+        meas_res_valid = [m for m, b in zip(meas_res, bsm_res) if b]
+        probs = [0.0] * 4
+        for j in range(4):
+            probs[j] = meas_res_valid.count(j) / num_bsm_res
+        results_direct_measurement.append(probs)
+
+        # reset timeline
+        tl.time = 0
+        tl.init()
+
+    # change to other measurement
+    erc_2.set_first_component(erc_2.bs_detector_name)
+    for i, phase in enumerate(phase_settings):
+        erc_2.set_phase(phase)
+
+        # start protocol for emitting
+        process = Process(anl.emit_protocol, "start", [])
+        event = Event(time_anl, process)
+        tl.schedule(event)
+        process = Process(hc.emit_protocol, "start", [])
+        event = Event(time_hc, process)
+        tl.schedule(event)
+
+        tl.run()
+        print("finished interference measurement trial {} out of {}".format(i+1, len(phase_settings)))
+
+        # collect data
+        bsm_res = erc.get_valid_bins(start_time_bsm, MODE_NUM, FREQUENCY)
+        meas_res = erc_2.get_detector_entries(erc_2.bs_detector_name, start_time_meas, MODE_NUM, FREQUENCY)
+        meas_res_valid = [m for m, b in zip(meas_res, bsm_res) if b]
+        num_detector_0 = meas_res.count(1) + meas_res_valid.count(3)
+        num_detector_1 = meas_res.count(2) + meas_res_valid.count(3)
+        freqs = [num_detector_0/(total_time * 1e-12), num_detector_1/(total_time * 1e-12)]
+        results_bs_measurement.append(freqs)
+
+        # reset timeline
+        tl.time = 0
+        tl.init()
+
+    """Store results"""
+
+    info = {"direct results": results_direct_measurement, "bs results": results_bs_measurement}
+    dump(info, fh)
+
+    # plt.bar(list(range(4)), counts)
+    # plt.yscale('log')
+    # plt.show()
