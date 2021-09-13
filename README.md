@@ -20,6 +20,15 @@ $ make install
 ```
 This will install the sequence library as well as the package dependencies.
 
+## Citations
+
+Please cite this work as follows:
+
+* X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: A Customizable Discrete-Event Simulator of Quantum Networks." Quantum Science and Technology, 2021. DOI: https://doi.org/10.1088/2058-9565/ac22f6.
+
+* X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: Simulator of QUantum Network Communication.” GitHub repository, https://github.com/sequence-toolbox/SeQUeNCe, 2021.
+
+
 ## Usage Examples
 Many examples of SeQUeNCe in action can be found in the example folder. These include both quantum key distribution and entanglement distribution examples.
 
@@ -51,10 +60,3 @@ $ python utils/draw_topo.py example/starlight.json
 ```
 This script also supports a flag `-m` to visualize BSM nodes created by default on quantum links between routers.
 
-## Citations
-
-Please cite this work as follows:
-
-* X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: A Customizable Discrete-Event Simulator of Quantum Networks." Quantum Science and Technology, 2021. DOI: https://doi.org/10.1088/2058-9565/ac22f6.
-
-* X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: Simulator of QUantum Network Communication.” GitHub repository, https://github.com/sequence-toolbox/SeQUeNCe, 2021.
