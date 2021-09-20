@@ -36,11 +36,14 @@ def test_Node_send_message():
     cc0.set_ends(node1, node2)
     cc1.set_ends(node2, node1)
 
-    for i in range(10):
+    MSG_NUM = 10
+    CC_DELAY = cc0.delay
+
+    for i in range(MSG_NUM):
         node1.send_message("node2", str(i))
         tl.time += 1
 
-    for i in range(10):
+    for i in range(MSG_NUM):
         node2.send_message("node1", str(i))
         tl.time += 1
 
@@ -48,18 +51,15 @@ def test_Node_send_message():
     tl.init()
     tl.run()
 
-    expect_res = [(5000010, 'node2', '0'), (5000011, 'node2', '1'), (5000012, 'node2', '2'), (5000013, 'node2', '3'),
-                  (5000014, 'node2', '4'), (5000015, 'node2', '5'), (5000016, 'node2', '6'), (5000017, 'node2', '7'),
-                  (5000018, 'node2', '8'), (5000019, 'node2', '9')]
-
-    for actual, expect in zip(node1.log, expect_res):
+    expect_node1_log = [(CC_DELAY + MSG_NUM + i, "node2", str(i))
+                        for i in range(MSG_NUM)]
+    for actual, expect in zip(node1.log, expect_node1_log):
         assert actual == expect
 
-    expect_res = [(5000000, 'node1', '0'), (5000001, 'node1', '1'), (5000002, 'node1', '2'), (5000003, 'node1', '3'),
-                  (5000004, 'node1', '4'), (5000005, 'node1', '5'), (5000006, 'node1', '6'), (5000007, 'node1', '7'),
-                  (5000008, 'node1', '8'), (5000009, 'node1', '9')]
+    expect_node2_log = [(CC_DELAY + i, "node1", str(i))
+                        for i in range(MSG_NUM)]
 
-    for actual, expect in zip(node2.log, expect_res):
+    for actual, expect in zip(node2.log, expect_node2_log):
         assert actual == expect
 
 
