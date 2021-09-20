@@ -64,7 +64,6 @@ def test_run():
     assert timeline.now() == timeline.time == time and len(timeline.events) == _INITIAL_COUNT
 
 
-
 def test_run_with_stop_time():
     random.seed(0)
     stop_time = 5
@@ -77,7 +76,6 @@ def test_run_with_stop_time():
     assert dummy.counter == _INITIAL_COUNT
     assert timeline.now() == timeline.time < stop_time and len(timeline.events) == len(events)
     
-
 
 def test_remove_event():
     timeline, dummys, events = _set_up_test('operate', number_of_dummys=2, event_time=1)

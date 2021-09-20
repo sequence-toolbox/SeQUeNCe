@@ -46,15 +46,18 @@ def test_generation_receive_message():
     node = Node("e1", tl)
     m0 = FakeNode("m1", tl)
     qc = QuantumChannel("qc_nodem1", tl, 0, 1e3)
+    qc.frequency = 1e12
     qc.set_ends(node, m0)
-    node.memory_array = MemoryArray("", tl)
-    node.assign_cchannel(ClassicalChannel("", tl, 0, delay=1), "m1")
+    node.memory_array = MemoryArray("memory", tl)
+    node.assign_cchannel(ClassicalChannel("cc", tl, 0, delay=1), "m1")
 
-    eg = EntanglementGenerationA(node, "EG", middle="m1", other="e2", memory=node.memory_array[0])
+    eg = EntanglementGenerationA(node, "EG", middle="m1", other="e2",
+                                 memory=node.memory_array[0])
     eg.qc_delay = 1
 
     # negotiate message
-    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG", emit_time_0=0, emit_time_1=0)
+    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG",
+                                        emit_time_0=0, emit_time_1=0)
     assert eg.received_message("e2", msg) is True
     assert eg.expected_times[0] == 1
     assert len(tl.events.data) == 4  # two excites, flip state, end time
@@ -81,11 +84,13 @@ def test_generation_pop():
 
     # BSM result
     middle.bsm_update(None, {'info_type': "BSM_res", 'res': 0, 'time': 100})
-    
+
     assert len(m0.messages) == 2
     assert m0.messages[0][0] == "e0"
     assert m0.messages[1][0] == "e1"
-    assert m0.messages[0][1].msg_type == m0.messages[1][1].msg_type == GenerationMsgType.MEAS_RES
+    assert m0.messages[0][1].msg_type \
+           == m0.messages[1][1].msg_type \
+           == GenerationMsgType.MEAS_RES
 
 
 def test_generation_expire():
