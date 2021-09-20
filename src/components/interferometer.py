@@ -40,7 +40,7 @@ class Interferometer(Entity):
             phase_error (float): phase error applied to measurement (default 0).
         """
 
-        Entity.__init__(self, "", timeline)
+        Entity.__init__(self, name, timeline)
         self.path_difference = path_diff  # time difference in ps
         self.phase_error = phase_error  # chance of measurement error in phase
         self.receivers = []
