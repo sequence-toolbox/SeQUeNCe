@@ -156,7 +156,8 @@ class Timeline:
         self.events.update_event_time(event, time)
 
     def remove_entity_by_name(self, name: str) -> None:
-        self.entities.pop(name)
+        entity = self.entities.pop(name)
+        entity.timeline = None
 
     def get_entity_by_name(self, name: str) -> Optional["Entity"]:
         if name in self.entities:
