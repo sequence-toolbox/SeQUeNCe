@@ -17,7 +17,10 @@ if TYPE_CHECKING:
 
 from .eventlist import EventList
 from ..utils import log
-from .quantum_manager import QuantumManagerKet, QuantumManagerDensity
+from .quantum_manager import (QuantumManagerKet,
+                              QuantumManagerDensity,
+                              KET_STATE_FORMALISM,
+                              DENSITY_MATRIX_FORMALISM)
 
 CARRIAGE_RETURN = '\r'
 SLEEP_SECONDS = 3
@@ -53,7 +56,7 @@ class Timeline:
         quantum_manager (QuantumManager): quantum state manager.
     """
 
-    def __init__(self, stop_time=inf, formalism='ket_vector'):
+    def __init__(self, stop_time=inf, formalism=KET_STATE_FORMALISM):
         """Constructor for timeline.
 
         Args:
@@ -67,10 +70,10 @@ class Timeline:
         self.run_counter = 0
         self.is_running = False
         self.show_progress = False
-        
-        if formalism == 'ket_vector':
+
+        if formalism == KET_STATE_FORMALISM:
             self.quantum_manager = QuantumManagerKet()
-        elif formalism == 'density_matrix':
+        elif formalism == DENSITY_MATRIX_FORMALISM:
             self.quantum_manager = QuantumManagerDensity()
         else:
             raise ValueError(f"Invalid formalism {formalism}")
