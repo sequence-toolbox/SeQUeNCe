@@ -19,6 +19,9 @@ from numpy.random import random_sample, choice
 
 from .quantum_utils import *
 
+KET_STATE_FORMALISM = "ket_vector"
+DENSITY_MATRIX_FORMALISM = "density_matrix"
+
 
 class QuantumManager():
     """Class to track and manage quantum states (abstract).
