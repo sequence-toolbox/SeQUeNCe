@@ -5,6 +5,8 @@ This module defines the Entity class, inherited by all physical simulation eleme
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict
+from numpy.random import default_rng
+from numpy.random._generator import Generator
 
 if TYPE_CHECKING:
     from .timeline import Timeline
@@ -20,7 +22,7 @@ class Entity(ABC):
         _observer (List): a list of observers for the entity.
     """
 
-    def __init__(self, name: str, timeline: "Timeline"):
+    def __init__(self, name: str, timeline: "Timeline") -> None:
         """Constructor for entity class.
 
         Args:
@@ -39,7 +41,7 @@ class Entity(ABC):
         timeline.entities[name] = self
 
     @abstractmethod
-    def init(self):
+    def init(self) -> None:
         """Method to initialize entity (abstract).
 
         Entity `init` methods are invoked for all timeline entities when the timeline is initialized.
@@ -48,27 +50,36 @@ class Entity(ABC):
 
         pass
 
-    def attach(self, observer: Any):
+    def attach(self, observer: Any) -> None:
         """Method to add an ovserver (to receive hardware updates)."""
 
         if not observer in self._observers:
             self._observers.append(observer)
 
-    def detach(self, observer: Any):
+    def detach(self, observer: Any) -> None:
         """Method to remove an observer."""
 
         self._observers.remove(observer)
 
-    def notify(self, info: Dict[str, Any]):
+    def notify(self, info: Dict[str, Any]) -> None:
         """Method to notify all attached observers of an update."""
 
         for observer in self._observers:
             observer.update(self, info)
 
-    def remove_from_timeline(self):
+    def remove_from_timeline(self) -> None:
         """Method to remove entity from attached timeline.
 
         This is to allow unused entities to be garbage collected.
         """
-
         self.timeline.remove_entity_by_name(self.name)
+
+    def get_generator(self) -> Generator:
+        """Method to get random generator of parent node.
+
+        If entity is not attached to a node, return default generator.
+        """
+        if hasattr(self.owner, "generator"):
+            return self.owner.get_generator()
+        else:
+            return default_rng()
