@@ -9,7 +9,7 @@ from datetime import timedelta
 from math import inf
 from sys import stdout
 from time import time_ns, sleep
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from numpy import random
 
@@ -18,7 +18,10 @@ if TYPE_CHECKING:
 
 from .eventlist import EventList
 from ..utils import log
-from .quantum_manager import QuantumManagerKet, QuantumManagerDensity
+from .quantum_manager import (QuantumManagerKet,
+                              QuantumManagerDensity,
+                              KET_STATE_FORMALISM,
+                              DENSITY_MATRIX_FORMALISM)
 
 CARRIAGE_RETURN = '\r'
 SLEEP_SECONDS = 3
@@ -54,24 +57,24 @@ class Timeline:
         quantum_manager (QuantumManager): quantum state manager.
     """
 
-    def __init__(self, stop_time=inf, formalism='ket_vector'):
+    def __init__(self, stop_time=inf, formalism=KET_STATE_FORMALISM):
         """Constructor for timeline.
 
         Args:
             stop_time (int): stop time (in ps) of simulation (default inf).
         """
         self.events = EventList()
-        self.entities = []
+        self.entities = {}
         self.time = 0
         self.stop_time = stop_time
         self.schedule_counter = 0
         self.run_counter = 0
         self.is_running = False
         self.show_progress = False
-        
-        if formalism == 'ket_vector':
+
+        if formalism == KET_STATE_FORMALISM:
             self.quantum_manager = QuantumManagerKet()
-        elif formalism == 'density_matrix':
+        elif formalism == DENSITY_MATRIX_FORMALISM:
             self.quantum_manager = QuantumManagerDensity()
         else:
             raise ValueError(f"Invalid formalism {formalism}")
@@ -91,7 +94,7 @@ class Timeline:
         """Method to initialize all simulated entities."""
         log.logger.info("Timeline initial network")
 
-        for entity in self.entities:
+        for entity in self.entities.values():
             entity.init()
 
     def run(self) -> None:
@@ -155,6 +158,16 @@ class Timeline:
         """
 
         self.events.update_event_time(event, time)
+
+    def remove_entity_by_name(self, name: str) -> None:
+        entity = self.entities.pop(name)
+        entity.timeline = None
+
+    def get_entity_by_name(self, name: str) -> Optional["Entity"]:
+        if name in self.entities:
+            return self.entities[name]
+        else:
+            return None
 
     def seed(self, seed: int) -> None:
         """Sets random seed for simulation."""

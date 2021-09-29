@@ -27,12 +27,16 @@ def test_construct_func():
 
     # unknown encoding scheme
     with pytest.raises(Exception):
-        bsm = make_bsm("bsm", tl, encoding_type="unknown", detectors=detectors4)
+        bsm = make_bsm("bsm", tl, encoding_type="unknown",
+                       detectors=detectors4)
 
     # implemented encoding schemes
-    polar_bsm = make_bsm("bsm", tl, encoding_type="polarization", detectors=detectors4)
-    time_bin_bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors2)
-    atom_bsm = make_bsm("bsm", tl, encoding_type="single_atom", detectors=detectors2)
+    polar_bsm = make_bsm("bsm1", tl, encoding_type="polarization",
+                         detectors=detectors4)
+    time_bin_bsm = make_bsm("bsm2", tl, encoding_type="time_bin",
+                            detectors=detectors2)
+    atom_bsm = make_bsm("bsm3", tl, encoding_type="single_atom",
+                        detectors=detectors2)
 
     assert type(polar_bsm) == PolarizationBSM
     assert type(time_bin_bsm) == TimeBinBSM
