@@ -37,7 +37,8 @@ class Entity(ABC):
         self.timeline = timeline
         self.owner = None
         self._observers = []
-        timeline.entities.append(self)
+        assert not name in timeline.entities
+        timeline.entities[name] = self
 
     @abstractmethod
     def init(self) -> None:
@@ -71,8 +72,7 @@ class Entity(ABC):
 
         This is to allow unused entities to be garbage collected.
         """
-
-        self.timeline.entities.remove(self)
+        self.timeline.remove_entity_by_name(self.name)
 
     def get_generator(self) -> Generator:
         """Method to get random generator of parent node.
