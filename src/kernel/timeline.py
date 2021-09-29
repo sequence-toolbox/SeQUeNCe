@@ -8,7 +8,7 @@ from _thread import start_new_thread
 from math import inf
 from sys import stdout
 from time import time_ns, sleep
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from numpy import random
 
@@ -63,7 +63,7 @@ class Timeline:
             stop_time (int): stop time (in ps) of simulation (default inf).
         """
         self.events = EventList()
-        self.entities = []
+        self.entities = {}
         self.time = 0
         self.stop_time = stop_time
         self.schedule_counter = 0
@@ -93,7 +93,7 @@ class Timeline:
         """Method to initialize all simulated entities."""
         log.logger.info("Timeline initial network")
 
-        for entity in self.entities:
+        for entity in self.entities.values():
             entity.init()
 
     def run(self) -> None:
@@ -157,6 +157,16 @@ class Timeline:
         """
 
         self.events.update_event_time(event, time)
+
+    def remove_entity_by_name(self, name: str) -> None:
+        entity = self.entities.pop(name)
+        entity.timeline = None
+
+    def get_entity_by_name(self, name: str) -> Optional["Entity"]:
+        if name in self.entities:
+            return self.entities[name]
+        else:
+            return None
 
     def seed(self, seed: int) -> None:
         """Sets random seed for simulation."""

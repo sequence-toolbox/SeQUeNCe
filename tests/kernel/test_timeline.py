@@ -64,7 +64,6 @@ def test_run():
     assert timeline.now() == timeline.time == time and len(timeline.events) == _INITIAL_COUNT
 
 
-
 def test_run_with_stop_time():
     random.seed(0)
     stop_time = 5
@@ -77,7 +76,6 @@ def test_run_with_stop_time():
     assert dummy.counter == _INITIAL_COUNT
     assert timeline.now() == timeline.time < stop_time and len(timeline.events) == len(events)
     
-
 
 def test_remove_event():
     timeline, dummys, events = _set_up_test('operate', number_of_dummys=2, event_time=1)
@@ -99,3 +97,20 @@ def test_update_event_time():
     timeline.run()
 
     assert dummys[0].click_time == 10 and dummys[1].click_time == 20
+
+
+def test_remove_entity_by_name():
+    tl = Timeline()
+    e1 = Dummy("e1", tl)
+    assert "e1" in tl.entities
+    assert e1.timeline == tl
+    tl.remove_entity_by_name("e1")
+    assert not "e1" in tl.entities
+    assert e1.timeline is None
+
+
+def test_get_entity_by_name():
+    tl = Timeline()
+    e1 = Dummy("e1", tl)
+    assert tl.get_entity_by_name("e1") == e1
+    assert tl.get_entity_by_name("e2") is None
