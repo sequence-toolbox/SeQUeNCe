@@ -27,6 +27,6 @@ def test_get_generator():
     rng = default_rng()
     owner = FakeOwner()
     owner.generator = rng
-    foo = Foo("foo", tl)
+    foo = Foo("foo2", tl)
     foo.owner = owner
     assert foo.get_generator() == rng
