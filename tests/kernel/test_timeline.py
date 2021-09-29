@@ -99,6 +99,18 @@ def test_update_event_time():
     assert dummys[0].click_time == 10 and dummys[1].click_time == 20
 
 
+def test_ns_to_human_time():
+    tl = Timeline()
+    ten_hours = int(10 * 3600e9)
+    assert tl.ns_to_human_time(ten_hours) == "10:00:00"
+    ten_minutes = int(600e9)
+    assert tl.ns_to_human_time(ten_minutes) == "0:10:00"
+    ten_seconds = int(1e10)
+    assert tl.ns_to_human_time(ten_seconds) == "0:00:10"
+    ten_ms = int(1e7)
+    assert tl.ns_to_human_time(ten_ms) == "0:00:00.010000"
+
+
 def test_remove_entity_by_name():
     tl = Timeline()
     e1 = Dummy("e1", tl)
