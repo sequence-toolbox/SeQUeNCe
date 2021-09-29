@@ -301,11 +301,13 @@ def test_ResourceReservationProtocol_set_es_params():
     mids = []
     for i in range(5):
         router = TestNode("r%d" % i, tl)
+        router.set_seed(i)
         router.rsvp.set_swapping_success_rate(0.8)
         router.rsvp.set_swapping_degradation(0.7)
         routers.append(router)
     for i in range(4):
         mid = BSMNode("mid%d" % i, tl, [routers[i].name, routers[i + 1].name])
+        mid.set_seed(i + 5)
         mids.append(mid)
     for i in range(4):
         qc = QuantumChannel("qc_l_%d" % i, tl, 0, 100)
@@ -323,7 +325,7 @@ def test_ResourceReservationProtocol_set_es_params():
     tl.init()
 
     path = [r.name for r in routers]
-    reservation = Reservation("r0", "r4", 1, 9000000, 10, 0.9)
+    reservation = Reservation("r0", "r4", 1, 20000000, 10, 0.9)
     for node in [routers[0], routers[-1]]:
         for i, card in enumerate(node.rsvp.timecards):
             if i >= 10:
