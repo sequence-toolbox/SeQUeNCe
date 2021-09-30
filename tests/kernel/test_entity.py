@@ -30,3 +30,19 @@ def test_get_generator():
     foo = Foo("foo2", tl)
     foo.owner = owner
     assert foo.get_generator() == rng
+
+
+def test_change_timeline():
+    tl1 = Timeline()
+    tl2 = Timeline()
+
+    ENTITY_NAME = "foo"
+    foo = Foo(ENTITY_NAME, tl1)
+    assert foo.timeline == tl1
+    assert tl1.get_entity_by_name(ENTITY_NAME) == foo
+    assert tl2.get_entity_by_name(ENTITY_NAME) is None
+
+    foo.change_timeline(tl2)
+    assert foo.timeline == tl2
+    assert tl1.get_entity_by_name(ENTITY_NAME) is None
+    assert tl2.get_entity_by_name(ENTITY_NAME) == foo
