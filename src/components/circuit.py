@@ -4,12 +4,14 @@ This module introduces the QuantumCircuit class. The qutip library is used to ca
 """
 
 from math import e, pi
-from typing import List
+from typing import List, Dict, Union, Optional
 
 import numpy as np
 from qutip.qip.circuit import QubitCircuit
 from qutip.qip.operations import gate_sequence_product
 from qutip import Qobj
+
+GATE_INFO_TYPE = List[Union[str, List[int]]]
 
 
 def x_gate():
@@ -59,23 +61,23 @@ class Circuit():
 
     Attributes:
         size (int): the number of qubits in the circuit.
-        gates (List[str]): a list of commands bound to register.
+        gates (List[List[Union[str, List[int]]]]): a list of commands bound to register.
         measured_qubits (List[int]): a list of indices of measured qubits.
     """
 
-    def __init__(self, size: int):
+    def __init__(self, size: int) -> None:
         """Constructor for quantum circuit.
 
         Args:
             size (int): the number of qubits used in circuit.
         """
-        
-        self.size = size
-        self.gates = []
-        self.measured_qubits = []
-        self._cache = None
 
-    def get_unitary_matrix(self) -> "np.ndarray":
+        self.size: int = size
+        self.gates: List[GATE_INFO_TYPE] = []
+        self.measured_qubits: List[int] = []
+        self._cache: Optional[np.ndarray] = None
+
+    def get_unitary_matrix(self) -> np.ndarray:
         """Method to get unitary matrix of circuit without measurement.
 
         Returns:
@@ -118,6 +120,21 @@ class Circuit():
             self._cache = gate_sequence_product(qc.propagators()).full()
             return self._cache
         return self._cache
+
+    def serialize(self) -> Dict:
+        gates = [{"name": g_name, "indices": indices}
+                 for g_name, indices in self.gates]
+        return {"size": self.size, "gates": gates,
+                "measured_qubits": self.measured_qubits}
+
+    def deserialize(self, json_data: Dict):
+        self.size = json_data["size"]
+        for gate in json_data["gates"]:
+            name: str = gate["name"]
+            indices: List[int] = gate["indices"]
+            self.gates.append([name, indices])
+        self.measured_qubits = json_data["measured_qubits"]
+        self._cache = None
 
     @validator
     def h(self, qubit: int):
