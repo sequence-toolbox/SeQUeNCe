@@ -1,9 +1,6 @@
-from numpy import random
 from sequence.components.optical_channel import *
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
-
-random.seed(1)
 
 
 def test_ClassicalChannel_set_ends():
@@ -75,7 +72,6 @@ def test_QuantumChannel_set_ends():
 
 def test_QuantumChannel_transmit():
     from sequence.components.photon import Photon
-    random.seed(1)
 
     class FakeNode(Node):
         def __init__(self, name, tl):
