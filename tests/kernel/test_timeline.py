@@ -126,3 +126,23 @@ def test_get_entity_by_name():
     e1 = Dummy("e1", tl)
     assert tl.get_entity_by_name("e1") == e1
     assert tl.get_entity_by_name("e2") is None
+
+
+def test_schedule():
+    ENTITY_NAME = "dummy"
+    SCHEDULE_NUM = 100
+
+    tl = Timeline()
+    e1 = Dummy(ENTITY_NAME, tl)
+
+    for i in range(SCHEDULE_NUM):
+        if i % 2:
+            # schedule event by entity object
+            tl.schedule(Event(0, Process(e1, "operate", [])))
+        else:
+            # schedule event by entity name
+            tl.schedule(Event(0, Process(ENTITY_NAME, "operate", [])))
+    assert tl.schedule_counter == SCHEDULE_NUM
+    tl.init()
+    tl.run()
+    assert tl.run_counter == SCHEDULE_NUM == e1.counter
