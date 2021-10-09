@@ -64,7 +64,7 @@ def _set_memory_with_fidelity(memories: List["Memory"], desired_state):
 
     else:
         raise Exception(
-            "Invalid quantum manager with formalism {}".format(qm.formalism))
+            "Invalid quantum manager of type {}".format(type(qm)))
 
 
 class BSM(Entity):

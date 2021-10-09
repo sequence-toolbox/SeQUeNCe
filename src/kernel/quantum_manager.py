@@ -15,6 +15,7 @@ from qutip.qip.operations import gate_sequence_product
 from numpy import log2, outer
 
 from .quantum_utils import *
+from ..components.circuit import Circuit
 
 KET_STATE_FORMALISM = "ket_vector"
 DENSITY_MATRIX_FORMALISM = "density_matrix"
@@ -57,7 +58,7 @@ class QuantumManager():
         return self.states[key]
 
     @abstractmethod
-    def run_circuit(self, circuit: "Circuit", keys: List[int],
+    def run_circuit(self, circuit: Circuit, keys: List[int],
                     meas_samp=None) -> int:
         """Method to run a circuit on a given set of quantum states.
 
@@ -74,7 +75,7 @@ class QuantumManager():
         if len(circuit.measured_qubits) > 0:
             assert meas_samp, "must specify random sample when measuring qubits"
 
-    def _prepare_circuit(self, circuit: "Circuit", keys: List[int]):
+    def _prepare_circuit(self, circuit: Circuit, keys: List[int]):
         old_states = []
         all_keys = []
 
@@ -150,7 +151,7 @@ class QuantumManagerKet(QuantumManager):
         self.states[key] = KetState(state, [key])
         return key
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int],
+    def run_circuit(self, circuit: Circuit, keys: List[int],
                     meas_samp=None) -> Dict[int, int]:
         super().run_circuit(circuit, keys, meas_samp)
         new_state, all_keys, circ_mat = self._prepare_circuit(circuit, keys)
@@ -271,7 +272,7 @@ class QuantumManagerDensity(QuantumManager):
         self.states[key] = DensityState(state, [key])
         return key
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int],
+    def run_circuit(self, circuit: Circuit, keys: List[int],
                     meas_samp=None) -> Dict[int, int]:
         super().run_circuit(circuit, keys, meas_samp)
         new_state, all_keys, circ_mat = super()._prepare_circuit(circuit, keys)
