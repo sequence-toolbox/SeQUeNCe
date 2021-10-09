@@ -3,6 +3,7 @@
 This module defines the Photon class for tracking individual photons.
 Photons may be encoded directly with polarization or time bin schemes, or may herald the encoded state of single atom memories.
 """
+from numpy.random._generator import Generator
 
 from ..utils.encoding import polarization
 from ..utils.quantum_state import QuantumState
@@ -48,16 +49,16 @@ class Photon():
 
         self.quantum_state.entangle(photon.quantum_state)
 
-    def random_noise(self):
+    def random_noise(self, rng: Generator):
         """Method to add random noise to photon's state (see `QuantumState` module)."""
 
-        self.quantum_state.random_noise()
+        self.quantum_state.random_noise(rng)
 
     def set_state(self, state):
         self.quantum_state.set_state(state)
 
     @staticmethod
-    def measure(basis, photon):
+    def measure(basis, photon, rng: Generator):
         """Method to measure a photon (see `QuantumState` module).
 
         Args:
@@ -68,10 +69,10 @@ class Photon():
             int: 0/1 value giving result of measurement in given basis.
         """
 
-        return photon.quantum_state.measure(basis)
+        return photon.quantum_state.measure(basis, rng)
 
     @staticmethod
-    def measure_multiple(basis, photons):
+    def measure_multiple(basis, photons, rng: Generator):
         """Method to measure 2 entangled photons (see `QuantumState` module).
 
         Args:
@@ -82,4 +83,6 @@ class Photon():
             int: 0-3 value giving the result of measurement in given basis.
         """
 
-        return QuantumState.measure_multiple(basis, [photons[0].quantum_state, photons[1].quantum_state])
+        return QuantumState.measure_multiple(basis, [photons[0].quantum_state,
+                                                     photons[1].quantum_state],
+                                             rng)

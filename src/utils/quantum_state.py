@@ -8,7 +8,7 @@ from math import sqrt
 from typing import Tuple
 
 from numpy import pi, cos, sin, array, outer, kron, identity, arange
-from numpy.random import random, random_sample, choice
+from numpy.random import Generator
 
 
 def swap_bits(num, pos1, pos2):
@@ -28,6 +28,8 @@ class QuantumState():
     """Class to manage a quantum state.
 
     Tracks quantum state coefficients (in Z-basis) and entangled states.
+    Functions related to the randomness uses the provided pseudo random number
+    generator (PRNG) to generate random numbers for a reproducible simulation.
 
     Attributes:
         state (Tuple[complex]): list of complex coefficients in Z-basis.
@@ -57,7 +59,7 @@ class QuantumState():
             quantum_state.entangled_states = entangled_states
             quantum_state.state = new_state
 
-    def random_noise(self):
+    def random_noise(self, rng: Generator):
         """Method to add random noise to a single state.
 
         Chooses a random angle to set the quantum state to (with no phase difference).
@@ -67,7 +69,7 @@ class QuantumState():
         """
 
         # TODO: rewrite for entangled states
-        angle = random() * 2 * pi
+        angle = rng.random() * 2 * pi
         self.state = (complex(cos(angle)), complex(sin(angle)))
 
     # only for use with entangled state
@@ -103,7 +105,7 @@ class QuantumState():
         self.entangled_states = [self]
         self.state = state
 
-    def measure(self, basis: Tuple[Tuple[complex]]) -> int:
+    def measure(self, basis: Tuple[Tuple[complex]], rng: Generator) -> int:
         """Method to measure a single quantum state.
 
         Args:
@@ -121,7 +123,7 @@ class QuantumState():
             num_states = len(self.entangled_states)
             state_index = self.entangled_states.index(self)
             state0, state1, prob = _measure_entangled_state_with_cache(self.state, basis, state_index, num_states)
-            if random_sample() < prob:
+            if rng.random() < prob:
                 new_state = state0
                 result = 0
             else:
@@ -132,7 +134,7 @@ class QuantumState():
         # handle unentangled case
         else:
             prob = _measure_state_with_cache(self.state, basis)
-            if random_sample() < prob:
+            if rng.random() < prob:
                 new_state = basis[0]
                 result = 0
             else:
@@ -148,7 +150,7 @@ class QuantumState():
         return result
 
     @staticmethod
-    def measure_multiple(basis, states):
+    def measure_multiple(basis, states, rng: Generator):
         """Method to measure multiple qubits in a more complex basis.
 
         May be used for bell state measurement.
@@ -196,7 +198,7 @@ class QuantumState():
 
         possible_results = arange(0, basis_dimension, 1)
         # result gives index of the basis vector that will be projected to
-        res = choice(possible_results, p=probabilities)
+        res = rng.choice(possible_results, p=probabilities)
         # project to new state, then reassign quantum state and entangled photons
         new_state = new_states[res]
         for state in entangled_list:

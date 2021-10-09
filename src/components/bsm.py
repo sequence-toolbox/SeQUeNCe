@@ -117,8 +117,8 @@ class BSM(Entity):
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
-
-        pass
+        for detector in self.detectors:
+            detector.owner = self.owner
 
     @abstractmethod
     def get(self, photon):
@@ -205,7 +205,8 @@ class PolarizationBSM(BSM):
         self.photons[0].entangle(self.photons[1])
 
         # measure in bell basis
-        res = Photon.measure_multiple(self.bell_basis, self.photons)
+        res = Photon.measure_multiple(self.bell_basis, self.photons,
+                                      self.get_generator())
 
         # check if we've measured as Phi+ or Phi-; these cannot be measured by the BSM
         if res == 0 or res == 1:
@@ -214,14 +215,14 @@ class PolarizationBSM(BSM):
         # measured as Psi+
         # photon detected in corresponding detectors
         if res == 2:
-            detector_num = random.choice([0, 2])
+            detector_num = self.get_generator().choice([0, 2])
             self.detectors[detector_num].get()
             self.detectors[detector_num + 1].get()
 
         # measured as Psi-
         # photon detected in opposite detectors
         elif res == 3:
-            detector_num = random.choice([0, 2])
+            detector_num = self.get_generator().choice([0, 2])
             self.detectors[detector_num].get()
             self.detectors[3 - detector_num].get()
 
@@ -298,13 +299,14 @@ class TimeBinBSM(BSM):
         if len(self.photons) != 2:
             return
 
-        if random.random_sample() < self.phase_error:
+        if self.get_generator().random() < self.phase_error:
             self.photons[1].apply_phase_error()
         # entangle photons to measure
         self.photons[0].entangle(self.photons[1])
 
         # measure in bell basis
-        res = Photon.measure_multiple(self.bell_basis, self.photons)
+        res = Photon.measure_multiple(self.bell_basis, self.photons,
+                                      self.get_generator())
 
         # check if we've measured as Phi+ or Phi-; these cannot be measured by the BSM
         if res == 0 or res == 1:
@@ -316,7 +318,7 @@ class TimeBinBSM(BSM):
         # measured as Psi+
         # send both photons to the same detector at the early and late time
         if res == 2:
-            detector_num = random.choice([0, 1])
+            detector_num = self.get_generator().choice([0, 1])
 
             process = Process(self.detectors[detector_num], "get", [])
             event = Event(int(round(early_time)), process)
@@ -328,7 +330,7 @@ class TimeBinBSM(BSM):
         # measured as Psi-
         # send photons to different detectors at the early and late time
         elif res == 3:
-            detector_num = random.choice([0, 1])
+            detector_num = self.get_generator().choice([0, 1])
 
             process = Process(self.detectors[detector_num], "get", [])
             event = Event(int(round(early_time)), process)
@@ -412,7 +414,7 @@ class SingleAtomBSM(BSM):
 
         # check if we're in first stage. If we are and not null, send photon to random detector
         if not photon.is_null:
-            detector_num = random.choice([0, 1])
+            detector_num = self.get_generator().choice([0, 1])
             memory.previous_bsm = detector_num
             self.detectors[detector_num].get()
 

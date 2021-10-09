@@ -8,8 +8,6 @@ QSDetector is defined as an abstract template and as implementaions for polariza
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict
 
-from numpy import random
-
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..components.photon import Photon
@@ -69,9 +67,11 @@ class Detector(Entity):
         now = self.timeline.now()
         time = round(now / self.time_resolution) * self.time_resolution
 
-        if (random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
+        if (
+                self.get_generator().random() < self.efficiency or dark_get) and now > self.next_detection_time:
             self.notify({'time': time})
-            self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
+            self.next_detection_time = now + (
+                        1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self) -> None:
         """Method to schedule false positive detection events.
@@ -84,7 +84,8 @@ class Detector(Entity):
         """
 
         if self.dark_count > 0:
-            time_to_next = int(random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
+            time_to_next = int(self.get_generator().exponential(
+                1 / self.dark_count) * 1e12)  # time to next dark count
             time = time_to_next + self.timeline.now()  # time of next dark count
 
             process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
@@ -225,7 +226,9 @@ class QSDetectorTimeBin(QSDetector):
     def init(self):
         """Implementation of Entity interface (see base class)."""
 
-        pass
+        self.interferometer.owner = self.owner
+        for d in self.detectors:
+            d.owner = self.owner
 
     def get(self, photon):
         """Method to receive a photon for measurement.

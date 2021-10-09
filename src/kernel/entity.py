@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 
 class Entity(ABC):
     """Abstract Entity class.
+    Entity should use the provided pseudo random number generator (PRNG) to
+    produce reproducible random numbers. As a result, simulations with the same
+    seed could reproduce identical results. Function "get_generator" allows to
+    get the PRNG.
 
     Attributes:
         name (str): name of the entity.
