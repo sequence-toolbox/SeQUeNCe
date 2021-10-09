@@ -29,16 +29,11 @@ class Entity(ABC):
             name (str): name of entity.
             timeline (Timeline): timeline for simulation.
         """
-
-        if name is None:
-            self.name = ""
-        else:
-            self.name = name
+        self.name = "" if name is None else name
         self.timeline = timeline
         self.owner = None
         self._observers = []
-        assert not name in timeline.entities
-        timeline.entities[name] = self
+        timeline.add_entity(self)
 
     @abstractmethod
     def init(self) -> None:
@@ -83,3 +78,8 @@ class Entity(ABC):
             return self.owner.get_generator()
         else:
             return default_rng()
+
+    def change_timeline(self, timeline: "Timeline"):
+        self.remove_from_timeline()
+        self.timeline = timeline
+        self.timeline.add_entity(self)

@@ -15,6 +15,7 @@ from numpy import random
 
 if TYPE_CHECKING:
     from .event import Event
+    from .entity import Entity
 
 from .eventlist import EventList
 from ..utils import log
@@ -159,15 +160,17 @@ class Timeline:
 
         self.events.update_event_time(event, time)
 
+    def add_entity(self, entity: "Entity") -> None:
+        assert entity.name not in self.entities
+        entity.timeline = self
+        self.entities[entity.name] = entity
+
     def remove_entity_by_name(self, name: str) -> None:
         entity = self.entities.pop(name)
         entity.timeline = None
 
     def get_entity_by_name(self, name: str) -> Optional["Entity"]:
-        if name in self.entities:
-            return self.entities[name]
-        else:
-            return None
+        return self.entities.get(name, None)
 
     def seed(self, seed: int) -> None:
         """Sets random seed for simulation."""
