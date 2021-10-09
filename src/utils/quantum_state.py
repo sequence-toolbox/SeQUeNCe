@@ -28,6 +28,8 @@ class QuantumState():
     """Class to manage a quantum state.
 
     Tracks quantum state coefficients (in Z-basis) and entangled states.
+    Functions related to the randomness uses the provided pseudo random number
+    generator (PRNG) to generate random numbers for a reproducible simulation.
 
     Attributes:
         state (Tuple[complex]): list of complex coefficients in Z-basis.
