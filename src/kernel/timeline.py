@@ -9,7 +9,7 @@ from datetime import timedelta
 from math import inf
 from sys import stdout
 from time import time_ns, sleep
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Dict, Union
 
 from numpy import random
 
@@ -64,14 +64,14 @@ class Timeline:
         Args:
             stop_time (int): stop time (in ps) of simulation (default inf).
         """
-        self.events = EventList()
-        self.entities = {}
-        self.time = 0
-        self.stop_time = stop_time
-        self.schedule_counter = 0
-        self.run_counter = 0
-        self.is_running = False
-        self.show_progress = False
+        self.events: EventList = EventList()
+        self.entities: Dict[str, "Entity"] = {}
+        self.time: Union[int, float] = 0
+        self.stop_time: Union[int, float] = stop_time
+        self.schedule_counter: int = 0
+        self.run_counter: int = 0
+        self.is_running: bool = False
+        self.show_progress: bool = False
 
         if formalism == KET_STATE_FORMALISM:
             self.quantum_manager = QuantumManagerKet()
@@ -87,7 +87,8 @@ class Timeline:
 
     def schedule(self, event: "Event") -> None:
         """Method to schedule an event."""
-
+        if type(event.process.owner) is str:
+            event.process.owner = self.get_entity_by_name(event.process.owner)
         self.schedule_counter += 1
         self.events.push(event)
 
