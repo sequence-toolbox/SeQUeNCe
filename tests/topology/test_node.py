@@ -122,3 +122,25 @@ def test_QuantumRouter_init():
     for i in range(2, 50):
         node_name = "node%d" % i
         assert node1.map_to_middle_node[node_name] == "mid%d" % i
+
+
+def test_Node_seed():
+    from numpy.random._generator import Generator
+
+    def rng_equal(rng1: Generator, rng2: Generator) -> bool:
+        return all([rng1.random() == rng2.random() for _ in range(10)])
+
+    tl = Timeline()
+    n1, n2 = [Node(f"node{i}", tl, seed=0) for i in range(2)]
+    assert rng_equal(n1.get_generator(), n2.get_generator())
+
+    n10, n11 = [Node(f"node{i}", tl, seed=i) for i in range(10, 12)]
+    assert not rng_equal(n10.get_generator(), n11.get_generator())
+
+    SEED = 111
+    n_seed1, n_seed2 = [Node(f"node{i}", tl) for i in range(20, 22)]
+
+    assert not rng_equal(n_seed1.get_generator(), n_seed2.get_generator())
+    n_seed1.set_seed(SEED)
+    n_seed2.set_seed(SEED)
+    assert rng_equal(n_seed1.get_generator(), n_seed2.get_generator())
