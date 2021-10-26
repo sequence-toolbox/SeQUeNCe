@@ -234,8 +234,10 @@ def test_ResourceReservationProtocol_create_rules():
     for i in range(4):
         qc = QuantumChannel("qc_l_%d" % i, tl, 0, 100)
         qc.set_ends(routers[i], mids[i])
+        routers[i].add_bsm_node(mids[i].name, routers[i + 1].name)
         qc = QuantumChannel("qc_r_%d" % i, tl, 0, 100)
         qc.set_ends(routers[i + 1], mids[i])
+        routers[i + 1].add_bsm_node(mids[i].name, routers[i].name)
     # all-to-all classical connections
     for i, n1 in enumerate(routers + mids):
         for j, n2 in enumerate(routers + mids):
@@ -310,8 +312,10 @@ def test_ResourceReservationProtocol_set_es_params():
     for i in range(4):
         qc = QuantumChannel("qc_l_%d" % i, tl, 0, 100)
         qc.set_ends(routers[i], mids[i])
+        routers[i].add_bsm_node(mids[i].name, routers[i + 1].name)
         qc = QuantumChannel("qc_r_%d" % i, tl, 0, 100)
         qc.set_ends(routers[i + 1], mids[i])
+        routers[i + 1].add_bsm_node(mids[i].name, routers[i].name)
     # all-to-all classical connections
     for i, n1 in enumerate(routers + mids):
         for j, n2 in enumerate(routers + mids):
@@ -323,7 +327,7 @@ def test_ResourceReservationProtocol_set_es_params():
     tl.init()
 
     path = [r.name for r in routers]
-    reservation = Reservation("r0", "r4", 1, 9000000, 10, 0.9)
+    reservation = Reservation("r0", "r4", 1, 20000000, 10, 0.9)
     for node in [routers[0], routers[-1]]:
         for i, card in enumerate(node.rsvp.timecards):
             if i >= 10:
