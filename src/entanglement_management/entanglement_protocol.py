@@ -1,7 +1,7 @@
 """Entanglement protocol definition (abstract)"""
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ..topology.node import Node
@@ -28,11 +28,14 @@ class EntanglementProtocol(Protocol):
         self.memories = []
 
     @abstractmethod
-    def set_others(self, other: "EntanglementProtocol") -> None:
-        """Method to set reference to paired protocol (abstract).
+    def set_others(self, remote_protocol: str, remote_node: str,
+                   memories: List[str]) -> None:
+        """Method to set other entanglement protocol instance.
 
         Args:
-            other (EntanglementProtocol): paired protocol.
+            protocol (str): other protocol name.
+            node (str): other node name.
+            memories (List[str]): the list of memories name used on other node.
         """
 
         pass

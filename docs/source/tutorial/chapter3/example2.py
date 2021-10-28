@@ -50,9 +50,13 @@ def entangle_memory(memo1: Memory, memo2: Memory, fidelity: float):
     memo1.fidelity = memo2.fidelity = fidelity
 
 
-def pair_protocol(p1: EntanglementProtocol, p2: EntanglementProtocol):
-    p1.set_others(p2)
-    p2.set_others(p1)
+def pair_protocol(node1: Node, node2: Node):
+    p1 = node1.protocols[0]
+    p2 = node2.protocols[0]
+    p1.set_others(p2.name, node2.name,
+                  [node2.kept_memo.name, node2.meas_memo.name])
+    p2.set_others(p1.name, node1.name,
+                  [node1.kept_memo.name, node1.meas_memo.name])
 
 
 tl = Timeline()
@@ -72,7 +76,7 @@ for i in range(10):
     node1.create_protocol()
     node2.create_protocol()
 
-    pair_protocol(node1.protocols[0], node2.protocols[0])
+    pair_protocol(node1, node2)
 
     tl.init()
     node1.protocols[0].start()

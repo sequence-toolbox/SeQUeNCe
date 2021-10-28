@@ -6,7 +6,8 @@ numpy.random.seed(0)
 
 from sequence.components.memory import MemoryArray
 from sequence.kernel.timeline import Timeline
-from sequence.resource_management.resource_manager import *
+from sequence.resource_management.resource_manager import ResourceManager, \
+    ResourceManagerMessage, ResourceManagerMsgType
 from sequence.resource_management.rule_manager import Rule
 from sequence.topology.node import Node
 
@@ -37,7 +38,7 @@ class FakeProtocol():
     def is_ready(self):
         return self.other_is_setted
 
-    def set_others(self, other):
+    def set_others(self, other, arg2, arg3):
         self.other_is_setted = True
 
     def start(self):
@@ -139,8 +140,11 @@ def test_received_message():
     # test receive REQUEST message
     protocol1 = FakeProtocol("waiting_protocol")
     resource_manager.waiting_protocols.append(protocol1)
-    req_msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST, protocol="ini_protocol",
-                                     req_condition_func=true_fun)
+    req_msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST,
+                                     protocol="ini_protocol",
+                                     node="source",
+                                     memories=[],
+                                     req_condition_func=true_fun, req_args={})
     resource_manager.received_message("sender", req_msg)
     assert protocol1 in node.protocols
     assert protocol1 not in resource_manager.waiting_protocols
@@ -152,8 +156,11 @@ def test_received_message():
 
     protocol1 = FakeProtocol("waiting_protocol")
     resource_manager.waiting_protocols.append(protocol1)
-    req_msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST, protocol="ini_protocol",
-                                     req_condition_func=false_fun)
+    req_msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST,
+                                     protocol="ini_protocol",
+                                     node="source",
+                                     memories=[],
+                                     req_condition_func=false_fun, req_args={})
     resource_manager.received_message("sender", req_msg)
     assert protocol1 not in node.protocols
     assert protocol1 in resource_manager.waiting_protocols
@@ -166,8 +173,15 @@ def test_received_message():
     # test receive RESPONSE message: is_approved==False and is_approved==True
     protocol2 = FakeProtocol("pending_protocol")
     resource_manager.pending_protocols.append(protocol2)
-    resp_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=protocol2, is_approved=False,
-                                      paired_protocol="paired_protocol")
+    resp_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE,
+                                      protocol=protocol2.name,
+                                      node="source",
+                                      memories=[],
+                                      is_approved=False,
+                                      paired_protocol="paired_protocol",
+                                      paired_node="paired_node",
+                                      paired_memories=[]
+                                      )
     resource_manager.received_message("sender", resp_msg)
     assert protocol2 not in node.protocols
     assert protocol2 not in resource_manager.pending_protocols
@@ -176,8 +190,14 @@ def test_received_message():
 
     protocol2 = FakeProtocol("pending_protocol")
     resource_manager.pending_protocols.append(protocol2)
-    resp_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=protocol2, is_approved=True,
-                                      paired_protocol="paired_protocol")
+    resp_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE,
+                                      protocol=protocol2.name,
+                                      node="source",
+                                      memories=[],
+                                      is_approved=True,
+                                      paired_protocol="paired_protocol",
+                                      paired_node="paired_node",
+                                      paired_memories=[])
     resource_manager.received_message("sender", resp_msg)
     assert protocol2 in node.protocols
     assert protocol2 not in resource_manager.pending_protocols
