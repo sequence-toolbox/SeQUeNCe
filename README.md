@@ -21,7 +21,7 @@ $ make install
 This will install the sequence library as well as the numpy, json5, and pandas dependencies.
 If there is no MPI implementation installed on the current machine, the mpi4py library will not be installed.
 In this case, all sequential simulations may be run, but parallel simulations will not work.
-The mpi4py library may be installed later as described in the parallel documentation.
+The mpi4py library may be installed later, as described in the parallel documentation.
 
 ## Usage Examples
 Many examples of SeQUeNCe in action can be found in the example folder. These include both quantum key distribution and entanglement distribution examples.
@@ -46,7 +46,7 @@ These examples include:
 ## Additional Tools
 
 ### Parallel Simulation
-SeQUeNCe is able to run simulations as parallel programs using MPI. For large simulations, this may provide a significant performance benefit. Please visit the [SeQUeNCe documentation website](https://sequence-toolbox.github.io/) for more information on how to set up and run parallelized simulations.
+SeQUeNCe is able to run simulations as parallel programs using MPI. For large simulations, this may provide a significant performance benefit. Full documentation for the parallel simulator may be accessed by following the README instructions in the `docs` directory. In the future, the [SeQUeNCe documentation website](https://sequence-toolbox.github.io/) will be updated with this information.
 
 ### Network Visualization
 The example directory contains an example json file `starlight.json` to specify a network topology, and the utils directory contains the script `draw_topo.py` to visualize json files. To use this script, the Graphviz library must be installed. Installation information can be found on the [Graphviz website](https://www.graphviz.org/download/).
