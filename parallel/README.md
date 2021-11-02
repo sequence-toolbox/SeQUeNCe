@@ -54,4 +54,3 @@ To build additional executables used for testing, omit the `--target quantum_ser
 
 ## Usage Examples
 Examples of how to set up and run parallel simulations are found in the `example` directory.
-The `paper_figures_plot` directory contains the necessary scripts to reproduce our parallel experiments.
