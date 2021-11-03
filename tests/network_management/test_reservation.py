@@ -234,8 +234,10 @@ def test_ResourceReservationProtocol_create_rules():
     for i in range(4):
         qc = QuantumChannel("qc_l_%d" % i, tl, 0, 100)
         qc.set_ends(routers[i], mids[i])
+        routers[i].add_bsm_node(mids[i].name, routers[i + 1].name)
         qc = QuantumChannel("qc_r_%d" % i, tl, 0, 100)
         qc.set_ends(routers[i + 1], mids[i])
+        routers[i + 1].add_bsm_node(mids[i].name, routers[i].name)
     # all-to-all classical connections
     for i, n1 in enumerate(routers + mids):
         for j, n2 in enumerate(routers + mids):
@@ -301,17 +303,21 @@ def test_ResourceReservationProtocol_set_es_params():
     mids = []
     for i in range(5):
         router = TestNode("r%d" % i, tl)
+        router.set_seed(i)
         router.rsvp.set_swapping_success_rate(0.8)
         router.rsvp.set_swapping_degradation(0.7)
         routers.append(router)
     for i in range(4):
         mid = BSMNode("mid%d" % i, tl, [routers[i].name, routers[i + 1].name])
+        mid.set_seed(i + 5)
         mids.append(mid)
     for i in range(4):
         qc = QuantumChannel("qc_l_%d" % i, tl, 0, 100)
         qc.set_ends(routers[i], mids[i])
+        routers[i].add_bsm_node(mids[i].name, routers[i + 1].name)
         qc = QuantumChannel("qc_r_%d" % i, tl, 0, 100)
         qc.set_ends(routers[i + 1], mids[i])
+        routers[i + 1].add_bsm_node(mids[i].name, routers[i].name)
     # all-to-all classical connections
     for i, n1 in enumerate(routers + mids):
         for j, n2 in enumerate(routers + mids):

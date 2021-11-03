@@ -54,11 +54,13 @@ def test_BBPSSWMessage():
         BBPSSWMessage("unknown type")
 
 
-def create_scenario(state1, state2, seed):
+def create_scenario(state1, state2, seed_index):
     tl = Timeline()
-    tl.seed(seed)
+    tl.show_progress = False
     a1 = FakeNode("a1", tl)
     a2 = FakeNode("a2", tl)
+    a1.set_seed(2 * seed_index)
+    a2.set_seed(2 * seed_index + 1)
     cc0 = ClassicalChannel("cc0", tl, 0, 1e5)
     cc1 = ClassicalChannel("cc1", tl, 0, 1e5)
     cc0.delay = ONE_MILLISECOND
@@ -66,9 +68,12 @@ def create_scenario(state1, state2, seed):
     cc0.set_ends(a1, a2)
     cc1.set_ends(a2, a1)
 
-    kept1 = Memory('kept1', tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
-    kept2 = Memory('kept2', tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
-    meas1 = Memory('mea1', tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
+    kept1 = Memory('kept1', tl, fidelity=1, frequency=0, efficiency=1,
+                   coherence_time=1, wavelength=HALF_MICRON)
+    kept2 = Memory('kept2', tl, fidelity=1, frequency=0, efficiency=1,
+                   coherence_time=1, wavelength=HALF_MICRON)
+    meas1 = Memory('mea1', tl, fidelity=1, frequency=0, efficiency=1,
+                   coherence_time=1, wavelength=HALF_MICRON)
     meas2 = Memory('mea2', tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
 
     tl.init()

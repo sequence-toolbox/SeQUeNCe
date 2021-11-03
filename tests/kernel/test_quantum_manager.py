@@ -207,7 +207,8 @@ def test_qmanager__measure():
     state = [math.sqrt(1/2), math.sqrt(1/2)]
     for _ in range(NUM_TESTS):
         key = qm.new()
-        res = qm._measure(state, [key], [key])
+        samp = np.random.random()
+        res = qm._measure(state, [key], [key], samp)
         if res[key]:
             meas_1.append(key)
         else:
@@ -225,10 +226,11 @@ def test_qmanager__measure():
     for _ in range(NUM_TESTS):
         key1 = qm.new(state)
         key2 = qm.new()
+        samp = np.random.random()
         # compound
         circuit = Circuit(2)
         circuit.measure(0)
-        res = qm.run_circuit(circuit, [key1, key2])
+        res = qm.run_circuit(circuit, [key1, key2], samp)
         if res[key1]:
             meas_1.append(key1)
         else:
@@ -246,11 +248,12 @@ def test_qmanager__measure():
     for _ in range(NUM_TESTS):
         key1 = qm.new(state)
         key2 = qm.new()
+        samp = np.random.random()
         # compound
         circuit = Circuit(2)
         circuit.measure(0)
         circuit.measure(1)
-        res = qm.run_circuit(circuit, [key1, key2])
+        res = qm.run_circuit(circuit, [key1, key2], samp)
         if res[key1]:
             meas_2.append(key1)
         else:
@@ -271,7 +274,8 @@ def test_qmanager__measure_density():
     state = np.outer(state_single, state_single)
     for _ in range(NUM_TESTS):
         key = qm.new()
-        res = qm._measure(state, [key], [key])
+        samp = np.random.random()
+        res = qm._measure(state, [key], [key], samp)
         if res[key]:
             meas_1.append(key)
         else:
@@ -289,7 +293,8 @@ def test_qmanager__measure_density():
     state = [[0.5, 0], [0, 0.5]]
     for _ in range(NUM_TESTS):
         key = qm.new()
-        res = qm._measure(state, [key], [key])
+        samp = np.random.random()
+        res = qm._measure(state, [key], [key], samp)
         if res[key]:
             meas_1.append(key)
         else:
@@ -303,10 +308,11 @@ def test_qmanager__measure_density():
     for _ in range(NUM_TESTS):
         key1 = qm.new(state)
         key2 = qm.new()
+        samp = np.random.random()
         # compound
         circuit = Circuit(2)
         circuit.measure(0)
-        res = qm.run_circuit(circuit, [key1, key2])
+        res = qm.run_circuit(circuit, [key1, key2], samp)
         if res[key1]:
             meas_1.append(key1)
         else:
@@ -320,11 +326,12 @@ def test_qmanager__measure_density():
     for _ in range(NUM_TESTS):
         key1 = qm.new(state)
         key2 = qm.new()
+        samp = np.random.random()
         # compound
         circuit = Circuit(2)
         circuit.measure(0)
         circuit.measure(1)
-        res = qm.run_circuit(circuit, [key1, key2])
+        res = qm.run_circuit(circuit, [key1, key2], samp)
         if res[key1]:
             meas_2.append(key1)
         else:

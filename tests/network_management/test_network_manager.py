@@ -81,8 +81,10 @@ def test_NetworkManager():
     n3 = FakeNode("n3", tl, 20)
     m1 = BSMNode("m1", tl, ["n1", "n2"])
     m2 = BSMNode("m2", tl, ["n2", "n3"])
-
-
+    n1.add_bsm_node(m1.name, n2.name)
+    n2.add_bsm_node(m1.name, n1.name)
+    n2.add_bsm_node(m2.name, n3.name)
+    n3.add_bsm_node(m2.name, n2.name)
 
     cc0 = ClassicalChannel("cc_n1_n2", tl, 10, delay=1e5)
     cc1 = ClassicalChannel("cc_n2_n1", tl, 10, delay=1e5)
