@@ -45,19 +45,22 @@ def correct_order(state, keys):
         return state
 
 
-def create_scenario(state1, state2, seed):
+def create_scenario(state1, state2, seed_index):
     tl = Timeline()
-    tl.seed(seed)
     a1 = FakeNode("a1", tl)
     a2 = FakeNode("a2", tl)
     a3 = FakeNode("a3", tl)
+    a1.set_seed(3 * seed_index)
+    a2.set_seed(3 * seed_index + 1)
+    a3.set_seed(3 * seed_index + 2)
     cc0 = ClassicalChannel("a2-a1", tl, 0, 1e5)
     cc1 = ClassicalChannel("a2-a3", tl, 0, 1e5)
     cc0.set_ends(a2, a1)
     cc1.set_ends(a2, a3)
     tl.init()
 
-    memo1 = Memory("a1.0", timeline=tl, fidelity=0.9, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
+    memo1 = Memory("a1.0", timeline=tl, fidelity=0.9, frequency=0,
+                   efficiency=1, coherence_time=1, wavelength=500)
     memo2 = Memory("a2.0", tl, 0.9, 0, 1, 1, 500)
     memo3 = Memory("a2.1", tl, 0.9, 0, 1, 1, 500)
     memo4 = Memory("a3.0", tl, 0.9, 0, 1, 1, 500)
