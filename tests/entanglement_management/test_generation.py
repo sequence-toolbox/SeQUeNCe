@@ -156,6 +156,9 @@ def test_generation_run():
     e0 = FakeNode("e0", tl)
     m0 = FakeNode("m0", tl)
     e1 = FakeNode("e1", tl)
+    e0.set_seed(0)
+    m0.set_seed(1)
+    e1.set_seed(2)
 
     # add connections
     qc0 = QuantumChannel("qc_e0m0", tl, 0, 1e3)
@@ -238,8 +241,11 @@ def test_generation_fidelity_ket():
     tl = Timeline()
 
     e0 = FakeNode("e0", tl)
+    e0.set_seed(0)
     m0 = FakeNode("m0", tl)
+    m0.set_seed(1)
     e1 = FakeNode("e1", tl)
+    e1.set_seed(2)
 
     # add connections
     qc0 = QuantumChannel("qc_e0m0", tl, 0, 1e3)

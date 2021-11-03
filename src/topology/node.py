@@ -7,7 +7,8 @@ Node types can be used to collect all the necessary hardware and software for a 
 
 from math import inf
 from time import monotonic_ns
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, List
+import numpy as np
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -42,13 +43,15 @@ class Node(Entity):
         cchannels (Dict[str, ClassicalChannel]): mapping of destination node names to classical channel instances.
         qchannels (Dict[str, ClassicalChannel]): mapping of destination node names to quantum channel instances.
         protocols (List[Protocol]): list of attached protocols.
+        generator (np.random.Generator): random number generator used by node.
     """
 
-    def __init__(self, name: str, timeline: "Timeline"):
+    def __init__(self, name: str, timeline: "Timeline", seed=None):
         """Constructor for node.
 
         name (str): name of node instance.
         timeline (Timeline): timeline for simulation.
+        seed (int): seed for random number generator, default None
         """
 
         Entity.__init__(self, name, timeline)
@@ -56,11 +59,19 @@ class Node(Entity):
         self.cchannels = {}  # mapping of destination node names to classical channels
         self.qchannels = {}  # mapping of destination node names to quantum channels
         self.protocols = []
+        self.generator = np.random.default_rng(seed)
 
     def init(self) -> None:
         pass
 
-    def assign_cchannel(self, cchannel: "ClassicalChannel", another: str) -> None:
+    def set_seed(self, seed: int) -> None:
+        self.generator = np.random.default_rng(seed)
+
+    def get_generator(self):
+        return self.generator
+
+    def assign_cchannel(self, cchannel: "ClassicalChannel",
+                        another: str) -> None:
         """Method to assign a classical channel to the node.
 
         This method is usually called by the `ClassicalChannel.add_ends` method and not called individually.
@@ -145,7 +156,8 @@ class BSMNode(Node):
         eg (EntanglementGenerationB): entanglement generation protocol instance.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", other_nodes: [str]) -> None:
+    def __init__(self, name: str, timeline: "Timeline",
+                 other_nodes: List[str]) -> None:
         """Constructor for BSM node.
 
         Args:

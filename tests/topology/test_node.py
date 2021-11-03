@@ -103,4 +103,3 @@ def test_Node_send_qubit():
     expect_rate_1 = 1 - qc1.loss
     assert abs(len(node1.log) / 1000 - expect_rate_1) < 0.1
     assert abs(len(node2.log) / 1000 - expect_rate_0) < 0.1
-
