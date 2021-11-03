@@ -181,7 +181,9 @@ class Memory(Entity):
             return
 
         # measure quantum state
-        res = self.timeline.quantum_manager.run_circuit(Memory._meas_circuit, [self.qstate_key])
+        res = self.timeline.quantum_manager.run_circuit(Memory._meas_circuit,
+                                                        [self.qstate_key],
+                                                        self.get_generator().random())
         state = res[self.qstate_key]
 
         # create photon and check if null
