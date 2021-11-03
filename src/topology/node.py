@@ -259,16 +259,19 @@ class QuantumRouter(Node):
     def init(self):
         """Method to initialize quantum router node.
 
-        Sets up map_to_middle_node dictionary.
+        Inherit parent function
         """
 
         super().init()
-        for dst in self.qchannels:
-            end = self.qchannels[dst].receiver
-            if isinstance(end, BSMNode):
-                for other in end.eg.others:
-                    if other != self.name:
-                        self.map_to_middle_node[other] = end.name
+
+    def add_bsm_node(self, bsm_name: str, router_name: str):
+        """Method to record connected BSM nodes
+
+        Args:
+            bsm_name (str): the BSM node between nodes self and router_name
+            router_name (str): the name of another router connected with the BSM node
+        """
+        self.map_to_middle_node[router_name] = bsm_name
 
     def memory_expire(self, memory: "Memory") -> None:
         """Method to receive expired memories.
