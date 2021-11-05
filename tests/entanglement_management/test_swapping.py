@@ -81,17 +81,18 @@ def create_scenario(state1, state2, seed_index):
     es3 = EntanglementSwappingB(a3, "a3.ESb1", memo4)
     a3.protocols.append(es3)
 
-    es1.set_others(es2)
-    es3.set_others(es2)
-    es2.set_others(es1)
-    es2.set_others(es3)
+    es1.set_others(es2.name, a2.name, [memo2.name, memo3.name])
+    es3.set_others(es2.name, a2.name, [memo2.name, memo3.name])
+    es2.set_others(es1.name, a1.name, [memo1.name])
+    es2.set_others(es3.name, a3.name, [memo4.name])
 
     es2.start()
 
     tl.run()
 
     ket1, ket2, ket3, ket4 = map(tl.quantum_manager.get,
-                                 [memo1.qstate_key, memo2.qstate_key, memo3.qstate_key, memo4.qstate_key])
+                                 [memo1.qstate_key, memo2.qstate_key,
+                                  memo3.qstate_key, memo4.qstate_key])
 
     assert id(ket1) == id(ket4)
     assert id(ket2) != id(ket3)
@@ -543,22 +544,26 @@ def test_EntanglementSwapping():
 
         es1 = EntanglementSwappingB(a1, "a1.ESb%d" % i, memo1)
         a1.protocols.append(es1)
-        es2 = EntanglementSwappingA(a2, "a2.ESa%d" % i, memo2, memo3, success_prob=0.2)
+        es2 = EntanglementSwappingA(a2, "a2.ESa%d" % i, memo2, memo3,
+                                    success_prob=0.2)
         a2.protocols.append(es2)
         es3 = EntanglementSwappingB(a3, "a3.ESb%d" % i, memo4)
         a3.protocols.append(es3)
 
-        es1.set_others(es2)
-        es3.set_others(es2)
-        es2.set_others(es1)
-        es2.set_others(es3)
+        es1.set_others(es2.name, a2.name, [memo2.name, memo3.name])
+        es3.set_others(es2.name, a2.name, [memo2.name, memo3.name])
+        es2.set_others(es1.name, a1.name, [memo1.name])
+        es2.set_others(es3.name, a3.name, [memo4.name])
 
         es2.start()
 
         assert memo2.fidelity == memo3.fidelity == 0
-        assert memo1.entangled_memory["node_id"] == memo4.entangled_memory["node_id"] == "a2"
-        assert memo2.entangled_memory["node_id"] == memo3.entangled_memory["node_id"] == None
-        assert memo2.entangled_memory["memo_id"] == memo3.entangled_memory["memo_id"] == None
+        assert memo1.entangled_memory["node_id"] == memo4.entangled_memory[
+            "node_id"] == "a2"
+        assert memo2.entangled_memory["node_id"] == memo3.entangled_memory[
+            "node_id"] == None
+        assert memo2.entangled_memory["memo_id"] == memo3.entangled_memory[
+            "memo_id"] == None
         assert a2.resource_manager.log[-2] == (memo2, "RAW")
         assert a2.resource_manager.log[-1] == (memo3, "RAW")
 

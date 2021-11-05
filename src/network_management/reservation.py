@@ -254,7 +254,7 @@ class ResourceReservationProtocol(StackProtocol):
                 def req_func(protocols):
                     for protocol in protocols:
                         if isinstance(protocol,
-                                      EntanglementGenerationA) and protocol.other == self.own.name and protocol.rule.get_reservation() == reservation:
+                                      EntanglementGenerationA) and protocol.remote_node_name == self.own.name and protocol.rule.get_reservation() == reservation:
                             return protocol
 
                 memories = [info.memory for info in memories_info]

@@ -67,7 +67,8 @@ class EntanglementGenerationMessage(Message):
             self.resolution = kwargs.get("resolution")
 
         else:
-            raise Exception("EntanglementGeneration generated invalid message type {}".format(msg_type))
+            raise Exception(f"EntanglementGeneration generated invalid message"
+                            f" type {msg_type}")
 
 
 class EntanglementGenerationA(EntanglementProtocol):
@@ -92,7 +93,6 @@ class EntanglementGenerationA(EntanglementProtocol):
     _z_circuit = Circuit(1)
     _z_circuit.z(0)
 
-
     def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory"):
         """Constructor for entanglement generation A class.
 
@@ -100,14 +100,15 @@ class EntanglementGenerationA(EntanglementProtocol):
             own (Node): node to attach protocol to.
             name (str): name of protocol instance.
             middle (str): name of middle measurement node.
-            other (str): name of other node.
+            remote_node_name (str): name of other node.
+            remote_protocol_name (str): name of other protocol
             memory (Memory): memory to entangle.
         """
 
         super().__init__(own, name)
         self.middle = middle
-        self.other = other  # other node
-        self.other_protocol = None  # other EG protocol on other node
+        self.remote_node_name = other
+        self.remote_protocol_name = None
 
         # memory info
         self.memory = memory
@@ -121,7 +122,8 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         # memory internal info
         self.ent_round = 1  # keep track of current stage of protocol
-        self.bsm_res = [-1, -1]  # keep track of bsm measurements to distinguish Psi+ and Psi-
+        self.bsm_res = [-1,
+                        -1]  # keep track of bsm measurements to distinguish Psi+ and Psi-
 
         self.scheduled_events = []
 
@@ -131,20 +133,19 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         self._qstate_key = self.memory.qstate_key
 
-    def set_others(self, other: "EntanglementGenerationA") -> None:
+    def set_others(self, protocol: str, node: str,
+                   memories: List[str]) -> None:
         """Method to set other entanglement protocol instance.
 
         Args:
-            other (EntanglementGenerationA): other protocol instance.
+            protocol (str): other protocol name.
+            node (str): other node name.
+            memories (List[str]): the list of memories name used on other node.
         """
-
-        assert self.other_protocol is None
-        assert self.fidelity == other.fidelity
-        if other.other_protocol is not None:
-            assert self == other.other_protocol
-        self.other_protocol = other
-        self.remote_memo_id = other.memories[0].name
-        self.primary = self.own.name > self.other
+        assert self.remote_protocol_name is None
+        self.remote_protocol_name = protocol
+        self.remote_memo_id = memories[0]
+        self.primary = self.own.name > self.remote_node_name
 
     def start(self) -> None:
         """Method to start entanglement generation protocol.
@@ -155,7 +156,8 @@ class EntanglementGenerationA(EntanglementProtocol):
             Will send message through attached node.
         """
 
-        log.logger.info(self.own.name + " protocol start with partner {}".format(self.other))
+        log.logger.info(f"{self.own.name} protocol start with partner "
+                        f"{self.remote_node_name}")
 
         # to avoid start after remove protocol
         if self not in self.own.protocols:
@@ -166,9 +168,10 @@ class EntanglementGenerationA(EntanglementProtocol):
             # send NEGOTIATE message
             self.qc_delay = self.own.qchannels[self.middle].delay
             frequency = self.memory.frequency
-            message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE, self.other_protocol.name,
-                                                    qc_delay=self.qc_delay, frequency=frequency)
-            self.own.send_message(self.other, message)
+            message = EntanglementGenerationMessage(
+                GenerationMsgType.NEGOTIATE, self.remote_protocol_name,
+                qc_delay=self.qc_delay, frequency=frequency)
+            self.own.send_message(self.remote_node_name, message)
 
     def end(self) -> None:
         """Method to end entanglement generation protocol.
@@ -233,7 +236,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             May schedule various internal and hardware events.
         """
 
-        if src not in [self.middle, self.other]:
+        if src not in [self.middle, self.remote_node_name]:
             return
 
         msg_type = msg.msg_type
@@ -289,8 +292,10 @@ class EntanglementGenerationA(EntanglementProtocol):
             # send negotiate_ack
             another_emit_time_0 = emit_time_0 + self.qc_delay - another_delay
             another_emit_time_1 = emit_time_1 + self.qc_delay - another_delay
-            message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, self.other_protocol.name,
-                                                    emit_time_0=another_emit_time_0, emit_time_1=another_emit_time_1)
+            message = EntanglementGenerationMessage(
+                GenerationMsgType.NEGOTIATE_ACK, self.remote_protocol_name,
+                emit_time_0=another_emit_time_0,
+                emit_time_1=another_emit_time_1)
             self.own.send_message(src, message)
 
         elif msg_type is GenerationMsgType.NEGOTIATE_ACK:
@@ -367,7 +372,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         return True
 
     def is_ready(self) -> bool:
-        return self.other_protocol is not None
+        return self.remote_protocol_name is not None
 
     def memory_expire(self, memory: "Memory") -> None:
         """Method to receive expired memories."""
@@ -381,7 +386,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
     def _entanglement_succeed(self):
         log.logger.info(self.own.name + " successful entanglement of memory {}".format(self.memory))
-        self.memory.entangled_memory["node_id"] = self.other
+        self.memory.entangled_memory["node_id"] = self.remote_node_name
         self.memory.entangled_memory["memo_id"] = self.remote_memo_id
         self.memory.fidelity = self.memory.raw_fidelity
 

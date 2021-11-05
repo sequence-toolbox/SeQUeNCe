@@ -88,7 +88,9 @@ from sequence.entanglement_management.generation import EntanglementGenerationA
 def eg_rule_action_f1_1(memories_info: List["MemoryInfo"]):
     def req_func(protocols):
         for protocol in protocols:
-            if isinstance(protocol, EntanglementGenerationA) and protocol.other == "r1" and r2.memory_array.memories.index(protocol.memory) < 10:
+            if isinstance(protocol,
+                          EntanglementGenerationA) and protocol.remote_node_name == "r1" and r2.memory_array.memories.index(
+                    protocol.memory) < 10:
                 return protocol
 
     memories = [info.memory for info in memories_info]
@@ -235,7 +237,9 @@ def add_eg_rules(index: int, path: List[RouterNode], middles: List[BSMNode]):
         def eg_rule_action(memories_info: List["MemoryInfo"]):
             def req_func(protocols):
                 for protocol in protocols:
-                    if isinstance(protocol, EntanglementGenerationA) and protocol.other == node.name and path[index+1].memory_array.memories.index(protocol.memory) in range(node_mems[index+1][0], node_mems[index+1][1]):
+                    if isinstance(protocol, EntanglementGenerationA) and protocol.remote_node_name == node.name and
+                            path[index + 1].memory_array.memories.index(protocol.memory) in range(
+                            node_mems[index + 1][0], node_mems[index + 1][1]):
                         return protocol
 
             memories = [info.memory for info in memories_info]

@@ -91,15 +91,16 @@ def create_scenario(state1, state2, seed_index):
     ep2 = BBPSSW(a2, "a2.ep2", kept2, meas2)
     a1.protocols.append(ep1)
     a2.protocols.append(ep2)
-    ep1.set_others(ep2)
-    ep2.set_others(ep1)
+    ep1.set_others(ep2.name, a2.name, [kept2.name, meas2.name])
+    ep2.set_others(ep1.name, a1.name, [kept1.name, meas1.name])
 
     ep1.start()
     ep2.start()
 
     tl.run()
 
-    assert meas1.entangled_memory == meas2.entangled_memory == {'node_id': None, 'memo_id': None}
+    assert meas1.entangled_memory == meas2.entangled_memory == {
+        'node_id': None, 'memo_id': None}
 
     return tl, kept1, kept2, meas1, meas2, ep1, ep2
 
@@ -653,18 +654,22 @@ def test_BBPSSW_fidelity():
         meas_memo2.fidelity = fidelity
 
         pair1 = np.random.choice(range(4), 1,
-                                 p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
+                                 p=[fidelity, (1 - fidelity) / 3,
+                                    (1 - fidelity) / 3, (1 - fidelity) / 3])
         pair2 = np.random.choice(range(4), 1,
-                                 p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
-        tl.quantum_manager.set([kept_memo1.qstate_key, kept_memo2.qstate_key], BELL_STATES[pair1[0]])
-        tl.quantum_manager.set([meas_memo1.qstate_key, meas_memo2.qstate_key], BELL_STATES[pair2[0]])
+                                 p=[fidelity, (1 - fidelity) / 3,
+                                    (1 - fidelity) / 3, (1 - fidelity) / 3])
+        tl.quantum_manager.set([kept_memo1.qstate_key, kept_memo2.qstate_key],
+                               BELL_STATES[pair1[0]])
+        tl.quantum_manager.set([meas_memo1.qstate_key, meas_memo2.qstate_key],
+                               BELL_STATES[pair2[0]])
 
         ep1 = BBPSSW(a1, "a1.ep1.%d" % i, kept_memo1, meas_memo1)
         ep2 = BBPSSW(a2, "a2.ep2.%d" % i, kept_memo2, meas_memo2)
         a1.protocols.append(ep1)
         a2.protocols.append(ep2)
-        ep1.set_others(ep2)
-        ep2.set_others(ep1)
+        ep1.set_others(ep2.name, a2.name, [kept_memo2.name, meas_memo2.name])
+        ep2.set_others(ep1.name, a1.name, [kept_memo1.name, meas_memo1.name])
 
         ep1.start()
         ep2.start()
@@ -727,18 +732,22 @@ def test_BBPSSW_success_rate():
         meas_memo2.fidelity = fidelity
 
         pair1 = np.random.choice(range(4), 1,
-                                 p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
+                                 p=[fidelity, (1 - fidelity) / 3,
+                                    (1 - fidelity) / 3, (1 - fidelity) / 3])
         pair2 = np.random.choice(range(4), 1,
-                                 p=[fidelity, (1 - fidelity) / 3, (1 - fidelity) / 3, (1 - fidelity) / 3])
-        tl.quantum_manager.set([kept_memo1.qstate_key, kept_memo2.qstate_key], BELL_STATES[pair1[0]])
-        tl.quantum_manager.set([meas_memo1.qstate_key, meas_memo2.qstate_key], BELL_STATES[pair2[0]])
+                                 p=[fidelity, (1 - fidelity) / 3,
+                                    (1 - fidelity) / 3, (1 - fidelity) / 3])
+        tl.quantum_manager.set([kept_memo1.qstate_key, kept_memo2.qstate_key],
+                               BELL_STATES[pair1[0]])
+        tl.quantum_manager.set([meas_memo1.qstate_key, meas_memo2.qstate_key],
+                               BELL_STATES[pair2[0]])
 
         ep1 = BBPSSW(a1, "a1.ep1.%d" % i, kept_memo1, meas_memo1)
         ep2 = BBPSSW(a2, "a2.ep2.%d" % i, kept_memo2, meas_memo2)
         a1.protocols.append(ep1)
         a2.protocols.append(ep2)
-        ep1.set_others(ep2)
-        ep2.set_others(ep1)
+        ep1.set_others(ep2.name, a2.name, [kept_memo2.name, meas_memo2.name])
+        ep2.set_others(ep1.name, a1.name, [kept_memo1.name, meas_memo1.name])
 
         ep1.start()
         ep2.start()
