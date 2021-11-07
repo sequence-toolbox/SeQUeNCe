@@ -172,10 +172,14 @@ class Topology():
             for node in [node1, node2]:
                 self.add_quantum_channel(node, name_middle, **kwargs)
 
+            self.nodes[node1].add_bsm_node(middle.name, node2)
+            self.nodes[node2].add_bsm_node(middle.name, node1)
+
             # update params
             del kwargs["attenuation"]
             if node1 in self._cc_graph and node2 in self._cc_graph[node1]:
-                kwargs["delay"] = (self._cc_graph[node1][node2] + self._cc_graph[node2][node1]) / 4
+                kwargs["delay"] = (self._cc_graph[node1][node2] +
+                                   self._cc_graph[node2][node1]) / 4
 
             # add classical channels (for middle node connectivity)
             for node in [node1, node2]:
