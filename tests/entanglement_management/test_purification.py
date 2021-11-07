@@ -65,8 +65,8 @@ def create_scenario(state1, state2, seed_index):
     cc1 = ClassicalChannel("cc1", tl, 0, 1e5)
     cc0.delay = ONE_MILLISECOND
     cc1.delay = ONE_MILLISECOND
-    cc0.set_ends(a1, a2)
-    cc1.set_ends(a2, a1)
+    cc0.set_ends(a1, a2.name)
+    cc1.set_ends(a2, a1.name)
 
     kept1 = Memory('kept1', tl, fidelity=1, frequency=0, efficiency=1,
                    coherence_time=1, wavelength=HALF_MICRON)
@@ -74,7 +74,8 @@ def create_scenario(state1, state2, seed_index):
                    coherence_time=1, wavelength=HALF_MICRON)
     meas1 = Memory('mea1', tl, fidelity=1, frequency=0, efficiency=1,
                    coherence_time=1, wavelength=HALF_MICRON)
-    meas2 = Memory('mea2', tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
+    meas2 = Memory('mea2', tl, fidelity=1, frequency=0, efficiency=1,
+                   coherence_time=1, wavelength=HALF_MICRON)
 
     tl.init()
 
@@ -623,8 +624,8 @@ def test_BBPSSW_fidelity():
     cc1 = ClassicalChannel("cc1", tl, 0, 1e5)
     cc0.delay = ONE_MILLISECOND
     cc1.delay = ONE_MILLISECOND
-    cc0.set_ends(a1, a2)
-    cc1.set_ends(a2, a1)
+    cc0.set_ends(a1, a2.name)
+    cc1.set_ends(a2, a1.name)
 
     tl.init()
 
@@ -700,8 +701,8 @@ def test_BBPSSW_success_rate():
     cc1 = ClassicalChannel("cc1", tl, 0, 1e5)
     cc0.delay = ONE_MILLISECOND
     cc1.delay = ONE_MILLISECOND
-    cc0.set_ends(a1, a2)
-    cc1.set_ends(a2, a1)
+    cc0.set_ends(a1, a2.name)
+    cc1.set_ends(a2, a1.name)
 
     tl.init()
     counter1 = counter2 = 0

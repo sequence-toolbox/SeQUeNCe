@@ -197,7 +197,7 @@ class Topology():
 
         name = "_".join(["qc", node1, node2])
         qchannel = QuantumChannel(name, self.timeline, **kwargs)
-        qchannel.set_ends(self.nodes[node1], self.nodes[node2])
+        qchannel.set_ends(self.nodes[node1], node2)
         self.qchannels.append(qchannel)
 
         # edit graph
@@ -232,7 +232,7 @@ class Topology():
 
         name = "_".join(["cc", node1, node2])
         cchannel = ClassicalChannel(name, self.timeline, **kwargs)
-        cchannel.set_ends(self.nodes[node1], self.nodes[node2])
+        cchannel.set_ends(self.nodes[node1], node2)
         self.cchannels.append(cchannel)
 
         # edit graph

@@ -65,11 +65,16 @@ def test_add_classical_connection():
     topo.add_classical_connection("n1", "n2", distance=1e3)
     
     assert topo.graph["n1"] == {}
-    channels = [e for e in tl.entities.values() if type(e) == ClassicalChannel]
+    channels: List[ClassicalChannel] = [e for e in tl.entities.values() if
+                                        type(e) == ClassicalChannel]
     assert len(channels) == 2
     for channel in channels:
-        ends = [channel.receiver, channel.sender]
-        assert n1 in ends and n2 in ends
+        if channel.sender == n1:
+            assert channel.receiver == n2.name
+        elif channel.sender == n2:
+            assert channel.receiver == n1.name
+        else:
+            raise NotImplementedError
 
 
 def test_add_quantum_connection():

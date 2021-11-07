@@ -6,8 +6,6 @@ from sequence.kernel.timeline import Timeline
 from sequence.entanglement_management.swapping import *
 from sequence.topology.node import Node
 
-numpy.random.seed(0)
-
 
 class ResourceManager():
     def __init__(self):
@@ -55,8 +53,8 @@ def create_scenario(state1, state2, seed_index):
     a3.set_seed(3 * seed_index + 2)
     cc0 = ClassicalChannel("a2-a1", tl, 0, 1e5)
     cc1 = ClassicalChannel("a2-a3", tl, 0, 1e5)
-    cc0.set_ends(a2, a1)
-    cc1.set_ends(a2, a3)
+    cc0.set_ends(a2, a1.name)
+    cc1.set_ends(a2, a3.name)
     tl.init()
 
     memo1 = Memory("a1.0", timeline=tl, fidelity=0.9, frequency=0,
@@ -518,8 +516,8 @@ def test_EntanglementSwapping():
         a3 = FakeNode("a3", tl)
         cc0 = ClassicalChannel("a2-a1", tl, 0, 1e5)
         cc1 = ClassicalChannel("a2-a3", tl, 0, 1e5)
-        cc0.set_ends(a2, a1)
-        cc1.set_ends(a2, a3)
+        cc0.set_ends(a2, a1.name)
+        cc1.set_ends(a2, a3.name)
         tl.init()
 
         memo1 = Memory("a1.%d" % 1, timeline=tl, fidelity=0.9, frequency=0,
