@@ -48,20 +48,24 @@ tl = Timeline()
 node1 = EntangleGenNode('node1', tl)
 node2 = EntangleGenNode('node2', tl)
 bsm_node = BSMNode('bsm_node', tl, ['node1', 'node2'])
+node1.set_seed(0)
+node2.set_seed(1)
+bsm_node.set_seed(2)
 
 bsm_node.bsm.update_detectors_params('efficiency', 1)
 
 qc1 = QuantumChannel('qc1', tl, attenuation=0, distance=1000)
 qc2 = QuantumChannel('qc2', tl, attenuation=0, distance=1000)
-qc1.set_ends(node1, bsm_node)
-qc2.set_ends(node2, bsm_node)
+qc1.set_ends(node1, bsm_node.name)
+qc2.set_ends(node2, bsm_node.name)
 
 nodes = [node1, node2, bsm_node]
 
 for i in range(3):
     for j in range(3):
-        cc= ClassicalChannel('cc_%s_%s'%(nodes[i].name, nodes[j].name), tl, 1000, 1e8)
-        cc.set_ends(nodes[i], nodes[j])
+        cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl,
+                              1000, 1e8)
+        cc.set_ends(nodes[i], nodes[j].name)
 
 for i in range(1000):
     tl.time = tl.now() + 1e11
@@ -72,9 +76,10 @@ for i in range(1000):
     node1.memory.reset()
     node2.memory.reset()
 
-    tl.init()
     node1.protocols[0].start()
     node2.protocols[0].start()
+
+    tl.init()
     tl.run()
 
 print(node1.resource_manager.ent_counter, ':', node1.resource_manager.raw_counter)

@@ -49,7 +49,7 @@ if __name__ == "__main__":
     node2 = ReceiverNode("node2", tl)
 
     qc = QuantumChannel("qc", tl, attenuation=0, distance=1e3)
-    qc.set_ends(node1, node2)
+    qc.set_ends(node1, node2.name)
 
     # counter
     counter = Counter()

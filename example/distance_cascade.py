@@ -42,24 +42,28 @@ if __name__ == "__main__":
             alice.update_lightsource_params(name, param)
 
         # Bob
-        detector_params = [{"efficiency": 0.8, "dark_count": 10, "time_resolution": 10, "count_rate": 50e6},
-                           {"efficiency": 0.8, "dark_count": 10, "time_resolution": 10, "count_rate": 50e6}]
+        detector_params = [
+            {"efficiency": 0.8, "dark_count": 10, "time_resolution": 10,
+             "count_rate": 50e6},
+            {"efficiency": 0.8, "dark_count": 10, "time_resolution": 10,
+             "count_rate": 50e6}]
         bob = QKDNode("bob", tl)
         for i in range(len(detector_params)):
             for name, param in detector_params[i].items():
                 bob.update_detector_params(i, name, param)
 
-        qc0.set_ends(alice, bob)
-        qc1.set_ends(bob, alice)
-        cc0.set_ends(alice, bob)
-        cc1.set_ends(bob, alice)
+        qc0.set_ends(alice, bob.name)
+        qc1.set_ends(bob, alice.name)
+        cc0.set_ends(alice, bob.name)
+        cc1.set_ends(bob, alice.name)
 
         # BB84 config
         pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
         # cascade config
         pair_cascade_protocols(alice.protocol_stack[1], bob.protocol_stack[1])
 
-        process = Process(alice.protocol_stack[1], 'push', [256, math.inf, 12e12])
+        process = Process(alice.protocol_stack[1], 'push',
+                          [256, math.inf, 12e12])
         tl.schedule(Event(0, process))
 
         tl.init()
