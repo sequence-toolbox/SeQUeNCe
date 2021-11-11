@@ -38,12 +38,13 @@ psi_minus = [0, 0.5 ** 0.5, -(0.5 ** 0.5), 0]
 
 def correct_order(state, keys):
     if keys[0] > keys[1]:
-        return numpy.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ state
+        return numpy.array(
+            [[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ state
     else:
         return state
 
 
-def create_scenario(state1, state2, seed_index):
+def config_three_nodes_network(state1, state2, seed_index):
     tl = Timeline()
     a1 = FakeNode("a1", tl)
     a2 = FakeNode("a2", tl)
@@ -57,13 +58,12 @@ def create_scenario(state1, state2, seed_index):
     cc1.set_ends(a2, a3.name)
     tl.init()
 
-    memo1 = Memory("a1.0", timeline=tl, fidelity=0.9, frequency=0,
-                   efficiency=1, coherence_time=1, wavelength=500)
-    memo2 = Memory("a2.0", tl, 0.9, 0, 1, 1, 500)
-    memo3 = Memory("a2.1", tl, 0.9, 0, 1, 1, 500)
-    memo4 = Memory("a3.0", tl, 0.9, 0, 1, 1, 500)
+    memory_names = ["a1.0", "a2.0", "a2.1", "a3.0"]
+    memories = [Memory(name, tl, 1, 0, 1, 1, 500) for name in memory_names]
+    for memory in memories:
+        memory.fidelity = 1
+    memo1, memo2, memo3, memo4 = memories
 
-    memo1.fidelity = memo2.fidelity = memo3.fidelity = memo4.fidelity = 1
     memo1.entangled_memory = {'node_id': 'a2', 'memo_id': memo2.name}
     memo2.entangled_memory = {'node_id': 'a1', 'memo_id': memo1.name}
     memo3.entangled_memory = {'node_id': 'a3', 'memo_id': memo4.name}
@@ -71,6 +71,14 @@ def create_scenario(state1, state2, seed_index):
 
     tl.quantum_manager.set([memo1.qstate_key, memo2.qstate_key], state1)
     tl.quantum_manager.set([memo3.qstate_key, memo4.qstate_key], state2)
+    return tl, [a1, a2, a3], memories
+
+
+def create_scenario(state1, state2, seed_index):
+    tl, nodes, memories = config_three_nodes_network(state1, state2,
+                                                     seed_index)
+    a1, a2, a3 = nodes
+    memo1, memo2, memo3, memo4 = memories
 
     es1 = EntanglementSwappingB(a1, "a1.ESb0", memo1)
     a1.protocols.append(es1)
@@ -94,11 +102,15 @@ def create_scenario(state1, state2, seed_index):
 
     assert id(ket1) == id(ket4)
     assert id(ket2) != id(ket3)
-    assert len(ket1.keys) == 2 and memo1.qstate_key in ket1.keys and memo4.qstate_key in ket1.keys
+    assert len(ket1.keys) == 2
+    assert memo1.qstate_key in ket1.keys
+    assert memo4.qstate_key in ket1.keys
     assert len(ket2.keys) == 1
 
-    assert memo2.entangled_memory == memo3.entangled_memory == {'node_id': None, 'memo_id': None}
-    assert memo1.entangled_memory["node_id"] == "a3" and memo4.entangled_memory["node_id"] == "a1"
+    assert memo2.entangled_memory == {'node_id': None, 'memo_id': None}
+    assert memo3.entangled_memory == {'node_id': None, 'memo_id': None}
+    assert memo1.entangled_memory["node_id"] == "a3"
+    assert memo4.entangled_memory["node_id"] == "a1"
     assert a1.resource_manager.log[-1] == (memo1, "ENTANGLED")
     assert a3.resource_manager.log[-1] == (memo4, "ENTANGLED")
     return ket1, ket2, ket3, ket4, a3
@@ -510,35 +522,9 @@ def test_EntanglementSwapping():
     counter1 = counter2 = 0
 
     for i in range(1000):
-        tl = Timeline()
-        a1 = FakeNode("a1", tl)
-        a2 = FakeNode("a2", tl)
-        a3 = FakeNode("a3", tl)
-        cc0 = ClassicalChannel("a2-a1", tl, 0, 1e5)
-        cc1 = ClassicalChannel("a2-a3", tl, 0, 1e5)
-        cc0.set_ends(a2, a1.name)
-        cc1.set_ends(a2, a3.name)
-        tl.init()
-
-        memo1 = Memory("a1.%d" % 1, timeline=tl, fidelity=0.9, frequency=0,
-                       efficiency=1, coherence_time=1,
-                       wavelength=500)
-        memo2 = Memory("a2.%d" % 2, tl, 0.9, 0, 1, 1, 500)
-        memo3 = Memory("a2.%d" % 3, tl, 0.9, 0, 1, 1, 500)
-        memo4 = Memory("a3.%d" % 4, tl, 0.9, 0, 1, 1, 500)
-
-        memo1.entangled_memory["node_id"] = "a2"
-        memo1.entangled_memory["memo_id"] = memo2.name
-        memo1.fidelity = 0.9
-        memo2.entangled_memory["node_id"] = "a1"
-        memo2.entangled_memory["memo_id"] = memo1.name
-        memo2.fidelity = 0.9
-        memo3.entangled_memory["node_id"] = "a3"
-        memo3.entangled_memory["memo_id"] = memo4.name
-        memo3.fidelity = 0.9
-        memo4.entangled_memory["node_id"] = "a2"
-        memo4.entangled_memory["memo_id"] = memo3.name
-        memo4.fidelity = 0.9
+        tl, nodes, memories = config_three_nodes_network(phi_plus, phi_plus, i)
+        a1, a2, a3 = nodes
+        memo1, memo2, memo3, memo4 = memories
 
         es1 = EntanglementSwappingB(a1, "a1.ESb%d" % i, memo1)
         a1.protocols.append(es1)
@@ -569,13 +555,15 @@ def test_EntanglementSwapping():
 
         if es2.is_success:
             counter1 += 1
-            assert memo1.entangled_memory["node_id"] == "a3" and memo4.entangled_memory["node_id"] == "a1"
+            assert memo1.entangled_memory["node_id"] == "a3"
+            assert memo4.entangled_memory["node_id"] == "a1"
             assert memo1.fidelity == memo4.fidelity <= memo1.raw_fidelity
             assert a1.resource_manager.log[-1] == (memo1, "ENTANGLED")
             assert a3.resource_manager.log[-1] == (memo4, "ENTANGLED")
         else:
             counter2 += 1
-            assert memo1.entangled_memory["node_id"] == memo4.entangled_memory["node_id"] == None
+            assert memo1.entangled_memory["node_id"] == None
+            assert memo4.entangled_memory["node_id"] == None
             assert memo1.fidelity == memo4.fidelity == 0
             assert a1.resource_manager.log[-1] == (memo1, "RAW")
             assert a3.resource_manager.log[-1] == (memo4, "RAW")
