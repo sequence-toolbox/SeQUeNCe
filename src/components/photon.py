@@ -4,7 +4,9 @@ This module defines the Photon class for tracking individual photons.
 Photons may be encoded directly with polarization or time bin schemes, or may herald the encoded state of single atom memories.
 """
 from numpy.random._generator import Generator
+from typing import Dict, Any, Optional
 
+from ..kernel.entity import Entity
 from ..utils.encoding import polarization
 from ..utils.quantum_state import QuantumState
 
@@ -33,16 +35,20 @@ class Photon():
             quantum_state (List[complex]): complex coefficients for photon's quantum state (default [1, 0]).
         """
 
-        self.name = name
-        self.wavelength = wavelength
-        self.location = location
-        self.encoding_type = encoding_type
+        self.name: str = name
+        self.wavelength: int = wavelength
+        self.location: Entity = location
+        self.encoding_type: Dict[str, Any] = encoding_type
         if self.encoding_type["name"] == "single_atom":
             self.memory = None
-        self.quantum_state = QuantumState()
-        self.quantum_state.state = quantum_state
+            self.fidelity: Optional[float] = None
+            self.detector_num: Optional[int] = None
+            self.loss: float = 0
+
+        self.quantum_state: QuantumState = QuantumState()
+        self.quantum_state.set_state_single(quantum_state)
         self.qstate_key = None
-        self.is_null = False
+        self.is_null: bool = False
 
     def entangle(self, photon):
         """Method to entangle photons (see `QuantumState` module)."""
@@ -86,3 +92,8 @@ class Photon():
         return QuantumState.measure_multiple(basis, [photons[0].quantum_state,
                                                      photons[1].quantum_state],
                                              rng)
+
+    def add_loss(self, loss: float):
+        assert 0 <= loss <= 1
+        assert self.encoding_type["name"] == "single_atom"
+        self.loss = 1 - (1 - self.loss) * (1 - loss)
