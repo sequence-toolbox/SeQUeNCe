@@ -5,12 +5,13 @@ The manager uses a memory manager and rule manager to track memories and control
 This module also defines the message type used by the resource manager.
 """
 
+from __future__ import annotations
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Callable, List, Optional
 if TYPE_CHECKING:
     from ..components.memory import Memory
     from ..topology.node import QuantumRouter
-    from .rule_manager import Rule
+    from .rule_manager import Rule, Arguments
 
 from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..message import Message
@@ -52,6 +53,7 @@ class ResourceManagerMessage(Message):
 
         if msg_type is ResourceManagerMsgType.REQUEST:
             self.req_condition_func = kwargs["req_condition_func"]
+            self.req_args = kwargs["req_args"]
         elif msg_type is ResourceManagerMsgType.RESPONSE:
             self.is_approved = kwargs["is_approved"]
             self.paired_protocol = kwargs["paired_protocol"]
@@ -62,7 +64,13 @@ class ResourceManagerMessage(Message):
         elif msg_type is ResourceManagerMsgType.RELEASE_MEMORY:
             self.memory = kwargs["memory_id"]
         else:
-            raise Exception("ResourceManagerMessage gets unknown type of message: %s" % str(msg_type))
+            raise Exception(
+                "ResourceManagerMessage gets unknown type of message: %s" % str(
+                    msg_type))
+
+
+RequestConditionFunc = Callable[[List["EntanglementProtocol"]],
+                                "EntanglementProtocol"]
 
 
 class ResourceManager():
@@ -192,7 +200,8 @@ class ResourceManager():
         return self.memory_manager
 
     def send_request(self, protocol: "EntanglementProtocol", req_dst: str,
-                     req_condition_func: Callable[[List["EntanglementProtocol"]], "EntanglementProtocol"]):
+                     req_condition_func: RequestConditionFunc,
+                     req_args: Arguments):
         """Method to send protocol request to another node.
 
         Send the request to pair the local 'protocol' with the protocol on the remote node 'req_dst'.
@@ -215,7 +224,8 @@ class ResourceManager():
                                      protocol=protocol.name,
                                      node=self.owner.name,
                                      memories=memo_names,
-                                     req_condition_func=req_condition_func)
+                                     req_condition_func=req_condition_func,
+                                     req_args=req_args)
         self.owner.send_message(req_dst, msg)
 
     def received_message(self, src: str, msg: "ResourceManagerMessage") -> None:
@@ -229,7 +239,8 @@ class ResourceManager():
         """
 
         if msg.msg_type is ResourceManagerMsgType.REQUEST:
-            protocol = msg.req_condition_func(self.waiting_protocols)
+            protocol = msg.req_condition_func(self.waiting_protocols,
+                                              msg.req_args)
             if protocol is not None:
                 protocol.set_others(msg.ini_protocol_name, msg.ini_node_name,
                                     msg.ini_memories_name)
@@ -271,7 +282,7 @@ class ResourceManager():
                     self.release_remote_protocol(src, msg.paired_protocol)
                 return
 
-            if msg.is_approved and protocol is not None:
+            if msg.is_approved:
                 protocol.set_others(msg.paired_protocol, msg.paired_node,
                                     msg.paired_memories)
                 if protocol.is_ready():
@@ -311,8 +322,10 @@ class ResourceManager():
         """Method to release protocols from memories on distant nodes.
 
         Release the remote protocol 'protocol' on the remote node 'dst'.
-        The local protocol was paired with the remote protocol but local protocol becomes invalid.
-        The resource manager needs to notify the remote node to cancel the paired protocol.
+        The local protocol was paired with the remote protocol but local
+        protocol becomes invalid.
+        The resource manager needs to notify the remote node to cancel the
+        paired protocol.
 
         Args:
             dst (str): name of the destination node.
