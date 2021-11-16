@@ -74,7 +74,7 @@ def test_add_classical_connection():
         elif channel.sender == n2:
             assert channel.receiver == n1.name
         else:
-            raise NotImplementedError
+            assert False
 
 
 def test_add_quantum_connection():
