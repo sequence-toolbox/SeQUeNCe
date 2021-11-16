@@ -4,7 +4,7 @@ This module defines the LightSource class to supply individual photons and the S
 These classes should be connected to one or two entities, respectively, that are capable of receiving photons.
 """
 
-from numpy import random, multiply
+from numpy import multiply
 
 from .photon import Photon
 from ..kernel.entity import Entity
@@ -82,13 +82,13 @@ class LightSource(Entity):
         period = int(round(1e12 / self.frequency))
 
         for i, state in enumerate(state_list):
-            num_photons = random.poisson(self.mean_photon_num)
+            num_photons = self.get_generator().poisson(self.mean_photon_num)
 
-            if random.random_sample() < self.phase_error:
+            if self.get_generator().random() < self.phase_error:
                 state = multiply([1, -1], state)
 
             for _ in range(num_photons):
-                wavelength = self.linewidth * random.randn() + self.wavelength
+                wavelength = self.linewidth * self.get_generator().standard_normal() + self.wavelength
                 new_photon = Photon(str(i),
                                     wavelength=wavelength,
                                     location=self.owner,
@@ -141,9 +141,10 @@ class SPDCSource(LightSource):
         time = self.timeline.now()
 
         for state in state_list:
-            num_photon_pairs = random.poisson(self.mean_photon_num)
+            num_photon_pairs = self.get_generator().poisson(
+                self.mean_photon_num)
 
-            if random.random_sample() < self.phase_error:
+            if self.get_generator().random() < self.phase_error:
                 state = multiply([1, -1], state)
 
             for _ in range(num_photon_pairs):
