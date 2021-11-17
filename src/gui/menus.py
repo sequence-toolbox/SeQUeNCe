@@ -6,11 +6,11 @@ such as unit dropdowns
 
 import os
 import base64
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc
+from dash import html
 import dash_bootstrap_components as dbc
 import dash_cytoscape as cyto
-import dash_table
+from dash import dash_table
 from .css_styles import *
 
 
@@ -299,7 +299,7 @@ quantum_memory_template = [
             ),
             dbc.Col(getTimeUnits('coh'), width=2)
         ],
-        no_gutters=True
+        className="g-0"
     ),
 
     dbc.Label('Frequency'),
@@ -313,7 +313,7 @@ quantum_memory_template = [
             ),
             dbc.Col(getFreqUnits('mem'), width=2)
         ],
-        no_gutters=True
+        className="g-0"
     ),
 
     dbc.Label('Efficiency'),
@@ -396,7 +396,12 @@ add_node_form = html.Div(
                 '',
                 style_in={'margin-bottom': '10px'}
             ),
-            dbc.Button('Add Node', color='primary', id='add_node', block=True),
+            html.Div(
+                [
+                    dbc.Button('Add Node', color='primary', id='add_node')
+                ],
+                className="d-grid"
+            ),
             html.P(id='make_node_error', style={'color': 'red'})
         ]
     ),
@@ -437,11 +442,16 @@ add_edge = html.Div(
             'edge_type_menu',
             'Quantum'
         ),
-        dbc.FormGroup(
+        dbc.Row(
             id='edge_properties'
         ),
         html.P(id='make_edge_error', style={'color': 'red'}),
-        dbc.Button('Add Edge', color='primary', id='add_edge', block=True),
+        html.Div(
+            [
+                dbc.Button('Add Edge', color='primary', id='add_edge'),
+            ],
+            className="d-grid"
+        ),
     ],
     style=MENU_STYLE,
     id=tab_ids[1]
@@ -451,16 +461,20 @@ delete_menu = html.Div(
     dbc.Form(
         [
             html.H3('Delete'),
-            dbc.FormGroup(
+            dbc.Row(
                 [
                     html.P(
                         'Select an element and press the button to remove it'
                     ),
-                    dbc.Button(
-                        'Delete',
-                        color='primary',
-                        id='delete_button',
-                        block=True
+                    html.Div(
+                        [
+                            dbc.Button(
+                                'Delete',
+                                color='primary',
+                                id='delete_button',
+                            ),
+                        ],
+                        className="d-grid"
                     ),
                 ]
             )
@@ -489,14 +503,18 @@ make_new_template = html.Div(
                 'template_type_menu',
                 ''
             ),
-            dbc.FormGroup(
+            dbc.Row(
                 id='template_properties'
             ),
-            dbc.Button(
-                'Save',
-                color='primary',
-                id='save_template',
-                block=True
+            html.Div(
+                [
+                    dbc.Button(
+                        'Save',
+                        color='primary',
+                        id='save_template',
+                    ),
+                ],
+                className="d-grid"
             ),
             html.P(id='save_state', style={'color': 'blue'})
         ]
@@ -699,15 +717,19 @@ selection_menu = html.Div(
     [
         html.H3('Edit'),
         html.Div(id='selected_element'),
-        dbc.Button(
-            'Submit',
-            id='submit_edit',
-            block=True,
-            color='primary',
-            style={
-                'margin-top': '10px'
-            }
-        )
+        html.Div(
+            [
+                dbc.Button(
+                    'Submit',
+                    id='submit_edit',
+                    color='primary',
+                    style={
+                        'margin-top': '10px'
+                    }
+                )
+            ],
+            className="d-grid"
+        ),
     ],
     id=tab_ids[7],
     style=MENU_STYLE
@@ -743,7 +765,7 @@ simulation_menu = html.Div(
                     placeholder='Ex: Test_1'
                 ), width=10)
             ],
-            no_gutters=True
+            className="g-0"
         ),
         dbc.Row(
             [
@@ -760,9 +782,9 @@ simulation_menu = html.Div(
                     width=2,
                 ),
             ],
-            no_gutters=True
+            className="g-0"
         ),
-        dbc.FormGroup(
+        dbc.Row(
             [
                 dbc.Label("Logging Options", width=6),
                 dbc.Col(
@@ -783,7 +805,13 @@ simulation_menu = html.Div(
                 ),
             ],
         ),
-        dbc.Button('Run', color='primary', id='run_sim', block=True),
+        html.Div(
+            [
+                dbc.Button('Run', color='primary', id='run_sim'),
+            ],
+            className="d-grid"
+        ),
+        
         dcc.Interval(
             id='running',
             interval=1000,
@@ -813,7 +841,7 @@ navbar = dbc.Navbar(
                     )),
                 ],
                 align="center",
-                no_gutters=True,
+                className="g-0"
             ),
             href="https://github.com/sequence-toolbox",
             style={
@@ -854,7 +882,7 @@ navbar = dbc.Navbar(
                     ],
                     label="Export",
                     group=True,
-                    bs_size='sm',
+                    size='sm',
                     nav=True,
                     in_navbar=True,
                     toggle_style={
@@ -874,7 +902,7 @@ navbar = dbc.Navbar(
                     ],
                     nav=True,
                     group=True,
-                    bs_size='sm',
+                    size='sm',
                     in_navbar=True,
                     label="More",
                     right=True,
@@ -883,8 +911,7 @@ navbar = dbc.Navbar(
                     }
                 ),
             ],
-            no_gutters=True,
-            className="ml-auto flex-nowrap mt-3 mt-md-0",
+            className="ml-auto flex-nowrap mt-3 mt-md-0 g-0",
             align="center",
         )
     ],

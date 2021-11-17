@@ -7,8 +7,8 @@ dash web app
 import os
 import base64
 import networkx as nx
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc
+from dash import html
 import dash_bootstrap_components as dbc
 from .menus import *
 from .css_styles import *
@@ -33,25 +33,30 @@ def make_item(menu, label, num, icon):
 def getSidebar(graph, delays, tdm):
     return html.Div(
         [
-            dbc.Button(
-                children=[
-                    html.I(
-                        className='bi bi-list',
+            html.Div(
+                [
+                    dbc.Button(
+                        children=[
+                            html.I(
+                                className='bi bi-list',
+                                style={
+                                    'font-size': '2rem',
+                                }
+                            ),
+                        ],
+                        outline=True,
+                        color="secondary",
+                        className="mr-1",
+                        id="btn_sidebar",
                         style={
-                            'font-size': '2rem',
+                            "margin-top": "10px",
+                            "margin-bottom": "20px",
                         }
                     ),
                 ],
-                outline=True,
-                color="secondary",
-                className="mr-1",
-                id="btn_sidebar",
-                block=True,
-                style={
-                    "margin-top": "10px",
-                    "margin-bottom": "20px",
-                }
+                className="d-grid"
             ),
+            
             dcc.Tabs(
                 [
                     make_item(

@@ -11,8 +11,8 @@ import datetime
 import shutil
 import pandas as pd
 import numpy as np
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc
+from dash import html
 import dash_bootstrap_components as dbc
 import networkx as nx
 from collections import OrderedDict
@@ -627,31 +627,28 @@ class Quantum_GUI:
         )
 
         @app.callback(
-            [
-                Output('graph', 'elements'),
-                Output('make_node_error', 'children'),
-                Output('make_edge_error', 'children'),
-                Output('all_nodes', 'data'),
-                Output('legend', 'children')
-            ],
-            [
-                Input('add_node', 'n_clicks'),
-                Input('add_edge', 'n_clicks'),
-                Input('new_network', 'n_clicks'),
-                Input('refresh', 'n_clicks'),
-                Input('submit_edit', 'n_clicks'),
-                Input('delete_button', 'n_clicks')
-            ],
-            state=[
-                State('node_to_add_name', 'value'),
-                State('type_menu', 'value'),
-                State('edge_properties', 'children'),
-                State('from_node', 'value'),
-                State('to_node', 'value'),
-                State('edge_type_menu', 'value'),
-                State('selected_element', 'children'),
-                State('last_clicked', 'data')
-            ]
+            
+            Output('graph', 'elements'),
+            Output('make_node_error', 'children'),
+            Output('make_edge_error', 'children'),
+            Output('all_nodes', 'data'),
+            Output('legend', 'children'),
+
+            Input('add_node', 'n_clicks'),
+            Input('add_edge', 'n_clicks'),
+            Input('new_network', 'n_clicks'),
+            Input('refresh', 'n_clicks'),
+            Input('submit_edit', 'n_clicks'),
+            Input('delete_button', 'n_clicks'),
+
+            State('node_to_add_name', 'value'),
+            State('type_menu', 'value'),
+            State('edge_properties', 'children'),
+            State('from_node', 'value'),
+            State('to_node', 'value'),
+            State('edge_type_menu', 'value'),
+            State('selected_element', 'children'),
+            State('last_clicked', 'data')
         )
         def edit_graph(
             node_state,
@@ -890,13 +887,13 @@ class Quantum_GUI:
             Output('save_state', 'children'),
             Output('comp_temp', 'data'),
             Output('detec_opts', 'data'),
+
             Input('template_type_menu', 'value'),
             Input('save_template', 'n_clicks'),
-            state=[
-                State('template_properties', 'children'),
-                State('template_type_menu', 'value'),
-                State('template_name', 'value')
-            ]
+
+            State('template_properties', 'children'),
+            State('template_type_menu', 'value'),
+            State('template_name', 'value')
         )
         def template_menu(edgeType, save_click, temp, temp_type, temp_name):
             ctx = dash.callback_context
@@ -928,23 +925,19 @@ class Quantum_GUI:
                 return [router_template, '', opts, '']
 
         @app.callback(
-            [
-                Output('running', 'disabled'),
-                Output('runtime', 'children'),
-                Output('simtime', 'children'),
-                Output('results_out', 'children')
-            ],
-            [
-                Input('run_sim', 'n_clicks'),
-                Input('running', 'n_intervals'),
-            ],
-            state=[
-                State('runtime', 'children'),
-                State('time_units_sim', 'value'),
-                State('sim_time_in', 'value'),
-                State('logging_verbosity', 'value'),
-                State('sim_name', 'value')
-            ]
+            Output('running', 'disabled'),
+            Output('runtime', 'children'),
+            Output('simtime', 'children'),
+            Output('results_out', 'children'),
+
+            Input('run_sim', 'n_clicks'),
+            Input('running', 'n_intervals'),
+
+            State('runtime', 'children'),
+            State('time_units_sim', 'value'),
+            State('sim_time_in', 'value'),
+            State('logging_verbosity', 'value'),
+            State('sim_name', 'value')
         )
         def run_sim(clicks, n, runtime, units, time_to_run, logging, sim_name):
             ctx = dash.callback_context
@@ -1039,10 +1032,10 @@ class Quantum_GUI:
             Output('page-content', 'style'),
             Output('project_name', 'style'),
             Output('refresh', 'style'),
-            [Input("btn_sidebar", "n_clicks")],
-            [
-                State('side_click', 'data')
-            ]
+            
+            Input("btn_sidebar", "n_clicks"),
+
+            State('side_click', 'data')
         )
         def toggle_sidebar(n, nclick):
             ctx = dash.callback_context
