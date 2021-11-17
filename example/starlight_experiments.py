@@ -17,8 +17,8 @@ if __name__ == "__main__":
 
     # set memory parameters
     MEMO_FREQ = 2e3
-    MEMO_EXPIRE = 1.1
-    MEMO_EFFICIENCY = 1
+    MEMO_EXPIRE = 1.3
+    MEMO_EFFICIENCY = 0.75
     MEMO_FIDELITY = 0.9349367588934053
     for name, node in network_topo.nodes.items():
         if isinstance(node, QuantumRouter):
