@@ -86,31 +86,21 @@ def test_NetworkManager():
     n2.add_bsm_node(m2.name, n3.name)
     n3.add_bsm_node(m2.name, n2.name)
 
-    cc0 = ClassicalChannel("cc_n1_n2", tl, 10, delay=1e5)
-    cc1 = ClassicalChannel("cc_n2_n1", tl, 10, delay=1e5)
-    cc2 = ClassicalChannel("cc_n1_m1", tl, 10, delay=1e5)
-    cc3 = ClassicalChannel("cc_n2_m1", tl, 10, delay=1e5)
-    cc4 = ClassicalChannel("cc_n2_n3", tl, 10, delay=1e5)
-    cc5 = ClassicalChannel("cc_n3_n2", tl, 10, delay=1e5)
-    cc6 = ClassicalChannel("cc_n2_m2", tl, 10, delay=1e5)
-    cc7 = ClassicalChannel("cc_n3_m2", tl, 10, delay=1e5)
-    cc0.set_ends(n1, n2)
-    cc1.set_ends(n2, n1)
-    cc2.set_ends(n1, m1)
-    cc3.set_ends(n2, m1)
-    cc4.set_ends(n2, n3)
-    cc5.set_ends(n3, n2)
-    cc6.set_ends(n2, m2)
-    cc7.set_ends(n3, m2)
+    for src in [n1, n2, n3, m1, m2]:
+        for dst in [n1, n2, n3, m1, m2]:
+            if src.name != dst.name:
+                cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl,
+                                      10, delay=1e5)
+                cc.set_ends(src, dst.name)
 
     qc = QuantumChannel("qc_n1_m1", tl, 0, 10)
-    qc.set_ends(n1, m1)
+    qc.set_ends(n1, m1.name)
     qc = QuantumChannel("qc_n2_m1", tl, 0, 10)
-    qc.set_ends(n2, m1)
+    qc.set_ends(n2, m1.name)
     qc = QuantumChannel("qc_n2_m2", tl, 0, 10)
-    qc.set_ends(n2, m2)
+    qc.set_ends(n2, m2.name)
     qc = QuantumChannel("qc_n3_m2", tl, 0, 10)
-    qc.set_ends(n3, m2)
+    qc.set_ends(n3, m2.name)
 
     n1.network_manager.protocol_stack[0].add_forwarding_rule("n2", "n2")
     n1.network_manager.protocol_stack[0].add_forwarding_rule("n3", "n2")

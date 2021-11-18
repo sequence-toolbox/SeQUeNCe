@@ -33,8 +33,8 @@ def test_Node_send_message():
     node2 = FakeNode("node2", tl)
     cc0 = ClassicalChannel("cc0", tl, 1e3)
     cc1 = ClassicalChannel("cc1", tl, 1e3)
-    cc0.set_ends(node1, node2)
-    cc1.set_ends(node2, node1)
+    cc0.set_ends(node1, node2.name)
+    cc1.set_ends(node2, node1.name)
 
     MSG_NUM = 10
     CC_DELAY = cc0.delay
@@ -82,8 +82,8 @@ def test_Node_send_qubit():
     node2 = FakeNode("node2", tl)
     qc0 = QuantumChannel("qc0", tl, 2e-4, 2e4)
     qc1 = QuantumChannel("qc1", tl, 2e-4, 2e4)
-    qc0.set_ends(node1, node2)
-    qc1.set_ends(node2, node1)
+    qc0.set_ends(node1, node2.name)
+    qc1.set_ends(node2, node1.name)
     tl.init()
 
     for i in range(1000):

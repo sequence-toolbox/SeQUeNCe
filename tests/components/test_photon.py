@@ -52,3 +52,13 @@ def test_measure_multiple():
              (complex(0), complex(0), complex(0), complex(1)))
 
     assert Photon.measure_multiple(basis, [photon1, photon2], rng) == 0
+
+def test_add_loss():
+    photon = Photon("", encoding_type={"name": "single_atom"})
+    assert photon.loss == 0
+
+    photon.add_loss(0.5)
+    assert photon.loss == 0.5
+
+    photon.add_loss(0.5)
+    assert photon.loss == 0.75
