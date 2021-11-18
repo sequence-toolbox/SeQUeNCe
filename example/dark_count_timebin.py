@@ -69,21 +69,24 @@ if __name__ == "__main__":
 
         for name, param in ls_params.items():
             alice.update_lightsource_params(name, param)
-        
+
         # Bob
-        detector_params = [{"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10},
-                           {"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10},
-                           {"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10}]
+        detector_params = [{"efficiency": 0.072, "dark_count": dark_count,
+                            "time_resolution": 10},
+                           {"efficiency": 0.072, "dark_count": dark_count,
+                            "time_resolution": 10},
+                           {"efficiency": 0.072, "dark_count": dark_count,
+                            "time_resolution": 10}]
         bob = QKDNode("bob", tl, encoding=time_bin)
 
         for i in range(len(detector_params)):
             for name, param in detector_params[i].items():
                 bob.update_detector_params(i, name, param)
 
-        qc0.set_ends(alice, bob)
-        qc1.set_ends(bob, alice)
-        cc0.set_ends(alice, bob)
-        cc1.set_ends(bob, alice)
+        qc0.set_ends(alice, bob.name)
+        qc1.set_ends(bob, alice.name)
+        cc0.set_ends(alice, bob.name)
+        cc1.set_ends(bob, alice.name)
 
         # BB84 and cascade config
         pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])

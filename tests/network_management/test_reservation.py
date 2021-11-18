@@ -233,10 +233,10 @@ def test_ResourceReservationProtocol_create_rules():
         mids.append(mid)
     for i in range(4):
         qc = QuantumChannel("qc_l_%d" % i, tl, 0, 100)
-        qc.set_ends(routers[i], mids[i])
+        qc.set_ends(routers[i], mids[i].name)
         routers[i].add_bsm_node(mids[i].name, routers[i + 1].name)
         qc = QuantumChannel("qc_r_%d" % i, tl, 0, 100)
-        qc.set_ends(routers[i + 1], mids[i])
+        qc.set_ends(routers[i + 1], mids[i].name)
         routers[i + 1].add_bsm_node(mids[i].name, routers[i].name)
     # all-to-all classical connections
     for i, n1 in enumerate(routers + mids):
@@ -244,7 +244,7 @@ def test_ResourceReservationProtocol_create_rules():
             if i == j:
                 continue
             cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 10, delay=1e6)
-            cc.set_ends(n1, n2)
+            cc.set_ends(n1, n2.name)
 
     tl.init()
 
@@ -313,10 +313,10 @@ def test_ResourceReservationProtocol_set_es_params():
         mids.append(mid)
     for i in range(4):
         qc = QuantumChannel("qc_l_%d" % i, tl, 0, 100)
-        qc.set_ends(routers[i], mids[i])
+        qc.set_ends(routers[i], mids[i].name)
         routers[i].add_bsm_node(mids[i].name, routers[i + 1].name)
         qc = QuantumChannel("qc_r_%d" % i, tl, 0, 100)
-        qc.set_ends(routers[i + 1], mids[i])
+        qc.set_ends(routers[i + 1], mids[i].name)
         routers[i + 1].add_bsm_node(mids[i].name, routers[i].name)
     # all-to-all classical connections
     for i, n1 in enumerate(routers + mids):
@@ -324,7 +324,7 @@ def test_ResourceReservationProtocol_set_es_params():
             if i == j:
                 continue
             cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 10, delay=100000)
-            cc.set_ends(n1, n2)
+            cc.set_ends(n1, n2.name)
 
     tl.init()
 

@@ -25,12 +25,13 @@ def test_light_source():
     FREQ, MEAN = 1e8, 0.1
     ls = LightSource("ls", tl, frequency=FREQ, mean_photon_num=MEAN)
     sender = FakeNode("sender", tl, ls)
+    sender.set_seed(0)
 
     assert sender.lightsource.frequency == FREQ and sender.lightsource.mean_photon_num == MEAN
 
     receiver = Receiver("receiver", tl)
     qc = QuantumChannel("qc", tl, distance=1e5, attenuation=0)
-    qc.set_ends(sender, receiver)
+    qc.set_ends(sender, receiver.name)
     state_list = []
     STATE_LEN = 1000
     for _ in range(STATE_LEN):
