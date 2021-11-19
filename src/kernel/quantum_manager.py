@@ -7,15 +7,18 @@ The states may currently be defined in two possible ways:
 The manager defines an API for interacting with quantum states.
 """
 
+from __future__ import annotations
 from abc import abstractmethod
-from typing import List, Dict
+from typing import List, Dict, TYPE_CHECKING
 
 from qutip.qip.circuit import QubitCircuit, Gate
 from qutip.qip.operations import gate_sequence_product
 from numpy import log2, outer
 
 from .quantum_utils import *
-from ..components.circuit import Circuit
+
+if TYPE_CHECKING:
+    from ..components.circuit import Circuit
 
 KET_STATE_FORMALISM = "ket_vector"
 DENSITY_MATRIX_FORMALISM = "density_matrix"
@@ -24,22 +27,24 @@ DENSITY_MATRIX_FORMALISM = "density_matrix"
 class QuantumManager():
     """Class to track and manage quantum states (abstract).
 
-    All states stored are of a single formalism
+    All states stored are of a single formalism (by default as a ket vector).
 
     Attributes:
         states (Dict[int, State]): mapping of state keys to quantum state objects.
+        formalism (str): formalism used for local quantum state representation.
     """
 
-    def __init__(self):
-        self.states = {}
-        self._least_available = 0
+    def __init__(self, formalism: str):
+        self.states: Dict[int, State] = {}
+        self._least_available: int = 0
+        self.formalism: str = formalism
 
     @abstractmethod
     def new(self, state: any) -> int:
         """Method to create a new quantum state.
 
         Args:
-            amplitudes: complex amplitudes of new state. Type depends on type of subclass.
+            state (any): complex amplitudes of new state. Type depends on type of subclass.
 
         Returns:
             int: key for new state generated.
@@ -65,6 +70,7 @@ class QuantumManager():
         Args:
             circuit (Circuit): quantum circuit to apply.
             keys (List[int]): list of keys for quantum states to apply circuit to.
+            meas_samp (float): random sample used for measurement.
 
         Returns:
             Dict[int, int]: dictionary mapping qstate keys to measurement results.
@@ -122,7 +128,7 @@ class QuantumManager():
 
         Args:
             keys (List[int]): key(s) of state(s) to change.
-            amplitudes: Amplitudes to set state to, type determined by type of subclass.
+            amplitudes (any): Amplitudes to set state to, type determined by type of subclass.
         """
 
         num_qubits = log2(len(amplitudes))
@@ -143,7 +149,7 @@ class QuantumManagerKet(QuantumManager):
     """Class to track and manage quantum states with the ket vector formalism."""
 
     def __init__(self):
-        super().__init__()
+        super().__init__(KET_STATE_FORMALISM)
 
     def new(self, state=(complex(1), complex(0))) -> int:
         key = self._least_available
@@ -192,6 +198,7 @@ class QuantumManagerKet(QuantumManager):
             state (List[complex]): state to measure.
             keys (List[int]): list of keys to measure.
             all_keys (List[int]): list of all keys corresponding to state.
+            meas_samp (float): random sample used for measurement result.
 
         Returns:
             Dict[int, int]: mapping of measured keys to measurement results.
@@ -263,7 +270,7 @@ class QuantumManagerDensity(QuantumManager):
     """Class to track and manage states with the density matrix formalism."""
 
     def __init__(self):
-        super().__init__()
+        super().__init__(DENSITY_MATRIX_FORMALISM)
 
     def new(self,
             state=([complex(1), complex(0)], [complex(0), complex(0)])) -> int:
@@ -373,9 +380,14 @@ class QuantumManagerDensity(QuantumManager):
 
 
 class State():
-    """Class to represent state of qubits."""
+    """Class to represent state of qubits.
 
-    def __init__(self, state, keys: List[int]):
+    Attributes:
+        state (any): internal representation of qubit state. Varies based on formalism.
+        keys (list[int]): associated keys for a quantum manager.
+    """
+
+    def __init__(self, state, keys):
         self.state = state
         self.keys = keys
 
@@ -394,7 +406,7 @@ class State():
         res = {"keys": self.keys}
         state = []
         for cplx_n in self.state:
-            if isinstance(cplx_n, float) or isinstance(cplx_n, int):
+            if type(cplx_n) == float:
                 state.append(cplx_n)
                 state.append(0)
             elif isinstance(cplx_n, complex):
@@ -442,7 +454,9 @@ class DensityState(State):
         """Constructor for density state class.
 
         Args:
-            state (List[List[complex]]): density matrix elements given as a list. If the list is one-dimensional, will be converted to matrix with outer product operation.
+            state (List[List[complex]]): density matrix elements given as a
+                list. If the list is one-dimensional, will be converted to
+                matrix with the outer product operation.
             keys (List[int]): list of keys to this state in quantum manager.
         """
 
