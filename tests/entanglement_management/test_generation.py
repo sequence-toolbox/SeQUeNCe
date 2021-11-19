@@ -54,10 +54,10 @@ def test_generation_receive_message():
 
     # negotiate message
     msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG",
-                                        emit_time_0=0, emit_time_1=0)
-    assert eg.received_message("e2", msg) is True
-    assert eg.expected_times[0] == 1
-    assert len(tl.events.data) == 4  # two excites, flip state, end time
+                                        emit_time=0)
+    eg.received_message("e2", msg)
+    assert eg.expected_time == 1
+    assert len(tl.events.data) == 2  # emit event and start/update_memory event
 
 
 def test_generation_pop():
@@ -80,7 +80,7 @@ def test_generation_pop():
     middle = EntanglementGenerationB(m0, "middle", others=["e0", "e1"])
 
     # BSM result
-    middle.bsm_update(None, {'info_type': "BSM_res", 'res': 0, 'time': 100})
+    middle.bsm_update(m0.bsm, {'info_type': "BSM_res", 'res': 0, 'time': 100})
 
     assert len(m0.messages) == 2
     assert m0.messages[0][0] == "e0"
@@ -228,7 +228,6 @@ def test_generation_run():
     
 
 def test_generation_fidelity_ket():
-    random.seed(0)
     NUM_TESTS = 1000
     FIDELITY = 0.75
 
@@ -300,7 +299,8 @@ def test_generation_fidelity_ket():
 
     tl.run()
 
-    desired = np.array([complex(np.sqrt(1/2)), complex(0), complex(0), complex(np.sqrt(1/2))])
+    desired = np.array([complex(np.sqrt(1 / 2)), complex(0),
+                        complex(0), complex(np.sqrt(1 / 2))])
     correct = 0
     total = 0
     for mem in e0.memory_array:
