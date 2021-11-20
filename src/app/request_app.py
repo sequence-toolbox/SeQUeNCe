@@ -1,7 +1,8 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING, List, Dict
+
 from ..kernel.event import Event
 from ..kernel.process import Process
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
@@ -32,18 +33,18 @@ class RequestApp():
             memo_to_reserve (Dict[int, Reservation]): mapping of memory index to corresponding reservation.
     """
 
-    def __init__(self, node: "QuantumRouter"):
-        self.node = node
+    def __init__(self, node: QuantumRouter):
+        self.node: QuantumRouter = node
         self.node.set_app(self)
-        self.responder = ""
-        self.start_t = -1
-        self.end_t = -1
-        self.memo_size = 0
-        self.fidelity = 0
-        self.reserve_res = None
-        self.memory_counter = 0
-        self.path = []
-        self.memo_to_reserve = {}
+        self.responder: str = ""
+        self.start_t: int = -1
+        self.end_t: int = -1
+        self.memo_size: int = 0
+        self.fidelity: float = 0
+        self.reserve_res: bool = None
+        self.memory_counter: int = 0
+        self.path: List[str] = []
+        self.memo_to_reserve: Dict[int, Reservation] = {}
 
     def start(self, responder: str, start_t: int, end_t: int, memo_size: int,
               fidelity: float):

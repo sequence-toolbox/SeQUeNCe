@@ -74,22 +74,21 @@ class RandomRequestApp(RequestApp):
         assert 0 < min_fidelity <= max_fidelity <= 1
 
         self.others: List[str] = others
-        self.rg = random.default_rng(seed)
+        self.rg: random.Generator = random.default_rng(seed)
 
         self.request_time: int = 0
 
-        self.wait_time = []
-        self.all_throughput = []
+        self.wait_time: List[int] = []
+        self.all_throughput: List[float] = []
         self.reserves = []
-        self.paths = []
-        self.memo_to_reserve = {}
+        self.paths: List[List[str]] = []
 
-        self.min_dur = min_dur
-        self.max_dur = max_dur
-        self.min_size = int(min_size)
-        self.max_size = int(max_size)
-        self.min_fidelity = min_fidelity
-        self.max_fidelity = max_fidelity
+        self.min_dur: int = min_dur
+        self.max_dur: int = max_dur
+        self.min_size: int = int(min_size)
+        self.max_size: int = int(max_size)
+        self.min_fidelity: float = min_fidelity
+        self.max_fidelity: float = max_fidelity
 
     def start(self):
         """Method to start the application.
@@ -141,7 +140,7 @@ class RandomRequestApp(RequestApp):
         self.memory_counter = 0
         self.path = []
 
-    def get_reserve_res(self, reservation: "Reservation", result: bool) -> None:
+    def get_reserve_res(self, reservation: Reservation, result: bool) -> None:
         """Method to receive reservation result from network manager.
 
         Args:
@@ -153,7 +152,6 @@ class RandomRequestApp(RequestApp):
         """
         super().get_reserve_res(reservation, result)
         if result:
-            # todo: temp
             process = Process(self, "start", [])
             self.reserves.append([self.responder, self.start_t, self.end_t,
                                   self.memo_size, self.fidelity])
