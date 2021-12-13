@@ -140,6 +140,9 @@ class QuantumChannel(OpticalChannel):
 
         # check if photon kept
         if (self.sender.get_generator().random() > self.loss) or qubit.is_null:
+            if qubit.is_null:
+                qubit.add_loss(self.loss)
+
             # check if polarization encoding and apply necessary noise
             if (qubit.encoding_type["name"] == "polarization") and (
                     self.sender.get_generator().random() > self.polarization_fidelity):

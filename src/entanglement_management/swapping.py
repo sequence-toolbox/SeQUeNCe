@@ -178,7 +178,8 @@ class EntanglementSwappingA(EntanglementProtocol):
             meas_res = self.own.timeline.quantum_manager.run_circuit(
                 self.circuit, [self.left_memo.qstate_key,
                                self.right_memo.qstate_key], meas_samp)
-            meas_res = [meas_res[self.left_memo.qstate_key], meas_res[self.right_memo.qstate_key]]
+            meas_res = [meas_res[self.left_memo.qstate_key],
+                        meas_res[self.right_memo.qstate_key]]
 
             msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,
                                                 self.left_protocol_name,
