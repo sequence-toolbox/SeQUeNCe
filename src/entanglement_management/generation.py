@@ -213,7 +213,6 @@ class EntanglementGenerationA(EntanglementProtocol):
         self.ent_round += 1
 
         if self.ent_round == 1:
-            self.memory.update_state(EntanglementGenerationA._plus_state)
             return True
 
         elif self.ent_round == 2 and self.bsm_res[0] != -1:
