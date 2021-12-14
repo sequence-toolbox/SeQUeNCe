@@ -5,25 +5,30 @@ All entities are required to have an attached timeline for simulation.
 """
 
 from _thread import start_new_thread
+from datetime import timedelta
 from math import inf
 from sys import stdout
 from time import time_ns, sleep
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Dict, Union
 
 from numpy import random
 
 if TYPE_CHECKING:
     from .event import Event
+    from .entity import Entity
 
 from .eventlist import EventList
 from ..utils import log
-from .quantum_manager import QuantumManagerKet, QuantumManagerDensity
+from .quantum_manager import (QuantumManagerKet,
+                              QuantumManagerDensity,
+                              KET_STATE_FORMALISM,
+                              DENSITY_MATRIX_FORMALISM)
 
 CARRIAGE_RETURN = '\r'
 SLEEP_SECONDS = 3
 
 NANOSECONDS_PER_MILLISECOND = 1e6
-PICOSECONDS_PER_NANOSECOND = MILLISECONDS_PER_SECOND = 1e3
+PICOSECONDS_PER_NANOSECOND = NANOSECONDS_PER_MICROSECOND = MILLISECONDS_PER_SECOND = 1e3
 SECONDS_PER_MINUTE = MINUTES_PER_HOUR = 60
 
 
@@ -53,24 +58,24 @@ class Timeline:
         quantum_manager (QuantumManager): quantum state manager.
     """
 
-    def __init__(self, stop_time=inf, formalism='ket_vector'):
+    def __init__(self, stop_time=inf, formalism=KET_STATE_FORMALISM):
         """Constructor for timeline.
 
         Args:
             stop_time (int): stop time (in ps) of simulation (default inf).
         """
-        self.events = EventList()
-        self.entities = []
-        self.time = 0
-        self.stop_time = stop_time
-        self.schedule_counter = 0
-        self.run_counter = 0
-        self.is_running = False
-        self.show_progress = False
-        
-        if formalism == 'ket_vector':
+        self.events: EventList = EventList()
+        self.entities: Dict[str, "Entity"] = {}
+        self.time: Union[int, float] = 0
+        self.stop_time: Union[int, float] = stop_time
+        self.schedule_counter: int = 0
+        self.run_counter: int = 0
+        self.is_running: bool = False
+        self.show_progress: bool = False
+
+        if formalism == KET_STATE_FORMALISM:
             self.quantum_manager = QuantumManagerKet()
-        elif formalism == 'density_matrix':
+        elif formalism == DENSITY_MATRIX_FORMALISM:
             self.quantum_manager = QuantumManagerDensity()
         else:
             raise ValueError(f"Invalid formalism {formalism}")
@@ -82,7 +87,8 @@ class Timeline:
 
     def schedule(self, event: "Event") -> None:
         """Method to schedule an event."""
-
+        if type(event.process.owner) is str:
+            event.process.owner = self.get_entity_by_name(event.process.owner)
         self.schedule_counter += 1
         self.events.push(event)
 
@@ -90,7 +96,7 @@ class Timeline:
         """Method to initialize all simulated entities."""
         log.logger.info("Timeline initial network")
 
-        for entity in self.entities:
+        for entity in self.entities.values():
             entity.init()
 
     def run(self) -> None:
@@ -155,6 +161,18 @@ class Timeline:
 
         self.events.update_event_time(event, time)
 
+    def add_entity(self, entity: "Entity") -> None:
+        assert entity.name not in self.entities
+        entity.timeline = self
+        self.entities[entity.name] = entity
+
+    def remove_entity_by_name(self, name: str) -> None:
+        entity = self.entities.pop(name)
+        entity.timeline = None
+
+    def get_entity_by_name(self, name: str) -> Optional["Entity"]:
+        return self.entities.get(name, None)
+
     def seed(self, seed: int) -> None:
         """Sets random seed for simulation."""
 
@@ -182,29 +200,8 @@ class Timeline:
             sleep(SLEEP_SECONDS)
 
     def ns_to_human_time(self, nanoseconds: int) -> str:
-        if nanoseconds >= NANOSECONDS_PER_MILLISECOND:
-            milliseconds = nanoseconds / NANOSECONDS_PER_MILLISECOND
-
-            if milliseconds >= MILLISECONDS_PER_SECOND:
-                seconds = milliseconds / MILLISECONDS_PER_SECOND
-
-                if seconds >= SECONDS_PER_MINUTE:
-                    minute = seconds // SECONDS_PER_MINUTE
-                    seconds %= SECONDS_PER_MINUTE
-
-                    if minutes >= MINUTES_PER_HOUR:
-                        hours = minutes // MINUTES_PER_HOUR
-                        minutes %= MINUTES_PER_HOUR
-
-                        return '%d hour: %d min: %.2f sec' % (hours, minutes, seconds)
-
-                    return '%d min: %.2f sec' % (minutes, seconds)
-
-                return '%.2f sec' % (seconds)
-
-            return f"%d ms" % (milliseconds)
-
-        return '0 ms'
+        milliseconds = nanoseconds / NANOSECONDS_PER_MILLISECOND
+        return str(timedelta(milliseconds=milliseconds))
 
     @staticmethod
     def convert_to_nanoseconds(picoseconds: int) -> int:

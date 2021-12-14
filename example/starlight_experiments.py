@@ -62,7 +62,9 @@ if __name__ == "__main__":
         app_node_name = name
         others = nodes_name[:]
         others.remove(app_node_name)
-        app = RandomRequestApp(network_topo.nodes[app_node_name], others, i)
+        app = RandomRequestApp(network_topo.nodes[app_node_name], others, i,
+                               min_dur=1e13, max_dur=2e13, min_size=10,
+                               max_size=25, min_fidelity=0.8, max_fidelity=1.0)
         apps.append(app)
         app.start()
 
@@ -90,7 +92,7 @@ if __name__ == "__main__":
             initiator = node.name
             reserves = node.app.reserves
             _wait_times = node.app.get_wait_time()
-            _throughputs = node.app.get_throughput()
+            _throughputs = node.app.get_all_throughput()
             min_size = min(len(reserves), len(_wait_times), len(_throughputs))
             reserves = reserves[:min_size]
             _wait_times = _wait_times[:min_size]

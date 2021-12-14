@@ -142,7 +142,8 @@ def test_ResourceReservationProtocol_pop():
             card.add(reservation)
         else:
             break
-    msg = ResourceReservationMessage(RSVPMsgType.REJECT, n1.rsvp.name, reservation)
+    msg = ResourceReservationMessage(RSVPMsgType.REJECT, n1.rsvp.name,
+                                     reservation, path=['n1', 'n2'])
     n1.rsvp.pop("n2", msg)
     assert len(n1.pop_log) == 1 and len(n1.push_log) == 0
     assert n1.pop_log[0]["msg"].msg_type == RSVPMsgType.REJECT
@@ -157,7 +158,8 @@ def test_ResourceReservationProtocol_pop():
             card.add(reservation)
         else:
             break
-    msg = ResourceReservationMessage(RSVPMsgType.REJECT, n1.rsvp.name, reservation)
+    msg = ResourceReservationMessage(RSVPMsgType.REJECT, n1.rsvp.name,
+                                     reservation, path=['n0', 'n1', 'n2'])
     n1.rsvp.pop("n2", msg)
     assert len(n1.pop_log) == 0 and len(n1.push_log) == 1
     assert n1.push_log[0]["msg"].msg_type == RSVPMsgType.REJECT
@@ -167,7 +169,8 @@ def test_ResourceReservationProtocol_pop():
 
     # initiator receives APPROVE
     reservation = Reservation("n1", "n2", 1, 10, 1000, 0.9)
-    msg = ResourceReservationMessage(RSVPMsgType.APPROVE, n1.rsvp.name, reservation, path=["n1", "n2"])
+    msg = ResourceReservationMessage(RSVPMsgType.APPROVE, n1.rsvp.name,
+                                     reservation, path=["n1", "n2"])
     n1.rsvp.pop("n2", msg)
     assert len(n1.pop_log) == 1 and len(n1.push_log) == 0
     assert n1.pop_log[0]["msg"].msg_type == RSVPMsgType.APPROVE
@@ -233,16 +236,18 @@ def test_ResourceReservationProtocol_create_rules():
         mids.append(mid)
     for i in range(4):
         qc = QuantumChannel("qc_l_%d" % i, tl, 0, 100)
-        qc.set_ends(routers[i], mids[i])
+        qc.set_ends(routers[i], mids[i].name)
+        routers[i].add_bsm_node(mids[i].name, routers[i + 1].name)
         qc = QuantumChannel("qc_r_%d" % i, tl, 0, 100)
-        qc.set_ends(routers[i + 1], mids[i])
+        qc.set_ends(routers[i + 1], mids[i].name)
+        routers[i + 1].add_bsm_node(mids[i].name, routers[i].name)
     # all-to-all classical connections
     for i, n1 in enumerate(routers + mids):
         for j, n2 in enumerate(routers + mids):
             if i == j:
                 continue
             cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 10, delay=1e6)
-            cc.set_ends(n1, n2)
+            cc.set_ends(n1, n2.name)
 
     tl.init()
 
@@ -273,12 +278,15 @@ def test_ResourceReservationProtocol_create_rules():
     counter = 0
     for memory in routers[0].memory_array:
         print(memory.entangled_memory["node_id"], memory.fidelity)
-        if memory.entangled_memory["node_id"] == "r4" and memory.fidelity >= 0.9:
+        if memory.entangled_memory["node_id"] == "r4" \
+                and memory.fidelity >= 0.9:
             counter += 1
 
     assert counter >= 0
     for info in routers[0].resource_manager.memory_manager:
-        if info.state == "ENTANGLED" and info.remote_node == "r4" and info.fidelity >= 0.9:
+        if info.state == "ENTANGLED" \
+                and info.remote_node == "r4" \
+                and info.fidelity >= 0.9:
             counter -= 1
     assert counter == 0
 
@@ -301,29 +309,33 @@ def test_ResourceReservationProtocol_set_es_params():
     mids = []
     for i in range(5):
         router = TestNode("r%d" % i, tl)
+        router.set_seed(i)
         router.rsvp.set_swapping_success_rate(0.8)
         router.rsvp.set_swapping_degradation(0.7)
         routers.append(router)
     for i in range(4):
         mid = BSMNode("mid%d" % i, tl, [routers[i].name, routers[i + 1].name])
+        mid.set_seed(i + 5)
         mids.append(mid)
     for i in range(4):
         qc = QuantumChannel("qc_l_%d" % i, tl, 0, 100)
-        qc.set_ends(routers[i], mids[i])
+        qc.set_ends(routers[i], mids[i].name)
+        routers[i].add_bsm_node(mids[i].name, routers[i + 1].name)
         qc = QuantumChannel("qc_r_%d" % i, tl, 0, 100)
-        qc.set_ends(routers[i + 1], mids[i])
+        qc.set_ends(routers[i + 1], mids[i].name)
+        routers[i + 1].add_bsm_node(mids[i].name, routers[i].name)
     # all-to-all classical connections
     for i, n1 in enumerate(routers + mids):
         for j, n2 in enumerate(routers + mids):
             if i == j:
                 continue
             cc = ClassicalChannel("cc_%s_%s" % (n1.name, n2.name), tl, 10, delay=100000)
-            cc.set_ends(n1, n2)
+            cc.set_ends(n1, n2.name)
 
     tl.init()
 
     path = [r.name for r in routers]
-    reservation = Reservation("r0", "r4", 1, 9000000, 10, 0.9)
+    reservation = Reservation("r0", "r4", 1, 20000000, 10, 0.9)
     for node in [routers[0], routers[-1]]:
         for i, card in enumerate(node.rsvp.timecards):
             if i >= 10:

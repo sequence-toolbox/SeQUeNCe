@@ -8,7 +8,6 @@ Photons should be routed to a BSM device for entanglement generation, or through
 from math import sqrt, inf
 from typing import Any, List, TYPE_CHECKING, Dict
 
-from numpy import random
 from scipy import stats
 
 if TYPE_CHECKING:
@@ -93,6 +92,7 @@ class MemoryArray(Entity):
 
     def set_node(self, node: "QuantumRouter") -> None:
         self.owner = node
+
 
 class Memory(Entity):
     """Individual single-atom memory.
@@ -181,7 +181,9 @@ class Memory(Entity):
             return
 
         # measure quantum state
-        res = self.timeline.quantum_manager.run_circuit(Memory._meas_circuit, [self.qstate_key])
+        res = self.timeline.quantum_manager.run_circuit(Memory._meas_circuit,
+                                                        [self.qstate_key],
+                                                        self.get_generator().random())
         state = res[self.qstate_key]
 
         # create photon and check if null
@@ -197,7 +199,7 @@ class Memory(Entity):
             self.next_excite_time = self.timeline.now() + period
 
         # send to node
-        if (state == 0) or (random.random_sample() < self.efficiency):
+        if (state == 0) or (self.get_generator().random() < self.efficiency):
             self.owner.send_qubit(dst, photon)
             self.excited_photon = photon
 

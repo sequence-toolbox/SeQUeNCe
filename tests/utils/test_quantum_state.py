@@ -1,6 +1,9 @@
 from sequence.utils.quantum_state import QuantumState
 from sequence.utils.encoding import polarization
 from math import sqrt
+from numpy.random import default_rng
+
+rng = default_rng()
 
 
 def test_measure():
@@ -20,7 +23,7 @@ def test_measure():
         counter = 0
         for _ in range(100):
             qs.set_state_single(s)
-            res = qs.measure(b)
+            res = qs.measure(b, rng)
             if res:
                 counter += 1
         assert counter == e
@@ -35,7 +38,7 @@ def test_measure():
         counter = 0
         for _ in range(1000):
             qs.set_state_single(s)
-            res = qs.measure(b)
+            res = qs.measure(b, rng)
             if res:
                 counter += 1
         assert abs(0.5 - counter / 1000) < 0.1
@@ -60,7 +63,7 @@ def test_measure_entangled():
             qs1.set_state_single(s)
             qs2 = QuantumState()
             qs1.entangle(qs2)
-            res = qs1.measure(b)
+            res = qs1.measure(b, rng)
             if res:
                 counter += 1
         assert counter == e
@@ -77,7 +80,7 @@ def test_measure_entangled():
             qs1.set_state_single(s)
             qs2 = QuantumState()
             qs1.entangle(qs2)
-            res = qs1.measure(b)
+            res = qs1.measure(b, rng)
             if res:
                 counter += 1
         assert abs(0.5 - counter / 1000) < 0.1

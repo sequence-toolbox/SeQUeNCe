@@ -28,6 +28,11 @@ class NetworkManagerMessage(Message):
         Message.__init__(self, msg_type, receiver)
         self.payload = payload
 
+    def __str__(self):
+        return "type={}, receiver={}, payload={}".format(self.msg_type,
+                                                         self.receiver,
+                                                         self.payload)
+
 
 class NetworkManager():
     """Network manager implementation class.
