@@ -1,0 +1,29 @@
+{
+    "stop_time": 1000000000000,
+    "nodes": [
+        {
+            "name": "alice",
+            "type": "QKDNode"
+        },
+        {
+            "name": "bob",
+            "type": "QKDNode"
+        }
+    ],
+    "qchannels": [
+        {
+            "source": "alice",
+            "destination": "bob",
+            "attenuation": 1e-5,
+            "distance": 3e3
+        }
+    ],
+    "cconnections": [
+        {
+            "node1": "alice",
+            "node2": "bob",
+            "distance": 3e3,
+            "delay": 1000000000
+        }
+    ]
+}
