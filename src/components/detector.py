@@ -116,7 +116,13 @@ class QSDetector(Entity, ABC):
     def __init__(self, name: str, timeline: "Timeline"):
         Entity.__init__(self, name, timeline)
         self.detectors = []
+        self.components = []
         self.trigger_times = []
+
+    def init(self):
+        for component in self.components:
+            component.attach(self)
+            component.owner = self.owner
 
     def update_detector_params(self, detector_id: int, arg_name: str, value: Any) -> None:
         self.detectors[detector_id].__setattr__(arg_name, value)
@@ -159,14 +165,15 @@ class QSDetectorPolarization(QSDetector):
         self.splitter = BeamSplitter(name + ".splitter", timeline)
         self.splitter.set_receiver(0, self.detectors[0])
         self.splitter.set_receiver(1, self.detectors[1])
+        
         self.components = [self.splitter, self.detectors[0], self.detectors[1]]
-        [component.attach(self) for component in self.components]
         self.trigger_times = [[], []]
 
     def init(self) -> None:
         """Implementation of Entity interface (see base class)."""
 
         assert len(self.detectors) == 2
+        super().init()
 
     def get(self, photon: "Photon") -> None:
         """Method to receive a photon for measurement.
@@ -220,15 +227,13 @@ class QSDetectorTimeBin(QSDetector):
         self.switch.set_interferometer(self.interferometer)
 
         self.components = [self.switch, self.interferometer] + self.detectors
-        [component.attach(self) for component in self.components]
         self.trigger_times = [[], [], []]
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
 
-        self.interferometer.owner = self.owner
-        for d in self.detectors:
-            d.owner = self.owner
+        assert len(self.detectors) == 3
+        super().init()
 
     def get(self, photon):
         """Method to receive a photon for measurement.
