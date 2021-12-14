@@ -40,16 +40,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - rewrite of quantum entanglement class
 - change all optical channels to one-way
 
-## [0.3.0]
-### Added
-- parallel execution of simulations
-    - separate parallel timelines
-    - server to manage cross-process quantum states (available in Python and C++)
-    - serialization of messages, circuits to allow cross-process exchange
+## [0.2.4]
+- serialization of messages, circuits
 - base classes for applications and quantum manager states
+- photon loss method "Photon.add\_loss()"
 
 ### Changed
 - moved all random number generation to network nodes
+    - includes all components and quantum manager functions
+    - utilizes "Entity.get\_generator()" method
 - reworked timeline events to handle cross-process events
-- reworked structure of topology files for network creation
-- Tweaked process of entangelement and reservation protocols
+    - most protocols and components now use strings instead of explicit instances for classes
+- tweaked process of entangelement and reservation protocols
+- EventList structure and interface with Timeline
+- Timeline timing display
