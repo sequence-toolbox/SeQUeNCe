@@ -69,13 +69,13 @@ def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager", args)
         return [memory_info]
     else:
         return []
-# args={"index_lower": 0, "index_upper": 9}
+# args = {"index_lower": 0, "index_upper": 9}
 ```
 
 Rule conditions take 3 arguments:
 
-- `memory_info`, containing the information stored in the memory manager, and
-- `manager`, which is a reference to the memory manager.
+- `memory_info`, containing the information stored in the memory manager,
+- `manager`, which is a reference to the memory manager, annd
 - `args`, which is a dictionary to store values of other arguments, like `index_upper` and `index_lower`
 
 In our case, we will use any memories in the `RAW` (unentangled) state. Other possible memory states are `OCCUPIED` (for
@@ -83,8 +83,8 @@ memories in use by some protocol) and `ENTANGLED` (for memories currently entang
 memory). If our desired condition is met, we will return the `memory_info` as a valid memory. Otherwise, we return
 nothing.
 
-The arguments for `args` for flow 1 are shown on line 9. We will create a variable to store these when we load the rule
-into the rule manager.
+The arguments for `args` for flow 1 are shown in the bottom comment.
+We will create a variable to store these when we load the rule into the rule manager.
 
 ### Step 3: Create Rule Actions for Flow 1
 
@@ -92,11 +92,12 @@ Next, we will dictate what the resource manager should do when our custom condit
 rule action.
 
 Rule actions are provided one argument by the resource manager: a list of `memory_info` objects that have met the
-condition of the rule. They should return three objects:
+condition of the rule. They should return four objects:
 
 1. Any protocols created,
-2. A list of nodes of which there are other requirements for operation, and
-3. Requirements that should be met on other nodes.
+2. A list of nodes of which there are other requirements for operation,
+3. Requirements that should be met on other nodes, and
+4. Arguments for the requirements function.
 
 In our case, we will create an entanglement generation protocol on both nodes and have router 1 confirm that router 2
 has created a protocol. `eg_rule_action1` will give the action for router 1 (including sending a requirement to router
