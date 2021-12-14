@@ -137,6 +137,7 @@ def test_QSDetectorPolarization():
     start_time = 0
     basis_list = [np.random.randint(2) for _ in range(1000)]
     qsdetector.set_basis_list(basis_list, start_time, frequency)
+    tl.init()
 
     for i in range(1000):
         tl.time = i * 1e12 / frequency
@@ -160,6 +161,7 @@ def test_QSDetectorTimeBin():
     start_time = 0
     basis_list = [np.random.randint(2) for _ in range(1000)]
     qsdetector.set_basis_list(basis_list, start_time, frequency)
+    tl.init()
 
     for i in range(1000):
         tl.time = i * 1e12 / frequency
