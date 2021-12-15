@@ -47,8 +47,10 @@ class FakeProtocol(StackProtocol):
 
 
 def test_NetworkManager_received_message():
+    tl = Timeline()
+    node = FakeNode('fake', tl)
     protocol = FakeProtocol(None, "protocol")
-    manager = NetworkManager(None, [protocol])
+    manager = NetworkManager(node, [protocol])
     assert protocol.is_pop is False
     msg = NetworkManagerMessage("", "network_manager", "payload")
     manager.received_message("src", msg)
@@ -56,7 +58,9 @@ def test_NetworkManager_received_message():
 
 
 def test_NetworkManager_load_stack():
-    manager = NetworkManager(None, [])
+    tl = Timeline()
+    node = FakeNode('fake', tl)
+    manager = NetworkManager(node, [])
     assert len(manager.protocol_stack) == 0
     protocol = FakeProtocol(None, "protocol")
     manager.load_stack([protocol])

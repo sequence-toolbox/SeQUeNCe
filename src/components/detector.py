@@ -67,11 +67,9 @@ class Detector(Entity):
         now = self.timeline.now()
         time = round(now / self.time_resolution) * self.time_resolution
 
-        if (
-                self.get_generator().random() < self.efficiency or dark_get) and now > self.next_detection_time:
+        if (self.get_generator().random() < self.efficiency or dark_get) and now > self.next_detection_time:
             self.notify({'time': time})
-            self.next_detection_time = now + (
-                        1e12 / self.count_rate)  # period in ps
+            self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
     def add_dark_count(self) -> None:
         """Method to schedule false positive detection events.
