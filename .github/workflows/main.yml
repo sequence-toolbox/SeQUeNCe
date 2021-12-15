@@ -25,6 +25,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install .
         pip install pytest
+        pip install mpi4py
     - name: Test with pytest
       run: |
         pytest tests
