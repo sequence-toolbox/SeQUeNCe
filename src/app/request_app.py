@@ -7,6 +7,7 @@ from ..kernel.process import Process
 if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
     from ..network_management.reservation import Reservation
+    from ..resource_management.memory_manager import MemoryInfo
 
 
 class RequestApp():

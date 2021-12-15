@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..message import Message
+from ..utils import log
 from .rule_manager import RuleManager
 from .memory_manager import MemoryManager
 
@@ -119,7 +120,8 @@ class ResourceManager():
         Returns:
             bool: if rule was loaded successfully.
         """
-
+        log.logger.info(
+            'load rule {}'.format(rule))
         self.rule_manager.load(rule)
 
         for memory_info in self.memory_manager:
@@ -140,7 +142,8 @@ class ResourceManager():
         Args:
             rule (Rule): rule to remove.
         """
-        
+        log.logger.info(
+            'expired rule {}'.format(rule))
         created_protocols = self.rule_manager.expire(rule)
         while created_protocols:
             protocol = created_protocols.pop()
@@ -227,6 +230,10 @@ class ResourceManager():
                                      req_condition_func=req_condition_func,
                                      req_args=req_args)
         self.owner.send_message(req_dst, msg)
+        log.logger.info(
+            "{} network manager send {} message to {}".format(self.owner.name,
+                                                              msg.msg_type.name,
+                                                              req_dst))
 
     def received_message(self, src: str, msg: "ResourceManagerMessage") -> None:
         """Method to receive resoruce manager messages.
@@ -237,7 +244,9 @@ class ResourceManager():
             src (str): name of the node that sent the message.
             msg (ResourceManagerMessage): message received.
         """
-
+        log.logger.info("{} receive {} message from {}".format(self.name,
+                                                               msg.msg_type.name,
+                                                               src))
         if msg.msg_type is ResourceManagerMsgType.REQUEST:
             protocol = msg.req_condition_func(self.waiting_protocols,
                                               msg.req_args)

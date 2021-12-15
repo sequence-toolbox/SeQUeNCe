@@ -101,7 +101,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         own (QuantumRouter): node that protocol instance is attached to.
         name (str): label for protocol instance.
         middle (str): name of BSM measurement node where emitted photons should be directed.
-        other (str): name of distant QuantumRouter node, containing a memory to be entangled with local memory.
+        remote_node_name (str): name of distant QuantumRouter node, containing a memory to be entangled with local memory.
         memory (Memory): quantum memory object to attempt entanglement for.
     """
 
@@ -111,16 +111,14 @@ class EntanglementGenerationA(EntanglementProtocol):
     _z_circuit = Circuit(1)
     _z_circuit.z(0)
 
-    def __init__(self, own: Node, name: str, middle: str, other: str,
-                 memory: Memory):
+    def __init__(self, own: Node, name: str, middle: str, other: str, memory: Memory):
         """Constructor for entanglement generation A class.
 
         Args:
             own (Node): node to attach protocol to.
             name (str): name of protocol instance.
             middle (str): name of middle measurement node.
-            remote_node_name (str): name of other node.
-            remote_protocol_name (str): name of other protocol
+            other (str): name of other node.
             memory (Memory): memory to entangle.
         """
 
@@ -221,6 +219,9 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         elif self.ent_round == 3 and self.bsm_res[1] != -1:
             # successful entanglement
+            log.logger.info(
+                self.own.name + " successful entanglement of memory {}".format(
+                    self.memory))
             self.memory.entangled_memory["node_id"] = self.remote_node_name
             self.memory.entangled_memory["memo_id"] = self.remote_memo_id
             self.memory.fidelity = self.memory.raw_fidelity
@@ -237,13 +238,16 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         else:
             # entanglement failed
+            log.logger.info(
+                self.own.name + " failed entanglement of memory {}".format(
+                    self.memory))
             self.update_resource_manager(self.memory, "RAW")
             return False
 
         return True
 
     def emit_event(self) -> None:
-        """Method to setup memory and emit photons.
+        """Method to set up memory and emit photons.
 
         If the protocol is in round 1, the memory will be first set to the \|+> state.
         Otherwise, it will apply an x_gate to the memory.
@@ -276,7 +280,9 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         msg_type = msg.msg_type
 
-        log.logger.debug(self.own.name + " EG protocol received_message of type {} from node {}, round={}".format(msg.msg_type, src, self.ent_round))
+        log.logger.debug("{} EG protocol received_message of type {} from node"
+                         " {}, round={}".format(self.own.name, msg.msg_type,
+                                                src, self.ent_round + 1))
 
         if msg_type is GenerationMsgType.NEGOTIATE:
             # configure params

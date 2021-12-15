@@ -40,7 +40,6 @@ class Photon():
         self.location: Entity = location
         self.encoding_type: Dict[str, Any] = encoding_type
         if self.encoding_type["name"] == "single_atom":
-            self.memory = None
             self.fidelity: Optional[float] = None
             self.detector_num: Optional[int] = None
             self.loss: float = 0
@@ -70,6 +69,7 @@ class Photon():
         Args:
             basis (List[List[complex]]): basis (given as lists of complex coefficients) with which to measure the photon.
             photon (Photon): photon to measure.
+            rng (Generator): PRGN to use  for measurement results.
 
         Returns:
             int: 0/1 value giving result of measurement in given basis.
@@ -84,6 +84,7 @@ class Photon():
         Args:
             basis (List[List[complex]]): basis (given as lists of complex coefficients) with which to measure the photons.
             photons (List[Photon]): list of 2 photons to measure.
+            rng (Generator): PRGN to use  for measurement results.
 
         Returns:
             int: 0-3 value giving the result of measurement in given basis.

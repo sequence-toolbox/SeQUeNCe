@@ -215,7 +215,7 @@ def ep_rule_action2(memories_info: List["MemoryInfo"], args: Arguments):
 
     """
     memories = [info.memory for info in memories_info]
-    name = "EP.%s" % (memories[0].name)
+    name = "EP.%s" % memories[0].name
     protocol = BBPSSW(None, name, memories[0], None)
     return protocol, [None], [None], [None]
 
@@ -230,11 +230,8 @@ def es_rule_actionB(memories_info: List["MemoryInfo"], args: Arguments):
     return protocol, [None], [None], [None]
 
 
-def es_rule_conditionB1(memory_info: "MemoryInfo", manager: "MemoryManager",
-                        args: Arguments):
-    """Condition function used by EntanglementSwappingB protocol on nodes of
-    either responder or initiator
-
+def es_rule_conditionB1(memory_info: "MemoryInfo", manager: "MemoryManager", args: Arguments):
+    """Condition function used by EntanglementSwappingB protocol on nodes of either responder or initiator
     """
     memory_indices = args["memory_indices"]
     target_remote = args["target_remote"]
@@ -250,10 +247,8 @@ def es_rule_conditionB1(memory_info: "MemoryInfo", manager: "MemoryManager",
         return []
 
 
-def es_rule_conditionA(memory_info: "MemoryInfo", manager: "MemoryManager",
-                       args: Arguments):
+def es_rule_conditionA(memory_info: "MemoryInfo", manager: "MemoryManager", args: Arguments):
     """Condition function used by EntanglementSwappingA protocol on nodes
-
     """
     memory_indices = args["memory_indices"]
     left = args["left"]
@@ -282,11 +277,8 @@ def es_rule_conditionA(memory_info: "MemoryInfo", manager: "MemoryManager",
     return []
 
 
-def es_req_func(protocols: List["EntanglementProtocol"],
-                args: Arguments) -> "EntanglementSwappingB":
-    """Function used by `es_rule_actionA` for selecting swapping protocols
-    on the remote node
-
+def es_req_func(protocols: List["EntanglementProtocol"], args: Arguments) -> "EntanglementSwappingB":
+    """Function used by `es_rule_actionA` for selecting swapping protocols on the remote node
     """
     target_memo = args["target_memo"]
     for protocol in protocols:
@@ -298,7 +290,6 @@ def es_req_func(protocols: List["EntanglementProtocol"],
 
 def es_rule_actionA(memories_info: List["MemoryInfo"], args: Arguments):
     """Action function used by EntanglementSwappingA protocol on nodes
-
     """
     es_succ_prob = args["es_succ_prob"]
     es_degradation = args["es_degradation"]
@@ -315,12 +306,8 @@ def es_rule_actionA(memories_info: List["MemoryInfo"], args: Arguments):
     return protocol, dsts, req_funcs, req_args
 
 
-def es_rule_conditionB2(memory_info: "MemoryInfo",
-                        manager: "MemoryManager",
-                        args: Arguments) -> List["MemoryInfo"]:
-    """Condition function used by EntanglementSwappingB protocol on
-    intermediate nodes of path
-
+def es_rule_conditionB2(memory_info: "MemoryInfo", manager: "MemoryManager", args: Arguments) -> List["MemoryInfo"]:
+    """Condition function used by EntanglementSwappingB protocol on intermediate nodes of path
     """
     memory_indices = args["memory_indices"]
     left = args["left"]
@@ -350,7 +337,7 @@ class ResourceReservationProtocol(StackProtocol):
         name (str): label for protocol instance.
         timecards (List[MemoryTimeCard]): list of reservation cards for all memories on node.
         es_succ_prob (float): sets `success_probability` of `EntanglementSwappingA` protocols created by rules.
-        es_degredation (float): sets `degredation` of `EntanglementSwappingA` protocols created by rules.
+        es_degradation (float): sets `degradation` of `EntanglementSwappingA` protocols created by rules.
         accepted_reservation (List[Reservation]): list of all approved reservation requests.
     """
 

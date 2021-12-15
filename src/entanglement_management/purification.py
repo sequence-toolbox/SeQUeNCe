@@ -59,8 +59,10 @@ class BBPSSW(EntanglementProtocol):
         name (str): label for protocol instance.
         kept_memo: memory to be purified by the protocol (should already be entangled).
         meas_memo: memory to measure and discart (should already be entangled).
-        another (BBPSSW): pointer of BBPSSW on another side (may be removed in the future).
         meas_res (int): measurement result from circuit.
+        remote_node_name (str): name of other node.
+        remote_protocol_name (str): name of other protocol
+        remote_memories (List[str]): name of remote memories
     """
 
     circuit = Circuit(2)
@@ -75,9 +77,6 @@ class BBPSSW(EntanglementProtocol):
             name (str): name of protocol instance.
             kept_memo (Memory): memory to have fidelity improved.
             meas_memo (Memory): memory to measure and discard.
-            remote_node_name (str): name of other node.
-            remote_protocol_name (str): name of other protocol
-            remote_memories (List[str]): name of remote memories
         """
 
         assert kept_memo != meas_memo
