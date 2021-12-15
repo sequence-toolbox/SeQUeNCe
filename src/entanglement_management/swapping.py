@@ -60,10 +60,10 @@ class EntanglementSwappingMessage(Message):
 
     def __str__(self):
         if self.msg_type == SwappingMsgType.SWAP_RES:
-            return "EntanglementSwappingMessage: msg_type: %s; local_memo: %d; fidelity: %.2f; " \
-                   "remote_node: %s; remote_memo: %d; " % (self.msg_type, self.local_memo,
-                                                           self.fidelity, self.remote_node,
-                                                           self.remote_memo)
+            return "EntanglementSwappingMessage: msg_type: %s; " \
+                   "fidelity: %.2f; remote_node: %s; remote_memo: %s; " \
+                   % (self.msg_type, self.fidelity,
+                      self.remote_node, self.remote_memo)
 
 
 class EntanglementSwappingA(EntanglementProtocol):
