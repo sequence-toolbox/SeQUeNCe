@@ -144,6 +144,9 @@ class QuantumChannel(OpticalChannel):
                 self.timeline.quantum_manager.move_manage_to_server(
                     qubit.qstate_key)
 
+            if qubit.is_null:
+                qubit.add_loss(self.loss)
+
             # check if polarization encoding and apply necessary noise
             if (qubit.encoding_type["name"] == "polarization") and (
                     self.sender.get_generator().random() > self.polarization_fidelity):

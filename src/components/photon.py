@@ -40,7 +40,6 @@ class Photon():
         self.location: Entity = location
         self.encoding_type: Dict[str, Any] = encoding_type
         if self.encoding_type["name"] == "single_atom":
-            self.memory = None
             self.fidelity: Optional[float] = None
             self.detector_num: Optional[int] = None
             self.loss: float = 0
