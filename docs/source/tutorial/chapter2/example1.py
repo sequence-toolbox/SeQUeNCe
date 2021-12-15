@@ -43,6 +43,7 @@ class ReceiverNode(Node):
 if __name__ == "__main__":
     runtime = 10e12 
     tl = Timeline(runtime)
+    tl.show_progress = False
 
     # nodes and hardware
     node1 = SenderNode("node1", tl)

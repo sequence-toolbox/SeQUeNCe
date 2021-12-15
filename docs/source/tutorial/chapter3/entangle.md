@@ -102,7 +102,8 @@ A: The implementation of `EntanglementGenerationA` assumes it has been placed in
 ### Step 2: Create Network
 
 As introduced in the previous chapter, we create nodes and channels to define the network.
-To avoid unnecessary errors, we will set the efficiency of our detectors to 1. 
+To avoid unnecessary errors, we will set the efficiency of our detectors to 1.
+Also note that we will set the timeline `show_progress` attribute to 0, since we will be calling the run method multiple times.
 
 ```python
 from sequence.kernel.timeline import Timeline
@@ -111,6 +112,7 @@ from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 
 
 tl = Timeline()
+tl.show_progress = False
 
 node1 = EntangleGenNode('node1', tl)
 node2 = EntangleGenNode('node2', tl)
@@ -261,6 +263,7 @@ We can now use the code below to create the simulated network.
 
 ```python
 tl = Timeline()
+tl.show_progress = False
 
 node1 = PurifyNode('node1', tl)
 node2 = PurifyNode('node2', tl)
@@ -453,6 +456,9 @@ tl = Timeline()
 left_node = SwapNodeB('left', tl)
 right_node = SwapNodeB('right', tl)
 mid_node = SwapNodeA('mid', tl)
+left_node.set_seed(0)
+right_node.set_seed(1)
+mid_node.set_seed(2)
 
 nodes = [left_node, right_node, mid_node]
 
@@ -464,7 +470,8 @@ for i in range(3):
 
 ### Step 3: Manually Set Entanglement State and Start Protocol
 
-We will reuse the code for `entangle_memory` and `pair_protocol` from the previous examples to configure the states of hardware and software.
+We will reuse the code for `entangle_memory` from the previous examples to configure the states of hardware and software.
+The `pair_protocol` function is slightly more complicated, as there are more nodes to deal with.
 Because we set the success probability to 1, we can guaruntee a successful result after running the simulation.
 The fidelity of entanglement after swapping will be `0.9*0.9*0.99=0.8019`.
 
@@ -485,7 +492,8 @@ entangle_memory(right_node.memo, mid_node.right_memo, 0.9)
 for node in nodes:
     node.create_protocol()
 
-pair_protocol(left_node, right_node, mid_node)
+pair_protocol(left_node.protocols[0], mid_node.protocols[0])
+pair_protocol(right_node.protocols[0], mid_node.protocols[0])
 for node in nodes:
     node.protocols[0].start()
 
