@@ -36,8 +36,7 @@ def valid_ip(ip):
 
 def generate_arg_parser():
     # TODO: delete?
-    parser = argparse.ArgumentParser(
-        description='The server of quantum manager')
+    parser = argparse.ArgumentParser(description='The server of quantum manager')
     parser.add_argument('ip', type=valid_ip, help='listening IP address')
     parser.add_argument('port', type=valid_port, help='listening port number')
     return parser

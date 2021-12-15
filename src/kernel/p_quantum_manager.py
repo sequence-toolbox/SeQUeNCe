@@ -8,8 +8,7 @@ The manager defines an API for interacting with quantum states.
 """
 from typing import List, Dict
 
-from .quantum_manager import QuantumManagerKet, QuantumManagerDensity, \
-    KetState, DensityState
+from .quantum_manager import QuantumManagerKet, QuantumManagerDensity
 
 
 class ParallelQuantumManagerKet(QuantumManagerKet):

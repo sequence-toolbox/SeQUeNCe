@@ -507,3 +507,8 @@ class SingleAtomBSM(BSM):
         res = detector_num
         info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
         self.notify(info)
+
+    def change_timeline(self, timeline):
+        self.timeline = timeline
+        for d in self.detectors:
+            d.change_timeline(timeline)

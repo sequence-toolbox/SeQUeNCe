@@ -68,8 +68,7 @@ class BeamSplitter(Entity):
         assert photon.encoding_type["name"] == "polarization"
 
         if self.get_generator().random() < self.fidelity:
-            index = int((
-                                    self.timeline.now() - self.start_time) * self.frequency * 1e-12)
+            index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
 
             if 0 > index or index >= len(self.basis_list):
                 return

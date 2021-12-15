@@ -112,8 +112,7 @@ class QuantumManagerClient():
             state.deserialize(state_raw)
             return state
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int],
-                    meas_samp=None) -> any:
+    def run_circuit(self, circuit: "Circuit", keys: List[int], meas_samp=None) -> any:
         self.client_call_counter += 1
         if self._check_local(keys):
             return self.qm.run_circuit(circuit, keys, meas_samp)

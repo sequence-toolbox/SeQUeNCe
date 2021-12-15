@@ -6,7 +6,6 @@ Node types can be used to collect all the necessary hardware and software for a 
 """
 
 from math import inf
-from time import monotonic_ns
 from typing import TYPE_CHECKING, Any, List
 import numpy as np
 
@@ -72,8 +71,7 @@ class Node(Entity):
     def get_generator(self):
         return self.generator
 
-    def assign_cchannel(self, cchannel: "ClassicalChannel",
-                        another: str) -> None:
+    def assign_cchannel(self, cchannel: "ClassicalChannel", another: str) -> None:
         """Method to assign a classical channel to the node.
 
         This method is usually called by the `ClassicalChannel.add_ends` method and not called individually.
@@ -105,6 +103,7 @@ class Node(Entity):
             msg (Message): message to transmit.
             priority (int): priority for transmitted message (default inf).
         """
+        log.logger.info("{} send message {} to {}".format(self.name, msg, dst))
 
         if priority == inf:
             priority = self.timeline.schedule_counter
@@ -209,6 +208,12 @@ class BSMNode(Node):
         """
 
         self.eg.others.append(other.name)
+
+    def change_timeline(self, timeline: "Timeline"):
+        self.timeline = timeline
+        self.bsm.change_timeline(timeline)
+        for cc in self.cchannels.values():
+            cc.change_timeline(timeline)
 
 
 class QuantumRouter(Node):

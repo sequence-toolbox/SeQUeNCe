@@ -117,11 +117,8 @@ class Rule():
         rule_manager (RuleManager): reference to rule manager object where rule is installed.
     """
 
-    def __init__(self, priority: int,
-                 action: ActionFunc,
-                 condition: ConditionFunc,
-                 action_args: Arguments,
-                 condition_args: Arguments):
+    def __init__(self, priority: int, action: ActionFunc, condition: ConditionFunc,
+                 action_args: Arguments, condition_args: Arguments):
         """Constructor for rule class."""
 
         self.priority: int = priority

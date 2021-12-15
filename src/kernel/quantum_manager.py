@@ -63,8 +63,7 @@ class QuantumManager():
         return self.states[key]
 
     @abstractmethod
-    def run_circuit(self, circuit: Circuit, keys: List[int],
-                    meas_samp=None) -> int:
+    def run_circuit(self, circuit: Circuit, keys: List[int], meas_samp=None) -> Dict[int, int]:
         """Method to run a circuit on a given set of quantum states.
 
         Args:
@@ -76,8 +75,7 @@ class QuantumManager():
             Dict[int, int]: dictionary mapping qstate keys to measurement results.
         """
 
-        assert len(
-            keys) == circuit.size, "mismatch between circuit size and supplied qubits"
+        assert len(keys) == circuit.size, "mismatch between circuit size and supplied qubits"
         if len(circuit.measured_qubits) > 0:
             assert meas_samp, "must specify random sample when measuring qubits"
 
@@ -157,8 +155,7 @@ class QuantumManagerKet(QuantumManager):
         self.states[key] = KetState(state, [key])
         return key
 
-    def run_circuit(self, circuit: Circuit, keys: List[int],
-                    meas_samp=None) -> Dict[int, int]:
+    def run_circuit(self, circuit: Circuit, keys: List[int], meas_samp=None) -> Dict[int, int]:
         super().run_circuit(circuit, keys, meas_samp)
         new_state, all_keys, circ_mat = self._prepare_circuit(circuit, keys)
 
@@ -279,8 +276,7 @@ class QuantumManagerDensity(QuantumManager):
         self.states[key] = DensityState(state, [key])
         return key
 
-    def run_circuit(self, circuit: Circuit, keys: List[int],
-                    meas_samp=None) -> Dict[int, int]:
+    def run_circuit(self, circuit: Circuit, keys: List[int], meas_samp=None) -> Dict[int, int]:
         super().run_circuit(circuit, keys, meas_samp)
         new_state, all_keys, circ_mat = super()._prepare_circuit(circuit, keys)
 
@@ -413,7 +409,7 @@ class State():
                 state.append(cplx_n.real)
                 state.append(cplx_n.imag)
             else:
-                assert "Unknow type of state"
+                raise ValueError("Unknown type of state")
 
         res["state"] = state
         return res
@@ -436,8 +432,7 @@ class KetState(State):
                         amplitudes]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
         num_qubits = log2(len(amplitudes))
         assert num_qubits.is_integer(), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
-        assert num_qubits == len(
-            keys), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
+        assert num_qubits == len(keys), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
         super().__init__(array(amplitudes, dtype=complex), keys)
 
 
@@ -454,9 +449,8 @@ class DensityState(State):
         """Constructor for density state class.
 
         Args:
-            state (List[List[complex]]): density matrix elements given as a
-                list. If the list is one-dimensional, will be converted to
-                matrix with the outer product operation.
+            state (List[List[complex]]): density matrix elements given as a list.
+                If the list is one-dimensional, will be converted to matrix with the outer product operation.
             keys (List[int]): list of keys to this state in quantum manager.
         """
 

@@ -69,6 +69,7 @@ class Photon():
         Args:
             basis (List[List[complex]]): basis (given as lists of complex coefficients) with which to measure the photon.
             photon (Photon): photon to measure.
+            rng (Generator): PRGN to use  for measurement results.
 
         Returns:
             int: 0/1 value giving result of measurement in given basis.
@@ -83,6 +84,7 @@ class Photon():
         Args:
             basis (List[List[complex]]): basis (given as lists of complex coefficients) with which to measure the photons.
             photons (List[Photon]): list of 2 photons to measure.
+            rng (Generator): PRGN to use  for measurement results.
 
         Returns:
             int: 0-3 value giving the result of measurement in given basis.

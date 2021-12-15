@@ -107,8 +107,8 @@ class Memory(Entity):
         efficiency (float): probability of emitting a photon when excited.
         coherence_time (float): average usable lifetime of memory (in seconds).
         wavelength (float): wavelength (in nm) of emitted photons.
-        qstate (QuantumState): quantum state of memory.
         entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
+        qstate_key (int): key for associated quantum state in timeline's quantum manager.
     """
 
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
@@ -123,7 +123,6 @@ class Memory(Entity):
             efficiency (float): efficiency of memories.
             coherence_time (float): average time (in s) that memory state is valid.
             wavelength (int): wavelength (in nm) of photons emitted by memories.
-            qstate_key (int): key for associated quantum state in timeline's quantum manager.
         """
 
         super().__init__(name, timeline)
@@ -306,8 +305,7 @@ class MemoryWithRandomCoherenceTime(Memory):
         coherence_time (float): average usable lifetime of memory (in seconds).
         coherence_time_stdev (float): standard deviation of coherence time
         wavelength (float): wavelength (in nm) of emitted photons.
-        qstate (QuantumState): quantum state of memory.
-        entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
+        qstate_key (int): key for associated quantum state in timeline's quantum manager.
     """
 
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
@@ -323,7 +321,6 @@ class MemoryWithRandomCoherenceTime(Memory):
             coherence_time (float): average time (in s) that memory state is valid
             coherence_time_stdev (float): standard deviation of coherence time
             wavelength (int): wavelength (in nm) of photons emitted by memories.
-            qstate_key (int): key for associated quantum state in timeline's quantum manager.
         """
 
         super(MemoryWithRandomCoherenceTime, self).__init__(name, timeline, fidelity, frequency, 

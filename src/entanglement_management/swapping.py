@@ -70,7 +70,8 @@ class EntanglementSwappingA(EntanglementProtocol):
     """Entanglement swapping protocol for middle router.
 
     The entanglement swapping protocol is an asymmetric protocol.
-    EntanglementSwappingA should be instantiated on the middle node, where it measures a memory from each pair to be swapped.
+    EntanglementSwappingA should be instantiated on the middle node,
+    where it measures a memory from each pair to be swapped.
     Results of measurement and swapping are sent to the end routers.
 
     Variables:
@@ -81,8 +82,15 @@ class EntanglementSwappingA(EntanglementProtocol):
         name (str): label for protocol instance.
         left_memo (Memory): a memory from one pair to be swapped.
         right_memo (Memory): a memory from the other pair to be swapped.
+        left_node (str): name of node that contains memory entangling with left_memo.
+        left_remote_memo (str): name of memory that entangles with left_memo.
+        right_node (str): name of node that contains memory entangling with right_memo.
+        right_remote_memo (str): name of memory that entangles with right_memo.
         success_prob (float): probability of a successful swapping operation.
         degradation (float): degradation factor of memory fidelity after the swapping operation.
+        is_success (bool): flag to show the result of swapping
+        left_protocol_name (str): name of left protocol.
+        right_protocol_name (str): name of right protocol.
     """
 
     circuit = Circuit(2)
@@ -100,15 +108,8 @@ class EntanglementSwappingA(EntanglementProtocol):
             name (str): label for swapping protocol instance.
             left_memo (Memory): memory entangled with a memory on one distant node.
             right_memo (Memory): memory entangled with a memory on the other distant node.
-            left_node (str): name of node that contains memory entangling with left_memo.
-            left_remote_memo (str): name of memory that entangles with left_memo.
-            right_node (str): name of node that contains memory entangling with right_memo.
-            right_remote_memo (str): name of memory that entangles with right_memo.
             success_prob (float): probability of a successful swapping operation (default 1).
             degradation (float): degradation factor of memory fidelity after swapping (default 0.95).
-            is_success (bool): flag to show the result of swapping
-            left_protocol (EntanglementSwappingB): pointer of left protocol (may be removed in the future).
-            right_protocol (EntanglementSwappingB): pointer of right protocol (may be removed in the future).
         """
 
         assert left_memo != right_memo

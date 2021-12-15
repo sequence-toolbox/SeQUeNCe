@@ -53,7 +53,7 @@ class OpticalChannel(Entity):
         self.attenuation = attenuation
         self.distance = distance  # (measured in m)
         self.polarization_fidelity = polarization_fidelity
-        self.light_speed = light_speed # used for photon timing calculations (measured in m/ps)
+        self.light_speed = light_speed  # used for photon timing calculations (measured in m/ps)
         # self.chromatic_dispersion = kwargs.get("cd", 17)  # measured in ps / (nm * km)
 
     def init(self) -> None:
@@ -80,8 +80,10 @@ class QuantumChannel(OpticalChannel):
         frequency (float): maximum frequency of qubit transmission (in Hz).
     """
 
-    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, polarization_fidelity=1, light_speed=2e-4, frequency=8e7):
-        """Constructor for Quatnum Channel class.
+    def __init__(self, name: str, timeline: "Timeline", attenuation: float,
+                 distance: int, polarization_fidelity=1, light_speed=2e-4,
+                 frequency=8e7):
+        """Constructor for Quantum Channel class.
 
         Args:
             name (str): name of the quantum channel instance.
@@ -139,7 +141,8 @@ class QuantumChannel(OpticalChannel):
                 self.sender.name, qubit.quantum_state.state, self.receiver,
                 self.name))
 
-        assert self.delay != 0 and self.loss != 1, "QuantumChannel init() function has not been run for {}".format(self.name)
+        assert self.delay != 0 and self.loss != 1, \
+            "QuantumChannel init() function has not been run for {}".format(self.name)
         assert source == self.sender
 
         # remove lowest time bin
@@ -257,8 +260,7 @@ class ClassicalChannel(OpticalChannel):
         self.receiver = receiver
         sender.assign_cchannel(self, receiver)
 
-    def transmit(self, message: "Message", source: "Node",
-                 priority: int) -> None:
+    def transmit(self, message: "Message", source: "Node", priority: int) -> None:
         """Method to transmit classical messages.
 
         Args:
