@@ -1,4 +1,4 @@
-import os
+import subprocess
 import statistics as stats
 import sys
 import time
@@ -30,9 +30,8 @@ if __name__ == "__main__":
 
     @timeit_wrapper
     def run():
-        sys.stdout = open(os.devnull, 'w')
-        exec(open(script).read())
-        sys.stdout = sys.__stdout__
+        cmd = "python3 " + script
+        subprocess.call(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     print("running timing test for {} with {} trials".format(script, num_trials))
 
@@ -45,5 +44,3 @@ if __name__ == "__main__":
     print("min time:  {}".format(min(runtimes)))
     print("max time:  {}".format(max(runtimes)))
     print("standard deviation: {}".format(stats.stdev(runtimes)))
-
-
