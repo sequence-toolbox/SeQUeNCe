@@ -14,19 +14,19 @@ jobs:
       matrix:
         python-version: [3.7, 3.8]
         mpi: [mpich, openmpi]
-        include:
-        - os: ubuntu-latest
-          mpi: mpich
-          install-mpi: sudo apt install -y mpich libmpich-dev
-        - os: ubuntu-latest
-          mpi: openmpi
-          install-mpi: sudo apt install -y openmpi-bin libopenmpi-dev
-        - os: macos-latest
-          mpi: mpich
-          install-mpi: brew install mpich
-        - os: macos-latest
-          mpi: openmpi
-          install-mpi: brew install openmpi
+#        include:
+#        - os: ubuntu-latest
+#          mpi: mpich
+#          install-mpi: sudo apt install -y mpich libmpich-dev
+#        - os: ubuntu-latest
+#          mpi: openmpi
+#          install-mpi: sudo apt install -y openmpi-bin libopenmpi-dev
+#        - os: macos-latest
+#          mpi: mpich
+#          install-mpi: brew install mpich
+#        - os: macos-latest
+#          mpi: openmpi
+#          install-mpi: brew install openmpi
 
     steps:
     - uses: actions/checkout@v2
@@ -35,7 +35,9 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Set up MPI
-      run: ${{ matrix.install-mpi }}
+      uses: mpi4py/setup-mpi@v1
+      with:
+        mpi: ${{ matrix.mpi }}
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
