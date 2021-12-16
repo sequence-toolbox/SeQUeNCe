@@ -2,7 +2,7 @@ name: main
 
 on:
   push:
-    branches: [master, RnD]
+    branches: [master, RnD, mpi_workflow]
   pull_request:
     branches: [master. RnD]
 
