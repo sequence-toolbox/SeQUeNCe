@@ -73,7 +73,6 @@ nx.relabel_nodes(graph, mapping, copy=False)
 output_dict = {}
 
 # get node names, processes
-node_procs = {}
 if args.nodes:
     node_procs = get_node_csv(args.nodes)
 else:
