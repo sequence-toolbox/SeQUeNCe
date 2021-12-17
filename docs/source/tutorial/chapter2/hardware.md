@@ -82,6 +82,7 @@ We are now ready to start writing the main function of our script. The first ste
 ```python
 from sequence.kernel.timeline import Timeline
 tl = Timeline(10e12)
+tl.show_progress = False
 ```
 
 We can then create our two network nodes using our custom node class. We only need to specify a name for each node and the timeline it belongs to:
@@ -101,7 +102,7 @@ qc = QuantumChannel("qc", tl, attenuation=0, distance=1e3)
 qc.set_ends(node1, node2.name)
 ```
 
-Lastly, we’ll create the counter for our detector. We only need to define an instance, and attach it to the detector When the detector properly detects a photon, it will call the `trigger` method of all attached objects, including our counter.
+Lastly, we’ll create the counter for our detector. We only need to define an instance, and attach it to the detector. When the detector properly detects a photon, it will call the `trigger` method of all attached objects, including our counter.
 
 ```python
 counter = Counter()

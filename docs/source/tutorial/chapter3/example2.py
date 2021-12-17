@@ -1,8 +1,4 @@
-from numpy import random
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
-
-random.seed(0)
-
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.components.memory import Memory
@@ -60,6 +56,7 @@ def pair_protocol(node1: Node, node2: Node):
 
 
 tl = Timeline()
+tl.show_progress = False
 
 node1 = PurifyNode('node1', tl)
 node2 = PurifyNode('node2', tl)

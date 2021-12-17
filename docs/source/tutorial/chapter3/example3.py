@@ -77,6 +77,7 @@ def pair_protocol(node1, node2, node_mid):
 
 
 tl = Timeline()
+tl.show_progress = False
 
 left_node = SwapNodeB('left', tl)
 right_node = SwapNodeB('right', tl)
