@@ -23,13 +23,17 @@ Optional Args:
 """
 
 import argparse
-import sys
 import json
 import pandas as pd
 
-from sequence.kernel.quantum_manager_server import valid_ip, valid_port
+from generator_utils import *
+
 from sequence.topology.topology import Topology
 from sequence.topology.router_net_topo import RouterNetTopo
+
+
+def router_name_func(i):
+    return f"router_{i}"
 
 
 # parse args
@@ -46,46 +50,30 @@ parser.add_argument('-p', '--parallel', nargs=5,
     help='optional parallel arguments: server ip, server port, num. processes, sync/async, lookahead')
 parser.add_argument('-n', '--nodes', type=str,
     help='path to csv file to provide process for each node. First node is the center.')
-
 args = parser.parse_args()
+
 output_dict = {}
 
-# get csv file
+# get csv file (if present) and node names
 if args.nodes:
-    # TODO: add length/proc assertions
-    df = pd.read_csv(args.nodes)
-    node_procs = {}
-    for name, group in zip(df['name'], df['group']):
-        node_procs[name] = group
-
+    node_procs = get_node_csv(args.nodes)
+    # assume center node is last listed
+    center_name = list(node_procs.keys())[-1]
 else:
-    node_procs = None
-
-# generate router nodes
-if args.parallel and node_procs:
-    node_names = list(node_procs.keys())
-    center_name = node_names.pop(0)
-else:
+    node_procs = generate_node_procs(args.parallel, args.star_size+1, router_name_func)
+    # rename center router
     center_name = "router_center"
-    node_names = ["router_" + str(i) for i in range(args.star_size)]
-nodes = [{Topology.NAME: name,
-          Topology.TYPE: RouterNetTopo.QUANTUM_ROUTER,
-          Topology.SEED: i,
-          RouterNetTopo.MEMO_ARRAY_SIZE: args.memo_size}
-          for i, name in enumerate(node_names)]
-nodes.append({Topology.NAME: center_name,
-              Topology.TYPE: RouterNetTopo.QUANTUM_ROUTER,
-              Topology.SEED: args.star_size,
-              RouterNetTopo.MEMO_ARRAY_SIZE: args.memo_size_center})
-if args.parallel:
-    combined = node_names + [center_name]
-    if node_procs:
-        for i in range(args.star_size + 1):
-            name = nodes[i][Topology.NAME]
-            nodes[i][RouterNetTopo.GROUP] = node_procs[name]
-    else:
-        for i in range(args.star_size + 1):
-            nodes[i][RouterNetTopo.GROUP] = int(i // ((args.star_size + 1) / int(args.parallel[2])))
+    proc = node_procs[router_name_func(args.star_size)]
+    del node_procs[router_name_func(args.star_size)]
+    node_procs[center_name] = proc
+router_names = list(node_procs.keys())
+
+# generate nodes, with middle having different num
+nodes = generate_nodes(node_procs, router_names, args.memo_size)
+for node in nodes:
+    if node[Topology.NAME] == center_name:
+        node[RouterNetTopo.MEMO_ARRAY_SIZE] = args.memo_size_center
+        break
 
 # generate quantum links
 qchannels = []
@@ -99,7 +87,7 @@ if args.parallel:
     for i in range(args.star_size):
         bsm_nodes[i][RouterNetTopo.GROUP] = nodes[i][RouterNetTopo.GROUP]
 
-for node_name, bsm_name in zip(node_names, bsm_names):
+for node_name, bsm_name in zip(router_names, bsm_names):
     # qchannels
     qchannels.append({Topology.SRC: node_name,
                       Topology.DST: bsm_name,
@@ -127,33 +115,12 @@ output_dict[Topology.ALL_NODE] = nodes + bsm_nodes
 output_dict[Topology.ALL_Q_CHANNEL] = qchannels
 
 # generate classical links
-combined_nodes = node_names + [center_name]
-for node1 in combined_nodes:
-    for node2 in combined_nodes:
-        if node1 == node2:
-            continue
-        cchannels.append({Topology.SRC: node1,
-                          Topology.DST: node2,
-                          Topology.DELAY: args.cc_delay * 1e9})
+router_cchannels = generate_classical(router_names, args.cc_delay)
+cchannels += router_cchannels
 output_dict[Topology.ALL_C_CHANNEL] = cchannels
 
 # write other config options to output dictionary
-output_dict[Topology.STOP_TIME] = args.stop * 1e12
-if args.parallel:
-    output_dict[RouterNetTopo.IS_PARALLEL] = True
-    output_dict[RouterNetTopo.PROC_NUM] = int(args.parallel[2])
-    output_dict[RouterNetTopo.IP] = args.parallel[0]
-    output_dict[RouterNetTopo.PORT] = int(args.parallel[1])
-    output_dict[RouterNetTopo.LOOKAHEAD] = int(args.parallel[4])
-    if args.parallel[3] == "true":
-        # set all to synchronous
-        output_dict[RouterNetTopo.ALL_GROUP] = \
-                [{RouterNetTopo.TYPE: RouterNetTopo.SYNC} for _ in range(int(args.parallel[2]))] 
-    else:
-        output_dict[RouterNetTopo.ALL_GROUP] = \
-                [{RouterNetTopo.TYPE: RouterNetTopo.ASYNC}] * int(args.parallel[2])
-else:
-    output_dict[RouterNetTopo.IS_PARALLEL] = False
+final_config(output_dict, args)
 
 # write final json
 output_file = open(args.output, 'w')
