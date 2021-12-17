@@ -6,15 +6,17 @@ import argparse
 import json
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from simanneal import Annealer
 import random
 
-SEED = 1
-random.seed(SEED)
+from generator_utils import *
 
 from sequence.topology.topology import Topology
 from sequence.topology.router_net_topo import RouterNetTopo
+
+
+SEED = 1
+random.seed(SEED)
 
 
 def router_name_func(i):
@@ -215,28 +217,21 @@ for i in range(NET_SIZE):
     mapping[i] = router_name_func(i)
     node_memo_size[router_name_func(i)] = nodes_caps[i]
 nx.relabel_nodes(graph, mapping, copy=False)
-# nx.draw(graph, with_labels=True)
-# plt.show()
-
-# assert 0
 
 output_dict = {}
 
 node_procs = {}
-router_names = []
 
 if args.nodes:
     # TODO: add length/proc assertions
     df = pd.read_csv(args.nodes)
     for name, group in zip(df['name'], df['group']):
         node_procs[name] = group
-        router_names.append(name)
 else:
     groups = get_partition(graph, int(GROUP_NUM), node_memo_size)
     for i, g in enumerate(groups):
         for name in g:
             node_procs[name] = i
-
 router_names = list(node_procs.keys())
 nodes = [{Topology.NAME: name,
           Topology.TYPE: RouterNetTopo.QUANTUM_ROUTER,
@@ -245,63 +240,19 @@ nodes = [{Topology.NAME: name,
           RouterNetTopo.GROUP: node_procs[name]}
          for i, name in enumerate(router_names)]
 
-cchannels = []
-qchannels = []
-bsm_nodes = []
-for i, node_pair in enumerate(graph.edges):
-    node1, node2 = node_pair
-    bsm_name = bsm_name_func(node1, node2)
-    bsm_node = {Topology.NAME: bsm_name,
-                Topology.TYPE: RouterNetTopo.BSM_NODE,
-                Topology.SEED: i,
-                RouterNetTopo.GROUP: node_procs[node1]}
-    bsm_nodes.append(bsm_node)
-
-    for node in node_pair:
-        qchannels.append({Topology.SRC: node,
-                          Topology.DST: bsm_name,
-                          Topology.DISTANCE: QC_LEN * 500,
-                          Topology.ATTENUATION: QC_ATT})
-
-    for node in node_pair:
-        cchannels.append({Topology.SRC: bsm_name,
-                          Topology.DST: node,
-                          Topology.DELAY: CC_DELAY * 1e9})
-
-        cchannels.append({Topology.SRC: node,
-                          Topology.DST: bsm_name,
-                          Topology.DELAY: CC_DELAY * 1e9})
-
+# add bsm links
+cchannels, qchannels, bsm_nodes = generate_bsm_links(graph, node_procs, args, bsm_name_func)
 nodes += bsm_nodes
 output_dict[Topology.ALL_NODE] = nodes
 output_dict[Topology.ALL_Q_CHANNEL] = qchannels
 
-for node1 in router_names:
-    for node2 in router_names:
-        if node1 == node2:
-            continue
-        cchannels.append({Topology.SRC: node1,
-                          Topology.DST: node2,
-                          Topology.DELAY: CC_DELAY * 1e9})
-
+# add router-to-router classical channels
+router_cchannels = generate_classical(router_names, args.cc_delay)
+cchannels += router_cchannels
 output_dict[Topology.ALL_C_CHANNEL] = cchannels
-output_dict[Topology.STOP_TIME] = args.stop * 1e12
-if args.parallel:
-    output_dict[RouterNetTopo.IS_PARALLEL] = True
-    output_dict[RouterNetTopo.PROC_NUM] = GROUP_NUM
-    output_dict[RouterNetTopo.IP] = IP
-    output_dict[RouterNetTopo.PORT] = PORT
-    output_dict[RouterNetTopo.LOOKAHEAD] = LOOKAHEAD
-    if args.parallel[3] == "true":
-        # set all to synchronous
-        output_dict[RouterNetTopo.ALL_GROUP] = \
-            [{RouterNetTopo.TYPE: RouterNetTopo.SYNC} for _ in
-             range(GROUP_NUM)]
-    else:
-        output_dict[RouterNetTopo.ALL_GROUP] = \
-            [{RouterNetTopo.TYPE: RouterNetTopo.ASYNC}] * int(GROUP_NUM)
-else:
-    output_dict[RouterNetTopo.IS_PARALLEL] = False
+
+# write other config options
+final_config(output_dict, args)
 
 # write final json
 output_file = open(args.output, 'w')
@@ -329,7 +280,8 @@ for src in selected_paths:
             assert table[path[-1]] == path[i + 1]
         else:
             table[path[-1]] = path[i + 1]
-#
+
+# visualization
 # r_f = lambda: random.randint(0,255)
 # colors = ['#%02X%02X%02X' % (r_f(),r_f(),r_f()) for _ in range(NET_SIZE)]
 # r_group = node_procs
