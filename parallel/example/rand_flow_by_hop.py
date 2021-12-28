@@ -223,9 +223,12 @@ def main(config_file: str, log_path: str):
 
 
 if __name__ == "__main__":
-    import sys
+    import argparse
 
-    config_file_name = sys.argv[1]
-    log_path = sys.argv[2]
-    main(config_file_name, log_path)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('config_file_name', type=str)
+    parser.add_argument('log_path', type=str)
 
+    args = parser.parse_args()
+
+    main(args.config_file_name, args.log_path)

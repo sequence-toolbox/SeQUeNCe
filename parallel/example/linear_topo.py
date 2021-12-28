@@ -100,4 +100,4 @@ def main(config_file: str, src: str, dst: str, start_t: int, end_t: int,
 
 if __name__ == "__main__":
     main("linear_32.json", "router_0", "router_31", 100e12, 100.1e12,
-         50, 0.9, "old/")
+         50, 0.9, "old")
