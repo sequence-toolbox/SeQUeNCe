@@ -5,6 +5,7 @@ from time import time
 
 from .timeline import Timeline
 from .event import Event
+from .quantum_manager import KET_STATE_FORMALISM
 from .quantum_manager_client import QuantumManagerClient
 
 
@@ -26,7 +27,7 @@ class ParallelTimeline(Timeline):
         quantum_manager (QuantumManagerClient): local quantum manager client to communicate with server.
     """
 
-    def __init__(self, lookahead: int, stop_time=float('inf'), formalism='KET',
+    def __init__(self, lookahead: int, stop_time=float('inf'), formalism=KET_STATE_FORMALISM,
                  qm_ip=None, qm_port=None):
         """Constructor for the ParallelTimeline class.
 
@@ -156,7 +157,7 @@ class ParallelTimeline(Timeline):
 
 class AsyncParallelTimeline(Timeline):
     def __init__(self, lookahead, quantum_manager, stop_time=float('inf'),
-                 formalism='KET'):
+                 formalism=KET_STATE_FORMALISM):
         super().__init__(stop_time, formalism)
         self.quantum_manager = quantum_manager
         self.lookahead = lookahead
