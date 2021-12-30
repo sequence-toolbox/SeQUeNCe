@@ -4,7 +4,7 @@ This module provides a definition of the Topology class, which can be used to ma
 Topology instances automatically perform many useful network functions.
 """
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Dict, List
 
 import json5
 
@@ -83,10 +83,10 @@ class Topology():
             table_type = topo_config["cchannels_table"].get("type", "RT")
             assert table_type == "RT", "non-RT tables not yet supported"
             labels = topo_config["cchannels_table"]["labels"]
-            table = topo_config["cchannels_table"]["table"]
-            assert len(labels) == len(table)                 # check that number of rows is correct
+            routing_table = topo_config["cchannels_table"]["table"]
+            assert len(labels) == len(routing_table)         # check that number of rows is correct
 
-            for i, row in enumerate(table):
+            for i, row in enumerate(routing_table):
                 assert len(row) == len(labels)               # check that number of columns is correct
                 for j, routing_time in enumerate(row):
                     if routing_time > 0:                     # skip 0 entries
@@ -126,7 +126,7 @@ class Topology():
 
             self.add_node(node)
 
-    def add_node(self, node: "Node") -> None:
+    def add_node(self, node: Node) -> None:
         """Method to add a node to the network.
 
         Args:
@@ -246,7 +246,7 @@ class Topology():
     def get_nodes_by_type(self, node_type: str) -> List[Node]:
         return [node for node in self.nodes.values() if type(node).__name__ == node_type]
 
-    def generate_forwarding_table(self, starting_node: str) -> dict:
+    def generate_forwarding_table(self, starting_node: str) -> Dict:
         """Method to create forwarding table for static routing protocol.
 
         Generates a mapping of destination nodes to next node for routing using Dijkstra's algorithm.
