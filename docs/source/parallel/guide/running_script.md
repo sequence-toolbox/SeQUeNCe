@@ -10,8 +10,6 @@ First, the general parallel settings will need to be listed in the JSON. The var
 - `PORT` (default `“port”`) should be set to the port the quantum manager server will be listening on. The `get_port.py` script may be used to find an available port.
 - `LOOKAHEAD` (default `“lookahead”`) should be set to the lookahead time (in picoseconds of simulation time).
 
-Next, we will add a field named `ALL_GROUP` (default `“groups”`) that lists properties for each timeline, namely whether the `TYPE` (default `“type”`) of each parallel timeline should be synchronous (`SYNC`, default `“sync”`) or asynchronous (`ASYNC`, default `“async”`).
-
 Finally, we will add a subfield to each node describing which process this node should belong to. The name of this field is `GROUP` (default `“group”`) and the process should be an integer referring to a specific (zero-indexed) process.
 
 Putting all of this together, an example JSON is shown below:

@@ -5,9 +5,8 @@ from numpy import mean
 
 from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
-from ..kernel.p_timeline import ParallelTimeline, AsyncParallelTimeline
+from ..kernel.p_timeline import ParallelTimeline
 from .node import BSMNode, QuantumRouter
-from ..components.optical_channel import QuantumChannel, ClassicalChannel
 
 
 class RouterNetTopo(Topo):
@@ -38,7 +37,6 @@ class RouterNetTopo(Topo):
     PORT = "port"
     PROC_NUM = "process_num"
     QUANTUM_ROUTER = "QuantumRouter"
-    SYNC = "sync"
 
     def __init__(self, conf_file_name: str):
         self.bsm_to_router_map = {}
@@ -47,7 +45,7 @@ class RouterNetTopo(Topo):
     def _load(self, filename):
         with open(filename, 'r') as fh:
             config = load(fh)
-        # quantum connections is supported by sequential simulation so far
+        # quantum connections are only supported by sequential simulation so far
         if not config[self.IS_PARALLEL]:
             self._add_qconnections(config)
         self._add_timeline(config)
@@ -63,21 +61,10 @@ class RouterNetTopo(Topo):
         stop_time = config.get(Topo.STOP_TIME, float('inf'))
         if config.get(self.IS_PARALLEL, False):
             assert MPI.COMM_WORLD.Get_size() == config[self.PROC_NUM]
-            rank = MPI.COMM_WORLD.Get_rank()
-
-            tl_type = config[self.ALL_GROUP][rank][Topo.TYPE]
             lookahead = config[self.LOOKAHEAD]
             ip = config[self.IP]
             port = config[self.PORT]
-            if tl_type == self.SYNC:
-                self.tl = ParallelTimeline(lookahead, qm_ip=ip, qm_port=port,
-                                           stop_time=stop_time)
-            elif tl_type == self.ASYNC:
-                self.tl = AsyncParallelTimeline(lookahead, qm_ip=ip,
-                                                qm_port=port,
-                                                stop_time=stop_time)
-            else:
-                raise NotImplementedError("Unknown type of timeline")
+            self.tl = ParallelTimeline(lookahead, qm_ip=ip, qm_port=port, stop_time=stop_time)
         else:
             self.tl = Timeline(stop_time)
 

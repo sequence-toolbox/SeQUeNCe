@@ -38,6 +38,8 @@ And with respect to wall clock time is shown here:
 
 ![async_wall](figures/async_tl2.png)
 
+Asynchronous timelines are implemented on the `async_tl` branch.
+
 ## Quantum Manager
 For quantum states that are unentangled or distributed within a single process, a single quantum manager is sufficient for storage and manipulation.
 Once these states cross a process boundary, however, many processes must communicate for their effective utilization.
