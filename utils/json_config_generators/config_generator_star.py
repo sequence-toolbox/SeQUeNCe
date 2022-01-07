@@ -24,7 +24,6 @@ Optional Args:
 
 import argparse
 import json
-import pandas as pd
 
 from generator_utils import *
 
@@ -39,17 +38,8 @@ def router_name_func(i):
 # parse args
 parser = argparse.ArgumentParser()
 parser.add_argument('star_size', type=int, help='number of non-center network nodes')
-parser.add_argument('memo_size', type=int, help='number of memories per end node')
 parser.add_argument('memo_size_center', type=int, help='number of memories on center node')
-parser.add_argument('qc_length', type=float, help='distance between star nodes and center (in km)')
-parser.add_argument('qc_atten', type=float, help='quantum channel attenuation (in dB/m)')
-parser.add_argument('cc_delay', type=float, help='classical channel delay (in ms)')
-parser.add_argument('-o', '--output', type=str, default='out.json', help='name of output config file')
-parser.add_argument('-s', '--stop', type=float, default=float('inf'), help='stop time (in s)')
-parser.add_argument('-p', '--parallel', nargs=5,
-    help='optional parallel arguments: server ip, server port, num. processes, sync/async, lookahead')
-parser.add_argument('-n', '--nodes', type=str,
-    help='path to csv file to provide process for each node. First node is the center.')
+parser = add_default_args(parser)
 args = parser.parse_args()
 
 output_dict = {}
