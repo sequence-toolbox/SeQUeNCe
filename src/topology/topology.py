@@ -20,7 +20,7 @@ class Topology():
 
     The topology class provides a simple interface for managing the nodes
     and connections in a network.
-    A network may also be generated using an external json/json5 file.
+    A network may also be generated using an external json file.
 
     Attributes:
         nodes (Dict[str, List[Node]]): mapping of type of node to a list of same type node.
