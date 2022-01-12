@@ -24,7 +24,7 @@ class FakeEntity(Entity):
 def build_env(lookahead):
     tl = ParallelTimeline(lookahead)
 
-    entity = FakeEntity(rank, tl)
+    entity = FakeEntity(str(rank), tl)
     for i in range(size):
         if i == rank: continue
         tl.add_foreign_entity(str(i), i)
@@ -49,3 +49,14 @@ def test_p_timeline_schedule_remote_events():
     tl.schedule(event)
     assert len(tl.events) == 0
     assert len(tl.event_buffer[foreign_rank]) == 1
+
+
+def test_p_timeline_run():
+    tl, entity = build_env(10)
+    assert len(tl.events) == 0
+    foreign_rank = (int(entity.name) + 1) % size
+    foreign_entity_name = str(foreign_rank)
+    event = Event(20, Process(foreign_entity_name, "add", []))
+    tl.schedule(event)
+    tl.run()
+    assert entity.counter == 1
