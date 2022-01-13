@@ -2,7 +2,7 @@ name: main
 
 on:
   push:
-    branches: [master, RnD, tests_parall]
+    branches: [master, RnD]
   pull_request:
     branches: [master. RnD]
 
