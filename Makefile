@@ -15,3 +15,6 @@ jupyter:
 test:
 	pip3 install .
 	pytest ./tests
+
+test_parallel:
+	mpiexec -n 2 pytest ./tests_parallel --with-mpi
