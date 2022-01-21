@@ -2,7 +2,7 @@ import json
 from time import time
 import pandas as pd
 from mpi4py import MPI
-from json import dump
+from json import load, dump
 
 from sequence.app.request_app import RequestApp
 from sequence.topology.router_net_topo import RouterNetTopo

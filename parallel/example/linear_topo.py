@@ -28,25 +28,6 @@ def main(config_file: str, src: str, dst: str, start_t: int, end_t: int,
         router.network_manager.protocol_stack[1].set_swapping_degradation(
             SWAP_DEG_RATE)
 
-    # with open(config_file, 'r') as fh:
-    #     data = load(fh)
-    #     qcs = data[RouterNetTopo.ALL_Q_CHANNEL]
-    #     q_links = {}
-    #     for qc in qcs:
-    #         _src, _dst = qc[RouterNetTopo.SRC], qc[RouterNetTopo.DST]
-    #         if _dst in q_links:
-    #             q_links[_dst].append(_src)
-    #         else:
-    #             q_links[_dst] = [_src]
-    #
-    #     for bsm_node, router_pair in q_links.items():
-    #         n1, n2 = router_pair
-    #         if tl.foreign_entities.get(n1, tl.id) != tl.foreign_entities.get(
-    #                 n2, tl.id):
-    #             tl.async_entities.add(bsm_node)
-    #             if bsm_node in tl.entities:
-    #                 tl.move_entity_to_async_tl(bsm_node)
-
     src_app = None
     for r in routers:
         if r.name == src or r.name == dst:
@@ -95,4 +76,4 @@ def main(config_file: str, src: str, dst: str, start_t: int, end_t: int,
 
 if __name__ == "__main__":
     main("linear_32.json", "router_0", "router_31", 100e12, 100.1e12,
-         50, 0.9, "old")
+         50, 0.9, "log")
