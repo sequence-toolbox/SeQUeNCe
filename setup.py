@@ -12,10 +12,13 @@ setup(
               'sequence.resource_management', 'sequence.topology', 'sequence.utils'],
     package_dir={'sequence': 'src'},
     install_requires=[
-        'numpy',
-	'matplotlib',
-        'json5',
+        'numpy<1.22',
+	    'matplotlib',
         'pandas',
-        'qutip'
+        'qutip>=4.6.0',
+        'tqdm>=4.54.0',
+        'networkx',
+        'mpi4py',
+        'pytest-mpi',
     ],
 )

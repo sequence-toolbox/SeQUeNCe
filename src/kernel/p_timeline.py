@@ -7,6 +7,7 @@ from .timeline import Timeline
 from .event import Event
 from .quantum_manager import KET_STATE_FORMALISM
 from .quantum_manager_client import QuantumManagerClient
+from .quantum_manager import KET_STATE_FORMALISM
 
 
 class ParallelTimeline(Timeline):
@@ -122,7 +123,8 @@ class ParallelTimeline(Timeline):
                 self.time = event.time
                 event.process.run()
                 self.run_counter += 1
-            self.quantum_manager.flush_before_sync()
+            if isinstance(self.quantum_manager, QuantumManagerClient):
+                self.quantum_manager.flush_before_sync()
             self.computing_time += time() - tick
 
     def add_foreign_entity(self, entity_name: str, foreign_id: int):
