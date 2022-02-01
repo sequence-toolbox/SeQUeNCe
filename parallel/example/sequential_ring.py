@@ -4,11 +4,8 @@ import pandas as pd
 from time import time
 
 from sequence.kernel.timeline import Timeline
-from sequence.kernel.quantum_manager_server import kill_server
 from sequence.topology.node import QuantumRouter, BSMNode
-from sequence.components.optical_channel import ClassicalChannel, \
-    QuantumChannel
-from sequence.app.random_request import RandomRequestApp
+from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.app.request_app import RequestApp
 import sequence.utils.log as log
 
@@ -179,15 +176,12 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int,
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description='The example of sequential quantum network')
+    parser = argparse.ArgumentParser(description='Example of sequential quantum network')
     parser.add_argument('ring_size', type=int, help='the size of ring network')
     parser.add_argument('lookahead', type=int,
-                        help='the lookahead of parallel simulation (ps); the longer lookahead generate the longer quantum channel')
-    parser.add_argument('stop_time', type=int,
-                        help='the time of stopping the simulation (sec)')
-    parser.add_argument('log_path', type=str,
-                        help='the path of log files')
+                        help='the lookahead of parallel simulation (ps); longer lookahead generates a longer quantum channel')
+    parser.add_argument('stop_time', type=int, help='the end time of the simulation (sec)')
+    parser.add_argument('log_path', type=str, help='the path for storing log files')
 
     args = parser.parse_args()
 
@@ -196,4 +190,3 @@ if __name__ == "__main__":
 
     ring_network(args.ring_size, args.lookahead, args.stop_time * 1e12,
                  args.log_path)
-

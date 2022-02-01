@@ -147,4 +147,3 @@ if __name__ == "__main__":
     flow_info_file_name = sys.argv[2]
     log_path = sys.argv[3]
     main(config_file_name, flow_info_file_name, log_path)
-

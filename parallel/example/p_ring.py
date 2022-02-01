@@ -6,9 +6,7 @@ import numpy as np
 
 from sequence.kernel.p_timeline import ParallelTimeline
 from sequence.topology.node import QuantumRouter, BSMNode
-from sequence.components.optical_channel import ClassicalChannel, \
-    QuantumChannel
-from sequence.app.random_request import RandomRequestApp
+from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.app.request_app import RequestApp
 import sequence.utils.log as log
 
@@ -66,8 +64,7 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     ATTENUATION = 0.0002
     SWAP_DEG_RATE = 1
 
-    tl = ParallelTimeline(lookahead=lookahead, stop_time=stop_time,
-                          qm_ip=qm_ip, qm_port=qm_port)
+    tl = ParallelTimeline(lookahead=lookahead, stop_time=stop_time, qm_ip=qm_ip, qm_port=qm_port)
 
     # log.set_logger(__name__, tl, "mpi_%d.log" % rank)
     # log.set_logger_level("DEBUG")
@@ -246,28 +243,23 @@ if __name__ == "__main__":
     rank = MPI.COMM_WORLD.Get_rank()
     size = MPI.COMM_WORLD.Get_size()
 
-    parser = argparse.ArgumentParser(
-        description='The example of parallel quantum network')
-    parser.add_argument('ip', type=valid_ip, help='listening IP address')
-    parser.add_argument('port', type=valid_port, help='listening port number')
+    parser = argparse.ArgumentParser(description='Example of parallel quantum network')
+    parser.add_argument('ip', type=valid_ip, help='quantum server IP address')
+    parser.add_argument('port', type=valid_port, help='quantum server port number')
     parser.add_argument('ring_size', type=int, help='the size of ring network')
     parser.add_argument('lookahead', type=int,
-                        help='the lookahead of parallel simulation (ps); the longer lookahead generate the longer quantum channel')
-    parser.add_argument('stop_time', type=int,
-                        help='the time of stopping the simulation (sec)')
-    parser.add_argument('log_path', type=str,
-                        help='the path of log files')
+                        help='the lookahead of parallel simulation (ps); longer lookahead generates a longer quantum channel')
+    parser.add_argument('stop_time', type=int, help='the end time of the simulation (sec)')
+    parser.add_argument('log_path', type=str, help='the path for storing log files')
 
     args = parser.parse_args()
 
     if rank == 0:
         print('Simulate {}-node ring network {} sec by {} processors'.format(
             args.ring_size, args.stop_time, size))
-        print(
-            'Connecting to the quanum manager server at {}:{}'.format(args.ip,
-                                                                      args.port))
+        print('Connecting to the quantum manager server at {}:{}'.format(
+            args.ip, args.port))
         print('log path: {}'.format(args.log_path))
 
     ring_network(args.ring_size, args.lookahead, args.stop_time * 1e12, rank,
                  size, args.ip, args.port, args.log_path)
-

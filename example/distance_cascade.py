@@ -11,7 +11,7 @@ from sequence.topology.node import QKDNode
 
 if __name__ == "__main__":
     NUM_EXPERIMENTS = 10
-    runtime = 12e12
+    runtime = 6e12
 
     dist_list = []
     tp_list = []
@@ -22,10 +22,9 @@ if __name__ == "__main__":
     bb84_latency_list = []
 
     for id in range(NUM_EXPERIMENTS):
-        distance = max(1000,10000*int(id))
+        distance = max(1000, 10000*int(id))
 
         tl = Timeline(runtime)
-        tl.seed(2)
         tl.show_progress = True
 
         qc0 = QuantumChannel("qc0", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
@@ -38,6 +37,7 @@ if __name__ == "__main__":
         # Alice
         ls_params = {"frequency": 80e6, "mean_photon_num": 0.1}
         alice = QKDNode("alice", tl)
+        alice.set_seed(0)
         for name, param in ls_params.items():
             alice.update_lightsource_params(name, param)
 
@@ -48,6 +48,7 @@ if __name__ == "__main__":
             {"efficiency": 0.8, "dark_count": 10, "time_resolution": 10,
              "count_rate": 50e6}]
         bob = QKDNode("bob", tl)
+        bob.set_seed(1)
         for i in range(len(detector_params)):
             for name, param in detector_params[i].items():
                 bob.update_detector_params(i, name, param)
@@ -63,7 +64,7 @@ if __name__ == "__main__":
         pair_cascade_protocols(alice.protocol_stack[1], bob.protocol_stack[1])
 
         process = Process(alice.protocol_stack[1], 'push',
-                          [256, math.inf, 12e12])
+                          [256, math.inf, 6e12])
         tl.schedule(Event(0, process))
 
         tl.init()

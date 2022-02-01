@@ -13,7 +13,8 @@ from uuid import uuid4
 if TYPE_CHECKING:
     from .p_timeline import ParallelTimeline
 
-from .quantum_manager import QuantumManagerKet, QuantumManagerDensity, KetState
+from .quantum_manager import QuantumManagerKet, QuantumManagerDensity, KetState, \
+    KET_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM
 from .quantum_manager_server import QuantumManagerMsgType, \
     QuantumManagerMessage
 from ..components.circuit import Circuit
@@ -57,16 +58,12 @@ class QuantumManagerClient():
         self.socket.settimeout(20)
 
         # local quantum manager
-        if formalism == "KET":
+        if formalism == KET_STATE_FORMALISM:
             self.qm = QuantumManagerKet()
-
-        elif formalism == "DENSITY":
+        elif formalism == DENSITY_MATRIX_FORMALISM:
             self.qm = QuantumManagerDensity()
-
         else:
-            raise Exception(
-                "Invalid formalim {} given; should be 'KET' or 'DENSITY'".format(
-                    formalism))
+            raise Exception("Invalid formalism {} given".format(formalism))
 
     def get_socket_to_server(self) -> "socket":
         return self.socket
