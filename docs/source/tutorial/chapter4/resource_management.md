@@ -64,7 +64,7 @@ and `index_upper`. Our condition is thus relatively simple:
 def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager", args):
     index_upper = args["index_upper"]
     index_lower = args["index_lower"]
-    if memory_info.state == "RAW"
+    if memory_info.state == "RAW" \
             and index_lower <= memory_info.index <= index_upper:
         return [memory_info]
     else:
@@ -113,7 +113,6 @@ node (see tutorial 3 for details) will be `“m12”`, which will be set when lo
 ```python
 from sequence.entanglement_management.generation import EntanglementGenerationA
 
-
 def eg_req_func(protocols, args):
     remote_node = args["remote_node"]
     index_upper = args["index_upper"]
@@ -122,7 +121,7 @@ def eg_req_func(protocols, args):
         if not isinstance(protocol, EntanglementGenerationA):
             continue
         index_func = protocol.memory.owner.memory_array.memories.index
-        if protocol.remote_node_name == remote_node
+        if protocol.remote_node_name == remote_node \
                 and index_lower <= index_func(protocol.memory) <= index_upper:
             return protocol
 
@@ -244,6 +243,7 @@ At the end of our simulation, we will print out for each memory (on router 1):
 We should notice that all of the memories 0-9 are entangled with router 2 within a short time.
 
 ### Step 6: Flow 2 Entanglement Generation
+
 Now, we'll create the custom rules to control our second flow between routers 1 and 3. The first step is again to set up entanglement generation in a similar manner to the first flow. To do this, we'll create a function `add_eg_rules` that takes as arguments
 - `index`, the index of the router (in the path) we will be adding rules to,
 - `path`, a list of router nodes that make up the path of the entanglement flow, and
@@ -297,7 +297,11 @@ def add_eg_rules(index: int, path: List[RouterNode], middles: List[BSMNode]):
 ```
 
 ### Step 7: Flow 2 Entanglement Purification
-We'll next create rules for entanglement purification. Our rule conditions will be a little different, as we will want memories to be in the `ENTANGLED` state with fidelity below some threshold (that we wish to improve). Each protocol will also need two memories, one of which will be consumed while the fidelity of the other increases. The arguments for our `add_ep_rules` function will be similar to our previous function:
+
+We'll next create rules for entanglement purification. Our rule conditions will be a little different,
+as we will want memories to be in the `ENTANGLED` state with fidelity below some threshold (that we wish to improve).
+Each protocol will also need two memories, one of which will be consumed while the fidelity of the other increases.
+The arguments for our `add_ep_rules` function will be similar to our previous function:
 - `index`, the index of the router (in the path) we will be adding rules to,
 - `path`, a list of router nodes that make up the path of the entanglement flow, and
 - `target_fidelity`, the fidelity of entanglement we wish to achieve.
@@ -390,7 +394,7 @@ Finally, we'll generate rules for entanglement swapping. The rules will be a lit
 - `path`, a list of router nodes that make up the path of the entanglement flow,
 - `target_fidelity`, the fidelity of entanglement we wish to achieve,
 - `succ_prob`, the probability of success for the swapping operation, and
-- `degredation`, the degredation of entanglement fidelity after the swapping operation.
+- `degredation`, the degradation of entanglement fidelity after the swapping operation.
 
 Also note that the code to generate swapping rules is much longer than our previous rules. Luckily, this will be done automatically by the network manager in future tutorials.
 
@@ -509,6 +513,7 @@ def add_es_rules(index: int, path: List[RouterNode], target_fidelity: float, suc
 ```
 
 ### Step 9: Run the Simulation Again
+
 We will now run the simulation again, adding in our new custom rules for the second flow. We will also add code to display memory information on routers 2 and 3. We should observe long-distance entanglement between routers 1 and 3 alongside the short distance entanglement from our first experiment.
 
 ```python

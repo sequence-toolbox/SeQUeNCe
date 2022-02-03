@@ -6,7 +6,6 @@ Node types can be used to collect all the necessary hardware and software for a 
 """
 
 from math import inf
-from time import monotonic_ns
 from typing import TYPE_CHECKING, Any, List
 import numpy as np
 
@@ -30,6 +29,7 @@ from ..qkd.cascade import Cascade
 from ..resource_management.resource_manager import ResourceManager
 from ..network_management.network_manager import NewNetworkManager
 from ..utils.encoding import *
+from ..utils import log
 
 
 class Node(Entity):
@@ -54,6 +54,7 @@ class Node(Entity):
         seed (int): seed for random number generator, default None
         """
 
+        log.logger.info("Create Node {}".format(name))
         Entity.__init__(self, name, timeline)
         self.owner = self
         self.cchannels = {}  # mapping of destination node names to classical channels
@@ -70,8 +71,7 @@ class Node(Entity):
     def get_generator(self):
         return self.generator
 
-    def assign_cchannel(self, cchannel: "ClassicalChannel",
-                        another: str) -> None:
+    def assign_cchannel(self, cchannel: "ClassicalChannel", another: str) -> None:
         """Method to assign a classical channel to the node.
 
         This method is usually called by the `ClassicalChannel.add_ends` method and not called individually.
@@ -103,6 +103,7 @@ class Node(Entity):
             msg (Message): message to transmit.
             priority (int): priority for transmitted message (default inf).
         """
+        log.logger.info("{} send message {} to {}".format(self.name, msg, dst))
 
         if priority == inf:
             priority = self.timeline.schedule_counter
@@ -117,7 +118,8 @@ class Node(Entity):
             src (str): name of node sending the message.
             msg (Message): message transmitted from node.
         """
-
+        log.logger.info(
+            "{} receive message {} from {}".format(self.name, msg, src))
         # signal to protocol that we've received a message
         if msg.receiver is not None:
             for protocol in self.protocols:
@@ -207,6 +209,12 @@ class BSMNode(Node):
 
         self.eg.others.append(other.name)
 
+    def change_timeline(self, timeline: "Timeline"):
+        self.timeline = timeline
+        self.bsm.change_timeline(timeline)
+        for cc in self.cchannels.values():
+            cc.change_timeline(timeline)
+
 
 class QuantumRouter(Node):
     """Node for entanglement distribution networks.
@@ -241,6 +249,8 @@ class QuantumRouter(Node):
         self.app = None
 
     def receive_message(self, src: str, msg: "Message") -> None:
+        log.logger.info("{} receive message {} from {}".format
+                        (self.name, msg, src))
         if msg.receiver == "resource_manager":
             self.resource_manager.received_message(src, msg)
         elif msg.receiver == "network_manager":

@@ -1,6 +1,3 @@
-from numpy import random
-random.seed(0)
-
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node, BSMNode
 from sequence.components.memory import Memory
@@ -44,6 +41,7 @@ def pair_protocol(node1: Node, node2: Node):
 
 
 tl = Timeline()
+tl.show_progress = False
 
 node1 = EntangleGenNode('node1', tl)
 node2 = EntangleGenNode('node2', tl)

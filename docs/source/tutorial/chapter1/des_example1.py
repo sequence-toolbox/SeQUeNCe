@@ -15,6 +15,8 @@ class Store(object):
 
 
 tl = Timeline()
+tl.show_progress = False
+
 store = Store(tl)
 
 # open store at 7:00

@@ -6,6 +6,7 @@ Also included in this module is the message type used by the network manager and
 
 from enum import Enum
 from typing import List, TYPE_CHECKING
+
 if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
     from ..protocol import StackProtocol
@@ -13,13 +14,14 @@ if TYPE_CHECKING:
 from ..message import Message
 from .routing import StaticRoutingProtocol
 from .reservation import ResourceReservationProtocol, ResourceReservationMessage, RSVPMsgType
+from ..utils import log
 
 
 class NetworkManagerMessage(Message):
     """Message used by the network manager.
 
     Attributes:
-        message_type (Enum): message type required by base message type.
+        msg_type (Enum): message type required by base message type.
         receiver (str): name of destination protocol instance.
         payload (Message): message to be passed through destination network manager.
     """
@@ -53,7 +55,7 @@ class NetworkManager():
             owner (QuantumRouter): node network manager is attached to.
             protocol_stack (List[StackProtocol]): stack of protocols to use for processing.
         """
-
+        log.logger.info("Create network manager of Node {}".format(owner.name))
         self.name = "network_manager"
         self.owner = owner
         self.protocol_stack = protocol_stack
@@ -116,7 +118,9 @@ class NetworkManager():
         Side Effects:
             Will invoke `pop` method of 0 indexed protocol in `protocol_stack`.
         """
-
+        log.logger.info(
+            "{} network manager receives message {} from {}".format(
+                self.owner.name, msg.payload, src))
         self.protocol_stack[0].pop(src=src, msg=msg.payload)
 
     def request(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float) -> None:
