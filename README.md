@@ -60,3 +60,6 @@ $ python utils/draw_topo.py example/starlight.json
 ```
 This script also supports a flag `-m` to visualize BSM nodes created by default on quantum links between routers.
 
+## Libraries Used
+This project includes a modified fork of the Quantum++ library version 2.6.
+Please see the Quantum++ [`LICENSE`](https://github.com/softwareQinc/qpp/blob/main/LICENSE) file for more information.
