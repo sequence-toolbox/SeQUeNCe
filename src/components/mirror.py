@@ -1,3 +1,17 @@
+from numpy import random, multiply
+
+from .photon import Photon
+from ..kernel.entity import Entity
+from ..kernel.event import Event
+from ..kernel.process import Process
+from ..utils.encoding import polarization
+
+from typing import TYPE_CHECKING, Any, Dict
+if TYPE_CHECKING:
+    from ..kernel.timeline import Timeline
+    from ..components.photon import Photon
+    from typing import List
+
 class Mirror(Entity):
     
     """Single photon reflecting device.
