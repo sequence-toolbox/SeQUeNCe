@@ -207,6 +207,7 @@ def measure_entangled_state_with_cache_density(state: Tuple[Tuple[complex]], sta
 
     return (state0, state1, prob_0)
 
+
 @lru_cache(maxsize=1000)
 def measure_multiple_with_cache_density(state: Tuple[Tuple[complex]], num_states: int, length_diff: int) -> Tuple[
         Tuple[Tuple[complex]], Tuple[float]]:

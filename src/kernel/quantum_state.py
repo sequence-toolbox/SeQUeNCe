@@ -9,10 +9,10 @@ These include 2 classes used by a quantum manager, and one used for individual p
 """
 
 from abc import ABC
-from typing import Tuple, List
+from typing import Tuple, Dict, List
 
 from numpy import pi, cos, sin, arange, log2
-from numpy.random import random, random_sample, choice
+from numpy.random import Generator
 
 from .quantum_utils import *
 
@@ -35,7 +35,6 @@ class State(ABC):
 
     Attributes:
         state (any): internal representation of the state, may vary by state type.
-        entangled_states (List[State]): list of other entangled states, for use when no quantum manager present.
         keys (List[int]): list of keys pointing to the state, for use with a quantum manager.
     """
 
@@ -43,8 +42,34 @@ class State(ABC):
         super().__init__()
 
         self.state = None
-        self.entangled_states = []
         self.keys = []
+
+    def deserialize(self, json_data) -> None:
+        self.keys = json_data["keys"]
+        self.state = []
+        for i in range(0, len(json_data["state"]), 2):
+            complex_val = complex(json_data["state"][i],
+                                  json_data["state"][i + 1])
+            self.state.append(complex_val)
+
+    def serialize(self) -> Dict:
+        res = {"keys": self.keys}
+        state = []
+        for cplx_n in self.state:
+            if type(cplx_n) == float:
+                state.append(cplx_n)
+                state.append(0)
+            elif isinstance(cplx_n, complex):
+                state.append(cplx_n.real)
+                state.append(cplx_n.imag)
+            else:
+                raise ValueError("Unknown type of state")
+
+        res["state"] = state
+        return res
+
+    def __str__(self):
+        return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])
 
 
 class KetState(State):
@@ -68,9 +93,6 @@ class KetState(State):
         self.state = array(amplitudes, dtype=complex)
         self.keys = keys
 
-    def __str__(self):
-        return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])
-
 
 class DensityState(State):
     """Class to represent an individual quantum state as a density matrix.
@@ -81,8 +103,6 @@ class DensityState(State):
     """
 
     def __init__(self, state: List[List[complex]], keys: List[int]):
-        super().__init__()
-
         """Constructor for density state class.
 
         Args:
@@ -90,6 +110,8 @@ class DensityState(State):
                 If the list is one-dimensional, will be converted to matrix with outer product operation.
             keys (List[int]): list of keys to this state in quantum manager.
         """
+
+        super().__init__()
 
         state = array(state, dtype=complex)
         if state.ndim == 1:
@@ -105,9 +127,6 @@ class DensityState(State):
 
         self.state = state
         self.keys = keys
-
-    def __str__(self):
-        return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])
 
 
 class FreeQuantumState(State):
@@ -149,7 +168,7 @@ class FreeQuantumState(State):
             quantum_state.entangled_states = entangled_states
             quantum_state.state = new_state
 
-    def random_noise(self):
+    def random_noise(self, rng: Generator):
         """Method to add random noise to a single state.
 
         Chooses a random angle to set the quantum state to (with no phase difference).
@@ -159,7 +178,7 @@ class FreeQuantumState(State):
         """
 
         # TODO: rewrite for entangled states
-        angle = random() * 2 * pi
+        angle = rng.random() * 2 * pi
         self.state = (complex(cos(angle)), complex(sin(angle)))
 
     # only for use with entangled state
@@ -195,7 +214,7 @@ class FreeQuantumState(State):
         self.entangled_states = [self]
         self.state = state
 
-    def measure(self, basis: Tuple[Tuple[complex]]) -> int:
+    def measure(self, basis: Tuple[Tuple[complex]], rng: Generator) -> int:
         """Method to measure a single quantum state.
 
         Args:
@@ -213,7 +232,7 @@ class FreeQuantumState(State):
             num_states = len(self.entangled_states)
             state_index = self.entangled_states.index(self)
             state0, state1, prob = measure_entangled_state_with_cache(self.state, basis, state_index, num_states)
-            if random_sample() < prob:
+            if rng.random() < prob:
                 new_state = state0
                 result = 0
             else:
@@ -224,7 +243,7 @@ class FreeQuantumState(State):
         # handle unentangled case
         else:
             prob = measure_state_with_cache(self.state, basis)
-            if random_sample() < prob:
+            if rng.random() < prob:
                 new_state = basis[0]
                 result = 0
             else:
@@ -240,7 +259,7 @@ class FreeQuantumState(State):
         return result
 
     @staticmethod
-    def measure_multiple(basis, states):
+    def measure_multiple(basis, states, rng: Generator):
         """Method to measure multiple qubits in a more complex basis.
 
         May be used for bell state measurement.
@@ -288,7 +307,7 @@ class FreeQuantumState(State):
 
         possible_results = arange(0, basis_dimension, 1)
         # result gives index of the basis vector that will be projected to
-        res = choice(possible_results, p=probabilities)
+        res = rng.choice(possible_results, p=probabilities)
         # project to new state, then reassign quantum state and entangled photons
         new_state = new_states[res]
         for state in entangled_list:

@@ -7,6 +7,7 @@ The states may currently be defined in two possible ways:
 The manager defines an API for interacting with quantum states.
 """
 
+from __future__ import annotations
 from abc import abstractmethod
 from typing import List, Dict, TYPE_CHECKING
 
@@ -16,11 +17,13 @@ if TYPE_CHECKING:
 
 from qutip.qip.circuit import QubitCircuit, Gate
 from qutip.qip.operations import gate_sequence_product
-from numpy import log2, arange
-from numpy.random import random_sample, choice
+from numpy import log2
 
 from .quantum_state import KetState, DensityState
 from .quantum_utils import *
+
+KET_STATE_FORMALISM = "ket_vector"
+DENSITY_MATRIX_FORMALISM = "density_matrix"
 
 
 class QuantumManager:
@@ -32,10 +35,10 @@ class QuantumManager:
         states (Dict[int, KetState]): mapping of state keys to quantum state objects.
     """
 
-    def __init__(self, formalism):
-        self.states = {}
-        self._least_available = 0
-        self.formalism = formalism
+    def __init__(self, formalism: str):
+        self.states: Dict[int, State] = {}
+        self._least_available: int = 0
+        self.formalism: str = formalism
 
     @abstractmethod
     def new(self, amplitudes: any) -> int:
@@ -61,20 +64,23 @@ class QuantumManager:
         return self.states[key]
 
     @abstractmethod
-    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
+    def run_circuit(self, circuit: Circuit, keys: List[int], meas_samp=None) -> Dict[int, int]:
         """Method to run a circuit on a given set of quantum states.
 
         Args:
             circuit (Circuit): quantum circuit to apply.
             keys (List[int]): list of keys for quantum states to apply circuit to.
+            meas_samp (float): random sample used for measurement.
 
         Returns:
             Dict[int, int]: dictionary mapping qstate keys to measurement results.
         """
 
         assert len(keys) == circuit.size, "mismatch between circuit size and supplied qubits"
+        if len(circuit.measured_qubits) > 0:
+            assert meas_samp, "must specify random sample when measuring qubits"
 
-    def _prepare_circuit(self, circuit: "Circuit", keys: List[int]):
+    def _prepare_circuit(self, circuit: Circuit, keys: List[int]):
         old_states = []
         all_keys = []
 
@@ -133,21 +139,24 @@ class QuantumManager:
         """Method to remove state stored at key."""
         del self.states[key]
 
+    def set_states(self, states: Dict):
+        self.states = states
+
 
 class QuantumManagerKet(QuantumManager):
     """Class to track and manage quantum states with the ket vector formalism."""
 
     def __init__(self):
-        super().__init__("KET")
+        super().__init__(KET_STATE_FORMALISM)
 
-    def new(self, amplitudes=[complex(1), complex(0)]) -> int:        
+    def new(self, amplitudes=(complex(1), complex(0))) -> int:
         key = self._least_available
         self._least_available += 1
         self.states[key] = KetState(amplitudes, [key])
         return key
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
-        super().run_circuit(circuit, keys)
+    def run_circuit(self, circuit: Circuit, keys: List[int], meas_samp=None) -> Dict[int, int]:
+        super().run_circuit(circuit, keys, meas_samp)
         new_state, all_keys, circ_mat = self._prepare_circuit(circuit, keys)
 
         new_state = circ_mat @ new_state
@@ -161,7 +170,7 @@ class QuantumManagerKet(QuantumManager):
         else:
             # measure state (state reassignment done in _measure method)
             keys = [all_keys[i] for i in circuit.measured_qubits]
-            return self._measure(new_state, keys, all_keys)
+            return self._measure(new_state, keys, all_keys, meas_samp)
 
     def set(self, keys: List[int], amplitudes: List[complex]) -> None:
         super().set(keys, amplitudes)
@@ -169,7 +178,13 @@ class QuantumManagerKet(QuantumManager):
         for key in keys:
             self.states[key] = new_state
 
-    def _measure(self, state: List[complex], keys: List[int], all_keys: List[int]) -> Dict[int, int]:
+    def set_to_zero(self, key: int):
+        self.set([key], [complex(1), complex(0)])
+
+    def set_to_one(self, key: int):
+        self.set([key], [complex(0), complex(1)])
+
+    def _measure(self, state: List[complex], keys: List[int], all_keys: List[int], meas_samp: float) -> Dict[int, int]:
         """Method to measure qubits at given keys.
 
         SHOULD NOT be called individually; only from circuit method (unless for unit testing purposes).
@@ -179,6 +194,7 @@ class QuantumManagerKet(QuantumManager):
             state (List[complex]): state to measure.
             keys (List[int]): list of keys to measure.
             all_keys (List[int]): list of all keys corresponding to state.
+            meas_samp (float): random sample used for measurement result.
 
         Returns:
             Dict[int, int]: mapping of measured keys to measurement results.
@@ -187,7 +203,7 @@ class QuantumManagerKet(QuantumManager):
         if len(keys) == 1:
             if len(all_keys) == 1:
                 prob_0 = measure_state_with_cache_ket(tuple(state))
-                if random_sample() < prob_0:
+                if meas_samp < prob_0:
                     result = 0
                 else:
                     result = 1
@@ -197,7 +213,7 @@ class QuantumManagerKet(QuantumManager):
                 num_states = len(all_keys)
                 state_index = all_keys.index(key)
                 state_0, state_1, prob_0 = measure_entangled_state_with_cache_ket(tuple(state), state_index, num_states)
-                if random_sample() < prob_0:
+                if meas_samp < prob_0:
                     new_state = array(state_0, dtype=complex)
                     result = 0
                 else:
@@ -208,7 +224,8 @@ class QuantumManagerKet(QuantumManager):
 
         else:
             # swap states into correct position
-            if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
+            if not all(
+                    [all_keys.index(key) == i for i, key in enumerate(keys)]):
                 all_keys, swap_mat = self._swap_qubits(all_keys, keys)
                 state = swap_mat @ state
 
@@ -217,9 +234,11 @@ class QuantumManagerKet(QuantumManager):
             new_states, probabilities = measure_multiple_with_cache_ket(tuple(state), len(keys), len_diff)
 
             # choose result, set as new state
-            possible_results = arange(0, 2 ** len(keys), 1)
-            result = choice(possible_results, p=probabilities)
-            new_state = new_states[result]
+            for i in range(int(2 ** len(keys))):
+                if meas_samp < sum(probabilities[:i + 1]):
+                    result = i
+                    new_state = new_states[i]
+                    break
 
             for key in keys:
                 all_keys.remove(key)
@@ -246,16 +265,16 @@ class QuantumManagerDensity(QuantumManager):
     """Class to track and manage states with the density matrix formalism."""
 
     def __init__(self):
-        super().__init__("DENSITY")
+        super().__init__(DENSITY_MATRIX_FORMALISM)
 
-    def new(self, state=[[complex(1), complex(0)], [complex(0), complex(0)]]) -> int:        
+    def new(self, state=([complex(1), complex(0)], [complex(0), complex(0)])) -> int:
         key = self._least_available
         self._least_available += 1
         self.states[key] = DensityState(state, [key])
         return key
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int]) -> Dict[int, int]:
-        super().run_circuit(circuit, keys)
+    def run_circuit(self, circuit: Circuit, keys: List[int], meas_samp=None) -> Dict[int, int]:
+        super().run_circuit(circuit, keys, meas_samp)
         new_state, all_keys, circ_mat = super()._prepare_circuit(circuit, keys)
 
         new_state = circ_mat @ new_state @ circ_mat.conj().T
@@ -269,7 +288,7 @@ class QuantumManagerDensity(QuantumManager):
         else:
             # measure state (state reassignment done in _measure method)
             keys = [all_keys[i] for i in circuit.measured_qubits]
-            return self._measure(new_state, keys, all_keys)
+            return self._measure(new_state, keys, all_keys, meas_samp)
 
     def set(self, keys: List[int], state: List[List[complex]]) -> None:
         """Method to set the quantum state at the given keys.
@@ -288,7 +307,14 @@ class QuantumManagerDensity(QuantumManager):
         for key in keys:
             self.states[key] = new_state
 
-    def _measure(self, state: List[List[complex]], keys: List[int], all_keys: List[int]) -> Dict[int, int]:
+    def set_to_zero(self, key: int):
+        self.set([key], [[complex(1), complex(0)], [complex(0), complex(0)]])
+
+    def set_to_one(self, key: int):
+        self.set([key], [[complex(0), complex(0)], [complex(0), complex(1)]])
+
+    def _measure(self, state: List[List[complex]], keys: List[int],
+                 all_keys: List[int], meas_samp: float) -> Dict[int, int]:
         """Method to measure qubits at given keys.
 
         SHOULD NOT be called individually; only from circuit method (unless for unit testing purposes).
@@ -306,7 +332,7 @@ class QuantumManagerDensity(QuantumManager):
         if len(keys) == 1:
             if len(all_keys) == 1:
                 prob_0 = measure_state_with_cache_density(tuple(map(tuple, state)))
-                if random_sample() < prob_0:
+                if meas_samp < prob_0:
                     result = 0
                     new_state = [[1, 0], [0, 0]]
                 else:
@@ -319,7 +345,7 @@ class QuantumManagerDensity(QuantumManager):
                 state_index = all_keys.index(key)
                 state_0, state_1, prob_0 =\
                     measure_entangled_state_with_cache_density(tuple(map(tuple, state)), state_index, num_states)
-                if random_sample() < prob_0:
+                if meas_samp < prob_0:
                     new_state = array(state_0, dtype=complex)
                     result = 0
                 else:
@@ -338,19 +364,18 @@ class QuantumManagerDensity(QuantumManager):
             new_states, probabilities = measure_multiple_with_cache_density(state_to_measure, len(keys), len_diff)
 
             # choose result, set as new state
-            possible_results = arange(0, 2 ** len(keys), 1)
-            result = choice(possible_results, p=probabilities)
-            new_state = new_states[result]
+            for i in range(int(2 ** len(keys))):
+                if meas_samp < sum(probabilities[:i + 1]):
+                    result = i
+                    new_state = new_states[i]
+                    break
 
         result_digits = [int(x) for x in bin(result)[2:]]
         while len(result_digits) < len(keys):
             result_digits.insert(0, 0)
-       
+
         new_state_obj = DensityState(new_state, all_keys)
         for key in all_keys:
             self.states[key] = new_state_obj
-    
+
         return dict(zip(keys, result_digits))
-
-
-
