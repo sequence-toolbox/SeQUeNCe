@@ -5,14 +5,12 @@ The beam splitter receives photons with polarization encoding and forwards photo
 attached receivers (which can be any entity).
 """
 
-from typing import TYPE_CHECKING
-
-from numpy import trace
-from numpy.random import random_sample, choice
+from typing import List, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
-    from typing import List
+
+from numpy import trace
 
 from .photon import Photon
 from ..kernel.quantum_utils import povm_0
@@ -68,16 +66,16 @@ class BeamSplitter(Entity):
 
         assert photon.encoding_type["name"] == "polarization", "Beamsplitter should only be used with polarization."
 
-        if random_sample() < self.fidelity:
+        if self.get_generator().random() < self.fidelity:
             index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
 
             if 0 > index or index >= len(self.basis_list):
                 return
 
-            res = Photon.measure(polarization["bases"][self.basis_list[index]], photon)
+            res = Photon.measure(polarization["bases"][self.basis_list[index]], photon, self.get_generator())
             self._receivers[res].get(photon)
 
-    def set_basis_list(self, basis_list: "List[int]", start_time: int, frequency: float) -> None:
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:
         """Sets the basis_list, start_time, and frequency attributes."""
 
         self.basis_list = basis_list
@@ -116,6 +114,6 @@ class FockBeamSplitter(Entity):
                     return
                 prob_0 = 0.5
 
-            detector_num = choice([0, 1], p=[prob_0, 1-prob_0])
+            detector_num = self.get_generator().choice([0, 1], p=[prob_0, 1-prob_0])
             self.most_recent_time = self.timeline.now()
             self._receivers[detector_num].get()

@@ -8,8 +8,6 @@ OpticalChannels must be attached to nodes on both ends.
 import heapq as hq
 from typing import TYPE_CHECKING
 
-from numpy import random
-
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..topology.node import Node
@@ -19,6 +17,7 @@ if TYPE_CHECKING:
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
+from ..utils import log
 
 
 class OpticalChannel(Entity):
@@ -47,6 +46,7 @@ class OpticalChannel(Entity):
             polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
             light_speed (float): speed of light within the fiber (in m/ps).
         """
+        log.logger.info("Create channel {}".format(name))
 
         Entity.__init__(self, name, timeline)
         self.sender = None
@@ -81,9 +81,9 @@ class QuantumChannel(OpticalChannel):
         frequency (float): maximum frequency of qubit transmission (in Hz).
     """
 
-    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, polarization_fidelity=1,
+    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, polarization_fidelity=1.0,
                  light_speed=2e-4, frequency=8e7):
-        """Constructor for Quatnum Channel class.
+        """Constructor for Quantum Channel class.
 
         Args:
             name (str): name of the quantum channel instance.
@@ -107,10 +107,23 @@ class QuantumChannel(OpticalChannel):
         self.delay = round(self.distance / self.light_speed)
         self.loss = 1 - 10 ** (self.distance * self.attenuation / -10)
 
-    def set_ends(self, sender: "Node", receiver: "Node") -> None:
+    def set_ends(self, sender: "Node", receiver: str) -> None:
+        """Method to set endpoints for the quantum channel.
+
+        This must be performed before transmission.
+
+        Args:
+            sender (Node): node sending qubits.
+            receiver (str): name of node receiving qubits.
+        """
+
+        log.logger.info(
+            "Set {} {} as ends of quantum channel {}".format(sender.name,
+                                                             receiver,
+                                                             self.name))
         self.sender = sender
         self.receiver = receiver
-        sender.assign_qchannel(self, receiver.name)
+        sender.assign_qchannel(self, receiver)
 
     def transmit(self, qubit: "Photon", source: "Node") -> None:
         """Method to transmit photon-encoded qubits.
@@ -122,6 +135,11 @@ class QuantumChannel(OpticalChannel):
         Side Effects:
             Receiver node may receive the qubit (via the `receive_qubit` method).
         """
+
+        log.logger.info(
+            "{} send qubit with state {} to {} by Channel {}".format(
+                self.sender.name, qubit.quantum_state.state, self.receiver,
+                self.name))
 
         assert self.delay != 0 and self.loss != 1, \
             "QuantumChannel init() function has not been run for {}".format(self.name)
@@ -136,11 +154,18 @@ class QuantumChannel(OpticalChannel):
             assert time == self.timeline.now(), "qc {} transmit method called at invalid time".format(self.name)
 
         # check if photon kept
-        if (random.random_sample() > self.loss) or qubit.is_null:
+        if (self.sender.get_generator().random() > self.loss) or qubit.is_null:
+            if self._receiver_on_other_tl():
+                self.timeline.quantum_manager.move_manage_to_server(
+                    qubit.qstate_key)
+
+            if qubit.is_null:
+                qubit.add_loss(self.loss)
+
             # check if polarization encoding and apply necessary noise
             if (qubit.encoding_type["name"] == "polarization") and (
-                    random.random_sample() > self.polarization_fidelity):
-                qubit.random_noise()
+                    self.sender.get_generator().random() > self.polarization_fidelity):
+                qubit.random_noise(self.get_generator())
 
             # schedule receiving node to receive photon at future time determined by light speed
             future_time = self.timeline.now() + self.delay
@@ -183,6 +208,9 @@ class QuantumChannel(OpticalChannel):
         time = int(time_bin * (1e12 / self.frequency))
         return time
 
+    def _receiver_on_other_tl(self) -> bool:
+        return self.timeline.get_entity_by_name(self.receiver) is None
+
 
 class ClassicalChannel(OpticalChannel):
     """Optical channel for transmission of classical messages.
@@ -214,10 +242,23 @@ class ClassicalChannel(OpticalChannel):
         else:
             self.delay = delay
 
-    def set_ends(self, sender: "Node", receiver: "Node") -> None:
+    def set_ends(self, sender: "Node", receiver: str) -> None:
+        """Method to set endpoints for the classical channel.
+
+        This must be performed before transmission.
+
+        Args:
+            sender (Node): node sending classical messages.
+            receiver (str): name of node receiving classical messages.
+        """
+
+        log.logger.info(
+            "Set {} {} as ends of classical channel {}".format(sender.name,
+                                                               receiver,
+                                                               self.name))
         self.sender = sender
         self.receiver = receiver
-        sender.assign_cchannel(self, receiver.name)
+        sender.assign_cchannel(self, receiver)
 
     def transmit(self, message: "Message", source: "Node", priority: int) -> None:
         """Method to transmit classical messages.
@@ -231,6 +272,11 @@ class ClassicalChannel(OpticalChannel):
             Receiver node may receive the qubit (via the `receive_qubit` method).
         """
 
+        log.logger.info(
+            "{} send message {} to {} by Channel {}".format(self.sender.name,
+                                                            message,
+                                                            self.receiver,
+                                                            self.name))
         assert source == self.sender
 
         future_time = round(self.timeline.now() + int(self.delay))

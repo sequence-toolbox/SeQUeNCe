@@ -1,10 +1,8 @@
-from numpy import random
 from sequence.components.interferometer import Interferometer
 from sequence.components.photon import Photon
 from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import time_bin
 
-random.seed(0)
 NUM_TRIALS = int(10e3)
 
 

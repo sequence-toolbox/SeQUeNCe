@@ -8,8 +8,6 @@ QSDetector is defined as an abstract template and as implementaions for polariza
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List
 
-from numpy import random
-
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
 
@@ -74,7 +72,7 @@ class Detector(Entity):
         now = self.timeline.now()
         time = round(now / self.time_resolution) * self.time_resolution
 
-        if (random.random_sample() < self.efficiency or dark_get) and now > self.next_detection_time:
+        if (self.get_generator().random() < self.efficiency or dark_get) and now > self.next_detection_time:
             self.notify({'time': time})
             self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
@@ -89,7 +87,7 @@ class Detector(Entity):
         """
 
         if self.dark_count > 0:
-            time_to_next = int(random.exponential(1 / self.dark_count) * 1e12)  # time to next dark count
+            time_to_next = int(self.get_generator().exponential(1 / self.dark_count) * 1e12)  # time to next dark count
             time = time_to_next + self.timeline.now()  # time of next dark count
 
             process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
@@ -288,7 +286,8 @@ class QSDetectorFockDirect(QSDetector):
 
     def get(self, photon: "Photon", **kwargs):
         src = kwargs["src"]
-        res = Photon.measure(None, photon)  # measure (0/1 determines existence of photons in encoding)
+        # measure (0/1 determines existence of photons in encoding)
+        res = Photon.measure(None, photon, self.get_generator())
         if res:
             detector_num = self.src_list.index(src)
             self.detectors[detector_num].get()

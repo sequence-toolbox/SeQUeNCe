@@ -48,7 +48,7 @@ class SPDCLens(Entity):
             May create two entangledd photons and send them to the direct_receiver.
         """
 
-        if random_sample() < self.rate:
+        if self.get_generator().random() < self.rate:
             state = photon.quantum_state
             photon.wavelength /= 2
             new_photon = deepcopy(photon)

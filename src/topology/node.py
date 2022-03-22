@@ -7,6 +7,7 @@ Node types can be used to collect all the necessary hardware and software for a 
 
 from math import inf
 from typing import TYPE_CHECKING, Any, List
+import numpy as np
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -29,6 +30,7 @@ from ..qkd.cascade import Cascade
 from ..resource_management.resource_manager import ResourceManager
 from ..network_management.network_manager import NewNetworkManager
 from ..utils.encoding import *
+from ..utils import log
 
 
 class Node(Entity):
@@ -42,27 +44,37 @@ class Node(Entity):
         cchannels (Dict[str, ClassicalChannel]): mapping of destination node names to classical channel instances.
         qchannels (Dict[str, QuantumChannel]): mapping of destination node names to quantum channel instances.
         protocols (List[Protocol]): list of attached protocols.
+        generator (np.random.Generator): random number generator used by node.
         components (Dict[str, Entity]): mapping of local component names to objects.
         first_component_name (str): name of component that first receives incoming qubits.
     """
 
-    def __init__(self, name: str, timeline: "Timeline"):
+    def __init__(self, name: str, timeline: "Timeline", seed=None):
         """Constructor for node.
 
         name (str): name of node instance.
         timeline (Timeline): timeline for simulation.
+        seed (int): seed for random number generator, default None
         """
 
+        log.logger.info("Create Node {}".format(name))
         Entity.__init__(self, name, timeline)
         self.owner = self
         self.cchannels = {}  # mapping of destination node names to classical channels
         self.qchannels = {}  # mapping of destination node names to quantum channels
         self.protocols = []
+        self.generator = np.random.default_rng(seed)
         self.components = {}
         self.first_component_name = None
 
     def init(self) -> None:
         pass
+
+    def set_seed(self, seed: int) -> None:
+        self.generator = np.random.default_rng(seed)
+
+    def get_generator(self):
+        return self.generator
 
     def add_component(self, component: Entity) -> None:
         """Adds a hardware component to the node.

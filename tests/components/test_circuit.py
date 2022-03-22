@@ -1,3 +1,5 @@
+import numpy as np
+
 from sequence.components.circuit import Circuit
 from numpy import array, array_equal, identity
 from pytest import raises
@@ -78,6 +80,13 @@ def test_s():
     assert array_equal(expect, circuit.get_unitary_matrix())
 
 
+def test_phase():
+    circuit = Circuit(1)
+    circuit.phase(0, np.pi/2)
+    expect = array([[1, 0], [0, complex(0, 1)]])
+    assert array_equal(expect, circuit.get_unitary_matrix())
+
+
 def test_measure():
     qc = Circuit(1)
     assert len(qc.measured_qubits) == 0
@@ -126,3 +135,35 @@ def test_Circuit():
                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, ],
                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, ]])
     assert array_equal(expect, qc.get_unitary_matrix())
+
+
+def test_serialization():
+    CIRCUIT_SIZE = 2
+    GATES = [["h", [0], None], ["x", [1], None], ["phase", [0], np.pi]]
+    MEASURES = [0]
+    circuit = Circuit(2)
+    for gate_type, gate_indices, args in GATES:
+        if gate_type == "h":
+            circuit.h(gate_indices[0])
+        elif gate_type == "x":
+            circuit.x(gate_indices[0])
+        elif gate_type == "phase":
+            circuit.phase(gate_indices[0], args)
+        else:
+            raise NotImplementedError
+    for index in MEASURES:
+        circuit.measure(index)
+
+    serialized_info = circuit.serialize()
+    assert serialized_info["size"] == CIRCUIT_SIZE
+    serailized_gates = [{"arg": arg, "indices": gate_indices, "name": gate_type} for
+                        gate_type, gate_indices, arg
+                        in GATES]
+    assert serialized_info["gates"] == serailized_gates
+    assert serialized_info["measured_qubits"] == MEASURES
+
+    deserailized_circuit = Circuit(1)
+    deserailized_circuit.deserialize(serialized_info)
+    assert deserailized_circuit.size == circuit.size
+    assert deserailized_circuit.gates == circuit.gates
+    assert deserailized_circuit.measured_qubits == circuit.measured_qubits

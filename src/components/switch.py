@@ -68,8 +68,9 @@ class Switch(Entity):
 
         receiver = self._receivers[self.basis_list[index]]
 
+        # check if receiver is detector; schedule in late/early time bin
         if self.basis_list[index] == 0:
-            if Photon.measure(photon.encoding_type["bases"][0], photon):
+            if Photon.measure(photon.encoding_type["bases"][0], photon, self.get_generator()):
                 time = self.timeline.now() + photon.encoding_type["bin_separation"]
                 process = Process(receiver, "get", [photon])
                 event = Event(time, process)

@@ -1,6 +1,5 @@
-from math import sqrt
-
-from numpy import random, pi
+import pytest
+from numpy import random
 
 from sequence.components.beam_splitter import BeamSplitter, FockBeamSplitter
 from sequence.components.photon import Photon

@@ -24,7 +24,6 @@ def create_detector(efficiency=0.9, dark_count=0, count_rate=25e6, time_resoluti
             self.log.append((self.timeline.now(), msg['time'], detector))
 
     tl = Timeline()
-    tl.seed(1)
     detector = Detector("", tl, efficiency=efficiency, dark_count=dark_count,
                         count_rate=count_rate, time_resolution=time_resolution)
     parent = Parent(tl)
@@ -71,7 +70,7 @@ def test_Detector_get():
     # time_resolution
     time_resolution = 233
     detector, parent, tl = create_detector(efficiency=1, count_rate=1e12, time_resolution=time_resolution)
-    times = random.randint(0, 1e12, 100, dtype=np.int64)
+    times = np.random.randint(0, 1e12, 100, dtype=np.int64)
     times.sort()
     for t in times:
         tl.time = t
@@ -94,14 +93,12 @@ def test_Detector_dark_count():
 
 def test_QSDetectorPolarization_init():
     tl = Timeline()
-    tl.seed(1)
     qsdetector = QSDetectorPolarization("qsd", tl)
     tl.init()
 
 
 def test_QSDetectorPolarization_set_basis_list():
     tl = Timeline()
-    tl.seed(1)
     qsdetector = QSDetectorPolarization("qsd", tl)
     basis_list = []
     start_time = 0
@@ -115,7 +112,6 @@ def test_QSDetectorPolarization_set_basis_list():
 def test_QSDetectorPolarization_update_splitter_params():
     fidelity = 0.9
     tl = Timeline()
-    tl.seed(1)
     qsdetector = QSDetectorPolarization("qsd", tl)
     qsdetector.update_splitter_params("fidelity", fidelity)
 
@@ -124,7 +120,6 @@ def test_QSDetectorPolarization_update_splitter_params():
 
 def test_QSDetectorPolarization_update_detector_params():
     tl = Timeline()
-    tl.seed(1)
     qsdetector = QSDetectorPolarization("qsd", tl)
     qsdetector.update_detector_params(0, "dark_count", 99)
     assert qsdetector.detectors[0].dark_count == 99 and qsdetector.detectors[1].dark_count != 99
@@ -132,7 +127,6 @@ def test_QSDetectorPolarization_update_detector_params():
 
 def test_QSDetector_update():
     tl = Timeline()
-    tl.seed(1)
     qsdetector = QSDetectorPolarization("qsd", tl)
 
     args = [[0, 10], [1, 20], [1, 40]]
@@ -144,19 +138,18 @@ def test_QSDetector_update():
 
 def test_QSDetectorPolarization():
     tl = Timeline()
-    tl.seed(1)
     qsdetector = QSDetectorPolarization("qsd", tl)
     qsdetector.update_detector_params(0, "efficiency", 1)
     qsdetector.update_detector_params(1, "efficiency", 1)
     frequency = 1e5
     start_time = 0
-    basis_list = [random.randint(2) for _ in range(1000)]
+    basis_list = [np.random.randint(2) for _ in range(1000)]
     qsdetector.set_basis_list(basis_list, start_time, frequency)
 
     for i in range(1000):
         tl.time = i * 1e12 / frequency
         basis = basis_list[i]
-        bit = random.randint(2)
+        bit = np.random.randint(2)
         photon = Photon(str(i), tl, quantum_state=polarization["bases"][basis][bit])
         qsdetector.get(photon)
 
@@ -168,18 +161,17 @@ def test_QSDetectorPolarization():
 
 def test_QSDetectorTimeBin():
     tl = Timeline()
-    tl.seed(1)
     qsdetector = QSDetectorTimeBin("qsd", tl)
     [qsdetector.update_detector_params(i, "efficiency", 1) for i in range(3)]
     frequency = 1e5
     start_time = 0
-    basis_list = [random.randint(2) for _ in range(1000)]
+    basis_list = [np.random.randint(2) for _ in range(1000)]
     qsdetector.set_basis_list(basis_list, start_time, frequency)
 
     for i in range(1000):
         tl.time = i * 1e12 / frequency
         basis = basis_list[i]
-        bit = random.randint(2)
+        bit = np.random.randint(2)
         photon = Photon(str(i), tl, encoding_type=time_bin, quantum_state=time_bin["bases"][basis][bit])
         qsdetector.get(photon)
 
@@ -198,7 +190,6 @@ def test_QSDetectorFockDirect():
     src_list = ["a", "b"]
 
     tl = Timeline()
-    tl.seed(1)
 
     qsd = QSDetectorFockDirect("qsd", tl, src_list)
     [qsd.update_detector_params(i, "efficiency", 1) for i in range(2)]
@@ -225,15 +216,23 @@ def test_QSDetectorFockDirect():
 
 
 def test_QSDetectorFockInterference():
+    class RandomControl:
+        def __init__(self, seed):
+            self.generator = np.random.default_rng(seed)
+
+        def get_generator(self):
+            return self.generator
+
     NUM_TRIALS = 1000
     COUNT_RATE = 80e6
     period = (1e12 / COUNT_RATE) + 1
     psi_minus = [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]
 
     tl = Timeline(formalism="density_matrix")
-    tl.seed(1)
 
     qsd = QSDetectorFockInterference("qsd", tl)
+    random_control = RandomControl(0)
+    qsd.owner = random_control
     [qsd.update_detector_params(i, "efficiency", 1) for i in range(2)]
     [qsd.update_detector_params(i, "count_rate", COUNT_RATE) for i in range(2)]
 

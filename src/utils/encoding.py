@@ -26,11 +26,11 @@ time_bin = \
      "bin_separation": 1400  # measured in ps
      }
 
-# single_atom must be copied by a memory object so the memory field can be overwritten
+# single_atom must be copied by a memory object so the fidelity field can be overwritten
 single_atom = \
     {"name": "single_atom",
      "bases": [((complex(1), complex(0)), (complex(0), complex(1))), None],
-     "memory": None  # overwritten by photon
+     "raw_fidelity": 1
      }
 
 absorptive = \

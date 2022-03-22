@@ -52,7 +52,7 @@ def test_MemoryArray_init():
 
 
 def test_MemoryArray_expire():
-    class FakeNode():
+    class FakeNode:
         def __init__(self, tl):
             self.timeline = tl
             self.ma = MemoryArray("ma", tl)
@@ -98,9 +98,8 @@ def test_Memory_excite():
         mem.excite()
 
     assert len(rec.photon_list) == NUM_TESTS
-    null_photons = [p for p in rec.photon_list if p.is_null]
-    null_ratio = len(null_photons) / NUM_TESTS
-    assert null_ratio == 1
+    for p in rec.photon_list:
+        assert p.loss == 0
 
     # test with imperfect efficiency
 
@@ -111,25 +110,8 @@ def test_Memory_excite():
     for _ in range(NUM_TESTS):
         mem.excite()
 
-    assert abs(len(rec.photon_list) / NUM_TESTS - 0.7) < 0.1
-    null_photons = [p for p in rec.photon_list if p.is_null]
-    null_ratio = len(null_photons) / len(rec.photon_list)
-    assert null_ratio == 0
-
-    # test with perfect efficiency, + state
-
-    rec.photon_list = []
-    mem.efficiency = 1
-    plus = [math.sqrt(1/2), math.sqrt(1/2)]
-
-    for _ in range(NUM_TESTS):
-       mem.update_state(plus)
-       mem.excite()
-
-    assert len(rec.photon_list) == NUM_TESTS
-    null_photons = [p for p in rec.photon_list if p.is_null]
-    null_ratio = len(null_photons) / NUM_TESTS
-    assert abs(null_ratio - 0.5) < 0.1
+    for p in rec.photon_list:
+        assert p.loss == 1 - mem.efficiency
 
 
 def test_Memory_expire():

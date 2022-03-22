@@ -1,4 +1,6 @@
 import pytest
+import numpy as np
+
 from sequence.components.bsm import *
 from sequence.components.memory import *
 from sequence.components.circuit import Circuit
@@ -8,7 +10,7 @@ from sequence.kernel.event import Event
 from sequence.utils.encoding import *
 
 
-class Parent():
+class Parent:
         def __init__(self):
             self.results = []
 
@@ -23,7 +25,6 @@ class Parent():
 
 def test_construct_func():
     tl = Timeline()
-    tl.seed(0)
     detectors2 = [{}] * 2
     detectors4 = [{}] * 4
 
@@ -32,9 +33,9 @@ def test_construct_func():
         bsm = make_bsm("bsm", tl, encoding_type="unknown", detectors=detectors4)
 
     # implemented encoding schemes
-    polar_bsm = make_bsm("bsm", tl, encoding_type="polarization", detectors=detectors4)
-    time_bin_bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors2)
-    atom_bsm = make_bsm("bsm", tl, encoding_type="single_atom", detectors=detectors2)
+    polar_bsm = make_bsm("bsm1", tl, encoding_type="polarization", detectors=detectors4)
+    time_bin_bsm = make_bsm("bsm2", tl, encoding_type="time_bin", detectors=detectors2)
+    atom_bsm = make_bsm("bsm3", tl, encoding_type="single_atom", detectors=detectors2)
 
     assert type(polar_bsm) == PolarizationBSM
     assert type(time_bin_bsm) == TimeBinBSM
@@ -43,7 +44,6 @@ def test_construct_func():
 
 def test_init():
     tl = Timeline()
-    tl.seed(0)
     detectors = [{"dark_count": 1}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors)
     tl.init()
@@ -53,7 +53,6 @@ def test_init():
 
 def test_base_get():
     tl = Timeline()
-    tl.seed(0)
     photon1 = Photon("", tl, location=1)
     photon2 = Photon("", tl, location=2)
     photon3 = Photon("", tl, location=3)
@@ -80,7 +79,6 @@ def test_base_get():
 
 def test_polarization_get():
     tl = Timeline()
-    tl.seed(0)
     detectors = [{"efficiency": 1}] * 4
     bsm = make_bsm("bsm", tl, encoding_type="polarization", detectors=detectors)
     parent = Parent()
@@ -106,7 +104,6 @@ def test_polarization_get():
 
 def test_polarization_update():
     tl = Timeline()
-    tl.seed(0)
     detectors = [{"time_resolution": 1}] * 4
     bsm = make_bsm("bsm", tl, encoding_type="polarization", detectors=detectors)
     parent = Parent()
@@ -142,7 +139,6 @@ def test_polarization_update():
 
 def test_time_bin_get():
     tl = Timeline()
-    tl.seed(0)
     detectors = [{"efficiency": 1, "count_rate": 1e9}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors)
     parent = Parent()
@@ -178,7 +174,6 @@ def test_time_bin_get():
 
 def test_time_bin_update():
     tl = Timeline()
-    tl.seed(0)
     detectors = [{}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="time_bin", detectors=detectors)
     parent = Parent()
@@ -222,7 +217,6 @@ def test_single_atom_get():
             self.bsm.get(photon)
 
     tl = Timeline()
-    tl.seed(0)
     detectors = [{"efficiency": 1}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="single_atom", detectors=detectors)
     parent = Parent()
@@ -264,7 +258,7 @@ def test_absorptive_get():
             self.detector = detector
 
         def get(self, photon, **kwargs):
-            res = Photon.measure(None, photon)
+            res = Photon.measure(None, photon, np.random.default_rng())
             if res:
                 self.detector.get()
 
@@ -276,13 +270,21 @@ def test_absorptive_get():
         def trigger(self, detector, info):
             self.times.append(info["time"])
 
+    class RandomControl:
+        def __init__(self, seed):
+            self.generator = np.random.default_rng(seed)
+
+        def get_generator(self):
+            return self.generator
+
     NUM_TRIALS = 1000
     PERIOD = 1e6
 
     tl = Timeline()
-    tl.seed(0)
     detectors = [{"efficiency": 1}] * 2
     bsm = make_bsm("bsm", tl, encoding_type="absorptive", detectors=detectors)
+    random_control = RandomControl(0)
+    bsm.owner = random_control
     d0 = Detector("d0", tl, 1)
     d1 = Detector("d1", tl, 1)
     m0 = Measurer(d0)

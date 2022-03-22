@@ -1,10 +1,9 @@
-import numpy
+import numpy as np
 
 from sequence.kernel.timeline import Timeline
 from sequence.components.photon import Photon
 
-
-numpy.random.seed(0)
+rng = np.random.default_rng()
 
 
 def test_init():
@@ -47,8 +46,8 @@ def test_measure():
     photon2 = Photon("p2", tl, quantum_state=(complex(0), complex(1)))
     basis = ((complex(1), complex(0)), (complex(0), complex(1)))
 
-    assert Photon.measure(basis, photon1) == 0
-    assert Photon.measure(basis, photon2) == 1
+    assert Photon.measure(basis, photon1, rng) == 0
+    assert Photon.measure(basis, photon2, rng) == 1
 
 
 def test_measure_multiple():
@@ -62,4 +61,16 @@ def test_measure_multiple():
              (complex(0), complex(0), complex(1), complex(0)),
              (complex(0), complex(0), complex(0), complex(1)))
 
-    assert Photon.measure_multiple(basis, [photon1, photon2]) == 0
+    assert Photon.measure_multiple(basis, [photon1, photon2], rng) == 0
+
+
+def test_add_loss():
+    tl = Timeline()
+    photon = Photon("", tl, encoding_type={"name": "single_atom"})
+    assert photon.loss == 0
+
+    photon.add_loss(0.5)
+    assert photon.loss == 0.5
+
+    photon.add_loss(0.5)
+    assert photon.loss == 0.75

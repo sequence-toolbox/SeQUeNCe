@@ -5,7 +5,7 @@ Interferometers are usually instantiated as part of a QSDetector object, defined
 """
 
 from math import sqrt
-from numpy import random, multiply
+from numpy import multiply
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -66,10 +66,10 @@ class Interferometer(Entity):
         if photon.use_qm:
             raise NotImplementedError("Interferometer usage not configured for quantum manager.")
 
-        detector_num = random.choice([0, 1])
+        detector_num = self.get_generator().choice([0, 1])
         quantum_state = photon.quantum_state
         time = 0
-        random_num = random.random_sample()
+        random_num = self.get_generator().random()
 
         if quantum_state.state == (complex(1), complex(0)):  # Early
             if random_num <= 0.5:
@@ -82,7 +82,7 @@ class Interferometer(Entity):
             else:
                 time = 2 * self.path_difference
 
-        if random.random_sample() < self.phase_error:
+        if self.get_generator().random() < self.phase_error:
             quantum_state.state = list(multiply([1, -1], quantum_state))
 
         if quantum_state.state == (complex(sqrt(1/2)), complex(sqrt(1/2))):  # Early + Late

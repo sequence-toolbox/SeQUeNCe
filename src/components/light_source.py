@@ -6,7 +6,7 @@ These classes should be connected to one or two entities, respectively, that are
 
 from typing import List
 
-from numpy import random, multiply
+from numpy import multiply
 
 from .photon import Photon
 from ..kernel.entity import Entity
@@ -76,13 +76,13 @@ class LightSource(Entity):
         period = int(round(1e12 / self.frequency))
 
         for i, state in enumerate(state_list):
-            num_photons = random.poisson(self.mean_photon_num)
+            num_photons = self.get_generator().poisson(self.mean_photon_num)
 
-            if random.random_sample() < self.phase_error:
+            if self.get_generator().random() < self.phase_error:
                 state = multiply([1, -1], state)
 
             for _ in range(num_photons):
-                wavelength = self.bandwidth * random.randn() + self.wavelength
+                wavelength = self.bandwidth * self.get_generator().standard_normal() + self.wavelength
                 new_photon = Photon(str(i), self.timeline,
                                     wavelength=wavelength,
                                     location=self.owner,
@@ -138,7 +138,7 @@ class SPDCSource(LightSource):
 
         if self.encoding_type["name"] == "absorptive":
             for _ in state_list:
-                num_photon_pairs = random.poisson(self.mean_photon_num)
+                num_photon_pairs = self.get_generator().poisson(self.mean_photon_num)
 
                 for _ in range(num_photon_pairs):
                     new_photon0 = Photon("", self.timeline,
@@ -180,9 +180,9 @@ class SPDCSource(LightSource):
 
         else:
             for state in state_list:
-                num_photon_pairs = random.poisson(self.mean_photon_num)
+                num_photon_pairs = self.get_generator().poisson(self.mean_photon_num)
 
-                if random.random_sample() < self.phase_error:
+                if self.get_generator().random_sample() < self.phase_error:
                     state = multiply([1, -1], state)
 
                 for _ in range(num_photon_pairs):

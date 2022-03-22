@@ -9,7 +9,6 @@ from copy import copy
 from math import inf
 from typing import Any, List, TYPE_CHECKING, Dict, Callable
 
-from numpy import random
 from scipy import stats
 
 if TYPE_CHECKING:
@@ -17,7 +16,6 @@ if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
 
 from .photon import Photon
-from .circuit import Circuit
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
@@ -59,7 +57,6 @@ class MemoryArray(Entity):
                             wavelength)
             memory.attach(self)
             self.memories.append(memory)
-            memory.owner = self.owner
             memory.set_memory_array(self)
 
     def __getitem__(self, key):
@@ -115,9 +112,6 @@ class Memory(Entity):
         entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
     """
 
-    _meas_circuit = Circuit(1)
-    _meas_circuit.measure(0)
-
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
                  efficiency: float, coherence_time: float, wavelength: int):
         """Constructor for the Memory class.
@@ -148,7 +142,7 @@ class Memory(Entity):
 
         # for photons
         self.encoding = copy(single_atom)
-        self.encoding["memory"] = self
+        self.encoding["raw_fidelity"] = self.raw_fidelity
 
         # keep track of previous BSM result (for entanglement generation)
         # -1 = no result, 0/1 give detector number
@@ -186,24 +180,29 @@ class Memory(Entity):
         if self.timeline.now() < self.next_excite_time:
             return
 
-        # measure quantum state
-        res = self.timeline.quantum_manager.run_circuit(Memory._meas_circuit, [self.qstate_key])
-        state = res[self.qstate_key]
+        # create photon
+        photon = Photon("", self.timeline, wavelength=self.wavelength, location=self.name, encoding_type=self.encoding,
+                        quantum_state=self.qstate_key, use_qm=True)
+        photon.timeline = None  # facilitate cross-process exchange of photons
+        photon.is_null = True
+        photon.add_loss(1 - self.efficiency)
 
-        # create photon and check if null
-        photon = Photon("", self.timeline, wavelength=self.wavelength, location=self, encoding_type=self.encoding)
-        if state == 0:
-            photon.is_null = True
+        # # measure quantum state
+        # res = self.timeline.quantum_manager.run_circuit(Memory._meas_circuit, [self.qstate_key])
+        # state = res[self.qstate_key]
+        #
+        # # create photon and check if null
+        # photon = Photon("", self.timeline, wavelength=self.wavelength, location=self, encoding_type=self.encoding)
+        # if state == 0:
+        #     photon.is_null = True
 
         if self.frequency > 0:
             period = 1e12 / self.frequency
             self.next_excite_time = self.timeline.now() + period
 
         # send to receiver
-        if (state == 0) or (random.random_sample() < self.efficiency):
-            # self.owner.send_qubit(dst, photon)
-            self._receivers[0].get(photon, dst=dst)
-            self.excited_photon = photon
+        self._receivers[0].get(photon, dst=dst)
+        self.excited_photon = photon
 
     def expire(self) -> None:
         """Method to handle memory expiration.
@@ -449,7 +448,7 @@ class AbsorptiveMemory(Entity):
 
         now = -1
         # require resonant absorption of photons
-        if photon.wavelength == self.wavelength and random.random_sample() < self.absorption_efficiency:
+        if photon.wavelength == self.wavelength and self.get_generator().random() < self.absorption_efficiency:
             self.photon_counter += 1
             now = self.timeline.now()
 
@@ -503,7 +502,7 @@ class AbsorptiveMemory(Entity):
         # TODO: clear locally stored photons
         for index in range(self.mode_number):
             if self.stored_photons[index] is not None:
-                if random.random_sample() < self.efficiency(store_time):
+                if self.get_generator().random() < self.efficiency(store_time):
                     photon = self.stored_photons[index]["photon"]
                     absorb_time = self.stored_photons[index]["time"]
 
