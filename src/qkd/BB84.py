@@ -109,6 +109,8 @@ class BB84(StackProtocol):
         Args:
             own (QKDNode): node hosting protocol instance.
             name (str): name of protocol instance.
+            lightsource (str): name of lightsource for QKD
+            qsdetector (str): name of QSDetector for QKD
 
         Keyword Args:
             role (int): 0/1 role defining Alice and Bob protocols (default -1).

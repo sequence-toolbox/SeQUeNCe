@@ -566,7 +566,8 @@ class Cascade(StackProtocol):
             Will send SEND_FOR_BINARY messages to other protocol.
         """
 
-        log.logger.debug(self.name + ' state={} interactive_binary_search, params={}'.format(self.state, [key_id, pass_id, block_id, start, end]))
+        log.logger.debug(self.name + ' state={} interactive_binary_search, params={}'.format(
+            self.state, [key_id, pass_id, block_id, start, end]))
 
         # first half checksum
         message = CascadeMessage(CascadeMsgType.SEND_FOR_BINARY, self.another.name,
