@@ -121,6 +121,7 @@ class Node(Entity):
             msg (Message): message to transmit.
             priority (int): priority for transmitted message (default inf).
         """
+        log.logger.info("{} send message {} to {}".format(self.name, msg, dst))
 
         if priority == inf:
             priority = self.timeline.schedule_counter
@@ -135,7 +136,8 @@ class Node(Entity):
             src (str): name of node sending the message.
             msg (Message): message transmitted from node.
         """
-
+        log.logger.info(
+            "{} receive message {} from {}".format(self.name, msg, src))
         # signal to protocol that we've received a message
         if msg.receiver is not None:
             for protocol in self.protocols:
@@ -227,6 +229,13 @@ class BSMNode(Node):
 
         self.protocols[0].others.append(other.name)
 
+    def change_timeline(self, timeline: "Timeline"):
+        self.timeline = timeline
+        bsm = self.get_components_by_type("SingleAtomBSM")
+        bsm.change_timeline(timeline)
+        for cc in self.cchannels.values():
+            cc.change_timeline(timeline)
+
 
 class QuantumRouter(Node):
     """Node for entanglement distribution networks.
@@ -264,6 +273,7 @@ class QuantumRouter(Node):
         self.app = None
 
     def receive_message(self, src: str, msg: "Message") -> None:
+        log.logger.info("{} receive message {} from {}".format(self.name, msg, src))
         if msg.receiver == "resource_manager":
             self.resource_manager.received_message(src, msg)
         elif msg.receiver == "network_manager":
@@ -274,24 +284,27 @@ class QuantumRouter(Node):
                 for p in matching:
                     p.received_message(src, msg)
             else:
-                for p in self.protocols:
-                    if p.name == msg.receiver:
-                        p.received_message(src, msg)
+                for protocol in self.protocols:
+                    if protocol.name == msg.receiver:
+                        protocol.received_message(src, msg)
                         break
 
     def init(self):
         """Method to initialize quantum router node.
 
-        Sets up map_to_middle_node dictionary.
+        Inherit parent function
         """
 
         super().init()
-        for dst in self.qchannels:
-            end = self.qchannels[dst].receiver
-            if isinstance(end, BSMNode):
-                for other in end.eg.others:
-                    if other != self.name:
-                        self.map_to_middle_node[other] = end.name
+
+    def add_bsm_node(self, bsm_name: str, router_name: str):
+        """Method to record connected BSM nodes
+
+        Args:
+            bsm_name (str): the BSM node between nodes self and router_name
+            router_name (str): the name of another router connected with the BSM node
+        """
+        self.map_to_middle_node[router_name] = bsm_name
 
     def get(self, photon: "Photon", **kwargs):
         """Receives photon from last hardware element (in this case, quantum memory)."""
@@ -363,7 +376,7 @@ class QKDNode(Node):
     1. Error Correction <= implemented by cascade
     0. Sifting <= implemented by BB84
 
-    Additionally, the components dictionary contains the following hardware:
+    Additionally, the `components` dictionary contains the following hardware:
 
     lightsource (LightSource): laser light source to generate keys.
     qsdetector (QSDetector): quantum state detector for qubit measurement.
