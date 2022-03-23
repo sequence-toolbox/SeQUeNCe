@@ -138,7 +138,7 @@ class QuantumChannel(OpticalChannel):
 
         log.logger.info(
             "{} send qubit with state {} to {} by Channel {}".format(
-                self.sender.name, qubit.quantum_state.state, self.receiver,
+                self.sender.name, qubit.quantum_state, self.receiver,
                 self.name))
 
         assert self.delay != 0 and self.loss != 1, \
