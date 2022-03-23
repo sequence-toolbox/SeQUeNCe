@@ -1,6 +1,3 @@
-import math
-
-import numpy
 from numpy import random, outer, zeros, multiply
 from numpy.random import random_sample
 
