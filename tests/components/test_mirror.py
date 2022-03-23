@@ -1,5 +1,3 @@
-# IN DEVELOPMENT
-
 import sequence
 import math
 
