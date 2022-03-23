@@ -1,6 +1,6 @@
-#IN DEVELOPMENT
+# IN DEVELOPMENT
 
-import sequence 
+import sequence
 import math
 
 import numpy
@@ -34,9 +34,9 @@ from matplotlib import pyplot as plt
 
 
 #from sequence.components.mirror import Mirror
-#---------------------------------------
+# ---------------------------------------
 class Mirror(Entity):
-    
+
     """Single photon reflecting device.
     This class models the reflection of a single photon, in the fashion of an experimental mirror.
     Can be attached to many different devices to enable different measurement options.
@@ -109,10 +109,12 @@ class Mirror(Entity):
                 self.photon_counter += 1
                 time += period
 
-#-----------------------------------
+# -----------------------------------
+
 
 NUM_TRIALS = 1000
 FREQUENCY = 1e3
+
 
 class Counter():
     def __init__(self):
@@ -125,7 +127,8 @@ class Counter():
 class EmittingNode(Node):
     def __init__(self, name, timeline):
         super().__init__(name, timeline)
-        self.light_source = LightSource(name, timeline, frequency=80000000, mean_photon_num = 1)
+        self.light_source = LightSource(
+            name, timeline, frequency=80000000, mean_photon_num=1)
         self.light_source.owner = self
 
 
@@ -136,14 +139,16 @@ class MiddleNode(Node):
         self.mirror = Mirror(name, timeline)
         self.mirror.owner = self
     #src = node1
+
     def receive_qubit(self, src, qubit):
         #print("received something")
         if not qubit.is_null:
             self.mirror.get()
 
             y = randrange(100)
-            if not (self.mirror.fidelity * 100 ) < y:
-                process_photon = Process(self.mirror, "emit",[[qubit.quantum_state.state], "node3"])
+            if not (self.mirror.fidelity * 100) < y:
+                process_photon = Process(self.mirror, "emit", [
+                                         [qubit.quantum_state.state], "node3"])
 
                 time = self.timeline.now()
                 period = int(round(1e12 / self.mirror.frequency))
@@ -151,7 +156,7 @@ class MiddleNode(Node):
                 self.owner.timeline.schedule(event)
                 time += period
                 #print("receiving mirror")
-       
+
 
 class ReceiverNode(Node):
     def __init__(self, name, timeline):
@@ -165,8 +170,9 @@ class ReceiverNode(Node):
             self.detector.get()
             #print("receiving detector")
 
+
 if __name__ == "__main__":
-    runtime = 10e12 
+    runtime = 10e12
     tl = Timeline(runtime)
 
     # nodes and hardware
@@ -179,22 +185,20 @@ if __name__ == "__main__":
     qc1.set_ends(node1, node2)
     qc2.set_ends(node2, node3)
 
-
     # counter
     counter = Counter()
     node3.detector.attach(counter)
 
     # schedule events
     time_bin = int(1e12 / FREQUENCY)
-        
-    #Process
 
-    process1 = Process(node1.light_source, "emit", [[((1+0j), 0j)],"node2"])
+    # Process
+
+    process1 = Process(node1.light_source, "emit", [[((1 + 0j), 0j)], "node2"])
 
     for i in range(NUM_TRIALS):
-            event1 = Event(i * time_bin, process1)
-            tl.schedule(event1)
-
+        event1 = Event(i * time_bin, process1)
+        tl.schedule(event1)
 
     tl.init()
     tl.run()
