@@ -1,5 +1,4 @@
 from numpy import random, outer, zeros, multiply
-from numpy.random import random_sample
 
 from random import randrange
 from typing import TYPE_CHECKING
