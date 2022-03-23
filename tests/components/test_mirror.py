@@ -1,4 +1,3 @@
-import sequence
 import math
 
 import numpy
@@ -32,7 +31,6 @@ from matplotlib import pyplot as plt
 
 
 #from sequence.components.mirror import Mirror
-# ---------------------------------------
 class Mirror(Entity):
 
     """Single photon reflecting device.
@@ -106,9 +104,6 @@ class Mirror(Entity):
                 self.owner.timeline.schedule(event)
                 self.photon_counter += 1
                 time += period
-
-# -----------------------------------
-
 
 NUM_TRIALS = 1000
 FREQUENCY = 1e3
