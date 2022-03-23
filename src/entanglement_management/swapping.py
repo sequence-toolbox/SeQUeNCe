@@ -123,7 +123,7 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.right_protocol_name = None
 
     def is_ready(self) -> bool:
-        return self.left_protocol is not None and self.right_protocol is not None
+        return self.left_protocol_name is not None and self.right_protocol_name is not None
 
     def set_others(self, protocol: str, node: str, memories: List[str]) -> None:
         """Method to set one other entanglement protocol instance.
