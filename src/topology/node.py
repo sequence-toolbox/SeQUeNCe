@@ -173,6 +173,13 @@ class Node(Entity):
     def get_components_by_type(self, component_type: str) -> [Entity]:
         return [comp for comp in self.components.values() if type(comp).__name__ == component_type]
 
+    def change_timeline(self, timeline: "Timeline"):
+        self.timeline = timeline
+        for component in self.components.values():
+            component.change_timeline(timeline)
+        for cc in self.cchannels.values():
+            cc.change_timeline(timeline)
+
 
 class BSMNode(Node):
     """Bell state measurement node.
@@ -186,7 +193,7 @@ class BSMNode(Node):
         eg (EntanglementGenerationB): entanglement generation protocol instance.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", other_nodes: [str]) -> None:
+    def __init__(self, name: str, timeline: "Timeline", other_nodes: List[str]) -> None:
         """Constructor for BSM node.
 
         Args:
@@ -228,13 +235,6 @@ class BSMNode(Node):
         """
 
         self.protocols[0].others.append(other.name)
-
-    def change_timeline(self, timeline: "Timeline"):
-        self.timeline = timeline
-        bsm = self.get_components_by_type("SingleAtomBSM")
-        bsm.change_timeline(timeline)
-        for cc in self.cchannels.values():
-            cc.change_timeline(timeline)
 
 
 class QuantumRouter(Node):
@@ -378,8 +378,8 @@ class QKDNode(Node):
 
     Additionally, the `components` dictionary contains the following hardware:
 
-    lightsource (LightSource): laser light source to generate keys.
-    qsdetector (QSDetector): quantum state detector for qubit measurement.
+    1. lightsource (LightSource): laser light source to generate keys.
+    2. qsdetector (QSDetector): quantum state detector for qubit measurement.
 
     Attributes:
         name (str): label for node instance.
@@ -462,15 +462,15 @@ class QKDNode(Node):
             self.protocol_stack[layer + 1].lower_protocols.append(protocol)
 
     def update_lightsource_params(self, arg_name: str, value: Any) -> None:
-        for c in self.components.values():
-            if type(c) is LightSource:
-                c.__setattr__(arg_name, value)
+        for component in self.components.values():
+            if type(component) is LightSource:
+                component.__setattr__(arg_name, value)
                 return
 
     def update_detector_params(self, detector_id: int, arg_name: str, value: Any) -> None:
-        for c in self.components.values():
-            if type(c) is QSDetector:
-                c.update_detector_params(detector_id, arg_name, value)
+        for component in self.components.values():
+            if type(component) is QSDetector:
+                component.update_detector_params(detector_id, arg_name, value)
                 return
 
     def get_bits(self, light_time: int, start_time: int, frequency: float, detector_name: str):
@@ -561,7 +561,7 @@ class QKDNode(Node):
             basis_list (List[int]): list of bases to measure in.
             start_time (int): time to start measurement.
             frequency (float): frequency with which to measure.
-            component_name (str): measurement component to edit.
+            component_name (str): name of measurement component to edit (normally a QSDetector).
         """
 
         component = self.components[component_name]

@@ -1,0 +1,93 @@
+{
+  "is_parallel": false,
+  "stop_time": 100,
+  "nodes": [
+    {
+      "name": "e1",
+      "type": "QuantumRouter",
+      "seed": 0,
+      "group": 0,
+      "memo_size": 20
+    },
+    {
+      "name": "e2",
+      "type": "QuantumRouter",
+      "seed": 1,
+      "group": 0,
+      "memo_size": 20
+    },
+    {
+      "name": "e3",
+      "type": "QuantumRouter",
+      "seed": 2,
+      "group": 0,
+      "memo_size": 20
+    },
+    {
+      "name": "e4",
+      "type": "QuantumRouter",
+      "seed": 3,
+      "group": 0,
+      "memo_size": 20
+    },
+    {
+      "seed": 4,
+      "group": 0,
+      "type": "BSMNode",
+      "name": "bsm0"
+    }
+  ],
+  "qchannels": [
+    {
+      "source": "e1",
+      "destination": "bsm0",
+      "attenuation": 0.0002,
+      "distance": 1000
+    },
+    {
+      "source": "e2",
+      "destination": "bsm0",
+      "attenuation": 0.0002,
+      "distance": 1000
+    }
+  ],
+  "qconnections": [
+    {
+      "node1": "e3",
+      "node2": "e4",
+      "attenuation": 0.0002,
+      "distance": 2000,
+      "type": "meet_in_the_middle"
+    }
+  ],
+  "cchannels": [
+    {
+      "source": "e1",
+      "destination": "bsm0",
+      "delay": 1000000000
+    },
+    {
+      "source": "e2",
+      "destination": "bsm0",
+      "delay": 1000000000
+    },
+    {
+      "source": "e1",
+      "destination": "e2",
+      "delay": 1000000000
+    },
+    {
+      "source": "e2",
+      "destination": "e1",
+      "delay": 1000000000
+    }
+  ],
+  "cconnections": [
+    {
+      "node1": "e3",
+      "node2": "e4",
+      "distance": 5e3,
+      "delay": 1000000000
+    }
+  ]
+}
