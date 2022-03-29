@@ -1,29 +1,18 @@
-from numpy import random, outer, zeros, multiply
-
+from numpy import random
 from random import randrange
+
 from typing import TYPE_CHECKING
-
-
 if TYPE_CHECKING:
     from sequence.kernel.timeline import Timeline
 
-from sequence.kernel.entity import Entity
-
-from sequence.kernel.timeline import Timeline
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.components.light_source import polarization
 from sequence.components.optical_channel import QuantumChannel
-from sequence.components.detector import Detector
 from sequence.topology.node import Node
 
-from sequence.kernel.entity import Entity
 from sequence.utils.encoding import *
-from sequence.components.photon import Photon
 from sequence.components.light_source import LightSource
-
-from ipywidgets import interact
-from matplotlib import pyplot as plt
 
 from sequence.components.mirror import Mirror
 
