@@ -27,7 +27,6 @@ from matplotlib import pyplot as plt
 
 from sequence.components.mirror import Mirror
 
-
 NUM_TRIALS = 1000
 FREQUENCY = 1e3
 
@@ -73,50 +72,41 @@ class MiddleNode(Node):
                 time += period
                 #print("receiving mirror")
 
+def test_mirror():
+    class Receiver(Node):
+        def __init__(self, name, tl):
+            Node.__init__(self, name, tl)
+            self.log = []
 
-class ReceiverNode(Node):
-    def __init__(self, name, timeline):
-        super().__init__(name, timeline)
-        self.detector = Detector(name + ".detector", tl, efficiency=1)
-        self.detector.owner = self
+        def receive_qubit(self, src: str, qubit) -> None:
+            self.log.append((self.timeline.now(), src, qubit))
 
-    def receive_qubit(self, src, qubit):
-        #print("received something")
-        if not qubit.is_null:
-            self.detector.get()
-            #print("receiving detector")
+    tl = Timeline()
+    FID, FREQ, MEAN = 0.98, 8e7, 0.1
+    mr = Mirror("mr", tl, fidelity=FID, frequency=8e7, mean_photon_num=MEAN)
+    sender = MiddleNode("sender", tl, ls)
 
+    assert sender.Mirror.fidelity == FID  
+    assert sender.Mirror.frequency == FREQ  
+    assert sender.Mirror.mean_photon_num == MEAN
 
-if __name__ == "__main__":
-    runtime = 10e12
-    tl = Timeline(runtime)
-
-    # nodes and hardware
-    node1 = EmittingNode("node1", tl)
-    node2 = MiddleNode("node2", tl)
-    node3 = ReceiverNode("node3", tl)
-
-    qc1 = QuantumChannel("qc", tl, attenuation=0, distance=1e3)
-    qc2 = QuantumChannel("qc", tl, attenuation=0, distance=1e3)
-    qc1.set_ends(node1, node2)
-    qc2.set_ends(node2, node3)
-
-    # counter
-    counter = Counter()
-    node3.detector.attach(counter)
-
-    # schedule events
-    time_bin = int(1e12 / FREQUENCY)
-
-    # Process
-
-    process1 = Process(node1.light_source, "emit", [[((1 + 0j), 0j)], "node2"])
-
-    for i in range(NUM_TRIALS):
-        event1 = Event(i * time_bin, process1)
-        tl.schedule(event1)
+    receiver = Receiver("receiver", tl)
+    qc = QuantumChannel("qc", tl, distance=1e5, attenuation=0)
+    qc.set_ends(sender, receiver)
+    state_list = []
+    STATE_LEN = 1000
+    for _ in range(STATE_LEN):
+        basis = random.randint(2)
+        bit = random.randint(2)
+        state_list.append(polarization["bases"][basis][bit])
 
     tl.init()
+    mr.emit(state_list, "receiver")
     tl.run()
 
-    print("percent measured: {}%".format(100 * counter.count / NUM_TRIALS))
+    assert (len(receiver.log) / STATE_LEN) - MEAN < 0.1
+    for time, src, qubit in receiver.log:
+        index = int(qubit.name)
+        assert state_list[index] == qubit.quantum_state.state
+        assert time == index * (1e12 / FREQ) + qc.delay
+        assert src == "sender"
