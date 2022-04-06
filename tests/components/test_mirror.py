@@ -85,8 +85,8 @@ def test_mirror():
     state_list = []
     STATE_LEN = 1000
     for _ in range(STATE_LEN):
-        basis = random.randint(2)
-        bit = random.randint(2)
+        basis = random.seed()
+        bit = random.seed()
         state_list.append(polarization["bases"][basis][bit])
 
     tl.init()
