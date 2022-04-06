@@ -69,7 +69,7 @@ class Mirror(Entity):
 
             num_photons = 1
 
-            if random.random_sample() < self.phase_error:
+            if get_generator(self) < self.phase_error:
                 state = multiply([1, -1], state)
 
             for _ in range(num_photons):
