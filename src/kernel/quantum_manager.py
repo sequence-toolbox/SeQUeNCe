@@ -388,3 +388,75 @@ class QuantumManagerDensity(QuantumManager):
             self.states[key] = new_state_obj
 
         return dict(zip(keys, result_digits))
+
+
+class QuantumManagerDensityFock(QuantumManager):
+    """Class to track and manage Fock states with the density matrix formalism."""
+
+    def __init__(self, truncation = 1):
+        # default truncation is 1 for 2-d Fock space.
+        super().__init__(DENSITY_MATRIX_FORMALISM, truncation = truncation)
+
+    def new(self, state='gnd') -> int:
+        """Method to create a new state with key
+
+        Default `state` argument is 'gnd' which stands for `ground state`.
+        If want to generate new state other than ground state, density matrix (List[List[complex]]) or pure state ket ([List[complex])
+        whose dimensions are compatible with global truncation should be fed in.
+        """
+        key = self._least_available
+        self._least_available += 1
+        if state == 'gnd':
+            gnd = [1] + [0]*self.truncation
+            self.states[key] = DensityState(gnd, [key], truncation = self.truncation)
+        else:
+            self.states[key] = DensityState(state, [key], truncation = self.truncation)
+
+        return key
+
+    def run_circuit(self, circuit: Circuit, keys: List[int], meas_samp=None) -> Dict[int, int]:
+        """Currently the Fock states do not support quantum circuits. 
+        This method is only to implement abstract method of parent class and SHOULD NOT be called after instantiation.
+        """
+        super().run_circuit(circuit, keys, meas_samp)
+        
+
+    def set(self, keys: List[int], state: List[List[complex]]) -> None:
+        """Method to set the quantum state at the given keys.
+
+        The `state` argument should be passed as List[List[complex]], where each internal list is a row.
+        However, the `state` may also be given as a one-dimensional pure state.
+        If the list is one-dimensional, will be converted to matrix with the outer product operation.
+
+        Args:
+            keys (List[int]): list of quantum manager keys to modify.
+            state: quantum state to set input keys to.
+        """
+
+        super().set(keys, state)
+        new_state = DensityState(state, keys, truncation = self.truncation)
+        for key in keys:
+            self.states[key] = new_state
+
+    def set_to_zero(self, key: int):
+        """set the state to ground (zero) state"""
+        zero = [1] + [0]*self.truncation
+        self.set([key], zero)
+
+    def _measure(self, state: List[List[complex]], keys: List[int],
+                 all_keys: List[int], meas_samp: float) -> Dict[int, int]:
+        """Method to measure subsystems at given keys.
+
+        Modifies quantum state of all qubits given by all_keys.
+
+        Args:
+            state (List[complex]): state to measure.
+            keys (List[int]): list of keys to measure.
+            all_keys (List[int]): list of all keys corresponding to state.
+
+        Returns:
+            Dict[int, int]: mapping of measured keys to measurement results.
+
+        WIP
+        """
+
