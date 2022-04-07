@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 from qutip.qip.circuit import QubitCircuit, Gate
 from qutip.qip.operations import gate_sequence_product
-from numpy import log2
+from numpy import log
 
 from .quantum_state import KetState, DensityState
 from .quantum_utils import *
@@ -33,12 +33,17 @@ class QuantumManager:
 
     Attributes:
         states (Dict[int, KetState]): mapping of state keys to quantum state objects.
+        truncation (int): maximally allowed number of excited states for elementary subsystems.
+                Default is 1 for qubit. 
+        dim (int): subsystem Hilbert space dimension. dim = truncation + 1
     """
 
-    def __init__(self, formalism: str):
+    def __init__(self, formalism: str, truncation: int = 1):
         self.states: Dict[int, State] = {}
         self._least_available: int = 0
         self.formalism: str = formalism
+        self.truncation = truncation
+        self.dim = self.truncation + 1
 
     @abstractmethod
     def new(self, amplitudes: any) -> int:
@@ -130,11 +135,15 @@ class QuantumManager:
             amplitudes: Amplitudes to set state to, type determined by type of subclass.
         """
 
-        num_qubits = log2(len(amplitudes))
-        assert num_qubits.is_integer(), "Length of amplitudes should be 2 ** n, where n is the number of keys"
-        num_qubits = int(num_qubits)
-        assert num_qubits == len(keys), "Length of amplitudes should be 2 ** n, where n is the number of keys"
-
+        num_subsystems = log(len(amplitudes), self.dim)
+        assert num_subsystems.is_integer(),\
+            "Length of amplitudes should be d ** n, where d is subsystem Hilbert space dimension and \
+             n is the number of subsystems"
+        num_subsystems = int(num_subsystems)
+        assert num_subsystems == len(keys),\
+            "Length of amplitudes should be d ** n, where d is subsystem Hilbert space dimension and \
+             n is the number of subsystems"
+    
     def remove(self, key: int) -> None:
         """Method to remove state stored at key."""
         del self.states[key]

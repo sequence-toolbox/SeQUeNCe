@@ -95,7 +95,7 @@ class KetState(State):
         """
         super().__init__()
         self.truncation = truncation
-        dim = truncation + 1  # dimension of element Hilbert space
+        dim = self.truncation + 1  # dimension of element Hilbert space
 
         # check formatting
         assert all([abs(a) <= 1.01 for a in amplitudes]), "Illegal value with abs > 1 in ket vector"
@@ -136,7 +136,7 @@ class DensityState(State):
 
         super().__init__()
         self.truncation = truncation
-        dim = truncation + 1  # dimension of element Hilbert space
+        dim = self.truncation + 1  # dimension of element Hilbert space
 
         state = array(state, dtype=complex)
         if state.ndim == 1:
