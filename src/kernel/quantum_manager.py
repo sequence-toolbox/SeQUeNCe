@@ -18,6 +18,8 @@ if TYPE_CHECKING:
 from qutip.qip.circuit import QubitCircuit, Gate
 from qutip.qip.operations import gate_sequence_product
 from numpy import log
+from scipy.linalg import fractional_matrix_power
+from scipy.sparse import csr_matrix
 
 from .quantum_state import KetState, DensityState
 from .quantum_utils import *
@@ -420,7 +422,6 @@ class QuantumManagerDensityFock(QuantumManager):
         """
         super().run_circuit(circuit, keys, meas_samp)
         
-
     def set(self, keys: List[int], state: List[List[complex]]) -> None:
         """Method to set the quantum state at the given keys.
 
@@ -439,15 +440,27 @@ class QuantumManagerDensityFock(QuantumManager):
             self.states[key] = new_state
 
     def set_to_zero(self, key: int):
-        """set the state to ground (zero) state"""
+        """set the state to ground (zero) state."""
         zero = [1] + [0]*self.truncation
         self.set([key], zero)
 
-    def _measure(self, state: List[List[complex]], keys: List[int],
-                 all_keys: List[int], meas_samp: float) -> Dict[int, int]:
-        """Method to measure subsystems at given keys.
+    def build_ladder(self):
+        """Generate matrix of creation and annihilation (ladder) operators on truncated Hilbert space."""
+        truncation = self.truncation
+        data = array([sqrt(i+1) for i in range(truncation)]) # elements in create/annihilation operator matrix
+        row = array([i+1 for i in range(truncation)])
+        col = array([i for i in range(truncation)])
+        create = csr_matrix((data, (row, col)), shape=(truncation+1, truncation+1)).toarray()
+        destroy = create.conj().T
 
-        Modifies quantum state of all qubits given by all_keys.
+        return create, destroy
+
+    def _measure(self, state: List[List[complex]], keys: List[int],
+                 all_keys: List[int]) -> Dict[int, int]:
+        """Method to measure subsystems at given keys in POVM formalism.
+
+        Modifies quantum state of all qubits given by all_keys, post-measurement operator determined
+        by measurement operators which are chosen as square root of POVM operators.
 
         Args:
             state (List[complex]): state to measure.
