@@ -5,10 +5,11 @@ These should not be used directly, but accessed by a QuantumManager instance or 
 """
 
 from functools import lru_cache
-from typing import Tuple
+from typing import List, Dict, Tuple
 from math import sqrt
 
 from numpy import array, kron, identity, zeros, trace, outer, eye
+from scipy.linalg import fractional_matrix_power
 
 
 a = array([[0, 1], [0, 0]])
@@ -237,3 +238,67 @@ def measure_multiple_with_cache_density(state: Tuple[Tuple[complex]], num_states
 
     return (tuple(return_states), tuple(probabilities))
 
+
+@lru_cache(maxsize=1000)
+def measure_state_with_cache_Fock_density(state: Tuple[Tuple[complex, complex]], povms: List[array]) -> float:
+    state = array(state)
+
+    # probabilities of getting different outcomes according to POVM operators
+    prob_list = [trace(state @ povm).real for povm in povms]
+    return prob_list
+
+
+@lru_cache(maxsize=1000)
+def measure_entangled_state_with_cache_Fock_density(state: Tuple[Tuple[complex]], state_index: int, num_states: int, povms: List[array], truncation: int = 1) -> Tuple[
+        Tuple[complex], Tuple[complex], float]:
+    """Measure one subsystem of a larger composite system. 'truncation' is a keyword argument with default value 1 for qubit(s) systems.
+
+    The measurement SHOULD NOT be entangling measurement, and thus POVM operators should be precisely consisted of 
+    operators on the subsystem's Hilbert space alone.
+    """
+    state = array(state)
+
+    # generate POVM operators on total Hilbert space
+    povm_list = [[0]]*len(povms)
+    for i in range(num_states):
+        if i == state_index:
+            for i in range(len(povms)):
+                povm_list[i] = kron(povm_list[i], povms[i])
+        else:
+            povm_list = [kron(povm, identity(truncation+1)) for povm in povm_list]
+
+    # list of probabilities of getting different outcomes from POVM
+    prob_list = [trace(state @ povm).real for povm in povm_list]
+    state_list = []
+
+    for i in range(len(prob_list)):
+        if prob_list[i] <=0:
+            state_post_meas = None
+        else:
+            measure_op = fractional_matrix_power(povm_list[i], 1/2)
+            state_post_meas = (measure_op @ state @ measure_op) / prob_list[i]
+        
+        state_list.append(state_post_meas)
+        
+    return state_list, prob_list
+
+
+@lru_cache(maxsize=1000)
+def measure_multiple_with_cache_Fock_density(state: Tuple[Tuple[complex]], num_states: int, length_diff: int, povms: List[array], truncation: int = 1) -> Tuple[
+        Tuple[Tuple[complex]], Tuple[float]]:
+    """Measure multiple subsystems of a larger composite system. 'truncation' is a keyword argument with default value 1 for qubit(s) systems.
+    
+    The measurement is assumed to be entangling measurement, e.g. realized by two photon detectors behind a beamsplitter.
+    Such measurement operators are consisted of mixed operators on different subsystems' Hilbert spaces.
+    For current implementation, the Hilbert space on which those mixed operators act on is separated from the rest of total Hilbert space,
+    *and the involved subsystems are moved close in terms of keys*
+
+    E.g. For a total system consisted of 4 subsystems (0, 1, 2, 3) each with dimension d, 
+    if the entangling measurement happens on (1, 2), then measurement operators on total space will be constructed as 
+    O_tot = kron(kron(identity(d), O), identity(d))
+    where the measurement operator on (1, 2) subspace needs to be generated beforehand to feed in the function
+    """
+    state = array(state)
+
+    #TODO: WIP
+    #TODO: if swapping to near keys possible
