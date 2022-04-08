@@ -497,10 +497,12 @@ class QuantumManagerDensityFock(QuantumManager):
             Dict[int, int]: mapping of measured keys to measurement results.
         """
 
+        povm_tuple = tuple([tuple(map(tuple, povm)) for povm in povms])
+
         if len(keys) == 1:
             if len(all_keys) == 1:
-                prob_0 = measure_state_with_cache_Fock_density(tuple(map(tuple, state)),
-                                                               [tuple(map(tuple, povm)) for povm in povms])
+                states, prob_0 = measure_state_with_cache_fock_density(tuple(map(tuple, state)),
+                                                                       povm_tuple)
                 if meas_samp < prob_0:
                     result = 0
                     new_state = [[1, 0], [0, 0]]

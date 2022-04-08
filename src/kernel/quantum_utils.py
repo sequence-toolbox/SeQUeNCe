@@ -240,9 +240,8 @@ def measure_multiple_with_cache_density(state: Tuple[Tuple[complex]], num_states
 
 
 @lru_cache(maxsize=1000)
-def measure_state_with_cache_fock_density(state: Tuple[Tuple[complex, complex]],
-                                          povms: List[Tuple[Tuple[complex, complex]]])\
-        -> Tuple[Tuple[Tuple[complex, complex]], Tuple[float]]:
+def measure_state_with_cache_fock_density(state: Tuple[Tuple[complex]], povms: Tuple[Tuple[Tuple[complex]]])\
+        -> Tuple[Tuple[Tuple[complex]], Tuple[float]]:
     state = array(state)
     povms = [array(povm) for povm in povms]
 
@@ -268,10 +267,11 @@ def measure_state_with_cache_fock_density(state: Tuple[Tuple[complex, complex]],
 
 @lru_cache(maxsize=1000)
 def measure_entangled_state_with_cache_fock_density(state: Tuple[Tuple[complex]], state_index: int, num_states: int,
-                                                    povms: List[Tuple[Tuple[complex, complex]]], truncation: int = 1)\
-        -> Tuple[Tuple[Tuple[complex, complex]], Tuple[float]]:
-    """Measure one subsystem of a larger composite system. 'truncation' is a keyword argument with default value 1 for qubit(s) systems.
+                                                    povms: Tuple[Tuple[Tuple[complex]]], truncation: int = 1)\
+        -> Tuple[Tuple[Tuple[complex]], Tuple[float]]:
+    """Measure one subsystem of a larger composite system.
 
+    'truncation' is a keyword argument with default value 1 for qubit(s) systems.
     The measurement SHOULD NOT be entangling measurement, and thus POVM operators should be precisely consisted of 
     operators on the subsystem's Hilbert space alone.
     """
@@ -308,7 +308,7 @@ def measure_entangled_state_with_cache_fock_density(state: Tuple[Tuple[complex]]
 
 @lru_cache(maxsize=1000)
 def measure_multiple_with_cache_fock_density(state: Tuple[Tuple[complex]], num_states: int, length_diff: int,
-                                             povms: List[Tuple[Tuple[complex, complex]]], truncation: int = 1)\
+                                             povms: Tuple[Tuple[Tuple[complex]]], truncation: int = 1)\
         -> Tuple[Tuple[Tuple[complex]], Tuple[float]]:
     """Measure multiple subsystems of a larger composite system. 'truncation' is a keyword argument with default value 1 for qubit(s) systems.
     
