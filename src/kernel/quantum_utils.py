@@ -5,6 +5,7 @@ These should not be used directly, but accessed by a QuantumManager instance or 
 """
 
 from functools import lru_cache
+from mimetypes import init
 from typing import List, Dict, Tuple
 from math import sqrt
 
@@ -266,7 +267,7 @@ def measure_state_with_cache_fock_density(state: Tuple[Tuple[complex]], povms: T
 
 
 @lru_cache(maxsize=1000)
-def measure_entangled_state_with_cache_fock_density(state: Tuple[Tuple[complex]], state_index: int, num_states: int,
+def measure_entangled_state_with_cache_fock_density(state: Tuple[Tuple[complex]], system_index: int, num_systems: int,
                                                     povms: Tuple[Tuple[Tuple[complex]]], truncation: int = 1)\
         -> Tuple[Tuple[Tuple[complex]], Tuple[float]]:
     """Measure one subsystem of a larger composite system.
@@ -279,13 +280,10 @@ def measure_entangled_state_with_cache_fock_density(state: Tuple[Tuple[complex]]
     povms = [array(povm) for povm in povms]
 
     # generate POVM operators on total Hilbert space
-    povm_list = [[0]]*len(povms)
-    for i in range(num_states):
-        if i == state_index:
-            for i in range(len(povms)):
-                povm_list[i] = kron(povm_list[i], povms[i])
-        else:
-            povm_list = [kron(povm, identity(truncation+1)) for povm in povm_list]
+    povm_list = []
+    for povm in povms:
+        povm_tot = kron(kron(identity((truncation+1)**system_index), povm), identity((truncation+1)**(num_systems-system_index-1)))
+        povm_list.append(povm_tot)
 
     # list of probabilities of getting different outcomes from POVM
     prob_list = [trace(state @ povm).real for povm in povm_list]
@@ -307,25 +305,65 @@ def measure_entangled_state_with_cache_fock_density(state: Tuple[Tuple[complex]]
 
 
 @lru_cache(maxsize=1000)
-def measure_multiple_with_cache_fock_density(state: Tuple[Tuple[complex]], num_states: int, length_diff: int,
+def measure_multiple_with_cache_fock_density(state: Tuple[Tuple[complex]], num_systems: int, indices: Tuple[int],
                                              povms: Tuple[Tuple[Tuple[complex]]], truncation: int = 1)\
         -> Tuple[Tuple[Tuple[complex]], Tuple[float]]:
     """Measure multiple subsystems of a larger composite system. 'truncation' is a keyword argument with default value 1 for qubit(s) systems.
-    
-    The measurement is assumed to be entangling measurement, e.g. realized by two photon detectors behind a beamsplitter.
+
+    Should be called by Quantum Managers.
+     
+    This function will facilitate entangling measurement, e.g. BSM with two photon detectors behind a beamsplitter.
     Such measurement operators are consisted of mixed operators on different subsystems' Hilbert spaces.
     For current implementation, the Hilbert space on which those mixed operators act on is separated from the rest of total Hilbert space,
-    *and the involved subsystems are moved close in terms of keys*
+    and we assume that the involved subsystems have already been moved close in terms of keys.
+    i.e. elements in `indices` argument are no less than 0 and no greater than `num_systems` (relative indices w.r.t. the measured state),
+        and the elements MUST BE consecutive.
 
     E.g. For a total system consisted of 4 subsystems (0, 1, 2, 3) each with dimension d, 
-    if the entangling measurement happens on (1, 2), then measurement operators on total space will be constructed as 
-    O_tot = kron(kron(identity(d), O), identity(d))
-    where the measurement operator on (1, 2) subspace needs to be generated beforehand to feed in the function
+        if the entangling measurement happens on (1, 2), then measurement operators on total space will be constructed as 
+        O_tot = kron(kron(identity(d), O), identity(d)),
+        where the measurement operator on (1, 2) subspace needs to be generated beforehand to feed in the function
     """
     state = array(state)
     povms = [array(povm) for povm in povms]
 
-    raise NotImplementedError()
+    # judge if elements in `indices` are consecutive
+    init_meas_sys_idx = min(indices)
+    fin_meas_sys_idx = max(indices)
+    num = len(indices)
 
-    #TODO: WIP
-    #TODO: if swapping to near keys possible
+    if fin_meas_sys_idx - init_meas_sys_idx + 1 == num:
+        visited = [False for i in range(num)] # flags of elements if visited
+        for i in range(num):
+            # If see an element again, raise ValueError
+            if (visited[indices[i] - init_meas_sys_idx] != False):
+                raise ValueError("indices should be consecutive")
+            # If visited first time, then mark the element as visited
+            visited[indices[i] - init_meas_sys_idx] = True
+    else:
+        # if min and max are not compatible with number with indices, raise ValueError
+        raise ValueError("indices should be consecutive")
+
+    povm_list = []
+    for povm in povms:
+        povm_tot = kron(kron(identity((truncation+1)**init_meas_sys_idx), povm), identity((truncation+1)**(num_systems-fin_meas_sys_idx-1)))
+        povm_list.append(povm_tot)
+
+    # list of probabilities of getting different outcomes from POVM
+    prob_list = [trace(state @ povm).real for povm in povm_list]
+    state_list = []
+
+    for i in range(len(prob_list)):
+        if prob_list[i] <= 0:
+            state_post_meas = None
+        else:
+            measure_op = fractional_matrix_power(povm_list[i], 1/2)
+            state_post_meas = (measure_op @ state @ measure_op) / prob_list[i]
+
+        state_post_meas_tuple = tuple(state_post_meas)
+        state_list.append(state_post_meas_tuple)
+
+    # return post-measurement states and measurement outcome probabilities in the order of fed-in POVM operators which correspond to outcomes
+    state_tuple = tuple(state_list)
+    prob_tuple = tuple(prob_list)
+    return state_tuple, prob_tuple
