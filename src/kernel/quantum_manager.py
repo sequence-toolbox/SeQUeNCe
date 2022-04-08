@@ -335,6 +335,7 @@ class QuantumManagerDensity(QuantumManager):
             state (List[complex]): state to measure.
             keys (List[int]): list of keys to measure.
             all_keys (List[int]): list of all keys corresponding to state.
+            meas_samp (float): random sample used for measurement result.
 
         Returns:
             Dict[int, int]: mapping of measured keys to measurement results.
@@ -395,24 +396,26 @@ class QuantumManagerDensity(QuantumManager):
 class QuantumManagerDensityFock(QuantumManager):
     """Class to track and manage Fock states with the density matrix formalism."""
 
-    def __init__(self, truncation = 1):
+    def __init__(self, truncation: int = 1):
         # default truncation is 1 for 2-d Fock space.
-        super().__init__(DENSITY_MATRIX_FORMALISM, truncation = truncation)
+        super().__init__(DENSITY_MATRIX_FORMALISM, truncation=truncation)
 
     def new(self, state='gnd') -> int:
         """Method to create a new state with key
 
-        Default `state` argument is 'gnd' which stands for `ground state`.
-        If want to generate new state other than ground state, density matrix (List[List[complex]]) or pure state ket ([List[complex])
-        whose dimensions are compatible with global truncation should be fed in.
+        Args:
+            state (Union[str, List[complex], List[List[complex]]]): amplitudes of new state.
+                Default value is 'gnd': create zero-excitation state with current truncation.
+                Other inputs are passed to the constructor of `DensityState`.
         """
+
         key = self._least_available
         self._least_available += 1
         if state == 'gnd':
             gnd = [1] + [0]*self.truncation
-            self.states[key] = DensityState(gnd, [key], truncation = self.truncation)
+            self.states[key] = DensityState(gnd, [key], truncation=self.truncation)
         else:
-            self.states[key] = DensityState(state, [key], truncation = self.truncation)
+            self.states[key] = DensityState(state, [key], truncation=self.truncation)
 
         return key
 
@@ -420,7 +423,14 @@ class QuantumManagerDensityFock(QuantumManager):
         """Currently the Fock states do not support quantum circuits. 
         This method is only to implement abstract method of parent class and SHOULD NOT be called after instantiation.
         """
-        super().run_circuit(circuit, keys, meas_samp)
+        raise Exception("run_circuit method of class QuantumManagerDensityFock called")
+
+    def _prepare_operator(self, keys: List[int]):
+        raise NotImplementedError()
+
+        new_state = None
+        all_keys = None
+        return new_state, all_keys
         
     def set(self, keys: List[int], state: List[List[complex]]) -> None:
         """Method to set the quantum state at the given keys.
@@ -435,14 +445,14 @@ class QuantumManagerDensityFock(QuantumManager):
         """
 
         super().set(keys, state)
-        new_state = DensityState(state, keys, truncation = self.truncation)
+        new_state = DensityState(state, keys, truncation=self.truncation)
         for key in keys:
             self.states[key] = new_state
 
     def set_to_zero(self, key: int):
         """set the state to ground (zero) state."""
-        zero = [1] + [0]*self.truncation
-        self.set([key], zero)
+        gnd = [1] + [0]*self.truncation
+        self.set([key], gnd)
 
     def build_ladder(self):
         """Generate matrix of creation and annihilation (ladder) operators on truncated Hilbert space."""
@@ -455,21 +465,86 @@ class QuantumManagerDensityFock(QuantumManager):
 
         return create, destroy
 
+    def measure(self, keys: List[int], povms: List[array], meas_samp: float) -> Dict[int, int]:
+        """Method to measure subsystems at given keys in POVM formalism.
+
+        Serves as wrapper for private `_measure` method, performing quantum manager specific operations.
+
+        Args:
+            keys (List[int]): list of keys to measure.
+            povms: (List[array]): list of POVM operators to use for measurement.
+            meas_samp (float): random measurement sample to use for computing resultant state.
+
+        Returns:
+            Dict[int, int]: mapping of measured keys to measurement results.
+        """
+        new_state, all_keys = self._prepare_operator(keys)
+        return self._measure(new_state, keys, all_keys, povms, meas_samp)
+
     def _measure(self, state: List[List[complex]], keys: List[int],
-                 all_keys: List[int]) -> Dict[int, int]:
+                 all_keys: List[int], povms: List[array], meas_samp: float) -> Dict[int, int]:
         """Method to measure subsystems at given keys in POVM formalism.
 
         Modifies quantum state of all qubits given by all_keys, post-measurement operator determined
         by measurement operators which are chosen as square root of POVM operators.
 
         Args:
-            state (List[complex]): state to measure.
+            state (List[List[complex]]): state to measure.
             keys (List[int]): list of keys to measure.
             all_keys (List[int]): list of all keys corresponding to state.
 
         Returns:
             Dict[int, int]: mapping of measured keys to measurement results.
-
-        WIP
         """
 
+        if len(keys) == 1:
+            if len(all_keys) == 1:
+                prob_0 = measure_state_with_cache_Fock_density(tuple(map(tuple, state)),
+                                                               [tuple(map(tuple, povm)) for povm in povms])
+                if meas_samp < prob_0:
+                    result = 0
+                    new_state = [[1, 0], [0, 0]]
+                else:
+                    result = 1
+                    new_state = [[0, 0], [0, 1]]
+
+            else:
+                key = keys[0]
+                num_states = len(all_keys)
+                state_index = all_keys.index(key)
+                state_0, state_1, prob_0 = \
+                    measure_entangled_state_with_cache_density(tuple(map(tuple, state)), state_index, num_states)
+                if meas_samp < prob_0:
+                    new_state = array(state_0, dtype=complex)
+                    result = 0
+                else:
+                    new_state = array(state_1, dtype=complex)
+                    result = 1
+
+        else:
+            # swap states into correct position
+            if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
+                all_keys, swap_mat = self._swap_qubits(all_keys, keys)
+                state = swap_mat @ state @ swap_mat.T
+
+            # calculate meas probabilities and projected states
+            len_diff = len(all_keys) - len(keys)
+            state_to_measure = tuple(map(tuple, state))
+            new_states, probabilities = measure_multiple_with_cache_density(state_to_measure, len(keys), len_diff)
+
+            # choose result, set as new state
+            for i in range(int(2 ** len(keys))):
+                if meas_samp < sum(probabilities[:i + 1]):
+                    result = i
+                    new_state = new_states[i]
+                    break
+
+        result_digits = [int(x) for x in bin(result)[2:]]
+        while len(result_digits) < len(keys):
+            result_digits.insert(0, 0)
+
+        new_state_obj = DensityState(new_state, all_keys)
+        for key in all_keys:
+            self.states[key] = new_state_obj
+
+        return dict(zip(keys, result_digits))

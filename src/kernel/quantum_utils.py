@@ -240,23 +240,43 @@ def measure_multiple_with_cache_density(state: Tuple[Tuple[complex]], num_states
 
 
 @lru_cache(maxsize=1000)
-def measure_state_with_cache_Fock_density(state: Tuple[Tuple[complex, complex]], povms: List[array]) -> float:
+def measure_state_with_cache_fock_density(state: Tuple[Tuple[complex, complex]],
+                                          povms: List[Tuple[Tuple[complex, complex]]])\
+        -> Tuple[Tuple[Tuple[complex, complex]], Tuple[float]]:
     state = array(state)
+    povms = [array(povm) for povm in povms]
 
     # probabilities of getting different outcomes according to POVM operators
     prob_list = [trace(state @ povm).real for povm in povms]
-    return prob_list
+    state_list = []
+
+    # get output states
+    for i in range(len(prob_list)):
+        if prob_list[i] <= 0:
+            state_post_meas = None
+        else:
+            measure_op = fractional_matrix_power(povms[i], 1/2)
+            state_post_meas = (measure_op @ state @ measure_op) / prob_list[i]
+
+        state_post_meas_tuple = tuple(state_post_meas)
+        state_list.append(state_post_meas_tuple)
+
+    state_tuple = tuple(state_list)
+    prob_tuple = tuple(prob_list)
+    return state_tuple, prob_tuple
 
 
 @lru_cache(maxsize=1000)
-def measure_entangled_state_with_cache_Fock_density(state: Tuple[Tuple[complex]], state_index: int, num_states: int, povms: List[array], truncation: int = 1) -> Tuple[
-        Tuple[complex], Tuple[complex], float]:
+def measure_entangled_state_with_cache_fock_density(state: Tuple[Tuple[complex]], state_index: int, num_states: int,
+                                                    povms: List[Tuple[Tuple[complex, complex]]], truncation: int = 1)\
+        -> Tuple[Tuple[Tuple[complex, complex]], Tuple[float]]:
     """Measure one subsystem of a larger composite system. 'truncation' is a keyword argument with default value 1 for qubit(s) systems.
 
     The measurement SHOULD NOT be entangling measurement, and thus POVM operators should be precisely consisted of 
     operators on the subsystem's Hilbert space alone.
     """
     state = array(state)
+    povms = [array(povm) for povm in povms]
 
     # generate POVM operators on total Hilbert space
     povm_list = [[0]]*len(povms)
@@ -272,20 +292,24 @@ def measure_entangled_state_with_cache_Fock_density(state: Tuple[Tuple[complex]]
     state_list = []
 
     for i in range(len(prob_list)):
-        if prob_list[i] <=0:
+        if prob_list[i] <= 0:
             state_post_meas = None
         else:
             measure_op = fractional_matrix_power(povm_list[i], 1/2)
             state_post_meas = (measure_op @ state @ measure_op) / prob_list[i]
-        
-        state_list.append(state_post_meas)
-        
-    return state_list, prob_list
+
+        state_post_meas_tuple = tuple(state_post_meas)
+        state_list.append(state_post_meas_tuple)
+
+    state_tuple = tuple(state_list)
+    prob_tuple = tuple(prob_list)
+    return state_tuple, prob_tuple
 
 
 @lru_cache(maxsize=1000)
-def measure_multiple_with_cache_Fock_density(state: Tuple[Tuple[complex]], num_states: int, length_diff: int, povms: List[array], truncation: int = 1) -> Tuple[
-        Tuple[Tuple[complex]], Tuple[float]]:
+def measure_multiple_with_cache_fock_density(state: Tuple[Tuple[complex]], num_states: int, length_diff: int,
+                                             povms: List[Tuple[Tuple[complex, complex]]], truncation: int = 1)\
+        -> Tuple[Tuple[Tuple[complex]], Tuple[float]]:
     """Measure multiple subsystems of a larger composite system. 'truncation' is a keyword argument with default value 1 for qubit(s) systems.
     
     The measurement is assumed to be entangling measurement, e.g. realized by two photon detectors behind a beamsplitter.
@@ -299,6 +323,9 @@ def measure_multiple_with_cache_Fock_density(state: Tuple[Tuple[complex]], num_s
     where the measurement operator on (1, 2) subspace needs to be generated beforehand to feed in the function
     """
     state = array(state)
+    povms = [array(povm) for povm in povms]
+
+    raise NotImplementedError()
 
     #TODO: WIP
     #TODO: if swapping to near keys possible
