@@ -17,8 +17,7 @@ if TYPE_CHECKING:
 
 from qutip.qip.circuit import QubitCircuit, Gate
 from qutip.qip.operations import gate_sequence_product
-from numpy import log
-from scipy.linalg import fractional_matrix_power
+from numpy import log, array, cumsum, base_repr
 from scipy.sparse import csr_matrix
 
 from .quantum_state import KetState, DensityState
@@ -497,55 +496,41 @@ class QuantumManagerDensityFock(QuantumManager):
             Dict[int, int]: mapping of measured keys to measurement results.
         """
 
+        state_tuple = tuple(map(tuple, state))
         povm_tuple = tuple([tuple(map(tuple, povm)) for povm in povms])
+        new_state = None
+        result = 0
 
         if len(keys) == 1:
             if len(all_keys) == 1:
-                states, prob_0 = measure_state_with_cache_fock_density(tuple(map(tuple, state)),
-                                                                       povm_tuple)
-                if meas_samp < prob_0:
-                    result = 0
-                    new_state = [[1, 0], [0, 0]]
-                else:
-                    result = 1
-                    new_state = [[0, 0], [0, 1]]
+                states, probs = measure_state_with_cache_fock_density(state_tuple, povm_tuple)
 
             else:
                 key = keys[0]
                 num_states = len(all_keys)
                 state_index = all_keys.index(key)
-                state_0, state_1, prob_0 = \
-                    measure_entangled_state_with_cache_density(tuple(map(tuple, state)), state_index, num_states)
-                if meas_samp < prob_0:
-                    new_state = array(state_0, dtype=complex)
-                    result = 0
-                else:
-                    new_state = array(state_1, dtype=complex)
-                    result = 1
+                states, probs = \
+                    measure_entangled_state_with_cache_fock_density(state_tuple, state_index, num_states, povm_tuple)
 
         else:
-            # swap states into correct position
-            if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
-                all_keys, swap_mat = self._swap_qubits(all_keys, keys)
-                state = swap_mat @ state @ swap_mat.T
-
             # calculate meas probabilities and projected states
             len_diff = len(all_keys) - len(keys)
-            state_to_measure = tuple(map(tuple, state))
-            new_states, probabilities = measure_multiple_with_cache_density(state_to_measure, len(keys), len_diff)
+            states, probs = \
+                measure_multiple_with_cache_fock_density(state_tuple, len(keys), len_diff, povm_tuple)
 
-            # choose result, set as new state
-            for i in range(int(2 ** len(keys))):
-                if meas_samp < sum(probabilities[:i + 1]):
-                    result = i
-                    new_state = new_states[i]
-                    break
+        prob_sum = cumsum(probs)
+        for i, (output_state, p) in enumerate(zip(states, prob_sum)):
+            if meas_samp < p:
+                new_state = array(output_state, dtype=complex)
+                result = i
+                break
 
-        result_digits = [int(x) for x in bin(result)[2:]]
+        # TODO: double check output result
+        result_digits = [int(x) for x in base_repr(result, base=(self.truncation + 1))[2:]]
         while len(result_digits) < len(keys):
             result_digits.insert(0, 0)
 
-        new_state_obj = DensityState(new_state, all_keys)
+        new_state_obj = DensityState(new_state, all_keys, self.truncation)
         for key in all_keys:
             self.states[key] = new_state_obj
 
