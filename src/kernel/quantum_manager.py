@@ -425,11 +425,58 @@ class QuantumManagerDensityFock(QuantumManager):
         raise Exception("run_circuit method of class QuantumManagerDensityFock called")
 
     def _prepare_operator(self, keys: List[int]):
-        raise NotImplementedError()
+        """Function to prepare states at given keys for operator application.
 
-        new_state = None
-        all_keys = None
+        Will take composite quantum state and swap subsystems to correspond with listed keys.
+        Should not be called directly, but from method to apply operator or measure state.
+
+        Args:
+            keys (List[int]): keys for states to apply operator to.
+
+        Returns:
+            Tuple(List[List[complex]], List[int]): Tuple containing:
+                1. new state to apply operator to, with keys swapped to be consecutive.
+                2. list of keys corresponding to new state.
+        """
+
+        old_states = []
+        all_keys = []
+
+        # go through keys and get all unique qstate objects
+        for key in keys:
+            qstate = self.states[key]
+            if qstate.keys[0] not in all_keys:
+                old_states.append(qstate.state)
+                all_keys += qstate.keys
+
+        # construct compound state
+        new_state = [1]
+        for state in old_states:
+            new_state = kron(new_state, state)
+
+        # apply any necessary swaps to order keys
+        start_idx = all_keys.index(keys[0])
+        for i, key in enumerate(keys):
+            i = i + start_idx
+            j = all_keys.index(key)
+            if j != i:
+                # TODO: create swapping unitary
+                swap_unitary = identity(self.dim ** len(all_keys))
+
+                for first_sub_digit in range(self.dim):
+                    for second_sub_digit in range(first_sub_digit + 1, self.dim):
+                        pass
+
+                new_state = swap_unitary @ new_state @ swap_unitary.T
+                all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
+
+        raise NotImplementedError()
         return new_state, all_keys
+
+    def apply_operator(self, operator: array, keys: List[int]):
+        swapped_state, all_keys = self._prepare_operator(keys)
+        new_state = operator @ swapped_state @ operator.conj().T
+        self.set(all_keys, new_state)
         
     def set(self, keys: List[int], state: List[List[complex]]) -> None:
         """Method to set the quantum state at the given keys.
@@ -530,8 +577,5 @@ class QuantumManagerDensityFock(QuantumManager):
         while len(result_digits) < len(keys):
             result_digits.insert(0, 0)
 
-        new_state_obj = DensityState(new_state, all_keys, self.truncation)
-        for key in all_keys:
-            self.states[key] = new_state_obj
-
+        self.set(all_keys, new_state)
         return dict(zip(keys, result_digits))
