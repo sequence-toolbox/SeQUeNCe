@@ -269,20 +269,34 @@ def measure_state_with_cache_fock_density(state: Tuple[Tuple[complex]], povms: T
 @lru_cache(maxsize=1000)
 def measure_entangled_state_with_cache_fock_density(state: Tuple[Tuple[complex]], system_index: int, num_systems: int,
                                                     povms: Tuple[Tuple[Tuple[complex]]], truncation: int = 1)\
-        -> Tuple[Tuple[Tuple[complex]], Tuple[float]]:
+        -> Tuple[Tuple[Tuple[Tuple[complex]]], Tuple[float]]:
     """Measure one subsystem of a larger composite system.
 
-    'truncation' is a keyword argument with default value 1 for qubit(s) systems.
-    The measurement SHOULD NOT be entangling measurement, and thus POVM operators should be precisely consisted of 
+    The measurement SHOULD NOT be entangling measurement, and thus POVM operators should be precisely consisted of
     operators on the subsystem's Hilbert space alone.
+
+    Args:
+        state (Tuple[Tuple[complex]]): state to measure
+        system_index (int): index of measured subsystem within state.
+        num_systems (int): number of total systems in the state.
+        povms (Tuple[Tuple[Tuple[complex]]]): tuple listing all POVM operators to use for measurement
+        truncation (int): fock space truncation, 1 for qubit system (default 1).
+
+    Returns:
+        Tuple[Tuple[Tuple[Tuple[complex]]], Tuple[float]]: tuple with two sub-tuples.
+            The first sub-tuple lists each output state, corresponding with the measurement of each POVM.
+            The second sub-tuple lists the probability for each measurement.
     """
+
     state = array(state)
     povms = [array(povm) for povm in povms]
 
     # generate POVM operators on total Hilbert space
     povm_list = []
+    left_dim = (truncation + 1) ** system_index
+    right_dim = (truncation + 1) ** (num_systems - system_index - 1)
     for povm in povms:
-        povm_tot = kron(kron(identity((truncation+1)**system_index), povm), identity((truncation+1)**(num_systems-system_index-1)))
+        povm_tot = kron(kron(identity(left_dim), povm), identity(right_dim))
         povm_list.append(povm_tot)
 
     # list of probabilities of getting different outcomes from POVM
@@ -305,24 +319,35 @@ def measure_entangled_state_with_cache_fock_density(state: Tuple[Tuple[complex]]
 
 
 @lru_cache(maxsize=1000)
-def measure_multiple_with_cache_fock_density(state: Tuple[Tuple[complex]], num_systems: int, indices: Tuple[int],
+def measure_multiple_with_cache_fock_density(state: Tuple[Tuple[complex]], indices: Tuple[int], num_systems: int,
                                              povms: Tuple[Tuple[Tuple[complex]]], truncation: int = 1)\
-        -> Tuple[Tuple[Tuple[complex]], Tuple[float]]:
-    """Measure multiple subsystems of a larger composite system. 'truncation' is a keyword argument with default value 1 for qubit(s) systems.
+        -> Tuple[Tuple[Tuple[Tuple[complex]]], Tuple[float]]:
+    """Measure multiple subsystems of a larger composite system.
 
     Should be called by Quantum Managers.
-     
     This function will facilitate entangling measurement, e.g. BSM with two photon detectors behind a beamsplitter.
     Such measurement operators are consisted of mixed operators on different subsystems' Hilbert spaces.
-    For current implementation, the Hilbert space on which those mixed operators act on is separated from the rest of total Hilbert space,
-    and we assume that the involved subsystems have already been moved close in terms of keys.
-    i.e. elements in `indices` argument are no less than 0 and no greater than `num_systems` (relative indices w.r.t. the measured state),
-        and the elements MUST BE consecutive.
+    For current implementation, the Hilbert space on which those mixed operators act on is separated from the rest of
+    the total Hilbert space, and we assume that the involved subsystems have already been moved close in terms of keys.
+    i.e., elements in `indices` argument are no less than 0 and no greater than `num_systems`
+    (relative indices w.r.t. the measured state), and the elements MUST BE consecutive.
 
-    E.g. For a total system consisted of 4 subsystems (0, 1, 2, 3) each with dimension d, 
-        if the entangling measurement happens on (1, 2), then measurement operators on total space will be constructed as 
+    E.g. For a total system consisted of 4 subsystems (0, 1, 2, 3) each with dimension d,
+    if the entangling measurement happens on (1, 2), then measurement operators on total space will be constructed as
         O_tot = kron(kron(identity(d), O), identity(d)),
-        where the measurement operator on (1, 2) subspace needs to be generated beforehand to feed in the function
+    where the measurement operator on (1, 2) subspace needs to be generated beforehand to feed in the function.
+
+    Args:
+        state (Tuple[Tuple[complex]]): state to measure.
+        indices (Tuple[int]): indices within combined state to measure.
+        num_systems (int): number of total systems in the state.
+        povms (Tuple[Tuple[Tuple[complex]]]): tuple listing all POVM operators to use for measurement.
+        truncation (int): fock space truncation, 1 for qubit system (default 1).
+
+    Returns:
+        Tuple[Tuple[Tuple[Tuple[complex]]], Tuple[float]]: tuple with two sub-tuples.
+            The first sub-tuple lists each output state, corresponding with the measurement of each POVM.
+            The second sub-tuple lists the probability for each measurement.
     """
     state = array(state)
     povms = [array(povm) for povm in povms]
@@ -331,22 +356,26 @@ def measure_multiple_with_cache_fock_density(state: Tuple[Tuple[complex]], num_s
     init_meas_sys_idx = min(indices)
     fin_meas_sys_idx = max(indices)
     num = len(indices)
+    if (fin_meas_sys_idx - init_meas_sys_idx + 1 != num) or (list(indices) != sorted(indices)):
+        raise ValueError("Indices should be consecutive; got {}".format(indices))
 
-    if fin_meas_sys_idx - init_meas_sys_idx + 1 == num:
-        visited = [False for i in range(num)] # flags of elements if visited
-        for i in range(num):
-            # If see an element again, raise ValueError
-            if (visited[indices[i] - init_meas_sys_idx] != False):
-                raise ValueError("indices should be consecutive")
-            # If visited first time, then mark the element as visited
-            visited[indices[i] - init_meas_sys_idx] = True
-    else:
-        # if min and max are not compatible with number with indices, raise ValueError
-        raise ValueError("indices should be consecutive")
+    # if fin_meas_sys_idx - init_meas_sys_idx + 1 == num:
+    #     visited = [False for i in range(num)] # flags of elements if visited
+    #     for i in range(num):
+    #         # If see an element again, raise ValueError
+    #         if (visited[indices[i] - init_meas_sys_idx] != False):
+    #             raise ValueError("indices should be consecutive")
+    #         # If visited first time, then mark the element as visited
+    #         visited[indices[i] - init_meas_sys_idx] = True
+    # else:
+    #     # if min and max are not compatible with number with indices, raise ValueError
+    #     raise ValueError("indices should be consecutive")
 
     povm_list = []
+    left_dim = (truncation + 1) ** init_meas_sys_idx
+    right_dim = (truncation + 1) ** (num_systems - fin_meas_sys_idx - 1)
     for povm in povms:
-        povm_tot = kron(kron(identity((truncation+1)**init_meas_sys_idx), povm), identity((truncation+1)**(num_systems-fin_meas_sys_idx-1)))
+        povm_tot = kron(kron(identity(left_dim), povm), identity(right_dim))
         povm_list.append(povm_tot)
 
     # list of probabilities of getting different outcomes from POVM
@@ -363,7 +392,7 @@ def measure_multiple_with_cache_fock_density(state: Tuple[Tuple[complex]], num_s
         state_post_meas_tuple = tuple(state_post_meas)
         state_list.append(state_post_meas_tuple)
 
-    # return post-measurement states and measurement outcome probabilities in the order of fed-in POVM operators which correspond to outcomes
+    # return post-measurement states and measurement outcome probabilities in the order of fed-in POVM operators
     state_tuple = tuple(state_list)
     prob_tuple = tuple(prob_list)
     return state_tuple, prob_tuple
