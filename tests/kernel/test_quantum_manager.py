@@ -343,12 +343,58 @@ def test_qmanager__measure_density():
 
 
 def test_qmanager__prepare_operator():
-    # test single state
+    qm = QuantumManagerDensityFock(truncation=2)
+    state_0 = [1, 0, 0]
+    state_1 = [0, 1, 0]
+    combined = np.kron(state_0, state_1)
+    desired_state = np.outer(combined, combined.conj())
 
-    pass
+    # test single state
+    key_0 = qm.new()
+    key_1 = qm.new()
+    qm.set([key_0, key_1], combined)
+
+    new_state, all_keys = qm._prepare_operator([key_0, key_1])
+    assert (new_state == np.array(desired_state)).all
+    assert (np.array(all_keys) == np.array([key_0, key_1])).all
+
+    # test disjoint state
+    key_0 = qm.new(state_0)
+    key_1 = qm.new(state_1)
+
+    new_state, all_keys = qm._prepare_operator([key_0, key_1])
+    assert (new_state == np.array(desired_state)).all
+    assert (np.array(all_keys) == np.array([key_0, key_1])).all
+
+    # test state that needs swapping
+    key_1 = qm.new()
+    key_0 = qm.new()
+    combined_alt = np.kron(state_1, state_0)
+    qm.set([key_1, key_0], combined_alt)
+
+    new_state, all_keys = qm._prepare_operator([key_0, key_1])
+    assert (new_state == np.array(desired_state)).all
+    assert (np.array(all_keys) == np.array([key_0, key_1])).all
+
+    # test larger state that needs swapping
+    key_0 = qm.new()
+    key_1 = qm.new()
+    key_2 = qm.new()
+    combined_alt = np.kron(np.kron(state_0, state_0), state_1)
+    qm.set([key_0, key_1, key_2], combined_alt)
+
+    combined_correct = np.kron(np.kron(state_0, state_1), state_0)
+    desired_state_alt = np.outer(combined_correct, combined_correct.conj())
+    new_state, all_keys = qm._prepare_operator([key_0, key_2])
+    assert (new_state == np.array(desired_state_alt)).all
+    assert (np.array(all_keys) == np.array([key_0, key_2, key_1])).all
 
 
 def test_qmanager_build_ladder():
+    pass
+
+
+def test_qmanager_apply_operator():
     pass
 
 

@@ -136,7 +136,7 @@ class QuantumManager:
             amplitudes: Amplitudes to set state to, type determined by type of subclass.
         """
 
-        num_subsystems = log(len(amplitudes), self.dim)
+        num_subsystems = log(len(amplitudes)) / log(self.dim)
         assert num_subsystems.is_integer(),\
             "Length of amplitudes should be d ** n, where d is subsystem Hilbert space dimension and \
              n is the number of subsystems"
@@ -437,10 +437,11 @@ class QuantumManagerDensityFock(QuantumManager):
         """
 
         size = self.dim ** num_systems
-        swap_unitary = zeros(size, size)
+        swap_unitary = zeros((size, size))
 
         for old_index in range(size):
             old_str = base_repr(old_index, self.dim)
+            old_str = old_str.zfill(num_systems)
             new_str = ''.join((old_str[:i], old_str[j], old_str[i+1:j], old_str[i], old_str[j+1:]))
             new_index = int(new_str, base=self.dim)
             swap_unitary[new_index, old_index] = 1
@@ -477,8 +478,12 @@ class QuantumManagerDensityFock(QuantumManager):
         for state in old_states:
             new_state = kron(new_state, state)
 
-        # apply any necessary swaps to order keys
+        # generate desired key order
         start_idx = all_keys.index(keys[0])
+        if start_idx + len(keys) > len(all_keys):
+            start_idx = len(all_keys) - len(keys)
+
+        # apply any necessary swaps to order keys
         for i, key in enumerate(keys):
             i = i + start_idx
             j = all_keys.index(key)

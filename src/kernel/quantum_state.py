@@ -100,7 +100,7 @@ class KetState(State):
         # check formatting
         assert all([abs(a) <= 1.01 for a in amplitudes]), "Illegal value with abs > 1 in ket vector"
         assert abs(sum([abs(a) ** 2 for a in amplitudes]) - 1) < 1e-5, "Squared amplitude moduli do not sum to 1"
-        num_subsystems = log(len(amplitudes), dim)
+        num_subsystems = log(len(amplitudes)) / log(dim)
         assert num_subsystems.is_integer(),\
             "Length of amplitudes should be d ** n, where d is subsystem Hilbert space dimension and \
              n is the number of subsystems"
@@ -140,13 +140,13 @@ class DensityState(State):
 
         state = array(state, dtype=complex)
         if state.ndim == 1:
-            state = outer(state.conj(), state)
+            state = outer(state, state.conj())
 
         # check formatting
         assert abs(trace(array(state)) - 1) < 0.01, "density matrix trace must be 1"
         for row in state:
             assert len(state) == len(row), "density matrix must be square"
-        num_subsystems = log(len(state), dim)
+        num_subsystems = log(len(state)) / log(dim)
         assert num_subsystems.is_integer(), \
             "Dimensions of density matrix should be d ** n, where d is subsystem Hilbert space dimension and \
              n is the number of subsystems"
