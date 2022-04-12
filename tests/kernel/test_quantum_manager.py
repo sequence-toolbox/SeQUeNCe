@@ -262,6 +262,7 @@ def test_qmanager__measure():
 
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
 
+
 def test_qmanager__measure_density():
     NUM_TESTS = 1000
 
@@ -340,3 +341,16 @@ def test_qmanager__measure_density():
 
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
 
+
+def test_qmanager__prepare_operator():
+    # test single state
+
+    pass
+
+
+def test_qmanager_build_ladder():
+    pass
+
+
+def test_qmanager_measure():
+    pass

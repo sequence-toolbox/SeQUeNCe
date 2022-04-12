@@ -490,8 +490,14 @@ class QuantumManagerDensityFock(QuantumManager):
         return new_state, all_keys
 
     def apply_operator(self, operator: array, keys: List[int]):
-        swapped_state, all_keys = self._prepare_operator(keys)
-        new_state = operator @ swapped_state @ operator.conj().T
+        prepared_state, all_keys = self._prepare_operator(keys)
+
+        # pad operator with identity
+        left_dim = all_keys.index(keys[0]) ** self.dim
+        right_dim = (len(all_keys) - all_keys.index(keys[-1]) - 1) ** self.dim
+        prepared_operator = kron(kron(identity(left_dim), operator), identity(right_dim))
+
+        new_state = prepared_operator @ prepared_state @ prepared_operator.conj().T
         self.set(all_keys, new_state)
         
     def set(self, keys: List[int], state: List[List[complex]]) -> None:
