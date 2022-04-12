@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 from qutip.qip.circuit import QubitCircuit, Gate
 from qutip.qip.operations import gate_sequence_product
-from numpy import log, array, cumsum, base_repr
+from numpy import log, array, cumsum, base_repr, zeros
 from scipy.sparse import csr_matrix
 
 from .quantum_state import KetState, DensityState
@@ -424,6 +424,29 @@ class QuantumManagerDensityFock(QuantumManager):
         """
         raise Exception("run_circuit method of class QuantumManagerDensityFock called")
 
+    def _generate_swap_operator(self, num_systems: int, i: int, j: int):
+        """Helper function to generate swapping unitary.
+
+        Args:
+            num_systems (int): number of subsystems in state
+            i (int): index of first subsystem to swap
+            j (int): index of second subsystem to swap
+
+        Returns:
+            Array[int]: unitary swapping operator
+        """
+
+        size = self.dim ** num_systems
+        swap_unitary = zeros(size, size)
+
+        for old_index in range(size):
+            old_str = base_repr(old_index, self.dim)
+            new_str = ''.join((old_str[:i], old_str[j], old_str[i+1:j], old_str[i], old_str[j+1:]))
+            new_index = int(new_str, base=self.dim)
+            swap_unitary[new_index, old_index] = 1
+
+        return swap_unitary
+
     def _prepare_operator(self, keys: List[int]):
         """Function to prepare states at given keys for operator application.
 
@@ -460,17 +483,10 @@ class QuantumManagerDensityFock(QuantumManager):
             i = i + start_idx
             j = all_keys.index(key)
             if j != i:
-                # TODO: create swapping unitary
-                swap_unitary = identity(self.dim ** len(all_keys))
-
-                for first_sub_digit in range(self.dim):
-                    for second_sub_digit in range(first_sub_digit + 1, self.dim):
-                        pass
-
+                swap_unitary = self._generate_swap_operator(len(all_keys), i, j)
                 new_state = swap_unitary @ new_state @ swap_unitary.T
                 all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
 
-        raise NotImplementedError()
         return new_state, all_keys
 
     def apply_operator(self, operator: array, keys: List[int]):
