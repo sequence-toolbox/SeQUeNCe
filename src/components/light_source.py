@@ -6,7 +6,7 @@ These classes should be connected to one or two entities, respectively, that are
 
 from typing import List
 
-from numpy import multiply
+from numpy import multiply, sqrt, zeros, kron, outer
 
 from .photon import Photon
 from ..kernel.entity import Entity
@@ -123,6 +123,46 @@ class SPDCSource(LightSource):
     def init(self):
         assert len(self._receivers) == 2, "SPDC source must connect to 2 receivers."
 
+    def _generate_tmsv_state(self, truncation: int=2, formalism: str="dm"):
+        """Method to generate two-mode squeezed vacuum state of two outout photonic modes, in density matrix or ket vector formalism.
+        
+        Arg:
+            truncation (int): truncation of Hilbert space of each subsystem in the generated state. Default is 2 (dim=3). 
+            formalism (str): formalism of generated state. Default is density matrix.
+        
+        Return:
+            state: generated state in density matrix or ket vector formalism.
+        """
+        mean_num = self.mean_photon_num
+        state = None
+
+        # create state component amplitudes list
+        amp_list = [(sqrt(mean_num/(mean_num+1)))**m/sqrt(mean_num+1) for m in range(truncation)]
+        amp_square_list = [amp**2 for amp in amp_list]
+        amp_list.append(sqrt(1-sum(amp_square_list)))
+        
+        # create two-mode state vector
+        state_vec = zeros((truncation+1)**2)
+
+        for i in range(truncation+1):
+            amp = amp_list[i]
+            basis = zeros(truncation+1)
+            basis[i] = 1
+            basis = kron(basis,basis)
+            state_vec += amp*basis
+
+        # create density matrix 
+        state_dm = outer(state_vec,state_vec.conj().T)
+
+        if formalism == "dm":
+            state = state_dm
+        elif formalism == "ket":
+            state = state_vec
+        else:
+            raise ValueError("Invalid quantum state formalism " + formalism)
+
+        return state
+
     def emit(self, state_list):
         """Method to emit photons.
 
@@ -136,7 +176,12 @@ class SPDCSource(LightSource):
 
         time = self.timeline.now()
 
-        if self.encoding_type["name"] == "absorptive":
+        if self.encoding_type["name"] == "fock":
+            """Use Fock encoding.
+            Two generated Photons should be entangled and should have keys pointing to same Fock state."""
+            raise NotImplementedError
+
+        elif self.encoding_type["name"] == "absorptive":
             for _ in state_list:
                 num_photon_pairs = self.get_generator().poisson(self.mean_photon_num)
 
