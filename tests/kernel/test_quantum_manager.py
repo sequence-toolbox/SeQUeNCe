@@ -342,7 +342,7 @@ def test_qmanager__measure_density():
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
 
 
-def test_qmanager__prepare_operator():
+def test_qmanager__prepare_state():
     qm = QuantumManagerDensityFock(truncation=2)
     state_0 = [1, 0, 0]
     state_1 = [0, 1, 0]
@@ -354,7 +354,7 @@ def test_qmanager__prepare_operator():
     key_1 = qm.new()
     qm.set([key_0, key_1], combined)
 
-    new_state, all_keys = qm._prepare_operator([key_0, key_1])
+    new_state, all_keys = qm._prepare_state([key_0, key_1])
     assert (new_state == np.array(desired_state)).all
     assert (np.array(all_keys) == np.array([key_0, key_1])).all
 
@@ -362,7 +362,7 @@ def test_qmanager__prepare_operator():
     key_0 = qm.new(state_0)
     key_1 = qm.new(state_1)
 
-    new_state, all_keys = qm._prepare_operator([key_0, key_1])
+    new_state, all_keys = qm._prepare_state([key_0, key_1])
     assert (new_state == np.array(desired_state)).all
     assert (np.array(all_keys) == np.array([key_0, key_1])).all
 
@@ -372,7 +372,7 @@ def test_qmanager__prepare_operator():
     combined_alt = np.kron(state_1, state_0)
     qm.set([key_1, key_0], combined_alt)
 
-    new_state, all_keys = qm._prepare_operator([key_0, key_1])
+    new_state, all_keys = qm._prepare_state([key_0, key_1])
     assert (new_state == np.array(desired_state)).all
     assert (np.array(all_keys) == np.array([key_0, key_1])).all
 
@@ -385,7 +385,7 @@ def test_qmanager__prepare_operator():
 
     combined_correct = np.kron(np.kron(state_0, state_1), state_0)
     desired_state_alt = np.outer(combined_correct, combined_correct.conj())
-    new_state, all_keys = qm._prepare_operator([key_0, key_2])
+    new_state, all_keys = qm._prepare_state([key_0, key_2])
     assert (new_state == np.array(desired_state_alt)).all
     assert (np.array(all_keys) == np.array([key_0, key_2, key_1])).all
 

@@ -19,6 +19,7 @@ from qutip.qip.circuit import QubitCircuit, Gate
 from qutip.qip.operations import gate_sequence_product
 from numpy import log, array, cumsum, base_repr, zeros
 from scipy.sparse import csr_matrix
+from scipy.special import binom
 
 from .quantum_state import KetState, DensityState
 from .quantum_utils import *
@@ -448,7 +449,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
         return swap_unitary
 
-    def _prepare_operator(self, keys: List[int]):
+    def _prepare_state(self, keys: List[int]):
         """Function to prepare states at given keys for operator application.
 
         Will take composite quantum state and swap subsystems to correspond with listed keys.
@@ -478,30 +479,40 @@ class QuantumManagerDensityFock(QuantumManager):
         for state in old_states:
             new_state = kron(new_state, state)
 
-        # generate desired key order
-        start_idx = all_keys.index(keys[0])
-        if start_idx + len(keys) > len(all_keys):
-            start_idx = len(all_keys) - len(keys)
-
         # apply any necessary swaps to order keys
-        for i, key in enumerate(keys):
-            i = i + start_idx
-            j = all_keys.index(key)
-            if j != i:
-                swap_unitary = self._generate_swap_operator(len(all_keys), i, j)
-                new_state = swap_unitary @ new_state @ swap_unitary.T
-                all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
+        if len(keys) > 1:
+
+            # generate desired key order
+            start_idx = all_keys.index(keys[0])
+            if start_idx + len(keys) > len(all_keys):
+                start_idx = len(all_keys) - len(keys)
+
+            for i, key in enumerate(keys):
+                i = i + start_idx
+                j = all_keys.index(key)
+                if j != i:
+                    swap_unitary = self._generate_swap_operator(len(all_keys), i, j)
+                    new_state = swap_unitary @ new_state @ swap_unitary.T
+                    all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
 
         return new_state, all_keys
 
-    def apply_operator(self, operator: array, keys: List[int]):
-        prepared_state, all_keys = self._prepare_operator(keys)
-
+    def _prepare_operator(self, all_keys: List[int], keys: List[int], operator) -> array:
         # pad operator with identity
         left_dim = all_keys.index(keys[0]) ** self.dim
         right_dim = (len(all_keys) - all_keys.index(keys[-1]) - 1) ** self.dim
-        prepared_operator = kron(kron(identity(left_dim), operator), identity(right_dim))
+        prepared_operator = operator
 
+        if left_dim > 0:
+            prepared_operator = kron(identity(left_dim), prepared_operator)
+        if right_dim > 0:
+            prepared_operator = kron(prepared_operator, identity(right_dim))
+
+        return prepared_operator
+
+    def apply_operator(self, operator: array, keys: List[int]):
+        prepared_state, all_keys = self._prepare_state(keys)
+        prepared_operator = self._prepare_operator(all_keys, keys, operator)
         new_state = prepared_operator @ prepared_state @ prepared_operator.conj().T
         self.set(all_keys, new_state)
         
@@ -530,7 +541,7 @@ class QuantumManagerDensityFock(QuantumManager):
     def build_ladder(self):
         """Generate matrix of creation and annihilation (ladder) operators on truncated Hilbert space."""
         truncation = self.truncation
-        data = array([sqrt(i+1) for i in range(truncation)]) # elements in create/annihilation operator matrix
+        data = array([sqrt(i+1) for i in range(truncation)])  # elements in create/annihilation operator matrix
         row = array([i+1 for i in range(truncation)])
         col = array([i for i in range(truncation)])
         create = csr_matrix((data, (row, col)), shape=(truncation+1, truncation+1)).toarray()
@@ -551,7 +562,7 @@ class QuantumManagerDensityFock(QuantumManager):
         Returns:
             Dict[int, int]: mapping of measured keys to measurement results.
         """
-        new_state, all_keys = self._prepare_operator(keys)
+        new_state, all_keys = self._prepare_state(keys)
         return self._measure(new_state, keys, all_keys, povms, meas_samp)
 
     def _measure(self, state: List[List[complex]], keys: List[int],
@@ -606,3 +617,42 @@ class QuantumManagerDensityFock(QuantumManager):
 
         self.set(all_keys, new_state)
         return dict(zip(keys, result_digits))
+
+    def _build_kraus_operators(self, loss_rate: float, all_keys: List[int], key: int) -> List[array]:
+        """Method to build Kraus loss operators.
+
+        Args:
+            loss_rate (float): loss rate for the quantum channel.
+            all_keys (List[int]): list of all keys in affected state.
+            key (int): key for subsystem experiencing loss.
+
+        Returns:
+            List[array]: list of generated Kraus operators.
+        """
+
+        assert 0 <= loss_rate <= 1
+        kraus_ops = []
+
+        for k in range(self.dim):
+            total_kraus_op = zeros((self.dim ** len(all_keys), self.dim ** len(all_keys)))
+
+            for n in range(k, self.dim):
+                coeff = sqrt(binom(n, k)) * sqrt(((1-loss_rate) ** (n-k)) * (loss_rate ** k))
+                single_op = zeros((self.dim, self.dim))
+                single_op[n-k, n] = 1
+                total_op = self._prepare_operator(all_keys, [key], single_op)
+                total_kraus_op += coeff * total_op
+
+            kraus_ops.append(total_kraus_op)
+
+        return kraus_ops
+
+    def add_loss(self, key, loss_rate):
+        prepared_state, all_keys = self._prepare_state([key])
+        kraus_ops = self._build_kraus_operators(loss_rate, all_keys, key)
+        output_state = zeros(prepared_state.shape)
+
+        for kraus_op in kraus_ops:
+            output_state += kraus_op @ prepared_state @ kraus_op.conj().T
+
+        return output_state

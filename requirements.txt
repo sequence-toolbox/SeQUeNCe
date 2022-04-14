@@ -1,4 +1,5 @@
 numpy
+scipy
 matplotlib
 pandas
 qutip>=4.6.0
