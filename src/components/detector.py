@@ -52,29 +52,22 @@ class Detector(Entity):
         """Implementation of Entity interface (see base class)."""
         self.next_detection_time = -1
         self.photon_counter = 0
-        self.add_dark_count()
+        if self.dark_count > 0:
+            self.add_dark_count()
 
     def get(self, photon=None, **kwargs) -> None:
         """Method to receive a photon for measurement.
 
         Args:
             photon (Photon): photon to detect (currently unused)
-            dark_get (bool): Signifies if the call is the result of a false positive dark count event.
-                If true, will ignore probability calculations (default false).
 
         Side Effects:
             May notify upper entities of a detection event.
         """
 
-        dark_get = kwargs.get("dark_get", False)
-
         self.photon_counter += 1
-        now = self.timeline.now()
-        time = round(now / self.time_resolution) * self.time_resolution
-
-        if (self.get_generator().random() < self.efficiency or dark_get) and now > self.next_detection_time:
-            self.notify({'time': time})
-            self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
+        if self.get_generator().random() < self.efficiency:
+            self.record_detection()
 
     def add_dark_count(self) -> None:
         """Method to schedule false positive detection events.
@@ -86,19 +79,34 @@ class Detector(Entity):
             May schedule future calls to self.
         """
 
-        if self.dark_count > 0:
-            time_to_next = int(self.get_generator().exponential(1 / self.dark_count) * 1e12)  # time to next dark count
-            time = time_to_next + self.timeline.now()  # time of next dark count
+        assert self.dark_count > 0, "Detector().add_dark_count called with 0 dark count rate"
+        time_to_next = int(self.get_generator().exponential(1 / self.dark_count) * 1e12)  # time to next dark count
+        time = time_to_next + self.timeline.now()  # time of next dark count
 
-            process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
-            process2 = Process(self, "get", [None], {"dark_get": True})
-            event1 = Event(time, process1)
-            event2 = Event(time, process2)
-            self.timeline.schedule(event1)
-            self.timeline.schedule(event2)
+        process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
+        process2 = Process(self, "record_detection", [])
+        event1 = Event(time, process1)
+        event2 = Event(time, process2)
+        self.timeline.schedule(event1)
+        self.timeline.schedule(event2)
+
+    def record_detection(self):
+        """Method to record a detection event.
+
+        Will calculate if detection succeeds (by checking if we have passed `next_detection_time`)
+        and will notify observers with the detection time (rounded to the nearest multiple of detection frequency).
+        """
+
+        now = self.timeline.now()
+
+        if now > self.next_detection_time:
+            time = round(now / self.time_resolution) * self.time_resolution
+            self.notify({'time': time})
+            self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
     def notify(self, info: Dict[str, Any]):
         """Custom notify function (calls `trigger` method)."""
+
         for observer in self._observers:
             observer.trigger(self, info)
 

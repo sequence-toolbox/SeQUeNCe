@@ -34,7 +34,7 @@ def create_detector(efficiency=0.9, dark_count=0, count_rate=25e6, time_resoluti
 def test_Detector_init():
     detector, parent, tl = create_detector(dark_count=10)
     tl.init()
-    assert len(tl.events) > 0
+    assert len(tl.events) == 2
 
 
 def test_Detector_get():
