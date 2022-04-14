@@ -12,7 +12,7 @@ from .photon import Photon
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
-from ..utils.encoding import polarization
+from ..utils.encoding import polarization, fock
 
 
 class LightSource(Entity):
@@ -106,7 +106,8 @@ class SPDCSource(LightSource):
         name (str): label for beamsplitter instance
         timeline (Timeline): timeline for simulation
         frequency (float): frequency (in Hz) of photon creation.
-        wavelengths (List[float]): wavelengths (in nm) of emitted entangled photons.
+        wavelengths (List[float]): wavelengths (in nm) of emitted entangled photons. 
+            If a list is given, it should contain two elements (corresponding to two modes).
         bandwidth (float): st. dev. in photon wavelength (in nm) (currently unused).
         mean_photon_num (float): mean number of photons emitted each period.
         encoding_type (Dict): encoding scheme of emitted photons (as defined in the encoding module).
@@ -114,11 +115,11 @@ class SPDCSource(LightSource):
     """
 
     def __init__(self, name, timeline, wavelengths=None, frequency=8e7, bandwidth=0, mean_photon_num=0.1,
-                 encoding_type=polarization, phase_error=0):
+                 encoding_type=fock, phase_error=0):
         super().__init__(name, timeline, frequency, 0, bandwidth, mean_photon_num, encoding_type, phase_error)
-        if wavelengths is None:
-            wavelengths = [1550, 1550]
         self.wavelengths = wavelengths
+        if self.wavelengths is None or len(self.wavelengths) != 2:
+            self.set_wavelength()
 
     def init(self):
         assert len(self._receivers) == 2, "SPDC source must connect to 2 receivers."
@@ -253,3 +254,7 @@ class SPDCSource(LightSource):
             process = Process(dst, "get", [photon])
             event = Event(int(round(time)), process)
             self.timeline.schedule(event)
+
+    def set_wavelength(self, wavelength1=1550, wavelength2=1550):
+        """Method to set the wavelengths of photons emitted in two output modes."""
+        self.wavelengths = [wavelength1, wavelength2]
