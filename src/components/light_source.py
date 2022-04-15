@@ -112,11 +112,16 @@ class SPDCSource(LightSource):
         mean_photon_num (float): mean number of photons emitted each period.
         encoding_type (Dict): encoding scheme of emitted photons (as defined in the encoding module).
         phase_error (float): phase error applied to qubits.
+        truncation (int): truncation of Hilbert space of each subsystem in the generated state. 
+            Default is 1 (dim=2). Note that the state dimension should be compatible with QuantumManagerDensityFock.
+        formalism (str): formalism of generated state. Default is density matrix.
     """
 
     def __init__(self, name, timeline, wavelengths=None, frequency=8e7, bandwidth=0, mean_photon_num=0.1,
-                 encoding_type=fock, phase_error=0):
+                 encoding_type=fock, phase_error=0, truncation=1, formalism: str="dm"):
         super().__init__(name, timeline, frequency, 0, bandwidth, mean_photon_num, encoding_type, phase_error)
+        self.truncation = truncation
+        self.formalism = formalism
         self.wavelengths = wavelengths
         if self.wavelengths is None or len(self.wavelengths) != 2:
             self.set_wavelength()
@@ -124,18 +129,15 @@ class SPDCSource(LightSource):
     def init(self):
         assert len(self._receivers) == 2, "SPDC source must connect to 2 receivers."
 
-    def _generate_tmsv_state(self, truncation: int=2, formalism: str="dm"):
+    def _generate_tmsv_state(self):
         """Method to generate two-mode squeezed vacuum state of two outout photonic modes, in density matrix or ket vector formalism.
-        
-        Arg:
-            truncation (int): truncation of Hilbert space of each subsystem in the generated state. Default is 2 (dim=3). 
-            formalism (str): formalism of generated state. Default is density matrix.
         
         Return:
             state: generated state in density matrix or ket vector formalism.
         """
         mean_num = self.mean_photon_num
-        state = None
+        truncation = self.truncation
+        formalism = self.formalism
 
         # create state component amplitudes list
         amp_list = [(sqrt(mean_num/(mean_num+1)))**m/sqrt(mean_num+1) for m in range(truncation)]
@@ -180,7 +182,31 @@ class SPDCSource(LightSource):
         if self.encoding_type["name"] == "fock":
             """Use Fock encoding.
             Two generated Photons should be entangled and should have keys pointing to same Fock state."""
-            raise NotImplementedError
+            state = self._generate_tmsv_state()
+            # generate the DensityState instance of TMSV state and two keys for both output modes, respectively, require QuantumManagerDensityFock
+            key = self.timeline.quantum_manager.new(state=state) 
+            key_another_photon = self.timeline.quantum_manager.new(state=state)
+            new_photon0 = Photon("", self.timeline,
+                        wavelength=self.wavelengths[0],
+                        location=self,
+                        encoding_type=self.encoding_type,
+                        quantum_state=key,
+                        use_qm=True)
+            new_photon1 = Photon("", self.timeline,
+                        wavelength=self.wavelengths[1],
+                        location=self,
+                        encoding_type=self.encoding_type,
+                        quantum_state=key_another_photon,
+                        use_qm=True)
+            # add photon1's key to photon0's corresponding DensityState's keys attribute
+            self.timeline.quantum_manager.states[key].keys.append(key_another_photon)
+
+            # add photon0's key to photon1's corresponding DensityState's keys attribute
+            self.timeline.quantum_manager.states[key_another_photon].keys.append(key)
+
+            #TODO: check if the entangling procedure is proper
+            self.send_photons(time, [new_photon0, new_photon1])
+            self.photon_counter += 1
 
         elif self.encoding_type["name"] == "absorptive":
             for _ in state_list:
