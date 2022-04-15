@@ -650,7 +650,7 @@ class QuantumManagerDensityFock(QuantumManager):
     def add_loss(self, key, loss_rate):
         """Method to apply generalized amplitude damping channel on a *single* subspace corresponding to `key`."""
         prepared_state, all_keys = self._prepare_state([key])
-        kraus_ops = self._build_kraus_operators(loss_rate, all_keys, key)
+        kraus_ops = self._build_loss_kraus_operators(loss_rate, all_keys, key)
         output_state = zeros(prepared_state.shape)
 
         for kraus_op in kraus_ops:

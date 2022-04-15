@@ -458,7 +458,22 @@ class AbsorptiveMemory(Entity):
 
         now = -1
         # require resonant absorption of photons
-        if photon.wavelength == self.wavelength and random.random_sample() < self.absorption_efficiency:
+        # if photon uses Fock representation, no need for random number judgement as inefficiency will be reflected with loss channel
+        if photon.encoding_type["name"] == "fock" and photon.wavelength == self.wavelength:
+            self.photon_counter += 1
+            now = self.timeline.now()
+
+            # invoke loss channel due to absorption inefficiency
+            key = photon.quantum_state # if using Fock representation, the `quantum_state` field is the key in quantum_manager
+            loss = 1 - self.absorption_efficiency # loss rate due to absorption inefficiency
+            # apply loss channel on photonic state and return a new state
+            output = self.timeline.quantum_manager.add_noise(key, loss)
+            # get all keys corresponding to the photonic state (entangled with the subsystem subject to loss channel)
+            keys = self.timeline.quantum_manager.states[key].keys
+            # update the quantum state in quantum manager after loss channel
+            self.timeline.quantum_manager.set(keys, output)
+
+        elif photon.wavelength == self.wavelength and self.get_generator().random() < self.absorption_efficiency:
             self.photon_counter += 1
             now = self.timeline.now()
 
@@ -511,16 +526,42 @@ class AbsorptiveMemory(Entity):
 
         for index in range(self.mode_number):
             if self.stored_photons[index] is not None:
-                if random.random_sample() < self.efficiency(store_time):
-                    photon = self.stored_photons[index]["photon"]
-                    absorb_time = self.stored_photons[index]["time"]
+                photon = self.stored_photons[index]["photon"]
+                absorb_time = self.stored_photons[index]["time"]
+                # if photon uses Fock representation, no need for random number judgement as inefficiency will be reflected with loss channel
+                if photon.encoding_type["name"] == "fock":
+                    key = photon.quantum_state # if using Fock representation, the `quantum_state` field is the key in quantum_manager
+                    loss = 1 - self.efficiency(store_time) # loss rate due to emission inefficiency
+                    # apply loss channel on photonic state and return a new state
+                    output = self.timeline.quantum_manager.add_noise(key, loss)
+                    # get all keys corresponding to the photonic state (entangled with the subsystem subject to loss channel)
+                    keys = self.timeline.quantum_manager.states[key].keys
+                    # update the quantum state in quantum manager after loss channel
+                    self.timeline.quantum_manager.set(keys, output)
 
                     if self.is_reversed:
                         if not self.is_spinwave:
                             raise Exception("AFC memory can only have normal order of re-emission")
-                        emit_time = self.total_time - self.mode_bin - absorb_time  # reversed order of re-emission
+                        emit_time = self.total_time - self.mode_bin - absorb_time # reversed order of re-emission
                     else:
-                        emit_time = absorb_time  # normal order of re-emission
+                        emit_time = absorb_time # normal order of re-emission
+                    
+                    if self.destination is not None:
+                        dst = self.destination
+
+                    # process = Process(self.owner, "send_qubit", [dst, photon])
+                    # self._receivers[0].get(photon, dst)
+                    process = Process(self._receivers[0], "get", [photon], {"dst": dst})
+                    event = Event(self.timeline.now() + emit_time, process)
+                    self.timeline.schedule(event)
+
+                elif self.get_generator().random() < self.efficiency(store_time):
+                    if self.is_reversed:
+                        if not self.is_spinwave:
+                            raise Exception("AFC memory can only have normal order of re-emission")
+                        emit_time = self.total_time - absorb_time # reversed order of re-emission
+                    else:
+                        emit_time = absorb_time # normal order of re-emission
                     
                     if self.destination is not None:
                         dst = self.destination
