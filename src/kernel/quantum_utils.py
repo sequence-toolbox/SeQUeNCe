@@ -5,7 +5,6 @@ These should not be used directly, but accessed by a QuantumManager instance or 
 """
 
 from functools import lru_cache
-from mimetypes import init
 from typing import List, Dict, Tuple
 from math import sqrt
 
@@ -396,3 +395,32 @@ def measure_multiple_with_cache_fock_density(state: Tuple[Tuple[complex]], indic
     state_tuple = tuple(state_list)
     prob_tuple = tuple(prob_list)
     return state_tuple, prob_tuple
+
+
+@lru_cache(maxsize=1000)
+def density_partial_trace(state: Tuple[Tuple[complex]], indices: Tuple[int], num_systems: int, truncation: int = 1)\
+        -> Tuple[Tuple[complex]]:
+    """Traces out subsystems systems at given indices.
+
+    Args:
+        state (Tuple[Tuple[complex]]: input state.
+        indices (Tuple[int]): indices of subsystems to trace out of state.
+            should be sorted in increasing order.
+        num_systems (int): number of total subsystems in the state.
+        truncation (int): fock space truncation, 1 for qubit system (default 1).
+
+    Returns:
+        Tuple[Tuple[complex]]: output state with reduced number of subsystems `num_systems - len(indices)`.
+    """
+
+    temp = array(state)
+
+    for i, idx in enumerate(indices):
+        offset = num_systems - i
+        temp = temp.reshape((truncation+1,) * offset * 2)
+        temp = trace(temp, axis1=(idx-i), axis2=(offset+idx-i))
+
+    output_dim = (truncation + 1) ** (num_systems - len(indices))
+    output_state = temp.reshape((output_dim, output_dim))
+    output_tuple = tuple(output_state)
+    return output_tuple
