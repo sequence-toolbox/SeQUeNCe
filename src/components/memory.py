@@ -458,21 +458,18 @@ class AbsorptiveMemory(Entity):
 
         now = -1
         # require resonant absorption of photons
-        # if photon uses Fock representation, no need for random number judgement as inefficiency will be reflected with loss channel
+        # if photon uses Fock representation, inefficiency will be reflected with loss channel
         if photon.encoding_type["name"] == "fock" and photon.wavelength == self.wavelength:
             self.photon_counter += 1
             now = self.timeline.now()
 
             # invoke loss channel due to absorption inefficiency
-            key = photon.quantum_state # if using Fock representation, the `quantum_state` field is the key in quantum_manager
-            loss = 1 - self.absorption_efficiency # loss rate due to absorption inefficiency
+            key = photon.quantum_state  # if using Fock representation, the `quantum_state` field is the state key.
+            loss = 1 - self.absorption_efficiency  # loss rate due to absorption inefficiency
             # apply loss channel on photonic state and return a new state
-            output = self.timeline.quantum_manager.add_noise(key, loss)
-            # get all keys corresponding to the photonic state (entangled with the subsystem subject to loss channel)
-            keys = self.timeline.quantum_manager.states[key].keys
-            # update the quantum state in quantum manager after loss channel
-            self.timeline.quantum_manager.set(keys, output)
+            self.timeline.quantum_manager.add_noise(key, loss)
 
+        # otherwise, use random counter w/ efficiency
         elif photon.wavelength == self.wavelength and self.get_generator().random() < self.absorption_efficiency:
             self.photon_counter += 1
             now = self.timeline.now()

@@ -619,7 +619,9 @@ class QuantumManagerDensityFock(QuantumManager):
         return dict(zip(keys, result_digits))
 
     def _build_loss_kraus_operators(self, loss_rate: float, all_keys: List[int], key: int) -> List[array]:
-        """Method to build Kraus operators of generalized amplitude damping channel which represents the effect of photon loss.
+        """Method to build Kraus operators of a generalized amplitude damping channel.
+
+        This represents the effect of photon loss.
 
         Args:
             loss_rate (float): loss rate for the quantum channel.
@@ -648,7 +650,13 @@ class QuantumManagerDensityFock(QuantumManager):
         return kraus_ops
 
     def add_loss(self, key, loss_rate):
-        """Method to apply generalized amplitude damping channel on a *single* subspace corresponding to `key`."""
+        """Method to apply generalized amplitude damping channel on a *single* subspace corresponding to `key`.
+
+        Args:
+            key (int): key for the subspace experiencing loss.
+            loss_rate (float): loss rate for the quantum channel.
+        """
+
         prepared_state, all_keys = self._prepare_state([key])
         kraus_ops = self._build_loss_kraus_operators(loss_rate, all_keys, key)
         output_state = zeros(prepared_state.shape)
@@ -656,4 +664,4 @@ class QuantumManagerDensityFock(QuantumManager):
         for kraus_op in kraus_ops:
             output_state += kraus_op @ prepared_state @ kraus_op.conj().T
 
-        return output_state
+        self.set(all_keys, output_state)
