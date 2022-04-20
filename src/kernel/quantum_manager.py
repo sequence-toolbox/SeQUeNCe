@@ -576,6 +576,8 @@ class QuantumManagerDensityFock(QuantumManager):
             state (List[List[complex]]): state to measure.
             keys (List[int]): list of keys to measure.
             all_keys (List[int]): list of all keys corresponding to state.
+            povms: (List[array]): list of POVM operators to use for measurement.
+            meas_samp (float): random measurement sample to use for computing resultant state.
 
         Returns:
             Dict[int, int]: mapping of measured keys to measurement results.
@@ -586,6 +588,7 @@ class QuantumManagerDensityFock(QuantumManager):
         new_state = None
         result = 0
 
+        # calculate meas probabilities and projected states
         if len(keys) == 1:
             if len(all_keys) == 1:
                 states, probs = measure_state_with_cache_fock_density(state_tuple, povm_tuple)
@@ -595,27 +598,42 @@ class QuantumManagerDensityFock(QuantumManager):
                 num_states = len(all_keys)
                 state_index = all_keys.index(key)
                 states, probs = \
-                    measure_entangled_state_with_cache_fock_density(state_tuple, state_index, num_states, povm_tuple)
+                    measure_entangled_state_with_cache_fock_density(state_tuple, state_index, num_states, povm_tuple,
+                                                                    self.truncation)
 
         else:
-            # calculate meas probabilities and projected states
-            len_diff = len(all_keys) - len(keys)
+            indices = tuple([all_keys.index(key) for key in keys])
             states, probs = \
-                measure_multiple_with_cache_fock_density(state_tuple, len(keys), len_diff, povm_tuple)
+                measure_multiple_with_cache_fock_density(state_tuple, indices, len(all_keys), povm_tuple,
+                                                         self.truncation)
 
+        # calculate result based on measurement sample.
         prob_sum = cumsum(probs)
         for i, (output_state, p) in enumerate(zip(states, prob_sum)):
             if meas_samp < p:
-                new_state = array(output_state, dtype=complex)
+                new_state = output_state
                 result = i
                 break
 
         # TODO: double check output result
-        result_digits = [int(x) for x in base_repr(result, base=(self.truncation + 1))[2:]]
+        result_digits = [int(x) for x in base_repr(result, base=self.dim)[2:]]
         while len(result_digits) < len(keys):
             result_digits.insert(0, 0)
 
-        self.set(all_keys, new_state)
+        # assign measured states
+        for key, result in zip(keys, result_digits):
+            state = [0] * self.dim
+            state[result] = 1
+            self.set([key], state)
+
+        # assign remaining state
+        if len(keys) < len(all_keys):
+            indices = tuple([all_keys.index(key) for key in keys])
+            remaining_tuple = density_partial_trace(new_state, indices, len(all_keys), self.truncation)
+            remaining_state = array(remaining_tuple)
+            remaining_keys = [key for key in all_keys if key not in keys]
+            self.set(remaining_keys, remaining_state)
+
         return dict(zip(keys, result_digits))
 
     def _build_loss_kraus_operators(self, loss_rate: float, all_keys: List[int], key: int) -> List[array]:
