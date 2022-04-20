@@ -7,7 +7,7 @@ QSDetector is defined as an abstract template and as implementaions for polariza
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List
-from numpy import zeros, eye, kron, exp, sqrt
+from numpy import eye, kron, exp, sqrt
 from scipy.linalg import fractional_matrix_power
 from math import factorial
 
@@ -322,7 +322,7 @@ class QSDetectorFockDirect(QSDetector):
         create, destroy = self.timeline.quantum_manager.build_ladder()
         series_elem_list = [(-1)**i*fractional_matrix_power(create,i+1).dot(fractional_matrix_power(destroy,i+1))/factorial(i+1) for i in range(truncation)]
         povm1 = sum(series_elem_list)
-        povm0 = zeros((truncation+1, truncation+1)) - povm1
+        povm0 = eye(truncation+1) - povm1
 
         return povm0, povm1
 
@@ -445,11 +445,11 @@ class QSDetectorFockInterference(QSDetector):
         # for detector1 (index 0)
         series_elem_list1 = [(-1)**i*fractional_matrix_power(create1,i+1).dot(fractional_matrix_power(destroy1,i+1))/factorial(i+1) for i in range(truncation)]
         povm1_1 = sum(series_elem_list1)
-        povm0_1 = zeros(((truncation+1)**2, (truncation+1)**2)) - povm1_1
+        povm0_1 = eye((truncation+1)**2) - povm1_1
         # for detector2 (index 1)
         series_elem_list2 = [(-1)**i*fractional_matrix_power(create2,i+1).dot(fractional_matrix_power(destroy2,i+1))/factorial(i+1) for i in range(truncation)]
         povm1_2 = sum(series_elem_list2)
-        povm0_2 = zeros(((truncation+1)**2, (truncation+1)**2)) - povm1_2
+        povm0_2 = eye((truncation+1)**2) - povm1_2
 
         # POVM operators for 4 possible outcomes
         # Note: povm01 and povm10 are relevant to BSM
