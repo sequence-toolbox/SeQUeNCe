@@ -7,7 +7,7 @@ QSDetector is defined as an abstract template and as implementaions for polariza
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List
-from numpy import eye, kron, exp, sqrt
+from numpy import eye, kron, exp, sqrt, array
 from scipy.linalg import fractional_matrix_power
 from math import factorial
 
@@ -22,7 +22,6 @@ from ..components.circuit import Circuit
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
-from ..kernel.quantum_utils import *
 from ..utils.encoding import time_bin
 
 
@@ -334,35 +333,19 @@ class QSDetectorFockDirect(QSDetector):
         arrival_time = self.timeline.now()
         self.arrival_times[input_port].append(arrival_time)
 
-        truncation = self.timeline.quantum_manager.truncation
         key = photon.quantum_state # the photon's key pointing to the quantum state in quantum manager
-        state = self.timeline.quantum_manager.states[key].state # the quantum state as array
-        keys = self.timeline.quantum_manager.states[key].keys # the list of all keys pointing to the quantum state in quantum manager
-        num_sys = len(keys) # total number of subsystems of the (entangled) composite system
-        povms = tuple(self._generate_povms()) # generate a tuple of two POVM operators
-        idx = keys.index(key) # the relative index of the subsystem to be measured, needed if using cached measurement function in quantum_utils.py
-        result = measure_entangled_state_with_cache_fock_density(tuple(state), idx, num_sys, povms, truncation = truncation) # get results
+        povms = self._generate_povms() # generate a tuple of two POVM operators
+        samp = self.get_generator().random() # random measurement sample
+        result = self.timeline.quantum_manager.measure([key], povms, samp) # the outcome determined by random sample
         
-        # determine outcome
-        prob0, prob1 = result[1] # probabilities for outcomes, prob1 corresponds to having a click
-        if self.get_generator().random() <= prob1:
+        assert result in list(range(len(povms))), "The measurement outcome is not valid."
+        if result == 1:
             detector_num = self.src_list.index(src)
             self.detectors[detector_num].get()
             # record trigger time
             trigger_time = self.timeline.now()
             self.trigger_times[detector_num].append(trigger_time)
-            state = array(result[0][1]) # post measurement state
-        else:
-            state = array(result[0][0]) # post measurement state
         
-        # trace out the subsystem corresponding to `key` and update the recorded state in quantum manager
-        state_partial_trace = density_partial_trace(tuple(state), (idx,), num_sys, truncation=truncation)
-        self.timeline.quantum_manager.states[key] = None # clear the stored state at `key`
-        keys.remove(key)
-        self.timeline.quantum_manager.set(keys, state_partial_trace)
-        for i in keys:
-            self.timeline.quantum_manager.states[i].keys.remove(key)
-
     def get_photon_times(self) -> List[List[int]]:
         trigger_times = self.trigger_times
         self.trigger_times = [[], []]
@@ -482,45 +465,28 @@ class QSDetectorFockInterference(QSDetector):
             photon1 = dict1["photon"]
             key0 = photon0.quantum_state
             key1 = photon1.quantum_state
-            keys0 = self.timeline.quantum_manager.states[key0].keys
-            keys1 = self.timeline.quantum_manager.states[key1].keys
-            idx0 = keys0.index(key0)
-            idx1 = keys1.index(key1)
-            state0 = self.timeline.quantum_manager.states[key0].state
-            state1 = self.timeline.quantum_manager.states[key1].state
-            composite_state = tuple(kron(state0, state1)) # note the order in tensor (kronecker) product to generate the composite system
-            keys = keys0 + keys1 # all keys pointing to the new composite system
-            indices = (idx0, idx1+len(keys0))
-            num_sys = len(keys0) + len(keys1)
             povms = tuple(self._generate_povms())
-            truncation = self.timeline.quantum_manager.truncation
 
             # determine the outcome
-            result = measure_multiple_with_cache_fock_density(composite_state, indices, num_sys, povms, truncation=truncation)
-            prob_dist = array(result[1]) # probability distribution for outcomes
-            outcomes = ["00", "01", "10", "11"]
-            outcome = self.get_generator().choice(outcomes, p=prob_dist) # random choice to determine outcome
-            if outcome == "00":
-                # no click at all
-                state = array(result[0][0]) # post measurement state
-
-            elif outcome == "01":
+            samp = self.get_generator().random() # random measurement sample
+            result = self.timeline.quantum_manager.measure([key0,key1], povms, samp) # the outcome determined by random sample
+        
+            assert result in list(range(len(povms))), "The measurement outcome is not valid."
+            if result == 1:
                 # detector 1 has a click
                 self.detectors[1].get()
                 # record trigger time
                 trigger_time = self.timeline.now()
                 self.trigger_times[1].append(trigger_time)
-                state = array(result[0][1]) # post measurement state
 
-            elif outcome == "10":
+            elif result == 2:
                 # detector 0 has a click
                 self.detectors[0].get()
                 # record trigger time
                 trigger_time = self.timeline.now()
                 self.trigger_times[0].append(trigger_time)
-                state = array(result[0][2]) # post measurement state
 
-            else:
+            elif result == 3:
                 # both detectors have a click
                 self.detectors[0].get()
                 self.detectors[1].get()
@@ -528,16 +494,6 @@ class QSDetectorFockInterference(QSDetector):
                 trigger_time = self.timeline.now()
                 self.trigger_times[0].append(trigger_time)
                 self.trigger_times[1].append(trigger_time)
-                state = array(result[0][3]) # post measurement state
-
-            # trace out the subsystem corresponding to `key` and update the recorded state in quantum manager
-            state_partial_trace = density_partial_trace(tuple(state), (idx0,idx1), num_sys, truncation=truncation)
-            self.timeline.quantum_manager.states[key0] = None # clear the stored state at `key0`
-            self.timeline.quantum_manager.states[key1] = None # clear the stored state at `key1`
-            keys.remove([key0,key1])
-            self.timeline.quantum_manager.set(keys, state_partial_trace)
-            for i in keys:
-                self.timeline.quantum_manager.states[i].keys = keys
 
         else:
             pass

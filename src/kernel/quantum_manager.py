@@ -639,7 +639,7 @@ class QuantumManagerDensityFock(QuantumManager):
             remaining_keys = [key for key in all_keys if key not in keys]
             self.set(remaining_keys, remaining_state)
 
-        return dict(zip(keys, result))
+        return result
 
     def _build_loss_kraus_operators(self, loss_rate: float, all_keys: List[int], key: int) -> List[array]:
         """Method to build Kraus operators of a generalized amplitude damping channel.
