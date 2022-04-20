@@ -615,7 +615,8 @@ class QuantumManagerDensityFock(QuantumManager):
                 result = i
                 break
 
-        # TODO: double check output result
+        """
+        # for potential future work
         result_digits = [int(x) for x in base_repr(result, base=self.dim)[2:]]
         while len(result_digits) < len(keys):
             result_digits.insert(0, 0)
@@ -625,6 +626,10 @@ class QuantumManagerDensityFock(QuantumManager):
             state = [0] * self.dim
             state[result] = 1
             self.set([key], state)
+        """
+
+        for key in keys:
+            self.states[key] = None # clear the stored state at `key`
 
         # assign remaining state
         if len(keys) < len(all_keys):
@@ -634,7 +639,7 @@ class QuantumManagerDensityFock(QuantumManager):
             remaining_keys = [key for key in all_keys if key not in keys]
             self.set(remaining_keys, remaining_state)
 
-        return dict(zip(keys, result_digits))
+        return dict(zip(keys, result))
 
     def _build_loss_kraus_operators(self, loss_rate: float, all_keys: List[int], key: int) -> List[array]:
         """Method to build Kraus operators of a generalized amplitude damping channel.
