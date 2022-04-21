@@ -342,9 +342,9 @@ class AbsorptiveMemory(Entity):
         stored_photons (List[Dict]): photons stored in memory temporal modes.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float, absorption_efficiency: float,
-                 efficiency: Callable, mode_number: int, AFC_lifetime: float, coherence_time: float, wavelength: int, 
-                 overlap_error: float, prepare_time: int, is_spinwave=False, is_reversed=False, destination=None):
+    def __init__(self, name: str, timeline: "Timeline", frequency: float, absorption_efficiency: float, efficiency: Callable, 
+                 mode_number: int, wavelength: int, prepare_time: int=0, AFC_lifetime: float=-1, coherence_time: float=-1, 
+                 fidelity: float=1, overlap_error: float=0, is_spinwave=False, is_reversed=False, destination=None):
         """Constructor for the AbsorptiveMemory class.
 
         Args:

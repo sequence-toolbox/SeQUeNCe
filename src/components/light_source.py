@@ -114,8 +114,8 @@ class SPDCSource(LightSource):
         phase_error (float): phase error applied to qubits.
     """
 
-    def __init__(self, name, timeline, wavelengths=None, frequency=8e7, bandwidth=0, mean_photon_num=0.1,
-                 encoding_type=fock, phase_error=0):
+    def __init__(self, name, timeline, wavelengths=None, frequency=8e7, mean_photon_num=0.1,
+                 encoding_type=fock, phase_error=0, bandwidth=0):
         super().__init__(name, timeline, frequency, 0, bandwidth, mean_photon_num, encoding_type, phase_error)
         self.wavelengths = wavelengths
         if self.wavelengths is None or len(self.wavelengths) != 2:
@@ -159,7 +159,8 @@ class SPDCSource(LightSource):
 
         Arguments:
             state_list (List[List[complex]]): list of complex coefficient arrays to send as photon-encoded qubits.
-                This is ignored for the absorptive encoding type.
+                This is ignored for absorptive and Fock encoding types.
+                For these encoding types only the length of list matters and elements can be arbitrary.
         """
 
         time = self.timeline.now()
@@ -167,26 +168,27 @@ class SPDCSource(LightSource):
         if self.encoding_type["name"] == "fock":
             # Use Fock encoding.
             # The two generated photons should be entangled and should have keys pointing to same Fock state.
+            for _ in state_list:
+                # generate two new photons
+                new_photon0 = Photon("", self.timeline,
+                                    wavelength=self.wavelengths[0],
+                                    location=self,
+                                    encoding_type=self.encoding_type,
+                                    use_qm=True)
+                new_photon1 = Photon("", self.timeline,
+                                    wavelength=self.wavelengths[1],
+                                    location=self,
+                                    encoding_type=self.encoding_type,
+                                    use_qm=True)
 
-            # generate two new photons
-            new_photon0 = Photon("", self.timeline,
-                                 wavelength=self.wavelengths[0],
-                                 location=self,
-                                 encoding_type=self.encoding_type,
-                                 use_qm=True)
-            new_photon1 = Photon("", self.timeline,
-                                 wavelength=self.wavelengths[1],
-                                 location=self,
-                                 encoding_type=self.encoding_type,
-                                 use_qm=True)
+                # set shared state to squeezed state
+                state = self._generate_tmsv_state()
+                keys = [new_photon0.quantum_state, new_photon1.quantum_state]
+                self.timeline.quantum_manager.set(keys, state)
 
-            # set shared state to squeezed state
-            state = self._generate_tmsv_state()
-            keys = [new_photon0.quantum_state, new_photon1.quantum_state]
-            self.timeline.quantum_manager.set(keys, state)
-
-            self.send_photons(time, [new_photon0, new_photon1])
-            self.photon_counter += 1
+                self.send_photons(time, [new_photon0, new_photon1])
+                self.photon_counter += 1
+                time += 1e12 / self.frequency
 
         elif self.encoding_type["name"] == "absorptive":
             for _ in state_list:
