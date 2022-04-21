@@ -1,10 +1,22 @@
+"""The main script for simulating experiment of entanglement generation between two remote AFC absorptive quantum memories.
+
+There are 4 nodes involved: 2 memory nodes, 1 entangling node (for BSM) and 1 measurement node (for measurement of retrieved photonic state).
+Each memory node is connected with both entangling node and measurement node, but there is no direct connection between memory nodes.
+
+Each memory node contains an AFC memory instance and an SPDC source instance.
+The entangling node contains a QSDetectorFockInterference instance (BSM device with a beamsplitter and two photon detectors behind).
+The measurement node contians a QSDetectorFockDirect instance and a QSDetectorFockInterference instance, for measurement of 
+    diagonal and off-diagonal elements of the effective 4-d density matrix, respectively.
+
+WIP
+"""
+
 from typing import List, Dict, Any
 from pathlib import Path
 
 from json5 import dump
 import numpy as np
 
-from sequence.components.bsm import make_bsm
 from sequence.components.detector import QSDetectorFockDirect, QSDetectorFockInterference
 from sequence.components.light_source import SPDCSource
 from sequence.components.memory import AbsorptiveMemory
@@ -15,38 +27,74 @@ from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.topology.topology import Topology
 from sequence.protocol import Protocol
-from sequence.utils.encoding import absorptive
+from sequence.utils.encoding import fock
 
 
 # define constants
-FREQUENCY = 80e6
-ABS_EFFICIENCY = 1.0
-MODE_NUM = 10000
-COHERENCE_TIME = 1
-TELECOM_WAVELENGTH = 1000
-WAVELENGTH = 500
-OVERLAP_ERR = 0
+DECAY_RATE = 0 # decay rate of absorptive quantum memory retrieval efficiency
+FREQUENCY = 80e6 # frequency of SPDC source photon creation
+ABS_EFFICIENCY = 1.0 # absorption efficiency of AFC memory
+MODE_NUM = 100 # number of temporal modes of AFC memory
+PREPARE_TIME = 0 # time required for AFC structure preparation
+COHERENCE_TIME = -1 # spin coherence time for AFC spinwave storage, -1 means infinite time
+AFC_LIFETIME = -1 # AFC structure lifetime, -1 means infinite time
+TELECOM_WAVELENGTH = 1500 # telecom band wavelength, for idler photon of SPDC source
+WAVELENGTH = 500 # wavelength of AFC memory resonant absorption, for signal photon of SPDC source
+MEAN_PHOTON_NUM1 = 0.1 # mean photon number of SPDC source on node 1
+MEAN_PHOTON_NUM1 = 0.1 # mean photon number of SPDC source on node 2
+DECAY_RATE1 = 0 # retrieval efficiency decay rate for memory 1
+DECAY_RATE2 = 0 # retrieval efficiency decay rate for memory 2
 
 # experiment settings
 num_direct_trials = 10
 phase_settings = np.linspace(0, 2*np.pi, num=10, endpoint=False)
 
 
-# for absorptive quantum memory
-def efficiency(_: int) -> float:
-    return 1.0
+# function to generate standard pure Bell state for fidelity calculation
+def build_bell_state(truncation, sign, phase=0, formalism="dm"):
+    """Generate standard Bell state which is heralded in ideal BSM for comparison with results from imperfect parameter choices."""
+    basis0 = np.zeros(truncation+1)
+    basis0[0] = 1
+    basis1 = np.zeros(truncation+1)
+    basis1[1] = 1
+    basis10 = np.kron(basis1, basis0)
+    basis01 = np.kron(basis0, basis1)
+    
+    if sign == "plus":
+        ket = (basis10 + np.exp(1j*phase)*basis01)/np.sqrt(2)
+    elif sign == "minus":
+        ket = (basis10 - np.exp(1j*phase)*basis01)/np.sqrt(2)
+    else:
+        raise ValueError("Invalid Bell state sign type " + sign)
+
+    dm = np.outer(ket, ket.conj().T)
+
+    if formalism == "dm":
+        return dm
+    elif formalism == "ket":
+        return ket
+    else:
+        raise ValueError("Invalid quantum state formalism " + formalism)
+
+
+# retrieval efficiency as function of storage time for absorptive quantum memory, using exponential decay model
+def efficiency1(t: int) -> float:
+    return np.exp(-t*DECAY_RATE1)
+
+def efficiency2(t: int) -> float:
+    return np.exp(-t*DECAY_RATE2)
 
 
 # protocol to control photon emission on end node
 class EmitProtocol(Protocol):
-    def __init__(self, own: "EndNode", name: str, other_node: str, num_qubits: int, source_name: str, memory_name: str):
+    def __init__(self, own: "EndNode", name: str, other_node: str, photon_pair_num: int, source_name: str, memory_name: str):
         """Constructor for Emission protocol.
 
         Args:
             own (EndNode): node on which the protocol is located.
             name (str): name of the protocol instance.
             other_node (str): name of the other node entangling photons
-            num_qubits (int): number of qubits to send in one execution.
+            num_output (int): number of output photon pulses to send in one execution.
             delay_time (int): time to wait before re-starting execution.
             source_name (str): name of the light source on the node.
             memory_name (str): name of the memory on the node.
@@ -54,14 +102,14 @@ class EmitProtocol(Protocol):
 
         super().__init__(own, name)
         self.other_node = other_node
-        self.num_qubits = num_qubits
+        self.num_output = photon_pair_num
         self.source_name = source_name
         self.memory_name = memory_name
 
     def start(self):
         self.own.components[self.memory_name]._prepare_AFC()
         
-        states = [None] * self.num_qubits  # TODO: rewrite spdc class?
+        states = [None] * self.num_output  # for Fock encoding only list length matters and list elements do not matter
         source = self.own.components[self.source_name]
         source.emit(states)
 
@@ -70,12 +118,14 @@ class EmitProtocol(Protocol):
 
 
 class EndNode(Node):
-    """Node for each end of the network.
+    """Node for each end of the network (the memory node).
 
     This node stores an SPDC photon source and a quantum memory.
+    The properties of attached devices are made customizable for each individual node.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", other_node: str, bsm_node: str, measure_node: str):
+    def __init__(self, name: str, timeline: "Timeline", other_node: str, bsm_node: str, measure_node: str, mean_photon_num: float,
+                 spdc_frequency, memo_frequency, abs_effi, retr_effi):
         super().__init__(name, timeline)
 
         self.bsm_name = bsm_node
@@ -85,11 +135,10 @@ class EndNode(Node):
         spdc_name = name + ".spdc_source"
         memo_name = name + ".memory"
         spdc = SPDCSource(spdc_name, timeline, wavelengths=[TELECOM_WAVELENGTH, WAVELENGTH],
-                          frequency=FREQUENCY, encoding_type=absorptive, mean_photon_num=0.2)
-        memory = AbsorptiveMemory(memo_name, timeline, fidelity=0.85, frequency=FREQUENCY,
-                                  absorption_efficiency=ABS_EFFICIENCY, mode_number=MODE_NUM,
-                                  coherence_time=COHERENCE_TIME, wavelength=WAVELENGTH, overlap_error=OVERLAP_ERR,
-                                  efficiency=efficiency, prepare_time=0, destination=measure_node)
+                          frequency=spdc_frequency, mean_photon_num=mean_photon_num)
+        memory = AbsorptiveMemory(memo_name, timeline, frequency=memo_frequency,
+                                  absorption_efficiency=abs_effi, efficiency=retr_effi, 
+                                  mode_number=MODE_NUM, wavelength=WAVELENGTH, destination=measure_node)
         self.add_component(spdc)
         self.add_component(memory)
         spdc.add_receiver(self)
@@ -110,22 +159,26 @@ class EndNode(Node):
 
 
 class EntangleNode(Node):
-    def __init__(self, name: str, timeline: "Timeline"):
+    def __init__(self, name: str, timeline: "Timeline", src_list: List[str]):
         super().__init__(name, timeline)
 
         # hardware setup
         bsm_name = name + ".bsm"
-        bsm = make_bsm(bsm_name, timeline, "absorptive")
+        bsm = QSDetectorFockInterference(bsm_name, timeline, src_list) # assume no relative phase between two input optical paths
         self.add_component(bsm)
         bsm.attach(self)
         self.set_first_component(bsm_name)
 
-        self.resolution = bsm.resolution
+        self.resolution = max([d.time_resolution for d in bsm.detectors])
         self.bsm_times = [[], []]
 
-    def bsm_update(self, bsm, info: Dict[str, Any]):
+    def receive_qubit(self, src: str, qubit) -> None:
+        self.components[self.first_component_name].get(qubit, src=src)
+
+    def bsm_update(self, info: Dict[str, Any]):
         self.bsm_times[info['res']].append(info['time'])
 
+    # TODO: check
     def get_valid_bins(self, start_time: int, num_bins: int, frequency: float):
         """Computes time bins containing a BSM measurement.
 
@@ -158,12 +211,13 @@ class MeasureNode(Node):
         direct_detector = QSDetectorFockDirect(self.direct_detector_name, timeline, other_nodes)
         self.add_component(direct_detector)
         direct_detector.attach(self)
-        self.set_first_component(self.direct_detector_name)
 
         self.bs_detector_name = name + ".bs"
-        bs_detector = QSDetectorFockInterference(self.bs_detector_name, tl)
+        bs_detector = QSDetectorFockInterference(self.bs_detector_name, timeline, other_nodes)
         self.add_component(bs_detector)
         bs_detector.add_receiver(self)
+
+        self.set_first_component(self.direct_detector_name)
 
         # time resolution of SPDs
         self.resolution = max([d.time_resolution for d in direct_detector.detectors + bs_detector.detectors])
@@ -174,6 +228,7 @@ class MeasureNode(Node):
     def set_phase(self, phase: float):
         self.components[self.bs_detector_name].set_phase(phase)
 
+    # TODO: check
     def get_detector_entries(self, detector_name: str, start_time: int, num_bins: int, frequency: float):
         """Computes distribution of detection events for density matrix.
 
@@ -206,6 +261,7 @@ class MeasureNode(Node):
 
 
 if __name__ == "__main__":
+    # TODO: WIP
     # open file to store experiment results
     Path("results").mkdir(parents=True, exist_ok=True)
     filename = "results/absorptive.json"
