@@ -355,8 +355,8 @@ class AbsorptiveMemory(Entity):
             absorption_efficiency (float): probability of absorbing a photon when arriving at the memory.
             efficiency (Callable): probability of emitting a photon as a function of storage time.
             mode_number (int): number of modes supported for storing photons.
-            AFC_lifetime (float): average usable lifetime of AFC structure (in s), 0 means infinite lifetime.
-            coherence_time (float): average usable lifetime of spinwave storage (spinwave transition coherence time) (in s), 0 means infinite coherence time.
+            AFC_lifetime (float): average usable lifetime of AFC structure (in s), -1 means infinite lifetime.
+            coherence_time (float): average usable lifetime of spinwave storage (spinwave transition coherence time) (in s), -1 means infinite coherence time.
             wavelength (int): wavelength (in nm) of photons emitted by memories.
             overlap_error (float): error due to photon overlap in one temporal mode.
             prepare_time (float): time to prepare AFC (in ps).
@@ -445,7 +445,7 @@ class AbsorptiveMemory(Entity):
         else:
             self.is_prepared = True
 
-            # schedule AFC expiration once it is prepared
+            # schedule AFC expiration once it is prepared, if finite AFC lifetime
             if self.AFC_lifetime > 0:
                 self._schedule_expiration()
 
@@ -484,8 +484,9 @@ class AbsorptiveMemory(Entity):
                 event = Event(self.absorb_start_time + self.total_time, process)
                 self.timeline.schedule(event)
             else:
-                # if spinwave type, schedule spinwave decoherence induced storage resetting
-                self._schedule_storage_reset()
+                # if spinwave type, and if finite spin coherence time, schedule spinwave decoherence induced storage resetting
+                if self.coherence_time>0:
+                    self._schedule_storage_reset()
 
         # determine which temporal mode the photon is stored in
         absorb_time = now - self.absorb_start_time
