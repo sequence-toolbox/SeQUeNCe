@@ -256,9 +256,9 @@ def measure_state_with_cache_fock_density(state: Tuple[Tuple[complex]], povms: T
         else:
             measure_op = fractional_matrix_power(povms[i], 1/2)
             state_post_meas = (measure_op @ state @ measure_op) / prob_list[i]
+            state_post_meas = tuple(map(tuple, state_post_meas))
 
-        state_post_meas_tuple = tuple(state_post_meas)
-        state_list.append(state_post_meas_tuple)
+        state_list.append(state_post_meas)
 
     state_tuple = tuple(state_list)
     prob_tuple = tuple(prob_list)
@@ -308,9 +308,9 @@ def measure_entangled_state_with_cache_fock_density(state: Tuple[Tuple[complex]]
         else:
             measure_op = fractional_matrix_power(povm_list[i], 1/2)
             state_post_meas = (measure_op @ state @ measure_op) / prob_list[i]
+            state_post_meas = tuple(map(tuple, state_post_meas))
 
-        state_post_meas_tuple = tuple(state_post_meas)
-        state_list.append(state_post_meas_tuple)
+        state_list.append(state_post_meas)
 
     state_tuple = tuple(state_list)
     prob_tuple = tuple(prob_list)
@@ -358,18 +358,6 @@ def measure_multiple_with_cache_fock_density(state: Tuple[Tuple[complex]], indic
     if (fin_meas_sys_idx - init_meas_sys_idx + 1 != num) or (list(indices) != sorted(indices)):
         raise ValueError("Indices should be consecutive; got {}".format(indices))
 
-    # if fin_meas_sys_idx - init_meas_sys_idx + 1 == num:
-    #     visited = [False for i in range(num)] # flags of elements if visited
-    #     for i in range(num):
-    #         # If see an element again, raise ValueError
-    #         if (visited[indices[i] - init_meas_sys_idx] != False):
-    #             raise ValueError("indices should be consecutive")
-    #         # If visited first time, then mark the element as visited
-    #         visited[indices[i] - init_meas_sys_idx] = True
-    # else:
-    #     # if min and max are not compatible with number with indices, raise ValueError
-    #     raise ValueError("indices should be consecutive")
-
     povm_list = []
     left_dim = (truncation + 1) ** init_meas_sys_idx
     right_dim = (truncation + 1) ** (num_systems - fin_meas_sys_idx - 1)
@@ -387,9 +375,9 @@ def measure_multiple_with_cache_fock_density(state: Tuple[Tuple[complex]], indic
         else:
             measure_op = fractional_matrix_power(povm_list[i], 1/2)
             state_post_meas = (measure_op @ state @ measure_op) / prob_list[i]
+            state_post_meas = tuple(map(tuple, state_post_meas))
 
-        state_post_meas_tuple = tuple(state_post_meas)
-        state_list.append(state_post_meas_tuple)
+        state_list.append(state_post_meas)
 
     # return post-measurement states and measurement outcome probabilities in the order of fed-in POVM operators
     state_tuple = tuple(state_list)

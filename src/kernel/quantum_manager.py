@@ -499,8 +499,8 @@ class QuantumManagerDensityFock(QuantumManager):
 
     def _prepare_operator(self, all_keys: List[int], keys: List[int], operator) -> array:
         # pad operator with identity
-        left_dim = all_keys.index(keys[0]) ** self.dim
-        right_dim = (len(all_keys) - all_keys.index(keys[-1]) - 1) ** self.dim
+        left_dim = self.dim ** all_keys.index(keys[0])
+        right_dim = self.dim ** (len(all_keys) - all_keys.index(keys[-1]) - 1)
         prepared_operator = operator
 
         if left_dim > 0:
