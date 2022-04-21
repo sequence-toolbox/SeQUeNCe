@@ -31,17 +31,23 @@ from sequence.utils.encoding import fock
 
 
 # define constants
-DECAY_RATE = 0 # decay rate of absorptive quantum memory retrieval efficiency
-FREQUENCY = 80e6 # frequency of SPDC source photon creation
-ABS_EFFICIENCY = 1.0 # absorption efficiency of AFC memory
-MODE_NUM = 100 # number of temporal modes of AFC memory
-PREPARE_TIME = 0 # time required for AFC structure preparation
-COHERENCE_TIME = -1 # spin coherence time for AFC spinwave storage, -1 means infinite time
-AFC_LIFETIME = -1 # AFC structure lifetime, -1 means infinite time
-TELECOM_WAVELENGTH = 1500 # telecom band wavelength, for idler photon of SPDC source
-WAVELENGTH = 500 # wavelength of AFC memory resonant absorption, for signal photon of SPDC source
+TELECOM_WAVELENGTH = 1436 # telecom band wavelength of SPDC source idler photon
+WAVELENGTH = 606 # wavelength of AFC memory resonant absorption, of SPDC source signal photon
+MODE_NUM = 100 # number of temporal modes of AFC memory (same for both memories)
+SPDC_FREQUENCY = 80e6 # frequency of both SPDC sources' photon creation
+
+MEMO_FREQUENCY1 = 80e6 # frequency of memory 1
+MEMO_FREQUENCY2 = 80e6 # frequency of memory 2
+ABS_EFFICIENCY1 = 1.0 # absorption efficiency of AFC memory 1
+ABS_EFFICIENCY2 = 1.0 # absorption efficiency of AFC memory 2
+PREPARE_TIME1 = 0 # time required for AFC structure preparation of memory 1
+PREPARE_TIME2 = 0 # time required for AFC structure preparation of memory 2
+COHERENCE_TIME1 = -1 # spin coherence time for AFC memory 1 spinwave storage, -1 means infinite time
+COHERENCE_TIME2 = -1 # spin coherence time for AFC memory 2 spinwave storage, -1 means infinite time
+AFC_LIFETIME1 = -1 # AFC structure lifetime of memory 1, -1 means infinite time
+AFC_LIFETIME2 = -1 # AFC structure lifetime of memory 2, -1 means infinite time
 MEAN_PHOTON_NUM1 = 0.1 # mean photon number of SPDC source on node 1
-MEAN_PHOTON_NUM1 = 0.1 # mean photon number of SPDC source on node 2
+MEAN_PHOTON_NUM2 = 0.1 # mean photon number of SPDC source on node 2
 DECAY_RATE1 = 0 # retrieval efficiency decay rate for memory 1
 DECAY_RATE2 = 0 # retrieval efficiency decay rate for memory 2
 
@@ -93,7 +99,7 @@ class EmitProtocol(Protocol):
         Args:
             own (EndNode): node on which the protocol is located.
             name (str): name of the protocol instance.
-            other_node (str): name of the other node entangling photons
+            other_node (str): name of the other node to generate entanglement with
             num_output (int): number of output photon pulses to send in one execution.
             delay_time (int): time to wait before re-starting execution.
             source_name (str): name of the light source on the node.
@@ -274,13 +280,16 @@ if __name__ == "__main__":
 
     anl_name = "Argonne"
     hc_name = "Harper Court"
-    erc_name = "Eckhardt Research Center"
-    erc_2_name = "Eckhardt Research Center 2"
+    erc_name = "Eckhardt Research Center BSM"
+    erc_2_name = "Eckhardt Research Center Measurement"
+    src_list = [anl_name, hc_name] # the list of sources, note the order
 
-    anl = EndNode(anl_name, tl, hc_name, erc_name, erc_2_name)
-    hc = EndNode(hc_name, tl, anl_name, erc_name, erc_2_name)
-    erc = EntangleNode(erc_name, tl)
-    erc_2 = MeasureNode(erc_2_name, tl, [anl_name, hc_name])
+    anl = EndNode(anl_name, tl, hc_name, erc_name, erc_2_name, mean_photon_num=MEAN_PHOTON_NUM1,
+                  spdc_frequency=SPDC_FREQUENCY, memo_frequency=MEMO_FREQUENCY1, abs_effi=ABS_EFFICIENCY1, retr_effi=efficiency1)
+    hc = EndNode(hc_name, tl, anl_name, erc_name, erc_2_name, mean_photon_num=MEAN_PHOTON_NUM2,
+                  spdc_frequency=SPDC_FREQUENCY, memo_frequency=MEMO_FREQUENCY2, abs_effi=ABS_EFFICIENCY2, retr_effi=efficiency2)
+    erc = EntangleNode(erc_name, tl, src_list)
+    erc_2 = MeasureNode(erc_2_name, tl, src_list)
 
     topo = Topology("Experiment Topo", tl)
     for node in [anl, hc, erc, erc_2]:
@@ -293,12 +302,15 @@ if __name__ == "__main__":
     tl.init()
 
     # calculations for when to start protocol
+    # requirement: photons must arrive at beamsplitter to realize interference
     delay_anl = topo.nodes[anl_name].qchannels[erc_name].delay
     delay_hc = topo.nodes[hc_name].qchannels[erc_name].delay
     time_anl = max(delay_anl, delay_hc) - delay_anl
     time_hc = max(delay_anl, delay_hc) - delay_hc
 
     # calculations for when to start recording measurements
+    # requirement: photons must arrive at beamsplitter to realize interference
+    # TODO: result in different channel lengths for BSM and DM measurement?
     start_time_bsm = time_anl + delay_anl
     mem = anl.get_components_by_type("AbsorptiveMemory")[0]
     total_time = mem.total_time
@@ -320,8 +332,8 @@ if __name__ == "__main__":
         print("finished direct measurement trial {} out of {}".format(i+1, num_direct_trials))
 
         # collect data
-        bsm_res = erc.get_valid_bins(start_time_bsm, MODE_NUM, FREQUENCY)
-        meas_res = erc_2.get_detector_entries(erc_2.direct_detector_name, start_time_meas, MODE_NUM, FREQUENCY)
+        bsm_res = erc.get_valid_bins(start_time_bsm, MODE_NUM, SPDC_FREQUENCY)
+        meas_res = erc_2.get_detector_entries(erc_2.direct_detector_name, start_time_meas, MODE_NUM, SPDC_FREQUENCY)
         num_bsm_res = sum(bsm_res)
         meas_res_valid = [m for m, b in zip(meas_res, bsm_res) if b]
         probs = [0.0] * 4
@@ -350,8 +362,8 @@ if __name__ == "__main__":
         print("finished interference measurement trial {} out of {}".format(i+1, len(phase_settings)))
 
         # collect data
-        bsm_res = erc.get_valid_bins(start_time_bsm, MODE_NUM, FREQUENCY)
-        meas_res = erc_2.get_detector_entries(erc_2.bs_detector_name, start_time_meas, MODE_NUM, FREQUENCY)
+        bsm_res = erc.get_valid_bins(start_time_bsm, MODE_NUM, SPDC_FREQUENCY)
+        meas_res = erc_2.get_detector_entries(erc_2.bs_detector_name, start_time_meas, MODE_NUM, SPDC_FREQUENCY)
         meas_res_valid = [m for m, b in zip(meas_res, bsm_res) if b]
         num_detector_0 = meas_res.count(1) + meas_res_valid.count(3)
         num_detector_1 = meas_res.count(2) + meas_res_valid.count(3)
