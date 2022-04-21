@@ -225,10 +225,10 @@ class QuantumManagerKet(QuantumManager):
                 state_index = all_keys.index(key)
                 state_0, state_1, prob_0 = measure_entangled_state_with_cache_ket(tuple(state), state_index, num_states)
                 if meas_samp < prob_0:
-                    new_state = array(state_0, dtype=complex)
+                    new_state = state_0
                     result = 0
                 else:
-                    new_state = array(state_1, dtype=complex)
+                    new_state = state_1
                     result = 1
 
             all_keys.remove(keys[0])
@@ -358,10 +358,10 @@ class QuantumManagerDensity(QuantumManager):
                 state_0, state_1, prob_0 =\
                     measure_entangled_state_with_cache_density(tuple(map(tuple, state)), state_index, num_states)
                 if meas_samp < prob_0:
-                    new_state = array(state_0, dtype=complex)
+                    new_state = state_0
                     result = 0
                 else:
-                    new_state = array(state_1, dtype=complex)
+                    new_state = state_1
                     result = 1
 
         else:
@@ -635,8 +635,8 @@ class QuantumManagerDensityFock(QuantumManager):
         # assign remaining state
         if len(keys) < len(all_keys):
             indices = tuple([all_keys.index(key) for key in keys])
-            remaining_tuple = density_partial_trace(new_state, indices, len(all_keys), self.truncation)
-            remaining_state = array(remaining_tuple)
+            new_state_tuple = tuple(map(tuple, new_state))
+            remaining_state = density_partial_trace(new_state_tuple, indices, len(all_keys), self.truncation)
             remaining_keys = [key for key in all_keys if key not in keys]
             self.set(remaining_keys, remaining_state)
 
