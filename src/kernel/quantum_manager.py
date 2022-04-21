@@ -549,7 +549,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
         return create, destroy
 
-    def measure(self, keys: List[int], povms: List[array], meas_samp: float) -> Dict[int, int]:
+    def measure(self, keys: List[int], povms: List[array], meas_samp: float) -> int:
         """Method to measure subsystems at given keys in POVM formalism.
 
         Serves as wrapper for private `_measure` method, performing quantum manager specific operations.
@@ -560,13 +560,14 @@ class QuantumManagerDensityFock(QuantumManager):
             meas_samp (float): random measurement sample to use for computing resultant state.
 
         Returns:
-            Dict[int, int]: mapping of measured keys to measurement results.
+            int: measurement as index of matching POVM in supplied tuple.
         """
+
         new_state, all_keys = self._prepare_state(keys)
         return self._measure(new_state, keys, all_keys, povms, meas_samp)
 
     def _measure(self, state: List[List[complex]], keys: List[int],
-                 all_keys: List[int], povms: List[array], meas_samp: float) -> Dict[int, int]:
+                 all_keys: List[int], povms: List[array], meas_samp: float) -> int:
         """Method to measure subsystems at given keys in POVM formalism.
 
         Modifies quantum state of all qubits given by all_keys, post-measurement operator determined
@@ -580,7 +581,7 @@ class QuantumManagerDensityFock(QuantumManager):
             meas_samp (float): random measurement sample to use for computing resultant state.
 
         Returns:
-            Dict[int, int]: mapping of measured keys to measurement results.
+            int: measurement as index of matching POVM in supplied tuple.
         """
 
         state_tuple = tuple(map(tuple, state))
@@ -629,7 +630,7 @@ class QuantumManagerDensityFock(QuantumManager):
         """
 
         for key in keys:
-            self.states[key] = None # clear the stored state at `key`
+            self.states[key] = None  # clear the stored state at key (particle destructively measured)
 
         # assign remaining state
         if len(keys) < len(all_keys):

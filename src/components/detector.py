@@ -2,7 +2,7 @@
 
 This module models a single photon detector (SPD) for measurement of individual photons.
 It also defines a QSDetector class, which combines models of different hardware devices to measure photon states in different bases.
-QSDetector is defined as an abstract template and as implementaions for polarization and time bin qubits.
+QSDetector is defined as an abstract template and as implementations for polarization and time bin qubits.
 """
 
 from abc import ABC, abstractmethod
@@ -15,10 +15,9 @@ if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
 
 from ..components.photon import Photon
-from ..components.beam_splitter import BeamSplitter, FockBeamSplitter
+from ..components.beam_splitter import BeamSplitter
 from ..components.switch import Switch
 from ..components.interferometer import Interferometer
-from ..components.circuit import Circuit
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
@@ -316,10 +315,12 @@ class QSDetectorFockDirect(QSDetector):
         """Method to generate POVM operators corresponding to photon detector having 0 and 1 click
         Will be used to generated outcome probability distribution.
         """
+
         # assume using Fock quantum manager
         truncation = self.timeline.quantum_manager.truncation
         create, destroy = self.timeline.quantum_manager.build_ladder()
-        series_elem_list = [(-1)**i*fractional_matrix_power(create,i+1).dot(fractional_matrix_power(destroy,i+1))/factorial(i+1) for i in range(truncation)]
+        series_elem_list = [((-1)**i) * fractional_matrix_power(create, i+1).dot(
+            fractional_matrix_power(destroy, i+1)) / factorial(i+1) for i in range(truncation)]
         povm1 = sum(series_elem_list)
         povm0 = eye(truncation+1) - povm1
 
@@ -328,15 +329,15 @@ class QSDetectorFockDirect(QSDetector):
     def get(self, photon: "Photon", **kwargs):
         src = kwargs["src"]
         assert photon.encoding_type["name"] == "fock", "Photon must be in Fock representation."
-        input_port = self.src_list.index[src] # determine at which input the Photon arrives, an index
+        input_port = self.src_list.index(src)  # determine at which input the Photon arrives, an index
         # record arrival time
         arrival_time = self.timeline.now()
         self.arrival_times[input_port].append(arrival_time)
 
-        key = photon.quantum_state # the photon's key pointing to the quantum state in quantum manager
-        povms = self._generate_povms() # generate a tuple of two POVM operators
-        samp = self.get_generator().random() # random measurement sample
-        result = self.timeline.quantum_manager.measure([key], povms, samp) # the outcome determined by random sample
+        key = photon.quantum_state  # the photon's key pointing to the quantum state in quantum manager
+        povms = self._generate_povms()  # generate a tuple of two POVM operators
+        samp = self.get_generator().random()  # random measurement sample
+        result = self.timeline.quantum_manager.measure([key], povms, samp)  # the outcome determined by random sample
         
         assert result in list(range(len(povms))), "The measurement outcome is not valid."
         if result == 1:
@@ -357,40 +358,41 @@ class QSDetectorFockDirect(QSDetector):
 
 
 class QSDetectorFockInterference(QSDetector):
-    """QSDetector with two input ports and two photon detectors behind beamsplitter which physically measure two beamsplitter output 
-        photonic modes' Fock states, respectively. POVM operators which apply to pre-beamsplitter photonic state are used.
-        NOTE: in current implementation, to realize interference we require Photons arrive at both input ports simultaneously,
-        and at most 1 Photon instance can be input at an input port at a time.
+    """QSDetector with two input ports and two photon detectors behind beamsplitter.
 
-    Usage: to realize Bell state measurement (BSM) and to measure off-diagonal elements of effective density matrix.
+    The detectors will physically measure the two beamsplitter output  photonic modes' Fock states, respectively.
+    POVM operators which apply to pre-beamsplitter photonic state are used.
+    NOTE: in the current implementation, to realize interference, we require that Photons arrive at both input ports
+    simultaneously, and at most 1 Photon instance can be input at an input port at a time.
+
+    Usage: to realize Bell state measurement (BSM) and to measure off-diagonal elements of the effective density matrix.
 
     Attributes:
         name (str): label for QSDetector instance.
         timeline (Timeline): timeline for simulation.
         src_list (List[str]): list of two sources which send photons to this detector (length 2).
         detectors (List[Detector]): list of attached detectors (length 2).
-        trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
         phase (float): relative phase between two input optical paths.
+        trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
+        arrival_times (List[List[int]]): tracks simulation time of arrival of photons at each input mode.
+
         temporary_photon_info (List[Dict]): temporary list of information of Photon arriving at each input port. 
             Specific to current implementation. At most 1 Photon's information will be recorded in a dictionary. 
-            When there are 2 non-empty dictionaries, e.g. [{"photon":Photon1, "time":arrival_time1}, {"photon":Photon2, "time":arrival_time2}],
-            the entangling measurement will be carried out. After measurement the temporary list will be reset.
+            When there are 2 non-empty dictionaries,
+            e.g. [{"photon":Photon1, "time":arrival_time1}, {"photon":Photon2, "time":arrival_time2}],
+            the entangling measurement will be carried out. After measurement, the temporary list will be reset.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", src_list: List[str], phase: float=0):
+    def __init__(self, name: str, timeline: "Timeline", src_list: List[str], phase: float = 0):
         super().__init__(name, timeline)
         assert len(src_list) == 2
         self.src_list = src_list
         self.phase = phase
-        # self.beamsplitter = FockBeamSplitter(name + ".beamsplitter", timeline)
+
         for i in range(2):
             d = Detector(name + ".detector" + str(i), timeline)
-            self.beamsplitter.add_receiver(d)
             self.detectors.append(d)
             d.attach(self)
-
-        # default circuit: no phase applied
-        # self._circuit = Circuit(2)
 
         self.trigger_times = [[], []]
         self.arrival_times = [[], []]
@@ -401,38 +403,46 @@ class QSDetectorFockInterference(QSDetector):
 
     def _generate_transformed_ladders(self):
         """Method to generate transformed creation/annihilation operators by the beamsplitter.
+
         Will be used to construct POVM operators.
         """
 
-        identity = eye(self.truncation+1)
+        truncation = self.timeline.quantum_manager.truncation
+        identity = eye(truncation + 1)
         create, destroy = self.timeline.quantum_manager.build_ladder()
         phase = self.phase
         efficiency1 = self.detectors[0].efficiency
         efficiency2 = self.detectors[1].efficiency
 
-        # Modified mode operators in Heisenberg picture by beamsplitter transformation considering inefficiency (ignoring relative phase)
-        create1 = (kron(efficiency1*create,identity) + exp(1j*phase)*kron(identity,efficiency2*create))/sqrt(2)
+        # Modified mode operators in Heisenberg picture by beamsplitter transformation
+        # considering inefficiency and ignoring relative phase
+        create1 = (kron(efficiency1*create, identity) + exp(1j*phase)*kron(identity, efficiency2*create)) / sqrt(2)
         destroy1 = create1.conj().T
-        create2 = (kron(efficiency1*create,identity) - exp(1j*phase)*kron(identity,efficiency2*create))/sqrt(2)
+        create2 = (kron(efficiency1*create, identity) - exp(1j*phase)*kron(identity, efficiency2*create)) / sqrt(2)
         destroy2 = create2.conj().T
 
         return create1, destroy1, create2, destroy2
 
     def _generate_povms(self):
-        """Method to generate POVM operators corresponding to photon detector having 00, 01, 10 and 11 click(s)
+        """Method to generate POVM operators corresponding to photon detector having 00, 01, 10 and 11 click(s).
+
         Will be used to generated outcome probability distribution.
         """
+
         # assume using Fock quantum manager
         truncation = self.timeline.quantum_manager.truncation
         create1, destroy1, create2, destroy2 = self._generate_transformed_ladders()
+
         # for detector1 (index 0)
-        series_elem_list1 = [(-1)**i*fractional_matrix_power(create1,i+1).dot(fractional_matrix_power(destroy1,i+1))/factorial(i+1) for i in range(truncation)]
+        series_elem_list1 = [(-1)**i * fractional_matrix_power(create1, i+1).dot(
+            fractional_matrix_power(destroy1, i+1)) / factorial(i+1) for i in range(truncation)]
         povm1_1 = sum(series_elem_list1)
-        povm0_1 = eye((truncation+1)**2) - povm1_1
+        povm0_1 = eye((truncation+1) ** 2) - povm1_1
         # for detector2 (index 1)
-        series_elem_list2 = [(-1)**i*fractional_matrix_power(create2,i+1).dot(fractional_matrix_power(destroy2,i+1))/factorial(i+1) for i in range(truncation)]
+        series_elem_list2 = [(-1)**i * fractional_matrix_power(create2, i+1).dot(
+            fractional_matrix_power(destroy2,i+1)) / factorial(i+1) for i in range(truncation)]
         povm1_2 = sum(series_elem_list2)
-        povm0_2 = eye((truncation+1)**2) - povm1_2
+        povm0_2 = eye((truncation+1) ** 2) - povm1_2
 
         # POVM operators for 4 possible outcomes
         # Note: povm01 and povm10 are relevant to BSM
@@ -446,16 +456,17 @@ class QSDetectorFockInterference(QSDetector):
     def get(self, photon, **kwargs):
         src = kwargs["src"]
         assert photon.encoding_type["name"] == "fock", "Photon must be in Fock representation."
-        input_port = self.src_list.index[src] # determine at which input the Photon arrives, an index
+        input_port = self.src_list.index(src)  # determine at which input the Photon arrives, an index
         # record arrival time
         arrival_time = self.timeline.now()
         self.arrival_times[input_port].append(arrival_time)
         # record in temporary photon list
-        assert not self.temporary_photon_info[input_port], "At most 1 Photon instance should arrive at an input port at a time."
+        assert not self.temporary_photon_info[input_port], \
+            "At most 1 Photon instance should arrive at an input port at a time."
         self.temporary_photon_info[input_port]["photon"] = photon
         self.temporary_photon_info[input_port]["time"] = arrival_time
 
-        # judge if there have already been two input Photons arrving simultaneously
+        # judge if there have already been two input Photons arriving simultaneously
         dict0 = self.temporary_photon_info[0]
         dict1 = self.temporary_photon_info[1]
         # if both two dictionaries are non-empty
@@ -468,8 +479,8 @@ class QSDetectorFockInterference(QSDetector):
             povms = tuple(self._generate_povms())
 
             # determine the outcome
-            samp = self.get_generator().random() # random measurement sample
-            result = self.timeline.quantum_manager.measure([key0,key1], povms, samp) # the outcome determined by random sample
+            samp = self.get_generator().random()  # random measurement sample
+            result = self.timeline.quantum_manager.measure([key0, key1], povms, samp)
         
             assert result in list(range(len(povms))), "The measurement outcome is not valid."
             if result == 1:
@@ -494,6 +505,8 @@ class QSDetectorFockInterference(QSDetector):
                 trigger_time = self.timeline.now()
                 self.trigger_times[0].append(trigger_time)
                 self.trigger_times[1].append(trigger_time)
+
+            self.temporary_photon_info = [{}, {}]
 
         else:
             pass
