@@ -374,6 +374,8 @@ class QSDetectorFockInterference(QSDetector):
         detectors (List[Detector]): list of attached detectors (length 2).
         phase (float): relative phase between two input optical paths.
         trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
+        detect_info (List[List[Dict]]): tracks detection information, including simulation time of detection events
+            and detection outcome for each detector.
         arrival_times (List[List[int]]): tracks simulation time of arrival of photons at each input mode.
 
         temporary_photon_info (List[Dict]): temporary list of information of Photon arriving at each input port. 
@@ -395,6 +397,7 @@ class QSDetectorFockInterference(QSDetector):
             d.attach(self)
 
         self.trigger_times = [[], []]
+        self.detect_info = [[], []]
         self.arrival_times = [[], []]
         self.temporary_photon_info = [{}, {}]
 
@@ -483,28 +486,51 @@ class QSDetectorFockInterference(QSDetector):
             result = self.timeline.quantum_manager.measure([key0, key1], povms, samp)
         
             assert result in list(range(len(povms))), "The measurement outcome is not valid."
-            if result == 1:
+            if result == 0:
+                # no click for either detector, but still record the zero outcome
+                detection_time = self.timeline.now()
+                # record detection information
+                detection_time = self.timeline.now()
+                info = {"time": detection_time, "outcome": 0}
+                self.detect_info[0].append(info)
+                self.detect_info[1].append(info)
+
+            elif result == 1:
                 # detector 1 has a click
                 self.detectors[1].get()
-                # record trigger time
-                trigger_time = self.timeline.now()
-                self.trigger_times[1].append(trigger_time)
+                detection_time = self.timeline.now()
+                # record trigger times
+                self.trigger_times[1].append(detection_time)
+                # record detection information
+                info0 = {"time": detection_time, "outcome": 0}
+                info1 = {"time": detection_time, "outcome": 1}
+                self.detect_info[0].append(info0)
+                self.detect_info[1].append(info1)
 
             elif result == 2:
                 # detector 0 has a click
                 self.detectors[0].get()
-                # record trigger time
-                trigger_time = self.timeline.now()
-                self.trigger_times[0].append(trigger_time)
+                detection_time = self.timeline.now()
+                # record trigger times
+                self.trigger_times[0].append(detection_time)
+                # record detection information
+                info0 = {"time": detection_time, "outcome": 1}
+                info1 = {"time": detection_time, "outcome": 0}
+                self.detect_info[0].append(info0)
+                self.detect_info[1].append(info1)
 
             elif result == 3:
                 # both detectors have a click
                 self.detectors[0].get()
                 self.detectors[1].get()
-                # record trigger time
-                trigger_time = self.timeline.now()
-                self.trigger_times[0].append(trigger_time)
-                self.trigger_times[1].append(trigger_time)
+                detection_time = self.timeline.now()
+                # record trigger times
+                self.trigger_times[0].append(detection_time)
+                self.trigger_times[1].append(detection_time)
+                # record detection information
+                info = {"time": detection_time, "outcome": 1}
+                self.detect_info[0].append(info)
+                self.detect_info[1].append(info)
 
             self.temporary_photon_info = [{}, {}]
 
@@ -523,10 +549,15 @@ class QSDetectorFockInterference(QSDetector):
             self.beamsplitter.get(photon)
         """
 
-    def get_photon_times(self) -> List[List[int]]:
+    def get_photon_times(self) -> tuple(List[List[int]], List[List[Dict]]):
+        """Method to get detector trigger times and detection information.
+        Will clear `trigger_times` and `detect_info`.
+        """
         trigger_times = self.trigger_times
+        detect_info = self.detect_info
         self.trigger_times = [[], []]
-        return trigger_times
+        self.detect_info = [[], []]
+        return trigger_times, detect_info
 
     # does nothing for this class
     def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:
