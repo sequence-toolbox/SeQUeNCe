@@ -342,10 +342,8 @@ class QSDetectorFockDirect(QSDetector):
         assert result in list(range(len(povms))), "The measurement outcome is not valid."
         if result == 1:
             detector_num = self.src_list.index(src)
-            self.detectors[detector_num].get()
-            # record trigger time
-            trigger_time = self.timeline.now()
-            self.trigger_times[detector_num].append(trigger_time)
+            # trigger time recording will be done by SPD
+            self.detectors[detector_num].record_detection()
         
     def get_photon_times(self) -> List[List[int]]:
         trigger_times = self.trigger_times
@@ -488,7 +486,6 @@ class QSDetectorFockInterference(QSDetector):
             assert result in list(range(len(povms))), "The measurement outcome is not valid."
             if result == 0:
                 # no click for either detector, but still record the zero outcome
-                detection_time = self.timeline.now()
                 # record detection information
                 detection_time = self.timeline.now()
                 info = {"time": detection_time, "outcome": 0}
@@ -497,11 +494,10 @@ class QSDetectorFockInterference(QSDetector):
 
             elif result == 1:
                 # detector 1 has a click
-                self.detectors[1].get()
-                detection_time = self.timeline.now()
-                # record trigger times
-                self.trigger_times[1].append(detection_time)
+                # trigger time recording will be done by SPD
+                self.detectors[1].record_detection()
                 # record detection information
+                detection_time = self.timeline.now()
                 info0 = {"time": detection_time, "outcome": 0}
                 info1 = {"time": detection_time, "outcome": 1}
                 self.detect_info[0].append(info0)
@@ -509,11 +505,10 @@ class QSDetectorFockInterference(QSDetector):
 
             elif result == 2:
                 # detector 0 has a click
-                self.detectors[0].get()
-                detection_time = self.timeline.now()
-                # record trigger times
-                self.trigger_times[0].append(detection_time)
+                # trigger time recording will be done by SPD
+                self.detectors[0].record_detection()
                 # record detection information
+                detection_time = self.timeline.now()
                 info0 = {"time": detection_time, "outcome": 1}
                 info1 = {"time": detection_time, "outcome": 0}
                 self.detect_info[0].append(info0)
@@ -521,13 +516,11 @@ class QSDetectorFockInterference(QSDetector):
 
             elif result == 3:
                 # both detectors have a click
-                self.detectors[0].get()
-                self.detectors[1].get()
-                detection_time = self.timeline.now()
-                # record trigger times
-                self.trigger_times[0].append(detection_time)
-                self.trigger_times[1].append(detection_time)
+                # trigger time recording will be done by SPD
+                self.detectors[0].record_detection()
+                self.detectors[1].record_detection()
                 # record detection information
+                detection_time = self.timeline.now()
                 info = {"time": detection_time, "outcome": 1}
                 self.detect_info[0].append(info)
                 self.detect_info[1].append(info)
