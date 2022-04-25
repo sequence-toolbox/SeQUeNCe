@@ -198,10 +198,6 @@ class EntangleNode(Node):
     def receive_qubit(self, src: str, qubit) -> None:
         self.components[self.first_component_name].get(qubit, src=src)
 
-    # TODO: check if needed
-    def bsm_update(self, info: Dict[str, Any]):
-        self.bsm_times[info['res']].append(info['time'])
-
     # TODO: check
     def get_valid_bins(self, start_time: int, num_bins: int, frequency: float):
         """Computes time bins containing a BSM measurement.
