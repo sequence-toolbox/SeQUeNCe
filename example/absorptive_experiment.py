@@ -11,46 +11,48 @@ The measurement node contians a QSDetectorFockDirect instance and a QSDetectorFo
 WIP
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Callable, TYPE_CHECKING
 from pathlib import Path
 
-from json5 import dump
+if TYPE_CHECKING:
+    from sequence.components.photon import Photon
+
+from json import dump
 import numpy as np
 
-from sequence.components.detector import QSDetectorFockDirect, QSDetectorFockInterference
-from sequence.components.light_source import SPDCSource
-from sequence.components.memory import AbsorptiveMemory
-from sequence.components.photon import Photon
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
+from sequence.kernel.quantum_manager import FOCK_DENSITY_MATRIX_FORMALISM
+from sequence.components.detector import QSDetectorFockDirect, QSDetectorFockInterference
+from sequence.components.light_source import SPDCSource
+from sequence.components.memory import AbsorptiveMemory
+from sequence.components.optical_channel import QuantumChannel
 from sequence.topology.node import Node
-from sequence.topology.topology import Topology
 from sequence.protocol import Protocol
-from sequence.utils.encoding import fock
 
 
 # define constants
-TRUNCATION = 2 # truncation of Fock space (=dimension-1)
-TELECOM_WAVELENGTH = 1436 # telecom band wavelength of SPDC source idler photon
-WAVELENGTH = 606 # wavelength of AFC memory resonant absorption, of SPDC source signal photon
-MODE_NUM = 100 # number of temporal modes of AFC memory (same for both memories)
-SPDC_FREQUENCY = 80e6 # frequency of both SPDC sources' photon creation (same as memory frequency s.t. every memory mode contains one Photon)
+TRUNCATION = 2  # truncation of Fock space (=dimension-1)
+TELECOM_WAVELENGTH = 1436  # telecom band wavelength of SPDC source idler photon
+WAVELENGTH = 606  # wavelength of AFC memory resonant absorption, of SPDC source signal photon
+MODE_NUM = 100  # number of temporal modes of AFC memory (same for both memories)
+SPDC_FREQUENCY = 80e6  # frequency of both SPDC sources' photon creation (same as memory frequency)
 
-MEMO_FREQUENCY1 = 80e6 # frequency of memory 1
-MEMO_FREQUENCY2 = 80e6 # frequency of memory 2
-ABS_EFFICIENCY1 = 1.0 # absorption efficiency of AFC memory 1
-ABS_EFFICIENCY2 = 1.0 # absorption efficiency of AFC memory 2
-PREPARE_TIME1 = 0 # time required for AFC structure preparation of memory 1
-PREPARE_TIME2 = 0 # time required for AFC structure preparation of memory 2
-COHERENCE_TIME1 = -1 # spin coherence time for AFC memory 1 spinwave storage, -1 means infinite time
-COHERENCE_TIME2 = -1 # spin coherence time for AFC memory 2 spinwave storage, -1 means infinite time
-AFC_LIFETIME1 = -1 # AFC structure lifetime of memory 1, -1 means infinite time
-AFC_LIFETIME2 = -1 # AFC structure lifetime of memory 2, -1 means infinite time
-MEAN_PHOTON_NUM1 = 0.1 # mean photon number of SPDC source on node 1
-MEAN_PHOTON_NUM2 = 0.1 # mean photon number of SPDC source on node 2
-DECAY_RATE1 = 0 # retrieval efficiency decay rate for memory 1
-DECAY_RATE2 = 0 # retrieval efficiency decay rate for memory 2
+MEMO_FREQUENCY1 = SPDC_FREQUENCY  # frequency of memory 1
+MEMO_FREQUENCY2 = SPDC_FREQUENCY  # frequency of memory 2
+ABS_EFFICIENCY1 = 1.0  # absorption efficiency of AFC memory 1
+ABS_EFFICIENCY2 = 1.0  # absorption efficiency of AFC memory 2
+PREPARE_TIME1 = 0  # time required for AFC structure preparation of memory 1
+PREPARE_TIME2 = 0  # time required for AFC structure preparation of memory 2
+COHERENCE_TIME1 = -1  # spin coherence time for AFC memory 1 spinwave storage, -1 means infinite time
+COHERENCE_TIME2 = -1  # spin coherence time for AFC memory 2 spinwave storage, -1 means infinite time
+AFC_LIFETIME1 = -1  # AFC structure lifetime of memory 1, -1 means infinite time
+AFC_LIFETIME2 = -1  # AFC structure lifetime of memory 2, -1 means infinite time
+MEAN_PHOTON_NUM1 = 0.1  # mean photon number of SPDC source on node 1
+MEAN_PHOTON_NUM2 = 0.1  # mean photon number of SPDC source on node 2
+DECAY_RATE1 = 0  # retrieval efficiency decay rate for memory 1
+DECAY_RATE2 = 0  # retrieval efficiency decay rate for memory 2
 
 # experiment settings
 num_direct_trials = 10
@@ -59,7 +61,11 @@ phase_settings = np.linspace(0, 2*np.pi, num=10, endpoint=False)
 
 # function to generate standard pure Bell state for fidelity calculation
 def build_bell_state(truncation, sign, phase=0, formalism="dm"):
-    """Generate standard Bell state which is heralded in ideal BSM for comparison with results from imperfect parameter choices."""
+    """Generate standard Bell state which is heralded in ideal BSM.
+
+    For comparison with results from imperfect parameter choices.
+    """
+
     basis0 = np.zeros(truncation+1)
     basis0[0] = 1
     basis1 = np.zeros(truncation+1)
@@ -74,7 +80,7 @@ def build_bell_state(truncation, sign, phase=0, formalism="dm"):
     else:
         raise ValueError("Invalid Bell state sign type " + sign)
 
-    dm = np.outer(ket, ket.conj().T)
+    dm = np.outer(ket, ket.conj())
 
     if formalism == "dm":
         return dm
@@ -88,21 +94,29 @@ def build_bell_state(truncation, sign, phase=0, formalism="dm"):
 def efficiency1(t: int) -> float:
     return np.exp(-t*DECAY_RATE1)
 
+
 def efficiency2(t: int) -> float:
     return np.exp(-t*DECAY_RATE2)
 
 
+def add_channel(node1: Node, node2: Node, timeline: Timeline, **kwargs):
+    name = "_".join(["qc", node1.name, node2.name])
+    qc = QuantumChannel(name, timeline, **kwargs)
+    qc.set_ends(node1, node2.name)
+    return qc
+
+
 # protocol to control photon emission on end node
 class EmitProtocol(Protocol):
-    def __init__(self, own: "EndNode", name: str, other_node: str, photon_pair_num: int, source_name: str, memory_name: str):
+    def __init__(self, own: "EndNode", name: str, other_node: str, photon_pair_num: int,
+                 source_name: str, memory_name: str):
         """Constructor for Emission protocol.
 
         Args:
             own (EndNode): node on which the protocol is located.
             name (str): name of the protocol instance.
             other_node (str): name of the other node to generate entanglement with
-            num_output (int): number of output photon pulses to send in one execution.
-            delay_time (int): time to wait before re-starting execution.
+            photon_pair_num (int): number of output photon pulses to send in one execution.
             source_name (str): name of the light source on the node.
             memory_name (str): name of the memory on the node.
         """
@@ -131,8 +145,9 @@ class EndNode(Node):
     The properties of attached devices are made customizable for each individual node.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", other_node: str, bsm_node: str, measure_node: str, mean_photon_num: float,
-                 spdc_frequency, memo_frequency, abs_effi, retr_effi):
+    def __init__(self, name: str, timeline: "Timeline", other_node: str, bsm_node: str, measure_node: str,
+                 mean_photon_num: float, spdc_frequency: float, memo_frequency: float, abs_effi: float,
+                 retrieval_efficiency: Callable):
         super().__init__(name, timeline)
 
         self.bsm_name = bsm_node
@@ -144,7 +159,7 @@ class EndNode(Node):
         spdc = SPDCSource(spdc_name, timeline, wavelengths=[TELECOM_WAVELENGTH, WAVELENGTH],
                           frequency=spdc_frequency, mean_photon_num=mean_photon_num)
         memory = AbsorptiveMemory(memo_name, timeline, frequency=memo_frequency,
-                                  absorption_efficiency=abs_effi, efficiency=retr_effi, 
+                                  absorption_efficiency=abs_effi, efficiency=retrieval_efficiency,
                                   mode_number=MODE_NUM, wavelength=WAVELENGTH, destination=measure_node)
         self.add_component(spdc)
         self.add_component(memory)
@@ -171,7 +186,8 @@ class EntangleNode(Node):
 
         # hardware setup
         bsm_name = name + ".bsm"
-        bsm = QSDetectorFockInterference(bsm_name, timeline, src_list) # assume no relative phase between two input optical paths
+        # assume no relative phase between two input optical paths
+        bsm = QSDetectorFockInterference(bsm_name, timeline, src_list)
         self.add_component(bsm)
         bsm.attach(self)
         self.set_first_component(bsm_name)
@@ -275,38 +291,40 @@ if __name__ == "__main__":
     filename = "results/absorptive.json"
     fh = open(filename, 'w')
 
-    """Run Simulation"""
+    """Setup Simulation"""
 
-    tl = Timeline(1e12, formalism='fock_density', truncation=TRUNCATION)
-    tl.seed(0)
+    tl = Timeline(1e12, formalism=FOCK_DENSITY_MATRIX_FORMALISM, truncation=TRUNCATION)
 
     anl_name = "Argonne"
     hc_name = "Harper Court"
     erc_name = "Eckhardt Research Center BSM"
     erc_2_name = "Eckhardt Research Center Measurement"
-    src_list = [anl_name, hc_name] # the list of sources, note the order
+    seeds = [1, 2, 3, 4]
+    src_list = [anl_name, hc_name]  # the list of sources, note the order
 
     anl = EndNode(anl_name, tl, hc_name, erc_name, erc_2_name, mean_photon_num=MEAN_PHOTON_NUM1,
-                  spdc_frequency=SPDC_FREQUENCY, memo_frequency=MEMO_FREQUENCY1, abs_effi=ABS_EFFICIENCY1, retr_effi=efficiency1)
+                  spdc_frequency=SPDC_FREQUENCY, memo_frequency=MEMO_FREQUENCY1, abs_effi=ABS_EFFICIENCY1,
+                  retrieval_efficiency=efficiency1)
     hc = EndNode(hc_name, tl, anl_name, erc_name, erc_2_name, mean_photon_num=MEAN_PHOTON_NUM2,
-                  spdc_frequency=SPDC_FREQUENCY, memo_frequency=MEMO_FREQUENCY2, abs_effi=ABS_EFFICIENCY2, retr_effi=efficiency2)
+                 spdc_frequency=SPDC_FREQUENCY, memo_frequency=MEMO_FREQUENCY2, abs_effi=ABS_EFFICIENCY2,
+                 retrieval_efficiency=efficiency2)
     erc = EntangleNode(erc_name, tl, src_list)
     erc_2 = MeasureNode(erc_2_name, tl, src_list)
 
-    topo = Topology("Experiment Topo", tl)
-    for node in [anl, hc, erc, erc_2]:
-        topo.add_node(node)
-    topo.add_quantum_channel(anl_name, erc_name, distance=20, attenuation=0)
-    topo.add_quantum_channel(hc_name, erc_name, distance=20, attenuation=0)
-    topo.add_quantum_channel(anl_name, erc_2_name, distance=20, attenuation=0)
-    topo.add_quantum_channel(hc_name, erc_2_name, distance=20, attenuation=0)
+    for seed, node in zip(seeds, [anl, hc, erc, erc_2]):
+        node.set_seed(seed)
+
+    qc1 = add_channel(anl, erc, tl, distance=20, attenuation=0)
+    qc2 = add_channel(hc, erc, tl, distance=20, attenuation=0)
+    qc3 = add_channel(anl, erc_2, tl, distance=20, attenuation=0)
+    qc4 = add_channel(hc, erc_2, tl, distance=20, attenuation=0)
 
     tl.init()
 
     # calculations for when to start protocol
     # requirement: photons must arrive at beamsplitter to realize interference
-    delay_anl = topo.nodes[anl_name].qchannels[erc_name].delay
-    delay_hc = topo.nodes[hc_name].qchannels[erc_name].delay
+    delay_anl = anl.qchannels[erc_name].delay
+    delay_hc = hc.qchannels[erc_name].delay
     time_anl = max(delay_anl, delay_hc) - delay_anl
     time_hc = max(delay_anl, delay_hc) - delay_hc
 
@@ -320,6 +338,8 @@ if __name__ == "__main__":
 
     results_direct_measurement = []
     results_bs_measurement = []
+
+    """Run Simulation"""
 
     for i in range(num_direct_trials):
         # start protocol for emitting
