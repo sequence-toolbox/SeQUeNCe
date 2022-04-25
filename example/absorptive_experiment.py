@@ -31,10 +31,11 @@ from sequence.utils.encoding import fock
 
 
 # define constants
+TRUNCATION = 2 # truncation of Fock space (=dimension-1)
 TELECOM_WAVELENGTH = 1436 # telecom band wavelength of SPDC source idler photon
 WAVELENGTH = 606 # wavelength of AFC memory resonant absorption, of SPDC source signal photon
 MODE_NUM = 100 # number of temporal modes of AFC memory (same for both memories)
-SPDC_FREQUENCY = 80e6 # frequency of both SPDC sources' photon creation
+SPDC_FREQUENCY = 80e6 # frequency of both SPDC sources' photon creation (same as memory frequency s.t. every memory mode contains one Photon)
 
 MEMO_FREQUENCY1 = 80e6 # frequency of memory 1
 MEMO_FREQUENCY2 = 80e6 # frequency of memory 2
@@ -181,6 +182,7 @@ class EntangleNode(Node):
     def receive_qubit(self, src: str, qubit) -> None:
         self.components[self.first_component_name].get(qubit, src=src)
 
+    # TODO: check if needed
     def bsm_update(self, info: Dict[str, Any]):
         self.bsm_times[info['res']].append(info['time'])
 
@@ -275,7 +277,7 @@ if __name__ == "__main__":
 
     """Run Simulation"""
 
-    tl = Timeline(1e12, 'density_matrix')
+    tl = Timeline(1e12, formalism='fock_density', truncation=TRUNCATION)
     tl.seed(0)
 
     anl_name = "Argonne"

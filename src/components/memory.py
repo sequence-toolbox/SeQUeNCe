@@ -469,10 +469,40 @@ class AbsorptiveMemory(Entity):
             # apply loss channel on photonic state and return a new state
             self.timeline.quantum_manager.add_noise(key, loss)
 
+            # determine which temporal mode the photon is stored in
+            absorb_time = now - self.absorb_start_time
+            index = int(absorb_time / self.mode_bin)
+            if index < 0 or index >= self.mode_number:
+                return
+            
+            # store photon information, NOTE the difference between information recorded for different encodings
+            if self.stored_photons[index] is None:
+                self.stored_photons[index] = {"photon": [photon], "time": [absorb_time]}
+                self.excited_photons.append(photon)
+            else:
+                self.stored_photons[index]["photon"].append(photon)
+                self.stored_photons[index]["time"].append(absorb_time)
+
         # otherwise, use random counter w/ efficiency
         elif photon.wavelength == self.wavelength and self.get_generator().random() < self.absorption_efficiency:
             self.photon_counter += 1
             now = self.timeline.now()
+
+            # determine which temporal mode the photon is stored in
+            absorb_time = now - self.absorb_start_time
+            index = int(absorb_time / self.mode_bin)
+            if index < 0 or index >= self.mode_number:
+                return
+
+            # keep one photon per mode since most hardware cannot resolve photon number
+            # photon_counter might be larger than mode_number, multi-photon events counted by "number"
+            # if "overlap" is True, memory fidelity will be corrected by overlap_error
+            if self.stored_photons[index] is None:
+                self.stored_photons[index] = {"photon": photon, "time": absorb_time, "number": 1, "overlap": False}
+                self.excited_photons.append(photon)
+            else:
+                self.stored_photons[index]["number"] += 1
+                self.stored_photons[index]["overlap"] = True
 
         # determine absorb_start_time
         if self.photon_counter == 1:
@@ -487,22 +517,6 @@ class AbsorptiveMemory(Entity):
                 # if spinwave type, and if finite spin coherence time, schedule spinwave decoherence induced storage resetting
                 if self.coherence_time>0:
                     self._schedule_storage_reset()
-
-        # determine which temporal mode the photon is stored in
-        absorb_time = now - self.absorb_start_time
-        index = int(absorb_time / self.mode_bin)
-        if index < 0 or index >= self.mode_number:
-            return
-        
-        # keep one photon per mode since most hardware cannot resolve photon number
-        # photon_counter might be larger than mode_number, multi-photon events counted by "number"
-        # if "degradation" is True, memory fidelity will be corrected by overlap_error
-        if self.stored_photons[index] is None:
-            self.stored_photons[index] = {"photon": photon, "time": absorb_time, "number": 1, "degradation": False}
-            self.excited_photons.append(photon)
-        else:
-            self.stored_photons[index]["number"] += 1
-            self.stored_photons[index]["degradation"] = True
 
     def retrieve(self, dst=""):
         """Method to re-emit all stored photons in normal/reverse sequence on demand.

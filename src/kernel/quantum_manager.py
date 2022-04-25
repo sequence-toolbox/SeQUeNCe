@@ -26,6 +26,7 @@ from .quantum_utils import *
 
 KET_STATE_FORMALISM = "ket_vector"
 DENSITY_MATRIX_FORMALISM = "density_matrix"
+FOCK_DENSITY_MATRIX_FORMALISM = "fock_density"
 
 
 class QuantumManager:
