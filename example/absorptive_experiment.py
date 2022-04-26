@@ -38,6 +38,9 @@ TELECOM_WAVELENGTH = 1436  # telecom band wavelength of SPDC source idler photon
 WAVELENGTH = 606  # wavelength of AFC memory resonant absorption, of SPDC source signal photon
 MODE_NUM = 100  # number of temporal modes of AFC memory (same for both memories)
 SPDC_FREQUENCY = 80e6  # frequency of both SPDC sources' photon creation (same as memory frequency)
+DIST_ANL_ERC = 20 # distance between ANL and ERC, in km
+DIST_HC_ERC = 20 # distance between HC and ERC, in km
+ATTENUATION = 0 # attenuation rate of optical fibre
 
 MEMO_FREQUENCY1 = SPDC_FREQUENCY  # frequency of memory 1
 MEMO_FREQUENCY2 = SPDC_FREQUENCY  # frequency of memory 2
@@ -154,11 +157,11 @@ class EndNode(Node):
         self.meas_name = measure_node
 
         # hardware setup
-        spdc_name = name + ".spdc_source"
-        memo_name = name + ".memory"
-        spdc = SPDCSource(spdc_name, timeline, wavelengths=[TELECOM_WAVELENGTH, WAVELENGTH],
+        self.spdc_name = name + ".spdc_source"
+        self.memo_name = name + ".memory"
+        spdc = SPDCSource(self.spdc_name, timeline, wavelengths=[TELECOM_WAVELENGTH, WAVELENGTH],
                           frequency=spdc_frequency, mean_photon_num=mean_photon_num)
-        memory = AbsorptiveMemory(memo_name, timeline, frequency=memo_frequency,
+        memory = AbsorptiveMemory(self.memo_name, timeline, frequency=memo_frequency,
                                   absorption_efficiency=abs_effi, efficiency=retrieval_efficiency,
                                   mode_number=MODE_NUM, wavelength=WAVELENGTH, destination=measure_node)
         self.add_component(spdc)
@@ -168,7 +171,7 @@ class EndNode(Node):
         memory.add_receiver(self)
 
         # protocols
-        self.emit_protocol = EmitProtocol(self, name + ".emit_protocol", other_node, MODE_NUM, spdc_name, memo_name)
+        self.emit_protocol = EmitProtocol(self, name + ".emit_protocol", other_node, MODE_NUM, self.spdc_name, self.memo_name)
 
     def get(self, photon: "Photon", **kwargs):
         dst = kwargs.get("dst")
@@ -310,12 +313,10 @@ if __name__ == "__main__":
     for seed, node in zip(seeds, [anl, hc, erc, erc_2]):
         node.set_seed(seed)
 
-    qc1 = add_channel(anl, erc, tl, distance=20, attenuation=0)
-    qc2 = add_channel(hc, erc, tl, distance=20, attenuation=0)
-    qc3 = add_channel(anl, erc_2, tl, distance=20, attenuation=0)
-    qc4 = add_channel(hc, erc_2, tl, distance=20, attenuation=0)
-
-    tl.init()
+    qc1 = add_channel(anl, erc, tl, distance=DIST_ANL_ERC, attenuation=ATTENUATION)
+    qc2 = add_channel(hc, erc, tl, distance=DIST_HC_ERC, attenuation=ATTENUATION)
+    qc3 = add_channel(anl, erc_2, tl, distance=DIST_ANL_ERC, attenuation=ATTENUATION)
+    qc4 = add_channel(hc, erc_2, tl, distance=DIST_HC_ERC, attenuation=ATTENUATION)
 
     # calculations for when to start protocol
     # requirement: photons must arrive at beamsplitter to realize interference
@@ -324,13 +325,30 @@ if __name__ == "__main__":
     time_anl = max(delay_anl, delay_hc) - delay_anl
     time_hc = max(delay_anl, delay_hc) - delay_hc
 
-    # calculations for when to start recording measurements
+    # calculations for fibre length modification for retrieved photon measurement
     # requirement: photons must arrive at beamsplitter to realize interference
-    # TODO: result in different channel lengths for BSM and DM measurement?
+    dalay_anl_reemit = anl.components[anl.memo_name].total_time
+    delay_hc_reemit = hc.components[hc.memo_name].total_time
+    delay_anl_meas = anl.qchannels[erc_2_name].delay
+    delay_hc_meas = hc.qchannels[erc_2_name].delay
+    delay_anl_meas_tot = time_anl + dalay_anl_reemit + delay_anl_meas
+    delay_hc_meas_tot = time_hc + delay_hc_reemit + delay_hc_meas
+    time_anl_meas = max(delay_anl_meas_tot, delay_hc_meas_tot) - delay_anl_meas_tot
+    time_hc_meas = max(delay_anl_meas_tot, delay_hc_meas_tot) - delay_hc_meas_tot
+    dist_anl_meas = qc3.light_speed * time_anl_meas
+    dist_hc_meas = qc4.light_speed * time_hc_meas
+
+    qc3.set_distance(dist_anl_meas)
+    qc4.set_distance(dist_hc_meas)
+
+    # calculations for when to start recording measurements
+    # TODO: check
     start_time_bsm = time_anl + delay_anl
     mem = anl.get_components_by_type("AbsorptiveMemory")[0]
     total_time = mem.total_time
     start_time_meas = time_anl + total_time + delay_anl
+
+    tl.init()
 
     results_direct_measurement = []
     results_bs_measurement = []
