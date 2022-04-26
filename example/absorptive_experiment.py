@@ -201,7 +201,7 @@ class EntangleNode(Node):
     def receive_qubit(self, src: str, qubit) -> None:
         self.components[self.first_component_name].get(qubit, src=src)
 
-    # TODO: check
+    # TODO: record BSM result (which SPD clicks) to determine the standard Bell state's relative sign for fidelity calculation
     def get_valid_bins(self, start_time: int, num_bins: int, frequency: float):
         """Computes time bins containing a BSM measurement.
 
@@ -335,8 +335,8 @@ if __name__ == "__main__":
     delay_hc_meas_tot = time_hc + delay_hc_reemit + delay_hc_meas
     time_anl_meas = max(delay_anl_meas_tot, delay_hc_meas_tot) - delay_anl_meas_tot
     time_hc_meas = max(delay_anl_meas_tot, delay_hc_meas_tot) - delay_hc_meas_tot
-    dist_anl_meas = qc3.light_speed * time_anl_meas
-    dist_hc_meas = qc4.light_speed * time_hc_meas
+    dist_anl_meas = qc3.light_speed * time_hc_meas + DIST_ANL_ERC
+    dist_hc_meas = qc4.light_speed * time_anl_meas + DIST_HC_ERC
 
     qc3.set_distance(dist_anl_meas)
     qc4.set_distance(dist_hc_meas)
