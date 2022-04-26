@@ -188,12 +188,12 @@ class EntangleNode(Node):
         super().__init__(name, timeline)
 
         # hardware setup
-        bsm_name = name + ".bsm"
+        self.bsm_name = name + ".bsm"
         # assume no relative phase between two input optical paths
-        bsm = QSDetectorFockInterference(bsm_name, timeline, src_list)
+        bsm = QSDetectorFockInterference(self.bsm_name, timeline, src_list)
         self.add_component(bsm)
         bsm.attach(self)
-        self.set_first_component(bsm_name)
+        self.set_first_component(self.bsm_name)
 
         self.resolution = max([d.time_resolution for d in bsm.detectors])
         self.bsm_times = [[], []]
@@ -201,7 +201,6 @@ class EntangleNode(Node):
     def receive_qubit(self, src: str, qubit) -> None:
         self.components[self.first_component_name].get(qubit, src=src)
 
-    # TODO: record BSM result (which SPD clicks) to determine the standard Bell state's relative sign for fidelity calculation
     def get_valid_bins(self, start_time: int, num_bins: int, frequency: float):
         """Computes time bins containing a BSM measurement.
 
@@ -224,6 +223,36 @@ class EntangleNode(Node):
                 return_bins[closest_bin] = not return_bins[closest_bin]
 
         return return_bins
+
+    def get_detector_entries(self, detector_name: str, start_time: int, num_bins: int, frequency: float):
+        """Returns detection events for density matrix measurement. Used to determine BSM result.
+
+        Args:
+            detector_name (str): name of detector to get measurements from.
+            start_time (int): simulation start time of when photons received.
+            num_bins (int): number of arrival bins
+            frequency (float): frequency of photon arrival (in Hz).
+
+        Returns:
+            List[int]: list of length (num_bins) with result for each time bin.
+        """
+
+        trigger_times = self.components[detector_name].get_photon_times()
+        return_res = [0] * num_bins
+
+        for time in trigger_times[0]:
+            closest_bin = int(round((time - start_time) * frequency * 1e-12))
+            expected_time = (float(closest_bin) * 1e12 / frequency) + start_time
+            if abs(expected_time - time) < self.resolution and 0 <= closest_bin < num_bins:
+                return_res[closest_bin] += 1
+
+        for time in trigger_times[1]:
+            closest_bin = int(round((time - start_time) * frequency * 1e-12))
+            expected_time = (float(closest_bin) * 1e12 / frequency) + start_time
+            if abs(expected_time - time) < self.resolution and 0 <= closest_bin < num_bins:
+                return_res[closest_bin] += 2
+
+        return return_res
 
 
 class MeasureNode(Node):
@@ -251,9 +280,8 @@ class MeasureNode(Node):
     def set_phase(self, phase: float):
         self.components[self.bs_detector_name].set_phase(phase)
 
-    # TODO: check
     def get_detector_entries(self, detector_name: str, start_time: int, num_bins: int, frequency: float):
-        """Computes distribution of detection events for density matrix.
+        """Returns detection events for density matrix measurement.
 
         Args:
             detector_name (str): name of detector to get measurements from.
@@ -262,7 +290,7 @@ class MeasureNode(Node):
             frequency (float): frequency of photon arrival (in Hz).
 
         Returns:
-            List[int]: list of length (duration * 1e-12 * frequency) with result for each time bin.
+            List[int]: list of length (num_bins) with result for each time bin.
         """
 
         trigger_times = self.components[detector_name].get_photon_times()
@@ -342,7 +370,6 @@ if __name__ == "__main__":
     qc4.set_distance(dist_hc_meas)
 
     # calculations for when to start recording measurements
-    # TODO: check
     start_time_bsm = time_anl + delay_anl
     mem = anl.get_components_by_type("AbsorptiveMemory")[0]
     total_time = mem.total_time
@@ -368,47 +395,53 @@ if __name__ == "__main__":
         print("finished direct measurement trial {} out of {}".format(i+1, num_direct_trials))
 
         # collect data
-        bsm_res = erc.get_valid_bins(start_time_bsm, MODE_NUM, SPDC_FREQUENCY)
+        # TODO: need access to intermediate state to calculate fidelity (with states of photon stored in memory after BSM)
+        bsm_success = erc.get_valid_bins(start_time_bsm, MODE_NUM, SPDC_FREQUENCY)
+        bsm_res = erc.get_detector_entries(erc.bsm_name, start_time_bsm, MODE_NUM, SPDC_FREQUENCY) # BSM results determine relative sign of reference Bell state
         meas_res = erc_2.get_detector_entries(erc_2.direct_detector_name, start_time_meas, MODE_NUM, SPDC_FREQUENCY)
-        num_bsm_res = sum(bsm_res)
-        meas_res_valid = [m for m, b in zip(meas_res, bsm_res) if b]
-        probs = [0.0] * 4
+        num_bsm_res = sum(bsm_success)
+        meas_res_valid = [m for m, b in zip(meas_res, bsm_success) if b]
+        counts_diag = [0] * 4
         for j in range(4):
-            probs[j] = meas_res_valid.count(j) / num_bsm_res
-        results_direct_measurement.append(probs)
+            counts_diag[j] = meas_res_valid.count(j)
+        res_diag = {"counts": counts_diag, "total_count": num_bsm_res}
+        results_direct_measurement.append(res_diag)
 
         # reset timeline
         tl.time = 0
         tl.init()
 
-    # change to other measurement
-    erc_2.set_first_component(erc_2.bs_detector_name)
-    for i, phase in enumerate(phase_settings):
-        erc_2.set_phase(phase)
+        # change to other measurement
+        erc_2.set_first_component(erc_2.bs_detector_name)
+        for i, phase in enumerate(phase_settings):
+            erc_2.set_phase(phase)
 
-        # start protocol for emitting
-        process = Process(anl.emit_protocol, "start", [])
-        event = Event(time_anl, process)
-        tl.schedule(event)
-        process = Process(hc.emit_protocol, "start", [])
-        event = Event(time_hc, process)
-        tl.schedule(event)
+            # start protocol for emitting
+            process = Process(anl.emit_protocol, "start", [])
+            event = Event(time_anl, process)
+            tl.schedule(event)
+            process = Process(hc.emit_protocol, "start", [])
+            event = Event(time_hc, process)
+            tl.schedule(event)
 
-        tl.run()
-        print("finished interference measurement trial {} out of {}".format(i+1, len(phase_settings)))
+            tl.run()
+            print("finished interference measurement trial {} out of {}".format(i+1, len(phase_settings)))
 
-        # collect data
-        bsm_res = erc.get_valid_bins(start_time_bsm, MODE_NUM, SPDC_FREQUENCY)
-        meas_res = erc_2.get_detector_entries(erc_2.bs_detector_name, start_time_meas, MODE_NUM, SPDC_FREQUENCY)
-        meas_res_valid = [m for m, b in zip(meas_res, bsm_res) if b]
-        num_detector_0 = meas_res.count(1) + meas_res_valid.count(3)
-        num_detector_1 = meas_res.count(2) + meas_res_valid.count(3)
-        freqs = [num_detector_0/(total_time * 1e-12), num_detector_1/(total_time * 1e-12)]
-        results_bs_measurement.append(freqs)
+            # collect data
+            bsm_success = erc.get_valid_bins(start_time_bsm, MODE_NUM, SPDC_FREQUENCY) # relative sign should not influence interference pattern
+            meas_res = erc_2.get_detector_entries(erc_2.bs_detector_name, start_time_meas, MODE_NUM, SPDC_FREQUENCY)
+            num_bsm_res = sum(bsm_success)
+            meas_res_valid = [m for m, b in zip(meas_res, bsm_success) if b]
+            num_detector_0 = meas_res.count(1) + meas_res_valid.count(3)
+            num_detector_1 = meas_res.count(2) + meas_res_valid.count(3)
+            # freqs = [num_detector_0/(total_time * 1e-12), num_detector_1/(total_time * 1e-12)]
+            counts_interfere = [num_detector_0 , num_detector_1] # use detection probability to construct interference pattern
+            res_interference = {"counts": counts_interfere, "total_count": num_bsm_res}
+            results_bs_measurement.append(res_interference)
 
-        # reset timeline
-        tl.time = 0
-        tl.init()
+            # reset timeline
+            tl.time = 0
+            tl.init()
 
     """Store results"""
 
