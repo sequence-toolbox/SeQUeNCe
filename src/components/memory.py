@@ -22,6 +22,11 @@ from ..kernel.process import Process
 from ..utils.encoding import single_atom
 
 
+def const(t):
+    """Constant function thal always returns 1. For AFC memory default spin efficiency."""
+    return 1
+
+
 # array of single atom memories
 class MemoryArray(Entity):
     """Aggregator for Memory objects.
@@ -321,7 +326,8 @@ class AbsorptiveMemory(Entity):
         fidelity (float): (current) fidelity of memory's entanglement.
         frequency (float): maximum frequency of absorption for memory (total frequency bandwidth of AFC memory) (in Hz).
         absorption_efficiency (float): probability of absorbing a photon when arriving at the memory.
-        efficiency (Callable): probability of emitting a photon as a function of storage time.
+        afc_efficiency (Callable): probability of emitting a photon as a function of AFC re-emission time of optical AFC.
+        spin_efficiency (Callable): effeciency of spinwave storage as a function of storage time.
         mode_number (int): number of temporal modes available for storing photons, i.e. number of peaks in Atomic Frequency Comb.
         mode_bin (int):
         AFC_lifetime (float): average usable lifetime of AFC structure (in s), 0 means infinite lifetime.
@@ -342,9 +348,9 @@ class AbsorptiveMemory(Entity):
         stored_photons (List[Dict]): photons stored in memory temporal modes.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", frequency: float, absorption_efficiency: float, efficiency: Callable, 
+    def __init__(self, name: str, timeline: "Timeline", frequency: float, absorption_efficiency: float, afc_efficiency: Callable, 
                  mode_number: int, wavelength: int, prepare_time: int=0, AFC_lifetime: float=-1, coherence_time: float=-1, 
-                 fidelity: float=1, overlap_error: float=0, is_spinwave=False, is_reversed=False, destination=None):
+                 fidelity: float=1, overlap_error: float=0, is_spinwave=False, is_reversed=False, destination=None, spin_efficiency=const):
         """Constructor for the AbsorptiveMemory class.
 
         Args:
@@ -353,7 +359,8 @@ class AbsorptiveMemory(Entity):
             fidelity (float): fidelity of memory.
             frequency (float): maximum frequency of absorption for memory (total frequency bandwidth of AFC memory).
             absorption_efficiency (float): probability of absorbing a photon when arriving at the memory.
-            efficiency (Callable): probability of emitting a photon as a function of storage time.
+            afc_efficiency (Callable): probability of emitting a photon as a function of AFC re-emission time of optical AFC.
+            spin_efficiency (Callable): effeciency of spinwave storage as a function of storage time. Default contant unity.
             mode_number (int): number of modes supported for storing photons.
             AFC_lifetime (float): average usable lifetime of AFC structure (in s), -1 means infinite lifetime.
             coherence_time (float): average usable lifetime of spinwave storage (spinwave transition coherence time) (in s), -1 means infinite coherence time.
@@ -373,7 +380,8 @@ class AbsorptiveMemory(Entity):
         self.raw_fidelity = fidelity
         self.frequency = frequency
         self.absorption_efficiency = absorption_efficiency
-        self.efficiency = efficiency
+        self.afc_efficiency = afc_efficiency
+        self.spin_efficiency = spin_efficiency
         self.mode_number = mode_number
         self.AFC_lifetime = AFC_lifetime # AFC lifetime in seconds
         self.coherence_time = coherence_time # spinwave coherencetime in seconds
@@ -543,7 +551,7 @@ class AbsorptiveMemory(Entity):
                 # if photon uses Fock representation, no need for random number judgement as inefficiency will be reflected with loss channel
                 if photon.encoding_type["name"] == "fock":
                     key = photon.quantum_state # if using Fock representation, the `quantum_state` field is the key in quantum_manager
-                    loss = 1 - self.efficiency(store_time) # loss rate due to emission inefficiency
+                    loss = 1 - self.afc_efficiency(self.total_time) * self.spin_efficiency(store_time) # loss rate due to emission inefficiency
                     # apply loss channel on photonic state and return a new state
                     output = self.timeline.quantum_manager.add_loss(key, loss)
                     # get all keys corresponding to the photonic state (entangled with the subsystem subject to loss channel)

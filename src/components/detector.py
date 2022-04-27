@@ -477,7 +477,7 @@ class QSDetectorFockInterference(QSDetector):
             photon1 = dict1["photon"]
             key0 = photon0.quantum_state
             key1 = photon1.quantum_state
-            povms = tuple(self._generate_povms())
+            povms = self._generate_povms()
 
             # determine the outcome
             samp = self.get_generator().random()  # random measurement sample

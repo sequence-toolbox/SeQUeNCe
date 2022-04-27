@@ -30,6 +30,7 @@ from sequence.components.memory import AbsorptiveMemory
 from sequence.components.optical_channel import QuantumChannel
 from sequence.topology.node import Node
 from sequence.protocol import Protocol
+from sequence.kernel.quantum_utils import * # only for manual calculation and should not be used in simulation
 
 
 # define constants
@@ -152,7 +153,7 @@ class EndNode(Node):
 
     def __init__(self, name: str, timeline: "Timeline", other_node: str, bsm_node: str, measure_node: str,
                  mean_photon_num: float, spdc_frequency: float, memo_frequency: float, abs_effi: float,
-                 retrieval_efficiency: Callable):
+                 afc_efficiency: Callable):
         super().__init__(name, timeline)
 
         self.bsm_name = bsm_node
@@ -164,7 +165,7 @@ class EndNode(Node):
         spdc = SPDCSource(self.spdc_name, timeline, wavelengths=[TELECOM_WAVELENGTH, WAVELENGTH],
                           frequency=spdc_frequency, mean_photon_num=mean_photon_num)
         memory = AbsorptiveMemory(self.memo_name, timeline, frequency=memo_frequency,
-                                  absorption_efficiency=abs_effi, efficiency=retrieval_efficiency,
+                                  absorption_efficiency=abs_effi, afc_efficiency=afc_efficiency,
                                   mode_number=MODE_NUM, wavelength=WAVELENGTH, destination=measure_node)
         self.add_component(spdc)
         self.add_component(memory)
@@ -333,10 +334,10 @@ if __name__ == "__main__":
 
     anl = EndNode(anl_name, tl, hc_name, erc_name, erc_2_name, mean_photon_num=MEAN_PHOTON_NUM1,
                   spdc_frequency=SPDC_FREQUENCY, memo_frequency=MEMO_FREQUENCY1, abs_effi=ABS_EFFICIENCY1,
-                  retrieval_efficiency=efficiency1)
+                  afc_efficiency=efficiency1)
     hc = EndNode(hc_name, tl, anl_name, erc_name, erc_2_name, mean_photon_num=MEAN_PHOTON_NUM2,
                  spdc_frequency=SPDC_FREQUENCY, memo_frequency=MEMO_FREQUENCY2, abs_effi=ABS_EFFICIENCY2,
-                 retrieval_efficiency=efficiency2)
+                 afc_efficiency=efficiency2)
     erc = EntangleNode(erc_name, tl, src_list)
     erc_2 = MeasureNode(erc_2_name, tl, src_list)
 
@@ -381,6 +382,73 @@ if __name__ == "__main__":
 
     results_direct_measurement = []
     results_bs_measurement = [[]] * len(phase_settings)
+
+    """Pre-simulation explicit calculation of entanglement fidelity upon successful BSM"""
+    # use non-transmitted Photon as interface with existing methods in SeQUeNCe
+    spdc_anl = anl.components[anl.spdc_name]
+    spdc_hc = hc.components[hc.spdc_name]
+    memo_anl = anl.components[anl.memo_name]
+    memo_hc = hc.components[hc.memo_name]
+    channel_anl = anl.qchannels[erc_name]
+    channel_hc = hc.qchannels[erc_name]
+    bsm = erc.components[erc.bsm_name]
+
+    # photon0: idler, photon1: signal
+    photon0_anl = Photon("", spdc_anl.timeline, wavelength=spdc_anl.wavelengths[0], location=spdc_anl, encoding_type=spdc_anl.encoding_type, use_qm=True)
+    photon1_anl = Photon("", spdc_anl.timeline, wavelength=spdc_anl.wavelengths[1], location=spdc_anl, encoding_type=spdc_anl.encoding_type, use_qm=True)
+    # set shared state to squeezed state
+    state_spdc_anl = spdc_anl._generate_tmsv_state()
+    keys = [photon0_anl.quantum_state, photon1_anl.quantum_state]
+    tl.quantum_manager.set(keys, state_spdc_anl)
+
+    photon0_hc = Photon("", spdc_hc.timeline, wavelength=spdc_hc.wavelengths[0], location=spdc_hc, encoding_type=spdc_hc.encoding_type, use_qm=True)
+    photon1_hc = Photon("", spdc_hc.timeline, wavelength=spdc_hc.wavelengths[1], location=spdc_hc, encoding_type=spdc_hc.encoding_type, use_qm=True)
+    # set shared state to squeezed state
+    state_spdc_hc = spdc_hc._generate_tmsv_state()
+    keys = [photon0_hc.quantum_state, photon1_hc.quantum_state]
+    tl.quantum_manager.set(keys, state_spdc_hc)
+
+    # photon loss upon absorption by memories
+    key_anl = photon1_anl.quantum_state
+    loss_anl = 1 - memo_anl.absorption_efficiency
+    tl.quantum_manager.add_loss(key_anl, loss_anl)
+    key_hc = photon1_hc.quantum_state
+    loss_hc = 1 - memo_hc.absorption_efficiency
+    tl.quantum_manager.add_loss(key_hc, loss_hc)
+
+    # transmission loss through optical fibres (overwrites previous variables)
+    key_anl = photon0_anl.quantum_state
+    loss_anl = channel_anl.loss
+    tl.quantum_manager.add_loss(key_anl, loss_anl)
+    key_hc = photon0_hc.quantum_state
+    loss_hc = channel_anl.loss
+    tl.quantum_manager.add_loss(key_hc, loss_hc)
+
+    # QSDetector measurement and remaining state after partial trace
+    povms = bsm._generate_povms()
+    povm_tuple = tuple([tuple(map(tuple, povm)) for povm in povms])
+    keys = [photon0_anl.quantum_state, photon0_hc.quantum_state]
+    new_state, all_keys = tl.quantum_manager._prepare_state(keys)
+    indices = tuple([all_keys.index(key) for key in keys])
+    state_tuple = tuple(map(tuple, new_state))
+    states, probs = measure_multiple_with_cache_fock_density(state_tuple, indices, len(all_keys), povm_tuple, tl.quantum_manager.truncation)
+    state_plus, state_minus = states[1], states[2]
+
+    for key in keys:
+        tl.quantum_manager.states[key] = None  # clear the stored state at key (particle destructively measured)
+
+    # assign remaining state (plus as example)
+    if len(keys) < len(all_keys):
+        indices = tuple([all_keys.index(key) for key in keys])
+        new_state_tuple = tuple(map(tuple, state_plus))
+        remaining_state = density_partial_trace(new_state_tuple, indices, len(all_keys), tl.quantum_manager.truncation)
+        remaining_keys = [key for key in all_keys if key not in keys]
+        tl.quantum_manager.set(remaining_keys, remaining_state)
+
+    # calculate the fidelity with reference Bell state
+    bell_plus = build_bell_state(tl.quantum_managertruncation, "plus")
+    bell_minus = build_bell_state(tl.quantum_managertruncation, "minus")
+    fidelity = np.trace(remaining_state.dot(bell_plus)).real
 
     """Run Simulation"""
 
