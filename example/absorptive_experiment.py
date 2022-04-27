@@ -11,7 +11,7 @@ The measurement node contians a QSDetectorFockDirect instance and a QSDetectorFo
 WIP
 """
 
-from typing import List, Dict, Any, Callable, TYPE_CHECKING
+from typing import List, Callable, TYPE_CHECKING
 from pathlib import Path
 
 if TYPE_CHECKING:
@@ -58,6 +58,7 @@ DECAY_RATE1 = 0  # retrieval efficiency decay rate for memory 1
 DECAY_RATE2 = 0  # retrieval efficiency decay rate for memory 2
 
 # experiment settings
+time = int(1e12)
 num_direct_trials = 10
 num_bs_trials_per_phase = 10
 phase_settings = np.linspace(0, 2*np.pi, num=10, endpoint=False)
@@ -321,7 +322,7 @@ if __name__ == "__main__":
 
     """Setup Simulation"""
 
-    tl = Timeline(1e12, formalism=FOCK_DENSITY_MATRIX_FORMALISM, truncation=TRUNCATION)
+    tl = Timeline(time, formalism=FOCK_DENSITY_MATRIX_FORMALISM, truncation=TRUNCATION)
 
     anl_name = "Argonne"
     hc_name = "Harper Court"
@@ -396,9 +397,11 @@ if __name__ == "__main__":
         print("finished direct measurement trial {} out of {}".format(i+1, num_direct_trials))
 
         # collect data
-        # TODO: need access to intermediate state to calculate fidelity (with states of photon stored in memory after BSM)
+        # TODO: need access to intermediate state to calculate fidelity
+        #  (with states of photon stored in memory after BSM)
         bsm_success = erc.get_valid_bins(start_time_bsm, MODE_NUM, SPDC_FREQUENCY)
-        bsm_res = erc.get_detector_entries(erc.bsm_name, start_time_bsm, MODE_NUM, SPDC_FREQUENCY) # BSM results determine relative sign of reference Bell state
+        # BSM results determine relative sign of reference Bell state
+        bsm_res = erc.get_detector_entries(erc.bsm_name, start_time_bsm, MODE_NUM, SPDC_FREQUENCY)
         meas_res = erc_2.get_detector_entries(erc_2.direct_detector_name, start_time_meas, MODE_NUM, SPDC_FREQUENCY)
         num_bsm_res = sum(bsm_success)
         meas_res_valid = [m for m, b in zip(meas_res, bsm_success) if b]
@@ -439,7 +442,8 @@ if __name__ == "__main__":
             num_detector_0 = meas_res.count(1) + meas_res_valid.count(3)
             num_detector_1 = meas_res.count(2) + meas_res_valid.count(3)
             # freqs = [num_detector_0/(total_time * 1e-12), num_detector_1/(total_time * 1e-12)]
-            counts_interfere = [num_detector_0 , num_detector_1]  # use detection probability to construct interference pattern
+            # use detection probability to construct interference pattern
+            counts_interfere = [num_detector_0 , num_detector_1]
             res_interference = {"counts": counts_interfere, "total_count": num_bsm_res}
             results_bs_measurement[i].append(res_interference)
 

@@ -684,7 +684,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
         prepared_state, all_keys = self._prepare_state([key])
         kraus_ops = self._build_loss_kraus_operators(loss_rate, all_keys, key)
-        output_state = zeros(prepared_state.shape)
+        output_state = zeros(prepared_state.shape, dtype=complex)
 
         for kraus_op in kraus_ops:
             output_state += kraus_op @ prepared_state @ kraus_op.conj().T

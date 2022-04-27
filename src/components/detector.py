@@ -542,7 +542,7 @@ class QSDetectorFockInterference(QSDetector):
             self.beamsplitter.get(photon)
         """
 
-    def get_photon_times(self) -> tuple(List[List[int]], List[List[Dict]]):
+    def get_photon_times(self) -> List[List[int]]:
         """Method to get detector trigger times and detection information.
         Will clear `trigger_times` and `detect_info`.
         """
@@ -550,7 +550,8 @@ class QSDetectorFockInterference(QSDetector):
         detect_info = self.detect_info
         self.trigger_times = [[], []]
         self.detect_info = [[], []]
-        return trigger_times, detect_info
+        # return trigger_times, detect_info
+        return trigger_times
 
     # does nothing for this class
     def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:

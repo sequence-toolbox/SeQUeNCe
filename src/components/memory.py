@@ -467,7 +467,7 @@ class AbsorptiveMemory(Entity):
             key = photon.quantum_state  # if using Fock representation, the `quantum_state` field is the state key.
             loss = 1 - self.absorption_efficiency  # loss rate due to absorption inefficiency
             # apply loss channel on photonic state and return a new state
-            self.timeline.quantum_manager.add_noise(key, loss)
+            self.timeline.quantum_manager.add_loss(key, loss)
 
             # determine which temporal mode the photon is stored in
             absorb_time = now - self.absorb_start_time
@@ -545,7 +545,7 @@ class AbsorptiveMemory(Entity):
                     key = photon.quantum_state # if using Fock representation, the `quantum_state` field is the key in quantum_manager
                     loss = 1 - self.efficiency(store_time) # loss rate due to emission inefficiency
                     # apply loss channel on photonic state and return a new state
-                    output = self.timeline.quantum_manager.add_noise(key, loss)
+                    output = self.timeline.quantum_manager.add_loss(key, loss)
                     # get all keys corresponding to the photonic state (entangled with the subsystem subject to loss channel)
                     keys = self.timeline.quantum_manager.states[key].keys
                     # update the quantum state in quantum manager after loss channel
