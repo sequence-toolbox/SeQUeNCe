@@ -59,6 +59,7 @@ DECAY_RATE2 = 0  # retrieval efficiency decay rate for memory 2
 
 # experiment settings
 num_direct_trials = 10
+num_bs_trials_per_phase = 10
 phase_settings = np.linspace(0, 2*np.pi, num=10, endpoint=False)
 
 
@@ -378,7 +379,7 @@ if __name__ == "__main__":
     tl.init()
 
     results_direct_measurement = []
-    results_bs_measurement = []
+    results_bs_measurement = [[]] * len(phase_settings)
 
     """Run Simulation"""
 
@@ -411,11 +412,12 @@ if __name__ == "__main__":
         tl.time = 0
         tl.init()
 
-        # change to other measurement
-        erc_2.set_first_component(erc_2.bs_detector_name)
-        for i, phase in enumerate(phase_settings):
-            erc_2.set_phase(phase)
+    # change to other measurement
+    erc_2.set_first_component(erc_2.bs_detector_name)
+    for i, phase in enumerate(phase_settings):
+        erc_2.set_phase(phase)
 
+        for j in range(num_bs_trials_per_phase):
             # start protocol for emitting
             process = Process(anl.emit_protocol, "start", [])
             event = Event(time_anl, process)
@@ -425,19 +427,21 @@ if __name__ == "__main__":
             tl.schedule(event)
 
             tl.run()
-            print("finished interference measurement trial {} out of {}".format(i+1, len(phase_settings)))
+            print("finished interference measurement trial {} out of {} for phase {}".format(
+                j+1, num_bs_trials_per_phase, i))
 
             # collect data
-            bsm_success = erc.get_valid_bins(start_time_bsm, MODE_NUM, SPDC_FREQUENCY) # relative sign should not influence interference pattern
+            # relative sign should not influence interference pattern
+            bsm_success = erc.get_valid_bins(start_time_bsm, MODE_NUM, SPDC_FREQUENCY)
             meas_res = erc_2.get_detector_entries(erc_2.bs_detector_name, start_time_meas, MODE_NUM, SPDC_FREQUENCY)
             num_bsm_res = sum(bsm_success)
             meas_res_valid = [m for m, b in zip(meas_res, bsm_success) if b]
             num_detector_0 = meas_res.count(1) + meas_res_valid.count(3)
             num_detector_1 = meas_res.count(2) + meas_res_valid.count(3)
             # freqs = [num_detector_0/(total_time * 1e-12), num_detector_1/(total_time * 1e-12)]
-            counts_interfere = [num_detector_0 , num_detector_1] # use detection probability to construct interference pattern
+            counts_interfere = [num_detector_0 , num_detector_1]  # use detection probability to construct interference pattern
             res_interference = {"counts": counts_interfere, "total_count": num_bsm_res}
-            results_bs_measurement.append(res_interference)
+            results_bs_measurement[i].append(res_interference)
 
             # reset timeline
             tl.time = 0
