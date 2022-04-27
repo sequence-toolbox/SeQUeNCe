@@ -7,7 +7,7 @@ Photons should be routed to a BSM device for entanglement generation, or through
 
 from copy import copy
 from math import inf
-from typing import Any, List, TYPE_CHECKING, Dict, Callable
+from typing import Any, List, TYPE_CHECKING, Dict, Callable, Union
 
 from scipy import stats
 
@@ -330,7 +330,7 @@ class AbsorptiveMemory(Entity):
         spin_efficiency (Callable): effeciency of spinwave storage as a function of storage time.
         mode_number (int): number of temporal modes available for storing photons, i.e. number of peaks in Atomic Frequency Comb.
         mode_bin (int):
-        AFC_lifetime (float): average usable lifetime of AFC structure (in s), 0 means infinite lifetime.
+        afc_lifetime (float): average usable lifetime of AFC structure (in s), 0 means infinite lifetime.
         coherence_time (float): average usable lifetime of spinwave storage (spinwave transition coherence time) (in s), 0 means infinite coherence time.
         wavelength (float): wavelength (in nm) of absorbed and emitted photons.
         total_time (float): AFC re-phasing time (in ps)
@@ -348,9 +348,10 @@ class AbsorptiveMemory(Entity):
         stored_photons (List[Dict]): photons stored in memory temporal modes.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", frequency: float, absorption_efficiency: float, afc_efficiency: Callable, 
-                 mode_number: int, wavelength: int, prepare_time: int=0, AFC_lifetime: float=-1, coherence_time: float=-1, 
-                 fidelity: float=1, overlap_error: float=0, is_spinwave=False, is_reversed=False, destination=None, spin_efficiency=const):
+    def __init__(self, name: str, timeline: "Timeline", frequency: float, absorption_efficiency: float,
+                 afc_efficiency: Callable, mode_number: int, wavelength: int, prepare_time: int = 0,
+                 afc_lifetime: float = -1, coherence_time: float = -1, fidelity: float = 1, overlap_error: float = 0,
+                 is_spinwave=False, is_reversed=False, destination=None, spin_efficiency=const):
         """Constructor for the AbsorptiveMemory class.
 
         Args:
@@ -362,7 +363,7 @@ class AbsorptiveMemory(Entity):
             afc_efficiency (Callable): probability of emitting a photon as a function of AFC re-emission time of optical AFC.
             spin_efficiency (Callable): effeciency of spinwave storage as a function of storage time. Default contant unity.
             mode_number (int): number of modes supported for storing photons.
-            AFC_lifetime (float): average usable lifetime of AFC structure (in s), -1 means infinite lifetime.
+            afc_lifetime (float): average usable lifetime of AFC structure (in s), -1 means infinite lifetime.
             coherence_time (float): average usable lifetime of spinwave storage (spinwave transition coherence time) (in s), -1 means infinite coherence time.
             wavelength (int): wavelength (in nm) of photons emitted by memories.
             overlap_error (float): error due to photon overlap in one temporal mode.
@@ -383,8 +384,8 @@ class AbsorptiveMemory(Entity):
         self.afc_efficiency = afc_efficiency
         self.spin_efficiency = spin_efficiency
         self.mode_number = mode_number
-        self.AFC_lifetime = AFC_lifetime # AFC lifetime in seconds
-        self.coherence_time = coherence_time # spinwave coherencetime in seconds
+        self.afc_lifetime = afc_lifetime  # AFC lifetime in seconds
+        self.coherence_time = coherence_time  # spinwave coherencetime in seconds
         self.wavelength = wavelength
         self.mode_bin = 1e12 / self.frequency  # time bin for each separate temporal mode in ps
         self.total_time = self.mode_number * self.mode_bin  # AFC rephasing time in ps
@@ -415,7 +416,7 @@ class AbsorptiveMemory(Entity):
         self.excited_photons = []
 
         # initialization of stored_photons dictionary
-        self.stored_photons = [None] * self.mode_number
+        self.stored_photons: List[Union[None, Dict]] = [None] * self.mode_number
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
@@ -454,7 +455,7 @@ class AbsorptiveMemory(Entity):
             self.is_prepared = True
 
             # schedule AFC expiration once it is prepared, if finite AFC lifetime
-            if self.AFC_lifetime > 0:
+            if self.afc_lifetime > 0:
                 self._schedule_expiration()
 
     def get(self, photon: "Photon", **kwargs):
@@ -464,44 +465,35 @@ class AbsorptiveMemory(Entity):
         if not self.is_prepared:
             raise Exception("AFC is not prepared yet.")
 
-        now = -1
+        self.photon_counter += 1
+        now = self.timeline.now()
+
+        # determine which temporal mode the photon is stored in
+        absorb_time = now - self.absorb_start_time
+        index = int(absorb_time / self.mode_bin)
+        if index < 0 or index >= self.mode_number:
+            return
+
         # require resonant absorption of photons
         # if photon uses Fock representation, inefficiency will be reflected with loss channel
         if photon.encoding_type["name"] == "fock" and photon.wavelength == self.wavelength:
-            self.photon_counter += 1
-            now = self.timeline.now()
-
             # invoke loss channel due to absorption inefficiency
             key = photon.quantum_state  # if using Fock representation, the `quantum_state` field is the state key.
             loss = 1 - self.absorption_efficiency  # loss rate due to absorption inefficiency
             # apply loss channel on photonic state and return a new state
             self.timeline.quantum_manager.add_loss(key, loss)
-
-            # determine which temporal mode the photon is stored in
-            absorb_time = now - self.absorb_start_time
-            index = int(absorb_time / self.mode_bin)
-            if index < 0 or index >= self.mode_number:
-                return
             
             # store photon information, NOTE the difference between information recorded for different encodings
+            # in this case, store more than one photon
             if self.stored_photons[index] is None:
-                self.stored_photons[index] = {"photon": [photon], "time": [absorb_time]}
+                self.stored_photons[index] = {"photons": [photon], "times": [absorb_time]}
                 self.excited_photons.append(photon)
             else:
-                self.stored_photons[index]["photon"].append(photon)
-                self.stored_photons[index]["time"].append(absorb_time)
+                self.stored_photons[index]["photons"].append(photon)
+                self.stored_photons[index]["times"].append(absorb_time)
 
         # otherwise, use random counter w/ efficiency
         elif photon.wavelength == self.wavelength and self.get_generator().random() < self.absorption_efficiency:
-            self.photon_counter += 1
-            now = self.timeline.now()
-
-            # determine which temporal mode the photon is stored in
-            absorb_time = now - self.absorb_start_time
-            index = int(absorb_time / self.mode_bin)
-            if index < 0 or index >= self.mode_number:
-                return
-
             # keep one photon per mode since most hardware cannot resolve photon number
             # photon_counter might be larger than mode_number, multi-photon events counted by "number"
             # if "overlap" is True, memory fidelity will be corrected by overlap_error
@@ -545,37 +537,40 @@ class AbsorptiveMemory(Entity):
         store_time = now - self.absorb_start_time - self.total_time
 
         for index in range(self.mode_number):
+
             if self.stored_photons[index] is not None:
-                photon = self.stored_photons[index]["photon"]
-                absorb_time = self.stored_photons[index]["time"]
-                # if photon uses Fock representation, no need for random number judgement as inefficiency will be reflected with loss channel
-                if photon.encoding_type["name"] == "fock":
-                    key = photon.quantum_state # if using Fock representation, the `quantum_state` field is the key in quantum_manager
-                    loss = 1 - self.afc_efficiency(self.total_time) * self.spin_efficiency(store_time) # loss rate due to emission inefficiency
-                    # apply loss channel on photonic state and return a new state
-                    output = self.timeline.quantum_manager.add_loss(key, loss)
-                    # get all keys corresponding to the photonic state (entangled with the subsystem subject to loss channel)
-                    keys = self.timeline.quantum_manager.states[key].keys
-                    # update the quantum state in quantum manager after loss channel
-                    self.timeline.quantum_manager.set(keys, output)
+                stored_photons = self.stored_photons[index]
 
-                    if self.is_reversed:
-                        if not self.is_spinwave:
-                            raise Exception("AFC memory can only have normal order of re-emission")
-                        emit_time = self.total_time - self.mode_bin - absorb_time # reversed order of re-emission
-                    else:
-                        emit_time = absorb_time # normal order of re-emission
+                # check if using Fock representation (will include
+                # if photon uses Fock representation, no need for random number judgement
+                # inefficiency will be reflected with loss channel
+                if "photons" in stored_photons:
+                    for photon, absorb_time in zip(stored_photons["photons"], stored_photons["times"]):
+
+                        key = photon.quantum_state
+                        # loss rate due to emission inefficiency
+                        loss = 1 - self.afc_efficiency(self.total_time) * self.spin_efficiency(store_time)
+                        # apply loss channel on photonic state and return a new state
+                        self.timeline.quantum_manager.add_loss(key, loss)
+
+                        if self.is_reversed:
+                            if not self.is_spinwave:
+                                raise Exception("AFC memory can only have normal order of re-emission")
+                            emit_time = self.total_time - self.mode_bin - absorb_time  # reversed order of re-emission
+                        else:
+                            emit_time = absorb_time  # normal order of re-emission
                     
-                    if self.destination is not None:
-                        dst = self.destination
+                        if self.destination is not None:
+                            dst = self.destination
 
-                    # process = Process(self.owner, "send_qubit", [dst, photon])
-                    # self._receivers[0].get(photon, dst)
-                    process = Process(self._receivers[0], "get", [photon], {"dst": dst})
-                    event = Event(self.timeline.now() + emit_time, process)
-                    self.timeline.schedule(event)
+                        process = Process(self._receivers[0], "get", [photon], {"dst": dst})
+                        event = Event(self.timeline.now() + emit_time, process)
+                        self.timeline.schedule(event)
 
                 elif self.get_generator().random() < self.efficiency(store_time):
+                    photon = stored_photons["photon"]
+                    absorb_time = stored_photons["time"]
+
                     if self.is_reversed:
                         if not self.is_spinwave:
                             raise Exception("AFC memory can only have normal order of re-emission")
@@ -586,8 +581,6 @@ class AbsorptiveMemory(Entity):
                     if self.destination is not None:
                         dst = self.destination
 
-                    # process = Process(self.owner, "send_qubit", [dst, photon])
-                    # self._receivers[0].get(photon, dst)
                     process = Process(self._receivers[0], "get", [photon], {"dst": dst})
                     event = Event(self.timeline.now() + emit_time, process)
                     self.timeline.schedule(event)
@@ -653,7 +646,7 @@ class AbsorptiveMemory(Entity):
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
 
-        decay_time = self.timeline.now() + int(self.AFC_lifetime * 1e12)
+        decay_time = self.timeline.now() + int(self.afc_lifetime * 1e12)
         process = Process(self, "expire", [])
         event = Event(decay_time, process)
         self.timeline.schedule(event)

@@ -136,7 +136,8 @@ class EmitProtocol(Protocol):
         self.memory_name = memory_name
 
     def start(self):
-        self.own.components[self.memory_name]._prepare_AFC()
+        if not self.own.components[self.memory_name].is_prepared:
+            self.own.components[self.memory_name]._prepare_AFC()
         
         states = [None] * self.num_output  # for Fock encoding only list length matters and list elements do not matter
         source = self.own.components[self.source_name]
