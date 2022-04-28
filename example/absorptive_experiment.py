@@ -34,16 +34,25 @@ from sequence.protocol import Protocol
 from sequence.kernel.quantum_utils import *  # only for manual calculation and should not be used in simulation
 
 
-# define constants
+# define simulation constants
+
+# quantum manager
 TRUNCATION = 2  # truncation of Fock space (=dimension-1)
+
+# photon sources
 TELECOM_WAVELENGTH = 1436  # telecom band wavelength of SPDC source idler photon
 WAVELENGTH = 606  # wavelength of AFC memory resonant absorption, of SPDC source signal photon
-MODE_NUM = 100  # number of temporal modes of AFC memory (same for both memories)
 SPDC_FREQUENCY = 80e6  # frequency of both SPDC sources' photon creation (same as memory frequency)
+MEAN_PHOTON_NUM1 = 0.1  # mean photon number of SPDC source on node 1
+MEAN_PHOTON_NUM2 = 0.1  # mean photon number of SPDC source on node 2
+
+# fibers
 DIST_ANL_ERC = 20  # distance between ANL and ERC, in km
 DIST_HC_ERC = 20  # distance between HC and ERC, in km
 ATTENUATION = 0  # attenuation rate of optical fibre
 
+# memories
+MODE_NUM = 100  # number of temporal modes of AFC memory (same for both memories)
 MEMO_FREQUENCY1 = SPDC_FREQUENCY  # frequency of memory 1
 MEMO_FREQUENCY2 = SPDC_FREQUENCY  # frequency of memory 2
 ABS_EFFICIENCY1 = 1.0  # absorption efficiency of AFC memory 1
@@ -54,8 +63,6 @@ COHERENCE_TIME1 = -1  # spin coherence time for AFC memory 1 spinwave storage, -
 COHERENCE_TIME2 = -1  # spin coherence time for AFC memory 2 spinwave storage, -1 means infinite time
 AFC_LIFETIME1 = -1  # AFC structure lifetime of memory 1, -1 means infinite time
 AFC_LIFETIME2 = -1  # AFC structure lifetime of memory 2, -1 means infinite time
-MEAN_PHOTON_NUM1 = 0.1  # mean photon number of SPDC source on node 1
-MEAN_PHOTON_NUM2 = 0.1  # mean photon number of SPDC source on node 2
 DECAY_RATE1 = 0  # retrieval efficiency decay rate for memory 1
 DECAY_RATE2 = 0  # retrieval efficiency decay rate for memory 2
 
@@ -63,7 +70,7 @@ DECAY_RATE2 = 0  # retrieval efficiency decay rate for memory 2
 time = int(1e12)
 calculate_fidelity_direct = True
 num_direct_trials = 10
-num_bs_trials_per_phase = 20
+num_bs_trials_per_phase = 10
 phase_settings = np.linspace(0, 2*np.pi, num=10, endpoint=False)
 
 

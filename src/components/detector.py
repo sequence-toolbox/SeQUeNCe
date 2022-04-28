@@ -151,7 +151,7 @@ class QSDetector(Entity, ABC):
             idx (int): the index of attached detector whose properties are going to be set.
             For other parameters see the `Detector` class. Default values are same as in `Detector` class.
         """
-        assert idx >= 0 and idx <= len(self.detectors)-1, "`idx` must be a valid index of attached detector."
+        assert 0 <= idx < len(self.detectors), "`idx` must be a valid index of attached detector."
 
         detector = self.detectors[idx]
         detector.efficiency = efficiency
@@ -321,30 +321,40 @@ class QSDetectorFockDirect(QSDetector):
         # assume using Fock quantum manager
         truncation = self.timeline.quantum_manager.truncation
         create, destroy = self.timeline.quantum_manager.build_ladder()
-        series_elem_list = [((-1)**i) * fractional_matrix_power(create, i+1).dot(
-            fractional_matrix_power(destroy, i+1)) / factorial(i+1) for i in range(truncation)]
-        povm1 = sum(series_elem_list)
-        povm0 = eye(truncation+1) - povm1
 
-        self.povms = [povm0, povm1]
+        create0 = create * sqrt(self.detectors[0].efficiency)
+        destroy0 = destroy * sqrt(self.detectors[0].efficiency)
+        series_elem_list = [((-1)**i) * fractional_matrix_power(create0, i+1).dot(
+            fractional_matrix_power(destroy0, i+1)) / factorial(i+1) for i in range(truncation)]
+        povm0_1 = sum(series_elem_list)
+        povm0_0 = eye(truncation+1) - povm0_1
+
+        create1 = create * sqrt(self.detectors[1].efficiency)
+        destroy1 = destroy * sqrt(self.detectors[1].efficiency)
+        series_elem_list = [((-1) ** i) * fractional_matrix_power(create1, i + 1).dot(
+            fractional_matrix_power(destroy1, i + 1)) / factorial(i + 1) for i in range(truncation)]
+        povm1_1 = sum(series_elem_list)
+        povm1_0 = eye(truncation + 1) - povm0_1
+
+        self.povms = [povm0_0, povm0_1, povm1_0, povm1_1]
 
     def get(self, photon: "Photon", **kwargs):
         src = kwargs["src"]
         assert photon.encoding_type["name"] == "fock", "Photon must be in Fock representation."
         input_port = self.src_list.index(src)  # determine at which input the Photon arrives, an index
+
         # record arrival time
         arrival_time = self.timeline.now()
         self.arrival_times[input_port].append(arrival_time)
 
         key = photon.quantum_state  # the photon's key pointing to the quantum state in quantum manager
         samp = self.get_generator().random()  # random measurement sample
-        result = self.timeline.quantum_manager.measure([key], self.povms, samp)  # the outcome determined by random sample
+        result = self.timeline.quantum_manager.measure([key], self.povms[input_port:(input_port+2)], samp)
         
         assert result in list(range(len(self.povms))), "The measurement outcome is not valid."
         if result == 1:
-            detector_num = self.src_list.index(src)
             # trigger time recording will be done by SPD
-            self.detectors[detector_num].record_detection()
+            self.detectors[input_port].record_detection()
         
     def get_photon_times(self) -> List[List[int]]:
         trigger_times = self.trigger_times
@@ -415,8 +425,8 @@ class QSDetectorFockInterference(QSDetector):
         identity = eye(truncation + 1)
         create, destroy = self.timeline.quantum_manager.build_ladder()
         phase = self.phase
-        efficiency1 = self.detectors[0].efficiency
-        efficiency2 = self.detectors[1].efficiency
+        efficiency1 = sqrt(self.detectors[0].efficiency)
+        efficiency2 = sqrt(self.detectors[1].efficiency)
 
         # Modified mode operators in Heisenberg picture by beamsplitter transformation
         # considering inefficiency and ignoring relative phase
