@@ -8,8 +8,6 @@ data = load(open(filename))
 
 direct_results = data["direct results"]
 bs_results = data["bs results"]
-print(len(bs_results))
-print(len(bs_results[1]))
 
 # plotting direct detection results
 bins = np.zeros(4)
@@ -28,8 +26,8 @@ for res in bs_results:
     counts = np.zeros(2)
     total = 0
     for trial in res:
-        counts += np.array(trial["counts"])
-        total += trial["total_count"]
+        counts += np.array(trial["counts1"])
+        total += trial["total_count1"]
     counts *= (1 / total)
     freq_0.append(counts[0])
     freq_1.append(counts[1])

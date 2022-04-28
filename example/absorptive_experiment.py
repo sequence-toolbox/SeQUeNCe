@@ -300,11 +300,6 @@ class MeasureNode(Node):
 
 
 if __name__ == "__main__":
-    # TODO: WIP
-    # open file to store experiment results
-    Path("results").mkdir(parents=True, exist_ok=True)
-    filename = "results/absorptive.json"
-    fh = open(filename, 'w')
 
     """Setup Simulation"""
 
@@ -468,19 +463,31 @@ if __name__ == "__main__":
 
             # collect data
 
-            # relative sign should not influence interference pattern
+            # relative sign should influence interference pattern
             bsm_res = erc.get_detector_entries(erc.bsm_name, start_time_bsm, MODE_NUM, SPDC_FREQUENCY)
-            bsm_success_indices = [i for i, res in enumerate(bsm_res) if res == 1 or res == 2]
+            bsm_success_indices_1 = [i for i, res in enumerate(bsm_res) if res == 1]
+            bsm_success_indices_2 = [i for i, res in enumerate(bsm_res) if res == 2]
             meas_res = erc_2.get_detector_entries(erc_2.bs_detector_name, start_time_meas, MODE_NUM, SPDC_FREQUENCY)
+            res_interference = {}
 
-            num_bsm_res = len(bsm_success_indices)
-            meas_res_valid = [meas_res[i] for i in bsm_success_indices]
-            num_detector_0 = meas_res.count(1) + meas_res_valid.count(3)
-            num_detector_1 = meas_res.count(2) + meas_res_valid.count(3)
-            # freqs = [num_detector_0/(total_time * 1e-12), num_detector_1/(total_time * 1e-12)]
-            # use detection probability to construct interference pattern
+            # detector 1
+            num_bsm_res = len(bsm_success_indices_1)
+            meas_res_valid = [meas_res[i] for i in bsm_success_indices_1]
+            num_detector_0 = meas_res_valid.count(1) + meas_res_valid.count(3)
+            num_detector_1 = meas_res_valid.count(2) + meas_res_valid.count(3)
             counts_interfere = [num_detector_0, num_detector_1]
-            res_interference = {"counts": counts_interfere, "total_count": num_bsm_res}
+            res_interference["counts1"] = counts_interfere
+            res_interference["total_count1"] = num_bsm_res
+
+            # detector 2
+            num_bsm_res = len(bsm_success_indices_2)
+            meas_res_valid = [meas_res[i] for i in bsm_success_indices_2]
+            num_detector_0 = meas_res_valid.count(1) + meas_res_valid.count(3)
+            num_detector_1 = meas_res_valid.count(2) + meas_res_valid.count(3)
+            counts_interfere = [num_detector_0, num_detector_1]
+            res_interference["counts2"] = counts_interfere
+            res_interference["total_count2"] = num_bsm_res
+
             results_bs_measurement[i].append(res_interference)
 
             # reset timeline
@@ -489,9 +496,11 @@ if __name__ == "__main__":
 
     """Store results"""
 
-    info = {"direct results": results_direct_measurement, "bs results": results_bs_measurement}
+    # open file to store experiment results
+    Path("results").mkdir(parents=True, exist_ok=True)
+    filename = "results/absorptive.json"
+    fh = open(filename, 'w')
+    info = {"num_direct_trials": num_direct_trials, "num_bs_trials": num_bs_trials_per_phase,
+            "num_phase": len(phase_settings),
+            "direct results": results_direct_measurement, "bs results": results_bs_measurement}
     dump(info, fh)
-
-    # plt.bar(list(range(4)), counts)
-    # plt.yscale('log')
-    # plt.show()
