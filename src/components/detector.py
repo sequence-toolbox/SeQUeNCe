@@ -308,7 +308,7 @@ class QSDetectorFockDirect(QSDetector):
         self.trigger_times = [[], []]
         self.arrival_times = [[], []]
 
-        self.povms = [None] * 2
+        self.povms = [None] * 4
 
     def init(self):
         self._generate_povms()
@@ -349,7 +349,10 @@ class QSDetectorFockDirect(QSDetector):
 
         key = photon.quantum_state  # the photon's key pointing to the quantum state in quantum manager
         samp = self.get_generator().random()  # random measurement sample
-        result = self.timeline.quantum_manager.measure([key], self.povms[input_port:(input_port+2)], samp)
+        if input_port == 0:
+            result = self.timeline.quantum_manager.measure([key], self.povms[0:2], samp)
+        if input_port == 1:
+            result = self.timeline.quantum_manager.measure([key], self.povms[2:4], samp)
         
         assert result in list(range(len(self.povms))), "The measurement outcome is not valid."
         if result == 1:
