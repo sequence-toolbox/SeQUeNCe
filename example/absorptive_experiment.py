@@ -47,10 +47,10 @@ MEAN_PHOTON_NUM1 = 0.1  # mean photon number of SPDC source on node 1
 MEAN_PHOTON_NUM2 = 0.1  # mean photon number of SPDC source on node 2
 
 # detectors
-BSM_DET1_EFFICIENCY = 0.9 # efficiency of detector 1 of BSM
-BSM_DET2_EFFICIENCY = 0.9 # efficiency of detector 2 of BSM
-MEAS_DET1_EFFICIENCY = 0.9 # efficiency of detector 1 of DM measurement
-MEAS_DET2_EFFICIENCY = 0.9 # efficiency of detector 2 of DM measurement
+BSM_DET1_EFFICIENCY = 0.9  # efficiency of detector 1 of BSM
+BSM_DET2_EFFICIENCY = 0.9  # efficiency of detector 2 of BSM
+MEAS_DET1_EFFICIENCY = 0.9  # efficiency of detector 1 of DM measurement
+MEAS_DET2_EFFICIENCY = 0.9  # efficiency of detector 2 of DM measurement
 
 # fibers
 DIST_ANL_ERC = 20  # distance between ANL and ERC, in km
@@ -77,7 +77,7 @@ time = int(1e12)
 calculate_fidelity_direct = True
 num_direct_trials = 10
 num_bs_trials_per_phase = 10
-phase_settings = np.linspace(0, 2*np.pi, num=10, endpoint=False)
+phase_settings = np.linspace(0, 2*np.pi, num=20, endpoint=False)
 
 
 # function to generate standard pure Bell state for fidelity calculation
@@ -413,26 +413,23 @@ if __name__ == "__main__":
         loss_hc = channel_anl.loss
         tl.quantum_manager.add_loss(key_hc, loss_hc)
 
-        # QSDetector measurement and remaining state after partial trace
+        # QSDetector measurement
         povms = bsm.povms
         povm_tuple = tuple([tuple(map(tuple, povm)) for povm in povms])
         keys = [photon0_anl.quantum_state, photon0_hc.quantum_state]
         new_state, all_keys = tl.quantum_manager._prepare_state(keys)
         indices = tuple([all_keys.index(key) for key in keys])
         state_tuple = tuple(map(tuple, new_state))
-        states, probs = measure_multiple_with_cache_fock_density(state_tuple, indices, len(all_keys), povm_tuple, tl.quantum_manager.truncation)
+        states, probs = measure_multiple_with_cache_fock_density(state_tuple, indices, len(all_keys), povm_tuple,
+                                                                 tl.quantum_manager.truncation)
         state_plus, state_minus = states[1], states[2]
     
-        for key in keys:
-            tl.quantum_manager.states[key] = None  # clear the stored state at key (particle destructively measured)
-    
-        # assign remaining state (minus as example)
-        if len(keys) < len(all_keys):
-            indices = tuple([all_keys.index(key) for key in keys])
-            new_state_tuple = tuple(map(tuple, state_plus))
-            remaining_state = density_partial_trace(new_state_tuple, indices, len(all_keys), tl.quantum_manager.truncation)
-            remaining_keys = [key for key in all_keys if key not in keys]
-            tl.quantum_manager.set(remaining_keys, remaining_state)
+        # calculate remaining state
+        indices = tuple([all_keys.index(key) for key in keys])
+        new_state_tuple = tuple(map(tuple, state_plus))
+        remaining_state = density_partial_trace(new_state_tuple, indices, len(all_keys),
+                                                tl.quantum_manager.truncation)
+        remaining_keys = [key for key in all_keys if key not in keys]
             
         # effective Bell state generated 
         def effective_state(state):
