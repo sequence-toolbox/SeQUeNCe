@@ -414,17 +414,41 @@ if __name__ == "__main__":
         tl.quantum_manager.add_loss(key_hc, loss_hc)
 
         # QSDetector measurement and remaining state after partial trace
+        povms = bsm.povms
+        povm_tuple = tuple([tuple(map(tuple, povm)) for povm in povms])
         keys = [photon0_anl.quantum_state, photon0_hc.quantum_state]
-        _ = tl.quantum_manager.measure(keys, bsm.povms, 0)
-        remaining_key = photon1_anl.quantum_state
-        remaining_state = tl.quantum_manager.get(remaining_key).state
-
+        new_state, all_keys = tl.quantum_manager._prepare_state(keys)
+        indices = tuple([all_keys.index(key) for key in keys])
+        state_tuple = tuple(map(tuple, new_state))
+        states, probs = measure_multiple_with_cache_fock_density(state_tuple, indices, len(all_keys), povm_tuple, tl.quantum_manager.truncation)
+        state_plus, state_minus = states[1], states[2]
+    
+        for key in keys:
+            tl.quantum_manager.states[key] = None  # clear the stored state at key (particle destructively measured)
+    
+        # assign remaining state (minus as example)
+        if len(keys) < len(all_keys):
+            indices = tuple([all_keys.index(key) for key in keys])
+            new_state_tuple = tuple(map(tuple, state_plus))
+            remaining_state = density_partial_trace(new_state_tuple, indices, len(all_keys), tl.quantum_manager.truncation)
+            remaining_keys = [key for key in all_keys if key not in keys]
+            tl.quantum_manager.set(remaining_keys, remaining_state)
+            
+        # effective Bell state generated 
+        def effective_state(state):
+            state[0][0] = 0
+            state = state/np.trace(state)
+            
+            return state
+        
+        remaining_state_eff = effective_state(remaining_state)
+        
         # calculate the fidelity with reference Bell state
         bell_plus = build_bell_state(tl.quantum_manager.truncation, "plus")
         bell_minus = build_bell_state(tl.quantum_manager.truncation, "minus")
-        fidelity = np.trace(remaining_state @ bell_minus).real
+        fidelity = np.trace(remaining_state_eff.dot(bell_minus)).real
 
-        print("Directly calculated fidelity:", fidelity)
+        print("Directly calculated effective fidelity:", fidelity)
 
     """Run Simulation"""
 
