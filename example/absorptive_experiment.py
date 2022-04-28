@@ -63,7 +63,7 @@ DECAY_RATE2 = 0  # retrieval efficiency decay rate for memory 2
 time = int(1e12)
 calculate_fidelity_direct = True
 num_direct_trials = 10
-num_bs_trials_per_phase = 10
+num_bs_trials_per_phase = 20
 phase_settings = np.linspace(0, 2*np.pi, num=10, endpoint=False)
 
 
@@ -346,7 +346,7 @@ if __name__ == "__main__":
     start_time_meas = start_time_anl + total_time + delay_anl
 
     results_direct_measurement = []
-    results_bs_measurement = [[]] * len(phase_settings)
+    results_bs_measurement = [[] for _ in phase_settings]
 
     """Pre-simulation explicit calculation of entanglement fidelity upon successful BSM"""
 
@@ -457,8 +457,8 @@ if __name__ == "__main__":
             tl.schedule(event)
 
             tl.run()
-            print("finished interference measurement trial {} out of {} for phase {}".format(
-                j+1, num_bs_trials_per_phase, i))
+            print("finished interference measurement trial {} out of {} for phase {} out ouf {}".format(
+                j+1, num_bs_trials_per_phase, i+1, len(phase_settings)))
 
             # collect data
 
@@ -473,7 +473,7 @@ if __name__ == "__main__":
             num_detector_1 = meas_res.count(2) + meas_res_valid.count(3)
             # freqs = [num_detector_0/(total_time * 1e-12), num_detector_1/(total_time * 1e-12)]
             # use detection probability to construct interference pattern
-            counts_interfere = [num_detector_0 , num_detector_1]
+            counts_interfere = [num_detector_0, num_detector_1]
             res_interference = {"counts": counts_interfere, "total_count": num_bsm_res}
             results_bs_measurement[i].append(res_interference)
 
