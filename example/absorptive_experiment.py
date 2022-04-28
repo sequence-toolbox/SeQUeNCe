@@ -62,9 +62,9 @@ DECAY_RATE2 = 0  # retrieval efficiency decay rate for memory 2
 # experiment settings
 time = int(1e12)
 calculate_fidelity_direct = True
-num_direct_trials = 1
-num_bs_trials_per_phase = 1
-phase_settings = np.linspace(0, 2*np.pi, num=1, endpoint=False)
+num_direct_trials = 10
+num_bs_trials_per_phase = 10
+phase_settings = np.linspace(0, 2*np.pi, num=10, endpoint=False)
 
 
 # function to generate standard pure Bell state for fidelity calculation
