@@ -55,8 +55,8 @@ MEAS_DET2_EFFICIENCY = 0.9  # efficiency of detector 2 of DM measurement
 # fibers
 DIST_ANL_ERC = 20  # distance between ANL and ERC, in km
 DIST_HC_ERC = 20  # distance between HC and ERC, in km
-ATTENUATION = 0  # attenuation rate of optical fibre
-DELAY_CLASSICAL = 2e-4  # delay for classical communication between BSM node and memory nodes
+ATTENUATION = 0.2  # attenuation rate of optical fibre
+DELAY_CLASSICAL = 5e-3  # delay for classical communication between BSM node and memory nodes
 
 # memories
 MODE_NUM = 100  # number of temporal modes of AFC memory (same for both memories)
