@@ -56,6 +56,7 @@ MEAS_DET2_EFFICIENCY = 0.9  # efficiency of detector 2 of DM measurement
 DIST_ANL_ERC = 20  # distance between ANL and ERC, in km
 DIST_HC_ERC = 20  # distance between HC and ERC, in km
 ATTENUATION = 0  # attenuation rate of optical fibre
+DELAY_CLASSICAL = 2e-4  # delay for classical communication between BSM node and memory nodes
 
 # memories
 MODE_NUM = 100  # number of temporal modes of AFC memory (same for both memories)
@@ -75,6 +76,7 @@ DECAY_RATE2 = 0  # retrieval efficiency decay rate for memory 2
 # experiment settings
 time = int(1e12)
 calculate_fidelity_direct = True
+calculate_rate_direct = True
 num_direct_trials = 10
 num_bs_trials_per_phase = 10
 phase_settings = np.linspace(0, 2*np.pi, num=20, endpoint=False)
@@ -366,7 +368,7 @@ if __name__ == "__main__":
     results_direct_measurement = []
     results_bs_measurement = [[] for _ in phase_settings]
 
-    """Pre-simulation explicit calculation of entanglement fidelity upon successful BSM"""
+    """Pre-simulation explicit calculation of effective entanglement fidelity upon successful BSM"""
 
     if calculate_fidelity_direct:
         # use non-transmitted Photon as interface with existing methods in SeQUeNCe
@@ -446,6 +448,26 @@ if __name__ == "__main__":
         fidelity = np.trace(remaining_state_eff.dot(bell_minus)).real
 
         print("Directly calculated effective fidelity:", fidelity)
+
+        """Pre-simulation explicit calculation of entanglement generation rate based on calculation above"""
+
+        if calculate_rate_direct:
+            duration_photon = MODE_NUM / SPDC_FREQUENCY  # duration of emitted photon train from SPDC source
+            delay_fiber_anl = anl.qchannels[erc_name].delay
+            delay_fiber_hc = hc.qchannels[erc_name].delay
+            assert delay_fiber_anl == delay_fiber_hc
+            delay_fiber = delay_fiber_anl  # time for photon to travel from SPDC source to BSM device
+            delay_classical = DELAY_CLASSICAL  # delay for classical communication between BSM node and memory nodes
+
+            # total duration from first photon emitted to last photon's detection result communicated back
+            duration_tot = duration_photon + delay_fiber + delay_classical
+            
+            prob_herald = probs[1] + probs[2]  # calculate heralding probability
+            num_generated_avg = MODE_NUM * prob_herald  # average number of entangled pairs generated in one emission cycle 
+
+            rate = num_generated_avg / duration_tot
+
+            print("Directly calculated entanglement generation:", rate)
 
     """Run Simulation"""
 
