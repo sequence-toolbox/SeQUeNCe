@@ -9,7 +9,7 @@ from typing import List, Tuple
 from math import sqrt
 
 from numpy import array, kron, identity, zeros, trace, outer, eye
-from scipy.linalg import fractional_matrix_power
+from scipy.linalg import sqrtm
 
 
 a = array([[0, 1], [0, 0]])
@@ -262,7 +262,7 @@ def measure_state_with_cache_fock_density(state: Tuple[Tuple[complex]], povms: T
         if prob_list[i] <= 0:
             state_post_meas = None
         else:
-            measure_op = fractional_matrix_power(povms[i], 1/2)
+            measure_op = sqrtm(povms[i])
             state_post_meas = (measure_op @ state @ measure_op) / prob_list[i]
 
         state_list.append(state_post_meas)
@@ -312,7 +312,7 @@ def measure_entangled_state_with_cache_fock_density(state: Tuple[Tuple[complex]]
         if prob_list[i] <= 0:
             state_post_meas = None
         else:
-            measure_op = fractional_matrix_power(povm_list[i], 1/2)
+            measure_op = sqrtm(povm_list[i])
             state_post_meas = (measure_op @ state @ measure_op) / prob_list[i]
 
         state_list.append(state_post_meas)
@@ -378,7 +378,7 @@ def measure_multiple_with_cache_fock_density(state: Tuple[Tuple[complex]], indic
         if prob_list[i] <= 0:
             state_post_meas = None
         else:
-            measure_op = fractional_matrix_power(povm_list[i], 1/2)
+            measure_op = sqrtm(povm_list[i])
             state_post_meas = (measure_op @ state @ measure_op) / prob_list[i]
 
         state_list.append(state_post_meas)
