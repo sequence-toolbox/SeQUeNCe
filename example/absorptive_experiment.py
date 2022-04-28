@@ -42,9 +42,15 @@ TRUNCATION = 2  # truncation of Fock space (=dimension-1)
 # photon sources
 TELECOM_WAVELENGTH = 1436  # telecom band wavelength of SPDC source idler photon
 WAVELENGTH = 606  # wavelength of AFC memory resonant absorption, of SPDC source signal photon
-SPDC_FREQUENCY = 80e6  # frequency of both SPDC sources' photon creation (same as memory frequency)
+SPDC_FREQUENCY = 80e6  # frequency of both SPDC sources' photon creation (same as memory frequency and detector count rate)
 MEAN_PHOTON_NUM1 = 0.1  # mean photon number of SPDC source on node 1
 MEAN_PHOTON_NUM2 = 0.1  # mean photon number of SPDC source on node 2
+
+# detectors
+BSM_DET1_EFFICIENCY = 0.9 # efficiency of detector 1 of BSM
+BSM_DET2_EFFICIENCY = 0.9 # efficiency of detector 2 of BSM
+MEAS_DET1_EFFICIENCY = 0.9 # efficiency of detector 1 of DM measurement
+MEAS_DET2_EFFICIENCY = 0.9 # efficiency of detector 2 of DM measurement
 
 # fibers
 DIST_ANL_ERC = 20  # distance between ANL and ERC, in km
@@ -209,6 +215,10 @@ class EntangleNode(Node):
         self.set_first_component(self.bsm_name)
         self.resolution = max([d.time_resolution for d in bsm.detectors])
 
+        # detector parameter setup
+        bsm.set_detector(0, efficiency=BSM_DET1_EFFICIENCY, count_rate=SPDC_FREQUENCY)
+        bsm.set_detector(1, efficiency=BSM_DET2_EFFICIENCY, count_rate=SPDC_FREQUENCY)
+
     def receive_qubit(self, src: str, qubit) -> None:
         self.components[self.first_component_name].get(qubit, src=src)
 
@@ -261,6 +271,12 @@ class MeasureNode(Node):
 
         # time resolution of SPDs
         self.resolution = max([d.time_resolution for d in direct_detector.detectors + bs_detector.detectors])
+
+        # detector parameter setup
+        direct_detector.set_detector(0, efficiency=MEAS_DET1_EFFICIENCY, count_rate=SPDC_FREQUENCY)
+        direct_detector.set_detector(1, efficiency=MEAS_DET2_EFFICIENCY, count_rate=SPDC_FREQUENCY)
+        bs_detector.set_detector(0, efficiency=MEAS_DET1_EFFICIENCY, count_rate=SPDC_FREQUENCY)
+        bs_detector.set_detector(1, efficiency=MEAS_DET2_EFFICIENCY, count_rate=SPDC_FREQUENCY)
 
     def receive_qubit(self, src: str, qubit) -> None:
         self.components[self.first_component_name].get(qubit, src=src)
