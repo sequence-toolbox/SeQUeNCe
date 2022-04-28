@@ -62,9 +62,9 @@ DECAY_RATE2 = 0  # retrieval efficiency decay rate for memory 2
 # experiment settings
 time = int(1e12)
 calculate_fidelity_direct = True
-num_direct_trials = 10
-num_bs_trials_per_phase = 10
-phase_settings = np.linspace(0, 2*np.pi, num=10, endpoint=False)
+num_direct_trials = 1
+num_bs_trials_per_phase = 1
+phase_settings = np.linspace(0, 2*np.pi, num=1, endpoint=False)
 
 
 # function to generate standard pure Bell state for fidelity calculation
@@ -200,35 +200,10 @@ class EntangleNode(Node):
         self.add_component(bsm)
         bsm.attach(self)
         self.set_first_component(self.bsm_name)
-
         self.resolution = max([d.time_resolution for d in bsm.detectors])
-        self.bsm_times = [[], []]
 
     def receive_qubit(self, src: str, qubit) -> None:
         self.components[self.first_component_name].get(qubit, src=src)
-
-    def get_valid_bins(self, start_time: int, num_bins: int, frequency: float):
-        """Computes time bins containing a BSM measurement.
-
-        Args:
-            start_time (int): simulation start time of when photons received.
-            num_bins (int): number of arrival bins
-            frequency (float): frequency of photon arrival (in Hz).
-
-        Returns:
-            List[int]: list of length num_bins containing 0/1.
-                List element is 0 for an unsuccessful measurement and 1 for successful.
-        """
-
-        return_bins = [0] * num_bins
-
-        for time in self.bsm_times[0] + self.bsm_times[1]:
-            closest_bin = int(round((time - start_time) * frequency * 1e-12))
-            expected_time = (float(closest_bin) * 1e12 / frequency) + start_time
-            if abs(expected_time - time) < self.resolution and 0 <= closest_bin < num_bins:
-                return_bins[closest_bin] = not return_bins[closest_bin]
-
-        return return_bins
 
     def get_detector_entries(self, detector_name: str, start_time: int, num_bins: int, frequency: float):
         """Returns detection events for density matrix measurement. Used to determine BSM result.
@@ -347,41 +322,28 @@ if __name__ == "__main__":
     for seed, node in zip(seeds, [anl, hc, erc, erc_2]):
         node.set_seed(seed)
 
-    qc1 = add_channel(anl, erc, tl, distance=DIST_ANL_ERC, attenuation=ATTENUATION)
-    qc2 = add_channel(hc, erc, tl, distance=DIST_HC_ERC, attenuation=ATTENUATION)
-    qc3 = add_channel(anl, erc_2, tl, distance=DIST_ANL_ERC, attenuation=ATTENUATION)
-    qc4 = add_channel(hc, erc_2, tl, distance=DIST_HC_ERC, attenuation=ATTENUATION)
+    # extend fiber lengths to be equivalent
+    fiber_length = max(DIST_ANL_ERC, DIST_HC_ERC)
 
-    # calculations for when to start protocol
-    # requirement: photons must arrive at beamsplitter to realize interference
-    delay_anl = anl.qchannels[erc_name].delay
-    delay_hc = hc.qchannels[erc_name].delay
-    time_anl = max(delay_anl, delay_hc) - delay_anl
-    time_hc = max(delay_anl, delay_hc) - delay_hc
-
-    # calculations for fibre length modification for retrieved photon measurement
-    # requirement: photons must arrive at beamsplitter to realize interference
-    dalay_anl_reemit = anl.components[anl.memo_name].total_time
-    delay_hc_reemit = hc.components[hc.memo_name].total_time
-    delay_anl_meas = anl.qchannels[erc_2_name].delay
-    delay_hc_meas = hc.qchannels[erc_2_name].delay
-    delay_anl_meas_tot = time_anl + dalay_anl_reemit + delay_anl_meas
-    delay_hc_meas_tot = time_hc + delay_hc_reemit + delay_hc_meas
-    time_anl_meas = max(delay_anl_meas_tot, delay_hc_meas_tot) - delay_anl_meas_tot
-    time_hc_meas = max(delay_anl_meas_tot, delay_hc_meas_tot) - delay_hc_meas_tot
-    dist_anl_meas = qc3.light_speed * time_hc_meas + DIST_ANL_ERC
-    dist_hc_meas = qc4.light_speed * time_anl_meas + DIST_HC_ERC
-
-    qc3.set_distance(dist_anl_meas)
-    qc4.set_distance(dist_hc_meas)
-
-    # calculations for when to start recording measurements
-    start_time_bsm = time_anl + delay_anl
-    mem = anl.components[anl.memo_name]
-    total_time = mem.total_time
-    start_time_meas = time_anl + total_time + delay_anl
+    qc1 = add_channel(anl, erc, tl, distance=fiber_length, attenuation=ATTENUATION)
+    qc2 = add_channel(hc, erc, tl, distance=fiber_length, attenuation=ATTENUATION)
+    qc3 = add_channel(anl, erc_2, tl, distance=fiber_length, attenuation=ATTENUATION)
+    qc4 = add_channel(hc, erc_2, tl, distance=fiber_length, attenuation=ATTENUATION)
 
     tl.init()
+
+    # calculate start time for protocol
+    # since fiber lengths equal, both start at 0
+    start_time_anl = start_time_hc = 0
+
+    # calculations for when to start recording measurements
+    delay_anl = anl.qchannels[erc_2_name].delay
+    delay_hc = hc.qchannels[erc_2_name].delay
+    assert delay_anl == delay_hc
+    start_time_bsm = start_time_anl + delay_anl
+    mem = anl.components[anl.memo_name]
+    total_time = mem.total_time
+    start_time_meas = start_time_anl + total_time + delay_anl
 
     results_direct_measurement = []
     results_bs_measurement = [[]] * len(phase_settings)
@@ -452,24 +414,24 @@ if __name__ == "__main__":
     for i in range(num_direct_trials):
         # start protocol for emitting
         process = Process(anl.emit_protocol, "start", [])
-        event = Event(time_anl, process)
+        event = Event(start_time_anl, process)
         tl.schedule(event)
         process = Process(hc.emit_protocol, "start", [])
-        event = Event(time_hc, process)
+        event = Event(start_time_hc, process)
         tl.schedule(event)
 
         tl.run()
         print("finished direct measurement trial {} out of {}".format(i+1, num_direct_trials))
 
         # collect data
-        # TODO: need access to intermediate state to calculate fidelity
-        #  (with states of photon stored in memory after BSM)
-        bsm_success = erc.get_valid_bins(start_time_bsm, MODE_NUM, SPDC_FREQUENCY)
-        # BSM results determine relative sign of reference Bell state
+
+        # BSM results determine relative sign of reference Bell state and herald successful entanglement
         bsm_res = erc.get_detector_entries(erc.bsm_name, start_time_bsm, MODE_NUM, SPDC_FREQUENCY)
+        bsm_success_indices = [i for i, res in enumerate(bsm_res) if res == 1 or res == 2]
         meas_res = erc_2.get_detector_entries(erc_2.direct_detector_name, start_time_meas, MODE_NUM, SPDC_FREQUENCY)
-        num_bsm_res = sum(bsm_success)
-        meas_res_valid = [m for m, b in zip(meas_res, bsm_success) if b]
+
+        num_bsm_res = len(bsm_success_indices)
+        meas_res_valid = [meas_res[i] for i in bsm_success_indices]
         counts_diag = [0] * 4
         for j in range(4):
             counts_diag[j] = meas_res_valid.count(j)
@@ -488,10 +450,10 @@ if __name__ == "__main__":
         for j in range(num_bs_trials_per_phase):
             # start protocol for emitting
             process = Process(anl.emit_protocol, "start", [])
-            event = Event(time_anl, process)
+            event = Event(start_time_anl, process)
             tl.schedule(event)
             process = Process(hc.emit_protocol, "start", [])
-            event = Event(time_hc, process)
+            event = Event(start_time_hc, process)
             tl.schedule(event)
 
             tl.run()
@@ -499,11 +461,14 @@ if __name__ == "__main__":
                 j+1, num_bs_trials_per_phase, i))
 
             # collect data
+
             # relative sign should not influence interference pattern
-            bsm_success = erc.get_valid_bins(start_time_bsm, MODE_NUM, SPDC_FREQUENCY)
+            bsm_res = erc.get_detector_entries(erc.bsm_name, start_time_bsm, MODE_NUM, SPDC_FREQUENCY)
+            bsm_success_indices = [i for i, res in enumerate(bsm_res) if res == 1 or res == 2]
             meas_res = erc_2.get_detector_entries(erc_2.bs_detector_name, start_time_meas, MODE_NUM, SPDC_FREQUENCY)
-            num_bsm_res = sum(bsm_success)
-            meas_res_valid = [m for m, b in zip(meas_res, bsm_success) if b]
+
+            num_bsm_res = len(bsm_success_indices)
+            meas_res_valid = [meas_res[i] for i in bsm_success_indices]
             num_detector_0 = meas_res.count(1) + meas_res_valid.count(3)
             num_detector_1 = meas_res.count(2) + meas_res_valid.count(3)
             # freqs = [num_detector_0/(total_time * 1e-12), num_detector_1/(total_time * 1e-12)]
