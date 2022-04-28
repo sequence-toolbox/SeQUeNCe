@@ -396,9 +396,8 @@ if __name__ == "__main__":
         tl.quantum_manager.add_loss(key_hc, loss_hc)
 
         # QSDetector measurement and remaining state after partial trace
-        povms = bsm._generate_povms()
         keys = [photon0_anl.quantum_state, photon0_hc.quantum_state]
-        _ = tl.quantum_manager.measure(keys, povms, 0)
+        _ = tl.quantum_manager.measure(keys, bsm.povms, 0)
         remaining_key = photon1_anl.quantum_state
         remaining_state = tl.quantum_manager.get(remaining_key).state
 

@@ -21,19 +21,19 @@ bins *= norm
 plt.bar(np.arange(4), bins)
 plt.show()
 
-# # plotting bs results
-# freq_0 = []
-# freq_1 = []
-# for res in bs_results:
-#     counts = np.zeros(2)
-#     total = 0
-#     for trial in res:
-#         counts += np.array(trial["counts"])
-#         total += trial["total_count"]
-#     counts *= (1 / total)
-#     freq_0.append(counts[0])
-#     freq_1.append(counts[1])
-#
-# plt.plot(freq_0)
-# plt.plot(freq_1)
-# plt.show()
+# plotting bs results
+freq_0 = []
+freq_1 = []
+for res in bs_results:
+    counts = np.zeros(2)
+    total = 0
+    for trial in res:
+        counts += np.array(trial["counts"])
+        total += trial["total_count"]
+    counts *= (1 / total)
+    freq_0.append(counts[0])
+    freq_1.append(counts[1])
+
+plt.plot(freq_0)
+plt.plot(freq_1)
+plt.show()

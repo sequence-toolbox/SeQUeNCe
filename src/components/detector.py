@@ -308,8 +308,10 @@ class QSDetectorFockDirect(QSDetector):
         self.trigger_times = [[], []]
         self.arrival_times = [[], []]
 
+        self.povms = [None] * 2
+
     def init(self):
-        pass
+        self._generate_povms()
 
     def _generate_povms(self):
         """Method to generate POVM operators corresponding to photon detector having 0 and 1 click
@@ -324,7 +326,7 @@ class QSDetectorFockDirect(QSDetector):
         povm1 = sum(series_elem_list)
         povm0 = eye(truncation+1) - povm1
 
-        return povm0, povm1
+        self.povms = [povm0, povm1]
 
     def get(self, photon: "Photon", **kwargs):
         src = kwargs["src"]
@@ -335,11 +337,10 @@ class QSDetectorFockDirect(QSDetector):
         self.arrival_times[input_port].append(arrival_time)
 
         key = photon.quantum_state  # the photon's key pointing to the quantum state in quantum manager
-        povms = self._generate_povms()  # generate a tuple of two POVM operators
         samp = self.get_generator().random()  # random measurement sample
-        result = self.timeline.quantum_manager.measure([key], povms, samp)  # the outcome determined by random sample
+        result = self.timeline.quantum_manager.measure([key], self.povms, samp)  # the outcome determined by random sample
         
-        assert result in list(range(len(povms))), "The measurement outcome is not valid."
+        assert result in list(range(len(self.povms))), "The measurement outcome is not valid."
         if result == 1:
             detector_num = self.src_list.index(src)
             # trigger time recording will be done by SPD
@@ -399,8 +400,10 @@ class QSDetectorFockInterference(QSDetector):
         self.arrival_times = [[], []]
         self.temporary_photon_info = [{}, {}]
 
+        self.povms = [None] * 4
+
     def init(self):
-        pass
+        self._generate_povms()
 
     def _generate_transformed_ladders(self):
         """Method to generate transformed creation/annihilation operators by the beamsplitter.
@@ -452,7 +455,7 @@ class QSDetectorFockInterference(QSDetector):
         povm10 = povm1_1 @ povm0_2
         povm11 = povm1_1 @ povm1_2
 
-        return povm00, povm01, povm10, povm11
+        self.povms = [povm00, povm01, povm10, povm11]
 
     def get(self, photon, **kwargs):
         src = kwargs["src"]
@@ -477,13 +480,12 @@ class QSDetectorFockInterference(QSDetector):
             photon1 = dict1["photon"]
             key0 = photon0.quantum_state
             key1 = photon1.quantum_state
-            povms = self._generate_povms()
 
             # determine the outcome
             samp = self.get_generator().random()  # random measurement sample
-            result = self.timeline.quantum_manager.measure([key0, key1], povms, samp)
+            result = self.timeline.quantum_manager.measure([key0, key1], self.povms, samp)
         
-            assert result in list(range(len(povms))), "The measurement outcome is not valid."
+            assert result in list(range(len(self.povms))), "The measurement outcome is not valid."
             if result == 0:
                 # no click for either detector, but still record the zero outcome
                 # record detection information
@@ -559,7 +561,4 @@ class QSDetectorFockInterference(QSDetector):
 
     def set_phase(self, phase: float):
         self.phase = phase
-        """
-        self._circuit = Circuit(2)
-        self._circuit.phase(0, phase)
-        """
+        self._generate_povms()
