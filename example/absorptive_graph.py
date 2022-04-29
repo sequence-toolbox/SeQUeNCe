@@ -6,7 +6,7 @@ import matplotlib.ticker as tck
 from matplotlib.colors import LightSource
 
 
-filename = "results/absorptive_with_error.json"
+filename = "results/absorptive.json"
 data = load(open(filename))
 
 direct_results = data["direct results"]
@@ -54,7 +54,15 @@ vis_total = (vis_0 + vis_1) / 2
 off_diag = vis_total * (bins[1] + bins[2]) / 2
 
 # plotting density matrix
-fig = plt.figure(figsize=(7, 7))
+# plot the 2-d matrix
+plt.rc('font', size=10)
+plt.rc('axes', titlesize=18)
+plt.rc('axes', labelsize=15)
+plt.rc('xtick', labelsize=15)
+plt.rc('ytick', labelsize=15)
+plt.rc('legend', fontsize=15)
+
+fig = plt.figure(figsize=(8, 8))
 ax = fig.add_subplot(projection="3d")
 ax.view_init(azim=-30, elev=20)
 
@@ -82,7 +90,7 @@ plt.savefig('density.png', bbox_inches='tight')
 plt.show()
 
 # plotting interference
-fig = plt.figure(figsize=(7, 4))
+fig = plt.figure(figsize=(8, 5))
 ax = fig.add_subplot()
 
 ax.errorbar(phases/np.pi, freq_0, yerr=st_dev_0, marker='o', ls='', capsize=5, label=r'$p_{01}$')
