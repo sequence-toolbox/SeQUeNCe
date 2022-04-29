@@ -173,7 +173,7 @@ class EndNode(Node):
 
     def __init__(self, name: str, timeline: "Timeline", other_node: str, bsm_node: str, measure_node: str,
                  mean_photon_num: float, spdc_frequency: float, memo_frequency: float, abs_effi: float,
-                 afc_efficiency: Callable):
+                 afc_efficiency: Callable, mode_number: int):
         super().__init__(name, timeline)
 
         self.bsm_name = bsm_node
@@ -186,7 +186,7 @@ class EndNode(Node):
                           frequency=spdc_frequency, mean_photon_num=mean_photon_num)
         memory = AbsorptiveMemory(self.memo_name, timeline, frequency=memo_frequency,
                                   absorption_efficiency=abs_effi, afc_efficiency=afc_efficiency,
-                                  mode_number=MODE_NUM, wavelength=WAVELENGTH, destination=measure_node)
+                                  mode_number=mode_number, wavelength=WAVELENGTH, destination=measure_node)
         self.add_component(spdc)
         self.add_component(memory)
         spdc.add_receiver(self)
@@ -194,7 +194,7 @@ class EndNode(Node):
         memory.add_receiver(self)
 
         # protocols
-        self.emit_protocol = EmitProtocol(self, name + ".emit_protocol", other_node, MODE_NUM, self.spdc_name, self.memo_name)
+        self.emit_protocol = EmitProtocol(self, name + ".emit_protocol", other_node, mode_number, self.spdc_name, self.memo_name)
 
     def get(self, photon: "Photon", **kwargs):
         dst = kwargs.get("dst")
@@ -349,10 +349,10 @@ if __name__ == "__main__":
         
             anl = EndNode(anl_name, tl, hc_name, erc_name, erc_2_name, mean_photon_num=mean_num1,
                           spdc_frequency=SPDC_FREQUENCY, memo_frequency=MEMO_FREQUENCY1, abs_effi=ABS_EFFICIENCY1,
-                          afc_efficiency=efficiency1)
+                          afc_efficiency=efficiency1, mode_number=MODE_NUM)
             hc = EndNode(hc_name, tl, anl_name, erc_name, erc_2_name, mean_photon_num=mean_num2,
                          spdc_frequency=SPDC_FREQUENCY, memo_frequency=MEMO_FREQUENCY2, abs_effi=ABS_EFFICIENCY2,
-                         afc_efficiency=efficiency2)
+                         afc_efficiency=efficiency2, mode_number=MODE_NUM)
             erc = EntangleNode(erc_name, tl, src_list)
             erc_2 = MeasureNode(erc_2_name, tl, src_list)
         
