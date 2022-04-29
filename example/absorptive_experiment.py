@@ -371,22 +371,6 @@ if __name__ == "__main__":
         
             tl.init()
         
-            # calculate start time for protocol
-            # since fiber lengths equal, both start at 0
-            start_time_anl = start_time_hc = 0
-        
-            # calculations for when to start recording measurements
-            delay_anl = anl.qchannels[erc_2_name].delay
-            delay_hc = hc.qchannels[erc_2_name].delay
-            assert delay_anl == delay_hc
-            start_time_bsm = start_time_anl + delay_anl
-            mem = anl.components[anl.memo_name]
-            total_time = mem.total_time
-            start_time_meas = start_time_anl + total_time + delay_anl
-        
-            results_direct_measurement = []
-            results_bs_measurement = [[] for _ in phase_settings]
-        
             # Pre-simulation explicit calculation of entanglement fidelity upon successful BSM
         
             if calculate_fidelity_direct:
