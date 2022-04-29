@@ -74,8 +74,8 @@ COHERENCE_TIME1 = -1  # spin coherence time for AFC memory 1 spinwave storage, -
 COHERENCE_TIME2 = -1  # spin coherence time for AFC memory 2 spinwave storage, -1 means infinite time
 AFC_LIFETIME1 = -1  # AFC structure lifetime of memory 1, -1 means infinite time
 AFC_LIFETIME2 = -1  # AFC structure lifetime of memory 2, -1 means infinite time
-DECAY_RATE1 = 0  # retrieval efficiency decay rate for memory 1
-DECAY_RATE2 = 0  # retrieval efficiency decay rate for memory 2
+DECAY_RATE1 = 7e-8  # retrieval efficiency decay rate for memory 1
+DECAY_RATE2 = 4.3e-8  # retrieval efficiency decay rate for memory 2
 
 # experiment settings
 time = int(1e12)
@@ -119,11 +119,11 @@ def build_bell_state(truncation, sign, phase=0, formalism="dm"):
 
 # retrieval efficiency as function of storage time for absorptive quantum memory, using exponential decay model
 def efficiency1(t: int) -> float:
-    return np.exp(-t*DECAY_RATE1)
+    return 0.3 * np.exp(-t*DECAY_RATE1)
 
 
 def efficiency2(t: int) -> float:
-    return np.exp(-t*DECAY_RATE2)
+    return 0.3 * np.exp(-t*DECAY_RATE2)
 
 
 def add_channel(node1: Node, node2: Node, timeline: Timeline, **kwargs):
