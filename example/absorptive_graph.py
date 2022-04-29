@@ -16,8 +16,7 @@ bs_results = data["bs results"]
 bins = np.zeros(4)
 for trial in direct_results:
     bins += np.array(trial["counts"])
-norm = (1 / sum(bins))
-bins *= norm
+bins *= (1 / sum(bins))
 
 # acquire bs results
 num = data["num_phase"]
@@ -38,23 +37,32 @@ for res in bs_results:
 def sin(x, A, phi, z): return A*np.sin(x + phi) + z
 params_0, _ = curve_fit(sin, phases, freq_0)
 params_1, _ = curve_fit(sin, phases, freq_1)
+vis_0 = abs(params_0[0]) / abs(params_0[2])
+vis_1 = abs(params_1[0]) / abs(params_1[2])
 
 # off-diagonal density matrix
-visibility = abs(params_0[0]) + abs(params_1[0])
-off_diag = visibility * (bins[1] + bins[2]) / 2
+vis_total = (vis_0 + vis_1) / 2
+off_diag = vis_total * (bins[1] + bins[2]) / 2
 
 # plotting density matrix
 fig = plt.figure()
 ax = fig.add_subplot(projection="3d")
 ax.view_init(azim=-30)
 
+offset = 3
+total = list(bins) + [off_diag, off_diag]
+height = np.log10(total) + offset
 width = depth = 0.8
 x = np.array([0, 1, 2, 3, 1, 2]) - (width/2)
 y = np.array([0, 1, 2, 3, 2, 1]) - (width/2)
 color = (['tab:blue'] * 4) + (['tab:orange'] * 2)
 ls = LightSource(100, 60)
-ax.bar3d(x, y, np.zeros(6), width, depth, list(bins) + [off_diag, off_diag],
+ax.bar3d(x, y, np.zeros(6), width, depth, height,
          color=color, edgecolor='black', shade=True, lightsource=ls)
+
+def log_tick_formatter(val, pos=None): return f"$10^{{{int(val-offset)}}}$"
+ax.zaxis.set_major_formatter(tck.FuncFormatter(log_tick_formatter))
+ax.zaxis.set_major_locator(tck.MaxNLocator(integer=True))
 
 ax.set_title(r'Reconstructed $|\tilde{\rho}|$')
 ax.set_xticks([0, 1, 2, 3])
@@ -72,14 +80,15 @@ ax.plot(phases/np.pi, freq_1, marker='o', ls='', label=r'$p_{10}$')
 plt.plot(phases/np.pi, sin(phases, *params_0), color='tab:blue', ls='--')
 plt.plot(phases/np.pi, sin(phases, *params_1), color='tab:orange', ls='--')
 
+ax.set_title("Photon Interference")
 ax.xaxis.set_major_formatter(tck.FormatStrFormatter(r'%g $\pi$'))
 ax.xaxis.set_major_locator(tck.MultipleLocator(base=0.5))
-ax.set_ylim([0, 1])
-ax.set_xlabel("Relative phase")
+ax.set_xlabel("Relative Phase")
+ax.set_ylabel("Detection Rate")
 ax.legend()
 plt.show()
 
 # output
-print("Detector 1 visibility:", abs(params_0[0]) * 2)
-print("Detector 2 visibility:", abs(params_1[0]) * 2)
-print("Combined:", abs(params_0[0]) + abs(params_1[0]))
+print("Detector 1 visibility:", vis_1)
+print("Detector 2 visibility:", vis_0)
+print("Combined:", vis_total)

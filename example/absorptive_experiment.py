@@ -47,22 +47,26 @@ MEAN_PHOTON_NUM1 = 0.1  # mean photon number of SPDC source on node 1
 MEAN_PHOTON_NUM2 = 0.1  # mean photon number of SPDC source on node 2
 
 # detectors
-BSM_DET1_EFFICIENCY = 0.9  # efficiency of detector 1 of BSM
-BSM_DET2_EFFICIENCY = 0.9  # efficiency of detector 2 of BSM
-MEAS_DET1_EFFICIENCY = 0.9  # efficiency of detector 1 of DM measurement
-MEAS_DET2_EFFICIENCY = 0.9  # efficiency of detector 2 of DM measurement
+BSM_DET1_EFFICIENCY = 0.6  # efficiency of detector 1 of BSM
+BSM_DET2_EFFICIENCY = 0.6  # efficiency of detector 2 of BSM
+BSM_DET1_DARK = 150  # Dark count rate (Hz)
+BSM_DET2_DARK = 150
+MEAS_DET1_EFFICIENCY = 0.6  # efficiency of detector 1 of DM measurement
+MEAS_DET2_EFFICIENCY = 0.6  # efficiency of detector 2 of DM measurement
+MEAS_DET1_DARK = 150
+MEAS_DET2_DARK = 150
 
 # fibers
 DIST_ANL_ERC = 20  # distance between ANL and ERC, in km
 DIST_HC_ERC = 20  # distance between HC and ERC, in km
-ATTENUATION = 0  # attenuation rate of optical fibre
+ATTENUATION = 2e-4  # attenuation rate of optical fibre (in dB/km)
 
 # memories
 MODE_NUM = 100  # number of temporal modes of AFC memory (same for both memories)
 MEMO_FREQUENCY1 = SPDC_FREQUENCY  # frequency of memory 1
 MEMO_FREQUENCY2 = SPDC_FREQUENCY  # frequency of memory 2
-ABS_EFFICIENCY1 = 1.0  # absorption efficiency of AFC memory 1
-ABS_EFFICIENCY2 = 1.0  # absorption efficiency of AFC memory 2
+ABS_EFFICIENCY1 = 0.35  # absorption efficiency of AFC memory 1
+ABS_EFFICIENCY2 = 0.35  # absorption efficiency of AFC memory 2
 PREPARE_TIME1 = 0  # time required for AFC structure preparation of memory 1
 PREPARE_TIME2 = 0  # time required for AFC structure preparation of memory 2
 COHERENCE_TIME1 = -1  # spin coherence time for AFC memory 1 spinwave storage, -1 means infinite time
@@ -75,8 +79,8 @@ DECAY_RATE2 = 0  # retrieval efficiency decay rate for memory 2
 # experiment settings
 time = int(1e12)
 calculate_fidelity_direct = True
-num_direct_trials = 10
-num_bs_trials_per_phase = 10
+num_direct_trials = 100
+num_bs_trials_per_phase = 30
 phase_settings = np.linspace(0, 2*np.pi, num=20, endpoint=False)
 
 
@@ -216,8 +220,8 @@ class EntangleNode(Node):
         self.resolution = max([d.time_resolution for d in bsm.detectors])
 
         # detector parameter setup
-        bsm.set_detector(0, efficiency=BSM_DET1_EFFICIENCY, count_rate=SPDC_FREQUENCY)
-        bsm.set_detector(1, efficiency=BSM_DET2_EFFICIENCY, count_rate=SPDC_FREQUENCY)
+        bsm.set_detector(0, efficiency=BSM_DET1_EFFICIENCY, count_rate=SPDC_FREQUENCY, dark_count=BSM_DET1_DARK)
+        bsm.set_detector(1, efficiency=BSM_DET2_EFFICIENCY, count_rate=SPDC_FREQUENCY, dark_count=BSM_DET1_DARK)
 
     def receive_qubit(self, src: str, qubit) -> None:
         self.components[self.first_component_name].get(qubit, src=src)
@@ -273,10 +277,10 @@ class MeasureNode(Node):
         self.resolution = max([d.time_resolution for d in direct_detector.detectors + bs_detector.detectors])
 
         # detector parameter setup
-        direct_detector.set_detector(0, efficiency=MEAS_DET1_EFFICIENCY, count_rate=SPDC_FREQUENCY)
-        direct_detector.set_detector(1, efficiency=MEAS_DET2_EFFICIENCY, count_rate=SPDC_FREQUENCY)
-        bs_detector.set_detector(0, efficiency=MEAS_DET1_EFFICIENCY, count_rate=SPDC_FREQUENCY)
-        bs_detector.set_detector(1, efficiency=MEAS_DET2_EFFICIENCY, count_rate=SPDC_FREQUENCY)
+        direct_detector.set_detector(0, efficiency=MEAS_DET1_EFFICIENCY, count_rate=SPDC_FREQUENCY, dark_count=MEAS_DET1_DARK)
+        direct_detector.set_detector(1, efficiency=MEAS_DET2_EFFICIENCY, count_rate=SPDC_FREQUENCY, dark_count=MEAS_DET2_DARK)
+        bs_detector.set_detector(0, efficiency=MEAS_DET1_EFFICIENCY, count_rate=SPDC_FREQUENCY, dark_count=MEAS_DET1_DARK)
+        bs_detector.set_detector(1, efficiency=MEAS_DET2_EFFICIENCY, count_rate=SPDC_FREQUENCY, dark_count=MEAS_DET2_DARK)
 
     def receive_qubit(self, src: str, qubit) -> None:
         self.components[self.first_component_name].get(qubit, src=src)
