@@ -1,7 +1,10 @@
-from numpy import random
+import numpy as np
+
 from sequence.components.optical_channel import *
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
+
+SEED = 0
 
 
 def test_ClassicalChannel_set_ends():
@@ -78,9 +81,13 @@ def test_QuantumChannel_transmit():
         def __init__(self, name, tl):
             Node.__init__(self, name, tl)
             self.log = []
+            self.generator = np.random.default_rng(SEED)
 
         def receive_qubit(self, src, photon):
             self.log.append((src, self.timeline.now(), photon.name))
+
+        def get_generator(self):
+            return self.generator
 
     tl = Timeline()
     qc = QuantumChannel("qc", tl, attenuation=0.0002, distance=1e4)

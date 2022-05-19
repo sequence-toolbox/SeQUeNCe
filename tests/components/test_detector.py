@@ -1,11 +1,12 @@
 from math import sqrt
-
 import numpy as np
 
 from sequence.components.detector import *
 from sequence.components.photon import Photon
 from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import polarization, time_bin, absorptive
+
+SEED = 0
 
 
 def clear_qsd_detectors(qsd):
@@ -15,7 +16,7 @@ def clear_qsd_detectors(qsd):
 
 
 def create_detector(efficiency=0.9, dark_count=0, count_rate=25e6, time_resolution=150):
-    class Parent():
+    class Parent:
         def __init__(self, tl):
             self.timeline = tl
             self.log = []
@@ -23,11 +24,20 @@ def create_detector(efficiency=0.9, dark_count=0, count_rate=25e6, time_resoluti
         def trigger(self, detector, msg):
             self.log.append((self.timeline.now(), msg['time'], detector))
 
+    class Owner:
+        def __init__(self):
+            self.generator = np.random.default_rng(SEED)
+
+        def get_generator(self):
+            return self.generator
+
     tl = Timeline()
     detector = Detector("", tl, efficiency=efficiency, dark_count=dark_count,
                         count_rate=count_rate, time_resolution=time_resolution)
     parent = Parent(tl)
+    own = Owner()
     detector.attach(parent)
+    detector.owner = own
     return detector, parent, tl
 
 
