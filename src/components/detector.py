@@ -38,6 +38,9 @@ class Detector(Entity):
         photon_counter (int): counts number of detection events.
     """
 
+    _meas_circuit = Circuit(1)
+    _meas_circuit.measure(0)
+
     def __init__(self, name: str, timeline: "Timeline", efficiency=0.9, dark_count=0, count_rate=int(25e6),
                  time_resolution=150):
         Entity.__init__(self, name, timeline)  # Detector is part of the QSDetector, and does not have its own name
@@ -71,6 +74,14 @@ class Detector(Entity):
         self.photon_counter += 1
         now = self.timeline.now()
         time = round(now / self.time_resolution) * self.time_resolution
+
+        # if get a photon and it has single_atom encoding, measure
+        if photon and photon.encoding_type["name"] == "single_atom":
+            key = photon.quantum_state
+            res = self.timeline.quantum_manager.run_circuit(Detector._meas_circuit, [key],
+                                                            self.get_generator().random())
+            if not res[key]:
+                return
 
         if (self.get_generator().random() < self.efficiency or dark_get) and now > self.next_detection_time:
             self.notify({'time': time})
