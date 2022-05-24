@@ -1,4 +1,3 @@
-from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.components.memory import Memory
@@ -6,7 +5,7 @@ from sequence.components.optical_channel import ClassicalChannel
 from sequence.entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 
 
-class SimpleManager():
+class SimpleManager:
     def __init__(self, own, memo_names):
         self.own = own
         self.memo_names = memo_names
@@ -74,9 +73,16 @@ def entangle_memory(memo1: Memory, memo2: Memory, fidelity: float):
     memo1.fidelity = memo2.fidelity = fidelity
 
 
-def pair_protocol(p1: EntanglementProtocol, p2: EntanglementProtocol):
-    p1.set_others(p2)
-    p2.set_others(p1)
+def pair_protocol(node1, node2, node_mid):
+    p1 = node1.protocols[0]
+    p2 = node2.protocols[0]
+    pmid = node_mid.protocols[0]
+    p1.set_others(pmid.name, node_mid.name,
+                  [node_mid.resource_manager.memo_names[0], node_mid.resource_manager.memo_names[1]])
+    p2.set_others(pmid.name, node_mid.name,
+                  [node_mid.resource_manager.memo_names[0], node_mid.resource_manager.memo_names[1]])
+    pmid.set_others(p1.name, node1.name, [node1.resource_manager.memo_names[0]])
+    pmid.set_others(p2.name, node2.name, [node2.resource_manager.memo_names[0]])
 
 
 tl = Timeline()
@@ -84,13 +90,16 @@ tl = Timeline()
 left_node = SwapNodeB('left', tl)
 right_node = SwapNodeB('right', tl)
 mid_node = SwapNodeA('mid', tl)
+left_node.set_seed(0)
+right_node.set_seed(1)
+mid_node.set_seed(2)
 
 nodes = [left_node, right_node, mid_node]
 
 for i in range(3):
     for j in range(3):
         cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl, 1000, 1e9)
-        cc.set_ends(nodes[i], nodes[j])
+        cc.set_ends(nodes[i], nodes[j].name)
 
 left_memo = left_node.components[left_node.resource_manager.memo_names[0]]
 right_memo = right_node.components[right_node.resource_manager.memo_names[0]]
@@ -102,8 +111,7 @@ entangle_memory(right_memo, mid_right_memo, 0.9)
 for node in nodes:
     node.resource_manager.create_protocol()
 
-pair_protocol(left_node.protocols[0], mid_node.protocols[0])
-pair_protocol(right_node.protocols[0], mid_node.protocols[0])
+pair_protocol(left_node, right_node, mid_node)
 
 tl.init()
 for node in nodes:

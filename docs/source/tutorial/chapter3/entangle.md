@@ -44,7 +44,7 @@ from sequence.components.memory import Memory
 from sequence.entanglement_management.generation import EntanglementGenerationA
 
 
-class SimpleManager():
+class SimpleManager:
     def __init__(self, own, memo_name):
         self.own = own
         self.memo_name = memo_name
@@ -130,21 +130,24 @@ tl = Timeline()
 node1 = EntangleGenNode('node1', tl)
 node2 = EntangleGenNode('node2', tl)
 bsm_node = BSMNode('bsm_node', tl, ['node1', 'node2'])
+node1.set_seed(0)
+node2.set_seed(1)
+bsm_node.set_seed(2)
 
 bsm = bsm_node.get_components_by_type("SingleAtomBSM")[0]
 bsm.update_detectors_params('efficiency', 1)
 
 qc1 = QuantumChannel('qc1', tl, attenuation=0, distance=1000)
 qc2 = QuantumChannel('qc2', tl, attenuation=0, distance=1000)
-qc1.set_ends(node1, bsm_node)
-qc2.set_ends(node2, bsm_node)
+qc1.set_ends(node1, bsm_node.name)
+qc2.set_ends(node2, bsm_node.name)
 
 nodes = [node1, node2, bsm_node]
 
 for i in range(3):
     for j in range(3):
         cc= ClassicalChannel('cc_%s_%s'%(nodes[i].name, nodes[j].name), tl, 1000, 1e8)
-        cc.set_ends(nodes[i], nodes[j])
+        cc.set_ends(nodes[i], nodes[j].name)
 ```
 
 ### Step 3: Configure and Start the `EntanglementGenerationA` Protocol
@@ -160,14 +163,18 @@ Now, the protocols are ready to start generating entanglement and we can start o
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 
 
-def pair_protocol(p1: EntanglementProtocol, p2: EntanglementProtocol):
-    p1.set_others(p2)
-    p2.set_others(p1)
+def pair_protocol(node1: Node, node2: Node):
+    p1 = node1.protocols[0]
+    p2 = node2.protocols[0]
+    node1_memo_name = node1.get_components_by_type("Memory")[0].name
+    node2_memo_name = node2.get_components_by_type("Memory")[0].name
+    p1.set_others(p2.name, node2.name, [node2_memo_name])
+    p2.set_others(p1.name, node1.name, [node1_memo_name])
 
 
 node1.resource_manager.create_protocol('bsm_node', 'node2')
 node2.resource_manager.create_protocol('bsm_node', 'node1')
-pair_protocol(node1.protocols[0], node2.protocols[0])
+pair_protocol(node1, node2)
 
 memory = node1.get_components_by_type("Memory")[0]
 
@@ -203,13 +210,14 @@ for i in range(1000):
     tl.time = tl.now() + 1e11
     node1.resource_manager.create_protocol('bsm_node', 'node2')
     node2.resource_manager.create_protocol('bsm_node', 'node1')
-    pair_protocol(node1.protocols[0], node2.protocols[0])
+    pair_protocol(node1, node2)
 
     tl.init()
     node1.protocols[0].start()
     node2.protocols[0].start()
     tl.run()
 
+print("node1 entangled memories : available memories")
 print(node1.resource_manager.ent_counter, ':', node1.resource_manager.raw_counter)
 # (around 500:500; the exact number depends on the seed of numpy.random)
 ```
@@ -241,7 +249,7 @@ We will also rewrite the code for the manager class to reflect our usage of two 
 from sequence.entanglement_management.purification import BBPSSW
 
 
-class SimpleManager():
+class SimpleManager:
     def __init__(self, own, kept_memo_name, meas_memo_name):
         self.own = own
         self.kept_memo_name = kept_memo_name
@@ -294,11 +302,13 @@ tl = Timeline()
 
 node1 = PurifyNode('node1', tl)
 node2 = PurifyNode('node2', tl)
+node1.set_seed(0)
+node2.set_seed(1)
 
 cc0 = ClassicalChannel('cc0', tl, 1000, 1e9)
 cc1 = ClassicalChannel('cc1', tl, 1000, 1e9)
-cc0.set_ends(node1, node2)
-cc1.set_ends(node2, node1)
+cc0.set_ends(node1, node2.name)
+cc1.set_ends(node2, node1.name)
 ```
 
 ### Step 3: Manually Set Entanglement States 
@@ -335,15 +345,21 @@ entangle_memory(meas_memo_1, meas_memo_2, 0.9)
 Similar to the previous example, we create, pair, and start the protocols.
 
 ```python
-def pair_protocol(p1, p2):
-    p1.set_others(p2)
-    p2.set_others(p1)
+def pair_protocol(node1: Node, node2: Node):
+    p1 = node1.protocols[0]
+    p2 = node2.protocols[0]
+    kept_memo_1_name = node1.resource_manager.kept_memo_name
+    meas_memo_1_name = node1.resource_manager.meas_memo_name
+    kept_memo_2_name = node2.resource_manager.kept_memo_name
+    meas_memo_2_name = node2.resource_manager.meas_memo_name
+    p1.set_others(p2.name, node2.name, [kept_memo_2_name, meas_memo_2_name])
+    p2.set_others(p1.name, node1.name, [kept_memo_1_name, meas_memo_1_name])
 
 
 node1.resource_manager.create_protocol()
 node2.resource_manager.create_protocol()
 
-pair_protocol(node1.protocols[0], node2.protocols[0])
+pair_protocol(node1, node2)
 
 tl.init()
 node1.protocols[0].start()
@@ -382,7 +398,7 @@ for i in range(10):
     node1.resource_manager.create_protocol()
     node2.resource_manager.create_protocol()
 
-    pair_protocol(node1.protocols[0], node2.protocols[0])
+    pair_protocol(node1, node2)
 
     tl.init()
     node1.protocols[0].start()
@@ -476,7 +492,7 @@ We will set up the manager so that it automatically creates the right type of sw
 ```python
 from sequence.entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 
-class SimpleManager():
+class SimpleManager:
     def __init__(self, own, memo_names):
         self.own = own
         self.memo_names = memo_names
@@ -510,22 +526,37 @@ tl = Timeline()
 left_node = SwapNodeB('left', tl)
 right_node = SwapNodeB('right', tl)
 mid_node = SwapNodeA('mid', tl)
+left_node.set_seed(0)
+right_node.set_seed(1)
+mid_node.set_seed(2)
 
 nodes = [left_node, right_node, mid_node]
 
 for i in range(3):
     for j in range(3):
         cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl, 1000, 1e9)
-        cc.set_ends(nodes[i], nodes[j])
+        cc.set_ends(nodes[i], nodes[j].name)
 ```
 
 ### Step 3: Manually Set Entanglement State and Start Protocol
 
-We will reuse the code for `entangle_memory` and `pair_protocol` from the previous examples to configure the states of hardware and software.
+We will reuse the code for `entangle_memory` from the previous examples to configure the states of hardware and software.
+The `pair_protocol` function is slightly more complicated, as there are more nodes to deal with.
 Because we set the success probability to 1, we can guaruntee a successful result after running the simulation.
 The fidelity of entanglement after swapping will be `0.9*0.9*0.99=0.8019`.
 
 ```python
+def pair_protocol(node1, node2, node_mid):
+    p1 = node1.protocols[0]
+    p2 = node2.protocols[0]
+    pmid = node_mid.protocols[0]
+    p1.set_others(pmid.name, node_mid.name,
+                  [node_mid.resource_manager.memo_names[0], node_mid.resource_manager.memo_names[1]])
+    p2.set_others(pmid.name, node_mid.name,
+                  [node_mid.resource_manager.memo_names[0], node_mid.resource_manager.memo_names[1]])
+    pmid.set_others(p1.name, node1.name, [node1.resource_manager.memo_names[0]])
+    pmid.set_others(p2.name, node2.name, [node2.resource_manager.memo_names[0]])
+
 left_memo = left_node.components[left_node.resource_manager.memo_names[0]]
 right_memo = right_node.components[right_node.resource_manager.memo_names[0]]
 mid_left_memo = mid_node.components[mid_node.resource_manager.memo_names[0]]
@@ -536,8 +567,7 @@ entangle_memory(right_memo, mid_right_memo, 0.9)
 for node in nodes:
     node.resource_manager.create_protocol()
 
-pair_protocol(left_node.protocols[0], mid_node.protocols[0])
-pair_protocol(right_node.protocols[0], mid_node.protocols[0])
+pair_protocol(left_node, right_node, mid_node)
 
 tl.init()
 for node in nodes:
