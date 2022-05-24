@@ -67,8 +67,7 @@ class ReceiverNode(Node):
         detector.owner = self
 
     def receive_qubit(self, src, qubit):
-        if not qubit.is_null:
-            self.components[self.first_component_name].get()
+        self.components[self.first_component_name].get()
 ```
 
 You may notice that the initialization methods make use of a few additional functions, and methods have been added to the node classes.
@@ -82,10 +81,7 @@ This is performed in the `SenderNode.get` method.
 At the other end of the channel, the `receive_qubit` method is called by a quantum channel on the receiving node of a transmission.
 For this method, the `src` input specifies the name of the node sending the qubit.
 In our case, we don’t care about the source node, so we can ignore it.
-The `qubit` input is the transmitted photon. For single atom memories, this photon may be in a null state, signified with a true value for the `is_null` attribute.
-A photon may be marked as null if it is somehow lost or should not have been emitted by the memory originally (if the memory is in the up state or has low fidelity).
-In this case, we must ignore the photon and not record it.
-Otherwise, it is sent to the detector for measurement.
+The `qubit` input is the transmitted photon; it is sent to the detector for measurement.
 This is done using the `first_component_name` attribute, which designates a component on a node to receive all incoming photons.
 
 ### Step 2: Custom Counting Protocol
@@ -98,7 +94,7 @@ Normally, the detector will pass two arguments through this function (a referenc
 We only wish to increment our counter.
 
 ```python
-class Counter():
+class Counter:
     def __init__(self):
         self.count = 0
 
@@ -170,7 +166,7 @@ We set the state of this single memory to a quantum state, given as a complex ar
 Let's also change our counter slightly to record the detection time. This can be done by accessing the `'time'` field of the detector info:
 
 ```python
-class Counter():
+class Counter:
     def __init__(self):
         self.count = 0
         self.time = 0
@@ -213,7 +209,7 @@ The events we wish to schedule are all for the memory.
 We want to first set it to a |+&#10217; state with the `update_state` method, and then excite the memory to measure emitted photons with the `excite` method.
 The `update_state` method will require a plus state as input.
 The `excite` method needs an argument for the desired destination node, so we'll supply the name of our `node2`.
-We’ll schedule both of these at a predetermined frequency `FREQUENCY` (given in Hz) for a set number of trials `NUM_TRIALS`.
+We'll schedule both of these at a predetermined period.
 
 To manage all of these requirements, we'll write our second protocol class, the `Sender`.
 The protocol will need a reference to the local node, as well as the name of the memory to trigger.
@@ -223,9 +219,7 @@ We'll include all memory modification in the `start` method, which will activate
 ```python
 import math
 
-period = int(1e12 / FREQUENCY)
-
-class Sender():
+class Sender:
     def __init__(self, own, memory_name):
         self.own = own
         self.memory = own.components[memory_name]
@@ -261,7 +255,8 @@ class SenderNode(Node):
 ### Step 6: Running and Output
 
 The procedure to initialize and run the timeline is the same as Tutorial 1.
-We will also add a call to the `start` method of our protocol, using the calculated period.
+We will also add a call to the `start` method of our protocol, using a calculated period.
+We'll use a predetermined frequency `FREQUENCY` (given in Hz) for a set number of trials `NUM_TRIALS`.
 
 ```python
 tl.init()
@@ -376,8 +371,8 @@ node2 = Node("node2", tl)
 
 cc0 = ClassicalChannel("cc0", tl, 1e3, 1e9)
 cc1 = ClassicalChannel("cc1", tl, 1e3, 1e9)
-cc0.set_ends(node1, node2)
-cc1.set_ends(node2, node1)
+cc0.set_ends(node1, node2.name)
+cc1.set_ends(node2, node1.name)
 
 pingp = PingProtocol(node1, "pingp", "pongp", "node2")
 pongp = PongProtocol(node2, "pongp", "pingp", "node1")

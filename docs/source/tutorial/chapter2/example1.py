@@ -13,7 +13,7 @@ NUM_TRIALS = 1000
 FREQUENCY = 1e3
 
 
-class Counter():
+class Counter:
     def __init__(self):
         self.count = 0
 
@@ -21,7 +21,7 @@ class Counter():
         self.count += 1
 
 
-class Sender():
+class Sender:
     def __init__(self, own, memory_name):
         self.own = own
         self.memory = own.components[memory_name]
@@ -65,8 +65,7 @@ class ReceiverNode(Node):
         detector.attach(self.counter)
 
     def receive_qubit(self, src, qubit):
-        if not qubit.is_null:
-            self.components[self.first_component_name].get()
+        self.components[self.first_component_name].get()
 
 
 if __name__ == "__main__":
@@ -78,7 +77,7 @@ if __name__ == "__main__":
     node2 = ReceiverNode("node2", tl)
 
     qc = QuantumChannel("qc", tl, attenuation=0, distance=1e3)
-    qc.set_ends(node1, node2)
+    qc.set_ends(node1, node2.name)
 
     tl.init()
 
