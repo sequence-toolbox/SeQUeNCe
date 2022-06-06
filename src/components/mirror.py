@@ -74,7 +74,7 @@ class Mirror(Entity):
                 state = multiply([1, -1], state)
 
             for _ in range(num_photons):
-                wavelength = self.linewidth * get_generator(self) + self.wavelength
+                wavelength = self.linewidth * rng.random_sample() + self.wavelength
                 new_photon = Photon(str(i),
                                     wavelength=wavelength,
                                     location=self.owner,
