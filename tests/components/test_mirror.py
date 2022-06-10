@@ -74,6 +74,8 @@ def test_mirror():
     FID, FREQ, MEAN = 0.98, 8e7, 0.1
     mr = Mirror("mr", tl, fidelity=FID, frequency=8e7, mean_photon_num=MEAN)
     sender = MiddleNode("sender", tl, ls)
+    sender.set_seed(YOUR_SEED)
+
 
     assert sender.Mirror.fidelity == FID  
     assert sender.Mirror.frequency == FREQ  
