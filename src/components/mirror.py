@@ -9,7 +9,6 @@ from ..utils.encoding import polarization
 from typing import TYPE_CHECKING, Any, Dict
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
-    from ..components.photon import Photon
     from typing import List
 
 class Mirror(Entity):
@@ -51,11 +50,9 @@ class Mirror(Entity):
         self.phase_error = phase_error
 
     def init(self):
-
         pass
 
     def get(self, dark_get=False) -> None:
-
         self.photon_counter += 1
         now = self.timeline.now()
         time = round(now / self.time_resolution) * self.time_resolution
@@ -70,11 +67,11 @@ class Mirror(Entity):
             num_photons = 1
             
             rng = self.get_generator()
-            if rng.random_sample() < self.phase_error:
+            if rng.random() < self.phase_error:
                 state = multiply([1, -1], state)
 
             for _ in range(num_photons):
-                wavelength = self.linewidth * rng.random_sample() + self.wavelength
+                wavelength = self.linewidth * rng.random() + self.wavelength
                 new_photon = Photon(str(i),
                                     wavelength=wavelength,
                                     location=self.owner,
