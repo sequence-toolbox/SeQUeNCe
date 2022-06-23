@@ -16,6 +16,7 @@ class Mirror(Entity):
     """Single photon reflecting device.
     This class models the reflection of a single photon, in the fashion of an experimental mirror.
     Can be attached to many different devices to enable different measurement options.
+
     Attributes:
         name (str): label for mirror instance.
         timeline (Timeline): timeline for simulation.
@@ -52,7 +53,7 @@ class Mirror(Entity):
     def init(self):
         pass
 
-    def get(self, dark_get=False) -> None:
+    def get(self) -> None:
         self.photon_counter += 1
         now = self.timeline.now()
         time = round(now / self.time_resolution) * self.time_resolution
