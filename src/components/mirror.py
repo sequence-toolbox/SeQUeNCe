@@ -2,11 +2,9 @@ from numpy import multiply
 
 from .photon import Photon
 from ..kernel.entity import Entity
-from ..kernel.event import Event
-from ..kernel.process import Process
 from ..utils.encoding import polarization
 
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Dict
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
 
@@ -61,31 +59,3 @@ class Mirror(Entity):
             return
 
         self.owner.send_qubit(self.destination, photon)
-
-    # def emit(self, state_list, dst: str) -> None:
-    #
-    #     time = self.timeline.now()
-    #     period = int(round(1e12 / self.frequency))
-    #
-    #     for i, state in enumerate(state_list):
-    #
-    #         num_photons = 1
-    #
-    #         rng = self.get_generator()
-    #         if rng.random() < self.phase_error:
-    #             state = multiply([1, -1], state)
-    #
-    #         for _ in range(num_photons):
-    #             wavelength = self.linewidth * rng.random() + self.wavelength
-    #             new_photon = Photon(str(i),
-    #                                 wavelength=wavelength,
-    #                                 location=self.owner,
-    #                                 encoding_type=self.encoding_type,
-    #                                 quantum_state=state)
-    #
-    #             process = Process(self.owner, "send_qubit", [dst, new_photon])
-    #
-    #             event = Event(time, process)
-    #             self.owner.timeline.schedule(event)
-    #             self.photon_counter += 1
-    #             time += period

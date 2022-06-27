@@ -1,27 +1,13 @@
-from random import randrange
-
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from sequence.kernel.timeline import Timeline
 
-from sequence.kernel.event import Event
-from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
-from sequence.components.optical_channel import QuantumChannel
 from sequence.topology.node import Node
-
 from sequence.utils.encoding import *
+from sequence.components.optical_channel import QuantumChannel
 from sequence.components.light_source import LightSource
-
 from sequence.components.mirror import Mirror
-
-
-class Counter:
-    def __init__(self):
-        self.count = 0
-
-    def trigger(self, detector, info):
-        self.count += 1
 
 
 class EmittingNode(Node):
@@ -39,20 +25,6 @@ class MiddleNode(Node):
 
     def receive_qubit(self, src, qubit):
         self.mirror.get(qubit)
-
-        # # print("received something")
-        # if not qubit.is_null:
-        #     self.mirror.get()
-        #
-        #     if self.get_generator().random() < self.mirror.fidelity:
-        #         process_photon = Process(self.mirror, "emit", [
-        #                                  [qubit.quantum_state.state], self.receiver])
-        #
-        #         time = self.timeline.now()
-        #         period = int(round(1e12 / self.mirror.frequency))
-        #         event = Event(time, process_photon)
-        #         self.owner.timeline.schedule(event)
-        #         time += period
 
 
 class Receiver(Node):
