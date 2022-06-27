@@ -37,6 +37,14 @@ class Mirror(Entity):
         pass
 
     def get(self, photon: Photon) -> None:
+        """Method to get a photon to reflect.
+
+        Will send to destination node specified by destination attribute through owner node.
+
+        Args:
+            photon (Photon): photon to reflect
+        """
+
         own_encoding = self.encoding_type["name"]
         assert photon.encoding_type["name"] == own_encoding
         assert self.destination != ""
