@@ -1,104 +1,79 @@
-from numpy import random
-from random import randrange
-
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from sequence.kernel.timeline import Timeline
 
-from sequence.kernel.event import Event
-from sequence.kernel.process import Process
-from sequence.components.light_source import polarization
-from sequence.components.optical_channel import QuantumChannel
+from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
-
 from sequence.utils.encoding import *
+from sequence.components.optical_channel import QuantumChannel
 from sequence.components.light_source import LightSource
-
 from sequence.components.mirror import Mirror
-
-NUM_TRIALS = 1000
-FREQUENCY = 1e3
-
-
-class Counter():
-    def __init__(self):
-        self.count = 0
-
-    def trigger(self, detector, info):
-        self.count += 1
 
 
 class EmittingNode(Node):
-    def __init__(self, name, timeline):
+    def __init__(self, name, timeline, light_source):
         super().__init__(name, timeline)
-        self.light_source = LightSource(
-            name, timeline, frequency=80000000, mean_photon_num=1)
+        self.light_source = light_source
         self.light_source.owner = self
 
 
 class MiddleNode(Node):
-
-    def __init__(self, name, timeline):
+    def __init__(self, name, timeline, mirror):
         super().__init__(name, timeline)
-        self.mirror = Mirror(name, timeline)
+        self.mirror = mirror
         self.mirror.owner = self
-    #src = node1
 
     def receive_qubit(self, src, qubit):
-        #print("received something")
-        if not qubit.is_null:
-            self.mirror.get()
+        self.mirror.get(qubit)
 
-            y = randrange(100)
-            if not (self.mirror.fidelity * 100) < y:
-                process_photon = Process(self.mirror, "emit", [
-                                         [qubit.quantum_state.state], "node3"])
 
-                time = self.timeline.now()
-                period = int(round(1e12 / self.mirror.frequency))
-                event = Event(time, process_photon)
-                self.owner.timeline.schedule(event)
-                time += period
-                #print("receiving mirror")
+class Receiver(Node):
+    def __init__(self, name, tl):
+        Node.__init__(self, name, tl)
+        self.log = []
+
+    def receive_qubit(self, src: str, qubit) -> None:
+        self.log.append((self.timeline.now(), src, qubit))
+
 
 def test_mirror():
-    class Receiver(Node):
-        def __init__(self, name, tl):
-            Node.__init__(self, name, tl)
-            self.log = []
-
-        def receive_qubit(self, src: str, qubit) -> None:
-            self.log.append((self.timeline.now(), src, qubit))
+    STATE_LEN = 1000
+    FIDELITY = 0.98
+    LS_FREQ = 8e7
+    MEAN = 0.1
 
     tl = Timeline()
-    FID, FREQ, MEAN = 0.98, 8e7, 0.1
-    mr = Mirror("mr", tl, fidelity=FID, frequency=8e7, mean_photon_num=MEAN)
-    sender = MiddleNode("sender", tl, ls)
-    sender.set_seed(YOUR_SEED)
 
-
-    assert sender.Mirror.fidelity == FID  
-    assert sender.Mirror.frequency == FREQ  
-    assert sender.Mirror.mean_photon_num == MEAN
-
+    ls = LightSource("ls", tl, frequency=LS_FREQ, mean_photon_num=MEAN)
+    sender = EmittingNode("sender", tl, ls)
     receiver = Receiver("receiver", tl)
-    qc = QuantumChannel("qc", tl, distance=1e5, attenuation=0)
-    qc.set_ends(sender, receiver)
+    mr = Mirror("mr", tl, fidelity=FIDELITY, destination=receiver.name)
+    mid = MiddleNode("mid", tl, mr)
+
+    sender.set_seed(0)
+    mid.set_seed(1)
+    receiver.set_seed(2)
+
+    assert mid.mirror.fidelity == FIDELITY
+
+    qc1 = QuantumChannel("qc1", tl, distance=1e5, attenuation=0)
+    qc2 = QuantumChannel("qc2", tl, distance=1e5, attenuation=0)
+    qc1.set_ends(sender, mid.name)
+    qc2.set_ends(mid, receiver.name)
+
     state_list = []
-    STATE_LEN = 1000
+    rng = mid.get_generator()
     for _ in range(STATE_LEN):
-        rng = sender.get_generator()
-        basis = rng.randint(2)
-        bit = random.randint(2)
+        basis = rng.integers(2)
+        bit = rng.integers(2)
         state_list.append(polarization["bases"][basis][bit])
 
     tl.init()
-    mr.emit(state_list, "receiver")
+    sender.light_source.emit(state_list, "mid")
     tl.run()
 
-    assert (len(receiver.log) / STATE_LEN) - MEAN < 0.1
+    assert abs((len(receiver.log) / STATE_LEN) - (MEAN * FIDELITY)) < 0.1
     for time, src, qubit in receiver.log:
         index = int(qubit.name)
         assert state_list[index] == qubit.quantum_state.state
-        assert time == index * (1e12 / FREQ) + qc.delay
-        assert src == "sender"
+        assert time == index * (1e12 / LS_FREQ) + qc1.delay + qc2.delay
