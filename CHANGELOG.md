@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - serialization of messages, circuits
 - base classes for applications and quantum manager states
-- photon loss method `Photon.add\_loss()`
+- photon loss method `Photon.add_loss()`
 
 ### Changed
 - moved all random number generation to network nodes
@@ -71,3 +71,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - tweaked library dependencies
     - added `mpi4py` and `mpi-pytest` requirements for parallel execution
     - removed `json5` requirement
+
+## [0.3.1]
+### Added
+- `Mirror` class for simple reflection of photons
+  - Sends photon to another node with quantum channel connection to the local node
+- Quantum++ package acknowledgement to README
