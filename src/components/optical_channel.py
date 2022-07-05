@@ -28,19 +28,20 @@ class OpticalChannel(Entity):
         timeline (Timeline): timeline for simulation.
         sender (Node): node at sending end of optical channel.
         receiver (Node): node at receiving end of optical channel.
-        atteunuation (float): attenuation of the fiber (in dB/km).
+        atteunuation (float): attenuation of the fiber (in dB/m).
         distance (int): length of the fiber (in m).
         polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
         light_speed (float): speed of light within the fiber (in m/ps).
     """
 
-    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int, polarization_fidelity: float, light_speed: float):
+    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int,
+                 polarization_fidelity: float, light_speed: float):
         """Constructor for abstract Optical Channel class.
 
         Args:
             name (str): name of the beamsplitter instance.
             timeline (Timeline): simulation timeline.
-            attenuation (float): loss rate of optical fiber (in dB/km).
+            attenuation (float): loss rate of optical fiber (in dB/m).
             distance (int): length of fiber (in m).
             polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
             light_speed (float): speed of light within the fiber (in m/ps).
@@ -71,7 +72,7 @@ class QuantumChannel(OpticalChannel):
         timeline (Timeline): timeline for simulation.
         sender (Node): node at sending end of optical channel.
         receiver (Node): node at receiving end of optical channel.
-        atteunuation (float): attenuation of the fiber (in dB/km).
+        atteunuation (float): attenuation of the fiber (in dB/m).
         distance (int): length of the fiber (in m).
         polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
         light_speed (float): speed of light within the fiber (in m/ps).
@@ -88,7 +89,7 @@ class QuantumChannel(OpticalChannel):
         Args:
             name (str): name of the quantum channel instance.
             timeline (Timeline): simulation timeline.
-            attenuation (float): loss rate of optical fiber (in dB/km).
+            attenuation (float): loss rate of optical fiber (in dB/m).
             distance (int): length of fiber (in m).
             polarization_fidelity (float): probability of no polarization error for a transmitted qubit (default 1).
             light_speed (float): speed of light within the fiber (in m/ps) (default 2e-4).
@@ -223,7 +224,7 @@ class ClassicalChannel(OpticalChannel):
         receiver (Node): node at receiving end of optical channel.
         distance (float): length of the fiber (in m).
         light_speed (float): speed of light within the fiber (in m/ps).
-        delay (float): delay in message transmission (default distance / light_speed).
+        delay (float): delay (in ps) of message transmission (default distance / light_speed).
     """
 
     def __init__(self, name: str, timeline: "Timeline", distance: int, delay=-1):
