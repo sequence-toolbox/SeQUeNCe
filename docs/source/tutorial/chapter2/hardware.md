@@ -39,6 +39,10 @@ from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.components.memory import Memory
 from sequence.components.detector import Detector
+from sequence.components.circuit import Circuit
+
+_meas_circuit = Circuit(1)
+_meas_circuit.measure(0)
 
 class SenderNode(Node):
     def __init__(self, name: str, timeline: Timeline):
@@ -55,11 +59,24 @@ class ReceiverNode(Node):
         self.detector.owner = self
 
     def receive_qubit(self, src: str, qubit) -> None:
-        if not qubit.is_null:
+        qm = self.timeline.quantum_manager
+        key = qubit.qstate_key
+        meas_res = qm.run_circuit(_meas_circuit, [key], self.get_generator().random())[key]
+        if meas_res:
             self.detector.get()
 ```
 
-Notice that we also needed to change the `receive_qubit` method of the base `Node` class. This method is invoked by the quantum channel when transmitting photons, and by default is set to do nothing. For this method, the `src` input specifies the name of the node sending the qubit. In our case, we don’t care about the source node, so we can ignore it. The `qubit` input is the transmitted photon. For single atom memories, this photon may be in a null state, signified with a true value for the `is_null` attribute. A photon may be marked as null if it is somehow lost or should not have been emitted by the memory originally (if the memory is in the up state or has low fidelity). In this case, we must ignore the photon and not record it. Otherwise, it is sent to the detector for measurement. The detector uses the `get` method to receive photons, and this interface is shared by many other optical hardware elements.
+Notice that we also needed to change the `receive_qubit` method of the base `Node` class.
+This method is invoked by the quantum channel when transmitting photons, and by default is set to do nothing.
+For this method, the `src` input specifies the name of the node sending the qubit.
+In our case, we don’t care about the source node, so we can ignore it.
+The `qubit` input is the transmitted photon.
+For single atom memories, the memory state heralded by the denotes the presence or absence of a photon.
+This corresponds to the up or down state of the memory.
+We will thus measure the memory state and record the photon accordingly (this will be done automatically in future updates).
+If we measure 0, we must ignore the photon and not record it.
+Otherwise, it is sent to the detector for recording.
+The detector uses the `get` method to receive photons, and this interface is shared by many other optical hardware elements.
 
 
 ### Step 2: Custom Protocol

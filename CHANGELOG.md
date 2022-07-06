@@ -77,3 +77,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Mirror` class for simple reflection of photons
   - Sends photon to another node with quantum channel connection to the local node
 - Quantum++ package acknowledgement to README
+
+## [0.3.2]
+### Changed
+- Corrected units in jupyter notebook example files
+- Corrected units for the optical channel class
+- Bug fixes for tutorial scripts
