@@ -42,32 +42,6 @@ def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=
         raise Exception("invalid encoding {} given for BSM {}".format(encoding_type, name))
 
 
-def _set_memory_with_fidelity(memories: List["Memory"], desired_state):
-    possible_states = [BSM._phi_plus, BSM._phi_minus, BSM._psi_plus, BSM._psi_minus]
-    assert desired_state in possible_states
-    qm = memories[0].timeline.quantum_manager
-    fidelity = (memories[0].raw_fidelity + memories[1].raw_fidelity) / 2
-    keys = [memories[0].qstate_key, memories[1].qstate_key]
-    
-    if qm.formalism == "KET":
-        probabilities = [(1-fidelity)/3] * 4
-        probabilities[possible_states.index(desired_state)] = fidelity
-        state_ind = random.choice(4, p=probabilities)
-        qm.set(keys, possible_states[state_ind])
-
-    elif qm.formalism == "DENSITY":
-        #multipliers = [(1-fidelity)/3] * 4
-        #multipliers[possible_states.index(desired_state)] = fidelity
-        #state = zeros((4, 4))
-        #for mult, pure in zip(multipliers, possible_states):
-        #    state = add(state, mult*outer(pure, pure))
-        # STATE VARIABLE DOES NOT EXIST IN THIS CONTEXT
-        qm.set(keys, state)
-
-    else:
-        raise Exception("Invalid quantum manager with formalism {}".format(qm.formalism))
-
-
 class BSM(Entity):
     """Parent class for bell state measurement devices.
 
