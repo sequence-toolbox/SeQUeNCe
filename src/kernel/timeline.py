@@ -5,6 +5,7 @@ All entities are required to have an attached timeline for simulation.
 """
 
 from _thread import start_new_thread
+from datetime import timedelta
 from math import inf
 from sys import stdout
 from time import time_ns, sleep
@@ -182,29 +183,8 @@ class Timeline:
             sleep(SLEEP_SECONDS)
 
     def ns_to_human_time(self, nanoseconds: int) -> str:
-        if nanoseconds >= NANOSECONDS_PER_MILLISECOND:
-            milliseconds = nanoseconds / NANOSECONDS_PER_MILLISECOND
-
-            if milliseconds >= MILLISECONDS_PER_SECOND:
-                seconds = milliseconds / MILLISECONDS_PER_SECOND
-
-                if seconds >= SECONDS_PER_MINUTE:
-                    minutes = seconds // SECONDS_PER_MINUTE
-                    seconds %= SECONDS_PER_MINUTE
-
-                    if minutes >= MINUTES_PER_HOUR:
-                        hours = minutes // MINUTES_PER_HOUR
-                        minutes %= MINUTES_PER_HOUR
-
-                        return '%d hour: %d min: %.2f sec' % (hours, minutes, seconds)
-
-                    return '%d min: %.2f sec' % (minutes, seconds)
-
-                return '%.2f sec' % (seconds)
-
-            return f"%d ms" % (milliseconds)
-
-        return '0 ms'
+        milliseconds = nanoseconds / NANOSECONDS_PER_MILLISECOND
+        return str(timedelta(milliseconds=milliseconds))
 
     @staticmethod
     def convert_to_nanoseconds(picoseconds: int) -> int:
