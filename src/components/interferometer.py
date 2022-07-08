@@ -85,8 +85,7 @@ class Interferometer(Entity):
             else:
                 time = 2 * self.path_difference
 
-        if random.random_sample() < self.phase_error:
-            # MULTIPLY FUNCTION DOES NOT EXIST IN THIS CONTEXT
+        if self.get_generator().random() < self.phase_error:
             quantum_state.state = list(multiply([1, -1], quantum_state))
 
         if quantum_state.state == (complex(sqrt(1/2)), complex(sqrt(1/2))):  # Early + Late
