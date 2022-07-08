@@ -39,6 +39,10 @@ from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.components.memory import Memory
 from sequence.components.detector import Detector
+from sequence.components.circuit import Circuit
+
+_meas_circuit = Circuit(1)
+_meas_circuit.measure(0)
 
 class SenderNode(Node):
     def __init__(self, name: str, timeline: Timeline):
@@ -55,11 +59,24 @@ class ReceiverNode(Node):
         self.detector.owner = self
 
     def receive_qubit(self, src: str, qubit) -> None:
-        if not qubit.is_null:
+        qm = self.timeline.quantum_manager
+        key = qubit.qstate_key
+        meas_res = qm.run_circuit(_meas_circuit, [key], self.get_generator().random())[key]
+        if meas_res:
             self.detector.get()
 ```
 
-Notice that we also needed to change the `receive_qubit` method of the base `Node` class. This method is invoked by the quantum channel when transmitting photons, and by default is set to do nothing. For this method, the `src` input specifies the name of the node sending the qubit. In our case, we don’t care about the source node, so we can ignore it. The `qubit` input is the transmitted photon. For single atom memories, this photon may be in a null state, signified with a true value for the `is_null` attribute. A photon may be marked as null if it is somehow lost or should not have been emitted by the memory originally (if the memory is in the up state or has low fidelity). In this case, we must ignore the photon and not record it. Otherwise, it is sent to the detector for measurement. The detector uses the `get` method to receive photons, and this interface is shared by many other optical hardware elements.
+Notice that we also needed to change the `receive_qubit` method of the base `Node` class.
+This method is invoked by the quantum channel when transmitting photons, and by default is set to do nothing.
+For this method, the `src` input specifies the name of the node sending the qubit.
+In our case, we don’t care about the source node, so we can ignore it.
+The `qubit` input is the transmitted photon.
+For single atom memories, the memory state heralded by the denotes the presence or absence of a photon.
+This corresponds to the up or down state of the memory.
+We will thus measure the memory state and record the photon accordingly (this will be done automatically in future updates).
+If we measure 0, we must ignore the photon and not record it.
+Otherwise, it is sent to the detector for recording.
+The detector uses the `get` method to receive photons, and this interface is shared by many other optical hardware elements.
 
 
 ### Step 2: Custom Protocol
@@ -82,6 +99,7 @@ We are now ready to start writing the main function of our script. The first ste
 ```python
 from sequence.kernel.timeline import Timeline
 tl = Timeline(10e12)
+tl.show_progress = False
 ```
 
 We can then create our two network nodes using our custom node class. We only need to specify a name for each node and the timeline it belongs to:
@@ -89,17 +107,19 @@ We can then create our two network nodes using our custom node class. We only ne
 ```python
 node1 = SenderNode("node1", tl)
 node2 = ReceiverNode("node2", tl)
+node1.set_seed(0)
+node2.set_seed(1)
 ```
 
-Next, we create the quantum channel to provide connectivity between the nodes. We won’t need a classical channel, as we’re not sending any messages between nodes. In the initializer, we again specify the name and timeline, and include the additional required attenuation and distance parameters. We set attenuation to 0, so that we do not lose any photons in the channel (try changing it to see the effects!), and set the distance to one kilometer (note that the distance is given in meters). The `set_ends` method finally sets the sender and receiver for the channel.
+Note that we also set the random generator seed for our nodes to ensure reproducability. Next, we create the quantum channel to provide connectivity between the nodes. We won’t need a classical channel, as we’re not sending any messages between nodes. In the initializer, we again specify the name and timeline, and include the additional required attenuation and distance parameters. We set attenuation to 0, so that we do not lose any photons in the channel (try changing it to see the effects!), and set the distance to one kilometer (note that the distance is given in meters). The `set_ends` method finally sets the sender and receiver for the channel, where the receiver is given as the name of the receiving node.
 
 ```python
 from sequence.components.optical_channel import QuantumChannel
 qc = QuantumChannel("qc", tl, attenuation=0, distance=1e3)
-qc.set_ends(node1, node2)
+qc.set_ends(node1, node2.name)
 ```
 
-Lastly, we’ll create the counter for our detector. We only need to define an instance, and attach it to the detector When the detector properly detects a photon, it will call the `trigger` method of all attached objects, including our counter.
+Lastly, we’ll create the counter for our detector. We only need to define an instance, and attach it to the detector. When the detector properly detects a photon, it will call the `trigger` method of all attached objects, including our counter.
 
 ```python
 counter = Counter()
@@ -289,8 +309,8 @@ node2 = Node("node2", tl)
 
 cc0 = ClassicalChannel("cc0", tl, 1e3, 1e9)
 cc1 = ClassicalChannel("cc1", tl, 1e3, 1e9)
-cc0.set_ends(node1, node2)
-cc1.set_ends(node2, node1)
+cc0.set_ends(node1, node2.name)
+cc1.set_ends(node2, node1.name)
 
 pingp = PingProtocol(node1, "pingp", "pongp", "node2")
 pongp = PongProtocol(node2, "pongp", "pingp", "node1")

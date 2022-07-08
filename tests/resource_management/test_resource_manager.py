@@ -6,7 +6,8 @@ numpy.random.seed(0)
 
 from sequence.components.memory import MemoryArray
 from sequence.kernel.timeline import Timeline
-from sequence.resource_management.resource_manager import *
+from sequence.resource_management.resource_manager import ResourceManager, \
+    ResourceManagerMessage, ResourceManagerMsgType
 from sequence.resource_management.rule_manager import Rule
 from sequence.topology.node import Node
 
@@ -29,7 +30,7 @@ class FakeProtocol():
         self.name = name
         self.other_is_setted = False
         self.is_started = False
-        self.rule = Rule(None, None, None)
+        self.rule = Rule(None, None, None, None, None)
         self.rule.protocols.append(self)
         self.memories = memories
         self.own = None
@@ -37,7 +38,7 @@ class FakeProtocol():
     def is_ready(self):
         return self.other_is_setted
 
-    def set_others(self, other):
+    def set_others(self, other, arg2, arg3):
         self.other_is_setted = True
 
     def start(self):
@@ -45,19 +46,19 @@ class FakeProtocol():
 
 
 def test_load():
-    def fake_condition(memo_info, manager):
+    def fake_condition(memo_info, manager, args):
         if memo_info.state == "RAW":
             return [memo_info]
         else:
             return []
 
-    def fake_action(memories):
-        return FakeProtocol("protocol"), [None], [None]
+    def fake_action(memories, args):
+        return FakeProtocol("protocol"), [None], [None], [{}]
 
     tl = Timeline()
     node = FakeNode("node", tl)
     assert len(node.resource_manager.rule_manager) == 0
-    rule = Rule(1, fake_action, fake_condition)
+    rule = Rule(1, fake_action, fake_condition, None, None)
     for memo_info in node.resource_manager.memory_manager:
         assert memo_info.state == "RAW"
     node.resource_manager.load(rule)
@@ -70,19 +71,19 @@ def test_load():
 
 
 def test_update():
-    def fake_condition(memo_info, manager):
+    def fake_condition(memo_info, manager, args):
         if memo_info.state == "ENTANGLED" and memo_info.fidelity > 0.8:
             return [memo_info]
         else:
             return []
 
-    def fake_action(memories):
-        return FakeProtocol("protocol"), [None], [None]
+    def fake_action(memories, args):
+        return FakeProtocol("protocol"), [None], [None], [{}]
 
     tl = Timeline()
     node = FakeNode("node", tl)
     assert len(node.resource_manager.rule_manager) == 0
-    rule = Rule(1, fake_action, fake_condition)
+    rule = Rule(1, fake_action, fake_condition, None, None)
     node.resource_manager.load(rule)
     assert len(node.resource_manager.rule_manager) == 1
     for memo_info in node.resource_manager.memory_manager:
@@ -114,22 +115,25 @@ def test_send_request():
     resource_manager = node.resource_manager
     assert len(node.send_log) == 0
     protocol = FakeProtocol("no_send")
-    resource_manager.send_request(protocol, None, None)
+    resource_manager.send_request(protocol, None, None, {})
     assert len(node.send_log) == 0
-    assert protocol in resource_manager.waiting_protocols and len(resource_manager.pending_protocols) == 0
+    assert protocol in resource_manager.waiting_protocols and len(
+        resource_manager.pending_protocols) == 0
     assert protocol.own == node
     protocol = FakeProtocol("send")
-    node.resource_manager.send_request(protocol, "dst_id", "req_condition_func")
+    node.resource_manager.send_request(protocol, "dst_id",
+                                       "req_condition_func", {})
     assert len(node.send_log) == 1
-    assert protocol in resource_manager.pending_protocols and len(resource_manager.waiting_protocols) == 1
+    assert protocol in resource_manager.pending_protocols and len(
+        resource_manager.waiting_protocols) == 1
     assert protocol.own == node
 
 
 def test_received_message():
-    def true_fun(protocols):
+    def true_fun(protocols, args):
         return protocols[0]
 
-    def false_fun(protocols):
+    def false_fun(protocols, args):
         return None
 
     tl = Timeline()
@@ -139,8 +143,11 @@ def test_received_message():
     # test receive REQUEST message
     protocol1 = FakeProtocol("waiting_protocol")
     resource_manager.waiting_protocols.append(protocol1)
-    req_msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST, protocol="ini_protocol",
-                                     req_condition_func=true_fun)
+    req_msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST,
+                                     protocol="ini_protocol",
+                                     node="source",
+                                     memories=[],
+                                     req_condition_func=true_fun, req_args={})
     resource_manager.received_message("sender", req_msg)
     assert protocol1 in node.protocols
     assert protocol1 not in resource_manager.waiting_protocols
@@ -152,8 +159,11 @@ def test_received_message():
 
     protocol1 = FakeProtocol("waiting_protocol")
     resource_manager.waiting_protocols.append(protocol1)
-    req_msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST, protocol="ini_protocol",
-                                     req_condition_func=false_fun)
+    req_msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST,
+                                     protocol="ini_protocol",
+                                     node="source",
+                                     memories=[],
+                                     req_condition_func=false_fun, req_args={})
     resource_manager.received_message("sender", req_msg)
     assert protocol1 not in node.protocols
     assert protocol1 in resource_manager.waiting_protocols
@@ -166,8 +176,15 @@ def test_received_message():
     # test receive RESPONSE message: is_approved==False and is_approved==True
     protocol2 = FakeProtocol("pending_protocol")
     resource_manager.pending_protocols.append(protocol2)
-    resp_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=protocol2, is_approved=False,
-                                      paired_protocol="paired_protocol")
+    resp_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE,
+                                      protocol=protocol2.name,
+                                      node="source",
+                                      memories=[],
+                                      is_approved=False,
+                                      paired_protocol="paired_protocol",
+                                      paired_node="paired_node",
+                                      paired_memories=[]
+                                      )
     resource_manager.received_message("sender", resp_msg)
     assert protocol2 not in node.protocols
     assert protocol2 not in resource_manager.pending_protocols
@@ -176,8 +193,14 @@ def test_received_message():
 
     protocol2 = FakeProtocol("pending_protocol")
     resource_manager.pending_protocols.append(protocol2)
-    resp_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=protocol2, is_approved=True,
-                                      paired_protocol="paired_protocol")
+    resp_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE,
+                                      protocol=protocol2.name,
+                                      node="source",
+                                      memories=[],
+                                      is_approved=True,
+                                      paired_protocol="paired_protocol",
+                                      paired_node="paired_node",
+                                      paired_memories=[])
     resource_manager.received_message("sender", resp_msg)
     assert protocol2 in node.protocols
     assert protocol2 not in resource_manager.pending_protocols
@@ -190,7 +213,7 @@ def test_expire():
     tl.init()
     for info in node.resource_manager.memory_manager:
         info.to_occupied()
-    rule = Rule(0, None, None)
+    rule = Rule(0, None, None, None, None)
     for i in range(6):
         node.memory_array[i].detach(node.memory_array)
     p1 = FakeProtocol("waiting_protocol", [node.memory_array[0]])
@@ -218,7 +241,8 @@ def test_expire():
     for i in range(6):
         assert node.resource_manager.memory_manager[i].state == "OCCUPIED"
     node.resource_manager.expire(rule)
-    assert p1 not in node.resource_manager.waiting_protocols and p4 in node.resource_manager.waiting_protocols
+    assert p1 not in node.resource_manager.waiting_protocols
+    assert p4 in node.resource_manager.waiting_protocols
     assert p2 not in node.resource_manager.pending_protocols
     assert p5 in node.resource_manager.pending_protocols
     assert p3 not in node.protocols and p6 in node.protocols
@@ -229,10 +253,11 @@ def test_expire():
         assert node.resource_manager.memory_manager[i].state == "OCCUPIED"
 
     for i, memory in enumerate(node.memory_array):
+        assert len(memory._observers) == 1
         if i < 3:
-            assert len(memory._observers) == 1 and isinstance(memory._observers.pop(), MemoryArray)
+            isinstance(memory._observers.pop(), MemoryArray)
         elif i < 6:
-            assert len(memory._observers) == 1 and isinstance(memory._observers.pop(), FakeProtocol)
+            isinstance(memory._observers.pop(), FakeProtocol)
 
 
 def test_ResourceManager1():
@@ -243,7 +268,8 @@ def test_ResourceManager1():
     class TestNode(Node):
         def __init__(self, name, tl):
             Node.__init__(self, name, tl)
-            self.memory_array = MemoryArray(name + ".MemoryArray", tl, num_memories=50)
+            self.memory_array = MemoryArray(name + ".MemoryArray", tl,
+                                            num_memories=50)
             self.memory_array.owner = self
             self.resource_manager = ResourceManager(self)
 
@@ -264,29 +290,31 @@ def test_ResourceManager1():
         def get_idle_memory(self, info):
             pass
 
-    def eg_rule_condition(memory_info, manager):
+    def eg_rule_condition(memory_info, manager, args):
         if memory_info.state == "RAW":
             return [memory_info]
         else:
             return []
 
-    def eg_rule_action1(memories_info):
-        def eg_req_func(protocols):
-            for protocol in protocols:
-                if isinstance(protocol, EntanglementGenerationA):
-                    return protocol
+    def eg_req_func(protocols, args):
+        for protocol in protocols:
+            if isinstance(protocol, EntanglementGenerationA):
+                return protocol
 
+    def eg_rule_action1(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA(None, "EGA." + memory.name, "mid_node", "node2", memory)
+        protocol = EntanglementGenerationA(None, "EGA." + memory.name,
+                                           "mid_node", "node2", memory)
         protocol.primary = True
-        return [protocol, ["node2"], [eg_req_func]]
+        return [protocol, ["node2"], [eg_req_func], [{}]]
 
-    def eg_rule_action2(memories_info):
+    def eg_rule_action2(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA(None, "EGA." + memory.name, "mid_node", "node1", memory)
-        return [protocol, [None], [None]]
+        protocol = EntanglementGenerationA(None, "EGA." + memory.name,
+                                           "mid_node", "node1", memory)
+        return protocol, [None], [None], [{}]
 
     tl = Timeline()
 
@@ -295,40 +323,25 @@ def test_ResourceManager1():
     mid_node.bsm.detectors[0].efficiency = 1
     mid_node.bsm.detectors[1].efficiency = 1
 
-    cc0 = ClassicalChannel("cc_n1_n2", tl, 0, 1e3)
-    cc1 = ClassicalChannel("cc_n2_n1", tl, 0, 1e3)
-    cc2 = ClassicalChannel("cc_n1_m", tl, 0, 1e3)
-    cc3 = ClassicalChannel("cc_m_n1", tl, 0, 1e3)
-    cc4 = ClassicalChannel("cc_n2_m", tl, 0, 1e3)
-    cc5 = ClassicalChannel("cc_m_n2", tl, 0, 1e3)
-    cc0.set_ends(node1, node2)
-    cc1.set_ends(node2, node1)
-    cc2.set_ends(node1, mid_node)
-    cc3.set_ends(mid_node, node1)
-    cc4.set_ends(node2, mid_node)
-    cc5.set_ends(mid_node, node2)
+    for src in [node1, node2, mid_node]:
+        for dst in [node1, node2, mid_node]:
+            if src.name != dst.name:
+                cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl, 0,
+                                      1e3)
+                cc.set_ends(src, dst.name)
 
     qc0 = QuantumChannel("qc_n1_m", tl, 0, 1e3, frequency=8e7)
     qc1 = QuantumChannel("qc_n2_m", tl, 0, 1e3, frequency=8e7)
-    qc0.set_ends(node1, mid_node)
-    qc1.set_ends(node2, mid_node)
+    qc0.set_ends(node1, mid_node.name)
+    qc1.set_ends(node2, mid_node.name)
 
     tl.init()
-    rule1 = Rule(10, eg_rule_action1, eg_rule_condition)
+    rule1 = Rule(10, eg_rule_action1, eg_rule_condition, {}, {})
     node1.resource_manager.load(rule1)
-    rule2 = Rule(10, eg_rule_action2, eg_rule_condition)
+    rule2 = Rule(10, eg_rule_action2, eg_rule_condition, {}, {})
     node2.resource_manager.load(rule2)
 
     tl.run()
-
-    for info in node1.resource_manager.memory_manager:
-        print(info.memory.name, info.state, info.remote_memo)
-    
-    for info in node2.resource_manager.memory_manager:
-        print(info.memory.name, info.state, info.remote_memo)
-
-    for event in tl.events:
-        print(event._is_removed, event.time, event.process.owner, event.process.activation)
 
     for info in node1.resource_manager.memory_manager:
         assert info.state == "ENTANGLED"
@@ -371,29 +384,31 @@ def test_ResourceManager2():
         def get_idle_memory(self, info):
             pass
 
-    def eg_rule_condition(memory_info, manager):
+    def eg_rule_condition(memory_info, manager, args):
         if memory_info.state == "RAW":
             return [memory_info]
         else:
             return []
 
-    def eg_rule_action1(memories_info):
-        def eg_req_func(protocols):
-            for protocol in protocols:
-                if isinstance(protocol, EntanglementGenerationA):
-                    return protocol
+    def eg_req_func(protocols, args):
+        for protocol in protocols:
+            if isinstance(protocol, EntanglementGenerationA):
+                return protocol
 
+    def eg_rule_action1(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA(None, "EGA." + memory.name, "mid_node", "node2", memory)
+        protocol = EntanglementGenerationA(None, "EGA." + memory.name,
+                                           "mid_node", "node2", memory)
         protocol.primary = True
-        return [protocol, ["node2"], [eg_req_func]]
+        return [protocol, ["node2"], [eg_req_func], [{}]]
 
-    def eg_rule_action2(memories_info):
+    def eg_rule_action2(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA(None, "EGA." + memory.name, "mid_node", "node1", memory)
-        return [protocol, [None], [None]]
+        protocol = EntanglementGenerationA(None, "EGA." + memory.name,
+                                           "mid_node", "node1", memory)
+        return protocol, [None], [None], [{}]
 
     tl = Timeline()
 
@@ -402,28 +417,22 @@ def test_ResourceManager2():
     mid_node.bsm.detectors[0].efficiency = 1
     mid_node.bsm.detectors[1].efficiency = 1
 
-    cc0 = ClassicalChannel("cc_n1_n2", tl, 0, 1e3)
-    cc1 = ClassicalChannel("cc_n2_n1", tl, 0, 1e3)
-    cc2 = ClassicalChannel("cc_n1_m", tl, 0, 1e3)
-    cc3 = ClassicalChannel("cc_m_n1", tl, 0, 1e3)
-    cc4 = ClassicalChannel("cc_n2_m", tl, 0, 1e3)
-    cc5 = ClassicalChannel("cc_m_n2", tl, 0, 1e3)
-    cc0.set_ends(node1, node2)
-    cc1.set_ends(node2, node1)
-    cc2.set_ends(node1, mid_node)
-    cc3.set_ends(mid_node, node1)
-    cc4.set_ends(node2, mid_node)
-    cc5.set_ends(mid_node, node2)
+    for src in [node1, node2, mid_node]:
+        for dst in [node1, node2, mid_node]:
+            if src.name != dst.name:
+                cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl, 0,
+                                      1e3)
+                cc.set_ends(src, dst.name)
 
     qc0 = QuantumChannel("qc_n1_m", tl, 0, 1e3, frequency=8e7)
     qc1 = QuantumChannel("qc_n2_m", tl, 0, 1e3, frequency=8e7)
-    qc0.set_ends(node1, mid_node)
-    qc1.set_ends(node2, mid_node)
+    qc0.set_ends(node1, mid_node.name)
+    qc1.set_ends(node2, mid_node.name)
 
     tl.init()
-    rule1 = Rule(10, eg_rule_action1, eg_rule_condition)
+    rule1 = Rule(10, eg_rule_action1, eg_rule_condition, {}, {})
     node1.resource_manager.load(rule1)
-    rule2 = Rule(10, eg_rule_action2, eg_rule_condition)
+    rule2 = Rule(10, eg_rule_action2, eg_rule_condition, {}, {})
     node2.resource_manager.load(rule2)
 
     process = Process(node1.resource_manager, "expire", [rule1])

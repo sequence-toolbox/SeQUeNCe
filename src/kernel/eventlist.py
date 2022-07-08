@@ -37,6 +37,9 @@ class EventList:
     def pop(self) -> "Event":
         return heappop(self.data)
 
+    def top(self) -> "Event":
+        return self.data[0]
+
     def isempty(self) -> bool:
         return len(self.data) == 0
 

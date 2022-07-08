@@ -65,23 +65,35 @@ def entangle_memory(memo1: Memory, memo2: Memory, fidelity: float):
     memo1.fidelity = memo2.fidelity = fidelity
 
 
-def pair_protocol(p1: EntanglementProtocol, p2: EntanglementProtocol):
-    p1.set_others(p2)
-    p2.set_others(p1)
+def pair_protocol(node1, node2, node_mid):
+    p1 = node1.protocols[0]
+    p2 = node2.protocols[0]
+    pmid = node_mid.protocols[0]
+    p1.set_others(pmid.name, node_mid.name,
+                  [node_mid.left_memo.name, node_mid.right_memo.name])
+    p2.set_others(pmid.name, node_mid.name,
+                  [node_mid.left_memo.name, node_mid.right_memo.name])
+    pmid.set_others(p1.name, node1.name, [node1.memo.name])
+    pmid.set_others(p2.name, node2.name, [node2.memo.name])
 
 
 tl = Timeline()
+tl.show_progress = False
 
 left_node = SwapNodeB('left', tl)
 right_node = SwapNodeB('right', tl)
 mid_node = SwapNodeA('mid', tl)
+left_node.set_seed(0)
+right_node.set_seed(1)
+mid_node.set_seed(2)
 
 nodes = [left_node, right_node, mid_node]
 
 for i in range(3):
     for j in range(3):
-        cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl, 1000, 1e9)
-        cc.set_ends(nodes[i], nodes[j])
+        cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl,
+                              1000, 1e9)
+        cc.set_ends(nodes[i], nodes[j].name)
 
 entangle_memory(left_node.memo, mid_node.left_memo, 0.9)
 entangle_memory(right_node.memo, mid_node.right_memo, 0.9)
@@ -89,12 +101,11 @@ entangle_memory(right_node.memo, mid_node.right_memo, 0.9)
 for node in nodes:
     node.create_protocol()
 
-pair_protocol(left_node.protocols[0], mid_node.protocols[0])
-pair_protocol(right_node.protocols[0], mid_node.protocols[0])
-
-tl.init()
+pair_protocol(left_node, right_node, mid_node)
 for node in nodes:
     node.protocols[0].start()
+
+tl.init()
 tl.run()
 
 print(left_node.memo.entangled_memory)

@@ -54,68 +54,115 @@ class RouterNode(Node):
 
 ### Step 2: Create Rule Conditions for Flow 1
 
-We’re going to focus on custom rules for the short-range entanglement between routers 1 and 2 first. Our first step is to define the rule conditions for this process that will be used by the resource manager to generate entanglement. In our case, we will simply use all available memories with the right indices to generate entanglement between the nodes. Our condition is thus relatively simple:
+We’re going to focus on custom rules for the short-range entanglement between routers 1 and 2 first. Our first step is
+to define the rule conditions for this process that will be used by the resource manager to generate entanglement. In
+our case, we will simply use all available memories with the indices `{0 ... 9}` to generate entanglement between the
+nodes. We implement a general condition function for choosing `RAW` memories with indices between `index_lower`
+and `index_upper`. Our condition is thus relatively simple:
 
 ```python
-def eg_rule_condition_f1(memory_info: "MemoryInfo", manager: "MemoryManager"):
-    if memory_info.state == "RAW" and memory_info.index < 10:
+def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager", args):
+    index_upper = args["index_upper"]
+    index_lower = args["index_lower"]
+    if memory_info.state == "RAW" \
+            and index_lower <= memory_info.index <= index_upper:
         return [memory_info]
     else:
         return []
+# args = {"index_lower": 0, "index_upper": 9}
 ```
 
-Rule conditions take 2 arguments:
-- `memory_info`, containing the information stored in the memory manager, and 
-- `manager`, which is a reference to the memory manager.
+Rule conditions take 3 arguments:
 
-In our case, we will use any memories in the `RAW` (unentangled) state. Other possible memory states are `OCCUPIED` (for memories in use by some protocol) and `ENTANGLED` (for memories currently entangled with another, possibly distant, memory). If our desired condition is met, we will return the `memory_info` as a valid memory. Otherwise, we return nothing.
+- `memory_info`, containing the information stored in the memory manager,
+- `manager`, which is a reference to the memory manager, annd
+- `args`, which is a dictionary to store values of other arguments, like `index_upper` and `index_lower`
+
+In our case, we will use any memories in the `RAW` (unentangled) state. Other possible memory states are `OCCUPIED` (for
+memories in use by some protocol) and `ENTANGLED` (for memories currently entangled with another, possibly distant,
+memory). If our desired condition is met, we will return the `memory_info` as a valid memory. Otherwise, we return
+nothing.
+
+The arguments for `args` for flow 1 are shown in the bottom comment.
+We will create a variable to store these when we load the rule into the rule manager.
 
 ### Step 3: Create Rule Actions for Flow 1
 
-Next, we will dictate what the resource manager should do when our custom condition is met. This is performed with a rule action.
+Next, we will dictate what the resource manager should do when our custom condition is met. This is performed with a
+rule action.
 
-Rule actions are provided one argument by the resource manager: a list of `memory_info` objects that have met the condition of the rule. They should return three objects:
+Rule actions are provided one argument by the resource manager: a list of `memory_info` objects that have met the
+condition of the rule. They should return four objects:
+
 1. Any protocols created,
-2. A list of nodes of which there are other requirements for operation, and
-3. Requirements that should be met on other nodes.
+2. A list of nodes of which there are other requirements for operation,
+3. Requirements that should be met on other nodes, and
+4. Arguments for the requirements function.
 
-In our case, we will create an entanglement generation protocol on both nodes and have router 1 confirm that router 2 has created a protocol. `eg_rule_action1` will give the action for router 1 (including sending a requirement to router 2), and `eg_rule_action2` will give the action for router 2. Note that the name of router 1 will be `“r1”`, the name of router 2 will be `“r2”`, and the name of the intermediate measurement node (see tutorial 3 for details) will be `“m12”`.
+In our case, we will create an entanglement generation protocol on both nodes and have router 1 confirm that router 2
+has created a protocol. `eg_rule_action1` will give the action for router 1 (including sending a requirement to router
+2), and `eg_rule_action2` will give the action for router 2. The action on router 1 will create
+the `EntanglementGenerationA` protocol and request the corresponding protocol from router 2 by sending the
+function `eg_req_func` and its arguments `req_args`. The `req_args` contain constraints about the target protocol. In
+this example, we use the type of protocol and memory index to filter the proper protocol. The action on router 2 will
+create an `EntanglementGenerationA` protocol and wait for a request from router 1. The `mid_name`
+and `other_name` in `args` define the name of BSM node and the other router used for generating entanglement. Note that
+the name of router 1 will be `“r1”`, the name of router 2 will be `“r2”`, and the name of the intermediate measurement
+node (see tutorial 3 for details) will be `“m12”`, which will be set when loading rules.
 
 ```python
 from sequence.entanglement_management.generation import EntanglementGenerationA
 
-# router 1 action
-def eg_rule_action_f1_1(memories_info: List["MemoryInfo"]):
-    def req_func(protocols):
-        for protocol in protocols:
-            if isinstance(protocol, EntanglementGenerationA) and protocol.other == "r1" and r2.memory_array.memories.index(protocol.memory) < 10:
-                return protocol
+def eg_req_func(protocols, args):
+    remote_node = args["remote_node"]
+    index_upper = args["index_upper"]
+    index_lower = args["index_lower"]
+    for protocol in protocols:
+        if not isinstance(protocol, EntanglementGenerationA):
+            continue
+        index_func = protocol.memory.owner.memory_array.memories.index
+        if protocol.remote_node_name == remote_node \
+                and index_lower <= index_func(protocol.memory) <= index_upper:
+            return protocol
+
+
+def eg_rule_action1(memories_info: List["MemoryInfo"], args):
+    mid_name = args["mid_name"]
+    other_name = args["other_name"]
 
     memories = [info.memory for info in memories_info]
     memory = memories[0]
-    protocol = EntanglementGenerationA(None, "EGA." + memory.name, "m12", "r2", memory)
-    return [protocol, ["r2"], [req_func]]
+    protocol = EntanglementGenerationA(None, "EGA." + memory.name, mid_name,
+                                       other_name,
+                                       memory)
+    req_args = {"remote_node": args["node_name"],
+                "index_upper": args["index_upper"],
+                "index_lower": args["index_lower"]}
+    return [protocol, [other_name], [eg_req_func], [req_args]]
 
-# router 2 action
-def eg_rule_action_f1_2(memories_info: List["MemoryInfo"]):
+
+def eg_rule_action2(memories_info: List["MemoryInfo"], args):
+    mid_name = args["mid_name"]
+    other_name = args["other_name"]
     memories = [info.memory for info in memories_info]
     memory = memories[0]
-    protocol = EntanglementGenerationA(None, "EGA." + memory.name, "m12", "r1", memory)
-    return [protocol, [None], [None]]
+    protocol = EntanglementGenerationA(None, "EGA." + memory.name,
+                                       mid_name, other_name, memory)
+    return [protocol, [None], [None], [None]]
 ```
 
 ### Step 4: Build the Network
 
-We’ll now actually build our network and get ready to run the simulation. We will include the third router node, as this will be used for our second flow, but we will not use it in our first experiment:
+We’ll now actually build our network and get ready to run the simulation. We will include the third router node, as this
+will be used for our second flow, but we will not use it in our first experiment. Also note that we have left the
+timeline `show_progress` attribute as its default true value, unlike previous tutorials. This will show a progress bar
+of the simulation during execution. This is most useful for longer experiments, where a user might wish to estimate the
+time remaining for a simulation.
 
 ```python
-from numpy import random
-
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import BSMNode
 from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
-
-random.seed(0)
 
 runtime = 10e12
 tl = Timeline(runtime)
@@ -128,31 +175,38 @@ r3 = RouterNode("r3", tl, memo_size=10)
 m12 = BSMNode("m12", tl, ["r1", "r2"])
 m23 = BSMNode("m23", tl, ["r2", "r3"])
 
+node_list = [r1, r2, r3, m12, m23]
+for i, node in enumerate(node_list):
+    node.set_seed(i)
+
 # create all-to-all classical connections
 cc_delay = 1e9
-node_list = [r1, r2, r3, m12, m23]
 for node1 in node_list:
     for node2 in node_list:
-        cc = ClassicalChannel("cc_%s_%s" % (node1.name, node2.name), tl, 1e3, delay=cc_delay)
-        cc.set_ends(node1, node2)
+        cc = ClassicalChannel("cc_%s_%s"%(node1.name, node2.name), tl, 1e3, delay=cc_delay)
+        cc.set_ends(node1, node2.name)
 
 # create quantum channels linking r1 and r2 to m1
 qc_atten = 0
 qc_dist = 1e3
 qc1 = QuantumChannel("qc_r1_m12", tl, qc_atten, qc_dist)
-qc1.set_ends(r1, m12)
+qc1.set_ends(r1, m12.name)
 qc2 = QuantumChannel("qc_r2_m12", tl, qc_atten, qc_dist)
-qc2.set_ends(r2, m12)
+qc2.set_ends(r2, m12.name)
 # create quantum channels linking r2 and r3 to m2
 qc3 = QuantumChannel("qc_r2_m23", tl, qc_atten, qc_dist)
-qc3.set_ends(r2, m23)
+qc3.set_ends(r2, m23.name)
 qc4 = QuantumChannel("qc_r3_m23", tl, qc_atten, qc_dist)
-qc4.set_ends(r3, m23)
+qc4.set_ends(r3, m23.name)
 ```
 
 ### Step 5: Run the Simulation with 1 Flow
 
-Finally, we can run our initial simulation, including installation of our custom rules. We will start our entanglement flow at the beginning of the simulation by installing the rules. Rules are created with the priority, rule action, and rule condition, while rules are installed with the `load` method of the resource manager:
+Finally, we can run our initial simulation, including installation of our custom rules. We will start our entanglement
+flow at the beginning of the simulation by installing the rules. Rules are created with a priority, rule action, rule
+condition, and arguments of action and condition, while rules are installed with the `load` method of the resource
+manager. For flow 1, routers `r1` and `r2` will use BSM node `m12` and memories with indicies between 0 and 9 to
+generate entanglement. These are specified in the action and condition args.
 
 ```python
 from sequence.resource_management.rule_manager import Rule
@@ -160,9 +214,15 @@ from sequence.resource_management.rule_manager import Rule
 tl.init()
 
 # load rules
-rule1 = Rule(10, eg_rule_action_f1_1, eg_rule_condition_f1)
+action_args = {"mid_name": "m12", "other_name": "r2", "node_name": "r1",
+               "index_upper": 9, "index_lower": 0}
+condition_args = {"index_lower": 0, "index_upper": 9}
+rule1 = Rule(10, eg_rule_action1, eg_rule_condition, action_args,
+             condition_args)
 r1.resource_manager.load(rule1)
-rule2 = Rule(10, eg_rule_action_f1_2, eg_rule_condition_f1)
+action_args2 = {"mid_name": "m12", "other_name": "r1"}
+rule2 = Rule(10, eg_rule_action2, eg_rule_condition, action_args2,
+             condition_args)
 r2.resource_manager.load(rule2)
 
 tl.run()
@@ -183,12 +243,14 @@ At the end of our simulation, we will print out for each memory (on router 1):
 We should notice that all of the memories 0-9 are entangled with router 2 within a short time.
 
 ### Step 6: Flow 2 Entanglement Generation
+
 Now, we'll create the custom rules to control our second flow between routers 1 and 3. The first step is again to set up entanglement generation in a similar manner to the first flow. To do this, we'll create a function `add_eg_rules` that takes as arguments
 - `index`, the index of the router (in the path) we will be adding rules to,
 - `path`, a list of router nodes that make up the path of the entanglement flow, and
 - `middles`, a list of bsm nodes along the path.
 
-The conditions and actions of the rule will be very similar to before, but with variable memory indices and nodes.
+The conditions and actions of the rule will be very similar to before, but with variable memory indices, nodes, and
+arguments.
 
 ```python
 def add_eg_rules(index: int, path: List[RouterNode], middles: List[BSMNode]):
@@ -201,54 +263,45 @@ def add_eg_rules(index: int, path: List[RouterNode], middles: List[BSMNode]):
     mem_range = node_mems[index]
 
     if index > 0:
-        def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager"):
-            if memory_info.state == "RAW" and memory_info.index in range(mem_range[0], mem_range[1])[:10]:
-                return [memory_info]
-            else:
-                return []
+        action_args = {"mid_name": middle_names[index - 1],
+                       "other_name": node_names[index - 1]}
+        condition_args = {"index_lower": mem_range[0],
+                          "index_upper": mem_range[0] + 9}
 
-        def eg_rule_action(memories_info: List["MemoryInfo"]):
-            memories = [info.memory for info in memories_info]
-            memory = memories[0]
-            protocol = EntanglementGenerationA(None, "EGA." + memory.name, middle_names[index - 1], node_names[index - 1], memory)
-            return [protocol, [None], [None]]
-
-        rule = Rule(10, eg_rule_action, eg_rule_condition)
+        rule = Rule(10, eg_rule_action2, eg_rule_condition, action_args,
+                    condition_args)
         node.resource_manager.load(rule)
 
     if index < (len(path) - 1):
         if index == 0:
-            def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager"):
-                if memory_info.state == "RAW" and memory_info.index in range(mem_range[0], mem_range[1]):
-                    return [memory_info]
-                else:
-                    return []
-
+            condition_args = {"index_lower": mem_range[0],
+                              "index_upper": mem_range[1] - 1}
         else:
-            def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager"):
-                if memory_info.state == "RAW" and memory_info.index in range(mem_range[0], mem_range[1])[10:]:
-                    return [memory_info]
-                else:
-                    return []
+            condition_args = {"index_lower": mem_range[1] - 10,
+                              "index_upper": mem_range[1] - 1}
 
+        action_args = {"mid_name": middle_names[index],
+                       "other_name": node_names[index + 1],
+                       "node_name": node.name,
+                       "index_upper": node_mems[index + 1][1] - 1,
+                       "index_lower": node_mems[index + 1][0]}
 
-        def eg_rule_action(memories_info: List["MemoryInfo"]):
-            def req_func(protocols):
-                for protocol in protocols:
-                    if isinstance(protocol, EntanglementGenerationA) and protocol.other == node.name and path[index+1].memory_array.memories.index(protocol.memory) in range(node_mems[index+1][0], node_mems[index+1][1]):
-                        return protocol
+        memories = [info.memory for info in memories_info]
+        memory = memories[0]
+        protocol = EntanglementGenerationA(None, "EGA." + memory.name, middle_names[index], node_names[index + 1],
+                                           memory)
+        return [protocol, [node_names[index + 1]], [req_func]]
 
-            memories = [info.memory for info in memories_info]
-            memory = memories[0]
-            protocol = EntanglementGenerationA(None, "EGA." + memory.name, middle_names[index], node_names[index + 1], memory)
-            return [protocol, [node_names[index + 1]], [req_func]]
-
-        rule = Rule(10, eg_rule_action, eg_rule_condition)
-        node.resource_manager.load(rule)
+    rule = Rule(10, eg_rule_action, eg_rule_condition)
+    node.resource_manager.load(rule)
 ```
 
 ### Step 7: Flow 2 Entanglement Purification
-We'll next create rules for entanglement purification. Our rule conditions will be a little different, as we will want memories to be in the `ENTANGLED` state with fidelity below some threshold (that we wish to improve). Each protocol will also need two memories, one of which will be consumed while the fidelity of the other increases. The arguments for our `add_ep_rules` function will be similar to our previous function:
+
+We'll next create rules for entanglement purification. Our rule conditions will be a little different,
+as we will want memories to be in the `ENTANGLED` state with fidelity below some threshold (that we wish to improve).
+Each protocol will also need two memories, one of which will be consumed while the fidelity of the other increases.
+The arguments for our `add_ep_rules` function will be similar to our previous function:
 - `index`, the index of the router (in the path) we will be adding rules to,
 - `path`, a list of router nodes that make up the path of the entanglement flow, and
 - `target_fidelity`, the fidelity of entanglement we wish to achieve.
@@ -341,7 +394,7 @@ Finally, we'll generate rules for entanglement swapping. The rules will be a lit
 - `path`, a list of router nodes that make up the path of the entanglement flow,
 - `target_fidelity`, the fidelity of entanglement we wish to achieve,
 - `succ_prob`, the probability of success for the swapping operation, and
-- `degredation`, the degredation of entanglement fidelity after the swapping operation.
+- `degredation`, the degradation of entanglement fidelity after the swapping operation.
 
 Also note that the code to generate swapping rules is much longer than our previous rules. Luckily, this will be done automatically by the network manager in future tutorials.
 
@@ -460,6 +513,7 @@ def add_es_rules(index: int, path: List[RouterNode], target_fidelity: float, suc
 ```
 
 ### Step 9: Run the Simulation Again
+
 We will now run the simulation again, adding in our new custom rules for the second flow. We will also add code to display memory information on routers 2 and 3. We should observe long-distance entanglement between routers 1 and 3 alongside the short distance entanglement from our first experiment.
 
 ```python

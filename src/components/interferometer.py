@@ -5,7 +5,6 @@ Interferometers are usually instantiated as part of a QSDetector object, defined
 """
 
 from math import sqrt
-from numpy import random
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -40,7 +39,7 @@ class Interferometer(Entity):
             phase_error (float): phase error applied to measurement (default 0).
         """
 
-        Entity.__init__(self, "", timeline)
+        Entity.__init__(self, name, timeline)
         self.path_difference = path_diff  # time difference in ps
         self.phase_error = phase_error  # chance of measurement error in phase
         self.receivers = []
@@ -69,10 +68,10 @@ class Interferometer(Entity):
         Side Effects:
             May call get method of one attached receiver from the receivers attribute.
         """
-        detector_num = random.choice([0, 1])
+        detector_num = self.get_generator().choice([0, 1])
         quantum_state = photon.quantum_state
         time = 0
-        random_num = random.random_sample()
+        random_num = self.get_generator().random()
 
         if quantum_state.state == (complex(1), complex(0)):  # Early
             if random_num <= 0.5:

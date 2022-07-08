@@ -6,8 +6,8 @@ Node types can be used to collect all the necessary hardware and software for a 
 """
 
 from math import inf
-from time import monotonic_ns
 from typing import TYPE_CHECKING, Any, List
+import numpy as np
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -29,6 +29,7 @@ from ..qkd.cascade import Cascade
 from ..resource_management.resource_manager import ResourceManager
 from ..network_management.network_manager import NewNetworkManager
 from ..utils.encoding import *
+from ..utils import log
 
 
 class Node(Entity):
@@ -42,23 +43,33 @@ class Node(Entity):
         cchannels (Dict[str, ClassicalChannel]): mapping of destination node names to classical channel instances.
         qchannels (Dict[str, ClassicalChannel]): mapping of destination node names to quantum channel instances.
         protocols (List[Protocol]): list of attached protocols.
+        generator (np.random.Generator): random number generator used by node.
     """
 
-    def __init__(self, name: str, timeline: "Timeline"):
+    def __init__(self, name: str, timeline: "Timeline", seed=None):
         """Constructor for node.
 
         name (str): name of node instance.
         timeline (Timeline): timeline for simulation.
+        seed (int): seed for random number generator, default None
         """
 
+        log.logger.info("Create Node {}".format(name))
         Entity.__init__(self, name, timeline)
         self.owner = self
         self.cchannels = {}  # mapping of destination node names to classical channels
         self.qchannels = {}  # mapping of destination node names to quantum channels
         self.protocols = []
+        self.generator = np.random.default_rng(seed)
 
     def init(self) -> None:
         pass
+
+    def set_seed(self, seed: int) -> None:
+        self.generator = np.random.default_rng(seed)
+
+    def get_generator(self):
+        return self.generator
 
     def assign_cchannel(self, cchannel: "ClassicalChannel", another: str) -> None:
         """Method to assign a classical channel to the node.
@@ -92,6 +103,7 @@ class Node(Entity):
             msg (Message): message to transmit.
             priority (int): priority for transmitted message (default inf).
         """
+        log.logger.info("{} send message {} to {}".format(self.name, msg, dst))
 
         if priority == inf:
             priority = self.timeline.schedule_counter
@@ -106,7 +118,8 @@ class Node(Entity):
             src (str): name of node sending the message.
             msg (Message): message transmitted from node.
         """
-
+        log.logger.info(
+            "{} receive message {} from {}".format(self.name, msg, src))
         # signal to protocol that we've received a message
         if msg.receiver is not None:
             for protocol in self.protocols:
@@ -154,10 +167,13 @@ class BSMNode(Node):
             other_nodes (str): 2-member list of node names for adjacent quantum routers.
         """
 
-        from ..entanglement_management.generation import EntanglementGenerationB
+        from ..entanglement_management.generation import \
+            EntanglementGenerationB
         Node.__init__(self, name, timeline)
         self.bsm = SingleAtomBSM("%s_bsm" % name, timeline)
-        self.eg = EntanglementGenerationB(self, "{}_eg".format(name), other_nodes)
+        self.bsm.owner = self
+        self.eg = EntanglementGenerationB(self, "{}_eg".format(name),
+                                          other_nodes)
         self.bsm.attach(self.eg)
 
     def receive_message(self, src: str, msg: "Message") -> None:
@@ -191,6 +207,12 @@ class BSMNode(Node):
         """
 
         self.eg.others.append(other.name)
+
+    def change_timeline(self, timeline: "Timeline"):
+        self.timeline = timeline
+        self.bsm.change_timeline(timeline)
+        for cc in self.cchannels.values():
+            cc.change_timeline(timeline)
 
 
 class QuantumRouter(Node):
@@ -226,6 +248,8 @@ class QuantumRouter(Node):
         self.app = None
 
     def receive_message(self, src: str, msg: "Message") -> None:
+        log.logger.info("{} receive message {} from {}".format
+                        (self.name, msg, src))
         if msg.receiver == "resource_manager":
             self.resource_manager.received_message(src, msg)
         elif msg.receiver == "network_manager":
@@ -244,16 +268,19 @@ class QuantumRouter(Node):
     def init(self):
         """Method to initialize quantum router node.
 
-        Sets up map_to_middle_node dictionary.
+        Inherit parent function
         """
 
         super().init()
-        for dst in self.qchannels:
-            end = self.qchannels[dst].receiver
-            if isinstance(end, BSMNode):
-                for other in end.eg.others:
-                    if other != self.name:
-                        self.map_to_middle_node[other] = end.name
+
+    def add_bsm_node(self, bsm_name: str, router_name: str):
+        """Method to record connected BSM nodes
+
+        Args:
+            bsm_name (str): the BSM node between nodes self and router_name
+            router_name (str): the name of another router connected with the BSM node
+        """
+        self.map_to_middle_node[router_name] = bsm_name
 
     def memory_expire(self, memory: "Memory") -> None:
         """Method to receive expired memories.

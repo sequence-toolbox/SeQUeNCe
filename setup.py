@@ -14,7 +14,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'numpy<1.22',
-	    'matplotlib',
+	      'matplotlib',
         'pandas',
         'qutip>=4.6.0',
         'dash>=1.20.0',

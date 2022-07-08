@@ -1,11 +1,8 @@
-from numpy import random
 from sequence.components.light_source import LightSource
 from sequence.components.optical_channel import QuantumChannel
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.utils.encoding import polarization
-
-random.seed(0)
 
 
 class FakeNode(Node):
@@ -28,17 +25,18 @@ def test_light_source():
     FREQ, MEAN = 1e8, 0.1
     ls = LightSource("ls", tl, frequency=FREQ, mean_photon_num=MEAN)
     sender = FakeNode("sender", tl, ls)
+    sender.set_seed(0)
 
     assert sender.lightsource.frequency == FREQ and sender.lightsource.mean_photon_num == MEAN
 
     receiver = Receiver("receiver", tl)
     qc = QuantumChannel("qc", tl, distance=1e5, attenuation=0)
-    qc.set_ends(sender, receiver)
+    qc.set_ends(sender, receiver.name)
     state_list = []
     STATE_LEN = 1000
     for _ in range(STATE_LEN):
-        basis = random.randint(2)
-        bit = random.randint(2)
+        basis = sender.get_generator().integers(2)
+        bit = sender.get_generator().integers(2)
         state_list.append(polarization["bases"][basis][bit])
 
     tl.init()

@@ -6,11 +6,15 @@ from sequence.kernel.process import Process
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import QuantumChannel
 from sequence.components.detector import Detector
+from sequence.components.circuit import Circuit
 from sequence.topology.node import Node
 
 
 NUM_TRIALS = 1000
 FREQUENCY = 1e3
+
+_meas_circuit = Circuit(1)
+_meas_circuit.measure(0)
 
 
 class Counter():
@@ -36,20 +40,24 @@ class ReceiverNode(Node):
         self.detector.owner = self
 
     def receive_qubit(self, src, qubit):
-        if not qubit.is_null:
+        qm = self.timeline.quantum_manager
+        key = qubit.qstate_key
+        meas_res = qm.run_circuit(_meas_circuit, [key], self.get_generator().random())[key]
+        if meas_res:
             self.detector.get()
 
 
 if __name__ == "__main__":
     runtime = 10e12 
     tl = Timeline(runtime)
+    tl.show_progress = False
 
     # nodes and hardware
     node1 = SenderNode("node1", tl)
     node2 = ReceiverNode("node2", tl)
 
     qc = QuantumChannel("qc", tl, attenuation=0, distance=1e3)
-    qc.set_ends(node1, node2)
+    qc.set_ends(node1, node2.name)
 
     # counter
     counter = Counter()

@@ -1,9 +1,7 @@
-from numpy import random
+from typing import List
 from sequence.components.optical_channel import *
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
-
-random.seed(1)
 
 
 def test_ClassicalChannel_set_ends():
@@ -14,9 +12,9 @@ def test_ClassicalChannel_set_ends():
     n2 = Node('n2', tl)
     assert len(n1.cchannels) == 0 and len(n2.cchannels) == 0
 
-    cc.set_ends(n1, n2)
+    cc.set_ends(n1, n2.name)
     assert cc.sender == n1
-    assert cc.receiver == n2
+    assert cc.receiver == n2.name
     assert 'n2' in n1.cchannels
     assert n1.cchannels["n2"] == cc
     assert len(n2.cchannels) == 0
@@ -34,9 +32,10 @@ def test_ClassicalChannel_transmit():
     tl = Timeline()
     cc = ClassicalChannel("cc", tl, 1e3)
 
-    n1 = FakeNode('n1', tl)
-    n2 = FakeNode('n2', tl)
-    cc.set_ends(n1, n2)
+    n1, n2 = [FakeNode(f'n{i}', tl) for i in range(1, 3)]
+    for node in [n1, n2]:
+        node.set_seed(0)
+    cc.set_ends(n1, n2.name)
 
     args = [['1-1', n1, 5], ['1-2', n1, 5]]
     results = [[cc.delay, 'n1', '1-1'], [1 + cc.delay, 'n1', '1-2']]
@@ -61,21 +60,21 @@ def test_QuantumChannel_init():
 def test_QuantumChannel_set_ends():
     tl = Timeline()
     qc = QuantumChannel("qc", tl, attenuation=0.0002, distance=1e4)
-    end1 = Node("end1", tl)
-    end2 = Node("end2", tl)
+    end1, end2 = [Node(f'n{i}', tl) for i in range(1, 3)]
+    for node in [end1, end2]:
+        node.set_seed(0)
     assert len(end1.qchannels) == len(end2.qchannels) == 0
-    qc.set_ends(end1, end2)
+    qc.set_ends(end1, end2.name)
 
     assert len(end1.qchannels) == 1
     assert len(end2.qchannels) == 0
     assert qc.sender == end1
-    assert qc.receiver == end2
+    assert qc.receiver == end2.name
     assert end2.name in end1.qchannels
 
 
 def test_QuantumChannel_transmit():
     from sequence.components.photon import Photon
-    random.seed(1)
 
     class FakeNode(Node):
         def __init__(self, name, tl):
@@ -89,7 +88,9 @@ def test_QuantumChannel_transmit():
     qc = QuantumChannel("qc", tl, attenuation=0.0002, distance=1e4)
     sender = FakeNode("sender", tl)
     receiver = FakeNode("receiver", tl)
-    qc.set_ends(sender, receiver)
+    sender.set_seed(0)
+    receiver.set_seed(1)
+    qc.set_ends(sender, receiver.name)
     tl.init()
 
     for i in range(1000):

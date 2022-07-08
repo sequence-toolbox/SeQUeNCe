@@ -43,8 +43,6 @@ if __name__ == "__main__":
 
     for distance in distances:
         tl = Timeline(runtime)
-        tl.seed(1)
-        tl.show_progress = True
 
         qc0 = QuantumChannel("qc0", tl, distance=distance * 1e3, polarization_fidelity=0.97, attenuation=0.0002)
         qc1 = QuantumChannel("qc1", tl, distance=distance * 1e3, polarization_fidelity=0.97, attenuation=0.0002)
@@ -54,24 +52,27 @@ if __name__ == "__main__":
         # Alice
         ls_params = {"frequency": 80e6, "mean_photon_num": 0.1}
         alice = QKDNode("alice", tl, encoding=time_bin, stack_size=1)
+        alice.set_seed(0)
 
         for name, param in ls_params.items():
             alice.update_lightsource_params(name, param)
 
         # Bob
-        detector_params = [{"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
-                           {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
-                           {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10}] 
+        detector_params = [
+            {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
+            {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
+            {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10}]
         bob = QKDNode("bob", tl, encoding=time_bin, stack_size=1)
+        bob.set_seed(1)
 
         for i in range(len(detector_params)):
             for name, param in detector_params[i].items():
                 bob.update_detector_params(i, name, param)
 
-        qc0.set_ends(alice, bob)
-        qc1.set_ends(bob, alice)
-        cc0.set_ends(alice, bob)
-        cc1.set_ends(bob, alice)
+        qc0.set_ends(alice, bob.name)
+        qc1.set_ends(bob, alice.name)
+        cc0.set_ends(alice, bob.name)
+        cc1.set_ends(bob, alice.name)
 
         # BB84 config
         pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
