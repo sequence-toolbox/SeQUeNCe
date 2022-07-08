@@ -158,8 +158,7 @@ class BSMNode(Node):
         eg (EntanglementGenerationB): entanglement generation protocol instance.
     """
 
-    def __init__(self, name: str, timeline: "Timeline",
-                 other_nodes: List[str]) -> None:
+    def __init__(self, name: str, timeline: "Timeline", other_nodes: List[str]) -> None:
         """Constructor for BSM node.
 
         Args:

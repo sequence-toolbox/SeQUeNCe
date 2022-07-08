@@ -12,6 +12,7 @@ from numpy import outer, add, zeros, array_equal
 from .circuit import Circuit
 from .detector import Detector
 from .photon import Photon
+from .memory import Memory
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process

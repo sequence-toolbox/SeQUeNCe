@@ -7,7 +7,7 @@ This is achieved through rules (also defined in this module), which if met defin
 from typing import Callable, TYPE_CHECKING, List, Tuple, Any, Dict
 from ..utils import log
 if TYPE_CHECKING:
-    from ..entanglement_management.entanglement_protocol import EntanglementProtocol
+    from ..entanglement_management.entanglement_protocol import EntanglementProtocol, Protocol
     from .memory_manager import MemoryInfo, MemoryManager
     from .resource_manager import ResourceManager
     from ..network_management.reservation import Reservation

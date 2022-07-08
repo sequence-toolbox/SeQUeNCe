@@ -5,7 +5,7 @@ The beam splitter receives photons with polarization encoding and forwards photo
 attached receivers (which can be any entity).
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline

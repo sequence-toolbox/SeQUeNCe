@@ -1,5 +1,12 @@
 numpy<1.22
 matplotlib
+dash>=1.20.0
+dash-core-components
+dash-html-components
+dash-bootstrap-components
+dash-table
+dash-cytoscape
+plotly
 pandas
 qutip>=4.6.0
 tqdm>=4.54.0
