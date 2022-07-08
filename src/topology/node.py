@@ -7,7 +7,7 @@ Node types can be used to collect all the necessary hardware and software for a 
 
 from math import inf
 from time import monotonic_ns
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, List
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -145,7 +145,7 @@ class BSMNode(Node):
         eg (EntanglementGenerationB): entanglement generation protocol instance.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", other_nodes: "list[str]") -> None:
+    def __init__(self, name: str, timeline: "Timeline", other_nodes: List[str]) -> None:
         """Constructor for BSM node.
 
         Args:
