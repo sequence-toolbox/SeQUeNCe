@@ -11,10 +11,11 @@ setup(
               'sequence.network_management', 'sequence.entanglement_management', 'sequence.qkd',
               'sequence.resource_management', 'sequence.topology', 'sequence.utils', 'sequence.gui'],
     package_dir={'sequence': 'src'},
+    package_data={'sequence': ['gui/user_templates.json', 'gui/default_params.json', 'gui/starlight.json']},
     include_package_data=True,
     install_requires=[
         'numpy<1.22',
-	      'matplotlib',
+        'matplotlib',
         'pandas',
         'qutip>=4.6.0',
         'dash>=1.20.0',

@@ -132,10 +132,8 @@ class QuantumGUI:
                     json.dump(
                         user_defaults,
                         outfile,
-                        quote_keys=True,
                         sort_keys=True,
-                        indent=4,
-                        trailing_commas=False
+                        indent=4
                     )
                 outfile.close()
 
@@ -170,10 +168,8 @@ class QuantumGUI:
             json.dump(
                 templates_in,
                 outfile,
-                quote_keys=True,
                 sort_keys=True,
-                indent=4,
-                trailing_commas=False
+                indent=4
             )
         outfile.close()
 
@@ -535,10 +531,8 @@ class QuantumGUI:
             json.dump(
                 self.graph_to_topology(),
                 outfile,
-                quote_keys=True,
                 sort_keys=True,
-                indent=4,
-                trailing_commas=False
+                indent=4
             )
         outfile.close()
         return path + '/topology.json'
@@ -555,10 +549,8 @@ class QuantumGUI:
             json.dump(
                 self.sim_params,
                 outfile,
-                quote_keys=True,
                 sort_keys=True,
-                indent=4,
-                trailing_commas=False
+                indent=4
             )
         outfile.close()
         return path + '/simulation.json'
@@ -575,10 +567,8 @@ class QuantumGUI:
             json.dump(
                 self.templates,
                 outfile,
-                quote_keys=True,
                 sort_keys=True,
-                indent=4,
-                trailing_commas=False
+                indent=4
             )
         outfile.close()
         return path+'/templates.json'
