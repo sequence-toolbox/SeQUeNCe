@@ -14,16 +14,11 @@ from ..utils.log import *
 
 DIRECTORY, _ = os.path.split(__file__)
 
-class GUI_Sim():
-    def __init__(
-        self,
-        sim_time: int,
-        time_scale: int,
-        logging: str,
-        sim_name,
-        config
-    ):
+
+class GUI_Sim:
+    def __init__(self, sim_time: int, time_scale: int, logging: str, sim_name, config):
         self.sim_name = sim_name
+        self.time_scale = time_scale
         self.timeline = Timeline(sim_time * time_scale)
         self.timeline.seed(0)
         self.topology = Topology(sim_name, self.timeline)
@@ -70,7 +65,7 @@ class GUI_Sim():
             link_type = edge_data.pop('link_type')
             source = edge_data.pop('source')
             target = edge_data.pop('target')
-            if(link_type == 'Quantum'):
+            if link_type == 'Quantum':
                 self.topology.add_quantum_connection(
                     source,
                     target,
