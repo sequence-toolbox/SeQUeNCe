@@ -3,7 +3,7 @@ import os
 import networkx as nx
 import pandas as pd
 import numpy as np
-from .app import Quantum_GUI
+from .app import QuantumGUI
 from .graph_comp import GraphNode
 
 
@@ -13,7 +13,7 @@ class run_gui():
         tdm_table = pd.DataFrame()
         delay_table = pd.DataFrame()
         self.name = name
-        self.gui = Quantum_GUI(
+        self.gui = QuantumGUI(
             graph,
             delays=delay_table,
             tdm=tdm_table
@@ -82,7 +82,7 @@ class run_gui():
 
         ###############################################
 
-        self.gui = Quantum_GUI(
+        self.gui = QuantumGUI(
             graph,
             delays=delay_table,
             tdm=tdm_table

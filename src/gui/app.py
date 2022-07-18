@@ -5,7 +5,7 @@ A Class which contains all of the logic and data for the GUI
 import dash
 import threading
 import os
-import json5
+import json
 import time
 import datetime
 import shutil
@@ -24,6 +24,7 @@ from .graph_comp import GraphNode
 from .layout import get_app_layout
 from .layout import TYPE_COLORS, TYPES
 from .css_styles import *
+
 
 EDGE_DICT_ORDER = OrderedDict(
     {
@@ -53,17 +54,17 @@ DIRECTORY, _ = os.path.split(__file__)
 TEMPLATES = '/user_templates.json'
 
 
-class Quantum_GUI:
+class QuantumGUI:
     """Class which holds the methods and properties of the SeQUeNCe GUI
 
-        The Quantum_GUI can be instantiated without specifiying any parameters.
+        The Quantum_GUI can be instantiated without specifying any parameters.
         Using no parameters creates an instance of the GUI with only the
         default node templates and nothing else. The GUI can also be
         instantiated with a number of additional parameters, described
         within the attributes section. The Quantum_GUI manages graphical
         user elements. The structure of the data used can be divided into three
         categories, templates, topology, and simulations.
-        The composition of each is in terms of Quantum_GUI elements is ...
+        The composition of each is in terms of Quantum_GUI elements is:
 
         templates
             - templates
@@ -105,26 +106,30 @@ class Quantum_GUI:
             node_columns (List[String]):
                 A list containing the column heading for the node_table
     """
+
     def __init__(self, graph_in, templates=None, delays=None, tdm=None):
         self.data = graph_in
         self.cc_delays = delays
         self.qc_tdm = tdm
         self.defaults = {}
         with open(DIRECTORY + '/default_params.json', 'r') as json_file:
-            self.defaults = json5.load(json_file)
+            self.defaults = json.load(json_file)
         json_file.close()
+
         if templates is None:
-            if(os.path.exists(DIRECTORY + TEMPLATES)):
+
+            if os.path.exists(DIRECTORY + TEMPLATES):
                 with open(DIRECTORY + TEMPLATES, 'r') as json_file:
-                    self.templates = json5.load(json_file)
+                    self.templates = json.load(json_file)
                 json_file.close()
+
             else:
                 user_defaults = {}
                 for x in TYPES:
                     user_defaults[x] = {}
                 self.templates = user_defaults
                 with open(DIRECTORY + '/user_templates.json', 'w') as outfile:
-                    json5.dump(
+                    json.dump(
                         user_defaults,
                         outfile,
                         quote_keys=True,
@@ -133,10 +138,12 @@ class Quantum_GUI:
                         trailing_commas=False
                     )
                 outfile.close()
-        self.simulation = GUI_Sim(0, 0, 'NOTSET', 'init', self)
+
+        # TODO: re-add simulation
+        # self.simulation = GUI_Sim(0, 0, 'NOTSET', 'init', self)
         self.sim_params = None
 
-        nodes = list(self.data.edges.data())
+        # nodes = list(self.data.edges.data())
 
     @property
     def data(self):
@@ -144,7 +151,7 @@ class Quantum_GUI:
 
     @data.setter
     def data(self, graph_in):
-        self._data = self.colorImageGraph(graph_in)
+        self._data = self.color_image_graph(graph_in)
         edges = self.get_graph_table_edges(self._data)
         nodes = self.get_graph_table_nodes(self._data)
         self._edge_table = edges[0].to_dict('records')
@@ -160,7 +167,7 @@ class Quantum_GUI:
     def templates(self, templates_in):
         self._templates = templates_in
         with open(DIRECTORY+'/'+'user_templates.json', 'w') as outfile:
-            json5.dump(
+            json.dump(
                 templates_in,
                 outfile,
                 quote_keys=True,
@@ -190,12 +197,13 @@ class Quantum_GUI:
         """Function which takes a list of columns and coverts them into a
         dictionary format for their use in a Dash DataTable.
 
-        Arguments:
+        Args:
             columns (List[str]):
                 columns to convert to datatable column dictionary
             case_norm (Boolean):
-                whether or not to capitalize the columns displayed
+                whether to capitalize the columns displayed
         """
+
         column_data = []
         for column in columns:
             to_add = {}
@@ -211,19 +219,19 @@ class Quantum_GUI:
 
     # returns the data and columns for the nodes table
     def get_graph_table_nodes(self, graph):
-        """Function which returns the node and column data for use in a Dash
-        DataTable.
+        """Function which returns the node and column data for use in a Dash DataTable.
 
-        Arguments:
+        Args:
             graph (DiGraph): graph to construct data from
         """
+
         nodes = list(graph.nodes.data())
         columns = NODE_TABLE_COLUMNS
         table_data = pd.DataFrame(columns=columns)
         column_data = self.convert_columns(columns)
         # print(nodes)
 
-        if(len(nodes) != 0):
+        if len(nodes) != 0:
             values = []
             for node in nodes:
                 values.append(list(node[1]['data'].values()))
@@ -237,21 +245,20 @@ class Quantum_GUI:
 
         return [table_data, column_data]
 
-    # returns the data and columns for the edges table
     def get_graph_table_edges(self, graph):
-        """Function which returns the edge and column data for use in a Dash
-        DataTable.
+        """Function which returns the edge and column data for use in a Dash DataTable.
 
         Arguments:
             graph (DiGraph):
                 graph to construct data from
         """
+
         edges = list(graph.edges.data())
         columns = EDGE_TABLE_COLUMNS
         table_data = pd.DataFrame(columns=columns)
         column_data = self.convert_columns(columns)
 
-        if(len(edges) != 0):
+        if len(edges) != 0:
             values = []
             for edge in edges:
                 values.append(list(edge[2]['data'].values()))
@@ -265,7 +272,7 @@ class Quantum_GUI:
 
         return [table_data, column_data]
 
-    def colorImageGraph(self, graph_in):
+    def color_image_graph(self, graph_in):
         """Function which takes any graph containing sequence components
         and returns a new colored graph based on predefined constants.
 
@@ -273,6 +280,7 @@ class Quantum_GUI:
             graph_in (DiGraph):
                 graph to construct data from
         """
+
         colored_graph = graph_in.copy()
         nodes = list(colored_graph.nodes.data())
         edges = list(colored_graph.edges.data())
@@ -290,10 +298,9 @@ class Quantum_GUI:
         # nx.set_node_attributes(colored_graph, node_images, 'image')
         return colored_graph
 
-    def graphToTopology(self):
-        """Function which serializes the class's current data field to a
-        dictionary for export or other use.
-        """
+    def graph_to_topology(self):
+        """Function which serializes the class's current data field to a dictionary for export or other use."""
+
         graph = self.data.copy()
         nodes = list(graph.nodes.data())
         edges = list(graph.edges.data())
@@ -340,15 +347,15 @@ class Quantum_GUI:
         return output
 
     def _callback_add_node(self, add_node_name, add_node_type):
-        """Function which adds a node with the given name and type
-        to the current graph.
+        """Function which adds a node with the given name and type to the current graph.
 
-        Arguments:
+        Args:
             add_node_name (str):
-                an str identifier for the node (must be unique)
+                a string identifier for the node (must be unique)
             add_node_type (str):
                 the type of the node to be added (must be of recognized type)
         """
+
         if add_node_name is None:
             raise PreventUpdate
 
@@ -372,20 +379,20 @@ class Quantum_GUI:
         return [nx.readwrite.cytoscape_data(self.data)['elements'], '']
 
     def _callback_add_edge(self, node_from, node_to, attributes):
-        """Function which adds a new edge between two existing nodes
-        with the given source, destination, and attributes.
+        """Function which adds a new edge between two existing nodes with the given source, destination, and attributes.
 
         Arguments:
             node_from (str):
-                an str identifier for the source of the edge (must exist)
+                a string identifier for the source of the edge (must exist)
             node_to (str):
-                an str identifier for the destination of the edge (must exist)
+                a string identifier for the destination of the edge (must exist)
             attributes (List):
                 a list of attributes of the given edge
                 (must be json serializable)
         """
+
         # Check if input was given, if not, silently do nothing
-        if((node_from is None) or (node_to is None)):
+        if (node_from is None) or (node_to is None):
             raise PreventUpdate
 
         # Check if given edges are already in the network, if yes give error
@@ -407,27 +414,26 @@ class Quantum_GUI:
     # Takes the 'children' value from a callback and returns it as a
     # python dictionary that follows the format of a node in the graph
     def parse_edge(self, from_node, to_node, type_in, children):
-        """Function which parses input for a new edge given by the user
-        and returns it as a python dictionary that follows the format of
-        a Cytoscape edge
+        """Function which parses input for a new edge given by the user.
+        Returns it as a python dictionary that follows the format of a Cytoscape edge.
 
-        Arguments:
+        Args:
             from_node (str):
-                an str identifier for the source of the edge (must exist)
+                a string identifier for the source of the edge (must exist)
             to_node (str):
-                an str identifier for the destination of the edge (must exist)
+                a string identifier for the destination of the edge (must exist)
             type_in (str):
-                a str (Classical or Quantum) which identifies the type
-                of edge
+                a string (Classical or Quantum) which identifies the type of edge
             children (Dict[any,any]):
                 raw user input read from the edge_properties form in menu
         """
-        if((from_node is None) or (to_node is None) or (children is None)):
+
+        if (from_node is None) or (to_node is None) or (children is None):
             raise PreventUpdate
         output = EDGE_DICT_ORDER.copy()
 
         for x in children:
-            if(x['type'] == 'Input'):
+            if x['type'] == 'Input':
                 out = x['props']['value']
                 output['_'.join(x['props']['id'].split('_')[:-1])] = out
         output['source'] = from_node[6:]
@@ -436,14 +442,14 @@ class Quantum_GUI:
         return output
 
     def parse_node(self, children):
-        """Function which parses input given by the user for a new node
-        and returns it as a python dictionary that follows the format of
-        a Cytoscape node
+        """Function which parses input given by the user for a new node.
+        Returns it as a python dictionary that follows the format of a Cytoscape node
 
-        Arguments:
+        Args:
             children (Dict[any,any]):
                 raw user input read from the edge_properties form in menu
         """
+
         values = {}
 
         if children is not None:
@@ -469,15 +475,17 @@ class Quantum_GUI:
             # print(values)
             output = values
             return output
-        return('No Input')
+
+        return 'No Input'
 
     def parse_edit(self, children):
-        """Function which parses input from the edit menu
+        """Function which parses input from the edit menu.
 
-        Arguments:
+        Args:
             children (Dict[any,any]):
                 raw user input read from the edge_properties form in menu
         """
+
         output = {}
         data = children['props']['children']
         for x in data:
@@ -485,9 +493,9 @@ class Quantum_GUI:
             output[values['className']] = values['value']
         return output
 
-    def cleanDirectory(self):
-        """Function which clears the program root directory of temporary files
-        """
+    def clean_directory(self):
+        """Function which clears the program root directory of temporary files."""
+
         if os.path.exists(DIRECTORY+'/sequence_data.zip'):
             os.remove(DIRECTORY+'/sequence_data.zip')
         if os.path.exists(DIRECTORY+'/templates.json'):
@@ -498,33 +506,34 @@ class Quantum_GUI:
             os.remove(DIRECTORY+'/topology.json')
         return
 
-    def saveAll(self, path):
-        """Function which saves all parts of the gui to a file
-        (Topology, Templates, and Simulations)
+    def save_all(self, path):
+        """Function which saves all parts of the gui to a file (Topology, Templates, and Simulations).
 
-        Arguments:
+        Args:
             path (str):
                 file path to where output should be saved
         """
+
         new_path = path + '/data'
         if not os.path.exists(DIRECTORY+'/data'):
             os.mkdir(DIRECTORY+'/data')
 
-        self.saveTemplates(new_path)
-        self.saveSimulation(new_path)
-        self.saveTopology(new_path)
+        self.save_templates(new_path)
+        self.save_simulation(new_path)
+        self.save_topology(new_path)
         return new_path
 
-    def saveTopology(self, path):
-        """Function which saves the topology of the GUI
+    def save_topology(self, path):
+        """Function which saves the topology of the GUI.
 
-        Arguments:
+        Args:
             path (str):
                 file path to where output should be saved
         """
+
         with open(path+'/topology.json', 'w') as outfile:
-            json5.dump(
-                self.graphToTopology(),
+            json.dump(
+                self.graph_to_topology(),
                 outfile,
                 quote_keys=True,
                 sort_keys=True,
@@ -532,17 +541,18 @@ class Quantum_GUI:
                 trailing_commas=False
             )
         outfile.close()
-        return(path+'/topology.json')
+        return path + '/topology.json'
 
-    def saveSimulation(self, path):
-        """Function which saves the simulation parameters of the GUI
+    def save_simulation(self, path):
+        """Function which saves the simulation parameters of the GUI.
 
-        Arguments:
+        Args:
             path (str):
                 file path to where output should be saved
         """
+
         with open(path+'/simulation.json', 'w') as outfile:
-            json5.dump(
+            json.dump(
                 self.sim_params,
                 outfile,
                 quote_keys=True,
@@ -551,17 +561,18 @@ class Quantum_GUI:
                 trailing_commas=False
             )
         outfile.close()
-        return(path+'/simulation.json')
+        return path + '/simulation.json'
 
-    def saveTemplates(self, path):
-        """Function which saves the templates of the GUI
+    def save_templates(self, path):
+        """Function which saves the templates of the GUI.
 
-        Arguments:
+        Args:
             path (str):
                 file path to where output should be saved
         """
+
         with open(path+'/templates.json', 'w') as outfile:
-            json5.dump(
+            json.dump(
                 self.templates,
                 outfile,
                 quote_keys=True,
@@ -570,19 +581,18 @@ class Quantum_GUI:
                 trailing_commas=False
             )
         outfile.close()
-        return(path+'/templates.json')
+        return path+'/templates.json'
 
     def get_app(self, name):
-        """Function which builds an instance of the GUI as a
-        Dash app
+        """Function which builds an instance of the GUI as a Dash app.
 
-        Note: All callback functions are defined within the the get_app
-        function
+        Note: All callback functions are defined within the the get_app function.
 
-        Arguments
+        Args:
             vis_opts (Dict[str,any]):
                 optional visualization parameters for the network graph
         """
+
         # create the app
         CSS = [
             dbc.themes.BOOTSTRAP,
@@ -850,7 +860,7 @@ class Quantum_GUI:
             if tapped_node is None and tapped_edge is None:
                 raise PreventUpdate
             elif input_id == 'tapNodeData':
-                parsed = json5.loads(tapped_node['data'])
+                parsed = json.loads(tapped_node['data'])
                 out = getSelectedNodeMenu(
                     parsed,
                     self.templates[tapped_node['data']['type']]
@@ -858,7 +868,7 @@ class Quantum_GUI:
                 val = tapped_node['data'].copy()
                 return [out, None, None, val]
             elif input_id == 'tapEdgeData':
-                parsed = json5.loads(tapped_edge['data'])
+                parsed = json.loads(tapped_edge['data'])
                 out = getSelectedEdgeMenu(
                     parsed,
                     self.data.nodes,
@@ -1007,10 +1017,10 @@ class Quantum_GUI:
         def export_data(all, top, temp, sim):
             ctx = dash.callback_context
             input_id = ctx.triggered[0]['prop_id'].split('.')[0]
-            self.cleanDirectory()
+            self.clean_directory()
 
             if input_id == 'export_all':
-                path = self.saveAll(DIRECTORY)
+                path = self.save_all(DIRECTORY)
 
                 shutil.make_archive(
                     base_name=DIRECTORY+'/sequence_data',
@@ -1020,11 +1030,11 @@ class Quantum_GUI:
                 shutil.rmtree(path)
                 return dcc.send_file(DIRECTORY + '/sequence_data.zip')
             elif input_id == 'export_topo':
-                return dcc.send_file(self.saveTopology(DIRECTORY))
+                return dcc.send_file(self.save_topology(DIRECTORY))
             elif input_id == 'export_templ':
-                return dcc.send_file(self.saveTemplates(DIRECTORY))
+                return dcc.send_file(self.save_templates(DIRECTORY))
             elif input_id == 'export_sim':
-                return dcc.send_file(self.saveSimulation(DIRECTORY))
+                return dcc.send_file(self.save_simulation(DIRECTORY))
 
         @app.callback(
             [Output(f"tab-{i}", "style") for i in range(len(tab_ids))],
