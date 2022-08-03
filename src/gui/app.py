@@ -582,11 +582,11 @@ class QuantumGUI:
     def get_app(self, name):
         """Function which builds an instance of the GUI as a Dash app.
 
-        Note: All callback functions are defined within the the get_app function.
+        Note: All callback functions are defined within the get_app function.
 
         Args:
-            vis_opts (Dict[str,any]):
-                optional visualization parameters for the network graph
+            name (str): name for dash app.
+            vis_opts (Dict[str,any]): optional visualization parameters for the network graph.
         """
 
         # create the app
@@ -856,17 +856,15 @@ class QuantumGUI:
             if tapped_node is None and tapped_edge is None:
                 raise PreventUpdate
             elif input_id == 'tapNodeData':
-                parsed = json.loads(tapped_node['data'])
                 out = getSelectedNodeMenu(
-                    parsed,
+                    tapped_node['data'],
                     self.templates[tapped_node['data']['type']]
                 )
                 val = tapped_node['data'].copy()
                 return [out, None, None, val]
             elif input_id == 'tapEdgeData':
-                parsed = json.loads(tapped_edge['data'])
                 out = getSelectedEdgeMenu(
-                    parsed,
+                    tapped_edge['data'],
                     self.data.nodes,
                     ['Quantum', 'Classical']
                 )
@@ -953,7 +951,7 @@ class QuantumGUI:
                 if time_to_run is None or units is None or sim_name is None:
                     return [dash.no_update, '', '', '']
                 else:
-                    if(not self.simulation.timeline.is_running):
+                    if not self.simulation.timeline.is_running:
                         self.simulation = GUI_Sim(
                             int(time_to_run),
                             int(units),
