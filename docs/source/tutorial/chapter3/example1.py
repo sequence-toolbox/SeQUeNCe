@@ -66,6 +66,7 @@ for i in range(3):
                               1000, 1e8)
         cc.set_ends(nodes[i], nodes[j].name)
 
+tl.init()
 for i in range(1000):
     tl.time = tl.now() + 1e11
     node1.create_protocol('bsm_node', 'node2')
@@ -77,8 +78,6 @@ for i in range(1000):
 
     node1.protocols[0].start()
     node2.protocols[0].start()
-
-    tl.init()
     tl.run()
 
 print(node1.resource_manager.ent_counter, ':', node1.resource_manager.raw_counter)

@@ -189,6 +189,7 @@ We can, however, set the protocol to try multiple times and observe the success 
 We will use the `Memory.reset()` method to reset the state of quantum memories before restarting protocols.
 
 ```python
+tl.init()
 for i in range(1000):
     tl.time = tl.now() + 1e11
     node1.create_protocol('bsm_node', 'node2')
@@ -197,8 +198,7 @@ for i in range(1000):
 
     node1.memory.reset()
     node2.memory.reset()
-
-    tl.init()
+    
     node1.protocols[0].start()
     node2.protocols[0].start()
     tl.run()
