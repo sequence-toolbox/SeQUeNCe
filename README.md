@@ -23,14 +23,15 @@ $ make install
 This will install the sequence library as well as the package dependencies.
 
 ## Running the GUI
-Once SeQUeNCe has been installed as described above, simply run the run.py script found in the root of the project directory
+Once SeQUeNCe has been installed as described above, simply run the `gui.py` script found in the root of the project directory
 ```
-$ python run.py
+$ python gui.py
 ```
 or
 ```
-$ python3 run.py
+$ python3 gui.py
 ```
+
 ## Citations
 
 Please cite this work as follows:

@@ -3,11 +3,16 @@ import os
 import networkx as nx
 import pandas as pd
 import numpy as np
+
 from .app import QuantumGUI
 from .graph_comp import GraphNode
+from ..topology.topology import Topology
+from ..topology.router_net_topo import RouterNetTopo
 
 
-class run_gui():
+class RunGui:
+    DEFAULT_CONFIG = '/starlight.json'
+
     def __init__(self, name):
         graph = nx.DiGraph()
         tdm_table = pd.DataFrame()
@@ -22,14 +27,15 @@ class run_gui():
     def load_graph(self, path_to_topology=None):
         # JSON
         if path_to_topology is None:
-            DIRECTORY, _ = os.path.split(__file__)
-            with open(DIRECTORY+'/starlight.json') as json_file:
+            directory, _ = os.path.split(__file__)
+            with open(directory + RunGui.DEFAULT_CONFIG) as json_file:
                 network_in = json.load(json_file)
         else:
             with open(path_to_topology) as json_file:
                 network_in = json.load(json_file)
 
         # Delay table initialization
+        # TODO: rewrite for non-table format
         pd.options.display.float_format = '{:.2e}'.format
         table = network_in['cchannels_table']
         delay_table = pd.DataFrame(table['table'])
@@ -55,32 +61,30 @@ class run_gui():
         graph = nx.DiGraph()
 
         for node in network_in['nodes']:
-            if node['type'] == 'QuantumRouter':
+            if node['type'] == RouterNetTopo.QUANTUM_ROUTER:
                 node['type'] = 'Quantum_Router'
-            new_node = GraphNode(node['name'], node['type'], 'default_router')
+            new_node = GraphNode(node[Topology.NAME], node[Topology.TYPE], 'default_router')
             graph.add_node(
-                node['name'],
-                label=node['name'],
-                node_type=node['type'],
+                node[Topology.NAME],
+                label=node[Topology.NAME],
+                node_type=node[Topology.TYPE],
                 data=new_node.__dict__
             )
 
-        for edge in network_in['qconnections']:
+        for edge in network_in[Topology.ALL_QC_CONNECT]:
             graph.add_edge(
-                edge['node1'],
-                edge['node2'],
+                edge[Topology.CONNECT_NODE_1],
+                edge[Topology.CONNECT_NODE_2],
                 data={
-                    'source': edge['node1'],
-                    'target': edge['node2'],
-                    'distance': edge['distance'],
-                    'attenuation': edge['attenuation'],
+                    'source': edge[Topology.CONNECT_NODE_1],
+                    'target': edge[Topology.CONNECT_NODE_2],
+                    'distance': edge[Topology.DISTANCE],
+                    'attenuation': edge[Topology.ATTENUATION],
                     'link_type': 'Quantum'
                 }
             )
 
         # input = nx.readwrite.cytoscape_data(graph)['elements']
-
-        ###############################################
 
         self.gui = QuantumGUI(
             graph,
