@@ -1,5 +1,5 @@
 """
-A Class which contains all of the logic and data for the GUI
+A Class which contains all the logic and data for the GUI.
 """
 
 import dash
@@ -18,12 +18,15 @@ import networkx as nx
 from collections import OrderedDict
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
+
 from .simulator_bindings import GUI_Sim
 from .menus import *
 from .graph_comp import GraphNode
 from .layout import get_app_layout
 from .layout import TYPE_COLORS, TYPES
 from .css_styles import *
+from ..topology.topology import Topology
+from ..topology.router_net_topo import RouterNetTopo
 
 
 EDGE_DICT_ORDER = OrderedDict(
@@ -55,16 +58,16 @@ TEMPLATES = '/user_templates.json'
 
 
 class QuantumGUI:
-    """Class which holds the methods and properties of the SeQUeNCe GUI
+    """Class which holds the methods and properties of the SeQUeNCe GUI.
 
-        The Quantum_GUI can be instantiated without specifying any parameters.
-        Using no parameters creates an instance of the GUI with only the
-        default node templates and nothing else. The GUI can also be
-        instantiated with a number of additional parameters, described
-        within the attributes section. The Quantum_GUI manages graphical
-        user elements. The structure of the data used can be divided into three
-        categories, templates, topology, and simulations.
-        The composition of each is in terms of Quantum_GUI elements is:
+    The Quantum_GUI can be instantiated without specifying any parameters.
+    Using no parameters creates an instance of the GUI with only the
+    default node templates and nothing else. The GUI can also be
+    instantiated with a number of additional parameters, described
+    within the attributes section. The Quantum_GUI manages graphical
+    user elements. The structure of the data used can be divided into three
+    categories, templates, topology, and simulations.
+    The composition of each is in terms of Quantum_GUI elements is:
 
         templates
             - templates
@@ -75,36 +78,23 @@ class QuantumGUI:
         simulation
             - sim_params
 
-        To monitor the progress of simulation, the Timeline.show_progress
-        attribute can be modified to show/hide a progress bar.
+    To monitor the progress of simulation, the Timeline.show_progress
+    attribute can be modified to show/hide a progress bar.
 
-        Attributes:
-            data (Graph or DiGraph):
-                A NetworkX Graph of DiGraph object with attributes node, label,
-                node_type, and data. The data attribute can be set to store any
-                number of node attributes, though the gui uses the __dict__
-                of GraphNode (defined in graph_comp.py) for consistency.
-            cc_delays (DataFrame):
-                Pandas DataFrame which represents an adjacency matrix of
-                classical channel time delays.
-            qc_tdm (DataFrame):
-                Pandas DataFrame which represents an adjacency matrix of
-                quantum channel tdm frames.
-            defaults (Dict):
-                Dictionary containing the default values of all node types.
-            templates (Dict):
-                Dictionary containing any user defined templates, loaded
-                from file or given as parameter.
-            edge_table (List[Dict]):
-                A list of dictionaries which represents a table listing all
-                edges in the current network. Should not be directly set
-            node_table (List[Dict]):
-                A list of dictionaries which represents a table listing all
-                nodes in the current network. Should not be directly set
-            edge_columns (List[String]):
-                A list containing the column heading for the edge_table
-            node_columns (List[String]):
-                A list containing the column heading for the node_table
+    Attributes:
+        data (Graph or DiGraph): A NetworkX Graph of DiGraph object with attributes node, label, node_type, and data.
+            The data attribute can be set to store any number of node attributes,
+            though the gui uses the __dict__ of GraphNode (defined in graph_comp.py) for consistency.
+        cc_delays (DataFrame): Pandas DataFrame which represents an adjacency matrix of classical channel time delays.
+        qc_tdm (DataFrame): Pandas DataFrame which represents an adjacency matrix of quantum channel tdm frames.
+        defaults (Dict): Dictionary containing the default values of all node types.
+        templates (Dict): Dictionary containing any user defined templates, loaded from file or given as parameter.
+        edge_table (List[Dict]): A list of dictionaries which represents a table listing all edges in the current
+            network. Should not be directly edited.
+        node_table (List[Dict]): A list of dictionaries which represents a table listing all nodes in the current
+            network. Should not be directly edited.
+        edge_columns (List[str]): A list containing the column heading for the edge_table.
+        node_columns (List[str]): A list containing the column heading for the node_table.
     """
 
     def __init__(self, graph_in, templates=None, delays=None, tdm=None):
@@ -190,14 +180,13 @@ class QuantumGUI:
         return self._node_columns
 
     def convert_columns(self, columns, case_norm=True):
-        """Function which takes a list of columns and coverts them into a
-        dictionary format for their use in a Dash DataTable.
+        """Function which takes a list of columns and coverts them into a dictionary format.
+
+        For their use in a Dash DataTable.
 
         Args:
-            columns (List[str]):
-                columns to convert to datatable column dictionary
-            case_norm (Boolean):
-                whether to capitalize the columns displayed
+            columns (List[str]): columns to convert to datatable column dictionary.
+            case_norm (bool): whether to capitalize the columns displayed (default True).
         """
 
         column_data = []
@@ -218,7 +207,7 @@ class QuantumGUI:
         """Function which returns the node and column data for use in a Dash DataTable.
 
         Args:
-            graph (DiGraph): graph to construct data from
+            graph (DiGraph): graph to construct data from.
         """
 
         nodes = list(graph.nodes.data())
@@ -245,8 +234,7 @@ class QuantumGUI:
         """Function which returns the edge and column data for use in a Dash DataTable.
 
         Arguments:
-            graph (DiGraph):
-                graph to construct data from
+            graph (DiGraph): graph to construct data from.
         """
 
         edges = list(graph.edges.data())
@@ -269,12 +257,12 @@ class QuantumGUI:
         return [table_data, column_data]
 
     def color_image_graph(self, graph_in):
-        """Function which takes any graph containing sequence components
-        and returns a new colored graph based on predefined constants.
+        """Function which takes any graph containing sequence components and returns a new colored graph.
+
+        Based on predefined constants.
 
         Arguments:
-            graph_in (DiGraph):
-                graph to construct data from
+            graph_in (DiGraph): graph to construct data from.
         """
 
         colored_graph = graph_in.copy()
@@ -300,7 +288,7 @@ class QuantumGUI:
         graph = self.data.copy()
         nodes = list(graph.nodes.data())
         edges = list(graph.edges.data())
-        q_delay = self.qc_tdm.copy()
+        # q_delay = self.qc_tdm.copy()
         c_delay = self.cc_delays.copy()
 
         nodes_top = []
@@ -308,8 +296,8 @@ class QuantumGUI:
         for node in nodes:
             nodes_top.append(
                 {
-                    'name': node[1]['label'],
-                    'type': node[1]['node_type']
+                    Topology.NAME: node[1]['label'],
+                    Topology.TYPE: node[1]['node_type']
                 }
             )
 
@@ -318,26 +306,44 @@ class QuantumGUI:
         for edge in edges:
             qconnections.append(
                 {
-                    'node1': edge[2]['data']['source'],
-                    'node2': edge[2]['data']['target'],
-                    'attenuation': edge[2]['data']['attenuation'],
-                    'distance': edge[2]['data']['distance']
+                    Topology.CONNECT_NODE_1: edge[2]['data']['source'],
+                    Topology.CONNECT_NODE_2: edge[2]['data']['target'],
+                    Topology.ATTENUATION: edge[2]['data']['attenuation'],
+                    Topology.DISTANCE: edge[2]['data']['distance']
                 }
             )
 
+        cconnections = []
+        table = c_delay.to_numpy()
+        labels = list(c_delay.columns)
+        for i, src in enumerate(labels):
+            for j, dst in enumerate(labels):
+                if i == j:
+                    continue
+                delay = table[i][j] / 2  # divide round trip time by 2
+                cconnections.append(
+                    {
+                        Topology.SRC: src,
+                        Topology.DST: dst,
+                        Topology.DELAY: delay
+                    }
+                )
+
         output = {
-            'nodes': nodes_top,
-            'qconnections': qconnections,
-            'cchannels_table': {
-                'type': 'RT',
-                'labels': list(c_delay.columns),
-                'table': c_delay.to_numpy().tolist()
-            },
-            'qchannels_table': {
-                'type': 'RT',
-                'labels': list(q_delay.columns),
-                'table': q_delay.to_numpy().tolist()
-            }
+            Topology.ALL_NODE: nodes_top,
+            Topology.ALL_QC_CONNECT: qconnections,
+            Topology.ALL_CC_CONNECT: cconnections
+
+            # 'cchannels_table': {
+            #     'type': 'RT',
+            #     'labels': list(c_delay.columns),
+            #     'table': c_delay.to_numpy().tolist()
+            # },
+            # 'qchannels_table': {
+            #     'type': 'RT',
+            #     'labels': list(q_delay.columns),
+            #     'table': q_delay.to_numpy().tolist()
+            # }
         }
 
         return output
