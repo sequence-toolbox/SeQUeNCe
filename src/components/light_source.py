@@ -13,6 +13,7 @@ from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..utils.encoding import polarization
+from ..utils import log
 
 
 class LightSource(Entity):
@@ -71,6 +72,8 @@ class LightSource(Entity):
         Arguments:
             state_list (List[List[complex]]): list of complex coefficient arrays to send as photon-encoded qubits.
         """
+
+        log.logger.info("{} emitting {} photons".format(self.name, len(state_list)))
 
         time = self.timeline.now()
         period = int(round(1e12 / self.frequency))
@@ -134,6 +137,8 @@ class SPDCSource(LightSource):
                 This is ignored for the absorptive encoding type.
         """
 
+        log.logger.info("SPDC sourcee {} emitting {} photons".format(self.name, len(state_list)))
+
         time = self.timeline.now()
 
         if self.encoding_type["name"] == "absorptive":
@@ -182,7 +187,7 @@ class SPDCSource(LightSource):
             for state in state_list:
                 num_photon_pairs = self.get_generator().poisson(self.mean_photon_num)
 
-                if self.get_generator().random_sample() < self.phase_error:
+                if self.get_generator().random() < self.phase_error:
                     state = multiply([1, -1], state)
 
                 for _ in range(num_photon_pairs):
@@ -203,6 +208,10 @@ class SPDCSource(LightSource):
                 time += 1e12 / self.frequency
 
     def send_photons(self, time, photons: List["Photon"]):
+        log.logger.debug("SPDC source {} sending photons to {} at time {}".format(
+            self.name, self._receivers, time
+        ))
+
         assert len(photons) == 2
         for dst, photon in zip(self._receivers, photons):
             process = Process(dst, "get", [photon])
