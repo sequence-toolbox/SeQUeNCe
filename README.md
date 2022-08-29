@@ -1,7 +1,5 @@
 # SeQUeNCe: Simulator of QUantum Network Communication
 
-This fork of SeQUeNCe contains the in-development version of the SeQUeNCe GUI. As of Summer 2021, it is in active development at Argonne National Laboratory as part of the DOE SULI program.
-
 SeQUeNCe is an open source, discrete-event simulator for quantum networks. As described in our [paper](http://arxiv.org/abs/2009.12000), the simulator includes 5 modules on top of a simulation kernel:
 * Hardware
 * Entanglement Management
@@ -12,7 +10,7 @@ SeQUeNCe is an open source, discrete-event simulator for quantum networks. As de
 These modules can be edited by users to define additional functionality and test protocol schemes, or may be used as-is to test network parameters and topologies.
 
 ## Installing
-SeQUeNCe requires an installation of Python 3.7. this can be found at the [Python Website](https://www.python.org/downloads/). Then, simply download the package, navigate to its directory, and install with
+SeQUeNCe requires an installation of Python 3.8 or later. This can be found at the [Python Website](https://www.python.org/downloads/). Then, simply download the package, navigate to its directory, and install with
 ```
 $ pip install .
 ```
@@ -38,7 +36,7 @@ Please cite this work as follows:
 
 * X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: A Customizable Discrete-Event Simulator of Quantum Networks." Quantum Science and Technology, 2021. DOI: https://doi.org/10.1088/2058-9565/ac22f6.
 
-* X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: Simulator of QUantum Network Communication.” GitHub repository, https://github.com/sequence-toolbox/SeQUeNCe, 2021.
+* X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: Simulator of QUantum Network Communication." GitHub repository, https://github.com/sequence-toolbox/SeQUeNCe, 2021.
 
 ## Usage Examples
 Many examples of SeQUeNCe in action can be found in the example folder. These include both quantum key distribution and entanglement distribution examples.
