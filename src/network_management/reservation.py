@@ -181,8 +181,7 @@ def ep_req_func1(protocols, args: Arguments) -> "BBPSSW":
 
 
 def ep_rule_action1(memories_info: List["MemoryInfo"], args: Arguments):
-    """Action function used by BBPSSW protocol on nodes except the
-    responder node
+    """Action function used by BBPSSW protocol on nodes except the initiator
 
     """
     memories = [info.memory for info in memories_info]
