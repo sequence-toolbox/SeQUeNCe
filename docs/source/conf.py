@@ -22,7 +22,7 @@ copyright = '2020-2022'
 author = 'Xiaoliang Wu, Joaquin Chung, Alexander Kolar, Eugene Wang, Tian Zhong, Rajkumar Kettimuthu, Martin Suchara'
 
 # The full version, including alpha/beta/rc tags
-release = '0.3.2'
+release = '0.4.0'
 
 
 # -- General configuration ---------------------------------------------------

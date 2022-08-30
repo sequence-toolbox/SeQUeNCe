@@ -48,10 +48,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - moved all random number generation to network nodes
-    - includes all components and quantum manager functions
-    - utilizes `Entity.get_generator()` method
+  - includes all components and quantum manager functions
+  - utilizes `Entity.get_generator()` method
 - reworked timeline events to handle cross-process events
-    - most protocols and components now use strings instead of explicit instances for classes
+  - most protocols and components now use strings instead of explicit instances for classes
 - tweaked process of entangelement and reservation protocols
 - `EventList` structure and interface with `Timeline`
 - `Timeline` timing display
@@ -60,17 +60,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - parallel execution for the kernel module
 - `parallel` directory with useful tools
-    - Python and C++ servers for managing parallel kernel executions
-    - Many examples for parallel execution
+  - Python and C++ servers for managing parallel kernel executions
+  - Many examples for parallel execution
 - updated documentation with parallel code
 - utility files for generating network config JSON files
 
 ### Changed
 - `Topology` class has been made into a simplified base class
-    - `RouterNetTopo` and `QKDTopo` classes added for specific network types
+  - `RouterNetTopo` and `QKDTopo` classes added for specific network types
 - tweaked library dependencies
-    - added `mpi4py` and `mpi-pytest` requirements for parallel execution
-    - removed `json5` requirement
+  - added `mpi4py` and `mpi-pytest` requirements for parallel execution
+  - removed `json5` requirement
 
 ## [0.3.1]
 ### Added
@@ -83,3 +83,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Corrected units in jupyter notebook example files
 - Corrected units for the optical channel class
 - Bug fixes for tutorial scripts
+
+## [0.4.0]
+### Added
+- GUI for ease of simulation setup
+- Framework for future GUI usage to run simulations
+  - This feature is currently unimplemented and will not work
+- Package dependencies for GUI (dash and plotly)
+
+### Changed
+- Updated version requirement for numpy
+  - This removes support for Python 3.7 and below
+- Bug fixes to tutorial chapter 3
+- Typo fixes to docstrings in reservation.py
