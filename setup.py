@@ -14,7 +14,7 @@ setup(
     package_data={'sequence': ['gui/user_templates.json', 'gui/default_params.json', 'gui/starlight.json']},
     include_package_data=True,
     install_requires=[
-        'numpy<1.22',
+        'numpy>=1.22',
         'matplotlib',
         'pandas',
         'qutip>=4.6.0',
