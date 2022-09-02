@@ -9,6 +9,8 @@ from sequence.entanglement_management.purification import BBPSSW
 from sequence.entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 from sequence.resource_management.resource_manager import ResourceManager
 from sequence.resource_management.rule_manager import Rule
+from sequence.message import Message
+from sequence.resource_management.memory_manager import MemoryInfo, MemoryManager
 
 
 ## Custom Node

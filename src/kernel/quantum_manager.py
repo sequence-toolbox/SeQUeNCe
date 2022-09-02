@@ -16,6 +16,8 @@ from qutip.qip.operations import gate_sequence_product
 from numpy import log2, outer
 
 from .quantum_utils import *
+from ..components.circuit import Circuit
+from ..utils.quantum_state import QuantumState
 
 if TYPE_CHECKING:
     from ..components.circuit import Circuit
@@ -51,14 +53,14 @@ class QuantumManager():
         """
         pass
 
-    def get(self, key: int) -> "State":
+    def get(self, key: int) -> "QuantumState":
         """Method to get quantum state stored at an index.
 
         Args:
             key (int): key for quantum state.
 
         Returns:
-            State: quantum state at supplied key.
+            QuantumState: quantum state at supplied key.
         """
         return self.states[key]
 

@@ -23,6 +23,7 @@ from ..kernel.event import Event
 from ..kernel.process import Process
 from ..components.circuit import Circuit
 from ..utils import log
+from ..components.bsm import SingleAtomBSM
 
 
 class GenerationMsgType(Enum):
