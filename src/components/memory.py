@@ -187,15 +187,6 @@ class Memory(Entity):
         photon.is_null = True
         photon.add_loss(1 - self.efficiency)
 
-        # # measure quantum state
-        # res = self.timeline.quantum_manager.run_circuit(Memory._meas_circuit, [self.qstate_key])
-        # state = res[self.qstate_key]
-        #
-        # # create photon and check if null
-        # photon = Photon("", self.timeline, wavelength=self.wavelength, location=self, encoding_type=self.encoding)
-        # if state == 0:
-        #     photon.is_null = True
-
         if self.frequency > 0:
             period = 1e12 / self.frequency
             self.next_excite_time = self.timeline.now() + period
@@ -224,7 +215,7 @@ class Memory(Entity):
     def reset(self) -> None:
         """Method to clear quantum memory.
 
-        Will reset quantum state to |0> and will clear entanglement information.
+        Will reset quantum state to \|0> and will clear entanglement information.
 
         Side Effects:
             Will modify internal parameters and quantum state.

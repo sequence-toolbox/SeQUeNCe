@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any, Dict, List
 if TYPE_CHECKING:
     from ..kernel.quantum_manager import QuantumManager
     from ..kernel.quantum_state import State
-    from ..components.memory import Memory
 
 from numpy import outer, add, zeros, array_equal
 

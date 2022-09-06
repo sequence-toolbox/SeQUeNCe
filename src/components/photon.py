@@ -24,7 +24,7 @@ class Photon:
         wavelength (float): wavelength of photon (in nm).
         location (Entity): current location of photon.
         encoding_type (Dict[str, Any]): encoding type of photon (as defined in encoding module).
-        quantum_state (Any): quantum state of photon.
+        quantum_state (Union[int, Tuple[complex]]): quantum state of photon.
             If `use_qm` is false, this will be a QuantumState object.
             Otherwise, it will be an integer key for the quantum manager.
         is_null (bool): defines whether photon is real or a "ghost" photon (not detectable but used in memory encoding).
@@ -69,7 +69,7 @@ class Photon:
         self.loss: float = 0
         self.use_qm = use_qm
 
-        self.quantum_state: Union[State, int] = None
+        self.quantum_state: Union[State, int] = -1
         if self.use_qm:
             if quantum_state is None:
                 self.quantum_state = timeline.quantum_manager.new()

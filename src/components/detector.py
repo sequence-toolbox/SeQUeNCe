@@ -62,6 +62,8 @@ class Detector(Entity):
 
         Args:
             photon (Photon): photon to detect (currently unused)
+
+        Keyword Args:
             dark_get (bool): Signifies if the call is the result of a false positive dark count event.
                 If true, will ignore probability calculations (default false).
 

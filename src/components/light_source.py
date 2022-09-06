@@ -26,7 +26,7 @@ class LightSource(Entity):
         timeline (Timeline): timeline for simulation
         frequency (float): frequency (in Hz) of photon creation.
         wavelength (float): wavelength (in nm) of emitted photons.
-        bandwidth (float): st. dev. in photon wavelength (in nm).
+        linewidth (float): st. dev. in photon wavelength (in nm).
         mean_photon_num (float): mean number of photons emitted each period.
         encoding_type (Dict[str, Any]): encoding scheme of emitted photons (as defined in the encoding module).
         phase_error (float): phase error applied to qubits.
@@ -51,7 +51,7 @@ class LightSource(Entity):
         Entity.__init__(self, name, timeline)
         self.frequency = frequency  # measured in Hz
         self.wavelength = wavelength  # measured in nm
-        self.bandwidth = bandwidth  # st. dev. in photon wavelength (nm)
+        self.linewidth = bandwidth  # st. dev. in photon wavelength (nm)
         self.mean_photon_num = mean_photon_num
         self.encoding_type = encoding_type
         self.phase_error = phase_error
@@ -85,7 +85,7 @@ class LightSource(Entity):
                 state = multiply([1, -1], state)
 
             for _ in range(num_photons):
-                wavelength = self.bandwidth * self.get_generator().standard_normal() + self.wavelength
+                wavelength = self.linewidth * self.get_generator().standard_normal() + self.wavelength
                 new_photon = Photon(str(i), self.timeline,
                                     wavelength=wavelength,
                                     location=self.owner,
