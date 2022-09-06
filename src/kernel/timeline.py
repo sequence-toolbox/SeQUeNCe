@@ -75,7 +75,7 @@ class Timeline:
 
         if formalism == KET_STATE_FORMALISM:
             self.quantum_manager = QuantumManagerKet()
-        elif formalism == 'density_matrix':
+        elif formalism == DENSITY_MATRIX_FORMALISM:
             self.quantum_manager = QuantumManagerDensity()
         else:
             raise ValueError(f"Invalid formalism {formalism}")

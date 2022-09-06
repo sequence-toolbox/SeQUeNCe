@@ -32,7 +32,8 @@ class QuantumManager:
     All states stored are of a single formalism (by default as a ket vector).
 
     Attributes:
-        states (Dict[int, KetState]): mapping of state keys to quantum state objects.
+        states (Dict[int, State]): mapping of state keys to quantum state objects.
+        formalism (str): formalism used for local quantum state representation.
     """
 
     def __init__(self, formalism: str):
@@ -41,11 +42,11 @@ class QuantumManager:
         self.formalism: str = formalism
 
     @abstractmethod
-    def new(self, amplitudes: any) -> int:
+    def new(self, state: any) -> int:
         """Method to create a new quantum state.
 
         Args:
-            amplitudes: complex amplitudes of new state. Type depends on type of subclass.
+            state (any): complex amplitudes of new state. Type depends on type of subclass.
 
         Returns:
             int: key for new state generated.
@@ -127,7 +128,7 @@ class QuantumManager:
 
         Args:
             keys (List[int]): key(s) of state(s) to change.
-            amplitudes: Amplitudes to set state to, type determined by type of subclass.
+            amplitudes (any): Amplitudes to set state to, type determined by type of subclass.
         """
 
         num_qubits = log2(len(amplitudes))
@@ -149,10 +150,10 @@ class QuantumManagerKet(QuantumManager):
     def __init__(self):
         super().__init__(KET_STATE_FORMALISM)
 
-    def new(self, amplitudes=(complex(1), complex(0))) -> int:
+    def new(self, state=(complex(1), complex(0))) -> int:
         key = self._least_available
         self._least_available += 1
-        self.states[key] = KetState(amplitudes, [key])
+        self.states[key] = KetState(state, [key])
         return key
 
     def run_circuit(self, circuit: Circuit, keys: List[int], meas_samp=None) -> Dict[int, int]:
@@ -231,7 +232,8 @@ class QuantumManagerKet(QuantumManager):
 
             # calculate meas probabilities and projected states
             len_diff = len(all_keys) - len(keys)
-            new_states, probabilities = measure_multiple_with_cache_ket(tuple(state), len(keys), len_diff)
+            new_states, probabilities = measure_multiple_with_cache_ket(
+                tuple(state), len(keys), len_diff)
 
             # choose result, set as new state
             for i in range(int(2 ** len(keys))):
