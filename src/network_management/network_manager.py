@@ -21,7 +21,7 @@ class NetworkManagerMessage(Message):
     """Message used by the network manager.
 
     Attributes:
-        message_type (Enum): message type required by base message type.
+        msg_type (Enum): message type required by base message type.
         receiver (str): name of destination protocol instance.
         payload (Message): message to be passed through destination network manager.
     """

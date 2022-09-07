@@ -110,7 +110,7 @@ class EntanglementGenerationA(EntanglementProtocol):
     _z_circuit = Circuit(1)
     _z_circuit.z(0)
 
-    def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory"):
+    def __init__(self, own: Node, name: str, middle: str, other: str, memory: Memory):
         """Constructor for entanglement generation A class.
 
         Args:
