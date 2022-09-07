@@ -39,6 +39,34 @@ class PeriodicApp:
             self.node.resource_manager.update(None, info.memory, "RAW")
 
 
+class ResetApp:
+    def __init__(self, node, other_node_name, target_fidelity=0.9):
+        self.node = node
+        self.node.set_app(self)
+        self.other_node_name = other_node_name
+        self.target_fidelity = target_fidelity
+
+    def get_other_reservation(self, reservation):
+        """called when receiving the request from the initiating node.
+
+        For this application, we do not need to do anything.
+        """
+
+        pass
+
+    def get_memory(self, info):
+        """Similar to the get_memory method of the main application.
+
+        We check if the memory info meets the request first,
+        by noting the remote entangled memory and entanglement fidelity.
+        We then free the memory for future use.
+        """
+
+        if (info.state == "ENTANGLED" and info.remote_node == self.other_node_name
+                and info.fidelity > self.target_fidelity):
+            self.node.resource_manager.update(None, info.memory, "RAW")
+
+
 if __name__ == "__main__":
     network_config = "star_network.json"
     num_periods = 5
@@ -59,6 +87,7 @@ if __name__ == "__main__":
             node2 = router
 
     app = PeriodicApp(node1, end_node_name)
+    reset_app = ResetApp(node2, start_node_name)
     
     tl.init()
     app.start()

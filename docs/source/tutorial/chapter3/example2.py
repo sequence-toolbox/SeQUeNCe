@@ -3,7 +3,7 @@ from sequence.topology.node import Node
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.entanglement_management.purification import BBPSSW
-from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
+from sequence.message import Message
 
 
 class SimpleManager:
@@ -83,6 +83,7 @@ kept_memo_2 = node2.components[node2.resource_manager.kept_memo_name]
 meas_memo_1 = node1.components[node1.resource_manager.meas_memo_name]
 meas_memo_2 = node2.components[node2.resource_manager.meas_memo_name]
 
+tl.init()
 for i in range(10):
     entangle_memory(kept_memo_1, kept_memo_2, 0.9)
     entangle_memory(meas_memo_1, meas_memo_2, 0.9)
@@ -92,7 +93,6 @@ for i in range(10):
 
     pair_protocol(node1, node2)
 
-    tl.init()
     node1.protocols[0].start()
     node2.protocols[0].start()
     tl.run()

@@ -65,7 +65,7 @@ class ReceiverNode(Node):
         detector.attach(self.counter)
 
     def receive_qubit(self, src, qubit):
-        self.components[self.first_component_name].get()
+        self.components[self.first_component_name].get(qubit)
 
 
 if __name__ == "__main__":

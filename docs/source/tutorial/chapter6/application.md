@@ -67,7 +67,42 @@ The other method we require, `get_memory`, is called by the resource manager whe
             self.node.resource_manager.update(None, info.memory, "RAW")
 ```
 
-### Step 2: Building and Running the Simulation
+### Step 2: Reset Application
+
+To ensure the memories are utilized properly and returned to the memory manager, we will need a second application on the receiving node.
+This application will also take in memories and reset them to `"RAW"` if they are properly entangled.
+The `get_reserve_res` method will do nothing.
+
+```python
+class ResetApp:
+    def __init__(self, node, other_node_name, target_fidelity=0.9):
+        self.node = node
+        self.node.set_app(self)
+        self.other_node_name = other_node_name
+        self.target_fidelity = target_fidelity
+
+    def get_other_reservation(self, reservation):
+        """called when receiving the request from the initiating node.
+
+        For this application, we do not need to do anything.
+        """
+
+        pass
+
+    def get_memory(self, info):
+        """Similar to the get_memory method of the main application.
+
+        We check if the memory info meets the request first,
+        by noting the remote entangled memory and entanglement fidelity.
+        We then free the memory for future use.
+        """
+
+        if (info.state == "ENTANGLED" and info.remote_node == self.other_node_name
+                and info.fidelity > self.target_fidelity):
+            self.node.resource_manager.update(None, info.memory, "RAW")
+```
+
+### Step 3: Building and Running the Simulation
 
 With all of the tools we have seen through the tutorials, creating our network and running the simulation are now a very simple process. We will use the same json file as the last tutorial (`star_network.json`) to automatically build the network, and will add our custom application to one node. Finally, we will begin the application processes with the `start` method.
 

@@ -225,13 +225,13 @@ For quantum and classical connections, the `get_qchannels` and `get_cchannels`  
 These provide an iterable list of all connections in the network that may be edited directly.
 
 ```python
-def set_parameters(topology: Topology):
+def set_parameters(topology: RouterNetTopo):
     # set memory parameters
     MEMO_FREQ = 2e3
     MEMO_EXPIRE = 0
     MEMO_EFFICIENCY = 1
     MEMO_FIDELITY = 0.9349367588934053
-    for node in topology.get_nodes_by_type("QuantumRouter"):
+    for node in topology.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
         memory_array = node.get_components_by_type("MemoryArray")[0]
         memory_array.update_memory_params("frequency", MEMO_FREQ)
         memory_array.update_memory_params("coherence_time", MEMO_EXPIRE)
@@ -242,7 +242,7 @@ def set_parameters(topology: Topology):
     DETECTOR_EFFICIENCY = 0.9
     DETECTOR_COUNT_RATE = 5e7
     DETECTOR_RESOLUTION = 100
-    for node in topology.get_nodes_by_type("BSMNode"):
+    for node in topology.get_nodes_by_type(RouterNetTopo.BSM_NODE):
         bsm = node.get_components_by_type("SingleAtomBSM")[0]
         bsm.update_detectors_params("efficiency", DETECTOR_EFFICIENCY)
         bsm.update_detectors_params("count_rate", DETECTOR_COUNT_RATE)
@@ -281,6 +281,7 @@ With the network built, we are now ready to make requests of the network manager
 We will make one request at one network node, asking for 25 memories to be entangled starting at 1 second and ending at 2 seconds (the end of our simulation). At the end of the simulation we will print out the entanglement state of memories in a manner similar to chapter 4.
 
 ```python
+# the start and end nodes may be edited as desired 
 start_node_name = "end1"
 end_node_name = "end2"
 node1 = node2 = None

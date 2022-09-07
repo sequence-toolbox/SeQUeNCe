@@ -138,6 +138,8 @@ We can then create our two network nodes using our custom node class. We only ne
 ```python
 node1 = SenderNode("node1", tl)
 node2 = ReceiverNode("node2", tl)
+node1.set_seed(0)
+node2.set_seed(1)
 ```
 
 Next, we create the quantum channel to provide connectivity between the nodes. We won’t need a classical channel, as we’re not sending any messages between nodes. In the initializer, we again specify the name and timeline, and include the additional required attenuation and distance parameters. We set attenuation to 0, so that we do not lose any photons in the channel (try changing it to see the effects!), and set the distance to one kilometer (note that the distance is given in meters). The `set_ends` method finally sets the sender and receiver for the channel.
@@ -145,7 +147,7 @@ Next, we create the quantum channel to provide connectivity between the nodes. W
 ```python
 from sequence.components.optical_channel import QuantumChannel
 qc = QuantumChannel("qc", tl, attenuation=0, distance=1e3)
-qc.set_ends(node1, node2)
+qc.set_ends(node1, node2.name)
 ```
 
 ### Step 4: Measure Memory Once
