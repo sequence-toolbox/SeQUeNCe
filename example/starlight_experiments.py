@@ -19,18 +19,15 @@ def get_component(node: Node, component_type: str):
 if __name__ == "__main__":
     # Experiment params and config
     network_config_file = "example/starlight.json"
-    runtime = 1e15
-
     network_topo = RouterNetTopo(network_config_file)
     tl = network_topo.get_timeline()
-    tl.stop_time = runtime
     routers = network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER)
     bsm_nodes = network_topo.get_nodes_by_type(RouterNetTopo.BSM_NODE)
 
     # set memory parameters
     MEMO_FREQ = 2e3
-    MEMO_EXPIRE = 1.1
-    MEMO_EFFICIENCY = 1
+    MEMO_EXPIRE = 1.3
+    MEMO_EFFICIENCY = 0.75
     MEMO_FIDELITY = 0.9349367588934053
     for node in routers:
         memory_array = node.get_components_by_type("MemoryArray")[0]  # assume only 1 memory array

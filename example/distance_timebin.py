@@ -7,13 +7,13 @@ from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
 from sequence.protocol import StackProtocol
 from sequence.qkd.BB84 import pair_bb84_protocols
-from sequence.topology.node import QKDNode
+from sequence.topology.node import QKDNode, Node
 from sequence.utils.encoding import time_bin
 
 
 # dummy parent class to receive BB84 keys and initiate BB84
 class Parent(StackProtocol):
-    def __init__(self, own, keysize: int, role: str):
+    def __init__(self, own: "Node", keysize: int, role: str):
         super().__init__(own, "")
         self.upper_protocols = []
         self.lower_protocols = []

@@ -1,5 +1,4 @@
 import math
-import time
 
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.kernel.event import Event
@@ -63,7 +62,4 @@ event = Event(0, process)
 tl.schedule(event)
 
 tl.init()
-start = time.time()
 tl.run()
-exec_time = time.time() - start
-print("Execution time: {}".format(exec_time))
