@@ -86,9 +86,6 @@ class MemoryArray(Entity):
         for memory in self.memories:
             memory.__setattr__(arg_name, value)
 
-    # def set_node(self, node: "QuantumRouter") -> None:
-    #     self.owner = node
-
     def add_receiver(self, receiver: "Entity"):
         for m in self.memories:
             m.add_receiver(receiver)
@@ -124,7 +121,6 @@ class Memory(Entity):
             efficiency (float): efficiency of memories.
             coherence_time (float): average time (in s) that memory state is valid.
             wavelength (int): wavelength (in nm) of photons emitted by memories.
-            qstate_key (int): key for associated quantum state in timeline's quantum manager.
         """
 
         super().__init__(name, timeline)
@@ -400,7 +396,7 @@ class AbsorptiveMemory(Entity):
 
     def set_memory_array(self, memory_array: MemoryArray):
         """Method to set the memory array to which the memory belongs
-        
+
         Args:
             memory_array (MemoryArray): memory array to which the memory belongs
         """
@@ -433,7 +429,7 @@ class AbsorptiveMemory(Entity):
     def get(self, photon: "Photon", **kwargs):
         """Method to receive a photon to store in the absorptive memory."""
 
-        # AFC needs to be prepared first        
+        # AFC needs to be prepared first
         if not self.is_prepared:
             raise Exception("AFC is not prepared yet.")
 
@@ -462,7 +458,7 @@ class AbsorptiveMemory(Entity):
         index = int(absorb_time / self.mode_bin)
         if index < 0 or index >= self.mode_number:
             return
-        
+
         # keep one photon per mode since most hardware cannot resolve photon number
         # photon_counter might be larger than mode_number, multi-photon events counted by "number"
         # if "degradation" is True, memory fidelity will be corrected by overlap_error
@@ -503,7 +499,7 @@ class AbsorptiveMemory(Entity):
                         emit_time = self.total_time - self.mode_bin - absorb_time  # reversed order of re-emission
                     else:
                         emit_time = absorb_time  # normal order of re-emission
-                    
+
                     if self.destination is not None:
                         dst = self.destination
 
@@ -512,7 +508,7 @@ class AbsorptiveMemory(Entity):
                     process = Process(self._receivers[0], "get", [photon], {"dst": dst})
                     event = Event(self.timeline.now() + emit_time, process)
                     self.timeline.schedule(event)
-        
+
         # TODO: make sure if after each round of re-emission AFC needs to be prepared before next storage task
         self.is_prepared = False
 

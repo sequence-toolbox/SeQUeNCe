@@ -69,9 +69,12 @@ if __name__ == "__main__":
             alice.update_lightsource_params(name, param)
 
         # Bob
-        detector_params = [{"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10},
-                           {"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10},
-                           {"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10}]
+        detector_params = [{"efficiency": 0.072, "dark_count": dark_count,
+                            "time_resolution": 10},
+                           {"efficiency": 0.072, "dark_count": dark_count,
+                            "time_resolution": 10},
+                           {"efficiency": 0.072, "dark_count": dark_count,
+                            "time_resolution": 10}]
         bob = QKDNode("bob", tl, encoding=time_bin)
         bob.set_seed(1)
 

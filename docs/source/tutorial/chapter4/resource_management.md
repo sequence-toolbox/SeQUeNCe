@@ -388,12 +388,14 @@ def ep_rule_condition2(memory_info: "MemoryInfo", manager: "MemoryManager",
         return [memory_info]
     return []
 
+        def ep_rule_action(memories_info: List["MemoryInfo"]):
+            memories = [info.memory for info in memories_info]
+            name = "EP.%s" % (memories[0].name)
+            protocol = BBPSSW(None, name, memories[0], None)
+            return protocol, [None], [None]
 
-def ep_rule_action2(memories_info: List["MemoryInfo"], args):
-    memories = [info.memory for info in memories_info]
-    name = "EP.%s" % (memories[0].name)
-    protocol = BBPSSW(None, name, memories[0], None)
-    return [protocol, [None], [None], [None]]
+        rule = Rule(10, ep_rule_action, ep_rule_condition)
+        node.resource_manager.load(rule)
 
 
 def add_ep_rules(index: int, path: List[RouterNode], target_fidelity: float):

@@ -41,7 +41,8 @@ def test_Rule_do():
     rule.do(memories_info)
     assert len(rule.protocols) == 1 and rule.protocols[0].name == "protocol1"
     assert len(rule_manager.log) == 1
-    assert rule_manager.log[0] == ("protocol1", "req_dst1", "req_condition1", {})
+    assert rule_manager.log[0] == (
+        "protocol1", "req_dst1", "req_condition1", {})
     assert rule.protocols[0].rule == rule
     assert len(memory._observers) == 1
     mem1 = Memory("1", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
@@ -49,7 +50,8 @@ def test_Rule_do():
     memories_info = [MemoryInfo(mem1, 0), MemoryInfo(mem2, 1)]
     rule.do(memories_info)
     assert len(rule.protocols) == 2 and rule.protocols[1].name == "protocol2"
-    assert len(rule_manager.log) == 2 and rule_manager.log[1] == ("protocol2", None, None, {})
+    assert len(rule_manager.log) == 2 and rule_manager.log[1] == (
+        "protocol2", None, None, {})
     assert rule.protocols[1].rule == rule
     assert len(mem1._observers) == len(mem2._observers) == 1
 

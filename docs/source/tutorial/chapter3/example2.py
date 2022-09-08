@@ -1,3 +1,4 @@
+from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.components.memory import Memory
@@ -97,5 +98,7 @@ for i in range(10):
     node2.protocols[0].start()
     tl.run()
 
-    print(kept_memo_1.name, kept_memo_1.entangled_memory, kept_memo_1.fidelity)
-    print(meas_memo_1.name, meas_memo_1.entangled_memory, meas_memo_1.fidelity)
+    print(kept_memo_1.name, kept_memo_1.entangled_memory,
+          kept_memo_1.fidelity)
+    print(meas_memo_1.name, meas_memo_1.entangled_memory,
+          meas_memo_1.fidelity)

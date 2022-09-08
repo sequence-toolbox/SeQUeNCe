@@ -166,7 +166,9 @@ class Photon:
         if photons[0].use_qm:
             raise NotImplementedError("Photon.measure_multiple() not implemented for quantum manager.")
 
-        return FreeQuantumState.measure_multiple(basis, [photons[0].quantum_state, photons[1].quantum_state], rng)
+        return FreeQuantumState.measure_multiple(basis,
+                                                 [photons[0].quantum_state, photons[1].quantum_state],
+                                                 rng)
 
     def add_loss(self, loss: float):
         assert 0 <= loss <= 1

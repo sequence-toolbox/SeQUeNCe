@@ -19,7 +19,6 @@ from ..message import Message
 from ..protocol import StackProtocol
 from ..utils import log
 
-
 def pair_cascade_protocols(sender: "Cascade", receiver: "Cascade") -> None:
     """Method to pair cascade protocol instance.
 

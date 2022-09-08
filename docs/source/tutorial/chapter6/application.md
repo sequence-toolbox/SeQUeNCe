@@ -36,7 +36,8 @@ class PeriodicApp:
         now = self.node.timeline.now()
         nm = self.node.network_manager
         nm.request(self.other, start_time=(now + 1e12), end_time=(now + 2e12),
-                   memory_size=self.memory_size, target_fidelity=self.target_fidelity)
+                   memory_size=self.memory_size,
+                   target_fidelity=self.target_fidelity)
         
         # schedule future start
         process = Process(self, "start", [])

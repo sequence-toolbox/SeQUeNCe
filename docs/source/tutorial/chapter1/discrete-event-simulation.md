@@ -61,6 +61,7 @@ from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 
 tl = Timeline() # create timeline
+tl.show_progress = False # turn of progress bar, we will address this in later tutorials.
 store = Store(tl) # create store
 
 # open store at 7:00
@@ -168,6 +169,7 @@ We can then define a store with an initial state - that the store opens at 7.
 
 ```python
 tl = Timeline()
+tl.show_progress = False
 store = Store(tl)
 process = Process(store, 'open', [])
 event = Event(7, process)

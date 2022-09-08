@@ -351,7 +351,8 @@ if __name__ == "__main__":
     cc_delay = 1e9
     for node1 in node_list:
         for node2 in node_list:
-            cc = ClassicalChannel("cc_%s_%s" % (node1.name, node2.name), tl, 1e3, delay=cc_delay)
+            cc = ClassicalChannel("cc_%s_%s" % (node1.name, node2.name), tl,
+                                  1e3, delay=cc_delay)
             cc.set_ends(node1, node2.name)
 
     # create quantum channels linking r1 and r2 to m1

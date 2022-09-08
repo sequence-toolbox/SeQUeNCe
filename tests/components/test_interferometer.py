@@ -5,6 +5,7 @@ from sequence.components.photon import Photon
 from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import time_bin
 
+
 NUM_TRIALS = int(10e3)
 SEED = 0
 

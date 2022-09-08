@@ -45,7 +45,7 @@ The json file should be structured as a dictionary with the following keys:
   - `qconnections`, giving a list of two-way quantum connection specifications, and
 - One of the following:
   - `cchannels`, giving a list of classical channel specifications (similar to `qchannels`)
-  - `cconnections`, giving a list of two-way classical connection specifications, and
+  - `cconnections`, giving a list of two-way classical connection specifications
 
 For this simulation, we use sequential simulation to simulate 2 seconds of the network.
 
@@ -74,26 +74,26 @@ The `memo_size` attribute defines the size of the memory array on the quantum ro
   {
     "name": "end1",
     "type": "QuantumRouter",
-    "memo_size": 50,
     "seed": 1
+    "memo_size": 50,
   },
   {
     "name": "end2",
     "type": "QuantumRouter",
-    "memo_size": 50,
     "seed": 2
+    "memo_size": 50,
   },
   {
     "name": "end3",
     "type": "QuantumRouter",
-    "memo_size": 50,
     "seed": 3
+    "memo_size": 50,
   },
   {
     "name": "end4",
     "type": "QuantumRouter",
-    "memo_size": 50,
     "seed": 4
+    "memo_size": 50,
   }
 ]
 ```
@@ -247,7 +247,6 @@ def set_parameters(topology: RouterNetTopo):
         bsm.update_detectors_params("efficiency", DETECTOR_EFFICIENCY)
         bsm.update_detectors_params("count_rate", DETECTOR_COUNT_RATE)
         bsm.update_detectors_params("time_resolution", DETECTOR_RESOLUTION)
-
     # set entanglement swapping parameters
     SWAP_SUCC_PROB = 0.90
     SWAP_DEGRADATION = 0.99
@@ -300,9 +299,11 @@ tl.run()
 
 print(node1, "memories")
 print("Index:\tEntangled Node:\tFidelity:\tEntanglement Time:")
-for info in network_topo.nodes[node1].resource_manager.memory_manager:
-    print("{:6}\t{:15}\t{:9}\t{}".format(str(info.index), str(info.remote_node),
-                                         str(info.fidelity), str(info.entangle_time * 1e-12)))
+for info in node1.resource_manager.memory_manager:
+		print("{:6}\t{:15}\t{:9}\t{}".format(str(info.index),
+                                         str(info.remote_node),
+                                         str(info.fidelity),
+                                         str(info.entangle_time * 1e-12)))
 ```
 
 We should notice that all memories are entangled with the specified distant node, that they have fidelity above our specified threshold, and that the entangled time is between 1 and 2 seconds.

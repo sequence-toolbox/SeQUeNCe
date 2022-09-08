@@ -79,7 +79,8 @@ def test_Detector_get():
 
     # time_resolution
     time_resolution = 233
-    detector, parent, tl = create_detector(efficiency=1, count_rate=1e12, time_resolution=time_resolution)
+    detector, parent, tl = create_detector(efficiency=1, count_rate=1e12,
+                                           time_resolution=time_resolution)
     times = np.random.randint(0, 1e12, 100, dtype=np.int64)
     times.sort()
     for t in times:
@@ -155,6 +156,7 @@ def test_QSDetectorPolarization():
     start_time = 0
     basis_list = [np.random.randint(2) for _ in range(1000)]
     qsdetector.set_basis_list(basis_list, start_time, frequency)
+    tl.init()
 
     for i in range(1000):
         tl.time = i * 1e12 / frequency
@@ -177,12 +179,14 @@ def test_QSDetectorTimeBin():
     start_time = 0
     basis_list = [np.random.randint(2) for _ in range(1000)]
     qsdetector.set_basis_list(basis_list, start_time, frequency)
+    tl.init()
 
     for i in range(1000):
         tl.time = i * 1e12 / frequency
         basis = basis_list[i]
         bit = np.random.randint(2)
-        photon = Photon(str(i), tl, encoding_type=time_bin, quantum_state=time_bin["bases"][basis][bit])
+        photon = Photon(str(i), tl, encoding_type=time_bin,
+                        quantum_state=time_bin["bases"][basis][bit])
         qsdetector.get(photon)
 
     tl.time = 0

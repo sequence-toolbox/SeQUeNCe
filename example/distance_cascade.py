@@ -42,8 +42,11 @@ if __name__ == "__main__":
             alice.update_lightsource_params(name, param)
 
         # Bob
-        detector_params = [{"efficiency": 0.8, "dark_count": 10, "time_resolution": 10, "count_rate": 50e6},
-                           {"efficiency": 0.8, "dark_count": 10, "time_resolution": 10, "count_rate": 50e6}]
+        detector_params = [
+            {"efficiency": 0.8, "dark_count": 10, "time_resolution": 10,
+             "count_rate": 50e6},
+            {"efficiency": 0.8, "dark_count": 10, "time_resolution": 10,
+             "count_rate": 50e6}]
         bob = QKDNode("bob", tl)
         bob.set_seed(1)
         for i in range(len(detector_params)):
@@ -60,7 +63,8 @@ if __name__ == "__main__":
         # cascade config
         pair_cascade_protocols(alice.protocol_stack[1], bob.protocol_stack[1])
 
-        process = Process(alice.protocol_stack[1], 'push', [256, math.inf, 12e12])
+        process = Process(alice.protocol_stack[1], 'push',
+                          [256, math.inf, 6e12])
         tl.schedule(Event(0, process))
 
         tl.init()

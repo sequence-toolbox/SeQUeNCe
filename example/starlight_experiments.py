@@ -138,6 +138,7 @@ if __name__ == "__main__":
             start_times.append(s_t)
             end_times.append(e_t)
             memory_sizes.append(size)
-    log = {"Node": node_names, "Start_time": start_times, "End_time": end_times, "Memory_size": memory_sizes}
+    log = {"Node": node_names, "Start_time": start_times,
+           "End_time": end_times, "Memory_size": memory_sizes}
     df = pd.DataFrame(log)
     df.to_csv("memory_usage_with_perfect_network.csv")

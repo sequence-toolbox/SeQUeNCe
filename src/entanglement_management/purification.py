@@ -151,7 +151,9 @@ class BBPSSW(EntanglementProtocol):
         self.meas_res = self.meas_res[self.meas_memo.qstate_key]
         dst = self.kept_memo.entangled_memory["node_id"]
 
-        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.remote_protocol_name, meas_res=self.meas_res)
+        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES,
+                                self.remote_protocol_name,
+                                meas_res=self.meas_res)
         self.own.send_message(dst, message)
 
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:

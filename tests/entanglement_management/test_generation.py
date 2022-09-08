@@ -92,7 +92,6 @@ def test_generation_pop():
 
     # BSM result
     middle.bsm_update(m0.bsm, {'info_type': "BSM_res", 'res': 0, 'time': 100})
-    
     assert len(m0.messages) == 2
     assert m0.messages[0][0] == "e0"
     assert m0.messages[1][0] == "e1"

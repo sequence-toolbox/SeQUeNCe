@@ -69,10 +69,14 @@ def create_scenario(state1, state2, seed_index, fidelity=1.0):
     cc0.set_ends(a1, a2.name)
     cc1.set_ends(a2, a1.name)
 
-    kept1 = Memory('kept1', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
-    kept2 = Memory('kept2', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
-    meas1 = Memory('mea1', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
-    meas2 = Memory('mea2', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
+    kept1 = Memory('kept1', tl, fidelity=fidelity, frequency=0, efficiency=1,
+                   coherence_time=1, wavelength=HALF_MICRON)
+    kept2 = Memory('kept2', tl, fidelity=fidelity, frequency=0, efficiency=1,
+                   coherence_time=1, wavelength=HALF_MICRON)
+    meas1 = Memory('mea1', tl, fidelity=fidelity, frequency=0, efficiency=1,
+                   coherence_time=1, wavelength=HALF_MICRON)
+    meas2 = Memory('mea2', tl, fidelity=fidelity, frequency=0, efficiency=1,
+                   coherence_time=1, wavelength=HALF_MICRON)
 
     tl.init()
 

@@ -102,7 +102,6 @@ class RandomRequestApp(RequestApp):
         Side Effects:
             Will create request for network manager on node.
         """
-
         self._update_last_rsvp_metrics()
 
         responder = self.rg.choice(self.others)

@@ -21,6 +21,7 @@ class Store(object):
 
 
 tl = Timeline(60)
+tl.show_progress = False
 store = Store(tl)
 print(tl.now())
 

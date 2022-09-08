@@ -185,7 +185,8 @@ class QuantumManagerKet(QuantumManager):
     def set_to_one(self, key: int):
         self.set([key], [complex(0), complex(1)])
 
-    def _measure(self, state: List[complex], keys: List[int], all_keys: List[int], meas_samp: float) -> Dict[int, int]:
+    def _measure(self, state: List[complex], keys: List[int],
+                 all_keys: List[int], meas_samp: float) -> Dict[int, int]:
         """Method to measure qubits at given keys.
 
         SHOULD NOT be called individually; only from circuit method (unless for unit testing purposes).
@@ -269,7 +270,8 @@ class QuantumManagerDensity(QuantumManager):
     def __init__(self):
         super().__init__(DENSITY_MATRIX_FORMALISM)
 
-    def new(self, state=([complex(1), complex(0)], [complex(0), complex(0)])) -> int:
+    def new(self,
+            state=([complex(1), complex(0)], [complex(0), complex(0)])) -> int:
         key = self._least_available
         self._least_available += 1
         self.states[key] = DensityState(state, [key])
@@ -356,14 +358,16 @@ class QuantumManagerDensity(QuantumManager):
 
         else:
             # swap states into correct position
-            if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
+            if not all(
+                    [all_keys.index(key) == i for i, key in enumerate(keys)]):
                 all_keys, swap_mat = self._swap_qubits(all_keys, keys)
                 state = swap_mat @ state @ swap_mat.T
 
             # calculate meas probabilities and projected states
             len_diff = len(all_keys) - len(keys)
             state_to_measure = tuple(map(tuple, state))
-            new_states, probabilities = measure_multiple_with_cache_density(state_to_measure, len(keys), len_diff)
+            new_states, probabilities = measure_multiple_with_cache_density(
+                state_to_measure, len(keys), len_diff)
 
             # choose result, set as new state
             for i in range(int(2 ** len(keys))):

@@ -76,7 +76,8 @@ nodes = [node1, node2, bsm_node]
 
 for i in range(3):
     for j in range(3):
-        cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl, 1000, 1e8)
+        cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl,
+                              1000, 1e8)
         cc.set_ends(nodes[i], nodes[j].name)
 
 tl.init()
@@ -85,6 +86,9 @@ for i in range(1000):
     node1.resource_manager.create_protocol('bsm_node', 'node2')
     node2.resource_manager.create_protocol('bsm_node', 'node1')
     pair_protocol(node1, node2)
+
+    node1.memory.reset()
+    node2.memory.reset()
 
     node1.protocols[0].start()
     node2.protocols[0].start()

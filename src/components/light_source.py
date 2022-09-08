@@ -110,7 +110,7 @@ class SPDCSource(LightSource):
         timeline (Timeline): timeline for simulation
         frequency (float): frequency (in Hz) of photon creation.
         wavelengths (List[float]): wavelengths (in nm) of emitted entangled photons.
-        bandwidth (float): st. dev. in photon wavelength (in nm) (currently unused).
+        linewidth (float): st. dev. in photon wavelength (in nm) (currently unused).
         mean_photon_num (float): mean number of photons emitted each period.
         encoding_type (Dict): encoding scheme of emitted photons (as defined in the encoding module).
         phase_error (float): phase error applied to qubits.
@@ -185,7 +185,8 @@ class SPDCSource(LightSource):
 
         else:
             for state in state_list:
-                num_photon_pairs = self.get_generator().poisson(self.mean_photon_num)
+                num_photon_pairs = self.get_generator().poisson(
+                self.mean_photon_num)
 
                 if self.get_generator().random() < self.phase_error:
                     state = multiply([1, -1], state)

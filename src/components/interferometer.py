@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..components.photon import Photon
+    from ..components.detector import Detector
 
 from ..kernel.process import Process
 from ..kernel.entity import Entity

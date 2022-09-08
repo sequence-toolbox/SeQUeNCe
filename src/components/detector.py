@@ -100,7 +100,8 @@ class Detector(Entity):
         """
 
         if self.dark_count > 0:
-            time_to_next = int(self.get_generator().exponential(1 / self.dark_count) * 1e12)  # time to next dark count
+            time_to_next = int(self.get_generator().exponential(
+                1 / self.dark_count) * 1e12)  # time to next dark count
             time = time_to_next + self.timeline.now()  # time of next dark count
 
             process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
@@ -132,6 +133,11 @@ class QSDetector(Entity, ABC):
         Entity.__init__(self, name, timeline)
         self.detectors = []
         self.trigger_times = []
+
+    def init(self):
+        for component in self.components:
+            component.attach(self)
+            component.owner = self.owner
 
     def update_detector_params(self, detector_id: int, arg_name: str, value: Any) -> None:
         self.detectors[detector_id].__setattr__(arg_name, value)
@@ -184,6 +190,7 @@ class QSDetectorPolarization(QSDetector):
         """Implementation of Entity interface (see base class)."""
 
         assert len(self.detectors) == 2
+        super().init()
 
     def get(self, photon: "Photon", **kwargs) -> None:
         """Method to receive a photon for measurement.
@@ -238,13 +245,13 @@ class QSDetectorTimeBin(QSDetector):
         self.switch.add_receiver(self.interferometer)
 
         self.components = [self.switch, self.interferometer] + self.detectors
-        [component.attach(self) for component in self.components]
         self.trigger_times = [[], [], []]
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
 
-        pass
+        assert len(self.detectors) == 3
+        super().init()
 
     def get(self, photon, **kwargs):
         """Method to receive a photon for measurement.

@@ -7,7 +7,7 @@ from sequence.kernel.timeline import Timeline
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
-from sequence.topology.node import QKDNode
+from sequence.topology.node import QKDNode, Node
 from sequence.protocol import StackProtocol
 from sequence.utils.encoding import *
 
@@ -47,8 +47,10 @@ def test_BB84_polarization():
     bob = QKDNode("bob", tl, stack_size=1)
     pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
 
-    qc0 = QuantumChannel("qc0", tl, distance=10e3, polarization_fidelity=0.99, attenuation=0.00002)
-    qc1 = QuantumChannel("qc1", tl, distance=10e3, polarization_fidelity=0.99, attenuation=0.00002)
+    qc0 = QuantumChannel("qc0", tl, distance=10e3, polarization_fidelity=0.99,
+                         attenuation=0.00002)
+    qc1 = QuantumChannel("qc1", tl, distance=10e3, polarization_fidelity=0.99,
+                         attenuation=0.00002)
     qc0.set_ends(alice, bob.name)
     qc1.set_ends(bob, alice.name)
     cc0 = ClassicalChannel("cc0", tl, distance=10e3)
@@ -80,8 +82,10 @@ def test_BB84_time_bin():
     bob = QKDNode("bob", tl, encoding=time_bin, stack_size=1)
     pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
 
-    qc0 = QuantumChannel("qc0", tl, distance=10e3, polarization_fidelity=0.99, attenuation=0.00002)
-    qc1 = QuantumChannel("qc1", tl, distance=10e3, polarization_fidelity=0.99, attenuation=0.00002)
+    qc0 = QuantumChannel("qc0", tl, distance=10e3, polarization_fidelity=0.99,
+                         attenuation=0.00002)
+    qc1 = QuantumChannel("qc1", tl, distance=10e3, polarization_fidelity=0.99,
+                         attenuation=0.00002)
     qc0.set_ends(alice, bob.name)
     qc1.set_ends(bob, alice.name)
     cc0 = ClassicalChannel("cc0", tl, distance=10e3)

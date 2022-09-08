@@ -501,49 +501,6 @@ class SingleAtomBSM(BSM):
                     detector_num = self.get_generator().choice([0, 1])
                     self.detectors[detector_num].get()
 
-    # def get(self, photon, **kwargs):
-    #     """See base class.
-    #
-    #     This method adds additional side effects not present in the base class.
-    #
-    #     Side Effects:
-    #         May call get method of one or more attached detector(s).
-    #         May alter the quantum state of photon and any stored photons, as well as their corresponding memories.
-    #     """
-    #
-    #     super().get(photon)
-    #
-    #     # check if we're in first stage. If we are and not null, send photon to random detector
-    #     if not photon.is_null:
-    #         memory = photon.encoding_type["memory"]
-    #         detector_num = random.choice([0, 1])
-    #         memory.previous_bsm = detector_num
-    #         self.detectors[detector_num].get()
-    #
-    #     if len(self.photons) == 2:
-    #         null_0 = self.photons[0].is_null
-    #         null_1 = self.photons[1].is_null
-    #         is_valid = null_0 ^ null_1
-    #
-    #         if is_valid:
-    #             memory_0 = self.photons[0].encoding_type["memory"]
-    #             memory_1 = self.photons[1].encoding_type["memory"]
-    #
-    #             # if we're in stage 1: null photon will need bsm assigned
-    #             if null_0 and memory_0.previous_bsm == -1:
-    #                 memory_0.previous_bsm = memory_1.previous_bsm
-    #             elif null_1 and memory_1.previous_bsm == -1:
-    #                 memory_1.previous_bsm = memory_0.previous_bsm
-    #
-    #             # if we're in stage 2: check if psi+ or psi-, then assign new state
-    #             else:
-    #                 if memory_0.previous_bsm != memory_1.previous_bsm:
-    #                     desired_state = BSM._psi_minus
-    #                 else:
-    #                     desired_state = BSM._psi_plus
-    #
-    #                 _set_memory_with_fidelity([memory_0, memory_1], desired_state)
-
     def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.
 

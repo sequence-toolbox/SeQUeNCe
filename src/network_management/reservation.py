@@ -376,7 +376,8 @@ class ResourceReservationProtocol(StackProtocol):
             msg.qcaps.append(qcap)
             self._push(dst=responder, msg=msg)
         else:
-            msg = ResourceReservationMessage(RSVPMsgType.REJECT, self.name, reservation, path=[])
+            msg = ResourceReservationMessage(RSVPMsgType.REJECT, self.name,
+                                             reservation, path=[])
             self._pop(msg=msg)
 
     def pop(self, src: str, msg: "ResourceReservationMessage"):
@@ -500,7 +501,8 @@ class ResourceReservationProtocol(StackProtocol):
             if index == 0:
                 condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
             else:
-                condition_args = {"memory_indices": memory_indices[reservation.memory_size:]}
+                condition_args = {"memory_indices":
+                                      memory_indices[reservation.memory_size:]}
 
             action_args = {"mid": self.own.map_to_middle_node[path[index + 1]],
                            "path": path, "index": index, "name": self.own.name,
@@ -510,7 +512,8 @@ class ResourceReservationProtocol(StackProtocol):
 
         # create rules for entanglement purification
         if index > 0:
-            condition_args = {"memory_indices": memory_indices[:reservation.memory_size],
+            condition_args = {"memory_indices":
+                                  memory_indices[:reservation.memory_size],
                               "reservation": reservation}
             action_args = {}
             rule = Rule(10, ep_rule_action1, ep_rule_condition1, action_args, condition_args)

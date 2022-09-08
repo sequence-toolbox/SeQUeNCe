@@ -52,6 +52,7 @@ class PongProtocol(Protocol):
 
 if __name__ == "__main__":
     tl = Timeline(1e12)
+    tl.show_progress = False
 
     node1 = Node("node1", tl)
     node2 = Node("node2", tl)
@@ -72,4 +73,3 @@ if __name__ == "__main__":
 
     tl.init()
     tl.run()
-

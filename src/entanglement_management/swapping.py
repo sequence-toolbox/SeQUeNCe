@@ -123,10 +123,11 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.right_protocol_name = None
 
     def is_ready(self) -> bool:
-        return self.left_protocol_name is not None and self.right_protocol_name is not None
+        return self.left_protocol_name is not None \
+               and self.right_protocol_name is not None
 
     def set_others(self, protocol: str, node: str, memories: List[str]) -> None:
-        """Method to set one other entanglement protocol instance.
+        """Method to set other entanglement protocol instance.
 
         Args:
             protocol (str): other protocol name.
@@ -178,15 +179,20 @@ class EntanglementSwappingA(EntanglementProtocol):
                                                 remote_memo=self.right_memo.entangled_memory["memo_id"],
                                                 expire_time=expire_time,
                                                 meas_res=[])
-            msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, self.right_protocol_name,
+            msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,
+                                                self.right_protocol_name,
                                                 fidelity=fidelity,
                                                 remote_node=self.left_memo.entangled_memory["node_id"],
                                                 remote_memo=self.left_memo.entangled_memory["memo_id"],
                                                 expire_time=expire_time,
                                                 meas_res=meas_res)
         else:
-            msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, self.left_protocol_name, fidelity=0)
-            msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, self.right_protocol_name, fidelity=0)
+            msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,
+                                                self.left_protocol_name,
+                                                fidelity=0)
+            msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,
+                                                self.right_protocol_name,
+                                                fidelity=0)
 
         self.own.send_message(self.left_node, msg_l)
         self.own.send_message(self.right_node, msg_r)
