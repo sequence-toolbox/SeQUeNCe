@@ -66,7 +66,7 @@ def test_generation_receive_message():
 
     # negotiate message
     msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG", emit_time=0)
-    assert eg.received_message("e2", msg)
+    eg.received_message("e2", msg)
     assert eg.expected_time == 1
     assert len(tl.events.data) == 2  # two excites, flip state, end time
 

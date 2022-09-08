@@ -36,7 +36,7 @@ class Mirror(Entity):
     def init(self):
         pass
 
-    def get(self, photon: Photon) -> None:
+    def get(self, photon, **kwargs) -> None:
         """Method to get a photon to reflect.
 
         Will send to destination node specified by destination attribute through owner node.

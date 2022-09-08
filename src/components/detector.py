@@ -125,12 +125,14 @@ class QSDetector(Entity, ABC):
     Attributes:
         name (str): label for QSDetector instance.
         timeline (Timeline): timeline for simulation.
+        componennts (List[entity]): list of all aggregated hardware components.
         detectors (List[Detector]): list of attached detectors.
         trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
         Entity.__init__(self, name, timeline)
+        self.components = []
         self.detectors = []
         self.trigger_times = []
 
@@ -185,6 +187,8 @@ class QSDetectorPolarization(QSDetector):
         self.splitter.add_receiver(self.detectors[0])
         self.splitter.add_receiver(self.detectors[1])
         self.trigger_times = [[], []]
+
+        self.components = [self.splitter] + self.detectors
 
     def init(self) -> None:
         """Implementation of Entity interface (see base class)."""
