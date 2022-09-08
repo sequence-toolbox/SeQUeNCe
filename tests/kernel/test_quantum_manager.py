@@ -33,7 +33,7 @@ def test_qmanager_new():
 
     test_state = [complex(0), complex(1)]
     key = qm.new(test_state)
-    assert (qm.get(key).state == np.array(test_state)).all
+    assert np.all(qm.get(key).state == np.array(test_state))
 
 
 def test_qmanager_set():
@@ -41,14 +41,14 @@ def test_qmanager_set():
     key = qm.new()
     new_state = [complex(0), complex(1)]
     qm.set([key], new_state)
-    assert (qm.get(key) == np.array(new_state)).all
+    assert np.all(qm.get(key).state == np.array(new_state))
 
     key2 = qm.new()
     keys = [key, key2]
     new_state = [complex(1), complex(0), complex(0), complex(0)]
     qm.set(keys, new_state)
-    assert (qm.get(key).state == qm.get(key2).state).all
-    assert (qm.get(key).state == np.array(new_state)).all
+    assert np.all(qm.get(key).state == qm.get(key2).state)
+    assert np.all(qm.get(key).state == np.array(new_state))
 
 
 def test_qmanager_remove():
@@ -65,20 +65,20 @@ def test_qmanager_circuit():
     key = qm.new()
     circuit = DumbCircuit(1, np.array([[0, 1], [1, 0]]))
     qm.run_circuit(circuit, [key])
-    assert (qm.get(key).state == np.array([0, 1])).all
+    assert np.all(qm.get(key).state == np.array([0, 1]))
 
     # two states
     key1 = qm.new()
     key2 = qm.new()
     circuit = DumbCircuit(2, np.identity(4))
     qm.run_circuit(circuit, [key1, key2])
-    assert (qm.get(key1).state == qm.get(key2).state).all
-    assert (qm.get(key1).state == np.array([1, 0, 0, 0])).all
+    assert np.all(qm.get(key1).state == qm.get(key2).state)
+    assert np.all(qm.get(key1).state == np.array([1, 0, 0, 0]))
 
     # two states, wrong order
     qm.run_circuit(circuit, [key2, key1])
-    assert (qm.get(key1).state == qm.get(key2).state).all
-    assert (qm.get(key1).state == np.array([1, 0, 0, 0])).all
+    assert np.all(qm.get(key1).state == qm.get(key2).state)
+    assert np.all(qm.get(key1).state == np.array([1, 0, 0, 0]))
     assert qm.get(key1).keys == [key2, key1]
 
     # single state in multi-qubit system
@@ -88,7 +88,7 @@ def test_qmanager_circuit():
     qm.run_circuit(circuit1, [key1, key2])
     circuit2 = DumbCircuit(1, np.array([[0, 1], [1, 0]]))
     qm.run_circuit(circuit2, [key1])
-    assert (qm.get(key1).state == np.array([0, 0, 1, 0])).all
+    assert np.all(qm.get(key1).state == np.array([0, 0, 1, 0]))
     assert (qm.get(key1) is qm.get(key2))
 
     # extension of circuit
@@ -216,9 +216,9 @@ def test_qmanager__measure():
     
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
     for key in meas_0:
-        assert (qm.get(key).state == np.array([1, 0])).all
+        assert np.all(qm.get(key).state == np.array([1, 0]))
     for key in meas_1:
-        assert (qm.get(key).state == np.array([0, 1])).all
+        assert np.all(qm.get(key).state == np.array([0, 1]))
 
     # single state in multi-qubit system
     meas_0 = []
@@ -238,9 +238,9 @@ def test_qmanager__measure():
 
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
     for key in meas_0:
-        assert (qm.get(key).state == np.array([1, 0])).all
+        assert np.all(qm.get(key).state == np.array([1, 0]))
     for key in meas_1:
-        assert (qm.get(key).state == np.array([0, 1])).all
+        assert np.all(qm.get(key).state == np.array([0, 1]))
 
     # multiple state
     meas_0 = []
@@ -261,6 +261,7 @@ def test_qmanager__measure():
         assert res[key2] == 0
 
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
+
 
 def test_qmanager__measure_density():
     NUM_TESTS = 1000
@@ -283,9 +284,9 @@ def test_qmanager__measure_density():
     
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
     for key in meas_0:
-        assert (qm.get(key).state == np.array([[1, 0], [0, 0]])).all
+        assert np.all(qm.get(key).state == np.array([[1, 0], [0, 0]]))
     for key in meas_1:
-        assert (qm.get(key).state == np.array([[0, 0], [0, 1]])).all
+        assert np.all(qm.get(key).state == np.array([[0, 0], [0, 1]]))
 
     # mixed state
     meas_0 = []

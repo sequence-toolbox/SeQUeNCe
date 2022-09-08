@@ -3,46 +3,59 @@ from sequence.topology.node import Node, BSMNode
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.entanglement_management.generation import EntanglementGenerationA
-from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
-from sequence.message import Message
 
 
-class SimpleManager():
-    def __init__(self):
+class SimpleManager:
+    def __init__(self, own, memo_name):
+        self.own = own
+        self.memo_name = memo_name
         self.raw_counter = 0
         self.ent_counter = 0
 
     def update(self, protocol, memory, state):
         if state == 'RAW':
             self.raw_counter += 1
+            memory.reset()
         else:
             self.ent_counter += 1
+
+    def create_protocol(self, middle: str, other: str):
+        self.own.protocols = [EntanglementGenerationA(self.own, '%s.eg' % self.own.name, middle, other,
+                                                      self.own.components[self.memo_name])]
 
 
 class EntangleGenNode(Node):
     def __init__(self, name: str, tl: Timeline):
         super().__init__(name, tl)
-        self.memory = Memory('%s.memo'%name, tl, 0.9, 2000, 1, -1, 500)
-        self.memory.owner = self
-        self.resource_manager = SimpleManager()
-        self.protocols = []
+
+        memo_name = '%s.memo' % name
+        memory = Memory(memo_name, tl, 0.9, 2000, 1, -1, 500)
+        memory.add_receiver(self)
+        self.add_component(memory)
+
+        self.resource_manager = SimpleManager(self, memo_name)
+
+    def init(self):
+        memory = self.get_components_by_type("Memory")[0]
+        memory.reset()
 
     def receive_message(self, src: str, msg: "Message") -> None:
         self.protocols[0].received_message(src, msg)
 
-    def create_protocol(self, middle: str, other: str):
-        self.protocols = [EntanglementGenerationA(self, '%s.eg'%self.name, middle, other, self.memory)]
+    def get(self, photon, **kwargs):
+        self.send_qubit(kwargs['dst'], photon)
 
 
 def pair_protocol(node1: Node, node2: Node):
     p1 = node1.protocols[0]
     p2 = node2.protocols[0]
-    p1.set_others(p2.name, node2.name, [node2.memory.name])
-    p2.set_others(p1.name, node1.name, [node1.memory.name])
+    node1_memo_name = node1.get_components_by_type("Memory")[0].name
+    node2_memo_name = node2.get_components_by_type("Memory")[0].name
+    p1.set_others(p2.name, node2.name, [node2_memo_name])
+    p2.set_others(p1.name, node1.name, [node1_memo_name])
 
 
 tl = Timeline()
-tl.show_progress = False
 
 node1 = EntangleGenNode('node1', tl)
 node2 = EntangleGenNode('node2', tl)
@@ -51,7 +64,8 @@ node1.set_seed(0)
 node2.set_seed(1)
 bsm_node.set_seed(2)
 
-bsm_node.bsm.update_detectors_params('efficiency', 1)
+bsm = bsm_node.get_components_by_type("SingleAtomBSM")[0]
+bsm.update_detectors_params('efficiency', 1)
 
 qc1 = QuantumChannel('qc1', tl, attenuation=0, distance=1000)
 qc2 = QuantumChannel('qc2', tl, attenuation=0, distance=1000)
@@ -69,8 +83,8 @@ for i in range(3):
 tl.init()
 for i in range(1000):
     tl.time = tl.now() + 1e11
-    node1.create_protocol('bsm_node', 'node2')
-    node2.create_protocol('bsm_node', 'node1')
+    node1.resource_manager.create_protocol('bsm_node', 'node2')
+    node2.resource_manager.create_protocol('bsm_node', 'node1')
     pair_protocol(node1, node2)
 
     node1.memory.reset()
@@ -80,4 +94,5 @@ for i in range(1000):
     node2.protocols[0].start()
     tl.run()
 
+print("node1 entangled memories : available memories")
 print(node1.resource_manager.ent_counter, ':', node1.resource_manager.raw_counter)

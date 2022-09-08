@@ -7,6 +7,10 @@ Also included in this module are a function to pair protocol instances (required
 
 import math
 from enum import Enum, auto
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..topology.node import QKDNode
 
 import numpy
 
@@ -52,14 +56,14 @@ class BB84Message(Message):
         frequency (float): frequency for qubit generation (if `msg_type == BEGIN_PHOTON_PULSE`).
         light_time (float): lenght of time to send qubits (if `msg_type == BEGIN_PHOTON_PULSE`).
         start_time (int): simulation start time of qubit pulse (if `msg_type == BEGIN_PHOTON_PULSE`).
-        wavelenght (float): wavelength (in nm) of photons (if `msg_type == BEGIN_PHOTON_PULSE`).
+        wavelength (float): wavelength (in nm) of photons (if `msg_type == BEGIN_PHOTON_PULSE`).
         bases (List[int]): list of measurement bases (if `msg_type == BASIS_LIST`).
         indices (List[int]): list of indices for matching bases (if `msg_type == MATCHING_INDICES`).
     """
 
     def __init__(self, msg_type: BB84MsgType, receiver: str, **kwargs):
         Message.__init__(self, msg_type, receiver)
-        self.owner_type = BB84
+        self.protocol_type = BB84
         if self.msg_type is BB84MsgType.BEGIN_PHOTON_PULSE:
             self.frequency = kwargs["frequency"]
             self.light_time = kwargs["light_time"]
@@ -94,25 +98,29 @@ class BB84(StackProtocol):
         key (int): generated key as an integer.
         key_bits (List[int]): generated key as a list of 0/1 bits.
         another (BB84): other BB84 protocol instance (on opposite node).
-        key_lenghts (List[int]): list of desired key lengths.
+        key_lengths (List[int]): list of desired key lengths.
         self.keys_left_list (List[int]): list of desired number of keys.
         self.end_run_times (List[int]): simulation time for end of each request.
     """
 
-    def __init__(self, own: "QKDNode", name: str, role=-1):
+    def __init__(self, own: "QKDNode", name: str, lightsource: str, qsdetector: str, role=-1):
         """Constructor for BB84 class.
 
         Args:
             own (QKDNode): node hosting protocol instance.
             name (str): name of protocol instance.
+            lightsource (str): name of lightsource for QKD
+            qsdetector (str): name of QSDetector for QKD
 
         Keyword Args:
             role (int): 0/1 role defining Alice and Bob protocols (default -1).
         """
 
-        if own == None: # used only for unit test purposes
+        if own is None:  # used only for unit test purposes
             return
         super().__init__(own, name)
+        self.ls_name = lightsource
+        self.qsd_name = qsdetector
         self.role = role
 
         self.working = False
@@ -198,16 +206,17 @@ class BB84(StackProtocol):
             self.working = True
             self.another.working = True
 
-            self.ls_freq = self.own.lightsource.frequency
+            ls = self.own.components[self.ls_name]
+            self.ls_freq = ls.frequency
 
             # calculate light time based on key length
-            self.light_time = self.key_lengths[0] / (self.ls_freq * self.own.lightsource.mean_photon_num)
+            self.light_time = self.key_lengths[0] / (self.ls_freq * ls.mean_photon_num)
 
             # send message that photon pulse is beginning, then send bits
             self.start_time = int(self.own.timeline.now()) + round(self.own.cchannels[self.another.own.name].delay)
             message = BB84Message(BB84MsgType.BEGIN_PHOTON_PULSE, self.another.name,
                                   frequency=self.ls_freq, light_time=self.light_time,
-                                  start_time=self.start_time, wavelength=self.own.lightsource.wavelength)
+                                  start_time=self.start_time, wavelength=ls.wavelength)
             self.own.send_message(self.another.own.name, message)
 
             process = Process(self, "begin_photon_pulse", [])
@@ -225,6 +234,7 @@ class BB84(StackProtocol):
         Also records bits sent for future processing.
 
         Side Effects:
+            Will set destination of photons for local node.
             Will invoke emit method of node lightsource.
             Will schedule another `begin_photon_pulse` event after the emit period.
         """
@@ -232,19 +242,21 @@ class BB84(StackProtocol):
         log.logger.debug(self.name + " starting photon pulse")
         
         if self.working and self.own.timeline.now() < self.end_run_times[0]:
+            self.own.destination = self.another.own.name
+
             # generate basis/bit list
             num_pulses = round(self.light_time * self.ls_freq)
             basis_list = numpy.random.choice([0, 1], num_pulses)
             bit_list = numpy.random.choice([0, 1], num_pulses)
 
             # control hardware
-            lightsource = self.own.lightsource
+            lightsource = self.own.components[self.ls_name]
             encoding_type = lightsource.encoding_type
             state_list = []
             for i, bit in enumerate(bit_list):
                 state = (encoding_type["bases"][basis_list[i]])[bit]
                 state_list.append(state)
-            lightsource.emit(state_list, self.another.own.name)
+            lightsource.emit(state_list)
 
             self.basis_lists.append(basis_list)
             self.bit_lists.append(bit_list)
@@ -254,6 +266,7 @@ class BB84(StackProtocol):
             process = Process(self, "begin_photon_pulse", [])
             event = Event(self.start_time + int(round(self.light_time * 1e12)), process)
             self.own.timeline.schedule(event)
+
         else:
             self.working = False
             self.another.working = False
@@ -278,7 +291,7 @@ class BB84(StackProtocol):
         num_pulses = int(self.light_time * self.ls_freq)
         basis_list = numpy.random.choice([0, 1], num_pulses)
         self.basis_lists.append(basis_list)
-        self.own.qsdetector.set_basis_list(basis_list, self.start_time, self.ls_freq)
+        self.own.components[self.qsd_name].set_basis_list(basis_list, self.start_time, self.ls_freq)
 
     def end_photon_pulse(self) -> None:
         """Method to process sent qubits."""
@@ -287,7 +300,7 @@ class BB84(StackProtocol):
 
         if self.working and self.own.timeline.now() < self.end_run_times[0]:
             # get bits
-            self.bit_lists.append(self.own.get_bits(self.light_time, self.start_time, self.ls_freq))
+            self.bit_lists.append(self.own.get_bits(self.light_time, self.start_time, self.ls_freq, self.qsd_name))
             self.start_time = self.own.timeline.now()
             # set bases for measurement
             self.set_measure_basis_list()
@@ -374,7 +387,7 @@ class BB84(StackProtocol):
                         self.set_key()  # convert from binary list to int
                         self._pop(info=self.key)
                         self.another.set_key()
-                        self.another._pop(info=self.another.key)
+                        self.another._pop(info=self.another.key)  # TODO: why access another node?
 
                         # for metrics
                         if self.latency == 0:
@@ -404,5 +417,3 @@ class BB84(StackProtocol):
         key_bits = self.key_bits[0:self.key_lengths[0]]
         del self.key_bits[0:self.key_lengths[0]]
         self.key = int("".join(str(x) for x in key_bits), 2)  # convert from binary list to int
-
-

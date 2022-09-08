@@ -1,7 +1,10 @@
-from typing import List
+import numpy as np
+
 from sequence.components.optical_channel import *
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
+
+SEED = 0
 
 
 def test_ClassicalChannel_set_ends():
@@ -32,9 +35,8 @@ def test_ClassicalChannel_transmit():
     tl = Timeline()
     cc = ClassicalChannel("cc", tl, 1e3)
 
-    n1, n2 = [FakeNode(f'n{i}', tl) for i in range(1, 3)]
-    for node in [n1, n2]:
-        node.set_seed(0)
+    n1 = FakeNode('n1', tl)
+    n2 = FakeNode('n2', tl)
     cc.set_ends(n1, n2.name)
 
     args = [['1-1', n1, 5], ['1-2', n1, 5]]
@@ -60,9 +62,8 @@ def test_QuantumChannel_init():
 def test_QuantumChannel_set_ends():
     tl = Timeline()
     qc = QuantumChannel("qc", tl, attenuation=0.0002, distance=1e4)
-    end1, end2 = [Node(f'n{i}', tl) for i in range(1, 3)]
-    for node in [end1, end2]:
-        node.set_seed(0)
+    end1 = Node("end1", tl)
+    end2 = Node("end2", tl)
     assert len(end1.qchannels) == len(end2.qchannels) == 0
     qc.set_ends(end1, end2.name)
 
@@ -80,9 +81,13 @@ def test_QuantumChannel_transmit():
         def __init__(self, name, tl):
             Node.__init__(self, name, tl)
             self.log = []
+            self.generator = np.random.default_rng(SEED)
 
         def receive_qubit(self, src, photon):
             self.log.append((src, self.timeline.now(), photon.name))
+
+        def get_generator(self):
+            return self.generator
 
     tl = Timeline()
     qc = QuantumChannel("qc", tl, attenuation=0.0002, distance=1e4)
@@ -94,7 +99,7 @@ def test_QuantumChannel_transmit():
     tl.init()
 
     for i in range(1000):
-        photon = Photon(str(i))
+        photon = Photon(str(i), tl)
         qc.transmit(photon, sender)
         tl.time = tl.time + 1
 

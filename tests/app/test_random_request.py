@@ -2,6 +2,7 @@ from sequence.app.random_request import RandomRequestApp
 from sequence.kernel.timeline import Timeline
 from sequence.network_management.reservation import Reservation
 from sequence.topology.node import QuantumRouter
+from sequence.components.memory import MemoryArray
 
 
 class FakeNode(QuantumRouter):
@@ -12,6 +13,13 @@ class FakeNode(QuantumRouter):
     def reserve_net_resource(self, responder: str, start_time: int, end_time: int, memory_size: int,
                              target_fidelity: float) -> None:
         self.reserve_log.append(responder)
+
+
+def get_memo_name(node):
+    for name in node.components.keys():
+        if type(node.components[name]) is MemoryArray:
+            return name
+    raise Exception("no memory array on node {}".format(node.name))
 
 
 def test_RandomRequestApp_update_last_rsvp_metrics():
@@ -98,33 +106,36 @@ def test_RandomRequestApp_get_memory():
 
     tl.run()
 
-    node.memory_array[0].entangled_memory["node_id"] = "n2"
-    node.memory_array[0].entangled_memory["memo_id"] = "1"
-    node.memory_array[0].fidelity = 0.9
-    node.resource_manager.update(None, node.memory_array[0], "ENTANGLED")
+    memo_name = get_memo_name(node)
+    memo_arr = node.components[memo_name]
+
+    memo_arr[0].entangled_memory["node_id"] = "n2"
+    memo_arr[0].entangled_memory["memo_id"] = "1"
+    memo_arr[0].fidelity = 0.9
+    node.resource_manager.update(None, memo_arr[0], "ENTANGLED")
     app.get_memory(node.resource_manager.memory_manager[0])
     assert node.resource_manager.memory_manager[0].state == "RAW"
-    assert node.memory_array[0].entangled_memory["node_id"] == None
-    assert node.memory_array[0].fidelity == 0
+    assert memo_arr[0].entangled_memory["node_id"] is None
+    assert memo_arr[0].fidelity == 0
 
-    node.memory_array[1].entangled_memory["node_id"] = "n3"
-    node.memory_array[1].entangled_memory["memo_id"] = "1"
-    node.memory_array[1].fidelity = 0.9
-    node.resource_manager.update(None, node.memory_array[1], "ENTANGLED")
+    memo_arr[1].entangled_memory["node_id"] = "n3"
+    memo_arr[1].entangled_memory["memo_id"] = "1"
+    memo_arr[1].fidelity = 0.9
+    node.resource_manager.update(None, memo_arr[1], "ENTANGLED")
     app.get_memory(node.resource_manager.memory_manager[1])
     assert node.resource_manager.memory_manager[1].state == "ENTANGLED"
 
-    node.memory_array[2].entangled_memory["node_id"] = "n2"
-    node.memory_array[2].entangled_memory["memo_id"] = "1"
-    node.memory_array[2].fidelity = 0.84
-    node.resource_manager.update(None, node.memory_array[2], "ENTANGLED")
+    memo_arr[2].entangled_memory["node_id"] = "n2"
+    memo_arr[2].entangled_memory["memo_id"] = "1"
+    memo_arr[2].fidelity = 0.84
+    node.resource_manager.update(None, memo_arr[2], "ENTANGLED")
     app.get_memory(node.resource_manager.memory_manager[2])
     assert node.resource_manager.memory_manager[2].state == "ENTANGLED"
 
-    node.memory_array[3].entangled_memory["node_id"] = "n2"
-    node.memory_array[3].entangled_memory["memo_id"] = "1"
-    node.memory_array[3].fidelity = 0.9
-    node.resource_manager.update(None, node.memory_array[3], "ENTANGLED")
+    memo_arr[3].entangled_memory["node_id"] = "n2"
+    memo_arr[3].entangled_memory["memo_id"] = "1"
+    memo_arr[3].fidelity = 0.9
+    node.resource_manager.update(None, memo_arr[3], "ENTANGLED")
     app.get_memory(node.resource_manager.memory_manager[3])
     assert node.resource_manager.memory_manager[3].state == "ENTANGLED"
 

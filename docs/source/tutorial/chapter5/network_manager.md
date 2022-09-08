@@ -9,7 +9,7 @@ To achieve this, we will be using an example json file to build our network and 
 
 ![topo](figures/star_network.png)
 
-This example is similar to the example jupyter notebook script `random_request_network.ipynb`, without applications and with slightly different paramters. The notebook can be viewed in the `example` directory of the SeQUeNCe download, including already written code and interactive input.
+This example is similar to the example jupyter notebook script `random_request_network.ipynb`, without applications and with slightly different parameters. The notebook can be viewed in the `example` directory of the SeQUeNCe download, including already written code and interactive input.
 
 ### Background
 
@@ -34,8 +34,8 @@ def NewNetworkManager(owner: "QuantumRouter") -> "NetworkManager":
 
 ### Step 1: Create the Network Configuration File
 
-For this example, we will be using a json file to specify the nodes and connectivity of the network. The json file
-should be structured as a dictionary with the following keys:
+For this example, we will be using a json file to specify the nodes and connectivity of the network.
+The json file should be structured as a dictionary with the following keys:
 
 - `is_parallel`, denoting if it's a parallel or sequential simulation
 - `stop_time`, the stop time of simulation
@@ -54,51 +54,54 @@ For this simulation, we use sequential simulation to simulate 2 seconds of the n
 "stop_time": 2000000000000
 ```
 
-Then, we make the `nodes` entry. All fields of the list will have the `name` field required by the node constructor and
-a specification of the node type, along with any more arguments (optional or not) specified by the specific node type.
-We will be using the `QuantumRouter` node type for this tutorial, which already includes all of the necessary hardware
-for entanglement distribution as well as all necessary modules (including network management). The `seed` attribute
-denotes the random seed used for the random number generator on the node, which could guarantee the reproducibility of
-the simulation. The `memo_size` define the size of memory array on the quantum router.
+Next, we will make the `nodes` entry.
+All fields of the list will have the `name` field required by the node constructor and a specification of the node type,
+along with any more arguments (optional or not) specified by the specific node type.
+We will be using the `QuantumRouter` node type for this tutorial,
+which already includes all of the necessary hardware for entanglement distribution as well as all necessary modules (including network management).
+The `seed` attribute denotes the random seed used for the random number generator on the node,
+which can guarantee the reproducibility of the simulation.
+The `memo_size` attribute defines the size of the memory array on the quantum router.
 
 ```json
 "nodes": [
-{
-"name": "center",
-"type": "QuantumRouter",
-"seed": 0,
-"memo_size": 50
-},
-{
-"name": "end1",
-"type": "QuantumRouter",
-"memo_size": 50,
-"seed": 1
-},
-{
-"name": "end2",
-"type": "QuantumRouter",
-"memo_size": 50,
-"seed": 2
-},
-{
-"name": "end3",
-"type": "QuantumRouter",
-"memo_size": 50,
-"seed": 3
-},
-{
-"name": "end4",
-"type": "QuantumRouter",
-"memo_size": 50,
-"seed": 4
-}
+  {
+    "name": "center",
+    "type": "QuantumRouter",
+    "seed": 0,
+    "memo_size": 50
+  },
+  {
+    "name": "end1",
+    "type": "QuantumRouter",
+    "seed": 1
+    "memo_size": 50,
+  },
+  {
+    "name": "end2",
+    "type": "QuantumRouter",
+    "seed": 2
+    "memo_size": 50,
+  },
+  {
+    "name": "end3",
+    "type": "QuantumRouter",
+    "seed": 3
+    "memo_size": 50,
+  },
+  {
+    "name": "end4",
+    "type": "QuantumRouter",
+    "seed": 4
+    "memo_size": 50,
+  }
 ]
 ```
 
-The `qconnections` entry should have multiple entries specifying the name of the two connected nodes, the attenuation
-and length of the fiber. The type of quantum connection should be specified by the attribute `type` . We predefined the
-type `meet_in_the_middle`  that automatically create a BSM node in the middle of node1 and node2.
+The `qconnections` entry should have multiple entries specifying the name of the two connected nodes and at least the attenuation and length of the fiber
+(plus any additional keyword arguments).
+The type of quantum connection should be specified by the attribute `type`.
+Here, we use the predefined type `meet_in_the_middle`  that automatically generates a BSM node in the middle of node1 and node2.
 
 ```json
 "qconnections": [
@@ -133,9 +136,8 @@ type `meet_in_the_middle`  that automatically create a BSM node in the middle of
 ]
 ```
 
-Finally, for the classical channels, we will be using the classical connections to create two classical
-channels (`node1` -> `node2` and `node2` -> `node1`). Two channels have the same delay specified by the
-attribute `delay`.
+Finally, for the classical channels, we will specify two-way `cconnections`.
+The node endpoints are specified by name as `node1` and `node2`, and each communication direction will have the same delay `delay`.
 
 ```json
 "cconnections": [
@@ -194,10 +196,11 @@ attribute `delay`.
 
 ### Step 2: Build the Network
 
-Now, we can move to our script and begin building the experiment from our json file. The file can be loaded with the
-construction function of `RouterNetTopo` . Note that we have the json file saved as `star_network.json` here.
-The `RouterNetTopo` will also create a timeline with 2 seconds of simulation time. We could use
-function `get_timeline()` to get the timeline for the simulation.
+Now, we can move to our script and begin building the experiment from our json file.
+The json file can be loaded with the construction function of `RouterNetTopo`.
+Note that we have the json file saved as `star_network.json` here.
+The `RouterNetTopo` will also create a timeline with 2 seconds of simulation time.
+We use the function `get_timeline()` to get the timeline for the simulation.
 
 ```python
 from sequence.topology.router_net_topo import RouterNetTopo
@@ -213,13 +216,13 @@ To edit network parameters quickly, we can define a custom function to interact 
 
 We will edit a few hardware objects by accessing the hardware fields of network nodes. To access all nodes of a specific type in the network, we can use the `topology.get_nodes_by_type` method. This is useful for editing hardware objects that may only be found on one node type, e.g. memories only found on `QuantumRouter` nodes.
 
-We may also wish to edit parameters of our entanglement protocols. Since these are created by a node's resource manager,
-we will need to edit the appropriate fields of the resource manager on each node. This is achieved in much the same way
-as hardware elements.
+We may also wish to edit parameters of our entanglement protocols.
+Since these are created by a node's resource manager,
+we will need to edit the appropriate fields of the resource manager on each node.
+This is achieved in much the same way as hardware elements.
 
-For quantum and classical connections, the `get_qchannels` and `get_cchannels`  functions of the topology will return a
-list of quantum channels and classical channels respectively. These provide an iterable list of all connections in the
-network that may be edited directly.
+For quantum and classical connections, the `get_qchannels` and `get_cchannels`  functions of the topology will return a  list of quantum channels and classical channels, respectively.
+These provide an iterable list of all connections in the network that may be edited directly.
 
 ```python
 def set_parameters(topology: RouterNetTopo):
@@ -229,20 +232,21 @@ def set_parameters(topology: RouterNetTopo):
     MEMO_EFFICIENCY = 1
     MEMO_FIDELITY = 0.9349367588934053
     for node in topology.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
-        node.memory_array.update_memory_params("frequency", MEMO_FREQ)
-        node.memory_array.update_memory_params("coherence_time", MEMO_EXPIRE)
-        node.memory_array.update_memory_params("efficiency", MEMO_EFFICIENCY)
-        node.memory_array.update_memory_params("raw_fidelity", MEMO_FIDELITY)
+        memory_array = node.get_components_by_type("MemoryArray")[0]
+        memory_array.update_memory_params("frequency", MEMO_FREQ)
+        memory_array.update_memory_params("coherence_time", MEMO_EXPIRE)
+        memory_array.update_memory_params("efficiency", MEMO_EFFICIENCY)
+        memory_array.update_memory_params("raw_fidelity", MEMO_FIDELITY)
 
     # set detector parameters
     DETECTOR_EFFICIENCY = 0.9
     DETECTOR_COUNT_RATE = 5e7
     DETECTOR_RESOLUTION = 100
     for node in topology.get_nodes_by_type(RouterNetTopo.BSM_NODE):
-        node.bsm.update_detectors_params("efficiency", DETECTOR_EFFICIENCY)
-        node.bsm.update_detectors_params("count_rate", DETECTOR_COUNT_RATE)
-        node.bsm.update_detectors_params("time_resolution", DETECTOR_RESOLUTION)
-        
+        bsm = node.get_components_by_type("SingleAtomBSM")[0]
+        bsm.update_detectors_params("efficiency", DETECTOR_EFFICIENCY)
+        bsm.update_detectors_params("count_rate", DETECTOR_COUNT_RATE)
+        bsm.update_detectors_params("time_resolution", DETECTOR_RESOLUTION)
     # set entanglement swapping parameters
     SWAP_SUCC_PROB = 0.90
     SWAP_DEGRADATION = 0.99
@@ -267,7 +271,7 @@ set_parameters(network_topo)
 ### Step 3: Making Requests
 
 With the network built, we are now ready to make requests of the network manager and start entanglement. The `request` method of the network manager can be used for this. When invoked, it will automatically start the reservation process and create rules as required (see the background section). The method has 5 arguments:
-- `responder`, a string name of the other node with whitch to generate entangled pairs
+- `responder`, a string name of the other node with which to generate entangled pairs
 - `start_time`, the simulation time (in **picoseconds**) at which entanglement should begin
 - `end_time`, the simulation time at which entanglement may end and reserved resources released
 - `memory_size`, the number of entangled memory pairs requested
@@ -277,16 +281,18 @@ We will make one request at one network node, asking for 25 memories to be entan
 
 ```python
 # the start and end nodes may be edited as desired 
+start_node_name = "end1"
+end_node_name = "end2"
 node1 = node2 = None
 
 for router in network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
-    if router.name == "end1":
-      	node1 = router
-    elif router.name == "end2":
+    if router.name == start_node_name:
+        node1 = router
+    elif router.name == end_node_name:
         node2 = router
 
 nm = node1.network_manager
-nm.request(node2.name, start_time=1e12, end_time=10e12, memory_size=25, target_fidelity=0.9)
+nm.request(start_node_name, start_time=1e12, end_time=10e12, memory_size=25, target_fidelity=0.9)
 
 tl.init()
 tl.run()

@@ -7,21 +7,21 @@ Also defined is a function to automatically construct a BSM of a specified type.
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List
 
+if TYPE_CHECKING:
+    from ..kernel.quantum_manager import QuantumManager
+    from ..kernel.quantum_state import State
+
 from numpy import outer, add, zeros, array_equal
 
 from .circuit import Circuit
 from .detector import Detector
 from .photon import Photon
-from .memory import Memory
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..kernel.quantum_manager import KET_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM
 from ..utils.encoding import *
 from ..utils import log
-
-if TYPE_CHECKING:
-    from ..kernel.quantum_manager import QuantumManager, State
 
 
 def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=[]):
@@ -41,8 +41,57 @@ def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=
         return TimeBinBSM(name, timeline, phase_error, detectors)
     elif encoding_type == "single_atom":
         return SingleAtomBSM(name, timeline, phase_error, detectors)
+    elif encoding_type == "absorptive":
+        return AbsorptiveBSM(name, timeline, phase_error, detectors)
     else:
         raise Exception("invalid encoding {} given for BSM {}".format(encoding_type, name))
+
+
+def _set_state_with_fidelity(keys: List[int], desired_state: List[complex], fidelity: float, rng, qm: "QuantumManager"):
+    possible_states = [BSM._phi_plus, BSM._phi_minus,
+                       BSM._psi_plus, BSM._psi_minus]
+    assert desired_state in possible_states
+
+    if qm.formalism == KET_STATE_FORMALISM:
+        probabilities = [(1 - fidelity) / 3] * 4
+        probabilities[possible_states.index(desired_state)] = fidelity
+        state_ind = rng.choice(4, p=probabilities)
+        qm.set(keys, possible_states[state_ind])
+
+    elif qm.formalism == DENSITY_MATRIX_FORMALISM:
+        multipliers = [(1 - fidelity) / 3] * 4
+        multipliers[possible_states.index(desired_state)] = fidelity
+        state = zeros((4, 4))
+        for mult, pure in zip(multipliers, possible_states):
+            state = add(state, mult * outer(pure, pure))
+        qm.set(keys, state)
+
+    else:
+        raise Exception("Invalid quantum manager with formalism {}".format(qm.formalism))
+
+
+def _set_pure_state(keys: List[int], ket_state: List[complex], qm: "QuantumManager"):
+    if qm.formalism == KET_STATE_FORMALISM:
+        qm.set(keys, ket_state)
+    elif qm.formalism == DENSITY_MATRIX_FORMALISM:
+        state = outer(ket_state, ket_state)
+        qm.set(keys, state)
+    else:
+        raise NotImplementedError("formalism of quantum state {} is not "
+                                  "implemented in the set_pure_quantum_state "
+                                  "function of bsm.py".format(qm.formalism))
+
+
+def _eq_psi_plus(state: "State", formalism: str):
+    if formalism == KET_STATE_FORMALISM:
+        return array_equal(state.state, BSM._psi_plus)
+    elif formalism == DENSITY_MATRIX_FORMALISM:
+        d_state = outer(BSM._phi_plus, BSM._psi_plus)
+        return array_equal(state.state, d_state)
+    else:
+        raise NotImplementedError("formalism of quantum state {} is not "
+                                  "implemented in the eq_phi_plus "
+                                  "function of bsm.py".format(formalism))
 
 
 class BSM(Entity):
@@ -61,7 +110,7 @@ class BSM(Entity):
     _psi_plus = [complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)]
     _psi_minus = [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]
 
-    def __init__(self, name, timeline, phase_error=0, detectors=[]):
+    def __init__(self, name, timeline, phase_error=0, detectors=None):
         """Constructor for base BSM object.
 
         Args:
@@ -72,18 +121,21 @@ class BSM(Entity):
         """
 
         super().__init__(name, timeline)
+        self.encoding = "None"
         self.phase_error = phase_error
         self.photons = []
         self.photon_arrival_time = -1
 
         self.detectors = []
-        for i, d in enumerate(detectors):
-            if d is not None:
-                detector = Detector("%s_%d" % (self.name, i), timeline, **d)
-                detector.attach(self)
-            else:
-                detector = None
-            self.detectors.append(detector)
+        if detectors is not None:
+            for i, d in enumerate(detectors):
+                if d is not None:
+                    detector = Detector("%s_%d" % (self.name, i), timeline, **d)
+                    detector.attach(self)
+                    detector.owner = self
+                else:
+                    detector = None
+                self.detectors.append(detector)
 
         # get resolution
         self.resolution = max(d.time_resolution for d in self.detectors)
@@ -96,16 +148,22 @@ class BSM(Entity):
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
-        for detector in self.detectors:
-            detector.owner = self.owner
+
+        self.photons = []
+        self.photon_arrival_time = -1
 
     @abstractmethod
-    def get(self, photon):
+    def get(self, photon, **kwargs):
         """Method to receive a photon for measurement (abstract).
 
         Arguments:
             photon (Photon): photon to measure.
         """
+
+        assert photon.encoding_type["name"] == self.encoding, \
+            "BSM expecting photon with encoding '{}' received photon with encoding '{}'".format(
+                self.encoding, photon.encoding_type["name"])
+
         # check if photon arrived later than current photon
         if self.photon_arrival_time < self.timeline.now():
             # clear photons
@@ -148,24 +206,24 @@ class PolarizationBSM(BSM):
         timeline (Timeline): timeline for simulation.
         phase_error (float): phase error applied to measurement.
         detectors (List[Detector]): list of attached photon detection devices.
-        resolution (int): maximum time resolution achievable with attached detectors.
     """
 
-    def __init__(self, name, timeline, phase_error=0, detectors=[]):
+    def __init__(self, name, timeline, phase_error=0, detectors=None):
         """Constructor for Polarization BSM.
 
         Args:
-            name (str): name of the beamsplitter instance.
+            name (str): name of the BSM instance.
             timeline (Timeline): simulation timeline.
             phase_error (float): phase error applied to polarization photons (default 0).
             detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 4) (default []).
         """
 
         super().__init__(name, timeline, phase_error, detectors)
+        self.encoding = "polarization"
         self.last_res = [-2 * self.resolution, -1]
         assert len(self.detectors) == 4
 
-    def get(self, photon):
+    def get(self, photon, **kwargs):
         """See base class.
 
         This method adds additional side effects not present in the base class.
@@ -184,8 +242,7 @@ class PolarizationBSM(BSM):
         self.photons[0].entangle(self.photons[1])
 
         # measure in bell basis
-        res = Photon.measure_multiple(self.bell_basis, self.photons,
-                                      self.get_generator())
+        res = Photon.measure_multiple(self.bell_basis, self.photons, self.get_generator())
 
         # check if we've measured as Phi+ or Phi-; these cannot be measured by the BSM
         if res == 0 or res == 1:
@@ -245,10 +302,9 @@ class TimeBinBSM(BSM):
         name (str): label for BSM instance
         timeline (Timeline): timeline for simulation
         detectors (List[Detector]): list of attached photon detection devices
-        resolution (int): maximum time resolution achievable with attached detectors  
     """
 
-    def __init__(self, name, timeline, phase_error=0, detectors=[]):
+    def __init__(self, name, timeline, phase_error=0, detectors=None):
         """Constructor for the time bin BSM class.
 
         Args:
@@ -259,11 +315,12 @@ class TimeBinBSM(BSM):
         """
 
         super().__init__(name, timeline, phase_error, detectors)
+        self.encoding = "time_bin"
         self.encoding_type = time_bin
         self.last_res = [-1, -1]
         assert len(self.detectors) == 2
 
-    def get(self, photon):
+    def get(self, photon, **kwargs):
         """See base class.
 
         This method adds additional side effects not present in the base class.
@@ -284,8 +341,7 @@ class TimeBinBSM(BSM):
         self.photons[0].entangle(self.photons[1])
 
         # measure in bell basis
-        res = Photon.measure_multiple(self.bell_basis, self.photons,
-                                      self.get_generator())
+        res = Photon.measure_multiple(self.bell_basis, self.photons, self.get_generator())
 
         # check if we've measured as Phi+ or Phi-; these cannot be measured by the BSM
         if res == 0 or res == 1:
@@ -350,56 +406,6 @@ class TimeBinBSM(BSM):
         self.last_res = [time, detector_num]
 
 
-def _set_state_with_fidelity(keys: List[int], desired_state: List[complex],
-                             fidelity: float, rng, qm: "QuantumManager"):
-    possible_states = [BSM._phi_plus, BSM._phi_minus,
-                       BSM._psi_plus, BSM._psi_minus]
-    assert desired_state in possible_states
-
-    if qm.formalism == KET_STATE_FORMALISM:
-        probabilities = [(1 - fidelity) / 3] * 4
-        probabilities[possible_states.index(desired_state)] = fidelity
-        state_ind = rng.choice(4, p=probabilities)
-        qm.set(keys, possible_states[state_ind])
-
-    elif qm.formalism == DENSITY_MATRIX_FORMALISM:
-        multipliers = [(1 - fidelity) / 3] * 4
-        multipliers[possible_states.index(desired_state)] = fidelity
-        state = zeros((4, 4))
-        for mult, pure in zip(multipliers, possible_states):
-            state = add(state, mult * outer(pure, pure))
-        qm.set(keys, state)
-
-    else:
-        raise Exception("Invalid quantum manager "
-                        "with formalism {}".format(qm.formalism))
-
-
-def _set_pure_state(keys: List[int], ket_state: List[complex],
-                    qm: "QuantumManager"):
-    if qm.formalism == KET_STATE_FORMALISM:
-        qm.set(keys, ket_state)
-    elif qm.formalism == DENSITY_MATRIX_FORMALISM:
-        state = outer(ket_state, ket_state)
-        qm.set(keys, state)
-    else:
-        raise NotImplementedError("formalism of quantum state {} is not "
-                                  "implemented in the set_pure_quantum_state "
-                                  "function of bsm.py".format(qm.formalism))
-
-
-def _eq_psi_plus(state: "State", formalism: str):
-    if formalism == KET_STATE_FORMALISM:
-        return array_equal(state.state, BSM._psi_plus)
-    elif formalism == DENSITY_MATRIX_FORMALISM:
-        d_state = outer(BSM._phi_plus, BSM._psi_plus)
-        return array_equal(state.state, d_state)
-    else:
-        raise NotImplementedError("formalism of quantum state {} is not "
-                                  "implemented in the eq_phi_plus "
-                                  "function of bsm.py".format(formalism))
-
-
 class SingleAtomBSM(BSM):
     """Class modeling a single atom BSM device.
 
@@ -414,7 +420,7 @@ class SingleAtomBSM(BSM):
     _meas_circuit = Circuit(1)
     _meas_circuit.measure(0)
 
-    def __init__(self, name, timeline, phase_error=0, detectors=[]):
+    def __init__(self, name, timeline, phase_error=0, detectors=None):
         """Constructor for the single atom BSM class.
 
         Args:
@@ -424,12 +430,13 @@ class SingleAtomBSM(BSM):
             detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2) (default []).
         """
 
-        if detectors == []:
+        if detectors is None:
             detectors = [{}, {}]
         super().__init__(name, timeline, phase_error, detectors)
+        self.encoding = "single_atom"
         assert len(self.detectors) == 2
 
-    def get(self, photon):
+    def get(self, photon, **kwargs):
         """See base class.
 
         This method adds additional side effects not present in the base class.
@@ -445,7 +452,7 @@ class SingleAtomBSM(BSM):
         if len(self.photons) == 2:
             qm = self.timeline.quantum_manager
             p0, p1 = self.photons
-            key0, key1 = p0.qstate_key, p1.qstate_key
+            key0, key1 = p0.quantum_state, p1.quantum_state
             keys = [key0, key1]
             state0, state1 = qm.get(key0), qm.get(key1)
             meas0, meas1 = [qm.run_circuit(self._meas_circuit, [key],
@@ -470,12 +477,12 @@ class SingleAtomBSM(BSM):
                     log.logger.info(self.name + " passed stage 2")
                     if _eq_psi_plus(state0, qm.formalism) ^ detector_num:
                         _set_state_with_fidelity(keys, BSM._psi_minus,
-                                                 p0.fidelity,
+                                                 p0.encoding_type["raw_fidelity"],
                                                  self.get_generator(),
                                                  qm)
                     else:
                         _set_state_with_fidelity(keys, BSM._psi_plus,
-                                                 p0.fidelity,
+                                                 p0.encoding_type["raw_fidelity"],
                                                  self.get_generator(),
                                                  qm)
                 else:
@@ -484,6 +491,7 @@ class SingleAtomBSM(BSM):
                 photon = p0 if meas0 else p1
                 if self.get_generator().random() > photon.loss:
                     self.detectors[detector_num].get()
+
             else:
                 if meas0 and self.get_generator().random() > p0.loss:
                     detector_num = self.get_generator().choice([0, 1])
@@ -509,7 +517,78 @@ class SingleAtomBSM(BSM):
         info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
         self.notify(info)
 
-    def change_timeline(self, timeline):
-        self.timeline = timeline
-        for d in self.detectors:
-            d.change_timeline(timeline)
+
+class AbsorptiveBSM(BSM):
+    """Class modeling a BSM device for absorptive quantum memories.
+
+    Measures photons and manages entanglement state of entangled photons.
+
+    Attributes:
+        name (str): label for BSM instance
+        timeline (Timeline): timeline for simulation
+        detectors (List[Detector]): list of attached photon detection devices (length 2).
+    """
+
+    def __init__(self, name, timeline, phase_error=0, detectors=None):
+        """Constructor for the AbsorptiveBSM class."""
+
+        if detectors is None:
+            detectors = [{}, {}]
+        super().__init__(name, timeline, phase_error, detectors)
+        self.encoding = "absorptive"
+        assert len(self.detectors) == 2
+
+    def get(self, photon, **kwargs):
+        """"""
+
+        super().get(photon)
+
+        # get other photon, set to measured state
+        key = photon.quantum_state
+        state = self.timeline.quantum_manager.get(key)
+        other_keys = state.keys[:]
+        other_keys.remove(key)
+        if photon.is_null:
+            self.timeline.quantum_manager.set(other_keys, [complex(1), complex(0)])
+        else:
+            detector_num = self.get_generator().choice([0, 1])
+            self.detectors[detector_num].get()
+            self.timeline.quantum_manager.set(other_keys, [complex(0), complex(1)])
+
+        if len(self.photons) == 2:
+            null_0 = self.photons[0].is_null
+            null_1 = self.photons[1].is_null
+            is_valid = null_0 ^ null_1
+
+            # check if we can set to entangled Psi+ state
+            if is_valid:
+                # get other photons to entangle
+                key_0 = self.photons[0].quantum_state
+                key_1 = self.photons[1].quantum_state
+                state_0 = self.timeline.quantum_manager.get(key_0)
+                state_1 = self.timeline.quantum_manager.get(key_1)
+                other_keys_0 = state_0.keys[:]
+                other_keys_1 = state_1.keys[:]
+                other_keys_0.remove(key_0)
+                other_keys_1.remove(key_1)
+                assert len(other_keys_0) == 1 and len(other_keys_1) == 1
+
+                # set to Psi+ state
+                combined = other_keys_0 + other_keys_1
+                self.timeline.quantum_manager.set(combined, BSM._psi_plus)
+
+    def trigger(self, detector: Detector, info: Dict[str, Any]):
+        """See base class.
+
+        This method adds additional side effects not present in the base class.
+
+        Side Effects:
+            May send a further message to any attached entities.
+        """
+
+        detector_num = self.detectors.index(detector)
+        time = info["time"]
+
+        res = detector_num
+        info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
+        self.notify(info)

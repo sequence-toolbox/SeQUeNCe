@@ -1,15 +1,24 @@
+import numpy as np
+
 from sequence.components.interferometer import Interferometer
 from sequence.components.photon import Photon
 from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import time_bin
-from numpy import random
 
 
 NUM_TRIALS = int(10e3)
+SEED = 0
 
 
 def create_intf(quantum_state):
-    class Receiver():
+    class Owner:
+        def __init__(self):
+            self.generator = np.random.default_rng(SEED)
+
+        def get_generator(self):
+            return self.generator
+
+    class Receiver:
         def __init__(self, name, timeline):
             self.name = name
             self.timeline = timeline
@@ -18,31 +27,24 @@ def create_intf(quantum_state):
         def get(self):
             self.log.append(self.timeline.now())
 
-    class FakeOwner():
-        def __init__(self):
-            self.generator = random.default_rng(0)
-
-        def get_generator(self):
-            return self.generator
-
     tl = Timeline()
     intfm = Interferometer("interferometer", tl, time_bin["bin_separation"])
-    owner = FakeOwner()
-    intfm.owner = owner
-
     d0 = Receiver("d0", tl)
     d1 = Receiver("d1", tl)
-    intfm.set_receiver(0, d0)
-    intfm.set_receiver(1, d1)
+    own = Owner()
+    intfm.add_receiver(d0)
+    intfm.add_receiver(d1)
+    intfm.owner = own
     tl.init()
+
     for i in range(NUM_TRIALS):
         tl.time = i * 1e6
-        photon = Photon(str(i), quantum_state=quantum_state)
+        photon = Photon(str(i), tl, encoding_type=time_bin, quantum_state=quantum_state)
         intfm.get(photon)
     tl.time = 0
     tl.run()
 
-    return intfm.receivers[0].log, intfm.receivers[1].log
+    return intfm._receivers[0].log, intfm._receivers[1].log
 
 
 def test_Interferometer_get():

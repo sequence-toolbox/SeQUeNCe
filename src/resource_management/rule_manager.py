@@ -7,13 +7,23 @@ This is achieved through rules (also defined in this module), which if met defin
 from typing import Callable, TYPE_CHECKING, List, Tuple, Any, Dict
 from ..utils import log
 if TYPE_CHECKING:
-    from ..entanglement_management.entanglement_protocol import EntanglementProtocol, Protocol
+    from ..entanglement_management.entanglement_protocol import EntanglementProtocol
     from .memory_manager import MemoryInfo, MemoryManager
     from .resource_manager import ResourceManager
     from ..network_management.reservation import Reservation
 
 
-class RuleManager():
+ActionFunc = Callable[[List["MemoryInfo"], Dict[str, Any]],
+                      Tuple["EntanglementProtocol", List["str"],
+                            List[Callable[["EntanglementProtocol"], bool]]]]
+
+ConditionFunc = Callable[["MemoryInfo", "MemoryManager", Dict[str, Any]],
+                         List["MemoryInfo"]],
+
+Arguments = Dict[str, Any]
+
+
+class RuleManager:
     """Class to manage and follow installed rules.
 
     The RuleManager checks available rules when the state of a memory is updated.
@@ -80,9 +90,7 @@ class RuleManager():
         return self.resource_manager.get_memory_manager()
 
     def send_request(self, protocol, req_dst, req_condition_func, req_args):
-        log.logger.info(
-            'Rule manager send request for protocol {} to {}'.format(
-                protocol.name, req_dst))
+        log.logger.info('Rule manager send request for protocol {} to {}'.format(protocol.name, req_dst))
         return self.resource_manager.send_request(protocol, req_dst,
                                                   req_condition_func, req_args)
 
@@ -93,17 +101,7 @@ class RuleManager():
         return self.rules[item]
 
 
-ActionFunc = Callable[[List["MemoryInfo"], Dict[str, Any]],
-                      Tuple["EntanglementProtocol", List["str"],
-                            List[Callable[["EntanglementProtocol"], bool]]]]
-
-ConditionFunc = Callable[["MemoryInfo", "MemoryManager", Dict[str, Any]],
-                         List["MemoryInfo"]],
-
-Arguments = Dict[str, Any]
-
-
-class Rule():
+class Rule:
     """Definition of rule for the rule manager.
 
     Rule objects are installed on and interacted with by the rule manager.
@@ -115,6 +113,7 @@ class Rule():
         condition (Callable[["MemoryInfo", "MemoryManager"], List["MemoryInfo"]]): condition required by rule.
         protocols (List[Protocols]): protocols created by rule.
         rule_manager (RuleManager): reference to rule manager object where rule is installed.
+        reservation (Reservation): associated reservation.
     """
 
     def __init__(self, priority: int, action: ActionFunc, condition: ConditionFunc,
@@ -155,9 +154,7 @@ class Rule():
         for info in memories_info:
             info.memory.detach(info.memory.memory_array)
             info.memory.attach(protocol)
-        for dst, req_func, args in zip(req_dsts,
-                                       req_condition_funcs,
-                                       req_args):
+        for dst, req_func, args in zip(req_dsts, req_condition_funcs, req_args):
             self.rule_manager.send_request(protocol, dst, req_func, args)
 
     def is_valid(self, memory_info: "MemoryInfo") -> List["MemoryInfo"]:

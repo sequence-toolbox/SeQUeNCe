@@ -4,6 +4,8 @@ This module defines the LightSource class to supply individual photons and the S
 These classes should be connected to one or two entities, respectively, that are capable of receiving photons.
 """
 
+from typing import List
+
 from numpy import multiply
 
 from .photon import Photon
@@ -11,6 +13,7 @@ from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..utils.encoding import polarization
+from ..utils import log
 
 
 class LightSource(Entity):
@@ -53,13 +56,6 @@ class LightSource(Entity):
         self.encoding_type = encoding_type
         self.phase_error = phase_error
         self.photon_counter = 0
-        # for BB84
-        # self.basis_lists = []
-        # self.basis_list = []
-        # self.bit_lists = []
-        # self.bit_list = []
-        # self.is_on = False
-        # self.pulse_id = 0
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
@@ -67,7 +63,7 @@ class LightSource(Entity):
         pass
 
     # for general use
-    def emit(self, state_list, dst: str) -> None:
+    def emit(self, state_list) -> None:
         """Method to emit photons.
 
         Will emit photons for a length of time determined by the `state_list` parameter.
@@ -75,8 +71,9 @@ class LightSource(Entity):
 
         Arguments:
             state_list (List[List[complex]]): list of complex coefficient arrays to send as photon-encoded qubits.
-            dst (str): name of destination node to receive photons.
         """
+
+        log.logger.info("{} emitting {} photons".format(self.name, len(state_list)))
 
         time = self.timeline.now()
         period = int(round(1e12 / self.frequency))
@@ -89,15 +86,16 @@ class LightSource(Entity):
 
             for _ in range(num_photons):
                 wavelength = self.linewidth * self.get_generator().standard_normal() + self.wavelength
-                new_photon = Photon(str(i),
+                new_photon = Photon(str(i), self.timeline,
                                     wavelength=wavelength,
                                     location=self.owner,
                                     encoding_type=self.encoding_type,
                                     quantum_state=state)
-                process = Process(self.owner, "send_qubit", [dst, new_photon])
+                process = Process(self._receivers[0], "get", [new_photon])
                 event = Event(time, process)
-                self.owner.timeline.schedule(event)
+                self.timeline.schedule(event)
                 self.photon_counter += 1
+
             time += period
 
 
@@ -111,22 +109,22 @@ class SPDCSource(LightSource):
         name (str): label for beamsplitter instance
         timeline (Timeline): timeline for simulation
         frequency (float): frequency (in Hz) of photon creation.
-        wavelengths (float): wavelengths (in nm) of emitted entangled photons.
-        linewidth (float): st. dev. in photon wavelength (in nm).
+        wavelengths (List[float]): wavelengths (in nm) of emitted entangled photons.
+        linewidth (float): st. dev. in photon wavelength (in nm) (currently unused).
         mean_photon_num (float): mean number of photons emitted each period.
         encoding_type (Dict): encoding scheme of emitted photons (as defined in the encoding module).
         phase_error (float): phase error applied to qubits.
-        photon_counter (int): counter for number of photons emitted.
-        direct_receiver (Entity): device to receive one entangled photon.
-        another_receiver (Entity): device to receive another entangled photon.
     """
 
-    def __init__(self, name, timeline, direct_receiver=None, another_receiver=None, wavelengths=[], frequency=8e7, wavelength=1550,
-                 bandwidth=0, mean_photon_num=0.1, encoding_type=polarization, phase_error=0):
-        super().__init__(name, timeline, frequency, wavelength, bandwidth, mean_photon_num, encoding_type, phase_error)
-        self.direct_receiver = direct_receiver
-        self.another_receiver = another_receiver
+    def __init__(self, name, timeline, wavelengths=None, frequency=8e7, bandwidth=0, mean_photon_num=0.1,
+                 encoding_type=polarization, phase_error=0):
+        super().__init__(name, timeline, frequency, 0, bandwidth, mean_photon_num, encoding_type, phase_error)
+        if wavelengths is None:
+            wavelengths = [1550, 1550]
         self.wavelengths = wavelengths
+
+    def init(self):
+        assert len(self._receivers) == 2, "SPDC source must connect to 2 receivers."
 
     def emit(self, state_list):
         """Method to emit photons.
@@ -136,40 +134,87 @@ class SPDCSource(LightSource):
 
         Arguments:
             state_list (List[List[complex]]): list of complex coefficient arrays to send as photon-encoded qubits.
+                This is ignored for the absorptive encoding type.
         """
+
+        log.logger.info("SPDC sourcee {} emitting {} photons".format(self.name, len(state_list)))
 
         time = self.timeline.now()
 
-        for state in state_list:
-            num_photon_pairs = self.get_generator().poisson(
+        if self.encoding_type["name"] == "absorptive":
+            for _ in state_list:
+                num_photon_pairs = self.get_generator().poisson(self.mean_photon_num)
+
+                for _ in range(num_photon_pairs):
+                    new_photon0 = Photon("", self.timeline,
+                                         wavelength=self.wavelengths[0],
+                                         location=self,
+                                         encoding_type=self.encoding_type,
+                                         use_qm=True)
+                    new_photon1 = Photon("", self.timeline,
+                                         wavelength=self.wavelengths[1],
+                                         location=self,
+                                         encoding_type=self.encoding_type,
+                                         use_qm=True)
+
+                    new_photon0.entangle(new_photon1)
+                    new_photon0.set_state((complex(0), complex(0), complex(0), complex(1)))
+                    self.send_photons(time, [new_photon0, new_photon1])
+                    self.photon_counter += 1
+
+                if num_photon_pairs is 0:
+                    # send two null photons for purposes of entanglement
+                    new_photon0 = Photon("", self.timeline,
+                                         wavelength=self.wavelengths[0],
+                                         location=self,
+                                         encoding_type=self.encoding_type,
+                                         use_qm=True)
+                    new_photon1 = Photon("", self.timeline,
+                                         wavelength=self.wavelengths[1],
+                                         location=self,
+                                         encoding_type=self.encoding_type,
+                                         use_qm=True)
+
+                    new_photon0.is_null = True
+                    new_photon1.is_null = True
+                    new_photon0.entangle(new_photon1)
+                    new_photon0.set_state((complex(1), complex(0), complex(0), complex(0)))
+                    self.send_photons(time, [new_photon0, new_photon1])
+
+                time += 1e12 / self.frequency
+
+        else:
+            for state in state_list:
+                num_photon_pairs = self.get_generator().poisson(
                 self.mean_photon_num)
 
-            if self.get_generator().random() < self.phase_error:
-                state = multiply([1, -1], state)
+                if self.get_generator().random() < self.phase_error:
+                    state = multiply([1, -1], state)
 
-            for _ in range(num_photon_pairs):
-                new_photon0 = Photon(None,
-                                     wavelength=self.wavelengths[0],
-                                     location=self.direct_receiver,
-                                     encoding_type=self.encoding_type)
-                new_photon1 = Photon(None,
-                                     wavelength=self.wavelengths[1],
-                                     location=self.direct_receiver,
-                                     encoding_type=self.encoding_type)
+                for _ in range(num_photon_pairs):
+                    new_photon0 = Photon("", self.timeline,
+                                         wavelength=self.wavelengths[0],
+                                         location=self,
+                                         encoding_type=self.encoding_type)
+                    new_photon1 = Photon("", self.timeline,
+                                         wavelength=self.wavelengths[1],
+                                         location=self,
+                                         encoding_type=self.encoding_type)
 
-                new_photon0.entangle(new_photon1)
-                new_photon0.set_state((state[0], complex(0), complex(0), state[1]))
+                    new_photon0.entangle(new_photon1)
+                    new_photon0.set_state((state[0], complex(0), complex(0), state[1]))
+                    self.send_photons(time, [new_photon0, new_photon1])
+                    self.photon_counter += 1
 
-                process0 = Process(self.direct_receiver, "get", [new_photon0])
-                process1 = Process(self.another_receiver, "get", [new_photon1])
-                event0 = Event(int(round(time)), process0)
-                event1 = Event(int(round(time)), process1)
-                self.timeline.schedule(event0)
-                self.timeline.schedule(event1)
+                time += 1e12 / self.frequency
 
-                self.photon_counter += 1
+    def send_photons(self, time, photons: List["Photon"]):
+        log.logger.debug("SPDC source {} sending photons to {} at time {}".format(
+            self.name, self._receivers, time
+        ))
 
-            time += 1e12 / self.frequency
-
-    def assign_another_receiver(self, receiver):
-        self.another_receiver = receiver
+        assert len(photons) == 2
+        for dst, photon in zip(self._receivers, photons):
+            process = Process(dst, "get", [photon])
+            event = Event(int(round(time)), process)
+            self.timeline.schedule(event)

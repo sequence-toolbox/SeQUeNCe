@@ -217,7 +217,7 @@ with the above methods, we can observe the state of store after a specfic time.
 
 ```python
 for t in [15, 32, 52]:
-    tl = Timeline(32)
+    tl = Timeline(t)
     store = Store(tl)
     print(tl.now())
     

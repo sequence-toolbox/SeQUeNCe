@@ -11,7 +11,8 @@ from sequence.topology.node import QuantumRouter, BSMNode
 class FakeNode(QuantumRouter):
     def __init__(self, name, timeline, memo_size=50):
         super().__init__(name, timeline, memo_size)
-        self.network_manager = NewNetworkManager((self))
+        memo_arr = self.get_components_by_type("MemoryArray")[0]
+        self.network_manager = NewNetworkManager(self, memo_arr.name)
         self.send_log = []
         self.receive_log = []
         self.send_out = True

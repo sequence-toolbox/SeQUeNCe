@@ -6,16 +6,16 @@ QSDetector is defined as an abstract template and as implementaions for polariza
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, List
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
-    from ..components.photon import Photon
-    from typing import List
 
-from ..components.beam_splitter import BeamSplitter
+from ..components.photon import Photon
+from ..components.beam_splitter import BeamSplitter, FockBeamSplitter
 from ..components.switch import Switch
 from ..components.interferometer import Interferometer
+from ..components.circuit import Circuit
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
@@ -38,6 +38,9 @@ class Detector(Entity):
         photon_counter (int): counts number of detection events.
     """
 
+    _meas_circuit = Circuit(1)
+    _meas_circuit.measure(0)
+
     def __init__(self, name: str, timeline: "Timeline", efficiency=0.9, dark_count=0, count_rate=int(25e6),
                  time_resolution=150):
         Entity.__init__(self, name, timeline)  # Detector is part of the QSDetector, and does not have its own name
@@ -50,12 +53,17 @@ class Detector(Entity):
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
+        self.next_detection_time = -1
+        self.photon_counter = 0
         self.add_dark_count()
 
-    def get(self, dark_get=False) -> None:
+    def get(self, photon=None, **kwargs) -> None:
         """Method to receive a photon for measurement.
 
         Args:
+            photon (Photon): photon to detect (currently unused)
+
+        Keyword Args:
             dark_get (bool): Signifies if the call is the result of a false positive dark count event.
                 If true, will ignore probability calculations (default false).
 
@@ -63,9 +71,19 @@ class Detector(Entity):
             May notify upper entities of a detection event.
         """
 
+        dark_get = kwargs.get("dark_get", False)
+
         self.photon_counter += 1
         now = self.timeline.now()
         time = round(now / self.time_resolution) * self.time_resolution
+
+        # if get a photon and it has single_atom encoding, measure
+        if photon and photon.encoding_type["name"] == "single_atom":
+            key = photon.quantum_state
+            res = self.timeline.quantum_manager.run_circuit(Detector._meas_circuit, [key],
+                                                            self.get_generator().random())
+            if not res[key]:
+                return
 
         if (self.get_generator().random() < self.efficiency or dark_get) and now > self.next_detection_time:
             self.notify({'time': time})
@@ -87,7 +105,7 @@ class Detector(Entity):
             time = time_to_next + self.timeline.now()  # time of next dark count
 
             process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
-            process2 = Process(self, "get", [True])
+            process2 = Process(self, "get", [None], {"dark_get": True})
             event1 = Event(time, process1)
             event2 = Event(time, process2)
             self.timeline.schedule(event1)
@@ -107,14 +125,15 @@ class QSDetector(Entity, ABC):
     Attributes:
         name (str): label for QSDetector instance.
         timeline (Timeline): timeline for simulation.
+        componennts (List[entity]): list of all aggregated hardware components.
         detectors (List[Detector]): list of attached detectors.
         trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
         Entity.__init__(self, name, timeline)
-        self.detectors = []
         self.components = []
+        self.detectors = []
         self.trigger_times = []
 
     def init(self):
@@ -126,12 +145,13 @@ class QSDetector(Entity, ABC):
         self.detectors[detector_id].__setattr__(arg_name, value)
 
     @abstractmethod
-    def get(self, photon: "Photon") -> None:
+    def get(self, photon: "Photon", **kwargs) -> None:
         """Abstract method for receiving photons for measurement."""
 
         pass
 
     def trigger(self, detector: Detector, info: Dict[str, Any]) -> None:
+        # TODO: rewrite
         detector_index = self.detectors.index(detector)
         self.trigger_times[detector_index].append(info['time'])
 
@@ -139,7 +159,7 @@ class QSDetector(Entity, ABC):
         return self.trigger_times
 
     @abstractmethod
-    def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:
         pass
 
 
@@ -159,13 +179,16 @@ class QSDetectorPolarization(QSDetector):
 
     def __init__(self, name: str, timeline: "Timeline"):
         QSDetector.__init__(self, name, timeline)
-        self.detectors = [Detector(name + ".detector" + str(i), timeline) for i in range(2)]
+        for i in range(2):
+            d = Detector(name + ".detector" + str(i), timeline)
+            self.detectors.append(d)
+            d.attach(self)
         self.splitter = BeamSplitter(name + ".splitter", timeline)
-        self.splitter.set_receiver(0, self.detectors[0])
-        self.splitter.set_receiver(1, self.detectors[1])
-        
-        self.components = [self.splitter, self.detectors[0], self.detectors[1]]
+        self.splitter.add_receiver(self.detectors[0])
+        self.splitter.add_receiver(self.detectors[1])
         self.trigger_times = [[], []]
+
+        self.components = [self.splitter] + self.detectors
 
     def init(self) -> None:
         """Implementation of Entity interface (see base class)."""
@@ -173,7 +196,7 @@ class QSDetectorPolarization(QSDetector):
         assert len(self.detectors) == 2
         super().init()
 
-    def get(self, photon: "Photon") -> None:
+    def get(self, photon: "Photon", **kwargs) -> None:
         """Method to receive a photon for measurement.
 
         Forwards the photon to the internal polariaztion beamsplitter.
@@ -188,10 +211,11 @@ class QSDetectorPolarization(QSDetector):
         self.splitter.get(photon)
 
     def get_photon_times(self):
-        times, self.trigger_times = self.trigger_times, [[], []]
+        times = self.trigger_times
+        self.trigger_times = [[], []]
         return times
 
-    def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:
         self.splitter.set_basis_list(basis_list, start_time, frequency)
 
     def update_splitter_params(self, arg_name: str, value: Any) -> None:
@@ -218,11 +242,11 @@ class QSDetectorTimeBin(QSDetector):
         QSDetector.__init__(self, name, timeline)
         self.switch = Switch(name + ".switch", timeline)
         self.detectors = [Detector(name + ".detector" + str(i), timeline) for i in range(3)]
-        self.switch.set_detector(self.detectors[0])
+        self.switch.add_receiver(self.detectors[0])
         self.interferometer = Interferometer(name + ".interferometer", timeline, time_bin["bin_separation"])
-        self.interferometer.set_receiver(0, self.detectors[1])
-        self.interferometer.set_receiver(1, self.detectors[2])
-        self.switch.set_interferometer(self.interferometer)
+        self.interferometer.add_receiver(self.detectors[1])
+        self.interferometer.add_receiver(self.detectors[2])
+        self.switch.add_receiver(self.interferometer)
 
         self.components = [self.switch, self.interferometer] + self.detectors
         self.trigger_times = [[], [], []]
@@ -233,7 +257,7 @@ class QSDetectorTimeBin(QSDetector):
         assert len(self.detectors) == 3
         super().init()
 
-    def get(self, photon):
+    def get(self, photon, **kwargs):
         """Method to receive a photon for measurement.
 
         Forwards the photon to the internal fiber switch.
@@ -251,8 +275,97 @@ class QSDetectorTimeBin(QSDetector):
         times, self.trigger_times = self.trigger_times, [[], [], []]
         return times
 
-    def set_basis_list(self, basis_list: "List", start_time: int, frequency: int) -> None:
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:
         self.switch.set_basis_list(basis_list, start_time, frequency)
 
     def update_interferometer_params(self, arg_name: str, value: Any) -> None:
         self.interferometer.__setattr__(arg_name, value)
+
+
+class QSDetectorFockDirect(QSDetector):
+    """QSDetector to directly measure photons in Fock state.
+
+    Used to calculate diagonal density matrix elements.
+
+    Attributes:
+        name (str): label for QSDetector instance.
+        timeline (Timeline): timeline for simulation.
+        src_list (List[int]):
+        detectors (List[Detector]): list of attached detectors (length 2).
+        trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
+    """
+
+    def __init__(self, name: str, timeline: "Timeline", src_list: List[str]):
+        super().__init__(name, timeline)
+        assert len(src_list) == 2
+        self.src_list = src_list
+        for i in range(2):
+            d = Detector(name + ".detector" + str(i), timeline)
+            self.detectors.append(d)
+            d.attach(self)
+        self.trigger_times = [[], []]
+
+    def init(self):
+        pass
+
+    def get(self, photon: "Photon", **kwargs):
+        src = kwargs["src"]
+        # measure (0/1 determines existence of photons in encoding)
+        res = Photon.measure(None, photon, self.get_generator())
+        if res:
+            detector_num = self.src_list.index(src)
+            self.detectors[detector_num].get()
+
+    def get_photon_times(self) -> List[List[int]]:
+        trigger_times = self.trigger_times
+        self.trigger_times = [[], []]
+        return trigger_times
+
+    # does nothing for this class
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: int) -> None:
+        pass
+
+
+class QSDetectorFockInterference(QSDetector):
+    """WIP"""
+
+    def __init__(self, name: str, timeline: "Timeline"):
+        super().__init__(name, timeline)
+        self.beamsplitter = FockBeamSplitter(name + ".beamsplitter", timeline)
+        for i in range(2):
+            d = Detector(name + ".detector" + str(i), timeline)
+            self.beamsplitter.add_receiver(d)
+            self.detectors.append(d)
+            d.attach(self)
+
+        # default circuit: no phase applied
+        self._circuit = Circuit(2)
+
+        self.trigger_times = [[], []]
+
+    def init(self):
+        pass
+
+    def get(self, photon, **kwargs):
+        # check if we have non-null photon
+        if not photon.is_null:
+            state = self.timeline.quantum_manager.get(photon.quantum_state)
+
+            # if entangled, apply phase gate
+            if len(state.keys) == 2:
+                self.timeline.quantum_manager.run_circuit(self._circuit, state.keys)
+
+            self.beamsplitter.get(photon)
+
+    def get_photon_times(self) -> List[List[int]]:
+        trigger_times = self.trigger_times
+        self.trigger_times = [[], []]
+        return trigger_times
+
+    # does nothing for this class
+    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:
+        pass
+
+    def set_phase(self, phase: float):
+        self._circuit = Circuit(2)
+        self._circuit.phase(0, phase)

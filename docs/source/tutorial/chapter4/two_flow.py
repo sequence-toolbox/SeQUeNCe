@@ -18,17 +18,19 @@ from sequence.resource_management.memory_manager import MemoryInfo, MemoryManage
 class RouterNode(Node):
     def __init__(self, name, tl, memo_size=50):
         super().__init__(name, tl)
-        self.memory_array = MemoryArray(name + ".MemoryArray", tl, num_memories=memo_size)
-        self.memory_array.owner = self
-        self.resource_manager = ResourceManager(self)
+        memory_array_name = name + ".MemoryArray"
+        memory_array = MemoryArray(memory_array_name, tl, num_memories=memo_size)
+        memory_array.add_receiver(self)
+        self.add_component(memory_array)
+
+        self.resource_manager = ResourceManager(self, memory_array_name)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         if msg.receiver == "resource_manager":
             self.resource_manager.received_message(src, msg)
         else:
             if msg.receiver is None:
-                matching = [p for p in self.protocols if
-                            type(p) == msg.protocol_type]
+                matching = [p for p in self.protocols if type(p) == msg.protocol_type]
                 for p in matching:
                     p.received_message(src, msg)
             else:
@@ -40,13 +42,16 @@ class RouterNode(Node):
     def get_idle_memory(self, info: "MemoryInfo") -> None:
         pass
 
+    def get(self, photon: "Photon", **kwargs):
+        dst = kwargs['dst']
+        self.send_qubit(dst, photon)
+
 
 ## flow 1
 
 # entanglement generation
 
-def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager",
-                      args):
+def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager", args):
     index_upper = args["index_upper"]
     index_lower = args["index_lower"]
     if memory_info.state == "RAW" \
@@ -60,13 +65,13 @@ def eg_req_func(protocols, args):
     remote_node = args["remote_node"]
     index_upper = args["index_upper"]
     index_lower = args["index_lower"]
+
     for protocol in protocols:
         if not isinstance(protocol, EntanglementGenerationA):
             continue
-        index_func = protocol.memory.owner.memory_array.memories.index
-        if protocol.remote_node_name == remote_node \
-                and index_lower <= index_func(
-            protocol.memory) <= index_upper:
+        mem_arr = protocol.own.get_components_by_type("MemoryArray")[0]
+        if protocol.remote_node_name == remote_node and \
+                index_lower <= mem_arr.memories.index(protocol.memory) <= index_upper:
             return protocol
 
 
@@ -96,6 +101,8 @@ def eg_rule_action2(memories_info: List["MemoryInfo"], args):
 
 
 ## flow 2
+
+# entanglement generation
 
 def add_eg_rules(index: int, path: List[RouterNode], middles: List[BSMNode]):
     assert len(path) == len(middles) + 1
@@ -136,6 +143,7 @@ def add_eg_rules(index: int, path: List[RouterNode], middles: List[BSMNode]):
 
 
 # entanglement purification
+
 def ep_rule_condition1(memory_info: "MemoryInfo", manager: "MemoryManager",
                        args):
     index_upper = args["index_upper"]
@@ -153,7 +161,6 @@ def ep_rule_condition1(memory_info: "MemoryInfo", manager: "MemoryManager",
                 assert memory_info.remote_memo != info.remote_memo
                 return [memory_info, info]
     return []
-
 
 def ep_req_func(protocols, args):
     remote1 = args["remote1"]
@@ -226,8 +233,7 @@ def add_ep_rules(index: int, path: List[RouterNode], target_fidelity: float):
                           "index_upper": mem_range[1] - 1,
                           "target_fidelity": target_fidelity}
 
-        rule = Rule(10, ep_rule_action1, ep_rule_condition1, {},
-                    condition_args)
+        rule = Rule(10, ep_rule_action1, ep_rule_condition1, {}, condition_args)
         node.resource_manager.load(rule)
 
     if index < len(path) - 1:
@@ -240,8 +246,7 @@ def add_ep_rules(index: int, path: List[RouterNode], target_fidelity: float):
                               "index_upper": mem_range[1] - 1,
                               "target_fidelity": target_fidelity}
 
-        rule = Rule(10, ep_rule_action2, ep_rule_condition2, {},
-                    condition_args)
+        rule = Rule(10, ep_rule_action2, ep_rule_condition2, {}, condition_args)
         node.resource_manager.load(rule)
 
 
@@ -393,7 +398,6 @@ if __name__ == "__main__":
                       "index_upper": 10,
                       "target_node": r1.name,
                       "target_fidelity": 0.9}
-
     rule = Rule(10, es_rule_actionB, es_rule_conditionB, {}, condition_args)
     r3.resource_manager.load(rule)
 
@@ -402,9 +406,7 @@ if __name__ == "__main__":
                       "index_upper": 30,
                       "target_fidelity": 0.9,
                       "left": r1.name, "right": r3.name}
-
-    rule = Rule(10, es_rule_actionA, es_rule_conditionA, action_args,
-                condition_args)
+    rule = Rule(10, es_rule_actionA, es_rule_conditionA, action_args, condition_args)
     r2.resource_manager.load(rule)
 
     tl.run()

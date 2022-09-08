@@ -55,7 +55,7 @@ class StackProtocol(Protocol):
 
         Args:
             own (Node): node protocol is attached to.
-            name (str): name of protocl instance.
+            name (str): name of protocol instance.
         """
 
         super().__init__(own, name)
@@ -86,5 +86,3 @@ class StackProtocol(Protocol):
         """Method to receive messages from distant nodes."""
 
         pass
-
-

@@ -6,18 +6,14 @@ from sequence.kernel.process import Process
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import QuantumChannel
 from sequence.components.detector import Detector
-from sequence.components.circuit import Circuit
 from sequence.topology.node import Node
 
 
 NUM_TRIALS = 1000
 FREQUENCY = 1e3
 
-_meas_circuit = Circuit(1)
-_meas_circuit.measure(0)
 
-
-class Counter():
+class Counter:
     def __init__(self):
         self.count = 0
 
@@ -25,32 +21,56 @@ class Counter():
         self.count += 1
 
 
+class Sender:
+    def __init__(self, own, memory_name):
+        self.own = own
+        self.memory = own.components[memory_name]
+
+    def start(self, period):
+        process1 = Process(self.memory, "update_state", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]])
+        process2 = Process(self.memory, "excite", ["node2"])
+        for i in range(NUM_TRIALS):
+            event1 = Event(i * period, process1)
+            event2 = Event(i * period + (period / 2), process2)
+            self.own.timeline.schedule(event1)
+            self.own.timeline.schedule(event2)
+
+
 class SenderNode(Node):
     def __init__(self, name, timeline):
         super().__init__(name, timeline)
-        self.memory = Memory(name + ".memory", tl, fidelity=1, frequency=0,
-                             efficiency=1, coherence_time=0, wavelength=500)
-        self.memory.owner = self
+        memory_name = name + ".memory"
+        memory = Memory(memory_name, timeline, fidelity=1, frequency=0,
+                        efficiency=1, coherence_time=0, wavelength=500)
+        self.add_component(memory)
+        memory.add_receiver(self)
+
+        self.sender = Sender(self, memory_name)
+
+    def get(self, photon, **kwargs):
+        self.send_qubit(kwargs['dst'], photon)
 
 
 class ReceiverNode(Node):
     def __init__(self, name, timeline):
         super().__init__(name, timeline)
-        self.detector = Detector(name + ".detector", tl, efficiency=1)
-        self.detector.owner = self
+
+        detector_name = name + ".detector"
+        detector = Detector(detector_name, timeline, efficiency=1)
+        self.add_component(detector)
+        self.set_first_component(detector_name)
+        detector.owner = self
+
+        self.counter = Counter()
+        detector.attach(self.counter)
 
     def receive_qubit(self, src, qubit):
-        qm = self.timeline.quantum_manager
-        key = qubit.qstate_key
-        meas_res = qm.run_circuit(_meas_circuit, [key], self.get_generator().random())[key]
-        if meas_res:
-            self.detector.get()
+        self.components[self.first_component_name].get(qubit)
 
 
 if __name__ == "__main__":
     runtime = 10e12 
     tl = Timeline(runtime)
-    tl.show_progress = False
 
     # nodes and hardware
     node1 = SenderNode("node1", tl)
@@ -59,23 +79,12 @@ if __name__ == "__main__":
     qc = QuantumChannel("qc", tl, attenuation=0, distance=1e3)
     qc.set_ends(node1, node2.name)
 
-    # counter
-    counter = Counter()
-    node2.detector.attach(counter)
+    tl.init()
 
     # schedule events
-    time_bin = int(1e12 / FREQUENCY)
-    
-    process1 = Process(node1.memory, "update_state", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]])
-    process2 = Process(node1.memory, "excite", ["node2"])
-    for i in range(NUM_TRIALS):
-        event1 = Event(i * time_bin, process1)
-        event2 = Event(i * time_bin + (time_bin / 2), process2)
-        tl.schedule(event1)
-        tl.schedule(event2)
+    period = int(1e12 / FREQUENCY)
+    node1.sender.start(period)
 
-    tl.init()
     tl.run()
 
-    print("percent measured: {}%".format(100 * counter.count / NUM_TRIALS))
-
+    print("percent measured: {}%".format(100 * node2.counter.count / NUM_TRIALS))
