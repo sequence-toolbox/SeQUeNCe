@@ -98,7 +98,7 @@ class Entity(ABC):
 
         If entity is not attached to a node, return default generator.
         """
-        if hasattr(self.owner, "generator"):
+        if hasattr(self.owner, "get_generator"):
             return self.owner.get_generator()
         else:
             return default_rng()

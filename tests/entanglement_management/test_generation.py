@@ -181,6 +181,7 @@ def test_generation_run():
     e1.memory_array.owner = e1
     detectors = [{"efficiency": 1, "count_rate": 1e11}] * 2
     m0.bsm = make_bsm("m0.bsm", tl, encoding_type="single_atom", detectors=detectors)
+    m0.bsm.owner = m0
 
     # add middle protocol
     eg_m0 = EntanglementGenerationB(m0, "eg_m0", others=["e0", "e1"])
