@@ -71,7 +71,8 @@ class MemoryArray(Entity):
         Set the owner of memory as the owner of memory array.
         """
 
-        pass
+        for memory in self.memories:
+            memory.owner = self.owner
 
     def memory_expire(self, memory: "Memory"):
         """Method to receive expiration events from memories.

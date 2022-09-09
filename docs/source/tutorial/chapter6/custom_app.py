@@ -90,5 +90,9 @@ if __name__ == "__main__":
     reset_app = ResetApp(node2, start_node_name)
     
     tl.init()
+
+    for name, component in tl.entities.items():
+        print("{}: {}".format(name, component.get_generator()))
+
     app.start()
     tl.run()
