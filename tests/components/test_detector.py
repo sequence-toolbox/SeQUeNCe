@@ -209,6 +209,8 @@ def test_QSDetectorFockDirect():
     [qsd.update_detector_params(i, "efficiency", 1) for i in range(2)]
     [qsd.update_detector_params(i, "count_rate", COUNT_RATE) for i in range(2)]
 
+    tl.init()
+
     for _ in range(1000):
         photon = Photon("", tl, encoding_type=absorptive, use_qm=True)
         photon.set_state((0, 1))

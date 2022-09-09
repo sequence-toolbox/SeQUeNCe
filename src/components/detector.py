@@ -299,14 +299,14 @@ class QSDetectorFockDirect(QSDetector):
         super().__init__(name, timeline)
         assert len(src_list) == 2
         self.src_list = src_list
+
         for i in range(2):
             d = Detector(name + ".detector" + str(i), timeline)
             self.detectors.append(d)
-            d.attach(self)
+
         self.trigger_times = [[], []]
 
-    def init(self):
-        pass
+        self.components = self.detectors
 
     def get(self, photon: "Photon", **kwargs):
         src = kwargs["src"]
@@ -331,20 +331,19 @@ class QSDetectorFockInterference(QSDetector):
 
     def __init__(self, name: str, timeline: "Timeline"):
         super().__init__(name, timeline)
+
         self.beamsplitter = FockBeamSplitter(name + ".beamsplitter", timeline)
         for i in range(2):
             d = Detector(name + ".detector" + str(i), timeline)
             self.beamsplitter.add_receiver(d)
             self.detectors.append(d)
-            d.attach(self)
 
         # default circuit: no phase applied
         self._circuit = Circuit(2)
 
         self.trigger_times = [[], []]
 
-    def init(self):
-        pass
+        self.components = self.detectors + [self.beamsplitter]
 
     def get(self, photon, **kwargs):
         # check if we have non-null photon
