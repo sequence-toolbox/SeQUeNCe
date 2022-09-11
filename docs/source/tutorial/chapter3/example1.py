@@ -87,8 +87,10 @@ for i in range(1000):
     node2.resource_manager.create_protocol('bsm_node', 'node1')
     pair_protocol(node1, node2)
 
-    node1.memory.reset()
-    node2.memory.reset()
+    memory1 = node1.get_components_by_type("Memory")[0]
+    memory1.reset()
+    memory2 = node2.get_components_by_type("Memory")[0]
+    memory2.reset()
 
     node1.protocols[0].start()
     node2.protocols[0].start()

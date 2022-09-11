@@ -4,7 +4,15 @@ from numpy.random import default_rng
 from numpy.random._generator import Generator
 
 
-class FakeOwner():
+class FakeOwnerNoGen:
+    def __init__(self):
+        pass
+
+
+class FakeOwner:
+    def __init__(self):
+        self.generator = None
+
     def get_generator(self):
         return self.generator
 
@@ -18,7 +26,7 @@ def test_get_generator():
     tl = Timeline()
 
     # owner does not have generator
-    owner = FakeOwner()
+    owner = FakeOwnerNoGen()
     foo = Foo("foo", tl)
     foo.owner = owner
     assert isinstance(foo.get_generator(), Generator)
