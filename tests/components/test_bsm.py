@@ -256,9 +256,10 @@ def test_absorptive_get():
     class Measurer:
         def __init__(self, detector):
             self.detector = detector
+            self.generator = np.random.default_rng(1)
 
         def get(self, photon, **kwargs):
-            res = Photon.measure(None, photon, np.random.default_rng())
+            res = Photon.measure(None, photon, self.generator)
             if res:
                 self.detector.get()
 
