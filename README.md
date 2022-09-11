@@ -10,7 +10,11 @@ SeQUeNCe is an open source, discrete-event simulator for quantum networks. As de
 These modules can be edited by users to define additional functionality and test protocol schemes, or may be used as-is to test network parameters and topologies.
 
 ## Installing
-SeQUeNCe requires an installation of Python 3.8 or later. This can be found at the [Python Website](https://www.python.org/downloads/). Then, simply download the package, navigate to its directory, and install with
+SeQUeNCe requires an installation of Python 3.8 or later. This can be found at the [Python Website](https://www.python.org/downloads/).
+The `mpi4py` package additionally requires an MPI installation on the local machine.
+For a few options listed by the MPI for python package, please see [this documentation page](https://mpi4py.readthedocs.io/en/stable/appendix.html#building-mpi).
+
+Then, simply download the package, navigate to its directory, and install with
 ```
 $ pip install .
 ```
@@ -48,6 +52,7 @@ Code for the experiments performed in our paper can be found in the file `starli
 The example folder contains several scripts that can be run with jupyter notebook for easy editing and visualization. These files require that the notebook package be installed:
 ```
 $ pip install notebook
+$ pip install ipywidgets
 ```
 To run each file, simply run
 ```
