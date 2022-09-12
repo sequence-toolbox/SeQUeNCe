@@ -1,10 +1,9 @@
 """Definition of Reservation protocol and related tools.
 
-This module provides a definition for the reservation protocol used by the
-network manager. This includes the Reservation, MemoryTimeCard, and QCap
-classes, which are used by the network manager to track reservations. Also
-included is the definition of the message type used by the reservation
-protocol. """
+This module provides a definition for the reservation protocol used by the network manager.
+This includes the Reservation, MemoryTimeCard, and QCap classes, which are used by the network manager to track reservations.
+Also included is the definition of the message type used by the reservation protocol.
+"""
 
 from enum import Enum, auto
 from typing import List, TYPE_CHECKING, Any, Dict
@@ -12,14 +11,12 @@ from typing import List, TYPE_CHECKING, Any, Dict
 if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
     from ..resource_management.memory_manager import MemoryInfo, MemoryManager
-    from ..entanglement_management.entanglement_protocol import \
-        EntanglementProtocol
+    from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 
 from ..resource_management.rule_manager import Rule, Arguments
 from ..entanglement_management.generation import EntanglementGenerationA
 from ..entanglement_management.purification import BBPSSW
-from ..entanglement_management.swapping import EntanglementSwappingA, \
-    EntanglementSwappingB
+from ..entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 from ..message import Message
 from ..protocol import StackProtocol
 from ..kernel.event import Event
@@ -37,8 +34,7 @@ class RSVPMsgType(Enum):
 class ResourceReservationMessage(Message):
     """Message used by resource reservation protocol.
 
-    This message contains all information passed between reservation protocol
-    instances.
+    This message contains all information passed between reservation protocol instances.
     Messages of different types contain different information.
 
     Attributes:
@@ -49,8 +45,7 @@ class ResourceReservationMessage(Message):
         path (List[str]): cumulative node list for entanglement path (if `msg_type == APPROVE`)
     """
 
-    def __init__(self, msg_type: any, receiver: str,
-                 reservation: "Reservation", **kwargs):
+    def __init__(self, msg_type: any, receiver: str, reservation: "Reservation", **kwargs):
         Message.__init__(self, msg_type, receiver)
         self.reservation = reservation
         if self.msg_type is RSVPMsgType.REQUEST:
@@ -181,7 +176,8 @@ def ep_req_func1(protocols, args: Arguments) -> "BBPSSW":
 
 
 def ep_rule_action1(memories_info: List["MemoryInfo"], args: Arguments):
-    """Action function used by BBPSSW protocol on nodes except the initiator
+    """Action function used by BBPSSW protocol on nodes except the
+    responder node
 
     """
     memories = [info.memory for info in memories_info]
@@ -324,32 +320,33 @@ def es_rule_conditionB2(memory_info: "MemoryInfo", manager: "MemoryManager", arg
 class ResourceReservationProtocol(StackProtocol):
     """ReservationProtocol for  node resources.
 
-    The reservation protocol receives network entanglement requests and
-    attempts to reserve local resources.
-    If successful, it will forward the request to another node in the
-    entanglement path and create local rules.
+    The reservation protocol receives network entanglement requests and attempts to reserve local resources.
+    If successful, it will forward the request to another node in the entanglement path and create local rules.
     These rules are passed to the node's resource manager.
     If unsuccessful, the protocol will notify the network manager of failure.
 
     Attributes:
         own (QuantumRouter): node that protocol instance is attached to.
         name (str): label for protocol instance.
+        memo_arr (MemoryArray): memory array to track.
         timecards (List[MemoryTimeCard]): list of reservation cards for all memories on node.
         es_succ_prob (float): sets `success_probability` of `EntanglementSwappingA` protocols created by rules.
         es_degradation (float): sets `degradation` of `EntanglementSwappingA` protocols created by rules.
         accepted_reservation (List[Reservation]): list of all approved reservation requests.
     """
 
-    def __init__(self, own: "QuantumRouter", name: str):
+    def __init__(self, own: "QuantumRouter", name: str, memory_array_name: str):
         """Constructor for the reservation protocol class.
 
         Args:
             own (QuantumRouter): node to attach protocol to.
             name (str): label for reservation protocol instance.
+            memory_array_name (str): name of the memory array component on own.
         """
 
         super().__init__(own, name)
-        self.timecards = [MemoryTimeCard(i) for i in range(len(own.memory_array))]
+        self.memo_arr = own.components[memory_array_name]
+        self.timecards = [MemoryTimeCard(i) for i in range(len(self.memo_arr))]
         self.es_succ_prob = 1
         self.es_degradation = 0.95
         self.accepted_reservation = []
@@ -410,8 +407,7 @@ class ResourceReservationProtocol(StackProtocol):
                 msg.qcaps.append(qcap)
                 if self.own.name == msg.reservation.responder:
                     path = [qcap.node for qcap in msg.qcaps]
-                    rules = self.create_rules(path,
-                                              reservation=msg.reservation)
+                    rules = self.create_rules(path, reservation=msg.reservation)
                     self.load_rules(rules, msg.reservation)
                     msg.reservation.set_path(path)
                     new_msg = ResourceReservationMessage(RSVPMsgType.APPROVE,
@@ -476,8 +472,7 @@ class ResourceReservationProtocol(StackProtocol):
     def create_rules(self, path: List[str], reservation: "Reservation") -> List["Rule"]:
         """Method to create rules for a successful request.
 
-        Rules are used to direct the flow of information/entanglement in the
-        resource manager.
+        Rules are used to direct the flow of information/entanglement in the resource manager.
 
         Args:
             path (List[str]): list of node names in entanglement path.
@@ -496,18 +491,15 @@ class ResourceReservationProtocol(StackProtocol):
         # create rules for entanglement generation
         index = path.index(self.own.name)
         if index > 0:
-            condition_args = {
-                "memory_indices": memory_indices[:reservation.memory_size]}
+            condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
             action_args = {"mid": self.own.map_to_middle_node[path[index - 1]],
                            "path": path, "index": index}
-            rule = Rule(10, eg_rule_action1, eg_rule_condition, action_args,
-                        condition_args)
+            rule = Rule(10, eg_rule_action1, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
 
         if index < len(path) - 1:
             if index == 0:
-                condition_args = {"memory_indices":
-                                      memory_indices[:reservation.memory_size]}
+                condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
             else:
                 condition_args = {"memory_indices":
                                       memory_indices[reservation.memory_size:]}
@@ -515,8 +507,7 @@ class ResourceReservationProtocol(StackProtocol):
             action_args = {"mid": self.own.map_to_middle_node[path[index + 1]],
                            "path": path, "index": index, "name": self.own.name,
                            "reservation": reservation}
-            rule = Rule(10, eg_rule_action2, eg_rule_condition, action_args,
-                        condition_args)
+            rule = Rule(10, eg_rule_action2, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
 
         # create rules for entanglement purification
@@ -524,10 +515,8 @@ class ResourceReservationProtocol(StackProtocol):
             condition_args = {"memory_indices":
                                   memory_indices[:reservation.memory_size],
                               "reservation": reservation}
-
             action_args = {}
-            rule = Rule(10, ep_rule_action1, ep_rule_condition1, action_args,
-                        condition_args)
+            rule = Rule(10, ep_rule_action1, ep_rule_condition1, action_args, condition_args)
             rules.append(rule)
 
         if index < len(path) - 1:
@@ -535,24 +524,20 @@ class ResourceReservationProtocol(StackProtocol):
                 condition_args = {"memory_indices": memory_indices,
                                   "fidelity": reservation.fidelity}
             else:
-                condition_args = {"memory_indices":
-                                      memory_indices[reservation.memory_size:],
+                condition_args = {"memory_indices": memory_indices[reservation.memory_size:],
                                   "fidelity": reservation.fidelity}
 
             action_args = {}
-            rule = Rule(10, ep_rule_action2, ep_rule_condition2, action_args,
-                        condition_args)
+            rule = Rule(10, ep_rule_action2, ep_rule_condition2, action_args, condition_args)
             rules.append(rule)
 
         # create rules for entanglement swapping
-
         if index == 0:
-            action_args = {}
             condition_args = {"memory_indices": memory_indices,
                               "target_remote": path[-1],
                               "fidelity": reservation.fidelity}
-            rule = Rule(10, es_rule_actionB, es_rule_conditionB1, action_args,
-                        condition_args)
+            action_args = {}
+            rule = Rule(10, es_rule_actionB, es_rule_conditionB1, action_args, condition_args)
             rules.append(rule)
 
         elif index == len(path) - 1:
@@ -560,8 +545,7 @@ class ResourceReservationProtocol(StackProtocol):
             condition_args = {"memory_indices": memory_indices,
                               "target_remote": path[0],
                               "fidelity": reservation.fidelity}
-            rule = Rule(10, es_rule_actionB, es_rule_conditionB1, action_args,
-                        condition_args)
+            rule = Rule(10, es_rule_actionB, es_rule_conditionB1, action_args, condition_args)
             rules.append(rule)
 
         else:
@@ -575,28 +559,28 @@ class ResourceReservationProtocol(StackProtocol):
             _index = _path.index(self.own.name)
             left, right = _path[_index - 1], _path[_index + 1]
 
+            condition_args = {"memory_indices": memory_indices,
+                              "left": left,
+                              "right": right,
+                              "fidelity": reservation.fidelity}
             action_args = {"es_succ_prob": self.es_succ_prob,
                            "es_degradation": self.es_degradation}
-            condition_args = {"memory_indices": memory_indices, "left": left,
-                              "right": right, "fidelity": reservation.fidelity}
-            rule = Rule(10, es_rule_actionA, es_rule_conditionA, action_args,
-                        condition_args)
+            rule = Rule(10, es_rule_actionA, es_rule_conditionA, action_args, condition_args)
             rules.append(rule)
 
             action_args = {}
-            rule = Rule(10, es_rule_actionB, es_rule_conditionB2, action_args,
-                        condition_args)
+            rule = Rule(10, es_rule_actionB, es_rule_conditionB2, action_args, condition_args)
             rules.append(rule)
 
         for rule in rules:
             rule.set_reservation(reservation)
+
         return rules
 
     def load_rules(self, rules: List["Rule"], reservation: "Reservation") -> None:
         """Method to add created rules to resource manager.
 
-        This method will schedule the resource manager to load all rules at the
-        reservation start time.
+        This method will schedule the resource manager to load all rules at the reservation start time.
         The rules will be set to expire at the reservation end time.
 
         Args:
@@ -608,7 +592,7 @@ class ResourceReservationProtocol(StackProtocol):
         for card in self.timecards:
             if reservation in card.reservations:
                 process = Process(self.own.resource_manager, "update",
-                                  [None, self.own.memory_array[card.memory_index], "RAW"])
+                                  [None, self.memo_arr[card.memory_index], "RAW"])
                 event = Event(reservation.end_time, process, 1)
                 self.own.timeline.schedule(event)
 
@@ -621,11 +605,9 @@ class ResourceReservationProtocol(StackProtocol):
             self.own.timeline.schedule(event)
 
     def received_message(self, src, msg):
-        """Method to receive messages directly (should not be used; receive
-        through network manager).
-        """
+        """Method to receive messages directly (should not be used; receive through network manager)."""
 
-        raise Exception("RSVP protocol should not call this function")
+        raise Exception("RSVP protocol {} received a message (disallowed)".format(self.name))
 
     def set_swapping_success_rate(self, prob: float) -> None:
         assert 0 <= prob <= 1
@@ -636,7 +618,7 @@ class ResourceReservationProtocol(StackProtocol):
         self.es_degradation = degradation
 
 
-class Reservation():
+class Reservation:
     """Tracking of reservation parameters for the network manager.
 
     Attributes:
@@ -688,7 +670,7 @@ class Reservation():
                other.fidelity == self.fidelity
 
 
-class MemoryTimeCard():
+class MemoryTimeCard:
     """Class for tracking reservations on a specific memory.
 
     Attributes:
@@ -709,8 +691,7 @@ class MemoryTimeCard():
     def add(self, reservation: "Reservation") -> bool:
         """Method to add reservation.
 
-        Will use `schedule_reservation` method to determine index to insert
-        reservation.
+        Will use `schedule_reservation` method to determine index to insert reservation.
 
         Args:
             reservation (Reservation): reservation to add.
@@ -746,8 +727,7 @@ class MemoryTimeCard():
     def schedule_reservation(self, resv: "Reservation") -> int:
         """Method to add reservation to a memory.
 
-        Will return index at which reservation can be inserted into memory
-        reservation list.
+        Will return index at which reservation can be inserted into memory reservation list.
         If no space found for reservation, will raise an exception.
 
         Args:

@@ -89,7 +89,7 @@ class ResourceManager():
         waiting_protocols (List[Protocol]): list of protocols awaiting a request from a remote protocol.
     """
 
-    def __init__(self, owner: "QuantumRouter"):
+    def __init__(self, owner: "QuantumRouter", memory_array_name: str):
         """Constructor for resource manager.
         
         Args:
@@ -98,7 +98,7 @@ class ResourceManager():
 
         self.name = "resource_manager"
         self.owner = owner
-        self.memory_manager = MemoryManager(owner.memory_array)
+        self.memory_manager = MemoryManager(owner.components[memory_array_name])
         self.memory_manager.set_resource_manager(self)
         self.rule_manager = RuleManager()
         self.rule_manager.set_resource_manager(self)
@@ -120,8 +120,8 @@ class ResourceManager():
         Returns:
             bool: if rule was loaded successfully.
         """
-        log.logger.info(
-            'load rule {}'.format(rule))
+
+        log.logger.info('load rule {}'.format(rule))
         self.rule_manager.load(rule)
 
         for memory_info in self.memory_manager:
@@ -142,8 +142,8 @@ class ResourceManager():
         Args:
             rule (Rule): rule to remove.
         """
-        log.logger.info(
-            'expired rule {}'.format(rule))
+
+        log.logger.info('expired rule {}'.format(rule))
         created_protocols = self.rule_manager.expire(rule)
         while created_protocols:
             protocol = created_protocols.pop()
@@ -203,8 +203,7 @@ class ResourceManager():
         return self.memory_manager
 
     def send_request(self, protocol: "EntanglementProtocol", req_dst: str,
-                     req_condition_func: RequestConditionFunc,
-                     req_args: Arguments):
+                     req_condition_func: RequestConditionFunc, req_args: Arguments):
         """Method to send protocol request to another node.
 
         Send the request to pair the local 'protocol' with the protocol on the remote node 'req_dst'.
@@ -213,14 +212,16 @@ class ResourceManager():
         Args:
             protocol (EntanglementProtocol): protocol sending the request.
             req_dst (str): name of destination node.
-            req_condition_func (Callable[[List[EntanglementProtocol]], EntanglementProtocol]): function used to evaluate condition on distant node.
+            req_condition_func (Callable[[List[EntanglementProtocol]], EntanglementProtocol]):
+                function used to evaluate condition on distant node.
+            req_args (Dict[str, Any]): arguments for req_cond_func.
         """
 
         protocol.own = self.owner
         if req_dst is None:
             self.waiting_protocols.append(protocol)
             return
-        if not protocol in self.pending_protocols:
+        if protocol not in self.pending_protocols:
             self.pending_protocols.append(protocol)
         memo_names = [memo.name for memo in protocol.memories]
         msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST,
@@ -231,9 +232,7 @@ class ResourceManager():
                                      req_args=req_args)
         self.owner.send_message(req_dst, msg)
         log.logger.info(
-            "{} network manager send {} message to {}".format(self.owner.name,
-                                                              msg.msg_type.name,
-                                                              req_dst))
+            "{} network manager send {} message to {}".format(self.owner.name, msg.msg_type.name, req_dst))
 
     def received_message(self, src: str, msg: "ResourceManagerMessage") -> None:
         """Method to receive resoruce manager messages.
@@ -244,12 +243,12 @@ class ResourceManager():
             src (str): name of the node that sent the message.
             msg (ResourceManagerMessage): message received.
         """
+
         log.logger.info("{} receive {} message from {}".format(self.name,
                                                                msg.msg_type.name,
                                                                src))
         if msg.msg_type is ResourceManagerMsgType.REQUEST:
-            protocol = msg.req_condition_func(self.waiting_protocols,
-                                              msg.req_args)
+            protocol = msg.req_condition_func(self.waiting_protocols, msg.req_args)
             if protocol is not None:
                 protocol.set_others(msg.ini_protocol_name, msg.ini_node_name,
                                     msg.ini_memories_name)
@@ -278,6 +277,7 @@ class ResourceManager():
                                              paired_node=None,
                                              paired_memories=None)
             self.owner.send_message(src, new_msg)
+
         elif msg.msg_type is ResourceManagerMsgType.RESPONSE:
             protocol_name = msg.ini_protocol_name
 
@@ -292,8 +292,7 @@ class ResourceManager():
                 return
 
             if msg.is_approved:
-                protocol.set_others(msg.paired_protocol, msg.paired_node,
-                                    msg.paired_memories)
+                protocol.set_others(msg.paired_protocol, msg.paired_node, msg.paired_memories)
                 if protocol.is_ready():
                     self.pending_protocols.remove(protocol)
                     self.owner.protocols.append(protocol)
@@ -310,10 +309,12 @@ class ResourceManager():
                     else:
                         self.update(None, memory, "ENTANGLED")
                 self.pending_protocols.remove(protocol)
+
         elif msg.msg_type is ResourceManagerMsgType.RELEASE_PROTOCOL:
             for p in self.owner.protocols:
                 if p.name == msg.protocol:
                     p.release()
+
         elif msg.msg_type is ResourceManagerMsgType.RELEASE_MEMORY:
             target_id = msg.memory
             for protocol in self.owner.protocols:
@@ -331,14 +332,12 @@ class ResourceManager():
         """Method to release protocols from memories on distant nodes.
 
         Release the remote protocol 'protocol' on the remote node 'dst'.
-        The local protocol was paired with the remote protocol but local
-        protocol becomes invalid.
-        The resource manager needs to notify the remote node to cancel the
-        paired protocol.
+        The local protocol was paired with the remote protocol but local protocol becomes invalid.
+        The resource manager needs to notify the remote node to cancel the paired protocol.
 
         Args:
             dst (str): name of the destination node.
-            protocol (EntanglementProtocol): protocol to release on node.
+            protocol (str): name of protocol to release on node.
         """
 
         msg = ResourceManagerMessage(ResourceManagerMsgType.RELEASE_PROTOCOL,
@@ -354,7 +353,6 @@ class ResourceManager():
         The resource manager needs to notify the remote node to release the occupied memory.
 
         Args:
-            init_protocol (EntanglementProtocol): protocol holding memory.
             dst (str): name of destination node.
             memory_id (str): name of memory to release.
         """

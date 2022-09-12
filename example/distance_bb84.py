@@ -27,6 +27,7 @@ if __name__ == "__main__":
         distance = max(1000, 10000 * int(i))
 
         tl = Timeline(runtime)
+        tl.show_progress = True
 
         qc0 = QuantumChannel("qc0", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
         qc1 = QuantumChannel("qc1", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
@@ -44,11 +45,8 @@ if __name__ == "__main__":
             alice.update_lightsource_params(name, param)
 
         # Bob
-        detector_params = [
-            {"efficiency": 0.8, "dark_count": 10, "time_resolution": 10,
-             "count_rate": 50e6},
-            {"efficiency": 0.8, "dark_count": 10, "time_resolution": 10,
-             "count_rate": 50e6}]
+        detector_params = [{"efficiency": 0.8, "dark_count": 10, "time_resolution": 10, "count_rate": 50e6},
+                           {"efficiency": 0.8, "dark_count": 10, "time_resolution": 10, "count_rate": 50e6}]
         bob = QKDNode("bob", tl, stack_size=1)
         bob.set_seed(1)
 
@@ -64,8 +62,7 @@ if __name__ == "__main__":
         # BB84 config
         pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
 
-        process = Process(alice.protocol_stack[0], "push",
-                          [256, math.inf, 6e12])
+        process = Process(alice.protocol_stack[0], "push", [256, math.inf, 6e12])
         event = Event(0, process)
         tl.schedule(event)
 
@@ -81,21 +78,6 @@ if __name__ == "__main__":
         tp_list.append(mean(bba.throughputs))
         error_rate_list.append(mean(bba.error_rates))
         latency_list.append(bba.latency)
-
-        # fh.write(str(distance))
-        # fh.write(' ')
-        # if bba.throughputs:
-        #     fh.write(str(1e-6 * sum(bba.throughputs) / len(bba.throughputs)))
-        # else:
-        #     fh.write(str(None))
-        # fh.write(' ')
-        # if bba.error_rates:
-        #     fh.write(str(sum(bba.error_rates) / len(bba.error_rates)))
-        # else:
-        #     fh.write(str(None))
-        # fh.write(' ')
-        # fh.write(str(bba.latency))
-        # fh.write('\n')
 
     log = {'Distance': dist_list, "Throughput": tp_list, 'Error_rate': error_rate_list, 'Latency': latency_list}
     df = pd.DataFrame(log)

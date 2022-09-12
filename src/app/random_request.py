@@ -5,6 +5,7 @@ Useful for testing network properties and throughputs.
 """
 from __future__ import annotations
 from typing import List, TYPE_CHECKING
+
 if TYPE_CHECKING:
     from ..network_management.reservation import Reservation
 
@@ -19,20 +20,16 @@ from ..topology.node import QuantumRouter
 class RandomRequestApp(RequestApp):
     """Code for the random request application.
 
-    This application will create a request for entanglement with a random node
-    (and with other random parameters).
+    This application will create a request for entanglement with a random node (and with other random parameters).
     If the request is accepted, a new request will be made once it has expired.
     Otherwise, a new request will be made immediately.
-    The responder and fidelity of failed request will be kept in the new
-    request.
+    The responder and fidelity of failed request will be kept in the new request.
 
-    The RandomRequestApp class inherits three functions from the RequsetApp
-    class: get_memory(memory_info), get_throughput(),
-    get_other_reservation(reservation). The "get_memory" function consumes the
-    memory when the qualified entanglement is generate. The "get_throughput"
-    function provides the throughput of the serving reservation. The
-    "get_other_reservation" function accepts reservation when node is the
-    responder node.
+    The RandomRequestApp class inherits three functions from the RequsetApp class:
+    get_memory(memory_info), get_throughput(), get_other_reservation(reservation).
+    The "get_memory" function consumes the memory when the qualified entanglement is generated.
+    The "get_throughput" function provides the throughput of the serving reservation.
+    The "get_other_reservation" function accepts reservation when node is the responder node.
 
     Attributes:
         node (QuantumRouter): Node that code is attached to.
@@ -41,15 +38,15 @@ class RandomRequestApp(RequestApp):
         request_time (int): simulation time at which current reservation requested.
         memory_counter (int): number of successfully received memories.
         wait_time (List[int]): aggregates times between request and accepted reservation.
-        all_throughput (List[float]): aggregates average rate of memory entanglement per reservation
-        reserves (List[List[any]]): aggregates previous reservations 
+        all_throughput (List[float]): aggregates average rate of memory entanglement per reservation.
+        reserves (List[List[any]]): aggregates previous reservations.
         memo_to_reserve (Dict[int, Reservation]): mapping of memory index to corresponding reservation.
-        min_dur (int): the minimum duration of request (ps)
-        max_dur (int): the maximum duration of request (ps)
-        min_size (int): the minimum required memory of request
-        max_size (int): the maximum required memory of request
-        min_fidelity (float): the minimum required fidelity of entanglement
-        max_fidelity (float): the maximum required fidelity of entanglement
+        min_dur (int): the minimum duration of request (ps).
+        max_dur (int): the maximum duration of request (ps).
+        min_size (int): the minimum required memory of request.
+        max_size (int): the maximum required memory of request.
+        min_fidelity (float): the minimum required fidelity of entanglement.
+        max_fidelity (float): the maximum required fidelity of entanglement.
     """
 
     def __init__(self, node: QuantumRouter, others: List[str], seed: int,
@@ -61,12 +58,12 @@ class RandomRequestApp(RequestApp):
             node (QuantumRouter): node that application is attached to.
             others (List[str]): list of names for other available routers.
             seed (int): seed for internal random number generator.
-            min_dur (int): the minimum duration of request (ps)
-            max_dur (int): the maximum duration of request (ps)
-            min_size (int): the minimum required memory of request
-            max_size (int): the maximum required memory of request
-            min_fidelity (float): the minimum required fidelity of entanglement
-            max_fidelity (float): the maximum required fidelity of entanglement
+            min_dur (int): the minimum duration of request (ps).
+            max_dur (int): the maximum duration of request (ps).
+            min_size (int): the minimum required memory of request.
+            max_size (int): the maximum required memory of request.
+            min_fidelity (float): the minimum required fidelity of entanglement.
+            max_fidelity (float): the maximum required fidelity of entanglement.
         """
         super().__init__(node)
         assert 0 < min_dur <= max_dur
@@ -150,6 +147,7 @@ class RandomRequestApp(RequestApp):
         Side Effects:
             May schedule a start/retry event based on reservation result.
         """
+
         super().get_reserve_res(reservation, result)
         if result:
             process = Process(self, "start", [])

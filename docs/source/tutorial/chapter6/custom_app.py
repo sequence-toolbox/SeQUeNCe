@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from sequence.topology.node import QuantumRouter
 
 
-class PeriodicApp():
+class PeriodicApp:
     def __init__(self, node: "QuantumRouter", other: str, memory_size=25, target_fidelity=0.9):
         self.node = node
         self.node.set_app(self)
@@ -21,7 +21,6 @@ class PeriodicApp():
         nm.request(self.other, start_time=(now + 1e12), end_time=(now + 2e12),
                    memory_size=self.memory_size,
                    target_fidelity=self.target_fidelity)
-
         # schedule future start
         process = Process(self, "start", [])
         event = Event(now + 2e12, process)
@@ -40,6 +39,34 @@ class PeriodicApp():
             self.node.resource_manager.update(None, info.memory, "RAW")
 
 
+class ResetApp:
+    def __init__(self, node, other_node_name, target_fidelity=0.9):
+        self.node = node
+        self.node.set_app(self)
+        self.other_node_name = other_node_name
+        self.target_fidelity = target_fidelity
+
+    def get_other_reservation(self, reservation):
+        """called when receiving the request from the initiating node.
+
+        For this application, we do not need to do anything.
+        """
+
+        pass
+
+    def get_memory(self, info):
+        """Similar to the get_memory method of the main application.
+
+        We check if the memory info meets the request first,
+        by noting the remote entangled memory and entanglement fidelity.
+        We then free the memory for future use.
+        """
+
+        if (info.state == "ENTANGLED" and info.remote_node == self.other_node_name
+                and info.fidelity > self.target_fidelity):
+            self.node.resource_manager.update(None, info.memory, "RAW")
+
+
 if __name__ == "__main__":
     network_config = "star_network.json"
     num_periods = 5
@@ -49,16 +76,23 @@ if __name__ == "__main__":
     tl.stop_time = 2e12 * num_periods
     tl.show_progress = False
 
-    node1 = "end1"
-    node2 = "end2"
-    for node in network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
-        if node.name == node1:
-            node1 = node
-        elif node.name == node2:
-            node2 = node
+    start_node_name = "end1"
+    end_node_name = "end2"
+    node1 = node2 = None
 
-    app = PeriodicApp(node1, node2.name)
+    for router in network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
+        if router.name == start_node_name:
+            node1 = router
+        elif router.name == end_node_name:
+            node2 = router
+
+    app = PeriodicApp(node1, end_node_name)
+    reset_app = ResetApp(node2, start_node_name)
     
     tl.init()
+
+    for name, component in tl.entities.items():
+        print("{}: {}".format(name, component.get_generator()))
+
     app.start()
     tl.run()

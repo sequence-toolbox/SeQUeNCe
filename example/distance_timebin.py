@@ -29,7 +29,7 @@ class Parent(StackProtocol):
     def push(self):
         self.lower_protocols[0].push(self.keysize, 10)
 
-    def received_message(self):
+    def received_message(self, src, msg):
         pass
 
 
@@ -43,6 +43,7 @@ if __name__ == "__main__":
 
     for distance in distances:
         tl = Timeline(runtime)
+        tl.show_progress = True
 
         qc0 = QuantumChannel("qc0", tl, distance=distance * 1e3, polarization_fidelity=0.97, attenuation=0.0002)
         qc1 = QuantumChannel("qc1", tl, distance=distance * 1e3, polarization_fidelity=0.97, attenuation=0.0002)
@@ -58,10 +59,9 @@ if __name__ == "__main__":
             alice.update_lightsource_params(name, param)
 
         # Bob
-        detector_params = [
-            {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
-            {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
-            {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10}]
+        detector_params = [{"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
+                           {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
+                           {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10}] 
         bob = QKDNode("bob", tl, encoding=time_bin, stack_size=1)
         bob.set_seed(1)
 

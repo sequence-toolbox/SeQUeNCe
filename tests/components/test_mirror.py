@@ -15,6 +15,10 @@ class EmittingNode(Node):
         super().__init__(name, timeline)
         self.light_source = light_source
         self.light_source.owner = self
+        light_source.add_receiver(self)
+
+    def get(self, photon, **kwargs):
+        self.send_qubit("mid", photon)
 
 
 class MiddleNode(Node):
@@ -69,7 +73,7 @@ def test_mirror():
         state_list.append(polarization["bases"][basis][bit])
 
     tl.init()
-    sender.light_source.emit(state_list, "mid")
+    sender.light_source.emit(state_list)
     tl.run()
 
     assert abs((len(receiver.log) / STATE_LEN) - (MEAN * FIDELITY)) < 0.1

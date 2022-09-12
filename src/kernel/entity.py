@@ -10,20 +10,21 @@ from numpy.random._generator import Generator
 
 if TYPE_CHECKING:
     from .timeline import Timeline
+    from ..components.photon import Photon
 
 
 class Entity(ABC):
     """Abstract Entity class.
     Entity should use the provided pseudo random number generator (PRNG) to
     produce reproducible random numbers. As a result, simulations with the same
-    seed could reproduce identical results. Function "get_generator" allows to
-    get the PRNG.
+    seed can reproduce identical results. Function "get_generator" returns the PRNG.
 
     Attributes:
         name (str): name of the entity.
         timeline (Timeline): the simulation timeline for the entity.
         owner (Entity): another entity that owns or aggregates the current entity.
-        _observer (List): a list of observers for the entity.
+        _observers (List): a list of observers for the entity.
+        _receivers (List[Entity]): a list of entities that receive photons from current component.
     """
 
     def __init__(self, name: str, timeline: "Timeline") -> None:
@@ -36,7 +37,10 @@ class Entity(ABC):
         self.name = "" if name is None else name
         self.timeline = timeline
         self.owner = None
+
+        self._receivers = []
         self._observers = []
+
         timeline.add_entity(self)
 
     @abstractmethod
@@ -49,10 +53,13 @@ class Entity(ABC):
 
         pass
 
-    def attach(self, observer: Any) -> None:
-        """Method to add an ovserver (to receive hardware updates)."""
+    def add_receiver(self, receiver: "Entity") -> None:
+        self._receivers.append(receiver)
 
-        if not observer in self._observers:
+    def attach(self, observer: Any) -> None:
+        """Method to add an observer (to receive hardware updates)."""
+
+        if observer not in self._observers:
             self._observers.append(observer)
 
     def detach(self, observer: Any) -> None:
@@ -66,6 +73,19 @@ class Entity(ABC):
         for observer in self._observers:
             observer.update(self, info)
 
+    def get(self, photon: "Photon", **kwargs):
+        """Method for an entity to receive a photon.
+
+        If entity is a node, may forward to external quantum channel.
+        Must be overwritten to be used, or will raise exception.
+
+        Args:
+            photon (Photon): photon received by the entity.
+            **kwargs: other arguments required by a particular hardware component.
+        """
+
+        raise Exception("get method called on non-receiving class.")
+
     def remove_from_timeline(self) -> None:
         """Method to remove entity from attached timeline.
 
@@ -78,7 +98,7 @@ class Entity(ABC):
 
         If entity is not attached to a node, return default generator.
         """
-        if hasattr(self.owner, "generator"):
+        if hasattr(self.owner, "get_generator"):
             return self.owner.get_generator()
         else:
             return default_rng()

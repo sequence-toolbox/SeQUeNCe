@@ -15,7 +15,7 @@ from .node import *
 from ..components.optical_channel import QuantumChannel, ClassicalChannel
 
 
-class Topology():
+class Topology:
     """Class for generating network from configuration file.
 
     The topology class provides a simple interface for managing the nodes

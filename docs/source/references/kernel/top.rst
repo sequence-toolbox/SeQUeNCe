@@ -15,3 +15,4 @@ The Kernel module provides the discrete event simulator for SeQUeNCe.
     p_timeline
     quantum_manager_client
     quantum_manager_server
+    quantum_state

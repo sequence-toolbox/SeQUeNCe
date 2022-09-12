@@ -7,7 +7,7 @@ from sequence.entanglement_management.swapping import *
 from sequence.topology.node import Node
 
 
-class ResourceManager():
+class ResourceManager:
     def __init__(self):
         self.log = []
 
@@ -38,8 +38,10 @@ psi_minus = [0, 0.5 ** 0.5, -(0.5 ** 0.5), 0]
 
 def correct_order(state, keys):
     if keys[0] > keys[1]:
-        return numpy.array(
-            [[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ state
+        return numpy.array([[1, 0, 0, 0],
+                            [0, 0, 1, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 0, 1]]) @ state
     else:
         return state
 
@@ -75,8 +77,7 @@ def config_three_nodes_network(state1, state2, seed_index):
 
 
 def create_scenario(state1, state2, seed_index):
-    tl, nodes, memories = config_three_nodes_network(state1, state2,
-                                                     seed_index)
+    tl, nodes, memories = config_three_nodes_network(state1, state2, seed_index)
     a1, a2, a3 = nodes
     memo1, memo2, memo3, memo4 = memories
 
@@ -528,8 +529,7 @@ def test_EntanglementSwapping():
 
         es1 = EntanglementSwappingB(a1, "a1.ESb%d" % i, memo1)
         a1.protocols.append(es1)
-        es2 = EntanglementSwappingA(a2, "a2.ESa%d" % i, memo2, memo3,
-                                    success_prob=0.2)
+        es2 = EntanglementSwappingA(a2, "a2.ESa%d" % i, memo2, memo3, success_prob=0.2)
         a2.protocols.append(es2)
         es3 = EntanglementSwappingB(a3, "a3.ESb%d" % i, memo4)
         a3.protocols.append(es3)
@@ -542,12 +542,9 @@ def test_EntanglementSwapping():
         es2.start()
 
         assert memo2.fidelity == memo3.fidelity == 0
-        assert memo1.entangled_memory["node_id"] == memo4.entangled_memory[
-            "node_id"] == "a2"
-        assert memo2.entangled_memory["node_id"] == memo3.entangled_memory[
-            "node_id"] == None
-        assert memo2.entangled_memory["memo_id"] == memo3.entangled_memory[
-            "memo_id"] == None
+        assert memo1.entangled_memory["node_id"] == memo4.entangled_memory["node_id"] == "a2"
+        assert memo2.entangled_memory["node_id"] == memo3.entangled_memory["node_id"] == None
+        assert memo2.entangled_memory["memo_id"] == memo3.entangled_memory["memo_id"] == None
         assert a2.resource_manager.log[-2] == (memo2, "RAW")
         assert a2.resource_manager.log[-1] == (memo3, "RAW")
 

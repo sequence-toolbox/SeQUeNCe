@@ -1,14 +1,20 @@
-"""Definition of the quantum state class.
+"""Definition of the quantum state classes.
 
-This module defines the QuantumState class, used by photons and memories to track internal quantum states.
-The class provides interfaces for measurement and entanglement.
+This module defines the classes used to track quantum states in SeQUeNCe.
+These include 2 classes used by a quantum manager, and one used for individual photons:
+
+1. The `KetState` class represents the ket vector formalism and is used by a quantum manager.
+2. The `DensityState` class represents the density matrix formalism and is also used by a quantum manager.
+3. The `FreeQuantumState` class uses the ket vector formalism, and is used by individual photons (not the quantum manager).
 """
-from functools import lru_cache
-from math import sqrt
-from typing import Tuple
 
-from numpy import pi, cos, sin, array, outer, kron, identity, arange
+from abc import ABC
+from typing import Tuple, Dict, List
+
+from numpy import pi, cos, sin, arange, log2
 from numpy.random import Generator
+
+from .quantum_utils import *
 
 
 def swap_bits(num, pos1, pos2):
@@ -24,23 +30,126 @@ def swap_bits(num, pos1, pos2):
     return num ^ x
 
 
-class QuantumState():
-    """Class to manage a quantum state.
-
-    Tracks quantum state coefficients (in Z-basis) and entangled states.
-    Functions related to the randomness uses the provided pseudo random number
-    generator (PRNG) to generate random numbers for a reproducible simulation.
+class State(ABC):
+    """Base class for storing quantum states (abstract).
 
     Attributes:
-        state (Tuple[complex]): list of complex coefficients in Z-basis.
-        entangled_states (List[QuantumState]): list of entangled states (indludng self).
+        state (any): internal representation of the state, may vary by state type.
+        keys (List[int]): list of keys pointing to the state, for use with a quantum manager.
     """
 
     def __init__(self):
+        super().__init__()
+
+        self.state = None
+        self.keys = []
+
+    def deserialize(self, json_data) -> None:
+        self.keys = json_data["keys"]
+        self.state = []
+        for i in range(0, len(json_data["state"]), 2):
+            complex_val = complex(json_data["state"][i],
+                                  json_data["state"][i + 1])
+            self.state.append(complex_val)
+
+    def serialize(self) -> Dict:
+        res = {"keys": self.keys}
+        state = []
+        for cplx_n in self.state:
+            if type(cplx_n) == float:
+                state.append(cplx_n)
+                state.append(0)
+            elif isinstance(cplx_n, complex):
+                state.append(cplx_n.real)
+                state.append(cplx_n.imag)
+            else:
+                raise ValueError("Unknown type of state")
+
+        res["state"] = state
+        return res
+
+    def __str__(self):
+        return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])
+
+
+class KetState(State):
+    """Class to represent an individual quantum state as a ket vector.
+
+    Attributes:
+        state (np.array): state vector. Should be of length 2 ** len(keys).
+        keys (List[int]): list of keys (qubits) associated with this state.
+    """
+
+    def __init__(self, amplitudes: List[complex], keys: List[int]):
+        super().__init__()
+
+        # check formatting
+        assert all([abs(a) <= 1.01 for a in amplitudes]), "Illegal value with abs > 1 in ket vector"
+        assert abs(sum([a ** 2 for a in amplitudes]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
+        num_qubits = log2(len(amplitudes))
+        assert num_qubits.is_integer(), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
+        assert num_qubits == len(keys), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
+
+        self.state = array(amplitudes, dtype=complex)
+        self.keys = keys
+
+
+class DensityState(State):
+    """Class to represent an individual quantum state as a density matrix.
+
+    Attributes:
+        state (np.array): density matrix values. NxN matrix with N = 2 ** len(keys).
+        keys (List[int]): list of keys (qubits) associated with this state.
+    """
+
+    def __init__(self, state: List[List[complex]], keys: List[int]):
+        """Constructor for density state class.
+
+        Args:
+            state (List[List[complex]]): density matrix elements given as a list.
+                If the list is one-dimensional, will be converted to matrix with outer product operation.
+            keys (List[int]): list of keys to this state in quantum manager.
+        """
+
+        super().__init__()
+
+        state = array(state, dtype=complex)
+        if state.ndim == 1:
+            state = outer(state.conj(), state)
+
+        # check formatting
+        assert abs(trace(array(state)) - 1) < 0.1, "density matrix trace must be 1"
+        for row in state:
+            assert len(state) == len(row), "density matrix must be square"
+        num_qubits = log2(len(state))
+        assert num_qubits.is_integer(), "Dimensions of density matrix should be 2 ** n, where n is the number of qubits"
+        assert num_qubits == len(keys), "Dimensions of density matrix should be 2 ** n, where n is the number of qubits"
+
+        self.state = state
+        self.keys = keys
+
+
+class FreeQuantumState(State):
+    """Class used by photons to track internal quantum states.
+
+    This is an alternative to tracking states in a dedicated quantum manager, which adds simulation overhead.
+    It defines several operations, including entanglement and measurement.
+    For memories with an internal quantum state and certain photons, such as those stored in a memory or in parallel
+    simulation, this class should not be used.
+    Quantum states stored in a quantum manager class should be used instead.
+    This module uses the ket vector formalism for storing and manipulating states.
+
+    Attributes:
+        state (Tuple[complex]): list of complex coefficients in Z-basis.
+        entangled_states (List[QuantumState]): list of entangled states (including self).
+    """
+
+    def __init__(self):
+        super().__init__()
         self.state = (complex(1), complex(0))
         self.entangled_states = [self]
 
-    def entangle(self, another_state: "QuantumState"):
+    def entangle(self, another_state: "FreeQuantumState"):
         """Method to entangle two quantum states.
 
         Arguments:
@@ -122,7 +231,7 @@ class QuantumState():
         if len(self.entangled_states) > 1:
             num_states = len(self.entangled_states)
             state_index = self.entangled_states.index(self)
-            state0, state1, prob = _measure_entangled_state_with_cache(self.state, basis, state_index, num_states)
+            state0, state1, prob = measure_entangled_state_with_cache(self.state, basis, state_index, num_states)
             if rng.random() < prob:
                 new_state = state0
                 result = 0
@@ -133,7 +242,7 @@ class QuantumState():
 
         # handle unentangled case
         else:
-            prob = _measure_state_with_cache(self.state, basis)
+            prob = measure_state_with_cache(self.state, basis)
             if rng.random() < prob:
                 new_state = basis[0]
                 result = 0
@@ -157,7 +266,7 @@ class QuantumState():
 
         Args:
             basis (List[List[complex]]): list of basis vectors.
-            states (List[QuantumState]): list of quantum state objects to meausre.
+            states (List[QuantumState]): list of quantum state objects to measure.
 
         Returns:
             int: measurement result in given basis.
@@ -194,7 +303,7 @@ class QuantumState():
         # math for probability calculations
         length_diff = len(entangled_list) - len(states)
 
-        new_states, probabilities = _measure_multiple_with_cache(state, basis, length_diff)
+        new_states, probabilities = measure_multiple_with_cache(state, basis, length_diff)
 
         possible_results = arange(0, basis_dimension, 1)
         # result gives index of the basis vector that will be projected to
@@ -206,79 +315,3 @@ class QuantumState():
             state.entangled_photons = entangled_list
 
         return res
-
-
-@lru_cache(maxsize=1000)
-def _measure_state_with_cache(state: Tuple[complex, complex], basis: Tuple[Tuple[complex]]) -> float:
-    state = array(state)
-    u = array(basis[0], dtype=complex)
-    v = array(basis[1], dtype=complex)
-    # measurement operator
-    M0 = outer(u.conj(), u)
-    M1 = outer(v.conj(), v)
-
-    # probability of measuring basis[0]
-    prob_0 = (state.conj().transpose() @ M0.conj().transpose() @ M0 @ state).real
-    return prob_0
-
-@lru_cache(maxsize=1000)
-def _measure_entangled_state_with_cache(state: Tuple[complex], basis:Tuple[Tuple[complex]],
-                                        state_index: int, num_states: int) -> Tuple[
-        Tuple[complex], Tuple[complex], float]:
-    state = array(state)
-    u = array(basis[0], dtype=complex)
-    v = array(basis[1], dtype=complex)
-    # measurement operator
-    M0 = outer(u.conj(), u)
-    M1 = outer(v.conj(), v)
-
-    # generate projectors
-    projector0 = [1]
-    projector1 = [1]
-    for i in range(num_states):
-        if i == state_index:
-            projector0 = kron(projector0, M0)
-            projector1 = kron(projector1, M1)
-        else:
-            projector0 = kron(projector0, identity(2))
-            projector1 = kron(projector1, identity(2))
-
-    # probability of measuring basis[0]
-    prob_0 = (state.conj().transpose() @ projector0.conj().transpose() @ projector0 @ state).real
-
-    if prob_0 >= 1:
-        state1 = None
-    else:
-        state1 = (projector1 @ state) / sqrt(1 - prob_0)
-
-    if prob_0 <= 0:
-        state0 = None
-    else:
-        state0 = (projector0 @ state) / sqrt(prob_0)
-
-    return (state0, state1, prob_0)
-
-@lru_cache(maxsize=1000)
-def _measure_multiple_with_cache(state: Tuple[Tuple[complex]], basis: Tuple[Tuple[complex]], length_diff: int) -> Tuple[
-        Tuple[Tuple[complex]], Tuple[float]]:
-    state = array(state)
-    # construct measurement operators, projectors, and probabilities of measurement
-    projectors = [None] * len(basis)
-    probabilities = [0] * len(basis)
-    for i, vector in enumerate(basis):
-        vector = array(vector, dtype=complex)
-        M = outer(vector.conj(), vector)  # measurement operator
-        projectors[i] = kron(M, identity(2 ** length_diff))  # projector
-        probabilities[i] = (state.conj().transpose() @ projectors[i].conj().transpose() @ projectors[i] @ state).real
-        if probabilities[i] < 0:
-            probabilities[i] = 0
-
-    return_states = [None] * len(projectors)
-    for i, proj in enumerate(projectors):
-        # project to new state
-        if probabilities[i] > 0:
-            new_state = (proj @ state) / sqrt(probabilities[i])
-            new_state = tuple(new_state)
-            return_states[i] = new_state
-
-    return (tuple(return_states), tuple(probabilities))

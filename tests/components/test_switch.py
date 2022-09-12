@@ -8,27 +8,26 @@ random.seed(0)
 FREQ = 1e6
 
 
-def create_switch(basis_list, photons):
-    class Receiver():
+def create_switch(tl, name, basis_list, photons):
+    class Receiver:
         def __init__(self, tl):
             self.timeline = tl
             self.log = []
 
-        def get(self, photon=None):
+        def get(self, photon):
             self.log.append((self.timeline.now(), photon))
 
-    tl = Timeline()
-    sw = Switch("sw", tl)
+    sw = Switch(name, tl)
     r1 = Receiver(tl)
     r2 = Receiver(tl)
-    sw.set_detector(r1)
-    sw.set_interferometer(r2)
+    sw.add_receiver(r1)
+    sw.add_receiver(r2)
     sw.set_basis_list(basis_list, 0, FREQ)
 
     tl.init()
     for i, photon in enumerate(photons):
-        tl.time = 1e12 / FREQ * i
-        sw.get(photons[i])
+        tl.time = (1e12 / FREQ) * i
+        sw.get(photon)
     tl.time = 0
     tl.run()
 
@@ -36,25 +35,24 @@ def create_switch(basis_list, photons):
 
 
 def test_Switch_get():
+    tl = Timeline()
     # z-basis measure |e> and |l>
-    photons = [Photon('', encoding_type=time_bin, quantum_state=time_bin["bases"][0][i]) for i in range(2)]
-    log1, log2 = create_switch([0] * 2, photons)
+    photons = [Photon('', tl, encoding_type=time_bin, quantum_state=time_bin["bases"][0][i]) for i in range(2)]
+    log1, log2 = create_switch(tl, "sw1", [0] * 2, photons)
     expects = [0, 1e12 / FREQ + time_bin["bin_separation"]]
     for i, log in enumerate(log1):
-        time, photon = log
+        time = log[0]
         assert time == expects[i]
-        assert photon is None
     assert len(log2) == 0
 
     # z-basis measure |e+l> and |e-l>
-    photons = [Photon('', encoding_type=time_bin, quantum_state=time_bin["bases"][0][random.randint(2)]) for _ in
+    photons = [Photon('', tl, encoding_type=time_bin, quantum_state=time_bin["bases"][0][random.randint(2)]) for _ in
                range(2000)]
-    log1, log2 = create_switch([0] * 2000, photons)
+    log1, log2 = create_switch(tl, "sw2", [0] * 2000, photons)
     assert len(log2) == 0
     counter1 = 0
     counter2 = 0
     for time, photon in log1:
-        assert photon is None
         time = time % (1e12 / FREQ)
         if time == 0:
             counter1 += 1
@@ -65,10 +63,10 @@ def test_Switch_get():
     assert abs(counter2 / counter1 - 1) < 0.1
 
     # x-basis get photons
-    photons = [Photon('',
+    photons = [Photon('', tl,
                       encoding_type=time_bin,
                       quantum_state=time_bin["bases"][random.randint(2)][random.randint(2)]) for _ in range(2000)]
-    log1, log2 = create_switch([1] * 2000, photons)
+    log1, log2 = create_switch(tl, "sw3", [1] * 2000, photons)
     assert len(log1) == 0
     for time, photon in log1:
         time = time % (1e12 / FREQ)

@@ -1,5 +1,6 @@
 from numpy import random
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
+from sequence.components.memory import MemoryArray
 from sequence.kernel.timeline import Timeline
 from sequence.network_management.reservation import *
 
@@ -46,7 +47,14 @@ def test_MemoryTimeCard_schedule_reservation():
 class FakeNode(QuantumRouter):
     def __init__(self, name, timeline, memo_size=50):
         super().__init__(name, timeline, memo_size)
-        self.rsvp = ResourceReservationProtocol(self, self.name + ".rsvp")
+
+        memo_arr_name = ""
+        for name in self.components.keys():
+            if type(self.components[name]) is MemoryArray:
+                memo_arr_name = name
+                break
+
+        self.rsvp = ResourceReservationProtocol(self, self.name + ".rsvp", memo_arr_name)
         self.rsvp.upper_protocols.append(self)
         self.rsvp.lower_protocols.append(self)
         self.push_log = []
@@ -68,7 +76,14 @@ class FakeNode(QuantumRouter):
 def test_ResourceReservationProtocol_push():
     tl = Timeline()
     n1 = FakeNode("n1", tl)
-    assert len(n1.rsvp.timecards) == len(n1.memory_array)
+
+    memo_arr = None
+    for c in n1.components.values():
+        if type(c) is MemoryArray:
+            memo_arr = c
+            break
+
+    assert len(n1.rsvp.timecards) == len(memo_arr)
     n1.rsvp.push("n10", 1, 10, 1000, 0.9)
     assert n1.pop_log[0]["msg"].msg_type == RSVPMsgType.REJECT
     assert len(n1.push_log) == 0
@@ -275,14 +290,19 @@ def test_ResourceReservationProtocol_create_rules():
     for node in routers:
         assert len(node.resource_manager.rule_manager) == 0
 
-    counter = 0
-    for memory in routers[0].memory_array:
-        print(memory.entangled_memory["node_id"], memory.fidelity)
-        if memory.entangled_memory["node_id"] == "r4" \
-                and memory.fidelity >= 0.9:
-            counter += 1
+    memo_arr = None
+    for c in routers[0].components.values():
+        if type(c) is MemoryArray:
+            memo_arr = c
+            break
 
+    counter = 0
+    for memory in memo_arr:
+        print(memory.entangled_memory["node_id"], memory.fidelity)
+        if memory.entangled_memory["node_id"] == "r4" and memory.fidelity >= 0.9:
+            counter += 1
     assert counter >= 0
+
     for info in routers[0].resource_manager.memory_manager:
         if info.state == "ENTANGLED" \
                 and info.remote_node == "r4" \

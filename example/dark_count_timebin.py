@@ -34,7 +34,7 @@ class Parent(StackProtocol):
     def push(self):
         self.lower_protocols[0].push(self.keysize, self.keynum)
 
-    def received_message(self):
+    def received_message(self, src, msg):
         pass
 
 

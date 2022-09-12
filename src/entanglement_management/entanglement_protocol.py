@@ -28,14 +28,13 @@ class EntanglementProtocol(Protocol):
         self.memories = []
 
     @abstractmethod
-    def set_others(self, remote_protocol: str, remote_node: str,
-                   memories: List[str]) -> None:
+    def set_others(self, remote_protocol: str, remote_node: str, memories: List[str]) -> None:
         """Method to set other entanglement protocol instance.
 
         Args:
-            protocol (str): other protocol name.
-            node (str): other node name.
-            memories (List[str]): the list of memories name used on other node.
+            remote_protocol (str): other protocol name.
+            remote_node (str): other node name.
+            memories (List[str]): the list of memory names used on other node.
         """
 
         pass

@@ -9,8 +9,6 @@ from enum import Enum, auto
 from typing import List, TYPE_CHECKING
 from functools import lru_cache
 
-from numpy.random import random
-
 if TYPE_CHECKING:
     from ..components.memory import Memory
     from ..topology.node import Node
@@ -94,14 +92,13 @@ class BBPSSW(EntanglementProtocol):
     def is_ready(self) -> bool:
         return self.remote_node_name is not None
 
-    def set_others(self, protocol: str, node: str,
-                   memories: List[str]) -> None:
+    def set_others(self, protocol: str, node: str, memories: List[str]) -> None:
         """Method to set other entanglement protocol instance.
 
         Args:
             protocol (str): other protocol name.
             node (str): other node name.
-            memories (List[str]): the list of memories name used on other node.
+            memories (List[str]): the list of memory names used on other node.
         """
         self.remote_node_name = node
         self.remote_protocol_name = protocol
@@ -137,10 +134,9 @@ class BBPSSW(EntanglementProtocol):
             Will send message to other protocol instance.
         """
 
-        log.logger.info(f"{self.own.name} protocol start with partner "
-                        f"{self.remote_node_name}")
+        log.logger.info(f"{self.own.name} protocol start with partner {self.remote_node_name}")
 
-        assert self.remote_protocol_name is not None, "other protocol is not set; please use set_others function to set it."
+        assert self.is_ready(), "other protocol is not set; please use set_others function to set it."
         kept_memo_ent = self.kept_memo.entangled_memory["node_id"]
         meas_memo_ent = self.meas_memo.entangled_memory["node_id"]
         assert kept_memo_ent == meas_memo_ent, "mismatch of entangled memories {}, {} on node {}".format(
@@ -178,8 +174,7 @@ class BBPSSW(EntanglementProtocol):
 
         self.update_resource_manager(self.meas_memo, "RAW")
         if self.meas_res == msg.meas_res:
-            self.kept_memo.fidelity = self.improved_fidelity(
-                self.kept_memo.fidelity)
+            self.kept_memo.fidelity = self.improved_fidelity(self.kept_memo.fidelity)
             self.update_resource_manager(self.kept_memo, state="ENTANGLED")
         else:
             self.update_resource_manager(self.kept_memo, state="RAW")
@@ -229,4 +224,3 @@ class BBPSSW(EntanglementProtocol):
         """
 
         return (F ** 2 + ((1 - F) / 3) ** 2) / (F ** 2 + 2 * F * (1 - F) / 3 + 5 * ((1 - F) / 3) ** 2)
-

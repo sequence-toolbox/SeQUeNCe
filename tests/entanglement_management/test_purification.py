@@ -23,7 +23,7 @@ psi_minus = [0, SQRT_HALF, -SQRT_HALF, 0]
 BELL_STATES = [phi_plus, phi_minus, psi_plus, psi_minus]
 
 
-class FakeResourceManager():
+class FakeResourceManager:
     def __init__(self, owner):
         self.log = []
 
@@ -31,6 +31,7 @@ class FakeResourceManager():
         self.log.append((memory, state))
         if state == RAW:
             memory.reset()
+
 
 class FakeNode(Node):
     def __init__(self, name, tl, **kwargs):
@@ -100,8 +101,7 @@ def create_scenario(state1, state2, seed_index, fidelity=1.0):
 
     tl.run()
 
-    assert meas1.entangled_memory == meas2.entangled_memory == {
-        'node_id': None, 'memo_id': None}
+    assert meas1.entangled_memory == meas2.entangled_memory == {'node_id': None, 'memo_id': None}
 
     return tl, kept1, kept2, meas1, meas2, ep1, ep2
 
@@ -647,8 +647,7 @@ def test_BBPSSW_fidelity():
             assert a2.resource_manager.log[-1] == (kept2, ENTANGLED)
         else:
             assert kept1.fidelity == 0
-            assert kept1.entangled_memory["node_id"] == kept2.entangled_memory[
-                "node_id"] == None
+            assert kept1.entangled_memory["node_id"] == kept2.entangled_memory["node_id"] == None
             assert a1.resource_manager.log[-1] == (kept1, RAW)
             assert a2.resource_manager.log[-1] == (kept2, RAW)
 

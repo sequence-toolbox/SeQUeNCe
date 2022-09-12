@@ -15,12 +15,14 @@ runtime = 2e10
 distance = 1e3
 
 tl = Timeline(runtime)
+tl.show_progress = True
 
 # set log
 log.set_logger(__name__, tl, log_filename)
-log.set_logger_level("DEBUG")
-log.track_module("BB84")
+log.set_logger_level('DEBUG')
+log.track_module('BB84')
 log.track_module('timeline')
+log.track_module('light_source')
 
 qc0 = QuantumChannel("qc0", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
 qc1 = QuantumChannel("qc1", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)
@@ -38,10 +40,8 @@ for name, param in ls_params.items():
     alice.update_lightsource_params(name, param)
 
 # Bob
-detector_params = [{"efficiency": 0.8, "dark_count": 10, "time_resolution": 10,
-                    "count_rate": 50e6},
-                   {"efficiency": 0.8, "dark_count": 10, "time_resolution": 10,
-                    "count_rate": 50e6}]
+detector_params = [{"efficiency": 0.8, "dark_count": 10, "time_resolution": 10, "count_rate": 50e6},
+                   {"efficiency": 0.8, "dark_count": 10, "time_resolution": 10, "count_rate": 50e6}]
 bob = QKDNode("bob", tl, stack_size=1)
 bob.set_seed(1)
 

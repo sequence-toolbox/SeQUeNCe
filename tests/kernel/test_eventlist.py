@@ -2,6 +2,7 @@ from sequence.kernel.event import Event
 from sequence.kernel.eventlist import EventList
 from numpy import random
 
+
 MAX_TS = 100
 MIN_TS = 0
 

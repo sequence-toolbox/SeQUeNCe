@@ -1,6 +1,6 @@
 # Chapter 6: Application
 
-In this sixth and final tutorial chapter, we will create a custom appliation to interact with the modules we have already seen. The goal of this tutorial is thus to see how applications are constructed in SeQUeNCe and how they interface with the network.
+In this sixth and final tutorial chapter, we will create a custom application to interact with the modules we have already seen. The goal of this tutorial is thus to see how applications are constructed in SeQUeNCe and how they interface with the network.
 
 ### Step 1: Building our Custom Application
 
@@ -8,7 +8,7 @@ We'll jump right in and build our custom application class `PeriodicApp`, which 
 
 To start, we will create a constructor for the application that requires
 - `node`, the node to which the application is attached,
-- `other`, the string name of the other node with whitch to attempt communications,
+- `other`, the string name of the other node with which to attempt communications,
 - `memory_size`, the number of memories that are requested for entanglement, and
 - `target_fidelity`, the desired fidelity of the entangled pairs.
 
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from sequence.topology.node import QuantumRouter
 
 
-class PeriodicApp():
+class PeriodicApp:
     def __init__(self, node: "QuantumRouter", other: str, memory_size=25, target_fidelity=0.9):
         self.node = node
         self.node.set_app(self)
@@ -68,7 +68,42 @@ The other method we require, `get_memory`, is called by the resource manager whe
             self.node.resource_manager.update(None, info.memory, "RAW")
 ```
 
-### Step 2: Building and Running the Simulation
+### Step 2: Reset Application
+
+To ensure the memories are utilized properly and returned to the memory manager, we will need a second application on the receiving node.
+This application will also take in memories and reset them to `"RAW"` if they are properly entangled.
+The `get_reserve_res` method will do nothing.
+
+```python
+class ResetApp:
+    def __init__(self, node, other_node_name, target_fidelity=0.9):
+        self.node = node
+        self.node.set_app(self)
+        self.other_node_name = other_node_name
+        self.target_fidelity = target_fidelity
+
+    def get_other_reservation(self, reservation):
+        """called when receiving the request from the initiating node.
+
+        For this application, we do not need to do anything.
+        """
+
+        pass
+
+    def get_memory(self, info):
+        """Similar to the get_memory method of the main application.
+
+        We check if the memory info meets the request first,
+        by noting the remote entangled memory and entanglement fidelity.
+        We then free the memory for future use.
+        """
+
+        if (info.state == "ENTANGLED" and info.remote_node == self.other_node_name
+                and info.fidelity > self.target_fidelity):
+            self.node.resource_manager.update(None, info.memory, "RAW")
+```
+
+### Step 3: Building and Running the Simulation
 
 With all of the tools we have seen through the tutorials, creating our network and running the simulation are now a very simple process. We will use the same json file as the last tutorial (`star_network.json`) to automatically build the network, and will add our custom application to one node. Finally, we will begin the application processes with the `start` method.
 
@@ -81,15 +116,17 @@ tl = network_topo.get_timeline()
 tl.stop_time = 2e12 * num_periods
 tl.show_progress = False
 
-node1 = "end1"
-node2 = "end2"
-for node in network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
-    if node.name == node1:
-        node1 = node
-    elif node.name == node2:
-        node2 = node
+start_node_name = "end1"
+end_node_name = "end2"
+node1 = node2 = None
 
-app = PeriodicApp(node1, node2.name)
+for router in network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
+    if router.name == start_node_name:
+        node1 = router
+    elif router.name == end_node_name:
+        node2 = router
+        
+app = PeriodicApp(node1, end_node_name)
 
 tl.init()
 app.start()

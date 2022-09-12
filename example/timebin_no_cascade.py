@@ -13,7 +13,6 @@ from sequence.utils.encoding import *
 
 
 if __name__ == "__main__":
-
     runtime = 1e12
     dark_count = 425
     distances = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]  # distances in km
@@ -31,10 +30,8 @@ if __name__ == "__main__":
         rate = distance if distance > 70 else 1
         tl = Timeline(runtime * rate)
 
-        qc0 = QuantumChannel("qc0", tl, distance=distance * 1e3,
-                             attenuation=0.0002)
-        qc1 = QuantumChannel("qc1", tl, distance=distance * 1e3,
-                             attenuation=0.0002)
+        qc0 = QuantumChannel("qc0", tl, distance=distance * 1e3, attenuation=0.0002)
+        qc1 = QuantumChannel("qc1", tl, distance=distance * 1e3, attenuation=0.0002)
         cc0 = ClassicalChannel("cc0", tl, distance=distance * 1e3)
         cc1 = ClassicalChannel("cc1", tl, distance=distance * 1e3)
 
@@ -47,12 +44,9 @@ if __name__ == "__main__":
             alice.update_lightsource_params(name, param)
 
         # Bob
-        detector_params = [{"efficiency": 0.072, "dark_count": dark_count,
-                            "time_resolution": 10},
-                           {"efficiency": 0.072, "dark_count": dark_count,
-                            "time_resolution": 10},
-                           {"efficiency": 0.072, "dark_count": dark_count,
-                            "time_resolution": 10}]
+        detector_params = [{"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10},
+                           {"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10},
+                           {"efficiency": 0.072, "dark_count": dark_count, "time_resolution": 10}]
         bob = QKDNode("bob", tl, encoding=time_bin, stack_size=1)
         bob.set_seed(0)
 

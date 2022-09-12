@@ -8,7 +8,9 @@ The components module provides models for quantum hardware.
 
     beam_splitter
     bsm
+    circuit
     detector
+    fiber_stretcher
     interferometer
     light_source
     memory

@@ -1,16 +1,16 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, List, Dict
 
-from ..kernel.event import Event
-from ..kernel.process import Process
-
 if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
     from ..network_management.reservation import Reservation
     from ..resource_management.memory_manager import MemoryInfo
 
+from ..kernel.event import Event
+from ..kernel.process import Process
 
-class RequestApp():
+
+class RequestApp:
     """Code for the request application.
 
         This application will create a request for entanglement.
@@ -66,11 +66,9 @@ class RequestApp():
         self.memo_size = memo_size
         self.fidelity = fidelity
 
-        self.node.reserve_net_resource(responder, start_t, end_t,
-                                       memo_size, fidelity)
+        self.node.reserve_net_resource(responder, start_t, end_t, memo_size, fidelity)
 
-    def get_reserve_res(self, reservation: "Reservation",
-                        result: bool) -> None:
+    def get_reserve_res(self, reservation: "Reservation", result: bool) -> None:
         """Method to receive reservation result from network manager.
 
         Args:
@@ -84,8 +82,7 @@ class RequestApp():
         if result:
             self.schedule_reservation(reservation)
 
-    def add_memo_reserve_map(self, index: int,
-                             reservation: "Reservation") -> None:
+    def add_memo_reserve_map(self, index: int, reservation: "Reservation") -> None:
         self.memo_to_reserve[index] = reservation
 
     def remove_memo_reserve_map(self, index: int) -> None:
@@ -110,11 +107,9 @@ class RequestApp():
 
         if info.index in self.memo_to_reserve:
             reservation = self.memo_to_reserve[info.index]
-            if info.remote_node == reservation.initiator \
-                    and info.fidelity >= reservation.fidelity:
+            if info.remote_node == reservation.initiator and info.fidelity >= reservation.fidelity:
                 self.node.resource_manager.update(None, info.memory, "RAW")
-            elif info.remote_node == reservation.responder \
-                    and info.fidelity >= reservation.fidelity:
+            elif info.remote_node == reservation.responder and info.fidelity >= reservation.fidelity:
                 self.memory_counter += 1
                 self.node.resource_manager.update(None, info.memory, "RAW")
 
@@ -138,11 +133,9 @@ class RequestApp():
             self.path = reservation.path
         for card in self.node.network_manager.protocol_stack[1].timecards:
             if reservation in card.reservations:
-                process = Process(self, "add_memo_reserve_map",
-                                  [card.memory_index, reservation])
+                process = Process(self, "add_memo_reserve_map", [card.memory_index, reservation])
                 event = Event(reservation.start_time, process)
                 self.node.timeline.schedule(event)
-                process = Process(self, "remove_memo_reserve_map",
-                                  [card.memory_index])
+                process = Process(self, "remove_memo_reserve_map", [card.memory_index])
                 event = Event(reservation.end_time, process)
                 self.node.timeline.schedule(event)

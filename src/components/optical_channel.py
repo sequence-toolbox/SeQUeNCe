@@ -28,7 +28,7 @@ class OpticalChannel(Entity):
         timeline (Timeline): timeline for simulation.
         sender (Node): node at sending end of optical channel.
         receiver (Node): node at receiving end of optical channel.
-        atteunuation (float): attenuation of the fiber (in dB/m).
+        attenuation (float): attenuation of the fiber (in dB/m).
         distance (int): length of the fiber (in m).
         polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
         light_speed (float): speed of light within the fiber (in m/ps).
@@ -72,7 +72,7 @@ class QuantumChannel(OpticalChannel):
         timeline (Timeline): timeline for simulation.
         sender (Node): node at sending end of optical channel.
         receiver (Node): node at receiving end of optical channel.
-        atteunuation (float): attenuation of the fiber (in dB/m).
+        attenuation (float): attenuation of the fiber (in dB/m).
         distance (int): length of the fiber (in m).
         polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
         light_speed (float): speed of light within the fiber (in m/ps).
@@ -81,9 +81,8 @@ class QuantumChannel(OpticalChannel):
         frequency (float): maximum frequency of qubit transmission (in Hz).
     """
 
-    def __init__(self, name: str, timeline: "Timeline", attenuation: float,
-                 distance: int, polarization_fidelity=1, light_speed=2e-4,
-                 frequency=8e7):
+    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int,
+                 polarization_fidelity=1.0, light_speed=2e-4, frequency=8e7):
         """Constructor for Quantum Channel class.
 
         Args:
@@ -139,7 +138,7 @@ class QuantumChannel(OpticalChannel):
 
         log.logger.info(
             "{} send qubit with state {} to {} by Channel {}".format(
-                self.sender.name, qubit.quantum_state.state, self.receiver,
+                self.sender.name, qubit.quantum_state, self.receiver,
                 self.name))
 
         assert self.delay != 0 and self.loss != 1, \
@@ -158,7 +157,7 @@ class QuantumChannel(OpticalChannel):
         if (self.sender.get_generator().random() > self.loss) or qubit.is_null:
             if self._receiver_on_other_tl():
                 self.timeline.quantum_manager.move_manage_to_server(
-                    qubit.qstate_key)
+                    qubit.quantum_state)
 
             if qubit.is_null:
                 qubit.add_loss(self.loss)
@@ -170,8 +169,7 @@ class QuantumChannel(OpticalChannel):
 
             # schedule receiving node to receive photon at future time determined by light speed
             future_time = self.timeline.now() + self.delay
-            process = Process(self.receiver, "receive_qubit",
-                              [source.name, qubit])
+            process = Process(self.receiver, "receive_qubit", [source.name, qubit])
             event = Event(future_time, process)
             self.timeline.schedule(event)
 
@@ -191,6 +189,8 @@ class QuantumChannel(OpticalChannel):
         Returns:
             int: simulation time for next available transmission window.
         """
+
+        # TODO: move this to node?
 
         min_time = max(min_time, self.timeline.now())
         time_bin = min_time * (self.frequency / 1e12)
@@ -223,7 +223,6 @@ class ClassicalChannel(OpticalChannel):
         sender (Node): node at sending end of optical channel.
         receiver (Node): node at receiving end of optical channel.
         distance (float): length of the fiber (in m).
-        light_speed (float): speed of light within the fiber (in m/ps).
         delay (float): delay (in ps) of message transmission (default distance / light_speed).
     """
 

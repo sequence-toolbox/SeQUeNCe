@@ -55,6 +55,7 @@ class NetworkManager():
             owner (QuantumRouter): node network manager is attached to.
             protocol_stack (List[StackProtocol]): stack of protocols to use for processing.
         """
+
         log.logger.info("Create network manager of Node {}".format(owner.name))
         self.name = "network_manager"
         self.owner = owner
@@ -118,6 +119,7 @@ class NetworkManager():
         Side Effects:
             Will invoke `pop` method of 0 indexed protocol in `protocol_stack`.
         """
+
         log.logger.info(
             "{} network manager receives message {} from {}".format(
                 self.owner.name, msg.payload, src))
@@ -132,7 +134,7 @@ class NetworkManager():
             responder (str): name of node to establish entanglement with.
             start_time (int): simulation start time of entanglement.
             end_time (int): simulation end time of entanglement.
-            memory_size (int): number of entangledd memory pairs to create.
+            memory_size (int): number of entangled memory pairs to create.
             target_fidelity (float): desired fidelity of entanglement.
 
         Side Effects:
@@ -142,7 +144,7 @@ class NetworkManager():
         self.protocol_stack[-1].push(responder, start_time, end_time, memory_size, target_fidelity)
 
 
-def NewNetworkManager(owner: "QuantumRouter") -> "NetworkManager":
+def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str) -> "NetworkManager":
     """Function to create a new network manager.
 
     Will create a network manager with default protocol stack.
@@ -150,6 +152,7 @@ def NewNetworkManager(owner: "QuantumRouter") -> "NetworkManager":
 
     Args:
         owner (QuantumRouter): node to attach network manager to.
+        memory_array_name (str): name of the memory array component on owner.
 
     Returns:
         NetworkManager: network manager object created.
@@ -157,7 +160,7 @@ def NewNetworkManager(owner: "QuantumRouter") -> "NetworkManager":
 
     manager = NetworkManager(owner, [])
     routing = StaticRoutingProtocol(owner, owner.name + ".StaticRoutingProtocol", {})
-    rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP")
+    rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP", memory_array_name)
     routing.upper_protocols.append(rsvp)
     rsvp.lower_protocols.append(routing)
     manager.load_stack([routing, rsvp])

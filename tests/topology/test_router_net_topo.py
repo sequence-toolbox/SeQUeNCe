@@ -18,7 +18,8 @@ def test_sequential_simulation():
     routers = all_nodes[RouterNetTopo.QUANTUM_ROUTER]
     e1 = e2 = e3 = e4 = None
     for router in routers:
-        assert len(router.memory_array) == 20
+        memory_array = router.get_components_by_type("MemoryArray")[0]
+        assert len(memory_array) == 20
         assert len(router.qchannels) == 1
         assert len(router.cchannels) == 2
         if router.name == "e1":
