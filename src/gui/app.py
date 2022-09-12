@@ -308,8 +308,8 @@ class QuantumGUI:
                 {
                     Topology.CONNECT_NODE_1: edge[2]['data']['source'],
                     Topology.CONNECT_NODE_2: edge[2]['data']['target'],
-                    Topology.ATTENUATION: edge[2]['data']['attenuation'],
-                    Topology.DISTANCE: edge[2]['data']['distance']
+                    Topology.ATTENUATION: float(edge[2]['data']['attenuation']),
+                    Topology.DISTANCE: int(edge[2]['data']['distance'])
                 }
             )
 
@@ -325,7 +325,7 @@ class QuantumGUI:
                     {
                         Topology.SRC: src,
                         Topology.DST: dst,
-                        Topology.DELAY: delay
+                        Topology.DELAY: int(delay)
                     }
                 )
 
@@ -435,11 +435,14 @@ class QuantumGUI:
         output = EDGE_DICT_ORDER.copy()
 
         for x in children:
-            if x['type'] == 'Input':
-                out = x['props']['value']
-                output['_'.join(x['props']['id'].split('_')[:-1])] = out
-        output['source'] = from_node[6:]
-        output['target'] = to_node[4:]
+            more_children = x['props']['children']
+            for y in more_children:
+                if y['props']['children']['type'] == 'Input':
+                    out = y['props']['children']['props']['value']
+                    output['_'.join(y['props']['children']['props']['id'].split('_')[:-1])] = out
+
+        output['source'] = from_node
+        output['target'] = to_node
         output['link_type'] = type_in
         return output
 
