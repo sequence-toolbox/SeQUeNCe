@@ -5,7 +5,7 @@ This function should be started on a separate process for parallel simulation, \
 Additionally defined are utility functions for socket connections and the messages used by the client/server.
 """
 
-from enum import Enum, auto
+from enum import Enum
 import socket
 import argparse
 from ipaddress import ip_address
@@ -13,11 +13,10 @@ import select
 from typing import List
 from time import time
 from json import dump
+from sequence.utils.communication import send_msg_with_length, recv_msg_with_length
+from sequence.components.circuit import Circuit
 
-from .p_quantum_manager import ParallelQuantumManagerKet, \
-    ParallelQuantumManagerDensity
-from ..utils.communication import send_msg_with_length, recv_msg_with_length
-from ..components.circuit import Circuit
+from .p_quantum_manager import ParallelQuantumManagerKet, ParallelQuantumManagerDensity
 
 
 def valid_port(port):
@@ -63,8 +62,7 @@ class QuantumManagerMessage():
         args (List[any]): list of other arguments for the request.
     """
 
-    def __init__(self, msg_type: QuantumManagerMsgType, keys: 'List[int]',
-                 args: 'List[Any]'):
+    def __init__(self, msg_type: QuantumManagerMsgType, keys: List[int], args: List[any]):
         self.type = msg_type
         self.keys = keys
         self.args = args

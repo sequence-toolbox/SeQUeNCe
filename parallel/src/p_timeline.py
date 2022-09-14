@@ -2,17 +2,17 @@ from typing import List
 
 from mpi4py import MPI
 from time import time
+from sequence.kernel.timeline import Timeline
+from sequence.kernel.event import Event
+from sequence.kernel.quantum_manager import KET_STATE_FORMALISM
 
-from .timeline import Timeline
-from .event import Event
 from .quantum_manager_client import QuantumManagerClient
-from .quantum_manager import KET_STATE_FORMALISM
 
 
 class ParallelTimeline(Timeline):
     """Class for a simulation timeline with parallel computation.
 
-    The Parallel Timeline acts behaves similarly to the Timeline class, maintianing and executing a queue of events.
+    The Parallel Timeline acts behaves similarly to the Timeline class, maintaining and executing a queue of events.
     There is one Parallel Timeline per simulation process.
     Each timeline controls a subset of the simulated network nodes.
     For events executed on nodes belonging to other timelines, an event buffer is maintained.
@@ -22,7 +22,8 @@ class ParallelTimeline(Timeline):
     Attributes:
         id (int): rank of MPI process running the Parallel Timeline instance.
         foreign_entities (Dict[str, int]): mapping of object names on other processes to process id.
-        event_buffer(List[List[Event]]): stores events for execution on foreign entities; swapped during synchronization.
+        event_buffer(List[List[Event]]): stores events for execution on foreign entities;
+            swapped during synchronization.
         lookahead (int): defines width of time window for execution (simulation time between synchronization).
         quantum_manager (QuantumManagerClient): local quantum manager client to communicate with server.
     """
