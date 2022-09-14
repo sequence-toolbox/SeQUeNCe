@@ -13,7 +13,7 @@ import select
 from typing import List
 from time import time
 from json import dump
-from sequence.utils.communication import send_msg_with_length, recv_msg_with_length
+from .communication import send_msg_with_length, recv_msg_with_length
 from sequence.components.circuit import Circuit
 
 from .p_quantum_manager import ParallelQuantumManagerKet, ParallelQuantumManagerDensity

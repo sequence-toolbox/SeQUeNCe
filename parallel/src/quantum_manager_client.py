@@ -12,7 +12,7 @@ from uuid import uuid4
 from sequence.kernel.quantum_manager import QuantumManagerKet, QuantumManagerDensity, KetState, \
     KET_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM
 from sequence.components.circuit import Circuit
-from sequence.utils.communication import send_msg_with_length, recv_msg_with_length
+from .communication import send_msg_with_length, recv_msg_with_length
 
 from .quantum_manager_server import QuantumManagerMsgType, \
     QuantumManagerMessage
