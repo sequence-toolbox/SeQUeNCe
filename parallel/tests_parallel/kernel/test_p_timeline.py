@@ -1,9 +1,10 @@
 import pytest
 from mpi4py import MPI
-from sequence.kernel.p_timeline import ParallelTimeline
 from sequence.kernel.entity import Entity
 from sequence.kernel.process import Process
 from sequence.kernel.event import Event
+
+from psequence.p_timeline import ParallelTimeline
 
 rank = MPI.COMM_WORLD.Get_rank()
 size = MPI.COMM_WORLD.Get_size()
