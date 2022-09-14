@@ -1,8 +1,8 @@
 from mpi4py import MPI
 from numpy.random import seed
 
-from sequence.kernel.p_timeline import ParallelTimeline
 from sequence.utils.phold import PholdNode
+from psequence.p_timeline import ParallelTimeline
 
 
 if __name__ == '__main__':
