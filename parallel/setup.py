@@ -9,9 +9,9 @@ setup(
                  " tzh@uchicago.edu, kettimut@mcs.anl.gov, msuchara@anl.gov",
     description="Parallel extension for SEQUENCE."
                 " SEQUENCE-Python is a prototype version of the official SEQUENCE release.",
-    packages=['sequence-parallel', 'sequence-parallel.p_quantum_manager', 'sequence-parallel.p_router_net_topo',
-              'sequence-parallel.p_timeline', 'sequence-parallel.p_timeline',
-              'sequence-parallel.quantum_manager_client', 'sequence-parallel.quantum_manager_server'],
+    packages=['psequence', 'psequence.p_quantum_manager', 'psequence.p_router_net_topo',
+              'psequence.p_timeline', 'psequence.p_timeline',
+              'psequence.quantum_manager_client', 'psequence.quantum_manager_server'],
     package_dir={'sequence': 'src'},
     package_data={'sequence': ['gui/user_templates.json', 'gui/default_params.json', 'gui/starlight.json']},
     include_package_data=True,
