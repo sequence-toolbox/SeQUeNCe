@@ -1,0 +1,7 @@
+numpy>=1.22
+pandas
+qutip>=4.6.0
+tqdm>=4.54.0
+mpi4py
+pytest-mpi
+sequence>=0.5.0
