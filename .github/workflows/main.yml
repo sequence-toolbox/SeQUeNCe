@@ -45,4 +45,5 @@ jobs:
 
     - name: Test parallel with pytest
       run: |
+        cd parallel
         make test_parallel
