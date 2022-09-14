@@ -1,7 +1,7 @@
 from mpi4py import MPI
 from numpy.random import seed
 
-from sequence.utils.phold import PholdNode
+from psequence.phold import PholdNode
 from psequence.p_timeline import ParallelTimeline
 
 
