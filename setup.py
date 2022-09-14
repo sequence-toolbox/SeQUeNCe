@@ -27,7 +27,5 @@ setup(
         'dash-table',
         'dash-cytoscape',
         'plotly',
-        'mpi4py',
-        'pytest-mpi',
     ],
 )
