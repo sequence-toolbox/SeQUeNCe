@@ -53,7 +53,7 @@ class QuantumManagerMsgType(Enum):
     SYNC = 8
 
 
-class QuantumManagerMessage():
+class QuantumManagerMessage:
     """Message for quantum manager communication.
 
     Attributes:
@@ -140,8 +140,7 @@ class QuantumManagerMessage():
             self.type = QuantumManagerMsgType.SYNC
 
 
-def start_server(ip: str, port: int, client_num, formalism="KET",
-                 log_file="server_log.json"):
+def start_server(ip: str, port: int, client_num, formalism="KET", log_file="server_log.json"):
     """Main function to run quantum manager server.
 
     Will run until all clients have disconnected or `TERMINATE` message received.
