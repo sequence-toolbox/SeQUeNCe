@@ -1,5 +1,5 @@
 Parallel Timeline
 =================
 
-.. automodule:: src.kernel.p_timeline
+.. automodule:: parallel.src.p_timeline
     :members:
