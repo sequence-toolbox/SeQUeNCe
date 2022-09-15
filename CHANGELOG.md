@@ -96,3 +96,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - This removes support for Python 3.7 and below
 - Bug fixes to tutorial chapter 3
 - Typo fixes to docstrings in reservation.py
+
+## [0.5.0]
+### Added
+- Tutorial materials for IEEE Quantum Week 2022 tutorial session
+
+### Changed
+- Reworked interface for nodes and hardware elements
+  - New Entity interface for receiving/passing photons
+  - New method for nodes to handle incoming and outgoing qubits
+  - Polished observer functionality
+- Reworked some protocols to utilize new interface
+- Some bug fixes for GUI
