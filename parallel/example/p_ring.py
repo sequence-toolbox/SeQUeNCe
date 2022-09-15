@@ -4,10 +4,10 @@ import pandas as pd
 from time import time
 import numpy as np
 
-from sequence.kernel.p_timeline import ParallelTimeline
 from sequence.topology.node import QuantumRouter, BSMNode
 from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.app.request_app import RequestApp
+from psequence.p_timeline import ParallelTimeline
 import sequence.utils.log as log
 
 

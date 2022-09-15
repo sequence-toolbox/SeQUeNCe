@@ -1,17 +1,16 @@
 from numpy.random import choice, exponential
-from typing import TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
-from ..kernel.process import Process
-from ..kernel.event import Event
+from sequence.kernel.process import Process
+from sequence.kernel.event import Event
 
 if TYPE_CHECKING:
-    from ..kernel.p_timeline import ParallelTimeline
+    from .p_timeline import ParallelTimeline
 
 
-class PholdNode():
-
+class PholdNode:
     def __init__(self, name: 'str', timeline: 'ParallelTimeline',
-                 init_work: int, lookahead: int, neighbors: 'List[str]'):
+                 init_work: int, lookahead: int, neighbors: List[str]):
         self.name = name
         self.timeline = timeline
         timeline.entities[name] = self

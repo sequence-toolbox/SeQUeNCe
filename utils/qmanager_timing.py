@@ -2,8 +2,7 @@ import time
 import multiprocessing
 import numpy as np
 
-from sequence.kernel.quantum_manager_server import generate_arg_parser, start_server, kill_server, \
-        QuantumManagerMessage, QuantumManagerMsgType
+from psequence.quantum_manager_server import generate_arg_parser, start_server
 from sequence.kernel.quantum_manager_client import QuantumManagerClient
 from sequence.components.circuit import Circuit
 
@@ -15,7 +14,7 @@ def client_function(ip, port):
     key = client.new()
 
     # send request to get state
-    ket_vec = client.get(key)
+    _ = client.get(key)
 
     # run Hadamard gate
     circ = Circuit(1)
@@ -23,7 +22,7 @@ def client_function(ip, port):
     client.run_circuit(circ, [key])
 
     # get state again to verify
-    ket_vec = client.get(key)
+    _ = client.get(key)
 
 
 NUM_TRIALS = 10
@@ -45,8 +44,7 @@ for _ in range(NUM_TRIALS):
     print("\ttime:", end - start)
     times.append(end - start)
 
-# close server
-kill_server(args.ip, args.port)
+p.kill()
 
 print("average time:", np.mean(times))
 

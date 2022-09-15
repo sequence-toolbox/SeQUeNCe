@@ -6,23 +6,20 @@ Qubits managed or accessed between processes are stored on a remote quantum mana
 """
 from collections import defaultdict
 from socket import socket
-from typing import List, TYPE_CHECKING, Any
+from typing import List
 from time import time
 from uuid import uuid4
-
-if TYPE_CHECKING:
-    from .p_timeline import ParallelTimeline
-
-from .quantum_manager import QuantumManagerKet, QuantumManagerDensity, KetState, \
+from sequence.kernel.quantum_manager import QuantumManagerKet, QuantumManagerDensity, KetState, \
     KET_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM
+from sequence.components.circuit import Circuit
+from .communication import send_msg_with_length, recv_msg_with_length
+
 from .quantum_manager_server import QuantumManagerMsgType, \
     QuantumManagerMessage
-from ..components.circuit import Circuit
-from ..utils.communication import send_msg_with_length, recv_msg_with_length
 
 
-class QuantumManagerClient():
-    """Class to pocess interactions with remote quantum manager server.
+class QuantumManagerClient:
+    """Class to process interactions with remote quantum manager server.
 
     Unless otherwise noted, the operation of all functions are the same as those of the QuantumManagerClass.
 
@@ -32,7 +29,6 @@ class QuantumManagerClient():
         port (int): port of quantum manager server.
         socket (socket): socket for communication with server.
         managed_qubits (set): keys for all qubits managed locally by client.
-        timeline (ParallelTimeline): local timeline.
         message_buffer (List): list of messages to send to quantum manager server.
     """
 
@@ -201,11 +197,11 @@ class QuantumManagerClient():
                 self._send_message(QuantumManagerMsgType.SET, state.keys,
                                    [state.state], False)
 
-    def move_manage_to_client(self, qubit_keys: List[int], amplitute: Any):
+    def move_manage_to_client(self, qubit_keys: List[int], amplitude: any):
         assert all(qubit_key in self.qm.states for qubit_key in qubit_keys)
         for key in qubit_keys:
             self.managed_qubits.add(key)
-        self.qm.set(qubit_keys, amplitute)
+        self.qm.set(qubit_keys, amplitude)
 
     def _send_message(self, msg_type, keys: List, args: List,
                       expecting_receive=True) -> any:

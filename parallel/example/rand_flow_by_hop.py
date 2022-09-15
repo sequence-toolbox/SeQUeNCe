@@ -9,7 +9,7 @@ from sequence.kernel.process import Process
 from sequence.kernel.event import Event
 from sequence.app.random_request import RandomRequestApp
 from sequence.app.request_app import RequestApp
-from sequence.topology.router_net_topo import RouterNetTopo
+from psequence.p_router_net_topo import ParallelRouterNetTopo
 import sequence.utils.log as log
 
 if TYPE_CHECKING:
@@ -58,13 +58,13 @@ def get_net_qc_graph(config_file: str):
         config = load(fh)
 
     graph = {}
-    for node in config[RouterNetTopo.ALL_NODE]:
-        if node[RouterNetTopo.TYPE] == RouterNetTopo.QUANTUM_ROUTER:
-            graph[node[RouterNetTopo.NAME]] = []
+    for node in config[ParallelRouterNetTopo.ALL_NODE]:
+        if node[ParallelRouterNetTopo.TYPE] == ParallelRouterNetTopo.QUANTUM_ROUTER:
+            graph[node[ParallelRouterNetTopo.NAME]] = []
 
     bsm_to_router_map = {}
-    for qc in config[RouterNetTopo.ALL_Q_CHANNEL]:
-        router, bsm = qc[RouterNetTopo.SRC], qc[RouterNetTopo.DST]
+    for qc in config[ParallelRouterNetTopo.ALL_Q_CHANNEL]:
+        router, bsm = qc[ParallelRouterNetTopo.SRC], qc[ParallelRouterNetTopo.DST]
         if not bsm in bsm_to_router_map:
             bsm_to_router_map[bsm] = router
         else:
@@ -116,7 +116,7 @@ def main(config_file: str, log_path: str):
     mpi_rank = MPI.COMM_WORLD.Get_rank()
     mpi_size = MPI.COMM_WORLD.Get_size()
 
-    topo = RouterNetTopo(config_file)
+    topo = ParallelRouterNetTopo(config_file)
     tl = topo.get_timeline()
     tl.stop_time = STOP_TIME
 

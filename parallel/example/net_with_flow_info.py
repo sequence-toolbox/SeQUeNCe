@@ -5,7 +5,7 @@ from mpi4py import MPI
 from json import load, dump
 
 from sequence.app.request_app import RequestApp
-from sequence.topology.router_net_topo import RouterNetTopo
+from psequence.p_router_net_topo import ParallelRouterNetTopo
 
 
 def main(config_file: str, flow_info_file: str, log_path: str):
@@ -21,7 +21,7 @@ def main(config_file: str, flow_info_file: str, log_path: str):
     mpi_rank = MPI.COMM_WORLD.Get_rank()
     mpi_size = MPI.COMM_WORLD.Get_size()
 
-    topo = RouterNetTopo(config_file)
+    topo = ParallelRouterNetTopo(config_file)
     tl = topo.get_timeline()
     tl.stop_time = STOP_TIME
 
