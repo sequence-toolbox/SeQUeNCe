@@ -366,6 +366,8 @@ class QuantumGUI:
 
         # Check to see if node with that name already exists
         # If it does, error
+        if add_node_name == '':
+            return [dash.no_update, 'Please enter a valid name']
         for data in nodes:
             if data == add_node_name:
                 return [dash.no_update, 'Node already exists']
@@ -378,6 +380,15 @@ class QuantumGUI:
             data=new_node.__dict__
         )
         self.data = new_graph
+
+        new_delay: pd.DataFrame = self.cc_delays.copy()
+        new_column = {add_node_name: [0] * new_delay.shape[0]}
+        new_delay = new_delay.assign(**new_column)
+        new_row = pd.DataFrame([[0] * new_delay.shape[1]],
+                               columns=new_delay.columns)
+        new_delay = pd.concat([new_delay, new_row], ignore_index=True)
+        self.cc_delays = new_delay
+
         return [nx.readwrite.cytoscape_data(self.data)['elements'], '']
 
     def _callback_add_edge(self, node_from, node_to, attributes):
@@ -642,6 +653,8 @@ class QuantumGUI:
             Output('make_edge_error', 'children'),
             Output('all_nodes', 'data'),
             Output('legend', 'children'),
+            Output('delay_table', 'data'),
+            Output('delay_table', 'columns'),
 
             Input('add_node', 'n_clicks'),
             Input('add_edge', 'n_clicks'),
@@ -683,12 +696,32 @@ class QuantumGUI:
                 legend_vals = list(self.data.nodes.data())
                 legend_vals = [x[1]['node_type'] for x in legend_vals]
                 legend = makeLegend(set(legend_vals))
+
+                # reassign CC delay table
+                delay_data = self.cc_delays.copy()
+                delay_columns = self.convert_columns(
+                    list(self.cc_delays.columns),
+                    case_norm=False
+                )
+                delay_rows = []
+                for x in delay_columns:
+                    delay_rows.append(x['id'])
+                delay_data.insert(loc=0, column='To', value=delay_rows)
+                delay_columns.insert(0, {
+                    'id': 'To',
+                    'type': 'text',
+                    'name': 'To'
+                })
+                new_delay_data = delay_data.to_dict('records')
+
                 return [
                     data,
                     '',
                     '',
                     nodes,
-                    legend
+                    legend,
+                    new_delay_data,
+                    delay_columns
                 ]
             else:
                 input_id = ctx.triggered[0]['prop_id'].split('.')[0]
@@ -701,13 +734,34 @@ class QuantumGUI:
                     legend_vals = list(self.data.nodes.data())
                     legend_vals = [x[1]['node_type'] for x in legend_vals]
                     legend = makeLegend(set(legend_vals))
+
+                    # reassign CC delay table
+                    delay_data = self.cc_delays.copy()
+                    delay_columns = self.convert_columns(
+                        list(self.cc_delays.columns),
+                        case_norm=False
+                    )
+                    delay_rows = []
+                    for x in delay_columns:
+                        delay_rows.append(x['id'])
+                    delay_data.insert(loc=0, column='To', value=delay_rows)
+                    delay_columns.insert(0, {
+                        'id': 'To',
+                        'type': 'text',
+                        'name': 'To'
+                    })
+                    new_delay_data = delay_data.to_dict('records')
+
                     return [
                         graph_data,
                         err_msg,
                         dash.no_update,
                         nodes,
-                        legend
+                        legend,
+                        new_delay_data,
+                        delay_columns
                     ]
+
                 elif input_id == 'add_edge':
                     info = self._callback_add_edge(
                         from_node,
@@ -725,38 +779,101 @@ class QuantumGUI:
                     legend_vals = list(self.data.nodes.data())
                     legend_vals = [x[1]['node_type'] for x in legend_vals]
                     legend = makeLegend(set(legend_vals))
+
+                    # reassign CC delay table
+                    delay_data = self.cc_delays.copy()
+                    delay_columns = self.convert_columns(
+                        list(self.cc_delays.columns),
+                        case_norm=False
+                    )
+                    delay_rows = []
+                    for x in delay_columns:
+                        delay_rows.append(x['id'])
+                    delay_data.insert(loc=0, column='To', value=delay_rows)
+                    delay_columns.insert(0, {
+                        'id': 'To',
+                        'type': 'text',
+                        'name': 'To'
+                    })
+                    new_delay_data = delay_data.to_dict('records')
+
                     return [
                         graph_data,
                         dash.no_update,
                         err_msg,
                         nodes,
-                        legend
+                        legend,
+                        new_delay_data,
+                        delay_columns
                     ]
+
                 elif input_id == 'new_network':
                     self.data = nx.empty_graph(create_using=nx.DiGraph())
                     nodes = list(self.data.nodes())
                     legend_vals = list(self.data.nodes.data())
                     legend_vals = [x[1]['node_type'] for x in legend_vals]
                     legend = makeLegend(set(legend_vals))
+
+                    # reassign CC delay table
+                    self.cc_delays = pd.DataFrame()
+                    delay_data = self.cc_delays.copy()
+                    delay_columns = self.convert_columns(
+                        list(self.cc_delays.columns),
+                        case_norm=False
+                    )
+                    delay_rows = []
+                    for x in delay_columns:
+                        delay_rows.append(x['id'])
+                    delay_data.insert(loc=0, column='To', value=delay_rows)
+                    delay_columns.insert(0, {
+                        'id': 'To',
+                        'type': 'text',
+                        'name': 'To'
+                    })
+                    new_delay_data = delay_data.to_dict('records')
+
                     return [
                         nx.readwrite.cytoscape_data(self.data)['elements'],
                         '',
                         '',
                         nodes,
-                        legend
+                        legend,
+                        new_delay_data,
+                        delay_columns
                     ]
+
                 elif input_id == 'refresh':
                     nodes = list(self.data.nodes())
                     legend_vals = list(self.data.nodes.data())
                     legend_vals = [x[1]['node_type'] for x in legend_vals]
                     legend = makeLegend(set(legend_vals))
+
+                    delay_data = self.cc_delays.copy()
+                    delay_columns = self.convert_columns(
+                        list(self.cc_delays.columns),
+                        case_norm=False
+                    )
+                    delay_rows = []
+                    for x in delay_columns:
+                        delay_rows.append(x['id'])
+                    delay_data.insert(loc=0, column='To', value=delay_rows)
+                    delay_columns.insert(0, {
+                        'id': 'To',
+                        'type': 'text',
+                        'name': 'To'
+                    })
+                    new_delay_data = delay_data.to_dict('records')
+
                     return [
                         nx.readwrite.cytoscape_data(self.data)['elements'],
                         dash.no_update,
                         dash.no_update,
                         nodes,
-                        legend
+                        legend,
+                        new_delay_data,
+                        delay_columns
                     ]
+
                 elif input_id == 'submit_edit':
                     # print(selected)
                     edited = self.parse_edit(selected)
@@ -767,17 +884,38 @@ class QuantumGUI:
                         self.data.edges[src][trgt]['data'] = new_data
                         gd = nx.readwrite.cytoscape_data(self.data)['elements']
                         err_msg = ''
+
                         nodes = list(self.data.nodes())
                         legend_vals = list(self.data.nodes.data())
                         legend_vals = [x[1]['node_type'] for x in legend_vals]
                         legend = makeLegend(set(legend_vals))
+
+                        delay_data = self.cc_delays.copy()
+                        delay_columns = self.convert_columns(
+                            list(self.cc_delays.columns),
+                            case_norm=False
+                        )
+                        delay_rows = []
+                        for x in delay_columns:
+                            delay_rows.append(x['id'])
+                        delay_data.insert(loc=0, column='To', value=delay_rows)
+                        delay_columns.insert(0, {
+                            'id': 'To',
+                            'type': 'text',
+                            'name': 'To'
+                        })
+                        new_delay_data = delay_data.to_dict('records')
+
                         return [
                             gd,
                             dash.no_update,
                             err_msg,
                             nodes,
-                            legend
+                            legend,
+                            new_delay_data,
+                            delay_columns
                         ]
+
                     else:
                         old_name = last_clicked['name']
                         self.data.nodes[old_name]['data'] = edited
@@ -788,24 +926,58 @@ class QuantumGUI:
                         )
                         gd = nx.readwrite.cytoscape_data(self.data)['elements']
                         err_msg = ''
+
                         nodes = list(self.data.nodes())
                         legend_vals = list(self.data.nodes.data())
                         legend_vals = [x[1]['node_type'] for x in legend_vals]
                         legend = makeLegend(set(legend_vals))
+
+                        delay_data = self.cc_delays.copy()
+                        delay_columns = self.convert_columns(
+                            list(self.cc_delays.columns),
+                            case_norm=False
+                        )
+                        delay_rows = []
+                        for x in delay_columns:
+                            delay_rows.append(x['id'])
+                        delay_data.insert(loc=0, column='To', value=delay_rows)
+                        delay_columns.insert(0, {
+                            'id': 'To',
+                            'type': 'text',
+                            'name': 'To'
+                        })
+                        new_delay_data = delay_data.to_dict('records')
+
                         return [
                             gd,
                             err_msg,
                             dash.no_update,
                             nodes,
-                            legend
+                            legend,
+                            new_delay_data,
+                            delay_columns
                         ]
+
                 elif input_id == 'delete_button':
                     to_delete = self.parse_edit(selected)
+
                     if 'name' in to_delete:
                         to_delete = to_delete['name']
                         new_graph = self.data.copy()
                         new_graph.remove_node(to_delete)
                         self.data = new_graph
+
+                        # remove from dataframe
+                        new_cc_delay = self.cc_delays.copy()
+                        # get index of node in columns
+                        node_names = new_cc_delay.columns.values.tolist()
+                        idx = node_names.index(to_delete)
+                        # remove row
+                        new_cc_delay.drop(index=idx, inplace=True)
+                        # remove column
+                        new_cc_delay.drop(labels=to_delete, axis=1, inplace=True)
+                        self.cc_delays = new_cc_delay
+
                     else:
                         new_graph = self.data.copy()
                         source = to_delete['source']
@@ -817,12 +989,31 @@ class QuantumGUI:
                     legend_vals = list(self.data.nodes.data())
                     legend_vals = [x[1]['node_type'] for x in legend_vals]
                     legend = makeLegend(set(legend_vals))
+
+                    delay_data = self.cc_delays.copy()
+                    delay_columns = self.convert_columns(
+                        list(self.cc_delays.columns),
+                        case_norm=False
+                    )
+                    delay_rows = []
+                    for x in delay_columns:
+                        delay_rows.append(x['id'])
+                    delay_data.insert(loc=0, column='To', value=delay_rows)
+                    delay_columns.insert(0, {
+                        'id': 'To',
+                        'type': 'text',
+                        'name': 'To'
+                    })
+                    new_delay_data = delay_data.to_dict('records')
+
                     return [
                         nx.readwrite.cytoscape_data(self.data)['elements'],
                         '',
                         '',
                         nodes,
-                        legend
+                        legend,
+                        new_delay_data,
+                        delay_columns
                     ]
 
         @app.callback(
