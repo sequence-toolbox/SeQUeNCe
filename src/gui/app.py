@@ -799,6 +799,7 @@ class QuantumGUI:
 
                 elif input_id == 'new_network':
                     self.data = nx.empty_graph(create_using=nx.DiGraph())
+                    self.cc_delays = pd.DataFrame()
 
                     nodes, legend, new_delay_data, delay_columns = \
                         self._callback_get_output()

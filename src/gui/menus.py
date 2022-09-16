@@ -610,7 +610,7 @@ def tdm_menu(data, columns):
     return html.Div(
         dbc.Form(
             [
-                html.H3('Quantum Channel TDM'),
+                html.H3('Quantum Channel TDM (WIP)'),
                 dash_table.DataTable(
                     id='tdm_table',
                     data=data,
@@ -753,7 +753,7 @@ results_menu = dbc.Form(
 
 simulation_menu = html.Div(
     [
-        html.H3('Run'),
+        html.H3('Run (WIP)'),
         dbc.Row(
             [
                 dbc.Col(
