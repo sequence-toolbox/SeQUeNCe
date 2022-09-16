@@ -418,6 +418,31 @@ class QuantumGUI:
 
         return [nx.readwrite.cytoscape_data(self.data)['elements'], '']
 
+    def _callback_get_output(self):
+        nodes = list(self.data.nodes())
+        legend_vals = list(self.data.nodes.data())
+        legend_vals = [x[1]['node_type'] for x in legend_vals]
+        legend = makeLegend(set(legend_vals))
+
+        # reassign CC delay table
+        delay_data = self.cc_delays.copy()
+        delay_columns = self.convert_columns(
+            list(self.cc_delays.columns),
+            case_norm=False
+        )
+        delay_rows = []
+        for x in delay_columns:
+            delay_rows.append(x['id'])
+        delay_data.insert(loc=0, column='To', value=delay_rows)
+        delay_columns.insert(0, {
+            'id': 'To',
+            'type': 'text',
+            'name': 'To'
+        })
+        new_delay_data = delay_data.to_dict('records')
+
+        return nodes, legend, new_delay_data, delay_columns
+
     def edit_node(self, data_in):
         new_graph = self.data.copy()
         nx.set_node_attributes(new_graph, )
@@ -730,27 +755,9 @@ class QuantumGUI:
                     info = self._callback_add_node(node_name, node_to_add_type)
                     graph_data = info[0]
                     err_msg = info[1]
-                    nodes = list(self.data.nodes())
-                    legend_vals = list(self.data.nodes.data())
-                    legend_vals = [x[1]['node_type'] for x in legend_vals]
-                    legend = makeLegend(set(legend_vals))
 
-                    # reassign CC delay table
-                    delay_data = self.cc_delays.copy()
-                    delay_columns = self.convert_columns(
-                        list(self.cc_delays.columns),
-                        case_norm=False
-                    )
-                    delay_rows = []
-                    for x in delay_columns:
-                        delay_rows.append(x['id'])
-                    delay_data.insert(loc=0, column='To', value=delay_rows)
-                    delay_columns.insert(0, {
-                        'id': 'To',
-                        'type': 'text',
-                        'name': 'To'
-                    })
-                    new_delay_data = delay_data.to_dict('records')
+                    nodes, legend, new_delay_data, delay_columns = \
+                        self._callback_get_output()
 
                     return [
                         graph_data,
@@ -773,29 +780,12 @@ class QuantumGUI:
                             properties
                         )
                     )
+
                     graph_data = info[0]
                     err_msg = info[1]
-                    nodes = list(self.data.nodes())
-                    legend_vals = list(self.data.nodes.data())
-                    legend_vals = [x[1]['node_type'] for x in legend_vals]
-                    legend = makeLegend(set(legend_vals))
 
-                    # reassign CC delay table
-                    delay_data = self.cc_delays.copy()
-                    delay_columns = self.convert_columns(
-                        list(self.cc_delays.columns),
-                        case_norm=False
-                    )
-                    delay_rows = []
-                    for x in delay_columns:
-                        delay_rows.append(x['id'])
-                    delay_data.insert(loc=0, column='To', value=delay_rows)
-                    delay_columns.insert(0, {
-                        'id': 'To',
-                        'type': 'text',
-                        'name': 'To'
-                    })
-                    new_delay_data = delay_data.to_dict('records')
+                    nodes, legend, new_delay_data, delay_columns = \
+                        self._callback_get_output()
 
                     return [
                         graph_data,
@@ -809,28 +799,9 @@ class QuantumGUI:
 
                 elif input_id == 'new_network':
                     self.data = nx.empty_graph(create_using=nx.DiGraph())
-                    nodes = list(self.data.nodes())
-                    legend_vals = list(self.data.nodes.data())
-                    legend_vals = [x[1]['node_type'] for x in legend_vals]
-                    legend = makeLegend(set(legend_vals))
 
-                    # reassign CC delay table
-                    self.cc_delays = pd.DataFrame()
-                    delay_data = self.cc_delays.copy()
-                    delay_columns = self.convert_columns(
-                        list(self.cc_delays.columns),
-                        case_norm=False
-                    )
-                    delay_rows = []
-                    for x in delay_columns:
-                        delay_rows.append(x['id'])
-                    delay_data.insert(loc=0, column='To', value=delay_rows)
-                    delay_columns.insert(0, {
-                        'id': 'To',
-                        'type': 'text',
-                        'name': 'To'
-                    })
-                    new_delay_data = delay_data.to_dict('records')
+                    nodes, legend, new_delay_data, delay_columns = \
+                        self._callback_get_output()
 
                     return [
                         nx.readwrite.cytoscape_data(self.data)['elements'],
@@ -843,26 +814,8 @@ class QuantumGUI:
                     ]
 
                 elif input_id == 'refresh':
-                    nodes = list(self.data.nodes())
-                    legend_vals = list(self.data.nodes.data())
-                    legend_vals = [x[1]['node_type'] for x in legend_vals]
-                    legend = makeLegend(set(legend_vals))
-
-                    delay_data = self.cc_delays.copy()
-                    delay_columns = self.convert_columns(
-                        list(self.cc_delays.columns),
-                        case_norm=False
-                    )
-                    delay_rows = []
-                    for x in delay_columns:
-                        delay_rows.append(x['id'])
-                    delay_data.insert(loc=0, column='To', value=delay_rows)
-                    delay_columns.insert(0, {
-                        'id': 'To',
-                        'type': 'text',
-                        'name': 'To'
-                    })
-                    new_delay_data = delay_data.to_dict('records')
+                    nodes, legend, new_delay_data, delay_columns = \
+                        self._callback_get_output()
 
                     return [
                         nx.readwrite.cytoscape_data(self.data)['elements'],
@@ -885,26 +838,8 @@ class QuantumGUI:
                         gd = nx.readwrite.cytoscape_data(self.data)['elements']
                         err_msg = ''
 
-                        nodes = list(self.data.nodes())
-                        legend_vals = list(self.data.nodes.data())
-                        legend_vals = [x[1]['node_type'] for x in legend_vals]
-                        legend = makeLegend(set(legend_vals))
-
-                        delay_data = self.cc_delays.copy()
-                        delay_columns = self.convert_columns(
-                            list(self.cc_delays.columns),
-                            case_norm=False
-                        )
-                        delay_rows = []
-                        for x in delay_columns:
-                            delay_rows.append(x['id'])
-                        delay_data.insert(loc=0, column='To', value=delay_rows)
-                        delay_columns.insert(0, {
-                            'id': 'To',
-                            'type': 'text',
-                            'name': 'To'
-                        })
-                        new_delay_data = delay_data.to_dict('records')
+                        nodes, legend, new_delay_data, delay_columns = \
+                            self._callback_get_output()
 
                         return [
                             gd,
@@ -927,26 +862,8 @@ class QuantumGUI:
                         gd = nx.readwrite.cytoscape_data(self.data)['elements']
                         err_msg = ''
 
-                        nodes = list(self.data.nodes())
-                        legend_vals = list(self.data.nodes.data())
-                        legend_vals = [x[1]['node_type'] for x in legend_vals]
-                        legend = makeLegend(set(legend_vals))
-
-                        delay_data = self.cc_delays.copy()
-                        delay_columns = self.convert_columns(
-                            list(self.cc_delays.columns),
-                            case_norm=False
-                        )
-                        delay_rows = []
-                        for x in delay_columns:
-                            delay_rows.append(x['id'])
-                        delay_data.insert(loc=0, column='To', value=delay_rows)
-                        delay_columns.insert(0, {
-                            'id': 'To',
-                            'type': 'text',
-                            'name': 'To'
-                        })
-                        new_delay_data = delay_data.to_dict('records')
+                        nodes, legend, new_delay_data, delay_columns = \
+                            self._callback_get_output()
 
                         return [
                             gd,
@@ -985,26 +902,8 @@ class QuantumGUI:
                         new_graph.remove_edge(source, target)
                         self.data = new_graph
 
-                    nodes = list(self.data.nodes())
-                    legend_vals = list(self.data.nodes.data())
-                    legend_vals = [x[1]['node_type'] for x in legend_vals]
-                    legend = makeLegend(set(legend_vals))
-
-                    delay_data = self.cc_delays.copy()
-                    delay_columns = self.convert_columns(
-                        list(self.cc_delays.columns),
-                        case_norm=False
-                    )
-                    delay_rows = []
-                    for x in delay_columns:
-                        delay_rows.append(x['id'])
-                    delay_data.insert(loc=0, column='To', value=delay_rows)
-                    delay_columns.insert(0, {
-                        'id': 'To',
-                        'type': 'text',
-                        'name': 'To'
-                    })
-                    new_delay_data = delay_data.to_dict('records')
+                    nodes, legend, new_delay_data, delay_columns = \
+                        self._callback_get_output()
 
                     return [
                         nx.readwrite.cytoscape_data(self.data)['elements'],
