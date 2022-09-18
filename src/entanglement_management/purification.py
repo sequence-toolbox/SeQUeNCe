@@ -174,7 +174,7 @@ class BBPSSW(EntanglementProtocol):
 
         self.update_resource_manager(self.meas_memo, "RAW")
         if self.meas_res == msg.meas_res:
-            self.kept_memo.fidelity = self.improved_fidelity(self.kept_memo.fidelity)
+            self.kept_memo.fidelity = BBPSSW.improved_fidelity(self.kept_memo.fidelity)
             self.update_resource_manager(self.kept_memo, state="ENTANGLED")
         else:
             self.update_resource_manager(self.kept_memo, state="RAW")
@@ -198,19 +198,6 @@ class BBPSSW(EntanglementProtocol):
 
     def release(self) -> None:
         pass
-
-    @staticmethod
-    @lru_cache(maxsize=128)
-    def success_probability(F: float) -> float:
-        """Method to calculate probability of purification success.
-        
-        Formula comes from Dur and Briegel (2007) page 14.
-
-        Args:
-            F (float): fidelity of entanglement.
-        """
-
-        return F ** 2 + 2 * F * (1 - F) / 3 + 5 * ((1 - F) / 3) ** 2
 
     @staticmethod
     @lru_cache(maxsize=128)

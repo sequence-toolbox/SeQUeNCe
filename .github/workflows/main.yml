@@ -2,9 +2,9 @@ name: main
 
 on:
   push:
-    branches: [master, RnD]
+    branches: [master, RnD, remove_mpi]
   pull_request:
-    branches: [master. RnD]
+    branches: [master. RnD, remove_mpi]
 
 jobs:
   build:
@@ -17,20 +17,33 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Set up MPI
-      uses: mpi4py/setup-mpi@v1
-      with:
-        mpi: ${{ matrix.mpi }}
+
     - name: Install dependencies
       run: |
         pip install pytest
         make setup
         make install
+
     - name: Test with pytest
       run: |
         make test
+
+    - name: Set up MPI
+      uses: mpi4py/setup-mpi@v1
+      with:
+        mpi: ${{ matrix.mpi }}
+
+    - name: Set up parallel code
+      run: |
+        cd parallel
+        make install
+
+    - name: Test parallel with pytest
+      run: |
+        cd parallel
         make test_parallel

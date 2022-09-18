@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="sequence",
-    version="0.5.0",
+    version="0.5.1",
     author="Xiaoliang Wu, Joaquin Chung, Alexander Kolar, Alexander Kiefer, Eugene Wang, Tian Zhong, Rajkumar Kettimuthu, Martin Suchara",
     author_email="xwu64@hawk.iit.edu, chungmiranda@anl.gov, akolar@anl.gov, akiefer@iu.edu, eugenewang@yahoo.com, tzh@uchicago.edu, kettimut@mcs.anl.gov, msuchara@anl.gov",
     description="Simulator of Quantum Network Communication: SEQUENCE-Python is a prototype version of the official SEQUENCE release.",
@@ -27,7 +27,5 @@ setup(
         'dash-table',
         'dash-cytoscape',
         'plotly',
-        'mpi4py',
-        'pytest-mpi',
     ],
 )

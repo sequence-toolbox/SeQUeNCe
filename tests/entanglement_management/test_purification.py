@@ -23,6 +23,10 @@ psi_minus = [0, SQRT_HALF, -SQRT_HALF, 0]
 BELL_STATES = [phi_plus, phi_minus, psi_plus, psi_minus]
 
 
+def success_probability(F: float) -> float:
+    return F ** 2 + 2 * F * (1 - F) / 3 + 5 * ((1 - F) / 3) ** 2
+
+
 class FakeResourceManager:
     def __init__(self, owner):
         self.log = []
@@ -669,4 +673,4 @@ def test_BBPSSW_success_rate():
 
         tl.run()
 
-    assert abs(counter1 / (counter1 + counter2) - BBPSSW.success_probability(fidelity)) < 0.1
+    assert abs(counter1 / (counter1 + counter2) - success_probability(fidelity)) < 0.1

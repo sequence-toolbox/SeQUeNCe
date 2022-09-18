@@ -1,5 +1,5 @@
 Quantum Manager Server
 ======================
 
-.. automodule:: src.kernel.quantum_manager_server
+.. automodule:: parallel.src.quantum_manager_server
     :members:

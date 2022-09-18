@@ -108,3 +108,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Polished observer functionality
 - Reworked some protocols to utilize new interface
 - Some bug fixes for GUI
+
+## [0.5.1]
+### Changed
+- Moved all parallel execution code to the parallel directory
+  - Now installed as separate package `psequence`
+  - New setup.py file and makefile specified in parallel folder
+  - Minimum sequence requirement 0.5.1
+- Parallel scripts are temporarily broken, will need to be rewritten for new structure
+
+### Removed
+- Removed `mpi4py` and `pytest-mpi` requirements for main package

@@ -6,9 +6,11 @@ The states may currently be defined in two possible ways:
 
 The manager defines an API for interacting with quantum states.
 """
-from typing import List, Dict
+from typing import List, Dict, TYPE_CHECKING
+from sequence.kernel.quantum_manager import QuantumManagerKet, QuantumManagerDensity
 
-from .quantum_manager import QuantumManagerKet, QuantumManagerDensity
+if TYPE_CHECKING:
+    from sequence.components.circuit import Circuit
 
 
 class ParallelQuantumManagerKet(QuantumManagerKet):

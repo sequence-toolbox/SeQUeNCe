@@ -35,6 +35,12 @@ Welcome to the SeQUeNCe documentation page
     references/qkd/top
     references/misc/top
 
+.. toctree::
+    :maxdepth: 1
+    :caption: Parallel Module References:
+
+    references/parallel/top
+
 Indices and tables
 ==================
 
