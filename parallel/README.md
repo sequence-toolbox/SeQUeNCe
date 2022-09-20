@@ -5,8 +5,7 @@ For details on how to set up and run parallel simulations with SeQUeNCe, please 
 Parallel simulation information is listed under the "Parallel Simulation Pages" heading, and the source files may be found in `../docs/source/parallel`.
 
 ## Installing
-Installation of SeQUeNCe includes the necessary simulation tools to run parallel simulations.
-On top of this, an installation of an MPI implementation is required.
+Before installing the parallel SeQUeNCe implementation, an installation of an MPI implementation is required (see below).
 Additionally, if the C++ version of the Quantum Manager Server is used (see the Quantum Manager Server section), an installation of CMake and the Eigen library is required.
 These instructions may also be viewed in the documentation on the "Prerequisites & Installation" page, and the source files are available at `../docs/source/parallel/install/prerequisite.md`.
 
@@ -37,6 +36,17 @@ $ make install
 ```
 Where `source_dir` is the path to the downloaded Eigen files. The `make install` step may require administrator privileges.
 For future reference and troubleshooting, these instructions may be viewed in the `INSTALL` file included with the Eigen library download.
+
+### Parallel SeQUeNCe
+Once these installations are completed, the parallel `psequence` package may be installed.
+This is handled in a similar manner to the base package; simply navigate to the parallel folder and run
+```
+$ pip install .
+```
+Or, using the included makefile,
+```
+$ make install
+```
 
 ## Quantum Manager Server
 Before running a parallel simulation script, a quantum manager server must be started to service requests from the simulation clients. SeQUeNCe includes a server program written in Python for ease of use and customization, as well as a version written in C++ for improved performance. Both programs communicate with the simulation clients using sockets.

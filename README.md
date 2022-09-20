@@ -11,9 +11,6 @@ These modules can be edited by users to define additional functionality and test
 
 ## Installing
 SeQUeNCe requires an installation of Python 3.8 or later. This can be found at the [Python Website](https://www.python.org/downloads/).
-The `mpi4py` package additionally requires an MPI installation on the local machine.
-For a few options listed by the MPI for python package, please see [this documentation page](https://mpi4py.readthedocs.io/en/stable/appendix.html#building-mpi).
-
 Then, simply download the package, navigate to its directory, and install with
 ```
 $ pip install .

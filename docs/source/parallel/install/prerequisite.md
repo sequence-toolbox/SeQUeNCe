@@ -3,7 +3,8 @@
 This set of three pages will go through the setup and usage of SeQUeNCe's parallel simulation capabilities. In this first page, we will review how to install the necessary requirements for parallel simulation.
 
 ## Additional Required Installations
-To run the parallel simulations fully in Python, only the MPI for Python library must be installed. The rest of the parallel simulation will work with installation of the SeQUeNCe library.
+To run the parallel simulations fully in Python, the MPI for Python library must be installed.
+The rest of the parallel simulation will then work with installation of the parallel SeQUeNCe library `psequence`.
 
 ### MPI for Python
 Before installing MPI for Python, an implementation of MPI must be installed on your system. Most working MPI implementations can be used, preferably those supporting MPI-3 and built with shared/dynamic libraries. For a few options listed by the MPI for python package, please see [this documentation page](https://mpi4py.readthedocs.io/en/stable/appendix.html#building-mpi).
@@ -11,6 +12,17 @@ Before installing MPI for Python, an implementation of MPI must be installed on 
 After this has been completed, the Python library may be installed as
 ```
 $ pip install mpi4py
+```
+
+### Parallel SeQUeNCe
+After this, the parallel `psequence` package may be installed.
+This is handled in a similar manner to the base package; simply navigate to the parallel folder and run
+```
+$ pip install .
+```
+Or, using the included makefile,
+```
+$ make install
 ```
 
 ## C++ Quantum Manager Server
