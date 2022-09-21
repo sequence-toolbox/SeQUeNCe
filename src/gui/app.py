@@ -687,6 +687,7 @@ class QuantumGUI:
             Input('refresh', 'n_clicks'),
             Input('submit_edit', 'n_clicks'),
             Input('delete_button', 'n_clicks'),
+            Input('delay_table', 'data'),
 
             State('node_to_add_name', 'value'),
             State('type_menu', 'value'),
@@ -704,6 +705,7 @@ class QuantumGUI:
             refresh,
             submit_edit,
             delete_b,
+            update_delay,
             node_name,
             node_to_add_type,
             properties,
@@ -716,31 +718,12 @@ class QuantumGUI:
             ctx = dash.callback_context
             if not ctx.triggered:
                 # print("No trigger")
-                data = nx.readwrite.cytoscape_data(self.data)['elements']
-                nodes = list(self.data.nodes())
-                legend_vals = list(self.data.nodes.data())
-                legend_vals = [x[1]['node_type'] for x in legend_vals]
-                legend = makeLegend(set(legend_vals))
 
-                # reassign CC delay table
-                delay_data = self.cc_delays.copy()
-                delay_columns = self.convert_columns(
-                    list(self.cc_delays.columns),
-                    case_norm=False
-                )
-                delay_rows = []
-                for x in delay_columns:
-                    delay_rows.append(x['id'])
-                delay_data.insert(loc=0, column='To', value=delay_rows)
-                delay_columns.insert(0, {
-                    'id': 'To',
-                    'type': 'text',
-                    'name': 'To'
-                })
-                new_delay_data = delay_data.to_dict('records')
+                nodes, legend, new_delay_data, delay_columns = \
+                    self._callback_get_output()
 
                 return [
-                    data,
+                    nx.readwrite.cytoscape_data(self.data)['elements'],
                     '',
                     '',
                     nodes,
@@ -748,6 +731,7 @@ class QuantumGUI:
                     new_delay_data,
                     delay_columns
                 ]
+
             else:
                 input_id = ctx.triggered[0]['prop_id'].split('.')[0]
                 # print(input_id)
@@ -902,6 +886,24 @@ class QuantumGUI:
                         target = to_delete['target']
                         new_graph.remove_edge(source, target)
                         self.data = new_graph
+
+                    nodes, legend, new_delay_data, delay_columns = \
+                        self._callback_get_output()
+
+                    return [
+                        nx.readwrite.cytoscape_data(self.data)['elements'],
+                        '',
+                        '',
+                        nodes,
+                        legend,
+                        new_delay_data,
+                        delay_columns
+                    ]
+
+                elif input_id == 'delay_table':
+                    df = pd.DataFrame(update_delay)
+                    df.drop('To', axis=1, inplace=True)
+                    self.cc_delays = df.astype(int)
 
                     nodes, legend, new_delay_data, delay_columns = \
                         self._callback_get_output()
