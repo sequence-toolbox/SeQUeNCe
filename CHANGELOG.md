@@ -119,3 +119,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Removed `mpi4py` and `pytest-mpi` requirements for main package
+
+## [0.5.2]
+### Added
+- Added more scripts for the QCE 2022 conference
+
+### Changed
+- Fixed some bugs in the GUI code for classical communication delay
+
+### Removed
+- Removed `mpi4py` from install instructions on the README
