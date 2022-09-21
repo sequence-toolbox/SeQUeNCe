@@ -93,7 +93,7 @@ class MemoryInfo():
         index (int): index of memory in memory array.
         state (str): state of memory.
         remote_node (str): name of node holding entangled memory.
-        remote_memo (int): index of entangled memory on remote node.
+        remote_memo (str): name of entangled memory on remote node.
         fidelity (int): fidelity of entanglement for memory.
         expire_event (Event): expiration event for the memory.
         entangle_time (int): time at which most recent entanglement is achieved.

@@ -2,9 +2,9 @@ name: main
 
 on:
   push:
-    branches: [master, RnD, remove_mpi]
+    branches: [master, RnD]
   pull_request:
-    branches: [master. RnD, remove_mpi]
+    branches: [master. RnD]
 
 jobs:
   build:
