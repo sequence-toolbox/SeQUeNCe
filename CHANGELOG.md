@@ -129,3 +129,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Removed `mpi4py` from install instructions on the README
+
+## [0.5.3]
+### Changed
+- Bug fixes to the GUI and QKD tests
