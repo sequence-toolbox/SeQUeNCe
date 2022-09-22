@@ -1,5 +1,3 @@
-from numpy import random
-
 from sequence.qkd.BB84 import pair_bb84_protocols
 
 # For testing BB84 Protocol
@@ -10,9 +8,6 @@ from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.topology.node import QKDNode, Node
 from sequence.protocol import StackProtocol
 from sequence.utils.encoding import *
-
-
-random.seed(0)
 
 
 # dummy parent class to test BB84 functionality
@@ -45,6 +40,8 @@ def test_BB84_polarization():
 
     alice = QKDNode("alice", tl, stack_size=1)
     bob = QKDNode("bob", tl, stack_size=1)
+    alice.set_seed(0)
+    bob.set_seed(1)
     pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
 
     qc0 = QuantumChannel("qc0", tl, distance=10e3, polarization_fidelity=0.99,
@@ -80,6 +77,8 @@ def test_BB84_time_bin():
 
     alice = QKDNode("alice", tl, encoding=time_bin, stack_size=1)
     bob = QKDNode("bob", tl, encoding=time_bin, stack_size=1)
+    alice.set_seed(2)
+    bob.set_seed(3)
     pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
 
     qc0 = QuantumChannel("qc0", tl, distance=10e3, polarization_fidelity=0.99,
@@ -108,5 +107,4 @@ def test_BB84_time_bin():
     tl.init()
     tl.run()
     assert pa.counter == pb.counter == 10
-
 
