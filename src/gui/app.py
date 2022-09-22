@@ -332,18 +332,10 @@ class QuantumGUI:
         output = {
             Topology.ALL_NODE: nodes_top,
             Topology.ALL_QC_CONNECT: qconnections,
-            Topology.ALL_CC_CONNECT: cconnections
+            Topology.ALL_CC_CONNECT: cconnections,
 
-            # 'cchannels_table': {
-            #     'type': 'RT',
-            #     'labels': list(c_delay.columns),
-            #     'table': c_delay.to_numpy().tolist()
-            # },
-            # 'qchannels_table': {
-            #     'type': 'RT',
-            #     'labels': list(q_delay.columns),
-            #     'table': q_delay.to_numpy().tolist()
-            # }
+            RouterNetTopo.IS_PARALLEL: False,
+            Topology.STOP_TIME: int(1e12)
         }
 
         return output
