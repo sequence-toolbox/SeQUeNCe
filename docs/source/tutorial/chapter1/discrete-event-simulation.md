@@ -34,14 +34,14 @@ from sequence.kernel.timeline import Timeline
 
 class Store(object):
     def __init__(self, tl: Timeline):
-        self.open = False
+        self.opening = False
         self.timeline = tl
 
     def open(self) -> None:
-        self.open = True
+        self.opening = True
 
     def close(self) -> None:
-        self.open = False
+        self.opening = False
 ```
 
 The `Store` class has two attributes: `open` and `timeline`. 
@@ -78,7 +78,7 @@ The object `Timeline` then schedules the created event in its event list.
 **Question**: after the above code executes, what is the state of `store`?
 
 ```python
-print(store.open) # False
+print(store.opening) # False
 ```
 
 ### Step 3: Run Simulation
@@ -89,7 +89,7 @@ To run the simulation, we need use `Timeline.run()` to process the scheduled eve
 
 ```python
 tl.run()
-print(tl.now(), store.open) # 7 True
+print(tl.now(), store.opening) # 7 True
 ```
 
 Now, the state of store is updated to the open state. 
@@ -105,7 +105,7 @@ close_proc = Process(store, 'close', [])
 close_event = Event(19, close_proc)
 tl.schedule(close_event)
 tl.run()
-print(tl.time, store.open) # 19 False
+print(tl.time, store.opening) # 19 False
 ```
 
 **Question**: will the state of `store` change if we schedule `close_event` first, then `open_event`?
@@ -115,7 +115,7 @@ tl.time = 0
 tl.schedule(open_event)
 tl.schedule(close_event)
 tl.run()
-print(tl.time, store.open)
+print(tl.time, store.opening)
 ```
 
 ```python
@@ -123,7 +123,7 @@ tl.time = 0
 tl.schedule(close_event)
 tl.schedule(open_event)
 tl.run()
-print(tl.time, store.open)
+print(tl.time, store.opening)
 ```
 
 You can compare the results of the above programs. 
@@ -144,17 +144,17 @@ from sequence.kernel.process import Process
 
 class Store(object):
     def __init__(self, tl: Timeline):
-        self.open = False
+        self.opening = False
         self.timeline = tl
 
     def open(self) -> None:
-        self.open = True
+        self.opening = True
         process = Process(self, 'close', [])
         event = Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
 
     def close(self) -> None:
-        self.open = False
+        self.opening = False
         process = Process(self, 'open', [])
         event = Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
@@ -198,7 +198,7 @@ For the second method, we can call `Timeline.stop()` in the `Store.open()` and `
     def open(self) -> None:
         if self.timeline.now() >= 60:
             self.timeline.stop()
-        self.open = True
+        self.opening = True
         process = Process(self, 'close', [])
         event = Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
@@ -206,7 +206,7 @@ For the second method, we can call `Timeline.stop()` in the `Store.open()` and `
     def close(self) -> None:
         if self.timeline.now() >= 60:
             self.timeline.stop()
-        self.open = False
+        self.opening = False
         process = Process(self, 'open', [])
         event = Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
@@ -226,6 +226,6 @@ for t in [15, 32, 52]:
     tl.schedule(event)
     
     tl.run()
-    print(store.open)
+    print(store.opening)
 # True, True, False
 ```
