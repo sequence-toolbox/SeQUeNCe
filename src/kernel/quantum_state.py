@@ -85,7 +85,7 @@ class KetState(State):
 
         # check formatting
         assert all([abs(a) <= 1.01 for a in amplitudes]), "Illegal value with abs > 1 in ket vector"
-        assert abs(sum([a ** 2 for a in amplitudes]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
+        assert abs(sum([abs(a) ** 2 for a in amplitudes]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
         num_qubits = log2(len(amplitudes))
         assert num_qubits.is_integer(), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
         assert num_qubits == len(keys), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
