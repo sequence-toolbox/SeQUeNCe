@@ -4,6 +4,7 @@ This module defines the Photon class for tracking individual photons.
 Photons may be encoded directly with polarization or time bin schemes, or may herald the encoded state of single atom memories.
 """
 from typing import Dict, Any, List, Union, TYPE_CHECKING
+from numpy import log2
 
 if TYPE_CHECKING:
     from numpy.random._generator import Generator
@@ -51,7 +52,8 @@ class Photon:
             wavelength (int): wavelength of photon (in nm) (default 0).
             location (Entity): location of the photon (default None).
             encoding_type (Dict[str, Any]): encoding type of photon (from encoding module) (default polarization).
-            quantum_state (Union[int, Tuple[complex]]): reference key for quantum manager, or complex coefficients for photon's quantum state.
+            quantum_state (Union[int, Tuple[complex]]):
+                reference key for quantum manager, or complex coefficients for photon's quantum state.
                 Default state is (1, 0).
                 If left blank and `use_qm` is true, will create new key from timeline quantum manager.
             use_qm (bool): determines if the quantum state is obtained from the quantum manager or stored locally.
@@ -78,9 +80,13 @@ class Photon:
                 self.quantum_state = quantum_state
         else:
             if quantum_state is None:
-                quantum_state=(complex(1), complex(0))
+                quantum_state = (complex(1), complex(0))
             else:
                 assert type(quantum_state) is tuple
+                assert all([abs(a) <= 1.01 for a in quantum_state]), "Illegal value with abs > 1 in photon state"
+                assert abs(sum([abs(a) ** 2 for a in quantum_state]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
+                num_qubits = log2(len(quantum_state))
+                assert num_qubits == 1, "Length of amplitudes for single photon should be 2"
             self.quantum_state = FreeQuantumState()
             self.quantum_state.state = quantum_state
 

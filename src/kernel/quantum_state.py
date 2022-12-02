@@ -186,11 +186,20 @@ class FreeQuantumState(State):
         """Method to change entangled state of multiple quantum states.
 
         Args:
-            state (Tuple[complex]): new coefficients for state. Should be 2^n in length, where n is the length of `entangled_states`.
+            state (Tuple[complex]): new coefficients for state.
+                Should be 2^n in length, where n is the length of `entangled_states`.
 
         Side Effects:
             Modifies the `state` field for current and entangled states.
         """
+
+        # check formatting of state
+        assert all([abs(a) <= 1.01 for a in state]), "Illegal value with abs > 1 in quantum state"
+        assert abs(sum([abs(a) ** 2 for a in state]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
+        num_qubits = log2(len(state))
+        assert num_qubits.is_integer(), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
+        assert num_qubits == len(self.entangled_states), \
+            "Length of amplitudes should be 2 ** n, where n is the number of qubits"
 
         for qs in self.entangled_states:
             qs.state = state

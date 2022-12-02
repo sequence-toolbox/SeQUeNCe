@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from sequence.kernel.timeline import Timeline
 from sequence.components.photon import Photon
@@ -33,11 +34,25 @@ def test_entangle():
 def test_set_state():
     tl = Timeline()
     photon = Photon("", tl)
+
     test_state = (complex(0), complex(1))
     photon.set_state(test_state)
-
     for i, coeff in enumerate(photon.quantum_state.state):
         assert coeff == test_state[i]
+
+    # non-unit amplitudes
+    test_state = (complex(2), complex(0))
+    with pytest.raises(AssertionError, match="Illegal value with abs > 1 in quantum state"):
+        photon.set_state(test_state)
+
+    test_state = (complex(0), complex(0))
+    with pytest.raises(AssertionError, match="Squared amplitudes do not sum to 1"):
+        photon.set_state(test_state)
+
+    # incorrect size
+    test_state = (complex(1), complex(0), complex(0), complex(0))
+    with pytest.raises(AssertionError):
+        photon.set_state(test_state)
 
 
 def test_measure():
