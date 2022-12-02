@@ -34,14 +34,14 @@ from sequence.kernel.timeline import Timeline
 
 class Store(object):
     def __init__(self, tl: Timeline):
-        self.opening = False
+        self.open = False
         self.timeline = tl
 
     def open(self) -> None:
-        self.opening = True
+        self.open = True
 
     def close(self) -> None:
-        self.opening = False
+        self.open = False
 ```
 
 The `Store` class has two attributes: `open` and `timeline`. 
@@ -61,6 +61,7 @@ from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 
 tl = Timeline() # create timeline
+tl.show_progress = False # turn of progress bar, we will address this in later tutorials.
 store = Store(tl) # create store
 
 # open store at 7:00
@@ -143,17 +144,17 @@ from sequence.kernel.process import Process
 
 class Store(object):
     def __init__(self, tl: Timeline):
-        self.opening = False
+        self.open = False
         self.timeline = tl
 
     def open(self) -> None:
-        self.opening = True
+        self.open = True
         process = Process(self, 'close', [])
         event = Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
 
     def close(self) -> None:
-        self.opening = False
+        self.open = False
         process = Process(self, 'open', [])
         event = Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
@@ -168,6 +169,7 @@ We can then define a store with an initial state - that the store opens at 7.
 
 ```python
 tl = Timeline()
+tl.show_progress = False
 store = Store(tl)
 process = Process(store, 'open', [])
 event = Event(7, process)
@@ -196,7 +198,7 @@ For the second method, we can call `Timeline.stop()` in the `Store.open()` and `
     def open(self) -> None:
         if self.timeline.now() >= 60:
             self.timeline.stop()
-        self.opening = True
+        self.open = True
         process = Process(self, 'close', [])
         event = Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
@@ -204,7 +206,7 @@ For the second method, we can call `Timeline.stop()` in the `Store.open()` and `
     def close(self) -> None:
         if self.timeline.now() >= 60:
             self.timeline.stop()
-        self.opening = False
+        self.open = False
         process = Process(self, 'open', [])
         event = Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)

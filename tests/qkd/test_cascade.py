@@ -1,4 +1,3 @@
-from numpy import random
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
@@ -6,9 +5,7 @@ from sequence.kernel.timeline import Timeline
 from sequence.protocol import StackProtocol
 from sequence.qkd.BB84 import pair_bb84_protocols
 from sequence.qkd.cascade import pair_cascade_protocols
-from sequence.topology.node import QKDNode
-
-random.seed(0)
+from sequence.topology.node import QKDNode, Node
 
 
 # dummy parent class to test cascade functionality
@@ -44,11 +41,15 @@ def test_cascade_run():
 
     alice = QKDNode("alice", tl)
     bob = QKDNode("bob", tl)
+    alice.set_seed(0)
+    bob.set_seed(0)
     pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
     pair_cascade_protocols(alice.protocol_stack[1], bob.protocol_stack[1])
 
-    qc0 = QuantumChannel("qc0", tl, distance=1e3, attenuation=2e-5, polarization_fidelity=0.97)
-    qc1 = QuantumChannel("qc1", tl, distance=1e3, attenuation=2e-5, polarization_fidelity=0.97)
+    qc0 = QuantumChannel("qc0", tl, distance=1e3, attenuation=2e-5,
+                         polarization_fidelity=0.97)
+    qc1 = QuantumChannel("qc1", tl, distance=1e3, attenuation=2e-5,
+                         polarization_fidelity=0.97)
     qc0.set_ends(alice, bob.name)
     qc1.set_ends(bob, alice.name)
     cc0 = ClassicalChannel("cc0", tl, distance=1e3)

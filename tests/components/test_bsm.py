@@ -256,9 +256,10 @@ def test_absorptive_get():
     class Measurer:
         def __init__(self, detector):
             self.detector = detector
+            self.generator = np.random.default_rng(1)
 
         def get(self, photon, **kwargs):
-            res = Photon.measure(None, photon, np.random.default_rng())
+            res = Photon.measure(None, photon, self.generator)
             if res:
                 self.detector.get()
 
@@ -305,13 +306,13 @@ def test_absorptive_get():
         photons0[1] = Photon("", tl, encoding_type=absorptive, location=0, use_qm=True)
         photons0[0].is_null = True
         photons0[1].is_null = True
-        photons0[0].entangle(photons0[1])
+        photons0[0].combine_state(photons0[1])
         photons0[0].set_state((complex(1), complex(0), complex(0), complex(0)))
 
         # pair 1 (not null)
         photons1[0] = Photon("", tl, encoding_type=absorptive, location=1, use_qm=True)
         photons1[1] = Photon("", tl, encoding_type=absorptive, location=1, use_qm=True)
-        photons1[0].entangle(photons1[1])
+        photons1[0].combine_state(photons1[1])
         photons1[0].set_state((complex(0), complex(0), complex(0), complex(1)))
 
         # send part of each pair to bsm

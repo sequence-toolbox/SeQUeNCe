@@ -5,8 +5,6 @@ This module defines the SPDCLens class for creation of entangled photons.
 
 from copy import deepcopy
 
-from numpy.random import random_sample
-
 from ..kernel.entity import Entity
 
 
@@ -53,7 +51,7 @@ class SPDCLens(Entity):
             photon.wavelength /= 2
             new_photon = deepcopy(photon)
 
-            photon.entangle(new_photon)
+            photon.combine_state(new_photon)
             photon.set_state((state[0], complex(0), complex(0), state[1]))
 
             self._receivers[0].get(photon)

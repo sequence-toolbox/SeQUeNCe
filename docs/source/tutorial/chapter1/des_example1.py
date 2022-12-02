@@ -2,6 +2,7 @@ from sequence.kernel.timeline import Timeline
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 
+
 class Store(object):
     def __init__(self, tl: Timeline):
         self.opening = False
@@ -15,6 +16,8 @@ class Store(object):
 
 
 tl = Timeline()
+tl.show_progress = False
+
 store = Store(tl)
 
 # open store at 7:00

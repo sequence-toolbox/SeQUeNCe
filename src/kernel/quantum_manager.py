@@ -35,9 +35,9 @@ class QuantumManager:
     All states stored are of a single formalism (by default as a ket vector).
 
     Attributes:
-        states (Dict[int, KetState]): mapping of state keys to quantum state objects.
+        states (Dict[int, State]): mapping of state keys to quantum state objects.
         truncation (int): maximally allowed number of excited states for elementary subsystems.
-                Default is 1 for qubit. 
+                Default is 1 for qubit.
         dim (int): subsystem Hilbert space dimension. dim = truncation + 1
     """
 
@@ -49,11 +49,11 @@ class QuantumManager:
         self.dim = self.truncation + 1
 
     @abstractmethod
-    def new(self, amplitudes: any) -> int:
+    def new(self, state: any) -> int:
         """Method to create a new quantum state.
 
         Args:
-            amplitudes: complex amplitudes of new state. Type depends on type of subclass.
+            state (any): complex amplitudes of new state. Type depends on type of subclass.
 
         Returns:
             int: key for new state generated.
@@ -135,7 +135,7 @@ class QuantumManager:
 
         Args:
             keys (List[int]): key(s) of state(s) to change.
-            amplitudes: Amplitudes to set state to, type determined by type of subclass.
+            amplitudes (any): Amplitudes to set state to, type determined by type of subclass.
         """
 
         num_subsystems = log(len(amplitudes)) / log(self.dim)
@@ -146,7 +146,7 @@ class QuantumManager:
         assert num_subsystems == len(keys),\
             "Length of amplitudes should be d ** n, where d is subsystem Hilbert space dimension and \
              n is the number of subsystems"
-    
+
     def remove(self, key: int) -> None:
         """Method to remove state stored at key."""
         del self.states[key]
@@ -161,10 +161,10 @@ class QuantumManagerKet(QuantumManager):
     def __init__(self):
         super().__init__(KET_STATE_FORMALISM)
 
-    def new(self, amplitudes=(complex(1), complex(0))) -> int:
+    def new(self, state=(complex(1), complex(0))) -> int:
         key = self._least_available
         self._least_available += 1
-        self.states[key] = KetState(amplitudes, [key])
+        self.states[key] = KetState(state, [key])
         return key
 
     def run_circuit(self, circuit: Circuit, keys: List[int], meas_samp=None) -> Dict[int, int]:
@@ -196,7 +196,8 @@ class QuantumManagerKet(QuantumManager):
     def set_to_one(self, key: int):
         self.set([key], [complex(0), complex(1)])
 
-    def _measure(self, state: List[complex], keys: List[int], all_keys: List[int], meas_samp: float) -> Dict[int, int]:
+    def _measure(self, state: List[complex], keys: List[int],
+                 all_keys: List[int], meas_samp: float) -> Dict[int, int]:
         """Method to measure qubits at given keys.
 
         SHOULD NOT be called individually; only from circuit method (unless for unit testing purposes).
@@ -226,10 +227,10 @@ class QuantumManagerKet(QuantumManager):
                 state_index = all_keys.index(key)
                 state_0, state_1, prob_0 = measure_entangled_state_with_cache_ket(tuple(state), state_index, num_states)
                 if meas_samp < prob_0:
-                    new_state = state_0
+                    new_state = array(state_0, dtype=complex)
                     result = 0
                 else:
-                    new_state = state_1
+                    new_state = array(state_1, dtype=complex)
                     result = 1
 
             all_keys.remove(keys[0])
@@ -243,7 +244,8 @@ class QuantumManagerKet(QuantumManager):
 
             # calculate meas probabilities and projected states
             len_diff = len(all_keys) - len(keys)
-            new_states, probabilities = measure_multiple_with_cache_ket(tuple(state), len(keys), len_diff)
+            new_states, probabilities = measure_multiple_with_cache_ket(
+                tuple(state), len(keys), len_diff)
 
             # choose result, set as new state
             for i in range(int(2 ** len(keys))):
@@ -279,7 +281,8 @@ class QuantumManagerDensity(QuantumManager):
     def __init__(self):
         super().__init__(DENSITY_MATRIX_FORMALISM)
 
-    def new(self, state=([complex(1), complex(0)], [complex(0), complex(0)])) -> int:
+    def new(self,
+            state=([complex(1), complex(0)], [complex(0), complex(0)])) -> int:
         key = self._least_available
         self._least_available += 1
         self.states[key] = DensityState(state, [key])
@@ -359,22 +362,24 @@ class QuantumManagerDensity(QuantumManager):
                 state_0, state_1, prob_0 =\
                     measure_entangled_state_with_cache_density(tuple(map(tuple, state)), state_index, num_states)
                 if meas_samp < prob_0:
-                    new_state = state_0
+                    new_state = array(state_0, dtype=complex)
                     result = 0
                 else:
-                    new_state = state_1
+                    new_state = array(state_1, dtype=complex)
                     result = 1
 
         else:
             # swap states into correct position
-            if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
+            if not all(
+                    [all_keys.index(key) == i for i, key in enumerate(keys)]):
                 all_keys, swap_mat = self._swap_qubits(all_keys, keys)
                 state = swap_mat @ state @ swap_mat.T
 
             # calculate meas probabilities and projected states
             len_diff = len(all_keys) - len(keys)
             state_to_measure = tuple(map(tuple, state))
-            new_states, probabilities = measure_multiple_with_cache_density(state_to_measure, len(keys), len_diff)
+            new_states, probabilities = measure_multiple_with_cache_density(
+                state_to_measure, len(keys), len_diff)
 
             # choose result, set as new state
             for i in range(int(2 ** len(keys))):
@@ -421,7 +426,7 @@ class QuantumManagerDensityFock(QuantumManager):
         return key
 
     def run_circuit(self, circuit: Circuit, keys: List[int], meas_samp=None) -> Dict[int, int]:
-        """Currently the Fock states do not support quantum circuits. 
+        """Currently the Fock states do not support quantum circuits.
         This method is only to implement abstract method of parent class and SHOULD NOT be called after instantiation.
         """
         raise Exception("run_circuit method of class QuantumManagerDensityFock called")
@@ -516,7 +521,7 @@ class QuantumManagerDensityFock(QuantumManager):
         prepared_operator = self._prepare_operator(all_keys, keys, operator)
         new_state = prepared_operator @ prepared_state @ prepared_operator.conj().T
         self.set(all_keys, new_state)
-        
+
     def set(self, keys: List[int], state: List[List[complex]]) -> None:
         """Method to set the quantum state at the given keys.
 

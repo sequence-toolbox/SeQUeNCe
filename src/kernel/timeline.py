@@ -119,30 +119,19 @@ class Timeline:
         if self.show_progress:
             self.progress_bar()
 
-        # log = {}
         while len(self.events) > 0:
             event = self.events.pop()
 
             if event.time >= self.stop_time:
-                self.schedule(event)
+                self.schedule(event)  # return to event list
                 break
-
             assert self.time <= event.time, f"invalid event time for process scheduled on {event.process.owner}"
-
             if event.is_invalid():
                 continue
 
             self.time = event.time
-            # if not event.process.activation in log:
-            #     log[event.process.activation] = 0
-            # log[event.process.activation]+=1
-
             event.process.run()
-
             self.run_counter += 1
-
-        # print('number of event', self.event_counter)
-        # print('log:',log)
 
         self.is_running = False
         time_elapsed = time_ns() - tick

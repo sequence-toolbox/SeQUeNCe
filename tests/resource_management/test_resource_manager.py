@@ -164,9 +164,11 @@ def test_send_request():
     assert len(resource_manager.pending_protocols) == 0
     assert protocol.own == node
     protocol = FakeProtocol("send")
-    node.resource_manager.send_request(protocol, "dst_id", "req_condition_func", {})
+    node.resource_manager.send_request(protocol, "dst_id",
+                                       "req_condition_func", {})
     assert len(node.send_log) == 1
-    assert protocol in resource_manager.pending_protocols and len(resource_manager.waiting_protocols) == 1
+    assert protocol in resource_manager.pending_protocols
+    len(resource_manager.waiting_protocols) == 1
     assert protocol.own == node
 
 
@@ -328,7 +330,8 @@ def test_ResourceManager1():
     def eg_rule_action2(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA(None, "EGA." + memory.name, "mid_node", "node1", memory)
+        protocol = EntanglementGenerationA(None, "EGA." + memory.name,
+                                           "mid_node", "node1", memory)
         return protocol, [None], [None], [{}]
 
     tl = Timeline()
@@ -402,7 +405,8 @@ def test_ResourceManager2():
     def eg_rule_action2(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA(None, "EGA." + memory.name, "mid_node", "node1", memory)
+        protocol = EntanglementGenerationA(None, "EGA." + memory.name,
+                                           "mid_node", "node1", memory)
         return protocol, [None], [None], [{}]
 
     tl = Timeline()

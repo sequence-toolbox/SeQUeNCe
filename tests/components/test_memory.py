@@ -7,6 +7,8 @@ from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 
+SEED = 0
+
 
 class DumbReceiver:
     def __init__(self):
@@ -25,6 +27,7 @@ class DumbParent:
         self.pop_log = []
         self.photon_list = []
         self.photon_arrival_times = []
+        self.generator = np.random.default_rng(SEED)
 
     def memory_expire(self, memory):
         self.pop_log.append(memory)
@@ -36,6 +39,17 @@ class DumbParent:
     def reset(self):
         self.photon_list = []
         self.photon_arrival_times = []
+
+    def get_generator(self):
+        return self.generator
+
+
+class Owner:
+    def __init__(self):
+        self.generator = np.random.default_rng(SEED)
+
+    def get_generator(self):
+        return self.generator
 
 
 def perfect_efficiency(_):
@@ -81,7 +95,7 @@ def test_Memory_update_state():
     mem.update_state(new_state)
     
     assert len(tl.quantum_manager.states) == 1
-    assert (tl.quantum_manager.get(mem.qstate_key) == np.array(new_state)).all
+    assert np.all(tl.quantum_manager.get(mem.qstate_key).state == np.array(new_state))
 
 
 def test_Memory_excite():
@@ -89,8 +103,10 @@ def test_Memory_excite():
 
     tl = Timeline()
     rec = DumbReceiver()
+    own = Owner()
     mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
     mem.add_receiver(rec)
+    mem.owner = own
 
     # test with perfect efficiency
 
@@ -151,7 +167,7 @@ def test_Memory_expire():
     mem.detach(parent)
     assert len(parent.pop_log) == 0 and protocol.is_expire is False
     mem.expire()
-    assert (tl.quantum_manager.get(mem.qstate_key).state == np.array([1, 0])).all  # check if collapsed to |0> state
+    assert np.all(tl.quantum_manager.get(mem.qstate_key).state == np.array([1, 0]))  # check if collapsed to |0> state
     assert mem.entangled_memory == {"node_id": None, "memo_id": None}
     assert len(parent.pop_log) == 0 and protocol.is_expire is True
 
@@ -326,11 +342,11 @@ def test_MemoryWithRandomCoherenceTime__schedule_expiration():
     
     times_of_expiration_calculated = [0]
     np.random.seed(2)
-    for i in range( NUM_TRIALS ):
-        times_of_expiration_calculated.append( times_of_expiration_calculated[-1]
-                                              + int(mem.coherence_time_distribution()*1e12) )
+    for i in range(NUM_TRIALS):
+        times_of_expiration_calculated.append(times_of_expiration_calculated[-1]
+                                              + int(mem.coherence_time_distribution()*1e12))
     times_of_expiration_calculated.pop(0)
-    
+
     np.random.seed(2)
     process = Process(mem, "update_state", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]])
     for i in range(NUM_TRIALS):
@@ -341,17 +357,17 @@ def test_MemoryWithRandomCoherenceTime__schedule_expiration():
         assert times_of_expiration_calculated[i] == tl.now()
         
     period_sum = times_of_expiration_calculated[0]
-    period_squared_sum = times_of_expiration_calculated[0]**2
-    for i in range( 1, len( times_of_expiration_calculated ) ):
-        period = times_of_expiration_calculated[i]-times_of_expiration_calculated[i-1]
+    period_squared_sum = times_of_expiration_calculated[0] ** 2
+    for i in range(1, len(times_of_expiration_calculated)):
+        period = times_of_expiration_calculated[i] - times_of_expiration_calculated[i-1]
         period_sum += period
         period_squared_sum += period*period
     
     avg_simulated = period_sum / NUM_TRIALS * 1e-12
-    stdev_simulated = np.sqrt( ( period_squared_sum - period_sum * period_sum * 1.0/NUM_TRIALS ) / NUM_TRIALS )*1e-12
+    stdev_simulated = np.sqrt((period_squared_sum - period_sum * period_sum * 1.0/NUM_TRIALS) / NUM_TRIALS) * 1e-12
 
     #check that values in series are different
     assert stdev_simulated > 0.0
     #probability of error below is less then 0.3%
-    assert abs( avg_simulated - coherence_period_avg ) < 3 * coherence_period_stdev / np.sqrt( NUM_TRIALS )
+    assert abs(avg_simulated - coherence_period_avg) < 3 * coherence_period_stdev / np.sqrt(NUM_TRIALS)
 

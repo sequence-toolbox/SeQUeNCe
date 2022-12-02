@@ -14,6 +14,7 @@ The components module provides models for quantum hardware.
     interferometer
     light_source
     memory
+    mirror
     optical_channel
     photon
     spdc_lens

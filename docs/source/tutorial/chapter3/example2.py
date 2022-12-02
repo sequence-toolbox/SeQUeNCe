@@ -1,16 +1,13 @@
-from numpy import random
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
-
-random.seed(0)
-
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.entanglement_management.purification import BBPSSW
+from sequence.message import Message
 
 
-class SimpleManager():
+class SimpleManager:
     def __init__(self, own, kept_memo_name, meas_memo_name):
         self.own = own
         self.kept_memo_name = kept_memo_name
@@ -59,26 +56,35 @@ def entangle_memory(memo1: Memory, memo2: Memory, fidelity: float):
     memo1.fidelity = memo2.fidelity = fidelity
 
 
-def pair_protocol(p1: EntanglementProtocol, p2: EntanglementProtocol):
-    p1.set_others(p2)
-    p2.set_others(p1)
+def pair_protocol(node1: Node, node2: Node):
+    p1 = node1.protocols[0]
+    p2 = node2.protocols[0]
+    kept_memo_1_name = node1.resource_manager.kept_memo_name
+    meas_memo_1_name = node1.resource_manager.meas_memo_name
+    kept_memo_2_name = node2.resource_manager.kept_memo_name
+    meas_memo_2_name = node2.resource_manager.meas_memo_name
+    p1.set_others(p2.name, node2.name, [kept_memo_2_name, meas_memo_2_name])
+    p2.set_others(p1.name, node1.name, [kept_memo_1_name, meas_memo_1_name])
 
 
 tl = Timeline()
 
 node1 = PurifyNode('node1', tl)
 node2 = PurifyNode('node2', tl)
+node1.set_seed(0)
+node2.set_seed(1)
 
 cc0 = ClassicalChannel('cc0', tl, 1000, 1e9)
 cc1 = ClassicalChannel('cc1', tl, 1000, 1e9)
-cc0.set_ends(node1, node2)
-cc1.set_ends(node2, node1)
+cc0.set_ends(node1, node2.name)
+cc1.set_ends(node2, node1.name)
 
 kept_memo_1 = node1.components[node1.resource_manager.kept_memo_name]
 kept_memo_2 = node2.components[node2.resource_manager.kept_memo_name]
 meas_memo_1 = node1.components[node1.resource_manager.meas_memo_name]
 meas_memo_2 = node2.components[node2.resource_manager.meas_memo_name]
 
+tl.init()
 for i in range(10):
     entangle_memory(kept_memo_1, kept_memo_2, 0.9)
     entangle_memory(meas_memo_1, meas_memo_2, 0.9)
@@ -86,12 +92,13 @@ for i in range(10):
     node1.resource_manager.create_protocol()
     node2.resource_manager.create_protocol()
 
-    pair_protocol(node1.protocols[0], node2.protocols[0])
+    pair_protocol(node1, node2)
 
-    tl.init()
     node1.protocols[0].start()
     node2.protocols[0].start()
     tl.run()
 
-    print(kept_memo_1.name, kept_memo_1.entangled_memory, kept_memo_1.fidelity)
-    print(meas_memo_1.name, meas_memo_1.entangled_memory, meas_memo_1.fidelity)
+    print(kept_memo_1.name, kept_memo_1.entangled_memory,
+          kept_memo_1.fidelity)
+    print(meas_memo_1.name, meas_memo_1.entangled_memory,
+          meas_memo_1.fidelity)

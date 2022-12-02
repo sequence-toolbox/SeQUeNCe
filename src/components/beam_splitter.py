@@ -5,7 +5,7 @@ The beam splitter receives photons with polarization encoding and forwards photo
 attached receivers (which can be any entity).
 """
 
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -72,7 +72,8 @@ class BeamSplitter(Entity):
             if 0 > index or index >= len(self.basis_list):
                 return
 
-            res = Photon.measure(polarization["bases"][self.basis_list[index]], photon, self.get_generator())
+            res = Photon.measure(polarization["bases"][self.basis_list[index]],
+                                 photon, self.get_generator())
             self._receivers[res].get(photon)
 
     def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:

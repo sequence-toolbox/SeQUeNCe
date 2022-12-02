@@ -1,11 +1,12 @@
 from math import sqrt
-
 import numpy as np
 
 from sequence.components.detector import *
 from sequence.components.photon import Photon
 from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import polarization, time_bin, absorptive
+
+SEED = 0
 
 
 def clear_qsd_detectors(qsd):
@@ -15,7 +16,7 @@ def clear_qsd_detectors(qsd):
 
 
 def create_detector(efficiency=0.9, dark_count=0, count_rate=25e6, time_resolution=150):
-    class Parent():
+    class Parent:
         def __init__(self, tl):
             self.timeline = tl
             self.log = []
@@ -23,11 +24,20 @@ def create_detector(efficiency=0.9, dark_count=0, count_rate=25e6, time_resoluti
         def trigger(self, detector, msg):
             self.log.append((self.timeline.now(), msg['time'], detector))
 
+    class Owner:
+        def __init__(self):
+            self.generator = np.random.default_rng(SEED)
+
+        def get_generator(self):
+            return self.generator
+
     tl = Timeline()
     detector = Detector("", tl, efficiency=efficiency, dark_count=dark_count,
                         count_rate=count_rate, time_resolution=time_resolution)
     parent = Parent(tl)
+    own = Owner()
     detector.attach(parent)
+    detector.owner = own
     return detector, parent, tl
 
 
@@ -69,7 +79,8 @@ def test_Detector_get():
 
     # time_resolution
     time_resolution = 233
-    detector, parent, tl = create_detector(efficiency=1, count_rate=1e12, time_resolution=time_resolution)
+    detector, parent, tl = create_detector(efficiency=1, count_rate=1e12,
+                                           time_resolution=time_resolution)
     times = np.random.randint(0, 1e12, 100, dtype=np.int64)
     times.sort()
     for t in times:
@@ -145,6 +156,7 @@ def test_QSDetectorPolarization():
     start_time = 0
     basis_list = [np.random.randint(2) for _ in range(1000)]
     qsdetector.set_basis_list(basis_list, start_time, frequency)
+    tl.init()
 
     for i in range(1000):
         tl.time = i * 1e12 / frequency
@@ -167,12 +179,14 @@ def test_QSDetectorTimeBin():
     start_time = 0
     basis_list = [np.random.randint(2) for _ in range(1000)]
     qsdetector.set_basis_list(basis_list, start_time, frequency)
+    tl.init()
 
     for i in range(1000):
         tl.time = i * 1e12 / frequency
         basis = basis_list[i]
         bit = np.random.randint(2)
-        photon = Photon(str(i), tl, encoding_type=time_bin, quantum_state=time_bin["bases"][basis][bit])
+        photon = Photon(str(i), tl, encoding_type=time_bin,
+                        quantum_state=time_bin["bases"][basis][bit])
         qsdetector.get(photon)
 
     tl.time = 0
@@ -194,6 +208,8 @@ def test_QSDetectorFockDirect():
     qsd = QSDetectorFockDirect("qsd", tl, src_list)
     [qsd.update_detector_params(i, "efficiency", 1) for i in range(2)]
     [qsd.update_detector_params(i, "count_rate", COUNT_RATE) for i in range(2)]
+
+    tl.init()
 
     for _ in range(1000):
         photon = Photon("", tl, encoding_type=absorptive, use_qm=True)
@@ -267,7 +283,7 @@ def test_QSDetectorFockInterference():
         p0 = Photon("", tl, encoding_type=absorptive, use_qm=True)
         p1 = Photon("", tl, encoding_type=absorptive, use_qm=True)
         p0.is_null = True
-        p0.entangle(p1)
+        p0.combine_state(p1)
         p0.set_state(psi_minus)
         qsd.get(p0)
         qsd.get(p1)
@@ -284,7 +300,7 @@ def test_QSDetectorFockInterference():
         p0 = Photon("", tl, encoding_type=absorptive, use_qm=True)
         p1 = Photon("", tl, encoding_type=absorptive, use_qm=True)
         p0.is_null = True
-        p0.entangle(p1)
+        p0.combine_state(p1)
         p0.set_state(psi_minus)
         qsd.get(p0)
         qsd.get(p1)
@@ -301,7 +317,7 @@ def test_QSDetectorFockInterference():
         p0 = Photon("", tl, encoding_type=absorptive, use_qm=True)
         p1 = Photon("", tl, encoding_type=absorptive, use_qm=True)
         p0.is_null = True
-        p0.entangle(p1)
+        p0.combine_state(p1)
         p0.set_state(psi_minus)
         qsd.get(p0)
         qsd.get(p1)

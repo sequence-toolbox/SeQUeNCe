@@ -1,5 +1,20 @@
 from sequence.kernel.event import Event
 from sequence.kernel.eventlist import EventList
+from numpy import random
+
+
+MAX_TS = 100
+MIN_TS = 0
+
+
+def generate_event_list_with_random_time(seed: int, length: int) -> EventList:
+    random.seed(seed)
+    times = list(random.randint(MIN_TS, MAX_TS, length))
+    el = EventList()
+    for t in times:
+        e = Event(t, None)
+        el.push(e)
+    return el
 
 
 def test_push():
@@ -11,25 +26,24 @@ def test_push():
 
 
 def test_pop():
-    from numpy import random
-    random.seed(0)
-    times = list(random.randint(0, 100, 10))
-    el = EventList()
-    for t in times:
-        e = Event(t, None)
-        el.push(e)
-    times.sort()
-    while el.isempty() is False:
-        assert times.pop(0) == el.pop().time
+    el = generate_event_list_with_random_time(0, 10)
+    last_ts = -float("inf")
+    while not el.isempty():
+        top_event = el.pop()
+        assert top_event.time >= last_ts
+        last_ts = top_event.time
 
-    priorities = list(random.randint(0, 100, 10))
+    random.seed(0)
+    priorities = list(random.randint(MIN_TS, MAX_TS, 10))
     el = EventList()
     for p in priorities:
         e = Event(5, None, p)
         el.push(e)
-    priorities.sort()
-    while el.isempty() is False:
-        assert priorities.pop(0) == el.pop().priority
+    last_priority = -float("inf")
+    while not el.isempty():
+        top_event = el.pop()
+        assert top_event.priority >= last_priority
+        last_priority = top_event.priority
 
 
 def test_isempty():
@@ -51,6 +65,7 @@ def test_len():
     e1 = el.pop()
     assert len(el) == 0
     assert e == e1
+
 
 def test_remove():
     el = EventList()
@@ -133,3 +148,11 @@ def test_update_event_time():
             event = e.pop()
             assert event.time >= pre_time
             pre_time = event.time
+
+
+def test_top():
+    el = generate_event_list_with_random_time(0, 10)
+    while not el.isempty():
+        top_event = el.top()
+        popped_event = el.pop()
+        assert top_event == popped_event

@@ -8,6 +8,7 @@ Entanglement generation is asymmetric:
 * EntanglementGeneraitonB should be used on the BSMNode and does not need to be started
 """
 
+from __future__ import annotations
 from enum import Enum, auto
 from math import sqrt
 from typing import List, TYPE_CHECKING, Dict, Any
@@ -67,7 +68,8 @@ class EntanglementGenerationMessage(Message):
             self.resolution = kwargs.get("resolution")
 
         else:
-            raise Exception("EntanglementGeneration generated invalid message type {}".format(msg_type))
+            raise Exception("EntanglementGeneration generated invalid message"
+                            " type {}".format(msg_type))
 
     def __repr__(self):
         if self.msg_type is GenerationMsgType.NEGOTIATE:
@@ -101,8 +103,6 @@ class EntanglementGenerationA(EntanglementProtocol):
         remote_node_name (str): name of distant QuantumRouter node, containing a memory to be entangled with local memory.
         memory (Memory): quantum memory object to attempt entanglement for.
     """
-    
-    # TODO: use a function to update resource manager
 
     _plus_state = [sqrt(1/2), sqrt(1/2)]
     _flip_circuit = Circuit(1)
@@ -170,7 +170,8 @@ class EntanglementGenerationA(EntanglementProtocol):
             Will send message through attached node.
         """
 
-        log.logger.info(f"{self.own.name} protocol start with partner {self.remote_node_name}")
+        log.logger.info(f"{self.own.name} protocol start with partner "
+                        f"{self.remote_node_name}")
 
         # to avoid start after remove protocol
         if self not in self.own.protocols:
@@ -181,8 +182,9 @@ class EntanglementGenerationA(EntanglementProtocol):
             # send NEGOTIATE message
             self.qc_delay = self.own.qchannels[self.middle].delay
             frequency = self.memory.frequency
-            message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE, self.remote_protocol_name,
-                                                    qc_delay=self.qc_delay, frequency=frequency)
+            message = EntanglementGenerationMessage(
+                GenerationMsgType.NEGOTIATE, self.remote_protocol_name,
+                qc_delay=self.qc_delay, frequency=frequency)
             self.own.send_message(self.remote_node_name, message)
 
     def update_memory(self):
@@ -266,7 +268,8 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         msg_type = msg.msg_type
 
-        log.logger.debug("{} EG protocol received_message of type {} from node {}, round={}".format(
+        log.logger.debug("{} EG protocol received_message of type {} from node"
+                         " {}, round={}".format(
             self.own.name, msg.msg_type, src, self.ent_round + 1))
 
         if msg_type is GenerationMsgType.NEGOTIATE:
@@ -341,7 +344,8 @@ class EntanglementGenerationA(EntanglementProtocol):
             time = msg.time
             resolution = msg.resolution
 
-            log.logger.debug("{} received MEAS_RES {} at time {}, expected {}, round={}".format(
+            log.logger.debug("{} received MEAS_RES {} at time {}, expected {},"
+                             " round={}".format(
                 self.own.name, detector, time, self.expected_time, self.ent_round))
 
             def valid_trigger_time(trigger_time, target_time, resolution):
@@ -368,9 +372,8 @@ class EntanglementGenerationA(EntanglementProtocol):
                     self.bsm_res[i] = -1
 
         else:
-            raise Exception("Invalid message {} received by EG on node {}".format(msg_type, self.own.name))
-
-        return True
+            raise Exception("Invalid message {} received by EG on node "
+                            "{}".format(msg_type, self.own.name))
 
     def is_ready(self) -> bool:
         return self.remote_protocol_name is not None
@@ -440,16 +443,14 @@ class EntanglementGenerationB(EntanglementProtocol):
         time = info["time"]
         resolution = bsm.resolution
 
-        log.logger.debug(self.own.name + " measured result {} at time {} with resolution {}".format(
-            res, time, resolution))
-
         for i, node in enumerate(self.others):
             message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES,
                                                     None, detector=res, time=time, resolution=resolution)
             self.own.send_message(node, message)
 
     def received_message(self, src: str, msg: EntanglementGenerationMessage):
-        raise Exception("EntanglementGenerationB protocol '{}' should not receive message".format(self.name))
+        raise Exception("EntanglementGenerationB protocol '{}' should not "
+                        "receive message".format(self.name))
 
     def start(self) -> None:
         pass

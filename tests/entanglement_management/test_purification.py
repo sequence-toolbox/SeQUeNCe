@@ -23,6 +23,10 @@ psi_minus = [0, SQRT_HALF, -SQRT_HALF, 0]
 BELL_STATES = [phi_plus, phi_minus, psi_plus, psi_minus]
 
 
+def success_probability(F: float) -> float:
+    return F ** 2 + 2 * F * (1 - F) / 3 + 5 * ((1 - F) / 3) ** 2
+
+
 class FakeResourceManager:
     def __init__(self, owner):
         self.log = []
@@ -69,10 +73,14 @@ def create_scenario(state1, state2, seed_index, fidelity=1.0):
     cc0.set_ends(a1, a2.name)
     cc1.set_ends(a2, a1.name)
 
-    kept1 = Memory('kept1', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
-    kept2 = Memory('kept2', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
-    meas1 = Memory('mea1', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
-    meas2 = Memory('mea2', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
+    kept1 = Memory('kept1', tl, fidelity=fidelity, frequency=0, efficiency=1,
+                   coherence_time=1, wavelength=HALF_MICRON)
+    kept2 = Memory('kept2', tl, fidelity=fidelity, frequency=0, efficiency=1,
+                   coherence_time=1, wavelength=HALF_MICRON)
+    meas1 = Memory('mea1', tl, fidelity=fidelity, frequency=0, efficiency=1,
+                   coherence_time=1, wavelength=HALF_MICRON)
+    meas2 = Memory('mea2', tl, fidelity=fidelity, frequency=0, efficiency=1,
+                   coherence_time=1, wavelength=HALF_MICRON)
 
     tl.init()
 
@@ -665,4 +673,4 @@ def test_BBPSSW_success_rate():
 
         tl.run()
 
-    assert abs(counter1 / (counter1 + counter2) - BBPSSW.success_probability(fidelity)) < 0.1
+    assert abs(counter1 / (counter1 + counter2) - success_probability(fidelity)) < 0.1

@@ -1,13 +1,12 @@
-import pytest
-from numpy import random
+import numpy as np
 
-from sequence.components.beam_splitter import BeamSplitter, FockBeamSplitter
+from sequence.components.beam_splitter import BeamSplitter
 from sequence.components.photon import Photon
-from sequence.components.circuit import Circuit
 from sequence.kernel.timeline import Timeline
-from sequence.utils.encoding import polarization, absorptive
+from sequence.utils.encoding import polarization
 
-random.seed(1)
+np.random.seed(0)
+SEED = 0
 
 
 def test_BeamSplitter_init():
@@ -18,7 +17,15 @@ def test_BeamSplitter_init():
     tl.init()
 
 
-class Receiver():
+class Owner:
+    def __init__(self):
+        self.generator = np.random.default_rng(SEED)
+
+    def get_generator(self):
+        return self.generator
+
+
+class Receiver:
     def __init__(self, tl):
         self.timeline = tl
         self.log = []
@@ -33,6 +40,8 @@ class Receiver():
 def test_BeamSplitter_get():
     tl = Timeline()
     bs = BeamSplitter("bs", tl)
+    own = Owner()
+    bs.owner = own
     receiver0 = Receiver(tl)
     bs.add_receiver(receiver0)
     receiver1 = Receiver(tl)
@@ -53,7 +62,7 @@ def test_BeamSplitter_get():
     for i in range(basis_len):
         time = 1e12 / frequency * i
         tl.time = time
-        bit = random.randint(2)
+        bit = np.random.randint(2)
         bits.append(bit)
         photon = Photon(str(i), tl, quantum_state=polarization["bases"][0][bit])
         bs.get(photon)
@@ -76,7 +85,7 @@ def test_BeamSplitter_get():
     for i in range(basis_len):
         time = 1e12 / frequency * i
         tl.time = time
-        bit = random.randint(2)
+        bit = np.random.randint(2)
         bits2.append(bit)
         photon = Photon(str(i), tl, quantum_state=polarization["bases"][1][bit])
         bs.get(photon)
@@ -99,7 +108,7 @@ def test_BeamSplitter_get():
     for i in range(basis_len):
         time = 1e12 / frequency * i
         tl.time = time
-        bit = random.randint(2)
+        bit = np.random.randint(2)
         bits.append(bit)
         photon = Photon(str(i), tl, quantum_state=polarization["bases"][0][bit])
         bs.get(photon)

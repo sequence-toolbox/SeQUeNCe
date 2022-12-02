@@ -157,7 +157,8 @@ def test_ResourceReservationProtocol_pop():
             card.add(reservation)
         else:
             break
-    msg = ResourceReservationMessage(RSVPMsgType.REJECT, n1.rsvp.name, reservation)
+    msg = ResourceReservationMessage(RSVPMsgType.REJECT, n1.rsvp.name,
+                                     reservation, path=['n1', 'n2'])
     n1.rsvp.pop("n2", msg)
     assert len(n1.pop_log) == 1 and len(n1.push_log) == 0
     assert n1.pop_log[0]["msg"].msg_type == RSVPMsgType.REJECT
@@ -172,7 +173,8 @@ def test_ResourceReservationProtocol_pop():
             card.add(reservation)
         else:
             break
-    msg = ResourceReservationMessage(RSVPMsgType.REJECT, n1.rsvp.name, reservation, path=['n0', 'n1', 'n2'])
+    msg = ResourceReservationMessage(RSVPMsgType.REJECT, n1.rsvp.name,
+                                     reservation, path=['n0', 'n1', 'n2'])
     n1.rsvp.pop("n2", msg)
     assert len(n1.pop_log) == 0 and len(n1.push_log) == 1
     assert n1.push_log[0]["msg"].msg_type == RSVPMsgType.REJECT
@@ -182,7 +184,8 @@ def test_ResourceReservationProtocol_pop():
 
     # initiator receives APPROVE
     reservation = Reservation("n1", "n2", 1, 10, 1000, 0.9)
-    msg = ResourceReservationMessage(RSVPMsgType.APPROVE, n1.rsvp.name, reservation, path=["n1", "n2"])
+    msg = ResourceReservationMessage(RSVPMsgType.APPROVE, n1.rsvp.name,
+                                     reservation, path=["n1", "n2"])
     n1.rsvp.pop("n2", msg)
     assert len(n1.pop_log) == 1 and len(n1.push_log) == 0
     assert n1.pop_log[0]["msg"].msg_type == RSVPMsgType.APPROVE
@@ -301,7 +304,9 @@ def test_ResourceReservationProtocol_create_rules():
     assert counter >= 0
 
     for info in routers[0].resource_manager.memory_manager:
-        if info.state == "ENTANGLED" and info.remote_node == "r4" and info.fidelity >= 0.9:
+        if info.state == "ENTANGLED" \
+                and info.remote_node == "r4" \
+                and info.fidelity >= 0.9:
             counter -= 1
     assert counter == 0
 
@@ -350,7 +355,7 @@ def test_ResourceReservationProtocol_set_es_params():
     tl.init()
 
     path = [r.name for r in routers]
-    reservation = Reservation("r0", "r4", 1, 9000000, 10, 0.9)
+    reservation = Reservation("r0", "r4", 1, 20000000, 10, 0.9)
     for node in [routers[0], routers[-1]]:
         for i, card in enumerate(node.rsvp.timecards):
             if i >= 10:

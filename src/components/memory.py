@@ -76,7 +76,8 @@ class MemoryArray(Entity):
         Set the owner of memory as the owner of memory array.
         """
 
-        pass
+        for memory in self.memories:
+            memory.owner = self.owner
 
     def memory_expire(self, memory: "Memory"):
         """Method to receive expiration events from memories.
@@ -90,9 +91,6 @@ class MemoryArray(Entity):
     def update_memory_params(self, arg_name: str, value: Any) -> None:
         for memory in self.memories:
             memory.__setattr__(arg_name, value)
-
-    # def set_node(self, node: "QuantumRouter") -> None:
-    #     self.owner = node
 
     def add_receiver(self, receiver: "Entity"):
         for m in self.memories:
@@ -129,7 +127,6 @@ class Memory(Entity):
             efficiency (float): efficiency of memories.
             coherence_time (float): average time (in s) that memory state is valid.
             wavelength (int): wavelength (in nm) of photons emitted by memories.
-            qstate_key (int): key for associated quantum state in timeline's quantum manager.
         """
 
         super().__init__(name, timeline)
@@ -192,15 +189,6 @@ class Memory(Entity):
         photon.is_null = True
         photon.add_loss(1 - self.efficiency)
 
-        # # measure quantum state
-        # res = self.timeline.quantum_manager.run_circuit(Memory._meas_circuit, [self.qstate_key])
-        # state = res[self.qstate_key]
-        #
-        # # create photon and check if null
-        # photon = Photon("", self.timeline, wavelength=self.wavelength, location=self, encoding_type=self.encoding)
-        # if state == 0:
-        #     photon.is_null = True
-
         if self.frequency > 0:
             period = 1e12 / self.frequency
             self.next_excite_time = self.timeline.now() + period
@@ -229,7 +217,7 @@ class Memory(Entity):
     def reset(self) -> None:
         """Method to clear quantum memory.
 
-        Will reset quantum state to |0> and will clear entanglement information.
+        Will reset quantum state to \|0> and will clear entanglement information.
 
         Side Effects:
             Will modify internal parameters and quantum state.
@@ -425,7 +413,7 @@ class AbsorptiveMemory(Entity):
 
     def set_memory_array(self, memory_array: MemoryArray):
         """Method to set the memory array to which the memory belongs
-        
+
         Args:
             memory_array (MemoryArray): memory array to which the memory belongs
         """
@@ -461,7 +449,7 @@ class AbsorptiveMemory(Entity):
     def get(self, photon: "Photon", **kwargs):
         """Method to receive a photon to store in the absorptive memory."""
 
-        # AFC needs to be prepared first        
+        # AFC needs to be prepared first
         if not self.is_prepared:
             raise Exception("AFC is not prepared yet.")
 
@@ -482,7 +470,7 @@ class AbsorptiveMemory(Entity):
             loss = 1 - self.absorption_efficiency  # loss rate due to absorption inefficiency
             # apply loss channel on photonic state and return a new state
             self.timeline.quantum_manager.add_loss(key, loss)
-            
+
             # store photon information, NOTE the difference between information recorded for different encodings
             # in this case, store more than one photon
             if self.stored_photons[index] is None:
@@ -559,7 +547,7 @@ class AbsorptiveMemory(Entity):
                             emit_time = self.total_time - self.mode_bin - absorb_time  # reversed order of re-emission
                         else:
                             emit_time = absorb_time  # normal order of re-emission
-                    
+
                         if self.destination is not None:
                             dst = self.destination
 
@@ -577,7 +565,7 @@ class AbsorptiveMemory(Entity):
                         emit_time = self.total_time - absorb_time # reversed order of re-emission
                     else:
                         emit_time = absorb_time # normal order of re-emission
-                    
+
                     if self.destination is not None:
                         dst = self.destination
 
@@ -589,7 +577,7 @@ class AbsorptiveMemory(Entity):
         # retrieval will re-emit all stored photons and information should no longer be stored
         # clearance unified as storage_reset method
         self.storage_reset()
-        
+
     def expire(self) -> None:
         """Method to handle memory expiration due to AFC expiration.
 
@@ -655,7 +643,7 @@ class AbsorptiveMemory(Entity):
 
     def _schedule_storage_reset(self) -> None:
         """Schedule the resetting of a cycle of photon storage in spinwave.
-        
+
         Only invoked when the memory type is AFC-spinwave.
         Storage resetting time is determined by AFC rephasing time and spinwave coherence time.
         """

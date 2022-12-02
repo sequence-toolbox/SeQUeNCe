@@ -4,6 +4,7 @@ This module defines the Photon class for tracking individual photons.
 Photons may be encoded directly with polarization or time bin schemes, or may herald the encoded state of single atom memories.
 """
 from typing import Dict, Any, List, Union, TYPE_CHECKING
+from numpy import log2
 
 if TYPE_CHECKING:
     from numpy.random._generator import Generator
@@ -24,7 +25,7 @@ class Photon:
         wavelength (float): wavelength of photon (in nm).
         location (Entity): current location of photon.
         encoding_type (Dict[str, Any]): encoding type of photon (as defined in encoding module).
-        quantum_state (Any): quantum state of photon.
+        quantum_state (Union[int, Tuple[complex]]): quantum state of photon.
             If `use_qm` is false, this will be a QuantumState object.
             Otherwise, it will be an integer key for the quantum manager.
         is_null (bool): defines whether photon is real or a "ghost" photon (not detectable but used in memory encoding).
@@ -51,7 +52,8 @@ class Photon:
             wavelength (int): wavelength of photon (in nm) (default 0).
             location (Entity): location of the photon (default None).
             encoding_type (Dict[str, Any]): encoding type of photon (from encoding module) (default polarization).
-            quantum_state (Union[int, Tuple[complex]]): reference key for quantum manager, or complex coefficients for photon's quantum state.
+            quantum_state (Union[int, Tuple[complex]]):
+                reference key for quantum manager, or complex coefficients for photon's quantum state.
                 Default state is (1, 0).
                 If left blank and `use_qm` is true, will create new key from timeline quantum manager.
             use_qm (bool): determines if the quantum state is obtained from the quantum manager or stored locally.
@@ -69,7 +71,7 @@ class Photon:
         self.loss: float = 0
         self.use_qm = use_qm
 
-        self.quantum_state: Union[State, int] = None
+        self.quantum_state: Union[State, int] = -1
         if self.use_qm:
             if quantum_state is None:
                 self.quantum_state = timeline.quantum_manager.new()
@@ -78,9 +80,13 @@ class Photon:
                 self.quantum_state = quantum_state
         else:
             if quantum_state is None:
-                quantum_state=(complex(1), complex(0))
+                quantum_state = (complex(1), complex(0))
             else:
                 assert type(quantum_state) is tuple
+                assert all([abs(a) <= 1.01 for a in quantum_state]), "Illegal value with abs > 1 in photon state"
+                assert abs(sum([abs(a) ** 2 for a in quantum_state]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
+                num_qubits = log2(len(quantum_state))
+                assert num_qubits == 1, "Length of amplitudes for single photon should be 2"
             self.quantum_state = FreeQuantumState()
             self.quantum_state.state = quantum_state
 
@@ -88,11 +94,11 @@ class Photon:
         if self.use_qm and self.timeline is not None:
             self.timeline.quantum_manager.remove(self.quantum_state)
 
-    def entangle(self, photon):
-        """Method to entangle photons (see `QuantumState` module).
+    def combine_state(self, photon):
+        """Method to combine quantum states of photons (see `QuantumState` module).
 
         This method does not modify the current state of the photon, but combines the internal quantum state object.
-        This ensures that two photons share a quantum state object.
+        This ensures that two photons share a quantum state object describing a product space.
         """
 
         if self.use_qm:
@@ -101,7 +107,7 @@ class Photon:
                 self.timeline.quantum_manager.get(photon.quantum_state).keys
             qm.run_circuit(Photon._entangle_circuit, all_keys)
         else:
-            self.quantum_state.entangle(photon.quantum_state)
+            self.quantum_state.combine_state(photon.quantum_state)
 
     def random_noise(self, rng: "Generator"):
         """Method to add random noise to photon's state (see `QuantumState` module)."""
@@ -151,7 +157,7 @@ class Photon:
 
     @staticmethod
     def measure_multiple(basis, photons: List["Photon"], rng: "Generator"):
-        """Method to measure 2 entangled photons (see `QuantumState` module).
+        """Method to measure 2 entangled photons (see `FreeQuantumState` module).
 
         Args:
             basis (List[List[complex]]): basis (given as lists of complex coefficients) with which to measure the photons.
@@ -166,7 +172,9 @@ class Photon:
         if photons[0].use_qm:
             raise NotImplementedError("Photon.measure_multiple() not implemented for quantum manager.")
 
-        return FreeQuantumState.measure_multiple(basis, [photons[0].quantum_state, photons[1].quantum_state], rng)
+        return FreeQuantumState.measure_multiple(basis,
+                                                 [photons[0].quantum_state, photons[1].quantum_state],
+                                                 rng)
 
     def add_loss(self, loss: float):
         assert 0 <= loss <= 1

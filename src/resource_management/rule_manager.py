@@ -145,7 +145,8 @@ class Rule:
             memories_info (List[MemoryInfo]): list of memory infos for memories meeting requirements.
         """
 
-        protocol, req_dsts, req_condition_funcs, req_args = self.action(memories_info, self.action_args)
+        protocol, req_dsts, req_condition_funcs, req_args = self.action(
+            memories_info, self.action_args)
         log.logger.info('Rule generates protocol {}'.format(protocol.name))
 
         protocol.rule = self

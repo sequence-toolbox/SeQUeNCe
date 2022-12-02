@@ -40,6 +40,9 @@ class Detector(Entity):
         photon_counter (int): counts number of detection events.
     """
 
+    _meas_circuit = Circuit(1)
+    _meas_circuit.measure(0)
+
     def __init__(self, name: str, timeline: "Timeline", efficiency=0.9, dark_count=0, count_rate=int(25e6),
                  time_resolution=150):
         Entity.__init__(self, name, timeline)  # Detector is part of the QSDetector, and does not have its own name
@@ -68,6 +71,16 @@ class Detector(Entity):
         """
 
         self.photon_counter += 1
+
+        # if get a photon and it has single_atom encoding, measure
+        if photon and photon.encoding_type["name"] == "single_atom":
+            key = photon.quantum_state
+            res = self.timeline.quantum_manager.run_circuit(Detector._meas_circuit, [key],
+                                                            self.get_generator().random())
+            # if we measure |0>, return (do not record detection)
+            if not res[key]:
+                return
+
         if self.get_generator().random() < self.efficiency:
             self.record_detection()
 
@@ -82,7 +95,8 @@ class Detector(Entity):
         """
 
         assert self.dark_count > 0, "Detector().add_dark_count called with 0 dark count rate"
-        time_to_next = int(self.get_generator().exponential(1 / self.dark_count) * 1e12)  # time to next dark count
+        time_to_next = int(self.get_generator().exponential(
+                1 / self.dark_count) * 1e12)  # time to next dark count
         time = time_to_next + self.timeline.now()  # time of next dark count
 
         process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
@@ -121,14 +135,21 @@ class QSDetector(Entity, ABC):
     Attributes:
         name (str): label for QSDetector instance.
         timeline (Timeline): timeline for simulation.
+        components (List[entity]): list of all aggregated hardware components.
         detectors (List[Detector]): list of attached detectors.
         trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
         Entity.__init__(self, name, timeline)
+        self.components = []
         self.detectors = []
         self.trigger_times = []
+
+    def init(self):
+        for component in self.components:
+            component.attach(self)
+            component.owner = self.owner
 
     def update_detector_params(self, detector_id: int, arg_name: str, value: Any) -> None:
         self.detectors[detector_id].__setattr__(arg_name, value)
@@ -143,7 +164,7 @@ class QSDetector(Entity, ABC):
         # TODO: rewrite
         detector_index = self.detectors.index(detector)
         self.trigger_times[detector_index].append(info['time'])
-    
+
     def set_detector(self, idx: int,  efficiency=0.9, dark_count=0, count_rate=int(25e6), time_resolution=150):
         """Method to set the properties of an attached detector.
 
@@ -192,10 +213,13 @@ class QSDetectorPolarization(QSDetector):
         self.splitter.add_receiver(self.detectors[1])
         self.trigger_times = [[], []]
 
+        self.components = [self.splitter] + self.detectors
+
     def init(self) -> None:
         """Implementation of Entity interface (see base class)."""
 
         assert len(self.detectors) == 2
+        super().init()
 
     def get(self, photon: "Photon", **kwargs) -> None:
         """Method to receive a photon for measurement.
@@ -250,13 +274,13 @@ class QSDetectorTimeBin(QSDetector):
         self.switch.add_receiver(self.interferometer)
 
         self.components = [self.switch, self.interferometer] + self.detectors
-        [component.attach(self) for component in self.components]
         self.trigger_times = [[], [], []]
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
 
-        pass
+        assert len(self.detectors) == 3
+        super().init()
 
     def get(self, photon, **kwargs):
         """Method to receive a photon for measurement.
@@ -284,7 +308,7 @@ class QSDetectorTimeBin(QSDetector):
 
 
 class QSDetectorFockDirect(QSDetector):
-    """QSDetector with two input ports and two photon detectors which directly measure input photons' Fock states, respectively.
+    """QSDetector to directly measure photons in Fock state.
 
     Usage: to measure diagonal elements of effective density matrix.
 
@@ -301,10 +325,12 @@ class QSDetectorFockDirect(QSDetector):
         super().__init__(name, timeline)
         assert len(src_list) == 2
         self.src_list = src_list
+
         for i in range(2):
             d = Detector(name + ".detector" + str(i), timeline)
             self.detectors.append(d)
-            d.attach(self)
+        self.components = self.detectors
+
         self.trigger_times = [[], []]
         self.arrival_times = [[], []]
 
@@ -312,6 +338,7 @@ class QSDetectorFockDirect(QSDetector):
 
     def init(self):
         self._generate_povms()
+        super().init()
 
     def _generate_povms(self):
         """Method to generate POVM operators corresponding to photon detector having 0 and 1 click
@@ -353,12 +380,12 @@ class QSDetectorFockDirect(QSDetector):
             result = self.timeline.quantum_manager.measure([key], self.povms[0:2], samp)
         if input_port == 1:
             result = self.timeline.quantum_manager.measure([key], self.povms[2:4], samp)
-        
+
         assert result in list(range(len(self.povms))), "The measurement outcome is not valid."
         if result == 1:
             # trigger time recording will be done by SPD
             self.detectors[input_port].record_detection()
-        
+
     def get_photon_times(self) -> List[List[int]]:
         trigger_times = self.trigger_times
         self.trigger_times = [[], []]
@@ -390,8 +417,8 @@ class QSDetectorFockInterference(QSDetector):
             and detection outcome for each detector.
         arrival_times (List[List[int]]): tracks simulation time of arrival of photons at each input mode.
 
-        temporary_photon_info (List[Dict]): temporary list of information of Photon arriving at each input port. 
-            Specific to current implementation. At most 1 Photon's information will be recorded in a dictionary. 
+        temporary_photon_info (List[Dict]): temporary list of information of Photon arriving at each input port.
+            Specific to current implementation. At most 1 Photon's information will be recorded in a dictionary.
             When there are 2 non-empty dictionaries,
             e.g. [{"photon":Photon1, "time":arrival_time1}, {"photon":Photon2, "time":arrival_time2}],
             the entangling measurement will be carried out. After measurement, the temporary list will be reset.
@@ -406,7 +433,7 @@ class QSDetectorFockInterference(QSDetector):
         for i in range(2):
             d = Detector(name + ".detector" + str(i), timeline)
             self.detectors.append(d)
-            d.attach(self)
+        self.components = self.detectors
 
         self.trigger_times = [[], []]
         self.detect_info = [[], []]
@@ -417,6 +444,7 @@ class QSDetectorFockInterference(QSDetector):
 
     def init(self):
         self._generate_povms()
+        super().init()
 
     def _generate_transformed_ladders(self):
         """Method to generate transformed creation/annihilation operators by the beamsplitter.
@@ -497,7 +525,7 @@ class QSDetectorFockInterference(QSDetector):
             # determine the outcome
             samp = self.get_generator().random()  # random measurement sample
             result = self.timeline.quantum_manager.measure([key0, key1], self.povms, samp)
-        
+
             assert result in list(range(len(self.povms))), "The measurement outcome is not valid."
             if result == 0:
                 # no click for either detector, but still record the zero outcome

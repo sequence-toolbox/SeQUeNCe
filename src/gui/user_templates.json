@@ -1,0 +1,46 @@
+{
+    "BSM_node": {
+        "default_BSM": {
+            "detector_type": "default_detector"
+        }
+    },
+    "Detector": {
+        "default_detector": {
+            "count_rate": 50000000.0,
+            "dark_count": 0,
+            "efficiency": 0.8,
+            "resolution": 100.0
+        }
+    },
+    "Entanglement": {
+        "default_entanglement": {
+            "degredation": 0.99,
+            "succ_prob": 0.9
+        }
+    },
+    "Memory": {
+        "default_memory": {
+            "coherence_time": 1300000000000.0,
+            "efficiency": 0.75,
+            "frequency": 2000.0,
+            "raw_fidelity": 0.85
+        }
+    },
+    "Photon_Source": {},
+    "Protocol": {},
+    "QKD": {
+        "default_QKD": {
+            "encoding": "polarization",
+            "stack_size": 5
+        }
+    },
+    "QuantumErrorCorrection": {},
+    "Quantum_Repeater": {},
+    "Quantum_Router": {
+        "default_router": {
+            "mem_type": "default_memory",
+            "memo_size": 50
+        }
+    },
+    "Temp": {}
+}

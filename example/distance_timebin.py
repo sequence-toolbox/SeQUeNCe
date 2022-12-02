@@ -7,13 +7,13 @@ from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
 from sequence.protocol import StackProtocol
 from sequence.qkd.BB84 import pair_bb84_protocols
-from sequence.topology.node import QKDNode
+from sequence.topology.node import QKDNode, Node
 from sequence.utils.encoding import time_bin
 
 
 # dummy parent class to receive BB84 keys and initiate BB84
 class Parent(StackProtocol):
-    def __init__(self, own, keysize: int, role: str):
+    def __init__(self, own: "Node", keysize: int, role: str):
         super().__init__(own, "")
         self.upper_protocols = []
         self.lower_protocols = []
@@ -43,7 +43,6 @@ if __name__ == "__main__":
 
     for distance in distances:
         tl = Timeline(runtime)
-        tl.seed(1)
         tl.show_progress = True
 
         qc0 = QuantumChannel("qc0", tl, distance=distance * 1e3, polarization_fidelity=0.97, attenuation=0.0002)
@@ -54,6 +53,7 @@ if __name__ == "__main__":
         # Alice
         ls_params = {"frequency": 80e6, "mean_photon_num": 0.1}
         alice = QKDNode("alice", tl, encoding=time_bin, stack_size=1)
+        alice.set_seed(0)
 
         for name, param in ls_params.items():
             alice.update_lightsource_params(name, param)
@@ -63,15 +63,16 @@ if __name__ == "__main__":
                            {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10},
                            {"efficiency": 0.8, "dark_count": 1, "time_resolution": 10}] 
         bob = QKDNode("bob", tl, encoding=time_bin, stack_size=1)
+        bob.set_seed(1)
 
         for i in range(len(detector_params)):
             for name, param in detector_params[i].items():
                 bob.update_detector_params(i, name, param)
 
-        qc0.set_ends(alice, bob)
-        qc1.set_ends(bob, alice)
-        cc0.set_ends(alice, bob)
-        cc1.set_ends(bob, alice)
+        qc0.set_ends(alice, bob.name)
+        qc1.set_ends(bob, alice.name)
+        cc0.set_ends(alice, bob.name)
+        cc1.set_ends(bob, alice.name)
 
         # BB84 config
         pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])

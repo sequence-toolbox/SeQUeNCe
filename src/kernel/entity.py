@@ -27,7 +27,7 @@ class Entity(ABC):
         _receivers (List[Entity]): a list of entities that receive photons from current component.
     """
 
-    def __init__(self, name: str, timeline: "Timeline"):
+    def __init__(self, name: str, timeline: "Timeline") -> None:
         """Constructor for entity class.
 
         Args:
@@ -44,7 +44,7 @@ class Entity(ABC):
         timeline.add_entity(self)
 
     @abstractmethod
-    def init(self):
+    def init(self) -> None:
         """Method to initialize entity (abstract).
 
         Entity `init` methods are invoked for all timeline entities when the timeline is initialized.
@@ -53,7 +53,7 @@ class Entity(ABC):
 
         pass
 
-    def add_receiver(self, receiver: "Entity"):
+    def add_receiver(self, receiver: "Entity") -> None:
         self._receivers.append(receiver)
 
     def attach(self, observer: Any) -> None:
@@ -98,7 +98,7 @@ class Entity(ABC):
 
         If entity is not attached to a node, return default generator.
         """
-        if hasattr(self.owner, "generator"):
+        if hasattr(self.owner, "get_generator"):
             return self.owner.get_generator()
         else:
             return default_rng()

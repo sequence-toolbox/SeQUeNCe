@@ -1,4 +1,4 @@
-"""Code for a randomozed application
+"""Code for a randomized application
 
 This module defines the RandomRequestApp, which will create random entanglement requests repeatedly.
 Useful for testing network properties and throughputs.
@@ -87,8 +87,6 @@ class RandomRequestApp(RequestApp):
         self.min_fidelity: float = min_fidelity
         self.max_fidelity: float = max_fidelity
 
-        # self.memo_arr = node.components[memory_array_name]
-
     def start(self):
         """Method to start the application.
 
@@ -96,19 +94,19 @@ class RandomRequestApp(RequestApp):
         
         1. Choose a random destination node from the `others` list.
         2. Choose a start time between 1-2 seconds in the future.
-        3. Choose an end time 10-20 seconds after the start time.
-        4. Pick a number of memories to request between 10 and half the max memory size.
-        5. Pick a random fidelity between 0.8 and 1.
-        6. Create a request and start recording metrics.
+        3. Choose a random duration between min_dur and max_dur to set end_time
+        4. Pick a number of memories to request between min_size and max_size
+        5. Pick a random fidelity between min_fidelity and max_fidelity.
+        6. Use its parent class start function to create request
 
         Side Effects:
             Will create request for network manager on node.
         """
-
         self._update_last_rsvp_metrics()
 
         responder = self.rg.choice(self.others)
-        start_time = self.node.timeline.now() + self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
+        start_time = self.node.timeline.now() + \
+                     self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
         end_time = start_time + self.rg.integers(self.min_dur, self.max_dur)
         memory_size = self.rg.integers(self.min_size, self.max_size)
         fidelity = self.rg.uniform(self.min_fidelity, self.max_fidelity)
@@ -124,7 +122,8 @@ class RandomRequestApp(RequestApp):
         Side Effects:
             Will create request for network manager on node.
         """
-        start_time = self.node.timeline.now() + self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
+        start_time = self.node.timeline.now() + \
+                     self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
         end_time = start_time + self.rg.integers(self.min_dur, self.max_dur)
         memory_size = self.rg.integers(self.min_size, self.max_size)
         super().start(responder, start_time, end_time, memory_size, fidelity)
@@ -138,7 +137,7 @@ class RandomRequestApp(RequestApp):
         self.memory_counter = 0
         self.path = []
 
-    def get_reserve_res(self, reservation: "Reservation", result: bool) -> None:
+    def get_reserve_res(self, reservation: Reservation, result: bool) -> None:
         """Method to receive reservation result from network manager.
 
         Args:
@@ -152,7 +151,8 @@ class RandomRequestApp(RequestApp):
         super().get_reserve_res(reservation, result)
         if result:
             process = Process(self, "start", [])
-            self.reserves.append([self.responder, self.start_t, self.end_t, self.memo_size, self.fidelity])
+            self.reserves.append([self.responder, self.start_t, self.end_t,
+                                  self.memo_size, self.fidelity])
             self.paths.append(self.path)
             event = Event(self.end_t + 1, process)
             self.node.timeline.schedule(event)
