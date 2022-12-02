@@ -14,11 +14,11 @@ def test_init():
     assert photon.quantum_state.state == (complex(1), complex(0))
 
 
-def test_entangle():
+def test_combine_state():
     tl = Timeline()
     photon1 = Photon("p1", tl)
     photon2 = Photon("p2", tl)
-    photon1.entangle(photon2)
+    photon1.combine_state(photon2)
 
     state1 = photon1.quantum_state
     state2 = photon2.quantum_state
@@ -69,7 +69,7 @@ def test_measure_multiple():
     tl = Timeline()
     photon1 = Photon("p1", tl)
     photon2 = Photon("p2", tl)
-    photon1.entangle(photon2)
+    photon1.combine_state(photon2)
 
     basis = ((complex(1), complex(0), complex(0), complex(0)),
              (complex(0), complex(1), complex(0), complex(0)),

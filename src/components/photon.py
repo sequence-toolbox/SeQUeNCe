@@ -94,11 +94,11 @@ class Photon:
         if self.use_qm and self.timeline is not None:
             self.timeline.quantum_manager.remove(self.quantum_state)
 
-    def entangle(self, photon):
-        """Method to entangle photons (see `QuantumState` module).
+    def combine_state(self, photon):
+        """Method to combine quantum states of photons (see `QuantumState` module).
 
         This method does not modify the current state of the photon, but combines the internal quantum state object.
-        This ensures that two photons share a quantum state object.
+        This ensures that two photons share a quantum state object describing a product space.
         """
 
         if self.use_qm:
@@ -107,7 +107,7 @@ class Photon:
                 self.timeline.quantum_manager.get(photon.quantum_state).keys
             qm.run_circuit(Photon._entangle_circuit, all_keys)
         else:
-            self.quantum_state.entangle(photon.quantum_state)
+            self.quantum_state.combine_state(photon.quantum_state)
 
     def random_noise(self, rng: "Generator"):
         """Method to add random noise to photon's state (see `QuantumState` module)."""
@@ -157,7 +157,7 @@ class Photon:
 
     @staticmethod
     def measure_multiple(basis, photons: List["Photon"], rng: "Generator"):
-        """Method to measure 2 entangled photons (see `QuantumState` module).
+        """Method to measure 2 entangled photons (see `FreeQuantumState` module).
 
         Args:
             basis (List[List[complex]]): basis (given as lists of complex coefficients) with which to measure the photons.

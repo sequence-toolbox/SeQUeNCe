@@ -100,7 +100,7 @@ def test_measure_entangled():
         for _ in range(100):
             qs1.set_state_single(s)
             qs2 = FreeQuantumState()
-            qs1.entangle(qs2)
+            qs1.combine_state(qs2)
             res = qs1.measure(b, rng)
             if res:
                 counter += 1
@@ -117,7 +117,7 @@ def test_measure_entangled():
         for _ in range(1000):
             qs1.set_state_single(s)
             qs2 = FreeQuantumState()
-            qs1.entangle(qs2)
+            qs1.combine_state(qs2)
             res = qs1.measure(b, rng)
             if res:
                 counter += 1

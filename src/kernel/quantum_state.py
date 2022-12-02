@@ -149,8 +149,8 @@ class FreeQuantumState(State):
         self.state = (complex(1), complex(0))
         self.entangled_states = [self]
 
-    def entangle(self, another_state: "FreeQuantumState"):
-        """Method to entangle two quantum states.
+    def combine_state(self, another_state: "FreeQuantumState"):
+        """Method to tensor multiply two quantum states.
 
         Arguments:
             another_state (QuantumState): state to entangle current state with.

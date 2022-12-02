@@ -283,7 +283,7 @@ def test_QSDetectorFockInterference():
         p0 = Photon("", tl, encoding_type=absorptive, use_qm=True)
         p1 = Photon("", tl, encoding_type=absorptive, use_qm=True)
         p0.is_null = True
-        p0.entangle(p1)
+        p0.combine_state(p1)
         p0.set_state(psi_minus)
         qsd.get(p0)
         qsd.get(p1)
@@ -300,7 +300,7 @@ def test_QSDetectorFockInterference():
         p0 = Photon("", tl, encoding_type=absorptive, use_qm=True)
         p1 = Photon("", tl, encoding_type=absorptive, use_qm=True)
         p0.is_null = True
-        p0.entangle(p1)
+        p0.combine_state(p1)
         p0.set_state(psi_minus)
         qsd.get(p0)
         qsd.get(p1)
@@ -317,7 +317,7 @@ def test_QSDetectorFockInterference():
         p0 = Photon("", tl, encoding_type=absorptive, use_qm=True)
         p1 = Photon("", tl, encoding_type=absorptive, use_qm=True)
         p0.is_null = True
-        p0.entangle(p1)
+        p0.combine_state(p1)
         p0.set_state(psi_minus)
         qsd.get(p0)
         qsd.get(p1)
