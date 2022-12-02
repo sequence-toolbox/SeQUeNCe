@@ -239,7 +239,7 @@ class PolarizationBSM(BSM):
             return
 
         # entangle photons to measure
-        self.photons[0].entangle(self.photons[1])
+        self.photons[0].combine_state(self.photons[1])
 
         # measure in bell basis
         res = Photon.measure_multiple(self.bell_basis, self.photons, self.get_generator())
@@ -338,7 +338,7 @@ class TimeBinBSM(BSM):
         if self.get_generator().random() < self.phase_error:
             self.photons[1].apply_phase_error()
         # entangle photons to measure
-        self.photons[0].entangle(self.photons[1])
+        self.photons[0].combine_state(self.photons[1])
 
         # measure in bell basis
         res = Photon.measure_multiple(self.bell_basis, self.photons, self.get_generator())

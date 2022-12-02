@@ -1,4 +1,4 @@
-from json5 import load
+from json import load
 import matplotlib.pyplot as plt
 
 

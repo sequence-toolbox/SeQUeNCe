@@ -157,7 +157,7 @@ class SPDCSource(LightSource):
                                          encoding_type=self.encoding_type,
                                          use_qm=True)
 
-                    new_photon0.entangle(new_photon1)
+                    new_photon0.combine_state(new_photon1)
                     new_photon0.set_state((complex(0), complex(0), complex(0), complex(1)))
                     self.send_photons(time, [new_photon0, new_photon1])
                     self.photon_counter += 1
@@ -177,7 +177,7 @@ class SPDCSource(LightSource):
 
                     new_photon0.is_null = True
                     new_photon1.is_null = True
-                    new_photon0.entangle(new_photon1)
+                    new_photon0.combine_state(new_photon1)
                     new_photon0.set_state((complex(1), complex(0), complex(0), complex(0)))
                     self.send_photons(time, [new_photon0, new_photon1])
 
@@ -201,7 +201,7 @@ class SPDCSource(LightSource):
                                          location=self,
                                          encoding_type=self.encoding_type)
 
-                    new_photon0.entangle(new_photon1)
+                    new_photon0.combine_state(new_photon1)
                     new_photon0.set_state((state[0], complex(0), complex(0), state[1]))
                     self.send_photons(time, [new_photon0, new_photon1])
                     self.photon_counter += 1
