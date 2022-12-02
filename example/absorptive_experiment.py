@@ -1,7 +1,7 @@
 from typing import List, Dict, Any
 from pathlib import Path
 
-from json5 import dump
+from json import dump
 import numpy as np
 
 from sequence.components.bsm import make_bsm
