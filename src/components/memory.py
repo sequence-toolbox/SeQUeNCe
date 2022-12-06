@@ -555,16 +555,16 @@ class AbsorptiveMemory(Entity):
                         event = Event(self.timeline.now() + emit_time, process)
                         self.timeline.schedule(event)
 
-                elif self.get_generator().random() < self.efficiency(store_time):
+                elif self.get_generator().random() < self.afc_efficiency(store_time):
                     photon = stored_photons["photon"]
                     absorb_time = stored_photons["time"]
 
                     if self.is_reversed:
                         if not self.is_spinwave:
                             raise Exception("AFC memory can only have normal order of re-emission")
-                        emit_time = self.total_time - absorb_time # reversed order of re-emission
+                        emit_time = self.total_time - self.mode_bin - absorb_time  # reversed order of re-emission
                     else:
-                        emit_time = absorb_time # normal order of re-emission
+                        emit_time = absorb_time  # normal order of re-emission
 
                     if self.destination is not None:
                         dst = self.destination

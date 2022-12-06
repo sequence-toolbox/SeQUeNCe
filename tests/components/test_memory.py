@@ -203,7 +203,8 @@ def test_Memory__schedule_expiration():
 def test_Absorptive_prepare():
     PREPARE_TIME = 100
     tl = Timeline()
-    mem = AbsorptiveMemory("mem", tl, 1, 80e6, 1, perfect_efficiency, 100, 0, 500, 0, PREPARE_TIME)
+    mem = AbsorptiveMemory("mem", tl, 80e6, 1, perfect_efficiency, 100, 1550, PREPARE_TIME)
+    # mem = AbsorptiveMemory("mem", tl, 80e6, 1, perfect_efficiency, 100, 0, 500, 0, PREPARE_TIME)
 
     tl.init()
     mem.prepare()
@@ -222,7 +223,7 @@ def test_Absorptive_get_all_bins():
     PERIOD = 1
     MODE_NUM = 100
     tl = Timeline()
-    mem = AbsorptiveMemory("mem", tl, 1, 1e12/PERIOD, 1, perfect_efficiency, MODE_NUM, 0, 500, 0, 100)
+    mem = AbsorptiveMemory("mem", tl, 1e12/PERIOD, 1, perfect_efficiency, MODE_NUM, 500)
     mem.is_prepared = True
     tl.init()
 
@@ -249,7 +250,7 @@ def test_Absorptive_get_all_bins():
 def test_Absorpive_get_skip_bins():
     PERIOD = 1
     tl = Timeline()
-    mem = AbsorptiveMemory("mem", tl, 1, 1e12/PERIOD, 1, perfect_efficiency, 100, 0, 500, 0, 100)
+    mem = AbsorptiveMemory("mem", tl, 1e12/PERIOD, 1, perfect_efficiency, 100, 500)
     mem.is_prepared = True
     tl.init()
 
@@ -271,7 +272,7 @@ def test_Absorptive_retrieve():
     PERIOD = 1
     MODE_NUM = 100
     tl = Timeline()
-    mem = AbsorptiveMemory("mem", tl, 1, 1e12/PERIOD, 1, perfect_efficiency, MODE_NUM, 0, 500, 0, 100)
+    mem = AbsorptiveMemory("mem", tl, 1e12/PERIOD, 1, perfect_efficiency, MODE_NUM, 500)
     parent = DumbParent(mem)
     mem.is_prepared = True
     tl.init()
@@ -296,9 +297,18 @@ def test_Absorptive_retrieve():
 
     # retrieve photons in reverse order
     mem.is_prepared = True
+    mem.is_spinwave = True
     mem.is_reversed = True
     parent.reset()
     tl.time = 0
+    mem.absorb_start_time = 0
+    photons = [None] * MODE_NUM
+    for i in range(MODE_NUM):
+        photon = Photon(str(i), tl, 500)
+        photons[i] = photon
+        mem.stored_photons[i] = {"photon": photon, "time": i}
+        mem.excited_photons.append(photon)
+
     mem.retrieve()
     assert len(tl.events) == MODE_NUM
     tl.run()
@@ -313,7 +323,7 @@ def test_Absorptive_retrieve():
 
 def test_Absorptive_expire():
     tl = Timeline()
-    mem = AbsorptiveMemory("mem", tl, 1, 80e6, 1, perfect_efficiency, 100, 0, 500, 0, 100)
+    mem = AbsorptiveMemory("mem", tl, 80e6, 1, perfect_efficiency, 100, 500)
     parent = DumbParent(mem)
 
     process = Process(mem, "expire", [])

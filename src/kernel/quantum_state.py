@@ -11,7 +11,7 @@ These include 2 classes used by a quantum manager, and one used for individual p
 from abc import ABC
 from typing import Tuple, Dict, List
 
-from numpy import pi, cos, sin, arange, log
+from numpy import pi, cos, sin, arange, log, log2
 from numpy.random import Generator
 
 from .quantum_utils import *
@@ -99,7 +99,7 @@ class KetState(State):
 
         # check formatting
         assert all([abs(a) <= 1.01 for a in amplitudes]), "Illegal value with abs > 1 in ket vector"
-        assert abs(sum([abs(a) ** 2 for a in amplitudes]) - 1) < 1e-5, "Squared amplitude moduli do not sum to 1"
+        assert abs(sum([abs(a) ** 2 for a in amplitudes]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
         num_subsystems = log(len(amplitudes)) / log(dim)
         assert num_subsystems.is_integer(),\
             "Length of amplitudes should be d ** n, where d is subsystem Hilbert space dimension and \

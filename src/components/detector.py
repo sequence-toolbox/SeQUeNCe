@@ -7,17 +7,18 @@ QSDetector is defined as an abstract template and as implementations for polariz
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List
-from numpy import eye, kron, exp, sqrt, array
+from numpy import eye, kron, exp, sqrt
 from scipy.linalg import fractional_matrix_power
 from math import factorial
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
 
-from ..components.photon import Photon
-from ..components.beam_splitter import BeamSplitter
-from ..components.switch import Switch
-from ..components.interferometer import Interferometer
+from .photon import Photon
+from .beam_splitter import BeamSplitter
+from .switch import Switch
+from .interferometer import Interferometer
+from .circuit import Circuit
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
