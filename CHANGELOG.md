@@ -133,3 +133,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.3]
 ### Changed
 - Bug fixes to the GUI and QKD tests
+
+## [0.5.4]
+### Added
+- Added some additional error checking to individual quantum states
+  - This includes additional error checking in the `Photon` class
+
+### Changed
+- The `entangle` method for the `Photon` and `FreeQuantumState` classes has been changed to `combine_state`
+- Updated chapter 1 tutorial in the documentation to match code example
+
+### Removed
+- residual `json5` references in examples
