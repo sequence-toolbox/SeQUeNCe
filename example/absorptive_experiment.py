@@ -11,6 +11,7 @@ The measurement node contians a QSDetectorFockDirect instance and a QSDetectorFo
 
 from typing import List, Callable, TYPE_CHECKING
 from pathlib import Path
+from copy import copy
 
 if TYPE_CHECKING:
     from sequence.components.photon import Photon
@@ -572,10 +573,11 @@ if __name__ == "__main__":
             
         # effective Bell state generated 
         def effective_state(state):
-            state[0][0] = 0
-            state = state/np.trace(state)
+            state_copy = copy(state)
+            state_copy[0][0] = 0
+            state_copy = state_copy/np.trace(state_copy)
             
-            return state
+            return state_copy
         
         remaining_state_eff = effective_state(remaining_state)
         
