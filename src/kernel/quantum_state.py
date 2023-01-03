@@ -100,13 +100,21 @@ class KetState(State):
         # check formatting
         assert all([abs(a) <= 1.01 for a in amplitudes]), "Illegal value with abs > 1 in ket vector"
         assert abs(sum([abs(a) ** 2 for a in amplitudes]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
+
         num_subsystems = log(len(amplitudes)) / log(dim)
-        assert num_subsystems.is_integer(),\
-            "Length of amplitudes should be d ** n, where d is subsystem Hilbert space dimension and \
-             n is the number of subsystems"
-        assert num_subsystems == len(keys), \
-            "Length of amplitudes should be d ** n, where d is subsystem Hilbert space dimension and \
-             n is the number of subsystems"
+        assert dim ** int(round(num_subsystems)) == len(amplitudes),\
+            "Length of amplitudes should be d ** n, " \
+            "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
+            "Actual amplitude length: {}, dim: {}, num subsystems: {}".format(
+                len(amplitudes), dim, num_subsystems
+            )
+        num_subsystems = int(round(num_subsystems))
+        assert num_subsystems == len(keys),\
+            "Length of amplitudes should be d ** n, " \
+            "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
+            "Amplitude length: {}, expected subsystems: {}, num keys: {}".format(
+                len(amplitudes), num_subsystems, len(keys)
+            )
 
         self.state = array(amplitudes, dtype=complex)
         self.keys = keys
@@ -146,13 +154,21 @@ class DensityState(State):
         assert abs(trace(array(state)) - 1) < 0.01, "density matrix trace must be 1"
         for row in state:
             assert len(state) == len(row), "density matrix must be square"
+
         num_subsystems = log(len(state)) / log(dim)
-        assert num_subsystems.is_integer(), \
-            "Dimensions of density matrix should be d ** n, where d is subsystem Hilbert space dimension and \
-             n is the number of subsystems"
+        assert dim ** int(round(num_subsystems)) == len(state), \
+            "Length of amplitudes should be d ** n, " \
+            "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
+            "Actual amplitude length: {}, dim: {}, num subsystems: {}".format(
+                len(state), dim, num_subsystems
+            )
+        num_subsystems = int(round(num_subsystems))
         assert num_subsystems == len(keys), \
-            "Dimensions of density matrix should be d ** n, where d is subsystem Hilbert space dimension and \
-             n is the number of subsystems"
+            "Length of amplitudes should be d ** n, " \
+            "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
+            "Amplitude length: {}, expected subsystems: {}, num keys: {}".format(
+                len(state), num_subsystems, len(keys)
+            )
 
         self.state = state
         self.keys = keys
@@ -225,10 +241,19 @@ class FreeQuantumState(State):
         # check formatting of state
         assert all([abs(a) <= 1.01 for a in state]), "Illegal value with abs > 1 in quantum state"
         assert abs(sum([abs(a) ** 2 for a in state]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
+
         num_qubits = log2(len(state))
-        assert num_qubits.is_integer(), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
+        assert 2 ** int(round(num_qubits)) == len(state), \
+            "Length of amplitudes should be 2 ** n, where n is the number of qubits. " \
+            "Actual amplitude length: {}, num qubits: {}".format(
+                len(state), num_qubits
+            )
+        num_qubits = int(round(num_qubits))
         assert num_qubits == len(self.entangled_states), \
-            "Length of amplitudes should be 2 ** n, where n is the number of qubits"
+            "Length of amplitudes should be 2 ** n, where n is the number of qubits. " \
+            "Num qubits in state: {}, num qubits in object: {}".format(
+                num_qubits, len(self.entangled_states)
+            )
 
         for qs in self.entangled_states:
             qs.state = state

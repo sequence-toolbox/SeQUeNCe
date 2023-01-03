@@ -370,8 +370,8 @@ def test_qmanager__prepare_state_fock():
     # test state that needs swapping
     key_1 = qm.new()
     key_0 = qm.new()
-    combined_alt = np.kron(state_1, state_0)
-    qm.set([key_1, key_0], combined_alt)
+    combined_2 = np.kron(state_1, state_0)
+    qm.set([key_1, key_0], combined_2)
 
     new_state, all_keys = qm._prepare_state([key_0, key_1])
     assert np.all(new_state == np.array(desired_state))
@@ -381,8 +381,8 @@ def test_qmanager__prepare_state_fock():
     key_0 = qm.new()
     key_1 = qm.new()
     key_2 = qm.new()
-    combined_alt = np.kron(np.kron(state_0, state_0), state_1)
-    qm.set([key_0, key_1, key_2], combined_alt)
+    combined_3 = np.kron(np.kron(state_0, state_0), state_1)
+    qm.set([key_0, key_1, key_2], combined_3)
 
     combined_correct = np.kron(np.kron(state_0, state_1), state_0)
     desired_state_alt = np.outer(combined_correct, combined_correct.conj())
