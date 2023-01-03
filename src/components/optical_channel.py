@@ -153,8 +153,20 @@ class QuantumChannel(OpticalChannel):
                 time = int(time_bin * (1e12 / self.frequency))
             assert time == self.timeline.now(), "qc {} transmit method called at invalid time".format(self.name)
 
-        # check if photon kept
-        if (self.sender.get_generator().random() > self.loss) or qubit.is_null:
+        # check if photon state using Fock representation
+        if qubit.encoding_type["name"] == "fock":
+            key = qubit.quantum_state  # if using Fock representation, the `quantum_state` field is the state key.
+            # apply loss channel on photonic statex
+            self.timeline.quantum_manager.add_loss(key, self.loss)
+
+            # schedule receiving node to receive photon at future time determined by light speed
+            future_time = self.timeline.now() + self.delay
+            process = Process(self.receiver, "receive_qubit", [source.name, qubit])
+            event = Event(future_time, process)
+            self.timeline.schedule(event)
+
+        # if not using Fock representation, check if photon kept
+        elif (self.sender.get_generator().random() > self.loss) or qubit.is_null:
             if self._receiver_on_other_tl():
                 self.timeline.quantum_manager.move_manage_to_server(
                     qubit.quantum_state)
@@ -173,7 +185,7 @@ class QuantumChannel(OpticalChannel):
             event = Event(future_time, process)
             self.timeline.schedule(event)
 
-        # if photon lost, exit
+        # if not using Fock representation, if photon lost, exit
         else:
             pass
 

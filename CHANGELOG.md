@@ -145,3 +145,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - residual `json5` references in examples
+
+## [0.6.0]
+### Added
+- Fock state density matrix encoding
+- Quantum manager to use fock state density matrix
+  - Add truncation attribute to quantum managers; Hilbert space dimension is truncation + 1
+  - Supports error channels based on kraus operators and direct operator action on state
+- Hardware models to use fock state density matrix
+  - Absorptive quantum memory built on AFC
+  - Interference and direct detection for state tomography
+
+### Changed
+- Moved around and updated some error checking
+- Temporarily removed mpich testing for python 3.8 and 3.9 (broken)

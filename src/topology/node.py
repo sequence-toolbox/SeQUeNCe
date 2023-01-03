@@ -170,7 +170,7 @@ class Node(Entity):
 
         self.components[self.first_component_name].get(qubit)
 
-    def get_components_by_type(self, component_type: str) -> [Entity]:
+    def get_components_by_type(self, component_type: str) -> List[Entity]:
         return [comp for comp in self.components.values() if type(comp).__name__ == component_type]
 
     def change_timeline(self, timeline: "Timeline"):

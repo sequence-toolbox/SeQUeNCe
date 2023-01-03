@@ -37,3 +37,8 @@ absorptive = \
     {"name": "absorptive",
      "bases": [((complex(1), complex(0)), (complex(0), complex(1))), None]
      }
+
+fock = \
+    {"name": "fock",
+     "bases": None
+     }
