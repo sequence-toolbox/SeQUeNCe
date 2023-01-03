@@ -8,7 +8,7 @@ from sequence.app.random_request import RandomRequestApp
 from sequence.topology.router_net_topo import RouterNetTopo
 
 
-def get_component(node: Node, component_type: str):
+def get_component(node: "Node", component_type: str):
     for comp in node.components.values():
         if type(comp).__name__ == component_type:
             return comp
@@ -21,6 +21,7 @@ if __name__ == "__main__":
     network_config_file = "example/starlight.json"
     network_topo = RouterNetTopo(network_config_file)
     tl = network_topo.get_timeline()
+    tl.show_progress = True
     routers = network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER)
     bsm_nodes = network_topo.get_nodes_by_type(RouterNetTopo.BSM_NODE)
 
