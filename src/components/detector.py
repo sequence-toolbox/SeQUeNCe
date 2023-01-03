@@ -379,7 +379,7 @@ class QSDetectorFockDirect(QSDetector):
         samp = self.get_generator().random()  # random measurement sample
         if input_port == 0:
             result = self.timeline.quantum_manager.measure([key], self.povms[0:2], samp)
-        if input_port == 1:
+        elif input_port == 1:
             result = self.timeline.quantum_manager.measure([key], self.povms[2:4], samp)
         else:
             raise Exception("too many input ports for QSDFockDirect {}".format(self.name))
