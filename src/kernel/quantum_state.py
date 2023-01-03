@@ -11,7 +11,7 @@ These include 2 classes used by a quantum manager, and one used for individual p
 from abc import ABC
 from typing import Tuple, Dict, List
 
-from numpy import pi, cos, sin, arange, log2
+from numpy import pi, cos, sin, arange, log, log2
 from numpy.random import Generator
 
 from .quantum_utils import *
@@ -38,7 +38,9 @@ class State(ABC):
         keys (List[int]): list of keys pointing to the state, for use with a quantum manager.
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        # potential key word arguments for derived classes, e.g. truncation = d-1 for qudit
+
         super().__init__()
 
         self.state = None
@@ -76,19 +78,35 @@ class KetState(State):
     """Class to represent an individual quantum state as a ket vector.
 
     Attributes:
-        state (np.array): state vector. Should be of length 2 ** len(keys).
-        keys (List[int]): list of keys (qubits) associated with this state.
+        state (np.array): state vector. Should be of length d ** len(keys), where d is dimension of elementary
+            Hilbert space. Default is 2 for qubits.
+        keys (List[int]): list of keys (subsystems) associated with this state.
+        truncation (int): maximally allowed number of excited states for elementary subsystems.
+                Default is 1 for qubit. dim = truncation + 1
     """
 
-    def __init__(self, amplitudes: List[complex], keys: List[int]):
+    def __init__(self, amplitudes: List[complex], keys: List[int], truncation: int = 1):
+        """Constructor for ket state class.
+
+        Args:
+            amplitudes
+            truncation (int): maximally allowed number of excited states for elementary subsystems.
+                Default is 1 for qubit. dim = truncation + 1
+        """
         super().__init__()
+        self.truncation = truncation
+        dim = self.truncation + 1  # dimension of element Hilbert space
 
         # check formatting
         assert all([abs(a) <= 1.01 for a in amplitudes]), "Illegal value with abs > 1 in ket vector"
         assert abs(sum([abs(a) ** 2 for a in amplitudes]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
-        num_qubits = log2(len(amplitudes))
-        assert num_qubits.is_integer(), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
-        assert num_qubits == len(keys), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
+        num_subsystems = log(len(amplitudes)) / log(dim)
+        assert num_subsystems.is_integer(),\
+            "Length of amplitudes should be d ** n, where d is subsystem Hilbert space dimension and \
+             n is the number of subsystems"
+        assert num_subsystems == len(keys), \
+            "Length of amplitudes should be d ** n, where d is subsystem Hilbert space dimension and \
+             n is the number of subsystems"
 
         self.state = array(amplitudes, dtype=complex)
         self.keys = keys
@@ -98,32 +116,43 @@ class DensityState(State):
     """Class to represent an individual quantum state as a density matrix.
 
     Attributes:
-        state (np.array): density matrix values. NxN matrix with N = 2 ** len(keys).
-        keys (List[int]): list of keys (qubits) associated with this state.
+        state (np.array): density matrix values. NxN matrix with N = d ** len(keys), where d is dimension of elementary
+            Hilbert space. Default is d = 2 for qubits.
+        keys (List[int]): list of keys (subsystems) associated with this state.
+        truncation (int): maximally allowed number of excited states for elementary subsystems.
+            Default is 1 for qubit. dim = truncation + 1
     """
 
-    def __init__(self, state: List[List[complex]], keys: List[int]):
+    def __init__(self, state: List[List[complex]], keys: List[int], truncation: int = 1):
         """Constructor for density state class.
 
         Args:
             state (List[List[complex]]): density matrix elements given as a list.
                 If the list is one-dimensional, will be converted to matrix with outer product operation.
             keys (List[int]): list of keys to this state in quantum manager.
+            truncation (int): maximally allowed number of excited states for elementary subsystems.
+                Default is 1 for qubit. dim = truncation + 1
         """
 
         super().__init__()
+        self.truncation = truncation
+        dim = self.truncation + 1  # dimension of element Hilbert space
 
         state = array(state, dtype=complex)
         if state.ndim == 1:
-            state = outer(state.conj(), state)
+            state = outer(state, state.conj())
 
         # check formatting
-        assert abs(trace(array(state)) - 1) < 0.1, "density matrix trace must be 1"
+        assert abs(trace(array(state)) - 1) < 0.01, "density matrix trace must be 1"
         for row in state:
             assert len(state) == len(row), "density matrix must be square"
-        num_qubits = log2(len(state))
-        assert num_qubits.is_integer(), "Dimensions of density matrix should be 2 ** n, where n is the number of qubits"
-        assert num_qubits == len(keys), "Dimensions of density matrix should be 2 ** n, where n is the number of qubits"
+        num_subsystems = log(len(state)) / log(dim)
+        assert num_subsystems.is_integer(), \
+            "Dimensions of density matrix should be d ** n, where d is subsystem Hilbert space dimension and \
+             n is the number of subsystems"
+        assert num_subsystems == len(keys), \
+            "Dimensions of density matrix should be d ** n, where d is subsystem Hilbert space dimension and \
+             n is the number of subsystems"
 
         self.state = state
         self.keys = keys
@@ -227,7 +256,9 @@ class FreeQuantumState(State):
         """Method to measure a single quantum state.
 
         Args:
-            basis (Tuple[Tuple[complex]]): measurement basis, given as list of states (that are themselves lists of complex coefficients).
+            basis (Tuple[Tuple[complex]]): measurement basis, given as list of states
+                (that are themselves lists of complex coefficients).
+            rng (Generator): random number generator for measurement
 
         Returns:
             int: 0/1 measurement result, corresponding to one basis vector.
@@ -276,6 +307,7 @@ class FreeQuantumState(State):
         Args:
             basis (List[List[complex]]): list of basis vectors.
             states (List[QuantumState]): list of quantum state objects to measure.
+            rng (Generator): random number generator for measurement
 
         Returns:
             int: measurement result in given basis.

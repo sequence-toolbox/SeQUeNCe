@@ -21,8 +21,10 @@ from .eventlist import EventList
 from ..utils import log
 from .quantum_manager import (QuantumManagerKet,
                               QuantumManagerDensity,
+                              QuantumManagerDensityFock,
                               KET_STATE_FORMALISM,
-                              DENSITY_MATRIX_FORMALISM)
+                              DENSITY_MATRIX_FORMALISM,
+                              FOCK_DENSITY_MATRIX_FORMALISM)
 
 CARRIAGE_RETURN = '\r'
 SLEEP_SECONDS = 3
@@ -58,11 +60,13 @@ class Timeline:
         quantum_manager (QuantumManager): quantum state manager.
     """
 
-    def __init__(self, stop_time=inf, formalism=KET_STATE_FORMALISM):
+    def __init__(self, stop_time=inf, formalism=KET_STATE_FORMALISM, truncation=1):
         """Constructor for timeline.
 
         Args:
             stop_time (int): stop time (in ps) of simulation (default inf).
+            formalism (str): formalism of quantum state representation.
+            truncation (int): truncation of Hilbert space (currently only for Fock representation).
         """
         self.events: EventList = EventList()
         self.entities: Dict[str, "Entity"] = {}
@@ -77,6 +81,8 @@ class Timeline:
             self.quantum_manager = QuantumManagerKet()
         elif formalism == DENSITY_MATRIX_FORMALISM:
             self.quantum_manager = QuantumManagerDensity()
+        elif formalism == FOCK_DENSITY_MATRIX_FORMALISM:
+            self.quantum_manager = QuantumManagerDensityFock(truncation=truncation)
         else:
             raise ValueError(f"Invalid formalism {formalism}")
 
@@ -188,10 +194,10 @@ class Timeline:
             stdout.flush()
             sleep(SLEEP_SECONDS)
 
-    def ns_to_human_time(self, nanoseconds: int) -> str:
+    def ns_to_human_time(self, nanoseconds: float) -> str:
         milliseconds = nanoseconds / NANOSECONDS_PER_MILLISECOND
         return str(timedelta(milliseconds=milliseconds))
 
     @staticmethod
-    def convert_to_nanoseconds(picoseconds: int) -> int:
+    def convert_to_nanoseconds(picoseconds: int) -> float:
         return picoseconds / PICOSECONDS_PER_NANOSECOND

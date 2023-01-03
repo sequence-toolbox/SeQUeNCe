@@ -1,7 +1,7 @@
 import time
 
 from numpy import sin, cos
-from numpy.random import random_sample
+from numpy.random import random_sample, default_rng
 from sequence.components.circuit import Circuit
 from sequence.kernel.quantum_manager import QuantumManagerKet
 from sequence.utils.quantum_state import QuantumState
@@ -10,6 +10,7 @@ from sequence.utils.quantum_state import QuantumState
 SAMPLE_SIZE = 10000
 
 basis = ((complex(1), complex(0)), (complex(0), complex(1)))
+rng = default_rng()
 qm = QuantumManagerKet()
 meas_circ = Circuit(1)
 meas_circ.measure(0)
@@ -33,7 +34,7 @@ class ParticleOld:
         self.qs.state = state
 
     def measure(self):
-        return self.qs.measure(basis)
+        return self.qs.measure(basis, rng)
 
 
 class ParticleNew:
@@ -41,7 +42,7 @@ class ParticleNew:
         self.qs_key = qm.new(state)
 
     def measure(self):
-        return qm.run_circuit(meas_circ, [self.qs_key])
+        return qm.run_circuit(meas_circ, [self.qs_key], rng.random())
 
 
 if __name__ == "__main__":
