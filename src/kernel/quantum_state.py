@@ -116,14 +116,6 @@ class KetState(State):
                 len(amplitudes), num_subsystems, len(keys)
             )
 
-        # num_subsystems = log(len(amplitudes)) / log(dim)
-        # assert num_subsystems.is_integer(),\
-        #     "Length of amplitudes should be d ** n, where d is subsystem Hilbert space dimension and \
-        #      n is the number of subsystems"
-        # assert num_subsystems == len(keys), \
-        #     "Length of amplitudes should be d ** n, where d is subsystem Hilbert space dimension and \
-        #      n is the number of subsystems"
-
         self.state = array(amplitudes, dtype=complex)
         self.keys = keys
 
@@ -177,14 +169,6 @@ class DensityState(State):
             "Amplitude length: {}, expected subsystems: {}, num keys: {}".format(
                 len(state), num_subsystems, len(keys)
             )
-
-        # num_subsystems = log(len(state)) / log(dim)
-        # assert num_subsystems.is_integer(), \
-        #     "Dimensions of density matrix should be d ** n, where d is subsystem Hilbert space dimension and \
-        #      n is the number of subsystems"
-        # assert num_subsystems == len(keys), \
-        #     "Dimensions of density matrix should be d ** n, where d is subsystem Hilbert space dimension and \
-        #      n is the number of subsystems"
 
         self.state = state
         self.keys = keys
@@ -270,10 +254,6 @@ class FreeQuantumState(State):
             "Num qubits in state: {}, num qubits in object: {}".format(
                 num_qubits, len(self.entangled_states)
             )
-
-        # assert num_qubits.is_integer(), "Length of amplitudes should be 2 ** n, where n is the number of qubits"
-        # assert num_qubits == len(self.entangled_states), \
-        #     "Length of amplitudes should be 2 ** n, where n is the number of qubits"
 
         for qs in self.entangled_states:
             qs.state = state
