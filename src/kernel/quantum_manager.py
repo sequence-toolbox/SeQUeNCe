@@ -139,13 +139,13 @@ class QuantumManager:
         """
 
         num_subsystems = log(len(amplitudes)) / log(self.dim)
-        assert num_subsystems.is_integer(),\
+        assert self.dim ** int(round(num_subsystems)) == len(amplitudes),\
             "Length of amplitudes should be d ** n, " \
             "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
             "Actual amplitude length: {}, dim: {}, num subsystems: {}".format(
                 len(amplitudes), self.dim, num_subsystems
             )
-        num_subsystems = int(num_subsystems)
+        num_subsystems = int(round(num_subsystems))
         assert num_subsystems == len(keys),\
             "Length of amplitudes should be d ** n, " \
             "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
