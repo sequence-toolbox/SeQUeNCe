@@ -176,15 +176,15 @@ class SPDCSource(LightSource):
             for _ in state_list:
                 # generate two new photons
                 new_photon0 = Photon("", self.timeline,
-                                    wavelength=self.wavelengths[0],
-                                    location=self,
-                                    encoding_type=self.encoding_type,
-                                    use_qm=True)
+                                     wavelength=self.wavelengths[0],
+                                     location=self,
+                                     encoding_type=self.encoding_type,
+                                     use_qm=True)
                 new_photon1 = Photon("", self.timeline,
-                                    wavelength=self.wavelengths[1],
-                                    location=self,
-                                    encoding_type=self.encoding_type,
-                                    use_qm=True)
+                                     wavelength=self.wavelengths[1],
+                                     location=self,
+                                     encoding_type=self.encoding_type,
+                                     use_qm=True)
 
                 # set shared state to squeezed state
                 state = self._generate_tmsv_state()

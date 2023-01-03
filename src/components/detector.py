@@ -381,6 +381,8 @@ class QSDetectorFockDirect(QSDetector):
             result = self.timeline.quantum_manager.measure([key], self.povms[0:2], samp)
         if input_port == 1:
             result = self.timeline.quantum_manager.measure([key], self.povms[2:4], samp)
+        else:
+            raise Exception("too many input ports for QSDFockDirect {}".format(self.name))
 
         assert result in list(range(len(self.povms))), "The measurement outcome is not valid."
         if result == 1:
@@ -591,7 +593,7 @@ class QSDetectorFockInterference(QSDetector):
         Will clear `trigger_times` and `detect_info`.
         """
         trigger_times = self.trigger_times
-        detect_info = self.detect_info
+        # detect_info = self.detect_info
         self.trigger_times = [[], []]
         self.detect_info = [[], []]
         # return trigger_times, detect_info

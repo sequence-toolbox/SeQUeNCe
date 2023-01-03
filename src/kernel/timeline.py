@@ -194,10 +194,10 @@ class Timeline:
             stdout.flush()
             sleep(SLEEP_SECONDS)
 
-    def ns_to_human_time(self, nanoseconds: int) -> str:
+    def ns_to_human_time(self, nanoseconds: float) -> str:
         milliseconds = nanoseconds / NANOSECONDS_PER_MILLISECOND
         return str(timedelta(milliseconds=milliseconds))
 
     @staticmethod
-    def convert_to_nanoseconds(picoseconds: int) -> int:
+    def convert_to_nanoseconds(picoseconds: int) -> float:
         return picoseconds / PICOSECONDS_PER_NANOSECOND
