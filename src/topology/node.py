@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 from ..kernel.entity import Entity
 from ..components.memory import MemoryArray
-from ..components.bsm import SingleAtomBSM
+from ..components.bsm import SingleAtomBSM, SingleAtomBSMProb
 from ..components.light_source import LightSource
 from ..components.detector import QSDetector, QSDetectorPolarization, QSDetectorTimeBin
 from ..qkd.BB84 import BB84
@@ -193,20 +193,25 @@ class BSMNode(Node):
         eg (EntanglementGenerationB): entanglement generation protocol instance.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", other_nodes: List[str]) -> None:
+    def __init__(self, name: str, timeline: "Timeline", other_nodes: List[str],
+                 prob=False) -> None:
         """Constructor for BSM node.
 
         Args:
             name (str): name of node.
             timeline (Timeline): simulation timeline.
             other_nodes (List[str]): 2-member list of node names for adjacent quantum routers.
+            prob (bool): if True, use probablistic entanglement generation -- faster but less robust (default False).
         """
 
         from ..entanglement_management.generation import EntanglementGenerationB
 
         Node.__init__(self, name, timeline)
         bsm_name = name + ".BSM"
-        bsm = SingleAtomBSM(bsm_name, timeline)
+        if prob:
+            bsm = SingleAtomBSMProb(bsm_name, timeline)
+        else:
+            bsm = SingleAtomBSM(bsm_name, timeline)
         self.eg = EntanglementGenerationB(self, "{}_eg".format(name), other_nodes)
 
         bsm.attach(self.eg)

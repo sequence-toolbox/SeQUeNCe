@@ -31,6 +31,7 @@ class RouterNetTopo(Topo):
     IS_PARALLEL = "is_parallel"
     LOOKAHEAD = "lookahead"
     MEET_IN_THE_MID = "meet_in_the_middle"
+    PROB_GEN = "probablistic_ent_gen"
     MEMO_ARRAY_SIZE = "memo_size"
     PORT = "port"
     PROC_NUM = "process_num"
@@ -77,8 +78,9 @@ class RouterNetTopo(Topo):
             name = node[Topo.NAME]
 
             if node_type == self.BSM_NODE:
+                use_prob = node.get(RouterNetTopo.PROB_GEN, False)
                 others = self.bsm_to_router_map[name]
-                node_obj = BSMNode(name, self.tl, others)
+                node_obj = BSMNode(name, self.tl, others, prob=use_prob)
             elif node_type == self.QUANTUM_ROUTER:
                 memo_size = node.get(self.MEMO_ARRAY_SIZE, 0)
                 if memo_size:
@@ -130,11 +132,13 @@ class RouterNetTopo(Topo):
             if len(cc_delay) == 0:
                 assert 0, q_connect
             cc_delay = mean(cc_delay) // 2
+
             if channel_type == self.MEET_IN_THE_MID:
                 bsm_name = "BSM.{}.{}.auto".format(node1, node2)
                 bsm_info = {self.NAME: bsm_name,
                             self.TYPE: self.BSM_NODE,
-                            self.SEED: 0}
+                            self.SEED: 0,
+                            self.PROB_GEN: q_connect.get(self.PROB_GEN, False)}
                 config[self.ALL_NODE].append(bsm_info)
 
                 for src in [node1, node2]:
@@ -165,6 +169,7 @@ class RouterNetTopo(Topo):
                                self.DISTANCE: distance,
                                self.DELAY: cc_delay}
                     config[self.ALL_C_CHANNEL].append(cc_info)
+
             else:
                 raise NotImplementedError("Unknown type of quantum connection")
 

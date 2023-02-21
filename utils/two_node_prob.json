@@ -1,0 +1,35 @@
+{
+  "nodes": [
+    {
+      "name": "left",
+      "type": "QuantumRouter",
+      "seed": 0,
+      "memo_size": 50
+    },
+    {
+      "name": "right",
+      "type": "QuantumRouter",
+      "seed": 1,
+      "memo_size": 50
+    }
+  ],
+  "qconnections": [
+    {
+      "node1": "left",
+      "node2": "right",
+      "attenuation": 0.0002,
+      "distance": 500,
+      "type": "meet_in_the_middle",
+      "probablistic_ent_gen": true
+    }
+  ],
+  "is_parallel": false,
+  "stop_time": 2000000000000,
+  "cconnections": [
+    {
+      "node1": "left",
+      "node2": "right",
+      "delay": 500000000
+    }
+  ]
+}

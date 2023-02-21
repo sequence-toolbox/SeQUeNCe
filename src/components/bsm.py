@@ -518,6 +518,86 @@ class SingleAtomBSM(BSM):
         self.notify(info)
 
 
+class SingleAtomBSMProb(SingleAtomBSM):
+    """Class modeling a single atom BSM device with probablistic success.
+
+    Uses incoming photons and manages entanglement of associated memories.
+    For speeding up simulations.
+
+    Attributes:
+        name (str): label for BSM instance
+        timeline (Timeline): timeline for simulation
+        detectors (List[Detector]): list of attached photon detection devices
+        resolution (int): maximum time resolution achievable with attached detectors
+    """
+
+    def get(self, photon, **kwargs):
+        """See base class.
+
+        This method adds additional side effects not present in the base class.
+
+        Side Effects:
+            May call get method of one or more attached detector(s).
+            May alter the quantum state of photon and any stored photons, as well as their corresponding memories.
+        """
+
+        super().get(photon)
+        log.logger.debug(self.name + " received photon")
+
+        if len(self.photons) == 2:
+            qm = self.timeline.quantum_manager
+            p0, p1 = self.photons
+            key0, key1 = p0.quantum_state, p1.quantum_state
+            keys = [key0, key1]
+            state0, state1 = qm.get(key0), qm.get(key1)
+
+            # don't explicitly measure but just choose
+            meas0 = self.get_generator().choice([0, 1])
+            meas1 = self.get_generator().choice([0, 1])
+
+            log.logger.debug(self.name + " measured photons as {}, {}".format(meas0, meas1))
+
+            if meas0 ^ meas1:
+                detector_num = self.get_generator().choice([0, 1])
+                if len(state0.keys) == 1:
+                    # if we're in stage 1: we set state to psi+/psi- to mark the
+                    # first triggered detector
+                    log.logger.info(self.name + " passed stage 1")
+                    if detector_num == 0:
+                        _set_pure_state(keys, BSM._psi_minus, qm)
+                    else:
+                        _set_pure_state(keys, BSM._psi_plus, qm)
+                elif len(state0.keys) == 2:
+                    # if we're in stage 2: check if the same detector is triggered
+                    # twice to assign state to psi+ or psi-
+                    log.logger.info(self.name + " passed stage 2")
+                    if _eq_psi_plus(state0, qm.formalism) ^ detector_num:
+                        _set_state_with_fidelity(keys, BSM._psi_minus,
+                                                 p0.encoding_type["raw_fidelity"],
+                                                 self.get_generator(),
+                                                 qm)
+                    else:
+                        _set_state_with_fidelity(keys, BSM._psi_plus,
+                                                 p0.encoding_type["raw_fidelity"],
+                                                 self.get_generator(),
+                                                 qm)
+                else:
+                    raise NotImplementedError("Unknown state")
+
+                photon = p0 if meas0 else p1
+                if self.get_generator().random() > photon.loss:
+                    self.detectors[detector_num].get()
+
+            else:
+                if meas0 and self.get_generator().random() > p0.loss:
+                    detector_num = self.get_generator().choice([0, 1])
+                    self.detectors[detector_num].get()
+
+                if meas1 and self.get_generator().random() > p1.loss:
+                    detector_num = self.get_generator().choice([0, 1])
+                    self.detectors[detector_num].get()
+
+
 class AbsorptiveBSM(BSM):
     """Class modeling a BSM device for absorptive quantum memories.
 
