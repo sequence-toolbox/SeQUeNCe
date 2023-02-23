@@ -11,7 +11,7 @@ from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
 
-from .rules import *
+from .rule_args import *
 from ..resource_management.rule_manager import Rule
 from ..message import Message
 from ..protocol import StackProtocol
