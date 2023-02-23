@@ -9,6 +9,7 @@ from ..entanglement_management.generation import EntanglementGenerationA
 from ..entanglement_management.purification import BBPSSW
 from ..entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 
+
 def eg_rule_condition(memory_info: "MemoryInfo",
                       manager: "MemoryManager",
                       args: Arguments) -> List["MemoryInfo"]:
