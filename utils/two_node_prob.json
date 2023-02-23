@@ -24,7 +24,7 @@
     }
   ],
   "is_parallel": false,
-  "stop_time": 2000000000000,
+  "stop_time": 10e12,
   "cconnections": [
     {
       "node1": "left",
