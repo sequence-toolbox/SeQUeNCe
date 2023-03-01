@@ -1,10 +1,11 @@
 from json import load
-from networkx import Graph, dijkstra_path, exception
+from networkx import Graph, dijkstra_path, shortest_path_length, exception
 from numpy import mean
 
 from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
 from .node import BSMNode, QuantumRouter
+from ..network_management.routing_local import LocalRoutingProtocol
 
 
 class RouterNetTopo(Topo):
@@ -198,6 +199,8 @@ class RouterNetTopo(Topo):
                     costs[bsm][-1] += qc.distance
 
         graph.add_weighted_edges_from(costs.values())
+
+        # add forwarding table
         for src in self.nodes[self.QUANTUM_ROUTER]:
             for dst_name in graph.nodes:
                 if src.name == dst_name:
@@ -213,3 +216,10 @@ class RouterNetTopo(Topo):
                     routing_protocol.add_forwarding_rule(dst_name, next_hop)
                 except exception.NetworkXNoPath:
                     pass
+
+        # add table of distances (for local best effort)
+        distances = shortest_path_length(graph)
+        for node in self.nodes[self.QUANTUM_ROUTER]:
+            routing_protocol = node.network_manager.protocol_stack[0]
+            if type(routing_protocol) is LocalRoutingProtocol:
+                routing_protocol.distances = distances
