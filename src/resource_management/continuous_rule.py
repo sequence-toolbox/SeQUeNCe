@@ -26,8 +26,8 @@ def adaptive_eg_rule_action(memories_info: List["MemoryInfo"], args: Dict[str, A
 
     Arguments in args:
         local (str): name of local node
-        others (str): list of names of other router nodes
-        mids (str): list of names of midpoint BSM nodes
+        others (Set[str]): list of names of other router nodes
+        mids (Set[str]): list of names of midpoint BSM nodes
         dist (List[float]): probabilities to use for selecting nodes
         rng: random number generator to use (from node)
     """

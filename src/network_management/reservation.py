@@ -164,6 +164,7 @@ class ResourceReservationProtocol(StackProtocol):
                                                      self.name,
                                                      msg.reservation)
                 self._push(dst=msg.reservation.initiator, msg=new_msg)
+
         elif msg.msg_type == RSVPMsgType.REJECT:
             for card in self.timecards:
                 card.remove(msg.reservation)
@@ -171,13 +172,18 @@ class ResourceReservationProtocol(StackProtocol):
                 self._pop(msg=msg)
             else:
                 self._push(dst=msg.reservation.initiator, msg=msg)
+
         elif msg.msg_type == RSVPMsgType.APPROVE:
+            # for adaptive protocol: update local resource generator with path info
+            self.own.resource_manager.update_probs(msg.path)
+
             rules = self.create_rules(msg.path, msg.reservation)
             self.load_rules(rules, msg.reservation)
             if msg.reservation.initiator == self.own.name:
                 self._pop(msg=msg)
             else:
                 self._push(dst=msg.reservation.initiator, msg=msg)
+
         else:
             raise Exception("Unknown type of message", msg.msg_type)
 

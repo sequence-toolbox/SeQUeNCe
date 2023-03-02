@@ -18,6 +18,7 @@ from ..message import Message
 from ..utils import log
 from .rule_manager import RuleManager
 from .memory_manager import MemoryManager
+from .continuous_rule import *
 
 
 class ResourceManagerMsgType(Enum):
@@ -87,9 +88,11 @@ class ResourceManager():
         rule_manager (RuleManager): internal rule manager object.
         pending_protocols (List[Protocol]): list of protocols awaiting a response for a remote resource request.
         waiting_protocols (List[Protocol]): list of protocols awaiting a request from a remote protocol.
+        probs (Dict[str, str]): mapping of neighbor nodes to probabilities of selection for adaptive protocol.
+        alpha (float): adaptive parameter for adaptive protocol.
     """
 
-    def __init__(self, owner: "QuantumRouter", memory_array_name: str):
+    def __init__(self, owner: "QuantumRouter", memory_array_name: str, alpha=0):
         """Constructor for resource manager.
         
         Args:
@@ -102,11 +105,23 @@ class ResourceManager():
         self.memory_manager.set_resource_manager(self)
         self.rule_manager = RuleManager()
         self.rule_manager.set_resource_manager(self)
+
         # protocols that are requesting remote resource
         self.pending_protocols = []
+
         # protocols that are waiting request from remote resource
         self.waiting_protocols = []
         self.memory_to_protocol_map = {}
+
+        # for adaptive protocol
+        self.neighbors = set(self.owner.map_to_middle_node.keys())
+        self.midpoints = set(self.owner.map_to_middle_node.values())
+        self.probs = {n: 1/len(self.neighbors) for n in self.neighbors}
+        self.alpha = alpha
+
+        # make rule for adaptive protocol
+        self.adaptive_rule = None
+        self.generate_prob_rule()
 
     def load(self, rule: "Rule") -> bool:
         """Method to load rules for entanglement management.
@@ -363,3 +378,40 @@ class ResourceManager():
                                      memories=[],
                                      memory_id=memory_id)
         self.owner.send_message(dst, msg)
+
+    def update_probs(self, path: List[str]):
+        local_memo_info = self.get_memory_manager().memory_map
+        ent_neighbors = set([info.remote_node for info in local_memo_info if info.remote_node])
+
+        available = self.neighbors & ent_neighbors
+        used = self.neighbors & set(path)
+
+        S = used & available  # defined in manuscript
+        V = used - available  # defined in manuscript
+        not_used = self.neighbors - used
+
+        # increase probability for links in T
+        if len(V) > 0:
+            sum_st = sum([self.probs[i] for i in (S | V)])
+            new_prob_increase = (self.alpha / len(V)) * (1 - sum_st)
+            for v in V:
+                self.probs[v] += new_prob_increase
+
+        # decrease probability for links not in T or S
+        if len(not_used) > 0:
+            sum_st_new = sum([self.probs[i] for i in used])
+            new_prob = (1 - sum_st_new) / len(not_used)
+            for i in not_used:
+                self.probs[i] = new_prob
+
+        self.generate_prob_rule()
+
+    def generate_prob_rule(self):
+        if self.adaptive_rule:
+            self.expire(self.adaptive_rule)
+        args = {"local": self.owner.name,
+                "others": self.neighbors,
+                "mids": self.midpoints,
+                "dist": self.probs}
+        self.adaptive_rule = Rule(0, adaptive_eg_rule_action, adaptive_eg_rule_condition, args, {})
+        self.load(self.adaptive_rule)
