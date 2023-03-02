@@ -330,12 +330,14 @@ class ResourceReservationProtocol(StackProtocol):
         """
 
         self.accepted_reservation.append(reservation)
-        for card in self.timecards:
-            if reservation in card.reservations:
-                process = Process(self.own.resource_manager, "update",
-                                  [None, self.memo_arr[card.memory_index], "RAW"])
-                event = Event(reservation.end_time, process, 1)
-                self.own.timeline.schedule(event)
+
+        # reset all memories after a reservation is finished (DON'T NEED FOR ADAPTIVE)
+        # for card in self.timecards:
+        #     if reservation in card.reservations:
+        #         process = Process(self.own.resource_manager, "update",
+        #                           [None, self.memo_arr[card.memory_index], "RAW"])
+        #         event = Event(reservation.end_time, process, 1)
+        #         self.own.timeline.schedule(event)
 
         for rule in rules:
             process = Process(self.own.resource_manager, "load", [rule])
