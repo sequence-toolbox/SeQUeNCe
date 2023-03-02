@@ -41,7 +41,8 @@ def adaptive_eg_rule_action(memories_info: List["MemoryInfo"], args: Dict[str, A
     rng = args["rng"]
 
     # choose other node
-    idx = rng.choice(len(mids), p=dist)
+    probs = list(dist.values())
+    idx = rng.choice(len(mids), p=probs)
     other = others[idx]
     mid = mids[idx]
 
