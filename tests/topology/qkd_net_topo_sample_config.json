@@ -3,11 +3,13 @@
     "nodes": [
         {
             "name": "alice",
-            "type": "QKDNode"
+            "type": "QKDNode",
+            "seed": 0
         },
         {
             "name": "bob",
-            "type": "QKDNode"
+            "type": "QKDNode",
+            "seed": 1
         }
     ],
     "qchannels": [
