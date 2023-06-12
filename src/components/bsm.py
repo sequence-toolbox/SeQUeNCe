@@ -125,6 +125,7 @@ class BSM(Entity):
         self.phase_error = phase_error
         self.photons = []
         self.photon_arrival_time = -1
+        self.resolution = None
 
         self.detectors = []
         if detectors is not None:
