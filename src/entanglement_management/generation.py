@@ -26,6 +26,28 @@ from ..components.circuit import Circuit
 from ..utils import log
 
 
+# def valid_trigger_time(trigger_time, target_time, resolution):
+#     upper = target_time + resolution
+#     lower = 0
+#     if resolution % 2 == 0:
+#         upper = min(upper, target_time + resolution // 2)
+#         lower = max(lower, target_time - resolution // 2)
+#     else:
+#         upper = min(upper, target_time + resolution // 2 + 1)
+#         lower = max(lower, target_time - resolution // 2)
+#     if (upper / resolution) % 1 >= 0.5:
+#         upper -= 1
+#     if (lower / resolution) % 1 < 0.5:
+#         lower += 1
+#     return lower <= trigger_time <= upper
+
+
+def valid_trigger_time(trigger_time, target_time, resolution):
+    lower = target_time - (resolution // 2)
+    upper = target_time + (resolution // 2)
+    return lower <= trigger_time <= upper
+
+
 class GenerationMsgType(Enum):
     """Defines possible message types for entanglement generation."""
 
@@ -269,8 +291,9 @@ class EntanglementGenerationA(EntanglementProtocol):
         msg_type = msg.msg_type
 
         log.logger.debug("{} EG protocol received_message of type {} from node"
-                         " {}, round={}".format(
-            self.own.name, msg.msg_type, src, self.ent_round + 1))
+                         " {}, round={}".format(self.own.name,
+                                                msg.msg_type,
+                                                src, self.ent_round))
 
         if msg_type is GenerationMsgType.NEGOTIATE:
             # configure params
@@ -345,23 +368,8 @@ class EntanglementGenerationA(EntanglementProtocol):
             resolution = msg.resolution
 
             log.logger.debug("{} received MEAS_RES {} at time {}, expected {},"
-                             " round={}".format(
-                self.own.name, detector, time, self.expected_time, self.ent_round))
-
-            def valid_trigger_time(trigger_time, target_time, resolution):
-                upper = target_time + resolution
-                lower = 0
-                if resolution % 2 == 0:
-                    upper = min(upper, target_time + resolution // 2)
-                    lower = max(lower, target_time - resolution // 2)
-                else:
-                    upper = min(upper, target_time + resolution // 2 + 1)
-                    lower = max(lower, target_time - resolution // 2 + 1)
-                if (upper / resolution) % 1 >= 0.5:
-                    upper -= 1
-                if (lower / resolution) % 1 < 0.5:
-                    lower += 1
-                return lower <= trigger_time <= upper
+                             " resolution={}, round={}".format(
+                self.own.name, detector, time, self.expected_time, resolution, self.ent_round))
 
             if valid_trigger_time(time, self.expected_time, resolution):
                 # record result if we don't already have one

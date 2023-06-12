@@ -490,6 +490,7 @@ class SingleAtomBSM(BSM):
 
                 photon = p0 if meas0 else p1
                 if self.get_generator().random() > photon.loss:
+                    log.logger.info("Triggering detector {}".format(detector_num))
                     self.detectors[detector_num].get()
 
             else:
