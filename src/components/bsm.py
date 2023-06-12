@@ -137,9 +137,6 @@ class BSM(Entity):
                     detector = None
                 self.detectors.append(detector)
 
-        # get resolution
-        self.resolution = max(d.time_resolution for d in self.detectors)
-
         # define bell basis vectors
         self.bell_basis = ((complex(sqrt(1 / 2)), complex(0), complex(0), complex(sqrt(1 / 2))),
                            (complex(sqrt(1 / 2)), complex(0), complex(0), -complex(sqrt(1 / 2))),
@@ -148,6 +145,9 @@ class BSM(Entity):
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
+
+        # get resolution
+        self.resolution = max(d.time_resolution for d in self.detectors)
 
         self.photons = []
         self.photon_arrival_time = -1
