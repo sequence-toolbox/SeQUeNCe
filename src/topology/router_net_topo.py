@@ -135,11 +135,10 @@ class RouterNetTopo(Topo):
                 bsm_name = "BSM.{}.{}.auto".format(node1, node2)
                 bsm_seed = q_connect.get(Topo.SEED, 0)
                 bsm_template_name = q_connect.get(Topo.TEMPLATE, None)
-                bsm_template = self.templates.get(bsm_template_name, None)
                 bsm_info = {self.NAME: bsm_name,
                             self.TYPE: self.BSM_NODE,
                             self.SEED: bsm_seed,
-                            self.TEMPLATE: bsm_template}
+                            self.TEMPLATE: bsm_template_name}
                 config[self.ALL_NODE].append(bsm_info)
 
                 for src in [node1, node2]:
