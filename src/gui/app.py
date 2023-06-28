@@ -297,7 +297,9 @@ class QuantumGUI:
             nodes_top.append(
                 {
                     Topology.NAME: node[1]['label'],
-                    Topology.TYPE: node[1]['node_type']
+                    Topology.TYPE: node[1]['node_type'],
+                    Topology.SEED: None,
+                    RouterNetTopo.MEMO_ARRAY_SIZE: 50
                 }
             )
 
@@ -309,11 +311,12 @@ class QuantumGUI:
                     Topology.CONNECT_NODE_1: edge[2]['data']['source'],
                     Topology.CONNECT_NODE_2: edge[2]['data']['target'],
                     Topology.ATTENUATION: float(edge[2]['data']['attenuation']),
-                    Topology.DISTANCE: int(edge[2]['data']['distance'])
+                    Topology.DISTANCE: int(edge[2]['data']['distance']),
+                    Topology.TYPE: RouterNetTopo.MEET_IN_THE_MID
                 }
             )
 
-        cconnections = []
+        cchannels = []
         table = c_delay.to_numpy()
         labels = list(c_delay.columns)
         for i, src in enumerate(labels):
@@ -321,7 +324,7 @@ class QuantumGUI:
                 if i == j:
                     continue
                 delay = table[i][j] / 2  # divide round trip time by 2
-                cconnections.append(
+                cchannels.append(
                     {
                         Topology.SRC: src,
                         Topology.DST: dst,
@@ -332,7 +335,7 @@ class QuantumGUI:
         output = {
             Topology.ALL_NODE: nodes_top,
             Topology.ALL_QC_CONNECT: qconnections,
-            Topology.ALL_CC_CONNECT: cconnections,
+            Topology.ALL_C_CHANNEL: cchannels,
 
             RouterNetTopo.IS_PARALLEL: False,
             Topology.STOP_TIME: int(1e12)
@@ -995,7 +998,7 @@ class QuantumGUI:
             ctx = dash.callback_context
             input_id = ctx.triggered[0]['prop_id'].split('.')[0]
             if input_id == 'template_type_menu':
-                if edgeType == 'Quantum_Router':
+                if edgeType == 'QuantumRouter':
                     opts = list(self.templates['Memory'].keys())
                     return [router_template, '', opts, '']
                 elif edgeType == 'Protocol':

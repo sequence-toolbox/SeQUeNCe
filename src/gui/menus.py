@@ -19,7 +19,7 @@ Mapping of all types in the GUI to their representative colors
 """
 TYPE_COLORS = {
     'Quantum_Repeater': '#4D9DE0',
-    'Quantum_Router': '#E15554',
+    'QuantumRouter': '#E15554',
     'Photon_Source': '#E1BC29',
     'Detector': '#3BB273',
     'QuantumErrorCorrection': '#7768AE ',
@@ -38,7 +38,7 @@ Default node type options for dropdown menus
 OPTIONS = [
     {
         'label': 'Quantum Router',
-        'value': 'Quantum_Router'
+        'value': 'QuantumRouter'
     },
     {
         'label': 'Quantum Memory',
