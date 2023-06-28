@@ -159,3 +159,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Moved around and updated some error checking
 - Temporarily removed mpich testing for python 3.8 and 3.9 (broken)
+
+## [0.6.1]
+### Added
+- Added some groundwork for future topology upgrades
+
+### Changed
+- made numerous bug fixes:
+  - BSM and optical channel components received fixes
+  - Some residual bugs with GUI usage have been fixed
+  - Error with typing in Fock quantum manager has beenn fixed
+
+### Removed
+- Removed support for scipy version 1.11. This is currently causing some issues with qutip.

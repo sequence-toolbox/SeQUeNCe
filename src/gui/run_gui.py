@@ -61,8 +61,6 @@ class RunGui:
         graph = nx.DiGraph()
 
         for node in network_in['nodes']:
-            if node['type'] == RouterNetTopo.QUANTUM_ROUTER:
-                node['type'] = 'Quantum_Router'
             new_node = GraphNode(node[Topology.NAME], node[Topology.TYPE], 'default_router')
             graph.add_node(
                 node[Topology.NAME],

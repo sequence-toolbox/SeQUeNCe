@@ -83,6 +83,7 @@ def test_polarization_get():
     bsm = make_bsm("bsm", tl, encoding_type="polarization", detectors=detectors)
     parent = Parent()
     bsm.attach(parent)
+    bsm.init()
 
     # get 2 photons in orthogonal states (map to Psi+)
     p1 = Photon("p1", tl, location=1, quantum_state=(complex(1), complex(0)))
@@ -108,6 +109,7 @@ def test_polarization_update():
     bsm = make_bsm("bsm", tl, encoding_type="polarization", detectors=detectors)
     parent = Parent()
     bsm.attach(parent)
+    bsm.init()
     detector_list = bsm.detectors
 
     # test Psi+

@@ -15,6 +15,7 @@ def test_sequential_simulation():
     assert len(topo.get_qchannels()) == 4
     assert len(topo.get_cchannels()) == 10
 
+    # check if all nodes are correctly generated
     routers = all_nodes[RouterNetTopo.QUANTUM_ROUTER]
     e1 = e2 = e3 = e4 = None
     for router in routers:
@@ -24,12 +25,20 @@ def test_sequential_simulation():
         assert len(router.cchannels) == 2
         if router.name == "e1":
             e1 = router
+            for memo in memory_array:
+                assert memo.raw_fidelity == 1.0  # this is determined by the template
         elif router.name == "e2":
             e2 = router
+            for memo in memory_array:
+                assert memo.raw_fidelity == 0.85  # this is the default value
         elif router.name == "e3":
             e3 = router
+            for memo in memory_array:
+                assert memo.raw_fidelity == 0.85
         elif router.name == "e4":
             e4 = router
+            for memo in memory_array:
+                assert memo.raw_fidelity == 0.85
         else:
             raise ValueError("the topology file contains unknown node")
 
