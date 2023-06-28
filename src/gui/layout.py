@@ -176,7 +176,7 @@ Constant containing all available class in the GUI
 """
 TYPES = [
     'Quantum_Repeater',
-    'Quantum_Router',
+    'QuantumRouter',
     'Photon_Source',
     'Detector',
     # 'QuantumErrorCorrection',
@@ -197,7 +197,7 @@ structure
 def genImages():
     images = {
         'Quantum_Repeater': 'repeater.png',
-        'Quantum_Router': 'router.png',
+        'QuantumRouter': 'router.png',
         'Photon_Source': 'photonsource.png',
         'Detector': 'detector.png',
         'QuantumErrorCorrection': 'quantum.png',

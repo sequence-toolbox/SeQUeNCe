@@ -125,6 +125,7 @@ class BSM(Entity):
         self.phase_error = phase_error
         self.photons = []
         self.photon_arrival_time = -1
+        self.resolution = None
 
         self.detectors = []
         if detectors is not None:
@@ -137,9 +138,6 @@ class BSM(Entity):
                     detector = None
                 self.detectors.append(detector)
 
-        # get resolution
-        self.resolution = max(d.time_resolution for d in self.detectors)
-
         # define bell basis vectors
         self.bell_basis = ((complex(sqrt(1 / 2)), complex(0), complex(0), complex(sqrt(1 / 2))),
                            (complex(sqrt(1 / 2)), complex(0), complex(0), -complex(sqrt(1 / 2))),
@@ -148,6 +146,9 @@ class BSM(Entity):
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
+
+        # get resolution
+        self.resolution = max(d.time_resolution for d in self.detectors)
 
         self.photons = []
         self.photon_arrival_time = -1
@@ -220,8 +221,12 @@ class PolarizationBSM(BSM):
 
         super().__init__(name, timeline, phase_error, detectors)
         self.encoding = "polarization"
-        self.last_res = [-2 * self.resolution, -1]
+        self.last_res = [None, None]
         assert len(self.detectors) == 4
+
+    def init(self):
+        super().init()
+        self.last_res = [-2 * self.resolution, -1]
 
     def get(self, photon, **kwargs):
         """See base class.
@@ -490,6 +495,7 @@ class SingleAtomBSM(BSM):
 
                 photon = p0 if meas0 else p1
                 if self.get_generator().random() > photon.loss:
+                    log.logger.info("Triggering detector {}".format(detector_num))
                     self.detectors[detector_num].get()
 
             else:

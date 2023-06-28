@@ -22,6 +22,8 @@ class QKDTopo(Topo):
 
     def _load(self, filename):
         topo_config = json.load(open(filename))
+
+        self._get_templates(topo_config)
         self._add_timeline(topo_config)
         self._add_nodes(topo_config)
         self._add_qchannels(topo_config)
@@ -34,16 +36,20 @@ class QKDTopo(Topo):
 
     def _add_nodes(self, config):
         for node in config[Topo.ALL_NODE]:
-            type = node[Topo.TYPE]
-            if type == self.QKD_NODE:
-                name = node[Topo.NAME]
-                # only support set the name of QKD node
-                # could be extended in the future
-                node = QKDNode(name, self.tl)
+            # TODO: add encoding configuration for QKD nodes
+            seed = node[Topo.SEED]
+            node_type = node[Topo.TYPE]
+            name = node[Topo.NAME]
+            template_name = node.get(Topo.TEMPLATE, None)
+            template = self.templates.get(template_name, {})
 
+            if node_type == self.QKD_NODE:
+                node = QKDNode(name, self.tl,
+                               seed=seed, component_templates=template)
             else:
                 raise NotImplementedError("Unknown type of node")
-            if type in self.nodes:
-                self.nodes[type].append(node)
+
+            if node_type in self.nodes:
+                self.nodes[node_type].append(node)
             else:
-                self.nodes[type] = [node]
+                self.nodes[node_type] = [node]

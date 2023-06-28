@@ -4,7 +4,7 @@ This module provides a definition of the Topology class, which can be used to
 manage a network's structure.
 Topology instances automatically perform many useful network functions.
 """
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import TYPE_CHECKING, Dict, Optional
 
@@ -15,7 +15,7 @@ from .node import *
 from ..components.optical_channel import QuantumChannel, ClassicalChannel
 
 
-class Topology:
+class Topology(ABC):
     """Class for generating network from configuration file.
 
     The topology class provides a simple interface for managing the nodes
@@ -45,6 +45,8 @@ class Topology:
     SRC = "source"
     STOP_TIME = "stop_time"
     TYPE = "type"
+    ALL_TEMPLATES = "templates"
+    TEMPLATE = "template"
 
     def __init__(self, conf_file_name: str):
         """Constructor for topology class.
@@ -55,6 +57,7 @@ class Topology:
         self.nodes: Dict[str, List[Node]] = defaultdict(lambda: [])
         self.qchannels: List[QuantumChannel] = []
         self.cchannels: List[ClassicalChannel] = []
+        self.templates: Dict[str, Dict] = {}
         self.tl: Optional[Timeline] = None
         self._load(conf_file_name)
 
@@ -66,6 +69,10 @@ class Topology:
             filename (str): the name of configuration file
         """
         pass
+
+    def _get_templates(self, config: Dict) -> None:
+        templates = config.get(Topology.ALL_TEMPLATES, {})
+        self.templates = templates
 
     def _add_qchannels(self, config: Dict) -> None:
         for qc in config.get(self.ALL_Q_CHANNEL, []):

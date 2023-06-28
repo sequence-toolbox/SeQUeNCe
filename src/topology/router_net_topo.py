@@ -43,6 +43,8 @@ class RouterNetTopo(Topo):
     def _load(self, filename):
         with open(filename, 'r') as fh:
             config = load(fh)
+
+        self._get_templates(config)
         # quantum connections are only supported by sequential simulation so far
         if not config[self.IS_PARALLEL]:
             self._add_qconnections(config)
@@ -75,19 +77,17 @@ class RouterNetTopo(Topo):
             seed = node[Topo.SEED]
             node_type = node[Topo.TYPE]
             name = node[Topo.NAME]
+            template_name = node.get(Topo.TEMPLATE, None)
+            template = self.templates.get(template_name, {})
 
             if node_type == self.BSM_NODE:
                 others = self.bsm_to_router_map[name]
-                node_obj = BSMNode(name, self.tl, others)
+                node_obj = BSMNode(name, self.tl, others, component_templates=template)
             elif node_type == self.QUANTUM_ROUTER:
                 memo_size = node.get(self.MEMO_ARRAY_SIZE, 0)
-                if memo_size:
-                    node_obj = QuantumRouter(name, self.tl, memo_size)
-                else:
-                    print("WARN: the size of memory on quantum router {} is not set".format(name))
-                    node_obj = QuantumRouter(name, self.tl)
+                node_obj = QuantumRouter(name, self.tl, memo_size, component_templates=template)
             else:
-                raise NotImplementedError("Unknown type of node")
+                raise ValueError("Unknown type of node '{}'".format(node_type))
 
             node_obj.set_seed(seed)
             if node_type in self.nodes:
@@ -115,9 +115,11 @@ class RouterNetTopo(Topo):
             cc_delay = []
             for cc in config.get(self.ALL_C_CHANNEL, []):
                 if cc[self.SRC] == node1 and cc[self.DST] == node2:
-                    cc_delay.append(cc.delay)
+                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / 2e-4)
+                    cc_delay.append(delay)
                 elif cc[self.SRC] == node2 and cc[self.DST] == node1:
-                    cc_delay.append(cc.delay)
+                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / 2e-4)
+                    cc_delay.append(delay)
 
             for cc in config.get(self.ALL_CC_CONNECT, []):
                 if (cc[self.CONNECT_NODE_1] == node1
@@ -130,11 +132,15 @@ class RouterNetTopo(Topo):
             if len(cc_delay) == 0:
                 assert 0, q_connect
             cc_delay = mean(cc_delay) // 2
-            if channel_type == self.MEET_IN_THE_MID:
+
+            if channel_type == self.MEET_IN_THE_MID:  # generate intermediate BSM node
                 bsm_name = "BSM.{}.{}.auto".format(node1, node2)
+                bsm_seed = q_connect.get(Topo.SEED, 0)
+                bsm_template_name = q_connect.get(Topo.TEMPLATE, None)
                 bsm_info = {self.NAME: bsm_name,
                             self.TYPE: self.BSM_NODE,
-                            self.SEED: 0}
+                            self.SEED: bsm_seed,
+                            self.TEMPLATE: bsm_template_name}
                 config[self.ALL_NODE].append(bsm_info)
 
                 for src in [node1, node2]:

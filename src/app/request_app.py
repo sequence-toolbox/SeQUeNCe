@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 
 from ..kernel.event import Event
 from ..kernel.process import Process
+from ..utils import log
 
 
 class RequestApp:
@@ -81,6 +82,9 @@ class RequestApp:
         self.reserve_res = result
         if result:
             self.schedule_reservation(reservation)
+            log.logger.info("Successful reservation of resources for request app on node {}".format(
+                self.node.name
+            ))
 
     def add_memo_reserve_map(self, index: int, reservation: "Reservation") -> None:
         self.memo_to_reserve[index] = reservation
@@ -111,6 +115,9 @@ class RequestApp:
                 self.node.resource_manager.update(None, info.memory, "RAW")
             elif info.remote_node == reservation.responder and info.fidelity >= reservation.fidelity:
                 self.memory_counter += 1
+                log.logger.info("Successfully generated entanglement. Counter is at {}.".format(
+                    self.memory_counter
+                ))
                 self.node.resource_manager.update(None, info.memory, "RAW")
 
     def get_throughput(self) -> float:

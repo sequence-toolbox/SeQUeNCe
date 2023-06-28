@@ -27,6 +27,7 @@ from ..components.light_source import LightSource
 from ..components.detector import QSDetector, QSDetectorPolarization, QSDetectorTimeBin
 from ..qkd.BB84 import BB84
 from ..qkd.cascade import Cascade
+from ..entanglement_management.generation import EntanglementGenerationB
 from ..resource_management.resource_manager import ResourceManager
 from ..network_management.network_manager import NewNetworkManager
 from ..utils.encoding import *
@@ -49,12 +50,15 @@ class Node(Entity):
         first_component_name (str): name of component that first receives incoming qubits.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", seed=None):
+    def __init__(self, name: str, timeline: "Timeline", seed=None, component_templates=None):
         """Constructor for node.
 
         name (str): name of node instance.
         timeline (Timeline): timeline for simulation.
         seed (int): seed for random number generator, default None
+        component_templates (Dict[str:Dict]): args for constructing components.
+            If not None, should map a component type (specified as a string) to constructor args.
+            Default is None.
         """
 
         log.logger.info("Create Node {}".format(name))
@@ -193,7 +197,8 @@ class BSMNode(Node):
         eg (EntanglementGenerationB): entanglement generation protocol instance.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", other_nodes: List[str]) -> None:
+    def __init__(self, name: str, timeline: "Timeline", other_nodes: List[str],
+                 seed=None, component_templates=None) -> None:
         """Constructor for BSM node.
 
         Args:
@@ -202,16 +207,19 @@ class BSMNode(Node):
             other_nodes (List[str]): 2-member list of node names for adjacent quantum routers.
         """
 
-        from ..entanglement_management.generation import EntanglementGenerationB
+        super().__init__(name, timeline, seed)
+        if not component_templates:
+            component_templates = {}
 
-        Node.__init__(self, name, timeline)
+        # create BSM object with optional args
         bsm_name = name + ".BSM"
-        bsm = SingleAtomBSM(bsm_name, timeline)
-        self.eg = EntanglementGenerationB(self, "{}_eg".format(name), other_nodes)
-
-        bsm.attach(self.eg)
+        bsm_args = component_templates.get("SingleAtomBSM", {})
+        bsm = SingleAtomBSM(bsm_name, timeline, **bsm_args)
         self.add_component(bsm)
         self.set_first_component(bsm_name)
+
+        self.eg = EntanglementGenerationB(self, "{}_eg".format(name), other_nodes)
+        bsm.attach(self.eg)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         # signal to protocol that we've received a message
@@ -250,7 +258,7 @@ class QuantumRouter(Node):
         app (any): application in use on node.
     """
 
-    def __init__(self, name, tl, memo_size=50):
+    def __init__(self, name, tl, memo_size=50, seed=None, component_templates=None):
         """Constructor for quantum router class.
 
         Args:
@@ -259,14 +267,18 @@ class QuantumRouter(Node):
             memo_size (int): number of memories to add in the array (default 50).
         """
 
-        Node.__init__(self, name, tl)
+        super().__init__(name, tl, seed)
+        if not component_templates:
+            component_templates = {}
 
-        # hardware setup
+        # create memory array object with optional args
         memo_arr_name = name + ".MemoryArray"
-        memory_array = MemoryArray(memo_arr_name, tl, num_memories=memo_size)
+        memo_arr_args = component_templates.get("MemoryArray", {})
+        memory_array = MemoryArray(memo_arr_name, tl, num_memories=memo_size, **memo_arr_args)
         self.add_component(memory_array)
         memory_array.add_receiver(self)
 
+        # add protocols
         self.resource_manager = ResourceManager(self, memo_arr_name)
         self.network_manager = NewNetworkManager(self, memo_arr_name)
         self.map_to_middle_node = {}
@@ -389,7 +401,8 @@ class QKDNode(Node):
         protocol_stack (List[StackProtocol]): protocols for QKD process.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", encoding=polarization, stack_size=5):
+    def __init__(self, name: str, timeline: "Timeline", encoding=polarization, stack_size=5,
+                 seed=None, component_templates=None):
         """Constructor for the qkd node class.
 
         Args:
@@ -399,16 +412,24 @@ class QKDNode(Node):
             stack_size (int): number of qkd protocols to include in the protocol stack (default 5).
         """
 
-        super().__init__(name, timeline)
+        super().__init__(name, timeline, seed)
+        if not component_templates:
+            component_templates = {}
+
         self.encoding = encoding
         self.destination = None
 
         # hardware setup
         ls_name = name + ".lightsource"
-        lightsource = LightSource(ls_name, timeline, encoding_type=encoding)
+        ls_args = component_templates.get("LightSource", {})
+        lightsource = LightSource(ls_name, timeline, encoding_type=encoding, **ls_args)
         self.add_component(lightsource)
         lightsource.add_receiver(self)
+
         qsd_name = name + ".qsdetector"
+        if "QSDetector" in component_templates:
+            raise NotImplementedError(
+                "Configurable parameters for QSDetector in constructor not yet supported.")
         if encoding["name"] == "polarization":
             qsdetector = QSDetectorPolarization(qsd_name, timeline)
         elif encoding["name"] == "time_bin":
@@ -418,13 +439,13 @@ class QKDNode(Node):
         self.add_component(qsdetector)
         self.set_first_component(qsd_name)
 
+        # add protocols
         self.protocol_stack = [None] * 5
 
         if stack_size > 0:
             # Create BB84 protocol
             self.protocol_stack[0] = BB84(self, name + ".BB84", ls_name, qsd_name)
             self.protocols.append(self.protocol_stack[0])
-
         if stack_size > 1:
             # Create cascade protocol
             self.protocol_stack[1] = Cascade(self, name + ".cascade")
