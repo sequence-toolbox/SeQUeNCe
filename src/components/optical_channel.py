@@ -96,7 +96,7 @@ class QuantumChannel(OpticalChannel):
         """
 
         super().__init__(name, timeline, attenuation, distance, polarization_fidelity, light_speed)
-        self.delay = 0
+        self.delay = -1
         self.loss = 1
         self.frequency = frequency  # maximum frequency for sending qubits (measured in Hz)
         self.send_bins = []
@@ -141,7 +141,7 @@ class QuantumChannel(OpticalChannel):
                 self.sender.name, qubit.quantum_state, self.receiver,
                 self.name))
 
-        assert self.delay != 0 and self.loss != 1, \
+        assert self.delay >= 0 and self.loss < 1, \
             "QuantumChannel init() function has not been run for {}".format(self.name)
         assert source == self.sender
 
