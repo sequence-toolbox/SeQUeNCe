@@ -414,7 +414,7 @@ class QuantumManagerDensityFock(QuantumManager):
         # default truncation is 1 for 2-d Fock space.
         super().__init__(DENSITY_MATRIX_FORMALISM, truncation=truncation)
 
-    def new(self, state='gnd') -> int:
+    def new(self, state=None) -> int:
         """Method to create a new state with key
 
         Args:
@@ -425,7 +425,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
         key = self._least_available
         self._least_available += 1
-        if state == 'gnd':
+        if not state:
             gnd = [1] + [0]*self.truncation
             self.states[key] = DensityState(gnd, [key], truncation=self.truncation)
         else:
