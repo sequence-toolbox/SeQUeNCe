@@ -115,9 +115,11 @@ class RouterNetTopo(Topo):
             cc_delay = []
             for cc in config.get(self.ALL_C_CHANNEL, []):
                 if cc[self.SRC] == node1 and cc[self.DST] == node2:
-                    cc_delay.append(cc.delay)
+                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / 2e-4)
+                    cc_delay.append(delay)
                 elif cc[self.SRC] == node2 and cc[self.DST] == node1:
-                    cc_delay.append(cc.delay)
+                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / 2e-4)
+                    cc_delay.append(delay)
 
             for cc in config.get(self.ALL_CC_CONNECT, []):
                 if (cc[self.CONNECT_NODE_1] == node1
