@@ -400,6 +400,10 @@ class QuantumGUI:
         if (node_from is None) or (node_to is None):
             raise PreventUpdate
 
+        # Check if given edge is classical (not yet supported)
+        if attributes['link_type'] == 'Classical':
+            return [dash.no_update, 'Classical connections are currently specified in the "Latency" tab']
+
         # Check if given edges are already in the network, if yes give error
         if self.data.has_edge(node_from, node_to):
             return [dash.no_update, 'Edge already exists']
