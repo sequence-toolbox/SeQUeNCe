@@ -221,8 +221,12 @@ class PolarizationBSM(BSM):
 
         super().__init__(name, timeline, phase_error, detectors)
         self.encoding = "polarization"
-        self.last_res = [-2 * self.resolution, -1]
+        self.last_res = [None, None]
         assert len(self.detectors) == 4
+
+    def init(self):
+        super().init()
+        self.last_res = [-2 * self.resolution, -1]
 
     def get(self, photon, **kwargs):
         """See base class.
