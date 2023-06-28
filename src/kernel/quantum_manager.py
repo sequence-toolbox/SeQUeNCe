@@ -425,7 +425,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
         key = self._least_available
         self._least_available += 1
-        if not state:
+        if state is None:
             gnd = [1] + [0]*self.truncation
             self.states[key] = DensityState(gnd, [key], truncation=self.truncation)
         else:
