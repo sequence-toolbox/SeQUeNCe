@@ -1,9 +1,11 @@
-"""Code for Barrett-Kok entanglement Generation protocol
+"""Code for entanglement Generation protocol
 
 This module defines code to support entanglement generation between single-atom memories on distant nodes.
 Also defined is the message type used by this implementation.
-Entanglement generation is asymmetric:
+Original implementation is for Barrett-Kok protocol (double heralded).
+Additional implementation is for (simplified) single-heralded protocol.
 
+Entanglement generation is asymmetric (for any meet-in-the-middle protocol):
 * EntanglementGenerationA should be used on the QuantumRouter (with one node set as the primary) and should be started via the "start" method
 * EntanglementGeneraitonB should be used on the BSMNode and does not need to be started
 """

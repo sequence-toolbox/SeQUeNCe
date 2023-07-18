@@ -381,3 +381,27 @@ class FreeQuantumState(State):
             state.entangled_photons = entangled_list
 
         return res
+
+class BellDiagonalState(State):
+    """Class to represent a 2-qubit EPR pair as Bell diagonal state with 4 diagonal elements of density matrix in Bell basese.
+
+    Attributes:
+        state (np.array): diagonal elements of 2-qubit density matrix in Bell bases. Should be of length 4.
+        keys (List[int]): list of keys (subsystems) associated with this state. Should be length 2.
+    """
+
+    def __init__(self, diag_elems: List[float], keys: List[int]):
+        """Constructor for Bell diagonal state class.
+
+        Args:
+            diag_elems (List[float]): 4 diagonal elements of 2-qubit density matrix in Bell bases. Default order: Phi+, Psi+, Psi-, Phi- (i.e. I, X, Y, Z errors).
+            keys (List[int]): list of keys to this state in quantum manager. Should be length 2.
+        """
+        super().__init__()
+
+        # check formatting
+        assert all(elem <= 1.001 and elem >= 0 for elem in diag_elems]), "Illegal value with elem > 1 or elem < 0 in density matrix diagonal elements"
+        assert abs(sum([elem for elem in diag_elems]) - 1) < 1e-5, "Density matrix diagonal elements do not sum to 1"
+
+        self.state = array(diag_elems, dtype=float)  # density matrix diagonal elements are guaranteed to be real from Hermiticity
+        self.keys = keys

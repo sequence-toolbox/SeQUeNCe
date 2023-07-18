@@ -42,3 +42,8 @@ fock = \
     {"name": "fock",
      "bases": None
      }
+
+single_heralded = \
+    {"name": "single_heralded",
+     "bases": None
+    }

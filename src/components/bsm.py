@@ -412,7 +412,7 @@ class TimeBinBSM(BSM):
 
 
 class SingleAtomBSM(BSM):
-    """Class modeling a single atom BSM device.
+    """Class modeling a single atom BSM device, for double-heralded Barrett-Kok entanglement generation protocol.
 
     Measures incoming photons and manages entanglement of associated memories.
 
@@ -598,3 +598,81 @@ class AbsorptiveBSM(BSM):
         res = detector_num
         info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
         self.notify(info)
+
+
+class SingleHeraldedBSM(BSM):
+    """Class modeling an abstract/simplified BSM device for single-heralded entanglement generation protocols.
+
+    We assume that in the single-heralded entanglement generation protocols, two memories each emit one photon entangled with memory state,
+        EG is successful only if both photons arrive at the BSM, 
+        and conditioned on both arrivals there is 1/2 probability (assuming linear optics) that the BSM can give distinguishable output,
+        in the end whether successful EG is heralded still depends on if the detectors successfully click (efficiency / dark count).
+
+    In this relatively simplified model, we do not perform explicit measurement and communicate explicit outcome, 
+        but assume that local correction based on classical feedforward is a ``free'' operation, and successfully generated EPR pair is in Phi+ form
+    The device manages entanglement of associated memories.
+
+    Attributes:
+        name (str): label for BSM instance
+        timeline (Timeline): timeline for simulation
+        detectors (List[Detector]): list of attached photon detection devices
+        resolution (int): maximum time resolution achievable with attached detectors  
+    """
+
+    def __init__(self, name, timeline, phase_error=0, detectors=None):
+        """Constructor for the single atom BSM class.
+
+        Args:
+            name (str): name of the beamsplitter instance.
+            timeline (Timeline): simulation timeline.
+            phase_error (float): phase error applied to polarization qubits (unused) (default 0).
+            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2) (default []).
+        """
+
+        if detectors is None:
+            detectors = [{}, {}]
+        super().__init__(name, timeline, phase_error, detectors)
+        self.encoding = "single_heralded"
+        assert len(self.detectors) == 2
+
+    def get(self, photon, **kwargs):
+        """See base class.
+
+        This method adds additional side effects not present in the base class.
+
+        Side Effects:
+            May call get method of one or more attached detector(s).
+            May alter the quantum state of memories corresponding to the photons.
+        """
+
+        super().get(photon)
+        log.logger.debug(self.name + " received photon")
+
+        # assumed simultaneous arrival of both photons
+        if len(self.photons) == 2:
+            # at most 1/2 probability of success according to LO assumption
+            if self.get_generator.random() > 1/2:
+                pass
+
+            else:
+                p0, p1 = self.photons
+
+                # if both memory successfully emit the photon in this round (consider memory emission inefficiency)
+                if self.get_generator().random() > p0.loss and self.get_generator().random() > p1.loss:
+                    
+                    pass 
+                    # WIP. Only modify correponding memories' quantum states (in BDS formalism) when two detectors click.
+
+
+    def trigger(self, detector: Detector, info: Dict[str, Any]):
+        """See base class.
+
+        This method adds additional side effects not present in the base class.
+
+        Side Effects:
+            May send a further message to any attached entities.
+        """
+
+        pass
+        
+        # WIP. Determine what information to send. Presumably only need to send whether the EG attempt is successful.

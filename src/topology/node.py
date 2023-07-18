@@ -48,17 +48,24 @@ class Node(Entity):
         generator (np.random.Generator): random number generator used by node.
         components (Dict[str, Entity]): mapping of local component names to objects.
         first_component_name (str): name of component that first receives incoming qubits.
+        gate_fid (float): fidelity of multi-qubit gates (usually CNOT) that can be performed on the node.
+        meas_fid (float): fidelity of single-qubit measurements (usually CNOT) that can be performed on the node.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", seed=None, component_templates=None):
+    def __init__(self, name: str, timeline: "Timeline", seed=None, component_templates=None, gate_fid=-1, meas_fid=-1):
         """Constructor for node.
 
-        name (str): name of node instance.
-        timeline (Timeline): timeline for simulation.
-        seed (int): seed for random number generator, default None
-        component_templates (Dict[str:Dict]): args for constructing components.
-            If not None, should map a component type (specified as a string) to constructor args.
-            Default is None.
+        Args:
+            name (str): name of node instance.
+            timeline (Timeline): timeline for simulation.
+            seed (int): seed for random number generator, default None
+            component_templates (Dict[str:Dict]): args for constructing components.
+                If not None, should map a component type (specified as a string) to constructor args.
+                Default is None.
+            gate_fid (float): fidelity of multi-qubit gates (usually CNOT) that can be performed on the node;
+                Default value is -1, meaning not considering gate imperfection.
+            meas_fid (float): fidelity of single-qubit measurements (usually CNOT) that can be performed on the node;
+                Default value is -1, meaning not considering measurement imperfection.
         """
 
         log.logger.info("Create Node {}".format(name))
@@ -70,6 +77,8 @@ class Node(Entity):
         self.generator = np.random.default_rng(seed)
         self.components = {}
         self.first_component_name = None
+        self.gate_fid = gate_fid
+        self.meas_fid = meas_fid
 
     def init(self) -> None:
         pass
