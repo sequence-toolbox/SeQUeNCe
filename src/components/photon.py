@@ -109,10 +109,12 @@ class Photon:
         else:
             self.quantum_state.combine_state(photon.quantum_state)
 
-    def random_noise(self, rng: "Generator"):
-        """Method to add random noise to photon's state (see `QuantumState` module)."""
+    def polarization_noise(self):
+        """Method to add polarization noise (i.e. become orthogonal polarization state) to photon's state (see `QuantumState` module)."""
+        
+        assert self.encoding_type["name"] == "polarization", "Optical fiber noise is only applicable to polarization encoding at present."
 
-        self.quantum_state.random_noise(rng)
+        self.quantum_state.polarization_noise()
 
     def set_state(self, state):
         if self.use_qm:

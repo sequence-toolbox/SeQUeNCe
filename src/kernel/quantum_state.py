@@ -213,18 +213,25 @@ class FreeQuantumState(State):
             quantum_state.entangled_states = entangled_states
             quantum_state.state = new_state
 
-    def random_noise(self, rng: Generator):
-        """Method to add random noise to a single state.
+    def polarization_noise(self):
+        """Method to add polarization noise to a single state of Photon.
 
-        Chooses a random angle to set the quantum state to (with no phase difference).
+        When invoked, will change the current polarization state of Photon to an orthogonal state, e.g. from vertical to horizontal, from diagonal to anti-diagonal.
 
         Side Effects:
             Modifies the `state` field.
         """
 
         # TODO: rewrite for entangled states
-        angle = rng.random() * 2 * pi
-        self.state = (complex(cos(angle)), complex(sin(angle)))
+
+        if self.state == (complex(1), complex(0)):
+            self.state = (complex(0), complex(1))
+        elif self.state == (complex(0), complex(1)):
+            self.state = (complex(1), complex(0))
+        elif self.state == (complex(sqrt(1 / 2)), complex(sqrt(1 / 2))):
+            self.state = (complex(sqrt(1 / 2)), complex(-sqrt(1 / 2)))
+        elif self.state == (complex(sqrt(1 / 2)), complex(-sqrt(1 / 2))):
+            self.state = (complex(sqrt(1 / 2)), complex(sqrt(1 / 2)))
 
     # only for use with entangled state
     def set_state(self, state: Tuple[complex]):

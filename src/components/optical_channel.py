@@ -74,7 +74,9 @@ class QuantumChannel(OpticalChannel):
         receiver (Node): node at receiving end of optical channel.
         attenuation (float): attenuation of the fiber (in dB/m).
         distance (int): length of the fiber (in m).
-        polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
+        polarization_fidelity (float): probability of no polarization error for a transmitted qubit
+        depolarizing_rate (float): accumulation rate of polarization error for polarization encoding with increasing distance
+            default: -1 meaning fixed polarization fidelity, unit in distance unit ^ -1.
         light_speed (float): speed of light within the fiber (in m/ps).
         loss (float): loss rate for transmitted photons (determined by attenuation).
         delay (int): delay (in ps) of photon transmission (determined by light speed, distance).
@@ -82,7 +84,7 @@ class QuantumChannel(OpticalChannel):
     """
 
     def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int,
-                 polarization_fidelity=1.0, light_speed=2e-4, frequency=8e7):
+                 polarization_fidelity=1.0, light_speed=2e-4, frequency=8e7, depolarizing_rate=-1):
         """Constructor for Quantum Channel class.
 
         Args:
@@ -91,11 +93,20 @@ class QuantumChannel(OpticalChannel):
             attenuation (float): loss rate of optical fiber (in dB/m).
             distance (int): length of fiber (in m).
             polarization_fidelity (float): probability of no polarization error for a transmitted qubit (default 1).
+            depolarizing_rate (float): accumulation rate of polarization error for polarization encoding with increasing distance
+                default: -1 meaning fixed polarization fidelity, unit in distance unit ^ -1.
             light_speed (float): speed of light within the fiber (in m/ps) (default 2e-4).
             frequency (float): maximum frequency of qubit transmission (in Hz) (default 8e7).
         """
 
         super().__init__(name, timeline, attenuation, distance, polarization_fidelity, light_speed)
+        self.depolarizing_rate = depolarizing_rate
+        if self.depolarizing_rate == -1:
+            pass
+        else: 
+            fid = (1 + np.exp(self.depolarizing_rate * self.distance)) / 2
+            self.polarization_fidelity = fid
+
         self.delay = -1
         self.loss = 1
         self.frequency = frequency  # maximum frequency for sending qubits (measured in Hz)
@@ -177,7 +188,7 @@ class QuantumChannel(OpticalChannel):
             # check if polarization encoding and apply necessary noise
             if (qubit.encoding_type["name"] == "polarization") and (
                     self.sender.get_generator().random() > self.polarization_fidelity):
-                qubit.random_noise(self.get_generator())
+                qubit.polarization_noise(self.get_generator())
 
             # schedule receiving node to receive photon at future time determined by light speed
             future_time = self.timeline.now() + self.delay
