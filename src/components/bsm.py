@@ -609,7 +609,8 @@ class SingleHeraldedBSM(BSM):
         in the end whether successful EG is heralded still depends on if the detectors successfully click (efficiency / dark count).
 
     In this relatively simplified model, we do not perform explicit measurement and communicate explicit outcome, 
-        but assume that local correction based on classical feedforward is a ``free'' operation, and successfully generated EPR pair is in Phi+ form
+        but assume that local correction based on classical feedforward is a ``free'' operation, and successfully generated EPR pair is in Phi+ form.
+        This is to be aligned with analytical formulae, and note that the 4 BDS elements are in I, Z, X, Y order.
     The device manages entanglement of associated memories.
 
     Attributes:
@@ -660,8 +661,14 @@ class SingleHeraldedBSM(BSM):
                 # if both memory successfully emit the photon in this round (consider memory emission inefficiency)
                 if self.get_generator().random() > p0.loss and self.get_generator().random() > p1.loss:
                     
-                    pass 
-                    # WIP. Only modify correponding memories' quantum states (in BDS formalism) when two detectors click.
+                    for idx, photon in enumerate(self.photons):
+                        detector = self.detectors[idx]
+                        detector.get(photon)
+
+                        # this implementation is based on expectation that if both photons arrive at the BSM simultaneously, 
+                        # they will trigger both detectors simultaneously as well, if both succeed given detector efficiency, 
+                        # and then we can record both detection events in bsm_res of entanglement generation protocol,
+                        # when update_memory is invoked at future_start_time both detector triggers should have been recorded
 
 
     def trigger(self, detector: Detector, info: Dict[str, Any]):
@@ -669,10 +676,24 @@ class SingleHeraldedBSM(BSM):
 
         This method adds additional side effects not present in the base class.
 
+        We assume that the single-heralded EG requires both incoming photons be detected, thus two detector triggers are needed.
+            Thus we will store the first trigger and see if there will be a second trigger.
+            Only when a trigger happens and there has been a trigger existing, do we notify, i.e. bsm_update, the EG protocol.
+
         Side Effects:
             May send a further message to any attached entities.
         """
 
-        pass
-        
-        # WIP. Determine what information to send. Presumably only need to send whether the EG attempt is successful.
+        # for single-heralded protocol we only care about cases where two detectors are triggered
+        # because we assume upon success the memory entangled state will be initialized to a fixed Bell state
+        # therefore, we notify protocol whenever a detector in BSM is triggered, and record how many times each detectors have been triggered
+        # only when both detectors have been triggered do we consider the generation attempt successful
+        # TODO: verify that in this way we can record if dark count has happened
+
+        detector_num = self.detectors.index(detector)
+        time = info["time"]
+
+        res = detector_num
+        info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
+        self.notify(info)
+

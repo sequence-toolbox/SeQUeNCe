@@ -709,6 +709,9 @@ class QuantumManagerDensityFock(QuantumManager):
 class QuantumManagerBellDiagonal(QuantumManager):
     """Class to track and manage quantum states with the bell diagonal formalism.
     
+    To be aligned with analytical formulae, we have assumed that successfully generated EPR pair is in Phi+ form.
+    And note that the 4 BDS elements are in I, Z, X, Y order.
+
     * BDS is only used for entanglement distribution (generation, swapping, purification), assuming underlying errors being purely Pauli.
     * All manipulation results can be tracked analytically, without explicit quantum gates / channels / measurements.
     """
@@ -727,7 +730,7 @@ class QuantumManagerBellDiagonal(QuantumManager):
             self.states[key] = BellDiagonalState(state, keys)
         return keys
 
-    def set(self, keys: List[int], diag_elems: List[complex]) -> None:
+    def set(self, keys: List[int], diag_elems: List[float]) -> None:
         super().set(keys, diag_elems)
         assert len(keys) == 2, "Bell diagonal states must have 2 keys."
         new_state = BellDiagonalState(diag_elems, keys)

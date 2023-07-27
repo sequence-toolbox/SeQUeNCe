@@ -115,8 +115,6 @@ class Memory(Entity):
         wavelength (float): wavelength (in nm) of emitted photons.
         qstate_key (int): key for associated quantum state in timeline's quantum manager.
         entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
-        raw_epr_errors (List[float]): assuming BDS form of raw EPR pair, probability distribution of X, Y, Z Pauli errors;
-            default value is -1, meaning not using BDS or further density matrix representation
         decoherence_errors (List[float]): assuming the memory (qubit) decoherence channel being Pauli channel, probability distribution of X, Y, Z Pauli errors;
             default value is -1, meaning not using BDS or further density matrix representation
         generation_time (float): time when the EPR pair is first generated (float or int depends on timing unit);
@@ -127,7 +125,7 @@ class Memory(Entity):
     """
 
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
-                 efficiency: float, coherence_time: float, wavelength: int, raw_epr_errors: List[float] = -1, decoherence_errors: List[float] = -1):
+                 efficiency: float, coherence_time: float, wavelength: int, decoherence_errors: List[float] = -1):
         """Constructor for the Memory class.
 
         Args:
@@ -138,8 +136,6 @@ class Memory(Entity):
             efficiency (float): efficiency of memories.
             coherence_time (float): average time (in s) that memory state is valid.
             wavelength (int): wavelength (in nm) of photons emitted by memories.
-            raw_epr_errors (List[float]): assuming BDS form of raw EPR pair, probability distribution of X, Y, Z Pauli errors;
-                default value is -1, meaning not using BDS or further density matrix representation
             decoherence_errors (List[float]): assuming the memory (qubit) decoherence channel being Pauli channel, probability distribution of X, Y, Z Pauli errors;
                 default value is -1, meaning not using BDS or further density matrix representation
             bds_elems (List[float]): diagonal elements of the DM of stored EPR pair in Bell basis (BDS).
@@ -158,7 +154,6 @@ class Memory(Entity):
         self.qstate_key = timeline.quantum_manager.new()
         self.memory_array = None
 
-        self.raw_epr_errors = raw_epr_errors
         self.decoherence_errors = decoherence_errors
         self.bds_elems = -1  # default value is -1 when EPR pair is not generated or BDS formalism is not used
         self.generation_time = -1  # default value is -1 when EPR pair is not generated or decoherence over time is not considered
@@ -302,7 +297,7 @@ class Memory(Entity):
             Will modify BDS diagonal elements and last_update_time.
         """
 
-        # WIP
+        # TODO: WIP
 
     def bds_purify(self) -> None:
         """Method to purify stored BDS in quantum memory according to DEJMPS/BBPSSW protocol, conditioned on success.
@@ -314,7 +309,7 @@ class Memory(Entity):
             Will modify BDS diagonal elements and last_update_time.
         """
 
-        # WIP
+        # TODO: WIP
 
     def bds_swap(self) -> None:
         """Method to swap stored BDS in quantum memory according to standard entanglement swapping circuit.
@@ -326,7 +321,7 @@ class Memory(Entity):
             Will modify BDS diagonal elements and last_update_time.
         """
 
-        # WIP
+        # TODO: WIP
 
     def _schedule_expiration(self) -> None:
         if self.expiration_event is not None:
