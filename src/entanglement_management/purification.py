@@ -8,6 +8,7 @@ Also defined is the message type used by the BBPSSW code.
 from enum import Enum, auto
 from typing import List, TYPE_CHECKING
 from functools import lru_cache
+import numpy as np
 
 if TYPE_CHECKING:
     from ..components.memory import Memory
@@ -17,6 +18,7 @@ from ..message import Message
 from .entanglement_protocol import EntanglementProtocol
 from ..utils import log
 from ..components.circuit import Circuit
+from ..kernel.quantum_state import BellDiagonalState
 
 
 class BBPSSWMsgType(Enum):
@@ -59,15 +61,16 @@ class BBPSSW(EntanglementProtocol):
         meas_memo: memory to measure and discart (should already be entangled).
         meas_res (int): measurement result from circuit.
         remote_node_name (str): name of other node.
-        remote_protocol_name (str): name of other protocol
-        remote_memories (List[str]): name of remote memories
+        remote_protocol_name (str): name of other protocol.
+        remote_memories (List[str]): name of remote memories.
+        is_bds (bool): whether the formalism of entangled state is Bell diagonal state (default False).
     """
 
     circuit = Circuit(2)
     circuit.cx(0, 1)
     circuit.measure(1)
 
-    def __init__(self, own: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory"):
+    def __init__(self, own: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory", is_bds=False):
         """Constructor for purification protocol.
 
         Args:
@@ -75,6 +78,7 @@ class BBPSSW(EntanglementProtocol):
             name (str): name of protocol instance.
             kept_memo (Memory): memory to have fidelity improved.
             meas_memo (Memory): memory to measure and discard.
+            is_bds (bool): whether the formalism of entangled state is Bell diagonal state (default False). 
         """
 
         assert kept_memo != meas_memo
@@ -88,6 +92,8 @@ class BBPSSW(EntanglementProtocol):
         self.meas_res = None
         if self.meas_memo is None:
             self.memories.pop()
+
+        self.is_bds = is_bds
 
     def is_ready(self) -> bool:
         return self.remote_node_name is not None
@@ -107,7 +113,8 @@ class BBPSSW(EntanglementProtocol):
     def start(self) -> None:
         """Method to start entanglement purification.
 
-        Run the circuit below on two pairs of entangled memories on both sides of protocol.
+        Run the circuit below on two pairs of entangled memories on both sides of protocol. (Original implementation)
+        For Bell diagonal state formalism, updated state and success probability are analytically calculated.
 
         o -------(x)----------| M |
         .         |
@@ -141,14 +148,41 @@ class BBPSSW(EntanglementProtocol):
         meas_memo_ent = self.meas_memo.entangled_memory["node_id"]
         assert kept_memo_ent == meas_memo_ent, "mismatch of entangled memories {}, {} on node {}".format(
             kept_memo_ent, meas_memo_ent, self.own.name)
-        assert self.kept_memo.fidelity == self.meas_memo.fidelity > 0.5
+        
+        if not self.is_bds:
+            assert self.kept_memo.fidelity == self.meas_memo.fidelity > 0.5
 
-        meas_samp = self.own.get_generator().random()
-        self.meas_res = self.own.timeline.quantum_manager.run_circuit(
-            self.circuit, [self.kept_memo.qstate_key,
-                           self.meas_memo.qstate_key],
-            meas_samp)
-        self.meas_res = self.meas_res[self.meas_memo.qstate_key]
+            meas_samp = self.own.get_generator().random()
+            self.meas_res = self.own.timeline.quantum_manager.run_circuit(
+                self.circuit, [self.kept_memo.qstate_key,
+                            self.meas_memo.qstate_key],
+                meas_samp)
+            self.meas_res = self.meas_res[self.meas_memo.qstate_key]
+
+        elif self.is_bds:
+            # use following trick to determine if the measurement results on both sides equal: 
+            # now we consider that both sides do a biased coin flip with head (getting 1) probablity p, and tail (getting 0) probability 1-p
+            # if we assume that when both sides have 1 or 0 the event corresponds to a successful purification,
+            # to simulate a correct success probability we require: p^2 + (1-p)^2 = q, where q is the real success probability of purification
+            # as we have proved that the success probability is above 1/2 (for both states with fidelity >= 1/2), 
+            # both solutions to the equation, i.e. p = (1 \pm \sqrt{2q-1})/2, are valid (between 0 and 1), and we choose p = (1 + \sqrt{2q-1})/2
+
+            # calculate correct success probabilty (q)
+            # determine BDS density matrix elements of kept entangled pair conditioned on successful purification, immediately after start of purification
+            p_succ, new_bds = self.purification_res()
+            assert 1.>=p_succ>=0.5, "Entanglement purification success probability should be higher than 1/2, when input states have fidelity higher than 1/2."
+            p_1 = (1 + np.sqrt(2*p_succ - 1)) / 2
+            if self.own.get_generator().random() <= p_1:
+                self.meas_res = 1
+            else:
+                self.meas_res = 0
+
+            # TODO: conditioned on success, BDS has been modified since start of purification, and during classical communication decoherence will happen (if applicable)
+            # TODO: the entangle_time attribute of MemoryInfo should be the time when the purification is started, not the time when purification result is determined (after CC)
+            # modify entangled state of kept pair (if failed will be reset automatically, so in advance update does not matter)
+            keys = [self.kept_memo.qstate_key, self.own.timeline.get_entity_by_name(kept_memo_ent).qstate_key]
+            self.own.timeline.quantum_manager.set(keys, new_bds)
+
         dst = self.kept_memo.entangled_memory["node_id"]
 
         message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES,
@@ -173,9 +207,17 @@ class BBPSSW(EntanglementProtocol):
         assert src == self.remote_node_name
 
         self.update_resource_manager(self.meas_memo, "RAW")
+
         if self.meas_res == msg.meas_res:
-            self.kept_memo.fidelity = BBPSSW.improved_fidelity(self.kept_memo.fidelity)
-            self.update_resource_manager(self.kept_memo, state="ENTANGLED")
+            if not self.is_bds:
+                self.kept_memo.fidelity = BBPSSW.improved_fidelity(self.kept_memo.fidelity)
+                self.update_resource_manager(self.kept_memo, state="ENTANGLED")
+            elif self.is_bds:
+                state = self.own.timeline.quantum_manager.states(self.kept_memo.qstate_key)
+                fidelity = state.state[0]
+                self.kept_memo.fidelity = fidelity
+                # TODO: if time-dependent decoherence exists, the current state should have undergone decoherence during classical communication
+                self.update_resource_manager(self.kept_memo, state="ENTANGLED")
         else:
             self.update_resource_manager(self.kept_memo, state="RAW")
 
@@ -198,7 +240,50 @@ class BBPSSW(EntanglementProtocol):
 
     def release(self) -> None:
         pass
+    
+    def purification_res(self) -> float:
+        """Method to calculate the correct success probabilty of a purification trial with BDS input, 
+            and the four BDS density matrix elements of kept entangled pair conditioned on successful purification."""
 
+        kept_input_state = self.own.timeline.quantum_manager.states[self.kept_memo.qstate_key]  # instance of BellDiagonalState
+        meas_input_state = self.own.timeline.quantum_manager.states[self.meas_memo.qstate_key]  # instance of BellDiagonalState
+
+        assert isinstance(kept_input_state, BellDiagonalState) and isinstance(meas_input_state, BellDiagonalState), "Input states should be Bell diagonal states."
+
+        kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = kept_input_state.state  # BDS diagonal elements of kept pair
+        meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = meas_input_state.state  # BDS diagonal elements of measured pair
+        assert 1.>=kept_elem_1>=0.5 and 1.>=meas_elem_1>=0.5, "Input states should have fidelity above 1/2."
+        a, b = (kept_elem_1 + kept_elem_2), (meas_elem_1, meas_elem_2)
+
+        own_node, remote_node = self.own, self.own.timeline.get_entity_by_name(self.remote_node_name)
+
+        own_node_gate_fid, own_node_meas_fid = own_node.gate_fid, own_node.meas_fid  # gate and measurment fidelities on protocol owner node
+        remote_node_gate_fid, remote_node_meas_fid = remote_node.gate_fid, remote_node.meas_fid  # gate and measurment fidelities on remote node
+
+        # calculate success probability with analytical formula
+        p_succ = 1/2 + own_node_gate_fid * remote_node_gate_fid * (own_node_meas_fid * (1-remote_node_meas_fid) + (1-own_node_meas_fid) * remote_node_meas_fid)\
+                + own_node_gate_fid * remote_node_gate_fid * (a*b + (1-a)*(1-b))\
+                      * (own_node_meas_fid * remote_node_meas_fid + (1-own_node_meas_fid)*(1-remote_node_meas_fid)\
+                        - own_node_meas_fid * (1-remote_node_meas_fid) - (1-own_node_meas_fid) * remote_node_meas_fid) - own_node_gate_fid * remote_node_gate_fid / 2
+
+        # calculate the BDS elements
+        new_elem_1 = own_node_gate_fid * remote_node_gate_fid * ((own_node_meas_fid * remote_node_meas_fid + (1-own_node_meas_fid)*(1-remote_node_meas_fid))*(kept_elem_1*meas_elem_1 + kept_elem_2*meas_elem_2)\
+                                                                 + (own_node_meas_fid * (1-remote_node_meas_fid) + (1-own_node_meas_fid) * remote_node_meas_fid)*(kept_elem_1*meas_elem_3 + kept_elem_2*meas_elem_4))\
+                                                                 + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+        new_elem_2 = own_node_gate_fid * remote_node_gate_fid * ((own_node_meas_fid * remote_node_meas_fid + (1-own_node_meas_fid)*(1-remote_node_meas_fid))*(kept_elem_1*meas_elem_2 + kept_elem_2*meas_elem_1)\
+                                                                 + (own_node_meas_fid * (1-remote_node_meas_fid) + (1-own_node_meas_fid) * remote_node_meas_fid)*(kept_elem_1*meas_elem_4 + kept_elem_2*meas_elem_3))\
+                                                                 + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+        new_elem_3 = own_node_gate_fid * remote_node_gate_fid * ((own_node_meas_fid * remote_node_meas_fid + (1-own_node_meas_fid)*(1-remote_node_meas_fid))*(kept_elem_3*meas_elem_3 + kept_elem_4*meas_elem_4)\
+                                                                 + (own_node_meas_fid * (1-remote_node_meas_fid) + (1-own_node_meas_fid) * remote_node_meas_fid)*(kept_elem_3*meas_elem_1 + kept_elem_4*meas_elem_2))\
+                                                                 + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+        new_elem_4 = own_node_gate_fid * remote_node_gate_fid * ((own_node_meas_fid * remote_node_meas_fid + (1-own_node_meas_fid)*(1-remote_node_meas_fid))*(kept_elem_3*meas_elem_4 + kept_elem_4*meas_elem_3)\
+                                                                 + (own_node_meas_fid * (1-remote_node_meas_fid) + (1-own_node_meas_fid) * remote_node_meas_fid)*(kept_elem_3*meas_elem_2 + kept_elem_4*meas_elem_1))\
+                                                                 + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+
+        bds_elems = np.array([new_elem_1, new_elem_2, new_elem_3, new_elem_4])
+        bds_elems = bds_elems / p_succ  # normalization by success probability
+        return p_succ, bds_elems
+    
     @staticmethod
     @lru_cache(maxsize=128)
     def improved_fidelity(F: float) -> float:

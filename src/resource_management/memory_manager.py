@@ -140,4 +140,5 @@ class MemoryInfo():
         self.remote_node = self.memory.entangled_memory["node_id"]
         self.remote_memo = self.memory.entangled_memory["memo_id"]
         self.fidelity = self.memory.fidelity
+        # TODO: tracking of entangle_time might need modification to facilitate implementation of time-dependent decoherence
         self.entangle_time = self.memory.timeline.now()

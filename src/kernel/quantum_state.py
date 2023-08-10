@@ -401,7 +401,8 @@ class BellDiagonalState(State):
         """Constructor for Bell diagonal state class.
 
         Args:
-            diag_elems (List[float]): 4 diagonal elements of 2-qubit density matrix in Bell bases. Default order: Phi+, Psi+, Psi-, Phi- (i.e. I, X, Y, Z errors).
+            diag_elems (List[float]): 4 diagonal elements of 2-qubit density matrix in Bell bases. 
+                Default order: Phi+, Phi-, Psi+, Psi- (i.e. I, Z, X, Y errors), in accordance with derived analytical formulae.
             keys (List[int]): list of keys to this state in quantum manager. Should be length 2.
         """
         super().__init__()

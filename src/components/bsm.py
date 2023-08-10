@@ -652,6 +652,7 @@ class SingleHeraldedBSM(BSM):
         # assumed simultaneous arrival of both photons
         if len(self.photons) == 2:
             # at most 1/2 probability of success according to LO assumption
+            # note that a tighter upper bound of success probability is in general setup-dependent (can be lower than 1/2)
             if self.get_generator.random() > 1/2:
                 pass
 

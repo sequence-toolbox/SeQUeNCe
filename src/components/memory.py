@@ -138,7 +138,6 @@ class Memory(Entity):
             wavelength (int): wavelength (in nm) of photons emitted by memories.
             decoherence_errors (List[float]): assuming the memory (qubit) decoherence channel being Pauli channel, probability distribution of X, Y, Z Pauli errors;
                 default value is -1, meaning not using BDS or further density matrix representation
-            bds_elems (List[float]): diagonal elements of the DM of stored EPR pair in Bell basis (BDS).
         """
 
         super().__init__(name, timeline)
@@ -155,7 +154,8 @@ class Memory(Entity):
         self.memory_array = None
 
         self.decoherence_errors = decoherence_errors
-        self.bds_elems = -1  # default value is -1 when EPR pair is not generated or BDS formalism is not used
+
+        # TODO: tracking of time when entanglement status is modified has been done at least partially in memory_manager
         self.generation_time = -1  # default value is -1 when EPR pair is not generated or decoherence over time is not considered
         self.last_update_time = -1  # default value is -1 when EPR pair is not generated or decoherence over time is not considered
 
@@ -259,7 +259,6 @@ class Memory(Entity):
         """
 
         self.fidelity = 0
-        self.bds_elems = -1
         self.generation_time = -1
         self.last_update_time = -1
 
@@ -288,7 +287,7 @@ class Memory(Entity):
         if self.coherence_time > 0:
             self._schedule_expiration()
 
-    def bds_decohere(self) -> None:
+    def bds_decohere(self, time) -> None:
         """Method to decohere stored BDS in quantum memory according to the single-qubit Pauli channels.
 
         During entanglement distribution (before application phase), BDS decoherence can be treated analytically (see entanglement purification paper for explicit formulae).
@@ -297,31 +296,7 @@ class Memory(Entity):
             Will modify BDS diagonal elements and last_update_time.
         """
 
-        # TODO: WIP
-
-    def bds_purify(self) -> None:
-        """Method to purify stored BDS in quantum memory according to DEJMPS/BBPSSW protocol, conditioned on success.
-
-        During entanglement distribution (before application phase), BDS purification can be treated analytically (see notes for explicit formulae).
-        Imperfections in gate and readout may be included, depending on node attributes.
-
-        Side Effects:
-            Will modify BDS diagonal elements and last_update_time.
-        """
-
-        # TODO: WIP
-
-    def bds_swap(self) -> None:
-        """Method to swap stored BDS in quantum memory according to standard entanglement swapping circuit.
-
-        During entanglement distribution (before application phase), BDS swapping can be treated analytically (see notes for explicit formulae).
-        Imperfections in gate and readout may be included, depending on node attributes.
-
-        Side Effects:
-            Will modify BDS diagonal elements and last_update_time.
-        """
-
-        # TODO: WIP
+        # TODO: may move to other location
 
     def _schedule_expiration(self) -> None:
         if self.expiration_event is not None:
