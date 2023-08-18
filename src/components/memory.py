@@ -23,7 +23,7 @@ from ..utils.encoding import single_atom, single_heralded
 
 
 def const(t):
-    """Constant function thal always returns 1. For AFC memory default spin efficiency."""
+    """Constant function that always returns 1. For AFC memory default spin efficiency."""
     return 1
 
 
@@ -125,7 +125,7 @@ class Memory(Entity):
     """
 
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
-                 efficiency: float, coherence_time: float, wavelength: int, decoherence_errors: List[float] = -1):
+                 efficiency: float, coherence_time: float, wavelength: int, decoherence_errors: List[float] = None):
         """Constructor for the Memory class.
 
         Args:
@@ -136,8 +136,9 @@ class Memory(Entity):
             efficiency (float): efficiency of memories.
             coherence_time (float): average time (in s) that memory state is valid.
             wavelength (int): wavelength (in nm) of photons emitted by memories.
-            decoherence_errors (List[float]): assuming the memory (qubit) decoherence channel being Pauli channel, probability distribution of X, Y, Z Pauli errors;
-                default value is -1, meaning not using BDS or further density matrix representation
+            decoherence_errors (List[float]): assuming the memory (qubit) decoherence channel being Pauli channel,
+                probability distribution of X, Y, Z Pauli errors
+                (default value is None, meaning not using BDS or further density matrix representation)
         """
 
         super().__init__(name, timeline)
@@ -148,7 +149,7 @@ class Memory(Entity):
         self.raw_fidelity = fidelity
         self.frequency = frequency
         self.efficiency = efficiency
-        self.coherence_time = coherence_time  # coherence time in seconds, will also be used to determine the decoherence rate
+        self.coherence_time = coherence_time  # coherence time in seconds, also used to determine the decoherence rate
         self.wavelength = wavelength
         self.qstate_key = timeline.quantum_manager.new()
         self.memory_array = None
@@ -156,8 +157,9 @@ class Memory(Entity):
         self.decoherence_errors = decoherence_errors
 
         # TODO: tracking of time when entanglement status is modified has been done at least partially in memory_manager
-        self.generation_time = -1  # default value is -1 when EPR pair is not generated or decoherence over time is not considered
-        self.last_update_time = -1  # default value is -1 when EPR pair is not generated or decoherence over time is not considered
+        # default value is -1 when EPR pair is not generated or decoherence over time is not considered
+        self.generation_time = -1
+        self.last_update_time = -1
 
         self.is_in_application = False  # initially quantum memory is guaranteed to be not involved in any application
 
@@ -188,13 +190,15 @@ class Memory(Entity):
         self.memory_array = memory_array
 
     def excite(self, dst="", protocol="bk") -> None:
-        """Method to excite memory and potentially emit a photon. Mainly for EG protocols, which can be double-heralded Barrett-Kok protocol or single-heralded protocols.
+        """Method to excite memory and potentially emit a photon.
 
+        Mainly for EG protocols, which can be double-heralded Barrett-Kok protocol or single-heralded protocols.
         If it is possible to emit a photon, the photon may be marked as null based on the state of the memory.
 
         Args:
             dst (str): name of destination node for emitted photon (default "").
             protocol (str): name of EG protocol considered (default "bk" standing for Barrett-Kok protocol).
+                Valid values are "bk" or "sh" (for single heralded).
 
         Side Effects:
             May modify quantum state of memory.
@@ -211,7 +215,9 @@ class Memory(Entity):
                             quantum_state=self.qstate_key, use_qm=True)
         elif protocol == "sh":
             photon = Photon("", self.timeline, wavelength=self.wavelength, location=self.name, encoding_type=self.encoding_sh,
-                            quantum_state=self.qstate_key)  # no need to use qm, as no explicit quantum state manipulation is needed here
+                            quantum_state=self.qstate_key, use_qm=True)
+        else:
+            raise ValueError("Invalid protocol type '{}' specified for memory.excite()".format(protocol))
 
         photon.timeline = None  # facilitate cross-process exchange of photons
         photon.is_null = True
@@ -232,15 +238,17 @@ class Memory(Entity):
 
         If the quantum memory has been explicitly involved in application after entanglement distribution, do not expire.
             Some simplified applications do not necessarily need to modify the is_in_application attribute.
-            Some more complicated applications such as probe state preparation for distributed quantum sensing may change is_in_application attribute to keep memory from expiration.
+            Some more complicated applications, such as probe state preparation for distributed quantum sensing,
+            may change is_in_application attribute to keep memory from expiring during study.
 
         Side Effects:
-            Will notify upper entities of expiration via the `pop` interface.
-            Will modify the quantum state of the memory.
+            May notify upper entities of expiration via the `pop` interface.
+            May modify the quantum state of the memory.
         """
 
-        if self.is_in_application == True:
+        if self.is_in_application:
             pass
+
         else:
             if self.excited_photon:
                 self.excited_photon.is_null = True
@@ -290,13 +298,15 @@ class Memory(Entity):
     def bds_decohere(self, time) -> None:
         """Method to decohere stored BDS in quantum memory according to the single-qubit Pauli channels.
 
-        During entanglement distribution (before application phase), BDS decoherence can be treated analytically (see entanglement purification paper for explicit formulae).
+        During entanglement distribution (before application phase),
+        BDS decoherence can be treated analytically (see entanglement purification paper for explicit formulae).
 
         Side Effects:
             Will modify BDS diagonal elements and last_update_time.
         """
 
         # TODO: may move to other location
+        pass
 
     def _schedule_expiration(self) -> None:
         if self.expiration_event is not None:
