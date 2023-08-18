@@ -78,11 +78,13 @@ class Node(Entity):
         self.components = {}
         self.first_component_name = None
 
-        # note that we are assuming homogeneous gates and measurements, i.e. every gate on one specific node has identical fidelity, and so is measurement.
+        # note that we are assuming homogeneous gates and measurements,
+        # i.e. every gate on one specific node has identical fidelity, and so is measurement.
         self.gate_fid = gate_fid
         self.meas_fid = meas_fid
 
-        assert 0<=self.gate_fid<=1 and 0<=self.meas_fid<=1, "Gate fidelity and measurement fidelity must be between 0 and 1."
+        assert 0 <= gate_fid <= 1 and 0 <= meas_fid <= 1, \
+            "Gate fidelity and measurement fidelity must be between 0 and 1."
 
     def init(self) -> None:
         pass
@@ -286,7 +288,7 @@ class QuantumRouter(Node):
                 Default value is 1, meaning ideal measurement.
         """
 
-        super().__init__(name, tl, seed, gate_fid=1, meas_fid=1)
+        super().__init__(name, tl, seed, gate_fid, meas_fid)
         if not component_templates:
             component_templates = {}
 
