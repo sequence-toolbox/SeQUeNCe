@@ -1,6 +1,7 @@
 """Models for simulating bell state measurement.
 
-This module defines a template bell state measurement (BSM) class, as well as implementations for polarization, time bin, and memory encoding schemes.
+This module defines a template bell state measurement (BSM) class,
+as well as implementations for polarization, time bin, and memory encoding schemes.
 Also defined is a function to automatically construct a BSM of a specified type.
 """
 
@@ -24,7 +25,7 @@ from ..utils.encoding import *
 from ..utils import log
 
 
-def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=[]):
+def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=None):
     """Function to construct BSM of specified type.
 
     Arguments:
@@ -32,7 +33,7 @@ def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=
         timeline (Timeline): timeline to be used for BSM instance.
         encoding_type (str): type of BSM to generate (default "time_bin").
         phase_error (float): error to apply to incoming qubits (default 0).
-        detectors (List[Dict[str, any]): list of detector objects given as dicts (default []).
+        detectors (List[Dict[str, any]): list of detector objects given as dicts (default None, for default params).
     """
 
     if encoding_type == "polarization":
@@ -114,10 +115,11 @@ class BSM(Entity):
         """Constructor for base BSM object.
 
         Args:
-            name (str): name of the beamsplitter instance.
+            name (str): name of the BSM instance.
             timeline (Timeline): simulation timeline.
             phase_error (float): Phase error applied to polarization photons (default 0).
-            detectors (List[Dict[str, Any]]): List of parameters for attached detectors, in dictionary format (default []).
+            detectors (List[Dict[str, Any]]): List of parameters for attached detectors, in dictionary format
+                (default None for default parameters).
         """
 
         super().__init__(name, timeline)
@@ -216,7 +218,8 @@ class PolarizationBSM(BSM):
             name (str): name of the BSM instance.
             timeline (Timeline): simulation timeline.
             phase_error (float): phase error applied to polarization photons (default 0).
-            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 4) (default []).
+            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format; must be of length 4
+                (default None for default parameters).
         """
 
         super().__init__(name, timeline, phase_error, detectors)
@@ -313,10 +316,11 @@ class TimeBinBSM(BSM):
         """Constructor for the time bin BSM class.
 
         Args:
-            name (str): name of the beamsplitter instance.
+            name (str): name of the BSM instance.
             timeline (Timeline): simulation timeline.
             phase_error (float): phase error applied to polarization qubits (unused) (default 0).
-            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2) (default []).
+            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format; must be of length 2
+                (default None for default parameters).
         """
 
         super().__init__(name, timeline, phase_error, detectors)
@@ -429,10 +433,11 @@ class SingleAtomBSM(BSM):
         """Constructor for the single atom BSM class.
 
         Args:
-            name (str): name of the beamsplitter instance.
+            name (str): name of the BSM instance.
             timeline (Timeline): simulation timeline.
             phase_error (float): phase error applied to polarization qubits (unused) (default 0).
-            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2) (default []).
+            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format; must be of length 2
+                (default None for default parameters).
         """
 
         if detectors is None:
@@ -532,7 +537,8 @@ class AbsorptiveBSM(BSM):
     Attributes:
         name (str): label for BSM instance
         timeline (Timeline): timeline for simulation
-        detectors (List[Detector]): list of attached photon detection devices (length 2).
+        detectors (List[Detector]): list of attached photon detection devices; must be of length 2
+            (default is None for default parameters).
     """
 
     def __init__(self, name, timeline, phase_error=0, detectors=None):
@@ -603,31 +609,35 @@ class AbsorptiveBSM(BSM):
 class SingleHeraldedBSM(BSM):
     """Class modeling an abstract/simplified BSM device for single-heralded entanglement generation protocols.
 
-    We assume that in the single-heralded entanglement generation protocols, two memories each emit one photon entangled with memory state,
+    We assume that in the single-heralded entanglement generation protocols,
+        two memories each emit one photon entangled with memory state,
         EG is successful only if both photons arrive at the BSM, 
-        and conditioned on both arrivals there is 1/2 probability (assuming linear optics) that the BSM can give distinguishable output,
-        in the end whether successful EG is heralded still depends on if the detectors successfully click (efficiency / dark count).
+        and conditioned on both arrivals there is 1/2 probability (assuming linear optics)
+        that the BSM can give distinguishable output,
+        in the end whether successful EG is heralded still depends on detection (efficiency / dark counts).
 
     In this relatively simplified model, we do not perform explicit measurement and communicate explicit outcome, 
-        but assume that local correction based on classical feedforward is a ``free'' operation, and successfully generated EPR pair is in Phi+ form.
-        This is to be aligned with analytical formulae, and note that the 4 BDS elements are in I, Z, X, Y order.
+        but assume that local correction based on classical feedforward is a ``free'' operation,
+        and successfully generated EPR pair is in Phi+ form.
+    This is to be aligned with analytical formulae, and note that the 4 BDS elements are in I, Z, X, Y order.
     The device manages entanglement of associated memories.
 
     Attributes:
-        name (str): label for BSM instance
-        timeline (Timeline): timeline for simulation
-        detectors (List[Detector]): list of attached photon detection devices
-        resolution (int): maximum time resolution achievable with attached detectors  
+        name (str): label for BSM instance.
+        timeline (Timeline): timeline for simulation.
+        detectors (List[Detector]): list of attached photon detection devices.
+        resolution (int): maximum time resolution achievable with attached detectors.
     """
 
     def __init__(self, name, timeline, phase_error=0, detectors=None):
         """Constructor for the single atom BSM class.
 
         Args:
-            name (str): name of the beamsplitter instance.
+            name (str): name of the BSM instance.
             timeline (Timeline): simulation timeline.
             phase_error (float): phase error applied to polarization qubits (unused) (default 0).
-            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2) (default []).
+            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format; must be of length 2
+                (default is None for default parameters).
         """
 
         if detectors is None:
@@ -640,6 +650,10 @@ class SingleHeraldedBSM(BSM):
         """See base class.
 
         This method adds additional side effects not present in the base class.
+        This implementation specifically is based on expectation that if both photons arrive at the BSM simultaneously,
+            they will trigger both detectors simultaneously as well, if both succeed given detector efficiency,
+            and then we can record both detection events in bsm_res of entanglement generation protocol,
+            when update_memory is invoked at future_start_time both detector triggers should have been recorded.
 
         Side Effects:
             May call get method of one or more attached detector(s).
@@ -652,8 +666,8 @@ class SingleHeraldedBSM(BSM):
         # assumed simultaneous arrival of both photons
         if len(self.photons) == 2:
             # at most 1/2 probability of success according to LO assumption
-            # note that a tighter upper bound of success probability is in general setup-dependent (can be lower than 1/2)
-            if self.get_generator.random() > 1/2:
+            # TODO: make this parameter of class?
+            if self.get_generator().random() > 1/2:
                 pass
 
             else:
@@ -666,30 +680,20 @@ class SingleHeraldedBSM(BSM):
                         detector = self.detectors[idx]
                         detector.get(photon)
 
-                        # this implementation is based on expectation that if both photons arrive at the BSM simultaneously, 
-                        # they will trigger both detectors simultaneously as well, if both succeed given detector efficiency, 
-                        # and then we can record both detection events in bsm_res of entanglement generation protocol,
-                        # when update_memory is invoked at future_start_time both detector triggers should have been recorded
-
-
     def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.
 
         This method adds additional side effects not present in the base class.
 
-        We assume that the single-heralded EG requires both incoming photons be detected, thus two detector triggers are needed.
-            Thus we will store the first trigger and see if there will be a second trigger.
-            Only when a trigger happens and there has been a trigger existing, do we notify, i.e. bsm_update, the EG protocol.
+        We assume that the single-heralded EG requires both incoming photons be detected,
+            thus two detector triggers are needed.
+        We will thus store the first trigger and see if there will be a second trigger.
+        Only when a trigger happens and there has been a trigger existing do we notify (bsm_update) the EG protocol.
+        TODO: verify that in this way we can record if dark count has happened.
 
         Side Effects:
             May send a further message to any attached entities.
         """
-
-        # for single-heralded protocol we only care about cases where two detectors are triggered
-        # because we assume upon success the memory entangled state will be initialized to a fixed Bell state
-        # therefore, we notify protocol whenever a detector in BSM is triggered, and record how many times each detectors have been triggered
-        # only when both detectors have been triggered do we consider the generation attempt successful
-        # TODO: verify that in this way we can record if dark count has happened
 
         detector_num = self.detectors.index(detector)
         time = info["time"]
