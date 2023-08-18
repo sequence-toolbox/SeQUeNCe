@@ -17,7 +17,7 @@ from typing import List, TYPE_CHECKING, Dict, Any
 
 if TYPE_CHECKING:
     from ..components.memory import Memory
-    from ..components.bsm import SingleAtomBSM
+    from ..components.bsm import SingleAtomBSM, SingleHeraldedBSM
     from ..topology.node import Node, BSMNode
 
 from .entanglement_protocol import EntanglementProtocol
@@ -120,13 +120,16 @@ class EntanglementGenerationA(EntanglementProtocol):
 
     The EntanglementGenerationA protocol should be instantiated on a quantum router node.
     Instances will communicate with each other (and with the B instance on a BSM node) to generate entanglement.
-    We also include the option of single heralded entanglement generation protocol instead of the default double-heralded Barrett-Kok protocol
-        In current implementation we don't distinguish different Bell states, 
-        and instead assume that post-measurement feedforward has been done to transform the Bell state in a specific form.
-    For single-heralded protocol we use Bell diagonal state (BDS) to track memory entangled states
-        The intial form of state (ratio of the Pauli errors) is assumed to be determined by the EG protocol itself.
-        Note that in reality this may also depend on memory (e.g. decoherence during the course), 
-        but this implementation avoids the cases where `raw_epr_errors` stored in different memories do not match each other.
+
+    We also include the option of single-heralded entanglement generation protocol,
+    instead of the default double-heralded Barrett-Kok protocol.
+    In current implementation we don't distinguish different Bell states,
+    and instead assume that post-measurement feedforward has been done to transform the Bell state in a specific form.
+
+    For thje single-heralded protocol, we use Bell Diagonal States (BDS) to track memory entangled states.
+    The intial form of state (ratio of the Pauli errors) is assumed to be determined by the EG protocol itself.
+    Note that in reality, this may also depend on memory (e.g. decoherence during the course),
+    but this implementation avoids the cases where `raw_epr_errors` in different memories do not match each other.
 
     Attributes:
         own (QuantumRouter): node that protocol instance is attached to.
@@ -134,8 +137,9 @@ class EntanglementGenerationA(EntanglementProtocol):
         middle (str): name of BSM measurement node where emitted photons should be directed.
         remote_node_name (str): name of distant QuantumRouter node, containing a memory to be entangled with local memory.
         memory (Memory): quantum memory object to attempt entanglement for.
-        is_sh (bool): if the entanglement generation protocol is single heralded or not (default False meaning double-heralded Barrett-Kok protocol).
-        raw_fidelity (float): fidelity of successfully generated entangled state at the beginning (default 1)
+        is_sh (bool): if the entanglement generation protocol is single heralded or not
+            (default False meaning double-heralded Barrett-Kok protocol)
+        raw_fidelity (float): fidelity of successfully generated entangled state at the beginning (default 1).
             here we let entanglement generation protocol record raw fidelity instead of memory,
             this can facilitate definition of distance-dependent raw fidelity
         raw_epr_errors (List[float]): assuming BDS form of raw EPR pair, probability distribution of X, Y, Z Pauli errors;
@@ -148,7 +152,8 @@ class EntanglementGenerationA(EntanglementProtocol):
     _z_circuit = Circuit(1)
     _z_circuit.z(0)
 
-    def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory", is_sh: bool=False, raw_fidelity: float=1, raw_epr_errors: List[float]=-1):
+    def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory",
+                 is_sh: bool = False, raw_fidelity: float = 1, raw_epr_errors: List[float] = None):
         """Constructor for entanglement generation A class.
 
         Args:
@@ -157,10 +162,11 @@ class EntanglementGenerationA(EntanglementProtocol):
             middle (str): name of middle measurement node.
             other (str): name of other node.
             memory (Memory): memory to entangle.
-            is_sh (bool): if the entanglement generation protocol is single heralded or not (default False meaning double-heralded Barrett-Kok protocol).
+            is_sh (bool): if the entanglement generation protocol is single heralded or not
+                (default False, meaning double-heralded Barrett-Kok protocol).
             raw_fidelity (float): fidelity of successfully generated entangled state at the beginning
-            raw_epr_errors (List[float]): assuming BDS form of raw EPR pair, probability distribution of X, Y, Z Pauli errors;
-                default value is -1, meaning not using BDS or further density matrix representation
+            raw_epr_errors (List[float]): assuming BDS form of raw EPR pair, probability distribution of X, Y, Z Pauli errors
+                (default value is None, meaning not using BDS or further density matrix representation)
         """
 
         super().__init__(own, name)
@@ -169,11 +175,16 @@ class EntanglementGenerationA(EntanglementProtocol):
         self.remote_protocol_name: str = None
 
         self.is_sh = is_sh
+        if is_sh:
+            assert self.own.timeline.quantum_manager.formalism == BELL_DIAGONAL_STATE_FORMALISM, \
+                "Currently single heralded protocol requires Bell diagonal state formalism."
+
         self.raw_fidelity = raw_fidelity
         assert 0.5 <= self.raw_fidelity <= 1, "Raw fidelity of EPR pair must be above 1/2."
         self.raw_epr_errors = raw_epr_errors
-        if self.raw_epr_errors != -1:
-            assert len(self.raw_epr_errors) == 3, "Raw EPR pair Pauli error list should have three elements in X, Y, Z order."
+        if self.raw_epr_errors:
+            assert len(self.raw_epr_errors) == 3, \
+                "Raw EPR pair Pauli error list should have three elements in X, Y, Z order."
 
         # memory info
         self.memory: Memory = memory
@@ -187,10 +198,10 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         # memory internal info
         self.ent_round = 0  # keep track of current stage of protocol
-        if self.is_sh == False:
-            self.bsm_res = [-1, -1]  # keep track of bsm measurements to distinguish Psi+ and Psi- for double heralded Barrett-Kok protocol
-        elif self.is_sh == True:
+        if is_sh:
             self.bsm_res = [0, 0]  # keep track of how many times each detector are triggered, can potentially see number of dark counts if greater than 1
+        else:
+            self.bsm_res = [-1, -1]  # keep track of bsm measurements to distinguish Psi+ and Psi- for double heralded Barrett-Kok protocol
 
         self.scheduled_events = []
 
@@ -208,10 +219,13 @@ class EntanglementGenerationA(EntanglementProtocol):
             node (str): other node name.
             memories (List[str]): the list of memory names used on other node.
         """
-        assert self.remote_protocol_name is None
+        assert self.remote_protocol_name is None, "Entanglement generation 'set_others' called twice."
 
-        remote_protocol = self.own.timeline.get_entity_by_name(protocol)
-        assert remote_protocol.is_sh == self.is_sh, "Entanglement generation protocols need to match in heralding schemes."
+        # check if remote protocol matches
+        remote_node = self.own.timeline.get_entity_by_name(node)
+        remote_protocol = next(p for p in remote_node.protocols if p.name == protocol)
+        assert remote_protocol.is_sh == self.is_sh, \
+            "Entanglement generation protocols need to match in heralding schemes."
 
         self.remote_protocol_name = protocol
 
@@ -260,11 +274,10 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         # to avoid start after protocol removed
         if self not in self.own.protocols:
-            
             return
         
-        if self.is_sh == True:
-            # in current implementation of single heralde protocol, memory state does not need to change before success
+        if self.is_sh:
+            # in current implementation of single herald protocol, memory state does not need to change before success
             self.ent_round += 1
 
             if self.ent_round == 1:
@@ -275,20 +288,19 @@ class EntanglementGenerationA(EntanglementProtocol):
                 if self.bsm_res[0] >= 1 and self.bsm_res[1] >= 1:
                     # successful entanglement
                     # Bell diagonal state assignment to both memories
-                    self_key = self.memory.qstate_key
+                    self_key = self._qstate_key
                     tl = self.own.timeline
                     remote_memory = tl.get_entity_by_name(self.remote_memo_id)
                     remote_key = remote_memory.qstate_key
                     keys = [self_key, remote_key]
 
-                    assert self.own.timeline.quantum_manager.formalism == BELL_DIAGONAL_STATE_FORMALISM, "Currently single heralded protocol requires Bell diagonal state formalism."
-
                     fid = self.raw_fidelity
                     if fid == 1:
                         state = [1., 0., 0., 0.]
-                    elif fid < 1:
+                    else:
                         errors = self.raw_epr_errors
-                        assert self.raw_epr_errors != -1, "Raw EPR pair Pauli error is required for BDS formalism with raw fidelity below 1."
+                        assert errors is not None, \
+                            "Raw EPR pair Pauli error is required for BDS formalism with raw fidelity below 1."
                         infid = 1 - fid
                         x_elem, y_elem, z_elem = [error * infid for error in errors]
                         state = [fid, z_elem, x_elem, y_elem]
@@ -310,7 +322,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
             return True
 
-        elif self.is_sh == False:
+        else:
             self.ent_round += 1
 
             if self.ent_round == 1:
@@ -350,13 +362,13 @@ class EntanglementGenerationA(EntanglementProtocol):
             May change state of attached memory.
             May cause attached memory to emit photon.
         """
-        if self.is_sh == False:
+        if self.is_sh:
+            self.memory.excite(self.middle, "sh")
+
+        else:
             if self.ent_round == 1:
                 self.memory.update_state(EntanglementGenerationA._plus_state)
             self.memory.excite(self.middle)
-        
-        elif self.is_sh == True:
-            self.memory.excite(self.middle, "sh")
 
     def received_message(self, src: str, msg: EntanglementGenerationMessage) -> None:
         """Method to receive messages.
@@ -533,9 +545,11 @@ class EntanglementGenerationB(EntanglementProtocol):
 
         self.is_sh = is_sh
 
-        remote_protocols = [self.own.timeline.get_entity_by_name(protocol) for protocol in self.others]
-        for remote_protocol in remote_protocols:
-            assert remote_protocol.is_sh == self.is_sh, "Entanglement generation protocols need to match in heralding schemes."
+        # TODO: need different way of checking end node protocols match middle
+        # remote_protocols = [self.own.timeline.get_entity_by_name(protocol) for protocol in self.others]
+        # for remote_protocol in remote_protocols:
+        #     assert remote_protocol.is_sh == self.is_sh, \
+        #         "Entanglement generation protocols need to match in heralding schemes."
 
     def bsm_update(self, bsm, info: Dict[str, Any]):
         """Method to receive detection events from BSM on node.
@@ -545,10 +559,12 @@ class EntanglementGenerationB(EntanglementProtocol):
             info (Dict[str, any]): information passed from bsm.
         """
 
-        if self.is_sh == False:
-            assert isinstance(bsm, SingleAtomBSM), "Barrett-Kok entanglement generation protocol needs to use SingleAtomBSM."
-        elif self.is_sh == True:
-            assert isinstance(bsm, SingleHeraldedBSM), "Single-heralded entanglement generation protocol needs to use SingleHeraldedBSM."
+        if self.is_sh:
+            assert isinstance(bsm, SingleHeraldedBSM), \
+                "Single-heralded entanglement generation protocol needs to use SingleHeraldedBSM."
+        else:
+            assert isinstance(bsm, SingleAtomBSM), \
+                "Barrett-Kok entanglement generation protocol needs to use SingleAtomBSM."
 
         assert info['info_type'] == "bsm_res"
 
