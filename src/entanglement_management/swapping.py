@@ -24,6 +24,7 @@ from .entanglement_protocol import EntanglementProtocol
 from ..utils import log
 from ..components.circuit import Circuit
 from ..kernel.quantum_state import BellDiagonalState
+from ..kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
 
 
 class SwappingMsgType(Enum):
@@ -67,7 +68,8 @@ class EntanglementSwappingA(EntanglementProtocol):
     """Entanglement swapping protocol for middle router.
 
     The entanglement swapping protocol is an asymmetric protocol.
-    EntanglementSwappingA should be instantiated on the middle node, where it measures a memory from each pair to be swapped.
+    EntanglementSwappingA should be instantiated on the middle node,
+        where it measures a memory from each pair to be swapped.
     Results of measurement and swapping are sent to the end routers.
 
     Variables:
@@ -106,7 +108,8 @@ class EntanglementSwappingA(EntanglementProtocol):
             left_memo (Memory): memory entangled with a memory on one distant node.
             right_memo (Memory): memory entangled with a memory on the other distant node.
             success_prob (float): probability of a successful swapping operation (default 1).
-            degradation (float): degradation factor of memory fidelity after swapping (default 0.95), does not apply to BDS formalism.
+            degradation (float): degradation factor of memory fidelity after swapping (default 0.95).
+                Does not apply to BDS formalism.
         """
 
         assert left_memo != right_memo
@@ -120,10 +123,10 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.right_remote_memo = right_memo.entangled_memory['memo_id']
 
         self.success_prob = success_prob
-        assert 1>=self.success_prob>=0, "Entanglement swapping success probability must be between 0 and 1."
+        assert 1 >= self.success_prob >= 0, "Entanglement swapping success probability must be between 0 and 1."
 
         self.degradation = degradation
-        assert 1>=self.degradation>=0, "Entanglement swapping fidelity degradation factor must be between 0 and 1."
+        assert 1 >= self.degradation >= 0, "Entanglement swapping fidelity degradation factor must be between 0 and 1."
 
         self.is_success = False
         self.left_protocol_name = None
@@ -236,19 +239,25 @@ class EntanglementSwappingA(EntanglementProtocol):
 
         return f1 * f2 * self.degradation
     
-    def swapping_res(self):
-        """Method to calculate the resulting entangled state conditioned on successful swapping, for BDS formalism."""
+    def swapping_res(self) -> List[float]:
+        """Method to calculate the resulting entangled state conditioned on successful swapping, for BDS formalism.
 
-        left_state = self.own.timeline.quantum_manager.states[self.left_memo.qstate_key]  # instance of BellDiagonalState
-        right_state = self.own.timeline.quantum_manager.states[self.right_memo.qstate_key]  # instance of BellDiagonalState
+        Returns:
+            List[float]: resultant bell diagonal state entries.
+        """
 
-        assert isinstance(left_state, BellDiagonalState) and isinstance(right_state, BellDiagonalState), "Input states should be Bell diagonal states."
+        assert self.own.timeline.quantum_manager.formalism == BELL_DIAGONAL_STATE_FORMALISM, \
+            "Input states should be Bell diagonal states."
+
+        left_state = self.own.timeline.quantum_manager.get(self.left_memo.qstate_key)
+        right_state = self.own.timeline.quantum_manager.get(self.right_memo.qstate_key)
 
         left_elem_1, left_elem_2, left_elem_3, left_elem_4 = left_state.state  # BDS diagonal elements of left pair
         right_elem_1, right_elem_2, right_elem_3, right_elem_4 = right_state.state  # BDS diagonal elements of right pair
-        assert 1.>=left_elem_1>=0.5 and 1.>=right_elem_1>=0.5, "Input states should have fidelity above 1/2."
+        assert 1. >= left_elem_1 >= 0.5 and 1. >= right_elem_1 >= 0.5, "Input states should have fidelity above 1/2."
 
-        gate_fid, meas_fid = self.own.gate_fid, self.own.meas_fid  # gate and measurment fidelities on swapping node, assuming two single-qubit measurements have equal fidelity
+        # gate and measurment fidelities on swapping node, assuming two single-qubit measurements have equal fidelity
+        gate_fid, meas_fid = self.own.gate_fid, self.own.meas_fid
 
         # calculate the BDS elements
         c_I = left_elem_1 * right_elem_1 + left_elem_2 * right_elem_2 + left_elem_3 * right_elem_3 + left_elem_4 * right_elem_4
@@ -393,14 +402,17 @@ class EntanglementSwappingB(EntanglementProtocol):
                 elif msg.meas_res == [1, 1]:
                     self.own.timeline.quantum_manager.run_circuit(self.x_z_cir, [self.memory.qstate_key])
             elif self.is_bds:
-                # if using BDS formalism, updated BDS has been determined analytically taking into account local correction, thus need to do nothing
+                # if using BDS formalism,
+                # updated BDS has been determined analytically taking into account local correction,
+                # thus need to do nothing
                 pass
 
             self.memory.fidelity = msg.fidelity
             self.memory.entangled_memory["node_id"] = msg.remote_node
             self.memory.entangled_memory["memo_id"] = msg.remote_memo
             self.memory.update_expire_time(msg.expire_time)
-            # TODO: if time-dependent decoherence exists, the current state should have undergone decoherence during classical communication
+            # TODO: if time-dependent decoherence exists,
+            #  the current state should have undergone decoherence during classical communication
             self.update_resource_manager(self.memory, "ENTANGLED")
         else:
             self.update_resource_manager(self.memory, "RAW")
