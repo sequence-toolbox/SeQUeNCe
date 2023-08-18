@@ -13,16 +13,18 @@ import numpy as np
 if TYPE_CHECKING:
     from ..components.memory import Memory
     from ..topology.node import Node
+    from typing import Tuple
 
 from ..message import Message
 from .entanglement_protocol import EntanglementProtocol
 from ..utils import log
 from ..components.circuit import Circuit
 from ..kernel.quantum_state import BellDiagonalState
+from ..kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
 
 
 class BBPSSWMsgType(Enum):
-    """Defines possible message types for entanglement purification"""
+    """Defines possible message types for entanglement purification."""
 
     PURIFICATION_RES = auto()
 
@@ -161,27 +163,38 @@ class BBPSSW(EntanglementProtocol):
 
         elif self.is_bds:
             # use following trick to determine if the measurement results on both sides equal: 
-            # now we consider that both sides do a biased coin flip with head (getting 1) probablity p, and tail (getting 0) probability 1-p
-            # if we assume that when both sides have 1 or 0 the event corresponds to a successful purification,
-            # to simulate a correct success probability we require: p^2 + (1-p)^2 = q, where q is the real success probability of purification
-            # as we have proved that the success probability is above 1/2 (for both states with fidelity >= 1/2), 
-            # both solutions to the equation, i.e. p = (1 \pm \sqrt{2q-1})/2, are valid (between 0 and 1), and we choose p = (1 + \sqrt{2q-1})/2
+            # We consider that both sides do a biased coin flip,
+            # with head (getting 1) probablity p, and tail (getting 0) probability 1-p.
+            # If we assume that when both sides have 1 or 0 the event corresponds to a successful purification,
+            # to simulate a correct success probability we require p^2 + (1-p)^2 = q,
+            # where q is the real success probability of purification.
+            # As we have proved that the success probability is above 1/2 (for both states with fidelity >= 1/2),
+            # both solutions to the equation, i.e. p = (1 \pm \sqrt{2q-1})/2, are valid (between 0 and 1);
+            # We choose p = (1 + \sqrt{2q-1})/2
 
-            # calculate correct success probabilty (q)
-            # determine BDS density matrix elements of kept entangled pair conditioned on successful purification, immediately after start of purification
+            # calculate correct success probabilty (q).
+            # Also determine BDS density matrix elements of kept entangled pair conditioned on successful purification,
+            # immediately after start of purification
             p_succ, new_bds = self.purification_res()
-            assert 1.>=p_succ>=0.5, "Entanglement purification success probability should be higher than 1/2, when input states have fidelity higher than 1/2."
+            assert 1. >= p_succ >= 0.5, \
+                "Entanglement purification success probability should be higher than 1/2."
             p_1 = (1 + np.sqrt(2*p_succ - 1)) / 2
             if self.own.get_generator().random() <= p_1:
                 self.meas_res = 1
             else:
                 self.meas_res = 0
 
-            # TODO: conditioned on success, BDS has been modified since start of purification, and during classical communication decoherence will happen (if applicable)
-            # TODO: the entangle_time attribute of MemoryInfo should be the time when the purification is started, not the time when purification result is determined (after CC)
-            # modify entangled state of kept pair (if failed will be reset automatically, so in advance update does not matter)
+            # TODO: conditioned on success, BDS has been modified since start of purification,
+            #  and during classical communication decoherence will happen (if applicable)
+            # TODO: the entangle_time attribute of MemoryInfo should be the time when the purification is started,
+            #  not the time when purification result is determined (after CC)
+            # modify entangled state of kept pair
+            # (if failed will be reset automatically, so in advance update does not matter)
             keys = [self.kept_memo.qstate_key, self.own.timeline.get_entity_by_name(kept_memo_ent).qstate_key]
-            self.own.timeline.quantum_manager.set(keys, new_bds)
+
+            # avoid both ends setting memory state
+            if self.kept_memo.name > kept_memo_ent:
+                self.own.timeline.quantum_manager.set(keys, new_bds)
 
         dst = self.kept_memo.entangled_memory["node_id"]
 
@@ -216,7 +229,8 @@ class BBPSSW(EntanglementProtocol):
                 state = self.own.timeline.quantum_manager.states(self.kept_memo.qstate_key)
                 fidelity = state.state[0]
                 self.kept_memo.fidelity = fidelity
-                # TODO: if time-dependent decoherence exists, the current state should have undergone decoherence during classical communication
+                # TODO: if time-dependent decoherence exists,
+                #  the state should have undergone decoherence during classical communication
                 self.update_resource_manager(self.kept_memo, state="ENTANGLED")
         else:
             self.update_resource_manager(self.kept_memo, state="RAW")
@@ -241,44 +255,63 @@ class BBPSSW(EntanglementProtocol):
     def release(self) -> None:
         pass
     
-    def purification_res(self) -> float:
-        """Method to calculate the correct success probabilty of a purification trial with BDS input, 
-            and the four BDS density matrix elements of kept entangled pair conditioned on successful purification."""
+    def purification_res(self) -> Tuple[float, np.array]:
+        """Method to calculate the correct success probabilty of a purification trial with BDS input.
 
-        kept_input_state = self.own.timeline.quantum_manager.states[self.kept_memo.qstate_key]  # instance of BellDiagonalState
-        meas_input_state = self.own.timeline.quantum_manager.states[self.meas_memo.qstate_key]  # instance of BellDiagonalState
+        The four BDS density matrix elements of kept entangled pair conditioned on successful purification.
 
-        assert isinstance(kept_input_state, BellDiagonalState) and isinstance(meas_input_state, BellDiagonalState), "Input states should be Bell diagonal states."
+        Returns:
+            float: success probability of purification.
+            float:
+        """
 
-        kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = kept_input_state.state  # BDS diagonal elements of kept pair
-        meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = meas_input_state.state  # BDS diagonal elements of measured pair
-        assert 1.>=kept_elem_1>=0.5 and 1.>=meas_elem_1>=0.5, "Input states should have fidelity above 1/2."
-        a, b = (kept_elem_1 + kept_elem_2), (meas_elem_1, meas_elem_2)
+        assert self.own.timeline.quantum_manager.formalism == BELL_DIAGONAL_STATE_FORMALISM, \
+            "Input states should be Bell diagonal states."
+
+        kept_input_state = self.own.timeline.quantum_manager.get(self.kept_memo.qstate_key)
+        meas_input_state = self.own.timeline.quantum_manager.get(self.meas_memo.qstate_key)
+
+        kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = kept_input_state.state  # Diagonal elements of kept pair
+        meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = meas_input_state.state  # Diagonal elements of measured pair
+        assert 1. >= kept_elem_1 >= 0.5 and 1. >= meas_elem_1 >= 0.5, "Input states should have fidelity above 1/2."
+        a, b = (kept_elem_1 + kept_elem_2), (meas_elem_1, meas_elem_2)  # TODO: how should meas_elem_1 and 2 be combined?
 
         own_node, remote_node = self.own, self.own.timeline.get_entity_by_name(self.remote_node_name)
 
-        own_node_gate_fid, own_node_meas_fid = own_node.gate_fid, own_node.meas_fid  # gate and measurment fidelities on protocol owner node
-        remote_node_gate_fid, remote_node_meas_fid = remote_node.gate_fid, remote_node.meas_fid  # gate and measurment fidelities on remote node
+        # gate and measurment fidelities on protocol owner node
+        own_node_gate_fid, own_node_meas_fid = own_node.gate_fid, own_node.meas_fid
+        # gate and measurment fidelities on remote node
+        remote_node_gate_fid, remote_node_meas_fid = remote_node.gate_fid, remote_node.meas_fid
 
         # calculate success probability with analytical formula
-        p_succ = 1/2 + own_node_gate_fid * remote_node_gate_fid * (own_node_meas_fid * (1-remote_node_meas_fid) + (1-own_node_meas_fid) * remote_node_meas_fid)\
-                + own_node_gate_fid * remote_node_gate_fid * (a*b + (1-a)*(1-b))\
-                      * (own_node_meas_fid * remote_node_meas_fid + (1-own_node_meas_fid)*(1-remote_node_meas_fid)\
-                        - own_node_meas_fid * (1-remote_node_meas_fid) - (1-own_node_meas_fid) * remote_node_meas_fid) - own_node_gate_fid * remote_node_gate_fid / 2
+        p_succ = 1/2 \
+            + own_node_gate_fid * remote_node_gate_fid \
+                 * (own_node_meas_fid * (1-remote_node_meas_fid) + (1-own_node_meas_fid) * remote_node_meas_fid) \
+            + own_node_gate_fid * remote_node_gate_fid * (a*b + (1-a)*(1-b)) \
+                 * (own_node_meas_fid * remote_node_meas_fid + (1-own_node_meas_fid)*(1-remote_node_meas_fid)
+                    - own_node_meas_fid * (1-remote_node_meas_fid) - (1-own_node_meas_fid) * remote_node_meas_fid) \
+            - own_node_gate_fid * remote_node_gate_fid / 2
 
         # calculate the BDS elements
-        new_elem_1 = own_node_gate_fid * remote_node_gate_fid * ((own_node_meas_fid * remote_node_meas_fid + (1-own_node_meas_fid)*(1-remote_node_meas_fid))*(kept_elem_1*meas_elem_1 + kept_elem_2*meas_elem_2)\
-                                                                 + (own_node_meas_fid * (1-remote_node_meas_fid) + (1-own_node_meas_fid) * remote_node_meas_fid)*(kept_elem_1*meas_elem_3 + kept_elem_2*meas_elem_4))\
-                                                                 + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
-        new_elem_2 = own_node_gate_fid * remote_node_gate_fid * ((own_node_meas_fid * remote_node_meas_fid + (1-own_node_meas_fid)*(1-remote_node_meas_fid))*(kept_elem_1*meas_elem_2 + kept_elem_2*meas_elem_1)\
-                                                                 + (own_node_meas_fid * (1-remote_node_meas_fid) + (1-own_node_meas_fid) * remote_node_meas_fid)*(kept_elem_1*meas_elem_4 + kept_elem_2*meas_elem_3))\
-                                                                 + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
-        new_elem_3 = own_node_gate_fid * remote_node_gate_fid * ((own_node_meas_fid * remote_node_meas_fid + (1-own_node_meas_fid)*(1-remote_node_meas_fid))*(kept_elem_3*meas_elem_3 + kept_elem_4*meas_elem_4)\
-                                                                 + (own_node_meas_fid * (1-remote_node_meas_fid) + (1-own_node_meas_fid) * remote_node_meas_fid)*(kept_elem_3*meas_elem_1 + kept_elem_4*meas_elem_2))\
-                                                                 + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
-        new_elem_4 = own_node_gate_fid * remote_node_gate_fid * ((own_node_meas_fid * remote_node_meas_fid + (1-own_node_meas_fid)*(1-remote_node_meas_fid))*(kept_elem_3*meas_elem_4 + kept_elem_4*meas_elem_3)\
-                                                                 + (own_node_meas_fid * (1-remote_node_meas_fid) + (1-own_node_meas_fid) * remote_node_meas_fid)*(kept_elem_3*meas_elem_2 + kept_elem_4*meas_elem_1))\
-                                                                 + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+        new_elem_1 = own_node_gate_fid * remote_node_gate_fid \
+            * ((own_node_meas_fid * remote_node_meas_fid + (1-own_node_meas_fid)*(1-remote_node_meas_fid))*(kept_elem_1*meas_elem_1 + kept_elem_2*meas_elem_2)
+                + (own_node_meas_fid * (1-remote_node_meas_fid) + (1-own_node_meas_fid) * remote_node_meas_fid)*(kept_elem_1*meas_elem_3 + kept_elem_2*meas_elem_4)) \
+            + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+
+        new_elem_2 = own_node_gate_fid * remote_node_gate_fid \
+            * ((own_node_meas_fid * remote_node_meas_fid + (1-own_node_meas_fid)*(1-remote_node_meas_fid))*(kept_elem_1*meas_elem_2 + kept_elem_2*meas_elem_1)
+                + (own_node_meas_fid * (1-remote_node_meas_fid) + (1-own_node_meas_fid) * remote_node_meas_fid)*(kept_elem_1*meas_elem_4 + kept_elem_2*meas_elem_3))\
+            + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+
+        new_elem_3 = own_node_gate_fid * remote_node_gate_fid \
+            * ((own_node_meas_fid * remote_node_meas_fid + (1-own_node_meas_fid)*(1-remote_node_meas_fid))*(kept_elem_3*meas_elem_3 + kept_elem_4*meas_elem_4)
+                + (own_node_meas_fid * (1-remote_node_meas_fid) + (1-own_node_meas_fid) * remote_node_meas_fid)*(kept_elem_3*meas_elem_1 + kept_elem_4*meas_elem_2)) \
+            + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+
+        new_elem_4 = own_node_gate_fid * remote_node_gate_fid \
+            * ((own_node_meas_fid * remote_node_meas_fid + (1-own_node_meas_fid)*(1-remote_node_meas_fid))*(kept_elem_3*meas_elem_4 + kept_elem_4*meas_elem_3)
+                + (own_node_meas_fid * (1-remote_node_meas_fid) + (1-own_node_meas_fid) * remote_node_meas_fid)*(kept_elem_3*meas_elem_2 + kept_elem_4*meas_elem_1))\
+            + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
 
         bds_elems = np.array([new_elem_1, new_elem_2, new_elem_3, new_elem_4])
         bds_elems = bds_elems / p_succ  # normalization by success probability
