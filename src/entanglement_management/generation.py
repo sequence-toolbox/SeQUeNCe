@@ -17,7 +17,6 @@ from typing import List, TYPE_CHECKING, Dict, Any
 
 if TYPE_CHECKING:
     from ..components.memory import Memory
-    from ..components.bsm import SingleAtomBSM, SingleHeraldedBSM
     from ..topology.node import Node, BSMNode
 
 from .entanglement_protocol import EntanglementProtocol
@@ -560,13 +559,13 @@ class EntanglementGenerationB(EntanglementProtocol):
         """
 
         if self.is_sh:
-            assert isinstance(bsm, SingleHeraldedBSM), \
+            assert bsm.encoding == "single_heralded", \
                 "Single-heralded entanglement generation protocol needs to use SingleHeraldedBSM."
         else:
-            assert isinstance(bsm, SingleAtomBSM), \
+            assert bsm.encoding == "single_atom", \
                 "Barrett-Kok entanglement generation protocol needs to use SingleAtomBSM."
 
-        assert info['info_type'] == "bsm_res"
+        assert info['info_type'] == "BSM_res"
 
         res = info["res"]
         time = info["time"]

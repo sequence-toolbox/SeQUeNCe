@@ -6,14 +6,13 @@ Also defined is the message type used by the BBPSSW code.
 """
 
 from enum import Enum, auto
-from typing import List, TYPE_CHECKING
+from typing import List, Tuple, TYPE_CHECKING
 from functools import lru_cache
 import numpy as np
 
 if TYPE_CHECKING:
     from ..components.memory import Memory
     from ..topology.node import Node
-    from typing import Tuple
 
 from ..message import Message
 from .entanglement_protocol import EntanglementProtocol
