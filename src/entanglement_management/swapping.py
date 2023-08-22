@@ -185,6 +185,14 @@ class EntanglementSwappingA(EntanglementProtocol):
                 meas_res = [meas_res[self.left_memo.qstate_key], meas_res[self.right_memo.qstate_key]]
                 
             elif self.is_bds:
+                # first invoke single-memory decoherence channels on each involved quantum memory (in total 4)
+                # note that bds_decohere() has changed the last_update_time to now, 
+                # thus we don't need to change it for the udpated state from swapping
+                self.left_memo.bds_decohere()
+                self.right_memo.bds_decohere()
+                self.own.timeline.get_entity_by_name(self.left_remote_memo).bds_decohere()
+                self.own.timeline.get_entity_by_name(self.right_remote_memo).bds_decohere()
+
                 # get BDS conditioned on success, fidelity is the first diagonal element
                 new_bds = self.swapping_res()
                 fidelity = new_bds[0]

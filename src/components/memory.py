@@ -10,6 +10,7 @@ from math import inf
 from typing import Any, List, TYPE_CHECKING, Dict, Callable, Union
 
 from scipy import stats
+import numpy as np
 
 if TYPE_CHECKING:
     from ..entanglement_management.entanglement_protocol import EntanglementProtocol
@@ -25,6 +26,24 @@ from ..utils.encoding import single_atom, single_heralded
 def const(t):
     """Constant function that always returns 1. For AFC memory default spin efficiency."""
     return 1
+
+
+# define helper functions for analytical BDS decoherence implementation, reference see recurrence protocol paper
+def _p_id(x_rate, y_rate, z_rate, t):
+    val = (1 + np.exp(-2*(x_rate+y_rate)*t) + np.exp(-2*(x_rate+z_rate)*t) + np.exp(-2*(z_rate+y_rate)*t)) / 4
+    return val
+
+def _p_xerr(x_rate, y_rate, z_rate, t):
+    val = (1 - np.exp(-2*(x_rate+y_rate)*t) - np.exp(-2*(x_rate+z_rate)*t) + np.exp(-2*(z_rate+y_rate)*t)) / 4
+    return val
+
+def _p_yerr(x_rate, y_rate, z_rate, t):
+    val = (1 - np.exp(-2*(x_rate+y_rate)*t) + np.exp(-2*(x_rate+z_rate)*t) - np.exp(-2*(z_rate+y_rate)*t)) / 4
+    return val
+
+def _p_zerr(x_rate, y_rate, z_rate, t):
+    val = (1 + np.exp(-2*(x_rate+y_rate)*t) - np.exp(-2*(x_rate+z_rate)*t) - np.exp(-2*(z_rate+y_rate)*t)) / 4
+    return val
 
 
 # array of single atom memories
@@ -142,19 +161,23 @@ class Memory(Entity):
         """
 
         super().__init__(name, timeline)
-        assert 0 <= fidelity <= 1
-        assert 0 <= efficiency <= 1
+        assert 0 <= fidelity <= 1, "Fidelity should be between 0 and 1."
+        assert 0 <= efficiency <= 1, "Efficiency should be between 0 and 1."
 
         self.fidelity = 0
         self.raw_fidelity = fidelity
         self.frequency = frequency
         self.efficiency = efficiency
         self.coherence_time = coherence_time  # coherence time in seconds, also used to determine the decoherence rate
+        self.decoherence_rate = 1 / self.coherence_time  # rate of decoherence to implement time dependent decoherence
         self.wavelength = wavelength
         self.qstate_key = timeline.quantum_manager.new()
         self.memory_array = None
 
         self.decoherence_errors = decoherence_errors
+        if self.decoherence_errors is not None:
+            assert len(self.decoherence_errors)==3 and abs(self.decoherence_errors[0]+self.decoherence_errors[1]+self.decoherence_errors[2]-1)<0.001, \
+                "Decoherence errors refer to probabilities for each Pauli error to happen if an error happens, thus should be normalized."
 
         # TODO: tracking of time when entanglement status is modified has been done at least partially in memory_manager
         # default value is -1 when EPR pair is not generated or decoherence over time is not considered
@@ -295,7 +318,7 @@ class Memory(Entity):
         if self.coherence_time > 0:
             self._schedule_expiration()
 
-    def bds_decohere(self, time) -> None:
+    def bds_decohere(self) -> None:
         """Method to decohere stored BDS in quantum memory according to the single-qubit Pauli channels.
 
         During entanglement distribution (before application phase),
@@ -304,9 +327,25 @@ class Memory(Entity):
         Side Effects:
             Will modify BDS diagonal elements and last_update_time.
         """
+        
+        time = self.timeline.now() - self.last_update_time  # duration of memory idling
 
-        # TODO: may move to other location
-        pass
+        x_rate, y_rate, z_rate = self.decoherence_rate * self.decoherence_errors[0], self.decoherence_rate * self.decoherence_errors[1], self.decoherence_rate * self.decoherence_errors[2] 
+        p_I, p_X, p_Y, p_Z = _p_id(x_rate, y_rate, z_rate, time), _p_xerr(x_rate, y_rate, z_rate, time), _p_yerr(x_rate, y_rate, z_rate, time), _p_zerr(x_rate, y_rate, z_rate, time)
+        
+        state_now = self.timeline.quantum_manager.states[self.qstate_key].state  # current diagonal elements
+        transform_mtx = np.array([[p_I, p_Z, p_X, p_Y],
+                                  [p_Z, p_I, p_Y, p_X],
+                                  [p_X, p_Y, p_I, p_Z],
+                                  [p_Y, p_X, p_Z, p_I]])  # transform matrix for diagonal elements
+        state_new = np.multiply(transform_mtx, state_now)  # new diagonal elements after decoherence transformation
+
+        # update the quantum state stored in quantum manager for self and entangled memory
+        keys = self.timeline.quantum_manager.states[self.qstate_key].keys
+        self.timeline.quantum_manager.set(keys, state_new)
+
+        # update the last_update_time of self, note that the attr of entangled memory should not be updated right now, because decoherence has not been applied there
+        self.last_update_time = self.timeline.now()
 
     def _schedule_expiration(self) -> None:
         if self.expiration_event is not None:
