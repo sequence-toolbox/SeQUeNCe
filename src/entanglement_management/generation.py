@@ -152,7 +152,7 @@ class EntanglementGenerationA(EntanglementProtocol):
     _z_circuit.z(0)
 
     def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory",
-                 is_sh: bool = False, raw_fidelity: float = 1, raw_epr_errors: List[float] = None):
+                 is_sh: bool = False, raw_fidelity: float = None, raw_epr_errors: List[float] = None):
         """Constructor for entanglement generation A class.
 
         Args:
@@ -164,6 +164,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             is_sh (bool): if the entanglement generation protocol is single heralded or not
                 (default False, meaning double-heralded Barrett-Kok protocol).
             raw_fidelity (float): fidelity of successfully generated entangled state at the beginning
+                (default None, in which case it will assume value from memory object).
             raw_epr_errors (List[float]): assuming BDS form of raw EPR pair, probability distribution of X, Y, Z Pauli errors
                 (default value is None, meaning not using BDS or further density matrix representation)
         """
@@ -178,7 +179,10 @@ class EntanglementGenerationA(EntanglementProtocol):
             assert self.own.timeline.quantum_manager.formalism == BELL_DIAGONAL_STATE_FORMALISM, \
                 "Currently single heralded protocol requires Bell diagonal state formalism."
 
-        self.raw_fidelity = raw_fidelity
+        if raw_fidelity:
+            self.raw_fidelity = raw_fidelity
+        else:
+            self.raw_fidelity = memory.raw_fidelity
         assert 0.5 <= self.raw_fidelity <= 1, "Raw fidelity of EPR pair must be above 1/2."
         self.raw_epr_errors = raw_epr_errors
         if self.raw_epr_errors:
