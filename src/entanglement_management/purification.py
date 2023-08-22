@@ -161,6 +161,14 @@ class BBPSSW(EntanglementProtocol):
             self.meas_res = self.meas_res[self.meas_memo.qstate_key]
 
         elif self.is_bds:
+            # first invoke single-memory decoherence channels on each involved quantum memory (in total 4)
+            # note that bds_decohere() has changed the last_update_time to now, 
+            # thus we don't need to change it for the udpated state from purification
+            self.meas_memo.bds_decohere()
+            self.kept_memo.bds_decohere()
+            self.own.timeline.get_entity_by_name(kept_memo_ent).bds_decohere()
+            self.own.timeline.get_entity_by_name(meas_memo_ent).bds_decohere()
+
             # use following trick to determine if the measurement results on both sides equal: 
             # We consider that both sides do a biased coin flip,
             # with head (getting 1) probablity p, and tail (getting 0) probability 1-p.
