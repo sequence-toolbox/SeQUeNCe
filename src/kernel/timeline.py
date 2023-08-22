@@ -22,9 +22,11 @@ from ..utils import log
 from .quantum_manager import (QuantumManagerKet,
                               QuantumManagerDensity,
                               QuantumManagerDensityFock,
+                              QuantumManagerBellDiagonal,
                               KET_STATE_FORMALISM,
                               DENSITY_MATRIX_FORMALISM,
-                              FOCK_DENSITY_MATRIX_FORMALISM)
+                              FOCK_DENSITY_MATRIX_FORMALISM,
+                              BELL_DIAGONAL_STATE_FORMALISM)
 
 CARRIAGE_RETURN = '\r'
 SLEEP_SECONDS = 3
@@ -83,6 +85,8 @@ class Timeline:
             self.quantum_manager = QuantumManagerDensity()
         elif formalism == FOCK_DENSITY_MATRIX_FORMALISM:
             self.quantum_manager = QuantumManagerDensityFock(truncation=truncation)
+        elif formalism == BELL_DIAGONAL_STATE_FORMALISM:
+            self.quantum_manager = QuantumManagerBellDiagonal()
         else:
             raise ValueError(f"Invalid formalism {formalism}")
 

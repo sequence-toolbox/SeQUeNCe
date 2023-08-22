@@ -4,6 +4,7 @@ from sequence.components.bsm import *
 from sequence.components.memory import MemoryArray
 from sequence.components.optical_channel import *
 from sequence.kernel.timeline import Timeline
+from sequence.kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
 from sequence.entanglement_management.generation import *
 from sequence.topology.node import Node
 
@@ -315,7 +316,7 @@ def test_generation_fidelity_ket():
 def test_generation_single_herald():
     NUM_TESTS = 100
 
-    tl = Timeline()
+    tl = Timeline(formalism=BELL_DIAGONAL_STATE_FORMALISM)
 
     e0 = FakeRouter("e0", tl)
     m0 = FakeBSMNode("m0", tl)
