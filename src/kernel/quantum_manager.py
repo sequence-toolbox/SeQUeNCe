@@ -719,16 +719,29 @@ class QuantumManagerBellDiagonal(QuantumManager):
     def __init__(self):
         super().__init__(BELL_DIAGONAL_STATE_FORMALISM)
 
-    def new(self, state=(float(1),float(0),float(0),float(0))) -> int:
-        key1 = self._least_available
-        self._least_available += 1
-        key2 = self._least_available
-        self._least_available += 1
+    def new(self, state=None) -> int:
+        """Generates new quantum state key for quantum manager.
 
-        keys = [key1, key2]
-        for key in keys:
-            self.states[key] = BellDiagonalState(state, keys)
-        return keys
+        NOTE: since this generates only one state, there will be no corresponding entangled state stored.
+        The Bell diagonal state formalism assumes entangled states;
+        thus, attempting to call `get` will return an exception until entangled.
+        The purpose of this function is thus mainly to avoid state key collisions.
+
+        Args:
+            state (Any): to conform to type definition (does nothing).
+
+        Returns:
+            int: quantum state key corresponding to state.
+        """
+        key = self._least_available
+        self._least_available += 1
+        return key
+
+    def get(self, key: int):
+        if key not in self.states:
+            raise Exception("Attempt to get Bell diagonal state before entanglement.")
+
+        super().get(key)
 
     def set(self, keys: List[int], diag_elems: List[float]) -> None:
         super().set(keys, diag_elems)
@@ -738,4 +751,4 @@ class QuantumManagerBellDiagonal(QuantumManager):
             self.states[key] = new_state
 
     def set_to_noiseless(self, keys: List[int]):
-        self.set(keys, [float(1),float(0),float(0),float(0)])
+        self.set(keys, [float(1), float(0), float(0), float(0)])
