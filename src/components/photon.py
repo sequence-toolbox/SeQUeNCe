@@ -67,7 +67,7 @@ class Photon:
         self.wavelength: int = wavelength
         self.location: Entity = location
         self.encoding_type: Dict[str, Any] = encoding_type
-        self.is_null: bool = False
+        self.is_null: bool = False  # TODO: update this with parameter from encoding scheme?
         self.loss: float = 0
         self.use_qm = use_qm
 
@@ -180,5 +180,5 @@ class Photon:
 
     def add_loss(self, loss: float):
         assert 0 <= loss <= 1
-        assert self.encoding_type["name"] == "single_atom"
+        assert self.encoding_type.get("keep_photon", False)
         self.loss = 1 - (1 - self.loss) * (1 - loss)
