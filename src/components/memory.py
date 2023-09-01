@@ -331,21 +331,26 @@ class Memory(Entity):
             Will modify BDS diagonal elements and last_update_time.
         """
         
-        time = self.timeline.now() - self.last_update_time  # duration of memory idling
+        if self.decoherence_errors is None:
+            # if not considering time-dependent decoherence then do nothing
+            pass
 
-        x_rate, y_rate, z_rate = self.decoherence_rate * self.decoherence_errors[0], self.decoherence_rate * self.decoherence_errors[1], self.decoherence_rate * self.decoherence_errors[2] 
-        p_I, p_X, p_Y, p_Z = _p_id(x_rate, y_rate, z_rate, time), _p_xerr(x_rate, y_rate, z_rate, time), _p_yerr(x_rate, y_rate, z_rate, time), _p_zerr(x_rate, y_rate, z_rate, time)
-        
-        state_now = self.timeline.quantum_manager.states[self.qstate_key].state  # current diagonal elements
-        transform_mtx = np.array([[p_I, p_Z, p_X, p_Y],
-                                  [p_Z, p_I, p_Y, p_X],
-                                  [p_X, p_Y, p_I, p_Z],
-                                  [p_Y, p_X, p_Z, p_I]])  # transform matrix for diagonal elements
-        state_new = np.multiply(transform_mtx, state_now)  # new diagonal elements after decoherence transformation
+        else:
+            time = self.timeline.now() - self.last_update_time  # duration of memory idling
 
-        # update the quantum state stored in quantum manager for self and entangled memory
-        keys = self.timeline.quantum_manager.states[self.qstate_key].keys
-        self.timeline.quantum_manager.set(keys, state_new)
+            x_rate, y_rate, z_rate = self.decoherence_rate * self.decoherence_errors[0], self.decoherence_rate * self.decoherence_errors[1], self.decoherence_rate * self.decoherence_errors[2] 
+            p_I, p_X, p_Y, p_Z = _p_id(x_rate, y_rate, z_rate, time), _p_xerr(x_rate, y_rate, z_rate, time), _p_yerr(x_rate, y_rate, z_rate, time), _p_zerr(x_rate, y_rate, z_rate, time)
+            
+            state_now = self.timeline.quantum_manager.states[self.qstate_key].state  # current diagonal elements
+            transform_mtx = np.array([[p_I, p_Z, p_X, p_Y],
+                                    [p_Z, p_I, p_Y, p_X],
+                                    [p_X, p_Y, p_I, p_Z],
+                                    [p_Y, p_X, p_Z, p_I]])  # transform matrix for diagonal elements
+            state_new = np.multiply(transform_mtx, state_now)  # new diagonal elements after decoherence transformation
+
+            # update the quantum state stored in quantum manager for self and entangled memory
+            keys = self.timeline.quantum_manager.states[self.qstate_key].keys
+            self.timeline.quantum_manager.set(keys, state_new)
 
         # update the last_update_time of self, note that the attr of entangled memory should not be updated right now, because decoherence has not been applied there
         self.last_update_time = self.timeline.now()
