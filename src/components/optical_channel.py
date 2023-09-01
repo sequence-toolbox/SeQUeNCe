@@ -167,7 +167,7 @@ class QuantumChannel(OpticalChannel):
         # check if photon state using Fock representation
         if qubit.encoding_type["name"] == "fock":
             key = qubit.quantum_state  # if using Fock representation, the `quantum_state` field is the state key.
-            # apply loss channel on photonic statex
+            # apply loss channel on photonic state
             self.timeline.quantum_manager.add_loss(key, self.loss)
 
             # schedule receiving node to receive photon at future time determined by light speed
