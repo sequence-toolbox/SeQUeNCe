@@ -33,13 +33,16 @@ def _p_id(x_rate, y_rate, z_rate, t):
     val = (1 + np.exp(-2*(x_rate+y_rate)*t) + np.exp(-2*(x_rate+z_rate)*t) + np.exp(-2*(z_rate+y_rate)*t)) / 4
     return val
 
+
 def _p_xerr(x_rate, y_rate, z_rate, t):
     val = (1 - np.exp(-2*(x_rate+y_rate)*t) - np.exp(-2*(x_rate+z_rate)*t) + np.exp(-2*(z_rate+y_rate)*t)) / 4
     return val
 
+
 def _p_yerr(x_rate, y_rate, z_rate, t):
     val = (1 - np.exp(-2*(x_rate+y_rate)*t) + np.exp(-2*(x_rate+z_rate)*t) - np.exp(-2*(z_rate+y_rate)*t)) / 4
     return val
+
 
 def _p_zerr(x_rate, y_rate, z_rate, t):
     val = (1 + np.exp(-2*(x_rate+y_rate)*t) - np.exp(-2*(x_rate+z_rate)*t) - np.exp(-2*(z_rate+y_rate)*t)) / 4
@@ -176,7 +179,7 @@ class Memory(Entity):
 
         self.decoherence_errors = decoherence_errors
         if self.decoherence_errors is not None:
-            assert len(self.decoherence_errors)==3 and abs(self.decoherence_errors[0]+self.decoherence_errors[1]+self.decoherence_errors[2]-1)<0.001, \
+            assert len(self.decoherence_errors) == 3 and abs(sum(self.decoherence_errors) - 1) < 0.001, \
                 "Decoherence errors refer to probabilities for each Pauli error to happen if an error happens, thus should be normalized."
 
         # TODO: tracking of time when entanglement status is modified has been done at least partially in memory_manager
