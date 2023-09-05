@@ -10,7 +10,7 @@ from math import inf
 from typing import Any, List, TYPE_CHECKING, Dict, Callable, Union
 
 from scipy import stats
-import numpy as np
+from numpy import exp, array
 
 if TYPE_CHECKING:
     from ..entanglement_management.entanglement_protocol import EntanglementProtocol
@@ -30,19 +30,22 @@ def const(t):
 
 # define helper functions for analytical BDS decoherence implementation, reference see recurrence protocol paper
 def _p_id(x_rate, y_rate, z_rate, t):
-    val = (1 + np.exp(-2*(x_rate+y_rate)*t) + np.exp(-2*(x_rate+z_rate)*t) + np.exp(-2*(z_rate+y_rate)*t)) / 4
+    val = (1 + exp(-2*(x_rate+y_rate)*t) + exp(-2*(x_rate+z_rate)*t) + exp(-2*(z_rate+y_rate)*t)) / 4
     return val
+
 
 def _p_xerr(x_rate, y_rate, z_rate, t):
-    val = (1 - np.exp(-2*(x_rate+y_rate)*t) - np.exp(-2*(x_rate+z_rate)*t) + np.exp(-2*(z_rate+y_rate)*t)) / 4
+    val = (1 - exp(-2*(x_rate+y_rate)*t) - exp(-2*(x_rate+z_rate)*t) + exp(-2*(z_rate+y_rate)*t)) / 4
     return val
+
 
 def _p_yerr(x_rate, y_rate, z_rate, t):
-    val = (1 - np.exp(-2*(x_rate+y_rate)*t) + np.exp(-2*(x_rate+z_rate)*t) - np.exp(-2*(z_rate+y_rate)*t)) / 4
+    val = (1 - exp(-2*(x_rate+y_rate)*t) + exp(-2*(x_rate+z_rate)*t) - exp(-2*(z_rate+y_rate)*t)) / 4
     return val
 
+
 def _p_zerr(x_rate, y_rate, z_rate, t):
-    val = (1 + np.exp(-2*(x_rate+y_rate)*t) - np.exp(-2*(x_rate+z_rate)*t) - np.exp(-2*(z_rate+y_rate)*t)) / 4
+    val = (1 + exp(-2*(x_rate+y_rate)*t) - exp(-2*(x_rate+z_rate)*t) - exp(-2*(z_rate+y_rate)*t)) / 4
     return val
 
 
@@ -134,12 +137,14 @@ class Memory(Entity):
         wavelength (float): wavelength (in nm) of emitted photons.
         qstate_key (int): key for associated quantum state in timeline's quantum manager.
         entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
-        decoherence_errors (List[float]): assuming the memory (qubit) decoherence channel being Pauli channel, probability distribution of X, Y, Z Pauli errors;
-            default value is -1, meaning not using BDS or further density matrix representation
-        generation_time (float): time when the EPR pair is first generated (float or int depends on timing unit);
-            default -1 before generation or not used
-        last_update_time (float): last time when the EPR pair is updated (usually when decoherence channel applied), used to determine decoherence channel;
-            default -1 before generation or not used
+        decoherence_errors (List[float]): assuming the memory (qubit) decoherence channel being Pauli channel,
+            probability distribution of X, Y, Z Pauli errors;
+            (default value is -1, meaning not using BDS or further density matrix representation).
+        generation_time (float): time when the EPR pair is first generated (float or int depends on timing unit)
+            (default -1 before generation or not used).
+        last_update_time (float): last time when the EPR pair is updated (usually when decoherence channel applied),
+            used to determine decoherence channel
+            (default -1 before generation or not used).
         is_in_application (bool): whether the quantum memory is involved in application after successful distribution of EPR pair
     """
 
@@ -176,7 +181,7 @@ class Memory(Entity):
 
         self.decoherence_errors = decoherence_errors
         if self.decoherence_errors is not None:
-            assert len(self.decoherence_errors)==3 and abs(self.decoherence_errors[0]+self.decoherence_errors[1]+self.decoherence_errors[2]-1)<0.001, \
+            assert len(self.decoherence_errors) == 3 and abs(sum(self.decoherence_errors) - 1) < 0.001, \
                 "Decoherence errors refer to probabilities for each Pauli error to happen if an error happens, thus should be normalized."
 
         # TODO: tracking of time when entanglement status is modified has been done at least partially in memory_manager
@@ -335,21 +340,28 @@ class Memory(Entity):
         else:
             time = self.timeline.now() - self.last_update_time  # duration of memory idling
 
-            x_rate, y_rate, z_rate = self.decoherence_rate * self.decoherence_errors[0], self.decoherence_rate * self.decoherence_errors[1], self.decoherence_rate * self.decoherence_errors[2] 
-            p_I, p_X, p_Y, p_Z = _p_id(x_rate, y_rate, z_rate, time), _p_xerr(x_rate, y_rate, z_rate, time), _p_yerr(x_rate, y_rate, z_rate, time), _p_zerr(x_rate, y_rate, z_rate, time)
+            x_rate, y_rate, z_rate = self.decoherence_rate * self.decoherence_errors[0], \
+                                     self.decoherence_rate * self.decoherence_errors[1], \
+                                     self.decoherence_rate * self.decoherence_errors[2]
+            p_I, p_X, p_Y, p_Z = _p_id(x_rate, y_rate, z_rate, time), \
+                                 _p_xerr(x_rate, y_rate, z_rate, time), \
+                                 _p_yerr(x_rate, y_rate, z_rate, time), \
+                                 _p_zerr(x_rate, y_rate, z_rate, time)
             
             state_now = self.timeline.quantum_manager.states[self.qstate_key].state  # current diagonal elements
-            transform_mtx = np.array([[p_I, p_Z, p_X, p_Y],
-                                    [p_Z, p_I, p_Y, p_X],
-                                    [p_X, p_Y, p_I, p_Z],
-                                    [p_Y, p_X, p_Z, p_I]])  # transform matrix for diagonal elements
-            state_new = np.multiply(transform_mtx, state_now)  # new diagonal elements after decoherence transformation
+            transform_mtx = array([[p_I, p_Z, p_X, p_Y],
+                                     [p_Z, p_I, p_Y, p_X],
+                                     [p_X, p_Y, p_I, p_Z],
+                                     [p_Y, p_X, p_Z, p_I]])  # transform matrix for diagonal elements
+            state_new = transform_mtx @ state_now  # new diagonal elements after decoherence transformation
 
             # update the quantum state stored in quantum manager for self and entangled memory
             keys = self.timeline.quantum_manager.states[self.qstate_key].keys
             self.timeline.quantum_manager.set(keys, state_new)
 
-        # update the last_update_time of self, note that the attr of entangled memory should not be updated right now, because decoherence has not been applied there
+        # update the last_update_time of self
+        # note that the attr of entangled memory should not be updated right now,
+        # because decoherence has not been applied there
         self.last_update_time = self.timeline.now()
 
     def _schedule_expiration(self) -> None:

@@ -226,9 +226,13 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         # check if remote protocol matches
         remote_node = self.own.timeline.get_entity_by_name(node)
-        remote_protocol = next(p for p in remote_node.protocols if p.name == protocol)
-        assert remote_protocol.is_sh == self.is_sh, \
-            "Entanglement generation protocols need to match in heralding schemes."
+        try:
+            remote_protocol = next(p for p in remote_node.protocols if p.name == protocol)
+            assert remote_protocol.is_sh == self.is_sh, \
+                "Entanglement generation protocols need to match in heralding schemes."
+        except StopIteration:
+            # if other protocol hasn't been instantiated yet, just store name
+            pass
 
         self.remote_protocol_name = protocol
 

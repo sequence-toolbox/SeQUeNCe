@@ -315,6 +315,8 @@ def test_generation_fidelity_ket():
 
 def test_generation_single_herald():
     NUM_TESTS = 100
+    FIDELITY = 0.85
+    ERROR_RATES = [1/3] * 3
 
     tl = Timeline(formalism=BELL_DIAGONAL_STATE_FORMALISM)
 
@@ -339,16 +341,16 @@ def test_generation_single_herald():
                 cc.set_ends(src, dst.name)
 
     # add hardware
-    e0.memory_array = MemoryArray("e0.memory_array", tl, num_memories=NUM_TESTS)
+    e0.memory_array = MemoryArray("e0.memory_array", tl, num_memories=NUM_TESTS, fidelity=FIDELITY)
     e0.memory_array.owner = e0
-    e1.memory_array = MemoryArray("e1.memory_array", tl, num_memories=NUM_TESTS)
+    e1.memory_array = MemoryArray("e1.memory_array", tl, num_memories=NUM_TESTS, fidelity=FIDELITY)
     e1.memory_array.owner = e1
     detectors = [{"efficiency": 1, "count_rate": 1e11}] * 2
-    m0.bsm = make_bsm("m0.bsm", tl, encoding_type="single_atom", detectors=detectors)
+    m0.bsm = make_bsm("m0.bsm", tl, encoding_type="single_heralded", detectors=detectors)
     m0.bsm.owner = m0
 
     # add middle protocol
-    eg_m0 = EntanglementGenerationB(m0, "eg_m0", others=["e0", "e1"])
+    eg_m0 = EntanglementGenerationB(m0, "eg_m0", others=["e0", "e1"], is_sh=True)
     m0.bsm.attach(eg_m0)
 
     tl.init()
@@ -359,11 +361,11 @@ def test_generation_single_herald():
     for i in range(NUM_TESTS):
         name0, name1 = [f"eg_e{j}[{i}]" for j in range(2)]
         protocol0 = EntanglementGenerationA(e0, name0, middle="m0", other="e1", memory=e0.memory_array[i],
-                                            is_sh=True)
+                                            is_sh=True, raw_epr_errors=ERROR_RATES)
         e0.protocols.append(protocol0)
         protocols_e0.append(protocol0)
         protocol1 = EntanglementGenerationA(e1, name1, middle="m0", other="e0", memory=e1.memory_array[i],
-                                            is_sh=True)
+                                            is_sh=True, raw_epr_errors=ERROR_RATES)
         e1.protocols.append(protocol1)
         protocols_e1.append(protocol1)
         protocol0.set_others(protocol1.name, e1.name, [e1.memory_array[i].name])
@@ -386,8 +388,8 @@ def test_generation_single_herald():
             assert e0.resource_manager.log[i][1] == "ENTANGLED"
             memory0 = e0.resource_manager.log[i][0]
             memory1 = e1.resource_manager.log[i][0]
-            assert memory0.fidelity == memory0.raw_fidelity
-            assert memory1.fidelity == memory1.raw_fidelity
+            assert memory0.fidelity == FIDELITY
+            assert memory1.fidelity == FIDELITY
             assert memory0.entangled_memory["node_id"] == e1.name
             assert memory1.entangled_memory["node_id"] == e0.name
 

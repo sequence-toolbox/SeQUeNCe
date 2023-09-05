@@ -27,10 +27,12 @@ time_bin = \
      }
 
 # single_atom must be copied by a memory object so the fidelity field can be overwritten
+# TODO: this should probably be moved ...
 single_atom = \
     {"name": "single_atom",
      "bases": [((complex(1), complex(0)), (complex(0), complex(1))), None],
-     "raw_fidelity": 1
+     "raw_fidelity": 1,
+     "keep_photon": True
      }
 
 absorptive = \
@@ -45,5 +47,6 @@ fock = \
 
 single_heralded = \
     {"name": "single_heralded",
-     "bases": None
-    }
+     "bases": None,
+     "keep_photon": True
+     }

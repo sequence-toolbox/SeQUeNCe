@@ -18,7 +18,6 @@ from ..message import Message
 from .entanglement_protocol import EntanglementProtocol
 from ..utils import log
 from ..components.circuit import Circuit
-from ..kernel.quantum_state import BellDiagonalState
 from ..kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
 
 
@@ -333,6 +332,9 @@ class BBPSSW(EntanglementProtocol):
 
         Args:
             F (float): fidelity of entanglement.
+
+        Returns:
+            float: fidelity of the resultant entangled state assuming successful purification.
         """
 
         return (F ** 2 + ((1 - F) / 3) ** 2) / (F ** 2 + 2 * F * (1 - F) / 3 + 5 * ((1 - F) / 3) ** 2)

@@ -11,7 +11,7 @@ These include 2 classes used by a quantum manager, and one used for individual p
 from abc import ABC
 from typing import Tuple, Dict, List
 
-from numpy import pi, cos, sin, arange, log, log2
+from numpy import pi, cos, sin, arange, log, log2, array, dot
 from numpy.random import Generator
 
 from .quantum_utils import *
@@ -213,7 +213,7 @@ class FreeQuantumState(State):
             quantum_state.entangled_states = entangled_states
             quantum_state.state = new_state
 
-    def polarization_noise(self):
+    def polarization_noise(self, rng: Generator):
         """Method to add polarization noise to a single state of Photon.
 
         When invoked, will change the current polarization state of Photon to an orthogonal state,
@@ -223,18 +223,31 @@ class FreeQuantumState(State):
             Modifies the `state` field.
         """
 
-        # TODO: rewrite for entangled states
+        # TODO: make this more streamlined/fast
 
-        if self.state == (complex(1), complex(0)):
-            self.state = (complex(0), complex(1))
-        elif self.state == (complex(0), complex(1)):
-            self.state = (complex(1), complex(0))
-        elif self.state == (complex(sqrt(1 / 2)), complex(sqrt(1 / 2))):
-            self.state = (complex(sqrt(1 / 2)), complex(-sqrt(1 / 2)))
-        elif self.state == (complex(sqrt(1 / 2)), complex(-sqrt(1 / 2))):
-            self.state = (complex(sqrt(1 / 2)), complex(sqrt(1 / 2)))
-        else:
-            raise NotImplementedError("photon polarization noise only currently supported for basis states.")
+        # get random state
+        curr_state = array(self.state)
+        starting_state = curr_state
+        while dot(curr_state, starting_state) == 1:
+            random_sample = rng.random()
+            starting_state = array([random_sample, sqrt(1 - random_sample ** 2)])
+
+        # get state orthonormal to starting
+        proj = dot(starting_state, curr_state) * curr_state
+        new_state = starting_state - proj
+        new_state /= sqrt(sum([abs(a) ** 2 for a in new_state]))
+        self.state = tuple(new_state)
+
+        # if self.state == (complex(1), complex(0)):
+        #     self.state = (complex(0), complex(1))
+        # elif self.state == (complex(0), complex(1)):
+        #     self.state = (complex(1), complex(0))
+        # elif self.state == (complex(sqrt(1 / 2)), complex(sqrt(1 / 2))):
+        #     self.state = (complex(sqrt(1 / 2)), complex(-sqrt(1 / 2)))
+        # elif self.state == (complex(sqrt(1 / 2)), complex(-sqrt(1 / 2))):
+        #     self.state = (complex(sqrt(1 / 2)), complex(sqrt(1 / 2)))
+        # else:
+        #     raise NotImplementedError("photon polarization noise only currently supported for basis states.")
 
     def set_state(self, state: Tuple[complex]):
         """Method to change entangled state of multiple quantum states.

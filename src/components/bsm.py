@@ -44,6 +44,8 @@ def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=
         return SingleAtomBSM(name, timeline, phase_error, detectors)
     elif encoding_type == "absorptive":
         return AbsorptiveBSM(name, timeline, phase_error, detectors)
+    elif encoding_type == "single_heralded":
+        return SingleHeraldedBSM(name, timeline, phase_error, detectors)
     else:
         raise Exception("invalid encoding {} given for BSM {}".format(encoding_type, name))
 
