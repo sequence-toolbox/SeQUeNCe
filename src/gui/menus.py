@@ -276,7 +276,8 @@ router_template = [
     dbc.Input(
         id='mem_size',
         className='memo_size',
-        placeholder='Memory Array Size'
+        placeholder='Memory Array Size',
+        type='number'
     ),
     dbc.Label('Memory Type'),
     dcc.Dropdown(
@@ -382,7 +383,7 @@ add_node_form = html.Div(
                 place='Enter Node ID'
             ),
             getDropdownField(
-                'Quantum_Router',
+                'QuantumRouter',
                 OPTIONS,
                 'Type:',
                 'type_menu',
@@ -497,7 +498,7 @@ make_new_template = html.Div(
                 place='Enter ID'
             ),
             getDropdownField(
-                'Quantum_Router',
+                'QuantumRouter',
                 OPTIONS,
                 'Type:',
                 'template_type_menu',
@@ -847,7 +848,7 @@ navbar = dbc.Navbar(
             style={
                 'position': 'relative',
                 'top': '0px',
-                'left': '0px'
+                'left': '10px'
             }
         ),
         dbc.Row(
@@ -900,12 +901,12 @@ navbar = dbc.Navbar(
                             href='https://github.com/sequence-toolbox/SeQUeNCe/issues',  # nopep8
                         ),
                     ],
-                    nav=True,
+                    label="More",
                     group=True,
                     size='sm',
+                    nav=True,
                     in_navbar=True,
-                    label="More",
-                    right=True,
+                    # right=True,
                     toggle_style={
                         'color': 'white'
                     }

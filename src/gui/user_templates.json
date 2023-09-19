@@ -35,8 +35,8 @@
         }
     },
     "QuantumErrorCorrection": {},
-    "Quantum_Repeater": {},
-    "Quantum_Router": {
+    "QuantumRepeater": {},
+    "QuantumRouter": {
         "default_router": {
             "mem_type": "default_memory",
             "memo_size": 50

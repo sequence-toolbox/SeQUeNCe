@@ -1018,7 +1018,7 @@ class QuantumGUI:
                     parsed = {temp_name: self.parse_node(temp)}
                     new_templates[temp_type].update(parsed)
                     self.templates = new_templates
-                    return [dash.no_update, 'Template Saved', '', '']
+                    return [dash.no_update, 'Template Saved', dash.no_update, '']
             else:
                 opts = list(self.templates['Memory'].keys())
                 return [router_template, '', opts, '']
