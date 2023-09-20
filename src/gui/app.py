@@ -819,11 +819,13 @@ class QuantumGUI:
                 elif input_id == 'submit_edit':
                     # print(selected)
                     edited = self.parse_edit(selected)
+
+                    # for an edge
                     if 'source' in edited:
                         src = last_clicked['source']
                         trgt = last_clicked['target']
                         new_data = {k: edited[k] for k in EDGE_DICT_ORDER}
-                        self.data.edges[src][trgt]['data'] = new_data
+                        self.data.edges[src, trgt]['data'] = new_data
                         gd = nx.readwrite.cytoscape_data(self.data)['elements']
                         err_msg = ''
 
@@ -840,6 +842,7 @@ class QuantumGUI:
                             delay_columns
                         ]
 
+                    # for a node
                     else:
                         old_name = last_clicked['name']
                         self.data.nodes[old_name]['data'] = edited
