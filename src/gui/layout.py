@@ -175,15 +175,13 @@ DIRECTORY, _ = os.path.split(__file__)
 Constant containing all available class in the GUI
 """
 TYPES = [
-    'Quantum_Repeater',
     'QuantumRouter',
-    'Photon_Source',
+    'PhotonSource',
     'Detector',
-    # 'QuantumErrorCorrection',
     'BSM_node',
-    # 'Temp',
     'Memory',
-    # 'Protocol'
+    'QKD',
+    'Entanglement'
 ]
 
 
@@ -196,7 +194,7 @@ structure
 
 def genImages():
     images = {
-        'Quantum_Repeater': 'repeater.png',
+        'QuantumRepeater': 'repeater.png',
         'QuantumRouter': 'router.png',
         'Photon_Source': 'photonsource.png',
         'Detector': 'detector.png',

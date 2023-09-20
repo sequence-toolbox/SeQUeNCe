@@ -18,16 +18,17 @@ from .css_styles import *
 Mapping of all types in the GUI to their representative colors
 """
 TYPE_COLORS = {
-    'Quantum_Repeater': '#4D9DE0',
-    'QuantumRouter': '#E15554',
-    'Photon_Source': '#E1BC29',
-    'Detector': '#3BB273',
-    'QuantumErrorCorrection': '#7768AE ',
-    'BSM_node': '#FFC857',
+    'QuantumRepeater': '#4d9de0',
+    'QuantumRouter': '#e15554',
+    'PhotonSource': '#e1bc29',
+    'Detector': '#3bb273',
+    'QuantumErrorCorrection': '#7768ae',
+    'BSMNode': '#ffc857',
     'Quantum': '#8634eb',
     'Classical': '#345feb',
     'Memory': '#8a34ab',
-    'Temp': '#084C61',
+    'Temp': '#084c61',
+    'QKDNode': '#cc99ff'
 }
 
 
@@ -54,24 +55,28 @@ OPTIONS = [
     # },
     {
         'label': 'BSM Node',
-        'value': 'BSM_node'
+        'value': 'BSMNode'
     },
-    {
-        'label': 'Quantum Repeater',
-        'value': 'Quantum_Repeater'
-    },
+    # {
+    #     'label': 'Quantum Repeater',
+    #     'value': 'Quantum_Repeater'
+    # },
     # {
     #     'label': 'Quantum Error Correction',
     #     'value': 'QuantumErrorCorrection'
     # },
     {
         'label': 'Photon Source',
-        'value': 'Photon_Source'
+        'value': 'PhotonSource'
     },
     # {
     #     'label': 'Temp',
     #     'value': 'Temp'
     # }
+    {
+        'label': 'QKD Node',
+        'value': 'QKDNode'
+    }
 ]
 
 DIRECTORY, _ = os.path.split(__file__)

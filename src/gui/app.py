@@ -54,7 +54,7 @@ EDGE_TABLE_COLUMNS = [
 ]
 
 DIRECTORY, _ = os.path.split(__file__)
-TEMPLATES = '/user_templates.json'
+TEMPLATES = '/default_templates.json'
 
 
 class QuantumGUI:
@@ -101,31 +101,28 @@ class QuantumGUI:
         self.data = graph_in
         self.cc_delays = delays
         self.qc_tdm = tdm
-        self.defaults = {}
-        with open(DIRECTORY + '/default_params.json', 'r') as json_file:
-            self.defaults = json.load(json_file)
-        json_file.close()
+        # self.defaults = {}
+        # with open(DIRECTORY + '/default_params.json', 'r') as json_file:
+        #     self.defaults = json.load(json_file)
+        # json_file.close()
 
         if templates is None:
-
             if os.path.exists(DIRECTORY + TEMPLATES):
                 with open(DIRECTORY + TEMPLATES, 'r') as json_file:
                     self.templates = json.load(json_file)
-                json_file.close()
 
             else:
                 user_defaults = {}
                 for x in TYPES:
                     user_defaults[x] = {}
                 self.templates = user_defaults
-                with open(DIRECTORY + '/user_templates.json', 'w') as outfile:
+                with open(DIRECTORY + TEMPLATES, 'w') as outfile:
                     json.dump(
                         user_defaults,
                         outfile,
                         sort_keys=True,
                         indent=4
                     )
-                outfile.close()
 
         # TODO: re-add simulation
         # self.simulation = GUI_Sim(0, 0, 'NOTSET', 'init', self)
@@ -298,15 +295,16 @@ class QuantumGUI:
             node_template_name = node[1]['data']['template']
             node_template = self.templates[node_type][node_template_name]
 
-            nodes_top.append(
-                {
-                    Topology.NAME: node[1]['label'],
-                    Topology.TYPE: node_type,
-                    Topology.SEED: None,
-                    RouterNetTopo.MEMO_ARRAY_SIZE: node_template['memo_size'],
-                    Topology.TEMPLATE: node_template_name
-                }
-            )
+            node_dict = {
+                Topology.NAME: node[1]['label'],
+                Topology.TYPE: node_type,
+                Topology.SEED: None,
+                Topology.TEMPLATE: node_template_name
+            }
+            if node_type == RouterNetTopo.QUANTUM_ROUTER:
+                node_dict[RouterNetTopo.MEMO_ARRAY_SIZE] = node_template['memo_size']
+
+            nodes_top.append(node_dict)
 
         qconnections = []
 
@@ -348,7 +346,7 @@ class QuantumGUI:
 
         return output
 
-    def _callback_add_node(self, add_node_name, add_node_type):
+    def _callback_add_node(self, add_node_name, add_node_type, add_node_template):
         """Function which adds a node with the given name and type to the current graph.
 
         Args:
@@ -372,7 +370,7 @@ class QuantumGUI:
             if data == add_node_name:
                 return [dash.no_update, 'Node already exists']
 
-        new_node = GraphNode(add_node_name, add_node_type, 'test')
+        new_node = GraphNode(add_node_name, add_node_type, add_node_template)
         new_graph.add_node(
             add_node_name,
             label=add_node_name,
@@ -563,7 +561,7 @@ class QuantumGUI:
         if not os.path.exists(DIRECTORY+'/data'):
             os.mkdir(DIRECTORY+'/data')
 
-        self.save_templates(new_path)
+        # self.save_templates(new_path)
         self.save_simulation(new_path)
         self.save_topology(new_path)
         return new_path
@@ -695,6 +693,7 @@ class QuantumGUI:
 
             State('node_to_add_name', 'value'),
             State('type_menu', 'value'),
+            State('add_template_menu', 'value'),
             State('edge_properties', 'children'),
             State('from_node', 'value'),
             State('to_node', 'value'),
@@ -712,6 +711,7 @@ class QuantumGUI:
             update_delay,
             node_name,
             node_to_add_type,
+            node_to_add_template,
             properties,
             from_node,
             to_node,
@@ -740,7 +740,7 @@ class QuantumGUI:
                 input_id = ctx.triggered[0]['prop_id'].split('.')[0]
                 # print(input_id)
                 if input_id == 'add_node':
-                    info = self._callback_add_node(node_name, node_to_add_type)
+                    info = self._callback_add_node(node_name, node_to_add_type, node_to_add_template)
                     graph_data = info[0]
                     err_msg = info[1]
 
