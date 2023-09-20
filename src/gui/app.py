@@ -1012,7 +1012,7 @@ class QuantumGUI:
                     return [quantum_memory_template, '', '', '']
                 elif edgeType == 'Detector':
                     return [detector_template, '', '', '']
-                elif edgeType == 'BSM_node':
+                elif edgeType == 'BSMNode':
                     opts = list(self.templates['Detector'].keys())
                     return [bsm_template, '', '', opts]
             elif input_id == 'save_template':
@@ -1202,7 +1202,15 @@ class QuantumGUI:
             return [makeDropdownOptions(data), data[0]]
 
         @app.callback(
-            Output("detec_type", "options"),
+            Output("detec_type_1", "options"),
+            Input('detec_opts', 'data'),
+            prevent_initial_call=True,
+        )
+        def updateTypeMenu(data):
+            return makeDropdownOptions(data)
+
+        @app.callback(
+            Output("detec_type_2", "options"),
             Input('detec_opts', 'data'),
             prevent_initial_call=True,
         )

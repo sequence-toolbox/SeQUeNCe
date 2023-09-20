@@ -357,9 +357,16 @@ detector_template = [
 ]
 
 bsm_template = [
-    dbc.Label('Detector Type'),
+    dbc.Label('Detector 1 Type'),
     dcc.Dropdown(
-        id='detec_type',
+        id='detec_type_1',
+        className='detector_type',
+        value='',
+        options=[]
+    ),
+    dbc.Label('Detector 2 Type'),
+    dcc.Dropdown(
+        id='detec_type_2',
         className='detector_type',
         value='',
         options=[]
