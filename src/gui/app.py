@@ -294,12 +294,17 @@ class QuantumGUI:
         nodes_top = []
 
         for node in nodes:
+            node_type = node[1]['node_type']
+            node_template_name = node[1]['data']['template']
+            node_template = self.templates[node_type][node_template_name]
+
             nodes_top.append(
                 {
                     Topology.NAME: node[1]['label'],
-                    Topology.TYPE: node[1]['node_type'],
+                    Topology.TYPE: node_type,
                     Topology.SEED: None,
-                    RouterNetTopo.MEMO_ARRAY_SIZE: 50
+                    RouterNetTopo.MEMO_ARRAY_SIZE: node_template['memo_size'],
+                    Topology.TEMPLATE: node_template_name
                 }
             )
 
