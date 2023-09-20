@@ -206,13 +206,13 @@ def getSelectedEdgeMenu(values, nodes, link_types):
             ),
             getInputField(
                 values['attenuation'],
-                'Attenuation:',
+                'Attenuation (dB/m):',
                 'selected_attenuation',
                 'attenuation'
             ),
             getInputField(
                 values['distance'],
-                'Distance:',
+                'Distance (m):',
                 'selected_distance',
                 'distance'
             )
@@ -249,13 +249,13 @@ def getTimeUnits(id_extra):
 classic_edge = [
     getInputField(
         '',
-        'Distance:',
+        'Distance (m):',
         'distance_input',
         ''
     ),
     getInputField(
         '',
-        'Attenuation:',
+        'Attenuation (dB/m):',
         'attenuation_input',
         ''
     )
@@ -264,13 +264,13 @@ classic_edge = [
 quantum_edge = [
     getInputField(
         '',
-        'Distance:',
+        'Distance (m):',
         'distance_input',
         ''
     ),
     getInputField(
         '',
-        'Attenuation:',
+        'Attenuation (dB/m):',
         'attenuation_input',
         ''
     )

@@ -26,6 +26,10 @@ def make_item(menu, label, num, icon):
             'font-size': '18px',
             'padding-right': '10px',
             'overflowX': 'hidden'
+        },
+        selected_style={
+            'text-align': 'left',
+            'font-size': '18px'
         }
     )
 
