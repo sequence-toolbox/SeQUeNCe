@@ -36,7 +36,22 @@ TYPE_COLORS = {
 Default node type options for dropdown menus
 """
 
-OPTIONS = [
+OPTIONS_NODE = [
+    {
+        'label': 'Quantum Router',
+        'value': 'QuantumRouter'
+    },
+    {
+        'label': 'BSM Node',
+        'value': 'BSMNode'
+    },
+    {
+        'label': 'QKD Node',
+        'value': 'QKDNode'
+    }
+]
+
+OPTIONS_TEMPLATE = [
     {
         'label': 'Quantum Router',
         'value': 'QuantumRouter'
@@ -161,7 +176,7 @@ def getSelectedNodeMenu(values, templates):
     out.append(
         getDropdownField(
             values['type'],
-            OPTIONS,
+            OPTIONS_NODE,
             'Node Type:',
             'selected_node_type',
             'type'
@@ -396,7 +411,7 @@ add_node_form = html.Div(
             ),
             getDropdownField(
                 'QuantumRouter',
-                OPTIONS,
+                OPTIONS_NODE,
                 'Type:',
                 'type_menu',
                 ''
@@ -511,7 +526,7 @@ make_new_template = html.Div(
             ),
             getDropdownField(
                 'QuantumRouter',
-                OPTIONS,
+                OPTIONS_TEMPLATE,
                 'Type:',
                 'template_type_menu',
                 ''
