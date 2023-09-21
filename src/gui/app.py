@@ -288,8 +288,8 @@ class QuantumGUI:
         # q_delay = self.qc_tdm.copy()
         c_delay = self.cc_delays.copy()
 
+        # add node dict
         nodes_top = []
-
         for node in nodes:
             node_type = node[1]['node_type']
             node_template_name = node[1]['data']['template']
@@ -306,8 +306,8 @@ class QuantumGUI:
 
             nodes_top.append(node_dict)
 
+        # add quantum connections dict
         qconnections = []
-
         for edge in edges:
             qconnections.append(
                 {
@@ -319,6 +319,7 @@ class QuantumGUI:
                 }
             )
 
+        # add classical connections dict
         cchannels = []
         table = c_delay.to_numpy()
         labels = list(c_delay.columns)
@@ -335,10 +336,28 @@ class QuantumGUI:
                     }
                 )
 
+        # add templates dict
+        templates = {}
+        for temp_name, temp_vals in self.templates['QuantumRouter'].items():
+            templates[temp_name] = {
+                'MemoryArray': self.templates['Memory'][temp_vals['mem_type']]
+            }
+        for temp_name, temp_vals in self.templates['BSMNode'].items():
+            templates[temp_name] = {
+                'SingleAtomBSM': {
+                    'detectors': [
+                        self.templates['Detector'][temp_vals['detector_1']],
+                        self.templates['Detector'][temp_vals['detector_2']]
+                    ]
+                }
+            }
+
+        # collect and finalize
         output = {
             Topology.ALL_NODE: nodes_top,
             Topology.ALL_QC_CONNECT: qconnections,
             Topology.ALL_C_CHANNEL: cchannels,
+            Topology.ALL_TEMPLATES: templates,
 
             RouterNetTopo.IS_PARALLEL: False,
             Topology.STOP_TIME: int(1e12)
