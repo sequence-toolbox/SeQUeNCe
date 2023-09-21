@@ -341,7 +341,7 @@ quantum_memory_template = [
     dbc.Input(id='mem_eff_in', className='efficiency', placeholder='0.75'),
 
     dbc.Label('Fidelity'),
-    dbc.Input(id='fidelity_in', className='fidelity', placeholder='500'),
+    dbc.Input(id='fidelity_in', className='fidelity', placeholder='0.85'),
 ]
 
 detector_template = [
