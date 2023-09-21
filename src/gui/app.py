@@ -1028,8 +1028,8 @@ class QuantumGUI:
                 if edgeType == 'QuantumRouter':
                     opts = list(self.templates['Memory'].keys())
                     return [router_template, '', opts, '']
-                elif edgeType == 'Protocol':
-                    return [protocol_template, '', '', '']
+                elif edgeType == 'QKDNode':
+                    return [qkd_template, '', '', '']
                 elif edgeType == 'Memory':
                     return [quantum_memory_template, '', '', '']
                 elif edgeType == 'Detector':

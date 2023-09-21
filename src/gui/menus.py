@@ -64,30 +64,14 @@ OPTIONS_TEMPLATE = [
         'label': 'Detector',
         'value': 'Detector'
     },
-    # {
-    #     'label': 'Protocol',
-    #     'value': 'Protocol'
-    # },
     {
         'label': 'BSM Node',
         'value': 'BSMNode'
     },
-    # {
-    #     'label': 'Quantum Repeater',
-    #     'value': 'Quantum_Repeater'
-    # },
-    # {
-    #     'label': 'Quantum Error Correction',
-    #     'value': 'QuantumErrorCorrection'
-    # },
     {
         'label': 'Photon Source',
         'value': 'PhotonSource'
     },
-    # {
-    #     'label': 'Temp',
-    #     'value': 'Temp'
-    # }
     {
         'label': 'QKD Node',
         'value': 'QKDNode'
@@ -388,9 +372,21 @@ bsm_template = [
     ),
 ]
 
-
-protocol_template = [
-
+qkd_template = [
+    dbc.Label('Photon Encoding'),
+    dcc.Dropdown(
+        id='encoding_in',
+        className='encoding',
+        value='',
+        options=["polarization", "time_bin"]
+    ),
+    dbc.Label('Protocol Stack Size'),
+    dcc.Dropdown(
+        id='stack_size_in',
+        className='stack_size',
+        value='',
+        options=[1, 2, 3, 4, 5]
+    ),
 ]
 
 # New #
