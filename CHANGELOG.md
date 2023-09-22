@@ -172,3 +172,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Removed support for scipy version 1.11. This is currently causing some issues with qutip.
+
+## [0.6.2]
+### Added
+- Moved around and added a few files in the `examples` folder
+  - These are primarily for the IEEE QCE 2023 conference
+
+### Changed
+- Modified the topology output of the GUI to be compatible with new topology upgrades
+- Several bug fixes in the GUI

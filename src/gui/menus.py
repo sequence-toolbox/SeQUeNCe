@@ -18,16 +18,17 @@ from .css_styles import *
 Mapping of all types in the GUI to their representative colors
 """
 TYPE_COLORS = {
-    'Quantum_Repeater': '#4D9DE0',
-    'QuantumRouter': '#E15554',
-    'Photon_Source': '#E1BC29',
-    'Detector': '#3BB273',
-    'QuantumErrorCorrection': '#7768AE ',
-    'BSM_node': '#FFC857',
+    'QuantumRepeater': '#4d9de0',
+    'QuantumRouter': '#e15554',
+    'PhotonSource': '#e1bc29',
+    'Detector': '#3bb273',
+    'QuantumErrorCorrection': '#7768ae',
+    'BSMNode': '#ffc857',
     'Quantum': '#8634eb',
     'Classical': '#345feb',
     'Memory': '#8a34ab',
-    'Temp': '#084C61',
+    'Temp': '#084c61',
+    'QKDNode': '#cc99ff'
 }
 
 
@@ -35,7 +36,22 @@ TYPE_COLORS = {
 Default node type options for dropdown menus
 """
 
-OPTIONS = [
+OPTIONS_NODE = [
+    {
+        'label': 'Quantum Router',
+        'value': 'QuantumRouter'
+    },
+    {
+        'label': 'BSM Node',
+        'value': 'BSMNode'
+    },
+    {
+        'label': 'QKD Node',
+        'value': 'QKDNode'
+    }
+]
+
+OPTIONS_TEMPLATE = [
     {
         'label': 'Quantum Router',
         'value': 'QuantumRouter'
@@ -48,30 +64,18 @@ OPTIONS = [
         'label': 'Detector',
         'value': 'Detector'
     },
-    # {
-    #     'label': 'Protocol',
-    #     'value': 'Protocol'
-    # },
     {
         'label': 'BSM Node',
-        'value': 'BSM_node'
+        'value': 'BSMNode'
     },
-    {
-        'label': 'Quantum Repeater',
-        'value': 'Quantum_Repeater'
-    },
-    # {
-    #     'label': 'Quantum Error Correction',
-    #     'value': 'QuantumErrorCorrection'
-    # },
     {
         'label': 'Photon Source',
-        'value': 'Photon_Source'
+        'value': 'PhotonSource'
     },
-    # {
-    #     'label': 'Temp',
-    #     'value': 'Temp'
-    # }
+    {
+        'label': 'QKD Node',
+        'value': 'QKDNode'
+    }
 ]
 
 DIRECTORY, _ = os.path.split(__file__)
@@ -156,7 +160,7 @@ def getSelectedNodeMenu(values, templates):
     out.append(
         getDropdownField(
             values['type'],
-            OPTIONS,
+            OPTIONS_NODE,
             'Node Type:',
             'selected_node_type',
             'type'
@@ -201,13 +205,13 @@ def getSelectedEdgeMenu(values, nodes, link_types):
             ),
             getInputField(
                 values['attenuation'],
-                'Attenuation:',
+                'Attenuation (dB/m):',
                 'selected_attenuation',
                 'attenuation'
             ),
             getInputField(
                 values['distance'],
-                'Distance:',
+                'Distance (m):',
                 'selected_distance',
                 'distance'
             )
@@ -244,13 +248,13 @@ def getTimeUnits(id_extra):
 classic_edge = [
     getInputField(
         '',
-        'Distance:',
+        'Distance (m):',
         'distance_input',
         ''
     ),
     getInputField(
         '',
-        'Attenuation:',
+        'Attenuation (dB/m):',
         'attenuation_input',
         ''
     )
@@ -259,13 +263,13 @@ classic_edge = [
 quantum_edge = [
     getInputField(
         '',
-        'Distance:',
+        'Distance (m):',
         'distance_input',
         ''
     ),
     getInputField(
         '',
-        'Attenuation:',
+        'Attenuation (dB/m):',
         'attenuation_input',
         ''
     )
@@ -276,7 +280,8 @@ router_template = [
     dbc.Input(
         id='mem_size',
         className='memo_size',
-        placeholder='Memory Array Size'
+        placeholder='Memory Array Size',
+        type='number'
     ),
     dbc.Label('Memory Type'),
     dcc.Dropdown(
@@ -320,7 +325,7 @@ quantum_memory_template = [
     dbc.Input(id='mem_eff_in', className='efficiency', placeholder='0.75'),
 
     dbc.Label('Fidelity'),
-    dbc.Input(id='fidelity_in', className='fidelity', placeholder='500'),
+    dbc.Input(id='fidelity_in', className='fidelity', placeholder='0.85'),
 ]
 
 detector_template = [
@@ -351,18 +356,37 @@ detector_template = [
 ]
 
 bsm_template = [
-    dbc.Label('Detector Type'),
+    dbc.Label('Detector 1 Type'),
     dcc.Dropdown(
-        id='detec_type',
+        id='detec_type_1',
+        className='detector_type',
+        value='',
+        options=[]
+    ),
+    dbc.Label('Detector 2 Type'),
+    dcc.Dropdown(
+        id='detec_type_2',
         className='detector_type',
         value='',
         options=[]
     ),
 ]
 
-
-protocol_template = [
-
+qkd_template = [
+    dbc.Label('Photon Encoding'),
+    dcc.Dropdown(
+        id='encoding_in',
+        className='encoding',
+        value='',
+        options=["polarization", "time_bin"]
+    ),
+    dbc.Label('Protocol Stack Size'),
+    dcc.Dropdown(
+        id='stack_size_in',
+        className='stack_size',
+        value='',
+        options=[1, 2, 3, 4, 5]
+    ),
 ]
 
 # New #
@@ -382,8 +406,8 @@ add_node_form = html.Div(
                 place='Enter Node ID'
             ),
             getDropdownField(
-                'Quantum_Router',
-                OPTIONS,
+                'QuantumRouter',
+                OPTIONS_NODE,
                 'Type:',
                 'type_menu',
                 ''
@@ -497,8 +521,8 @@ make_new_template = html.Div(
                 place='Enter ID'
             ),
             getDropdownField(
-                'Quantum_Router',
-                OPTIONS,
+                'QuantumRouter',
+                OPTIONS_TEMPLATE,
                 'Type:',
                 'template_type_menu',
                 ''
@@ -847,7 +871,7 @@ navbar = dbc.Navbar(
             style={
                 'position': 'relative',
                 'top': '0px',
-                'left': '0px'
+                'left': '10px'
             }
         ),
         dbc.Row(
@@ -900,12 +924,12 @@ navbar = dbc.Navbar(
                             href='https://github.com/sequence-toolbox/SeQUeNCe/issues',  # nopep8
                         ),
                     ],
-                    nav=True,
+                    label="More",
                     group=True,
                     size='sm',
+                    nav=True,
                     in_navbar=True,
-                    label="More",
-                    right=True,
+                    # right=True,
                     toggle_style={
                         'color': 'white'
                     }

@@ -123,3 +123,8 @@ def test_measure_entangled():
                 counter += 1
         assert abs(0.5 - counter / 1000) < 0.1
 
+
+def test_polarization_noise():
+    qs = FreeQuantumState()
+    pass
+
