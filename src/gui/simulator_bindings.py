@@ -43,7 +43,7 @@ class GUI_Sim:
                     self.timeline,
                     **node_temp
                 )
-            elif node_type == "Quantum_Router":
+            elif node_type == "QuantumRouter":
                 mem = node_temp.pop('mem_type')
                 mem_config = self.sim_templates[mem].copy()
                 node_in = QuantumRouter(

@@ -54,7 +54,7 @@ EDGE_TABLE_COLUMNS = [
 ]
 
 DIRECTORY, _ = os.path.split(__file__)
-TEMPLATES = '/user_templates.json'
+TEMPLATES = '/default_templates.json'
 
 
 class QuantumGUI:
@@ -101,31 +101,28 @@ class QuantumGUI:
         self.data = graph_in
         self.cc_delays = delays
         self.qc_tdm = tdm
-        self.defaults = {}
-        with open(DIRECTORY + '/default_params.json', 'r') as json_file:
-            self.defaults = json.load(json_file)
-        json_file.close()
+        # self.defaults = {}
+        # with open(DIRECTORY + '/default_params.json', 'r') as json_file:
+        #     self.defaults = json.load(json_file)
+        # json_file.close()
 
         if templates is None:
-
             if os.path.exists(DIRECTORY + TEMPLATES):
                 with open(DIRECTORY + TEMPLATES, 'r') as json_file:
                     self.templates = json.load(json_file)
-                json_file.close()
 
             else:
                 user_defaults = {}
                 for x in TYPES:
                     user_defaults[x] = {}
                 self.templates = user_defaults
-                with open(DIRECTORY + '/user_templates.json', 'w') as outfile:
+                with open(DIRECTORY + TEMPLATES, 'w') as outfile:
                     json.dump(
                         user_defaults,
                         outfile,
                         sort_keys=True,
                         indent=4
                     )
-                outfile.close()
 
         # TODO: re-add simulation
         # self.simulation = GUI_Sim(0, 0, 'NOTSET', 'init', self)
@@ -291,20 +288,26 @@ class QuantumGUI:
         # q_delay = self.qc_tdm.copy()
         c_delay = self.cc_delays.copy()
 
+        # add node dict
         nodes_top = []
-
         for node in nodes:
-            nodes_top.append(
-                {
-                    Topology.NAME: node[1]['label'],
-                    Topology.TYPE: node[1]['node_type'],
-                    Topology.SEED: None,
-                    RouterNetTopo.MEMO_ARRAY_SIZE: 50
-                }
-            )
+            node_type = node[1]['node_type']
+            node_template_name = node[1]['data']['template']
+            node_template = self.templates[node_type][node_template_name]
 
+            node_dict = {
+                Topology.NAME: node[1]['label'],
+                Topology.TYPE: node_type,
+                Topology.SEED: None,
+                Topology.TEMPLATE: node_template_name
+            }
+            if node_type == RouterNetTopo.QUANTUM_ROUTER:
+                node_dict[RouterNetTopo.MEMO_ARRAY_SIZE] = node_template['memo_size']
+
+            nodes_top.append(node_dict)
+
+        # add quantum connections dict
         qconnections = []
-
         for edge in edges:
             qconnections.append(
                 {
@@ -316,6 +319,7 @@ class QuantumGUI:
                 }
             )
 
+        # add classical connections dict
         cchannels = []
         table = c_delay.to_numpy()
         labels = list(c_delay.columns)
@@ -332,10 +336,28 @@ class QuantumGUI:
                     }
                 )
 
+        # add templates dict
+        templates = {}
+        for temp_name, temp_vals in self.templates['QuantumRouter'].items():
+            templates[temp_name] = {
+                'MemoryArray': self.templates['Memory'][temp_vals['mem_type']]
+            }
+        for temp_name, temp_vals in self.templates['BSMNode'].items():
+            templates[temp_name] = {
+                'SingleAtomBSM': {
+                    'detectors': [
+                        self.templates['Detector'][temp_vals['detector_1']],
+                        self.templates['Detector'][temp_vals['detector_2']]
+                    ]
+                }
+            }
+
+        # collect and finalize
         output = {
             Topology.ALL_NODE: nodes_top,
             Topology.ALL_QC_CONNECT: qconnections,
             Topology.ALL_C_CHANNEL: cchannels,
+            Topology.ALL_TEMPLATES: templates,
 
             RouterNetTopo.IS_PARALLEL: False,
             Topology.STOP_TIME: int(1e12)
@@ -343,7 +365,7 @@ class QuantumGUI:
 
         return output
 
-    def _callback_add_node(self, add_node_name, add_node_type):
+    def _callback_add_node(self, add_node_name, add_node_type, add_node_template):
         """Function which adds a node with the given name and type to the current graph.
 
         Args:
@@ -367,7 +389,7 @@ class QuantumGUI:
             if data == add_node_name:
                 return [dash.no_update, 'Node already exists']
 
-        new_node = GraphNode(add_node_name, add_node_type, 'test')
+        new_node = GraphNode(add_node_name, add_node_type, add_node_template)
         new_graph.add_node(
             add_node_name,
             label=add_node_name,
@@ -558,7 +580,7 @@ class QuantumGUI:
         if not os.path.exists(DIRECTORY+'/data'):
             os.mkdir(DIRECTORY+'/data')
 
-        self.save_templates(new_path)
+        # self.save_templates(new_path)
         self.save_simulation(new_path)
         self.save_topology(new_path)
         return new_path
@@ -690,6 +712,7 @@ class QuantumGUI:
 
             State('node_to_add_name', 'value'),
             State('type_menu', 'value'),
+            State('add_template_menu', 'value'),
             State('edge_properties', 'children'),
             State('from_node', 'value'),
             State('to_node', 'value'),
@@ -707,6 +730,7 @@ class QuantumGUI:
             update_delay,
             node_name,
             node_to_add_type,
+            node_to_add_template,
             properties,
             from_node,
             to_node,
@@ -735,7 +759,7 @@ class QuantumGUI:
                 input_id = ctx.triggered[0]['prop_id'].split('.')[0]
                 # print(input_id)
                 if input_id == 'add_node':
-                    info = self._callback_add_node(node_name, node_to_add_type)
+                    info = self._callback_add_node(node_name, node_to_add_type, node_to_add_template)
                     graph_data = info[0]
                     err_msg = info[1]
 
@@ -814,11 +838,13 @@ class QuantumGUI:
                 elif input_id == 'submit_edit':
                     # print(selected)
                     edited = self.parse_edit(selected)
+
+                    # for an edge
                     if 'source' in edited:
                         src = last_clicked['source']
                         trgt = last_clicked['target']
                         new_data = {k: edited[k] for k in EDGE_DICT_ORDER}
-                        self.data.edges[src][trgt]['data'] = new_data
+                        self.data.edges[src, trgt]['data'] = new_data
                         gd = nx.readwrite.cytoscape_data(self.data)['elements']
                         err_msg = ''
 
@@ -835,6 +861,7 @@ class QuantumGUI:
                             delay_columns
                         ]
 
+                    # for a node
                     else:
                         old_name = last_clicked['name']
                         self.data.nodes[old_name]['data'] = edited
@@ -1001,13 +1028,13 @@ class QuantumGUI:
                 if edgeType == 'QuantumRouter':
                     opts = list(self.templates['Memory'].keys())
                     return [router_template, '', opts, '']
-                elif edgeType == 'Protocol':
-                    return [protocol_template, '', '', '']
+                elif edgeType == 'QKDNode':
+                    return [qkd_template, '', '', '']
                 elif edgeType == 'Memory':
                     return [quantum_memory_template, '', '', '']
                 elif edgeType == 'Detector':
                     return [detector_template, '', '', '']
-                elif edgeType == 'BSM_node':
+                elif edgeType == 'BSMNode':
                     opts = list(self.templates['Detector'].keys())
                     return [bsm_template, '', '', opts]
             elif input_id == 'save_template':
@@ -1018,7 +1045,7 @@ class QuantumGUI:
                     parsed = {temp_name: self.parse_node(temp)}
                     new_templates[temp_type].update(parsed)
                     self.templates = new_templates
-                    return [dash.no_update, 'Template Saved', '', '']
+                    return [dash.no_update, 'Template Saved', dash.no_update, '']
             else:
                 opts = list(self.templates['Memory'].keys())
                 return [router_template, '', opts, '']
@@ -1197,7 +1224,15 @@ class QuantumGUI:
             return [makeDropdownOptions(data), data[0]]
 
         @app.callback(
-            Output("detec_type", "options"),
+            Output("detec_type_1", "options"),
+            Input('detec_opts', 'data'),
+            prevent_initial_call=True,
+        )
+        def updateTypeMenu(data):
+            return makeDropdownOptions(data)
+
+        @app.callback(
+            Output("detec_type_2", "options"),
             Input('detec_opts', 'data'),
             prevent_initial_call=True,
         )
