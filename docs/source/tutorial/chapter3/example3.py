@@ -99,9 +99,10 @@ nodes = [left_node, right_node, mid_node]
 
 for i in range(3):
     for j in range(3):
-        cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl,
-                              1000, 1e9)
-        cc.set_ends(nodes[i], nodes[j].name)
+        if i != j:
+            cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl,
+                                1000, 1e9)
+            cc.set_ends(nodes[i], nodes[j].name)
 
 left_memo = left_node.components[left_node.resource_manager.memo_names[0]]
 right_memo = right_node.components[right_node.resource_manager.memo_names[0]]
