@@ -1,3 +1,6 @@
+from math import sqrt
+from numpy.random import choice
+
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
@@ -5,6 +8,27 @@ from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.entanglement_management.purification import BBPSSW
 from sequence.message import Message
+
+
+def entangle_with_fidelity(memo1, memo2, fidelity):
+    # phi plus, phi minus, psi plus, psi minus
+    possible_states = [[complex(sqrt(1 / 2)), complex(0), complex(0), complex(sqrt(1 / 2))],
+                       [complex(sqrt(1 / 2)), complex(0), complex(0), -complex(sqrt(1 / 2))],
+                       [complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)],
+                       [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]]
+    desired_state = 2
+
+    # set correct probabilities
+    probabilities = [(1 - fidelity) / 3] * 4
+    probabilities[desired_state] = fidelity
+
+    # choose state randomly to assign
+    state_ind = choice(4, p=probabilities)
+
+    # assign state to memores
+    qm = memo1.timeline.quantum_manager
+    keys = [memo1.qstate_key, memo2.qstate_key]
+    qm.set(keys, possible_states[state_ind])
 
 
 class SimpleManager:
@@ -48,11 +72,14 @@ def entangle_memory(memo1: Memory, memo2: Memory, fidelity: float):
     memo1.reset()
     memo2.reset()
 
+    # set quantum state
+    entangle_with_fidelity(memo1, memo2, fidelity)
+
+    # set classical tracking variables
     memo1.entangled_memory['node_id'] = memo2.owner.name
     memo1.entangled_memory['memo_id'] = memo2.name
     memo2.entangled_memory['node_id'] = memo1.owner.name
     memo2.entangled_memory['memo_id'] = memo1.name
-
     memo1.fidelity = memo2.fidelity = fidelity
 
 
