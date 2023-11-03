@@ -5,7 +5,7 @@ from sequence.components.optical_channel import ClassicalChannel
 from sequence.entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 from sequence.message import Message
 
-from example2 import entangle_with_fidelity
+from example2 import entangle_memory
 
 
 class SimpleManager:
@@ -62,21 +62,6 @@ class SwapNodeB(Node):
 
     def create_protocol(self):
         self.protocols = [EntanglementSwappingB(self, '%s.ESB'%self.name, self.memo)]
-
-
-def entangle_memory(memo1: Memory, memo2: Memory, fidelity: float):
-    memo1.reset()
-    memo2.reset()
-
-    # set quantum state
-    entangle_with_fidelity(memo1, memo2, fidelity)
-
-    # set classical tracking variables
-    memo1.entangled_memory['node_id'] = memo2.owner.name
-    memo1.entangled_memory['memo_id'] = memo2.name
-    memo2.entangled_memory['node_id'] = memo1.owner.name
-    memo2.entangled_memory['memo_id'] = memo1.name
-    memo1.fidelity = memo2.fidelity = fidelity
 
 
 def pair_protocol(node1, node2, node_mid):

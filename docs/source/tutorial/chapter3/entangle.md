@@ -314,7 +314,37 @@ cc1.set_ends(node2, node1.name)
 ### Step 3: Manually Set Entanglement States 
 
 To avoid unnecessary modules and operations, we will manually modify the memories to create an entangled state.
-First, we use the `Memory.reset()` to reset the state of memory.
+We will first create a helper function to set the desired quantum state.
+Since we are using a Monte Carlo simulation method with state vectors,
+we will randomly assign a bell state based on our `fidelity` parameter.
+
+```python
+from math import sqrt
+from numpy.random import choice
+
+def entangle_with_fidelity(memo1, memo2, fidelity):
+    # phi plus, phi minus, psi plus, psi minus
+    possible_states = [[complex(sqrt(1 / 2)), complex(0), complex(0), complex(sqrt(1 / 2))],
+                       [complex(sqrt(1 / 2)), complex(0), complex(0), -complex(sqrt(1 / 2))],
+                       [complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)],
+                       [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]]
+    desired_state = 2
+
+    # set correct probabilities
+    probabilities = [(1 - fidelity) / 3] * 4
+    probabilities[desired_state] = fidelity
+
+    # choose state randomly to assign
+    state_ind = choice(4, p=probabilities)
+
+    # assign state to memories
+    qm = memo1.timeline.quantum_manager
+    keys = [memo1.qstate_key, memo2.qstate_key]
+    qm.set(keys, possible_states[state_ind])
+```
+
+Next, we will define a function to update the classical stored state of the memory.
+As a first step, we use the `Memory.reset()` to reset the state of memory.
 Then, we assign the identity of the node and memory to which we are entangled in `Memory.entangled_memory` (implemented as a dictionary `{'node_id': str, 'memo_id': str}`).
 Finally, we set the fidelity of entanglement.
 
@@ -323,11 +353,14 @@ def entangle_memory(memo1: Memory, memo2: Memory, fidelity: float):
     memo1.reset()
     memo2.reset()
 
+    # set quantum state
+    entangle_with_fidelity(memo1, memo2, fidelity)
+
+    # set classical tracking variables
     memo1.entangled_memory['node_id'] = memo2.owner.name
     memo1.entangled_memory['memo_id'] = memo2.name
     memo2.entangled_memory['node_id'] = memo1.owner.name
     memo2.entangled_memory['memo_id'] = memo1.name
-
     memo1.fidelity = memo2.fidelity = fidelity
 
 
@@ -541,11 +574,13 @@ for i in range(3):
 ### Step 3: Manually Set Entanglement State and Start Protocol
 
 We will reuse the code for `entangle_memory` from the previous examples to configure the states of hardware and software.
-The `pair_protocol` function is slightly more complicated, as there are more nodes to deal with.
+The `pair_protocol` function is slightly more complicated, however, as there are more nodes to deal with.
 Because we set the success probability to 1, we can guaruntee a successful result after running the simulation.
 The fidelity of entanglement after swapping will be `0.9*0.9*0.99=0.8019`.
 
 ```python
+from example2 import entangle_memory
+
 def pair_protocol(node1, node2, node_mid):
     p1 = node1.protocols[0]
     p2 = node2.protocols[0]

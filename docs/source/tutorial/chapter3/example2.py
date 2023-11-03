@@ -24,7 +24,7 @@ def entangle_with_fidelity(memo1, memo2, fidelity):
     # choose state randomly to assign
     state_ind = choice(4, p=probabilities)
 
-    # assign state to memores
+    # assign state to memories
     qm = memo1.timeline.quantum_manager
     keys = [memo1.qstate_key, memo2.qstate_key]
     qm.set(keys, possible_states[state_ind])
