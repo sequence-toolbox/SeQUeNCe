@@ -12,7 +12,7 @@ We will also be creating a custom node class to meet the requirements of this ex
 
 ### Background
 
-The Resource Management module in SeQUeNCe is responsible for managing the usage of and flow of information from hardware elements on a node. This is achieved with an internal **memory manager** and **rule manager**, as shown below:
+The Resource Management module in SeQUeNCe is responsible for managing the usage of quantum memory and flow of information from hardware elements on a node. This is achieved with an internal **memory manager** and **rule manager**, as shown below:
 
 ![rm](figures/resource_management.png)
 
@@ -388,14 +388,11 @@ def ep_rule_condition2(memory_info: "MemoryInfo", manager: "MemoryManager",
         return [memory_info]
     return []
 
-        def ep_rule_action(memories_info: List["MemoryInfo"]):
-            memories = [info.memory for info in memories_info]
-            name = "EP.%s" % (memories[0].name)
-            protocol = BBPSSW(None, name, memories[0], None)
-            return protocol, [None], [None]
-
-        rule = Rule(10, ep_rule_action, ep_rule_condition)
-        node.resource_manager.load(rule)
+def ep_rule_action2(memories_info: List["MemoryInfo"], args):
+    memories = [info.memory for info in memories_info]
+    name = "EP.%s" % (memories[0].name)
+    protocol = BBPSSW(None, name, memories[0], None)
+    return [protocol, [None], [None], [None]]
 
 
 def add_ep_rules(index: int, path: List[RouterNode], target_fidelity: float):
