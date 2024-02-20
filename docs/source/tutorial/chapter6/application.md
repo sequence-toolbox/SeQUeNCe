@@ -127,6 +127,7 @@ for router in network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
         node2 = router
         
 app = PeriodicApp(node1, end_node_name)
+reset_app = ResetApp(node2, start_node_name)
 
 tl.init()
 app.start()

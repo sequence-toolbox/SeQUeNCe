@@ -206,7 +206,7 @@ We use the function `get_timeline()` to get the timeline for the simulation.
 from sequence.topology.router_net_topo import RouterNetTopo
 
 
-network_config = "star_network2.json"
+network_config = "star_network.json"
 network_topo = RouterNetTopo(network_config)
 tl = network_topo.get_timeline()
 ```
@@ -292,7 +292,7 @@ for router in network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
         node2 = router
 
 nm = node1.network_manager
-nm.request(start_node_name, start_time=1e12, end_time=10e12, memory_size=25, target_fidelity=0.9)
+nm.request(end_node_name, start_time=1e12, end_time=10e12, memory_size=25, target_fidelity=0.9)
 
 tl.init()
 tl.run()
