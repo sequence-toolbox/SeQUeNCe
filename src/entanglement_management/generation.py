@@ -152,7 +152,7 @@ class EntanglementGenerationA(EntanglementProtocol):
     _z_circuit.z(0)
 
     def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory",
-                 is_sh: bool = False, raw_fidelity: float = None, raw_epr_errors: List[float] = None):
+                 is_sh: bool = True, raw_fidelity: float = None, raw_epr_errors: List[float] = None):
         """Constructor for entanglement generation A class.
 
         Args:
@@ -176,8 +176,9 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         self.is_sh = is_sh
         if is_sh:
-            assert self.own.timeline.quantum_manager.formalism == BELL_DIAGONAL_STATE_FORMALISM, \
-                "Currently single heralded protocol requires Bell diagonal state formalism."
+            # assert self.own.timeline.quantum_manager.formalism == BELL_DIAGONAL_STATE_FORMALISM, \
+            #     "Currently single heralded protocol requires Bell diagonal state formalism."
+            pass
 
         if raw_fidelity:
             self.raw_fidelity = raw_fidelity
@@ -282,14 +283,14 @@ class EntanglementGenerationA(EntanglementProtocol):
         # to avoid start after protocol removed
         if self not in self.own.protocols:
             return
-        
+
         if self.is_sh:
             # in current implementation of single herald protocol, memory state does not need to change before success
             self.ent_round += 1
 
             if self.ent_round == 1:
                 return True
-            
+
             elif self.ent_round == 2:
                 # success when both detectors in BSM are triggered
                 if self.bsm_res[0] >= 1 and self.bsm_res[1] >= 1:
@@ -315,14 +316,14 @@ class EntanglementGenerationA(EntanglementProtocol):
                     tl.quantum_manager.set(keys, state)
 
                     # TODO: if decoherence exists, fidelity recorded in resource manager needs to be changed at future times
-                    # TODO: in current implementation, quantum manager has one fixed formalism, 
-                    #       and we are using BDS formalism to track the generated and distributed EPR pairs, 
+                    # TODO: in current implementation, quantum manager has one fixed formalism,
+                    #       and we are using BDS formalism to track the generated and distributed EPR pairs,
                     #       but in DQS the application will generate and track larger multi-partite state presumably with QuTiP features,
                     #       therefore might be suitable for some separate tracking other than quantum manager
 
                     self._entanglement_succeed()
 
-                else: 
+                else:
                     # entanglement failed
                     self._entanglement_fail()
                     return False
@@ -518,7 +519,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         for event in self.scheduled_events:
             self.own.timeline.remove_event(event)
         log.logger.info(self.own.name + " failed entanglement of memory {}".format(self.memory))
-        
+
         self.update_resource_manager(self.memory, 'RAW')
 
 
@@ -536,7 +537,7 @@ class EntanglementGenerationB(EntanglementProtocol):
         is_sh (bool): if the entanglement generation protocol is single heralded or not (default False meaning double-heralded Barrett-Kok protocol).
     """
 
-    def __init__(self, own: "BSMNode", name: str, others: List[str], is_sh: bool=False):
+    def __init__(self, own: "BSMNode", name: str, others: List[str], is_sh: bool=True):
         """Constructor for entanglement generation B protocol.
 
         Args:

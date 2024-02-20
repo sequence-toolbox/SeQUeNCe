@@ -217,7 +217,7 @@ class Memory(Entity):
     def set_memory_array(self, memory_array: MemoryArray):
         self.memory_array = memory_array
 
-    def excite(self, dst="", protocol="bk") -> None:
+    def excite(self, dst="", protocol="sh") -> None:
         """Method to excite memory and potentially emit a photon.
 
         Mainly for EG protocols, which can be double-heralded Barrett-Kok protocol or single-heralded protocols.
@@ -332,7 +332,7 @@ class Memory(Entity):
         Side Effects:
             Will modify BDS diagonal elements and last_update_time.
         """
-        
+
         if self.decoherence_errors is None:
             # if not considering time-dependent decoherence then do nothing
             pass
@@ -347,7 +347,7 @@ class Memory(Entity):
                                  _p_xerr(x_rate, y_rate, z_rate, time), \
                                  _p_yerr(x_rate, y_rate, z_rate, time), \
                                  _p_zerr(x_rate, y_rate, z_rate, time)
-            
+
             state_now = self.timeline.quantum_manager.states[self.qstate_key].state  # current diagonal elements
             transform_mtx = array([[p_I, p_Z, p_X, p_Y],
                                      [p_Z, p_I, p_Y, p_X],
@@ -837,14 +837,14 @@ class MemoryWithRandomCoherenceTime(Memory):
             wavelength (int): wavelength (in nm) of photons emitted by memories.
         """
 
-        super(MemoryWithRandomCoherenceTime, self).__init__(name, timeline, fidelity, frequency, 
+        super(MemoryWithRandomCoherenceTime, self).__init__(name, timeline, fidelity, frequency,
                          efficiency, coherence_time, wavelength)
-        
+
         # coherence time standard deviation in seconds
         self.coherence_time_stdev = coherence_time_stdev
         self.random_coherence_time = (coherence_time_stdev > 0.0 and
                                       self.coherence_time > 0.0)
-        
+
     def coherence_time_distribution(self) -> None:
         return stats.truncnorm.rvs(
             -0.95 * self.coherence_time / self.coherence_time_stdev,
@@ -855,9 +855,9 @@ class MemoryWithRandomCoherenceTime(Memory):
     def _schedule_expiration(self) -> None:
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
-            
+
         coherence_period = (self.coherence_time_distribution()
-                            if self.random_coherence_time else 
+                            if self.random_coherence_time else
                             self.coherence_time)
 
         decay_time = self.timeline.now() + int(coherence_period * 1e12)
