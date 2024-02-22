@@ -21,26 +21,32 @@ $ make install
 ```
 This will install the sequence library as well as the package dependencies.
 
+## Citation
+Please cite us, thank you!
+```
+@article{sequence,
+author = {Xiaoliang Wu and Alexander Kolar and Joaquin Chung and Dong Jin and Tian Zhong and Rajkumar Kettimuthu and Martin Suchara},
+title = {SeQUeNCe: a customizable discrete-event simulator of quantum networks},
+journal = {Quantum Science and Technology},
+volume = {6},
+year = {2021},
+month = {sep},
+doi = {10.1088/2058-9565/ac22f6},
+url = {https://dx.doi.org/10.1088/2058-9565/ac22f6},
+publisher = {IOP Publishing},
+}
+```
+
+<!-- * X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: Simulator of QUantum Network Communication." GitHub repository, https://github.com/sequence-toolbox/SeQUeNCe, 2021. -->
+
 ## Running the GUI
 Once SeQUeNCe has been installed as described above, simply run the `gui.py` script found in the root of the project directory
 ```
 $ python gui.py
 ```
-or
-```
-$ python3 gui.py
-```
-
-## Citations
-
-Please cite this work as follows:
-
-* X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: A Customizable Discrete-Event Simulator of Quantum Networks." Quantum Science and Technology, 2021. DOI: https://doi.org/10.1088/2058-9565/ac22f6.
-
-* X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: Simulator of QUantum Network Communication." GitHub repository, https://github.com/sequence-toolbox/SeQUeNCe, 2021.
 
 ## Usage Examples
-Many examples of SeQUeNCe in action can be found in the example folder. These include both quantum key distribution and entanglement distribution examples.
+Many examples of SeQUeNCe in action can be found in the [example](/example) folder. These include both quantum key distribution and entanglement distribution examples.
 
 ### Starlight Experiments
 Code for the experiments performed in our paper can be found in the file `starlight_experiments.py`. This script uses the `starlight.json` file (also within the example folder) to specify the network topology.
@@ -74,3 +80,15 @@ This script also supports a flag `-m` to visualize BSM nodes created by default 
 ## Libraries Used
 This project includes a modified fork of the Quantum++ library version 2.6.
 Please see the Quantum++ [`LICENSE`](https://github.com/softwareQinc/qpp/blob/main/LICENSE) file for more information.
+
+## Contact
+If you have questions, please contact [Caitao Zhan](https://caitaozhan.github.io/) at [czhan@anl.gov](mailto:czhan@anl.gov).
+
+## Papers that Used and/or Extended SeQUeNCe
+
+* A. Zang et al., ["Simulation of Entanglement Generation and Distribution - Towards Practical Quantum Networks"](https://dl.acm.org/doi/10.1145/3518997.3534992), ACM SIGSIM-PADS'22
+
+* R. Zhou et al., [A Simulator of Atom-Atom Entanglement with Atomic Ensembles and Quantum Optics](https://ieeexplore.ieee.org/abstract/document/10313610), IEEE QCE'23
+
+
+Please do a Pull Request to add your paper here! 
