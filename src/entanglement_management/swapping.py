@@ -262,7 +262,7 @@ class EntanglementSwappingA(EntanglementProtocol):
 
 
 class EntanglementSwappingB(EntanglementProtocol):
-    """Entanglement swapping protocol for middle router.
+    """Entanglement swapping protocol for end router.
 
     The entanglement swapping protocol is an asymmetric protocol.
     EntanglementSwappingB should be instantiated on the end nodes, where it waits for swapping results from the middle node.

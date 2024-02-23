@@ -3,6 +3,7 @@ from sequence.topology.node import Node, BSMNode
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.entanglement_management.generation import EntanglementGenerationA
+from sequence.message import Message
 
 
 class SimpleManager:
@@ -55,6 +56,7 @@ def pair_protocol(node1: Node, node2: Node):
     p2.set_others(p1.name, node1.name, [node1_memo_name])
 
 
+
 tl = Timeline()
 
 node1 = EntangleGenNode('node1', tl)
@@ -76,9 +78,9 @@ nodes = [node1, node2, bsm_node]
 
 for i in range(3):
     for j in range(3):
-        cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl,
-                              1000, 1e8)
-        cc.set_ends(nodes[i], nodes[j].name)
+        if i != j:
+            cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl, 1000, 1e8)
+            cc.set_ends(nodes[i], nodes[j].name)
 
 tl.init()
 for i in range(1000):

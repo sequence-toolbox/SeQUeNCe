@@ -67,7 +67,7 @@ class ReceiverNode(Node):
         detector.owner = self
 
     def receive_qubit(self, src, qubit):
-        self.components[self.first_component_name].get()
+        self.components[self.first_component_name].get(qubit)
 ```
 
 You may notice that the initialization methods make use of a few additional functions, and methods have been added to the node classes.
