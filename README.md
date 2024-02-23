@@ -86,9 +86,15 @@ If you have questions, please contact [Caitao Zhan](https://caitaozhan.github.io
 
 ## Papers that Used and/or Extended SeQUeNCe
 
-* A. Zang et al., ["Simulation of Entanglement Generation and Distribution - Towards Practical Quantum Networks"](https://dl.acm.org/doi/10.1145/3518997.3534992), ACM SIGSIM-PADS'22
+* V. Semenenko et al., ["Entanglement generation in a quantum network with finite quantum memory lifetime"](https://pubs.aip.org/avs/aqs/article/4/1/012002/2835237/Entanglement-generation-in-a-quantum-network-with), AVS Quantum Science 4, 012002 (2022)
 
-* R. Zhou et al., [A Simulator of Atom-Atom Entanglement with Atomic Ensembles and Quantum Optics](https://ieeexplore.ieee.org/abstract/document/10313610), IEEE QCE'23
+* A. Zang et al., ["Simulation of Entanglement Generation between Absorptive Quantum Memories"](https://ieeexplore.ieee.org/abstract/document/9951205), IEEE QCE'22
+
+* M.G. Davis et al., ["Towards Distributed Quantum Computing by Qubit and Gate Graph Partitioning Techniques"](https://ieeexplore.ieee.org/abstract/document/10313645), IEEE QCE'23
+
+* R. Zhou et al., ["A Simulator of Atom-Atom Entanglement with Atomic Ensembles and Quantum Optics"](https://ieeexplore.ieee.org/abstract/document/10313610), IEEE QCE'23
+
+* X. Wu et al., ["Parallel Simulation of Quantum Networks with Distributed Quantum State Management"](https://dl.acm.org/doi/abs/10.1145/3634701), ACM Transactions on Modeling and Computer Simulation
 
 
 Please do a Pull Request to add your paper here! 
