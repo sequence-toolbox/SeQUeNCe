@@ -18,6 +18,11 @@ Sphinx can be easily installed via pip:
 $ pip install -U sphinx
 ```
 
+Also, need to install recommonmark
+```
+pip install recommonmark
+```
+
 Once installed, the project can be built with the included makefile:
 
 ```
