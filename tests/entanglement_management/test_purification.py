@@ -1,3 +1,4 @@
+from typing import Tuple
 import numpy as np
 import pytest
 
@@ -59,7 +60,9 @@ def test_BBPSSWMessage():
         BBPSSWMessage("unknown type")
 
 
-def create_scenario(state1, state2, seed_index, fidelity=1.0):
+def create_scenario(state1, state2, seed_index, fidelity=1.0) -> Tuple[Timeline, Memory, Memory, Memory, Memory, BBPSSW, BBPSSW]:
+    '''create the whole quantum network (timeline, nodes, channels, memory, protocols)
+    '''
     tl = Timeline()
     tl.show_progress = False
     a1 = FakeNode("a1", tl)
@@ -73,14 +76,10 @@ def create_scenario(state1, state2, seed_index, fidelity=1.0):
     cc0.set_ends(a1, a2.name)
     cc1.set_ends(a2, a1.name)
 
-    kept1 = Memory('kept1', tl, fidelity=fidelity, frequency=0, efficiency=1,
-                   coherence_time=1, wavelength=HALF_MICRON)
-    kept2 = Memory('kept2', tl, fidelity=fidelity, frequency=0, efficiency=1,
-                   coherence_time=1, wavelength=HALF_MICRON)
-    meas1 = Memory('mea1', tl, fidelity=fidelity, frequency=0, efficiency=1,
-                   coherence_time=1, wavelength=HALF_MICRON)
-    meas2 = Memory('mea2', tl, fidelity=fidelity, frequency=0, efficiency=1,
-                   coherence_time=1, wavelength=HALF_MICRON)
+    kept1 = Memory('kept1', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)  # memory kept
+    kept2 = Memory('kept2', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
+    meas1 = Memory('meas1', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)  # memory measured
+    meas2 = Memory('meas2', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
 
     tl.init()
 
@@ -625,8 +624,7 @@ def get_random_state_by_fidelity(fidelity):
         return [f, (1 - f) / 3, (1 - f) / 3, (1 - f) / 3]
 
     choice = np.random.choice
-    index1, index2 = [choice(range(4), 1, p=prob_distribution(fidelity))[0]
-                      for _ in range(2)]
+    index1, index2 = [choice(range(4), 1, p=prob_distribution(fidelity))[0] for _ in range(2)]
     return BELL_STATES[index1], BELL_STATES[index2]
 
 
@@ -634,10 +632,7 @@ def test_BBPSSW_fidelity():
     for i in range(1000):
         fidelity = np.random.uniform(0.5, 1)
         state1, state2 = get_random_state_by_fidelity(fidelity)
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(state1,
-                                                                   state2,
-                                                                   i,
-                                                                   fidelity)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(state1, state2, i, fidelity)
         a1, a2 = [tl.get_entity_by_name(name) for name in ["a1", "a2"]]
         assert (meas1, RAW) in a1.resource_manager.log
         assert (meas2, RAW) in a2.resource_manager.log
@@ -662,10 +657,7 @@ def test_BBPSSW_success_rate():
 
     for i in range(1000):
         state1, state2 = get_random_state_by_fidelity(fidelity)
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(state1,
-                                                                   state2,
-                                                                   i,
-                                                                   fidelity)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(state1, state2, i, fidelity)
         if ep1.meas_res == ep2.meas_res:
             counter1 += 1
         else:
