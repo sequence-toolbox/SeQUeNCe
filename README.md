@@ -21,26 +21,32 @@ $ make install
 ```
 This will install the sequence library as well as the package dependencies.
 
+## Citation
+Please cite us, thank you!
+```
+@article{sequence,
+author = {Xiaoliang Wu and Alexander Kolar and Joaquin Chung and Dong Jin and Tian Zhong and Rajkumar Kettimuthu and Martin Suchara},
+title = {SeQUeNCe: a customizable discrete-event simulator of quantum networks},
+journal = {Quantum Science and Technology},
+volume = {6},
+year = {2021},
+month = {sep},
+doi = {10.1088/2058-9565/ac22f6},
+url = {https://dx.doi.org/10.1088/2058-9565/ac22f6},
+publisher = {IOP Publishing},
+}
+```
+
+<!-- * X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: Simulator of QUantum Network Communication." GitHub repository, https://github.com/sequence-toolbox/SeQUeNCe, 2021. -->
+
 ## Running the GUI
 Once SeQUeNCe has been installed as described above, simply run the `gui.py` script found in the root of the project directory
 ```
 $ python gui.py
 ```
-or
-```
-$ python3 gui.py
-```
-
-## Citations
-
-Please cite this work as follows:
-
-* X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: A Customizable Discrete-Event Simulator of Quantum Networks." Quantum Science and Technology, 2021. DOI: https://doi.org/10.1088/2058-9565/ac22f6.
-
-* X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: Simulator of QUantum Network Communication." GitHub repository, https://github.com/sequence-toolbox/SeQUeNCe, 2021.
 
 ## Usage Examples
-Many examples of SeQUeNCe in action can be found in the example folder. These include both quantum key distribution and entanglement distribution examples.
+Many examples of SeQUeNCe in action can be found in the [example](/example) folder. These include both quantum key distribution and entanglement distribution examples.
 
 ### Starlight Experiments
 Code for the experiments performed in our paper can be found in the file `starlight_experiments.py`. This script uses the `starlight.json` file (also within the example folder) to specify the network topology.
@@ -74,3 +80,25 @@ This script also supports a flag `-m` to visualize BSM nodes created by default 
 ## Libraries Used
 This project includes a modified fork of the Quantum++ library version 2.6.
 Please see the Quantum++ [`LICENSE`](https://github.com/softwareQinc/qpp/blob/main/LICENSE) file for more information.
+
+## Contact
+If you have questions, please contact [Caitao Zhan](https://caitaozhan.github.io/) at [czhan@anl.gov](mailto:czhan@anl.gov).
+
+## Papers that Used and/or Extended SeQUeNCe
+
+* X. Wu et al., ["Simulations of Photonic Quantum Networks for Performance Analysis and Experiment Design"](https://ieeexplore.ieee.org/document/8950718), IEEE/ACM Workshop on Photonics-Optics Technology Oriented Networking, Information and Computing Systems (PHOTONICS), 2019
+
+* X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. ["SeQUeNCe: A Customizable Discrete-Event Simulator of Quantum Networks"](https://iopscience.iop.org/article/10.1088/2058-9565/ac22f6), Quantum Science and Technology, 2021
+
+* V. Semenenko et al., ["Entanglement generation in a quantum network with finite quantum memory lifetime"](https://pubs.aip.org/avs/aqs/article/4/1/012002/2835237/Entanglement-generation-in-a-quantum-network-with), AVS Quantum Science, 2022
+
+* A. Zang et al., ["Simulation of Entanglement Generation between Absorptive Quantum Memories"](https://ieeexplore.ieee.org/abstract/document/9951205), IEEE QCE 2022
+
+* M.G. Davis et al., ["Towards Distributed Quantum Computing by Qubit and Gate Graph Partitioning Techniques"](https://ieeexplore.ieee.org/abstract/document/10313645), IEEE QCE 2023
+
+* R. Zhou et al., ["A Simulator of Atom-Atom Entanglement with Atomic Ensembles and Quantum Optics"](https://ieeexplore.ieee.org/abstract/document/10313610), IEEE QCE 2023
+
+* X. Wu et al., ["Parallel Simulation of Quantum Networks with Distributed Quantum State Management"](https://dl.acm.org/doi/abs/10.1145/3634701), ACM Transactions on Modeling and Computer Simulation, 2024
+
+
+Please do a Pull Request to add your paper here! 

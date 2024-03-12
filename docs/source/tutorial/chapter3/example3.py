@@ -62,9 +62,13 @@ class SwapNodeB(Node):
         self.protocols = [EntanglementSwappingB(self, '%s.ESB'%self.name, self.memo)]
 
 
-def entangle_memory(memo1: Memory, memo2: Memory, fidelity: float):
+def entangle_memory(tl: Timeline, memo1: Memory, memo2: Memory, fidelity: float):
+    SQRT_HALF = 0.5 ** 0.5
+    phi_plus = [SQRT_HALF, 0, 0, SQRT_HALF]
+
     memo1.reset()
     memo2.reset()
+    tl.quantum_manager.set([memo1.qstate_key, memo2.qstate_key], phi_plus)
 
     memo1.entangled_memory['node_id'] = memo2.owner.name
     memo1.entangled_memory['memo_id'] = memo2.name
@@ -86,6 +90,7 @@ def pair_protocol(node1, node2, node_mid):
     pmid.set_others(p2.name, node2.name, [node2.resource_manager.memo_names[0]])
 
 
+
 tl = Timeline()
 
 left_node = SwapNodeB('left', tl)
@@ -100,26 +105,46 @@ nodes = [left_node, right_node, mid_node]
 for i in range(3):
     for j in range(3):
         if i != j:
-            cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl,
-                                1000, 1e9)
+            cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl, 1000, 1e9)
             cc.set_ends(nodes[i], nodes[j].name)
 
 left_memo = left_node.components[left_node.resource_manager.memo_names[0]]
 right_memo = right_node.components[right_node.resource_manager.memo_names[0]]
 mid_left_memo = mid_node.components[mid_node.resource_manager.memo_names[0]]
 mid_right_memo = mid_node.components[mid_node.resource_manager.memo_names[1]]
-entangle_memory(left_memo, mid_left_memo, 0.9)
-entangle_memory(right_memo, mid_right_memo, 0.9)
+entangle_memory(tl, left_memo, mid_left_memo, 0.9)
+entangle_memory(tl, right_memo, mid_right_memo, 0.9)
 
 for node in nodes:
     node.resource_manager.create_protocol()
 
 pair_protocol(left_node, right_node, mid_node)
 
+print('--------')
+print('Before swapping:')
+print(tl.quantum_manager.states[0], '\n')
+print(tl.quantum_manager.states[1], '\n')
+print(tl.quantum_manager.states[2], '\n')
+print(tl.quantum_manager.states[3], '\n')
+
+print(left_memo.entangled_memory)
+print(mid_left_memo.entangled_memory)
+print(mid_right_memo.entangled_memory)
+print(right_memo.entangled_memory)
+print(left_memo.fidelity)
+
+
 tl.init()
 for node in nodes:
     node.protocols[0].start()
 tl.run()
+
+print('--------')
+print('after swapping:')
+print(tl.quantum_manager.states[0], '\n')
+print(tl.quantum_manager.states[1], '\n')
+print(tl.quantum_manager.states[2], '\n')
+print(tl.quantum_manager.states[3], '\n')
 
 print(left_memo.entangled_memory)
 print(mid_left_memo.entangled_memory)

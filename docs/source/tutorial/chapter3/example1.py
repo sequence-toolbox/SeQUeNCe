@@ -56,6 +56,7 @@ def pair_protocol(node1: Node, node2: Node):
     p2.set_others(p1.name, node1.name, [node1_memo_name])
 
 
+
 tl = Timeline()
 
 node1 = EntangleGenNode('node1', tl)
@@ -78,8 +79,7 @@ nodes = [node1, node2, bsm_node]
 for i in range(3):
     for j in range(3):
         if i != j:
-            cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl,
-                                1000, 1e8)
+            cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl, 1000, 1e8)
             cc.set_ends(nodes[i], nodes[j].name)
 
 tl.init()

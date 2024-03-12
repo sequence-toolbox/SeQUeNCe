@@ -27,7 +27,7 @@ class OpticalChannel(Entity):
         name (str): label for channel instance.
         timeline (Timeline): timeline for simulation.
         sender (Node): node at sending end of optical channel.
-        receiver (Node): node at receiving end of optical channel.
+        receiver (str): name of the node at receiving end of optical channel.
         attenuation (float): attenuation of the fiber (in dB/m).
         distance (int): length of the fiber (in m).
         polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
@@ -71,7 +71,7 @@ class QuantumChannel(OpticalChannel):
         name (str): label for channel instance.
         timeline (Timeline): timeline for simulation.
         sender (Node): node at sending end of optical channel.
-        receiver (Node): node at receiving end of optical channel.
+        receiver (str): name of the node at receiving end of optical channel.
         attenuation (float): attenuation of the fiber (in dB/m).
         distance (int): length of the fiber (in m).
         polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
@@ -117,10 +117,7 @@ class QuantumChannel(OpticalChannel):
             receiver (str): name of node receiving qubits.
         """
 
-        log.logger.info(
-            "Set {} {} as ends of quantum channel {}".format(sender.name,
-                                                             receiver,
-                                                             self.name))
+        log.logger.info("Set {} {} as ends of quantum channel {}".format(sender.name, receiver, self.name))
         self.sender = sender
         self.receiver = receiver
         sender.assign_qchannel(self, receiver)
@@ -136,10 +133,8 @@ class QuantumChannel(OpticalChannel):
             Receiver node may receive the qubit (via the `receive_qubit` method).
         """
 
-        log.logger.info(
-            "{} send qubit with state {} to {} by Channel {}".format(
-                self.sender.name, qubit.quantum_state, self.receiver,
-                self.name))
+        log.logger.info("{} send qubit with state {} to {} by Channel {}".format(
+                        self.sender.name, qubit.quantum_state, self.receiver, self.name))
 
         assert self.delay >= 0 and self.loss < 1, \
             "QuantumChannel init() function has not been run for {}".format(self.name)
@@ -233,7 +228,7 @@ class ClassicalChannel(OpticalChannel):
         name (str): label for channel instance.
         timeline (Timeline): timeline for simulation.
         sender (Node): node at sending end of optical channel.
-        receiver (Node): node at receiving end of optical channel.
+        receiver (str): name of the node at receiving end of optical channel.
         distance (float): length of the fiber (in m).
         delay (float): delay (in ps) of message transmission (default distance / light_speed).
     """
@@ -264,10 +259,7 @@ class ClassicalChannel(OpticalChannel):
             receiver (str): name of node receiving classical messages.
         """
 
-        log.logger.info(
-            "Set {} {} as ends of classical channel {}".format(sender.name,
-                                                               receiver,
-                                                               self.name))
+        log.logger.info("Set {} {} as ends of classical channel {}".format(sender.name, receiver, self.name))
         self.sender = sender
         self.receiver = receiver
         sender.assign_cchannel(self, receiver)
@@ -284,11 +276,7 @@ class ClassicalChannel(OpticalChannel):
             Receiver node may receive the qubit (via the `receive_qubit` method).
         """
 
-        log.logger.info(
-            "{} send message {} to {} by Channel {}".format(self.sender.name,
-                                                            message,
-                                                            self.receiver,
-                                                            self.name))
+        log.logger.info("{} send message {} to {} by Channel {}".format(self.sender.name, message, self.receiver, self.name))
         assert source == self.sender
 
         future_time = round(self.timeline.now() + int(self.delay))

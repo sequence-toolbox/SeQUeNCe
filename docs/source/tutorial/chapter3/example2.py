@@ -44,9 +44,13 @@ class PurifyNode(Node):
         self.protocols[0].received_message(src, msg)
 
 
-def entangle_memory(memo1: Memory, memo2: Memory, fidelity: float):
+def entangle_memory(tl: Timeline, memo1: Memory, memo2: Memory, fidelity: float):
+    SQRT_HALF = 0.5 ** 0.5
+    phi_plus = [SQRT_HALF, 0, 0, SQRT_HALF]
+
     memo1.reset()
     memo2.reset()
+    tl.quantum_manager.set([memo1.qstate_key, memo2.qstate_key], phi_plus)
 
     memo1.entangled_memory['node_id'] = memo2.owner.name
     memo1.entangled_memory['memo_id'] = memo2.name
@@ -86,8 +90,8 @@ meas_memo_2 = node2.components[node2.resource_manager.meas_memo_name]
 
 tl.init()
 for i in range(10):
-    entangle_memory(kept_memo_1, kept_memo_2, 0.9)
-    entangle_memory(meas_memo_1, meas_memo_2, 0.9)
+    entangle_memory(tl, kept_memo_1, kept_memo_2, 0.9)  # this version of purification always success, need to fix
+    entangle_memory(tl, meas_memo_1, meas_memo_2, 0.9)
 
     node1.resource_manager.create_protocol()
     node2.resource_manager.create_protocol()
@@ -98,7 +102,5 @@ for i in range(10):
     node2.protocols[0].start()
     tl.run()
 
-    print(kept_memo_1.name, kept_memo_1.entangled_memory,
-          kept_memo_1.fidelity)
-    print(meas_memo_1.name, meas_memo_1.entangled_memory,
-          meas_memo_1.fidelity)
+    print(kept_memo_1.name, kept_memo_1.entangled_memory, kept_memo_1.fidelity)
+    print(meas_memo_1.name, meas_memo_1.entangled_memory, meas_memo_1.fidelity)
