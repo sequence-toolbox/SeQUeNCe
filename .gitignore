@@ -139,3 +139,6 @@ src/gui/test_run.py
 
 # macos
 .DS_Store
+
+# tmp folder
+tmp/
