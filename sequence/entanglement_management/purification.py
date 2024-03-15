@@ -41,6 +41,9 @@ class BBPSSWMessage(Message):
             self.meas_res = kwargs['meas_res']
         else:
             raise Exception("BBPSSW protocol create unknown type of message: %s" % str(msg_type))
+    
+    def __str__(self):
+        return f"\"BBPSSW: type={self.msg_type}, meas_res={self.meas_res}\""
 
 
 class BBPSSW(EntanglementProtocol):
