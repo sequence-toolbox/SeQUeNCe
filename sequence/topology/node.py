@@ -56,9 +56,6 @@ class Node(Entity):
         name (str): name of node instance.
         timeline (Timeline): timeline for simulation.
         seed (int): seed for random number generator, default None
-        component_templates (Dict[str:Dict]): args for constructing components.
-            If not None, should map a component type (specified as a string) to constructor args.
-            Default is None.
         """
 
         log.logger.info("Create Node {}".format(name))
@@ -96,7 +93,7 @@ class Node(Entity):
     def assign_cchannel(self, cchannel: "ClassicalChannel", another: str) -> None:
         """Method to assign a classical channel to the node.
 
-        This method is usually called by the `ClassicalChannel.add_ends` method and not called individually.
+        This method is usually called by the `ClassicalChannel.set_ends` method and not called individually.
 
         Args:
             cchannel (ClassicalChannel): channel to add.
@@ -108,7 +105,7 @@ class Node(Entity):
     def assign_qchannel(self, qchannel: "QuantumChannel", another: str) -> None:
         """Method to assign a quantum channel to the node.
 
-        This method is usually called by the `QuantumChannel.add_ends` method and not called individually.
+        This method is usually called by the `QuantumChannel.set_ends` method and not called individually.
 
         Args:
             qchannel (QuantumChannel): channel to add.

@@ -10,10 +10,12 @@ pytest tests
 
 ```bash
 # run tests under a folder
+cd tests
 pytest entanglement_management
 ```
 
 ```bash
 # run tests in a file
-pytest entanglement_management/test_swapping.py
+cd entanglement_management
+pytest test_swapping.py
 ```
