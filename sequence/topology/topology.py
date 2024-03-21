@@ -29,10 +29,10 @@ class Topology(ABC):
         tl (Timeline): the timeline used for simulation
     """
 
-    ALL_CC_CONNECT = "cconnections"
+    ALL_CC_CONNECT = "cconnections"    # NOTE why not name it ALL_C_CONNECT?
     ALL_C_CHANNEL = "cchannels"
     ALL_NODE = "nodes"
-    ALL_QC_CONNECT = "qconnections"
+    ALL_QC_CONNECT = "qconnections"    # NOTE why not name it ALL_Q_CONNECT?
     ALL_Q_CHANNEL = "qchannels"
     ATTENUATION = "attenuation"
     CONNECT_NODE_1 = "node1"
