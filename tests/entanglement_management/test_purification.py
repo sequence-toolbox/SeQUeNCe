@@ -7,6 +7,7 @@ from sequence.components.optical_channel import ClassicalChannel
 from sequence.kernel.timeline import Timeline
 from sequence.entanglement_management.purification import *
 from sequence.topology.node import Node
+from sequence.constants import SQRT_HALF, PHI_PLUS, PHI_MINUS, PSI_PLUS, PSI_MINUS
 
 np.random.seed(0)
 
@@ -15,13 +16,13 @@ RAW = 'RAW'
 
 HALF_MICRON = 500
 ONE_MILLISECOND = 1e9
-SQRT_HALF = 0.5 ** 0.5
+# SQRT_HALF = 0.5 ** 0.5
 
-phi_plus = [SQRT_HALF, 0, 0, SQRT_HALF]
-phi_minus = [SQRT_HALF, 0, 0, -SQRT_HALF]
-psi_plus = [0, SQRT_HALF, SQRT_HALF, 0]
-psi_minus = [0, SQRT_HALF, -SQRT_HALF, 0]
-BELL_STATES = [phi_plus, phi_minus, psi_plus, psi_minus]
+# phi_plus = [SQRT_HALF, 0, 0, SQRT_HALF]
+# phi_minus = [SQRT_HALF, 0, 0, -SQRT_HALF]
+# psi_plus = [0, SQRT_HALF, SQRT_HALF, 0]
+# psi_minus = [0, SQRT_HALF, -SQRT_HALF, 0]
+BELL_STATES = [PHI_PLUS, PHI_MINUS, PSI_PLUS, PSI_MINUS]
 
 
 def success_probability(F: float) -> float:
@@ -135,7 +136,7 @@ def test_BBPSSW_phi_plus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(phi_plus, phi_plus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PHI_PLUS, PHI_PLUS, i)
         assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
         assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
         assert ep1.meas_res == ep2.meas_res
@@ -146,7 +147,7 @@ def test_BBPSSW_phi_plus_phi_plus():
         assert id(ket1) == id(ket2)
         assert kept1.qstate_key in ket1.keys and kept2.qstate_key in ket1.keys
         state = correct_order(ket1.state, ket1.keys)
-        assert complex_array_equal(phi_plus, state)
+        assert complex_array_equal(PHI_PLUS, state)
         # assert kept1 and kept2 point to the same Ketstate
         # assert the state is phi+
     assert abs(counter - 50) < 10
@@ -167,7 +168,7 @@ def test_BBPSSW_phi_plus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(phi_plus, phi_minus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PHI_PLUS, PHI_MINUS, i)
         assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
         assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
         assert ep1.meas_res == ep2.meas_res
@@ -178,7 +179,7 @@ def test_BBPSSW_phi_plus_phi_minus():
         state = correct_order(ket1.state, ket1.keys)
         if ep1.meas_res == 0:
             counter += 1
-            assert complex_array_equal(phi_minus, state)
+            assert complex_array_equal(PHI_MINUS, state)
         else:
             assert complex_array_equal([-SQRT_HALF, 0, 0, SQRT_HALF], state)
 
@@ -199,7 +200,7 @@ def test_BBPSSW_phi_minus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(phi_minus, phi_plus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PHI_MINUS, PHI_PLUS, i)
         assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
         assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
         assert ep1.meas_res == ep2.meas_res
@@ -210,7 +211,7 @@ def test_BBPSSW_phi_minus_phi_plus():
         assert kept1.qstate_key in ket1.keys and kept2.qstate_key in ket1.keys
         state = correct_order(ket1.state, ket1.keys)
 
-        assert complex_array_equal(phi_minus, state)
+        assert complex_array_equal(PHI_MINUS, state)
         if ep1.meas_res == 0:
             counter += 1
         else:
@@ -233,7 +234,7 @@ def test_BBPSSW_phi_minus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(phi_minus, phi_minus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PHI_MINUS, PHI_MINUS, i)
         assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
         assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
         assert ep1.meas_res == ep2.meas_res
@@ -246,7 +247,7 @@ def test_BBPSSW_phi_minus_phi_minus():
 
         if ep1.meas_res == 0:
             counter += 1
-            assert complex_array_equal(phi_plus, state)
+            assert complex_array_equal(PHI_PLUS, state)
         else:
             assert complex_array_equal([-SQRT_HALF, 0, 0, -SQRT_HALF], state)
 
@@ -267,7 +268,7 @@ def test_BBPSSW_phi_plus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(phi_plus, psi_plus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PHI_PLUS, PSI_PLUS, i)
         assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
         assert ep1.meas_res != ep2.meas_res
 
@@ -296,7 +297,7 @@ def test_BBPSSW_phi_plus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(phi_plus, psi_minus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PHI_PLUS, PSI_MINUS, i)
         assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
         assert ep1.meas_res != ep2.meas_res
 
@@ -324,7 +325,7 @@ def test_BBPSSW_phi_minus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(phi_minus, psi_plus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PHI_MINUS, PSI_PLUS, i)
         assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
         assert ep1.meas_res != ep2.meas_res
 
@@ -352,7 +353,7 @@ def test_BBPSSW_phi_minus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(phi_minus, psi_minus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PHI_MINUS, PSI_MINUS, i)
         assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
         assert ep1.meas_res != ep2.meas_res
 
@@ -381,7 +382,7 @@ def test_BBPSSW_psi_plus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(psi_plus, phi_plus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PSI_PLUS, PHI_PLUS, i)
         assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
         assert ep1.meas_res != ep2.meas_res
 
@@ -410,7 +411,7 @@ def test_BBPSSW_psi_plus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(psi_plus, phi_minus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PSI_PLUS, PHI_MINUS, i)
         assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
         assert ep1.meas_res != ep2.meas_res
 
@@ -438,7 +439,7 @@ def test_BBPSSW_psi_minus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(psi_minus, phi_plus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PSI_MINUS, PHI_PLUS, i)
         assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
         assert ep1.meas_res != ep2.meas_res
 
@@ -467,7 +468,7 @@ def test_BBPSSW_psi_minus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(psi_minus, phi_minus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PSI_MINUS, PHI_MINUS, i)
         assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
         assert ep1.meas_res != ep2.meas_res
 
@@ -496,7 +497,7 @@ def test_BBPSSW_psi_plus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(psi_plus, psi_plus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PSI_PLUS, PSI_PLUS, i)
         assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
         assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
         assert ep1.meas_res == ep2.meas_res
@@ -507,7 +508,7 @@ def test_BBPSSW_psi_plus_psi_plus():
         assert kept1.qstate_key in ket1.keys and kept2.qstate_key in ket1.keys
 
         state = correct_order(ket1.state, ket1.keys)
-        assert complex_array_equal(psi_plus, state)
+        assert complex_array_equal(PSI_PLUS, state)
         if ep1.meas_res == 0:
             counter += 1
         else:
@@ -530,7 +531,7 @@ def test_BBPSSW_psi_plus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(psi_plus, psi_minus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PSI_PLUS, PSI_MINUS, i)
         assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
         assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
         assert ep1.meas_res == ep2.meas_res
@@ -544,7 +545,7 @@ def test_BBPSSW_psi_plus_psi_minus():
 
         if ep1.meas_res == 0:
             counter += 1
-            assert complex_array_equal(psi_minus, state)
+            assert complex_array_equal(PSI_MINUS, state)
         else:
             assert complex_array_equal([0, -SQRT_HALF, SQRT_HALF, 0], state)
 
@@ -565,7 +566,7 @@ def test_BBPSSW_psi_minus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(psi_minus, psi_plus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PSI_MINUS, PSI_PLUS, i)
         assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
         assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
         assert ep1.meas_res == ep2.meas_res
@@ -576,7 +577,7 @@ def test_BBPSSW_psi_minus_psi_plus():
         assert kept1.qstate_key in ket1.keys and kept2.qstate_key in ket1.keys
 
         state = correct_order(ket1.state, ket1.keys)
-        assert complex_array_equal(psi_minus, state)
+        assert complex_array_equal(PSI_MINUS, state)
         if ep1.meas_res == 0:
             counter += 1
         else:
@@ -600,7 +601,7 @@ def test_BBPSSW_psi_minus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(psi_minus, psi_minus, i)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PSI_MINUS, PSI_MINUS, i)
         assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
         assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
         assert ep1.meas_res == ep2.meas_res
@@ -613,7 +614,7 @@ def test_BBPSSW_psi_minus_psi_minus():
 
         if ep1.meas_res == 0:
             counter += 1
-            assert complex_array_equal(psi_plus, state)
+            assert complex_array_equal(PSI_PLUS, state)
         else:
             assert complex_array_equal([0, -SQRT_HALF, -SQRT_HALF, 0], state)
     assert abs(counter - 50) < 10

@@ -1,10 +1,11 @@
-from json import load
+import json
+import numpy as np
 from networkx import Graph, dijkstra_path, exception
-from numpy import mean
 
 from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
 from .node import BSMNode, QuantumRouter
+from ..constants import SPEED_OF_LIGHT
 
 
 class RouterNetTopo(Topo):
@@ -42,7 +43,7 @@ class RouterNetTopo(Topo):
 
     def _load(self, filename):
         with open(filename, 'r') as fh:
-            config = load(fh)
+            config = json.load(fh)
 
         self._get_templates(config)
         # quantum connections are only supported by sequential simulation so far
@@ -113,25 +114,22 @@ class RouterNetTopo(Topo):
             distance = q_connect[Topo.DISTANCE] // 2
             channel_type = q_connect[Topo.TYPE]
             cc_delay = []
-            for cc in config.get(self.ALL_C_CHANNEL, []):
+            for cc in config.get(self.ALL_C_CHANNEL, []):   # classical channel
                 if cc[self.SRC] == node1 and cc[self.DST] == node2:
-                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / 2e-4)
+                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
                     cc_delay.append(delay)
                 elif cc[self.SRC] == node2 and cc[self.DST] == node1:
-                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / 2e-4)
+                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
                     cc_delay.append(delay)
 
-            for cc in config.get(self.ALL_CC_CONNECT, []):
-                if (cc[self.CONNECT_NODE_1] == node1
-                    and cc[self.CONNECT_NODE_2] == node2) \
-                        or (cc[self.CONNECT_NODE_1] == node2
-                            and cc[self.CONNECT_NODE_2] == node1):
-                    delay = cc.get(self.DELAY,
-                                   cc.get(self.DISTANCE, 1000) / 2e-4)
+            for cc in config.get(self.ALL_CC_CONNECT, []):  # classical connection
+                if (cc[self.CONNECT_NODE_1] == node1 and cc[self.CONNECT_NODE_2] == node2) \
+                        or (cc[self.CONNECT_NODE_1] == node2 and cc[self.CONNECT_NODE_2] == node1):
+                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
                     cc_delay.append(delay)
             if len(cc_delay) == 0:
                 assert 0, q_connect
-            cc_delay = mean(cc_delay) // 2
+            cc_delay = np.mean(cc_delay) // 2
 
             if channel_type == self.MEET_IN_THE_MID:  # generate intermediate BSM node
                 bsm_name = "BSM.{}.{}.auto".format(node1, node2)
