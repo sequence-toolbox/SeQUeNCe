@@ -40,10 +40,10 @@ The json file should be structured as a dictionary with the following keys:
 - `is_parallel`, denoting if it's a parallel or sequential simulation
 - `stop_time`, the stop time of simulation
 - `nodes`, giving a list of node specifications
-- One of the following:
+- At least one of the following:
   - `qchannels`, giving a list of quantum channel specifications
   - `qconnections`, giving a list of two-way quantum connection specifications
-- One of the following:
+- At least one of the following:
   - `cchannels`, giving a list of classical channel specifications (similar to `qchannels`)
   - `cconnections`, giving a list of two-way classical connection specifications
 
