@@ -2,14 +2,17 @@ These tests can be run using the [`pytest`](https://docs.pytest.org/en/8.0.x/) l
 
 Examples:
 
-```
-pytest
-```
-
-```
-pytest entanglement_management
+```bash
+# run all tests
+pytest tests
 ```
 
+```bash
+# run tests under entanglement_management folder
+pytest tests/entanglement_management
 ```
-pytest entanglement_management/test_swapping.py
+
+```bash
+# run tests in a the test_swapping.py file
+pytest tests/entanglement_management/test_swapping.py 
 ```
