@@ -100,7 +100,7 @@ class LightSource(Entity):
 
 
 class SPDCSource(LightSource):
-    """Model for a laser light source for entangled photons (via SPDC).
+    """Model for a laser light source for entangled photons, via spontaneous parametric down-conversion (SPDC).
 
     The SPDCLightSource component acts as a simple low intensity laser with an SPDC lens.
     It provides entangled photon clusters at a set frequency.
