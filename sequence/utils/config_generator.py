@@ -16,9 +16,10 @@ def add_default_args(parser):
         argparse.ArgummentParser
     '''
     parser.add_argument('memo_size', type=int, help='number of memories per node')
-    parser.add_argument('qc_length', type=float, help='distance between ring nodes (in km)')
+    parser.add_argument('qc_length', type=float, help='distance between nodes (in m)')
     parser.add_argument('qc_atten', type=float, help='quantum channel attenuation (in dB/m)')
     parser.add_argument('cc_delay', type=float, help='classical channel delay (in ms)')
+    parser.add_argument('-d', '--directory', type=str, default='tmp', help='name of output directory')
     parser.add_argument('-o', '--output', type=str, default='out.json', help='name of output config file')
     parser.add_argument('-s', '--stop', type=float, default=float('inf'), help='stop time (in s)')
     parser.add_argument('-p', '--parallel', nargs=4, help='optional parallel arguments: server ip, server port, num. processes, lookahead')
@@ -128,3 +129,10 @@ def final_config(output_dict, parsed_args):
     else:
         output_dict[RouterNetTopo.IS_PARALLEL] = False
 
+
+def router_name_func(i):
+    return f"router_{i}"
+
+
+def bsm_name_func(i, j):
+    return f"BSM_{i}_{j}"

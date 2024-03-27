@@ -17,10 +17,14 @@ from sequence.topology.qkd_topo import QKDTopo
 
 parser = argparse.ArgumentParser()
 parser.add_argument('config_file', help="path to json file defining network")
+parser.add_argument('-d', '--directory', type=str, default='tmp', help='directory to save the figure')
+parser.add_argument('-f', '--filename', type=str, default='topology', help='filename of the figure')
 # TODO: add support for middle node not viewing
 # parser.add_argument('-m', dest='draw_middle', action='store_true')
 
 args = parser.parse_args()
+directory = args.directory
+filename = args.filename
 
 # determine type of network
 with open(args.config_file, 'r') as fh:
@@ -55,4 +59,4 @@ for node_type in node_types:
 for qchannel in topo.get_qchannels():
     g.edge(qchannel.sender.name, qchannel.receiver, color='blue', dir='forward')
 
-g.view()
+g.view(directory=directory, filename=filename)
