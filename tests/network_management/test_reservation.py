@@ -157,8 +157,7 @@ def test_ResourceReservationProtocol_pop():
             card.add(reservation)
         else:
             break
-    msg = ResourceReservationMessage(RSVPMsgType.REJECT, n1.rsvp.name,
-                                     reservation, path=['n1', 'n2'])
+    msg = ResourceReservationMessage(RSVPMsgType.REJECT, n1.rsvp.name, reservation, path=['n1', 'n2'])
     n1.rsvp.pop("n2", msg)
     assert len(n1.pop_log) == 1 and len(n1.push_log) == 0
     assert n1.pop_log[0]["msg"].msg_type == RSVPMsgType.REJECT
@@ -173,8 +172,7 @@ def test_ResourceReservationProtocol_pop():
             card.add(reservation)
         else:
             break
-    msg = ResourceReservationMessage(RSVPMsgType.REJECT, n1.rsvp.name,
-                                     reservation, path=['n0', 'n1', 'n2'])
+    msg = ResourceReservationMessage(RSVPMsgType.REJECT, n1.rsvp.name, reservation, path=['n0', 'n1', 'n2'])
     n1.rsvp.pop("n2", msg)
     assert len(n1.pop_log) == 0 and len(n1.push_log) == 1
     assert n1.push_log[0]["msg"].msg_type == RSVPMsgType.REJECT
@@ -184,8 +182,7 @@ def test_ResourceReservationProtocol_pop():
 
     # initiator receives APPROVE
     reservation = Reservation("n1", "n2", 1, 10, 1000, 0.9)
-    msg = ResourceReservationMessage(RSVPMsgType.APPROVE, n1.rsvp.name,
-                                     reservation, path=["n1", "n2"])
+    msg = ResourceReservationMessage(RSVPMsgType.APPROVE, n1.rsvp.name, reservation, path=["n1", "n2"])
     n1.rsvp.pop("n2", msg)
     assert len(n1.pop_log) == 1 and len(n1.push_log) == 0
     assert n1.pop_log[0]["msg"].msg_type == RSVPMsgType.APPROVE
