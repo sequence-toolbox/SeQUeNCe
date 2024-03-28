@@ -130,9 +130,13 @@ def final_config(output_dict, parsed_args):
         output_dict[RouterNetTopo.IS_PARALLEL] = False
 
 
-def router_name_func(i):
+def router_name_func(i) -> str:
+    '''a function that returns the name of the router
+    '''
     return f"router_{i}"
 
 
-def bsm_name_func(i, j):
+def bsm_name_func(i, j) -> str:
+    '''a function that returns the name of the BSM node
+    '''
     return f"BSM_{i}_{j}"
