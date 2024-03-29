@@ -18,6 +18,7 @@ from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..utils import log
+from ..constants import SPEED_OF_LIGHT
 
 
 class OpticalChannel(Entity):
@@ -82,7 +83,7 @@ class QuantumChannel(OpticalChannel):
     """
 
     def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int,
-                 polarization_fidelity=1.0, light_speed=2e-4, frequency=8e7):
+                 polarization_fidelity=1.0, light_speed=SPEED_OF_LIGHT, frequency=8e7):
         """Constructor for Quantum Channel class.
 
         Args:
@@ -91,7 +92,7 @@ class QuantumChannel(OpticalChannel):
             attenuation (float): loss rate of optical fiber (in dB/m).
             distance (int): length of fiber (in m).
             polarization_fidelity (float): probability of no polarization error for a transmitted qubit (default 1).
-            light_speed (float): speed of light within the fiber (in m/ps) (default 2e-4).
+            light_speed (float): speed of light within the fiber (in m/ps).
             frequency (float): maximum frequency of qubit transmission (in Hz) (default 8e7).
         """
 
@@ -243,7 +244,7 @@ class ClassicalChannel(OpticalChannel):
             delay (float): delay (in ps) of message transmission (default distance / light_speed).
         """
 
-        super().__init__(name, timeline, 0, distance, 0, 2e-4)
+        super().__init__(name, timeline, 0, distance, 0, SPEED_OF_LIGHT)
         if delay == -1:
             self.delay = distance / self.light_speed
         else:

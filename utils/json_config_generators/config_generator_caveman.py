@@ -27,8 +27,7 @@ import networkx as nx
 import argparse
 import json
 
-from generator_utils import *
-
+from sequence.utils.config_generator import *
 from sequence.topology.topology import Topology
 
 

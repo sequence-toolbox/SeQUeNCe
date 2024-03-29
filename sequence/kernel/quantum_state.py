@@ -8,14 +8,14 @@ These include 2 classes used by a quantum manager, and one used for individual p
 3. The `FreeQuantumState` class uses the ket vector formalism, and is used by individual photons (not the quantum manager).
 """
 
+import math
 from abc import ABC
 from typing import Tuple, Dict, List
-
 from numpy import pi, cos, sin, arange, log, log2
 from numpy.random import Generator
 
 from .quantum_utils import *
-
+from ..constants import EPSILON
 
 def swap_bits(num, pos1, pos2):
     """Swaps bits in num at positions 1 and 2.
@@ -98,23 +98,19 @@ class KetState(State):
         dim = self.truncation + 1  # dimension of element Hilbert space
 
         # check formatting
-        assert all([abs(a) <= 1.01 for a in amplitudes]), "Illegal value with abs > 1 in ket vector"
-        assert abs(sum([abs(a) ** 2 for a in amplitudes]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
+        assert all([abs(a) <= 1 + EPSILON for a in amplitudes]), "Illegal value with abs > 1 in ket vector"
+        assert math.isclose(sum([abs(a) ** 2 for a in amplitudes]), 1), "Squared amplitudes do not sum to 1"
 
         num_subsystems = log(len(amplitudes)) / log(dim)
         assert dim ** int(round(num_subsystems)) == len(amplitudes),\
             "Length of amplitudes should be d ** n, " \
             "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
-            "Actual amplitude length: {}, dim: {}, num subsystems: {}".format(
-                len(amplitudes), dim, num_subsystems
-            )
+            "Actual amplitude length: {}, dim: {}, num subsystems: {}".format(len(amplitudes), dim, num_subsystems)
         num_subsystems = int(round(num_subsystems))
         assert num_subsystems == len(keys),\
             "Length of amplitudes should be d ** n, " \
             "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
-            "Amplitude length: {}, expected subsystems: {}, num keys: {}".format(
-                len(amplitudes), num_subsystems, len(keys)
-            )
+            "Amplitude length: {}, expected subsystems: {}, num keys: {}".format(len(amplitudes), num_subsystems, len(keys))
 
         self.state = array(amplitudes, dtype=complex)
         self.keys = keys

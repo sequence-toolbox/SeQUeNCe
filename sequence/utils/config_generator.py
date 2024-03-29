@@ -1,4 +1,6 @@
-"""This module defines common functions for the config generation files."""
+"""This module defines common functions for the config generation files.
+Examples of using this module is in https://github.com/sequence-toolbox/SeQUeNCe/tree/master/utils/json_config_generators
+"""
 
 import pandas as pd
 
@@ -7,20 +9,25 @@ from sequence.topology.router_net_topo import RouterNetTopo
 
 
 def add_default_args(parser):
+    '''
+    Args:
+        parser: argparse.ArgummentParser
+    Return:
+        argparse.ArgummentParser
+    '''
     parser.add_argument('memo_size', type=int, help='number of memories per node')
     parser.add_argument('qc_length', type=float, help='distance between ring nodes (in km)')
     parser.add_argument('qc_atten', type=float, help='quantum channel attenuation (in dB/m)')
     parser.add_argument('cc_delay', type=float, help='classical channel delay (in ms)')
     parser.add_argument('-o', '--output', type=str, default='out.json', help='name of output config file')
     parser.add_argument('-s', '--stop', type=float, default=float('inf'), help='stop time (in s)')
-    parser.add_argument('-p', '--parallel', nargs=4,
-                        help='optional parallel arguments: server ip, server port, num. processes, lookahead')
+    parser.add_argument('-p', '--parallel', nargs=4, help='optional parallel arguments: server ip, server port, num. processes, lookahead')
     parser.add_argument('-n', '--nodes', type=str, help='path to csv file to provide process for each node')
     return parser
 
 
 # get csv file
-def get_node_csv(node_file):
+def get_node_csv(node_file) -> dict:
     node_procs = {}
 
     # TODO: add length/proc assertions
@@ -31,7 +38,9 @@ def get_node_csv(node_file):
     return node_procs
 
 
-def generate_node_procs(parallel, net_size, naming_func):
+def generate_node_procs(parallel, net_size, naming_func) -> dict:
+    '''map a node to a process
+    '''
     if parallel:
         num_procs = int(parallel[2])
     else:
@@ -45,7 +54,7 @@ def generate_node_procs(parallel, net_size, naming_func):
     return node_procs
 
 
-def generate_nodes(node_procs, router_names, memo_size):
+def generate_nodes(node_procs: dict, router_names: str, memo_size: int) -> list:
     nodes = [{Topology.NAME: name,
               Topology.TYPE: RouterNetTopo.QUANTUM_ROUTER,
               Topology.SEED: i,
@@ -88,7 +97,7 @@ def generate_bsm_links(graph, node_procs, parsed_args, bsm_naming_func):
 
 
 # generate classical network connections
-def generate_classical(router_names, cc_delay):
+def generate_classical(router_names: list, cc_delay: int) -> list:
     cchannels = []
     for node1 in router_names:
         for node2 in router_names:
@@ -100,7 +109,7 @@ def generate_classical(router_names, cc_delay):
     return cchannels
 
 
-# add final touches to config dict
+# add final touches to config dict: 1) stop_time, 2)parallel related
 def final_config(output_dict, parsed_args):
     output_dict[Topology.STOP_TIME] = parsed_args.stop * 1e12
     if parsed_args.parallel:

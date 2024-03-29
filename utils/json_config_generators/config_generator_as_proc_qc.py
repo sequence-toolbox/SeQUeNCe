@@ -11,8 +11,7 @@ import matplotlib.pyplot as plt
 from simanneal import Annealer
 import random
 
-from generator_utils import add_default_args, generate_bsm_links, generate_classical, final_config
-
+from sequence.utils.config_generator import add_default_args, generate_bsm_links, generate_classical, final_config
 from sequence.topology.topology import Topology
 from sequence.topology.router_net_topo import RouterNetTopo
 

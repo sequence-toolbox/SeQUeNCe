@@ -2,7 +2,7 @@
 
 This module defines a process, which is performed when an event is executed.
 """
-from typing import Any, List
+from typing import Any, List, Dict
 
 
 class Process:
@@ -12,20 +12,22 @@ class Process:
 
     Attributes:
         owner (Any): the object of process.
-        activation_method (str): the function of object.
-        act_params (List[Any]): the arguments of object.
+        activation_method (str): the function name of object.
+        activation_args  (List[Any]): the (non-keyword) arguments of object's function.
+        activation_kwargs (Dict[Any, Any]): the keyword arguments of object's function.
     """
 
-    def __init__(self, owner: Any, activation_method: str, act_params: List[Any], act_kwargs={}):
+    def __init__(self, owner: Any, activation_method: str, activation_args: List[Any], activation_kwargs: Dict[Any, Any] = {}):
         self.owner = owner
         self.activation = activation_method
-        self.act_params = act_params
-        self.act_kwargs = act_kwargs
+        self.activation_args = activation_args
+        self.activation_kwargs = activation_kwargs
 
     def run(self) -> None:
         """Method to execute process.
 
-        Will run the `activation_method` method of `owner` with `act_params` passed as args.
+        Will run the `activation_method` method of `owner` with 
+        `activation_args` passed as args, and 'activation_kwargs' passed as kwargs.
         """
 
-        return getattr(self.owner, self.activation)(*self.act_params, **self.act_kwargs)
+        return getattr(self.owner, self.activation)(*self.activation_args, **self.activation_kwargs)
