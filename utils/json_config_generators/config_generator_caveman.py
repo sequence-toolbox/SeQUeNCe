@@ -31,13 +31,6 @@ from sequence.utils.config_generator import *
 from sequence.topology.topology import Topology
 
 
-def router_name_func(i):
-    return f"router_{i}"
-
-
-def bsm_name_func(i, j):
-    return f"BSM_{i}_{j}"
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument('l', type=int, help="l (int) – Number of cliques")

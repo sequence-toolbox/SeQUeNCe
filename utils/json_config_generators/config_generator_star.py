@@ -24,14 +24,12 @@ Optional Args:
 
 import argparse
 import json
+import os
 
-from sequence.utils.config_generator import add_default_args, get_node_csv, generate_node_procs, generate_nodes, generate_classical, final_config
+from sequence.utils.config_generator import add_default_args, get_node_csv, generate_node_procs, generate_nodes, generate_classical, final_config, router_name_func
 from sequence.topology.topology import Topology
 from sequence.topology.router_net_topo import RouterNetTopo
 
-
-def router_name_func(i):
-    return f"router_{i}"
 
 
 # parse args
@@ -112,6 +110,7 @@ output_dict[Topology.ALL_C_CHANNEL] = cchannels
 final_config(output_dict, args)
 
 # write final json
-output_file = open(args.output, 'w')
+path = os.path.join(args.directory, args.output)
+output_file = open(path, 'w')
 json.dump(output_dict, output_file, indent=4)
 
