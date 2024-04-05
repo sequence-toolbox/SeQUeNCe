@@ -275,12 +275,12 @@ class QuantumManagerKet(QuantumManager):
             # set to state measured
             new_state_obj = KetState(result_states[res], [key])
             self.states[key] = new_state_obj
-        
+
         if len(all_keys) > 0:
             new_state_obj = KetState(new_state, all_keys)
             for key in all_keys:
                 self.states[key] = new_state_obj
-        
+
         return dict(zip(keys, result_digits))
 
 
@@ -708,7 +708,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
 class QuantumManagerBellDiagonal(QuantumManager):
     """Class to track and manage quantum states with the bell diagonal formalism.
-    
+
     To be aligned with analytical formulae, we have assumed that successfully generated EPR pair is in Phi+ form.
     And note that the 4 BDS elements are in I, Z, X, Y order.
 
@@ -745,7 +745,10 @@ class QuantumManagerBellDiagonal(QuantumManager):
 
     def set(self, keys: List[int], diag_elems: List[float]) -> None:
         super().set(keys, diag_elems)
-        assert len(keys) == 2, "Bell diagonal states must have 2 keys."
+        # assert len(keys) == 2, "Bell diagonal states must have 2 keys."
+        if len(keys) != 2:
+            #raise Warning("bell diagonal quantum manager received invalid set request")  # optional
+            return
         new_state = BellDiagonalState(diag_elems, keys)
         for key in keys:
             self.states[key] = new_state

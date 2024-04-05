@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 from ..kernel.entity import Entity
 from ..components.memory import MemoryArray
 from ..components.bsm import SingleAtomBSM
+from ..components.bsm import SingleHeraldedBSM
 from ..components.light_source import LightSource
 from ..components.detector import QSDetector, QSDetectorPolarization, QSDetectorTimeBin
 from ..qkd.BB84 import BB84
@@ -36,7 +37,7 @@ from ..utils import log
 
 class Node(Entity):
     """Base node type.
-    
+
     Provides default interfaces for network.
 
     Attributes:
@@ -228,8 +229,8 @@ class BSMNode(Node):
 
         # create BSM object with optional args
         bsm_name = name + ".BSM"
-        bsm_args = component_templates.get("SingleAtomBSM", {})
-        bsm = SingleAtomBSM(bsm_name, timeline, **bsm_args)
+        bsm_args = component_templates.get("SingleHeraldedBSM", {}) # bsm_args = component_templates.get("SingleAtomBSM", {})
+        bsm = SingleHeraldedBSM(bsm_name, timeline, **bsm_args) # bsm = SingleAtomBSM(bsm_name, timeline, **bsm_args)
         self.add_component(bsm)
         self.set_first_component(bsm_name)
 
@@ -557,7 +558,7 @@ class QKDNode(Node):
         elif encoding == "time_bin":
             detection_times = qsdetector.get_photon_times()
             bin_separation = self.encoding["bin_separation"]
-        
+
             # single detector (for early, late basis) times
             for time in detection_times[0]:
                 index = int(round((time - start_time) * frequency * 1e-12))
@@ -566,7 +567,7 @@ class QKDNode(Node):
                         bits[index] = 0
                     elif abs(((index * 1e12 / frequency) + start_time) - (time - bin_separation)) < bin_separation / 2:
                         bits[index] = 1
-        
+
             # interferometer detector 0 times
             for time in detection_times[1]:
                 time -= bin_separation
