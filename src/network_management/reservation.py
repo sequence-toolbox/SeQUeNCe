@@ -176,8 +176,7 @@ def ep_req_func1(protocols, args: Arguments) -> "BBPSSW":
 
 
 def ep_rule_action1(memories_info: List["MemoryInfo"], args: Arguments):
-    """Action function used by BBPSSW protocol on nodes except the
-    responder node
+    """Action function used by BBPSSW protocol on nodes except the initiator
 
     """
     memories = [info.memory for info in memories_info]
@@ -318,7 +317,7 @@ def es_rule_conditionB2(memory_info: "MemoryInfo", manager: "MemoryManager", arg
 
 
 class ResourceReservationProtocol(StackProtocol):
-    """ReservationProtocol for  node resources.
+    """ReservationProtocol for node resources.
 
     The reservation protocol receives network entanglement requests and attempts to reserve local resources.
     If successful, it will forward the request to another node in the entanglement path and create local rules.
@@ -494,7 +493,7 @@ class ResourceReservationProtocol(StackProtocol):
             condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
             action_args = {"mid": self.own.map_to_middle_node[path[index - 1]],
                            "path": path, "index": index}
-            rule = Rule(10, eg_rule_action1, eg_rule_condition, action_args, condition_args)
+            rule = Rule(20, eg_rule_action1, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
 
         if index < len(path) - 1:
@@ -507,7 +506,7 @@ class ResourceReservationProtocol(StackProtocol):
             action_args = {"mid": self.own.map_to_middle_node[path[index + 1]],
                            "path": path, "index": index, "name": self.own.name,
                            "reservation": reservation}
-            rule = Rule(10, eg_rule_action2, eg_rule_condition, action_args, condition_args)
+            rule = Rule(20, eg_rule_action2, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
 
         # create rules for entanglement purification
@@ -537,7 +536,7 @@ class ResourceReservationProtocol(StackProtocol):
                               "target_remote": path[-1],
                               "fidelity": reservation.fidelity}
             action_args = {}
-            rule = Rule(10, es_rule_actionB, es_rule_conditionB1, action_args, condition_args)
+            rule = Rule(20, es_rule_actionB, es_rule_conditionB1, action_args, condition_args)
             rules.append(rule)
 
         elif index == len(path) - 1:
@@ -545,7 +544,7 @@ class ResourceReservationProtocol(StackProtocol):
             condition_args = {"memory_indices": memory_indices,
                               "target_remote": path[0],
                               "fidelity": reservation.fidelity}
-            rule = Rule(10, es_rule_actionB, es_rule_conditionB1, action_args, condition_args)
+            rule = Rule(20, es_rule_actionB, es_rule_conditionB1, action_args, condition_args)
             rules.append(rule)
 
         else:
@@ -565,11 +564,11 @@ class ResourceReservationProtocol(StackProtocol):
                               "fidelity": reservation.fidelity}
             action_args = {"es_succ_prob": self.es_succ_prob,
                            "es_degradation": self.es_degradation}
-            rule = Rule(10, es_rule_actionA, es_rule_conditionA, action_args, condition_args)
+            rule = Rule(20, es_rule_actionA, es_rule_conditionA, action_args, condition_args)
             rules.append(rule)
 
             action_args = {}
-            rule = Rule(10, es_rule_actionB, es_rule_conditionB2, action_args, condition_args)
+            rule = Rule(20, es_rule_actionB, es_rule_conditionB2, action_args, condition_args)
             rules.append(rule)
 
         for rule in rules:
