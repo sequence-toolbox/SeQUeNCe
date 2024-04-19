@@ -185,10 +185,16 @@ class EntanglementGenerationA(EntanglementProtocol):
         else:
             self.raw_fidelity = memory.raw_fidelity
         assert 0.5 <= self.raw_fidelity <= 1, "Raw fidelity of EPR pair must be above 1/2."
+
         self.raw_epr_errors = raw_epr_errors
-        if self.raw_epr_errors:
+        if raw_epr_errors:
             assert len(self.raw_epr_errors) == 3, \
                 "Raw EPR pair Pauli error list should have three elements in X, Y, Z order."
+            assert sum(self.raw_epr_errors) == 1, \
+                "Raw EPR pair Pauli error list should sum to 1."
+        else:
+            assert self.raw_fidelity == 1, \
+                "Pauli error list not specified with non-unit fidelity."
 
         # memory info
         self.memory: Memory = memory
