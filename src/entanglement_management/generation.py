@@ -152,7 +152,7 @@ class EntanglementGenerationA(EntanglementProtocol):
     _z_circuit.z(0)
 
     def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory",
-                 is_sh: bool = True, raw_fidelity: float = None, raw_epr_errors: List[float] = None):
+                 is_sh: bool = True, raw_fidelity: float = None, raw_epr_errors: List[float] = (0.4, 0.3, 0.3)):
         """Constructor for entanglement generation A class.
 
         Args:
