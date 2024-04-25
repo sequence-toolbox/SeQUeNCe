@@ -30,11 +30,11 @@ class NetworkManagerMessage(Message):
         Message.__init__(self, msg_type, receiver)
         self.payload = payload
 
-    def __str__(self):
-        return "type={}, receiver={}, payload={}".format(self.msg_type, self.receiver, self.payload)
+    def __str__(self) -> str:
+        return "(type={}; receiver={}; payload={})".format(self.msg_type, self.receiver, self.payload)
 
 
-class NetworkManager():
+class NetworkManager:
     """Network manager implementation class.
 
     The network manager is responsible for the operations of a node within a broader quantum network.

@@ -91,10 +91,7 @@ class RouterNetTopo(Topo):
                 raise ValueError("Unknown type of node '{}'".format(node_type))
 
             node_obj.set_seed(seed)
-            if node_type in self.nodes:
-                self.nodes[node_type].append(node_obj)
-            else:
-                self.nodes[node_type] = [node_obj]
+            self.nodes[node_type].append(node_obj)
 
     def _add_bsm_node_to_router(self):
         for bsm in self.bsm_to_router_map:
@@ -208,7 +205,7 @@ class RouterNetTopo(Topo):
                         path = dijkstra_path(graph, dst_name, src.name)[::-1]
                     next_hop = path[1]
                     # routing protocol locates at the bottom of the stack
-                    routing_protocol = src.network_manager.protocol_stack[0]
+                    routing_protocol = src.network_manager.protocol_stack[0]  # gaurantee that [0] is the routing protocol?
                     routing_protocol.add_forwarding_rule(dst_name, next_hop)
                 except exception.NetworkXNoPath:
                     pass

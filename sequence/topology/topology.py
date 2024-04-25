@@ -54,7 +54,7 @@ class Topology(ABC):
         Args:
             conf_file_name (str): the name of configuration file
         """
-        self.nodes: Dict[str, List[Node]] = defaultdict(lambda: [])
+        self.nodes: Dict[str, List[Node]] = defaultdict(list)
         self.qchannels: List[QuantumChannel] = []
         self.cchannels: List[ClassicalChannel] = []
         self.templates: Dict[str, Dict] = {}

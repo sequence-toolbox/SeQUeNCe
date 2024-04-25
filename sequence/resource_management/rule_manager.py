@@ -13,12 +13,10 @@ if TYPE_CHECKING:
     from ..network_management.reservation import Reservation
 
 
-ActionFunc = Callable[[List["MemoryInfo"], Dict[str, Any]],
-                      Tuple["EntanglementProtocol", List["str"],
-                            List[Callable[["EntanglementProtocol"], bool]]]]
+ActionFunc = Callable[[List["MemoryInfo"], Dict[str, Any]], 
+                      Tuple["EntanglementProtocol", List["str"], List[Callable[["EntanglementProtocol"], bool]]]]
 
-ConditionFunc = Callable[["MemoryInfo", "MemoryManager", Dict[str, Any]],
-                         List["MemoryInfo"]],
+ConditionFunc = Callable[["MemoryInfo", "MemoryManager", Dict[str, Any]], List["MemoryInfo"]],
 
 Arguments = Dict[str, Any]
 
@@ -91,8 +89,7 @@ class RuleManager:
 
     def send_request(self, protocol, req_dst, req_condition_func, req_args):
         log.logger.info('Rule manager send request for protocol {} to {}'.format(protocol.name, req_dst))
-        return self.resource_manager.send_request(protocol, req_dst,
-                                                  req_condition_func, req_args)
+        return self.resource_manager.send_request(protocol, req_dst, req_condition_func, req_args)
 
     def __len__(self):
         return len(self.rules)
@@ -129,6 +126,11 @@ class Rule:
         self.rule_manager = None
         self.reservation = None
 
+    def __str__(self):
+        action_name = str(self.action).split(' ')[1]
+        condition_name = str(self.condition).split(' ')[1]
+        return "|action={}, args={}; condition={}, args={}|".format(action_name, self.action_args, condition_name, self.condition_args)
+
     def set_rule_manager(self, rule_manager: "RuleManager") -> None:
         """Method to assign rule to a rule manager.
 
@@ -145,8 +147,7 @@ class Rule:
             memories_info (List[MemoryInfo]): list of memory infos for memories meeting requirements.
         """
 
-        protocol, req_dsts, req_condition_funcs, req_args = self.action(
-            memories_info, self.action_args)
+        protocol, req_dsts, req_condition_funcs, req_args = self.action(memories_info, self.action_args)
         log.logger.info('Rule generates protocol {}'.format(protocol.name))
 
         protocol.rule = self

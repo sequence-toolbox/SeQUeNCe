@@ -137,8 +137,7 @@ class Node(Entity):
             src (str): name of node sending the message.
             msg (Message): message transmitted from node.
         """
-        log.logger.info(
-            "{} receive message {} from {}".format(self.name, msg, src))
+        log.logger.info("{} receive message {} from {}".format(self.name, msg, src))
         # signal to protocol that we've received a message
         if msg.receiver is not None:
             for protocol in self.protocols:
@@ -277,11 +276,16 @@ class QuantumRouter(Node):
 
         # add protocols
         self.resource_manager = ResourceManager(self, memo_arr_name)
-        self.network_manager = NewNetworkManager(self, memo_arr_name)
+        self.network_manager = NewNetworkManager(self, memo_arr_name)  # NOTE caitao: update self.protocols?
         self.map_to_middle_node = {}
         self.app = None
 
     def receive_message(self, src: str, msg: "Message") -> None:
+        """Determine what to do when a message is received, based on the msg.receiver
+        Args:
+            src (str): name of node that sends the message
+            msg (Message): the message
+        """
         log.logger.info("{} receive message {} from {}".format(self.name, msg, src))
         if msg.receiver == "resource_manager":
             self.resource_manager.received_message(src, msg)
@@ -368,7 +372,7 @@ class QuantumRouter(Node):
         """Method for application to receive another reservation."""
 
         if self.app:
-            self.app.get_other_reservation(reservation)
+            self.app.get_other_reservation(reservation) # NOTE Caitao: ?
 
 
 class QKDNode(Node):

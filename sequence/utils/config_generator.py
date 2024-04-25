@@ -55,13 +55,19 @@ def generate_node_procs(parallel, net_size, naming_func) -> dict:
     return node_procs
 
 
-def generate_nodes(node_procs: dict, router_names: str, memo_size: int) -> list:
-    nodes = [{Topology.NAME: name,
-              Topology.TYPE: RouterNetTopo.QUANTUM_ROUTER,
-              Topology.SEED: i,
-              RouterNetTopo.MEMO_ARRAY_SIZE: memo_size,
-              RouterNetTopo.GROUP: node_procs[name]}
-             for i, name in enumerate(router_names)]
+def generate_nodes(node_procs: dict, router_names: str, memo_size: int, template: str = None) -> list:
+    '''generate a list of node configs
+    '''
+    nodes = []
+    for i, name in enumerate(router_names):
+        config = {Topology.NAME: name,
+                  Topology.TYPE: RouterNetTopo.QUANTUM_ROUTER,
+                  Topology.SEED: i,
+                  RouterNetTopo.MEMO_ARRAY_SIZE: memo_size,
+                  RouterNetTopo.GROUP: node_procs[name]}
+        if template:
+            config[RouterNetTopo.TEMPLATE] = template
+        nodes.append(config)
     return nodes
 
 

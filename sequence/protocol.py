@@ -75,10 +75,12 @@ class StackProtocol(Protocol):
         pass
 
     def _push(self, **kwargs):
+        """call the push of all lower_protocols"""
         for protocol in self.lower_protocols:
             protocol.push(**kwargs)
 
     def _pop(self, **kwargs):
+        """call the pop of all upper_protocols"""
         for protocol in self.upper_protocols:
             protocol.pop(**kwargs)
 

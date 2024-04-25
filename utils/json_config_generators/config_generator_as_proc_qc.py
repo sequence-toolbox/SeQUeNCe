@@ -1,3 +1,6 @@
+"""This module generates JSON config files for Internet Autonomous System Network
+"""
+
 from collections import defaultdict
 from time import time
 

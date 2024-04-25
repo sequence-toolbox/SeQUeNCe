@@ -118,7 +118,7 @@ class QuantumChannel(OpticalChannel):
             receiver (str): name of node receiving qubits.
         """
 
-        log.logger.info("Set {} {} as ends of quantum channel {}".format(sender.name, receiver, self.name))
+        log.logger.info("Set {}, {} as ends of quantum channel {}".format(sender.name, receiver, self.name))
         self.sender = sender
         self.receiver = receiver
         sender.assign_qchannel(self, receiver)
@@ -260,7 +260,7 @@ class ClassicalChannel(OpticalChannel):
             receiver (str): name of node receiving classical messages.
         """
 
-        log.logger.info("Set {} {} as ends of classical channel {}".format(sender.name, receiver, self.name))
+        log.logger.info("Set {}, {} as ends of classical channel {}".format(sender.name, receiver, self.name))
         self.sender = sender
         self.receiver = receiver
         sender.assign_cchannel(self, receiver)

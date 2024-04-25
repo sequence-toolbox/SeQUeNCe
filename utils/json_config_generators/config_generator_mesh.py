@@ -10,6 +10,7 @@ Args:
     cc_delay (float): classical channel delay (in ms).
 
 Optional Args:
+    -d --directory (str): name of the output directory (default tmp)
     -o --output (str): name of the output file (default out.json).
     -s --stop (float): simulation stop time (in s) (default infinity).
     -p --parallel: sets simulation as parallel and requires addition args:
