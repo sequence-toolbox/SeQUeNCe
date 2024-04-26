@@ -741,7 +741,7 @@ class QuantumManagerBellDiagonal(QuantumManager):
         if key not in self.states:
             raise Exception("Attempt to get Bell diagonal state before entanglement.")
 
-        super().get(key)
+        return super().get(key)
 
     def set(self, keys: List[int], diag_elems: List[float]) -> None:
         super().set(keys, diag_elems)
