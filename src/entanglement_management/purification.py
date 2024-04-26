@@ -155,18 +155,22 @@ class BBPSSW(EntanglementProtocol):
             meas_samp = self.own.get_generator().random()
             self.meas_res = self.own.timeline.quantum_manager.run_circuit(
                 self.circuit, [self.kept_memo.qstate_key,
-                            self.meas_memo.qstate_key],
+                               self.meas_memo.qstate_key],
                 meas_samp)
             self.meas_res = self.meas_res[self.meas_memo.qstate_key]
 
         elif self.is_bds:
+            # get remote memories
+            remote_memos = [self.own.timeline.get_entity_by_name(memo)
+                            for memo in self.remote_memories]
+            remote_kept_memo = remote_memos[0]
+            remote_meas_memo = remote_memos[1]
+
             # first invoke single-memory decoherence channels on each involved quantum memory (in total 4)
-            # note that bds_decohere() has changed the last_update_time to now, 
-            # thus we don't need to change it for the udpated state from purification
             self.meas_memo.bds_decohere()
             self.kept_memo.bds_decohere()
-            self.own.timeline.get_entity_by_name(kept_memo_ent).bds_decohere()
-            self.own.timeline.get_entity_by_name(meas_memo_ent).bds_decohere()
+            remote_kept_memo.bds_decohere()
+            remote_meas_memo.bds_decohere()
 
             # use following trick to determine if the measurement results on both sides equal: 
             # We consider that both sides do a biased coin flip,
@@ -194,15 +198,14 @@ class BBPSSW(EntanglementProtocol):
             #  and during classical communication decoherence will happen (if applicable)
             # TODO: the entangle_time attribute of MemoryInfo should be the time when the purification is started,
             #  not the time when purification result is determined (after CC)
+
             # modify entangled state of kept pair
             # (if failed will be reset automatically, so in advance update does not matter)
-            keys = [self.kept_memo.qstate_key, self.own.timeline.get_entity_by_name(kept_memo_ent).qstate_key]
-
-            # avoid both ends setting memory state
-            if self.kept_memo.name > kept_memo_ent:
+            if self.kept_memo.name > kept_memo_ent:  # avoid both ends setting memory state
+                keys = [self.kept_memo.qstate_key, remote_kept_memo.qstate_key]
                 self.own.timeline.quantum_manager.set(keys, new_bds)
 
-        dst = self.kept_memo.entangled_memory["node_id"]
+        dst = kept_memo_ent
 
         message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES,
                                 self.remote_protocol_name,
