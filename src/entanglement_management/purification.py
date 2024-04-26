@@ -70,7 +70,7 @@ class BBPSSW(EntanglementProtocol):
     circuit.cx(0, 1)
     circuit.measure(1)
 
-    def __init__(self, own: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory", is_bds=False):
+    def __init__(self, own: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory", is_bds=True):
         """Constructor for purification protocol.
 
         Args:
