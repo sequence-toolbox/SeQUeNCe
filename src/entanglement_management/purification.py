@@ -297,7 +297,7 @@ class BBPSSW(EntanglementProtocol):
             meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = meas_input_state.state  # Diagonal elements of measured pair
 
         assert 1. >= kept_elem_1 >= 0.5 and 1. >= meas_elem_1 >= 0.5, "Input states should have fidelity above 1/2."
-        a, b = (kept_elem_1 + kept_elem_2), (meas_elem_1, meas_elem_2)  # TODO: how should meas_elem_1 and 2 be combined?
+        a, b = (kept_elem_1 + kept_elem_2), (meas_elem_1 + meas_elem_2)
 
         # calculate success probability with analytical formula
         p_succ = 1/2 \
