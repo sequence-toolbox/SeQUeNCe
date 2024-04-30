@@ -125,7 +125,7 @@ class EntanglementGenerationA(EntanglementProtocol):
     In current implementation we don't distinguish different Bell states,
     and instead assume that post-measurement feedforward has been done to transform the Bell state in a specific form.
 
-    For thje single-heralded protocol, we use Bell Diagonal States (BDS) to track memory entangled states.
+    For the single-heralded protocol, we use Bell Diagonal States (BDS) to track memory entangled states.
     The intial form of state (ratio of the Pauli errors) is assumed to be determined by the EG protocol itself.
     Note that in reality, this may also depend on memory (e.g. decoherence during the course),
     but this implementation avoids the cases where `raw_epr_errors` in different memories do not match each other.

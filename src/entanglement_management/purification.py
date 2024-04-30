@@ -64,13 +64,14 @@ class BBPSSW(EntanglementProtocol):
         remote_protocol_name (str): name of other protocol.
         remote_memories (List[str]): name of remote memories.
         is_bds (bool): whether the formalism of entangled state is Bell diagonal state (default False).
+        is_twirled (bool): whether we twirl the input and output BDS. True: BBPSSW, False: DEJMPS. (default False)
     """
 
     circuit = Circuit(2)
     circuit.cx(0, 1)
     circuit.measure(1)
 
-    def __init__(self, own: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory", is_bds=True):
+    def __init__(self, own: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory", is_bds=True, is_twirled=False):
         """Constructor for purification protocol.
 
         Args:
@@ -94,6 +95,7 @@ class BBPSSW(EntanglementProtocol):
             self.memories.pop()
 
         self.is_bds = is_bds
+        self.is_twirled = is_twirled
 
     def is_ready(self) -> bool:
         return self.remote_node_name is not None
@@ -167,6 +169,9 @@ class BBPSSW(EntanglementProtocol):
             remote_meas_memo = remote_memos[1]
 
             # first invoke single-memory decoherence channels on each involved quantum memory (in total 4)
+            # purification will use the updated BDS as input, and also update the BDS with purification_res
+            # the bds_decohere() method will also update the last_update_time of quantum memories
+            # in this case it will be the time when purification is initiated, thus allowing correct accounting of idling decoherence
             self.meas_memo.bds_decohere()
             self.kept_memo.bds_decohere()
             remote_kept_memo.bds_decohere()
@@ -194,13 +199,10 @@ class BBPSSW(EntanglementProtocol):
             else:
                 self.meas_res = 0
 
-            # TODO: conditioned on success, BDS has been modified since start of purification,
-            #  and during classical communication decoherence will happen (if applicable)
             # TODO: the entangle_time attribute of MemoryInfo should be the time when the purification is started,
             #  not the time when purification result is determined (after CC)
 
             # modify entangled state of kept pair
-            # (if failed will be reset automatically, so in advance update does not matter)
             if self.kept_memo.name > kept_memo_ent:  # avoid both ends setting memory state
                 keys = [self.kept_memo.qstate_key, remote_kept_memo.qstate_key]
                 self.own.timeline.quantum_manager.set(keys, new_bds)
@@ -280,17 +282,22 @@ class BBPSSW(EntanglementProtocol):
         kept_input_state = self.own.timeline.quantum_manager.get(self.kept_memo.qstate_key)
         meas_input_state = self.own.timeline.quantum_manager.get(self.meas_memo.qstate_key)
 
-        kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = kept_input_state.state  # Diagonal elements of kept pair
-        meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = meas_input_state.state  # Diagonal elements of measured pair
-        assert 1. >= kept_elem_1 >= 0.5 and 1. >= meas_elem_1 >= 0.5, "Input states should have fidelity above 1/2."
-        a, b = (kept_elem_1 + kept_elem_2), (meas_elem_1, meas_elem_2)  # TODO: how should meas_elem_1 and 2 be combined?
-
         own_node, remote_node = self.own, self.own.timeline.get_entity_by_name(self.remote_node_name)
 
         # gate and measurment fidelities on protocol owner node
         own_node_gate_fid, own_node_meas_fid = own_node.gate_fid, own_node.meas_fid
         # gate and measurment fidelities on remote node
         remote_node_gate_fid, remote_node_meas_fid = remote_node.gate_fid, remote_node.meas_fid
+
+        if self.is_twirled:
+            kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = kept_input_state.state[0], (1-kept_input_state.state[0])/3, (1-kept_input_state.state[0])/3, (1-kept_input_state.state[0])/3   # Diagonal elements of kept pair (twirled)
+            meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = meas_input_state.state[0], (1-meas_input_state.state[0])/3, (1-meas_input_state.state[0])/3, (1-meas_input_state.state[0])/3  # Diagonal elements of measured pair (twirled)   
+        else:
+            kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = kept_input_state.state  # Diagonal elements of kept pair
+            meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = meas_input_state.state  # Diagonal elements of measured pair
+
+        assert 1. >= kept_elem_1 >= 0.5 and 1. >= meas_elem_1 >= 0.5, "Input states should have fidelity above 1/2."
+        a, b = (kept_elem_1 + kept_elem_2), (meas_elem_1, meas_elem_2)  # TODO: how should meas_elem_1 and 2 be combined?
 
         # calculate success probability with analytical formula
         p_succ = 1/2 \
@@ -322,8 +329,12 @@ class BBPSSW(EntanglementProtocol):
                 + (own_node_meas_fid * (1-remote_node_meas_fid) + (1-own_node_meas_fid) * remote_node_meas_fid)*(kept_elem_3*meas_elem_2 + kept_elem_4*meas_elem_1))\
             + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
 
-        bds_elems = np.array([new_elem_1, new_elem_2, new_elem_3, new_elem_4])
-        bds_elems = bds_elems / p_succ  # normalization by success probability
+        if self.is_twirled:
+            new_fid = new_elem_1 / p_succ  # normalization by success probability
+            bds_elems = np.array([new_fid, (1-new_fid)/3, (1-new_fid)/3, (1-new_fid)/3])
+        else:
+            bds_elems = np.array([new_elem_1, new_elem_2, new_elem_3, new_elem_4])
+            bds_elems = bds_elems / p_succ  # normalization by success probability
         return p_succ, bds_elems
     
     @staticmethod

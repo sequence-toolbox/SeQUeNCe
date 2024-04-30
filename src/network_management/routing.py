@@ -87,7 +87,7 @@ class StaticRoutingProtocol(StackProtocol):
         self._push(dst=dst, msg=new_msg)
 
     def pop(self, src: str, msg: "StaticRoutingMessage"):
-        """Message to receive reservation messages.
+        """Method to receive reservation messages.
 
         Messages are forwarded to the upper protocol.
 
