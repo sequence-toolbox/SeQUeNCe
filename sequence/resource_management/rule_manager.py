@@ -12,11 +12,11 @@ if TYPE_CHECKING:
     from .resource_manager import ResourceManager
     from ..network_management.reservation import Reservation
 
-
+# NOTE caitao: this signature seem to have issues -- the return of the function
 ActionFunc = Callable[[List["MemoryInfo"], Dict[str, Any]], 
                       Tuple["EntanglementProtocol", List["str"], List[Callable[["EntanglementProtocol"], bool]]]]
 
-ConditionFunc = Callable[["MemoryInfo", "MemoryManager", Dict[str, Any]], List["MemoryInfo"]],
+ConditionFunc = Callable[["MemoryInfo", "MemoryManager", Dict[str, Any]], List["MemoryInfo"]]
 
 Arguments = Dict[str, Any]
 
