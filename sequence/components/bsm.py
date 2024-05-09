@@ -131,7 +131,7 @@ class BSM(Entity):
         if detectors is not None:
             for i, d in enumerate(detectors):
                 if d is not None:
-                    detector = Detector("%s_%d" % (self.name, i), timeline, **d)
+                    detector = Detector("{}_{}".format(self.name, i), timeline, **d)
                     detector.attach(self)
                     detector.owner = self
                 else:
@@ -460,13 +460,12 @@ class SingleAtomBSM(BSM):
             key0, key1 = p0.quantum_state, p1.quantum_state
             keys = [key0, key1]
             state0, state1 = qm.get(key0), qm.get(key1)
-            meas0, meas1 = [qm.run_circuit(self._meas_circuit, [key],
-                                           self.get_generator().random())[key]
+            meas0, meas1 = [qm.run_circuit(self._meas_circuit, [key], self.get_generator().random())[key]
                             for key in keys]
 
             log.logger.debug(self.name + " measured photons as {}, {}".format(meas0, meas1))
 
-            if meas0 ^ meas1:
+            if meas0 ^ meas1:  # 1, 0 or 0, 1
                 detector_num = self.get_generator().choice([0, 1])
                 if len(state0.keys) == 1:
                     # if we're in stage 1: we set state to psi+/psi- to mark the
@@ -481,22 +480,16 @@ class SingleAtomBSM(BSM):
                     # twice to assign state to psi+ or psi-
                     log.logger.info(self.name + " passed stage 2")
                     if _eq_psi_plus(state0, qm.formalism) ^ detector_num:
-                        _set_state_with_fidelity(keys, BSM._psi_minus,
-                                                 p0.encoding_type["raw_fidelity"],
-                                                 self.get_generator(),
-                                                 qm)
+                        _set_state_with_fidelity(keys, BSM._psi_minus, p0.encoding_type["raw_fidelity"], self.get_generator(), qm)
                     else:
-                        _set_state_with_fidelity(keys, BSM._psi_plus,
-                                                 p0.encoding_type["raw_fidelity"],
-                                                 self.get_generator(),
-                                                 qm)
+                        _set_state_with_fidelity(keys, BSM._psi_plus, p0.encoding_type["raw_fidelity"], self.get_generator(), qm)
                 else:
                     raise NotImplementedError("Unknown state")
 
                 photon = p0 if meas0 else p1
                 if self.get_generator().random() > photon.loss:
                     log.logger.info("Triggering detector {}".format(detector_num))
-                    self.detectors[detector_num].get()
+                    self.detectors[detector_num].get()   # middle BSM node notify two end nodes via EntanglementGenerationB.bsm_update()
 
             else:
                 if meas0 and self.get_generator().random() > p0.loss:

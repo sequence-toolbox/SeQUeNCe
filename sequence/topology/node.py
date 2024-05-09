@@ -287,12 +287,12 @@ class QuantumRouter(Node):
             msg (Message): the message
         """
         log.logger.info("{} receive message {} from {}".format(self.name, msg, src))
-        if msg.receiver == "resource_manager":
-            self.resource_manager.received_message(src, msg)
-        elif msg.receiver == "network_manager":
+        if msg.receiver == "network_manager":
             self.network_manager.received_message(src, msg)
+        elif msg.receiver == "resource_manager":
+            self.resource_manager.received_message(src, msg)
         else:
-            if msg.receiver is None:
+            if msg.receiver is None:  # NOTE caitao: the msg sent by EntanglementGenerationB doesn't have a receiver (A-B not paired)
                 matching = [p for p in self.protocols if type(p) == msg.protocol_type]
                 for p in matching:
                     p.received_message(src, msg)

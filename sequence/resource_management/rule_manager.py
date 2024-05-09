@@ -88,7 +88,7 @@ class RuleManager:
         return self.resource_manager.get_memory_manager()
 
     def send_request(self, protocol, req_dst, req_condition_func, req_args):
-        log.logger.info('Rule manager send request for protocol {} to {}'.format(protocol.name, req_dst))
+        log.logger.info('{} rule manager send request for protocol {} to {}'.format(self.resource_manager.owner, protocol.name, req_dst))
         return self.resource_manager.send_request(protocol, req_dst, req_condition_func, req_args)
 
     def __len__(self):
@@ -148,7 +148,7 @@ class Rule:
         """
 
         protocol, req_dsts, req_condition_funcs, req_args = self.action(memories_info, self.action_args)
-        log.logger.info('Rule generates protocol {}'.format(protocol.name))
+        log.logger.info('{} rule generates protocol {}'.format(self.rule_manager.resource_manager.owner, protocol.name))
 
         protocol.rule = self
         self.protocols.append(protocol)

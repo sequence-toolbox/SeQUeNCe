@@ -54,8 +54,8 @@ class ResourceManagerMessage(Message):
         self.ini_protocol_name = kwargs["protocol"]
         self.ini_node_name = kwargs["node"]
         self.ini_memories_name = kwargs["memories"]
-        self.string = "ini_protocol_name={}, ini_node_name={}, ini_memories_name={}".format(
-                       self.ini_protocol_name, self.ini_node_name, self.ini_memories_name)
+        self.string = "type={}, ini_protocol_name={}, ini_node_name={}, ini_memories_name={}".format(
+                       msg_type.name, self.ini_protocol_name, self.ini_node_name, self.ini_memories_name)
 
         if msg_type is ResourceManagerMsgType.REQUEST:
             self.req_condition_func = kwargs["req_condition_func"]
@@ -249,9 +249,9 @@ class ResourceManager:
             msg (ResourceManagerMessage): message received.
         """
 
-        log.logger.info("{} receive {} message from {}".format(self.owner.name, msg.msg_type.name, src))
+        log.logger.info("{} resource manager receive message from {}: {}".format(self.owner.name, src, msg))
         if msg.msg_type is ResourceManagerMsgType.REQUEST:
-            protocol = msg.req_condition_func(self.waiting_protocols, msg.req_args)
+            protocol = msg.req_condition_func(self.waiting_protocols, msg.req_args) # select the wait-for-request protocol to respond to the message
             if protocol is not None:
                 protocol.set_others(msg.ini_protocol_name, msg.ini_node_name, msg.ini_memories_name)
                 memo_names = [memo.name for memo in protocol.memories]

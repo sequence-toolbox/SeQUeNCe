@@ -137,8 +137,7 @@ class QuantumChannel(OpticalChannel):
         log.logger.info("{} send qubit with state {} to {} by Channel {}".format(
                         self.sender.name, qubit.quantum_state, self.receiver, self.name))
 
-        assert self.delay >= 0 and self.loss < 1, \
-            "QuantumChannel init() function has not been run for {}".format(self.name)
+        assert self.delay >= 0 and self.loss < 1, "QuantumChannel init() function has not been run for {}".format(self.name)
         assert source == self.sender
 
         # remove lowest time bin
@@ -164,15 +163,13 @@ class QuantumChannel(OpticalChannel):
         # if not using Fock representation, check if photon kept
         elif (self.sender.get_generator().random() > self.loss) or qubit.is_null:
             if self._receiver_on_other_tl():
-                self.timeline.quantum_manager.move_manage_to_server(
-                    qubit.quantum_state)
+                self.timeline.quantum_manager.move_manage_to_server(qubit.quantum_state)
 
             if qubit.is_null:
                 qubit.add_loss(self.loss)
 
             # check if polarization encoding and apply necessary noise
-            if (qubit.encoding_type["name"] == "polarization") and (
-                    self.sender.get_generator().random() > self.polarization_fidelity):
+            if qubit.encoding_type["name"] == "polarization" and self.sender.get_generator().random() > self.polarization_fidelity:
                 qubit.random_noise(self.get_generator())
 
             # schedule receiving node to receive photon at future time determined by light speed

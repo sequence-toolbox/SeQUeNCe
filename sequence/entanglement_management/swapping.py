@@ -123,8 +123,10 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.right_protocol_name = None
 
     def is_ready(self) -> bool:
-        return self.left_protocol_name is not None \
-               and self.right_protocol_name is not None
+        """Return True if left_protocol and right_protocol are both set
+        """
+
+        return (self.left_protocol_name is not None) and (self.right_protocol_name is not None)
 
     def set_others(self, protocol: str, node: str, memories: List[str]) -> None:
         """Method to set other entanglement protocol instance.
@@ -152,15 +154,14 @@ class EntanglementSwappingA(EntanglementProtocol):
             Will send messages to other protocols.
         """
 
-        log.logger.info(f"{self.own.name} middle protocol start with ends "
-                        f"{self.left_protocol_name}, "
-                        f"{self.right_protocol_name}")
+        log.logger.info(f"{self.own.name} middle protocol start with ends {self.left_node}, {self.right_node}")
 
         assert self.left_memo.fidelity > 0 and self.right_memo.fidelity > 0
         assert self.left_memo.entangled_memory["node_id"] == self.left_node
         assert self.right_memo.entangled_memory["node_id"] == self.right_node
 
         if self.own.get_generator().random() < self.success_probability():
+            # swapping successed
             fidelity = self.updated_fidelity(self.left_memo.fidelity, self.right_memo.fidelity)
             self.is_success = True
 
@@ -168,31 +169,26 @@ class EntanglementSwappingA(EntanglementProtocol):
 
             meas_samp = self.own.get_generator().random()
             meas_res = self.own.timeline.quantum_manager.run_circuit(
-                self.circuit, [self.left_memo.qstate_key,
-                               self.right_memo.qstate_key], meas_samp)
+                        self.circuit, [self.left_memo.qstate_key, self.right_memo.qstate_key], meas_samp)
             meas_res = [meas_res[self.left_memo.qstate_key], meas_res[self.right_memo.qstate_key]]
-
+            
+            log.logger.info(f"{self.name} swapping successed, meas_res={meas_res[0]},{meas_res[1]}")
+            
             msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,
-                                                self.left_protocol_name,
-                                                fidelity=fidelity,
+                                                self.left_protocol_name, fidelity=fidelity,
                                                 remote_node=self.right_memo.entangled_memory["node_id"],
                                                 remote_memo=self.right_memo.entangled_memory["memo_id"],
-                                                expire_time=expire_time,
-                                                meas_res=[])
-            msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,
-                                                self.right_protocol_name,
-                                                fidelity=fidelity,
+                                                expire_time=expire_time, meas_res=[])
+            msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, 
+                                                self.right_protocol_name, fidelity=fidelity,
                                                 remote_node=self.left_memo.entangled_memory["node_id"],
                                                 remote_memo=self.left_memo.entangled_memory["memo_id"],
-                                                expire_time=expire_time,
-                                                meas_res=meas_res)
+                                                expire_time=expire_time, meas_res=meas_res)
         else:
-            msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,
-                                                self.left_protocol_name,
-                                                fidelity=0)
-            msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,
-                                                self.right_protocol_name,
-                                                fidelity=0)
+            # swapping failed
+            log.logger.info(f"{self.name} swapping failed")
+            msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,self.left_protocol_name, fidelity=0)
+            msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, self.right_protocol_name, fidelity=0)
 
         self.own.send_message(self.left_node, msg_l)
         self.own.send_message(self.right_node, msg_r)
@@ -331,8 +327,7 @@ class EntanglementSwappingB(EntanglementProtocol):
             Will invoke `update_resource_manager` method.
         """
 
-        log.logger.debug(
-            self.own.name + " protocol received_message from node {}, fidelity={}".format(src, msg.fidelity))
+        log.logger.debug(self.own.name + " protocol received_message from node {}, fidelity={}".format(src, msg.fidelity))
 
         assert src == self.remote_node_name
 

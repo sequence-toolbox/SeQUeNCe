@@ -130,6 +130,7 @@ class Timeline:
                 continue
 
             self.time = event.time
+            log.logger.debug("Event #{}: process owner={}, activation={}".format(self.run_counter, event.process.owner.name, event.process.activation))
             event.process.run()
             self.run_counter += 1
 

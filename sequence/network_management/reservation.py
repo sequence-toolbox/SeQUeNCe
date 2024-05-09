@@ -163,7 +163,7 @@ def ep_req_func1(protocols, args: Arguments) -> BBPSSW:
     return _protocols[0]
 
 
-def ep_rule_condition1(memory_info: "MemoryInfo", manager: "MemoryManager", args: Arguments) -> List["MemoryInfo"]:
+def ep_rule_condition1(memory_info: "MemoryInfo", memory_manager: "MemoryManager", args: Arguments) -> List["MemoryInfo"]:
     """Condition function used by BBPSSW protocol on nodes except the initiator
     """
     memory_indices = args["memory_indices"]
@@ -171,7 +171,7 @@ def ep_rule_condition1(memory_info: "MemoryInfo", manager: "MemoryManager", args
     if (memory_info.index in memory_indices
             and memory_info.state == "ENTANGLED"
             and memory_info.fidelity < reservation.fidelity):
-        for info in manager:
+        for info in memory_manager:
             if (info != memory_info and info.index in memory_indices
                     and info.state == "ENTANGLED"
                     and info.remote_node == memory_info.remote_node
@@ -200,7 +200,7 @@ def es_rule_actionA(memories_info: List["MemoryInfo"], args: Arguments) -> Tuple
     es_succ_prob = args["es_succ_prob"]
     es_degradation = args["es_degradation"]
     memories = [info.memory for info in memories_info]
-    protocol = EntanglementSwappingA(None, "ESA.%s.%s" % (memories[0].name, memories[1].name),
+    protocol = EntanglementSwappingA(None, "ESA.{}.{}".format(memories[0].name, memories[1].name),
                                      memories[0], memories[1], success_prob=es_succ_prob, degradation=es_degradation)
     dsts = [info.remote_node for info in memories_info]
     req_funcs = [es_req_func, es_req_func]
@@ -228,7 +228,7 @@ def es_req_func(protocols: List["EntanglementProtocol"], args: Arguments) -> Ent
             return protocol
 
 
-def es_rule_conditionA(memory_info: "MemoryInfo", manager: "MemoryManager", args: Arguments) -> List["MemoryInfo"]:
+def es_rule_conditionA(memory_info: "MemoryInfo", memory_manager: "MemoryManager", args: Arguments) -> List["MemoryInfo"]:
     """Condition function used by EntanglementSwappingA protocol on nodes
     """
     memory_indices = args["memory_indices"]
@@ -239,22 +239,22 @@ def es_rule_conditionA(memory_info: "MemoryInfo", manager: "MemoryManager", args
             and memory_info.index in memory_indices
             and memory_info.remote_node == left
             and memory_info.fidelity >= fidelity):
-        for info in manager:
-            if (info.state == "ENTANGLED"
-                    and info.index in memory_indices
-                    and info.remote_node == right
-                    and info.fidelity >= fidelity):
-                return [memory_info, info]
+        for memory_info2 in memory_manager:
+            if (memory_info2.state == "ENTANGLED"
+                    and memory_info2.index in memory_indices
+                    and memory_info2.remote_node == right
+                    and memory_info2.fidelity >= fidelity):
+                return [memory_info, memory_info2]
     elif (memory_info.state == "ENTANGLED"
-          and memory_info.index in memory_indices
-          and memory_info.remote_node == right
-          and memory_info.fidelity >= fidelity):
-        for info in manager:
-            if (info.state == "ENTANGLED"
-                    and info.index in memory_indices
-                    and info.remote_node == left
-                    and info.fidelity >= fidelity):
-                return [memory_info, info]
+            and memory_info.index in memory_indices
+            and memory_info.remote_node == right
+            and memory_info.fidelity >= fidelity):
+        for memory_info2 in memory_manager:
+            if (memory_info2.state == "ENTANGLED"
+                    and memory_info2.index in memory_indices
+                    and memory_info2.remote_node == left
+                    and memory_info2.fidelity >= fidelity):
+                return [memory_info, memory_info2]
     return []
 
 
