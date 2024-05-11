@@ -21,7 +21,8 @@ def _init_logger():
 
 
 logger = _init_logger()
-LOG_FORMAT = '%(asctime)-15s\t%(simtime)s\t%(levelname)-8s\t%(module)s:\t%(message)s'
+# LOG_FORMAT = '{asctime}  {simtime:<20,} {levelname:7} {module:20} {message}'
+LOG_FORMAT = '{simtime:<20,} {levelname:7} {module:20} {message}'   # no asctime
 _log_modules = []
 
 
@@ -40,7 +41,7 @@ def set_logger(name: str, timeline, logfile="out.log"):
     logger = logging.getLogger(name)
 
     handler = logging.FileHandler(logfile)
-    fmt = logging.Formatter(LOG_FORMAT)
+    fmt = logging.Formatter(LOG_FORMAT, style='{')
     f = ContextFilter(timeline)
 
     handler.setFormatter(fmt)
@@ -86,5 +87,5 @@ class ContextFilter(logging.Filter):
 
     def filter(self, record):
         global _log_modules
-        record.simtime = self.timeline.now()
+        record.simtime = int(self.timeline.now())
         return record.module in _log_modules

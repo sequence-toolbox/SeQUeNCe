@@ -29,6 +29,7 @@ class Photon:
             If `use_qm` is false, this will be a QuantumState object.
             Otherwise, it will be an integer key for the quantum manager.
         is_null (bool): defines whether photon is real or a "ghost" photon (not detectable but used in memory encoding).
+                        if True, then it is a "ghost" photon
         loss (float): similarly defined for memory encoding, used to track loss and improve performance.
             Does not need to be utilized for all encoding schemes.
         use_qm (bool): determines if photon stores state locally (False) or uses timeline quantum manager (True).
@@ -172,9 +173,7 @@ class Photon:
         if photons[0].use_qm:
             raise NotImplementedError("Photon.measure_multiple() not implemented for quantum manager.")
 
-        return FreeQuantumState.measure_multiple(basis,
-                                                 [photons[0].quantum_state, photons[1].quantum_state],
-                                                 rng)
+        return FreeQuantumState.measure_multiple(basis, [photons[0].quantum_state, photons[1].quantum_state], rng)
 
     def add_loss(self, loss: float):
         assert 0 <= loss <= 1

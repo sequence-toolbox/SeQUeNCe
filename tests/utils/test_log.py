@@ -49,6 +49,5 @@ def test_log():
     tl.init()
     de.log()
 
-    # NOTE: when running locally, file_len(filename) is 1, but when using pytest, it is 2
-    # NOTE: don't know the reason behind this
+    # NOTE caitao: when running locally, file_len(filename) is 1, but when using pytest, it is 2
     assert file_len(filename) == 2

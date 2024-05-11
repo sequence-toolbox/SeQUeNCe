@@ -11,6 +11,7 @@ Args:
     cc_delay (float): classical channel delay (in ms).
 
 Optional Args:
+    -d --directory (str): name of the output directory (default tmp)
     -o --output (str): name of the output file (default out.json).
     -s --stop (float): simulation stop time (in s) (default infinity).
     -p --parallel: sets simulation as parallel and requires addition args:
@@ -24,6 +25,7 @@ Optional Args:
 
 import argparse
 import json
+import os
 
 from sequence.utils.config_generator import add_default_args, get_node_csv, generate_node_procs, generate_nodes, generate_classical, final_config, router_name_func
 from sequence.topology.topology import Topology
@@ -109,6 +111,7 @@ output_dict[Topology.ALL_C_CHANNEL] = cchannels
 final_config(output_dict, args)
 
 # write final json
-output_file = open(args.output, 'w')
+path = os.path.join(args.directory, args.output)
+output_file = open(path, 'w')
 json.dump(output_dict, output_file, indent=4)
 

@@ -26,6 +26,7 @@ Optional Args:
 import networkx as nx
 import argparse
 import json
+import os
 
 from sequence.utils.config_generator import *
 from sequence.topology.topology import Topology
@@ -67,5 +68,6 @@ output_dict[Topology.ALL_C_CHANNEL] = cchannels
 final_config(output_dict, args)
 
 # write final json
-output_file = open(args.output, 'w')
+path = os.path.join(args.directory, args.output)
+output_file = open(path, 'w')
 json.dump(output_dict, output_file, indent=4)

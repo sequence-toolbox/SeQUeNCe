@@ -43,6 +43,9 @@ class Entity(ABC):
 
         timeline.add_entity(self)
 
+    def __str__(self) -> str:
+        return self.name
+
     @abstractmethod
     def init(self) -> None:
         """Method to initialize entity (abstract).

@@ -16,11 +16,9 @@ class RequestApp:
 
         This application will create a request for entanglement.
         If the request is accepted, the network will start to serve the request
-         at the start time of the request and end at the end time of the
-        request.
+        at the start time of the request and end at the end time of the request.
         Otherwise, the app do nothing.
-        The information about the request is defined in the arguments of the
-        start function.
+        The information about the request is defined in the arguments of the start function.
 
         Attributes:
             node (QuantumRouter): Node that code is attached to.
@@ -48,12 +46,10 @@ class RequestApp:
         self.path: List[str] = []
         self.memo_to_reserve: Dict[int, Reservation] = {}
 
-    def start(self, responder: str, start_t: int, end_t: int, memo_size: int,
-              fidelity: float):
+    def start(self, responder: str, start_t: int, end_t: int, memo_size: int, fidelity: float):
         """Method to start the application.
 
-            This method will use arguments to create a request and send to the
-            network.
+            This method will use arguments to create a request and send to the network.
 
         Side Effects:
             Will create request for network manager on node.
@@ -82,9 +78,7 @@ class RequestApp:
         self.reserve_res = result
         if result:
             self.schedule_reservation(reservation)
-            log.logger.info("Successful reservation of resources for request app on node {}".format(
-                self.node.name
-            ))
+            log.logger.info("Successful reservation of resources for request app on node {}".format(self.node.name))
 
     def add_memo_reserve_map(self, index: int, reservation: "Reservation") -> None:
         self.memo_to_reserve[index] = reservation
@@ -115,17 +109,14 @@ class RequestApp:
                 self.node.resource_manager.update(None, info.memory, "RAW")
             elif info.remote_node == reservation.responder and info.fidelity >= reservation.fidelity:
                 self.memory_counter += 1
-                log.logger.info("Successfully generated entanglement. Counter is at {}.".format(
-                    self.memory_counter
-                ))
+                log.logger.info("Successfully generated entanglement. Counter is at {}.".format(self.memory_counter))
                 self.node.resource_manager.update(None, info.memory, "RAW")
 
     def get_throughput(self) -> float:
         return self.memory_counter / (self.end_t - self.start_t) * 1e12
 
     def get_other_reservation(self, reservation: "Reservation") -> None:
-        """Method to add the approved reservation that is requested by other
-        nodes
+        """Method to add the approved reservation that is requested by other nodes
 
         Args:
             reservation (Reservation): reservation that uses the node of application as the responder

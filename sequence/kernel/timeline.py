@@ -130,13 +130,14 @@ class Timeline:
                 continue
 
             self.time = event.time
+            log.logger.debug("Event #{}: process owner={}, activation={}".format(self.run_counter, event.process.owner.name, event.process.activation))
             event.process.run()
             self.run_counter += 1
 
         self.is_running = False
         time_elapsed = time_ns() - tick
-        log.logger.info("Timeline end simulation. Execution Time: %d ns; Scheduled Event: %d; Executed Event: %d" %
-                        (time_elapsed, self.schedule_counter, self.run_counter))
+        log.logger.info("Timeline end simulation. Execution Time: {}; Scheduled Event: {}; Executed Event: {}".format(
+                         self.ns_to_human_time(time_elapsed), self.schedule_counter, self.run_counter))
 
     def stop(self) -> None:
         """Method to stop simulation."""
@@ -195,6 +196,8 @@ class Timeline:
             sleep(SLEEP_SECONDS)
 
     def ns_to_human_time(self, nanoseconds: float) -> str:
+        """Returns a string in the form [D day[s], ][H]H:MM:SS[.UUUUUU]
+        """
         milliseconds = nanoseconds / NANOSECONDS_PER_MILLISECOND
         return str(timedelta(milliseconds=milliseconds))
 

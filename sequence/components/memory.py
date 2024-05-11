@@ -27,9 +27,8 @@ def const(t):
     return 1
 
 
-# array of single atom memories
 class MemoryArray(Entity):
-    """Aggregator for Memory objects.
+    """Aggregator for Memory objects. An array of single atom memories
 
     The MemoryArray can be accessed as a list to get individual memories.
 
@@ -58,8 +57,7 @@ class MemoryArray(Entity):
         self.memories = []
 
         for i in range(num_memories):
-            memory = Memory(self.name + "[%d]" % i, timeline, fidelity, frequency, efficiency, coherence_time,
-                            wavelength)
+            memory = Memory(self.name + f"[{i}]", timeline, fidelity, frequency, efficiency, coherence_time, wavelength)
             memory.attach(self)
             self.memories.append(memory)
             memory.set_memory_array(self)
@@ -112,6 +110,7 @@ class Memory(Entity):
         coherence_time (float): average usable lifetime of memory (in seconds).
         wavelength (float): wavelength (in nm) of emitted photons.
         qstate_key (int): key for associated quantum state in timeline's quantum manager.
+        memory_array (MemoryArray): memory array aggregating current memory.
         entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
     """
 
@@ -286,7 +285,7 @@ class Memory(Entity):
         for observer in self._observers:
             observer.memory_expire(self)
 
-    def detach(self, observer: 'EntanglementProtocol'):
+    def detach(self, observer: 'EntanglementProtocol'):  # observer could be a MemoryArray
         if observer in self._observers:
             self._observers.remove(observer)
 

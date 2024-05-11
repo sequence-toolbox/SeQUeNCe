@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from ..components.memory import Memory, MemoryArray
 
 
-class MemoryManager():
+class MemoryManager:
     """Class to manage a node's memories.
 
     The memory manager tracks the entanglement state of a node's memories, along with other information (such as fidelity).
@@ -77,7 +77,7 @@ class MemoryManager():
         return self.memory_map[index]
 
 
-class MemoryInfo():
+class MemoryInfo:
     """Class to track memory information parameters for memory manager.
 
     The memory info class chiefly tracks a memory's entanglement state, in one of 3 allowed states:

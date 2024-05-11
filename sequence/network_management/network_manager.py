@@ -30,11 +30,11 @@ class NetworkManagerMessage(Message):
         Message.__init__(self, msg_type, receiver)
         self.payload = payload
 
-    def __str__(self):
-        return "type={}, receiver={}, payload={}".format(self.msg_type, self.receiver, self.payload)
+    def __str__(self) -> str:
+        return "type={}; receiver={}; payload={}".format(self.msg_type, self.receiver, self.payload)
 
 
-class NetworkManager():
+class NetworkManager:
     """Network manager implementation class.
 
     The network manager is responsible for the operations of a node within a broader quantum network.
@@ -118,7 +118,7 @@ class NetworkManager():
             Will invoke `pop` method of 0 indexed protocol in `protocol_stack`.
         """
 
-        log.logger.info("{} network manager receives message {} from {}".format(self.owner.name, msg.payload, src))
+        log.logger.info("{} network manager receives message from {}: {}".format(self.owner.name, src, msg))
         self.protocol_stack[0].pop(src=src, msg=msg.payload)
 
     def request(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float) -> None:
@@ -153,10 +153,11 @@ def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str) -> "Networ
     Returns:
         NetworkManager: network manager object created.
     """
-
+    swapping_success_rate = 0.5
     manager = NetworkManager(owner, [])
     routing = StaticRoutingProtocol(owner, owner.name + ".StaticRoutingProtocol", {})
     rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP", memory_array_name)
+    rsvp.set_swapping_success_rate(swapping_success_rate)
     routing.upper_protocols.append(rsvp)
     rsvp.lower_protocols.append(routing)
     manager.load_stack([routing, rsvp])
