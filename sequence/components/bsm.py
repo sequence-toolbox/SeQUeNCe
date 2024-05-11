@@ -465,7 +465,7 @@ class SingleAtomBSM(BSM):
 
             log.logger.debug(self.name + " measured photons as {}, {}".format(meas0, meas1))
 
-            if meas0 ^ meas1:  # 1, 0 or 0, 1
+            if meas0 ^ meas1:  # meas0, meas1 = 1, 0 or 0, 1
                 detector_num = self.get_generator().choice([0, 1])
                 if len(state0.keys) == 1:
                     # if we're in stage 1: we set state to psi+/psi- to mark the
@@ -490,15 +490,21 @@ class SingleAtomBSM(BSM):
                 if self.get_generator().random() > photon.loss:
                     log.logger.info("Triggering detector {}".format(detector_num))
                     self.detectors[detector_num].get()   # middle BSM node notify two end nodes via EntanglementGenerationB.bsm_update()
+                else:
+                    log.logger.info(f'Oops, photon p{meas1} is lost')
 
-            else:
+            else: # meas0, meas1 = 1, 1
                 if meas0 and self.get_generator().random() > p0.loss:
                     detector_num = self.get_generator().choice([0, 1])
                     self.detectors[detector_num].get()
+                else:
+                    log.logger.info(f'Oops, photon p0 is lost')
 
                 if meas1 and self.get_generator().random() > p1.loss:
                     detector_num = self.get_generator().choice([0, 1])
                     self.detectors[detector_num].get()
+                else:
+                    log.logger.info(f'Oops, photon p1 is lost')
 
     def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.

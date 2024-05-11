@@ -262,12 +262,12 @@ class ResourceManager:
                 self.waiting_protocols.remove(protocol)
                 self.owner.protocols.append(protocol)
                 protocol.start()
-                return
-
-            new_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=msg.ini_protocol_name,
-                                             node=msg.ini_node_name, memories=msg.ini_memories_name, is_approved=False,
-                                             paired_protocol=None, paired_node=None, paired_memories=None)
-            self.owner.send_message(src, new_msg)
+            else:
+                # non of the self.waiting_protocol satisfy the req_condition_func --> is_approved=False
+                new_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=msg.ini_protocol_name,
+                                                 node=msg.ini_node_name, memories=msg.ini_memories_name, is_approved=False,
+                                                 paired_protocol=None, paired_node=None, paired_memories=None)
+                self.owner.send_message(src, new_msg)
 
         elif msg.msg_type is ResourceManagerMsgType.RESPONSE:
             protocol_name = msg.ini_protocol_name

@@ -153,10 +153,11 @@ def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str) -> "Networ
     Returns:
         NetworkManager: network manager object created.
     """
-
+    swapping_success_rate = 0.5
     manager = NetworkManager(owner, [])
     routing = StaticRoutingProtocol(owner, owner.name + ".StaticRoutingProtocol", {})
     rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP", memory_array_name)
+    rsvp.set_swapping_success_rate(swapping_success_rate)
     routing.upper_protocols.append(rsvp)
     rsvp.lower_protocols.append(routing)
     manager.load_stack([routing, rsvp])
