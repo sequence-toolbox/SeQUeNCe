@@ -22,6 +22,9 @@ from ..protocol import StackProtocol
 from ..kernel.event import Event
 from ..kernel.process import Process
 
+ENTANGLED = 'ENTANGLED'
+RAW = 'RAW'
+
 
 class RSVPMsgType(Enum):
     """Defines possible message types for the reservation protocol."""
@@ -129,11 +132,11 @@ def ep_rule_condition1(memory_info: "MemoryInfo", manager: "MemoryManager",
     memory_indices = args["memory_indices"]
     reservation = args["reservation"]
     if (memory_info.index in memory_indices
-            and memory_info.state == "ENTANGLED"
+            and memory_info.state == ENTANGLED
             and memory_info.fidelity < reservation.fidelity):
         for info in manager:
             if (info != memory_info and info.index in memory_indices
-                    and info.state == "ENTANGLED"
+                    and info.state == ENTANGLED
                     and info.remote_node == memory_info.remote_node
                     and info.fidelity == memory_info.fidelity):
                 assert memory_info.remote_memo != info.remote_memo
@@ -181,7 +184,7 @@ def ep_rule_action1(memories_info: List["MemoryInfo"], args: Arguments):
 
     """
     memories = [info.memory for info in memories_info]
-    name = "EP.%s.%s" % (memories[0].name, memories[1].name)
+    name = "EP.{}.{}".format(memories[0].name, memories[1].name)
     protocol = BBPSSW(None, name, memories[0], memories[1])
     dsts = [memories_info[0].remote_node]
     req_funcs = [ep_req_func1]
@@ -199,7 +202,7 @@ def ep_rule_condition2(memory_info: "MemoryInfo", manager: "MemoryManager",
     fidelity = args["fidelity"]
 
     if (memory_info.index in memory_indices
-            and memory_info.state == "ENTANGLED"
+            and memory_info.state == ENTANGLED
             and memory_info.fidelity < fidelity):
         return [memory_info]
     return []
@@ -210,7 +213,7 @@ def ep_rule_action2(memories_info: List["MemoryInfo"], args: Arguments):
 
     """
     memories = [info.memory for info in memories_info]
-    name = "EP.%s" % memories[0].name
+    name = "EP.{}".format(memories[0].name)
     protocol = BBPSSW(None, name, memories[0], None)
     return protocol, [None], [None], [None]
 
@@ -231,7 +234,7 @@ def es_rule_conditionB1(memory_info: "MemoryInfo", manager: "MemoryManager", arg
     memory_indices = args["memory_indices"]
     target_remote = args["target_remote"]
     fidelity = args["fidelity"]
-    if (memory_info.state == "ENTANGLED"
+    if (memory_info.state == ENTANGLED
             and memory_info.index in memory_indices
             # and memory_info.remote_node != path[-1]
             and memory_info.remote_node != target_remote
@@ -249,22 +252,22 @@ def es_rule_conditionA(memory_info: "MemoryInfo", manager: "MemoryManager", args
     left = args["left"]
     right = args["right"]
     fidelity = args["fidelity"]
-    if (memory_info.state == "ENTANGLED"
+    if (memory_info.state == ENTANGLED
             and memory_info.index in memory_indices
             and memory_info.remote_node == left
             and memory_info.fidelity >= fidelity):
         for info in manager:
-            if (info.state == "ENTANGLED"
+            if (info.state == ENTANGLED
                     and info.index in memory_indices
                     and info.remote_node == right
                     and info.fidelity >= fidelity):
                 return [memory_info, info]
-    elif (memory_info.state == "ENTANGLED"
+    elif (memory_info.state == ENTANGLED
           and memory_info.index in memory_indices
           and memory_info.remote_node == right
           and memory_info.fidelity >= fidelity):
         for info in manager:
-            if (info.state == "ENTANGLED"
+            if (info.state == ENTANGLED
                     and info.index in memory_indices
                     and info.remote_node == left
                     and info.fidelity >= fidelity):
@@ -289,8 +292,7 @@ def es_rule_actionA(memories_info: List["MemoryInfo"], args: Arguments):
     es_succ_prob = args["es_succ_prob"]
     es_degradation = args["es_degradation"]
     memories = [info.memory for info in memories_info]
-    protocol = EntanglementSwappingA(None, "ESA.%s.%s" % (memories[0].name,
-                                                          memories[1].name),
+    protocol = EntanglementSwappingA(None, "ESA.{}.{}".format(memories[0].name, memories[1].name),
                                      memories[0], memories[1],
                                      success_prob=es_succ_prob,
                                      degradation=es_degradation)
@@ -308,7 +310,7 @@ def es_rule_conditionB2(memory_info: "MemoryInfo", manager: "MemoryManager", arg
     left = args["left"]
     right = args["right"]
     fidelity = args["fidelity"]
-    if (memory_info.state == "ENTANGLED"
+    if (memory_info.state == ENTANGLED
             and memory_info.index in memory_indices
             and memory_info.remote_node not in [left, right]
             and memory_info.fidelity >= fidelity):
@@ -318,7 +320,7 @@ def es_rule_conditionB2(memory_info: "MemoryInfo", manager: "MemoryManager", arg
 
 
 class ResourceReservationProtocol(StackProtocol):
-    """ReservationProtocol for  node resources.
+    """ReservationProtocol for node resources.
 
     The reservation protocol receives network entanglement requests and attempts to reserve local resources.
     If successful, it will forward the request to another node in the entanglement path and create local rules.
@@ -332,7 +334,7 @@ class ResourceReservationProtocol(StackProtocol):
         timecards (List[MemoryTimeCard]): list of reservation cards for all memories on node.
         es_succ_prob (float): sets `success_probability` of `EntanglementSwappingA` protocols created by rules.
         es_degradation (float): sets `degradation` of `EntanglementSwappingA` protocols created by rules.
-        accepted_reservation (List[Reservation]): list of all approved reservation requests.
+        accepted_reservations (List[Reservation]): list of all approved reservation requests.
     """
 
     def __init__(self, own: "QuantumRouter", name: str, memory_array_name: str):
@@ -349,7 +351,7 @@ class ResourceReservationProtocol(StackProtocol):
         self.timecards = [MemoryTimeCard(i) for i in range(len(self.memo_arr))]
         self.es_succ_prob = 1
         self.es_degradation = 0.95
-        self.accepted_reservation = []
+        self.accepted_reservations = []
 
     def push(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float):
         """Method to receive reservation requests from higher level protocol.
@@ -376,13 +378,12 @@ class ResourceReservationProtocol(StackProtocol):
             msg.qcaps.append(qcap)
             self._push(dst=responder, msg=msg)
         else:
-            msg = ResourceReservationMessage(RSVPMsgType.REJECT, self.name,
-                                             reservation, path=[])
+            msg = ResourceReservationMessage(RSVPMsgType.REJECT, self.name, reservation, path=[])
             self._pop(msg=msg)
 
     def pop(self, src: str, msg: "ResourceReservationMessage"):
         """Method to receive messages from lower protocols.
-
+           NOTE (caitao, 3/19/2024): argument "src" not used
         Messages may be of 3 types, causing different network manager behavior:
 
         1. REQUEST: requests are evaluated, and forwarded along the path if accepted. Otherwise a REJECT message is sent back.
@@ -410,18 +411,13 @@ class ResourceReservationProtocol(StackProtocol):
                     rules = self.create_rules(path, reservation=msg.reservation)
                     self.load_rules(rules, msg.reservation)
                     msg.reservation.set_path(path)
-                    new_msg = ResourceReservationMessage(RSVPMsgType.APPROVE,
-                                                         self.name,
-                                                         msg.reservation,
-                                                         path=path)
+                    new_msg = ResourceReservationMessage(RSVPMsgType.APPROVE, self.name, msg.reservation, path=path)
                     self._pop(msg=msg)
                     self._push(dst=msg.reservation.initiator, msg=new_msg)
                 else:
                     self._push(dst=msg.reservation.responder, msg=msg)
             else:
-                new_msg = ResourceReservationMessage(RSVPMsgType.REJECT,
-                                                     self.name,
-                                                     msg.reservation)
+                new_msg = ResourceReservationMessage(RSVPMsgType.REJECT, self.name, msg.reservation)
                 self._push(dst=msg.reservation.initiator, msg=new_msg)
         elif msg.msg_type == RSVPMsgType.REJECT:
             for card in self.timecards:
@@ -442,7 +438,7 @@ class ResourceReservationProtocol(StackProtocol):
 
     def schedule(self, reservation: "Reservation") -> bool:
         """Method to attempt reservation request.
-
+           NOTE (caitao, 3/19/2024): change method name to can_schedule()?
         Args:
             reservation (Reservation): reservation to approve or reject.
 
@@ -452,7 +448,7 @@ class ResourceReservationProtocol(StackProtocol):
 
         if self.own.name in [reservation.initiator, reservation.responder]:
             counter = reservation.memory_size
-        else:
+        else: # e.g., entanglement swapping nodes needs twice amount of memory
             counter = reservation.memory_size * 2
         cards = []
         for card in self.timecards:
@@ -501,8 +497,7 @@ class ResourceReservationProtocol(StackProtocol):
             if index == 0:
                 condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
             else:
-                condition_args = {"memory_indices":
-                                      memory_indices[reservation.memory_size:]}
+                condition_args = {"memory_indices": memory_indices[reservation.memory_size:]}
 
             action_args = {"mid": self.own.map_to_middle_node[path[index + 1]],
                            "path": path, "index": index, "name": self.own.name,
@@ -512,8 +507,7 @@ class ResourceReservationProtocol(StackProtocol):
 
         # create rules for entanglement purification
         if index > 0:
-            condition_args = {"memory_indices":
-                                  memory_indices[:reservation.memory_size],
+            condition_args = {"memory_indices": memory_indices[:reservation.memory_size],
                               "reservation": reservation}
             action_args = {}
             rule = Rule(10, ep_rule_action1, ep_rule_condition1, action_args, condition_args)
@@ -560,8 +554,7 @@ class ResourceReservationProtocol(StackProtocol):
             left, right = _path[_index - 1], _path[_index + 1]
 
             condition_args = {"memory_indices": memory_indices,
-                              "left": left,
-                              "right": right,
+                              "left": left, "right": right,
                               "fidelity": reservation.fidelity}
             action_args = {"es_succ_prob": self.es_succ_prob,
                            "es_degradation": self.es_degradation}
@@ -588,7 +581,7 @@ class ResourceReservationProtocol(StackProtocol):
             reservation (Reservation): reservation that created the rules.
         """
 
-        self.accepted_reservation.append(reservation)
+        self.accepted_reservations.append(reservation)
         for card in self.timecards:
             if reservation in card.reservations:
                 process = Process(self.own.resource_manager, "update",
@@ -700,9 +693,9 @@ class MemoryTimeCard:
             bool: whether or not reservation was inserted successfully.
         """
         
-        pos = self.schedule_reservation(reservation)
-        if pos >= 0:
-            self.reservations.insert(pos, reservation)
+        position = self.schedule_reservation(reservation)
+        if position >= 0:
+            self.reservations.insert(position, reservation)
             return True
         else:
             return False
@@ -718,20 +711,20 @@ class MemoryTimeCard:
         """
 
         try:
-            pos = self.reservations.index(reservation)
-            self.reservations.pop(pos)
+            position = self.reservations.index(reservation)
+            self.reservations.pop(position)
             return True
         except ValueError:
             return False
 
-    def schedule_reservation(self, resv: "Reservation") -> int:
+    def schedule_reservation(self, reservation: "Reservation") -> int:
         """Method to add reservation to a memory.
 
         Will return index at which reservation can be inserted into memory reservation list.
         If no space found for reservation, will raise an exception.
 
         Args:
-            resv (Reservation): reservation to schedule.
+            reservation (Reservation): reservation to schedule.
 
         Returns:
             int: index to insert reservation in reservation list.
@@ -743,19 +736,19 @@ class MemoryTimeCard:
         start, end = 0, len(self.reservations) - 1
         while start <= end:
             mid = (start + end) // 2
-            if self.reservations[mid].start_time > resv.end_time:
+            if self.reservations[mid].start_time > reservation.end_time:
                 end = mid - 1
-            elif self.reservations[mid].end_time < resv.start_time:
+            elif self.reservations[mid].end_time < reservation.start_time:
                 start = mid + 1
-            elif (max(self.reservations[mid].start_time, resv.start_time)
-                  <= min(self.reservations[mid].end_time, resv.end_time)):
+            elif (max(self.reservations[mid].start_time, reservation.start_time) <= \
+                    min(self.reservations[mid].end_time, reservation.end_time)):
                 return -1
             else:
                 raise Exception("Unexpected status")
         return start
 
 
-class QCap():
+class QCap:
     """Class to collect local information for the reservation protocol
 
     Attributes:

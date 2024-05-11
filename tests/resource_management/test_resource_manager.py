@@ -1,13 +1,12 @@
 import math
-
 import numpy
 
 from sequence.components.memory import MemoryArray
 from sequence.components.bsm import SingleAtomBSM
 from sequence.kernel.timeline import Timeline
-from sequence.resource_management.resource_manager import ResourceManager, \
-    ResourceManagerMessage, ResourceManagerMsgType
+from sequence.resource_management.resource_manager import ResourceManager, ResourceManagerMessage, ResourceManagerMsgType
 from sequence.resource_management.rule_manager import Rule
+from sequence.message import Message
 from sequence.topology.node import Node
 
 numpy.random.seed(0)
