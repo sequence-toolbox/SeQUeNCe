@@ -127,8 +127,10 @@ class Rule:
         self.reservation = None
 
     def __str__(self):
-        action_name = str(self.action).split(' ')[1]
-        condition_name = str(self.condition).split(' ')[1]
+        action_name_list = str(self.action).split(' ')
+        action_name = action_name_list[1] if len(action_name_list) == 2 else action_name_list[0]  # in case action_name = ['None']
+        condition_name_list = str(self.condition).split(' ')
+        condition_name = condition_name_list[1] if len(condition_name_list) == 2 else condition_name_list[0]
         return "|action={}, args={}; condition={}, args={}|".format(action_name, self.action_args, condition_name, self.condition_args)
 
     def set_rule_manager(self, rule_manager: "RuleManager") -> None:
@@ -148,7 +150,7 @@ class Rule:
         """
 
         protocol, req_dsts, req_condition_funcs, req_args = self.action(memories_info, self.action_args)
-        log.logger.info('{} rule generates protocol {}'.format(self.rule_manager.resource_manager.owner, protocol.name))
+        log.logger.info('{} rule generates protocol {}'.format(self.rule_manager, protocol.name))
 
         protocol.rule = self
         self.protocols.append(protocol)

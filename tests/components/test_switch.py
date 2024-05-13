@@ -13,6 +13,7 @@ def create_switch(tl, name, basis_list, photons):
         def __init__(self, tl):
             self.timeline = tl
             self.log = []
+            self.name = ""
 
         def get(self, photon):
             self.log.append((self.timeline.now(), photon))
