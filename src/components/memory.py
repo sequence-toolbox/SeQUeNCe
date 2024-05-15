@@ -62,7 +62,8 @@ class MemoryArray(Entity):
     """
 
     def __init__(self, name: str, timeline: "Timeline", num_memories=10,
-                 fidelity=0.85, frequency=80e6, efficiency=1, coherence_time=-1, wavelength=500):
+                 fidelity=0.85, frequency=80e6, efficiency=1, coherence_time=-1, wavelength=500,
+                 decoherence_errors: List[float] = None):
         """Constructor for the Memory Array class.
 
         Args:
@@ -74,6 +75,8 @@ class MemoryArray(Entity):
             efficiency (float): efficiency of memories (default 1).
             coherence_time (float): average time (in s) that memory state is valid (default -1 -> inf).
             wavelength (int): wavelength (in nm) of photons emitted by memories (default 500).
+            decoherence_errors (List[int]): pauli decoherence errors.
+                Passed to memory object.
         """
 
         Entity.__init__(self, name, timeline)
@@ -81,7 +84,7 @@ class MemoryArray(Entity):
 
         for i in range(num_memories):
             memory = Memory(self.name + "[%d]" % i, timeline, fidelity, frequency, efficiency, coherence_time,
-                            wavelength)
+                            wavelength, decoherence_errors)
             memory.attach(self)
             self.memories.append(memory)
             memory.set_memory_array(self)
@@ -340,7 +343,7 @@ class Memory(Entity):
             pass
 
         else:
-            time = self.timeline.now() - self.last_update_time  # duration of memory idling
+            time = (self.timeline.now() - self.last_update_time) * 1e-12  # duration of memory idling (in s)
 
             x_rate, y_rate, z_rate = self.decoherence_rate * self.decoherence_errors[0], \
                                      self.decoherence_rate * self.decoherence_errors[1], \
