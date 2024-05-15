@@ -152,7 +152,7 @@ class EntanglementGenerationA(EntanglementProtocol):
     _z_circuit.z(0)
 
     def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory",
-                 is_sh: bool = True, raw_fidelity: float = None, raw_epr_errors: List[float] = (0.4, 0.3, 0.3)):
+                 is_sh: bool = True, raw_fidelity: float = None, raw_epr_errors: List[float] = (1/3, 1/3, 1/3)):
         """Constructor for entanglement generation A class.
 
         Args:
@@ -187,14 +187,16 @@ class EntanglementGenerationA(EntanglementProtocol):
         assert 0.5 <= self.raw_fidelity <= 1, "Raw fidelity of EPR pair must be above 1/2."
 
         self.raw_epr_errors = raw_epr_errors
-        if raw_epr_errors:
+        if self.raw_epr_errors:
             assert len(self.raw_epr_errors) == 3, \
                 "Raw EPR pair Pauli error list should have three elements in X, Y, Z order."
             assert sum(self.raw_epr_errors) == 1, \
                 "Raw EPR pair Pauli error list should sum to 1."
         else:
-            assert self.raw_fidelity == 1, \
-                "Pauli error list not specified with non-unit fidelity."
+            # assert self.raw_fidelity == 1, \
+            #     "Pauli error list not specified with non-unit fidelity."
+            # it is acceptable to have below-unit raw fidelity and None raw_epr_errors in BKP
+            pass
 
         # memory info
         self.memory: Memory = memory

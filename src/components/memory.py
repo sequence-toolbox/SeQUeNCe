@@ -144,7 +144,7 @@ class Memory(Entity):
             probability distribution of X, Y, Z Pauli errors;
             (default value is -1, meaning not using BDS or further density matrix representation).
         generation_time (float): time when the EPR pair is first generated (float or int depends on timing unit)
-            (default -1 before generation or not used). (Attribute omitted)
+            (default -1 before generation or not used). Used only for logging.
         last_update_time (float): last time when the EPR pair is updated (usually when decoherence channel applied),
             used to determine decoherence channel
             (default -1 before generation or not used).
@@ -189,7 +189,7 @@ class Memory(Entity):
 
         # TODO: tracking of time when entanglement status is modified has been done at least partially in memory_manager
         # default value is -1 when EPR pair is not generated or decoherence over time is not considered
-        # self.generation_time = -1 (unnecessary to distinguish time when entanglement is generated and when quantum state is updated)
+        self.generation_time = -1  
         self.last_update_time = -1
 
         self.is_in_application = False  # initially quantum memory is guaranteed to be not involved in any application
@@ -248,6 +248,7 @@ class Memory(Entity):
             photon = Photon("", self.timeline, wavelength=self.wavelength, location=self.name, encoding_type=self.encoding_sh,
                             quantum_state=self.qstate_key, use_qm=True)
             # keep track of memory initialization time
+            self.generation_time = self.timeline.now()
             self.last_update_time = self.timeline.now()
         else:
             raise ValueError("Invalid protocol type '{}' specified for memory.excite()".format(protocol))
@@ -300,7 +301,7 @@ class Memory(Entity):
         """
 
         self.fidelity = 0
-        # self.generation_time = -1
+        self.generation_time = -1
         self.last_update_time = -1
 
         self.timeline.quantum_manager.set([self.qstate_key], [complex(1), complex(0)])
