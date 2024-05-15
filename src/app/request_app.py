@@ -87,9 +87,15 @@ class RequestApp:
             ))
 
     def add_memo_reserve_map(self, index: int, reservation: "Reservation") -> None:
+        log.logger.info("Adding reservation for request app on node {}".format(
+            self.node.name
+        ))
         self.memo_to_reserve[index] = reservation
 
     def remove_memo_reserve_map(self, index: int) -> None:
+        log.logger.info("Removing reservation for request app on node {}".format(
+            self.node.name
+        ))
         self.memo_to_reserve.pop(index)
 
     def get_memory(self, info: "MemoryInfo") -> None:
