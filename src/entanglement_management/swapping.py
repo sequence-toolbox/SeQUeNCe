@@ -90,6 +90,7 @@ class EntanglementSwappingA(EntanglementProtocol):
         left_protocol_name (str): name of left protocol.
         right_protocol_name (str): name of right protocol.
         is_bds (bool): whether the formalism of entangled state is Bell diagonal state (default False).
+        is_twirled (bool): whether the input and output states are twirled into Werner form (default True).
     """
 
     circuit = Circuit(2)
@@ -99,7 +100,7 @@ class EntanglementSwappingA(EntanglementProtocol):
     circuit.measure(1)
 
     def __init__(self, own: "Node", name: str, left_memo: "Memory", right_memo: "Memory", success_prob=1,
-                 degradation=0.95, is_bds=False):
+                 degradation=0.95, is_bds=False, is_twirled=True):
         """Constructor for entanglement swapping A protocol.
 
         Args:
@@ -133,6 +134,7 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.right_protocol_name = None
 
         self.is_bds = is_bds
+        self.is_twirled = is_twirled
 
     def is_ready(self) -> bool:
         return self.left_protocol_name is not None \
@@ -262,6 +264,11 @@ class EntanglementSwappingA(EntanglementProtocol):
 
         left_elem_1, left_elem_2, left_elem_3, left_elem_4 = left_state.state  # BDS diagonal elements of left pair
         right_elem_1, right_elem_2, right_elem_3, right_elem_4 = right_state.state  # BDS diagonal elements of right pair
+
+        if self.is_twirled:
+            left_elem_2, left_elem_3, left_elem_4 = [(1-left_elem_1)/3] * 3
+            right_elem_2, right_elem_3, right_elem_4 = [(1-right_elem_1)/3] * 3
+
         assert 1. >= left_elem_1 >= 0.5 and 1. >= right_elem_1 >= 0.5, "Input states should have fidelity above 1/2."
 
         # gate and measurment fidelities on swapping node, assuming two single-qubit measurements have equal fidelity
@@ -278,7 +285,10 @@ class EntanglementSwappingA(EntanglementProtocol):
         new_elem_3 = gate_fid * (meas_fid**2 * c_Z + meas_fid*(1-meas_fid)*(c_I+c_Y) + (1-meas_fid)**2*c_X) + (1-gate_fid)/4
         new_elem_4 = gate_fid * (meas_fid**2 * c_Y + meas_fid*(1-meas_fid)*(c_X+c_Z) + (1-meas_fid)**2*c_I) + (1-gate_fid)/4        
 
-        bds_elems = [new_elem_1, new_elem_2, new_elem_3, new_elem_4]
+        if self.is_twirled:
+            bds_elems = [new_elem_1, (1-new_elem_1)/3, (1-new_elem_1)/3, (1-new_elem_1)/3]
+        else:
+            bds_elems = [new_elem_1, new_elem_2, new_elem_3, new_elem_4]
         return bds_elems
 
     def received_message(self, src: str, msg: "Message") -> None:

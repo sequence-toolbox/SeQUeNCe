@@ -64,14 +64,14 @@ class BBPSSW(EntanglementProtocol):
         remote_protocol_name (str): name of other protocol.
         remote_memories (List[str]): name of remote memories.
         is_bds (bool): whether the formalism of entangled state is Bell diagonal state (default False).
-        is_twirled (bool): whether we twirl the input and output BDS. True: BBPSSW, False: DEJMPS. (default False)
+        is_twirled (bool): whether we twirl the input and output BDS. True: BBPSSW, False: DEJMPS. (default True)
     """
 
     circuit = Circuit(2)
     circuit.cx(0, 1)
     circuit.measure(1)
 
-    def __init__(self, own: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory", is_bds=True, is_twirled=False):
+    def __init__(self, own: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory", is_bds=True, is_twirled=True):
         """Constructor for purification protocol.
 
         Args:
