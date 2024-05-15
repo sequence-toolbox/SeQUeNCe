@@ -237,7 +237,8 @@ class BBPSSW(EntanglementProtocol):
                 self.kept_memo.fidelity = BBPSSW.improved_fidelity(self.kept_memo.fidelity)
                 self.update_resource_manager(self.kept_memo, state="ENTANGLED")
             elif self.is_bds:
-                state = self.own.timeline.quantum_manager.states(self.kept_memo.qstate_key)
+                # state = self.own.timeline.quantum_manager.states(self.kept_memo.qstate_key)
+                state = self.own.timeline.quantum_manager.get(self.kept_memo.qstate_key)
                 fidelity = state.state[0]
                 self.kept_memo.fidelity = fidelity
                 # TODO: if time-dependent decoherence exists,
