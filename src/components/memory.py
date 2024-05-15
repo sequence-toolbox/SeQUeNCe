@@ -409,6 +409,16 @@ class Memory(Entity):
         if observer in self._observers:
             self._observers.remove(observer)
 
+    def get_bds_state(self):
+        """Method to get state of memory in BDS formalism.
+
+        Will automatically call the `bds_decohere` method.
+        """
+        self.bds_decohere()
+        state_obj = self.timeline.quantum_manager.get(self.qstate_key)
+        state = state_obj.state
+        return state
+
 
 class AbsorptiveMemory(Entity):
     """Atomic ensemble absorptive memory.
