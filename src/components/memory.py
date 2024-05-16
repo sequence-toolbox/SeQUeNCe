@@ -143,6 +143,7 @@ class Memory(Entity):
         decoherence_errors (List[float]): assuming the memory (qubit) decoherence channel being Pauli channel,
             probability distribution of X, Y, Z Pauli errors;
             (default value is -1, meaning not using BDS or further density matrix representation).
+        cutoff_ratio (float): the ratio between cutoff time and memory coherence time (default 1, should be between 0 and 1).
         generation_time (float): time when the EPR pair is first generated (float or int depends on timing unit)
             (default -1 before generation or not used). Used only for logging.
         last_update_time (float): last time when the EPR pair is updated (usually when decoherence channel applied),
@@ -152,7 +153,7 @@ class Memory(Entity):
     """
 
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
-                 efficiency: float, coherence_time: float, wavelength: int, decoherence_errors: List[float] = None):
+                 efficiency: float, coherence_time: float, wavelength: int, decoherence_errors: List[float] = None, cutoff_ratio: float = 1):
         """Constructor for the Memory class.
 
         Args:
@@ -186,6 +187,9 @@ class Memory(Entity):
         if self.decoherence_errors is not None:
             assert len(self.decoherence_errors) == 3 and abs(sum(self.decoherence_errors) - 1) < 0.001, \
                 "Decoherence errors refer to probabilities for each Pauli error to happen if an error happens, thus should be normalized."
+
+        self.cutoff_ratio = cutoff_ratio
+        assert 0 < self.cutoff_ratio <= 1, "Ratio of cutoff time and coherence time should be between 0 and 1."
 
         # TODO: tracking of time when entanglement status is modified has been done at least partially in memory_manager
         # default value is -1 when EPR pair is not generated or decoherence over time is not considered
@@ -374,7 +378,7 @@ class Memory(Entity):
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
 
-        decay_time = self.timeline.now() + int(self.coherence_time * 1e12)
+        decay_time = self.timeline.now() + int(self.cutoff_ratio * self.coherence_time * 1e12)
         process = Process(self, "expire", [])
         event = Event(decay_time, process)
         self.timeline.schedule(event)
