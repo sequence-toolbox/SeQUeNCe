@@ -63,7 +63,7 @@ class MemoryArray(Entity):
 
     def __init__(self, name: str, timeline: "Timeline", num_memories=10,
                  fidelity=0.85, frequency=80e6, efficiency=1, coherence_time=-1, wavelength=500,
-                 decoherence_errors: List[float] = None):
+                 decoherence_errors: List[float] = None, cutoff_ratio=1):
         """Constructor for the Memory Array class.
 
         Args:
@@ -77,6 +77,7 @@ class MemoryArray(Entity):
             wavelength (int): wavelength (in nm) of photons emitted by memories (default 500).
             decoherence_errors (List[int]): pauli decoherence errors.
                 Passed to memory object.
+            cutoff_ratio (float): the ratio between cutoff time and memory coherence time (default 1, should be between 0 and 1).
         """
 
         Entity.__init__(self, name, timeline)
@@ -84,7 +85,7 @@ class MemoryArray(Entity):
 
         for i in range(num_memories):
             memory = Memory(self.name + "[%d]" % i, timeline, fidelity, frequency, efficiency, coherence_time,
-                            wavelength, decoherence_errors)
+                            wavelength, decoherence_errors, cutoff_ratio)
             memory.attach(self)
             self.memories.append(memory)
             memory.set_memory_array(self)
