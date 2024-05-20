@@ -378,13 +378,9 @@ class EntanglementGenerationA(EntanglementProtocol):
             May change state of attached memory.
             May cause attached memory to emit photon.
         """
-        if self.is_sh:
-            self.memory.excite(self.middle, "sh")
-
-        else:
-            if self.ent_round == 1:
-                self.memory.update_state(EntanglementGenerationA._plus_state)
-            self.memory.excite(self.middle)
+        if self.ent_round == 1:
+            self.memory.update_state(EntanglementGenerationA._plus_state)
+        self.memory.excite(self.middle)
 
     def received_message(self, src: str, msg: EntanglementGenerationMessage) -> None:
         """Method to receive messages.
