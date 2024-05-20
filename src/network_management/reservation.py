@@ -134,8 +134,9 @@ def ep_rule_condition1(memory_info: "MemoryInfo", manager: "MemoryManager",
         for info in manager:
             if (info != memory_info and info.index in memory_indices
                     and info.state == "ENTANGLED"
-                    and info.remote_node == memory_info.remote_node
-                    and info.fidelity == memory_info.fidelity):
+                    and info.remote_node == memory_info.remote_node):
+                    # TODO: Revert!
+                    # and info.fidelity == memory_info.fidelity):
                 assert memory_info.remote_memo != info.remote_memo
                 return [memory_info, info]
     return []
