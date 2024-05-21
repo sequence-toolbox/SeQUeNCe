@@ -13,7 +13,9 @@ These modules can be edited by users to define additional functionality and test
 SeQUeNCe requires an installation of Python 3.8 or later. This can be found at the [Python Website](https://www.python.org/downloads/).
 Then, simply download the package, navigate to its directory, and install with
 ```
-$ pip install .
+git clone https://github.com/sequence-toolbox/SeQUeNCe.git
+cd SeQUeNCe
+pip install .
 ```
 Or, using the included makefile,
 ```
@@ -52,7 +54,7 @@ Many examples of SeQUeNCe in action can be found in the [example](/example) fold
 Code for the experiments performed in our paper can be found in the file `starlight_experiments.py`. This script uses the `starlight.json` file (also within the example folder) to specify the network topology.
 
 ### Jupyter Notebook Examples
-The example folder contains several scripts that can be run with jupyter notebook for easy editing and visualization. These files require that the notebook package be installed:
+The example folder contains several scripts that can be run with jupyter notebook for easy editing and visualization. These files require that the notebook package be installed (Anaconda recommended):
 ```
 $ pip install notebook
 $ pip install ipywidgets
