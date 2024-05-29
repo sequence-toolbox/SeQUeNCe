@@ -10,5 +10,6 @@ dash-cytoscape
 plotly
 pandas
 qutip>=4.6.0
+qutip-qip>=0.3.1
 tqdm>=4.54.0
 networkx
