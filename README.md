@@ -17,7 +17,7 @@ git clone https://github.com/sequence-toolbox/SeQUeNCe.git
 cd SeQUeNCe
 pip install .
 ```
-Or, using the included makefile,
+Or, replace `pip install .` with the included makefile,
 ```
 $ make install
 ```

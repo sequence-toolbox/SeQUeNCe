@@ -18,6 +18,7 @@ setup(
         'matplotlib',
         'pandas',
         'qutip>=4.6.0',
+        'qutip-qip>=0.3.1',
         'dash>=1.20.0',
         'dash-core-components',
         'dash-html-components',
