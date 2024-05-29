@@ -1,6 +1,6 @@
 numpy>=1.22
 pandas
-qutip>=4.6.0
+qutip==4.7.5
 tqdm>=4.54.0
 mpi4py
 pytest-mpi
