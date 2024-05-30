@@ -69,7 +69,7 @@ def eg_req_func(protocols, args):
     for protocol in protocols:
         if not isinstance(protocol, EntanglementGenerationA):
             continue
-        mem_arr = protocol.own.get_components_by_type("MemoryArray")[0]
+        mem_arr = protocol.owner.get_components_by_type("MemoryArray")[0]
         if protocol.remote_node_name == remote_node and \
                 index_lower <= mem_arr.memories.index(protocol.memory) <= index_upper:
             return protocol

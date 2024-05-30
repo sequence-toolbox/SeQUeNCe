@@ -28,7 +28,7 @@ class Protocol(ABC):
             name (str): name of protocol instance.
         """
 
-        self.own = own
+        self.owner = own
         self.name = name
 
     @abstractmethod

@@ -7,8 +7,8 @@ from sequence.message import Message
 
 
 class SimpleManager:
-    def __init__(self, own, memo_names):
-        self.own = own
+    def __init__(self, owner, memo_names):
+        self.owner = owner
         self.memo_names = memo_names
         self.raw_counter = 0
         self.ent_counter = 0
@@ -22,12 +22,12 @@ class SimpleManager:
 
     def create_protocol(self):
         if type(self.own) is SwapNodeA:
-            left_memo = self.own.components[self.memo_names[0]]
-            right_memo = self.own.components[self.memo_names[1]]
-            self.own.protocols = [EntanglementSwappingA(self.own, 'ESA', left_memo, right_memo, 1, 0.99)]
+            left_memo = self.owner.components[self.memo_names[0]]
+            right_memo = self.owner.components[self.memo_names[1]]
+            self.owner.protocols = [EntanglementSwappingA(self.own, 'ESA', left_memo, right_memo, 1, 0.99)]
         else:
-            memo = self.own.components[self.memo_names[0]]
-            self.own.protocols = [EntanglementSwappingB(self.own, '%s.ESB' % self.own.name, memo)]
+            memo = self.owner.components[self.memo_names[0]]
+            self.owner.protocols = [EntanglementSwappingB(self.own, '%s.ESB' % self.owner.name, memo)]
 
 
 class SwapNodeA(Node):

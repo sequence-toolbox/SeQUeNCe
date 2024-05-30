@@ -79,7 +79,7 @@ class StaticRoutingProtocol(StackProtocol):
             Will invoke `push` method of lower protocol or network manager.
         """
 
-        assert dst != self.own.name
+        assert dst != self.owner.name
         dst = self.forwarding_table[dst]
         new_msg = StaticRoutingMessage(Enum, self.name, msg)
         self._push(dst=dst, msg=new_msg)

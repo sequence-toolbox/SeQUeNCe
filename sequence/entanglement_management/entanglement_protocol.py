@@ -77,5 +77,5 @@ class EntanglementProtocol(Protocol):
             May alter the state of `memory`.
         """
 
-        self.own.resource_manager.update(self, memory, state)
+        self.owner.resource_manager.update(self, memory, state)
 

@@ -137,17 +137,17 @@ class BBPSSW(EntanglementProtocol):
             Will send message to other protocol instance.
         """
 
-        log.logger.info(f"{self.own.name} protocol start with partner {self.remote_node_name}")
+        log.logger.info(f"{self.owner.name} protocol start with partner {self.remote_node_name}")
 
         assert self.is_ready(), "other protocol is not set; please use set_others function to set it."
         kept_memo_ent = self.kept_memo.entangled_memory["node_id"]
         meas_memo_ent = self.meas_memo.entangled_memory["node_id"]
         assert kept_memo_ent == meas_memo_ent, "mismatch of entangled memories {}, {} on node {}".format(
-            kept_memo_ent, meas_memo_ent, self.own.name)
+            kept_memo_ent, meas_memo_ent, self.owner.name)
         assert self.kept_memo.fidelity == self.meas_memo.fidelity > 0.5
 
-        meas_samp = self.own.get_generator().random()
-        self.meas_res = self.own.timeline.quantum_manager.run_circuit(
+        meas_samp = self.owner.get_generator().random()
+        self.meas_res = self.owner.timeline.quantum_manager.run_circuit(
             self.circuit, [self.kept_memo.qstate_key,
                            self.meas_memo.qstate_key],
             meas_samp)
@@ -157,7 +157,7 @@ class BBPSSW(EntanglementProtocol):
         message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES,
                                 self.remote_protocol_name,
                                 meas_res=self.meas_res)
-        self.own.send_message(dst, message)
+        self.owner.send_message(dst, message)
 
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:
         """Method to receive messages.
@@ -171,7 +171,7 @@ class BBPSSW(EntanglementProtocol):
         """
 
         log.logger.info(
-            self.own.name + " received result message, succeeded: {}".format(
+            self.owner.name + " received result message, succeeded: {}".format(
                 self.meas_res == msg.meas_res))
         assert src == self.remote_node_name
 

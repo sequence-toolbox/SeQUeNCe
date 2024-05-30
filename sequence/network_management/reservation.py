@@ -344,10 +344,10 @@ class ResourceReservationProtocol(StackProtocol):
             May push/pop to lower/upper attached protocols (or network manager).
         """
 
-        reservation = Reservation(self.own.name, responder, start_time, end_time, memory_size, target_fidelity)
+        reservation = Reservation(self.owner.name, responder, start_time, end_time, memory_size, target_fidelity)
         if self.schedule(reservation):
             msg = ResourceReservationMessage(RSVPMsgType.REQUEST, self.name, reservation)
-            qcap = QCap(self.own.name)
+            qcap = QCap(self.owner.name)
             msg.qcaps.append(qcap)
             self._push(dst=responder, msg=msg)
         else:
@@ -375,11 +375,11 @@ class ResourceReservationProtocol(StackProtocol):
         """
 
         if msg.msg_type == RSVPMsgType.REQUEST:
-            assert self.own.timeline.now() < msg.reservation.start_time
+            assert self.owner.timeline.now() < msg.reservation.start_time
             if self.schedule(msg.reservation):
-                qcap = QCap(self.own.name)
+                qcap = QCap(self.owner.name)
                 msg.qcaps.append(qcap)
-                if self.own.name == msg.reservation.responder:
+                if self.owner.name == msg.reservation.responder:
                     path = [qcap.node for qcap in msg.qcaps]
                     rules = self.create_rules(path, reservation=msg.reservation)
                     self.load_rules(rules, msg.reservation)
@@ -395,14 +395,14 @@ class ResourceReservationProtocol(StackProtocol):
         elif msg.msg_type == RSVPMsgType.REJECT:
             for card in self.timecards:
                 card.remove(msg.reservation)
-            if msg.reservation.initiator == self.own.name:
+            if msg.reservation.initiator == self.owner.name:
                 self._pop(msg=msg)
             else:
                 self._push(dst=msg.reservation.initiator, msg=msg)
         elif msg.msg_type == RSVPMsgType.APPROVE:
             rules = self.create_rules(msg.path, msg.reservation)
             self.load_rules(rules, msg.reservation)
-            if msg.reservation.initiator == self.own.name:
+            if msg.reservation.initiator == self.owner.name:
                 self._pop(msg=msg)
             else:
                 self._push(dst=msg.reservation.initiator, msg=msg)
@@ -419,7 +419,7 @@ class ResourceReservationProtocol(StackProtocol):
             bool: if reservation can be met or not.
         """
 
-        if self.own.name in [reservation.initiator, reservation.responder]:
+        if self.owner.name in [reservation.initiator, reservation.responder]:
             counter = reservation.memory_size
         else:
             counter = reservation.memory_size * 2
@@ -457,12 +457,12 @@ class ResourceReservationProtocol(StackProtocol):
             if reservation in card.reservations:
                 memory_indices.append(card.memory_index)
 
-        index = path.index(self.own.name)  # the location of this node along the path from initiator to responder
+        index = path.index(self.owner.name)  # the location of this node along the path from initiator to responder
 
         # 1. create rules for entanglement generation
         if index > 0:
             condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
-            action_args = {"mid": self.own.map_to_middle_node[path[index - 1]],
+            action_args = {"mid": self.owner.map_to_middle_node[path[index - 1]],
                            "path": path, "index": index}
             rule = Rule(10, eg_rule_action1, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
@@ -473,8 +473,8 @@ class ResourceReservationProtocol(StackProtocol):
             else:
                 condition_args = {"memory_indices": memory_indices[reservation.memory_size:]}
 
-            action_args = {"mid": self.own.map_to_middle_node[path[index + 1]],
-                           "path": path, "index": index, "name": self.own.name, "reservation": reservation}
+            action_args = {"mid": self.owner.map_to_middle_node[path[index + 1]],
+                           "path": path, "index": index, "name": self.owner.name, "reservation": reservation}
             rule = Rule(10, eg_rule_action2, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
 
@@ -508,13 +508,13 @@ class ResourceReservationProtocol(StackProtocol):
             rules.append(rule)
         else:
             _path = path[:]
-            while _path.index(self.own.name) % 2 == 0:
+            while _path.index(self.owner.name) % 2 == 0:
                 new_path = []
                 for i, n in enumerate(_path):
                     if i % 2 == 0 or i == len(_path) - 1:
                         new_path.append(n)
                 _path = new_path
-            _index = _path.index(self.own.name)
+            _index = _path.index(self.owner.name)
             left, right = _path[_index - 1], _path[_index + 1]
 
             condition_args = {"memory_indices": memory_indices, "left": left, "right": right, "fidelity": reservation.fidelity}
@@ -545,17 +545,17 @@ class ResourceReservationProtocol(StackProtocol):
         self.accepted_reservation.append(reservation)
         for card in self.timecards:
             if reservation in card.reservations:
-                process = Process(self.own.resource_manager, "update", [None, self.memo_arr[card.memory_index], "RAW"])
+                process = Process(self.owner.resource_manager, "update", [None, self.memo_arr[card.memory_index], "RAW"])
                 event = Event(reservation.end_time, process, 1)
-                self.own.timeline.schedule(event)
+                self.owner.timeline.schedule(event)
 
         for rule in rules:
-            process = Process(self.own.resource_manager, "load", [rule])
+            process = Process(self.owner.resource_manager, "load", [rule])
             event = Event(reservation.start_time, process)
-            self.own.timeline.schedule(event)
-            process = Process(self.own.resource_manager, "expire", [rule])
+            self.owner.timeline.schedule(event)
+            process = Process(self.owner.resource_manager, "expire", [rule])
             event = Event(reservation.end_time, process, 0)
-            self.own.timeline.schedule(event)
+            self.owner.timeline.schedule(event)
 
     def received_message(self, src, msg):
         """Method to receive messages directly (should not be used; receive through network manager)."""

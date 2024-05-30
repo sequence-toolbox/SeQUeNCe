@@ -24,7 +24,7 @@ class Counter:
 
 class Sender:
     def __init__(self, own, memory_name):
-        self.own = own
+        self.owner = own
         self.memory = own.components[memory_name]
 
     def start(self, period):
@@ -33,8 +33,8 @@ class Sender:
         for i in range(NUM_TRIALS):
             event1 = Event(i * period, process1)
             event2 = Event(i * period + (period / 10), process2)
-            self.own.timeline.schedule(event1)
-            self.own.timeline.schedule(event2)
+            self.owner.timeline.schedule(event1)
+            self.owner.timeline.schedule(event2)
 
 
 class SenderNode(Node):

@@ -210,7 +210,7 @@ class Cascade(StackProtocol):
 
         log.logger.debug(self.name + ' state={} get_key_from_BB84, key={}'.format(self.state, info))
         self.bits.append(info)
-        self.t1.append(self.own.timeline.now())
+        self.t1.append(self.owner.timeline.now())
         self.t2.append(-1)
 
         if self.state == 1:
@@ -289,7 +289,7 @@ class Cascade(StackProtocol):
             self.keylen = msg.keylen
             self.frame_num = msg.frame_num
             self.run_time = msg.run_time
-            self.start_time = self.own.timeline.now()
+            self.start_time = self.owner.timeline.now()
             self.end_time = self.start_time + self.run_time
             self.state = 1
 
@@ -397,7 +397,7 @@ class Cascade(StackProtocol):
                     self._pop(key=self.valid_keys[-1])
                     self.frame_num -= 1
 
-            self.t2[key_id] = self.own.timeline.now()
+            self.t2[key_id] = self.owner.timeline.now()
             self.performance_measure()
 
     def generate_key(self, keylen: int, frame_num=math.inf, run_time=math.inf) -> None:
@@ -421,14 +421,14 @@ class Cascade(StackProtocol):
 
         if self.state == 0:
             log.logger.debug(self.name + ' generate_key with state 0')
-            self.setup_time = self.own.timeline.now()
+            self.setup_time = self.owner.timeline.now()
             self.keylen = keylen
             self.frame_num = frame_num
             self.run_time = run_time
             self._push(length=10000, key_num=1)
 
         else:
-            self.start_time = self.own.timeline.now()
+            self.start_time = self.owner.timeline.now()
             self.end_time = self.start_time + self.run_time
             log.logger.debug(self.name + ' generate_key with state ' + str(self.state))
             self._push(length=self.frame_len, key_num=self.frame_num, run_time=self.run_time)
@@ -535,7 +535,7 @@ class Cascade(StackProtocol):
                 self.frame_num -= 1
 
         if self.role == 0:
-            self.t2[key_id] = self.own.timeline.now()
+            self.t2[key_id] = self.owner.timeline.now()
         self.performance_measure()
 
         message = CascadeMessage(CascadeMsgType.KEY_IS_VALID, self.another.name, key_id=key_id)
@@ -583,12 +583,12 @@ class Cascade(StackProtocol):
     def send_by_cc(self, message: "CascadeMessage") -> None:
         """Method to send classical messages."""
 
-        if self.own.timeline.now() > self.end_time and self.state != 2:
+        if self.owner.timeline.now() > self.end_time and self.state != 2:
             self.end_cascade()
             self.another.end_cascade()
             return
 
-        self.own.send_message(self.another.own.name, message)
+        self.owner.send_message(self.another.owner.name, message)
 
     def performance_measure(self) -> None:
         """Method to record performance metrics."""
@@ -607,9 +607,9 @@ class Cascade(StackProtocol):
                 self.latency = None
             self.another.latency = self.latency
 
-        if self.own.timeline.now() - self.start_time:
-            self.throughput = 1e12 * len(self.valid_keys) * self.keylen / (self.own.timeline.now() - self.start_time)
-            self.privacy_throughput = 1e12 * (len(self.valid_keys) * self.keylen - int(len(self.valid_keys)/40) * self.secure_params - self.disclosed_bits_counter) / (self.own.timeline.now() - self.start_time)
+        if self.owner.timeline.now() - self.start_time:
+            self.throughput = 1e12 * len(self.valid_keys) * self.keylen / (self.owner.timeline.now() - self.start_time)
+            self.privacy_throughput = 1e12 * (len(self.valid_keys) * self.keylen - int(len(self.valid_keys)/40) * self.secure_params - self.disclosed_bits_counter) / (self.owner.timeline.now() - self.start_time)
 
         counter = 0
         for j in range(min(len(self.valid_keys), len(self.another.valid_keys))):

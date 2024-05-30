@@ -227,7 +227,7 @@ class ResourceManager:
             req_args (Dict[str, Any]): arguments for req_cond_func.
         """
 
-        protocol.own = self.owner
+        protocol.owner = self.owner
         if req_dst is None:
             self.waiting_protocols.append(protocol)
             return
@@ -287,7 +287,7 @@ class ResourceManager:
                 if protocol.is_ready():
                     self.pending_protocols.remove(protocol)
                     self.owner.protocols.append(protocol)
-                    protocol.own = self.owner
+                    protocol.owner = self.owner
                     protocol.start()
             else:
                 protocol.rule.protocols.remove(protocol)

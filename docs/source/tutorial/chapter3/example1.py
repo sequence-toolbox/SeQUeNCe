@@ -7,8 +7,8 @@ from sequence.message import Message
 
 
 class SimpleManager:
-    def __init__(self, own, memo_name):
-        self.own = own
+    def __init__(self, owner, memo_name):
+        self.owner = owner
         self.memo_name = memo_name
         self.raw_counter = 0
         self.ent_counter = 0
@@ -21,8 +21,8 @@ class SimpleManager:
             self.ent_counter += 1
 
     def create_protocol(self, middle: str, other: str):
-        self.own.protocols = [EntanglementGenerationA(self.own, '%s.eg' % self.own.name, middle, other,
-                                                      self.own.components[self.memo_name])]
+        self.owner.protocols = [EntanglementGenerationA(self.owner, '%s.eg' % self.owner.name, middle, other,
+                                                      self.owner.components[self.memo_name])]
 
 
 class EntangleGenNode(Node):
