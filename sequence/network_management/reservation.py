@@ -573,6 +573,7 @@ class ResourceReservationProtocol(StackProtocol):
 
 class Reservation:
     """Tracking of reservation parameters for the network manager.
+       Each request will generate a reservation
 
     Attributes:
         initiator (str): name of the node that created the reservation request.
@@ -712,7 +713,7 @@ class MemoryTimeCard:
 
 
 class QCap:
-    """Class to collect local information for the reservation protocol
+    """Quantum Capacity. Class to collect local information for the reservation protocol
 
     Attributes:
         node (str): name of current node.

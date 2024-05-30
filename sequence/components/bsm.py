@@ -419,6 +419,7 @@ class SingleAtomBSM(BSM):
     Attributes:
         name (str): label for BSM instance
         timeline (Timeline): timeline for simulation
+        phase_error (float): phase error applied to measurement.
         detectors (List[Detector]): list of attached photon detection devices
         resolution (int): maximum time resolution achievable with attached detectors  
     """

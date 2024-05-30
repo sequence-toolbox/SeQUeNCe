@@ -29,7 +29,7 @@ from ..qkd.BB84 import BB84
 from ..qkd.cascade import Cascade
 from ..entanglement_management.generation import EntanglementGenerationB
 from ..resource_management.resource_manager import ResourceManager
-from ..network_management.network_manager import NewNetworkManager
+from ..network_management.network_manager import NewNetworkManager, NetworkManager
 from ..utils.encoding import *
 from ..utils import log
 
@@ -274,9 +274,10 @@ class QuantumRouter(Node):
         self.add_component(memory_array)
         memory_array.add_receiver(self)
 
-        # add protocols
-        self.resource_manager = ResourceManager(self, memo_arr_name)
-        self.network_manager = NewNetworkManager(self, memo_arr_name)  # NOTE caitao: update self.protocols?
+        # setup managers
+        self.resource_manager = None
+        self.network_manager = None
+        self.init_managers(memo_arr_name)
         self.map_to_middle_node = {}
         self.app = None
 
@@ -301,6 +302,26 @@ class QuantumRouter(Node):
                     if protocol.name == msg.receiver:
                         protocol.received_message(src, msg)
                         break
+
+    def init_managers(self, memo_arr_name: str):
+        '''initialize resource manager and network manager
+        Args:
+            memo_arr_name: the name of the memory array
+        '''
+        resource_manager = ResourceManager(self, memo_arr_name)
+        network_manager = NewNetworkManager(self, memo_arr_name)
+        self.set_resource_manager(resource_manager)
+        self.set_network_manager(network_manager)
+
+    def set_resource_manager(self, resource_manager: ResourceManager):
+        '''set the resource manager
+        '''
+        self.resource_manager = resource_manager
+
+    def set_network_manager(self, network_manager: NetworkManager):
+        '''set the network manager
+        '''
+        self.network_manager = network_manager
 
     def init(self):
         """Method to initialize quantum router node.

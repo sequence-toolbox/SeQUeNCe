@@ -216,7 +216,7 @@ class SPDCSource(LightSource):
                     self.send_photons(time, [new_photon0, new_photon1])
                     self.photon_counter += 1
 
-                if num_photon_pairs is 0:
+                if num_photon_pairs == 0:
                     # send two null photons for purposes of entanglement
                     new_photon0 = Photon("", self.timeline,
                                          wavelength=self.wavelengths[0],
