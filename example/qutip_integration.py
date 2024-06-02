@@ -6,6 +6,116 @@ import sequence as sqnc
 from sequence.resource_management.memory_manager import MemoryManager 
 
 
+def purification_result(state1, state2, gate_fid1, gate_fid2, meas_fid1, meas_fid2, is_twirled=True):
+    """Function to derive purification success probability and output state.
+
+    Codes are modified from SeQUeNCe purification.py.
+    Variable name correspondence between current implementation and SeQUeNCe:
+        gate_fid1 <--> own_node_gate_fid
+        gate_fid2 <--> remote_node_gate_fid
+        meas_fid1 <--> own_node_meas_fid
+        meas_fid2 <--> remote_node_meas_fid
+    
+    Return:
+        p_succ (float): success probability
+        bds_elems (List): list of successful output BDS diagonal elements
+    """
+
+    if is_twirled:
+        kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = state1[0], (1-state1[0])/3, (1-state1[0])/3, (1-state1[0])/3  # Diagonal elements of kept pair (twirled)
+        meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = state2[0], (1-state2[0])/3, (1-state2[0])/3, (1-state2[0])/3  # Diagonal elements of measured pair (twirled)   
+    else:
+        kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = state1  # Diagonal elements of kept pair
+        meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = state2  # Diagonal elements of measured pair
+
+    assert 1. >= kept_elem_1 >= 0.5 and 1. >= meas_elem_1 >= 0.5, "Input states should have fidelity above 1/2."
+    a, b = (kept_elem_1 + kept_elem_2), (meas_elem_1 + meas_elem_2)
+
+    # calculate success probability with analytical formula
+    p_succ = gate_fid1 * gate_fid2 * (meas_fid1 * (1-meas_fid2) + (1-meas_fid1) * meas_fid2) \
+            + gate_fid1 * gate_fid2 * (a*b + (1-a)*(1-b)) \
+                * (meas_fid1 * meas_fid2 + (1-meas_fid1)*(1-meas_fid2) - meas_fid1 * (1-meas_fid2) - (1-meas_fid1) * meas_fid2) \
+            - gate_fid1 * gate_fid2 / 2 + 1/2
+
+    new_elem_1 = gate_fid1 * gate_fid2 \
+        * ((meas_fid1 * meas_fid2 + (1-meas_fid1)*(1-meas_fid2))*(kept_elem_1*meas_elem_1 + kept_elem_2*meas_elem_2)
+            + (meas_fid1 * (1-meas_fid2) + (1-meas_fid1) * meas_fid2)*(kept_elem_1*meas_elem_3 + kept_elem_2*meas_elem_4)) \
+        + (1 - gate_fid1 * gate_fid2) / 8
+
+    new_elem_2 = gate_fid1 * gate_fid2 \
+        * ((meas_fid1 * meas_fid2 + (1-meas_fid1)*(1-meas_fid2))*(kept_elem_1*meas_elem_2 + kept_elem_2*meas_elem_1)
+            + (meas_fid1 * (1-meas_fid2) + (1-meas_fid1) * meas_fid2)*(kept_elem_1*meas_elem_4 + kept_elem_2*meas_elem_3))\
+        + (1 - gate_fid1 * gate_fid2) / 8
+
+    new_elem_3 = gate_fid1 * gate_fid2 \
+        * ((meas_fid1 * meas_fid2 + (1-meas_fid1)*(1-meas_fid2))*(kept_elem_3*meas_elem_3 + kept_elem_4*meas_elem_4)
+            + (meas_fid1 * (1-meas_fid2) + (1-meas_fid1) * meas_fid2)*(kept_elem_3*meas_elem_1 + kept_elem_4*meas_elem_2)) \
+        + (1 - gate_fid1 * gate_fid2) / 8
+
+    new_elem_4 = gate_fid1 * gate_fid2 \
+        * ((meas_fid1 * meas_fid2 + (1-meas_fid1)*(1-meas_fid2))*(kept_elem_3*meas_elem_4 + kept_elem_4*meas_elem_3)
+            + (meas_fid1 * (1-meas_fid2) + (1-meas_fid1) * meas_fid2)*(kept_elem_3*meas_elem_2 + kept_elem_4*meas_elem_1))\
+        + (1 - gate_fid1 * gate_fid2) / 8
+
+    if is_twirled:
+        new_fid = new_elem_1 / p_succ  # normalization by success probability
+        bds_elems = [new_fid, (1-new_fid)/3, (1-new_fid)/3, (1-new_fid)/3]
+    else:
+        new_elems = [new_elem_1, new_elem_2, new_elem_3, new_elem_4]
+        bds_elems = [elem / p_succ for elem in new_elems]  # normalization by success probability
+    
+    return p_succ, bds_elems
+
+
+# Final purification
+def final_purification(bds_list, gate_fid1, gate_fid2, meas_fid1, meas_fid2, is_twirled=True):
+    """Function to perform the final purification of EPR pairs between node 1 (own node in SeQUeNCe) and node 2 (remote node in SeQUeNCe),
+        to make sure that the link has at most one EPR pair left.
+    
+    Special consideration:
+        When input states are non-identical, especially with large difference, 
+        the successful output state's fidelity might not be higher than the higher fidelity among the two input states.
+
+    Heuristic strategy (pumping):
+        Each round find two EPR pairs from the remaining EPR pairs with lowest fidelity and purify them, and remove them from the list:
+            if successful, append the successful output state to the list of remaining EPR pairs,
+            if unsuccessful, do nothing,
+        Repeat the first step until there is at most one EPR pair in the list.
+
+    Args:
+        bds_list (List[array]): list of remaining BDS diagonal element arrays
+        gate_fid1 (float): gate fidelity on node 1
+        gate_fid2 (float): gate fidelity on node 2
+        meas_fid1 (float): measurement fidelity on node 1
+        meas_fid2 (float): measurement fidelity on node 2
+        is_twirled (bool): if twirling is applied to keep the input and output in Werner form
+
+    Return:
+        bds_remain (array): diagonal element array of the final remaining BDS, might be empty if final purification failed
+    """
+
+    # sort the list of BDS diagonal element arrays in fidelity ascending order
+    bds_list_sorted = bds_list.sort(key = lambda x: x[0])
+
+    while len(bds_list_sorted) > 1:
+        state1 = bds_list_sorted[0]
+        state2 = bds_list_sorted[1]
+
+        bds_list_sorted = bds_list_sorted[2:]
+
+        p_succ, bds_elems = purification_result(state1, state2, gate_fid1, gate_fid2, meas_fid1, meas_fid2, is_twirled)
+
+        if np.random.uniform() < p_succ:
+            bds_list_sorted.append(bds_elems)
+        
+        bds_list_sorted.sort(key = lambda x: x[0])
+
+    if len(bds_list_sorted) == 1:
+        return bds_list_sorted[0]
+    elif len(bds_list_sorted) == 0:
+        return bds_list_sorted
+
+
 # Ad hoc generation of 3-qubit GHZ state from 2 BDS
 # we assume all 1-qubit gates are perfect, only 1-qubit measurements and multi-qubit gates are noisy
 # before performing GHZ generation, BDS from SeQUeNCe simulation must check their memories' last_update_time, to make sure that all idling decoherence is included
