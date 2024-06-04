@@ -99,6 +99,10 @@ class MemoryInfo:
         entangle_time (int): time at which most recent entanglement is achieved.
     """
 
+    RAW       = "RAW"
+    OCCUPIED  = "OCCUPIED"
+    ENTANGLED = "ENTANGLED"
+
     def __init__(self, memory: "Memory", index: int, state="RAW"):
         """Constructor for memory info class.
 
@@ -120,7 +124,7 @@ class MemoryInfo:
     def to_raw(self) -> None:
         """Method to set memory to raw (unentangled) state."""
 
-        self.state = "RAW"
+        self.state = self.RAW
         self.memory.reset()
         self.remote_node = None
         self.remote_memo = None
@@ -130,13 +134,13 @@ class MemoryInfo:
     def to_occupied(self) -> None:
         """Method to set memory to occupied state."""
 
-        assert self.state != "OCCUPIED"
-        self.state = "OCCUPIED"
+        assert self.state != self.OCCUPIED
+        self.state = self.OCCUPIED
 
     def to_entangled(self) -> None:
         """Method to set memory to entangled state."""
 
-        self.state = "ENTANGLED"
+        self.state = self.ENTANGLED
         self.remote_node = self.memory.entangled_memory["node_id"]
         self.remote_memo = self.memory.entangled_memory["memo_id"]
         self.fidelity = self.memory.fidelity

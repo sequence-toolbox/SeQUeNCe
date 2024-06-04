@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from ..components.optical_channel import QuantumChannel, ClassicalChannel
     from ..components.memory import Memory
     from ..components.photon import Photon
-    from ..app.random_request import RandomRequestApp
+    from ..app.request_app import RequestApp
 
 from ..kernel.entity import Entity
 from ..components.memory import MemoryArray
@@ -268,16 +268,16 @@ class QuantumRouter(Node):
             component_templates = {}
 
         # create memory array object with optional args
-        memo_arr_name = name + ".MemoryArray"
+        self.memo_arr_name = name + ".MemoryArray"
         memo_arr_args = component_templates.get("MemoryArray", {})
-        memory_array = MemoryArray(memo_arr_name, tl, num_memories=memo_size, **memo_arr_args)
+        memory_array = MemoryArray(self.memo_arr_name, tl, num_memories=memo_size, **memo_arr_args)
         self.add_component(memory_array)
         memory_array.add_receiver(self)
 
         # setup managers
         self.resource_manager = None
         self.network_manager = None
-        self.init_managers(memo_arr_name)
+        self.init_managers(self.memo_arr_name)
         self.map_to_middle_node = {}
         self.app = None
 
@@ -356,7 +356,7 @@ class QuantumRouter(Node):
 
         self.resource_manager.memory_expire(memory)
 
-    def set_app(self, app: "RandomRequestApp"):
+    def set_app(self, app: "RequestApp"):
         """Method to add an application to the node."""
 
         self.app = app

@@ -310,17 +310,17 @@ class ResourceReservationProtocol(StackProtocol):
         accepted_reservation (List[Reservation]): list of all approved reservation requests.
     """
 
-    def __init__(self, own: "QuantumRouter", name: str, memory_array_name: str):
+    def __init__(self, owner: "QuantumRouter", name: str, memory_array_name: str):
         """Constructor for the reservation protocol class.
 
         Args:
-            own (QuantumRouter): node to attach protocol to.
+            owner (QuantumRouter): node to attach protocol to.
             name (str): label for reservation protocol instance.
             memory_array_name (str): name of the memory array component on own.
         """
 
-        super().__init__(own, name)
-        self.memo_arr = own.components[memory_array_name]
+        super().__init__(owner, name)
+        self.memo_arr = owner.components[memory_array_name]
         self.timecards = [MemoryTimeCard(i) for i in range(len(self.memo_arr))]
         self.es_succ_prob = 1
         self.es_degradation = 0.95
@@ -423,17 +423,17 @@ class ResourceReservationProtocol(StackProtocol):
             counter = reservation.memory_size
         else:
             counter = reservation.memory_size * 2
-        cards = []
-        for card in self.timecards:
-            if card.add(reservation):
+        timecards = []
+        for timecard in self.timecards:
+            if timecard.add(reservation):
                 counter -= 1
-                cards.append(card)
+                timecards.append(timecard)
             if counter == 0:
                 break
 
         if counter > 0:
-            for card in cards:
-                card.remove(reservation)
+            for timecard in timecards:
+                timecard.remove(reservation)
             return False
 
         return True

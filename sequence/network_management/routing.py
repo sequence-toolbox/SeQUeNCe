@@ -55,6 +55,9 @@ class StaticRoutingProtocol(StackProtocol):
         super().__init__(own, name)
         self.forwarding_table = forwarding_table
 
+    def get_forwarding_table(self) -> dict:
+        return self.forwarding_table
+
     def add_forwarding_rule(self, dst: str, next_node: str):
         """Adds mapping {dst: next_node} to forwarding table."""
 
