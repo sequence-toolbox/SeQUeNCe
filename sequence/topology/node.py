@@ -59,7 +59,7 @@ class Node(Entity):
         """
 
         log.logger.info("Create Node {}".format(name))
-        Entity.__init__(self, name, timeline)
+        super().__init__(name, timeline)
         self.owner = self
         self.cchannels = {}  # mapping of destination node names to classical channels
         self.qchannels = {}  # mapping of destination node names to quantum channels
@@ -450,8 +450,7 @@ class QKDNode(Node):
 
         qsd_name = name + ".qsdetector"
         if "QSDetector" in component_templates:
-            raise NotImplementedError(
-                "Configurable parameters for QSDetector in constructor not yet supported.")
+            raise NotImplementedError("Configurable parameters for QSDetector in constructor not yet supported.")
         if encoding["name"] == "polarization":
             qsdetector = QSDetectorPolarization(qsd_name, timeline)
         elif encoding["name"] == "time_bin":

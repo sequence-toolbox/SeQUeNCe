@@ -36,7 +36,7 @@ class BBPSSWMessage(Message):
     """
 
     def __init__(self, msg_type: BBPSSWMsgType, receiver: str, **kwargs):
-        Message.__init__(self, msg_type, receiver)
+        super().__init__(msg_type, receiver)
         if self.msg_type is BBPSSWMsgType.PURIFICATION_RES:
             self.meas_res = kwargs['meas_res']
         else:

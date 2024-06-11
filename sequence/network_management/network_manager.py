@@ -27,7 +27,7 @@ class NetworkManagerMessage(Message):
     """
 
     def __init__(self, msg_type: Enum, receiver: str, payload: "Message"):
-        Message.__init__(self, msg_type, receiver)
+        super().__init__(msg_type, receiver)
         self.payload = payload
 
     def __str__(self) -> str:

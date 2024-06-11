@@ -23,7 +23,7 @@ class EntanglementProtocol(Protocol):
     """
 
     def __init__(self, own: "Node", name: str):
-        Protocol.__init__(self, own, name)
+        super().__init__(own, name)
         self.rule = None
         self.memories = []
 

@@ -55,17 +55,20 @@ class MemoryArray(Entity):
 
         Entity.__init__(self, name, timeline)
         self.memories = []
+        self.memory_name_to_index = {}
 
         for i in range(num_memories):
-            memory = Memory(self.name + f"[{i}]", timeline, fidelity, frequency, efficiency, coherence_time, wavelength)
+            memory_name = self.name + f"[{i}]"
+            self.memory_name_to_index[memory_name] = i
+            memory = Memory(memory_name, timeline, fidelity, frequency, efficiency, coherence_time, wavelength)
             memory.attach(self)
             self.memories.append(memory)
             memory.set_memory_array(self)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: int) -> "Memory":
         return self.memories[key]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.memories)
 
     def init(self):
@@ -93,6 +96,12 @@ class MemoryArray(Entity):
     def add_receiver(self, receiver: "Entity"):
         for m in self.memories:
             m.add_receiver(receiver)
+
+    def get_memory_by_name(self, name: str) -> "Memory":
+        index = self.memory_name_to_index.get(name, -1)
+        assert index >= 0, "Oops! name={} not exist!"
+        return self.memories[index]
+
 
 
 class Memory(Entity):

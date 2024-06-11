@@ -50,7 +50,7 @@ class ResourceManagerMessage(Message):
     """
 
     def __init__(self, msg_type: ResourceManagerMsgType, **kwargs):
-        Message.__init__(self, msg_type, "resource_manager")
+        super().__init__(msg_type, "resource_manager")
         self.ini_protocol_name = kwargs["protocol"]
         self.ini_node_name = kwargs["node"]
         self.ini_memories_name = kwargs["memories"]

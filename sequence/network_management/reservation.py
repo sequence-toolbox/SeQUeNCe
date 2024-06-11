@@ -38,7 +38,7 @@ class ResourceReservationMessage(Message):
     Messages of different types contain different information.
 
     Attributes:
-        msg_type (GenerationMsgType): defines the message type.
+        msg_type (RSVPMsgType): defines the message type.
         receiver (str): name of destination protocol instance.
         reservation (Reservation): reservation object relayed between nodes.
         qcaps (List[QCaps]): cumulative quantum capacity object list (if `msg_type == REQUEST`)
@@ -46,7 +46,7 @@ class ResourceReservationMessage(Message):
     """
 
     def __init__(self, msg_type: any, receiver: str, reservation: "Reservation", **kwargs):
-        Message.__init__(self, msg_type, receiver)
+        super().__init__(msg_type, receiver)
         self.reservation = reservation
         if self.msg_type is RSVPMsgType.REQUEST:
             self.qcaps = []
