@@ -134,8 +134,8 @@ class ResourceManager:
         log.logger.info('{} load rule={}'.format(self.owner.name, rule))
         self.rule_manager.load(rule)
 
-        for memory_info in self.memory_manager:
-            memories_info = rule.is_valid(memory_info)
+        for memory_info in self.memory_manager:  # iterate through each memory, and check if the rule is valid on each memory
+            memories_info = rule.is_valid(memory_info)  # is valid means condition is satisfied
             if len(memories_info) > 0:
                 rule.do(memories_info)
                 for info in memories_info:
@@ -350,3 +350,6 @@ class ResourceManager:
         msg = ResourceManagerMessage(ResourceManagerMsgType.RELEASE_MEMORY, protocol="", 
                                      node="", memories=[], memory_id=memory_id)
         self.owner.send_message(dst, msg)
+
+    def __str__(self) -> str:
+        return self.name

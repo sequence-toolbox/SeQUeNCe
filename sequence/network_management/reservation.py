@@ -410,7 +410,7 @@ class ResourceReservationProtocol(StackProtocol):
             raise Exception("Unknown type of message", msg.msg_type)
 
     def schedule(self, reservation: "Reservation") -> bool:
-        """Method to attempt reservation request.
+        """Method to attempt reservation request. If attempt succeeded, return True; otherwise, return False.
 
         Args:
             reservation (Reservation): reservation to approve or reject.
@@ -428,12 +428,12 @@ class ResourceReservationProtocol(StackProtocol):
             if timecard.add(reservation):
                 counter -= 1
                 timecards.append(timecard)
-            if counter == 0:
+            if counter == 0:  # attempt reservation succeeded: enough memory (timecard)
                 break
 
-        if counter > 0:
+        if counter > 0:       # attempt reservation failed: not enough memory (timecard)
             for timecard in timecards:
-                timecard.remove(reservation)
+                timecard.remove(reservation)  # remove reservation from the timecard that have added the reservation
             return False
 
         return True
@@ -671,7 +671,7 @@ class MemoryTimeCard:
             reservation (Reservation): reservation to remove.
 
         Returns:
-            bool: if reservation was already on the memory or not.
+            bool: if reservation was already on the memory (return True) or not (return False).
         """
 
         try:
