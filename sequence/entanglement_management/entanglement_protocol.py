@@ -23,7 +23,7 @@ class EntanglementProtocol(Protocol):
     """
 
     def __init__(self, own: "Node", name: str):
-        Protocol.__init__(self, own, name)
+        super().__init__(own, name)
         self.rule = None
         self.memories = []
 
@@ -77,5 +77,5 @@ class EntanglementProtocol(Protocol):
             May alter the state of `memory`.
         """
 
-        self.own.resource_manager.update(self, memory, state)
+        self.owner.resource_manager.update(self, memory, state)
 

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from ..components.optical_channel import QuantumChannel, ClassicalChannel
     from ..components.memory import Memory
     from ..components.photon import Photon
-    from ..app.random_request import RandomRequestApp
+    from ..app.request_app import RequestApp
 
 from ..kernel.entity import Entity
 from ..components.memory import MemoryArray
@@ -29,7 +29,7 @@ from ..qkd.BB84 import BB84
 from ..qkd.cascade import Cascade
 from ..entanglement_management.generation import EntanglementGenerationB
 from ..resource_management.resource_manager import ResourceManager
-from ..network_management.network_manager import NewNetworkManager
+from ..network_management.network_manager import NewNetworkManager, NetworkManager
 from ..utils.encoding import *
 from ..utils import log
 
@@ -59,7 +59,7 @@ class Node(Entity):
         """
 
         log.logger.info("Create Node {}".format(name))
-        Entity.__init__(self, name, timeline)
+        super().__init__(name, timeline)
         self.owner = self
         self.cchannels = {}  # mapping of destination node names to classical channels
         self.qchannels = {}  # mapping of destination node names to quantum channels
@@ -268,15 +268,16 @@ class QuantumRouter(Node):
             component_templates = {}
 
         # create memory array object with optional args
-        memo_arr_name = name + ".MemoryArray"
+        self.memo_arr_name = name + ".MemoryArray"
         memo_arr_args = component_templates.get("MemoryArray", {})
-        memory_array = MemoryArray(memo_arr_name, tl, num_memories=memo_size, **memo_arr_args)
+        memory_array = MemoryArray(self.memo_arr_name, tl, num_memories=memo_size, **memo_arr_args)
         self.add_component(memory_array)
         memory_array.add_receiver(self)
 
-        # add protocols
-        self.resource_manager = ResourceManager(self, memo_arr_name)
-        self.network_manager = NewNetworkManager(self, memo_arr_name)  # NOTE caitao: update self.protocols?
+        # setup managers
+        self.resource_manager = None
+        self.network_manager = None
+        self.init_managers(self.memo_arr_name)
         self.map_to_middle_node = {}
         self.app = None
 
@@ -301,6 +302,26 @@ class QuantumRouter(Node):
                     if protocol.name == msg.receiver:
                         protocol.received_message(src, msg)
                         break
+
+    def init_managers(self, memo_arr_name: str):
+        '''initialize resource manager and network manager
+        Args:
+            memo_arr_name: the name of the memory array
+        '''
+        resource_manager = ResourceManager(self, memo_arr_name)
+        network_manager = NewNetworkManager(self, memo_arr_name)
+        self.set_resource_manager(resource_manager)
+        self.set_network_manager(network_manager)
+
+    def set_resource_manager(self, resource_manager: ResourceManager):
+        '''set the resource manager
+        '''
+        self.resource_manager = resource_manager
+
+    def set_network_manager(self, network_manager: NetworkManager):
+        '''set the network manager
+        '''
+        self.network_manager = network_manager
 
     def init(self):
         """Method to initialize quantum router node.
@@ -335,7 +356,7 @@ class QuantumRouter(Node):
 
         self.resource_manager.memory_expire(memory)
 
-    def set_app(self, app: "RandomRequestApp"):
+    def set_app(self, app: "RequestApp"):
         """Method to add an application to the node."""
 
         self.app = app
@@ -429,8 +450,7 @@ class QKDNode(Node):
 
         qsd_name = name + ".qsdetector"
         if "QSDetector" in component_templates:
-            raise NotImplementedError(
-                "Configurable parameters for QSDetector in constructor not yet supported.")
+            raise NotImplementedError("Configurable parameters for QSDetector in constructor not yet supported.")
         if encoding["name"] == "polarization":
             qsdetector = QSDetectorPolarization(qsd_name, timeline)
         elif encoding["name"] == "time_bin":

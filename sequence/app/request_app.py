@@ -45,6 +45,7 @@ class RequestApp:
         self.memory_counter: int = 0
         self.path: List[str] = []
         self.memo_to_reserve: Dict[int, Reservation] = {}
+        self.name: str = ""
 
     def start(self, responder: str, start_t: int, end_t: int, memo_size: int, fidelity: float):
         """Method to start the application.
@@ -137,3 +138,6 @@ class RequestApp:
                 process = Process(self, "remove_memo_reserve_map", [card.memory_index])
                 event = Event(reservation.end_time, process)
                 self.node.timeline.schedule(event)
+
+    def set_name(self, name: str):
+        self.name = name

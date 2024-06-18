@@ -55,6 +55,9 @@ class StaticRoutingProtocol(StackProtocol):
         super().__init__(own, name)
         self.forwarding_table = forwarding_table
 
+    def get_forwarding_table(self) -> dict:
+        return self.forwarding_table
+
     def add_forwarding_rule(self, dst: str, next_node: str):
         """Adds mapping {dst: next_node} to forwarding table."""
 
@@ -79,7 +82,7 @@ class StaticRoutingProtocol(StackProtocol):
             Will invoke `push` method of lower protocol or network manager.
         """
 
-        assert dst != self.own.name
+        assert dst != self.owner.name
         dst = self.forwarding_table[dst]
         new_msg = StaticRoutingMessage(Enum, self.name, msg)
         self._push(dst=dst, msg=new_msg)

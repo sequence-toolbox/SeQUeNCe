@@ -50,7 +50,7 @@ class ResourceManagerMessage(Message):
     """
 
     def __init__(self, msg_type: ResourceManagerMsgType, **kwargs):
-        Message.__init__(self, msg_type, "resource_manager")
+        super().__init__(msg_type, "resource_manager")
         self.ini_protocol_name = kwargs["protocol"]
         self.ini_node_name = kwargs["node"]
         self.ini_memories_name = kwargs["memories"]
@@ -106,7 +106,7 @@ class ResourceManager:
             owner (QuantumRouter): node to attach to.
         """
 
-        self.name = "resource_manager"
+        self.name = f"{owner.name}.resource_manager"
         self.owner = owner
         self.memory_manager = MemoryManager(owner.components[memory_array_name])
         self.memory_manager.set_resource_manager(self)
@@ -134,8 +134,8 @@ class ResourceManager:
         log.logger.info('{} load rule={}'.format(self.owner.name, rule))
         self.rule_manager.load(rule)
 
-        for memory_info in self.memory_manager:
-            memories_info = rule.is_valid(memory_info)
+        for memory_info in self.memory_manager:  # iterate through each memory, and check if the rule is valid on each memory
+            memories_info = rule.is_valid(memory_info)  # is valid means condition is satisfied
             if len(memories_info) > 0:
                 rule.do(memories_info)
                 for info in memories_info:
@@ -227,7 +227,7 @@ class ResourceManager:
             req_args (Dict[str, Any]): arguments for req_cond_func.
         """
 
-        protocol.own = self.owner
+        protocol.owner = self.owner
         if req_dst is None:
             self.waiting_protocols.append(protocol)
             return
@@ -287,7 +287,7 @@ class ResourceManager:
                 if protocol.is_ready():
                     self.pending_protocols.remove(protocol)
                     self.owner.protocols.append(protocol)
-                    protocol.own = self.owner
+                    protocol.owner = self.owner
                     protocol.start()
             else:
                 protocol.rule.protocols.remove(protocol)
@@ -350,3 +350,6 @@ class ResourceManager:
         msg = ResourceManagerMessage(ResourceManagerMsgType.RELEASE_MEMORY, protocol="", 
                                      node="", memories=[], memory_id=memory_id)
         self.owner.send_message(dst, msg)
+
+    def __str__(self) -> str:
+        return self.name

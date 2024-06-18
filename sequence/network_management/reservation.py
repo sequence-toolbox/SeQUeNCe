@@ -38,7 +38,7 @@ class ResourceReservationMessage(Message):
     Messages of different types contain different information.
 
     Attributes:
-        msg_type (GenerationMsgType): defines the message type.
+        msg_type (RSVPMsgType): defines the message type.
         receiver (str): name of destination protocol instance.
         reservation (Reservation): reservation object relayed between nodes.
         qcaps (List[QCaps]): cumulative quantum capacity object list (if `msg_type == REQUEST`)
@@ -46,7 +46,7 @@ class ResourceReservationMessage(Message):
     """
 
     def __init__(self, msg_type: any, receiver: str, reservation: "Reservation", **kwargs):
-        Message.__init__(self, msg_type, receiver)
+        super().__init__(msg_type, receiver)
         self.reservation = reservation
         if self.msg_type is RSVPMsgType.REQUEST:
             self.qcaps = []
@@ -310,17 +310,17 @@ class ResourceReservationProtocol(StackProtocol):
         accepted_reservation (List[Reservation]): list of all approved reservation requests.
     """
 
-    def __init__(self, own: "QuantumRouter", name: str, memory_array_name: str):
+    def __init__(self, owner: "QuantumRouter", name: str, memory_array_name: str):
         """Constructor for the reservation protocol class.
 
         Args:
-            own (QuantumRouter): node to attach protocol to.
+            owner (QuantumRouter): node to attach protocol to.
             name (str): label for reservation protocol instance.
             memory_array_name (str): name of the memory array component on own.
         """
 
-        super().__init__(own, name)
-        self.memo_arr = own.components[memory_array_name]
+        super().__init__(owner, name)
+        self.memo_arr = owner.components[memory_array_name]
         self.timecards = [MemoryTimeCard(i) for i in range(len(self.memo_arr))]
         self.es_succ_prob = 1
         self.es_degradation = 0.95
@@ -344,10 +344,10 @@ class ResourceReservationProtocol(StackProtocol):
             May push/pop to lower/upper attached protocols (or network manager).
         """
 
-        reservation = Reservation(self.own.name, responder, start_time, end_time, memory_size, target_fidelity)
+        reservation = Reservation(self.owner.name, responder, start_time, end_time, memory_size, target_fidelity)
         if self.schedule(reservation):
             msg = ResourceReservationMessage(RSVPMsgType.REQUEST, self.name, reservation)
-            qcap = QCap(self.own.name)
+            qcap = QCap(self.owner.name)
             msg.qcaps.append(qcap)
             self._push(dst=responder, msg=msg)
         else:
@@ -375,11 +375,11 @@ class ResourceReservationProtocol(StackProtocol):
         """
 
         if msg.msg_type == RSVPMsgType.REQUEST:
-            assert self.own.timeline.now() < msg.reservation.start_time
+            assert self.owner.timeline.now() < msg.reservation.start_time
             if self.schedule(msg.reservation):
-                qcap = QCap(self.own.name)
+                qcap = QCap(self.owner.name)
                 msg.qcaps.append(qcap)
-                if self.own.name == msg.reservation.responder:
+                if self.owner.name == msg.reservation.responder:
                     path = [qcap.node for qcap in msg.qcaps]
                     rules = self.create_rules(path, reservation=msg.reservation)
                     self.load_rules(rules, msg.reservation)
@@ -395,14 +395,14 @@ class ResourceReservationProtocol(StackProtocol):
         elif msg.msg_type == RSVPMsgType.REJECT:
             for card in self.timecards:
                 card.remove(msg.reservation)
-            if msg.reservation.initiator == self.own.name:
+            if msg.reservation.initiator == self.owner.name:
                 self._pop(msg=msg)
             else:
                 self._push(dst=msg.reservation.initiator, msg=msg)
         elif msg.msg_type == RSVPMsgType.APPROVE:
             rules = self.create_rules(msg.path, msg.reservation)
             self.load_rules(rules, msg.reservation)
-            if msg.reservation.initiator == self.own.name:
+            if msg.reservation.initiator == self.owner.name:
                 self._pop(msg=msg)
             else:
                 self._push(dst=msg.reservation.initiator, msg=msg)
@@ -410,7 +410,7 @@ class ResourceReservationProtocol(StackProtocol):
             raise Exception("Unknown type of message", msg.msg_type)
 
     def schedule(self, reservation: "Reservation") -> bool:
-        """Method to attempt reservation request.
+        """Method to attempt reservation request. If attempt succeeded, return True; otherwise, return False.
 
         Args:
             reservation (Reservation): reservation to approve or reject.
@@ -419,21 +419,21 @@ class ResourceReservationProtocol(StackProtocol):
             bool: if reservation can be met or not.
         """
 
-        if self.own.name in [reservation.initiator, reservation.responder]:
+        if self.owner.name in [reservation.initiator, reservation.responder]:
             counter = reservation.memory_size
         else:
             counter = reservation.memory_size * 2
-        cards = []
-        for card in self.timecards:
-            if card.add(reservation):
+        timecards = []
+        for timecard in self.timecards:
+            if timecard.add(reservation):
                 counter -= 1
-                cards.append(card)
-            if counter == 0:
+                timecards.append(timecard)
+            if counter == 0:  # attempt reservation succeeded: enough memory (timecard)
                 break
 
-        if counter > 0:
-            for card in cards:
-                card.remove(reservation)
+        if counter > 0:       # attempt reservation failed: not enough memory (timecard)
+            for timecard in timecards:
+                timecard.remove(reservation)  # remove reservation from the timecard that have added the reservation
             return False
 
         return True
@@ -457,12 +457,12 @@ class ResourceReservationProtocol(StackProtocol):
             if reservation in card.reservations:
                 memory_indices.append(card.memory_index)
 
-        index = path.index(self.own.name)  # the location of this node along the path from initiator to responder
+        index = path.index(self.owner.name)  # the location of this node along the path from initiator to responder
 
         # 1. create rules for entanglement generation
         if index > 0:
             condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
-            action_args = {"mid": self.own.map_to_middle_node[path[index - 1]],
+            action_args = {"mid": self.owner.map_to_middle_node[path[index - 1]],
                            "path": path, "index": index}
             rule = Rule(10, eg_rule_action1, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
@@ -473,8 +473,8 @@ class ResourceReservationProtocol(StackProtocol):
             else:
                 condition_args = {"memory_indices": memory_indices[reservation.memory_size:]}
 
-            action_args = {"mid": self.own.map_to_middle_node[path[index + 1]],
-                           "path": path, "index": index, "name": self.own.name, "reservation": reservation}
+            action_args = {"mid": self.owner.map_to_middle_node[path[index + 1]],
+                           "path": path, "index": index, "name": self.owner.name, "reservation": reservation}
             rule = Rule(10, eg_rule_action2, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
 
@@ -508,13 +508,13 @@ class ResourceReservationProtocol(StackProtocol):
             rules.append(rule)
         else:
             _path = path[:]
-            while _path.index(self.own.name) % 2 == 0:
+            while _path.index(self.owner.name) % 2 == 0:
                 new_path = []
                 for i, n in enumerate(_path):
                     if i % 2 == 0 or i == len(_path) - 1:
                         new_path.append(n)
                 _path = new_path
-            _index = _path.index(self.own.name)
+            _index = _path.index(self.owner.name)
             left, right = _path[_index - 1], _path[_index + 1]
 
             condition_args = {"memory_indices": memory_indices, "left": left, "right": right, "fidelity": reservation.fidelity}
@@ -545,17 +545,17 @@ class ResourceReservationProtocol(StackProtocol):
         self.accepted_reservation.append(reservation)
         for card in self.timecards:
             if reservation in card.reservations:
-                process = Process(self.own.resource_manager, "update", [None, self.memo_arr[card.memory_index], "RAW"])
+                process = Process(self.owner.resource_manager, "update", [None, self.memo_arr[card.memory_index], "RAW"])
                 event = Event(reservation.end_time, process, 1)
-                self.own.timeline.schedule(event)
+                self.owner.timeline.schedule(event)
 
         for rule in rules:
-            process = Process(self.own.resource_manager, "load", [rule])
+            process = Process(self.owner.resource_manager, "load", [rule])
             event = Event(reservation.start_time, process)
-            self.own.timeline.schedule(event)
-            process = Process(self.own.resource_manager, "expire", [rule])
+            self.owner.timeline.schedule(event)
+            process = Process(self.owner.resource_manager, "expire", [rule])
             event = Event(reservation.end_time, process, 0)
-            self.own.timeline.schedule(event)
+            self.owner.timeline.schedule(event)
 
     def received_message(self, src, msg):
         """Method to receive messages directly (should not be used; receive through network manager)."""
@@ -573,6 +573,7 @@ class ResourceReservationProtocol(StackProtocol):
 
 class Reservation:
     """Tracking of reservation parameters for the network manager.
+       Each request will generate a reservation
 
     Attributes:
         initiator (str): name of the node that created the reservation request.
@@ -670,7 +671,7 @@ class MemoryTimeCard:
             reservation (Reservation): reservation to remove.
 
         Returns:
-            bool: if reservation was already on the memory or not.
+            bool: if reservation was already on the memory (return True) or not (return False).
         """
 
         try:
@@ -712,7 +713,7 @@ class MemoryTimeCard:
 
 
 class QCap:
-    """Class to collect local information for the reservation protocol
+    """Quantum Capacity. Class to collect local information for the reservation protocol
 
     Attributes:
         node (str): name of current node.

@@ -41,7 +41,7 @@ class RouterNetTopo(Topo):
         self.bsm_to_router_map = {}
         super().__init__(conf_file_name)
 
-    def _load(self, filename):
+    def _load(self, filename: str):
         with open(filename, 'r') as fh:
             config = json.load(fh)
 
@@ -58,7 +58,7 @@ class RouterNetTopo(Topo):
         self._add_cconnections(config)
         self._generate_forwarding_table(config)
 
-    def _add_timeline(self, config):
+    def _add_timeline(self, config: dict):
         stop_time = config.get(Topo.STOP_TIME, float('inf'))
         if config.get(self.IS_PARALLEL, False):
             raise Exception("Please install 'psequence' package for parallel simulations.")
@@ -73,7 +73,7 @@ class RouterNetTopo(Topo):
             else:
                 self.bsm_to_router_map[dst] = [src]
 
-    def _add_nodes(self, config):
+    def _add_nodes(self, config: dict):
         for node in config[Topo.ALL_NODE]:
             seed = node[Topo.SEED]
             node_type = node[Topo.TYPE]
@@ -103,14 +103,16 @@ class RouterNetTopo(Topo):
             if r1 is not None:
                 r1.add_bsm_node(bsm, r0_str)
 
-    def _add_qconnections(self, config):
+    def _add_qconnections(self, config: dict):
+        '''generate bsm_info, qc_info, and cc_info for the q_connections
+        '''
         for q_connect in config.get(Topo.ALL_QC_CONNECT, []):
             node1 = q_connect[Topo.CONNECT_NODE_1]
             node2 = q_connect[Topo.CONNECT_NODE_2]
             attenuation = q_connect[Topo.ATTENUATION]
             distance = q_connect[Topo.DISTANCE] // 2
             channel_type = q_connect[Topo.TYPE]
-            cc_delay = []
+            cc_delay = []                                   # generate classical channel delay
             for cc in config.get(self.ALL_C_CHANNEL, []):   # classical channel
                 if cc[self.SRC] == node1 and cc[self.DST] == node2:
                     delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
@@ -128,8 +130,8 @@ class RouterNetTopo(Topo):
                 assert 0, q_connect
             cc_delay = np.mean(cc_delay) // 2
 
-            if channel_type == self.MEET_IN_THE_MID:  # generate intermediate BSM node
-                bsm_name = "BSM.{}.{}.auto".format(node1, node2)
+            if channel_type == self.MEET_IN_THE_MID:
+                bsm_name = "BSM.{}.{}.auto".format(node1, node2)  # the intermediate BSM node
                 bsm_seed = q_connect.get(Topo.SEED, 0)
                 bsm_template_name = q_connect.get(Topo.TEMPLATE, None)
                 bsm_info = {self.NAME: bsm_name,
@@ -139,7 +141,7 @@ class RouterNetTopo(Topo):
                 config[self.ALL_NODE].append(bsm_info)
 
                 for src in [node1, node2]:
-                    qc_name = "QC.{}.{}".format(src, bsm_name)
+                    qc_name = "QC.{}.{}".format(src, bsm_name)  # the quantum channel
                     qc_info = {self.NAME: qc_name,
                                self.SRC: src,
                                self.DST: bsm_name,
@@ -149,7 +151,7 @@ class RouterNetTopo(Topo):
                         config[self.ALL_Q_CHANNEL] = []
                     config[self.ALL_Q_CHANNEL].append(qc_info)
 
-                    cc_name = "CC.{}.{}".format(src, bsm_name)
+                    cc_name = "CC.{}.{}".format(src, bsm_name)  # the classical channel
                     cc_info = {self.NAME: cc_name,
                                self.SRC: src,
                                self.DST: bsm_name,
@@ -169,7 +171,9 @@ class RouterNetTopo(Topo):
             else:
                 raise NotImplementedError("Unknown type of quantum connection")
 
-    def _generate_forwarding_table(self, config):
+    def _generate_forwarding_table(self, config: dict):
+        '''for static routing
+        '''
         graph = Graph()
         for node in config[Topo.ALL_NODE]:
             if node[Topo.TYPE] == self.QUANTUM_ROUTER:

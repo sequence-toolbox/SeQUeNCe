@@ -153,21 +153,21 @@ class EntanglementSwappingA(EntanglementProtocol):
             Will send messages to other protocols.
         """
 
-        log.logger.info(f"{self.own.name} middle protocol start with ends {self.left_node}, {self.right_node}")
+        log.logger.info(f"{self.owner.name} middle protocol start with ends {self.left_node}, {self.right_node}")
 
         assert self.left_memo.fidelity > 0 and self.right_memo.fidelity > 0
         assert self.left_memo.entangled_memory["node_id"] == self.left_node
         assert self.right_memo.entangled_memory["node_id"] == self.right_node
 
-        if self.own.get_generator().random() < self.success_probability():
+        if self.owner.get_generator().random() < self.success_probability():
             # swapping successed
             fidelity = self.updated_fidelity(self.left_memo.fidelity, self.right_memo.fidelity)
             self.is_success = True
 
             expire_time = min(self.left_memo.get_expire_time(), self.right_memo.get_expire_time())
 
-            meas_samp = self.own.get_generator().random()
-            meas_res = self.own.timeline.quantum_manager.run_circuit(
+            meas_samp = self.owner.get_generator().random()
+            meas_res = self.owner.timeline.quantum_manager.run_circuit(
                         self.circuit, [self.left_memo.qstate_key, self.right_memo.qstate_key], meas_samp)
             meas_res = [meas_res[self.left_memo.qstate_key], meas_res[self.right_memo.qstate_key]]
             
@@ -189,8 +189,8 @@ class EntanglementSwappingA(EntanglementProtocol):
             msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,self.left_protocol_name, fidelity=0)
             msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, self.right_protocol_name, fidelity=0)
 
-        self.own.send_message(self.left_node, msg_l)
-        self.own.send_message(self.right_node, msg_r)
+        self.owner.send_message(self.left_node, msg_l)
+        self.owner.send_message(self.right_node, msg_r)
 
         self.update_resource_manager(self.left_memo, "RAW")
         self.update_resource_manager(self.right_memo, "RAW")
@@ -250,10 +250,10 @@ class EntanglementSwappingA(EntanglementProtocol):
                 self.update_resource_manager(memo, "ENTANGLED")
 
     def release_remote_protocol(self, remote_node: str):
-        self.own.resource_manager.release_remote_protocol(remote_node, self)
+        self.owner.resource_manager.release_remote_protocol(remote_node, self)
 
     def release_remote_memory(self, remote_node: str, remote_memo: str):
-        self.own.resource_manager.release_remote_memory(remote_node, remote_memo)
+        self.owner.resource_manager.release_remote_memory(remote_node, remote_memo)
 
 
 class EntanglementSwappingB(EntanglementProtocol):
@@ -326,17 +326,17 @@ class EntanglementSwappingB(EntanglementProtocol):
             Will invoke `update_resource_manager` method.
         """
 
-        log.logger.debug(self.own.name + " protocol received_message from node {}, fidelity={}".format(src, msg.fidelity))
+        log.logger.debug(self.owner.name + " protocol received_message from node {}, fidelity={}".format(src, msg.fidelity))
 
         assert src == self.remote_node_name
 
-        if msg.fidelity > 0 and self.own.timeline.now() < msg.expire_time:
+        if msg.fidelity > 0 and self.owner.timeline.now() < msg.expire_time:
             if msg.meas_res == [1, 0]:
-                self.own.timeline.quantum_manager.run_circuit(self.z_cir, [self.memory.qstate_key])
+                self.owner.timeline.quantum_manager.run_circuit(self.z_cir, [self.memory.qstate_key])
             elif msg.meas_res == [0, 1]:
-                self.own.timeline.quantum_manager.run_circuit(self.x_cir, [self.memory.qstate_key])
+                self.owner.timeline.quantum_manager.run_circuit(self.x_cir, [self.memory.qstate_key])
             elif msg.meas_res == [1, 1]:
-                self.own.timeline.quantum_manager.run_circuit(self.x_z_cir, [self.memory.qstate_key])
+                self.owner.timeline.quantum_manager.run_circuit(self.x_z_cir, [self.memory.qstate_key])
 
             self.memory.fidelity = msg.fidelity
             self.memory.entangled_memory["node_id"] = msg.remote_node
@@ -347,7 +347,7 @@ class EntanglementSwappingB(EntanglementProtocol):
             self.update_resource_manager(self.memory, "RAW")
 
     def start(self) -> None:
-        log.logger.info(f"{self.own.name} end protocol start with partner {self.remote_node_name}")
+        log.logger.info(f"{self.owner.name} end protocol start with partner {self.remote_node_name}")
 
     def memory_expire(self, memory: "Memory") -> None:
         """Method to deal with expired memories.

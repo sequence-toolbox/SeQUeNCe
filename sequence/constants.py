@@ -18,3 +18,9 @@ PSI_MINUS: Final = array([0, SQRT_HALF, -SQRT_HALF, 0])
 
 # machine epsilon, i.e., a small number
 EPSILON: Final = 1e-7
+
+# convert to picosecond
+NANOSECOND: Final  = 1e3
+MICROSECOND: Final = 1e6
+MILLISECOND: Final = 1e9
+SECOND: Final      = 1e12
