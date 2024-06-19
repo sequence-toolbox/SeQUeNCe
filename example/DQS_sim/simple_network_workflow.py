@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import os
 
 from sequence_sim import run_sequence_simulation
 from qutip_integration import final_purification, bell_dm, merge, gate_teleport
@@ -8,7 +9,7 @@ from qutip_integration import final_purification, bell_dm, merge, gate_teleport
 # meta params
 CONFIG_FILE = "config_files/simulation_args.json"
 NET_CONFIG_FILE = "config_files/topology_3_node.json"
-OUTPUT_FILE = "results/simple_link_"+str(datetime.today())+".json"
+OUTPUT_DIR = "results"
 
 # logging params
 LOGGING = False
@@ -29,6 +30,9 @@ prep_time = simulation_config["prep_time"]
 app_info = simulation_config["applications"]
 
 # set up storing data
+now = datetime.now()
+output_file = f"dqs_sim_{now.strftime("%Y-%m-%d_%H%M%S")}.json"
+output_path = os.path.join(OUTPUT_DIR, output_file)
 data_dict = {
     "simulation config": simulation_config,
     "network config": network_config,
@@ -64,6 +68,6 @@ for i, cutoff_time in enumerate(cutoff_times):
 print("Finished data collection.")
 
 # save output data
-with open(OUTPUT_FILE, 'w') as fp:
+with open(output_path, 'w') as fp:
     json.dump(data_dict, fp,
               indent=4)
