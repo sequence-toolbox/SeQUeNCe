@@ -55,7 +55,7 @@ def run_sequence_simulation(network_config_file, prep_time, cutoff_time, app_inf
             break
     if not start_node:
         raise ValueError(f"Invalid app node name {start_name}")
-    apps = [GHZApp(start_name) for _ in end_names]
+    apps = [GHZApp(start_node) for _ in end_names]
 
     # initialize and start apps
     tl.init()
