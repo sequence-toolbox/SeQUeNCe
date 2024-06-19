@@ -43,17 +43,13 @@ output_path = os.path.join(OUTPUT_DIR, output_file)
 data_dict = {
     "simulation config": simulation_config,
     "network config": network_config,
-    "memory states": [],
-    "memory entanglement": [],
-    "memory entanglement time": []
+    "results": []
 }
 
 for i, cutoff_time in enumerate(cutoff_times):
     print(f"Running {num_trials} trials for cutoff time {cutoff_time} s ({i + 1}/{len(cutoff_times)})")
 
-    all_memory_states = []
-    all_memory_entanglement = []
-    all_memory_times = []
+    results_all_trials = []
 
     for trial_no in range(num_trials):
 
@@ -61,9 +57,6 @@ for i, cutoff_time in enumerate(cutoff_times):
         memory_states, memory_entanglement, memory_times = run_sequence_simulation(
             NET_CONFIG_FILE, prep_time, cutoff_time, app_info, trial_no
         )
-        all_memory_states.append(memory_states)
-        all_memory_entanglement.append(memory_entanglement)
-        all_memory_times.append(memory_times)
 
         # compile memory info
         states = {name: [] for name in other_nodes}
@@ -86,14 +79,18 @@ for i, cutoff_time in enumerate(cutoff_times):
 
         # run GHZ generation (if necessary)
 
+        # save trial data
+        results_all_trials.append({
+            "initial entangled states": states,
+            "purified states": states_purified
+        })
+
         print(f"\tCompleted trial {trial_no + 1}/{num_trials}")
 
     print("Finished trials.")
 
     # save data for current cutoff time
-    data_dict["memory states"].append(all_memory_states)
-    data_dict["memory entanglement"].append(all_memory_entanglement)
-    data_dict["memory entanglement time"].append(all_memory_times)
+    data_dict["results"].append(results_all_trials)
 
 print("Finished data collection.")
 
