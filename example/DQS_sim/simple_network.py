@@ -1,10 +1,7 @@
 from datetime import datetime
 import json
 
-from ghz_app import GHZApp
-
-from sequence.topology.router_net_topo import RouterNetTopo
-import sequence.utils.log as log
+from sequence_sim import run_sequence_simulation
 
 
 # meta params
@@ -13,7 +10,7 @@ NET_CONFIG_FILE = "config_files/topology_3_node.json"
 OUTPUT_FILE = "results/simple_link_"+str(datetime.today())+".json"
 
 # logging params
-LOGGING = True
+LOGGING = False
 LOG_OUTPUT = "results/test_log.log"
 MODULE_TO_LOG = ["timeline", "purification"]
 VERBOSE_OUTPUT = False
@@ -47,95 +44,14 @@ for i, cutoff_time in enumerate(cutoff_times):
     all_memory_times = []
 
     for trial_no in range(num_trials):
-        # establish network
-        net_topo = RouterNetTopo(NET_CONFIG_FILE)
-
-        # timeline setup
-        tl = net_topo.get_timeline()
-        tl.stop_time = (prep_time + cutoff_time) * 1e12
-        # print(f"Simulation length: {tl.stop_time / 1e12} s")
-
-        if LOGGING:
-            # set log
-            if i == 0:
-                log.set_logger(__name__, tl, LOG_OUTPUT)
-                log.set_logger_level('DEBUG')
-                for module in MODULE_TO_LOG:
-                    log.track_module(module)
-            elif i == 1:
-                for module in MODULE_TO_LOG:
-                    log.remove_module(module)
-
-        # network configuration
-        routers = net_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER)
-        bsm_nodes = net_topo.get_nodes_by_type(RouterNetTopo.BSM_NODE)
-
-        for j, node in enumerate(routers + bsm_nodes):
-            node.set_seed(j + (trial_no * 3))
-
-        # establish apps
-        start_nodes = app_info["start_nodes"]
-        end_nodes = app_info["end_nodes"]
-        app_memories = app_info["memory_number"]
-        apps = []
-        for start_name in start_nodes:
-            start_node = None
-            for node in routers:
-                if node.name == start_name:
-                    start_node = node
-                    break
-            if not start_node:
-                raise ValueError(f"Invalid app node name {start_name}")
-
-            apps.append(GHZApp(start_node))
-
-        # initialize and start apps
-        tl.init()
-
-        for app, other_node in zip(apps, end_nodes):
-            app.start(other_node,
-                      prep_time * 1e12,
-                      (prep_time + cutoff_time) * 1e12,
-                      app_memories,
-                      fidelity=1.0)
-
-        # run simulation
-        tl.run()
-
-        print(f"\tCompleted trial {trial_no + 1}/{num_trials}")
-
-        # save data for trial
-        memory_states = []
-        memory_entanglement = []
-        memory_times = []
-
-        memo_arr = start_node.get_components_by_type("MemoryArray")[0]
-        for index in apps[1].memo_to_reserve:  # iterate through memo indices
-            memo = memo_arr[index]
-            update_time = memo.last_update_time
-            state = memo.get_bds_state()
-            remote = memo.entangled_memory['node_id']
-            if remote is not None:
-                memory_states.append(list(state))  # ndarray not serializable for JSON
-                memory_entanglement.append(remote)
-                memory_times.append(update_time)
-
+        # run main SeQUeNCe simulation
+        memory_states, memory_entanglement, memory_times = run_sequence_simulation(
+            NET_CONFIG_FILE, prep_time, cutoff_time, app_info, trial_no
+        )
+        print(f"\tCompleted simulation trial {trial_no + 1}/{num_trials}")
         all_memory_states.append(memory_states)
         all_memory_entanglement.append(memory_entanglement)
         all_memory_times.append(memory_times)
-
-        if VERBOSE_OUTPUT:
-            print("\tMemory states:")
-            for index in apps[1].memo_to_reserve:  # iterate through memo indices
-                memo = memo_arr[index]
-                # state = tl.quantum_manager.get(memo.qstate_key).state
-                update_time = memo.last_update_time
-                state = memo.get_bds_state()
-                remote = memo.entangled_memory['node_id']
-                print(f"\t\t{index}: {memo} ({remote})")
-                print(f"\t\t\t{state}")
-                print(f"\t\t\tUpdate time: {update_time * 1e-12} s")
-                print(f"\t\t\tGeneration time: {memo.generation_time * 1e-12} s")
 
     print("Finished trials.")
 
