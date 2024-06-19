@@ -20,9 +20,6 @@ NUM_TRIALS = 10
 PREP_TIME = 1  # units: s
 cutoff_times = [10]  # unit: s
 
-# qc params
-QC_FREQ = 1e11
-
 # application params
 center_node_name = "center"
 other_node_names = ["end1", "end2"]
@@ -72,10 +69,6 @@ for i, cutoff_time in enumerate(cutoff_times):
 
         for j, node in enumerate(routers + bsm_nodes):
             node.set_seed(j + (trial_no * 3))
-
-        # set quantum channel parameters
-        for qc in net_topo.get_qchannels():
-            qc.frequency = QC_FREQ
 
         # establish apps on the center node
         start_node = None

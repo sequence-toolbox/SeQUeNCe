@@ -38,14 +38,16 @@
             "node2": "center",
             "attenuation": 0.0002,
             "distance": 20000,
-            "type": "meet_in_the_middle"
+            "type": "meet_in_the_middle",
+            "frequency": 1e11
         },
         {
             "node1": "end2",
             "node2": "center",
             "attenuation": 0.0002,
             "distance": 20000,
-            "type": "meet_in_the_middle"
+            "type": "meet_in_the_middle",
+            "frequency": 1e11
         }
     ],
     "cconnections": [
