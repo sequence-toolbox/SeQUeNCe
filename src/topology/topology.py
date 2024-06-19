@@ -40,6 +40,7 @@ class Topology(ABC):
     DELAY = "delay"
     DISTANCE = "distance"
     DST = "destination"
+    QC_FREQ = "frequency"
     NAME = "name"
     SEED = "seed"
     SRC = "source"
@@ -83,7 +84,9 @@ class Topology(ABC):
                 name = qc.get(self.NAME, "qc.{}.{}".format(src_str, dst_str))
                 distance = qc[self.DISTANCE]
                 attenuation = qc[self.ATTENUATION]
-                qc_obj = QuantumChannel(name, self.tl, attenuation, distance)
+                frequency = qc.get(self.QC_FREQ, 8e7)
+                qc_obj = QuantumChannel(name, self.tl, attenuation, distance,
+                                        frequency=frequency)
                 qc_obj.set_ends(src_node, dst_str)
                 self.qchannels.append(qc_obj)
 

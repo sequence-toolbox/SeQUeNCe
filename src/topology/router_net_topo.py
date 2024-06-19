@@ -113,6 +113,7 @@ class RouterNetTopo(Topo):
             node2 = q_connect[Topo.CONNECT_NODE_2]
             attenuation = q_connect[Topo.ATTENUATION]
             distance = q_connect[Topo.DISTANCE] // 2
+            frequency = q_connect.get(Topo.QC_FREQ, 8e7)
             channel_type = q_connect[Topo.TYPE]
             cc_delay = []
             for cc in config.get(self.ALL_C_CHANNEL, []):
@@ -151,7 +152,8 @@ class RouterNetTopo(Topo):
                                self.SRC: src,
                                self.DST: bsm_name,
                                self.DISTANCE: distance,
-                               self.ATTENUATION: attenuation}
+                               self.ATTENUATION: attenuation,
+                               self.QC_FREQ: frequency}
                     if self.ALL_Q_CHANNEL not in config:
                         config[self.ALL_Q_CHANNEL] = []
                     config[self.ALL_Q_CHANNEL].append(qc_info)
