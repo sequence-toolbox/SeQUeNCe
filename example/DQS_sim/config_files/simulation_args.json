@@ -3,7 +3,7 @@
     "prep_time": 1,
     "cutoff_times": [1],
     "applications": {
-        "start_nodes": ["center", "center"],
+        "start_node": "center",
         "end_nodes": ["end1", "end2"],
         "memory_number": 10
     }

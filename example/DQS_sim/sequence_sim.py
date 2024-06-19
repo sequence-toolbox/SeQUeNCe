@@ -44,25 +44,23 @@ def run_sequence_simulation(network_config_file, prep_time, cutoff_time, app_inf
         node.set_seed(j + (trial_no * 3))
 
     # establish apps
-    start_nodes = app_info["start_nodes"]
-    end_nodes = app_info["end_nodes"]
+    start_name = app_info["start_node"]
+    end_names = app_info["end_nodes"]
     app_memories = app_info["memory_number"]
-    apps = []
-    for start_name in start_nodes:
-        start_node = None
-        for node in routers:
-            if node.name == start_name:
-                start_node = node
-                break
-        if not start_node:
-            raise ValueError(f"Invalid app node name {start_name}")
 
-        apps.append(GHZApp(start_node))
+    start_node = None
+    for node in routers:
+        if node.name == start_name:
+            start_node = node
+            break
+    if not start_node:
+        raise ValueError(f"Invalid app node name {start_name}")
+    apps = [GHZApp(start_name) for _ in end_names]
 
     # initialize and start apps
     tl.init()
 
-    for app, other_node in zip(apps, end_nodes):
+    for app, other_node in zip(apps, end_names):
         app.start(other_node,
                   prep_time * 1e12,
                   (prep_time + cutoff_time) * 1e12,
