@@ -8,48 +8,51 @@ import sequence.utils.log as log
 
 
 # meta params
-CONFIG_FILE = "config_files/topology_3_node.json"
+CONFIG_FILE = "config_files/simulation_args.json"
+NET_CONFIG_FILE = "config_files/topology_3_node.json"
 OUTPUT_FILE = "results/simple_link_"+str(datetime.today())+".json"
+
+# logging params
 LOGGING = True
 LOG_OUTPUT = "results/test_log.log"
 MODULE_TO_LOG = ["timeline", "purification"]
 VERBOSE_OUTPUT = False
 
-# simulation params
-NUM_TRIALS = 10
-PREP_TIME = 1  # units: s
-cutoff_times = [10]  # unit: s
 
-# application params
-center_node_name = "center"
-other_node_names = ["end1", "end2"]
-NUM_MEMO = 10
+# load config files
+with open(CONFIG_FILE, 'r') as config:
+    simulation_config = json.load(config)
+with open(NET_CONFIG_FILE, 'r') as config:
+    network_config = json.load(config)
 
+cutoff_times = simulation_config["cutoff_times"]
+num_trials = simulation_config["num_trials"]
+prep_time = simulation_config["prep_time"]
+app_info = simulation_config["applications"]
 
-# storing data
-data_dict = {"cutoff times": cutoff_times,
-             "preparation time": PREP_TIME,
-             "application number of memories": NUM_MEMO,
-             "number of trials": NUM_TRIALS,
-             "memory states": [],
-             "memory entanglement": [],
-             "memory entanglement time": []}
-
+# set up storing data
+data_dict = {
+    "simulation config": simulation_config,
+    "network config": network_config,
+    "memory states": [],
+    "memory entanglement": [],
+    "memory entanglement time": []
+}
 
 for i, cutoff_time in enumerate(cutoff_times):
-    print(f"Running {NUM_TRIALS} trials for cutoff time {cutoff_time} s ({i + 1}/{len(cutoff_times)})")
+    print(f"Running {num_trials} trials for cutoff time {cutoff_time} s ({i + 1}/{len(cutoff_times)})")
 
     all_memory_states = []
     all_memory_entanglement = []
     all_memory_times = []
 
-    for trial_no in range(NUM_TRIALS):
+    for trial_no in range(num_trials):
         # establish network
-        net_topo = RouterNetTopo(CONFIG_FILE)
+        net_topo = RouterNetTopo(NET_CONFIG_FILE)
 
         # timeline setup
         tl = net_topo.get_timeline()
-        tl.stop_time = (PREP_TIME + cutoff_time) * 1e12
+        tl.stop_time = (prep_time + cutoff_time) * 1e12
         # print(f"Simulation length: {tl.stop_time / 1e12} s")
 
         if LOGGING:
@@ -70,26 +73,36 @@ for i, cutoff_time in enumerate(cutoff_times):
         for j, node in enumerate(routers + bsm_nodes):
             node.set_seed(j + (trial_no * 3))
 
-        # establish apps on the center node
-        start_node = None
-        for node in routers:
-            if node.name == center_node_name:
-                start_node = node
-                break
-        if not start_node:
-            raise ValueError(f"Invalid app node name {center_node_name}")
+        # establish apps
+        start_nodes = app_info["start_nodes"]
+        end_nodes = app_info["end_nodes"]
+        app_memories = app_info["memory_number"]
+        apps = []
+        for start_name in start_nodes:
+            start_node = None
+            for node in routers:
+                if node.name == start_name:
+                    start_node = node
+                    break
+            if not start_node:
+                raise ValueError(f"Invalid app node name {start_name}")
 
-        apps = [GHZApp(start_node) for _ in other_node_names]
+            apps.append(GHZApp(start_node))
 
         # initialize and start apps
         tl.init()
 
-        for app, other_node in zip(apps, other_node_names):
-            app.start(other_node, PREP_TIME*1e12, (PREP_TIME + cutoff_time)*1e12, NUM_MEMO, fidelity=1.0)
+        for app, other_node in zip(apps, end_nodes):
+            app.start(other_node,
+                      prep_time * 1e12,
+                      (prep_time + cutoff_time) * 1e12,
+                      app_memories,
+                      fidelity=1.0)
 
+        # run simulation
         tl.run()
 
-        print(f"\tCompleted trial {trial_no + 1}/{NUM_TRIALS}")
+        print(f"\tCompleted trial {trial_no + 1}/{num_trials}")
 
         # save data for trial
         memory_states = []

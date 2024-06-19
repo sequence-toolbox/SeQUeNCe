@@ -1,0 +1,10 @@
+{
+    "num_trials": 10,
+    "prep_time": 1,
+    "cutoff_times": [1],
+    "applications": {
+        "start_nodes": ["center", "center"],
+        "end_nodes": ["end1", "end2"],
+        "memory_number": 10
+    }
+}
