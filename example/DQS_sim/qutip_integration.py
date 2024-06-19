@@ -1,5 +1,6 @@
 # import qutip as qtp
-from qutip import basis, identity, sigmax, sigmaz, tensor, bell_state, measure_povm
+from qutip import basis, identity, sigmax, sigmaz, tensor, bell_state
+from qutip.measurement import measure_povm
 from qutip_qip.operations import hadamard_transform, cnot, swap
 import numpy as np
 import sequence as sqnc
@@ -95,25 +96,25 @@ def final_purification(bds_list, gate_fid1, gate_fid2, meas_fid1, meas_fid2, is_
     """
 
     # sort the list of BDS diagonal element arrays in fidelity ascending order
-    bds_list_sorted = bds_list.sort(key = lambda x: x[0])
+    bds_list.sort(key=(lambda x: x[0]))
 
-    while len(bds_list_sorted) > 1:
-        state1 = bds_list_sorted[0]
-        state2 = bds_list_sorted[1]
+    while len(bds_list) > 1:
+        state1 = bds_list[0]
+        state2 = bds_list[1]
 
-        bds_list_sorted = bds_list_sorted[2:]
+        bds_list = bds_list[2:]
 
         p_succ, bds_elems = purification_result(state1, state2, gate_fid1, gate_fid2, meas_fid1, meas_fid2, is_twirled)
 
         if np.random.uniform() < p_succ:
-            bds_list_sorted.append(bds_elems)
+            bds_list.append(bds_elems)
         
-        bds_list_sorted.sort(key = lambda x: x[0])
+        bds_list.sort(key=(lambda x: x[0]))
 
-    if len(bds_list_sorted) == 1:
-        return bds_list_sorted[0]
-    elif len(bds_list_sorted) == 0:
-        return bds_list_sorted
+    if len(bds_list) == 1:
+        return bds_list[0]
+    elif len(bds_list) == 0:
+        return bds_list
 
 
 # Ad hoc generation of 3-qubit GHZ state from 2 BDS
@@ -167,7 +168,7 @@ def merge(state1, state2, cnot_fid, meas_fid):
         where noisy CNOT is modeled as a mixture of noiseless CNOT and 2-qubit completely depolarizing channel.
 
     Input states should be QuTiP quantum objects (density matrix). 
-    BDS should have major component as (|00> + |11>)/\sqrt{2}.
+    BDS should have major component as (|00> + |11>)/\\sqrt{2}.
 
     Args:
         state1 (Qobj): first BDS density matrix.
@@ -214,7 +215,7 @@ def gate_teleport(state1, state2, cnot_fid, meas_fid):
         where noisy CNOT is modeled as a mixture of noiseless CNOT and 2-qubit completely depolarizing channel.
 
     Input states should be QuTiP quantum objects (density matrix). 
-    BDS should have major component as (|01> + |10>)/\sqrt{2}. 
+    BDS should have major component as (|01> + |10>)/\\sqrt{2}.
     Following derivation in (Chou, Kevin S., et al. "Deterministic teleportation of a quantum gate between two logical qubits." Nature 561.7723 (2018): 368-373.)
     We assume center qubit (control) is initialized in |+> state, and other two qubits (targets) are initialized in |0> state.
 
