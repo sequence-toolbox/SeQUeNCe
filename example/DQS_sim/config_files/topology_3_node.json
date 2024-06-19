@@ -1,0 +1,70 @@
+{
+    "templates": {
+        "DQS_template": {
+            "MemoryArray": {
+                "fidelity": 0.85,
+                "coherence_time": 0.5,
+                "decoherence_errors": [0.333, 0.333, 0.334],
+                "cutoff_ratio": 0.1
+            }
+        }
+    },
+    "nodes": [
+        {
+            "name": "end1",
+            "type": "QuantumRouter",
+            "seed": 0,
+            "memo_size": 10,
+            "template": "DQS_template"
+        },
+        {
+            "name": "end2",
+            "type": "QuantumRouter",
+            "seed": 1,
+            "memo_size": 10,
+            "template": "DQS_template"
+        },
+        {
+            "name": "center",
+            "type": "QuantumRouter",
+            "seed": 2,
+            "memo_size": 20,
+            "template": "DQS_template"
+        }
+    ],
+    "qconnections": [
+        {
+            "node1": "end1",
+            "node2": "center",
+            "attenuation": 0.0002,
+            "distance": 20000,
+            "type": "meet_in_the_middle"
+        },
+        {
+            "node1": "end2",
+            "node2": "center",
+            "attenuation": 0.0002,
+            "distance": 20000,
+            "type": "meet_in_the_middle"
+        }
+    ],
+    "cconnections": [
+        {
+            "node1": "end1",
+            "node2": "center",
+            "delay": 1000000000
+        },
+        {
+            "node1": "end2",
+            "node2": "center",
+            "delay": 1000000000
+        },
+        {
+            "node1": "end1",
+            "node2": "end2",
+            "delay": 1000000000
+        }
+    ],
+    "is_parallel": false,
+    "formalism": "bell_diagonal"
+}
