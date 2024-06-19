@@ -15,21 +15,27 @@
             "type": "QuantumRouter",
             "seed": 0,
             "memo_size": 10,
-            "template": "DQS_template"
+            "template": "DQS_template",
+            "gate_fidelity": 1,
+            "measurement_fidelity": 1
         },
         {
             "name": "end2",
             "type": "QuantumRouter",
             "seed": 1,
             "memo_size": 10,
-            "template": "DQS_template"
+            "template": "DQS_template",
+            "gate_fidelity": 1,
+            "measurement_fidelity": 1
         },
         {
             "name": "center",
             "type": "QuantumRouter",
             "seed": 2,
             "memo_size": 20,
-            "template": "DQS_template"
+            "template": "DQS_template",
+            "gate_fidelity": 1,
+            "measurement_fidelity": 1
         }
     ],
     "qconnections": [

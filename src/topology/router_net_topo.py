@@ -36,6 +36,8 @@ class RouterNetTopo(Topo):
     PORT = "port"
     PROC_NUM = "process_num"
     QUANTUM_ROUTER = "QuantumRouter"
+    GATE_FID = "gate_fidelity"
+    MEAS_FID = "measurement_fidelity"
 
     def __init__(self, conf_file_name: str):
         self.bsm_to_router_map = {}
@@ -87,7 +89,13 @@ class RouterNetTopo(Topo):
                 node_obj = BSMNode(name, self.tl, others, component_templates=template)
             elif node_type == self.QUANTUM_ROUTER:
                 memo_size = node.get(self.MEMO_ARRAY_SIZE, 0)
-                node_obj = QuantumRouter(name, self.tl, memo_size, component_templates=template)
+                gate_fid = node.get(self.GATE_FID, 1)
+                meas_fid = node.get(self.MEAS_FID, 1)
+                node_obj = QuantumRouter(name, self.tl,
+                                         memo_size=memo_size,
+                                         component_templates=template,
+                                         gate_fid=gate_fid,
+                                         meas_fid=meas_fid)
             else:
                 raise ValueError("Unknown type of node '{}'".format(node_type))
 
