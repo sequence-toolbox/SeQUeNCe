@@ -5,7 +5,7 @@ import os
 import qutip
 
 from sequence_sim import run_sequence_simulation
-from qutip_integration import final_purification, bell_dm, merge, gate_teleport
+from qutip_integration import final_purification, merge, gate_teleport
 
 
 # meta params
@@ -52,7 +52,7 @@ main_results_file = os.path.join(output_path, "main.json")
 qutip_storage_count = 0  # for giving each qutip obj a unique filename
 qutip_template = "ghz_{}"
 
-# data sotrage object
+# data storage object
 data_dict = {
     "simulation config": simulation_config,
     "network config": network_config,
