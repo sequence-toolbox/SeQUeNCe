@@ -2,6 +2,8 @@ from datetime import datetime
 import json
 import os
 
+import qutip
+
 from sequence_sim import run_sequence_simulation
 from qutip_integration import final_purification, bell_dm, merge, gate_teleport
 
@@ -41,16 +43,24 @@ meas_fid = {node["name"]: node["measurement_fidelity"] for node in network_confi
 if len(other_nodes) > 2:
     raise NotImplementedError("case for greater than 2 remote nodes not yet implemented")
 
-# set up storing data
+# set up storing data (paths)
 now = datetime.now()
-output_file = f"dqs_sim_{now.strftime("%Y-%m-%d_%H%M%S")}.json"
-output_path = os.path.join(OUTPUT_DIR, output_file)
+output_subdir = f"dqs_sim_{now.strftime("%Y-%m-%d_%H%M%S")}"
+output_path = os.path.join(OUTPUT_DIR, output_subdir)
+os.mkdir(output_path)
+main_results_file = os.path.join(output_path, "main.json")
+qutip_storage_count = 0  # for giving each qutip obj a unique filename
+qutip_template = "ghz_{}"
+
+# data sotrage object
 data_dict = {
     "simulation config": simulation_config,
     "network config": network_config,
     "results": []
 }
 
+
+# main simulation loop
 for i, cutoff_time in enumerate(cutoff_times):
     print(f"Running {num_trials} trials for cutoff time {cutoff_time} s ({i + 1}/{len(cutoff_times)})")
 
@@ -84,17 +94,25 @@ for i, cutoff_time in enumerate(cutoff_times):
 
         # run GHZ generation (if necessary)
         successful_purification = [len(states_purified[node]) > 0 for node in other_nodes]
-        ghz = None
+        ghz_filename = None
         if all(successful_purification):
+            # generate GHZ
             if ghz_method == "merge":
                 ghz = merge(*states_purified.values(), gate_fid[center_node], meas_fid[center_node])
             else:
                 ghz = gate_teleport(*states_purified.values(), gate_fid[center_node], meas_fid[center_node])
 
+            # save qutip obj
+            ghz_filename = qutip_template.format(qutip_storage_count)
+            ghz_path = os.path.join(output_path, ghz_filename)
+            qutip.qsave(ghz, name=ghz_path)
+            qutip_storage_count += 1
+
         # save trial data
         results_all_trials.append({
             "initial entangled states": states,
-            "purified states": states_purified
+            "purified states": states_purified,
+            "GHZ state": ghz_filename
         })
 
         print(f"\tCompleted trial {trial_no + 1}/{num_trials}")
@@ -107,6 +125,6 @@ for i, cutoff_time in enumerate(cutoff_times):
 print("Finished data collection.")
 
 # save output data
-with open(output_path, 'w') as fp:
+with open(main_results_file, 'w') as fp:
     json.dump(data_dict, fp,
               indent=4)
