@@ -1,11 +1,30 @@
 from datetime import datetime
 import json
 import os
+import argparse
 
 import qutip
 
 from sequence_sim import run_sequence_simulation
 from qutip_integration import final_purification, merge, gate_teleport
+
+
+def dqs_sim_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        'config',
+        help='Simulation configuration file in JSON format'
+    )
+    parser.add_argument(
+        'net_config',
+        help='Network configuration file in JSON format'
+    )
+    parser.add_argument(
+        '-o', '--output',
+        default='results',
+        help='Output path to dump results in. Default is \'results\''
+    )
+    return parser.parse_args()
 
 
 # main simulation function
@@ -86,10 +105,7 @@ def dqs_sim(config_file, net_config_file, output_path, trial_no):
 
 
 if __name__ == "__main__":
-    # meta params
-    CONFIG_FILE = "config_files/simulation_args.json"
-    NET_CONFIG_FILE = "config_files/topology_3_node.json"
-    OUTPUT_DIR = "results"
+    args = dqs_sim_parser()
 
     # logging params
     LOGGING = False
@@ -98,9 +114,9 @@ if __name__ == "__main__":
     VERBOSE_OUTPUT = False
 
     # open config files
-    with open(CONFIG_FILE, 'r') as config:
+    with open(args.config, 'r') as config:
         simulation_config = json.load(config)
-    with open(NET_CONFIG_FILE, 'r') as config:
+    with open(args.net_config, 'r') as config:
         network_config = json.load(config)
 
     # simulation params
@@ -109,7 +125,7 @@ if __name__ == "__main__":
     # set up storing data (paths)
     now = datetime.now()
     output_subdir = f"dqs_sim_{now.strftime("%Y-%m-%d_%H%M%S")}"
-    output_path = os.path.join(OUTPUT_DIR, output_subdir)
+    output_path = os.path.join(args.output, output_subdir)
     os.mkdir(output_path)
     main_results_file = os.path.join(output_path, "main.json")
 
@@ -121,10 +137,10 @@ if __name__ == "__main__":
     }
 
     # main simulation loop
-    print(f"Running {num_trials} trials for config '{CONFIG_FILE}' and topology '{NET_CONFIG_FILE}'")
+    print(f"Running {num_trials} trials for config '{args.config}' and topology '{args.net_config}'")
     results = []
     for trial_no in range(num_trials):
-        trial_result = dqs_sim(CONFIG_FILE, NET_CONFIG_FILE, output_path, trial_no)
+        trial_result = dqs_sim(args.config, args.net_config, output_path, trial_no)
         results.append(trial_result)
         print(f"\tCompleted trial {trial_no + 1}/{num_trials}")
 
