@@ -60,11 +60,8 @@ data_dict = {
 }
 
 
-# main simulation loop
-print(f"Running {num_trials} trials for config '{CONFIG_FILE}' and topology '{NET_CONFIG_FILE}'")
-results = []
-for trial_no in range(num_trials):
-
+# main simulation function
+def dqs_sim(trial_no):
     # run main SeQUeNCe simulation
     memory_states, memory_entanglement, memory_times = run_sequence_simulation(
         NET_CONFIG_FILE, prep_time, cutoff_time, app_info, trial_no
@@ -100,23 +97,30 @@ for trial_no in range(num_trials):
             ghz = gate_teleport(*states_purified.values(), gate_fid[center_node], meas_fid[center_node])
 
         # save qutip obj
-        ghz_filename = qutip_template.format(qutip_storage_count)
+        ghz_filename = qutip_template.format(trial_no)
         ghz_path = os.path.join(output_path, ghz_filename)
         qutip.qsave(ghz, name=ghz_path)
-        qutip_storage_count += 1
 
-    # save trial data
-    results.append({
+    # return trial data
+    return_dict = {
         "initial entangled states": states,
         "purified states": states_purified,
         "GHZ state": ghz_filename
-    })
+    }
+    return return_dict
 
+
+# main simulation loop
+print(f"Running {num_trials} trials for config '{CONFIG_FILE}' and topology '{NET_CONFIG_FILE}'")
+results = []
+for trial_no in range(num_trials):
+    trial_result = dqs_sim(trial_no)
+    results.append(trial_result)
     print(f"\tCompleted trial {trial_no + 1}/{num_trials}")
 
 print("Finished trials.")
 
-# save data for current cutoff time
+# save data for trials
 data_dict["results"] = results
 
 
