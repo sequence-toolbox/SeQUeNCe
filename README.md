@@ -1,4 +1,12 @@
-# SeQUeNCe: Simulator of QUantum Network Communication
+<p align="center">
+<img src="docs/Sequence_Icon_Name.svg" alt="sequence icon" width="450">
+</p>
+
+<h3><p align="center">Quantum Networking in SeQUeNCe: Scalable, Customizable, Easy Debugging</p></h3>
+
+<br>
+
+## SeQUeNCe: Simulator of QUantum Network Communication
 
 SeQUeNCe is an open source, discrete-event simulator for quantum networks. As described in our [paper](http://arxiv.org/abs/2009.12000), the simulator includes 5 modules on top of a simulation kernel:
 * Hardware
