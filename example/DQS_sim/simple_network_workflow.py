@@ -29,12 +29,17 @@ cutoff_times = simulation_config["cutoff_times"]
 num_trials = simulation_config["num_trials"]
 prep_time = simulation_config["prep_time"]
 app_info = simulation_config["applications"]
+ghz_method = simulation_config["ghz_method"]
+assert ghz_method in ["merge", "gate_teleport"], \
+    f"invalid GHZ generation method {ghz_method} (must be 'merge' or 'gate_teleport'"
 
 # purification/GHZ parameters
 center_node = app_info["start_node"]
 other_nodes = app_info["end_nodes"]
 gate_fid = {node["name"]: node["gate_fidelity"] for node in network_config["nodes"]}
 meas_fid = {node["name"]: node["measurement_fidelity"] for node in network_config["nodes"]}
+if len(other_nodes) > 2:
+    raise NotImplementedError("case for greater than 2 remote nodes not yet implemented")
 
 # set up storing data
 now = datetime.now()
@@ -78,6 +83,13 @@ for i, cutoff_time in enumerate(cutoff_times):
             states_purified[end_node] = purified_state
 
         # run GHZ generation (if necessary)
+        successful_purification = [len(states_purified[node]) > 0 for node in other_nodes]
+        ghz = None
+        if all(successful_purification):
+            if ghz_method == "merge":
+                ghz = merge(*states_purified.values(), gate_fid[center_node], meas_fid[center_node])
+            else:
+                ghz = gate_teleport(*states_purified.values(), gate_fid[center_node], meas_fid[center_node])
 
         # save trial data
         results_all_trials.append({

@@ -6,5 +6,6 @@
         "start_node": "center",
         "end_nodes": ["end1", "end2"],
         "memory_number": 10
-    }
+    },
+    "ghz_method": "merge"
 }
