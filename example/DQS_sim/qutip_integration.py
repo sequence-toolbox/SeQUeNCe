@@ -121,14 +121,14 @@ def final_purification(bds_list, gate_fid1, gate_fid2, meas_fid1, meas_fid2, is_
 # we assume all 1-qubit gates are perfect, only 1-qubit measurements and multi-qubit gates are noisy
 # before performing GHZ generation, BDS from SeQUeNCe simulation must check their memories' last_update_time, to make sure that all idling decoherence is included
 
-def bell_dm(state, elem_order):
+def bell_dm(state, elem_order=(0, 1, 2, 3)):
     """Function to create BDS density matrix as QuTiP Qobj instance.
 
     4 Bell states: Phi+ (|00>+|11>), Phi- (|00>-|11>), Psi+ (|01>+|10>), Psi- (|01>-|10>) are ordered as 0,1,2,3.
     Will use bell_state() function inside QuTiP.
     
     Args:
-        state (array): 1-d array of 4 BDS density matrix diagonal elements.
+        state (np.ndarray): 1-d array of 4 BDS density matrix diagonal elements.
         elem_order (List[int]): the indices of corresponding Bell states for the 4 BDS density matrix diagonal elements.
 
     Return:
@@ -138,7 +138,7 @@ def bell_dm(state, elem_order):
     bell_dm = 0  # initialization
 
     for elem, idx in zip(state, elem_order):
-        idx_str = format(idx, 'b')  # transform Bell state index into binary strings for bell_state() function in QuTiP
+        idx_str = format(idx, '02b')  # transform Bell state index into binary strings for bell_state() function in QuTiP
         pure_bell_dm = bell_state(idx_str) * bell_state(idx_str).dag()
         bell_dm += elem * pure_bell_dm
 
@@ -187,24 +187,25 @@ def merge(state1, state2, cnot_fid, meas_fid):
     # apply CNOT between two BDS, control on qubit 1 and target on qubit 2
     cnot_12 = tensor(identity(2), cnot(), identity(2))  # noiseless CNOT unitary
     swap_12 = tensor(identity(2), swap(), identity(2))
-    swap_23 = tensor(identity(4), swap())
+    swap_23 = tensor(identity([2, 2]), swap())
     post_cnot_state = cnot_fid * cnot_12 * init_state * cnot_12.dag()\
-          + (1-cnot_fid) * swap_23 * swap_12 * (tensor(init_state.ptrace([0,3]),identity(4))/4) * swap_12.dag() * swap_23.dag()
+          + (1-cnot_fid) * swap_23 * swap_12 * (tensor(init_state.ptrace([0, 3]), identity([2, 2]))/4) * swap_12.dag() * swap_23.dag()
 
     # apply noisy measurement, assuming on qubit 1
     povm0, povm1 = noisy_meas(meas_fid)  # 1-qubit povms
-    povm0 = tensor(identity(2), povm0, identity(4))
-    povm1 = tensor(identity(2), povm1, identity(4))
+    povm0 = tensor(identity(2), povm0, identity([2, 2]))
+    povm1 = tensor(identity(2), povm1, identity([2, 2]))
     povms = [povm0, povm1]
     res, post_meas_state = measure_povm(post_cnot_state, povms)
 
     # trace out qubit 1
-    post_meas_state.ptrace([0,1,2])
+    post_meas_state = post_meas_state.ptrace([0, 1, 2])
+
     # apply feedforward X correction on qubit 0 if measure result is 1 (now remaining qubit 0, 1, 2)
     if res == 0:
         ghz_state = post_meas_state
     if res == 1:
-        x_gate = tensor(sigmax(),identity(4))
+        x_gate = tensor(sigmax(), identity([2, 2]))
         ghz_state = x_gate * post_meas_state * x_gate.dag()
 
     return ghz_state
