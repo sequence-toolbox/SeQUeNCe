@@ -27,7 +27,7 @@ with open(NET_CONFIG_FILE, 'r') as config:
     network_config = json.load(config)
 
 # simulation parameters
-cutoff_times = simulation_config["cutoff_times"]
+cutoff_time = simulation_config["cutoff_time"]
 num_trials = simulation_config["num_trials"]
 prep_time = simulation_config["prep_time"]
 app_info = simulation_config["applications"]
@@ -61,68 +61,64 @@ data_dict = {
 
 
 # main simulation loop
-for i, cutoff_time in enumerate(cutoff_times):
-    print(f"Running {num_trials} trials for cutoff time {cutoff_time} s ({i + 1}/{len(cutoff_times)})")
+print(f"Running {num_trials} trials for config '{CONFIG_FILE}' and topology '{NET_CONFIG_FILE}'")
+results = []
+for trial_no in range(num_trials):
 
-    results_all_trials = []
+    # run main SeQUeNCe simulation
+    memory_states, memory_entanglement, memory_times = run_sequence_simulation(
+        NET_CONFIG_FILE, prep_time, cutoff_time, app_info, trial_no
+    )
 
-    for trial_no in range(num_trials):
+    # compile memory info
+    states = {name: [] for name in other_nodes}
+    for state, other in zip(memory_states, memory_entanglement):
+        states[other].append(state)
 
-        # run main SeQUeNCe simulation
-        memory_states, memory_entanglement, memory_times = run_sequence_simulation(
-            NET_CONFIG_FILE, prep_time, cutoff_time, app_info, trial_no
+    # run purification
+    states_purified = {}
+    gate_fid_1 = gate_fid[center_node]
+    meas_fid_1 = meas_fid[center_node]
+    for end_node in other_nodes:
+        purified_state = final_purification(
+            states[end_node],
+            gate_fid_1,
+            gate_fid[end_node],
+            meas_fid_1,
+            meas_fid[end_node]
         )
+        states_purified[end_node] = purified_state
 
-        # compile memory info
-        states = {name: [] for name in other_nodes}
-        for state, other in zip(memory_states, memory_entanglement):
-            states[other].append(state)
+    # run GHZ generation (if necessary)
+    successful_purification = [len(states_purified[node]) > 0 for node in other_nodes]
+    ghz_filename = None
+    if all(successful_purification):
+        # generate GHZ
+        if ghz_method == "merge":
+            ghz = merge(*states_purified.values(), gate_fid[center_node], meas_fid[center_node])
+        else:
+            ghz = gate_teleport(*states_purified.values(), gate_fid[center_node], meas_fid[center_node])
 
-        # run purification
-        states_purified = {}
-        gate_fid_1 = gate_fid[center_node]
-        meas_fid_1 = meas_fid[center_node]
-        for end_node in other_nodes:
-            purified_state = final_purification(
-                states[end_node],
-                gate_fid_1,
-                gate_fid[end_node],
-                meas_fid_1,
-                meas_fid[end_node]
-            )
-            states_purified[end_node] = purified_state
+        # save qutip obj
+        ghz_filename = qutip_template.format(qutip_storage_count)
+        ghz_path = os.path.join(output_path, ghz_filename)
+        qutip.qsave(ghz, name=ghz_path)
+        qutip_storage_count += 1
 
-        # run GHZ generation (if necessary)
-        successful_purification = [len(states_purified[node]) > 0 for node in other_nodes]
-        ghz_filename = None
-        if all(successful_purification):
-            # generate GHZ
-            if ghz_method == "merge":
-                ghz = merge(*states_purified.values(), gate_fid[center_node], meas_fid[center_node])
-            else:
-                ghz = gate_teleport(*states_purified.values(), gate_fid[center_node], meas_fid[center_node])
+    # save trial data
+    results.append({
+        "initial entangled states": states,
+        "purified states": states_purified,
+        "GHZ state": ghz_filename
+    })
 
-            # save qutip obj
-            ghz_filename = qutip_template.format(qutip_storage_count)
-            ghz_path = os.path.join(output_path, ghz_filename)
-            qutip.qsave(ghz, name=ghz_path)
-            qutip_storage_count += 1
+    print(f"\tCompleted trial {trial_no + 1}/{num_trials}")
 
-        # save trial data
-        results_all_trials.append({
-            "initial entangled states": states,
-            "purified states": states_purified,
-            "GHZ state": ghz_filename
-        })
+print("Finished trials.")
 
-        print(f"\tCompleted trial {trial_no + 1}/{num_trials}")
+# save data for current cutoff time
+data_dict["results"] = results
 
-    print("Finished trials.")
-
-    # save data for current cutoff time
-    data_dict["results"].append(results_all_trials)
-
-print("Finished data collection.")
 
 # save output data
 with open(main_results_file, 'w') as fp:

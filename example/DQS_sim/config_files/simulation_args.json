@@ -1,7 +1,7 @@
 {
     "num_trials": 10,
     "prep_time": 1,
-    "cutoff_times": [1],
+    "cutoff_time": 1,
     "applications": {
         "start_node": "center",
         "end_nodes": ["end1", "end2"],
