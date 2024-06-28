@@ -1,5 +1,8 @@
 <p align="center">
-<img src="docs/Sequence_Icon_Name.svg" alt="sequence icon" width="450">
+  <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="docs/Sequence_Icon_Name_Dark.png">
+   <img src="docs/Sequence_Icon_Name.svg" alt="sequence icon" width="450" class="center">
+  </picture>
 </p>
 
 <h3><p align="center">Quantum Networking in SeQUeNCe: Scalable, Customizable, Easy Debugging</p></h3>
