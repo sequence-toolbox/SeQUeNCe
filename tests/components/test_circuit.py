@@ -41,6 +41,13 @@ def test_cx():
     assert array_equal(expect, circuit.get_unitary_matrix())
 
 
+def test_cz():
+    circuit = Circuit(2)
+    circuit.cz(0, 1)
+    expect = array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+    assert array_equal(expect, circuit.get_unitary_matrix())
+
+
 def test_ccx():
     circuit = Circuit(3)
     circuit.ccx(0, 1, 2)
@@ -77,6 +84,13 @@ def test_s():
     circuit = Circuit(1)
     circuit.s(0)
     expect = array([[1, 0], [0, complex(0, 1)]])
+    assert array_equal(expect, circuit.get_unitary_matrix())
+
+
+def test_sdg():
+    circuit = Circuit(1)
+    circuit.sdg(0)
+    expect = array([[1, 0], [0, -complex(0, 1)]])
     assert array_equal(expect, circuit.get_unitary_matrix())
 
 

@@ -37,6 +37,10 @@ def s_gate():
                     [0., 1.j]])
     return Qobj(mat, dims=[[2], [2]])
 
+def sdg_gate():
+    mat = np.array([[1.,   0],
+                    [0., -1.j]])
+    return Qobj(mat, dims=[[2], [2]])
 
 def t_gate():
     mat = np.array([[1.,   0],
@@ -95,6 +99,7 @@ class Circuit:
                              "Y": y_gate,
                              "Z": z_gate,
                              "S": s_gate,
+                             "Sdg": sdg_gate,
                              "T": t_gate}
             for gate in self.gates:
                 name, indices, arg = gate
@@ -108,6 +113,8 @@ class Circuit:
                     qc.add_gate('Z', indices[0])
                 elif name == 'cx':
                     qc.add_gate('CNOT', controls=indices[0], targets=indices[1])
+                elif name == 'cz':
+                    qc.add_gate('CZ', controls=indices[0], targets=indices[1])
                 elif name == 'ccx':
                     qc.add_gate('TOFFOLI', controls=indices[:2], targets=indices[2])
                 elif name == 'swap':
@@ -116,6 +123,8 @@ class Circuit:
                     qc.add_gate('T', indices[0])
                 elif name == 's':
                     qc.add_gate('S', indices[0])
+                elif name == 'sdg':
+                    qc.add_gate('Sdg', indices[0])
                 elif name == 'phase':
                     qc.add_gate('PHASEGATE', indices[0], arg_value=arg)
                 else:
@@ -192,6 +201,17 @@ class Circuit:
         self.gates.append(['cx', [control, target], None])
 
     @validator
+    def cz(self, control: int, target: int):
+        """Method to apply Control-Z gate on three qubits.
+
+        Args:
+            control (int): the index of control1 in the circuit.
+            target (int): the index of target in the circuit.
+        """
+
+        self.gates.append(['cz', [control, target], None])
+
+    @validator
     def ccx(self, control1: int, control2: int, target: int):
         """Method to apply Toffoli gate on three qubits.
 
@@ -233,6 +253,16 @@ class Circuit:
         """
 
         self.gates.append(['s', [qubit], None])
+    
+    @validator
+    def sdg(self, qubit: int):
+        """Method to apply single Sdg gate on a qubit.
+
+        Args:
+            qubit (int): the index of qubit in the circuit.
+        """
+
+        self.gates.append(['sdg', [qubit], None])
 
     @validator
     def phase(self, qubit: int, theta: float):

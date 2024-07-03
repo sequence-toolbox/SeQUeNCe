@@ -13,11 +13,6 @@ from sequence.components.memory import Memory
 import sequence.utils.log as log
 from sequence.utils import log
 
-
-# TO BE DELETED: fix import
-import os
-import sys
-
 from ..local_ghz_protocol import LocalGHZprotocol
 
 class GHZStateManager:
