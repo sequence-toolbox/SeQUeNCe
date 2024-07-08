@@ -33,19 +33,6 @@ def generate_g_state(num_memories):
     return g_state
 
 def entangle_memory(tl: Timeline, memories: list, n: int):
-    """
-    Entangles three memories to create a GHZ state.
-
-    Args:
-        tl (Timeline): The timeline object.
-        memo1 (Memory): The first memory object.
-        memo2 (Memory): The second memory object.
-        memo3 (Memory): The third memory object.
-        fidelity (float): The fidelity of the quantum state.
-
-    Returns:
-        None
-    """
 
     # square root of 1/2
     #SQRT_HALF = 0.5 ** 0.5
@@ -59,4 +46,45 @@ def entangle_memory(tl: Timeline, memories: list, n: int):
 
     # Setting the GHZ state
     qstate_keys = [memo.qstate_key for memo in memories]
+    tl.quantum_manager.set(qstate_keys, g_state)
+
+
+def qlan_entangle_memory(tl: Timeline, local_memories: list, remote_memories: list, n: int):
+
+    # 1/sqrt(2)|000> + 0 +...+ 0 + 1/sqrt(2)|111>
+    g_state = generate_g_state(n)
+
+    # Resetting the memories
+    for memo in local_memories:
+        memo.reset()
+    for memo in remote_memories:
+        memo.reset()
+
+    # DEBUG
+    for i in range(len(remote_memories)):
+        print(remote_memories[i].qstate_key)
+
+    for i in range(len(local_memories)):
+        print(local_memories[i].qstate_key)
+
+
+    combined_memories = []
+    min_size = min(len(remote_memories), len(local_memories))
+    for i in range(min_size):
+        combined_memories.append(remote_memories[i])
+        combined_memories.append(local_memories[i])
+
+    # Add remaining memories from the longer list
+    if len(remote_memories) > len(local_memories):
+        combined_memories.extend(remote_memories[min_size:])
+    else:
+        combined_memories.extend(local_memories[min_size:])
+
+    # DEBUG
+    for memo in combined_memories:
+        print(memo.qstate_key)
+
+
+    qstate_keys = [memo.qstate_key for memo in combined_memories]
+    print(qstate_keys)
     tl.quantum_manager.set(qstate_keys, g_state)
