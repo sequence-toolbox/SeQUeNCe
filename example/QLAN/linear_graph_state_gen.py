@@ -61,11 +61,11 @@ def qlan_entangle_memory(tl: Timeline, local_memories: list, remote_memories: li
         memo.reset()
 
     # DEBUG
-    for i in range(len(remote_memories)):
-        print(remote_memories[i].qstate_key)
+    # for i in range(len(remote_memories)):
+    #    print(remote_memories[i].qstate_key)
 
-    for i in range(len(local_memories)):
-        print(local_memories[i].qstate_key)
+    #for i in range(len(local_memories)):
+    #    print(local_memories[i].qstate_key)
 
 
     combined_memories = []
@@ -81,10 +81,9 @@ def qlan_entangle_memory(tl: Timeline, local_memories: list, remote_memories: li
         combined_memories.extend(local_memories[min_size:])
 
     # DEBUG
-    for memo in combined_memories:
-        print(memo.qstate_key)
-
+    # for memo in combined_memories:
+    #    print(memo.qstate_key)
 
     qstate_keys = [memo.qstate_key for memo in combined_memories]
-    print(qstate_keys)
+    # print(qstate_keys)
     tl.quantum_manager.set(qstate_keys, g_state)

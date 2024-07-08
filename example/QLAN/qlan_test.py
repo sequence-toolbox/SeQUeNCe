@@ -48,11 +48,15 @@ if __name__ == '__main__':
 
     # Create Orchestrator node and clients
     orch = OrchestratorNode('Orchestrator', tl, num_local_memories=2,remote_memories=[memo_c_1, memo_c_2, memo_c_3])
-    orch.set_seed(227)
+    
+    # Seed to obtain 0s as results measurements at the orchestrator
+    orch.set_seed(2332)
 
     # Get the memories from the node
     memo_o_1 = orch.components[orch.resource_manager.memory1_name]
     memo_o_2 = orch.components[orch.resource_manager.memory2_name]
+
+    orch.update_bases('ZZ')
 
     # Run the experiment with the given memories
     run_experiment(tl=tl, local_memories=[memo_o_1, memo_o_2], remote_memories=[memo_c_1, memo_c_2, memo_c_3])

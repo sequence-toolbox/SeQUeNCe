@@ -92,9 +92,9 @@ class OrchestratorNode(Node):
         super().__init__(name, tl)
         
         # Instantiating memories
-        local_memory_names = [f'{name}.memo_o_{i}' for i in range(1, num_local_memories+1)]
+        self.local_memory_names = [f'{name}.memo_o_{i}' for i in range(1, num_local_memories+1)]
         
-        local_memories = [Memory(name=memory_name, timeline=tl, fidelity=0.9, frequency=2000, efficiency=1, coherence_time=-1, wavelength=500) for memory_name in local_memory_names]
+        local_memories = [Memory(name=memory_name, timeline=tl, fidelity=0.9, frequency=2000, efficiency=1, coherence_time=-1, wavelength=500) for memory_name in self.local_memory_names]
 
         # Check if the number of memories is greater than 5
         if len(local_memories) + len(remote_memories) > 5:
@@ -108,7 +108,7 @@ class OrchestratorNode(Node):
         self.bases = 'z' * len(local_memories)
 
         # Adding resource manager
-        self.resource_manager = OrchestratorStateManager(owner=self, memory_names=local_memory_names)
+        self.resource_manager = OrchestratorStateManager(owner=self, memory_names=self.local_memory_names)
         
 
     def update_bases(self, bases: str):
@@ -119,7 +119,7 @@ class OrchestratorNode(Node):
             bases (str): The new set of bases.
         """
         # Check if the input string matches the number of local_memories
-        if len(bases) != len(self.local_memories):
+        if len(bases) != len(self.local_memory_names):
             raise ValueError("The number of bases should match the number of local memories.")
         self.bases = bases
         self.resource_manager.bases = bases
