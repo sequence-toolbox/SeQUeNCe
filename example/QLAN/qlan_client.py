@@ -21,7 +21,7 @@ class ClientStateManager:
         ent_counter (int): The counter for the number of entangled states.
     """
 
-    def __init__(self, owner, memory_names, remote_memories):
+    def __init__(self, owner, tl, memory_names, remote_memories):
         """
         Initializes a new instance of the OrchestratorStateManager class.
 
@@ -31,6 +31,7 @@ class ClientStateManager:
             bases (str): The set of bases.
         """
         self.owner = owner
+        self.tl = tl
         self.memory_names = memory_names
         self.remote_memories = remote_memories
 
@@ -38,6 +39,9 @@ class ClientStateManager:
             setattr(self, f"memory{i+1}_name", memory_name)
         self.raw_counter = 0
         self.ent_counter = 0
+        
+        # TODO: delete the feature related to measurements at the client.
+        self.bases = 'x'
 
 
     def update(self, memories: list, states: list):
@@ -65,9 +69,9 @@ class ClientStateManager:
         # Trying measurement protocol
         # self.owner.protocols = [MeasurementProtocol(self.owner, 'Measurement Protocol', memory_objects, base = 'y')]
 
-        # Trying adaptive measurement protocol
+        # TODO: change to real protocol (correction)
         self.owner.protocols = [
-            MeasurementProtocol(self.owner, 'Measurement Protocol', memory_objects, bases = self.bases),
+            MeasurementProtocol(owner=self.owner, name='Measurement Protocol', tl=self.tl, local_memories=memory_objects, remote_memories = self.owner.remote_memory_names, bases = self.bases),
         ]
 
 
@@ -96,10 +100,14 @@ class ClientNode(Node):
         # Number of local memories must be set to 1 in most of the cases
         self.num_local_memories = 1
         # Must be updates when entangled whit the orchestrator
-        self.remote_memories = []       
+        self.remote_memories = []   
+        self.adjacent_nodes = {}    
         
         # Instantiating memories
         local_memory_names= [f'{name}.memo_c_{i}' for i in range(1, self.num_local_memories+1)]
+
+        # TODO: check if it is necessary to keep this attribute
+        self.remote_memory_names = []
         
         local_memories = [Memory(name=memory_name, timeline=tl, fidelity=0.9, frequency=2000, efficiency=1, coherence_time=-1, wavelength=500) for memory_name in local_memory_names]
 
@@ -112,7 +120,7 @@ class ClientNode(Node):
             self.add_component(memory)
 
         # Adding resource manager
-        self.resource_manager = ClientStateManager(owner=self, memory_names=local_memory_names, remote_memories=self.remote_memories)
+        self.resource_manager = ClientStateManager(owner=self, tl=tl, memory_names=local_memory_names, remote_memories=self.remote_memories)
         
 
     def update_orchestrator(self, remote_memories: List[Memory]):

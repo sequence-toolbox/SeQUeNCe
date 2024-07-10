@@ -6,6 +6,7 @@ from sequence.components.memory import Memory
 from sequence.message import Message
 from sequence.utils import log
 from .qlan_measurement_protocol import MeasurementProtocol
+from .linear_graph_state_gen import generate_g_state
 
 # WIP
 class OrchestratorStateManager:
@@ -21,7 +22,7 @@ class OrchestratorStateManager:
         ent_counter (int): The counter for the number of entangled states.
     """
 
-    def __init__(self, owner, memory_names):
+    def __init__(self, owner, tl, memory_names):
         """
         Initializes a new instance of the OrchestratorStateManager class.
 
@@ -31,6 +32,7 @@ class OrchestratorStateManager:
             bases (str): The set of bases.
         """
         self.owner = owner
+        self.tl = tl
         self.memory_names = memory_names
         self.bases = self.owner.bases
         for i, memory_name in enumerate(memory_names):
@@ -65,8 +67,55 @@ class OrchestratorStateManager:
 
         # Trying adaptive measurement protocol
         self.owner.protocols = [
-            MeasurementProtocol(owner=self.owner, name='Measurement Protocol', local_memories=memory_objects, bases = self.bases),
+            MeasurementProtocol(owner=self.owner, name='Measurement Protocol', tl=self.tl, local_memories=memory_objects, remote_memories = self.owner.remote_memory_names, bases = self.bases),
         ]
+    
+    # TODO: function for state generation (abstract generation, without real distribution of states). May be extended with teleportation protocols
+    def generate_chain_state(self, tl, local_memories: List[Memory], remote_memories: List[Memory]):
+        
+        # Requires memory objects to work! (abstraction: it should be able to set only local memories)
+        n = len(local_memories)+len(remote_memories)
+        
+        # 1/sqrt(2)|000> + 0 +...+ 0 + 1/sqrt(2)|111>
+        g_state = generate_g_state(n)
+
+        # Resetting the memories
+        for memo in local_memories:
+            memo.reset()
+        for memo in remote_memories:
+            memo.reset()
+        
+        # DEBUG
+        # for i in range(len(remote_memories)):
+        #    print(remote_memories[i].qstate_key)
+
+        #for i in range(len(local_memories)):
+        #    print(local_memories[i].qstate_key)
+
+
+        combined_memories = []
+        min_size = min(len(remote_memories), len(local_memories))
+        for i in range(min_size):
+            combined_memories.append(remote_memories[i])
+            combined_memories.append(local_memories[i])
+
+        # Add remaining memories from the longer list
+        if len(remote_memories) > len(local_memories):
+            combined_memories.extend(remote_memories[min_size:])
+        else:
+            combined_memories.extend(local_memories[min_size:])
+
+        # DEBUG
+        # for memo in combined_memories:
+        #    print(memo.qstate_key)
+
+        qstate_keys = [memo.qstate_key for memo in combined_memories]
+
+        # print(qstate_keys)
+        tl.quantum_manager.set(qstate_keys, g_state)
+
+        # Find adjacent nodes
+        self.owner.find_adjacent_nodes(tl, remote_memories)
 
 
 class OrchestratorNode(Node):
@@ -79,6 +128,9 @@ class OrchestratorNode(Node):
         tl (Timeline): The timeline object.
         bases (str): The set of bases.
     """
+
+    # Dictionary for adjacent nodes (aka entangled nodes) for each memory.
+    
     def __init__(self, name: str, tl: Timeline, num_local_memories: int, remote_memories: List[Memory]):
         """
         Initializes a new instance of the OrchestratorNode class.
@@ -91,7 +143,11 @@ class OrchestratorNode(Node):
         """
         super().__init__(name, tl)
         
-        # Instantiating memories
+        # Remote memories infos
+        self.remote_memories = remote_memories
+        self.remote_memory_names = [memory.name for memory in remote_memories]
+
+        # Instantiating memories (note that the remote memories are already instantiated in the client nodes ant thus have a name)
         self.local_memory_names = [f'{name}.memo_o_{i}' for i in range(1, num_local_memories+1)]
         
         local_memories = [Memory(name=memory_name, timeline=tl, fidelity=0.9, frequency=2000, efficiency=1, coherence_time=-1, wavelength=500) for memory_name in self.local_memory_names]
@@ -108,8 +164,30 @@ class OrchestratorNode(Node):
         self.bases = 'z' * len(local_memories)
 
         # Adding resource manager
-        self.resource_manager = OrchestratorStateManager(owner=self, memory_names=self.local_memory_names)
+        self.resource_manager = OrchestratorStateManager(owner=self, tl=tl, memory_names=self.local_memory_names)
+
+        # Generation of a chain graph state (abstract)
+        self.resource_manager.generate_chain_state(tl, local_memories, remote_memories)
+
+    def find_adjacent_nodes(self, tl: "Timeline", remote_memories: List[Memory]):
+
+        self.adjacent_nodes = {}
         
+        # TODO: Target keys should be 3 and 4: we are supposing that client memories have smaller indices than orchestration memories. This code should be generalized for a greater number of memories.
+        target_keys = list(range(len(remote_memories), len(remote_memories) + len(self.local_memory_names)))
+
+        target_array = tl.quantum_manager.states[0].keys
+        print("Target keys: ",target_keys)
+        
+        print("Target array: ",target_array)
+        for key in target_keys:
+            for i in range(len(target_array)):
+                if target_array[i] == key:
+                    if i > 0 and i < len(target_array) - 1:
+                        self.adjacent_nodes[key] = [target_array[i-1], target_array[i+1]]
+                    elif i == len(target_array) - 1:
+                        self.adjacent_nodes[key] = [target_array[i-1]]
+        print(self.adjacent_nodes)
 
     def update_bases(self, bases: str):
         """
