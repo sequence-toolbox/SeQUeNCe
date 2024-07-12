@@ -9,9 +9,13 @@ from sequence.utils import log
 
 from enum import Enum, auto
 
-class MsgType(Enum):
-    Outcome0 = auto()
-    Outcome1 = auto()
+class MeasurementMsgType(Enum):
+    Z_Outcome0 = auto()
+    Z_Outcome1 = auto()
+    Y_Outcome0 = auto()
+    Y_Outcome1 = auto()
+    X_Outcome0 = auto()
+    X_Outcome1 = auto()
 
 
 class MeasurementProtocol(EntanglementProtocol):
@@ -93,7 +97,7 @@ class MeasurementProtocol(EntanglementProtocol):
         Returns:
             bool: True if the protocol is ready, False otherwise.
         """
-        return True
+        return (self.remote_node_names is not None) 
 
     def set_others(self, protocols: list[str], nodes: list[str], memories: list[list[str]]) -> None:
         """Set other entanglement protocol instances for coordination.
@@ -107,9 +111,9 @@ class MeasurementProtocol(EntanglementProtocol):
         self.remote_protocol_names = protocols
         self.remote_memories = memories
     
-    def start(self, owner) -> None:
+    def start(self, tl) -> None:
         """Start the measurement protocol."""
-        log.logger.info(f"{self.owner.name} protocol start at node {self.owner.name}")
+        log.logger.info(f"{self.name} protocol starts at node {self.owner.name}")
 
         # Execute the quantum circuit to perform the measurements
         result = self.owner.timeline.quantum_manager.run_circuit(
@@ -117,10 +121,10 @@ class MeasurementProtocol(EntanglementProtocol):
                            [memory.qstate_key for memory in self.local_memories],
                            meas_samp = self.owner.get_generator().random())
 
-        print(f"Measurement protocol executed at {self.owner.name}.")
-        #print("The key of the first qubit is: ", result)
+        print(f"Measurement Protocol starts at node {self.owner.name} at {format(self.owner.timeline.now())}.")
+        self.send_outcome_messages(self.tl)
 
-    def sendOutcomeMessages(self, tl: "Timeline"):
+    def send_outcome_messages(self, tl: "Timeline"):
         # Please notice that the index is given by the order of the memories in the list declared in main
         
         #print(tl.quantum_manager.states[0].state)
@@ -132,19 +136,44 @@ class MeasurementProtocol(EntanglementProtocol):
         # TODO: this messages should be sent only to the adjacent qubits for each orchestrator qubit!
         print(self.local_memory_identifiers)
 
+        base_count = 0
         for identifier in self.local_memory_identifiers:
+            
+            # Case Outcome "0"
             if (tl.quantum_manager.states[identifier].state == [1.+0.j, 0.+0.j]).any():
+            
                 for i in self.owner.adjacent_nodes[identifier]:
-                    print("Outcome 0")
-                    #new_msg = Message(MsgType.Outcome0, self.others_name[i])
-                    #self.owner.send_message(, new_msg)
+                    if self.bases[base_count] == "z" or self.bases[base_count] == "Z":
+                        msg_type = MeasurementMsgType.Z_Outcome0
+                    elif self.bases[base_count] == "x" or self.bases[base_count] == "X":
+                        msg_type = MeasurementMsgType.X_Outcome0
+                    elif self.bases[base_count] == "y" or self.bases[base_count] == "Y":
+                        msg_type = MeasurementMsgType.Y_Outcome0
+                    else:
+                        raise ValueError("Invalid bases. Please use one of the supported bases: x, y, z")
 
-            elif tl.quantum_manager.states[4] == [0.+0.j, 1.+0.j].any():
+                    new_msg = Message(msg_type, self.remote_node_names[i])
+                    print(f"Sending: {new_msg.msg_type} at {self.remote_node_names[i]}.")
+                    self.owner.send_message(self.remote_node_names[i], new_msg)
+                base_count +=1
+
+            # Case Outcome "1"
+            elif tl.quantum_manager.states[identifier].state == [0.+0.j, 1.+0.j].any():
+                
                 for i in self.owner.adjacent_nodes[identifier]:
-                    print("Outcome 1")
-                    #new_msg = Message(MsgType.Outcome0, self.others_name[i])
-                    #self.owner.send_message(, new_msg)
+                    if self.bases[base_count] == "z" or self.bases[base_count] == "Z":
+                        msg_type = MeasurementMsgType.Z_Outcome1
+                    elif self.bases[base_count] == "x" or self.bases[base_count] == "X":
+                        msg_type = MeasurementMsgType.X_Outcome1
+                    elif self.bases[base_count] == "y" or self.bases[base_count] == "Y":
+                        msg_type = MeasurementMsgType.Y_Outcome1
+                    else:
+                        raise ValueError("Invalid bases. Please use one of the supported bases: x, y, z")
 
+                    new_msg = Message(MsgType.Outcome1, self.remote_node_names[i])
+                    print(f"Sending: {new_msg.msg_type} at {self.remote_node_names[i]}.")
+                    self.owner.send_message(self.remote_node_names[i], new_msg)
+                base_count +=1
 
     def memory_expire(self, memory: "Memory") -> None:
         """Handle memory expiration events.
@@ -162,7 +191,7 @@ class MeasurementProtocol(EntanglementProtocol):
             src (str): The source of the message.
             msg (Message): The received message.
         """
-        pass
+        print(f"Received ACK message from {src} at {format(self.tl.now())}")
 
     def release(self) -> None:
         """Release resources used by the protocol."""

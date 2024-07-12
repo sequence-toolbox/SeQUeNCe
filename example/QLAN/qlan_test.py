@@ -4,6 +4,7 @@ from sequence.kernel.timeline import Timeline
 from sequence.components.memory import Memory
 from sequence.message import Message
 from sequence.utils import log
+from sequence.components.optical_channel import ClassicalChannel
 
 # Qlan imports
 from .qlan_orchestrator import OrchestratorNode
@@ -32,29 +33,32 @@ def pair_protocol(orchestrator: OrchestratorNode, clients: List[ClientNode]):
 
     p_orch.set_others(protocols_names, clients_names, [orch_memo_name1, orch_memo_name2])
 
-def run_experiment(tl, local_memories, remote_memories):
-    tl.init()
-    
-    # TODO: Generation Moved to the OrchestratorStateManager. This may be extended to distribution process!
-    #for i in range(10):
-    #    qlan_entangle_memory(tl=tl, local_memories=local_memories, remote_memories=remote_memories, n=5)
-
-    tl.run()
-
 def display_state_information(tl, local_memories, remote_memories):
-    
+    print("Local Memories:")
+    print("----------------------------------------")
     for i, memory in enumerate(local_memories):
-        print(memory.name, memory.entangled_memory, memory.fidelity)
-        print(f"Quantum state stored in memory{memory.qstate_key+1}:\n {tl.quantum_manager.states[i]}")
+        print(f"Memory {memory.name}:")
+        print(f"  Entangled Memory: {memory.entangled_memory}")
+        print(f"  Quantum state stored in memory{memory.qstate_key+1}:")
+        print(f"  {tl.quantum_manager.states[i+len(local_memories)+1]}")
+        print("----------------------------------------")
     
+    print("Remote Memories:")
+    print("----------------------------------------")
     for i, memory in enumerate(remote_memories):
-        print(memory.name, memory.entangled_memory, memory.fidelity)
-        print(f"Quantum state stored in memory{memory.qstate_key+1}:\n {tl.quantum_manager.states[i+len(local_memories)]}")
+        print(f"Memory {memory.name}:")
+        print(f"  Entangled Memory: {memory.entangled_memory}")
+        print(f"  Quantum state stored in memory{memory.qstate_key+1}:")
+        print(f"  {tl.quantum_manager.states[i]}")
+        print("----------------------------------------")
 
 
 if __name__ == '__main__':
     # Create a timeline
-    tl = Timeline()
+    #tl = Timeline()
+
+    tl = Timeline(10e12)
+    tl.show_progress = True
 
     # Create clients (change to client objects)
     client1 = ClientNode('client1', tl)
@@ -84,25 +88,42 @@ if __name__ == '__main__':
     memo_o_1 = orch.components[orch.resource_manager.memory1_name]
     memo_o_2 = orch.components[orch.resource_manager.memory2_name]
 
-    orch.update_bases('yy')
+    tl.init()
+    
+    # Building the physical topology
+    cc_o_c1 = ClassicalChannel("cc_o_c1", tl, 10, 1e9)
+    cc_o_c2 = ClassicalChannel("cc_o_c2", tl, 10, 1e9)
+    cc_o_c3 = ClassicalChannel("cc_o_c3", tl, 10, 1e9)
+    cc_o_c1.set_ends(orch, client1.name)
+    cc_o_c2.set_ends(orch, client2.name)
+    cc_o_c3.set_ends(orch, client3.name)
+
+    cc_c1_o = ClassicalChannel("cc_c1_o", tl, 10, 1e9)
+    cc_c2_o = ClassicalChannel("cc_c2_o", tl, 10, 1e9)
+    cc_c3_o = ClassicalChannel("cc_c3_o", tl, 10, 1e9)
+    cc_c1_o.set_ends(client1, orch.name)
+    cc_c2_o.set_ends(client2, orch.name)
+    cc_c3_o.set_ends(client3, orch.name)
+
+    orch.update_bases('zz')
 
     orch.resource_manager.create_protocol()
     client1.resource_manager.create_protocol()
     client2.resource_manager.create_protocol()
     client3.resource_manager.create_protocol()
-
+    
     pair_protocol(orchestrator=orch, clients=[client1, client2, client3])
-
-    # Run the experiment with the given memories
-    run_experiment(tl=tl, local_memories=[memo_o_1, memo_o_2], remote_memories=[memo_c_1, memo_c_2, memo_c_3])
 
     # Display the state information (stored in the State Manager!)
     display_state_information(tl=tl, local_memories=[memo_o_1, memo_o_2], remote_memories=[memo_c_1, memo_c_2, memo_c_3])
 
     print("\n ----  Orchestrator Measurement ---- \n")
 
+    client1.protocols[0].start()
+    client2.protocols[0].start()
+    client3.protocols[0].start()
     orch.protocols[0].start(orch)
-    orch.protocols[0].sendOutcomeMessages(tl)
+    tl.run()
 
     # Display the state information (stored in the State Manager!)
     display_state_information(tl=tl, local_memories=[memo_o_1, memo_o_2], remote_memories=[memo_c_1, memo_c_2, memo_c_3])

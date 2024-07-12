@@ -6,8 +6,8 @@ from sequence.components.memory import Memory
 from sequence.message import Message
 from sequence.utils import log
 from .qlan_measurement_protocol import MeasurementProtocol
+from .qlan_correction_protocol import CorrectionProtocol
 
-# WIP
 class ClientStateManager:
     """
     This class represents a GHZ state manager that keeps track of the entangled and empty memories.
@@ -40,10 +40,6 @@ class ClientStateManager:
         self.raw_counter = 0
         self.ent_counter = 0
         
-        # TODO: delete the feature related to measurements at the client.
-        self.bases = 'x'
-
-
     def update(self, memories: list, states: list):
         """
         Updates the number of entangled and empty memories based on the state.
@@ -71,7 +67,7 @@ class ClientStateManager:
 
         # TODO: change to real protocol (correction)
         self.owner.protocols = [
-            MeasurementProtocol(owner=self.owner, name='Measurement Protocol', tl=self.tl, local_memories=memory_objects, remote_memories = self.owner.remote_memory_names, bases = self.bases),
+            CorrectionProtocol(owner=self.owner, name='Correction Protocol', tl=self.tl, local_memories=memory_objects),
         ]
 
 
@@ -130,11 +126,7 @@ class ClientNode(Node):
         self.remote_memories = remote_memories
         self.resource_manager.remote_memories = remote_memories
     
-    # WIP: change to real protocols
-    # Function for receiving classing messages using the chosen protocol
-    def start_measurement(self):
-        self.protocols[0].start()
-
     # Function for receiving classing messages using the chosen protocol
     def receive_message(self, src: str, msg: "Message"):
+        print(f"Received message from {src} at {self.name}")
         self.protocols[0].received_message(src, msg)
