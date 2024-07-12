@@ -7,9 +7,9 @@ from sequence.utils import log
 from sequence.components.optical_channel import ClassicalChannel
 
 # Qlan imports
-from .qlan_orchestrator import OrchestratorNode
-from .linear_graph_state_gen import qlan_entangle_memory
-from .qlan_client import ClientNode
+from ..qlan_orchestrator import OrchestratorNode
+from ..linear_graph_state_gen import qlan_entangle_memory
+from ..qlan_client import ClientNode
 
 
 # TODO: Class for managing experiments. Should be able to instatiate nodes, run experiments and display results with the topology expressed with json files.
@@ -55,10 +55,10 @@ def display_state_information(tl, local_memories, remote_memories):
 
 if __name__ == '__main__':
     # Create a timeline
-    #tl = Timeline()
+    tl = Timeline()
 
-    tl = Timeline(10e12)
-    tl.show_progress = True
+    #tl = Timeline(1e12)
+    tl.show_progress = False
 
     # Create clients (change to client objects)
     client1 = ClientNode('client1', tl)
@@ -87,9 +87,8 @@ if __name__ == '__main__':
     # Get the memories from the node
     memo_o_1 = orch.components[orch.resource_manager.memory1_name]
     memo_o_2 = orch.components[orch.resource_manager.memory2_name]
+    orch.update_bases('xx')
 
-    tl.init()
-    
     # Building the physical topology
     cc_o_c1 = ClassicalChannel("cc_o_c1", tl, 10, 1e9)
     cc_o_c2 = ClassicalChannel("cc_o_c2", tl, 10, 1e9)
@@ -105,13 +104,13 @@ if __name__ == '__main__':
     cc_c2_o.set_ends(client2, orch.name)
     cc_c3_o.set_ends(client3, orch.name)
 
-    orch.update_bases('zz')
-
     orch.resource_manager.create_protocol()
     client1.resource_manager.create_protocol()
     client2.resource_manager.create_protocol()
     client3.resource_manager.create_protocol()
     
+    tl.init()
+
     pair_protocol(orchestrator=orch, clients=[client1, client2, client3])
 
     # Display the state information (stored in the State Manager!)
@@ -123,6 +122,7 @@ if __name__ == '__main__':
     client2.protocols[0].start()
     client3.protocols[0].start()
     orch.protocols[0].start(orch)
+
     tl.run()
 
     # Display the state information (stored in the State Manager!)

@@ -128,5 +128,4 @@ class ClientNode(Node):
     
     # Function for receiving classing messages using the chosen protocol
     def receive_message(self, src: str, msg: "Message"):
-        print(f"Received message from {src} at {self.name}")
         self.protocols[0].received_message(src, msg)

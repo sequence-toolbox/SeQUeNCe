@@ -134,7 +134,7 @@ class MeasurementProtocol(EntanglementProtocol):
         #print(tl.quantum_manager.states[4].state)
 
         # TODO: this messages should be sent only to the adjacent qubits for each orchestrator qubit!
-        print(self.local_memory_identifiers)
+        print("Orchestrator memories identifiers: ",self.local_memory_identifiers)
 
         base_count = 0
         for identifier in self.local_memory_identifiers:
@@ -153,7 +153,7 @@ class MeasurementProtocol(EntanglementProtocol):
                         raise ValueError("Invalid bases. Please use one of the supported bases: x, y, z")
 
                     new_msg = Message(msg_type, self.remote_node_names[i])
-                    print(f"Sending: {new_msg.msg_type} at {self.remote_node_names[i]}.")
+                    print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at at {format(self.tl.now())}")
                     self.owner.send_message(self.remote_node_names[i], new_msg)
                 base_count +=1
 
@@ -170,8 +170,8 @@ class MeasurementProtocol(EntanglementProtocol):
                     else:
                         raise ValueError("Invalid bases. Please use one of the supported bases: x, y, z")
 
-                    new_msg = Message(MsgType.Outcome1, self.remote_node_names[i])
-                    print(f"Sending: {new_msg.msg_type} at {self.remote_node_names[i]}.")
+                    new_msg = Message(MeasurementMsgType.Outcome1, self.remote_node_names[i])
+                    print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at at {format(self.tl.now())}")
                     self.owner.send_message(self.remote_node_names[i], new_msg)
                 base_count +=1
 

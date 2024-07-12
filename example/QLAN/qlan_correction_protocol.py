@@ -106,6 +106,7 @@ class CorrectionProtocol(EntanglementProtocol):
     def received_message(self, src: str, message: Message):
 
         assert src in self.remote_node_names
+        print(f"Received message from {src} at {self.owner.name} at {format(self.tl.now())}")
 
         n = len(self.local_memories)
         self.circuit = Circuit(n)
@@ -129,7 +130,7 @@ class CorrectionProtocol(EntanglementProtocol):
         elif message.msg_type is MeasurementMsgType.Y_Outcome0:
 
             for i in range(n):
-                self.circuit.minus_root_iZ_dg(i)
+                self.circuit.root_iZ(i)
             
             self.perform_correction()
             new_msg = Message(CorrectionMsgType.ACK_Outcome0, src)
@@ -138,7 +139,7 @@ class CorrectionProtocol(EntanglementProtocol):
         elif message.msg_type is MeasurementMsgType.Y_Outcome1:
 
             for i in range(n):
-                self.circuit.root_iZ_dg(i)
+                self.circuit.minus_root_iZ(i)
 
             self.perform_correction()
             new_msg = Message(CorrectionMsgType.ACK_Outcome0, src)

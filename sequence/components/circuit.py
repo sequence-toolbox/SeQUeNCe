@@ -3,7 +3,7 @@
 This module introduces the QuantumCircuit class. The qutip library is used to calculate the unitary matrix of a circuit.
 """
 
-from math import e, pi
+from math import e, pi, sqrt
 from typing import List, Dict, Union, Optional
 
 import numpy as np
@@ -45,6 +45,16 @@ def sdg_gate():
 def t_gate():
     mat = np.array([[1.,   0],
                     [0., e ** (1.j * (pi / 4))]])
+    return Qobj(mat, dims=[[2], [2]])
+
+def root_iZ_gate():
+    mat = 1/sqrt(2)*np.array([[1.+1.j,   0],
+                              [0, 1.-1.j]])
+    return Qobj(mat, dims=[[2], [2]])
+
+def minus_root_iZ_gate():
+    mat = 1/sqrt(2)*np.array([[1.-1.j,   0],
+                              [0, 1.+1.j]])
     return Qobj(mat, dims=[[2], [2]])
 
 
@@ -100,7 +110,9 @@ class Circuit:
                              "Z": z_gate,
                              "S": s_gate,
                              "Sdg": sdg_gate,
-                             "T": t_gate}
+                             "T": t_gate,
+                             "ROOTiZ": root_iZ_gate,
+                             "MINUSROOTiZ": minus_root_iZ_gate}
             for gate in self.gates:
                 name, indices, arg = gate
                 if name == 'h':
@@ -125,6 +137,10 @@ class Circuit:
                     qc.add_gate('S', indices[0])
                 elif name == 'sdg':
                     qc.add_gate('Sdg', indices[0])
+                elif name == 'root_iZ':
+                    qc.add_gate('ROOTiZ', indices[0])
+                elif name == 'minus_root_iZ':
+                    qc.add_gate('MINUSROOTiZ', indices[0])
                 elif name == 'phase':
                     qc.add_gate('PHASEGATE', indices[0], arg_value=arg)
                 else:
@@ -263,6 +279,27 @@ class Circuit:
         """
 
         self.gates.append(['sdg', [qubit], None])
+
+    @validator
+    def root_iZ(self, qubit: int):
+        """Method to apply single Sdg gate on a qubit.
+
+        Args:
+            qubit (int): the index of qubit in the circuit.
+        """
+
+        self.gates.append(['root_iZ', [qubit], None])
+
+    @validator
+    def minus_root_iZ(self, qubit: int):
+        """Method to apply single Sdg gate on a qubit.
+
+        Args:
+            qubit (int): the index of qubit in the circuit.
+        """
+
+        self.gates.append(['minus_root_iZ', [qubit], None])
+    
 
     @validator
     def phase(self, qubit: int, theta: float):

@@ -1,4 +1,5 @@
 import numpy as np
+from math import sqrt
 
 from sequence.components.circuit import Circuit
 from numpy import array, array_equal, identity
@@ -91,6 +92,20 @@ def test_sdg():
     circuit = Circuit(1)
     circuit.sdg(0)
     expect = array([[1, 0], [0, -complex(0, 1)]])
+    assert array_equal(expect, circuit.get_unitary_matrix())
+
+
+def test_root_iZ():
+    circuit = Circuit(1)
+    circuit.root_iZ(0)
+    expect = 1/sqrt(2)*array([[complex(1, 1), 0], [0, complex(1, -1)]])
+    assert array_equal(expect, circuit.get_unitary_matrix())
+
+
+def test_minus_root_iZ():
+    circuit = Circuit(1)
+    circuit.minus_root_iZ(0)
+    expect = 1/sqrt(2)*array([[complex(1, -1), 0], [0, complex(1, 1)]])
     assert array_equal(expect, circuit.get_unitary_matrix())
 
 
