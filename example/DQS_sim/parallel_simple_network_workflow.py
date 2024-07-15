@@ -24,6 +24,7 @@ if __name__ == "__main__":
 
     # simulation params
     num_trials = simulation_config["num_trials"]
+    num_other_nodes = len(simulation_config["applications"]["end_nodes"])
 
     # set up storing data (paths)
     now = datetime.now()
@@ -47,10 +48,25 @@ if __name__ == "__main__":
                                             repeat(output_path),
                                             range(num_trials)))
 
+    # calculate trial distributions
+    results_distribution = {"generated pairs": [0] * (num_other_nodes + 1),
+                            "purified pairs": [0] * (num_other_nodes + 1),
+                            "GHZ generated": 0}
+    for trial_result in results:
+        num_gen_pairs = len([node for node in trial_result["initial entangled states"]
+                             if len(trial_result["initial entangled states"][node]) > 0])
+        num_purified_pairs = len([node for node in trial_result["purified states"]
+                                  if len(trial_result["purified states"][node]) > 0])
+        results_distribution["generated pairs"][num_gen_pairs] += 1
+        results_distribution["purified pairs"][num_purified_pairs] += 1
+        if trial_result["GHZ state"]:
+            results_distribution["GHZ generated"] += 1
+
     print("Finished trials.")
 
     # save data for trials
     data_dict["results"] = results
+    data_dict["results distribution"] = results_distribution
 
     # save output data
     with open(main_results_file, 'w') as fp:
