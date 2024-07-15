@@ -157,8 +157,10 @@ def noisy_meas(fid):
         noisy_meas (List[Qobj])
     """
 
-    povm_0 = fid * basis(2,0) * basis(2,0).dag() + (1-fid) * basis(2,1) * basis(2,1).dag()
-    povm_1 = fid * basis(2,1) * basis(2,1).dag() + (1-fid) * basis(2,0) * basis(2,0).dag()
+    povm_0 = (np.sqrt(fid) * basis(2,0) * basis(2,0).dag() +
+              np.sqrt(1-fid) * basis(2,1) * basis(2,1).dag())
+    povm_1 = (np.sqrt(fid) * basis(2,1) * basis(2,1).dag() +
+              np.sqrt(1-fid) * basis(2,0) * basis(2,0).dag())
 
     return [povm_0, povm_1]
 
