@@ -107,12 +107,6 @@ def dqs_sim(config_file, net_config_file, output_path, trial_no):
 if __name__ == "__main__":
     args = dqs_sim_parser()
 
-    # logging params
-    LOGGING = False
-    LOG_OUTPUT = "results/test_log.log"
-    MODULE_TO_LOG = ["timeline", "purification"]
-    VERBOSE_OUTPUT = False
-
     # open config files
     with open(args.config, 'r') as config:
         simulation_config = json.load(config)

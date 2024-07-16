@@ -18,12 +18,6 @@ def multiprocess_helper(l, f, trial_start, num_trials, *args):
 if __name__ == "__main__":
     args = dqs_sim_parser()
 
-    # logging params
-    LOGGING = False
-    LOG_OUTPUT = "results/test_log.log"
-    MODULE_TO_LOG = ["timeline", "purification"]
-    VERBOSE_OUTPUT = False
-
     # open config files
     with open(args.config, 'r') as config:
         simulation_config = json.load(config)
@@ -61,7 +55,10 @@ if __name__ == "__main__":
 
     # run trials in parallel
     print(f"Running {num_trials} trials for config '{args.config}' and topology '{args.net_config}'")
-    with multiprocessing.Pool(processes=num_trials) as pool:
+    print(f"Number of processes: {num_processes}")
+    tick = time.time()
+
+    with multiprocessing.Pool(processes=num_processes) as pool:
         async_res = pool.starmap_async(multiprocess_helper,
                                        zip(repeat(results),
                                            repeat(dqs_sim),
@@ -74,9 +71,10 @@ if __name__ == "__main__":
         while not async_res.ready():
             time.sleep(1)
             num_finished = len(results)
-            print(f"\tCompleted {num_finished}/{num_trials} trials.")
+            print(f"\tCompleted {num_finished}/{num_trials} trials ({num_finished/num_trials:.0%})")
 
     # calculate trial distributions
+    print("Calculating distributions...")
     results_distribution = {"generated pairs": [0] * (num_other_nodes + 1),
                             "purified pairs": [0] * (num_other_nodes + 1),
                             "GHZ generated": 0}
@@ -90,7 +88,9 @@ if __name__ == "__main__":
         if trial_result["GHZ state"]:
             results_distribution["GHZ generated"] += 1
 
-    print("Finished trials.")
+    print("Finished simulation.")
+    total_time = time.time() - tick
+    print(f"Runtime: {total_time:.3f}s")
 
     # save data for trials
     data_dict["results"] = list(results)
