@@ -4,13 +4,15 @@ import os
 import multiprocessing
 from itertools import repeat
 import time
+import numpy as np
 
 from simple_network_workflow import dqs_sim, dqs_sim_parser
 
 
-def multiprocess_helper(l, f, *args):
-    res = f(*args)
-    l.append(res)
+def multiprocess_helper(l, f, trial_start, num_trials, *args):
+    for trial in range(trial_start, trial_start+num_trials):
+        res = f(*args, trial_no=trial)
+        l.append(res)
 
 
 if __name__ == "__main__":
@@ -46,18 +48,28 @@ if __name__ == "__main__":
         "results": []
     }
 
-    # main simulation loop
+    # setup for multiprocessing
     manager = multiprocessing.Manager()
     results = manager.list()
+
+    num_processes = multiprocessing.cpu_count()
+    trials_per_process = num_trials // num_processes
+    extra = num_trials % num_processes
+    split_trials = trials_per_process * np.ones(num_processes, dtype=int)
+    split_trials[0:extra] += 1
+    trial_start = np.cumsum(split_trials) - split_trials
+
+    # run trials in parallel
     print(f"Running {num_trials} trials for config '{args.config}' and topology '{args.net_config}'")
     with multiprocessing.Pool(processes=num_trials) as pool:
         async_res = pool.starmap_async(multiprocess_helper,
                                        zip(repeat(results),
                                            repeat(dqs_sim),
+                                           trial_start,
+                                           split_trials,
                                            repeat(args.config),
                                            repeat(args.net_config),
-                                           repeat(output_path),
-                                           range(num_trials)))
+                                           repeat(output_path)))
 
         while not async_res.ready():
             time.sleep(1)
