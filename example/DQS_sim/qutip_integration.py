@@ -6,6 +6,42 @@ import numpy as np
 import sequence as sqnc
 from sequence.resource_management.memory_manager import MemoryManager 
 
+import qutip as qt
+from itertools import combinations
+
+
+def calc_scalar_c(rho: qt.Qobj, tol=1e-09):
+    '''Calculates the scalar C. C=2*sum_(a,b)[l_a*l_b/(l_a+l_b)], l_a and l_b
+    are the l_i=<i|rho|i>, where |i> is the generalized Bell basis. The input state
+    is diagonal in the generalized Bell basis so we take the eigenvalue decomposition of rho.
+    l_a and l_b are paired based on oposite relative phase: |a>=|s_1>+|s_2> and |b>=|s_1>-|s_2>,
+    where |s_i> is an element of the standard basis.
+    
+    Args:
+        rho: density matrix
+        tol: numerical tolerance
+    
+    Return
+        C: float'''
+    vec_dim=rho.dims[0][0]
+    std_basis_vecs=list(range(vec_dim)) #integer rep of standard basis elements.
+    std_basis_pairs=list(combinations(std_basis_vecs, 2))
+    c_val=0
+    for idx1, idx2 in std_basis_pairs:
+        # construct matrix representations of basis vectors.
+        vec1=[[0]*vec_dim]
+        vec1[0][idx1]=1
+        vec1=qt.Qobj(vec1)
+        vec2=[[0]*vec_dim]
+        vec2[0][idx2]=1
+        vec2=qt.Qobj(vec2)
+        # eigenvalues
+        val1=((vec1+vec2) * rho * (vec1+vec2).trans().conj()).full()[0][0]
+        val2=((vec1-vec2) * rho * (vec1-vec2).trans().conj()).full()[0][0]
+        if abs(val1+val2)>tol:
+            c_val+=(val1*val2)/(val1+val2)
+    return 4*c_val #multiplying by 4 since the order of the eigenvalues in the sum matters.
+
 
 def purification_result(state1, state2, gate_fid1, gate_fid2, meas_fid1, meas_fid2, is_twirled=True):
     """Function to derive purification success probability and output state.
@@ -401,3 +437,8 @@ if __name__ == "__main__":
     state=np.array([[0,1],[1,0]])
     print(state)
     print(app.bds_to_qobj(state))
+
+    phiP=qt.Qobj([[1/2, 0, 0, 1/2],[0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]])
+    phiM=qt.Qobj([[1/2, 0, 0, -1/2],[0, 0, 0, 0], [0, 0, 0, 0], [-1/2, 0, 0, 1/2]])
+    print(calc_scalar_c(phiP))
+    print(calc_scalar_c(phiM))
