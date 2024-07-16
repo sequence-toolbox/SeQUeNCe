@@ -11,6 +11,7 @@ from ..qlan_orchestrator import OrchestratorNode
 from ..linear_graph_state_gen import qlan_entangle_memory
 from ..qlan_client import ClientNode
 
+DESIRED_OUTCOMES = '11'
 
 # TODO: Class for managing experiments. Should be able to instatiate nodes, run experiments and display results with the topology expressed with json files.
 def pair_protocol(orchestrator: OrchestratorNode, clients: List[ClientNode]):
@@ -81,13 +82,20 @@ if __name__ == '__main__':
     # Create Orchestrator node and clients
     orch = OrchestratorNode('Orchestrator', tl, num_local_memories=2, remote_memories=[memo_c_1, memo_c_2, memo_c_3])
     
-    # Seed to obtain 0s as results measurements at the orchestrator
-    orch.set_seed(2332)
+    # Seed to obtain desired results of the measurements at the orchestrator
+    if DESIRED_OUTCOMES == '00':
+        orch.set_seed(3)
+    elif DESIRED_OUTCOMES == '01':
+        orch.set_seed(2)
+    elif DESIRED_OUTCOMES == '10':
+        orch.set_seed(0)
+    elif DESIRED_OUTCOMES == '11':
+        orch.set_seed(4)
 
     # Get the memories from the node
     memo_o_1 = orch.components[orch.resource_manager.memory1_name]
     memo_o_2 = orch.components[orch.resource_manager.memory2_name]
-    orch.update_bases('xx')
+    orch.update_bases('yy')
 
     # Building the physical topology
     cc_o_c1 = ClassicalChannel("cc_o_c1", tl, 10, 1e9)

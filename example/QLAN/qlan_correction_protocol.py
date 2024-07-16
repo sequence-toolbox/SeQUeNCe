@@ -7,7 +7,7 @@ from sequence.components.optical_channel import ClassicalChannel
 from sequence.message import Message
 from sequence.utils import log
 
-from .qlan_measurement_protocol import MeasurementMsgType
+from .qlan_measurement_protocol import MeasurementMsgType, B0MsgType
 
 
 from enum import Enum, auto
@@ -47,6 +47,7 @@ class CorrectionProtocol(EntanglementProtocol):
         self.owner = owner
         self.name = name
         self.tl = tl
+        self.B0 = False
         
         # Local Memories 
         self.local_memories: list[Memory] = local_memories
@@ -106,12 +107,16 @@ class CorrectionProtocol(EntanglementProtocol):
     def received_message(self, src: str, message: Message):
 
         assert src in self.remote_node_names
-        print(f"Received message from {src} at {self.owner.name} at {format(self.tl.now())}")
+        print(f"\n*-*-*-*-*-*-*-*-* {self.owner.name} *-*-*-*-*-*-*-*-*")
+        print(f"Received message from {src} of type {message.msg_type} at {self.owner.name} at {format(self.tl.now())}")
 
         n = len(self.local_memories)
         self.circuit = Circuit(n)
 
-        if message.msg_type == MeasurementMsgType.Z_Outcome0:
+        if message.msg_type == B0MsgType.B0_Designation:
+            self.B0 = True
+
+        elif message.msg_type == MeasurementMsgType.Z_Outcome0:
 
             # No correction circuit is needed
             new_msg = Message(CorrectionMsgType.ACK_Outcome0, src)
@@ -147,21 +152,33 @@ class CorrectionProtocol(EntanglementProtocol):
         
         elif message.msg_type is MeasurementMsgType.X_Outcome0:
 
-            # TODO: Here, we assume that the node is not b_0, measurement protocol should notify if the node is b_0 (probably Xb0 new message type must be defined).
-            
-            # Please note that : 
-            # the X measurement should be emulated using other message types since the unitaries are the same (z or root_iZ) as the Y and Z measurements...
-            for i in range(n):
-                self.circuit.z(i)
+            if self.B0 == True:
+                for i in range(n):
+                    print(f"Applying minus root iZ")
+                    #self.circuit.minus_root_iY(i)
+                    self.circuit.h(i)
+                self.B0 = False
+            else:
+                for i in range(n):
+                    print(f"Applying Z")
+                    self.circuit.z(i)
 
             self.perform_correction()
             new_msg = Message(CorrectionMsgType.ACK_Outcome0, src)
             self.owner.send_message(self.remote_node_names, new_msg)
         
         elif message.msg_type is MeasurementMsgType.X_Outcome1:
-
-            for i in range(n):
-                self.circuit.z(i)
+            
+            if self.B0 == True:
+                for i in range(n):
+                    print(f"Applying minus root iZ")
+                    #self.circuit.root_iY(i)
+                    self.circuit.h(i)
+                self.B0 = False
+            else:
+                for i in range(n):
+                    print(f"Applying Z")
+                    self.circuit.z(i)
 
             self.perform_correction()
             new_msg = Message(CorrectionMsgType.ACK_Outcome0, src)
