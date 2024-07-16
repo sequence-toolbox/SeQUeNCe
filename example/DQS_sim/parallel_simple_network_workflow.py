@@ -3,8 +3,16 @@ import json
 import os
 import multiprocessing
 from itertools import repeat
+import time
+import numpy as np
 
 from simple_network_workflow import dqs_sim, dqs_sim_parser
+
+
+def multiprocess_helper(l, f, trial_start, num_trials, *args):
+    for trial in range(trial_start, trial_start+num_trials):
+        res = f(*args, trial_no=trial)
+        l.append(res)
 
 
 if __name__ == "__main__":
@@ -40,13 +48,33 @@ if __name__ == "__main__":
         "results": []
     }
 
-    # main simulation loop
+    # setup for multiprocessing
+    manager = multiprocessing.Manager()
+    results = manager.list()
+
+    num_processes = multiprocessing.cpu_count()
+    trials_per_process = num_trials // num_processes
+    extra = num_trials % num_processes
+    split_trials = trials_per_process * np.ones(num_processes, dtype=int)
+    split_trials[0:extra] += 1
+    trial_start = np.cumsum(split_trials) - split_trials
+
+    # run trials in parallel
     print(f"Running {num_trials} trials for config '{args.config}' and topology '{args.net_config}'")
     with multiprocessing.Pool(processes=num_trials) as pool:
-        results = pool.starmap(dqs_sim, zip(repeat(args.config),
-                                            repeat(args.net_config),
-                                            repeat(output_path),
-                                            range(num_trials)))
+        async_res = pool.starmap_async(multiprocess_helper,
+                                       zip(repeat(results),
+                                           repeat(dqs_sim),
+                                           trial_start,
+                                           split_trials,
+                                           repeat(args.config),
+                                           repeat(args.net_config),
+                                           repeat(output_path)))
+
+        while not async_res.ready():
+            time.sleep(1)
+            num_finished = len(results)
+            print(f"\tCompleted {num_finished}/{num_trials} trials.")
 
     # calculate trial distributions
     results_distribution = {"generated pairs": [0] * (num_other_nodes + 1),
@@ -65,7 +93,7 @@ if __name__ == "__main__":
     print("Finished trials.")
 
     # save data for trials
-    data_dict["results"] = results
+    data_dict["results"] = list(results)
     data_dict["results distribution"] = results_distribution
 
     # save output data
