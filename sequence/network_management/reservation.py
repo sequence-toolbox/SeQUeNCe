@@ -90,6 +90,11 @@ def eg_rule_action2(memories_info: List["MemoryInfo"], args: Arguments) -> Tuple
 
 def eg_req_func(protocols: List["EntanglementProtocol"], args: Arguments) -> EntanglementGenerationA:
     """Function used by `eg_rule_action2` function for selecting generation protocols on the remote node
+    Args:
+        protocols: the waiting protocols (wait for request)
+        args: arguments from the node who sent the request
+    Return:
+        the selected protocol
     """
     name = args["name"]
     reservation = args["reservation"]
@@ -262,7 +267,7 @@ def es_rule_conditionB1(memory_info: "MemoryInfo", manager: "MemoryManager", arg
     """Condition function used by EntanglementSwappingB protocol on nodes of either responder or initiator
     """
     memory_indices = args["memory_indices"]
-    target_remote = args["target_remote"]
+    target_remote = args["target_remote"]  # A - B - C. For A: B is the remote node, C is the target remote
     fidelity = args["fidelity"]
     if (memory_info.state == "ENTANGLED"
             and memory_info.index in memory_indices

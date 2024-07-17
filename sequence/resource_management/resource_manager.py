@@ -20,6 +20,9 @@ from .rule_manager import RuleManager
 from .memory_manager import MemoryManager
 
 
+RequestConditionFunc = Callable[[List["EntanglementProtocol"]], "EntanglementProtocol"]
+
+
 class ResourceManagerMsgType(Enum):
     """Available message types for the ResourceManagerMessage."""
 
@@ -80,8 +83,6 @@ class ResourceManagerMessage(Message):
     def __str__(self) -> str:
         return self.string
 
-
-RequestConditionFunc = Callable[[List["EntanglementProtocol"]], "EntanglementProtocol"]
 
 
 class ResourceManager:
@@ -146,8 +147,8 @@ class ResourceManager:
     def expire(self, rule: "Rule") -> None:
         """Method to remove expired rule.
 
-        Will update rule in rule manager.
-        Will also update and modify protocols connected to the rule (if they have already been created).
+        Will update (remove) rule in rule manager.
+        Will also update (remove) protocols connected to the rule (if they have already been created, and not finished yet).
 
         Args:
             rule (Rule): rule to remove.
@@ -173,7 +174,7 @@ class ResourceManager:
         """Method to update state of memory after completion of entanglement management protocol.
 
         Args:
-            protocol (EntanglementProtocol): concerned protocol.
+            protocol (EntanglementProtocol): concerned protocol. If not None, then remove it from everywhere
             memory (Memory): memory to update.
             state (str): new state for the memory.
 
@@ -197,7 +198,7 @@ class ResourceManager:
         if protocol in self.pending_protocols:
             self.pending_protocols.remove(protocol)
 
-        # check if any rules have been met
+        # iterate all the ruls and check if there is a valid rule
         memo_info = self.memory_manager.get_info_by_memory(memory)
         for rule in self.rule_manager:
             memories_info = rule.is_valid(memo_info)
@@ -212,7 +213,7 @@ class ResourceManager:
     def get_memory_manager(self):
         return self.memory_manager
 
-    def send_request(self, protocol: "EntanglementProtocol", req_dst: str,
+    def send_request(self, protocol: "EntanglementProtocol", req_dst: Optional[str],
                      req_condition_func: RequestConditionFunc, req_args: Arguments):
         """Method to send protocol request to another node.
 
@@ -283,7 +284,7 @@ class ResourceManager:
                 return
 
             if msg.is_approved:
-                protocol.set_others(msg.paired_protocol, msg.paired_node, msg.paired_memories)
+                protocol.set_others(msg.paired_protocol, msg.paired_node, msg.paired_memories)  # pairing (cost one round-trip-time)
                 if protocol.is_ready():
                     self.pending_protocols.remove(protocol)
                     self.owner.protocols.append(protocol)

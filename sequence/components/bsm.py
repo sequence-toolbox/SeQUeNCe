@@ -492,20 +492,20 @@ class SingleAtomBSM(BSM):
                     log.logger.info("Triggering detector {}".format(detector_num))
                     self.detectors[detector_num].get()   # middle BSM node notify two end nodes via EntanglementGenerationB.bsm_update()
                 else:
-                    log.logger.info(f'Oops, photon p{meas1} is lost')
+                    log.logger.info(f'Oops! photon p{meas1} is lost')
 
             else: # meas0, meas1 = 1, 1
                 if meas0 and self.get_generator().random() > p0.loss:
                     detector_num = self.get_generator().choice([0, 1])
                     self.detectors[detector_num].get()
                 else:
-                    log.logger.info(f'Oops, photon p0 is lost')
+                    log.logger.info(f'Oops! photon p0 is lost')
 
                 if meas1 and self.get_generator().random() > p1.loss:
                     detector_num = self.get_generator().choice([0, 1])
                     self.detectors[detector_num].get()
                 else:
-                    log.logger.info(f'Oops, photon p1 is lost')
+                    log.logger.info(f'Oops! photon p1 is lost')
 
     def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.

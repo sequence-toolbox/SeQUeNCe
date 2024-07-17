@@ -31,6 +31,7 @@ class RequestApp:
             memory_counter (int): number of successfully received memories
             path (List[str]): the path of flow denoted by a list of node names
             memo_to_reserve (Dict[int, Reservation]): mapping of memory index to corresponding reservation.
+            name (str): the name of the app
     """
 
     def __init__(self, node: QuantumRouter):
@@ -45,7 +46,7 @@ class RequestApp:
         self.memory_counter: int = 0
         self.path: List[str] = []
         self.memo_to_reserve: Dict[int, Reservation] = {}
-        self.name: str = ""
+        self.name: str = f"{self.node.name}.RequestApp"
 
     def start(self, responder: str, start_t: int, end_t: int, memo_size: int, fidelity: float):
         """Method to start the application.
@@ -141,3 +142,6 @@ class RequestApp:
 
     def set_name(self, name: str):
         self.name = name
+
+    def __str__(self) -> str:
+        return self.name

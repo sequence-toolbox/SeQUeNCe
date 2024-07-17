@@ -177,7 +177,7 @@ class EntanglementSwappingA(EntanglementProtocol):
                                                 self.left_protocol_name, fidelity=fidelity,
                                                 remote_node=self.right_memo.entangled_memory["node_id"],
                                                 remote_memo=self.right_memo.entangled_memory["memo_id"],
-                                                expire_time=expire_time, meas_res=[])
+                                                expire_time=expire_time, meas_res=[])  # empty meas_res
             msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, 
                                                 self.right_protocol_name, fidelity=fidelity,
                                                 remote_node=self.left_memo.entangled_memory["node_id"],

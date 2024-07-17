@@ -390,10 +390,10 @@ class QuantumRouter(Node):
             self.app.get_reserve_res(reservation, res)
 
     def get_other_reservation(self, reservation: "Reservation"):
-        """Method for application to receive another reservation."""
+        """Method for application to add the approved reservation that is requested by other nodes"""
 
         if self.app:
-            self.app.get_other_reservation(reservation) # NOTE Caitao: ?
+            self.app.get_other_reservation(reservation)
 
 
 class QKDNode(Node):
