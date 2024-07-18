@@ -154,7 +154,7 @@ class CorrectionProtocol(EntanglementProtocol):
 
             if self.B0 == True:
                 for i in range(n):
-                    print(f"Applying minus root iZ")
+                    print(f"Applying minus root iY")
                     #self.circuit.minus_root_iY(i)
                     self.circuit.h(i)
                 self.B0 = False
@@ -171,7 +171,7 @@ class CorrectionProtocol(EntanglementProtocol):
             
             if self.B0 == True:
                 for i in range(n):
-                    print(f"Applying minus root iZ")
+                    print(f"Applying root iY")
                     #self.circuit.root_iY(i)
                     self.circuit.h(i)
                 self.B0 = False

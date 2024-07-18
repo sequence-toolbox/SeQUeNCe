@@ -59,7 +59,9 @@ class MeasurementProtocol(EntanglementProtocol):
         #print("Local memories: ", self.local_memory_identifiers)
 
         self.bases: str = bases
-        self.remote_node_names = remote_memories
+
+        # N_a u N_{\hat a}
+        self.remote_node_names = remote_memories    
         
         self.remote_protocol_names = []
         self.remote_memories = []
@@ -139,101 +141,130 @@ class MeasurementProtocol(EntanglementProtocol):
         base_count = 0
         for identifier in self.local_memory_identifiers:
 
+            print("current identifier: ",identifier)
+
             # Case Outcome "0"
             if (tl.quantum_manager.states[identifier].state == [1.+0.j, 0.+0.j]).any():
                 
-                for i in self.owner.adjacent_nodes[identifier]:
-                    
-                    b0 = None
-                    print(f"\n*-*-*-*-*-*-*-*-* {self.owner.name} *-*-*-*-*-*-*-*-*")
-                    # Case of Measurement in the Z basis
-                    if self.bases[base_count] == "z" or self.bases[base_count] == "Z":
-                        msg_type = MeasurementMsgType.Z_Outcome0
-                        new_msg = Message(msg_type, self.remote_node_names[i])
-                        print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
-                        self.owner.send_message(self.remote_node_names[i], new_msg)
+                Na = self.owner.adjacent_nodes[identifier]
+                Nb0 = []
+                dest_sample = []
+                b0 = None
 
-                    # Case of Measurement in the X basis
-                    elif self.bases[base_count] == "y" or self.bases[base_count] == "Y":
-                        msg_type = MeasurementMsgType.Y_Outcome0
-                        new_msg = Message(msg_type, self.remote_node_names[i])
-                        print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
-                        self.owner.send_message(self.remote_node_names[i], new_msg)
+                print("Na is now updated! ", Na)
                     
-                    # Case of Measurement in the X basis
-                    elif self.bases[base_count] == "x" or self.bases[base_count] == "X":
-                        msg_type = MeasurementMsgType.X_Outcome0
-                        b0 = self.owner.adjacent_nodes[identifier][1]
-                        # Sending "b_0" message to che chosen node (first available node in the adjacency list -- choice is arbitary):
-                        if b0 == i:
-                            print(f"Selected b0 = {b0} from {self.owner.adjacent_nodes}")
-                            new_msg = Message(B0MsgType.B0_Designation, self.remote_node_names[i])
-                            print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
-                            self.owner.send_message(self.remote_node_names[i], new_msg)
+                print(f"\n*-*-*-*-*-*-*-*-* {self.owner.name} *-*-*-*-*-*-*-*-*")
+                # Case of Measurement in the Z basis
+                if self.bases[base_count] == "z" or self.bases[base_count] == "Z":
+                    msg_type = MeasurementMsgType.Z_Outcome0
+                    dest_sample = Na
                         
-                        # Sending the outcomes to {b0} u {N_a \ (N_b0 u {b0})}
-                        dest_sample = [val for val in self.owner.adjacent_nodes[identifier] if val != b0]
-                        dest_sample.append(b0)
+                    #new_msg = Message(msg_type, self.remote_node_names[i])
+                    #print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
+                    #self.owner.send_message(self.remote_node_names[i], new_msg)
 
-                        new_msg = Message(msg_type, self.remote_node_names[i])
-                        print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
-                        self.owner.send_message(self.remote_node_names[i], new_msg)
+                # Case of Measurement in the X basis
+                elif self.bases[base_count] == "y" or self.bases[base_count] == "Y":
+                    msg_type = MeasurementMsgType.Y_Outcome0
+                    dest_sample = Na
+                    #new_msg = Message(msg_type, self.remote_node_names[i])
+                    #print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
+                    #self.owner.send_message(self.remote_node_names[i], new_msg)
+                    
+                # Case of Measurement in the X basis
+                elif self.bases[base_count] == "x" or self.bases[base_count] == "X":
+                    msg_type = MeasurementMsgType.X_Outcome0
+                    b0 = Na[1]
+                    # Sending "b_0" message to che chosen node (first available node in the adjacency list -- choice is arbitary):
+                    #if b0 == i:
+                    print(f"Selected b0 = {b0} from {self.owner.adjacent_nodes}")
+                    Nb0 = [key for key, value in self.owner.adjacent_nodes.items() if b0 in value]
+                    print("Nb0 is now updated! ", Nb0)
+                    new_msg = Message(B0MsgType.B0_Designation, self.remote_node_names[b0])
+                    print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[b0]} at {format(self.tl.now())}")
+                    self.owner.send_message(self.remote_node_names[b0], new_msg)
+                        
+                    # Sending the outcomes to {b0} u {N_a \ (N_b0 u {b0})}
+                    dest_sample = [node for node in Na if node not in Nb0 and node != b0]
+                    dest_sample.append(b0)
+                    print("DEST SAMPLE HERE: ",dest_sample)
+                    #dest_sample = [val for val in self.owner.adjacent_nodes[identifier] if val != b0]
+                    #dest_sample.append(b0)
 
-                    # Unknown measurement basis
-                    else:
-                        raise ValueError("Invalid bases. Please use one of the supported bases: x, y, z")
-
-                self.update_adjacent_nodes(self.local_memory_identifiers[base_count], b0)                    
-                base_count +=1
-                
+                # Unknown measurement basis
+                else:
+                    raise ValueError("Invalid bases. Please use one of the supported bases: x, y, z")
+                    
+                for dest in dest_sample:
+                    new_msg = Message(msg_type, self.remote_node_names[dest])
+                    print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[dest]} at {format(self.tl.now())}")
+                    #print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
+                    self.owner.send_message(self.remote_node_names[dest], new_msg)
                     
             # Case Outcome "1"
             if (tl.quantum_manager.states[identifier].state == [0.+0.j, 1.+0.j]).any():
                 
-                for i in self.owner.adjacent_nodes[identifier]:
-                    
-                    b0 = None
-                    print(f"\n*-*-*-*-*-*-*-*-* {self.owner.name} *-*-*-*-*-*-*-*-*")
-                    # Case of Measurement in the Z basis
-                    if self.bases[base_count] == "z" or self.bases[base_count] == "Z":
-                        msg_type = MeasurementMsgType.Z_Outcome1
-                        new_msg = Message(msg_type, self.remote_node_names[i])
-                        print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
-                        self.owner.send_message(self.remote_node_names[i], new_msg)
+                Na = self.owner.adjacent_nodes[identifier]
+                Nb0 = []
+                dest_sample = []
+                b0 = None
 
-                    # Case of Measurement in the X basis
-                    elif self.bases[base_count] == "y" or self.bases[base_count] == "Y":
-                        msg_type = MeasurementMsgType.Y_Outcome1
-                        new_msg = Message(msg_type, self.remote_node_names[i])
-                        print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
-                        self.owner.send_message(self.remote_node_names[i], new_msg)
+                print("Na is now updated! ", Na)
                     
-                    # Case of Measurement in the X basis
-                    elif self.bases[base_count] == "x" or self.bases[base_count] == "X":
-                        msg_type = MeasurementMsgType.X_Outcome1
-                        b0 = self.owner.adjacent_nodes[identifier][1]
-                        # Sending "b_0" message to che chosen node (first available node in the adjacency list -- choice is arbitary):
-                        if b0 == i:
-                            print(f"Selected b0 = {b0} from {self.owner.adjacent_nodes}")
-                            new_msg = Message(B0MsgType.B0_Designation, self.remote_node_names[i])
-                            print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
-                            self.owner.send_message(self.remote_node_names[i], new_msg)
+                print(f"\n*-*-*-*-*-*-*-*-* {self.owner.name} *-*-*-*-*-*-*-*-*")
+                # Case of Measurement in the Z basis
+                if self.bases[base_count] == "z" or self.bases[base_count] == "Z":
+                    msg_type = MeasurementMsgType.Z_Outcome1
+                    dest_sample = Na
                         
-                        # Sending the outcomes to {b0} u {N_b0 \ (N_a u {a})}
-                        # TODO FIX THIS with formula written above
-                        dest_sample = [val for val in self.owner.adjacent_nodes[identifier] if val != b0]
-                        dest_sample.append(b0)
+                    #new_msg = Message(msg_type, self.remote_node_names[i])
+                    #print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
+                    #self.owner.send_message(self.remote_node_names[i], new_msg)
 
-                        new_msg = Message(msg_type, self.remote_node_names[i])
-                        print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
-                        self.owner.send_message(self.remote_node_names[i], new_msg)
+                # Case of Measurement in the X basis
+                elif self.bases[base_count] == "y" or self.bases[base_count] == "Y":
+                    msg_type = MeasurementMsgType.Y_Outcome1
+                    dest_sample = Na
+                    #new_msg = Message(msg_type, self.remote_node_names[i])
+                    #print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
+                    #self.owner.send_message(self.remote_node_names[i], new_msg)
+                    
+                # Case of Measurement in the X basis
+                elif self.bases[base_count] == "x" or self.bases[base_count] == "X":
+                    msg_type = MeasurementMsgType.X_Outcome1
+                    b0 = Na[1]
+                    # Sending "b_0" message to che chosen node (first available node in the adjacency list -- choice is arbitary):
+                    #if b0 == i:
+                    print(f"Selected b0 = {b0} from {self.owner.adjacent_nodes}")
+                    Nb0 = [key for key, value in self.owner.adjacent_nodes.items() if b0 in value]
+                    print("Nb0 is now updated! ", Nb0)
+                    new_msg = Message(B0MsgType.B0_Designation, self.remote_node_names[b0])
+                    print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[b0]} at {format(self.tl.now())}")
+                    self.owner.send_message(self.remote_node_names[b0], new_msg)
+                        
+                    # Sending the outcomes to {b0} u {N_a \ (N_b0 u {b0})}
+                    dest_sample = [node for node in Nb0 if node not in Na and node != self.local_memory_identifiers[base_count]]
+                    dest_sample.append(b0)
+                    print("DEST SAMPLE HERE: ",dest_sample)
+                    #dest_sample = [val for val in self.owner.adjacent_nodes[identifier] if val != b0]
+                    #dest_sample.append(b0)
 
-                    # Unknown measurement basis
-                    else:
-                        raise ValueError("Invalid bases. Please use one of the supported bases: x, y, z")
+                # Unknown measurement basis
+                else:
+                    raise ValueError("Invalid bases. Please use one of the supported bases: x, y, z")
+                    
+                for dest in dest_sample:
+                    # Fixing corrections at orchestrator
+                    if dest >= len(self.remote_node_names):
+                        dest = dest % len(self.remote_node_names)
 
-                self.update_adjacent_nodes(self.local_memory_identifiers[base_count], b0)                    
-                base_count +=1
+                    new_msg = Message(msg_type, self.remote_node_names[dest])
+                    print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[dest]} at {format(self.tl.now())}")
+                    #print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
+                    self.owner.send_message(self.remote_node_names[dest], new_msg)
+
+            self.update_adjacent_nodes(self.local_memory_identifiers[base_count], b0)                    
+            base_count +=1
 
     def update_adjacent_nodes(self, current_key, b0 = None):
         saved_values = []
