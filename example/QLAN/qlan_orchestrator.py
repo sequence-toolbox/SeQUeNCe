@@ -1,36 +1,24 @@
-from .qlan_measurement_protocol import MeasurementProtocol
 from typing import List
 from sequence.topology.node import Node
 from sequence.kernel.timeline import Timeline
 from sequence.components.memory import Memory
 from sequence.message import Message
 from sequence.utils import log
-from .qlan_measurement_protocol import MeasurementProtocol
+from .qlan_measurement_protocol import QlanMeasurementProtocol
 from .linear_graph_state_gen import generate_g_state
 
-# WIP
-class OrchestratorStateManager:
+class QlanOrchestratorStateManager:
     """
-    This class represents a GHZ state manager that keeps track of the entangled and empty memories.
+    This class represents a state manager for the QLAN Orchestrator node.
     It provides methods to update the state of the memories and create a protocol for the owner.
 
-    Attributes:
+    Args:
         owner (object): The owner object.
+        tl (Timeline): The timeline object.
         memory_names (list): The names of the memories.
         bases (str): The set of bases.
-        raw_counter (int): The counter for the number of RAW states.
-        ent_counter (int): The counter for the number of entangled states.
     """
-
     def __init__(self, owner, tl, memory_names):
-        """
-        Initializes a new instance of the OrchestratorStateManager class.
-
-        Args:
-            owner (object): The owner object.
-            memory_names (list): The names of the memories.
-            bases (str): The set of bases.
-        """
         self.owner = owner
         self.tl = tl
         self.memory_names = memory_names
@@ -58,16 +46,13 @@ class OrchestratorStateManager:
 
     def create_protocol(self):
         """
-        Sets the memories of the manager equal to the owner's memories and sets the owner's protocol to DynamicLocalGHZprotocol.
+        Sets the memories of the manager equal to the owner's memories and sets the owner's protocol to QlanMeasurementProtocol.
         """
         memory_objects = [self.owner.components[memory_name] for memory_name in self.memory_names]
         
-        # Trying measurement protocol
-        # self.owner.protocols = [MeasurementProtocol(self.owner, 'Measurement Protocol', memory_objects, base = 'y')]
-
         # Trying adaptive measurement protocol
         self.owner.protocols = [
-            MeasurementProtocol(owner=self.owner, name='Measurement Protocol', tl=self.tl, local_memories=memory_objects, remote_memories = self.owner.remote_memory_names, bases = self.bases),
+            QlanMeasurementProtocol(owner=self.owner, name='Measurement Protocol', tl=self.tl, local_memories=memory_objects, remote_memories = self.owner.remote_memory_names, bases = self.bases),
         ]
     
     # TODO: function for state generation (abstract generation, without real distribution of states). May be extended with teleportation protocols
@@ -85,14 +70,6 @@ class OrchestratorStateManager:
         for memo in remote_memories:
             memo.reset()
         
-        # DEBUG
-        # for i in range(len(remote_memories)):
-        #    print(remote_memories[i].qstate_key)
-
-        #for i in range(len(local_memories)):
-        #    print(local_memories[i].qstate_key)
-
-
         combined_memories = []
         min_size = min(len(remote_memories), len(local_memories))
         for i in range(min_size):
@@ -105,20 +82,15 @@ class OrchestratorStateManager:
         else:
             combined_memories.extend(local_memories[min_size:])
 
-        # DEBUG
-        # for memo in combined_memories:
-        #    print(memo.qstate_key)
-
         qstate_keys = [memo.qstate_key for memo in combined_memories]
 
-        # print(qstate_keys)
         tl.quantum_manager.set(qstate_keys, g_state)
 
         # Find adjacent nodes
         self.owner.find_adjacent_nodes(tl, remote_memories)
 
 
-class OrchestratorNode(Node):
+class QlanOrchestratorNode(Node):
     """
     This class represents a network node that shares a GHZ state.
     It inherits from the class "Node" and adds the memories as components and the simple manager.
@@ -153,8 +125,8 @@ class OrchestratorNode(Node):
         local_memories = [Memory(name=memory_name, timeline=tl, fidelity=0.9, frequency=2000, efficiency=1, coherence_time=-1, wavelength=500) for memory_name in self.local_memory_names]
 
         # Check if the number of memories is greater than 5
-        if len(local_memories) + len(remote_memories) > 5:
-            raise ValueError("The minimum number of memories allowed is 5.")
+        if len(local_memories) != len(remote_memories)-1:
+            raise ValueError("The number of local memories is invalid! ")
         
         # Adding local memories components
         for memory in local_memories:
@@ -164,7 +136,7 @@ class OrchestratorNode(Node):
         self.bases = 'z' * len(local_memories)
 
         # Adding resource manager
-        self.resource_manager = OrchestratorStateManager(owner=self, tl=tl, memory_names=self.local_memory_names)
+        self.resource_manager = QlanOrchestratorStateManager(owner=self, tl=tl, memory_names=self.local_memory_names)
 
         # Generation of a chain graph state (abstract)
         self.resource_manager.generate_chain_state(tl, local_memories, remote_memories)
@@ -173,7 +145,6 @@ class OrchestratorNode(Node):
 
         self.adjacent_nodes = {}
         
-        # TODO: Target keys should be 3 and 4: we are supposing that client memories have smaller indices than orchestration memories. This code should be generalized for a greater number of memories.
         target_keys = list(range(len(remote_memories), len(remote_memories) + len(self.local_memory_names)))
 
         target_array = tl.quantum_manager.states[0].keys

@@ -6,17 +6,17 @@ from sequence.message import Message
 from sequence.utils import log
 from sequence.components.optical_channel import ClassicalChannel
 
-# Qlan imports
-from ..qlan_orchestrator import OrchestratorNode
+# QLAN Imports
+from ..qlan_orchestrator import QlanOrchestratorNode
 from ..linear_graph_state_gen import qlan_entangle_memory
-from ..qlan_client import ClientNode
+from ..qlan_client import QlanClientNode
 import random
 
 DESIRED_OUTCOMES = '00'
 #DESIRED_OUTCOMES = 'random'
 
 # TODO: Class for managing experiments. Should be able to instatiate nodes, run experiments and display results with the topology expressed with json files.
-def pair_protocol(orchestrator: OrchestratorNode, clients: List[ClientNode]):
+def pair_protocol(orchestrator: QlanOrchestratorNode, clients: List[QlanClientNode]):
     
     # WIP: associate memories correctly, modify set_others if needed
     p_orch = orchestrator.protocols[0]
@@ -64,9 +64,9 @@ if __name__ == '__main__':
     tl.show_progress = False
 
     # Create clients (change to client objects)
-    client1 = ClientNode('client1', tl)
-    client2 = ClientNode('client2', tl)
-    client3 = ClientNode('client3', tl)
+    client1 = QlanClientNode('client1', tl)
+    client2 = QlanClientNode('client2', tl)
+    client3 = QlanClientNode('client3', tl)
     client1.set_seed(224)
     client2.set_seed(225)
     client3.set_seed(226)
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     memo_c_3 = client3.get_components_by_type("Memory")[0]
 
     # Create Orchestrator node and clients
-    orch = OrchestratorNode('Orchestrator', tl, num_local_memories=2, remote_memories=[memo_c_1, memo_c_2, memo_c_3])
+    orch = QlanOrchestratorNode('Orchestrator', tl, num_local_memories=2, remote_memories=[memo_c_1, memo_c_2, memo_c_3])
     
     # Seed to obtain desired results of the measurements at the orchestrator
     if DESIRED_OUTCOMES == '00':
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     # Get the memories from the node
     memo_o_1 = orch.components[orch.resource_manager.memory1_name]
     memo_o_2 = orch.components[orch.resource_manager.memory2_name]
-    orch.update_bases('xz')
+    orch.update_bases('yy')
 
     # Building the physical topology
     cc_o_c1 = ClassicalChannel("cc_o_c1", tl, 10, 1e9)

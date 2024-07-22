@@ -10,7 +10,7 @@ from sequence.utils import log
 
 from enum import Enum, auto
 
-class MeasurementMsgType(Enum):
+class QlanMeasurementMsgType(Enum):
     Z_Outcome0 = auto()
     Z_Outcome1 = auto()
     Y_Outcome0 = auto()
@@ -18,36 +18,28 @@ class MeasurementMsgType(Enum):
     X_Outcome0 = auto()
     X_Outcome1 = auto()
 
-class B0MsgType(Enum):
+class QlanB0MsgType(Enum):
     B0_Designation = auto()
 
-class MeasurementProtocol(EntanglementProtocol):
+class QlanMeasurementProtocol(EntanglementProtocol):
     """Protocol for the measurement of qubits retained at the orchestrator.
 
-    This class provides an implementation of this protocol. 
+    This class provides an implementation of the measurement protocol for qubits that are retained at the orchestrator. 
     It should be instantiated on an orchestrator node.
 
     Variables:
         circuit (Circuit): Circuit that performs the measurements.
 
     Attributes:
-        owner (Node): Node that protocol instance is attached to.
-        name (str): Label for protocol instance.
+        owner (Node): Node that the protocol instance is attached to.
+        name (str): Label for the protocol instance.
         local_memories (list[Memory]): Memories at the orchestrator.
         remote_memories (list[str]): Names of memories on the client nodes.
         bases (str): Bases for the measurements (one for each qubit).
     """
 
     def __init__(self, owner: "Node", name: str, tl: "Timeline", local_memories: list[Memory], remote_memories: list[Memory], bases: str):
-        """Initialize the local measurement protocol.
 
-        Args:
-            owner (Node): The node that owns this protocol instance.
-            name (str): The name of this protocol instance.
-            local_memories (list[Memory]): List of local memories at the orchestrator.
-            remote_memories (list[Memory]): List of remote memories on the client nodes.
-            bases (str): Bases for the measurements (one for each qubit).
-        """
         super().__init__(owner, name)
         self.owner = owner
         self.name = name
@@ -55,10 +47,8 @@ class MeasurementProtocol(EntanglementProtocol):
         
         # Local Memories 
         self.local_memories: list[Memory] = local_memories
-        
         self.local_memory_identifiers = list(owner.adjacent_nodes.keys())
-        #print("Local memories: ", self.local_memory_identifiers)
-
+        
         self.bases: str = bases
 
         # N_a u N_{\hat a}
@@ -66,7 +56,6 @@ class MeasurementProtocol(EntanglementProtocol):
         
         self.remote_protocol_names = []
         self.remote_memories = []
-        #self.adjacent_nodes = owner.adjacent_nodes
 
         n = len(local_memories)  # Number of qubits (and memories)
         
@@ -95,7 +84,7 @@ class MeasurementProtocol(EntanglementProtocol):
 
 
     def is_ready(self) -> bool:
-        """Check if the protocol is ready to start (always ready if the distribution is not considered).
+        """Check if the protocol is ready to start.
 
         Returns:
             bool: True if the protocol is ready, False otherwise.
@@ -116,7 +105,11 @@ class MeasurementProtocol(EntanglementProtocol):
         self.message_list = defaultdict(list)
     
     def start(self, tl) -> None:
-        """Start the measurement protocol."""
+        """Start the measurement protocol.
+
+        Args:
+            tl (Timeline): The timeline object for tracking the progress of the protocol.
+        """
         log.logger.info(f"{self.name} protocol starts at node {self.owner.name}")
 
         # Execute the quantum circuit to perform the measurements
@@ -129,7 +122,16 @@ class MeasurementProtocol(EntanglementProtocol):
         self.send_outcome_messages(self.tl)
 
     def send_outcome_messages(self, tl: "Timeline"):
-        # Please notice that the index is given by the order of the memories in the list declared in main
+        '''Send the outcomes of the measurements to the clients, based on the measurement outcomes and chosen bases.
+
+        Args:
+            tl (Timeline): The timeline object.
+
+        Returns:
+            None
+        '''
+
+        # Please notice that the index is given by the order of the memories in the list declared in main.py
 
         print("Init message_list: ", self.message_list)
         
@@ -153,7 +155,7 @@ class MeasurementProtocol(EntanglementProtocol):
                 print(f"\n*-*-*-*-*-*-*-*-* {self.owner.name} *-*-*-*-*-*-*-*-*")
                 # Case of Measurement in the Z basis
                 if self.bases[base_count] == "z" or self.bases[base_count] == "Z":
-                    msg_type = MeasurementMsgType.Z_Outcome0
+                    msg_type = QlanMeasurementMsgType.Z_Outcome0
                     dest_sample = Na
                     
                     for dest in dest_sample:
@@ -163,13 +165,10 @@ class MeasurementProtocol(EntanglementProtocol):
                             self.message_list[dest] = [msg_type]
 
                     print("MESSAGE LIST HERE: ",self.message_list)
-                    #new_msg = Message(msg_type, self.remote_node_names[i])
-                    #print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
-                    #self.owner.send_message(self.remote_node_names[i], new_msg)
 
                 # Case of Measurement in the X basis
                 elif self.bases[base_count] == "y" or self.bases[base_count] == "Y":
-                    msg_type = MeasurementMsgType.Y_Outcome0
+                    msg_type = QlanMeasurementMsgType.Y_Outcome0
                     dest_sample = Na
                     
                     for dest in dest_sample:
@@ -179,20 +178,17 @@ class MeasurementProtocol(EntanglementProtocol):
                             self.message_list[dest] = [msg_type]
 
                     print("MESSAGE LIST HERE: ",self.message_list)
-                    #new_msg = Message(msg_type, self.remote_node_names[i])
-                    #print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
-                    #self.owner.send_message(self.remote_node_names[i], new_msg)
                     
                 # Case of Measurement in the X basis
                 elif self.bases[base_count] == "x" or self.bases[base_count] == "X":
-                    msg_type = MeasurementMsgType.X_Outcome0
+                    msg_type = QlanMeasurementMsgType.X_Outcome0
                     b0 = Na[1]
                     # Sending "b_0" message to che chosen node (first available node in the adjacency list -- choice is arbitary):
                     #if b0 == i:
                     print(f"Selected b0 = {b0} from {self.owner.adjacent_nodes}")
                     Nb0 = [key for key, value in self.owner.adjacent_nodes.items() if b0 in value]
                     print("Nb0 is now updated! ", Nb0)
-                    new_msg = Message(B0MsgType.B0_Designation, self.remote_node_names[b0])
+                    new_msg = Message(QlanB0MsgType.B0_Designation, self.remote_node_names[b0])
                     print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[b0]} at {format(self.tl.now())}")
                     self.owner.send_message(self.remote_node_names[b0], new_msg)
                         
@@ -207,9 +203,6 @@ class MeasurementProtocol(EntanglementProtocol):
                             self.message_list[dest] = [msg_type]
 
                     print("MESSAGE LIST HERE: ",self.message_list)
-                    
-                    #dest_sample = [val for val in self.owner.adjacent_nodes[identifier] if val != b0]
-                    #dest_sample.append(b0)
 
                 # Unknown measurement basis
                 else:
@@ -228,7 +221,7 @@ class MeasurementProtocol(EntanglementProtocol):
                 print(f"\n*-*-*-*-*-*-*-*-* {self.owner.name} *-*-*-*-*-*-*-*-*")
                 # Case of Measurement in the Z basis
                 if self.bases[base_count] == "z" or self.bases[base_count] == "Z":
-                    msg_type = MeasurementMsgType.Z_Outcome1
+                    msg_type = QlanMeasurementMsgType.Z_Outcome1
                     dest_sample = Na
 
                     for dest in dest_sample:
@@ -241,7 +234,7 @@ class MeasurementProtocol(EntanglementProtocol):
                     
                 # Case of Measurement in the X basis
                 elif self.bases[base_count] == "y" or self.bases[base_count] == "Y":
-                    msg_type = MeasurementMsgType.Y_Outcome1
+                    msg_type = QlanMeasurementMsgType.Y_Outcome1
                     dest_sample = Na
                     
                     for dest in dest_sample:
@@ -254,14 +247,14 @@ class MeasurementProtocol(EntanglementProtocol):
 
                 # Case of Measurement in the X basis
                 elif self.bases[base_count] == "x" or self.bases[base_count] == "X":
-                    msg_type = MeasurementMsgType.X_Outcome1
+                    msg_type = QlanMeasurementMsgType.X_Outcome1
                     b0 = Na[1]
                     # Sending "b_0" message to che chosen node (first available node in the adjacency list -- choice is arbitary):
                     #if b0 == i:
                     print(f"Selected b0 = {b0} from {self.owner.adjacent_nodes}")
                     Nb0 = [key for key, value in self.owner.adjacent_nodes.items() if b0 in value]
                     print("Nb0 is now updated! ", Nb0)
-                    new_msg = Message(B0MsgType.B0_Designation, self.remote_node_names[b0])
+                    new_msg = Message(QlanB0MsgType.B0_Designation, self.remote_node_names[b0])
                     print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[b0]} at {format(self.tl.now())}")
                     self.owner.send_message(self.remote_node_names[b0], new_msg)
                         
@@ -277,16 +270,11 @@ class MeasurementProtocol(EntanglementProtocol):
                             self.message_list[dest] = [msg_type]
 
                     print("MESSAGE LIST HERE: ",self.message_list)
-                    #message_list.update({dest: msg_type for dest in dest_sample})
-
+                    
                 # Unknown measurement basis
                 else:
                     raise ValueError("Invalid bases. Please use one of the supported bases: x, y, z")
                 
-                #    new_msg = Message(msg_type, self.remote_node_names[dest])
-                #    print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[dest]} at {format(self.tl.now())}")
-                #    self.owner.send_message(self.remote_node_names[dest], new_msg)
-
             self.update_adjacent_nodes(self.local_memory_identifiers[base_count], b0)                    
             base_count +=1
 
@@ -305,6 +293,15 @@ class MeasurementProtocol(EntanglementProtocol):
         self.message_list = {}
 
     def update_adjacent_nodes(self, current_key, b0 = None):
+        '''Update the adjacent nodes of the orchestrator after the measurement outcomes are sent.
+        
+        Args:
+            current_key: The key of the current memory.
+            b0: The designated node for outcome "1" in the X basis measurement.
+
+        Returns:
+            None
+        '''
         saved_values = []
         keys_to_clear = []
 
