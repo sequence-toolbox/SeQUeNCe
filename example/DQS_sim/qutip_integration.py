@@ -8,6 +8,26 @@ from sequence.resource_management.memory_manager import MemoryManager
 
 import qutip as qt
 from itertools import combinations
+from typing import List
+import math
+
+def _filter_basis_pairs(pairs: List, num_qubits: int):
+    '''Helper function. Filters the list of basis vectors such that for each pair their binary
+    representations are different at each qubit index.
+    
+    Args: 
+        pairs: list of pairs of integers. The integers denote vectors in the standard basis
+        for the specified number of qubits.
+        num_qubits: number of qubits.'''
+    new_pairs=[]
+    for p in pairs:
+        int_p0=p[0]
+        int_p1=p[1]
+        p0=bin(int_p0)[2:].zfill(num_qubits)
+        p1=bin(int_p1)[2:].zfill(num_qubits)
+        if all([p0[idx]!=p1[idx] for idx in range(num_qubits)]):
+            new_pairs.append([int_p0, int_p1])        
+    return new_pairs
 
 
 def calc_scalar_c(rho: qt.Qobj, tol=1e-09):
@@ -26,6 +46,9 @@ def calc_scalar_c(rho: qt.Qobj, tol=1e-09):
     vec_dim=rho.dims[0][0]
     std_basis_vecs=list(range(vec_dim)) #integer rep of standard basis elements.
     std_basis_pairs=list(combinations(std_basis_vecs, 2))
+    # the filter ensures that each pair of strings have different values at each index.
+    # this ensures that equal superpositions of are bipartite maximally entangled.
+    std_basis_pairs=_filter_basis_pairs(std_basis_pairs, int(math.log2(vec_dim)))
     c_val=0
     for idx1, idx2 in std_basis_pairs:
         # construct matrix representations of basis vectors.
@@ -36,8 +59,10 @@ def calc_scalar_c(rho: qt.Qobj, tol=1e-09):
         vec2[0][idx2]=1
         vec2=qt.Qobj(vec2)
         # eigenvalues
-        val1=((vec1+vec2) * rho * (vec1+vec2).trans().conj()).full()[0][0]
-        val2=((vec1-vec2) * rho * (vec1-vec2).trans().conj()).full()[0][0]
+        vec_plus=(vec1+vec2).unit()
+        vec_minus=(vec1-vec2).unit()
+        val1=(vec_plus * rho * vec_plus.trans().conj()).full()[0][0]
+        val2=(vec_minus * rho * vec_minus.trans().conj()).full()[0][0]
         if abs(val1+val2)>tol:
             c_val+=(val1*val2)/(val1+val2)
     return 4*c_val #multiplying by 4 since the order of the eigenvalues in the sum matters.
@@ -442,3 +467,4 @@ if __name__ == "__main__":
     phiM=qt.Qobj([[1/2, 0, 0, -1/2],[0, 0, 0, 0], [0, 0, 0, 0], [-1/2, 0, 0, 1/2]])
     print(calc_scalar_c(phiP))
     print(calc_scalar_c(phiM))
+    print(calc_scalar_c(0.5*phiP+0.5*phiM))
