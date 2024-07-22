@@ -109,6 +109,20 @@ def test_minus_root_iZ():
     assert array_equal(expect, circuit.get_unitary_matrix())
 
 
+def test_root_iY():
+    circuit = Circuit(1)
+    circuit.root_iY(0)
+    expect = 1/sqrt(2)*array([[1, 1], [-1, 1]])
+    assert array_equal(expect, circuit.get_unitary_matrix())
+
+
+def test_minus_root_iY():
+    circuit = Circuit(1)
+    circuit.minus_root_iY(0)
+    expect = 1/sqrt(2)*array([[1, -1], [1, 1]])
+    assert array_equal(expect, circuit.get_unitary_matrix())
+
+
 def test_phase():
     circuit = Circuit(1)
     circuit.phase(0, np.pi/2)

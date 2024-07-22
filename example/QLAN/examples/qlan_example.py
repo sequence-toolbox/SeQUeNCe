@@ -12,7 +12,7 @@ from ..linear_graph_state_gen import qlan_entangle_memory
 from ..qlan_client import ClientNode
 import random
 
-DESIRED_OUTCOMES = '11'
+DESIRED_OUTCOMES = '00'
 #DESIRED_OUTCOMES = 'random'
 
 # TODO: Class for managing experiments. Should be able to instatiate nodes, run experiments and display results with the topology expressed with json files.
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     # Get the memories from the node
     memo_o_1 = orch.components[orch.resource_manager.memory1_name]
     memo_o_2 = orch.components[orch.resource_manager.memory2_name]
-    orch.update_bases('xx')
+    orch.update_bases('xz')
 
     # Building the physical topology
     cc_o_c1 = ClassicalChannel("cc_o_c1", tl, 10, 1e9)

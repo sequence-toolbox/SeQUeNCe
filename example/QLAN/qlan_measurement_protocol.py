@@ -1,3 +1,4 @@
+from collections import defaultdict
 from sequence.components.circuit import Circuit
 from sequence.components.memory import Memory
 from sequence.topology.node import Node
@@ -112,6 +113,7 @@ class MeasurementProtocol(EntanglementProtocol):
         self.remote_node_names = nodes
         self.remote_protocol_names = protocols
         self.remote_memories = memories
+        self.message_list = defaultdict(list)
     
     def start(self, tl) -> None:
         """Start the measurement protocol."""
@@ -128,14 +130,9 @@ class MeasurementProtocol(EntanglementProtocol):
 
     def send_outcome_messages(self, tl: "Timeline"):
         # Please notice that the index is given by the order of the memories in the list declared in main
-        
-        #print(tl.quantum_manager.states[0].state)
-        #print(tl.quantum_manager.states[1].state)
-        #print(tl.quantum_manager.states[2].state)
-        #print(tl.quantum_manager.states[3].state)
-        #print(tl.quantum_manager.states[4].state)
 
-        # TODO: this messages should be sent only to the adjacent qubits for each orchestrator qubit!
+        print("Init message_list: ", self.message_list)
+        
         print("\nOrchestrator memories identifiers: ",self.local_memory_identifiers)
 
         base_count = 0
@@ -158,7 +155,14 @@ class MeasurementProtocol(EntanglementProtocol):
                 if self.bases[base_count] == "z" or self.bases[base_count] == "Z":
                     msg_type = MeasurementMsgType.Z_Outcome0
                     dest_sample = Na
-                        
+                    
+                    for dest in dest_sample:
+                        if dest in self.message_list:
+                            self.message_list[dest].append(msg_type)
+                        else:
+                            self.message_list[dest] = [msg_type]
+
+                    print("MESSAGE LIST HERE: ",self.message_list)
                     #new_msg = Message(msg_type, self.remote_node_names[i])
                     #print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
                     #self.owner.send_message(self.remote_node_names[i], new_msg)
@@ -167,6 +171,14 @@ class MeasurementProtocol(EntanglementProtocol):
                 elif self.bases[base_count] == "y" or self.bases[base_count] == "Y":
                     msg_type = MeasurementMsgType.Y_Outcome0
                     dest_sample = Na
+                    
+                    for dest in dest_sample:
+                        if dest in self.message_list:
+                            self.message_list[dest].append(msg_type)
+                        else:
+                            self.message_list[dest] = [msg_type]
+
+                    print("MESSAGE LIST HERE: ",self.message_list)
                     #new_msg = Message(msg_type, self.remote_node_names[i])
                     #print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
                     #self.owner.send_message(self.remote_node_names[i], new_msg)
@@ -187,20 +199,22 @@ class MeasurementProtocol(EntanglementProtocol):
                     # Sending the outcomes to {b0} u {N_a \ (N_b0 u {b0})}
                     dest_sample = [node for node in Na if node not in Nb0 and node != b0]
                     dest_sample.append(b0)
-                    print("DEST SAMPLE HERE: ",dest_sample)
+                    
+                    for dest in dest_sample:
+                        if dest in self.message_list:
+                            self.message_list[dest].append(msg_type)
+                        else:
+                            self.message_list[dest] = [msg_type]
+
+                    print("MESSAGE LIST HERE: ",self.message_list)
+                    
                     #dest_sample = [val for val in self.owner.adjacent_nodes[identifier] if val != b0]
                     #dest_sample.append(b0)
 
                 # Unknown measurement basis
                 else:
                     raise ValueError("Invalid bases. Please use one of the supported bases: x, y, z")
-                    
-                for dest in dest_sample:
-                    new_msg = Message(msg_type, self.remote_node_names[dest])
-                    print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[dest]} at {format(self.tl.now())}")
-                    #print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
-                    self.owner.send_message(self.remote_node_names[dest], new_msg)
-                    
+                        
             # Case Outcome "1"
             if (tl.quantum_manager.states[identifier].state == [0.+0.j, 1.+0.j]).any():
                 
@@ -216,19 +230,28 @@ class MeasurementProtocol(EntanglementProtocol):
                 if self.bases[base_count] == "z" or self.bases[base_count] == "Z":
                     msg_type = MeasurementMsgType.Z_Outcome1
                     dest_sample = Na
-                        
-                    #new_msg = Message(msg_type, self.remote_node_names[i])
-                    #print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
-                    #self.owner.send_message(self.remote_node_names[i], new_msg)
 
+                    for dest in dest_sample:
+                        if dest in self.message_list:
+                            self.message_list[dest].append(msg_type)
+                        else:
+                            self.message_list[dest] = [msg_type]
+
+                    print("MESSAGE LIST HERE: ",self.message_list)
+                    
                 # Case of Measurement in the X basis
                 elif self.bases[base_count] == "y" or self.bases[base_count] == "Y":
                     msg_type = MeasurementMsgType.Y_Outcome1
                     dest_sample = Na
-                    #new_msg = Message(msg_type, self.remote_node_names[i])
-                    #print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
-                    #self.owner.send_message(self.remote_node_names[i], new_msg)
                     
+                    for dest in dest_sample:
+                        if dest in self.message_list:
+                            self.message_list[dest].append(msg_type)
+                        else:
+                            self.message_list[dest] = [msg_type]
+
+                    print("MESSAGE LIST HERE: ",self.message_list)
+
                 # Case of Measurement in the X basis
                 elif self.bases[base_count] == "x" or self.bases[base_count] == "X":
                     msg_type = MeasurementMsgType.X_Outcome1
@@ -246,25 +269,40 @@ class MeasurementProtocol(EntanglementProtocol):
                     dest_sample = [node for node in Nb0 if node not in Na and node != self.local_memory_identifiers[base_count]]
                     dest_sample.append(b0)
                     print("DEST SAMPLE HERE: ",dest_sample)
-                    #dest_sample = [val for val in self.owner.adjacent_nodes[identifier] if val != b0]
-                    #dest_sample.append(b0)
+                    
+                    for dest in dest_sample:
+                        if dest in self.message_list:
+                            self.message_list[dest].append(msg_type)
+                        else:
+                            self.message_list[dest] = [msg_type]
+
+                    print("MESSAGE LIST HERE: ",self.message_list)
+                    #message_list.update({dest: msg_type for dest in dest_sample})
 
                 # Unknown measurement basis
                 else:
                     raise ValueError("Invalid bases. Please use one of the supported bases: x, y, z")
-                    
-                for dest in dest_sample:
-                    # Fixing corrections at orchestrator
-                    if dest >= len(self.remote_node_names):
-                        dest = dest % len(self.remote_node_names)
-
-                    new_msg = Message(msg_type, self.remote_node_names[dest])
-                    print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[dest]} at {format(self.tl.now())}")
-                    #print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[i]} at {format(self.tl.now())}")
-                    self.owner.send_message(self.remote_node_names[dest], new_msg)
+                
+                #    new_msg = Message(msg_type, self.remote_node_names[dest])
+                #    print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[dest]} at {format(self.tl.now())}")
+                #    self.owner.send_message(self.remote_node_names[dest], new_msg)
 
             self.update_adjacent_nodes(self.local_memory_identifiers[base_count], b0)                    
             base_count +=1
+
+        # Sending the messages outcomes
+        for dest, msg_type in self.message_list.items():
+                    
+            # Fixing corrections at orchestrator
+            if int(dest) >= len(self.remote_node_names):
+                dest = dest % len(self.remote_node_names) + 1
+            for i in range(0,len(self.message_list[dest])):
+                new_msg = Message(msg_type[i], self.remote_node_names[dest])
+                print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[dest]} at {format(self.tl.now())}")
+                self.owner.send_message(self.remote_node_names[dest], new_msg)
+
+        # reset message list after sending all messages
+        self.message_list = {}
 
     def update_adjacent_nodes(self, current_key, b0 = None):
         saved_values = []
