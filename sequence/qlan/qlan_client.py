@@ -1,10 +1,10 @@
 from typing import List
-from sequence.topology.node import Node
-from sequence.kernel.timeline import Timeline
-from sequence.components.memory import Memory
-from sequence.message import Message
-from sequence.utils import log
-from .qlan_correction_protocol import QlanCorrectionProtocol
+from ..topology.node import Node
+from ..kernel.timeline import Timeline
+from ..components.memory import Memory
+from ..message import Message
+from ..utils import log
+from .qlan_correction import QlanCorrectionProtocol
 
 class QlanClientStateManager:
     """
@@ -66,11 +66,17 @@ class QlanClientNode(Node):
         local_memories (List[Memory]): The list of local memories to add as components.
         remote_memories (List[Memory]): The list of remote memories to add as components.
     """
-    def __init__(self, name: str, tl: Timeline):
+    def __init__(self, name: str, tl: Timeline, num_local_memories: int = 1, memo_fidelity = 0.9, memo_frequency: int = 2000, memo_efficiency: float = 1, memo_coherence_time: float = -1, memo_wavelength: float = 500):
         super().__init__(name, tl)
         
         # Number of local memories must be set to 1 in most of the cases
-        self.num_local_memories = 1
+        self.num_local_memories = num_local_memories
+
+        self.memory_fidelity = memo_fidelity
+        self.memory_frequency = memo_frequency
+        self.memory_efficiency = memo_efficiency
+        self.memory_coherence_time = memo_coherence_time
+        self.memory_wavelength = memo_wavelength
 
         # TODO: Must be updated when entangled whit the orchestrator
         self.remote_memories = []   
@@ -82,7 +88,13 @@ class QlanClientNode(Node):
         # TODO: check if it is necessary to keep this attribute
         self.remote_memory_names = []
         
-        local_memories = [Memory(name=memory_name, timeline=tl, fidelity=0.9, frequency=2000, efficiency=1, coherence_time=-1, wavelength=500) for memory_name in local_memory_names]
+        local_memories = [Memory(name=memory_name, 
+                                 timeline=tl, 
+                                 fidelity=self.memory_fidelity, 
+                                 frequency=self.memory_frequency, 
+                                 efficiency=self.memory_efficiency, 
+                                 coherence_time=self.memory_coherence_time, 
+                                 wavelength=self.memory_wavelength) for memory_name in local_memory_names]
 
         # Check if the number of memories is greater than 1
         if len(local_memories) > 1:

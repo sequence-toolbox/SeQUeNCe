@@ -1,13 +1,11 @@
-from sequence.components.circuit import Circuit
-from sequence.components.memory import Memory
-from sequence.topology.node import Node
-from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
+from ..components.circuit import Circuit
+from ..components.memory import Memory
+from ..topology.node import Node
+from ..entanglement_management.entanglement_protocol import EntanglementProtocol
+from ..message import Message
+from ..utils import log
 
-from sequence.components.optical_channel import ClassicalChannel
-from sequence.message import Message
-from sequence.utils import log
-
-from .qlan_measurement_protocol import QlanMeasurementMsgType, QlanB0MsgType
+from .qlan_measurement import QlanMeasurementMsgType, QlanB0MsgType
 
 from enum import Enum, auto
 
@@ -100,12 +98,14 @@ class QlanCorrectionProtocol(EntanglementProtocol):
         elif message.msg_type == QlanMeasurementMsgType.Z_Outcome0:
 
             # No correction circuit is needed
+            print(f"No correction is needed!")
             new_msg = Message(QlanCorrectionMsgType.ACK_Outcome0, src)
             self.owner.send_message(self.remote_node_names, new_msg)
         
         elif message.msg_type is QlanMeasurementMsgType.Z_Outcome1:
             
             for i in range(n):
+                print(f"Applying Z")
                 self.circuit.z(i)
 
             self.perform_correction()
@@ -115,6 +115,7 @@ class QlanCorrectionProtocol(EntanglementProtocol):
         elif message.msg_type is QlanMeasurementMsgType.Y_Outcome0:
 
             for i in range(n):
+                print(f"Applying root iZ")
                 self.circuit.root_iZ(i)
             
             self.perform_correction()
@@ -124,6 +125,7 @@ class QlanCorrectionProtocol(EntanglementProtocol):
         elif message.msg_type is QlanMeasurementMsgType.Y_Outcome1:
 
             for i in range(n):
+                print(f"Applying minus root iZ")
                 self.circuit.minus_root_iZ(i)
 
             self.perform_correction()

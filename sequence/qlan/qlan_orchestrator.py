@@ -1,14 +1,15 @@
 from typing import List
-from sequence.topology.node import Node
-from sequence.kernel.timeline import Timeline
-from sequence.components.memory import Memory
-from sequence.message import Message
-from sequence.utils import log
-from .qlan_measurement_protocol import QlanMeasurementProtocol
-from .linear_graph_state_gen import generate_g_state
+from ..topology.node import Node
+from ..kernel.timeline import Timeline
+from ..components.memory import Memory
+from ..message import Message
+from ..utils import log
+
+from .qlan_measurement import QlanMeasurementProtocol
+from .graph_gen import generate_g_state
 
 class QlanOrchestratorStateManager:
-    """
+    """ 
     This class represents a state manager for the QLAN Orchestrator node.
     It provides methods to update the state of the memories and create a protocol for the owner.
 
@@ -103,7 +104,7 @@ class QlanOrchestratorNode(Node):
 
     # Dictionary for adjacent nodes (aka entangled nodes) for each memory.
     
-    def __init__(self, name: str, tl: Timeline, num_local_memories: int, remote_memories: List[Memory]):
+    def __init__(self, name: str, tl: Timeline, num_local_memories: int, remote_memories: List[Memory], memo_fidelity = 0.9, memo_frequency: int = 2000, memo_efficiency: float = 1, memo_coherence_time: float = -1, memo_wavelength: float = 500):
         """
         Initializes a new instance of the OrchestratorNode class.
 
@@ -114,6 +115,12 @@ class QlanOrchestratorNode(Node):
             remote_memories (List[Memory]): The list of remote memories to add as components.
         """
         super().__init__(name, tl)
+
+        self.memory_fidelity = memo_fidelity
+        self.memory_frequency = memo_frequency
+        self.memory_efficiency = memo_efficiency
+        self.memory_coherence_time = memo_coherence_time
+        self.memory_wavelength = memo_wavelength
         
         # Remote memories infos
         self.remote_memories = remote_memories
@@ -122,24 +129,25 @@ class QlanOrchestratorNode(Node):
         # Instantiating memories (note that the remote memories are already instantiated in the client nodes ant thus have a name)
         self.local_memory_names = [f'{name}.memo_o_{i}' for i in range(1, num_local_memories+1)]
         
-        local_memories = [Memory(name=memory_name, timeline=tl, fidelity=0.9, frequency=2000, efficiency=1, coherence_time=-1, wavelength=500) for memory_name in self.local_memory_names]
+        self.local_memories = [Memory(name=memory_name, 
+                                 timeline=tl, fidelity=self.memory_fidelity, frequency=self.memory_frequency, efficiency=self.memory_efficiency, coherence_time=self.memory_coherence_time, wavelength=self.memory_wavelength) for memory_name in self.local_memory_names]
 
         # Check if the number of memories is greater than 5
-        if len(local_memories) != len(remote_memories)-1:
+        if len(self.local_memories) != len(remote_memories)-1:
             raise ValueError("The number of local memories is invalid! ")
         
         # Adding local memories components
-        for memory in local_memories:
+        for memory in self.local_memories:
             self.add_component(memory)
 
         # Set the bases (default is all 'z' measurements)
-        self.bases = 'z' * len(local_memories)
+        self.bases = 'z' * len(self.local_memories)
 
         # Adding resource manager
         self.resource_manager = QlanOrchestratorStateManager(owner=self, tl=tl, memory_names=self.local_memory_names)
 
         # Generation of a chain graph state (abstract)
-        self.resource_manager.generate_chain_state(tl, local_memories, remote_memories)
+        self.resource_manager.generate_chain_state(tl, self.local_memories, remote_memories)
 
     def find_adjacent_nodes(self, tl: "Timeline", remote_memories: List[Memory]):
 
@@ -180,3 +188,12 @@ class QlanOrchestratorNode(Node):
     # Function for receiving classing messages using the chosen protocol
     def receive_message(self, src: str, msg: "Message"):
         self.protocols[0].received_message(src, msg)
+
+    def set_app(self, app: "RequestApp"):
+        """Method to add an application to the node."""
+
+        self.app = app
+
+    def reset_linear_state(self, tl: "Timeline"):
+
+        self.resource_manager.generate_chain_state(tl, self.local_memories, self.remote_memories)

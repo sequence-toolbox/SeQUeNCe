@@ -7,9 +7,14 @@ from sequence.utils import log
 from sequence.components.optical_channel import ClassicalChannel
 
 # QLAN Imports
-from ..qlan_orchestrator import QlanOrchestratorNode
-from ..linear_graph_state_gen import qlan_entangle_memory
-from ..qlan_client import QlanClientNode
+
+from sequence.qlan.qlan_orchestrator import QlanOrchestratorNode
+from sequence.qlan.qlan_client import QlanClientNode
+from sequence.qlan.graph_gen import qlan_entangle_memory
+
+#from ..qlan_orchestrator import QlanOrchestratorNode
+#from ..linear_graph_state_gen import qlan_entangle_memory
+#from ..qlan_client import QlanClientNode
 import random
 
 DESIRED_OUTCOMES = '00'

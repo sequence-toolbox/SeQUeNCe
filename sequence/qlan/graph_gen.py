@@ -1,9 +1,7 @@
 import numpy as np
-
-# Basic components
-from sequence.kernel.timeline import Timeline
-from sequence.topology.node import Node
-from sequence.components.memory import Memory
+from ..kernel.timeline import Timeline
+from ..topology.node import Node
+from ..components.memory import Memory
 
 # Log utility
 import sequence.utils.log as log
@@ -14,7 +12,7 @@ def generate_g_state(num_memories):
     # Calculate the constant value
     constant = 1 / np.sqrt(2 ** num_memories)
     
-    # Initialize the GHZ state vector
+    # Initialize the Graph state vector
     g_state = np.zeros(2 ** num_memories)
     
     # Iterate over all possible binary strings
@@ -24,7 +22,7 @@ def generate_g_state(num_memories):
         # Count occurrences of two consecutive '1's
         count_consecutive_ones = sum(1 for j in range(len(binary_str) - 1) if binary_str[j] == '1' and binary_str[j + 1] == '1')
         
-        # Set the value in the GHZ state vector
+        # Set the value in the Graph State state vector
         if count_consecutive_ones % 2 == 1:
             g_state[i] = -constant
         else:
@@ -44,7 +42,7 @@ def entangle_memory(tl: Timeline, memories: list, n: int):
     for memo in memories:
         memo.reset()
 
-    # Setting the GHZ state
+    # Setting the state
     qstate_keys = [memo.qstate_key for memo in memories]
     tl.quantum_manager.set(qstate_keys, g_state)
 
@@ -60,14 +58,6 @@ def qlan_entangle_memory(tl: Timeline, local_memories: list, remote_memories: li
     for memo in remote_memories:
         memo.reset()
 
-    # DEBUG
-    # for i in range(len(remote_memories)):
-    #    print(remote_memories[i].qstate_key)
-
-    #for i in range(len(local_memories)):
-    #    print(local_memories[i].qstate_key)
-
-
     combined_memories = []
     min_size = min(len(remote_memories), len(local_memories))
     for i in range(min_size):
@@ -80,10 +70,5 @@ def qlan_entangle_memory(tl: Timeline, local_memories: list, remote_memories: li
     else:
         combined_memories.extend(local_memories[min_size:])
 
-    # DEBUG
-    # for memo in combined_memories:
-    #    print(memo.qstate_key)
-
     qstate_keys = [memo.qstate_key for memo in combined_memories]
-    # print(qstate_keys)
     tl.quantum_manager.set(qstate_keys, g_state)

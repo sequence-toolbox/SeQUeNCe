@@ -1,12 +1,11 @@
 from collections import defaultdict
-from sequence.components.circuit import Circuit
-from sequence.components.memory import Memory
-from sequence.topology.node import Node
-from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
+from ..components.circuit import Circuit
+from ..components.memory import Memory
+from ..topology.node import Node
+from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 
-from sequence.components.optical_channel import ClassicalChannel
-from sequence.message import Message
-from sequence.utils import log
+from ..message import Message
+from ..utils import log
 
 from enum import Enum, auto
 
