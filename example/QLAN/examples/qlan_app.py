@@ -6,6 +6,7 @@ from sequence.topology.qlan_star_topo import QlanStarTopo
 from sequence.resource_management.memory_manager import MemoryInfo
 from sequence.network_management.reservation import Reservation
 from sequence.kernel.timeline import Timeline
+import sequence.utils.log as log
 
 # Qlan imports
 from sequence.qlan.qlan_orchestrator import QlanOrchestratorNode
@@ -103,7 +104,12 @@ class PeriodicApp:
             print("----------------------------------------")
 
 if __name__ == "__main__":
-    network_config = "/Users/francesco/Desktop/SeQUeNCe Local/example/QLAN/examples/qlan_topology_3.json"
+
+    # Choose the number of clients configuration
+    NUM_CLIENTS= 6  
+
+    network_config = f"/Users/francesco/Desktop/SeQUeNCe Local/example/QLAN/examples/topologies/qlan_topology_{NUM_CLIENTS}.json"
+    
     NUM_PERIODS = 3
     PERIOD = 1e12
     client_nodes = []
@@ -112,6 +118,14 @@ if __name__ == "__main__":
     tl = network_topo.get_timeline()
     tl.stop_time = PERIOD * NUM_PERIODS
     tl.show_progress = True
+
+    # set log
+    log_filename = "qlan_app.log"
+    log.set_logger(__name__, tl, log_filename)
+    log.set_logger_level('DEBUG')
+    #log.track_module('QlanOrchestratorNode')
+    #log.track_module('QlanClientNode')
+    log.track_module('timeline')
 
     for node in network_topo.get_nodes_by_type(QlanStarTopo.ORCHESTRATOR):
         orchestrator = node

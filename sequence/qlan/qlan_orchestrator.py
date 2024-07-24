@@ -134,7 +134,7 @@ class QlanOrchestratorNode(Node):
 
         # Check if the number of memories is greater than 5
         if len(self.local_memories) != len(remote_memories)-1:
-            raise ValueError("The number of local memories is invalid! ")
+            raise ValueError(f"The number of local memories {len(self.local_memories)} is invalid. It should be equal to the number of remote memories {len(remote_memories)} minus 1.")
         
         # Adding local memories components
         for memory in self.local_memories:

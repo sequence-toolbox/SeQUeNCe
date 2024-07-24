@@ -139,7 +139,7 @@ class QlanStarTopo(Topo):
             if node_type == self.ORCHESTRATOR:
                 node_obj = QlanOrchestratorNode(name, 
                                                 self.tl,
-                                                2, 
+                                                self.n_local_memories, 
                                                 self.remote_memories_array, self.memo_fidelity_orch, 
                                                 self.memo_freq_orch, 
                                                 self.memo_efficiency_orch, 
@@ -188,46 +188,5 @@ class QlanStarTopo(Topo):
             if len(cc_delay) == 0:
                 assert 0, q_connect
             cc_delay = np.mean(cc_delay) // 2
-
-            #if channel_type == self.MEET_IN_THE_MID:
-            #    bsm_name = "BSM.{}.{}.auto".format(node1, node2)  # the intermediate BSM node
-            #    bsm_seed = q_connect.get(Topo.SEED, 0)
-            #    bsm_template_name = q_connect.get(Topo.TEMPLATE, None)
-            #    bsm_info = {self.NAME: bsm_name,
-            #                self.TYPE: self.BSM_NODE,
-            #                self.SEED: bsm_seed,
-            #                self.TEMPLATE: bsm_template_name}
-            #    config[self.ALL_NODE].append(bsm_info)
-            #
-            #    for src in [node1, node2]:
-            #        qc_name = "QC.{}.{}".format(src, bsm_name)  # the quantum channel
-            #        qc_info = {self.NAME: qc_name,
-            #                   self.SRC: src,
-            #                   self.DST: bsm_name,
-            #                   self.DISTANCE: distance,
-            #                   self.ATTENUATION: attenuation}
-            #        if self.ALL_Q_CHANNEL not in config:
-            #            config[self.ALL_Q_CHANNEL] = []
-            #        config[self.ALL_Q_CHANNEL].append(qc_info)
-            #
-            #        cc_name = "CC.{}.{}".format(src, bsm_name)  # the classical channel
-            #        cc_info = {self.NAME: cc_name,
-            #                   self.SRC: src,
-            #                   self.DST: bsm_name,
-            #                   self.DISTANCE: distance,
-            #                   self.DELAY: cc_delay}
-            #        if self.ALL_C_CHANNEL not in config:
-            #            config[self.ALL_C_CHANNEL] = []
-            #        config[self.ALL_C_CHANNEL].append(cc_info)
-            #
-            #        cc_name = "CC.{}.{}".format(bsm_name, src)
-            #        cc_info = {self.NAME: cc_name,
-            #                   self.SRC: bsm_name,
-            #                   self.DST: src,
-            #                   self.DISTANCE: distance,
-            #                   self.DELAY: cc_delay}
-            #        config[self.ALL_C_CHANNEL].append(cc_info)
-            #else:
-            #    raise NotImplementedError("Unknown type of quantum connection")
 
 
