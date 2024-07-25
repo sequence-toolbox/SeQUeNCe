@@ -12,6 +12,7 @@ import sequence.utils.log as log
 from sequence.qlan.qlan_orchestrator import QlanOrchestratorNode
 from sequence.qlan.graph_gen import qlan_entangle_memory
 from sequence.qlan.qlan_client import QlanClientNode
+from sequence.qlan.qlan_correction import QlanCorrectionProtocol
 
 '''
 This benchmark file is WIP. 
@@ -106,10 +107,10 @@ class PeriodicApp:
 if __name__ == "__main__":
 
     # Choose the number of clients configuration
-    NUM_CLIENTS= 6  
+    NUM_CLIENTS= 3  
 
-    network_config = f"/Users/francesco/Desktop/SeQUeNCe Local/example/QLAN/examples/topologies/qlan_topology_{NUM_CLIENTS}.json"
-    
+    network_config = f"example/QLAN/examples/topologies/qlan_topology_{NUM_CLIENTS}.json"
+
     NUM_PERIODS = 3
     PERIOD = 1e12
     client_nodes = []
@@ -120,12 +121,16 @@ if __name__ == "__main__":
     tl.show_progress = True
 
     # set log
-    log_filename = "qlan_app.log"
+    log_filename = "example/QLAN/examples/qlan_app.log"
     log.set_logger(__name__, tl, log_filename)
     log.set_logger_level('DEBUG')
-    #log.track_module('QlanOrchestratorNode')
-    #log.track_module('QlanClientNode')
-    log.track_module('timeline')
+    #log.set_logger_level('INFO')
+    
+    log.track_module('qlan_orchestrator')
+    log.track_module('qlan_correction')
+    log.track_module('qlan_measurement')
+    log.track_module('qlan_client')
+    #log.track_module('timeline')
 
     for node in network_topo.get_nodes_by_type(QlanStarTopo.ORCHESTRATOR):
         orchestrator = node

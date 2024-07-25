@@ -109,15 +109,13 @@ class QlanMeasurementProtocol(EntanglementProtocol):
         Args:
             tl (Timeline): The timeline object for tracking the progress of the protocol.
         """
-        log.logger.info(f"{self.name} protocol starts at node {self.owner.name}")
+        log.logger.info(f"\nPROTOCOL STARTED: {self.name} starts at node {self.owner.name}")
 
         # Execute the quantum circuit to perform the measurements
         result = self.owner.timeline.quantum_manager.run_circuit(
                            self.circuit, 
                            [memory.qstate_key for memory in self.local_memories],
                            meas_samp = self.owner.get_generator().random())
-
-        print(f"Measurement Protocol starts at node {self.owner.name} at {format(self.owner.timeline.now())}.")
         self.send_outcome_messages(self.tl)
 
     def send_outcome_messages(self, tl: "Timeline"):
@@ -132,14 +130,14 @@ class QlanMeasurementProtocol(EntanglementProtocol):
 
         # Please notice that the index is given by the order of the memories in the list declared in main.py
 
-        print("Init message_list: ", self.message_list)
-        
-        print("\nOrchestrator memories identifiers: ",self.local_memory_identifiers)
+        log.logger.debug(f"\nORCHESTRATOR DEBUG: init message_list {self.message_list}")
+        log.logger.debug(f"\nORCHESTRATOR DEBUG: adjacent_nodes {self.owner.adjacent_nodes}")
+        log.logger.debug(f"\nORCHESTRATOR DEBUG: local_memory_identifiers {self.local_memory_identifiers}")
 
         base_count = 0
         for identifier in self.local_memory_identifiers:
 
-            print("current identifier: ",identifier)
+            log.logger.debug(f"\nORCHESTRATOR DEBUG: CURRENT IDENTIFIER {identifier}")
 
             # Case Outcome "0"
             if (tl.quantum_manager.states[identifier].state == [1.+0.j, 0.+0.j]).any():
@@ -149,9 +147,8 @@ class QlanMeasurementProtocol(EntanglementProtocol):
                 dest_sample = []
                 b0 = None
 
-                print("Na is now updated! ", Na)
-                    
-                print(f"\n*-*-*-*-*-*-*-*-* {self.owner.name} *-*-*-*-*-*-*-*-*")
+                log.logger.debug(f"\nORCHESTRATOR DEBUG: Na is now updated {Na}")
+                
                 # Case of Measurement in the Z basis
                 if self.bases[base_count] == "z" or self.bases[base_count] == "Z":
                     msg_type = QlanMeasurementMsgType.Z_Outcome0
@@ -163,7 +160,7 @@ class QlanMeasurementProtocol(EntanglementProtocol):
                         else:
                             self.message_list[dest] = [msg_type]
 
-                    print("MESSAGE LIST HERE: ",self.message_list)
+                    log.logger.debug(f"\nORCHESTRATOR DEBUG: message_list {self.message_list}")
 
                 # Case of Measurement in the X basis
                 elif self.bases[base_count] == "y" or self.bases[base_count] == "Y":
@@ -176,19 +173,24 @@ class QlanMeasurementProtocol(EntanglementProtocol):
                         else:
                             self.message_list[dest] = [msg_type]
 
-                    print("MESSAGE LIST HERE: ",self.message_list)
+                    log.logger.debug(f"\nORCHESTRATOR DEBUG: message_list {self.message_list}")
                     
                 # Case of Measurement in the X basis
                 elif self.bases[base_count] == "x" or self.bases[base_count] == "X":
                     msg_type = QlanMeasurementMsgType.X_Outcome0
                     b0 = Na[1]
                     # Sending "b_0" message to che chosen node (first available node in the adjacency list -- choice is arbitary):
-                    #if b0 == i:
-                    print(f"Selected b0 = {b0} from {self.owner.adjacent_nodes}")
+                    
+                    log.logger.info(f"\nORCHESTRATOR: Selected b0 = {b0} from {self.owner.adjacent_nodes}")
+                    
                     Nb0 = [key for key, value in self.owner.adjacent_nodes.items() if b0 in value]
-                    print("Nb0 is now updated! ", Nb0)
+
+                    log.logger.debug(f"\nORCHESTRATOR DEBUG: Nb0 is now updated {Nb0}")
+                    
                     new_msg = Message(QlanB0MsgType.B0_Designation, self.remote_node_names[b0])
-                    print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[b0]} at {format(self.tl.now())}")
+
+                    log.logger.info(f"\nORCHESTRATOR: Sending: {new_msg.msg_type} to {self.remote_node_names[b0]} at {format(self.tl.now())}")
+
                     self.owner.send_message(self.remote_node_names[b0], new_msg)
                         
                     # Sending the outcomes to {b0} u {N_a \ (N_b0 u {b0})}
@@ -201,7 +203,7 @@ class QlanMeasurementProtocol(EntanglementProtocol):
                         else:
                             self.message_list[dest] = [msg_type]
 
-                    print("MESSAGE LIST HERE: ",self.message_list)
+                    log.logger.debug(f"\nORCHESTRATOR DEBUG: message_list {self.message_list}")
 
                 # Unknown measurement basis
                 else:
@@ -215,9 +217,8 @@ class QlanMeasurementProtocol(EntanglementProtocol):
                 dest_sample = []
                 b0 = None
 
-                print("Na is now updated! ", Na)
+                log.logger.debug(f"\nORCHESTRATOR DEBUG: Na is now updated {Na}")
                     
-                print(f"\n*-*-*-*-*-*-*-*-* {self.owner.name} *-*-*-*-*-*-*-*-*")
                 # Case of Measurement in the Z basis
                 if self.bases[base_count] == "z" or self.bases[base_count] == "Z":
                     msg_type = QlanMeasurementMsgType.Z_Outcome1
@@ -229,7 +230,7 @@ class QlanMeasurementProtocol(EntanglementProtocol):
                         else:
                             self.message_list[dest] = [msg_type]
 
-                    print("MESSAGE LIST HERE: ",self.message_list)
+                    log.logger.debug(f"\nORCHESTRATOR DEBUG: message_list {self.message_list}")
                     
                 # Case of Measurement in the X basis
                 elif self.bases[base_count] == "y" or self.bases[base_count] == "Y":
@@ -242,7 +243,7 @@ class QlanMeasurementProtocol(EntanglementProtocol):
                         else:
                             self.message_list[dest] = [msg_type]
 
-                    print("MESSAGE LIST HERE: ",self.message_list)
+                    log.logger.debug(f"\nORCHESTRATOR DEBUG: message_list {self.message_list}")
 
                 # Case of Measurement in the X basis
                 elif self.bases[base_count] == "x" or self.bases[base_count] == "X":
@@ -250,17 +251,23 @@ class QlanMeasurementProtocol(EntanglementProtocol):
                     b0 = Na[1]
                     # Sending "b_0" message to che chosen node (first available node in the adjacency list -- choice is arbitary):
                     #if b0 == i:
-                    print(f"Selected b0 = {b0} from {self.owner.adjacent_nodes}")
+                    log.logger.info(f"\nB0 ELECTION: Selected b0 = {b0} from {self.owner.adjacent_nodes}")
+
                     Nb0 = [key for key, value in self.owner.adjacent_nodes.items() if b0 in value]
-                    print("Nb0 is now updated! ", Nb0)
+                    
+                    log.logger.debug(f"\nORCHESTRATOR DEBUG: Nb0 is now updated {Nb0}")
+                    
                     new_msg = Message(QlanB0MsgType.B0_Designation, self.remote_node_names[b0])
-                    print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[b0]} at {format(self.tl.now())}")
+                    
+                    log.logger.info(f"\nMESSAGE SENT: {self.owner.name} is sending: {new_msg.msg_type} to {self.remote_node_names[dest]} at {format(self.tl.now())}")
+                    
                     self.owner.send_message(self.remote_node_names[b0], new_msg)
                         
                     # Sending the outcomes to {b0} u {N_a \ (N_b0 u {b0})}
                     dest_sample = [node for node in Nb0 if node not in Na and node != self.local_memory_identifiers[base_count]]
                     dest_sample.append(b0)
-                    print("DEST SAMPLE HERE: ",dest_sample)
+
+                    log.logger.debug(f"\nORCHESTRATOR DEBUG: dest_sample {dest_sample}")
                     
                     for dest in dest_sample:
                         if dest in self.message_list:
@@ -268,7 +275,7 @@ class QlanMeasurementProtocol(EntanglementProtocol):
                         else:
                             self.message_list[dest] = [msg_type]
 
-                    print("MESSAGE LIST HERE: ",self.message_list)
+                    log.logger.debug(f"\nORCHESTRATOR DEBUG: message_list {self.message_list}")
                     
                 # Unknown measurement basis
                 else:
@@ -285,7 +292,9 @@ class QlanMeasurementProtocol(EntanglementProtocol):
                 dest = dest % len(self.remote_node_names) + 1
             for i in range(0,len(self.message_list[dest])):
                 new_msg = Message(msg_type[i], self.remote_node_names[dest])
-                print(f"Sending: {new_msg.msg_type} to {self.remote_node_names[dest]} at {format(self.tl.now())}")
+                
+                log.logger.info(f"\nMESSAGE SENT: {self.owner.name} is sending: {new_msg.msg_type} to {self.remote_node_names[dest]} at {format(self.tl.now())}")
+
                 self.owner.send_message(self.remote_node_names[dest], new_msg)
 
         # reset message list after sending all messages
@@ -324,8 +333,9 @@ class QlanMeasurementProtocol(EntanglementProtocol):
 
         # Cleaning measured qubits
         self.owner.adjacent_nodes[current_key] = []
-        print(f"Updated adjacent nodes: {self.owner.adjacent_nodes}")
 
+        log.logger.debug(f"\nORCHESTRATOR DEBUG: updated adjacent nodes: {self.owner.adjacent_nodes}")
+        
     def memory_expire(self, memory: "Memory") -> None:
         """Handle memory expiration events.
 
@@ -342,8 +352,7 @@ class QlanMeasurementProtocol(EntanglementProtocol):
             src (str): The source of the message.
             msg (Message): The received message.
         """
-        print(f"\n*-*-*-*-*-*-*-*-* {self.owner.name} *-*-*-*-*-*-*-*-*")
-        print(f"Received ACK message from {src} at {format(self.tl.now())}")
+        log.logger.info(f"\nMESSAGE RECEIVED: {self.owner.name} received ACK message from {src} at {format(self.tl.now())}")
 
     def release(self) -> None:
         """Release resources used by the protocol."""

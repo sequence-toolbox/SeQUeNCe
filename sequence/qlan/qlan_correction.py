@@ -49,8 +49,7 @@ class QlanCorrectionProtocol(EntanglementProtocol):
     
     def start(self) -> None:
         """Start the measurement protocol."""
-        #log.logger.info(f"{self.name} protocol start at node {self.owner.name}")
-        print(f"{self.name} protocol starts at node {self.owner.name}")
+        log.logger.info(f"\nPROTOCOL STARTED: {self.name} starts at node {self.owner.name}")
 
 
     def set_others(self, protocols: list[str], nodes: list[str], memories: list[list[str]]) -> None:
@@ -74,9 +73,7 @@ class QlanCorrectionProtocol(EntanglementProtocol):
                            [memory.qstate_key for memory in self.local_memories],
                            meas_samp = self.owner.get_generator().random())
 
-        print(f"Correction protocol executed at {self.owner.name}")
-        #print("The key of the first qubit is: ", result)
-
+        log.logger.info(f"\nPROTOCOL ENDED: {self.owner.name} executed {self.name} at {format(self.tl.now())}")
     
     def received_message(self, src: str, message: Message):
         '''Receives the message from the QLAN Orchestrator node and performs the correction based on the measurement outcomes.
@@ -86,9 +83,8 @@ class QlanCorrectionProtocol(EntanglementProtocol):
         '''
 
         assert src in self.remote_node_names
-        print(f"\n*-*-*-*-*-*-*-*-* {self.owner.name} *-*-*-*-*-*-*-*-*")
-        print(f"Received message from {src} of type {message.msg_type} at {self.owner.name} at {format(self.tl.now())}")
-
+        log.logger.info(f"\nMESSAGE RECEIVED: {self.owner.name} received message from {src} of type {message.msg_type}  at {format(self.tl.now())}")
+        
         n = len(self.local_memories)
         self.circuit = Circuit(n)
 
@@ -98,14 +94,14 @@ class QlanCorrectionProtocol(EntanglementProtocol):
         elif message.msg_type == QlanMeasurementMsgType.Z_Outcome0:
 
             # No correction circuit is needed
-            print(f"No correction is needed!")
+            log.logger.info(f"\nAPPLYING CORRECTION: No correction is needed at {self.owner.name}")
             new_msg = Message(QlanCorrectionMsgType.ACK_Outcome0, src)
             self.owner.send_message(self.remote_node_names, new_msg)
         
         elif message.msg_type is QlanMeasurementMsgType.Z_Outcome1:
             
             for i in range(n):
-                print(f"Applying Z")
+                log.logger.info(f"\nAPPLYING CORRECTION: Applying Z at {self.owner.name}")
                 self.circuit.z(i)
 
             self.perform_correction()
@@ -115,7 +111,7 @@ class QlanCorrectionProtocol(EntanglementProtocol):
         elif message.msg_type is QlanMeasurementMsgType.Y_Outcome0:
 
             for i in range(n):
-                print(f"Applying root iZ")
+                log.logger.info(f"\nAPPLYING CORRECTION: Applying root iZ at {self.owner.name}")
                 self.circuit.root_iZ(i)
             
             self.perform_correction()
@@ -125,7 +121,7 @@ class QlanCorrectionProtocol(EntanglementProtocol):
         elif message.msg_type is QlanMeasurementMsgType.Y_Outcome1:
 
             for i in range(n):
-                print(f"Applying minus root iZ")
+                log.logger.info(f"\nAPPLYING CORRECTION: Applying minus root iZ at {self.owner.name}")
                 self.circuit.minus_root_iZ(i)
 
             self.perform_correction()
@@ -136,13 +132,13 @@ class QlanCorrectionProtocol(EntanglementProtocol):
 
             if self.B0 == True:
                 for i in range(n):
-                    print(f"Applying minus root iY")
+                    log.logger.info(f"\nAPPLYING CORRECTION: Applying minus root iY at {self.owner.name}")
                     self.circuit.minus_root_iY(i)
                     #self.circuit.h(i)
                 self.B0 = False
             else:
                 for i in range(n):
-                    print(f"Applying Z")
+                    log.logger.info(f"\nAPPLYING CORRECTION: Applying Z at {self.owner.name}")
                     self.circuit.z(i)
 
             self.perform_correction()
@@ -153,12 +149,12 @@ class QlanCorrectionProtocol(EntanglementProtocol):
             
             if self.B0 == True:
                 for i in range(n):
-                    print(f"Applying root iY")
+                    log.logger.info(f"\nAPPLYING CORRECTION: Applying root iY at {self.owner.name}")
                     self.circuit.root_iY(i)
                 self.B0 = False
             else:
                 for i in range(n):
-                    print(f"Applying Z")
+                    log.logger.info(f"\nAPPLYING CORRECTION: Applying Z at {self.owner.name}")
                     self.circuit.z(i)
 
             self.perform_correction()
