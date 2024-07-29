@@ -1,0 +1,105 @@
+import random
+from sequence.kernel.timeline import Timeline
+from sequence.kernel.process import Process
+from sequence.components.optical_channel import QuantumChannel
+from sequence.components.detector import Detector
+from sequence.topology.node import Node
+from sequence.components.light_source import LightSource
+from sequence.utils.encoding import fock
+from sequence.components.photon import Photon
+import sequence.utils.log as log
+
+
+#questa prova è ok perchè la sorgente emette fotoni con stato di fock pari a ket1 (che pptremmoe supporre essere fotoni a microonda)
+#teorcimanete dovremmo cambiare la loro wavelenght ma per ora va bene così
+
+#il problema è che la sorgente una volta che emette fotoni non riesce a inviarli a un nodo remoto dove c'è il detector (o comuqnue il detector non è capace di farne la detection in maniera chiara)
+
+NUM_TRIALS = 3
+FREQUENCY = 1e9
+PERIOD = int(1e12 / FREQUENCY)
+ATTENUATION = 0
+DISTANCE = 1
+MEAN_PHOTON_NUMBER = 10
+EFFICIENCY = 0.5
+
+
+class EmittingNode(Node):
+    def __init__(self, name, timeline):
+        super().__init__(name, timeline)
+        self.lightsource = LightSource(name + ".lightsource", timeline, frequency=FREQUENCY, wavelength=1550,
+                                       bandwidth=0, mean_photon_num=MEAN_PHOTON_NUMBER, encoding_type=fock, phase_error=0)
+        self.add_component(self.lightsource)
+        self.lightsource.add_receiver(self)
+    
+        period = int(int(1e12 / self.lightsource.frequency))
+        print(f"Period of the light source: {period} ps")
+        
+        num_photons_per_period = self.lightsource.mean_photon_num * period
+        print(f"Number of photons sent by the light source per period: {num_photons_per_period}")
+
+    def get_photon_count(self):
+        return self.lightsource.photon_counter
+    
+    def get(self, photon, **kwargs):
+        self.send_qubit(kwargs['dst'], photon)
+
+
+class Counter:
+    def __init__(self):
+        self.count = 0
+
+    def trigger(self, detector, info):
+        self.count += 1
+
+
+class ReceiverNode(Node):
+    def __init__(self, name, timeline):
+        super().__init__(name, timeline)
+
+        # Configure the detector to handle photon reception
+        self.detector2 = Detector(name + ".detector", timeline, efficiency=EFFICIENCY)
+        self.add_component(self.detector2)
+        self.set_first_component(self.detector2)
+        self.detector2.owner = self
+
+        self.counter2 = Counter()
+        self.detector2.attach(self.counter2)
+
+
+if __name__ == "__main__":
+    runtime = 1e12  
+    tl = Timeline(runtime)
+    tl.init()
+
+    node1 = EmittingNode("node1", tl)
+    node2 = ReceiverNode("node2", tl)
+    
+    qc1 = QuantumChannel("qc.node1.node2", tl, ATTENUATION, DISTANCE)
+    qc1.set_ends(node1, node2.name)  
+
+    node0 = ReceiverNode("node0", tl)
+    qc0 = QuantumChannel("qc.node0.node1", tl, ATTENUATION, DISTANCE)
+    qc0.set_ends(node0, node2.name)
+
+    print(f"Number of trials: {NUM_TRIALS}")
+    
+    tl.run()
+
+    # Create a list of quantum states (tuples of two elements)
+    state = (0.0 + 0.0j, 1.0 + 0.0j)  # Single photon state in |1>
+    print(f"Fock states emitted by the LightSource: {state}")
+
+    state_list = [state] * NUM_TRIALS
+
+    for trial in range(NUM_TRIALS):
+        print(f"Trial {trial+1}:")
+        node1.lightsource.photon_counter = 0  # Reset counter for each trial
+        node1.lightsource.emit([state_list[trial]])  # Emit one photon per trial
+        print(f"Number of photons emitted in trial {trial+1}: {node1.get_photon_count()}")
+        
+        # Ensure node2's detector receives and counts photons
+        node2.detector.photon_counter = 0
+        detector = node2.get_components_by_type("Detector")[0]
+        #detector.get(node1.lightsource.photons[0])
+        print(f"Number of photons detected in trial {trial+1}: {detector.photon_counter}")
