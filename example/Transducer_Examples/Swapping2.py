@@ -1,7 +1,6 @@
 import random
 from sequence.kernel.timeline import Timeline
 from sequence.components.optical_channel import QuantumChannel
-from sequence.components.detector import Detector
 from sequence.protocol import Protocol
 from sequence.topology.node import Node
 from sequence.components.light_source import LightSource
@@ -15,9 +14,15 @@ from sequence.utils.encoding import fock
 import math
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
-
 import sequence.utils.log as log
 import matplotlib.pyplot as plt
+from example.Transducer_Examples.TransductionComponent import Transducer
+from example.Transducer_Examples.TransductionComponent import FockDetector
+from example.Transducer_Examples.TransductionComponent import Trasmon
+from sequence.components.detector import Detector
+from example.Transducer_Examples.ConversionProtocols import UpConversionProtocol
+from example.Transducer_Examples.ConversionProtocols import DownConversionProtocol
+from example.Transducer_Examples.ConversionProtocols import EmittingProtocol
 
 # General
 NUM_TRIALS = 5
@@ -43,22 +48,7 @@ DISTANCE = 1e3
 
 
 
-class FockDetector(Detector):
-    def __init__(self, name: str, timeline: "Timeline", efficiency=1, wavelength=1550, encoding_type=fock):
-        super().__init__(name, timeline, efficiency)
-        self.name = name
-        self.photon_counter = 0
-        self.wavelength = wavelength
-        self.encoding_type = encoding_type
-        self.timeline = timeline
-        self.efficiency = efficiency
-    
-    def init(self):
-        pass
 
-    def get(self, photon=None, **kwargs) -> None:
-        if random.random() < self.efficiency:
-            self.photon_counter += 1
 
 
 class MyFockComponent(Entity):
@@ -97,46 +87,6 @@ class MyFockComponent(Entity):
 
 
 
-class Transducer(Entity):  # se uso entity ho automaticamente una lista di receivers
-    def __init__(self, owner: "Node", name: str, timeline: "Timeline", efficiency=1, photon_counter=int):  # efficinecy =1 lo metto come valore di default
-        Entity.__init__(self, name, timeline)
-        self.name = name
-        self.owner = owner
-        self.timeline = timeline
-        self.efficiency = efficiency
-        self.photon_counter = 0
-
-    def init(self):
-        assert len(self._receivers) == 2
-
-    def add_output(self, outputs: List):
-        for i in outputs:
-            self.add_receiver(i)
-    
-    def receive_photon_from_channel(self, photon: "Photon") -> None:
-        self.photon_counter += 1
-
-   
-
-class UpConversionProtocol(Protocol):
-    def __init__(self, own: "Node", name: str, transducer=Transducer):
-        super().__init__(own, name)    
-
-    def start(self) -> None:
-        transducer = node1.get_components_by_type("Transducer")[0]
-        print(transducer._receivers[0])
-        print(transducer._receivers[1])
-        if random.random() < transducer.efficiency:
-            print("Successful up-conversion")
-            photon = Photon(f"photon", tl)
-            transducer._receivers[0].receive_photon(node2, photon)
-        else:
-            print("NO successful up-conversion")
-            photon = Photon(f"photon", tl)
-            transducer._receivers[1].get(photon)
-
-    def received_message(self, src: str, msg):
-        pass
 
 
 
