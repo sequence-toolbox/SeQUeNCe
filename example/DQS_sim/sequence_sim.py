@@ -78,10 +78,10 @@ def run_sequence_simulation(network_config_file, prep_time, cutoff_time, app_inf
     memo_arr = start_node.get_components_by_type("MemoryArray")[0]
     for index in apps[1].memo_to_reserve:  # iterate through memo indices
         memo = memo_arr[index]
-        update_time = memo.last_update_time
-        state = memo.get_bds_state()
         remote = memo.entangled_memory['node_id']
         if remote is not None:
+            update_time = memo.last_update_time
+            state = memo.get_bds_state()
             memory_states.append(list(state))  # ndarray not serializable for JSON
             memory_entanglement.append(remote)
             memory_times.append(update_time)
