@@ -1,4 +1,5 @@
 import random
+import numpy as np
 from sequence.kernel.timeline import Timeline
 from sequence.components.optical_channel import QuantumChannel
 from sequence.protocol import Protocol
@@ -30,7 +31,7 @@ class Counter:
         self.count += 1
 
 class Trasmon(Entity):
-    def __init__(self, owner: "Node", name: str, timeline: "Timeline", wavelength: int, photon_counter: int, quantum_state: tuple, efficiency=1):
+    def __init__(self, owner: "Node", name: str, timeline: "Timeline", wavelength: List[int], photon_counter: int, quantum_state: List[tuple], efficiency=1):
         Entity.__init__(self, name, timeline)
         self.name = name
         self.owner = owner
@@ -55,17 +56,26 @@ class Trasmon(Entity):
 
     def emit(self) -> None:
         
-        new_photon = Photon(name=self.name,
+        new_photon0 = Photon(name=self.name,
                             timeline=self.timeline,
-                            wavelength=self.wavelength,
-                            quantum_state=self.quantum_state)
-        
-        #il contatore può essere riferito alla carica interna del trasmone 0, 1 oppure numeri compresi tra 0 e 1 a seconda dello stato che voglio codificare
-        #per ora suppongo che il mio trasmone emetta sempre (quindi trasferisce sempre lo stato 1)
+                            wavelength=self.wavelength[0],
+                            quantum_state=self.quantum_state[0])
+                            
+        new_photon1 = Photon(name=self.name,
+                            timeline=self.timeline,
+                            wavelength=self.wavelength[1],
+                            quantum_state=self.quantum_state[1]
+                            )
+                            
+        input_photons = [new_photon0, new_photon1]
+        input_quantum_state= np.kron(self.quantum_state[0], self.quantum_state[1])
+        #print(input_quantum_state)
+        #controllo dello stato
         
         if random.random() < self.efficiency:
 
-            self._receivers[0].receive_photon_from_trasmon(new_photon)
+            self._receivers[0].receive_photon_from_trasmon(input_photons)
+            #qui con il quantum manager dovresti mandargli lo stato
             self.photon_counter += 1 #utile se vuoi aggiungere non idealità
         else:
             pass

@@ -57,7 +57,9 @@ DISTANCE = 1e3
 
 
 #state = (0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j) #statevector
-state = (0.0 + 0.0j, 1.0 + 0.0j) #statevector #meno preciso
+ket1 = (0.0 + 0.0j, 1.0 + 0.0j) #statevector #meno preciso
+ket0 = (1.0 + 0.0j, 0.0 + 0.0j) 
+state_list= [ket1, ket0] 
 
 #questo è lo statevector 1, quindi il transducer deve emettere. si potrebbe fare anche con lo zero ma in quel caso errore e non errore sono diversi.  Non penso ne valga la pena
 #state_list = [state] * NUM_TRIALS #lista di stati di fock, abbiamo un insieme di state_vector per il numero totale di trials
@@ -76,7 +78,7 @@ class SenderNode(Node):
         #Hardware setup
 
         self.trasmon_name = name + ".trasmon"
-        trasmon = Trasmon(name=self.trasmon_name, owner=self, timeline=timeline, wavelength=MICROWAVE_WAVELENGTH, photon_counter=0, quantum_state=state, efficiency=1)
+        trasmon = Trasmon(name=self.trasmon_name, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, quantum_state=state_list, efficiency=1)
         self.add_component(trasmon)
         self.set_first_component(self.trasmon_name)
 
@@ -133,7 +135,7 @@ class ReceiverNode(Node):
         detector3.attach(self.counter3)
 
         self.trasmon_name2 = name + ".trasmon2"
-        trasmon2 = Trasmon(name=self.trasmon_name2, owner=self, timeline=timeline, wavelength=MICROWAVE_WAVELENGTH, photon_counter=0, quantum_state=state, efficiency=1)
+        trasmon2 = Trasmon(name=self.trasmon_name2, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, quantum_state=state_list, efficiency=1)
         self.add_component(trasmon2)
         self.set_first_component(self.trasmon_name2)
         
