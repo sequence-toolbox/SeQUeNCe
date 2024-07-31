@@ -25,6 +25,7 @@ from example.Transducer_Examples.ConversionProtocols import UpConversionProtocol
 from example.Transducer_Examples.ConversionProtocols import DownConversionProtocol
 from example.Transducer_Examples.ConversionProtocols import EmittingProtocol
 from sequence.kernel.quantum_manager import QuantumManager
+import sequence.components.circuit as Circuit
 
 
 #GENERAL
@@ -110,7 +111,7 @@ class SenderNode(Node):
         transducer.add_output([node2, detector])
 
         self.emitting_protocol = EmittingProtocol(self, name + ".emitting_protocol", timeline, trasmon, transducer)
-        self.upconversion_protocol = UpConversionProtocol(self, name + ".upconversion_protocol", timeline, transducer, node2)
+        self.upconversion_protocol = UpConversionProtocol(self, name + ".upconversion_protocol", timeline, transducer, node2, trasmon)
 
 
 
@@ -217,7 +218,7 @@ if __name__ == "__main__":
         event0 = Event(event_time0, process0)
         tl.schedule(event0)
     
-        process1 = Process(node1.upconversion_protocol, "start", [Photon])
+        process1 = Process(node1.upconversion_protocol, "start", [Photon]) 
         event_time1 = (event_time0 + CONVERSION_DURATION) 
         event1 = Event(event_time1, process1)
         tl.schedule(event1)
@@ -264,7 +265,7 @@ if __name__ == "__main__":
     #print(f"Conversion efficiency of DQT protocol: {conversion_percentage:.2f}%")
 
 
-    #if transducer.efficiency and transducer2.efficiency > 0.5:
+    #if transducer.efficiency and transducer2.efficiency > 0.5: #qui ok ma va fatto con l
         #print(f"Transducers features are good for the DQT protocol")
         #Percentuale di fotoni convertiti
         
@@ -280,16 +281,16 @@ if __name__ == "__main__":
     print(f"- - - - - - - - - -")
 
     #Plot dell'andamento delle conversioni rispetto al numero di trials
-    # trials = list(range(NUM_TRIALS))
-    # plt.plot(trials, failed_up_conversions, label="Failed UpConversions")
-    # plt.plot(trials, failed_down_conversions, label="Failed DownConversions")
-    # plt.plot(trials, successful_conversions, label="Successful Conversions")
-    # plt.xticks(range(0, NUM_TRIALS, 1))  # Mostra le etichette ogni 10 trial
+    trials = list(range(NUM_TRIALS))
+    plt.plot(trials, failed_up_conversions, label="Failed UpConversions")
+    plt.plot(trials, failed_down_conversions, label="Failed DownConversions")
+    plt.plot(trials, successful_conversions, label="Successful Conversions")
+    plt.xticks(range(0, NUM_TRIALS, 1))  # Mostra le etichette ogni 10 trial
 
-    # plt.xlabel("Trial")
-    # plt.ylabel("Number of Conversions")
-    # plt.title("Photon Conversion over Trials")
-    # plt.legend()
-    # plt.show()
+    plt.xlabel("Trial")
+    plt.ylabel("Number of Conversions")
+    plt.title("Photon Conversion over Trials")
+    plt.legend()
+    plt.show()
 
-    #Plot rispetto al tempo?
+    #Plot rispetto al tempo con parallelizzazione?

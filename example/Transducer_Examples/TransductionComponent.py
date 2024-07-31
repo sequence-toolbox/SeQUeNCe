@@ -19,7 +19,8 @@ import sequence.utils.log as log
 import matplotlib.pyplot as plt
 from sequence.components.detector import Detector
 from typing import List
-
+import sequence.components.circuit as Circuit
+from qutip import Qobj
 
 
 
@@ -29,6 +30,8 @@ class Counter:
 
     def trigger(self, detector, info):
         self.count += 1
+
+
 
 class Trasmon(Entity):
     def __init__(self, owner: "Node", name: str, timeline: "Timeline", wavelength: List[int], photon_counter: int, photons_quantum_state: List[tuple], efficiency=1):
@@ -63,15 +66,12 @@ class Trasmon(Entity):
                             
         input_photons = [new_photon0, new_photon1]
         input_quantum_state= np.kron(self.photons_quantum_state[0], self.photons_quantum_state[1])
-
         self.input_quantum_state = input_quantum_state
-
         #print(input_quantum_state)
         #controllo dello stato di input del trasmone
         
         #aggiunta di non idealità di emissione (sto supponendo di voler emmetere sempre per che lo stato che voglio mandare è 1)
         if random.random() < self.efficiency:
-
             self._receivers[0].receive_photon_from_trasmon(input_photons)
             #qui con il quantum manager dovresti mandargli lo stato
             self.photon_counter += 1 #utile se vuoi aggiungere non idealità
@@ -82,18 +82,16 @@ class Trasmon(Entity):
         self.photon_counter += 1
         #docrebbe anche riceverlo in qualche modo ma è ok
         
-
-        
-
         
 class Transducer(Entity):
-    def __init__(self, owner: "Node", name: str, timeline: "Timeline", efficiency=1, photon_counter=int):
+    def __init__(self, owner: "Node", name: str, timeline: "Timeline", efficiency=1, photon_counter=int, quantum_state=tuple):
         Entity.__init__(self, name, timeline)
         self.name = name
         self.owner = owner
         self.timeline = timeline
         self.efficiency = efficiency
         self.photon_counter = photon_counter
+        self.quantum_state = quantum_state
 
     def init(self):
         assert len(self._receivers) == 2
@@ -113,16 +111,6 @@ class Transducer(Entity):
         self.photon_counter += 1
     #questa può essere utile per la EQT
 
-
-    
-        
-
-    #def receive_photon_from_trasmon(self, photon: "Photon") -> None:
-    #    if lightsource.photon_counter >= 0: 
-    #        self.photon_counter += lightsource.photon_counter
-    #    else:
-    #        self.photon_counter += 0
-    #        print("NO photon emitted by the Source")
 
 
 class FockDetector(Detector):
