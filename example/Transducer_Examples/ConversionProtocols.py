@@ -48,12 +48,16 @@ class EmittingProtocol(Protocol):
         
         #print di controllo
 
-        print(f"Trasmon Photon counter: {self.trasmon.photon_counter}") 
-        print(f"Transducer Photon counter: {self.transducer.photon_counter}")
-        print(f"Trasmon Quantum state: {self.trasmon.quantum_state}") #questo non ci deve essere sempre
-        print(f"Trasmon-Photon Wavelength: {self.trasmon.wavelength}") #come li prendo dal new photon? vedi CHGP #neanche questo
+        print(f"Microwave photons emitted by the Trasmon at Tx: {self.trasmon.photon_counter}") 
+        # #questo è per verificare che il contatore del trasmone sia stato incrementato di un fotone, se è stato incrementato significa che ha emesso
+
+        #print(f"Transducer Photon counter: {self.transducer.photon_counter}") #questo può servire s evuoi in futuro aggiungere non idealità tra il trasmone e il transducer (per ora supponiamo emissione non ideale ma collegamento ideale)
+
+        print(f"Trasmon Quantum state: {self.trasmon.input_quantum_state}") #questo non ci deve essere sempre
        
-        #aggiungi non idealità
+        #print(f"Trasmon Quantum state: {self.trasmon.input_quantum_state}") #questo non ci deve essere sempre
+        #print(f"Trasmon-Photon Wavelength: {self.trasmon.wavelength}") #come li prendo dal new photon? vedi CHGP #neanche questo
+       
 
     def received_message(self, src: str, msg):
         pass
