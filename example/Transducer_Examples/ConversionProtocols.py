@@ -31,6 +31,15 @@ from qutip import Qobj
 MICROWAVE_WAVELENGTH = 999308 # nm
 OPTICAL_WAVELENGTH = 1550 # nm
 
+# Definizione della matrice di conversione
+def get_conversion_matrix(efficiency: float) -> Qobj:
+    custom_gate_matrix = np.array([
+        [1, 0, 0, 0],
+        [0, math.sqrt(1 - efficiency), math.sqrt(efficiency), 0],
+        [0, math.sqrt(efficiency), math.sqrt(1 - efficiency), 0],
+        [0, 0, 0, 1]
+    ])
+    return Qobj(custom_gate_matrix, dims=[[4], [4]])
 
 
 #Nota: questo è lo stato 1, quindi il trasmone DEVE emettere, se parto dallo sttao 0 NON deve amettere (si può studiare anche questa cosa in fututo)
@@ -47,82 +56,44 @@ class EmittingProtocol(Protocol):
         self.transducer = transducer
 
     def start(self) -> None:
-         
         self.trasmon.emit()
 
-        
-        #print di controllo
-
-        print(f"Microwave photons emitted by the Trasmon at Tx: {self.trasmon.photon_counter}") 
-        # #questo è per verificare che il contatore del trasmone sia stato incrementato di un fotone, se è stato incrementato significa che ha emesso
-
-        #print(f"Transducer Photon counter: {self.transducer.photon_counter}") #questo può servire s evuoi in futuro aggiungere non idealità tra il trasmone e il transducer (per ora supponiamo emissione non ideale ma collegamento ideale)
-
-        print(f"Trasmon Quantum state: {self.trasmon.input_quantum_state}") #questo non ci deve essere sempre
-       
-        #print(f"Trasmon Quantum state: {self.trasmon.input_quantum_state}") #questo non ci deve essere sempre
-        #print(f"Trasmon-Photon Wavelength: {self.trasmon.wavelength}") #come li prendo dal new photon? vedi CHGP #neanche questo
-       
+        print(f"Microwave photons emitted by the Trasmon at Tx: {self.trasmon.photon_counter}")
+        print(f"Trasmon Quantum state: {self.trasmon.input_quantum_state}")
 
     def received_message(self, src: str, msg):
         pass
 
-
-
-#nota per questi protocolli: il detector della prima condizione è quello che identifica la conversione AVVENUTA :)
-
-
-
 class UpConversionProtocol(Protocol):
-    "Questo protocollo è per la up-conversion dei fotoni."
-    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer:"Transducer", node: "Node", trasmon: "Trasmon"):
+    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", node: "Node", trasmon: "Trasmon"):
         super().__init__(own, name)
         self.owner = own
         self.name = name
-        self.tl = tl  
-        self.transducer = transducer 
+        self.tl = tl
+        self.transducer = transducer
         self.trasmon = trasmon
         self.node = node
 
     def start(self, photon: "Photon") -> None:
         if self.transducer.photon_counter > 0:
-            
+            custom_gate = get_conversion_matrix(self.transducer.efficiency)
 
-                
-                #Parte quantistica
-                
-                # Definisci la gate personalizzata
-            custom_gate_matrix = np.array([
-                [1, 0, 0, 0],
-                [0, 1, 1 - math.sqrt(self.transducer.efficiency), 0],
-                [0, 0, math.sqrt(self.transducer.efficiency), 0],
-                [0, 0, 0, 1]
-                ])
-            custom_gate = Qobj(custom_gate_matrix, dims=[[4], [4]])
-                
             trasmon_state_vector = np.array(self.trasmon.input_quantum_state).reshape((4, 1))
             photon_state = Qobj(trasmon_state_vector, dims=[[4], [1]])
-                
-                
-                # Applica la gate allo stato del trasmone
-            new_photon_state = custom_gate * photon_state
-                    
-                # Aggiorna lo stato quantistico del fotone
-            self.transducer.quantum_state = new_photon_state.full().flatten()
-                    
-            print(f"Transducer at Tx quantum state: {self.transducer.quantum_state}")
-            
-            if random.random() < self.transducer.efficiency:
 
-                #Parte statistica
-                #photon0 = photons[0] #chiamo il primo della lista perché ho supppsto essere alle microonde
-                photon.wavelength = OPTICAL_WAVELENGTH  
+            new_photon_state = custom_gate * photon_state
+            self.transducer.quantum_state = new_photon_state.full().flatten()
+
+            print(f"Transducer at Tx quantum state: {self.transducer.quantum_state}")
+
+            if random.random() < self.transducer.efficiency:
+                photon.wavelength = OPTICAL_WAVELENGTH
                 self.transducer._receivers[0].receive_photon(self.node, photon)
                 print("Successful up-conversion")
-                #qui forse potresti dire di settare lo stato di questo fotone (che in realtà è più precisamente una lista di fotoni a quello stato lì)
-
+                self.transducer.output_quantum_state = [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j]
+                print(f"State after successful up-conversion: {self.transducer.output_quantum_state}")
             else:
-                photon.wavelength = MICROWAVE_WAVELENGTH 
+                photon.wavelength = MICROWAVE_WAVELENGTH
                 self.transducer._receivers[1].get(photon)
                 print("FAILED up-conversion")
         else:
@@ -132,37 +103,44 @@ class UpConversionProtocol(Protocol):
         pass
 
 class DownConversionProtocol(Protocol):
-    def __init__(self, own: "Node", name: str,  tl: "Timeline", transducer: "Transducer"):
-        super().__init__(own, name)    
+    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", trasmon: "Trasmon"):
+        super().__init__(own, name)
         self.owner = own
         self.name = name
-        self.tl = tl  
-        self.transducer = transducer  
+        self.tl = tl
+        self.transducer = transducer
 
-    def start(self, photon: "Photon") -> None: 
+    def start(self, photon: "Photon") -> None:
         if self.transducer.photon_counter > 0:
+            #signfica che il contatore del secondo trasduttore è incrementato, quindi la up_conversion di prima ha avuto successo
+            #di conseguenza posso settare quello stato
 
-            #Parte quantistica
+            transducer_state = [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j]
+            custom_gate = get_conversion_matrix(self.transducer.efficiency)
 
+            transducer_state_vector = np.array(transducer_state).reshape((4, 1))
+            transducer_state = Qobj(transducer_state_vector, dims=[[4], [1]])
 
-            #Parte statistica
+            new_transducer_state = custom_gate * transducer_state
+            self.transducer.quantum_state = new_transducer_state.full().flatten()
+
+            print(f"Transducer at Rx quantum state: {self.transducer.quantum_state}")
+
             if random.random() < self.transducer.efficiency:
                 photon.wavelength = MICROWAVE_WAVELENGTH
-                self.transducer._receivers[0].receive(photon) 
+                self.transducer._receivers[0].receive(photon)
                 print("Successful down-conversion")
-
-            
+                self.transducer.output_quantum_state = [0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j]
+                print(f"State after successful down-conversion: {self.transducer.output_quantum_state}")
             else:
-                photon.wavelength = OPTICAL_WAVELENGTH    
+                photon.wavelength = OPTICAL_WAVELENGTH
                 self.transducer._receivers[1].get(photon)
                 print("FAILED down-conversion")
         else:
             print("No photon to down-convert")
-        
+
     def received_message(self, src: str, msg):
         pass
-
-
 
 class ReceivingProtocol(Protocol):
     def __init__(self, own: "Node", name: str, tl: "Timeline", trasmon="Trasmon", transducer="Transducer"):
@@ -173,19 +151,8 @@ class ReceivingProtocol(Protocol):
         self.trasmon = trasmon
         self.transducer = transducer
 
-    def start(self,photon: "Photon") -> None:
-         
+    def start(self, photon: "Photon") -> None:
         self.trasmon.receive(photon)
-
-        
-        #print di controllo
-
-       # print(f"Trasmon Photon counter: {self.trasmon.photon_counter}")
-        #print(f"Transducer Photon counter: {self.transducer.photon_counter}")
-        #print(f"Trasmon Quantum state: {self.trasmon.quantum_state}")
-        #print(f"Trasmon-Photon Wavelength: {self.trasmon.wavelength}") #come li prendo dal new photon? vedi CHGP
-       
-        #aggiungi non idealità
 
     def received_message(self, src: str, msg):
         pass

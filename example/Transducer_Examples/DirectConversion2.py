@@ -51,7 +51,7 @@ state_list= [ket1, ket0] #Il trasmone in questo caso voglio che generi lo stato 
 
 # Transducer
 EFFICIENCY_UP = 0.5
-EFFICIENCY_DOWN = 0.8
+EFFICIENCY_DOWN = 0.5
 
 # Fock Detector
 MICROWAVE_DETECTOR_EFFICIENCY_Rx = 1
@@ -143,6 +143,8 @@ class ReceiverNode(Node):
         
         transducer2.add_output([trasmon2,detector2])
         print(f"Transducer2 output: {transducer2._receivers}")
+
+        #transducer = node1.get_components_by_type("Transducer")[0]
         self.downconversion_protocol = DownConversionProtocol(self, name + ".downconversion_protocol", timeline, transducer2)
 
     def receive_photon(self, src, photon):

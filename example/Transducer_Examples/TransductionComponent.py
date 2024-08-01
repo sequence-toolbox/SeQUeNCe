@@ -84,14 +84,15 @@ class Trasmon(Entity):
         
         
 class Transducer(Entity):
-    def __init__(self, owner: "Node", name: str, timeline: "Timeline", efficiency=1, photon_counter=int, quantum_state=tuple):
+    def __init__(self, owner: "Node", name: str, timeline: "Timeline", efficiency=1, photon_counter=int, input_quantum_state=None):
         Entity.__init__(self, name, timeline)
         self.name = name
         self.owner = owner
         self.timeline = timeline
         self.efficiency = efficiency
         self.photon_counter = photon_counter
-        self.quantum_state = quantum_state
+        self.input_quantum_state = input_quantum_state
+        #self.quantum_state = quantum_state
 
     def init(self):
         assert len(self._receivers) == 2
@@ -101,14 +102,19 @@ class Transducer(Entity):
             self.add_receiver(i)
     
     def receive_photon_from_trasmon(self, photon: "Photon") -> None:
+        #potresti aggiunger eun if se lo stato è quello desiderato :)
         self.photon_counter += 1 #in questo caso il contatore indica che ha ricevuto un fotone alle microonde
 
     def receive_photon_from_channel(self, photon: "Photon") -> None:
-        self.photon_counter += 1 #in questo caso il contatore indica che ha ricevuto un fotone ottico
+        #photon.quantum_state = qui devi considerare due fotoni , quindi lo stato ket10 che vorresti ricevere
+        
+        self.photon_counter += 1
+
+         #in questo caso il contatore indica che ha ricevuto un fotone ottico
         #capire come diffenrenziare questi due casi
 
-    def microwave_initialization(self, photon: "Photon") -> None:
-        self.photon_counter += 1
+    #def microwave_initialization(self, photon: "Photon") -> None:
+        #self.photon_counter += 1
     #questa può essere utile per la EQT
 
 
