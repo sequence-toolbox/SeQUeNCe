@@ -12,47 +12,60 @@ DATA_DIR = "/Users/alexkolar/Desktop/Lab/dqs_sim/sweep_length/results"
 # plotting params
 mpl.rcParams.update({'font.sans-serif': 'Helvetica',
                      'font.size': 12})
+c_color = 'cornflowerblue'
+percent_color = 'coral'
 
 
-# results_files = glob.glob("(*km)*/main.json", root_dir=DATA_DIR)
-results_files = glob.glob("(*km)*/*.qu", root_dir=DATA_DIR)
+results_files = glob.glob("(*km)*/main.json", root_dir=DATA_DIR)
 
-# calculate average GHZ
-qobj_by_distance = {}
+# get all GHZ statistics
+distances = []
+c_vals = []
+complete_percent = []
 for file in results_files:
-    long_name = os.path.split(file)[0]
+    dir_name = os.path.split(file)[0]
 
-    # get distance
-    distance_str = long_name[long_name.find("(") + 1:long_name.find(")")]
-    distance_str = distance_str[:-2]  # remove 'km'
-    distance = int(distance_str)
+    with open(os.path.join(DATA_DIR, file)) as f:
+        result_data = json.load(f)
+    distance = result_data["network config"]["qconnections"][0]["distance"]
+    distance /= 1e3  # convert to km
+    distances.append(distance)
 
-    file_to_load = os.path.splitext(file)[0]
-    file_to_load = os.path.join(DATA_DIR, file_to_load)
-    qobj = qload(file_to_load)
-    if distance in qobj_by_distance:
-        qobj_by_distance[distance].append(qobj)
-    else:
-        qobj_by_distance[distance] = [qobj]
+    qobjs = []
+    for trial in result_data["results"]:
+        if trial["GHZ state"] is not None:
+            file_path = os.path.join(DATA_DIR, dir_name, trial["GHZ state"])
+            qobj = qload(file_path)
+            qobjs.append(qobj)
 
-# calculate c
-c_by_distance = {}
-for distance, qobjs in qobj_by_distance.items():
+    # calculate c
     avg_ghz = sum(qobjs) / len(qobjs)
     c = calc_scalar_c(avg_ghz)
-    c_by_distance[distance] = abs(c)  # c is complex
+    c_vals.append(abs(c))  # c is complex
+
+    # calculate completion
+    num_trials = result_data["simulation config"]["num_trials"]
+    num_completed = result_data["results distribution"]["GHZ generated"]
+    complete_percent.append(num_completed / num_trials)
+
+# sort
+distances, c_vals = zip(*sorted(zip(distances, c_vals)))
 
 
 # plotting
-x_vals, y_vals = zip(*c_by_distance.items())
-x_vals, y_vals = list(x_vals), list(y_vals)
-x_vals, y_vals = zip(*sorted(zip(x_vals, y_vals)))
+fig, ax = plt.subplots()
+ax2 = ax.twinx()
+ax.plot(distances, c_vals,
+        '-o', color=c_color)
+ax2.plot(distances, complete_percent,
+         '-o', color=percent_color)
 
-plt.plot(x_vals, y_vals,
-         '-o', color='cornflowerblue')
-plt.xlabel("Distance (km)")
-plt.ylabel("C")
-plt.ylim((-0.1, 1.1))
+ax.set_xlabel("Distance (km)")
+ax.set_ylabel("C", color=c_color)
+ax2.set_ylabel("Completion Rate", color=percent_color)
+ax.set_ylim((-0.1, 1.1))
+ax2.set_ylim((-0.1, 1.1))
+ax.grid(True)
 
-plt.tight_layout()
-plt.show()
+fig.tight_layout()
+fig.show()
