@@ -31,7 +31,9 @@ def _filter_basis_pairs(pairs: List, num_qubits: int):
 
 
 def calc_scalar_c(rho: qt.Qobj, tol=1e-09):
-    '''Calculates the scalar C. C=2*sum_(a,b)[l_a*l_b/(l_a+l_b)], l_a and l_b
+    """Calculates the scalar C.
+
+    C=2*sum_(a,b)[l_a*l_b/(l_a+l_b)], l_a and l_b
     are the l_i=<i|rho|i>, where |i> is the generalized Bell basis. The input state
     is diagonal in the generalized Bell basis so we take the eigenvalue decomposition of rho.
     l_a and l_b are paired based on oposite relative phase: |a>=|s_1>+|s_2> and |b>=|s_1>-|s_2>,
@@ -42,30 +44,37 @@ def calc_scalar_c(rho: qt.Qobj, tol=1e-09):
         tol: numerical tolerance
     
     Return
-        C: float'''
-    vec_dim=rho.dims[0][0]
-    std_basis_vecs=list(range(vec_dim)) #integer rep of standard basis elements.
-    std_basis_pairs=list(combinations(std_basis_vecs, 2))
+        C: float
+    """
+
+    qobj_dim = rho.dims[0]
+    vec_dim = np.prod(qobj_dim)
+    std_basis_vecs = list(range(vec_dim))  # integer rep of standard basis elements.
+    std_basis_pairs = list(combinations(std_basis_vecs, 2))
     # the filter ensures that each pair of strings have different values at each index.
     # this ensures that equal superpositions of are bipartite maximally entangled.
-    std_basis_pairs=_filter_basis_pairs(std_basis_pairs, int(math.log2(vec_dim)))
-    c_val=0
+    std_basis_pairs = _filter_basis_pairs(std_basis_pairs, int(math.log2(vec_dim)))
+    c_val = 0
+
     for idx1, idx2 in std_basis_pairs:
         # construct matrix representations of basis vectors.
-        vec1=[[0]*vec_dim]
-        vec1[0][idx1]=1
-        vec1=qt.Qobj(vec1)
-        vec2=[[0]*vec_dim]
-        vec2[0][idx2]=1
-        vec2=qt.Qobj(vec2)
+        vec1 = [[0]*vec_dim]
+        vec1[0][idx1] = 1
+        vec1 = qt.Qobj(vec1, dims=[[1], qobj_dim])
+
+        vec2 = [[0]*vec_dim]
+        vec2[0][idx2] = 1
+        vec2 = qt.Qobj(vec2, dims=[[1], qobj_dim])
+
         # eigenvalues
-        vec_plus=(vec1+vec2).unit()
-        vec_minus=(vec1-vec2).unit()
-        val1=(vec_plus * rho * vec_plus.trans().conj()).full()[0][0]
-        val2=(vec_minus * rho * vec_minus.trans().conj()).full()[0][0]
-        if abs(val1+val2)>tol:
-            c_val+=(val1*val2)/(val1+val2)
-    return 4*c_val #multiplying by 4 since the order of the eigenvalues in the sum matters.
+        vec_plus = (vec1+vec2).unit()
+        vec_minus = (vec1-vec2).unit()
+        val1 = (vec_plus * rho * vec_plus.trans().conj())
+        val2 = (vec_minus * rho * vec_minus.trans().conj())
+        if abs(val1+val2) > tol:
+            c_val += (val1*val2)/(val1+val2)
+
+    return 4 * c_val  # multiplying by 4 since the order of the eigenvalues in the sum matters.
 
 
 def purification_result(state1, state2, gate_fid1, gate_fid2, meas_fid1, meas_fid2, is_twirled=True):
