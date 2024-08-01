@@ -45,8 +45,12 @@ def get_conversion_matrix(efficiency: float) -> Qobj:
 #Nota: questo è lo stato 1, quindi il trasmone DEVE emettere, se parto dallo sttao 0 NON deve amettere (si può studiare anche questa cosa in fututo)
 
 
+#Per ora questo protocollo attiva solo il metodo emit proprio del componente trasmone
 #si può aggiungere la non idealità interna o esterna (andrebbe studiato questo, va nell'emissione, nell'incremento del contatore del trasduttore o entrambe?)
 class EmittingProtocol(Protocol):
+    
+    "Protocol for emission of single microwave photon by trasmon"
+
     def __init__(self, own: "Node", name: str, tl: "Timeline", trasmon="Trasmon", transducer="Transducer"):
         super().__init__(own, name)
         self.owner = own
@@ -63,6 +67,8 @@ class EmittingProtocol(Protocol):
 
     def received_message(self, src: str, msg):
         pass
+
+
 
 class UpConversionProtocol(Protocol):
     def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", node: "Node", trasmon: "Trasmon"):

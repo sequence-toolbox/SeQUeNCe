@@ -41,8 +41,8 @@ class Trasmon(Entity):
         self.timeline = timeline
         self.wavelength = wavelength
         self.photon_counter = photon_counter #il photon counter fa riferimento ai fotoni alle microonde (non quelli ottici)
-        self.photons_quantum_state = photons_quantum_state
-        self.efficiency=efficiency #per modellare eventuali non idealità
+        self.photons_quantum_state = photons_quantum_state #stato quantistico dei singoli fotoni, lo stato complessivo in ingresso al trasmone sarà il loro prodotto scalare
+        self.efficiency=efficiency #per modellare eventuali non idealità nell'emissione del fotone alle microonde. Se efficiency=1 allora il trasmone nello stato 10 (uno nel senso di carica attivata e quindi deve emettere 1 fotone alle microonde) emette sempre
 
     def init(self):
         pass
@@ -52,7 +52,8 @@ class Trasmon(Entity):
             self.add_receiver(i)
 
     def emit(self) -> None:
-        
+
+        #inizio con il descrivere lo stato in ingresso al trasmone
         new_photon0 = Photon(name=self.name,
                             timeline=self.timeline,
                             wavelength=self.wavelength[0],
@@ -66,17 +67,28 @@ class Trasmon(Entity):
                             
         input_photons = [new_photon0, new_photon1]
         input_quantum_state= np.kron(self.photons_quantum_state[0], self.photons_quantum_state[1])
-        self.input_quantum_state = input_quantum_state
+        self.input_quantum_state = input_quantum_state #stato quantistico complessivo in ingresso al trasmone
+
+
+        #print(self.photons_quantum_state[0])
+        #print(self.photons_quantum_state[1])
+        #controllo stati dei singoli fotoni
+
         #print(input_quantum_state)
         #controllo dello stato di input del trasmone
         
         #aggiunta di non idealità di emissione (sto supponendo di voler emmetere sempre per che lo stato che voglio mandare è 1)
-        if random.random() < self.efficiency:
-            self._receivers[0].receive_photon_from_trasmon(input_photons)
-            #qui con il quantum manager dovresti mandargli lo stato
-            self.photon_counter += 1 #utile se vuoi aggiungere non idealità
+        if self.photons_quantum_state[0] is (1.0 + 0.0j, 0.0 + 0.0j):
+        #se il fotone alle microonde è 1 allora effettivamente il trasmone deve mandare i suoi fotoni, altrimenti no
+            if random.random() < self.efficiency:
+                self._receivers[0].receive_photon_from_trasmon(input_photons) 
+                #il trasmone che è il ricevitore del trasmone riceve una lista di fotoni correttamente
+                #AGGIUNTA: qui con il quantum manager dovresti mandargli lo stato
+                self.photon_counter += 1 #utile se vuoi aggiungere non idealità
+            else:
+                pass
         else:
-            pass
+            print("The trasmon is in the state 00, or 01, it doesn't emit microwave photons")
     
     def receive(self, photon: "Photon") -> None:
         self.photon_counter += 1

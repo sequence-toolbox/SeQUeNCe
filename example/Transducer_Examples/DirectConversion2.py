@@ -72,8 +72,7 @@ DISTANCE = 1e3
 
 #NODES OF THE NETWORK 
 
-#Nota: in entrambi i nodi i detector identifica il FALLIMENTO della conversione
-#Nota: nel ReceiverNode il detector è a MICROONDE
+#Nota: in entrambi i nodi i DETECTOR identifica il FALLIMENTO della conversione
 
 class SenderNode(Node):
     def __init__(self, name, timeline, node2):
@@ -145,7 +144,7 @@ class ReceiverNode(Node):
         print(f"Transducer2 output: {transducer2._receivers}")
 
         #transducer = node1.get_components_by_type("Transducer")[0]
-        self.downconversion_protocol = DownConversionProtocol(self, name + ".downconversion_protocol", timeline, transducer2)
+        self.downconversion_protocol = DownConversionProtocol(self, name + ".downconversion_protocol", timeline, transducer2, trasmon2)
 
     def receive_photon(self, src, photon):
         self.components[self.transducer2_name].receive_photon_from_channel(photon)
