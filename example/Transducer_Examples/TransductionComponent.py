@@ -52,7 +52,7 @@ class Trasmon(Entity):
         for i in outputs:
             self.add_receiver(i)
 
-    def emit(self) -> None:
+    def get(self) -> None:
 
         #inizio con il descrivere lo stato in ingresso al trasmone
         new_photon0 = Photon(name=self.name,
@@ -71,25 +71,14 @@ class Trasmon(Entity):
         self.input_quantum_state = input_quantum_state #stato quantistico complessivo in ingresso al trasmone
 
 
-        print(self.photons_quantum_state[0])
-        print(self.photons_quantum_state[1])
+        #print(self.photons_quantum_state[0])
+        #print(self.photons_quantum_state[1])
         #controllo stati dei singoli fotoni
 
         #print(input_quantum_state)
         #controllo dello stato di input del trasmone
-        
-        #aggiunta di non idealità di emissione (sto supponendo di voler emmetere sempre per che lo stato che voglio mandare è 1)
-        if self.photons_quantum_state[0] == ket1:
-        #se il fotone alle microonde è 1 allora effettivamente il trasmone deve mandare i suoi fotoni, altrimenti no
-            if random.random() < self.efficiency:
-                self._receivers[0].receive_photon_from_trasmon(input_photons) 
-                #il trasmone che è il ricevitore del trasmone riceve una lista di fotoni correttamente
-                #AGGIUNTA: qui con il quantum manager dovresti mandargli lo stato
-                self.photon_counter += 1 #utile se vuoi aggiungere non idealità
-            else:
-                pass
-        else:
-            print("The trasmon is in the state 00, or 01, it doesn't emit microwave photons")
+        return new_photon0, new_photon1
+       
     
     def receive(self, photon: "Photon") -> None:
         self.photon_counter += 1

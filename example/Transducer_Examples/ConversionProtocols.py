@@ -28,6 +28,8 @@ import sequence.components.circuit as Circuit
 from qutip import Qobj
 
 
+ket1 = (0.0 + 0.0j, 1.0 + 0.0j) 
+ket0 = (1.0 + 0.0j, 0.0 + 0.0j) 
 
 MICROWAVE_WAVELENGTH = 999308 # nm
 OPTICAL_WAVELENGTH = 1550 # nm
@@ -43,11 +45,7 @@ def get_conversion_matrix(efficiency: float) -> Qobj:
     return Qobj(custom_gate_matrix, dims=[[4], [4]])
 
 
-#Nota: questo è lo stato 1, quindi il trasmone DEVE emettere, se parto dallo sttao 0 NON deve amettere (si può studiare anche questa cosa in fututo)
 
-
-#Per ora questo protocollo attiva solo il metodo emit proprio del componente trasmone
-#si può aggiungere la non idealità interna o esterna (andrebbe studiato questo, va nell'emissione, nell'incremento del contatore del trasduttore o entrambe?)
 class EmittingProtocol(Protocol):
 
     "Protocol for emission of single microwave photon by trasmon"
@@ -60,11 +58,30 @@ class EmittingProtocol(Protocol):
         self.trasmon = trasmon
         self.transducer = transducer
 
-    def start(self) -> None:
-        self.trasmon.emit()
 
+    def start(self) -> None:
+
+        #Il trasmone setta il suo stato
+        self.trasmon.get()
+
+        #Il trasmone emette un fotone alle microonde a due condizioni:
+        #SE il primo fotone del suo stato è 1 (quindi ho un fotone alle microonde) , il primo fotone è per la convenzione adottata quello alle microonde
+        #SE non ci sono non idealità
+
+        if self.trasmon.photons_quantum_state[0] == ket1:
+            if random.random() < self.trasmon.efficiency:
+                    self.trasmon._receivers[0].receive_photon_from_trasmon(Photon) #CERCA DI FAR SI CHE RICEVA IL FOTONE NEW_PHOTON0
+                    #il trasmone che è il ricevitore del trasmone riceve un fotone correttamente
+                    #AGGIUNTA: qui con il quantum manager dovresti mandargli lo stato
+                    self.trasmon.photon_counter += 1 
+            else:
+                    pass
+        else:
+                print("The trasmon is in the state 00, or 01, it doesn't emit microwave photons")
+        
         print(f"Microwave photons emitted by the Trasmon at Tx: {self.trasmon.photon_counter}")
         print(f"Trasmon Quantum state: {self.trasmon.input_quantum_state}")
+
 
     def received_message(self, src: str, msg):
         pass
@@ -113,6 +130,8 @@ class UpConversionProtocol(Protocol):
 
     def received_message(self, src: str, msg):
         pass
+
+
 
 class DownConversionProtocol(Protocol):
     def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", trasmon: "Trasmon"):
