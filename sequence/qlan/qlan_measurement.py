@@ -49,6 +49,7 @@ class QlanMeasurementProtocol(EntanglementProtocol):
         self.local_memory_identifiers = list(owner.adjacent_nodes.keys())
         
         self.bases: str = bases
+        self.message_sent = []
 
         # N_a u N_{\hat a}
         self.remote_node_names = remote_memories    
@@ -162,7 +163,7 @@ class QlanMeasurementProtocol(EntanglementProtocol):
 
                     log.logger.debug(f"\nORCHESTRATOR DEBUG: message_list {self.message_list}")
 
-                # Case of Measurement in the X basis
+                # Case of Measurement in the Y basis
                 elif self.bases[base_count] == "y" or self.bases[base_count] == "Y":
                     msg_type = QlanMeasurementMsgType.Y_Outcome0
                     dest_sample = Na
@@ -259,7 +260,7 @@ class QlanMeasurementProtocol(EntanglementProtocol):
                     
                     new_msg = Message(QlanB0MsgType.B0_Designation, self.remote_node_names[b0])
                     
-                    log.logger.info(f"\nMESSAGE SENT: {self.owner.name} is sending: {new_msg.msg_type} to {self.remote_node_names[dest]} at {format(self.tl.now())}")
+                    log.logger.info(f"\nORCHESTRATOR: Sending: {new_msg.msg_type} to {self.remote_node_names[b0]} at {format(self.tl.now())}")
                     
                     self.owner.send_message(self.remote_node_names[b0], new_msg)
                         
@@ -296,6 +297,7 @@ class QlanMeasurementProtocol(EntanglementProtocol):
                 log.logger.info(f"\nMESSAGE SENT: {self.owner.name} is sending: {new_msg.msg_type} to {self.remote_node_names[dest]} at {format(self.tl.now())}")
 
                 self.owner.send_message(self.remote_node_names[dest], new_msg)
+                self.message_sent.append(new_msg.msg_type)
 
         # reset message list after sending all messages
         self.message_list = {}
