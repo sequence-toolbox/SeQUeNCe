@@ -69,7 +69,8 @@ class Trasmon(Entity):
         input_photons = [new_photon0, new_photon1]
         input_quantum_state= np.kron(self.photons_quantum_state[0], self.photons_quantum_state[1])
         self.input_quantum_state = input_quantum_state #stato quantistico complessivo in ingresso al trasmone
-
+        self.new_photon0=new_photon0
+        self.new_photon1=new_photon1
 
         #print(self.photons_quantum_state[0])
         #print(self.photons_quantum_state[1])
@@ -77,24 +78,23 @@ class Trasmon(Entity):
 
         #print(input_quantum_state)
         #controllo dello stato di input del trasmone
-        return new_photon0, new_photon1
+        #return new_photon0, new_photon1
        
     
-    def receive(self, photon: "Photon") -> None:
+    def receive_photon_from_transducer(self, photon: "Photon") -> None:
         self.photon_counter += 1
         #docrebbe anche riceverlo in qualche modo ma è ok
         
         
 class Transducer(Entity):
-    def __init__(self, owner: "Node", name: str, timeline: "Timeline", efficiency=1, photon_counter=int, input_quantum_state=None):
+    def __init__(self, owner: "Node", name: str, timeline: "Timeline", efficiency=1, photon_counter=int):
         Entity.__init__(self, name, timeline)
         self.name = name
         self.owner = owner
         self.timeline = timeline
         self.efficiency = efficiency
         self.photon_counter = photon_counter
-        self.input_quantum_state = input_quantum_state
-        #self.quantum_state = quantum_state
+        
 
     def init(self):
         assert len(self._receivers) == 2
@@ -109,7 +109,6 @@ class Transducer(Entity):
 
     def receive_photon_from_channel(self, photon: "Photon") -> None:
         #photon.quantum_state = qui devi considerare due fotoni , quindi lo stato ket10 che vorresti ricevere
-        
         self.photon_counter += 1
 
          #in questo caso il contatore indica che ha ricevuto un fotone ottico

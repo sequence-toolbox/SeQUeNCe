@@ -70,7 +70,7 @@ class EmittingProtocol(Protocol):
 
         if self.trasmon.photons_quantum_state[0] == ket1:
             if random.random() < self.trasmon.efficiency:
-                    self.trasmon._receivers[0].receive_photon_from_trasmon(Photon) #CERCA DI FAR SI CHE RICEVA IL FOTONE NEW_PHOTON0
+                    self.trasmon._receivers[0].receive_photon_from_trasmon(self.trasmon.new_photon0) #CERCA DI FAR SI CHE RICEVA IL FOTONE NEW_PHOTON0
                     #il trasmone che è il ricevitore del trasmone riceve un fotone correttamente
                     #AGGIUNTA: qui con il quantum manager dovresti mandargli lo stato
                     self.trasmon.photon_counter += 1 
@@ -79,8 +79,9 @@ class EmittingProtocol(Protocol):
         else:
                 print("The trasmon is in the state 00, or 01, it doesn't emit microwave photons")
         
-        print(f"Microwave photons emitted by the Trasmon at Tx: {self.trasmon.photon_counter}")
         print(f"Trasmon Quantum state: {self.trasmon.input_quantum_state}")
+        print(f"Microwave photons emitted by the Trasmon at Tx: {self.trasmon.photon_counter}")
+
 
 
     def received_message(self, src: str, msg):
@@ -99,10 +100,12 @@ class UpConversionProtocol(Protocol):
         self.node = node
 
     def start(self, photon: "Photon") -> None:
-        #Se il traduttore ha ricevuto un fotone alle microonde, il suo contatore si è incrementato
+        #Se il trasduttore ha ricevuto un fotone alle microonde, il suo contatore si è incrementato
         #Se il contatore del trasmone si è incrementato, posso proseguire con la up-conversion
-        #Lo stato del trasmone entra nel trasduttore e viene up-conversionato
+        #Lo stato del trasmone entra nel trasduttore e viene up-convertito
         #Statisticamente si calcola per ogni fotone in ingresso alle microonde quanti fotoni in uscita ottici posso avere
+        #Se statisticamente il fotone viene up-convertito, il trasduttore del nodo riceviore incrmeneta il suo contatore
+
         if self.transducer.photon_counter > 0:
             custom_gate = get_conversion_matrix(self.transducer.efficiency)
 
@@ -159,9 +162,9 @@ class DownConversionProtocol(Protocol):
 
             if random.random() < self.transducer.efficiency:
                 photon.wavelength = MICROWAVE_WAVELENGTH
-                self.transducer._receivers[0].receive(photon)
+                self.transducer._receivers[0].receive_photon_from_transducer(photon)
                 print("Successful down-conversion")
-                self.transducer.output_quantum_state = [0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j]
+                self.transducer.output_quantum_state = [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j]
                 print(f"State after successful down-conversion: {self.transducer.output_quantum_state}")
             else:
                 photon.wavelength = OPTICAL_WAVELENGTH
@@ -172,6 +175,8 @@ class DownConversionProtocol(Protocol):
 
     def received_message(self, src: str, msg):
         pass
+
+
 
 class ReceivingProtocol(Protocol):
     def __init__(self, own: "Node", name: str, tl: "Timeline", trasmon="Trasmon", transducer="Transducer"):
