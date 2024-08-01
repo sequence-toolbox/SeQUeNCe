@@ -28,6 +28,7 @@ import sequence.components.circuit as Circuit
 from qutip import Qobj
 
 
+
 MICROWAVE_WAVELENGTH = 999308 # nm
 OPTICAL_WAVELENGTH = 1550 # nm
 
@@ -48,7 +49,7 @@ def get_conversion_matrix(efficiency: float) -> Qobj:
 #Per ora questo protocollo attiva solo il metodo emit proprio del componente trasmone
 #si può aggiungere la non idealità interna o esterna (andrebbe studiato questo, va nell'emissione, nell'incremento del contatore del trasduttore o entrambe?)
 class EmittingProtocol(Protocol):
-    
+
     "Protocol for emission of single microwave photon by trasmon"
 
     def __init__(self, own: "Node", name: str, tl: "Timeline", trasmon="Trasmon", transducer="Transducer"):
@@ -81,6 +82,10 @@ class UpConversionProtocol(Protocol):
         self.node = node
 
     def start(self, photon: "Photon") -> None:
+        #Se il traduttore ha ricevuto un fotone alle microonde, il suo contatore si è incrementato
+        #Se il contatore del trasmone si è incrementato, posso proseguire con la up-conversion
+        #Lo stato del trasmone entra nel trasduttore e viene up-conversionato
+        #Statisticamente si calcola per ogni fotone in ingresso alle microonde quanti fotoni in uscita ottici posso avere
         if self.transducer.photon_counter > 0:
             custom_gate = get_conversion_matrix(self.transducer.efficiency)
 
@@ -95,6 +100,7 @@ class UpConversionProtocol(Protocol):
             if random.random() < self.transducer.efficiency:
                 photon.wavelength = OPTICAL_WAVELENGTH
                 self.transducer._receivers[0].receive_photon(self.node, photon)
+                #il nodo2 (e quindi il trasduttore) riceve il fotone ottico e incrementa il suo contatore
                 print("Successful up-conversion")
                 self.transducer.output_quantum_state = [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j]
                 print(f"State after successful up-conversion: {self.transducer.output_quantum_state}")
@@ -119,7 +125,7 @@ class DownConversionProtocol(Protocol):
     def start(self, photon: "Photon") -> None:
         if self.transducer.photon_counter > 0:
             #signfica che il contatore del secondo trasduttore è incrementato, quindi la up_conversion di prima ha avuto successo
-            #di conseguenza posso settare quello stato
+            #di conseguenza posso settare questo stato come stato di input del trasduttore
 
             transducer_state = [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j]
             custom_gate = get_conversion_matrix(self.transducer.efficiency)
