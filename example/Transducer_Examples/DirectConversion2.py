@@ -1,4 +1,3 @@
-import random
 from sequence.kernel.timeline import Timeline
 from sequence.components.optical_channel import QuantumChannel
 from sequence.protocol import Protocol
@@ -16,14 +15,12 @@ from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 import sequence.utils.log as log
 import matplotlib.pyplot as plt
-from example.Transducer_Examples.TransductionComponent import Transducer
-from example.Transducer_Examples.TransductionComponent import FockDetector
-from example.Transducer_Examples.TransductionComponent import Trasmon
-from example.Transducer_Examples.TransductionComponent import Counter
-from sequence.components.detector import Detector
+from example.Transducer_Examples.TransductionComponent import *
+
+from example.Transducer_Examples.ConversionProtocols import EmittingProtocol
 from example.Transducer_Examples.ConversionProtocols import UpConversionProtocol
 from example.Transducer_Examples.ConversionProtocols import DownConversionProtocol
-from example.Transducer_Examples.ConversionProtocols import EmittingProtocol
+
 from sequence.kernel.quantum_manager import QuantumManager
 import sequence.components.circuit as Circuit
 
@@ -50,8 +47,8 @@ state_list= [ket1, ket0] #Il trasmone in questo caso voglio che generi lo stato 
 
 
 # Transducer
-EFFICIENCY_UP = 0.2
-EFFICIENCY_DOWN = 0.2
+EFFICIENCY_UP = 0.5
+EFFICIENCY_DOWN = 0.8
 
 # Fock Detector
 MICROWAVE_DETECTOR_EFFICIENCY_Rx = 1

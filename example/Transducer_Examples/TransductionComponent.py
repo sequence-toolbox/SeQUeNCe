@@ -137,11 +137,38 @@ class FockDetector(Detector):
         if random.random() < self.efficiency:
             self.photon_counter += 1
     
+    def set_efficiency(self, efficiency):
+        self.efficiency = efficiency
+
     def receive_photon(self, src: str, photon: "Photon") -> None:
         if photon.wavelength == self.wavelength:
             self.get(photon)
         else:
             pass
+
+# class SPD(FockDetector):
+#     def __init__(self, name: str, timeline: "Timeline", efficiency=1, wavelength=int, encoding_type=fock):
+#         super().__init__(name, timeline, efficiency)
+#         self.name = name
+#         self.photon_counter = 0
+#         self.wavelength = wavelength
+#         self.encoding_type = encoding_type
+#         self.timeline = timeline
+#         self.efficiency = efficiency
+    
+#     def init(self):
+#         pass
+
+#     def get(self, photon=None, **kwargs) -> None:
+#         if random.random() < self.efficiency:
+#             self.photon_counter += 1
+    
+#     def receive_photon(self, src: str, photon: "Photon") -> None:
+#         if photon.wavelength == self.wavelength:
+#             self.get(photon)
+#         else:
+#             pass
+
 
 
 class FockBeamSplitter(Entity):

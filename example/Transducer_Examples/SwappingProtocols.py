@@ -30,11 +30,15 @@ import sequence.components.circuit as Circuit
 from qutip import Qobj
 
 
+
+
 ket1 = (0.0 + 0.0j, 1.0 + 0.0j) 
 ket0 = (1.0 + 0.0j, 0.0 + 0.0j) 
 
 MICROWAVE_WAVELENGTH = 999308 # nm
 OPTICAL_WAVELENGTH = 1550 # nm
+
+
 
 class UpConversionProtocolEntangle(Protocol): #versione per entanglement swapping, semplificata senza trasmone 
     def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", node: "Node"):
@@ -51,8 +55,10 @@ class UpConversionProtocolEntangle(Protocol): #versione per entanglement swappin
                 self.transducer._receivers[0].receive_photon(self.node, photon)
                 #il nodo2 (e quindi il trasduttore) riceve il fotone ottico e incrementa il suo contatore
                 print("Successful up-conversion")
+
                 self.transducer.output_quantum_state = [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j]
-                print(f"State after successful up-conversion: {self.transducer.output_quantum_state}")
+                #print(f"State after successful up-conversion: {self.transducer.output_quantum_state}")
+                #print di controllo
             else:
                 photon.wavelength = MICROWAVE_WAVELENGTH
                 self.transducer._receivers[1].get(photon)
@@ -63,41 +69,82 @@ class UpConversionProtocolEntangle(Protocol): #versione per entanglement swappin
         pass
 
 
-class SwappingProtocol(Protocol): #versione per entanglement swapping, semplificata senza trasmone 
-    def __init__(self, own: "Node", name: str, tl: "Timeline", FockBS: "FockBeamSplitter", node: "Node"):
+
+class Swapping(Protocol):
+    def __init__(self, own: "Node", name: str, tl: "Timeline", FockBS: "FockBeamSplitter"):
         super().__init__(own, name)
         self.owner = own
         self.name = name
         self.tl = tl
         self.FockBS = FockBS
-        self.node = node
 
     def start(self, photon: "Photon") -> None:
-        import random
+        receivers = self.FockBS._receivers
+        photon_count = self.FockBS.photon_counter
 
-class SwappingMeasure(Protocol): 
-    def __init__(self, own: "Node", name: str, tl: "Timeline", FockBS: "FockBeamSplitter", node: "Node"):
-        super().__init__(own, name)
-        self.owner = own
-        self.name = name
-        self.tl = tl
-        self.FockBS = FockBS
-        self.node = node
-
-    def start(self, photon: "Photon") -> None:
-        if self.FockBS.photon_counter > 0:
-            receivers = self.FockBS._receivers()  
-            for _ in range(self.FockBS.photon_counter):
-                selected_receiver = random.choice(receivers)
-                self.send_photon(selected_receiver, photon)  # Supponiamo che tu abbia un metodo per inviare i fotoni
-
-            # Reset the photon counter after processing
-            self.FockBS.photon_counter = 0
-
+        if photon_count == 1:
+            selected_receiver = random.choice(receivers)
+            selected_receiver.get(photon)
+        elif photon_count == 2:
+            selected_receiver = random.choice(receivers)
+            selected_receiver.get(photon)
+            selected_receiver.get(photon)  # Invia entrambi i fotoni allo stesso ricevitore
+    
     def received_message(self, src: str, msg):
         pass
 
-            
+
+
+
+
+class Measure(Protocol):
+    def __init__(self, own: "Node", name: str, tl: "Timeline", FockBS: "FockBeamSplitter", entanglement_count: int):
+        super().__init__(own, name)
+        self.owner = own
+        self.name = name
+        self.tl = tl
+        self.FockBS = FockBS
+        self.entanglement_count = 0
+        self.entanglement_count_spd = 0  # nuovo contatore
+        self.entanglement_count_real = 0  # contatore reale
+        self.entanglement_count_spd_real = 0  # nuovo contatore reale
+
+    def start(self, photon: "Photon") -> None:
+        # Efficienza reale dei ricevitori, così da richiamarla dopo più facilmente
+        real_efficiency_0 = self.FockBS._receivers[0].efficiency
+        real_efficiency_1 = self.FockBS._receivers[1].efficiency
+
+        # Temporaneamente impostiamo l'efficienza a 1 per i contatori ideali
+        self.FockBS._receivers[0].set_efficiency(1)
+        self.FockBS._receivers[1].set_efficiency(1)
+        print(f"Efficiency detecor 1: {real_efficiency_0}")
+        print(f"Efficiency detector 2: {real_efficiency_1}")
+        print(f"Efficiency detector 1 (ideal): {self.FockBS._receivers[0].efficiency}")
+        print(f"Efficiency detector 2 (ideal): {self.FockBS._receivers[1].efficiency}")
+
+        # Incrementa entanglement_count e entanglement_count_spd per efficienza ideale
+        if self.FockBS._receivers[0].photon_counter == 1 or self.FockBS._receivers[1].photon_counter == 1:
+            self.entanglement_count += 1
+        if self.FockBS._receivers[0].photon_counter >= 1 or self.FockBS._receivers[1].photon_counter >= 1:
+            self.entanglement_count_spd += 1
+
+        # Ripristina l'efficienza reale
+        self.FockBS._receivers[0].set_efficiency(real_efficiency_0)
+        self.FockBS._receivers[1].set_efficiency(real_efficiency_1)
+
+        print(f"Efficiency detector 1 (real): {self.FockBS._receivers[0].efficiency}")
+        print(f"Efficiency detector 2 (real): {self.FockBS._receivers[1].efficiency}")
+
+        # Incrementa entanglement_count_real e entanglement_count_spd_real per efficienza reale
+        if self.FockBS._receivers[0].photon_counter == 1 or self.FockBS._receivers[1].photon_counter == 1:
+            self.entanglement_count_real += 1
+        if self.FockBS._receivers[0].photon_counter >= 1 or self.FockBS._receivers[1].photon_counter >= 1:
+            self.entanglement_count_spd_real += 1
+
+        print(f"Entanglement count (ideal): {self.entanglement_count}")
+        print(f"Entanglement count SPD (ideal): {self.entanglement_count_spd}")
+        print(f"Entanglement count (real): {self.entanglement_count_real}")
+        print(f"Entanglement count SPD (real): {self.entanglement_count_spd_real}")
 
     def received_message(self, src: str, msg):
         pass
