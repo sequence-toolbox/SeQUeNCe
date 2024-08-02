@@ -37,7 +37,7 @@ import sequence.components.circuit as Circuit
 
 # GENERAL
 
-NUM_TRIALS = 10
+NUM_TRIALS = 3
 FREQUENCY = 1e9
 MICROWAVE_WAVELENGTH = 999308 # nm
 OPTICAL_WAVELENGTH = 1550 # nm
@@ -121,12 +121,12 @@ class EntangleNode(Node):
         self.set_first_component(self.fock_beam_splitter_name)
 
         detector_name = name + ".detector1"
-        detector = FockDetector(detector_name, timeline, efficiency=0.2)
+        detector = FockDetector(detector_name, timeline, efficiency=1)
         self.add_component(detector)
         self.set_first_component(detector_name)
 
         detector_name2 = name + ".detector2"
-        detector2 = FockDetector(detector_name2, timeline, efficiency=1)
+        detector2 = FockDetector(detector_name2, timeline, efficiency=0.5)
         self.add_component(detector2)
         self.set_first_component(detector_name2)
 
@@ -190,10 +190,14 @@ if __name__ == "__main__":
         # Componenti nodo2
         fock_beam_splitter = node2.get_components_by_type("FockBeamSplitter")[0]
         fock_beam_splitter_count = fock_beam_splitter.photon_counter
-        detector2 = node2.get_components_by_type("FockDetector")[0]
+        detector1 = node2.get_components_by_type("FockDetector")[0]
+        detector1_count = detector1.photon_counter
+        detector1_count2 = detector1.photon_counter2
+
+
+        detector2 = node2.get_components_by_type("FockDetector")[1]
         detector2_count = detector2.photon_counter
-        detector3 = node2.get_components_by_type("FockDetector")[1]
-        detector3_count = detector3.photon_counter
+        detector2_count2 = detector2.photon_counter2
 
         # Scheduling dei processi e degli eventi
         process1 = Process(node1.upconversionentangle_protocol, "start", [Photon]) 
@@ -216,8 +220,10 @@ if __name__ == "__main__":
         tl.schedule(event5)
 
         print(f"Photon count in FockBeamSplitter: {fock_beam_splitter_count}")
-        print(f"Photon count in detector1: {detector2_count}")
-        print(f"Photon count in detector2: {detector3_count}")
+        print(f"Photon count in detector1 APPARENTE: {detector1_count}")
+        print(f"Photon count in detector2 APPARENTE: {detector2_count}")
+        print(f"Photon count in detector1 IDEALE: {detector1_count2}")
+        print(f"Photon count in detector2 IDEALE: {detector2_count2}")
 
         # Reset timeline
         tl.time = 0
@@ -225,8 +231,10 @@ if __name__ == "__main__":
 
         # Reset dei contatori
         fock_beam_splitter.photon_counter = 0
+        detector1.photon_counter = 0
         detector2.photon_counter = 0
-        detector3.photon_counter = 0
+        detector1.photon_counter2 = 0
+        detector2.photon_counter2 = 0
 
         # Incremento del conteggio totale
         cumulative_time += PERIOD

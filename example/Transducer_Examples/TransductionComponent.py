@@ -125,6 +125,7 @@ class FockDetector(Detector):
         super().__init__(name, timeline, efficiency)
         self.name = name
         self.photon_counter = 0
+        self.photon_counter2 = 0
         self.wavelength = wavelength
         self.encoding_type = encoding_type
         self.timeline = timeline
@@ -136,9 +137,16 @@ class FockDetector(Detector):
     def get(self, photon=None, **kwargs) -> None:
         if random.random() < self.efficiency:
             self.photon_counter += 1
+
+    def get_2(self, photon=None, **kwargs) -> None:
+        if random.random() < self.efficiency:
+            self.photon_counter2 += 1
     
     def set_efficiency(self, efficiency):
         self.efficiency = efficiency
+
+    #def reset_photon_counter(self):
+        #self.photon_counter = 0
 
     def receive_photon(self, src: str, photon: "Photon") -> None:
         if photon.wavelength == self.wavelength:

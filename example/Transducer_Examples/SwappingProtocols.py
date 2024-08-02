@@ -81,14 +81,48 @@ class Swapping(Protocol):
     def start(self, photon: "Photon") -> None:
         receivers = self.FockBS._receivers
         photon_count = self.FockBS.photon_counter
+        real_efficiency_0 = self.FockBS._receivers[0].efficiency
+        real_efficiency_1 = self.FockBS._receivers[1].efficiency
+
+
+        #print(f"Ricevitore 1: {self.FockBS._receivers[0]}")
+        #print(f"Ricevitore 2: {self.FockBS._receivers[1]}")
+
+        print(f"Efficiency detecor 1: {self.FockBS._receivers[0].efficiency}")
+        print(f"Efficiency detector 2: {self.FockBS._receivers[1].efficiency}")
+        
+        #caso REALE
 
         if photon_count == 1:
             selected_receiver = random.choice(receivers)
             selected_receiver.get(photon)
+            #caso reale
+
         elif photon_count == 2:
+            # Invia entrambi i fotoni allo stesso ricevitore
             selected_receiver = random.choice(receivers)
             selected_receiver.get(photon)
-            selected_receiver.get(photon)  # Invia entrambi i fotoni allo stesso ricevitore
+            selected_receiver.get(photon)
+
+        #caso IDEALE con efficienza 1
+        self.FockBS._receivers[0].set_efficiency(1) 
+        self.FockBS._receivers[1].set_efficiency(1)
+   
+            
+        if photon_count == 1:
+            selected_receiver = random.choice(receivers)
+            selected_receiver.get_2(photon)
+            #caso reale
+
+        elif photon_count == 2:
+            # Invia entrambi i fotoni allo stesso ricevitore
+            selected_receiver = random.choice(receivers)
+            selected_receiver.get_2(photon)
+            selected_receiver.get_2(photon)
+        
+        # Ripristina le efficienze reali
+        self.FockBS._receivers[0].set_efficiency(real_efficiency_0)
+        self.FockBS._receivers[1].set_efficiency(real_efficiency_1)
     
     def received_message(self, src: str, msg):
         pass
@@ -106,45 +140,30 @@ class Measure(Protocol):
         self.FockBS = FockBS
         self.entanglement_count = 0
         self.entanglement_count_spd = 0  # nuovo contatore
-        self.entanglement_count_real = 0  # contatore reale
-        self.entanglement_count_spd_real = 0  # nuovo contatore reale
+        self.entanglement_count_ideal = 0  # contatore reale
+        self.entanglement_count_spd_ideal = 0  # nuovo contatore reale
 
     def start(self, photon: "Photon") -> None:
-        # Efficienza reale dei ricevitori, così da richiamarla dopo più facilmente
-        real_efficiency_0 = self.FockBS._receivers[0].efficiency
-        real_efficiency_1 = self.FockBS._receivers[1].efficiency
+        
 
-        # Temporaneamente impostiamo l'efficienza a 1 per i contatori ideali
-        self.FockBS._receivers[0].set_efficiency(1)
-        self.FockBS._receivers[1].set_efficiency(1)
-        print(f"Efficiency detecor 1: {real_efficiency_0}")
-        print(f"Efficiency detector 2: {real_efficiency_1}")
-        print(f"Efficiency detector 1 (ideal): {self.FockBS._receivers[0].efficiency}")
-        print(f"Efficiency detector 2 (ideal): {self.FockBS._receivers[1].efficiency}")
 
-        # Incrementa entanglement_count e entanglement_count_spd per efficienza ideale
+        # Incrementa entanglement_count e entanglement_count_spd per efficienza REAL quindi NON BUONOOO!
         if self.FockBS._receivers[0].photon_counter == 1 or self.FockBS._receivers[1].photon_counter == 1:
             self.entanglement_count += 1
-        if self.FockBS._receivers[0].photon_counter >= 1 or self.FockBS._receivers[1].photon_counter >= 1:
-            self.entanglement_count_spd += 1
+        #if self.FockBS._receivers[0].photon_counter >= 1 or self.FockBS._receivers[1].photon_counter >= 1:
+        #    self.entanglement_count_spd += 1
 
-        # Ripristina l'efficienza reale
-        self.FockBS._receivers[0].set_efficiency(real_efficiency_0)
-        self.FockBS._receivers[1].set_efficiency(real_efficiency_1)
+    
+        # Incrementa entanglement_count_real e entanglement_count_spd_real per efficienza IDEAL
+        if self.FockBS._receivers[0].photon_counter2 == 1 or self.FockBS._receivers[1].photon_counter2 == 1:
+            self.entanglement_count_ideal += 1
+        if self.FockBS._receivers[0].photon_counter2 >= 1 or self.FockBS._receivers[1].photon_counter2 >= 1:
+            self.entanglement_count_spd_ideal += 1
 
-        print(f"Efficiency detector 1 (real): {self.FockBS._receivers[0].efficiency}")
-        print(f"Efficiency detector 2 (real): {self.FockBS._receivers[1].efficiency}")
-
-        # Incrementa entanglement_count_real e entanglement_count_spd_real per efficienza reale
-        if self.FockBS._receivers[0].photon_counter == 1 or self.FockBS._receivers[1].photon_counter == 1:
-            self.entanglement_count_real += 1
-        if self.FockBS._receivers[0].photon_counter >= 1 or self.FockBS._receivers[1].photon_counter >= 1:
-            self.entanglement_count_spd_real += 1
-
-        print(f"Entanglement count (ideal): {self.entanglement_count}")
-        print(f"Entanglement count SPD (ideal): {self.entanglement_count_spd}")
-        print(f"Entanglement count (real): {self.entanglement_count_real}")
-        print(f"Entanglement count SPD (real): {self.entanglement_count_spd_real}")
+        print(f"Entanglement count APPARENTE, CON NON IDEALITà DIE DETECTOR: {self.entanglement_count}") 
+        #print(f"Entanglement count SPD: {self.entanglement_count_spd}")
+        print(f"Entanglement count (ideal): {self.entanglement_count_ideal}")
+        print(f"Entanglement count SPD (ideal): {self.entanglement_count_spd_ideal}")
 
     def received_message(self, src: str, msg):
         pass
