@@ -79,8 +79,8 @@ class EmittingProtocol(Protocol):
         else:
                 print("The trasmon is in the state 00, or 01, it doesn't emit microwave photons")
         
-        print(f"Trasmon Quantum state: {self.trasmon.input_quantum_state}")
-        print(f"Microwave photons emitted by the Trasmon at Tx: {self.trasmon.photon_counter}")
+        #print(f"Trasmon Quantum state: {self.trasmon.input_quantum_state}")
+        #print(f"Microwave photons emitted by the Trasmon at Tx: {self.trasmon.photon_counter}")
 
 
 
@@ -192,3 +192,6 @@ class ReceivingProtocol(Protocol):
 
     def received_message(self, src: str, msg):
         pass
+
+
+

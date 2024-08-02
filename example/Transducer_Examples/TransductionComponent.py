@@ -144,3 +144,26 @@ class FockDetector(Detector):
             pass
 
 
+class FockBeamSplitter(Entity):
+    def __init__(self, name: str, owner: "Node", timeline: "Timeline", efficiency:int, photon_counter:int, src_list: List[str]):
+        Entity.__init__(self, name, timeline)
+        self.name = name
+        self.owner = owner
+        self.timeline = timeline
+        self.efficiency = efficiency
+        self.photon_counter = photon_counter
+        
+    def init(self):
+        assert len(self._receivers) == 2
+
+    def receive_photon_from_scr(self, photon: "Photon", source: List[str]) -> None:
+        self.photon_counter += 1
+
+    def add_output(self, outputs: List):
+        for i in outputs:
+            self.add_receiver(i)
+
+    def send_photon(self, receiver: "Entity", photon: "Photon") -> None:
+        receiver.get(self.name, photon)
+
+

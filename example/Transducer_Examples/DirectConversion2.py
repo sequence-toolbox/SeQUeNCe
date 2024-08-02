@@ -50,8 +50,8 @@ state_list= [ket1, ket0] #Il trasmone in questo caso voglio che generi lo stato 
 
 
 # Transducer
-EFFICIENCY_UP = 0.5
-EFFICIENCY_DOWN = 0.5
+EFFICIENCY_UP = 0.2
+EFFICIENCY_DOWN = 0.2
 
 # Fock Detector
 MICROWAVE_DETECTOR_EFFICIENCY_Rx = 1

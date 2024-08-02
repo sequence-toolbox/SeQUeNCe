@@ -19,28 +19,47 @@ import matplotlib.pyplot as plt
 from example.Transducer_Examples.TransductionComponent import Transducer
 from example.Transducer_Examples.TransductionComponent import FockDetector
 from example.Transducer_Examples.TransductionComponent import Trasmon
+from example.Transducer_Examples.TransductionComponent import Counter
+from example.Transducer_Examples.TransductionComponent import FockBeamSplitter
+
 from sequence.components.detector import Detector
 from example.Transducer_Examples.ConversionProtocols import UpConversionProtocol
+from example.Transducer_Examples.SwappingProtocols import UpConversionProtocolEntangle
 from example.Transducer_Examples.ConversionProtocols import DownConversionProtocol
 from example.Transducer_Examples.ConversionProtocols import EmittingProtocol
+from sequence.kernel.quantum_manager import QuantumManager
+import sequence.components.circuit as Circuit
 
-# General
-NUM_TRIALS = 5
+
+#GENERAL
+
+NUM_TRIALS = 10
 FREQUENCY = 1e9
-START_TIME = 0
-PERIOD = int(1e12 / FREQUENCY)
+MICROWAVE_WAVELENGTH = 999308 # nm
+OPTICAL_WAVELENGTH = 1550 # nm
+MEAN_PHOTON_NUM=1
 
-# Source
-WAVELENGTH = 1550
-MEAN_PHOTON_NUM = 10
+# Timeline
+START_TIME = 0
+EMISSION_DURATION = 10 # ps
+CONVERSION_DURATION = 10 # ps
+PERIOD = EMISSION_DURATION + CONVERSION_DURATION + CONVERSION_DURATION
+
+#Trasmon
+ket1 = (0.0 + 0.0j, 1.0 + 0.0j) 
+ket0 = (1.0 + 0.0j, 0.0 + 0.0j) 
+state_list= [ket1, ket0] #Il trasmone in questo caso voglio che generi lo stato 10 (voglio un fotone alle microonde e 0 ottico)
+#state_list= [ket1, ket0] stato 01 (0 fotoni alle microonde, 1 ottico)
+
 
 # Transducer
 EFFICIENCY_UP = 0.5
-
+EFFICIENCY_DOWN = 0.5
 
 # Fock Detector
-MICROWAVE_DETECTOR_EFFICIENCY = 1
-OPTICAL_DETECTOR_EFFICIENCY = 1 #poi nel caso li distinguo anche tra 1 e 2
+MICROWAVE_DETECTOR_EFFICIENCY_Rx = 1
+MICROWAVE_DETECTOR_EFFICIENCY_Tx = 1
+OPTICAL_DETECTOR_EFFICIENCY = 1
 
 # Channel
 ATTENUATION = 0
@@ -51,63 +70,22 @@ DISTANCE = 1e3
 
 
 
-class MyFockComponent(Entity):
-        def __init__(self, name: str, timeline: "Timeline", src_list: List, prob: int = 0.5):  
-            #aggiungo una lista di scr, che sarebbero i miei inpu (sono canali, da riempire??)
-            #inserisco prob che attuamente è 0.5, ovvero ho un beam splitter 50/50. Se voglio cambiarla dovrò cambirare anche la funzione get
 
-            Entity.__init__(self, name, timeline)
-            self.name = name
-            self.timeline = timeline
-            src_list = [] #aggiungo la lista degli input, per ora una lista vuota che vado a riempire con i canali
-            self.first_component_name = self
-
-
-        def init(self):  # ci metto due ricevitori come il trasducer
-             assert len(self._receivers) == 2
-
-        def add_input(self, inputs, src: "QuantumChannel") -> None:
-            for i in inputs:
-                self.receive_qubit(i)
-
-        def add_detectors(self, ouputs: List):  #riempio i due ricevitori (questa volta sono due detector)
-            for i in ouputs:
-                self.add_receiver(i)
-
-        #def receive_photon_from_channel(self, photon: "Photon") -> None:
-            #....
-            #da mettere se nodo sentangled riceve un sifnifica che si richiama questa funzione
-            
-            #puoi mettere una seire di if, se il componente ne riceve 1, 0 o 2, 
-            # in particolare se ne riceve 2 puoi usare la fock interaction
-
-        def Fock_interaction(self, photon: "Photon", **kwargs) -> None:
-            detector_num = self.get_generator().choice([0, 1])
-            self._receivers[detector_num].get(photon)
-
-
-
-
-
-
-
-class Counter:
-    def __init__(self):
-        self.count = 0
-
-    def trigger(self, detector, info):
-        self.count += 1
-
-
-
+#NODES OF THE NETWORK 
 
 class SenderNode(Node):
     def __init__(self, name, timeline, node2):
         super().__init__(name, timeline)
 
-        # Hardware setup
 
-        #Istanzio componenet trasduttore
+        #Hardware setup
+
+        self.trasmon_name = name + ".trasmon"
+        trasmon = Trasmon(name=self.trasmon_name, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=1, photons_quantum_state= state_list)
+        self.add_component(trasmon)
+        self.set_first_component(self.trasmon_name)
+
+
         self.transducer_name = name + ".transducer"
         transducer = Transducer(name=self.transducer_name, owner=self, timeline=timeline, efficiency=EFFICIENCY_UP)
         self.add_component(transducer)
@@ -117,109 +95,158 @@ class SenderNode(Node):
         transducer.attach(self.counter)
         self.set_first_component(self.transducer_name)
 
-        #Istanzio componente microwave detector nel Tx
+
+        trasmon.add_receiver(transducer)
+
+
         detector_name = name + ".fockdetector1"
-        detector = FockDetector(detector_name, timeline, efficiency=MICROWAVE_DETECTOR_EFFICIENCY)
+        detector = FockDetector(detector_name, timeline, wavelength=MICROWAVE_WAVELENGTH, efficiency=MICROWAVE_DETECTOR_EFFICIENCY_Tx)
         self.add_component(detector)
         self.set_first_component(detector_name)
         self.counter = Counter()
         detector.attach(self.counter)
 
-        #output del trasduttore
         transducer.add_output([node2, detector])
 
-        #Istanzio il protocollo di upconversion
-        self.upconversion_protocol = UpConversionProtocol(self, name + ".upconversion_protocol")
+        self.emitting_protocol = EmittingProtocol(self, name + ".emitting_protocol", timeline, trasmon, transducer)
+        self.upconversion_protocol = UpConversionProtocolEntangle(self, name + ".upconversion_protocol", timeline, transducer, node2)
+
 
 
 
 class EntangleNode(Node):
-    def __init__(self, name, timeline):
+    def __init__(self, name, timeline, src_list: List[str]):
         super().__init__(name, timeline)
-
+        
         # Hardware setup
-        self.myfockcomponent_name = name + ".mycomponent"
-        myfockcomponent = MyFockComponent(name=myfockcomponent.name, timeline=timeline)  # non metto scr_list perchè voglio un solo ingresso
-        self.add_component(MyFockComponent)
-        myfockcomponent.attach(self)
-        self.set_first_component(self.myfockcomponent_name)
-            
-        detector_name2 = name + ".fockdetector2"
-        detector2 = FockDetector(detector_name2, timeline, efficiency=OPTICAL_DETECTOR_EFFICIENCY)
+        self.fock_beam_splitter_name = name + ".FockBeamSplitter"
+        fock_beam_splitter = FockBeamSplitter(name=self.fock_beam_splitter_name, owner=self, timeline=timeline, efficiency=0.5, photon_counter=0, src_list=src_list)        
+        self.add_component(fock_beam_splitter)
+        self.set_first_component(self.fock_beam_splitter_name)
+        
+        detector_name = name + ".detector1"
+        detector = Detector(detector_name, timeline, efficiency=1)
+        self.add_component(detector)
+        self.set_first_component(detector_name)
+
+        detector_name2 = name + ".detector2"
+        detector2 = Detector(detector_name2, timeline, efficiency=1)
         self.add_component(detector2)
+        self.set_first_component(detector_name2)
+
+        fock_beam_splitter.add_output([detector, detector2])
+        
+        self.counter = Counter()
         self.counter2 = Counter()
+
+        detector.attach(self.counter)
         detector2.attach(self.counter2)
+    
+    def receive_photon(self, photon, src_list):
+        self.components[self.fock_beam_splitter_name].receive_photon_from_scr(photon, src_list)
 
-        detector_name3 = name + ".fockdetector3"
-        detector3 = FockDetector(detector_name3, timeline, efficiency=OPTICAL_DETECTOR_EFFICIENCY)
-        self.add_component(detector3)
-        self.counter3 = Counter()
-        detector3.attach(self.counter3)
-
-        myfockcomponent.add_detectors([detector2, detector3])
-
-def receive_photon(self, src, photon):
-        self.components[self.myfockcomponent_name].receive_photon_from_channel(photon)
 
 if __name__ == "__main__":
 
-    runtime = 1e12
+    runtime = 10e12
     tl = Timeline(runtime)
    
-    node2 = EntangleNode("node2", tl)
-    node1 = SenderNode("node1", tl, node2)
-    node3 = SenderNode("node3", tl, node2)
+    
+    nodoprimo_name = "Nodoo1"
+    nodoterzo_name = "Nodoo3"
+    
+    src_list = [nodoprimo_name, nodoterzo_name]  # the list of sources, note the order
+
+   
+
+    node2 = EntangleNode("node2", tl, src_list)
+    node1 = SenderNode(nodoprimo_name, tl, node2)
+    node3 = SenderNode(nodoterzo_name, tl, node2)
 
     qc1 = QuantumChannel("qc.node1.node2", tl, attenuation=ATTENUATION, distance=DISTANCE)
-    qc2 = QuantumChannel("qc.node3.node2", tl, attenuation=ATTENUATION, distance=DISTANCE)
+    qc2= QuantumChannel("qc.node1.node3", tl, attenuation=ATTENUATION, distance=DISTANCE)
     qc1.set_ends(node1, node2.name)
-    qc2.set_ends(node3, node2.name)
+    qc2.set_ends(node1, node3.name)
 
-    if EFFICIENCY_UP >= 0 and EFFICIENCY_UP <= 1:
-        pass
-    else:
-        print("Error: the efficiency must be between 0 and 1")
-        exit(1)
-    
-   
     tl.init()
 
-    print(f"--------------------")
-    #print(f"Simulation started with period {PERIOD} ps")
     
-    total_photons_successful=0
 
+    cumulative_time = START_TIME
+    
+    print(f"--------------------")
+
+    print(f"Direct Quantum Transduction Protocol starts, the qubit that we are going to convert is: {ket1}")
+    
     for trial in range(NUM_TRIALS): 
+
+        print(f"--------------------")
         print(f"Trial {trial}:")
 
+        tl.run()
 
-        tl.run() #se metto qua il tl.run il primo trial non richiama la funzione, ho sempre 0 e 0
+        #Richiamo i vari componenti dai nodi per richiamre i contatoti di fotoni 
+        #(mi servirà per printare i conteggi e poi per il reset)
 
+        #componenti nodo1
+        trasmon = node1.get_components_by_type("Trasmon")[0]
+        trasmon_count = trasmon.photon_counter
+        transducer = node1.get_components_by_type("Transducer")[0]
+        transducer_count = transducer.photon_counter
         detector = node1.get_components_by_type("FockDetector")[0]
-        detector_count = detector.photon_counter #DETECTOR A MICROONDE NODE1
+        detector_count = detector.photon_counter
 
+        fock_beam_splitter = node2.get_components_by_type("FockBeamSplitter")[0]
+        fock_beam_splitter_count = fock_beam_splitter.photon_counter
+        #componenti nodo2
+       
 
-        process1 = Process(node1.upconversion_protocol, "start", [])
-        event1 = Event(START_TIME + PERIOD * trial, process1) #incrementa il periodo che qua è 1
+        #scheduling dei processi e degli eventi
+        
+        #process0 = Process(node1.emitting_protocol, "start", [])
+        #event_time0 = (cumulative_time + EMISSION_DURATION) 
+        #event0 = Event(event_time0, process0)
+        #tl.schedule(event0)
+    
+        process1 = Process(node1.upconversion_protocol, "start", [Photon]) 
+        event_time1 = (cumulative_time + CONVERSION_DURATION) 
+        event1 = Event(event_time1, process1)
         tl.schedule(event1)
 
+        #process2 = Process(node3.emitting_protocol, "start", [])
+        #event2 = Event(event_time0, process2)
+        #tl.schedule(event0)
+    
+        process3 = Process(node3.upconversion_protocol, "start", [Photon]) 
+        event3 = Event(event_time1, process3)
+        tl.schedule(event1)
+
+        print(f"Photon count in FockBs: {fock_beam_splitter_count}")
+
+        #possiamo anche farli emettere contemporaneamente, ma lasciamo che la ricezione sia a due istati diversi :)
+        #(per ora)
+
+    
+    
+
         
-        #tl.run() #se metto qua il tl.run mi "scala" nel tempo i fotoni ricevuti da detector e detector2
+        #reset timeline
+        tl.time = 0
+        tl.init()
+
+
+        #Incremento del conteggio totale
+        cumulative_time += PERIOD
+
+        #reset dei contatori qui!
+        trasmon.photon_counter = 0 
+
+    #RESULTS
+
+    print(f"- - - - - - - - - -")
+
+  
     
-    
-        #print(f"Number of photons converted at time {tl.time} ps: {detector2_count}") #sistema queste unità di misura
-        #print(f"Number of NOT converted photons at time {tl.time} ps: {detector_count}")
+    print(f"- - - - - - - - - -")
 
-        #reset dei detector e contatori trasduttore
-        detector.photon_counter = 0
-    
-
-        #incremento del conteggio per calcolare la percentuale finale
-        #total_photons_successful += detector2_count
-
-
-        
-        
-
-
-    
+  
