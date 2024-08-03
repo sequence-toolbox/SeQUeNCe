@@ -75,12 +75,14 @@ class EmittingProtocol(Protocol):
                     #AGGIUNTA: qui con il quantum manager dovresti mandargli lo stato
                     self.trasmon.photon_counter += 1 
             else:
+                    #print(self.trasmon._receivers[0].photon_counter)
                     pass
+            
         else:
                 print("The trasmon is in the state 00, or 01, it doesn't emit microwave photons")
         
         #print(f"Trasmon Quantum state: {self.trasmon.input_quantum_state}")
-        #print(f"Microwave photons emitted by the Trasmon at Tx: {self.trasmon.photon_counter}")
+        print(f"Microwave photons emitted by the Trasmon at Tx: {self.trasmon.photon_counter}")
 
 
 

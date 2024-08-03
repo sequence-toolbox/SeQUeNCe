@@ -27,7 +27,7 @@ import sequence.components.circuit as Circuit
 
 #GENERAL
 
-NUM_TRIALS = 10
+NUM_TRIALS = 50
 FREQUENCY = 1e9
 MICROWAVE_WAVELENGTH = 999308 # nm
 OPTICAL_WAVELENGTH = 1550 # nm
@@ -79,7 +79,7 @@ class SenderNode(Node):
         #Hardware setup
 
         self.trasmon_name = name + ".trasmon"
-        trasmon = Trasmon(name=self.trasmon_name, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=1, photons_quantum_state= state_list)
+        trasmon = Trasmon(name=self.trasmon_name, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=0.7, photons_quantum_state= state_list)
         self.add_component(trasmon)
         self.set_first_component(self.trasmon_name)
 
@@ -171,11 +171,20 @@ if __name__ == "__main__":
     tl.init()
 
     total_photons_successful = 0
+
+    total_transducer_count = 0
     
+
+    #Plot1
     failed_up_conversions = []
     failed_down_conversions = []
     successful_conversions = [] 
 
+    #Plot2
+    ideal_photons = []
+    emitted_photons = []  # Modifica: aggiunto per tracciare i fotoni emessi cumulativamente
+    converted_photons = []
+    
 
     cumulative_time = START_TIME
     
@@ -231,6 +240,8 @@ if __name__ == "__main__":
         failed_down_conversions.append(detector2_count)
         successful_conversions.append(trasmon2_count)
 
+        
+
         print(f"Number of photons converted at time {tl.time}: {trasmon2_count}") 
         #Chiedere questione tl_now
         
@@ -238,6 +249,19 @@ if __name__ == "__main__":
         tl.time = 0
         tl.init()
 
+
+       
+        
+
+        #Incremento del conteggio totale
+        total_photons_successful += trasmon2_count
+        total_transducer_count += transducer_count
+        cumulative_time += PERIOD
+
+        ideal_photons.append(trial + 1)
+        emitted_photons.append(total_transducer_count)
+        converted_photons.append(total_photons_successful)
+        
         #reset dei vari contatori per ogni trial
         trasmon.photon_counter = 0 
         trasmon2.photon_counter = 0 
@@ -246,10 +270,6 @@ if __name__ == "__main__":
         detector2.photon_counter = 0
         transducer2.photon_counter = 0
 
-        #Incremento del conteggio totale
-        total_photons_successful += trasmon2_count
-        cumulative_time += PERIOD
-
 
     #RESULTS
 
@@ -257,6 +277,7 @@ if __name__ == "__main__":
 
     total_photons_to_be_converted = NUM_TRIALS - 1
     print(f"Total number of photons converted: {total_photons_successful}")
+    print(f"Total number of photons EMITTED: {total_transducer_count}")
     conversion_percentage = (total_photons_successful / total_photons_to_be_converted) * 100 if total_photons_to_be_converted > 0 else 0
     print(f"Conversion efficiency of DQT protocol: {conversion_percentage:.2f}%")
     #conversion_percentage = (total_photons_successful / total_photons_to_be_converted) * 100 if total_photons_to_be_converted > 0 else 0
@@ -291,4 +312,39 @@ if __name__ == "__main__":
     plt.legend()
     plt.show()
 
-    #Plot rispetto al tempo con parallelizzazione?
+
+import matplotlib.pyplot as plt
+
+# Supponendo che queste variabili siano già definite nel tuo codice
+# time_points, ideal_photons, emitted_photons, converted_photons
+import matplotlib.pyplot as plt
+
+# Supponendo che queste variabili siano già definite nel tuo codice
+# time_points, ideal_photons, emitted_photons, converted_photons
+
+import matplotlib.pyplot as plt
+
+# Supponendo che queste variabili siano già definite nel tuo codice
+# time_points, ideal_photons, emitted_photons, converted_photons
+
+time_points = [i * PERIOD for i in range(NUM_TRIALS)]
+plt.plot(time_points, ideal_photons, 'o-', label="Ideal conversion", color='#FF00FF')  # Magenta
+plt.plot(time_points, emitted_photons, 'o-', label="Microwave Photons Emitted", color='#50C878')  # Smeraldo
+plt.plot(time_points, converted_photons, 'o-', label="Successfully Converted Photons", color='#0047AB')  # Cobalto
+
+plt.xlabel("Time (ps)", fontsize=14)
+plt.ylabel("Photon Number", fontsize=14)
+plt.title("Photon Conversion over Time", fontsize=16, fontweight='bold')
+plt.legend(fontsize=12, loc='upper left')
+plt.grid(True)  # Aggiunge una griglia per migliorare la leggibilità
+
+plt.xticks(fontsize=12)  # Ingrandisce le etichette dell'asse x
+plt.yticks(fontsize=12)  # Ingrandisce le etichette dell'asse y
+
+plt.show()
+
+
+
+
+
+#da poter aggiungere: andamento rispetto al tempo con parallelizzazione degli eventi

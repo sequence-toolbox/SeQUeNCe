@@ -37,7 +37,7 @@ import sequence.components.circuit as Circuit
 
 # GENERAL
 
-NUM_TRIALS = 3
+NUM_TRIALS = 10
 FREQUENCY = 1e9
 MICROWAVE_WAVELENGTH = 999308 # nm
 OPTICAL_WAVELENGTH = 1550 # nm
@@ -58,7 +58,7 @@ state_list= [ket1, ket0] # Il trasmone in questo caso voglio che generi lo stato
 
 
 # Transducer
-EFFICIENCY_UP = 1
+EFFICIENCY_UP = 0.5
 
 # Fock Detector
 MICROWAVE_DETECTOR_EFFICIENCY_Rx = 1
@@ -111,7 +111,7 @@ class SenderNode(Node):
 
 
 class EntangleNode(Node):
-    def __init__(self, name, timeline, src_list: List[str], entanglement_count):
+    def __init__(self, name, timeline, src_list: List[str]):
         super().__init__(name, timeline)
 
         # Hardware setup
@@ -138,8 +138,12 @@ class EntangleNode(Node):
         detector.attach(self.counter)
         detector2.attach(self.counter2)
 
+        
+
+        
+
         self.swapping_protocol = Swapping(self, name + ".swapping_protocol", timeline, fock_beam_splitter)
-        self.measure_protocol = Measure(self, name + ".measure_protocol", timeline, fock_beam_splitter, entanglement_count)
+        self.measure_protocol = Measure(self, name + ".measure_protocol", timeline, fock_beam_splitter)
 
     def receive_photon(self, photon, src_list):
         self.components[self.fock_beam_splitter_name].receive_photon_from_scr(photon, src_list)
@@ -154,9 +158,8 @@ if __name__ == "__main__":
 
     src_list = [nodoprimo_name, nodoterzo_name]  # the list of sources, note the order
 
-    entanglement_count = 0
 
-    node2 = EntangleNode("node2", tl, src_list, entanglement_count)
+    node2 = EntangleNode("node2", tl, src_list)
     node1 = SenderNode(nodoprimo_name, tl, node2)
     node3 = SenderNode(nodoterzo_name, tl, node2)
 
@@ -168,6 +171,12 @@ if __name__ == "__main__":
     tl.init()
 
     cumulative_time = START_TIME
+
+    # List to store results
+    times = []
+    detector_photon_counters_real = []
+    spd_reals = []
+    
 
     print(f"--------------------")
 
@@ -194,10 +203,13 @@ if __name__ == "__main__":
         detector1_count = detector1.photon_counter
         detector1_count2 = detector1.photon_counter2
 
+        
 
         detector2 = node2.get_components_by_type("FockDetector")[1]
         detector2_count = detector2.photon_counter
         detector2_count2 = detector2.photon_counter2
+
+
 
         # Scheduling dei processi e degli eventi
         process1 = Process(node1.upconversionentangle_protocol, "start", [Photon]) 
@@ -220,10 +232,25 @@ if __name__ == "__main__":
         tl.schedule(event5)
 
         print(f"Photon count in FockBeamSplitter: {fock_beam_splitter_count}")
-        print(f"Photon count in detector1 APPARENTE: {detector1_count}")
-        print(f"Photon count in detector2 APPARENTE: {detector2_count}")
-        print(f"Photon count in detector1 IDEALE: {detector1_count2}")
-        print(f"Photon count in detector2 IDEALE: {detector2_count2}")
+        print(f"Photon count in detector1 REALE: {detector1_count}")
+        print(f"Photon count in detector2 REALE: {detector2_count}")
+
+        
+    
+
+        #Raccogliamo i valori dei contatori dal protocollo Measure
+        
+     
+        detector_photon_counter_real = node2.measure_protocol.get_detector_photon_counter_real()
+        spd_real = node2.measure_protocol.get_spd_real()
+
+        print(f"Detector photon counter with eta NOT 1 (cumulative): {detector_photon_counter_real}")
+        print(f"SPD with eta NOT 1 (cumulative): {spd_real}")
+
+        # Append results
+        times.append(trial * PERIOD)  # Time for each trial
+        detector_photon_counters_real.append(detector_photon_counter_real)
+        spd_reals.append(spd_real)
 
         # Reset timeline
         tl.time = 0
@@ -239,9 +266,48 @@ if __name__ == "__main__":
         # Incremento del conteggio totale
         cumulative_time += PERIOD
 
-    # RESULTS
-   
-    print(f"Numero di entanglement generati: {entanglement_count}")
-    print(f"- - - - - - - - - -")
+        # RESULTS
+        # Calculate and print percentages
+        detector_photon_counter_percentage = [count / NUM_TRIALS * 100 for count in detector_photon_counters_real]
+        spd_real_percentage = [value / NUM_TRIALS * 100 for value in spd_reals]
 
-   
+        print(f"Percentage of detector photon counters relative to number of trials: {detector_photon_counter_percentage[-1]}%")
+        print(f"Percentage of SPD real relative to number of trials: {spd_real_percentage[-1]}%")
+       
+
+
+    # Plotting
+    plt.figure(figsize=(12, 6))
+
+    # Definizione dei colori
+    color_blu = '#0047AB'
+
+    # Creazione del primo subplot
+    plt.subplot(2, 1, 1)
+    plt.plot(times, detector_photon_counters_real, 'o-', color=color_blu, label='Detector Photon Counter Real')
+    plt.xlabel('Time (ps)')
+    plt.ylabel('Detector Photon Counter Real')
+    plt.legend()
+    plt.grid(True)
+
+    # Creazione del secondo subplot
+    plt.subplot(2, 1, 2)
+    plt.plot(times, spd_reals, 'o-', color=color_blu, label='SPD Real')
+    plt.xlabel('Time (ps)')
+    plt.ylabel('SPD Real')
+    plt.legend()
+    plt.grid(True)
+
+    # Sincronizzazione degli assi
+    plt.tight_layout()
+
+    # Sincronizzazione degli assi x
+    min_time = min(times)
+
+    plt.tight_layout()
+    plt.show()
+
+
+
+ 
+print(f"- - - - - - - - - -")
