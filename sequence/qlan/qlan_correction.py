@@ -23,6 +23,12 @@ class QlanCorrectionProtocol(EntanglementProtocol):
         name (str): Label for protocol instance.
         tl (Timeline): Timeline for protocol scheduling.
         local_memories (list[Memory]): Memories at the orchestrator.
+        remote_node_names (list[str]): Names of the remote nodes.
+        remote_protocol_names (list[str]): Names of the remote protocols.
+        remote_memories (list[list[str]]): Names of the remote memories.
+        received_messages (list[Message]): List of received messages.
+        sent_messages (list[Message]): List of sent messages.
+        B0 (bool): Flag indicating if B0 designation is received.
     """
 
     def __init__(self, owner: "Node", name: str, tl: "Timeline", local_memories: list[Memory]):
@@ -32,7 +38,6 @@ class QlanCorrectionProtocol(EntanglementProtocol):
         self.tl = tl
         self.B0 = False
         
-        # Local Memories 
         self.local_memories: list[Memory] = local_memories
         self.local_memory_identifiers = list(owner.adjacent_nodes.keys())
 
@@ -63,15 +68,17 @@ class QlanCorrectionProtocol(EntanglementProtocol):
         self.remote_node_names = nodes
         self.remote_protocol_names = protocols
         self.remote_memories = memories
+        self.received_messages = []
+        self.sent_messages = []
 
     def perform_correction(self):
         '''Performs the correction based on the measurement outcomes received from the QLAN Orchestrator node.'''
 
         # Execute the quantum circuit to perform the measurements
         result = self.owner.timeline.quantum_manager.run_circuit(
-                           self.circuit, 
-                           [memory.qstate_key for memory in self.local_memories],
-                           meas_samp = self.owner.get_generator().random())
+                            self.circuit, 
+                            [memory.qstate_key for memory in self.local_memories],
+                            meas_samp = self.owner.get_generator().random())
 
         log.logger.info(f"\nPROTOCOL ENDED: {self.owner.name} executed {self.name} at {format(self.tl.now())}")
     
@@ -83,8 +90,9 @@ class QlanCorrectionProtocol(EntanglementProtocol):
         '''
 
         assert src in self.remote_node_names
+        self.received_messages.append(message)
         log.logger.info(f"\nMESSAGE RECEIVED: {self.owner.name} received message from {src} of type {message.msg_type}  at {format(self.tl.now())}")
-        
+
         n = len(self.local_memories)
         self.circuit = Circuit(n)
 
@@ -93,10 +101,10 @@ class QlanCorrectionProtocol(EntanglementProtocol):
 
         elif message.msg_type == QlanMeasurementMsgType.Z_Outcome0:
 
-            # No correction circuit is needed
             log.logger.info(f"\nAPPLYING CORRECTION: No correction is needed at {self.owner.name}")
             new_msg = Message(QlanCorrectionMsgType.ACK_Outcome0, src)
             self.owner.send_message(self.remote_node_names, new_msg)
+            self.sent_messages.append(new_msg)
         
         elif message.msg_type is QlanMeasurementMsgType.Z_Outcome1:
             
@@ -107,6 +115,7 @@ class QlanCorrectionProtocol(EntanglementProtocol):
             self.perform_correction()
             new_msg = Message(QlanCorrectionMsgType.ACK_Outcome0, src)
             self.owner.send_message(self.remote_node_names, new_msg)
+            self.sent_messages.append(new_msg)
         
         elif message.msg_type is QlanMeasurementMsgType.Y_Outcome0:
 
@@ -117,6 +126,7 @@ class QlanCorrectionProtocol(EntanglementProtocol):
             self.perform_correction()
             new_msg = Message(QlanCorrectionMsgType.ACK_Outcome0, src)
             self.owner.send_message(self.remote_node_names, new_msg)
+            self.sent_messages.append(new_msg)
         
         elif message.msg_type is QlanMeasurementMsgType.Y_Outcome1:
 
@@ -127,6 +137,7 @@ class QlanCorrectionProtocol(EntanglementProtocol):
             self.perform_correction()
             new_msg = Message(QlanCorrectionMsgType.ACK_Outcome0, src)
             self.owner.send_message(self.remote_node_names, new_msg)
+            self.sent_messages.append(new_msg)
         
         elif message.msg_type is QlanMeasurementMsgType.X_Outcome0:
 
@@ -134,7 +145,6 @@ class QlanCorrectionProtocol(EntanglementProtocol):
                 for i in range(n):
                     log.logger.info(f"\nAPPLYING CORRECTION: Applying minus root iY at {self.owner.name}")
                     self.circuit.minus_root_iY(i)
-                    #self.circuit.h(i)
                 self.B0 = False
             else:
                 for i in range(n):
@@ -144,6 +154,7 @@ class QlanCorrectionProtocol(EntanglementProtocol):
             self.perform_correction()
             new_msg = Message(QlanCorrectionMsgType.ACK_Outcome0, src)
             self.owner.send_message(self.remote_node_names, new_msg)
+            self.sent_messages.append(new_msg)
         
         elif message.msg_type is QlanMeasurementMsgType.X_Outcome1:
             
@@ -160,6 +171,7 @@ class QlanCorrectionProtocol(EntanglementProtocol):
             self.perform_correction()
             new_msg = Message(QlanCorrectionMsgType.ACK_Outcome0, src)
             self.owner.send_message(self.remote_node_names, new_msg)
+            self.sent_messages.append(new_msg)
         
         else:
             raise ValueError(f"Unknown message type received: {message.msg_type}")

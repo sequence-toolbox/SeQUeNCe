@@ -18,6 +18,8 @@ class QlanOrchestratorStateManager:
         tl (Timeline): The timeline object.
         memory_names (list): The names of the memories.
         bases (str): The set of bases.
+        raw_counter (int): The counter for raw memories.
+        ent_counter (int): The counter for entangled memories.
     """
     def __init__(self, owner, tl, memory_names):
         self.owner = owner
@@ -87,7 +89,6 @@ class QlanOrchestratorStateManager:
 
         tl.quantum_manager.set(qstate_keys, g_state)
 
-        # Find adjacent nodes
         self.owner.find_adjacent_nodes(tl, remote_memories)
 
 
@@ -96,13 +97,18 @@ class QlanOrchestratorNode(Node):
     This class represents a network node that shares a GHZ state.
     It inherits from the class "Node" and adds the memories as components and the simple manager.
 
-    Attributes:
+    Args:
         name (str): The name of the node.
         tl (Timeline): The timeline object.
+        num_local_memories (int): The number of local memories to add as components.
+        remote_memories (List[Memory]): The list of remote memories to add as components.
+        memo_fidelity (float): The fidelity of the memories.
+        memo_frequency (int): The frequency of the memories.
+        memo_efficiency (float): The efficiency of the memories.
+        memo_coherence_time (float): The coherence time of the memories.
+        memo_wavelength (float): The wavelength of the memories.
         bases (str): The set of bases.
     """
-
-    # Dictionary for adjacent nodes (aka entangled nodes) for each memory.
     
     def __init__(self, name: str, tl: Timeline, num_local_memories: int, remote_memories: List[Memory], memo_fidelity = 0.9, memo_frequency: int = 2000, memo_efficiency: float = 1, memo_coherence_time: float = -1, memo_wavelength: float = 500):
         """
@@ -122,31 +128,31 @@ class QlanOrchestratorNode(Node):
         self.memory_coherence_time = memo_coherence_time
         self.memory_wavelength = memo_wavelength
         
-        # Remote memories infos
         self.remote_memories = remote_memories
         self.remote_memory_names = [memory.name for memory in remote_memories]
 
-        # Instantiating memories (note that the remote memories are already instantiated in the client nodes ant thus have a name)
         self.local_memory_names = [f'{name}.memo_o_{i}' for i in range(1, num_local_memories+1)]
         
         self.local_memories = [Memory(name=memory_name, 
-                                 timeline=tl, fidelity=self.memory_fidelity, frequency=self.memory_frequency, efficiency=self.memory_efficiency, coherence_time=self.memory_coherence_time, wavelength=self.memory_wavelength) for memory_name in self.local_memory_names]
+                                timeline=tl, 
+                                fidelity=self.memory_fidelity, 
+                                frequency=self.memory_frequency,
+                                efficiency=self.memory_efficiency,
+                                coherence_time=self.memory_coherence_time,
+                                wavelength=self.memory_wavelength) for
+                                memory_name in self.local_memory_names]
 
-        # Check if the number of memories is greater than 5
         if len(self.local_memories) != len(remote_memories)-1:
             raise ValueError(f"The number of local memories {len(self.local_memories)} is invalid. It should be equal to the number of remote memories {len(remote_memories)} minus 1.")
         
-        # Adding local memories components
         for memory in self.local_memories:
             self.add_component(memory)
 
         # Set the bases (default is all 'z' measurements)
         self.bases = 'z' * len(self.local_memories)
 
-        # Adding resource manager
         self.resource_manager = QlanOrchestratorStateManager(owner=self, tl=tl, memory_names=self.local_memory_names)
 
-        # Generation of a chain graph state (abstract)
         self.resource_manager.generate_chain_state(tl, self.local_memories, remote_memories)
 
     def find_adjacent_nodes(self, tl: "Timeline", remote_memories: List[Memory]):
@@ -181,11 +187,9 @@ class QlanOrchestratorNode(Node):
         self.bases = bases
         self.resource_manager.bases = bases
     
-    # Function for receiving classing messages using the chosen protocol
     def start_measurement(self):
         self.protocols[0].start()
 
-    # Function for receiving classing messages using the chosen protocol
     def receive_message(self, src: str, msg: "Message"):
         self.protocols[0].received_message(src, msg)
 

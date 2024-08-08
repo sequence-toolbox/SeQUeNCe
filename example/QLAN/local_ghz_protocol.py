@@ -23,11 +23,10 @@ class LocalGHZ3protocol(EntanglementProtocol):
         memory3 (Memory): Memory to store qubit 3.
     """
 
-    # Define the quantum circuit for GHZ state generation
     circuit = Circuit(3)
-    circuit.h(0)        # Apply Hadamard gate to the first qubit
-    circuit.cx(0, 1)    # Apply CNOT gate between the first and second qubit
-    circuit.cx(0, 2)    # Apply CNOT gate between the first and third qubit
+    circuit.h(0)        
+    circuit.cx(0, 1)    
+    circuit.cx(0, 2)    
 
     def __init__(self, owner: "Node", name: str, memory1: "Memory", memory2: "Memory", memory3: "Memory"):
         """Initialize the local GHZ protocol.
@@ -69,13 +68,12 @@ class LocalGHZ3protocol(EntanglementProtocol):
         """Start the 3-qubit GHZ generation protocol."""
         log.logger.info(f"{self.owner.name} protocol start at node {self.owner.name}")
 
-        # Execute the quantum circuit to generate the GHZ state
         result = self.owner.timeline.quantum_manager.run_circuit(
-                           self.circuit, 
-                           [self.memory1.qstate_key,
+                            self.circuit, 
+                            [self.memory1.qstate_key,
                             self.memory2.qstate_key,
                             self.memory3.qstate_key],
-                           meas_samp = self.owner.get_generator().random())
+                            meas_samp = self.owner.get_generator().random())
 
         print(f"GHZ generation protocol executed at {self.owner.name}.")
         print("The key of the first qubit is: ", result)
@@ -118,13 +116,12 @@ class LocalGHZprotocol(EntanglementProtocol):
         """
         super().__init__(owner, name)
         self.memories = memories
-        self.n = len(memories)  # Number of qubits (and memories)
+        self.n = len(memories)  
 
-        # Dynamically create the quantum circuit for GHZ state generation
         self.circuit = Circuit(self.n)
-        self.circuit.h(0)  # Apply Hadamard gate to the first qubit
+        self.circuit.h(0)  
         for i in range(1, self.n):
-            self.circuit.cx(0, i)  # Apply CNOT gate between the first qubit and the ith qubit
+            self.circuit.cx(0, i)  
 
     def start(self):
         """
@@ -132,7 +129,6 @@ class LocalGHZprotocol(EntanglementProtocol):
         """
         log.logger.info(f"{self.owner.name} protocol start at node {self.owner.name}")
 
-        # Execute the quantum circuit to generate the GHZ state
         qstate_keys = [memory.qstate_key for memory in self.memories]
         result = self.owner.timeline.quantum_manager.run_circuit(
             self.circuit, 

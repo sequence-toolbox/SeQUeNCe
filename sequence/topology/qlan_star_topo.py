@@ -19,6 +19,22 @@ class QlanStarTopo(Topo):
         qchannels (List[QuantumChannel]): list of quantum channel objects in network.
         cchannels (List[ClassicalChannel]): list of classical channel objects in network.
         tl (Timeline): the timeline used for simulation
+        orchestrator_nodes (List[QlanOrchestratorNode]): list of orchestrator nodes in the network.
+        client_nodes (List[QlanClientNode]): list of client nodes in the network.
+        remote_memories_array (List[Memory]): list of remote memory objects in the network.
+        n_local_memories (int): number of local memories in each orchestrator node.
+        n_clients (int): number of client nodes in the network.
+        meas_bases (str): measurement bases used by the client nodes.
+        memo_fidelity_orch (float): fidelity of the memories in the orchestrator nodes.
+        memo_freq_orch (int): frequency of the memories in the orchestrator nodes.
+        memo_efficiency_orch (float): efficiency of the memories in the orchestrator nodes.
+        memo_coherence_orch (float): coherence of the memories in the orchestrator nodes.
+        memo_wavelength_orch (int): wavelength of the memories in the orchestrator nodes.
+        memo_fidelity_client (float): fidelity of the memories in the client nodes.
+        memo_freq_client (int): frequency of the memories in the client nodes.
+        memo_efficiency_client (float): efficiency of the memories in the client nodes.
+        memo_coherence_client (float): coherence of the memories in the client nodes.
+        memo_wavelength_client (int): wavelength of the memories in the client nodes.
     """
     IS_PARALLEL = "is_parallel"
     MEET_IN_THE_MID = "meet_in_the_middle"
@@ -40,14 +56,11 @@ class QlanStarTopo(Topo):
     MEM_SIZE = "memo_size"
 
     def __init__(self, conf_file_name: str):
-
         self.orchestrator_nodes = []
         self.client_nodes = []
         self.remote_memories_array = []
-
         super().__init__(conf_file_name)
 
-        
 
     def _load(self, filename: str):
         with open(filename, 'r') as fh:
@@ -101,19 +114,18 @@ class QlanStarTopo(Topo):
             seed = node[Topo.SEED]
             node_type = node[Topo.TYPE]
             name = node[Topo.NAME]
-            #memo_size = node[self.MEM_SIZE]
             template_name = node.get(Topo.TEMPLATE, None)
             template = self.templates.get(template_name, {})
 
             if node_type == self.CLIENT:
                 node_obj = QlanClientNode(name, 
-                                          self.tl, 
-                                          1, 
-                                          self.memo_fidelity_client, 
-                                          self.memo_freq_client, 
-                                          self.memo_efficiency_client, 
-                                          self.memo_coherence_client, 
-                                          self.memo_wavelength_client)
+                                            self.tl, 
+                                            1, 
+                                            self.memo_fidelity_client, 
+                                            self.memo_freq_client, 
+                                            self.memo_efficiency_client, 
+                                            self.memo_coherence_client, 
+                                            self.memo_wavelength_client)
                 node_obj.set_seed(seed)
                 node_memo = node_obj.get_components_by_type("Memory")[0]
                 self.remote_memories_array.append(node_memo)
@@ -132,7 +144,6 @@ class QlanStarTopo(Topo):
             seed = node[Topo.SEED]
             node_type = node[Topo.TYPE]
             name = node[Topo.NAME]
-            #memo_size = node[self.MEM_SIZE]
             template_name = node.get(Topo.TEMPLATE, None)
             template = self.templates.get(template_name, {})
 
@@ -161,7 +172,7 @@ class QlanStarTopo(Topo):
             orch.resource_manager.create_protocol()
         for client in self.client_nodes:
             client.resource_manager.create_protocol()
-           
+
     def _add_qconnections(self, config: dict):
         '''generate bsm_info, qc_info, and cc_info for the q_connections
         '''
@@ -171,8 +182,8 @@ class QlanStarTopo(Topo):
             attenuation = q_connect[Topo.ATTENUATION]
             distance = q_connect[Topo.DISTANCE] // 2
             channel_type = q_connect[Topo.TYPE]
-            cc_delay = []                                   # generate classical channel delay
-            for cc in config.get(self.ALL_C_CHANNEL, []):   # classical channel
+            cc_delay = []                                   
+            for cc in config.get(self.ALL_C_CHANNEL, []):   
                 if cc[self.SRC] == node1 and cc[self.DST] == node2:
                     delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
                     cc_delay.append(delay)
@@ -180,7 +191,7 @@ class QlanStarTopo(Topo):
                     delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
                     cc_delay.append(delay)
 
-            for cc in config.get(self.ALL_CC_CONNECT, []):  # classical connection
+            for cc in config.get(self.ALL_CC_CONNECT, []):  
                 if (cc[self.CONNECT_NODE_1] == node1 and cc[self.CONNECT_NODE_2] == node2) \
                         or (cc[self.CONNECT_NODE_1] == node2 and cc[self.CONNECT_NODE_2] == node1):
                     delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
@@ -188,5 +199,4 @@ class QlanStarTopo(Topo):
             if len(cc_delay) == 0:
                 assert 0, q_connect
             cc_delay = np.mean(cc_delay) // 2
-
 

@@ -32,9 +32,14 @@ class QlanMeasurementProtocol(EntanglementProtocol):
     Attributes:
         owner (Node): Node that the protocol instance is attached to.
         name (str): Label for the protocol instance.
+        tl (Timeline): The timeline object for tracking the progress of the protocol.
         local_memories (list[Memory]): Memories at the orchestrator.
         remote_memories (list[str]): Names of memories on the client nodes.
         bases (str): Bases for the measurements (one for each qubit).
+        sent_messages (list): List of sent messages.
+        remote_node_names (list[str]): Names of the remote nodes.
+        remote_protocol_names (list[str]): Names of the remote protocols.
+        message_list (defaultdict): Dictionary to store the outcome messages.
     """
 
     def __init__(self, owner: "Node", name: str, tl: "Timeline", local_memories: list[Memory], remote_memories: list[Memory], bases: str):
@@ -43,13 +48,10 @@ class QlanMeasurementProtocol(EntanglementProtocol):
         self.owner = owner
         self.name = name
         self.tl = tl
-        
-        # Local Memories 
         self.local_memories: list[Memory] = local_memories
         self.local_memory_identifiers = list(owner.adjacent_nodes.keys())
-        
         self.bases: str = bases
-        self.message_sent = []
+        self.sent_messages = []
 
         # N_a u N_{\hat a}
         self.remote_node_names = remote_memories    
@@ -57,7 +59,7 @@ class QlanMeasurementProtocol(EntanglementProtocol):
         self.remote_protocol_names = []
         self.remote_memories = []
 
-        n = len(local_memories)  # Number of qubits (and memories)
+        n = len(local_memories)
         
         if n != len(bases):
             raise ValueError("The number of qubits at the orchestrator does not match the number of measurement bases.")
@@ -112,11 +114,10 @@ class QlanMeasurementProtocol(EntanglementProtocol):
         """
         log.logger.info(f"\nPROTOCOL STARTED: {self.name} starts at node {self.owner.name}")
 
-        # Execute the quantum circuit to perform the measurements
         result = self.owner.timeline.quantum_manager.run_circuit(
-                           self.circuit, 
-                           [memory.qstate_key for memory in self.local_memories],
-                           meas_samp = self.owner.get_generator().random())
+                            self.circuit, 
+                            [memory.qstate_key for memory in self.local_memories],
+                            meas_samp = self.owner.get_generator().random())
         self.send_outcome_messages(self.tl)
 
     def send_outcome_messages(self, tl: "Timeline"):
@@ -128,8 +129,6 @@ class QlanMeasurementProtocol(EntanglementProtocol):
         Returns:
             None
         '''
-
-        # Please notice that the index is given by the order of the memories in the list declared in main.py
 
         log.logger.debug(f"\nORCHESTRATOR DEBUG: init message_list {self.message_list}")
         log.logger.debug(f"\nORCHESTRATOR DEBUG: adjacent_nodes {self.owner.adjacent_nodes}")
@@ -297,7 +296,7 @@ class QlanMeasurementProtocol(EntanglementProtocol):
                 log.logger.info(f"\nMESSAGE SENT: {self.owner.name} is sending: {new_msg.msg_type} to {self.remote_node_names[dest]} at {format(self.tl.now())}")
 
                 self.owner.send_message(self.remote_node_names[dest], new_msg)
-                self.message_sent.append(new_msg.msg_type)
+                self.sent_messages.append(new_msg.msg_type)
 
         # reset message list after sending all messages
         self.message_list = {}
@@ -325,15 +324,11 @@ class QlanMeasurementProtocol(EntanglementProtocol):
             # Replace b0 with saved_values in other keys
             for key, values in self.owner.adjacent_nodes.items():
                 if b0 in values:
-                    # Ensure no duplicates are added
                     new_values = [val if val != b0 else saved_values for val in values]
-                    # Flatten the list in case of nested lists from saved_values
                     new_values = [item for sublist in new_values for item in (sublist if isinstance(sublist, list) else [sublist])]
-                    # Remove duplicates while preserving order
                     seen = set()
                     self.owner.adjacent_nodes[key] = [x for x in new_values if not (x in seen or seen.add(x))]
 
-        # Cleaning measured qubits
         self.owner.adjacent_nodes[current_key] = []
 
         log.logger.debug(f"\nORCHESTRATOR DEBUG: updated adjacent nodes: {self.owner.adjacent_nodes}")
