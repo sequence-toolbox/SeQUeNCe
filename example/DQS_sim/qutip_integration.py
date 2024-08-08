@@ -3,7 +3,6 @@ from qutip import basis, identity, sigmax, sigmaz, tensor, bell_state
 from qutip.measurement import measure_povm
 from qutip_qip.operations import hadamard_transform, cnot, swap
 import numpy as np
-import sequence as sqnc
 from sequence.resource_management.memory_manager import MemoryManager 
 
 import qutip as qt
@@ -236,15 +235,15 @@ def noisy_meas(fid):
         fid (float): fidelity of the noisy measurement, equal to the probability of correct projector in the mixture.
     
     Return:
-        noisy_meas (List[Qobj])
+        noisy_meas (List[Qobj]): measurement operators, which are square root of the POVMs
     """
 
-    povm_0 = (np.sqrt(fid) * basis(2,0) * basis(2,0).dag() +
+    meas_0 = (np.sqrt(fid) * basis(2,0) * basis(2,0).dag() +
               np.sqrt(1-fid) * basis(2,1) * basis(2,1).dag())
-    povm_1 = (np.sqrt(fid) * basis(2,1) * basis(2,1).dag() +
+    meas_1 = (np.sqrt(fid) * basis(2,1) * basis(2,1).dag() +
               np.sqrt(1-fid) * basis(2,0) * basis(2,0).dag())
 
-    return [povm_0, povm_1]
+    return [meas_0, meas_1]
 
 
 def merge(state1, state2, cnot_fid, meas_fid):
@@ -252,7 +251,7 @@ def merge(state1, state2, cnot_fid, meas_fid):
         where noisy CNOT is modeled as a mixture of noiseless CNOT and 2-qubit completely depolarizing channel.
 
     Input states should be QuTiP quantum objects (density matrix). 
-    BDS should have major component as (|00> + |11>)/\\sqrt{2}.
+    BDS should have major component as (|00> + |11>)/sqrt{2}.
 
     Args:
         state1 (Qobj): first BDS density matrix.
@@ -275,15 +274,15 @@ def merge(state1, state2, cnot_fid, meas_fid):
     post_cnot_state = cnot_fid * cnot_12 * init_state * cnot_12.dag()\
           + (1-cnot_fid) * swap_23 * swap_12 * (tensor(init_state.ptrace([0, 3]), identity([2, 2]))/4) * swap_12.dag() * swap_23.dag()
 
-    # apply noisy measurement, assuming on qubit 1
-    povm0, povm1 = noisy_meas(meas_fid)  # 1-qubit povms
-    povm0 = tensor(identity(2), povm0, identity([2, 2]))
-    povm1 = tensor(identity(2), povm1, identity([2, 2]))
-    povms = [povm0, povm1]
-    res, post_meas_state = measure_povm(post_cnot_state, povms)
+    # apply noisy measurement on qubit 2
+    meas0, meas1 = noisy_meas(meas_fid)  # 1-qubit measurement operators
+    meas0 = tensor(identity([2, 2]), meas0, identity(2))
+    meas1 = tensor(identity([2, 2]), meas1, identity(2))
+    meas_ops = [meas0, meas1]
+    res, post_meas_state = measure_povm(post_cnot_state, meas_ops)
 
-    # trace out qubit 1
-    post_meas_state = post_meas_state.ptrace([0, 1, 2])
+    # trace out qubit 2
+    post_meas_state = post_meas_state.ptrace([0, 1, 3])
 
     # apply feedforward X correction on qubit 0 if measure result is 1 (now remaining qubit 0, 1, 2)
     if res == 0:
@@ -300,7 +299,7 @@ def gate_teleport(state1, state2, cnot_fid, meas_fid):
         where noisy CNOT is modeled as a mixture of noiseless CNOT and 2-qubit completely depolarizing channel.
 
     Input states should be QuTiP quantum objects (density matrix). 
-    BDS should have major component as (|01> + |10>)/\\sqrt{2}.
+    BDS should have major component as (|01> + |10>)/sqrt{2}.
     Following derivation in (Chou, Kevin S., et al. "Deterministic teleportation of a quantum gate between two logical qubits." Nature 561.7723 (2018): 368-373.)
     We assume center qubit (control) is initialized in |+> state, and other two qubits (targets) are initialized in |0> state.
 
@@ -317,7 +316,7 @@ def gate_teleport(state1, state2, cnot_fid, meas_fid):
     bell_dm_1 = bell_dm(state1)
     bell_dm_2 = bell_dm(state2)
 
-    povm0, povm1 = noisy_meas(meas_fid)  # 1-qubit povms
+    meas0, meas1 = noisy_meas(meas_fid)  # 1-qubit measurement operators
 
     plus_state = (basis(2,0) + basis(2,1)) / np.sqrt(2)
     plus_dm = plus_state * plus_state.dag()
@@ -338,23 +337,23 @@ def gate_teleport(state1, state2, cnot_fid, meas_fid):
     post_cnot_state = cnot_fid**2 * state_both_succ + cnot_fid * (state_01_succ + state_23_succ) + (1-cnot_fid)**2 * state_both_fail
 
     # measure qubit 1 in Z basis
-    # full povms for qubit 1 (measure in Z basis)
-    povm0_1 = tensor(identity(2), povm0, identity(4))
-    povm1_1 = tensor(identity(2), povm1, identity(4))
-    povms_1 = [povm0_1, povm1_1]
+    # full measurement operators for qubit 1 (measure in Z basis)
+    meas0_1 = tensor(identity(2), meas0, identity(4))
+    meas1_1 = tensor(identity(2), meas1, identity(4))
+    meas_ops_1 = [meas0_1, meas1_1]
 
-    res1, post_meas1_state = measure_povm(post_cnot_state, povms_1)
+    res1, post_meas1_state = measure_povm(post_cnot_state, meas_ops_1)
 
     # measure qubit 2 in X basis
-    # full povms for qubit 2 (measure in X basis, thus need Hadamard gate prior to meas)
-    povm0_2 = tensor(identity(4), povm0, identity(2))
-    povm1_2 = tensor(identity(4), povm1, identity(2))
-    povms_2 = [povm0_2, povm1_2]
+    # full measurement operators for qubit 2 (measure in X basis, thus need Hadamard gate prior to meas)
+    meas0_2 = tensor(identity(4), meas0, identity(2))
+    meas1_2 = tensor(identity(4), meas1, identity(2))
+    meas_ops_2 = [meas0_2, meas1_2]
 
     hadamard_2 = tensor(identity(4), hadamard_transform(), identity(2))
     post_meas1_state = hadamard_2 * post_meas1_state * hadamard_2.dag()
 
-    res2, post_meas2_state = measure_povm(post_meas1_state, povms_2)
+    res2, post_meas2_state = measure_povm(post_meas1_state, meas_ops_2)
 
     # trace out qubits 1 and 2
     post_meas_state = post_meas2_state.ptrace([0,3])
@@ -393,23 +392,23 @@ def gate_teleport(state1, state2, cnot_fid, meas_fid):
     post_cnot_state = cnot_fid**2 * state_both_succ + cnot_fid * (state_12_succ + state_34_succ) + (1-cnot_fid)**2 * state_both_fail
 
     # measure qubit 2 in Z basis
-    # full povms for qubit 2 (measure in Z basis)
-    povm0_2 = tensor(identity(4), povm0, identity(4))
-    povm1_2 = tensor(identity(4), povm1, identity(4))
-    povms_2 = [povm0_2, povm1_2]
+    # full measurement operators for qubit 2 (measure in Z basis)
+    meas0_2 = tensor(identity(4), meas0, identity(4))
+    meas1_2 = tensor(identity(4), meas1, identity(4))
+    meas_ops_2 = [meas0_2, meas1_2]
 
-    res2, post_meas2_state = measure_povm(post_cnot_state, povms_2)
+    res2, post_meas2_state = measure_povm(post_cnot_state, meas_ops_2)
 
     # measure qubit 3 in X basis
-    # full povms for qubit 3 (measure in X basis, thus need Hadamard gate prior to meas)
-    povm0_3 = tensor(identity(4), povm0, identity(2))
-    povm1_3 = tensor(identity(4), povm1, identity(2))
-    povms_3 = [povm0_3, povm1_3]
+    # full measurement operators for qubit 3 (measure in X basis, thus need Hadamard gate prior to meas)
+    meas0_3 = tensor(identity(4), meas0, identity(2))
+    meas1_3 = tensor(identity(4), meas1, identity(2))
+    meas_ops_3 = [meas0_3, meas1_3]
 
     hadamard_3 = tensor(identity(8), hadamard_transform(), identity(2))
     post_meas1_state = hadamard_3 * post_meas2_state * hadamard_3.dag()
 
-    res3, post_meas2_state = measure_povm(post_meas2_state, povms_3)
+    res3, post_meas2_state = measure_povm(post_meas2_state, meas_ops_3)
 
     # trace out qubits 2 and 3
     post_meas_state = post_meas2_state.ptrace([0,1,4])
@@ -428,64 +427,3 @@ def gate_teleport(state1, state2, cnot_fid, meas_fid):
 
     return ghz_state
 
-
-class AppQutipInt:
-    def __init__(self, mem_manager: MemoryManager) -> None:
-        '''Args:
-            mem_manager (MemoryManager): manages all the memories'''
-        self.mem_manager=mem_manager
-
-    def start(self) -> None:
-        pass
-
-    def get_memory(self, mem_info):
-        '''Starts the operations on the bell state.
-        Args: 
-            mem_info (resource_management.memory_manager.MemoryInfo): '''
-        #TODO: "Alvin: I'm not sure what method will determine the memory state."
-        state="ENTANGLED"
-        self.mem_manager.update(mem_info.memory, state)
-
-    def bds_to_qobj(self, bell_st):
-        '''Converts bell_st to qutip qobj.
-        Args: 
-            bell_st (np.ndarray) : 
-        Returns: qtp.qobj'''
-        # return qtp.Qobj(bell_st)  
-        #TODO: has been redone, QuTiP has computational basis as default, thus need basis transformation
-
-        pass
-        
-
-    def start_decoherence(self):
-        '''Asynch process that modifies stored qobj with decoherence.'''
-        pass
-
-
-if __name__ == "__main__":
-    # Start application.
-    # Sequence stuff to init.
-    mem_manager=[]
-    app = AppQutipInt(mem_manager)
-    app.start()
-    # Get from sequence.
-    # mem_info=[]
-    # app.get_memory(mem_info)
-
-    # # Get from sequence.
-    # bell_st=[] 
-    # app.bds_to_qobj(bell_st)
-
-    # app.start_decoherence()
-    # #Begin gate teleporation.
-
-    # Tests
-    state=np.array([[0,1],[1,0]])
-    print(state)
-    print(app.bds_to_qobj(state))
-
-    phiP=qt.Qobj([[1/2, 0, 0, 1/2],[0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]])
-    phiM=qt.Qobj([[1/2, 0, 0, -1/2],[0, 0, 0, 0], [0, 0, 0, 0], [-1/2, 0, 0, 1/2]])
-    print(calc_scalar_c(phiP))
-    print(calc_scalar_c(phiM))
-    print(calc_scalar_c(0.5*phiP+0.5*phiM))
