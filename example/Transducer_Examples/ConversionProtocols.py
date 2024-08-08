@@ -61,27 +61,18 @@ class EmittingProtocol(Protocol):
 
     def start(self) -> None:
 
-        #Il trasmone setta il suo stato
         self.trasmon.get()
-
-        #Il trasmone emette un fotone alle microonde a due condizioni:
-        #SE il primo fotone del suo stato è 1 (quindi ho un fotone alle microonde) , il primo fotone è per la convenzione adottata quello alle microonde
-        #SE non ci sono non idealità
 
         if self.trasmon.photons_quantum_state[0] == ket1:
             if random.random() < self.trasmon.efficiency:
-                    self.trasmon._receivers[0].receive_photon_from_trasmon(self.trasmon.new_photon0) #CERCA DI FAR SI CHE RICEVA IL FOTONE NEW_PHOTON0
-                    #il trasmone che è il ricevitore del trasmone riceve un fotone correttamente
-                    #AGGIUNTA: qui con il quantum manager dovresti mandargli lo stato
-                    self.trasmon.photon_counter += 1 
+                self.trasmon._receivers[0].receive_photon_from_trasmon(self.trasmon.new_photon0) 
+                self.trasmon.photon_counter += 1 
             else:
-                    #print(self.trasmon._receivers[0].photon_counter)
-                    pass
+                pass
             
         else:
                 print("The trasmon is in the state 00, or 01, it doesn't emit microwave photons")
         
-        #print(f"Trasmon Quantum state: {self.trasmon.input_quantum_state}")
         print(f"Microwave photons emitted by the Trasmon at Tx: {self.trasmon.photon_counter}")
 
 
@@ -92,6 +83,9 @@ class EmittingProtocol(Protocol):
 
 
 class UpConversionProtocol(Protocol):
+
+    "Protocol for Up-conversion of an input microwave photon into an output optical photon"
+
     def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", node: "Node", trasmon: "Trasmon"):
         super().__init__(own, name)
         self.owner = own
@@ -102,11 +96,7 @@ class UpConversionProtocol(Protocol):
         self.node = node
 
     def start(self, photon: "Photon") -> None:
-        #Se il trasduttore ha ricevuto un fotone alle microonde, il suo contatore si è incrementato
-        #Se il contatore del trasmone si è incrementato, posso proseguire con la up-conversion
-        #Lo stato del trasmone entra nel trasduttore e viene up-convertito
-        #Statisticamente si calcola per ogni fotone in ingresso alle microonde quanti fotoni in uscita ottici posso avere
-        #Se statisticamente il fotone viene up-convertito, il trasduttore del nodo riceviore incrmeneta il suo contatore
+       
 
         if self.transducer.photon_counter > 0:
             custom_gate = get_conversion_matrix(self.transducer.efficiency)
@@ -122,7 +112,6 @@ class UpConversionProtocol(Protocol):
             if random.random() < self.transducer.efficiency:
                 photon.wavelength = OPTICAL_WAVELENGTH
                 self.transducer._receivers[0].receive_photon(self.node, photon)
-                #il nodo2 (e quindi il trasduttore) riceve il fotone ottico e incrementa il suo contatore
                 print("Successful up-conversion")
                 self.transducer.output_quantum_state = [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j]
                 print(f"State after successful up-conversion: {self.transducer.output_quantum_state}")
@@ -139,6 +128,9 @@ class UpConversionProtocol(Protocol):
 
 
 class DownConversionProtocol(Protocol):
+
+    "Protocol for Down-conversion of an input optical photon into an output microwave photon"
+
     def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", trasmon: "Trasmon"):
         super().__init__(own, name)
         self.owner = own
@@ -148,8 +140,7 @@ class DownConversionProtocol(Protocol):
 
     def start(self, photon: "Photon") -> None:
         if self.transducer.photon_counter > 0:
-            #signfica che il contatore del secondo trasduttore è incrementato, quindi la up_conversion di prima ha avuto successo
-            #di conseguenza posso settare questo stato come stato di input del trasduttore
+
 
             transducer_state = [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j]
             custom_gate = get_conversion_matrix(self.transducer.efficiency)
@@ -178,22 +169,6 @@ class DownConversionProtocol(Protocol):
     def received_message(self, src: str, msg):
         pass
 
-
-
-class ReceivingProtocol(Protocol):
-    def __init__(self, own: "Node", name: str, tl: "Timeline", trasmon="Trasmon", transducer="Transducer"):
-        super().__init__(own, name)
-        self.owner = own
-        self.name = name
-        self.tl = tl
-        self.trasmon = trasmon
-        self.transducer = transducer
-
-    def start(self, photon: "Photon") -> None:
-        self.trasmon.receive(photon)
-
-    def received_message(self, src: str, msg):
-        pass
 
 
 

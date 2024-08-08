@@ -35,15 +35,22 @@ class Counter:
 
 
 class Trasmon(Entity):
+
+    """Class modeling a transmon qubit.
+
+    The Trasmon class can be configured to emit microwave photons.
+
+    """
+
     def __init__(self, owner: "Node", name: str, timeline: "Timeline", wavelength: List[int], photon_counter: int, photons_quantum_state: List[tuple], efficiency=1):
         Entity.__init__(self, name, timeline)
         self.name = name
         self.owner = owner
         self.timeline = timeline
         self.wavelength = wavelength
-        self.photon_counter = photon_counter #il photon counter fa riferimento ai fotoni alle microonde (non quelli ottici)
-        self.photons_quantum_state = photons_quantum_state #stato quantistico dei singoli fotoni, lo stato complessivo in ingresso al trasmone sarà il loro prodotto scalare
-        self.efficiency=efficiency #per modellare eventuali non idealità nell'emissione del fotone alle microonde. Se efficiency=1 allora il trasmone nello stato 10 (uno nel senso di carica attivata e quindi deve emettere 1 fotone alle microonde) emette sempre
+        self.photon_counter = photon_counter 
+        self.photons_quantum_state = photons_quantum_state 
+        self.efficiency=efficiency 
 
     def init(self):
         pass
@@ -54,7 +61,6 @@ class Trasmon(Entity):
 
     def get(self) -> None:
 
-        #inizio con il descrivere lo stato in ingresso al trasmone
         new_photon0 = Photon(name=self.name,
                             timeline=self.timeline,
                             wavelength=self.wavelength[0],
@@ -68,25 +74,25 @@ class Trasmon(Entity):
                             
         input_photons = [new_photon0, new_photon1]
         input_quantum_state= np.kron(self.photons_quantum_state[0], self.photons_quantum_state[1])
-        self.input_quantum_state = input_quantum_state #stato quantistico complessivo in ingresso al trasmone
+        self.input_quantum_state = input_quantum_state 
         self.new_photon0=new_photon0
         self.new_photon1=new_photon1
-
-        #print(self.photons_quantum_state[0])
-        #print(self.photons_quantum_state[1])
-        #controllo stati dei singoli fotoni
-
-        #print(input_quantum_state)
-        #controllo dello stato di input del trasmone
-        #return new_photon0, new_photon1
-       
     
     def receive_photon_from_transducer(self, photon: "Photon") -> None:
         self.photon_counter += 1
-        #docrebbe anche riceverlo in qualche modo ma è ok
+
+    def receive_photon(self, photon: "Photon") -> None:
+        self.photon_counter += 1
         
         
 class Transducer(Entity):
+
+    """Class modeling a transducer.
+    A transducer can operate in two modes: up-conversion and down-conversion.
+    In up-conversion it can convert microwave photons to optical photons.
+    In down-conversion it can convert optical photons to microwave photons.
+
+    """
     def __init__(self, owner: "Node", name: str, timeline: "Timeline", efficiency=1, photon_counter=int):
         Entity.__init__(self, name, timeline)
         self.name = name
@@ -104,23 +110,20 @@ class Transducer(Entity):
             self.add_receiver(i)
     
     def receive_photon_from_trasmon(self, photon: "Photon") -> None:
-        #potresti aggiunger eun if se lo stato è quello desiderato :)
-        self.photon_counter += 1 #in questo caso il contatore indica che ha ricevuto un fotone alle microonde
+        self.photon_counter += 1 
 
     def receive_photon_from_channel(self, photon: "Photon") -> None:
-        #photon.quantum_state = qui devi considerare due fotoni , quindi lo stato ket10 che vorresti ricevere
         self.photon_counter += 1
 
-         #in questo caso il contatore indica che ha ricevuto un fotone ottico
-        #capire come diffenrenziare questi due casi
-
-    #def microwave_initialization(self, photon: "Photon") -> None:
-        #self.photon_counter += 1
-    #questa può essere utile per la EQT
 
 
 
 class FockDetector(Detector):
+
+    """Class modeling a Fock detector.
+    A Fock detector can detect the number of photons in a given mode.
+    """
+
     def __init__(self, name: str, timeline: "Timeline", efficiency=1, wavelength=int, encoding_type=fock):
         super().__init__(name, timeline, efficiency)
         self.name = name
@@ -139,14 +142,11 @@ class FockDetector(Detector):
             self.photon_counter += 1
 
     def get_2(self, photon=None, **kwargs) -> None:
-        if random.random() < self.efficiency:
             self.photon_counter2 += 1
     
     def set_efficiency(self, efficiency):
         self.efficiency = efficiency
 
-    #def reset_photon_counter(self):
-        #self.photon_counter = 0
 
     def receive_photon(self, src: str, photon: "Photon") -> None:
         if photon.wavelength == self.wavelength:
@@ -154,32 +154,14 @@ class FockDetector(Detector):
         else:
             pass
 
-# class SPD(FockDetector):
-#     def __init__(self, name: str, timeline: "Timeline", efficiency=1, wavelength=int, encoding_type=fock):
-#         super().__init__(name, timeline, efficiency)
-#         self.name = name
-#         self.photon_counter = 0
-#         self.wavelength = wavelength
-#         self.encoding_type = encoding_type
-#         self.timeline = timeline
-#         self.efficiency = efficiency
-    
-#     def init(self):
-#         pass
-
-#     def get(self, photon=None, **kwargs) -> None:
-#         if random.random() < self.efficiency:
-#             self.photon_counter += 1
-    
-#     def receive_photon(self, src: str, photon: "Photon") -> None:
-#         if photon.wavelength == self.wavelength:
-#             self.get(photon)
-#         else:
-#             pass
-
 
 
 class FockBeamSplitter(Entity):
+
+    """Class modeling a Fock beam splitter.
+    A Fock beam splitter can send a single photon randomly in one of its ports.
+
+    """
     def __init__(self, name: str, owner: "Node", timeline: "Timeline", efficiency:int, photon_counter:int, src_list: List[str]):
         Entity.__init__(self, name, timeline)
         self.name = name
