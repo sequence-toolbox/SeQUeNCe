@@ -77,6 +77,18 @@ def calc_scalar_c(rho: qt.Qobj, tol=1e-09):
     return 4 * c_val  # multiplying by 4 since the order of the eigenvalues in the sum matters.
 
 
+def calculate_fidelity(state):
+    """Calculates fidelity of input GHZ state."""
+    ghz_dim = state.dims[0]
+    desired_ghz_arr = np.zeros(np.prod(ghz_dim))
+    desired_ghz_arr[0] = np.sqrt(1/2)
+    desired_ghz_arr[-1] = np.sqrt(1/2)
+    desired_ghz = qt.Qobj(desired_ghz_arr, dims=[ghz_dim, [1]])
+
+    fidelity = np.abs(desired_ghz.dag() * state * desired_ghz)
+    return fidelity
+
+
 def purification_result(state1, state2, gate_fid1, gate_fid2, meas_fid1, meas_fid2, is_twirled=True):
     """Function to derive purification success probability and output state.
 
