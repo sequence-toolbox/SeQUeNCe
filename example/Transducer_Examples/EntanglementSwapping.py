@@ -181,7 +181,6 @@ if __name__ == "__main__":
         detector2_count2 = detector2.photon_counter2
 
 
-        # Scheduling dei processi e degli eventi
         process1 = Process(node1.upconversionentangle_protocol, "start", [Photon]) 
         event_time1 = cumulative_time + ENTANGLEMENT_GENERATION_DURATION 
         event1 = Event(event_time1, process1)
@@ -226,7 +225,7 @@ if __name__ == "__main__":
         spd_ideals.append(spd_ideal)
 
 
-        # Reset 
+        # Time and counters Reset 
         tl.time = 0
         tl.init()
 

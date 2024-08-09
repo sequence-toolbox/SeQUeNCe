@@ -202,7 +202,6 @@ class MeasureIdeal(Protocol):
         if self.FockBS._receivers[0].photon_counter >= 1 or self.FockBS._receivers[1].photon_counter >= 1:
             self.spd_real += 1
 
-    
       
         print(f"Ideal detector photon counter: {self.detector_photon_counter_ideal}")
         print(f"Ideal SPD: {self.spd_ideal}")

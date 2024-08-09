@@ -42,8 +42,7 @@ PERIOD = EMISSION_DURATION + CONVERSION_DURATION + CONVERSION_DURATION
 #Trasmon
 ket1 = (0.0 + 0.0j, 1.0 + 0.0j) 
 ket0 = (1.0 + 0.0j, 0.0 + 0.0j) 
-state_list= [ket1, ket0] #Il trasmone in questo caso voglio che generi lo stato 10 (voglio un fotone alle microonde e 0 ottico)
-#state_list= [ket1, ket0] stato 01 (0 fotoni alle microonde, 1 ottico)
+state_list= [ket1, ket0] 
 TRASMON_EFFICIENCY = 0.9
 
 # Transducer
@@ -61,15 +60,8 @@ DISTANCE = 1e3
 
 
 
-#lista degli stati assunti dai sinoli fotoni che il trasmone genera, quindi emetta ket1 o ket0 (è carico, emette lo stato uno, è scarico emette lo stato 0)
-#questo è lo statevector 1, quindi il transducer deve emettere. si potrebbe fare anche con lo zero ma in quel caso errore e non errore sono diversi.  Non penso ne valga la pena
-
-
-
 
 #NODES OF THE NETWORK 
-
-#Nota: in entrambi i nodi i DETECTOR identifica il FALLIMENTO della conversione
 
 class SenderNode(Node):
     def __init__(self, name, timeline, node2):
@@ -111,8 +103,6 @@ class SenderNode(Node):
 
 
 
-#Nota: nel ReceiverNode il detector è OTTICO
-
 class ReceiverNode(Node):
     def __init__(self, name, timeline):
         super().__init__(name, timeline)
@@ -140,7 +130,6 @@ class ReceiverNode(Node):
         transducer2.add_output([trasmon2,detector2])
         print(f"Transducer2 output: {transducer2._receivers}")
 
-        #transducer = node1.get_components_by_type("Transducer")[0]
         self.downconversion_protocol = DownConversionProtocol(self, name + ".downconversion_protocol", timeline, transducer2, trasmon2)
 
     def receive_photon(self, src, photon):
@@ -182,7 +171,7 @@ if __name__ == "__main__":
 
     #Plot2
     ideal_photons = []
-    emitted_photons = []  # Modifica: aggiunto per tracciare i fotoni emessi cumulativamente
+    emitted_photons = []  
     converted_photons = []
     
 
@@ -199,10 +188,8 @@ if __name__ == "__main__":
 
         tl.run()
 
-        #Richiamo i vari componenti dai nodi per richiamre i contatoti di fotoni 
-        #(mi servirà per printare i conteggi e poi per il reset)
 
-        #componenti nodo1
+
         trasmon = node1.get_components_by_type("Trasmon")[0]
         trasmon_count = trasmon.photon_counter
         transducer = node1.get_components_by_type("Transducer")[0]
@@ -210,15 +197,12 @@ if __name__ == "__main__":
         detector = node1.get_components_by_type("FockDetector")[0]
         detector_count = detector.photon_counter
 
-        #componenti nodo2
         transducer2 = node2.get_components_by_type("Transducer")[0]
         trasmon2 = node2.get_components_by_type("Trasmon")[0]
         trasmon2_count = trasmon2.photon_counter
         detector2 = node2.get_components_by_type("FockDetector")[0]
         detector2_count = detector2.photon_counter
 
-
-        #scheduling dei processi e degli eventi
         
         process0 = Process(node1.emitting_protocol, "start", [])
         event_time0 = (cumulative_time + EMISSION_DURATION) 
@@ -243,14 +227,12 @@ if __name__ == "__main__":
         
 
         print(f"Number of photons converted at time {tl.time}: {trasmon2_count}") 
-        #Chiedere questione tl_now
         
         #reset timeline
         tl.time = 0
         tl.init()
 
 
-        #Incremento del conteggio totale
         total_photons_successful += trasmon2_count
         total_transducer_count += transducer_count
         cumulative_time += PERIOD
@@ -259,7 +241,6 @@ if __name__ == "__main__":
         emitted_photons.append(total_transducer_count)
         converted_photons.append(total_photons_successful)
         
-        #reset dei vari contatori per ogni trial
         trasmon.photon_counter = 0 
         trasmon2.photon_counter = 0 
         transducer.photon_counter = 0
@@ -281,28 +262,9 @@ if __name__ == "__main__":
     print(f"Conversion efficiency of DQT protocol with no-idealities of trasmon: {conversion_percentage:.2f}%")
 
 
-
-    #il bound del mio papaepr è calcolato rispetto ai fotoni emessi
-    #Nota: vedrai che il mio bound non è sempre rispettato e questo ha senso. 
-    #Perchè il codice può funzionare meglio o peggio rispetto alla teoria, la "verità" si vede a regime, con un numero di count infiniti
-
     conversion_percentage_2 = (total_photons_successful / total_transducer_count) * 100 if total_photons_to_be_converted > 0 else 0
     print(f"Conversion efficiency of DQT protocol: {conversion_percentage_2:.2f}%")
 
-
-    
-    
-
-
-    #if transducer.efficiency and transducer2.efficiency > 0.5: #qui ok ma va fatto con l
-        #print(f"Transducers features are good for the DQT protocol")
-        #Percentuale di fotoni convertiti
-        
-    #Sarebbe carino dare anche qualche metrica per la EQT
-   # elif transducer.efficiency < 0.5  and transducer2.efficiency > 0.5:
-    #    print(f"Transducers features are good for the EQT protocol")
-    #elif transducer.efficiency and transducer2.efficiency < 0.5 :
-    #    print(f"Transducers features are not good for any protocol")
 
 
     
@@ -312,14 +274,12 @@ if __name__ == "__main__":
 
     time_points = [i * PERIOD for i in range(NUM_TRIALS)]
 
-    #Plot dell'andamento delle conversioni rispetto al numero di trials
     trials = list(range(NUM_TRIALS))
     plt.plot(time_points, failed_up_conversions,  'r-', label="Failed UpConversions")
     plt.plot(time_points, failed_down_conversions, 'b-', label="Failed DownConversions")
     plt.plot(time_points, successful_conversions, 'g-', label="Successful Conversions")
-      # Mostra le etichette ogni 10 trial
 
-    plt.xticks(fontsize=12)  # Ingrandisce le etichette dell'asse x
+    plt.xticks(fontsize=12)  
     plt.yticks(fontsize=12) 
     plt.legend(fontsize=12, loc='best')
 

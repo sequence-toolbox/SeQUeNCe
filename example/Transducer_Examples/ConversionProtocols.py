@@ -34,7 +34,6 @@ ket0 = (1.0 + 0.0j, 0.0 + 0.0j)
 MICROWAVE_WAVELENGTH = 999308 # nm
 OPTICAL_WAVELENGTH = 1550 # nm
 
-# Definizione della matrice di conversione
 def get_conversion_matrix(efficiency: float) -> Qobj:
     custom_gate_matrix = np.array([
         [1, 0, 0, 0],
