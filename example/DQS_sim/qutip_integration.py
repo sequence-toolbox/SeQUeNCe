@@ -313,8 +313,8 @@ def gate_teleport(state1, state2, cnot_fid, meas_fid):
         ghz_state (Qobj): generated GHZ state.
     """
 
-    bell_dm_1 = bell_dm(state1)
-    bell_dm_2 = bell_dm(state2)
+    bell_dm_1 = bell_dm(state1, elem_order=(2, 0, 1, 3))  # major component being (|01> + |10>)/sqrt{2}
+    bell_dm_2 = bell_dm(state2, elem_order=(2, 0, 1, 3))  # major component being (|01> + |10>)/sqrt{2}
 
     meas0, meas1 = noisy_meas(meas_fid)  # 1-qubit measurement operators
 
@@ -325,32 +325,32 @@ def gate_teleport(state1, state2, cnot_fid, meas_fid):
     ### 1st teleported CNOT
     init_state = tensor(plus_dm, bell_dm_1, zero_dm)
 
-    cnot_01 = tensor(cnot(), identity(4))
-    cnot_23 = tensor(identity(4), cnot())
+    cnot_01 = tensor(cnot(), identity([2,2]))
+    cnot_23 = tensor(identity([2,2]), cnot())
     cnot_01_23 = cnot_01 * cnot_23
 
     state_both_succ = cnot_01_23 * init_state * cnot_01_23.dag()
-    state_01_succ = tensor((cnot_01 * init_state * cnot_01.dag()).ptrace([0,1]), identity(4)/4)
-    state_23_succ = tensor(identity(4)/4, (cnot_23 * init_state * cnot_23.dag()).ptrace([2,3]))
-    state_both_fail = tensor(identity(4)/4, identity(4)/4)
+    state_01_succ = tensor((cnot_01 * init_state * cnot_01.dag()).ptrace([0,1]), identity([2,2])/4)
+    state_23_succ = tensor(identity([2,2])/4, (cnot_23 * init_state * cnot_23.dag()).ptrace([2,3]))
+    state_both_fail = tensor(identity([2,2])/4, identity([2,2])/4)
 
-    post_cnot_state = cnot_fid**2 * state_both_succ + cnot_fid * (state_01_succ + state_23_succ) + (1-cnot_fid)**2 * state_both_fail
+    post_cnot_state = cnot_fid**2 * state_both_succ + (1-cnot_fid) * cnot_fid * (state_01_succ + state_23_succ) + (1-cnot_fid)**2 * state_both_fail
 
     # measure qubit 1 in Z basis
     # full measurement operators for qubit 1 (measure in Z basis)
-    meas0_1 = tensor(identity(2), meas0, identity(4))
-    meas1_1 = tensor(identity(2), meas1, identity(4))
+    meas0_1 = tensor(identity(2), meas0, identity([2,2]))
+    meas1_1 = tensor(identity(2), meas1, identity([2,2]))
     meas_ops_1 = [meas0_1, meas1_1]
 
     res1, post_meas1_state = measure_povm(post_cnot_state, meas_ops_1)
 
     # measure qubit 2 in X basis
     # full measurement operators for qubit 2 (measure in X basis, thus need Hadamard gate prior to meas)
-    meas0_2 = tensor(identity(4), meas0, identity(2))
-    meas1_2 = tensor(identity(4), meas1, identity(2))
+    meas0_2 = tensor(identity([2,2]), meas0, identity(2))
+    meas1_2 = tensor(identity([2,2]), meas1, identity(2))
     meas_ops_2 = [meas0_2, meas1_2]
 
-    hadamard_2 = tensor(identity(4), hadamard_transform(), identity(2))
+    hadamard_2 = tensor(identity([2,2]), hadamard_transform(), identity(2))
     post_meas1_state = hadamard_2 * post_meas1_state * hadamard_2.dag()
 
     res2, post_meas2_state = measure_povm(post_meas1_state, meas_ops_2)
@@ -358,17 +358,17 @@ def gate_teleport(state1, state2, cnot_fid, meas_fid):
     # trace out qubits 1 and 2
     post_meas_state = post_meas2_state.ptrace([0,3])
     # apply feedforward Z correction on qubit 0 if qubit 2 measurement result is 1
-    # apply feedforward X correction on qubit 3 if qubit 1 measurement result is 1
+    # apply feedforward X correction on qubit 3 if qubit 1 measurement result is 0
     x_gate = tensor(identity(2), sigmax())
     z_gate = tensor(sigmaz(), identity(2))
     if res1 == 0 and res2 == 0:
-        final_state = post_meas_state
-    elif res1 == 1 and res2 == 0:
         final_state = x_gate * post_meas_state * x_gate.dag()
+    elif res1 == 1 and res2 == 0:
+        final_state = post_meas_state
     elif res1 == 0 and res2 == 1:
-        final_state = z_gate * post_meas_state * z_gate.dag()
-    elif res1 == 1 and res2 == 1:
         final_state = z_gate * x_gate * post_meas_state * x_gate.dag() * z_gate.dag()
+    elif res1 == 1 and res2 == 1:
+        final_state = z_gate * post_meas_state * z_gate.dag()
     
     ### 2nd teleported CNOT
     # previously the center qubit is indexed 0
@@ -376,54 +376,54 @@ def gate_teleport(state1, state2, cnot_fid, meas_fid):
     final_state = swap() * final_state * swap().dag()
     init_state = tensor(final_state, bell_dm_2, zero_dm)
 
-    cnot_12 = tensor(identity(2), cnot(), identity(4))
-    cnot_34 = tensor(identity(8), cnot())
+    cnot_12 = tensor(identity(2), cnot(), identity([2,2]))
+    cnot_34 = tensor(identity([2,2,2]), cnot())
     cnot_12_34 = cnot_12 * cnot_34
 
     state_both_succ = cnot_12_34 * init_state * cnot_12_34.dag()
-    state_12_succ = tensor((cnot_12 * init_state * cnot_12.dag()).ptrace([0,1,2]), identity(4)/4)
-    state_34_succ = tensor(identity(4)/4, (cnot_34 * init_state * cnot_34.dag()).ptrace([0,3,4]))
+    state_12_succ = tensor((cnot_12 * init_state * cnot_12.dag()).ptrace([0,1,2]), identity([2,2])/4)
+    state_34_succ = tensor(identity([2,2])/4, (cnot_34 * init_state * cnot_34.dag()).ptrace([0,3,4]))
     # swap current qubits 0, 1, 2 to 1, 2, 0 (first 1 <-> 2, then 0 <-> 1)
-    swap_01 = tensor(swap(), identity(8))
-    swap_12 = tensor(identity(2), swap(), identity(2))
+    swap_01 = tensor(swap(), identity([2,2,2]))
+    swap_12 = tensor(identity(2), swap(), identity([2,2]))
     state_34_succ = swap_01 * swap_12 * state_34_succ * swap_12.dag() * swap_01.dag()
-    state_both_fail = tensor(init_state.ptrace([0]), identity(4)/4, identity(4)/4)
+    state_both_fail = tensor(init_state.ptrace([0]), identity([2,2])/4, identity([2,2])/4)
 
-    post_cnot_state = cnot_fid**2 * state_both_succ + cnot_fid * (state_12_succ + state_34_succ) + (1-cnot_fid)**2 * state_both_fail
+    post_cnot_state = cnot_fid**2 * state_both_succ + (1-cnot_fid) * cnot_fid * (state_12_succ + state_34_succ) + (1-cnot_fid)**2 * state_both_fail
 
     # measure qubit 2 in Z basis
     # full measurement operators for qubit 2 (measure in Z basis)
-    meas0_2 = tensor(identity(4), meas0, identity(4))
-    meas1_2 = tensor(identity(4), meas1, identity(4))
+    meas0_2 = tensor(identity([2,2]), meas0, identity([2,2]))
+    meas1_2 = tensor(identity([2,2]), meas1, identity([2,2]))
     meas_ops_2 = [meas0_2, meas1_2]
 
     res2, post_meas2_state = measure_povm(post_cnot_state, meas_ops_2)
 
     # measure qubit 3 in X basis
     # full measurement operators for qubit 3 (measure in X basis, thus need Hadamard gate prior to meas)
-    meas0_3 = tensor(identity(4), meas0, identity(2))
-    meas1_3 = tensor(identity(4), meas1, identity(2))
+    meas0_3 = tensor(identity([2,2,2]), meas0, identity(2))
+    meas1_3 = tensor(identity([2,2,2]), meas1, identity(2))
     meas_ops_3 = [meas0_3, meas1_3]
 
-    hadamard_3 = tensor(identity(8), hadamard_transform(), identity(2))
-    post_meas1_state = hadamard_3 * post_meas2_state * hadamard_3.dag()
+    hadamard_3 = tensor(identity([2,2,2]), hadamard_transform(), identity(2))
+    post_meas2_state = hadamard_3 * post_meas2_state * hadamard_3.dag()
 
     res3, post_meas2_state = measure_povm(post_meas2_state, meas_ops_3)
 
     # trace out qubits 2 and 3
     post_meas_state = post_meas2_state.ptrace([0,1,4])
     # apply feedforward Z correction on qubit 1 if qubit 3 measurement result is 1
-    # apply feedforward X correction on qubit 4 if qubit 2 measurement result is 1
-    x_gate = tensor(identity(4), sigmax())
+    # apply feedforward X correction on qubit 4 if qubit 2 measurement result is 0
+    x_gate = tensor(identity([2,2]), sigmax())
     z_gate = tensor(identity(2), sigmaz(), identity(2))
     if res2 == 0 and res3 == 0:
-        ghz_state = post_meas_state
-    elif res2 == 1 and res3 == 0:
         ghz_state = x_gate * post_meas_state * x_gate.dag()
+    elif res2 == 1 and res3 == 0:
+        ghz_state = post_meas_state
     elif res2 == 0 and res3 == 1:
-        ghz_state = z_gate * post_meas_state * z_gate.dag()
-    elif res2 == 1 and res3 == 1:
         ghz_state = z_gate * x_gate * post_meas_state * x_gate.dag() * z_gate.dag()
+    elif res2 == 1 and res3 == 1:
+        ghz_state = z_gate * post_meas_state * z_gate.dag()
 
     return ghz_state
 
