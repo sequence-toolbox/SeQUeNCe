@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="docs/Sequence_Icon_Name_Dark.png">
-   <img src="docs/Sequence_Icon_Name.svg" alt="sequence icon" width="450" class="center">
+   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sequence-toolbox/SeQUeNCe/master/docs/Sequence_Icon_Name_Dark.png">
+   <img src="https://raw.githubusercontent.com/sequence-toolbox/SeQUeNCe/master/docs/Sequence_Icon_Name.svg" alt="sequence icon" width="450" class="center">
   </picture>
 </p>
 
@@ -22,17 +22,18 @@ These modules can be edited by users to define additional functionality and test
 
 ## Installing
 SeQUeNCe requires an installation of Python 3.8 or later. This can be found at the [Python Website](https://www.python.org/downloads/).
-Then, simply download the package, navigate to its directory, and install with
+
+You can install with:
+```
+pip install sequence
+```
+
+Or, download the package, navigate to its directory, and install with
 ```
 git clone https://github.com/sequence-toolbox/SeQUeNCe.git
 cd SeQUeNCe
 pip install .
 ```
-Or, replace `pip install .` with the included makefile,
-```
-$ make install
-```
-This will install the sequence library as well as the package dependencies.
 
 ## Citation
 Please cite us, thank you!
