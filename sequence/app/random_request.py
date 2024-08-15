@@ -137,7 +137,7 @@ class RandomRequestApp(RequestApp):
         self.memory_counter = 0
         self.path = []
 
-    def get_reserve_res(self, reservation: Reservation, result: bool) -> None:
+    def get_reservation_result(self, reservation: Reservation, result: bool) -> None:
         """Method to receive reservation result from network manager.
 
         Args:
@@ -148,7 +148,7 @@ class RandomRequestApp(RequestApp):
             May schedule a start/retry event based on reservation result.
         """
 
-        super().get_reserve_res(reservation, result)
+        super().get_reservation_result(reservation, result)
         if result:
             process = Process(self, "start", [])
             self.reserves.append([self.responder, self.start_t, self.end_t,
