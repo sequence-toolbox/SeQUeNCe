@@ -23,6 +23,8 @@ from ..message import Message
 from .entanglement_protocol import EntanglementProtocol
 from ..utils import log
 from ..components.circuit import Circuit
+from ..kernel.process import Process
+from ..kernel.event import Event
 
 
 class SwappingMsgType(Enum):
@@ -192,8 +194,23 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.owner.send_message(self.left_node, msg_l)
         self.owner.send_message(self.right_node, msg_r)
 
-        self.update_resource_manager(self.left_memo, "RAW")
-        self.update_resource_manager(self.right_memo, "RAW")
+        # original
+        # self.update_resource_manager(self.left_memo, "RAW")
+        # self.update_resource_manager(self.right_memo, "RAW")
+
+        # delay updating the memory, to update with the end node at the same time
+        left_delay = self.owner.cchannels[self.left_node].delay
+        future_time = round(self.owner.timeline.now() + int(left_delay))
+        process = Process(self, "update_resource_manager", [self.left_memo, "RAW"])
+        event = Event(future_time, process, self.owner.timeline.schedule_counter)
+        self.owner.timeline.schedule(event)
+
+        right_delay = self.owner.cchannels[self.right_node].delay
+        future_time = round(self.owner.timeline.now() + int(right_delay))
+        process = Process(self, "update_resource_manager", [self.right_memo, "RAW"])
+        event = Event(future_time, process, self.owner.timeline.schedule_counter)
+        self.owner.timeline.schedule(event)
+
 
     def success_probability(self) -> float:
         """A simple model for BSM success probability."""
@@ -347,7 +364,7 @@ class EntanglementSwappingB(EntanglementProtocol):
             self.update_resource_manager(self.memory, "RAW")
 
     def start(self) -> None:
-        log.logger.info(f"{self.owner.name} end protocol start with partner {self.remote_node_name}")
+        log.logger.debug(f"{self.owner.name} end protocol start with partner {self.remote_node_name}")
 
     def memory_expire(self, memory: "Memory") -> None:
         """Method to deal with expired memories.

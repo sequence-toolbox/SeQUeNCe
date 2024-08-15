@@ -136,8 +136,8 @@ class Rule:
         action_name_list = str(self.action).split(' ')
         action_name = action_name_list[1] if len(action_name_list) >= 2 else action_name_list[0]  # in case action_name = ['None']
         condition_name_list = str(self.condition).split(' ')
-        condition_name = condition_name_list[1] if len(condition_name_list) == 2 else condition_name_list[0]
-        return "|action={}, args={}; condition={}, args={}|".format(action_name, self.action_args, condition_name, self.condition_args)
+        condition_name = condition_name_list[1] if len(condition_name_list) >= 2 else condition_name_list[0]
+        return "|action={}, args={}; condition={}; args={}|".format(action_name, self.action_args, condition_name, self.condition_args)
 
     def set_rule_manager(self, rule_manager: "RuleManager") -> None:
         """Method to assign rule to a rule manager.

@@ -362,7 +362,7 @@ class QuantumRouter(Node):
         self.app = app
 
     def reserve_net_resource(self, responder: str, start_time: int, end_time: int, memory_size: int,
-                             target_fidelity: float) -> None:
+                             target_fidelity: float, entanglement_number: int = 1, id: int = 0) -> None:
         """Method to request a reservation.
 
         Can be used by local applications.
@@ -373,9 +373,11 @@ class QuantumRouter(Node):
             end_time (int): desired simulation end time of entanglement.
             memory_size (int): number of memories requested.
             target_fidelity (float): desired fidelity of entanglement.
+            entanglement_number (int): the number of entanglement that the request ask for.
+            id (int): the ID of the request.
         """
 
-        self.network_manager.request(responder, start_time, end_time, memory_size, target_fidelity)
+        self.network_manager.request(responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, id)
 
     def get_idle_memory(self, info: "MemoryInfo") -> None:
         """Method for application to receive available memories."""
@@ -383,14 +385,23 @@ class QuantumRouter(Node):
         if self.app:
             self.app.get_memory(info)
 
-    def get_reserve_res(self, reservation: "Reservation", res: bool) -> None:
-        """Method for application to receive reservations results."""
+    def get_reservation_result(self, reservation: "Reservation", result: bool) -> None:
+        """Method for application to receive reservations results
+
+        Args:
+            reservation: the reservation created by the reservation protocol at this node (the initiator)
+            result: whether the reservation has been approved by the responder
+        """
 
         if self.app:
-            self.app.get_reserve_res(reservation, res)
+            self.app.get_reservation_result(reservation, result)
 
     def get_other_reservation(self, reservation: "Reservation"):
-        """Method for application to add the approved reservation that is requested by other nodes"""
+        """Method for application to add the approved reservation that is requested by other nodes
+        
+        Args:
+            reservation: the reservation created by the other node (this node is the responder)
+        """
 
         if self.app:
             self.app.get_other_reservation(reservation)

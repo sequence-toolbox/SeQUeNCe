@@ -27,7 +27,7 @@ class RequestApp:
             end_t (int): the end time of request (ps)
             memo_size (int): the size of memory used for the request
             fidelity (float): the target fidelity of the entanglement
-            reserve_res (bool): if network approves the request
+            reservation_result (bool): if network approves the request
             memory_counter (int): number of successfully received memories
             path (List[str]): the path of flow denoted by a list of node names
             memo_to_reserve (Dict[int, Reservation]): mapping of memory index to corresponding reservation.
@@ -42,10 +42,10 @@ class RequestApp:
         self.end_t: int = -1
         self.memo_size: int = 0
         self.fidelity: float = 0
-        self.reserve_res: bool = None
+        self.reservation_result: bool = None
         self.memory_counter: int = 0
         self.path: List[str] = []
-        self.memo_to_reserve: Dict[int, Reservation] = {}
+        self.memo_to_reservation: Dict[int, Reservation] = {}
         self.name: str = f"{self.node.name}.RequestApp"
 
     def start(self, responder: str, start_t: int, end_t: int, memo_size: int, fidelity: float):
@@ -67,8 +67,9 @@ class RequestApp:
 
         self.node.reserve_net_resource(responder, start_t, end_t, memo_size, fidelity)
 
-    def get_reserve_res(self, reservation: "Reservation", result: bool) -> None:
-        """Method to receive reservation result from network manager.
+    def get_reservation_result(self, reservation: "Reservation", result: bool) -> None:
+        """Method to receive reservation result from network manager. 
+           The initiator will call this method once received a responce from the responder
 
         Args:
             reservation (Reservation): reservation that has been completed.
@@ -77,16 +78,25 @@ class RequestApp:
         Side Effects:
             May schedule a start/retry event based on reservation result.
         """
-        self.reserve_res = result
+        self.reservation_result = result
         if result:
             self.schedule_reservation(reservation)
             log.logger.info("Successful reservation of resources for request app on node {}".format(self.node.name))
 
-    def add_memo_reserve_map(self, index: int, reservation: "Reservation") -> None:
-        self.memo_to_reserve[index] = reservation
+    def add_memo_reservation_map(self, index: int, reservation: "Reservation") -> None:
+        '''map the memory index to the reservation
+        Args:
+            index: the index of the memory
+            reservation: the reservation
+        '''
+        self.memo_to_reservation[index] = reservation
 
-    def remove_memo_reserve_map(self, index: int) -> None:
-        self.memo_to_reserve.pop(index)
+    def remove_memo_reservation_map(self, index: int) -> None:
+        '''when the reservation ended, remove it from the self.memo_to_reservation
+        Args:
+            the index of the memory array
+        '''
+        self.memo_to_reservation.pop(index)
 
     def get_memory(self, info: "MemoryInfo") -> None:
         """Method to receive entangled memories.
@@ -105,8 +115,8 @@ class RequestApp:
         if info.state != "ENTANGLED":
             return
 
-        if info.index in self.memo_to_reserve:
-            reservation = self.memo_to_reserve[info.index]
+        if info.index in self.memo_to_reservation:
+            reservation = self.memo_to_reservation[info.index]
             if info.remote_node == reservation.initiator and info.fidelity >= reservation.fidelity:
                 self.node.resource_manager.update(None, info.memory, "RAW")
             elif info.remote_node == reservation.responder and info.fidelity >= reservation.fidelity:
@@ -118,25 +128,27 @@ class RequestApp:
         return self.memory_counter / (self.end_t - self.start_t) * 1e12
 
     def get_other_reservation(self, reservation: "Reservation") -> None:
-        """Method to add the approved reservation that is requested by other nodes
+        """Method to add the approved reservation that is requested by other nodes. The responder will call this method
 
         Args:
             reservation (Reservation): reservation that uses the node of application as the responder
 
         Side Effects:
-            Will add calls to `add_memo_reserve_map` and `remove_memo_reserve_map` methods.
+            Will add calls to `add_memo_reservation_map` and `remove_memo_reservation_map` methods.
         """
         self.schedule_reservation(reservation)
 
     def schedule_reservation(self, reservation: "Reservation") -> None:
         if reservation.initiator == self.node.name:
-            self.path = reservation.path
-        for card in self.node.network_manager.protocol_stack[1].timecards:
+            self.path = reservation.path  # NOTE self.path will be an issue when there are multiple reservation.path at the same time
+
+        reservation_protocol = self.node.network_manager.protocol_stack[1]
+        for card in reservation_protocol.timecards:
             if reservation in card.reservations:
-                process = Process(self, "add_memo_reserve_map", [card.memory_index, reservation])
+                process = Process(self, "add_memo_reservation_map", [card.memory_index, reservation])
                 event = Event(reservation.start_time, process)
                 self.node.timeline.schedule(event)
-                process = Process(self, "remove_memo_reserve_map", [card.memory_index])
+                process = Process(self, "remove_memo_reservation_map", [card.memory_index])
                 event = Event(reservation.end_time, process)
                 self.node.timeline.schedule(event)
 

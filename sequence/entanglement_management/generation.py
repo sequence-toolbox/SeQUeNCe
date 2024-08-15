@@ -185,7 +185,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             Will send message through attached node.
         """
 
-        log.logger.info(f"{self.owner.name} protocol start with partner {self.remote_node_name}")
+        log.logger.info(f"{self.name} protocol start with partner {self.remote_protocol_name}")
 
         # to avoid start after remove protocol
         if self not in self.owner.protocols:
@@ -386,7 +386,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
     def _entanglement_fail(self):
         for event in self.scheduled_events:
-            self.owner.timeline.remove_event(event)   # NOTE caitao: useless? It will be popped from the priority queue anyway
+            self.owner.timeline.remove_event(event)
         log.logger.info(self.owner.name + " failed entanglement of memory {}".format(self.memory))
         
         self.update_resource_manager(self.memory, MemoryInfo.RAW)

@@ -154,7 +154,7 @@ class ResourceManager:
             rule (Rule): rule to remove.
         """
 
-        log.logger.info('expired rule {}'.format(rule))
+        log.logger.info('{} expired rule {}'.format(self.owner.name, rule))
         created_protocols = self.rule_manager.expire(rule)
         while created_protocols:
             protocol = created_protocols.pop()
@@ -238,7 +238,7 @@ class ResourceManager:
         msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST, protocol=protocol.name, node=self.owner.name,
                                      memories=memo_names, req_condition_func=req_condition_func, req_args=req_args)
         self.owner.send_message(req_dst, msg)
-        log.logger.info("{} send {} message to {}".format(self.owner.name, msg.msg_type.name, req_dst))
+        log.logger.debug("{} send {} message to {}".format(self.owner.name, msg.msg_type.name, req_dst))
 
     def received_message(self, src: str, msg: "ResourceManagerMessage") -> None:
         """Method to receive resource manager messages.
@@ -250,7 +250,7 @@ class ResourceManager:
             msg (ResourceManagerMessage): message received.
         """
 
-        log.logger.info("{} resource manager receive message from {}: {}".format(self.owner.name, src, msg))
+        log.logger.debug("{} resource manager receive message from {}: {}".format(self.owner.name, src, msg))
         if msg.msg_type is ResourceManagerMsgType.REQUEST:
             protocol = msg.req_condition_func(self.waiting_protocols, msg.req_args) # select the wait-for-request protocol to respond to the message
             if protocol is not None:

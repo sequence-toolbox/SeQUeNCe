@@ -331,7 +331,8 @@ class ResourceReservationProtocol(StackProtocol):
         self.es_degradation = 0.95
         self.accepted_reservation = []
 
-    def push(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float):
+    def push(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float,
+                   entanglement_number: int = 1, id: int = 0):
         """Method to receive reservation requests from higher level protocol.
 
         Will evaluate request and determine if node can meet it.
@@ -344,12 +345,13 @@ class ResourceReservationProtocol(StackProtocol):
             end_time (int): simulation time at which entanglement should cease.
             memory_size (int): number of memories to be entangled.
             target_fidelity (float): desired fidelity of entanglement.
-
+            entanglement_number (int): the number of entanglement the request ask for.
+            id (int): the ID of the request.
         Side Effects:
             May push/pop to lower/upper attached protocols (or network manager).
         """
 
-        reservation = Reservation(self.owner.name, responder, start_time, end_time, memory_size, target_fidelity)
+        reservation = Reservation(self.owner.name, responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, id)
         if self.schedule(reservation):
             msg = ResourceReservationMessage(RSVPMsgType.REQUEST, self.name, reservation)
             qcap = QCap(self.owner.name)
@@ -587,10 +589,12 @@ class Reservation:
         end_time (int): simulation time at which resources may be released.
         memory_size (int): number of entangled memory pairs requested.
         path (list): a list of router names from the source to destination
+        entanglement_number (int): the number of entanglement pair that the request ask for.
+        id (int): the ID of a request.
     """
 
     def __init__(self, initiator: str, responder: str, start_time: int,
-                 end_time: int, memory_size: int, fidelity: float):
+                 end_time: int, memory_size: int, fidelity: float, entanglement_number: int = 1, id: int = 0):
         """Constructor for the reservation class.
 
         Args:
@@ -600,6 +604,8 @@ class Reservation:
             end_time (int): simulation end time of entanglement.
             memory_size (int): number of entangled memories requested.
             fidelity (float): desired fidelity of entanglement.
+            entanglement_number (int): the number of entanglement the request ask for.
+            id (int): the ID of a request
         """
 
         self.initiator = initiator
@@ -608,13 +614,16 @@ class Reservation:
         self.end_time = end_time
         self.memory_size = memory_size
         self.fidelity = fidelity
+        self.entanglement_number = entanglement_number
+        self.id = id
         self.path = []
         assert self.start_time < self.end_time
         assert self.memory_size > 0
 
     def __str__(self) -> str:
-        return "|initiator={}; responder={}; start_time={:,}; end_time={:,}; memory_size={}; target_fidelity={}|".format(
-                self.initiator, self.responder, int(self.start_time), int(self.end_time), self.memory_size, self.fidelity)
+        s = "|initiator={}; responder={}; start_time={:,}; end_time={:,}; memory_size={}; target_fidelity={}; entanglement_number={}; id={}|".format(
+              self.initiator, self.responder, int(self.start_time), int(self.end_time), self.memory_size, self.fidelity, self.entanglement_number, self.id)
+        return s
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -629,6 +638,10 @@ class Reservation:
                other.end_time == self.end_time and \
                other.memory_size == self.memory_size and \
                other.fidelity == self.fidelity
+
+    def __hash__(self):
+        return hash((self.initiator, self.responder, self.start_time, self.end_time, self.memory_size, self.fidelity))
+
 
 
 class MemoryTimeCard:
