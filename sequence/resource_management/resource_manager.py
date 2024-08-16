@@ -20,6 +20,9 @@ from .rule_manager import RuleManager
 from .memory_manager import MemoryManager
 
 
+RequestConditionFunc = Callable[[List["EntanglementProtocol"]], "EntanglementProtocol"]
+
+
 class ResourceManagerMsgType(Enum):
     """Available message types for the ResourceManagerMessage."""
 
@@ -80,8 +83,6 @@ class ResourceManagerMessage(Message):
     def __str__(self) -> str:
         return self.string
 
-
-RequestConditionFunc = Callable[[List["EntanglementProtocol"]], "EntanglementProtocol"]
 
 
 class ResourceManager:
@@ -146,14 +147,14 @@ class ResourceManager:
     def expire(self, rule: "Rule") -> None:
         """Method to remove expired rule.
 
-        Will update rule in rule manager.
-        Will also update and modify protocols connected to the rule (if they have already been created).
+        Will update (remove) rule in rule manager.
+        Will also update (remove) protocols connected to the rule (if they have already been created, and not finished yet).
 
         Args:
             rule (Rule): rule to remove.
         """
 
-        log.logger.info('expired rule {}'.format(rule))
+        log.logger.info('{} expired rule {}'.format(self.owner.name, rule))
         created_protocols = self.rule_manager.expire(rule)
         while created_protocols:
             protocol = created_protocols.pop()
@@ -173,7 +174,7 @@ class ResourceManager:
         """Method to update state of memory after completion of entanglement management protocol.
 
         Args:
-            protocol (EntanglementProtocol): concerned protocol.
+            protocol (EntanglementProtocol): concerned protocol. If not None, then remove it from everywhere
             memory (Memory): memory to update.
             state (str): new state for the memory.
 
@@ -197,7 +198,7 @@ class ResourceManager:
         if protocol in self.pending_protocols:
             self.pending_protocols.remove(protocol)
 
-        # check if any rules have been met
+        # iterate all the ruls and check if there is a valid rule
         memo_info = self.memory_manager.get_info_by_memory(memory)
         for rule in self.rule_manager:
             memories_info = rule.is_valid(memo_info)
@@ -212,7 +213,7 @@ class ResourceManager:
     def get_memory_manager(self):
         return self.memory_manager
 
-    def send_request(self, protocol: "EntanglementProtocol", req_dst: str,
+    def send_request(self, protocol: "EntanglementProtocol", req_dst: Optional[str],
                      req_condition_func: RequestConditionFunc, req_args: Arguments):
         """Method to send protocol request to another node.
 
@@ -237,7 +238,7 @@ class ResourceManager:
         msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST, protocol=protocol.name, node=self.owner.name,
                                      memories=memo_names, req_condition_func=req_condition_func, req_args=req_args)
         self.owner.send_message(req_dst, msg)
-        log.logger.info("{} send {} message to {}".format(self.owner.name, msg.msg_type.name, req_dst))
+        log.logger.debug("{} send {} message to {}".format(self.owner.name, msg.msg_type.name, req_dst))
 
     def received_message(self, src: str, msg: "ResourceManagerMessage") -> None:
         """Method to receive resource manager messages.
@@ -249,7 +250,7 @@ class ResourceManager:
             msg (ResourceManagerMessage): message received.
         """
 
-        log.logger.info("{} resource manager receive message from {}: {}".format(self.owner.name, src, msg))
+        log.logger.debug("{} resource manager receive message from {}: {}".format(self.owner.name, src, msg))
         if msg.msg_type is ResourceManagerMsgType.REQUEST:
             protocol = msg.req_condition_func(self.waiting_protocols, msg.req_args) # select the wait-for-request protocol to respond to the message
             if protocol is not None:
@@ -277,13 +278,13 @@ class ResourceManager:
                 if p.name == protocol_name:
                     protocol = p
                     break
-            else:
+            else:  # no matched pending protocols
                 if msg.is_approved:
                     self.release_remote_protocol(src, msg.paired_protocol)
                 return
 
             if msg.is_approved:
-                protocol.set_others(msg.paired_protocol, msg.paired_node, msg.paired_memories)
+                protocol.set_others(msg.paired_protocol, msg.paired_node, msg.paired_memories)  # pairing (cost one round-trip-time)
                 if protocol.is_ready():
                     self.pending_protocols.remove(protocol)
                     self.owner.protocols.append(protocol)

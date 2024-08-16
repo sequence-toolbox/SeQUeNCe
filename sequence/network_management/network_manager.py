@@ -99,9 +99,9 @@ class NetworkManager:
         reservation = msg.reservation
         if reservation.initiator == self.owner.name:
             if msg.msg_type == RSVPMsgType.APPROVE:
-                self.owner.get_reserve_res(reservation, True)
+                self.owner.get_reservation_result(reservation, True)
             else:
-                self.owner.get_reserve_res(reservation, False)
+                self.owner.get_reservation_result(reservation, False)
         elif reservation.responder == self.owner.name:
             self.owner.get_other_reservation(reservation)
 
@@ -121,7 +121,8 @@ class NetworkManager:
         log.logger.info("{} network manager receives message from {}: {}".format(self.owner.name, src, msg))
         self.protocol_stack[0].pop(src=src, msg=msg.payload)
 
-    def request(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float) -> None:
+    def request(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float, 
+                entanglement_number: int = 1, id: int = 0) -> None:
         """Method to make an entanglement request.
 
         Will defer request to top protocol in protocol stack.
@@ -132,12 +133,14 @@ class NetworkManager:
             end_time (int): simulation end time of entanglement.
             memory_size (int): number of entangled memory pairs to create.
             target_fidelity (float): desired fidelity of entanglement.
+            entanglement_number (int): the number of entanglement requested
+            id (int): the ID of the request
 
         Side Effects:
-            Will invoke `push` method of -1 indexed protocol in `protocol_stack`.
+            Will invoke `push` method of -1 indexed protocol in `protocol_stack`, which is the resource reservation protocol
         """
 
-        self.protocol_stack[-1].push(responder, start_time, end_time, memory_size, target_fidelity)
+        self.protocol_stack[-1].push(responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, id)
 
 
 def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str) -> "NetworkManager":

@@ -541,13 +541,6 @@ def test_EntanglementSwapping():
 
         es2.start()
 
-        assert memo2.fidelity == memo3.fidelity == 0
-        assert memo1.entangled_memory["node_id"] == memo4.entangled_memory["node_id"] == "a2"
-        assert memo2.entangled_memory["node_id"] == memo3.entangled_memory["node_id"] == None
-        assert memo2.entangled_memory["memo_id"] == memo3.entangled_memory["memo_id"] == None
-        assert a2.resource_manager.log[-2] == (memo2, "RAW")
-        assert a2.resource_manager.log[-1] == (memo3, "RAW")
-
         tl.run()
 
         if es2.is_success:

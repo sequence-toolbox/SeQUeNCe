@@ -77,7 +77,8 @@ class RuleManager:
             rule (Rule): rule to remove.
 
         Returns:
-            List[EntanglementProtocol]: list of protocols created by rule (if any).
+            List[EntanglementProtocol]: list of protocols created by rule (if any). 
+                                        Note that when a protocol finishes, it will be removed from rule.protocols
         """
 
         self.rules.remove(rule)
@@ -135,8 +136,8 @@ class Rule:
         action_name_list = str(self.action).split(' ')
         action_name = action_name_list[1] if len(action_name_list) >= 2 else action_name_list[0]  # in case action_name = ['None']
         condition_name_list = str(self.condition).split(' ')
-        condition_name = condition_name_list[1] if len(condition_name_list) == 2 else condition_name_list[0]
-        return "|action={}, args={}; condition={}, args={}|".format(action_name, self.action_args, condition_name, self.condition_args)
+        condition_name = condition_name_list[1] if len(condition_name_list) >= 2 else condition_name_list[0]
+        return "|action={}, args={}; condition={}; args={}|".format(action_name, self.action_args, condition_name, self.condition_args)
 
     def set_rule_manager(self, rule_manager: "RuleManager") -> None:
         """Method to assign rule to a rule manager.
@@ -157,7 +158,7 @@ class Rule:
         protocol, req_dsts, req_condition_funcs, req_args = self.action(memories_info, self.action_args)
         log.logger.info('{} rule generates protocol {}'.format(self.rule_manager, protocol.name))
 
-        protocol.rule = self
+        protocol.rule = self  # the protocol is connected to the reservation via the rule
         self.protocols.append(protocol)
         for info in memories_info:
             info.memory.detach(info.memory.memory_array)

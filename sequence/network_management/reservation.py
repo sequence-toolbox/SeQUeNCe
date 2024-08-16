@@ -90,6 +90,11 @@ def eg_rule_action2(memories_info: List["MemoryInfo"], args: Arguments) -> Tuple
 
 def eg_req_func(protocols: List["EntanglementProtocol"], args: Arguments) -> EntanglementGenerationA:
     """Function used by `eg_rule_action2` function for selecting generation protocols on the remote node
+    Args:
+        protocols: the waiting protocols (wait for request)
+        args: arguments from the node who sent the request
+    Return:
+        the selected protocol
     """
     name = args["name"]
     reservation = args["reservation"]
@@ -262,7 +267,7 @@ def es_rule_conditionB1(memory_info: "MemoryInfo", manager: "MemoryManager", arg
     """Condition function used by EntanglementSwappingB protocol on nodes of either responder or initiator
     """
     memory_indices = args["memory_indices"]
-    target_remote = args["target_remote"]
+    target_remote = args["target_remote"]  # A - B - C. For A: B is the remote node, C is the target remote
     fidelity = args["fidelity"]
     if (memory_info.state == "ENTANGLED"
             and memory_info.index in memory_indices
@@ -326,7 +331,8 @@ class ResourceReservationProtocol(StackProtocol):
         self.es_degradation = 0.95
         self.accepted_reservation = []
 
-    def push(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float):
+    def push(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float,
+                   entanglement_number: int = 1, id: int = 0):
         """Method to receive reservation requests from higher level protocol.
 
         Will evaluate request and determine if node can meet it.
@@ -339,12 +345,13 @@ class ResourceReservationProtocol(StackProtocol):
             end_time (int): simulation time at which entanglement should cease.
             memory_size (int): number of memories to be entangled.
             target_fidelity (float): desired fidelity of entanglement.
-
+            entanglement_number (int): the number of entanglement the request ask for.
+            id (int): the ID of the request.
         Side Effects:
             May push/pop to lower/upper attached protocols (or network manager).
         """
 
-        reservation = Reservation(self.owner.name, responder, start_time, end_time, memory_size, target_fidelity)
+        reservation = Reservation(self.owner.name, responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, id)
         if self.schedule(reservation):
             msg = ResourceReservationMessage(RSVPMsgType.REQUEST, self.name, reservation)
             qcap = QCap(self.owner.name)
@@ -543,19 +550,22 @@ class ResourceReservationProtocol(StackProtocol):
         """
 
         self.accepted_reservation.append(reservation)
-        for card in self.timecards:
-            if reservation in card.reservations:
-                process = Process(self.owner.resource_manager, "update", [None, self.memo_arr[card.memory_index], "RAW"])
-                event = Event(reservation.end_time, process, 1)
-                self.owner.timeline.schedule(event)
 
         for rule in rules:
             process = Process(self.owner.resource_manager, "load", [rule])
-            event = Event(reservation.start_time, process)
+            event = Event(reservation.start_time, process, self.owner.timeline.schedule_counter)
             self.owner.timeline.schedule(event)
+            
             process = Process(self.owner.resource_manager, "expire", [rule])
-            event = Event(reservation.end_time, process, 0)
+            event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
             self.owner.timeline.schedule(event)
+
+        for card in self.timecards:
+            if reservation in card.reservations:
+                process = Process(self.owner.resource_manager, "update", [None, self.memo_arr[card.memory_index], "RAW"])
+                event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
+                self.owner.timeline.schedule(event)
+
 
     def received_message(self, src, msg):
         """Method to receive messages directly (should not be used; receive through network manager)."""
@@ -582,10 +592,12 @@ class Reservation:
         end_time (int): simulation time at which resources may be released.
         memory_size (int): number of entangled memory pairs requested.
         path (list): a list of router names from the source to destination
+        entanglement_number (int): the number of entanglement pair that the request ask for.
+        id (int): the ID of a request.
     """
 
     def __init__(self, initiator: str, responder: str, start_time: int,
-                 end_time: int, memory_size: int, fidelity: float):
+                 end_time: int, memory_size: int, fidelity: float, entanglement_number: int = 1, id: int = 0):
         """Constructor for the reservation class.
 
         Args:
@@ -595,6 +607,8 @@ class Reservation:
             end_time (int): simulation end time of entanglement.
             memory_size (int): number of entangled memories requested.
             fidelity (float): desired fidelity of entanglement.
+            entanglement_number (int): the number of entanglement the request ask for.
+            id (int): the ID of a request
         """
 
         self.initiator = initiator
@@ -603,13 +617,16 @@ class Reservation:
         self.end_time = end_time
         self.memory_size = memory_size
         self.fidelity = fidelity
+        self.entanglement_number = entanglement_number
+        self.id = id
         self.path = []
         assert self.start_time < self.end_time
         assert self.memory_size > 0
 
     def __str__(self) -> str:
-        return "|initiator={}; responder={}; start_time={:,}; end_time={:,}; memory_size={}; target_fidelity={}|".format(
-                self.initiator, self.responder, int(self.start_time), int(self.end_time), self.memory_size, self.fidelity)
+        s = "|initiator={}; responder={}; start_time={:,}; end_time={:,}; memory_size={}; target_fidelity={}; entanglement_number={}; id={}|".format(
+              self.initiator, self.responder, int(self.start_time), int(self.end_time), self.memory_size, self.fidelity, self.entanglement_number, self.id)
+        return s
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -624,6 +641,10 @@ class Reservation:
                other.end_time == self.end_time and \
                other.memory_size == self.memory_size and \
                other.fidelity == self.fidelity
+
+    def __hash__(self):
+        return hash((self.initiator, self.responder, self.start_time, self.end_time, self.memory_size, self.fidelity))
+
 
 
 class MemoryTimeCard:

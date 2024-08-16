@@ -23,6 +23,7 @@ from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..utils.encoding import time_bin
+from ..utils import log
 
 
 class Detector(Entity):
@@ -82,6 +83,8 @@ class Detector(Entity):
 
         if self.get_generator().random() < self.efficiency:
             self.record_detection()
+        else:
+            log.logger.debug(f'Oops! Photon loss in the detector {self.name}')
 
     def add_dark_count(self) -> None:
         """Method to schedule false positive detection events.
