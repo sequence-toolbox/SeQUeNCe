@@ -44,10 +44,10 @@ def test_log():
 
     lg.set_logger(__name__, tl, filename)
     lg.set_logger_level("DEBUG")
-    lg.track_module(__name__)
+    lg.track_module('test_log')
 
     tl.init()
     de.log()
 
-    # TODO: fix (should be 1)
+    # NOTE caitao: when running locally, file_len(filename) is 1, but when using pytest, it is 2
     assert file_len(filename) == 2

@@ -1,3 +1,6 @@
+"""This module generates JSON config files for Internet Autonomous System Network
+"""
+
 from collections import defaultdict
 
 import networkx as nx
@@ -9,8 +12,7 @@ import numpy as np
 from simanneal import Annealer
 import random
 
-from generator_utils import add_default_args, generate_bsm_links, generate_classical, final_config
-
+from sequence.utils.config_generator import add_default_args, generate_bsm_links, generate_classical, final_config, router_name_func, bsm_name_func
 from sequence.topology.topology import Topology
 from sequence.topology.router_net_topo import RouterNetTopo
 
@@ -18,13 +20,6 @@ from sequence.topology.router_net_topo import RouterNetTopo
 SEED = 1
 random.seed(SEED)
 
-
-def router_name_func(i):
-    return f"router_{i}"
-
-
-def bsm_name_func(i, j):
-    return f"BSM_{i}_{j}"
 
 
 def get_exp_dis_prob(x0, x1, alpha):

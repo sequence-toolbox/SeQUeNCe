@@ -108,3 +108,4 @@ def test_BB84_time_bin():
     tl.run()
     assert pa.counter == pb.counter == 10
 
+test_BB84_polarization()

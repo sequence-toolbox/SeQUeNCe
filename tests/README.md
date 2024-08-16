@@ -2,14 +2,20 @@ These tests can be run using the [`pytest`](https://docs.pytest.org/en/8.0.x/) l
 
 Examples:
 
-```
-pytest
+
+```bash
+# run all tests
+pytest tests
 ```
 
-```
+```bash
+# run tests under a folder
+cd tests
 pytest entanglement_management
 ```
 
-```
-pytest entanglement_management/test_swapping.py
+```bash
+# run tests in a file
+cd entanglement_management
+pytest test_swapping.py
 ```

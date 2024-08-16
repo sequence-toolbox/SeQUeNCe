@@ -39,10 +39,10 @@
             "memo_size": 20
         },
         {
-            "seed": 4,
-            "group": 0,
+            "name": "bsm0",
             "type": "BSMNode",
-            "name": "bsm0"
+            "seed": 4,
+            "group": 0
         }
     ],
     "qchannels": [
