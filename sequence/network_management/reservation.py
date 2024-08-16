@@ -550,19 +550,22 @@ class ResourceReservationProtocol(StackProtocol):
         """
 
         self.accepted_reservation.append(reservation)
-        for card in self.timecards:
-            if reservation in card.reservations:
-                process = Process(self.owner.resource_manager, "update", [None, self.memo_arr[card.memory_index], "RAW"])
-                event = Event(reservation.end_time, process, 1)
-                self.owner.timeline.schedule(event)
 
         for rule in rules:
             process = Process(self.owner.resource_manager, "load", [rule])
-            event = Event(reservation.start_time, process)
+            event = Event(reservation.start_time, process, self.owner.timeline.schedule_counter)
             self.owner.timeline.schedule(event)
+            
             process = Process(self.owner.resource_manager, "expire", [rule])
-            event = Event(reservation.end_time, process, 0)
+            event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
             self.owner.timeline.schedule(event)
+
+        for card in self.timecards:
+            if reservation in card.reservations:
+                process = Process(self.owner.resource_manager, "update", [None, self.memo_arr[card.memory_index], "RAW"])
+                event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
+                self.owner.timeline.schedule(event)
+
 
     def received_message(self, src, msg):
         """Method to receive messages directly (should not be used; receive through network manager)."""

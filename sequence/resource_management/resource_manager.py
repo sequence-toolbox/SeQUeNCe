@@ -278,7 +278,7 @@ class ResourceManager:
                 if p.name == protocol_name:
                     protocol = p
                     break
-            else:
+            else:  # no matched pending protocols
                 if msg.is_approved:
                     self.release_remote_protocol(src, msg.paired_protocol)
                 return
