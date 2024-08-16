@@ -181,3 +181,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Modified the topology output of the GUI to be compatible with new topology upgrades
 - Several bug fixes in the GUI
+
+
+## [0.6.3]
+### Added
+- We have an Icon for SeQUeNCe!
+- `pip install sequence` is now available!
+- `src` folder is renamed to `sequence` for seamlessly use `pip install --editable .`
+- add `sequence/constants.py` to organize the common constants
+- move `utils/json_config_generators/generator_utils.py` to `sequence/utils/config_generator.py`
+
+
+### Changed
+- Various refactoring, include but not limited to updating variable/method names, moving code around, adding/rewriting comments, and making the code more succint, etc.
+- logging looks better
+- In `class Reservation`, added attribute `entanglement_number` and `id`
+- In `class EntanglementSwappingA`, delay updating the memory at the middle node to RAW.

@@ -552,7 +552,7 @@ class ResourceReservationProtocol(StackProtocol):
             reservation (Reservation): reservation that created the rules.
         """
 
-        self.accepted_reservation.append(reservation)
+        self.accepted_reservations.append(reservation)
 
         for rule in rules:
             process = Process(self.owner.resource_manager, "load", [rule])
