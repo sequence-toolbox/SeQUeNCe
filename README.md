@@ -1,4 +1,15 @@
-# SeQUeNCe: Simulator of QUantum Network Communication
+<p align="center">
+  <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sequence-toolbox/SeQUeNCe/master/docs/Sequence_Icon_Name_Dark.png">
+   <img src="https://raw.githubusercontent.com/sequence-toolbox/SeQUeNCe/master/docs/Sequence_Icon_Name.svg" alt="sequence icon" width="450" class="center">
+  </picture>
+</p>
+
+<h3><p align="center">Quantum Networking in SeQUeNCe: Scalable, Customizable, Easy Debugging</p></h3>
+
+<br>
+
+## SeQUeNCe: Simulator of QUantum Network Communication
 
 SeQUeNCe is an open source, discrete-event simulator for quantum networks. As described in our [paper](http://arxiv.org/abs/2009.12000), the simulator includes 5 modules on top of a simulation kernel:
 * Hardware
@@ -10,21 +21,19 @@ SeQUeNCe is an open source, discrete-event simulator for quantum networks. As de
 These modules can be edited by users to define additional functionality and test protocol schemes, or may be used as-is to test network parameters and topologies.
 
 ## Installing
-SeQUeNCe requires an installation of [Python 3.8](https://www.python.org/downloads/) or later.
-Then, simply download the package, navigate to its directory, and install with `pip install --editable .`
+SeQUeNCe requires [Python](https://www.python.org/downloads/) 3.8 or later. You can simply install using `pip`:
+```
+pip install sequence
+```
+
+Or, you may install from source:
 ```
 git clone https://github.com/sequence-toolbox/SeQUeNCe.git
 cd SeQUeNCe
 pip install --editable .
 ```
-Note: With `--editable`, any changes you make to the package code are immediately reflected when you import the package. This greatly speeds up the development process because you don't have to repeatedly uninstall/install the package after making changes. You are free to skip the `--editable` option.
 
-<!-- Or, using the included makefile
-```
-make install
-```
-
-This will install the sequence library as well as the package dependencies. -->
+Note: With `--editable`, any changes you make to the package code are immediately reflected when you import the package and this greatly speeds up the development process. You are free to skip the `--editable` option.
 
 ## Citation
 Please cite us, thank you!
@@ -57,7 +66,7 @@ Many examples of SeQUeNCe in action can be found in the [example](/example) fold
 Code for the experiments performed in our paper can be found in the file `starlight_experiments.py`. This script uses the `starlight.json` file (also within the example folder) to specify the network topology.
 
 ### Jupyter Notebook Examples
-The example folder contains several scripts that can be run with jupyter notebook for easy editing and visualization. These files require that the notebook package be installed:
+The example folder contains several scripts that can be run with jupyter notebook for easy editing and visualization. These files require that the notebook package be installed (Anaconda recommended):
 ```
 $ pip install notebook
 $ pip install ipywidgets

@@ -22,6 +22,9 @@ from ..protocol import StackProtocol
 from ..kernel.event import Event
 from ..kernel.process import Process
 
+ENTANGLED = 'ENTANGLED'
+RAW = 'RAW'
+
 
 class RSVPMsgType(Enum):
     """Defines possible message types for the reservation protocol."""
@@ -287,7 +290,7 @@ def es_rule_conditionB2(memory_info: "MemoryInfo", manager: "MemoryManager", arg
     left = args["left"]
     right = args["right"]
     fidelity = args["fidelity"]
-    if (memory_info.state == "ENTANGLED"
+    if (memory_info.state == ENTANGLED
             and memory_info.index in memory_indices
             and memory_info.remote_node not in [left, right]
             and memory_info.fidelity >= fidelity):
@@ -312,7 +315,7 @@ class ResourceReservationProtocol(StackProtocol):
         timecards (List[MemoryTimeCard]): list of reservation cards for all memories on node.
         es_succ_prob (float): sets `success_probability` of `EntanglementSwappingA` protocols created by rules.
         es_degradation (float): sets `degradation` of `EntanglementSwappingA` protocols created by rules.
-        accepted_reservation (List[Reservation]): list of all approved reservation requests.
+        accepted_reservations (List[Reservation]): list of all approved reservation requests.
     """
 
     def __init__(self, owner: "QuantumRouter", name: str, memory_array_name: str):
@@ -329,7 +332,7 @@ class ResourceReservationProtocol(StackProtocol):
         self.timecards = [MemoryTimeCard(i) for i in range(len(self.memo_arr))]
         self.es_succ_prob = 1
         self.es_degradation = 0.95
-        self.accepted_reservation = []
+        self.accepted_reservations = []
 
     def push(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float,
                    entanglement_number: int = 1, id: int = 0):
@@ -363,7 +366,7 @@ class ResourceReservationProtocol(StackProtocol):
 
     def pop(self, src: str, msg: "ResourceReservationMessage"):
         """Method to receive messages from lower protocols.
-
+           NOTE (caitao, 3/19/2024): argument "src" not used
         Messages may be of 3 types, causing different network manager behavior:
 
         1. REQUEST: requests are evaluated, and forwarded along the path if accepted. Otherwise a REJECT message is sent back.
@@ -428,7 +431,7 @@ class ResourceReservationProtocol(StackProtocol):
 
         if self.owner.name in [reservation.initiator, reservation.responder]:
             counter = reservation.memory_size
-        else:
+        else: # e.g., entanglement swapping nodes needs twice amount of memory
             counter = reservation.memory_size * 2
         timecards = []
         for timecard in self.timecards:
@@ -678,9 +681,9 @@ class MemoryTimeCard:
             bool: whether or not reservation was inserted successfully.
         """
         
-        pos = self.schedule_reservation(reservation)
-        if pos >= 0:
-            self.reservations.insert(pos, reservation)
+        position = self.schedule_reservation(reservation)
+        if position >= 0:
+            self.reservations.insert(position, reservation)
             return True
         else:
             return False
@@ -696,20 +699,20 @@ class MemoryTimeCard:
         """
 
         try:
-            pos = self.reservations.index(reservation)
-            self.reservations.pop(pos)
+            position = self.reservations.index(reservation)
+            self.reservations.pop(position)
             return True
         except ValueError:
             return False
 
-    def schedule_reservation(self, resv: "Reservation") -> int:
+    def schedule_reservation(self, reservation: "Reservation") -> int:
         """Method to add reservation to a memory.
 
         Will return index at which reservation can be inserted into memory reservation list.
         If no space found for reservation, will raise an exception.
 
         Args:
-            resv (Reservation): reservation to schedule.
+            reservation (Reservation): reservation to schedule.
 
         Returns:
             int: index to insert reservation in reservation list.
@@ -721,12 +724,12 @@ class MemoryTimeCard:
         start, end = 0, len(self.reservations) - 1
         while start <= end:
             mid = (start + end) // 2
-            if self.reservations[mid].start_time > resv.end_time:
+            if self.reservations[mid].start_time > reservation.end_time:
                 end = mid - 1
-            elif self.reservations[mid].end_time < resv.start_time:
+            elif self.reservations[mid].end_time < reservation.start_time:
                 start = mid + 1
-            elif (max(self.reservations[mid].start_time, resv.start_time)
-                  <= min(self.reservations[mid].end_time, resv.end_time)):
+            elif (max(self.reservations[mid].start_time, reservation.start_time) <= \
+                    min(self.reservations[mid].end_time, reservation.end_time)):
                 return -1
             else:
                 raise Exception("Unexpected status")
