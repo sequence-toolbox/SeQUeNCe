@@ -26,14 +26,14 @@ SeQUeNCe requires [Python](https://www.python.org/downloads/) 3.8 or later. You 
 pip install sequence
 ```
 
-Or, you may install from source:
+For [development mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html) (a.k.a. editable install):
 ```
 git clone https://github.com/sequence-toolbox/SeQUeNCe.git
 cd SeQUeNCe
-pip install --editable .
+pip install --editable . --config-settings editable_mode=strict
 ```
 
-Note: With `--editable`, any changes you make to the package code are immediately reflected when you import the package and this greatly speeds up the development process. You are free to skip the `--editable` option.
+Note: For issues related to editable install, see [link](https://stackoverflow.com/questions/76213501/python-packages-imported-in-editable-mode-cant-be-resolved-by-pylance-in-vscode).
 
 ## Citation
 Please cite us, thank you!

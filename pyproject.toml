@@ -1,11 +1,32 @@
 [project]
 name = "sequence"
+authors = [
+    {name = "Xiaoliang Wu", email = "xwu64@hawk.iit.edu"},
+    {name = "Joaquin Chung", email = "chungmiranda@anl.gov"},
+    {name = "Alexander Kolar", email = "akolar@anl.gov"},
+    {name = "Alexander Kiefer", email = "akiefer@iu.edu"},
+    {name = "Eugene Wang", email = "eugenewang@yahoo.com"},
+    {name = "Tian Zhong", email = "tzh@uchicago.edu"},
+    {name = "Rajkumar Kettimuthu", email = "kettimut@mcs.anl.gov"},
+    {name = "Martin Suchara", email = "msuchara@anl.gov"},
+]
 version = "0.6.3"
 description = "Simulator of QUantum Network Communication (SeQUeNCe) is an open-source tool that allows modeling of quantum networks including photonic network components, control protocols, and applications."
 readme = "README.md"
 requires-python = ">=3.8"
 
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools]
+packages = ['sequence', 'sequence.app', 'sequence.kernel', 'sequence.components',
+            'sequence.network_management', 'sequence.entanglement_management', 'sequence.qkd',
+            'sequence.resource_management', 'sequence.topology', 'sequence.utils', 'sequence.gui']
+
+[tool.setuptools.package-data]
+sequence = ["gui/user_templates.json", "gui/default_params.json", "gui/starlight.json"]
+
 [project.urls]
-homepage = "https://github.com/sequence-toolbox/SeQUeNCe"
-documentation = "https://sequence-toolbox.github.io/"
-issues = "https://github.com/sequence-toolbox/SeQUeNCe/issues"
+Homepage = "https://github.com/sequence-toolbox/SeQUeNCe"
+Documentation = "https://sequence-toolbox.github.io/"
+Issues = "https://github.com/sequence-toolbox/SeQUeNCe/issues"
