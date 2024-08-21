@@ -187,13 +187,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - We have an Icon for SeQUeNCe!
 - `pip install sequence` is now available!
-- `src` folder is renamed to `sequence` for seamlessly use `pip install --editable .`
-- add `sequence/constants.py` to organize the common constants
-- move `utils/json_config_generators/generator_utils.py` to `sequence/utils/config_generator.py`
+- `src` folder is renamed to `sequence`
+- Add `sequence/constants.py` to organize the common constants
+- Add support for Python 3.12
+- Add `pyproject.toml`
 
 
 ### Changed
-- Various refactoring, include but not limited to updating variable/method names, moving code around, adding/rewriting comments, and making the code more succint, etc.
-- logging looks better
+- Various refactoring, include but not limited to updating variable/method names, moving code around, adding/rewriting comments, and making the code more succinct, etc.
+- In README.md, installation with option `--editable`  is encouraged.
+- `logging` looks better
 - In `class Reservation`, added attribute `entanglement_number` and `id`
 - In `class EntanglementSwappingA`, delay updating the memory at the middle node to RAW.
+- Update `ResourceReservationProtocol.load_rules()`
+- Move `utils/json_config_generators/generator_utils.py` to `sequence/utils/config_generator.py`
+
+### Removed
+- Removed support for Python 3.8
+- Removed `setup.py`
+- Removed `MANIFEST.in`
