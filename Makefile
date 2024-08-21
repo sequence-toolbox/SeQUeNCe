@@ -3,9 +3,6 @@ all: jupyter
 setup:
 	pip3 install -r ./requirements.txt
 
-install_no_pip:
-	python3 setup.py install
-
 install:
 	pip3 install .
 
