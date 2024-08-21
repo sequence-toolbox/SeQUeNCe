@@ -1,13 +1,12 @@
 import math
-
 import numpy
 
 from sequence.components.memory import MemoryArray
 from sequence.components.bsm import SingleAtomBSM
 from sequence.kernel.timeline import Timeline
-from sequence.resource_management.resource_manager import ResourceManager, \
-    ResourceManagerMessage, ResourceManagerMsgType
+from sequence.resource_management.resource_manager import ResourceManager, ResourceManagerMessage, ResourceManagerMsgType
 from sequence.resource_management.rule_manager import Rule
+from sequence.message import Message
 from sequence.topology.node import Node
 
 numpy.random.seed(0)
@@ -37,7 +36,7 @@ class FakeProtocol:
         self.rule = Rule(None, None, None, None, None)
         self.rule.protocols.append(self)
         self.memories = memories
-        self.own = None
+        self.owner = None
 
     def is_ready(self):
         return self.other_is_setted
@@ -162,14 +161,14 @@ def test_send_request():
     assert len(node.send_log) == 0
     assert protocol in resource_manager.waiting_protocols
     assert len(resource_manager.pending_protocols) == 0
-    assert protocol.own == node
+    assert protocol.owner == node
     protocol = FakeProtocol("send")
     node.resource_manager.send_request(protocol, "dst_id",
                                        "req_condition_func", {})
     assert len(node.send_log) == 1
     assert protocol in resource_manager.pending_protocols
     len(resource_manager.waiting_protocols) == 1
-    assert protocol.own == node
+    assert protocol.owner == node
 
 
 def test_received_message():

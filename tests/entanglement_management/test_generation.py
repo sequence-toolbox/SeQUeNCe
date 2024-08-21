@@ -170,8 +170,7 @@ def test_generation_run():
     for src in [e0, e1, m0]:
         for dst in [e0, e1, m0]:
             if src.name != dst.name:
-                cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl,
-                                      1e3, delay=1e9)
+                cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl, 1e3, delay=1e9)
                 cc.set_ends(src, dst.name)
 
     # add hardware

@@ -28,6 +28,7 @@ class DumbParent:
         self.photon_list = []
         self.photon_arrival_times = []
         self.generator = np.random.default_rng(SEED)
+        self.name = ""
 
     def memory_expire(self, memory):
         self.pop_log.append(memory)

@@ -10,6 +10,7 @@ If your JSON file contains parallel simulation information, please remove before
 import argparse
 from graphviz import Graph
 from json import load
+from collections import defaultdict
 
 from sequence.topology.router_net_topo import RouterNetTopo
 from sequence.topology.qkd_topo import QKDTopo
@@ -17,10 +18,14 @@ from sequence.topology.qkd_topo import QKDTopo
 
 parser = argparse.ArgumentParser()
 parser.add_argument('config_file', help="path to json file defining network")
-# TODO: add support for middle node not viewing
-# parser.add_argument('-m', dest='draw_middle', action='store_true')
+parser.add_argument('-d', '--directory', type=str, default='tmp', help='directory to save the figure')
+parser.add_argument('-f', '--filename', type=str, default='topology', help='filename of the figure')
+parser.add_argument('-m', '--draw_middle', action='store_true')
 
 args = parser.parse_args()
+directory = args.directory
+filename = args.filename
+draw_middle = args.draw_middle
 
 # determine type of network
 with open(args.config_file, 'r') as fh:
@@ -46,13 +51,28 @@ node_types = list(topo.nodes.keys())
 
 for node_type in node_types:
     if node_type == RouterNetTopo.BSM_NODE:
-        for node in topo.get_nodes_by_type(node_type):
-            g.node(node.name, label='BSM', shape='rectangle')
+        if draw_middle:
+            for node in topo.get_nodes_by_type(node_type):
+                g.node(node.name, label='BSM', shape='rectangle')
     else:
         for node in topo.get_nodes_by_type(node_type):
             g.node(node.name)
 
-for qchannel in topo.get_qchannels():
-    g.edge(qchannel.sender.name, qchannel.receiver, color='blue', dir='forward')
+if draw_middle:
+    # draw the middle BSM node
+    for qchannel in topo.get_qchannels():
+        g.edge(qchannel.sender.name, qchannel.receiver, color='blue', dir='forward')
+else:
+    # do not draw the middle BSM node
+    bsm_to_node = defaultdict(list)
+    for qchannel in topo.get_qchannels():
+        node = qchannel.sender.name
+        bsm = qchannel.receiver
+        bsm_to_node[bsm].append(node)
+    qconnections = set()
+    for bsm, nodes in bsm_to_node.items():
+        assert len(nodes) == 2, f'{bsm} connects to {len(nodes)} number of nodes (should be 2)'
+        g.edge(nodes[0], nodes[1], color='blue')
 
-g.view()
+
+g.view(directory=directory, filename=filename)

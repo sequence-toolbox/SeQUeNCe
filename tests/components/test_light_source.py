@@ -10,6 +10,7 @@ class Receiver:
     def __init__(self, timeline):
         self.timeline = timeline
         self.log = []
+        self.name = ""
 
     def get(self, photon):
         self.log.append((self.timeline.now(), photon))

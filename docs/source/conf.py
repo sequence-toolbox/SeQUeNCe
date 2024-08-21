@@ -22,7 +22,7 @@ copyright = '2020-2024'
 author = 'Xiaoliang Wu, Joaquin Chung, Alexander Kolar, Eugene Wang, Tian Zhong, Rajkumar Kettimuthu, Martin Suchara'
 
 # The full version, including alpha/beta/rc tags
-release = '0.6.2'
+release = '0.6.3'
 
 
 # -- General configuration ---------------------------------------------------
@@ -43,7 +43,7 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+exclude_patterns = ['Thumbs.db', '.DS_Store']
 
 source_suffix = {
         '.rst': 'restructuredtext',

@@ -2,7 +2,7 @@
 
 In this tutorial, we will showcase the Network Management module of SeQUeNCe and show its operation on a typical network. The goal of this tutorial is to
 - Gain familiarity with the `network_management` module
-- Gain familiarity with the `topology.topology` module, including
+- Gain familiarity with the `topology.topology` module
 - Using external files to build networks
 
 To achieve this, we will be using an example json file to build our network and will use the network manager on `QuantumRouter` nodes to request entanglement pairs. The json file will create the network topology shown below:
@@ -39,11 +39,11 @@ The json file should be structured as a dictionary with the following keys:
 
 - `is_parallel`, denoting if it's a parallel or sequential simulation
 - `stop_time`, the stop time of simulation
-- `nodes`, giving a list of node specifications,
-- One of the following:
-  - `qchannels`, giving a list of quantum channel specifications,
-  - `qconnections`, giving a list of two-way quantum connection specifications, and
-- One of the following:
+- `nodes`, giving a list of node specifications
+- At least one of the following:
+  - `qchannels`, giving a list of quantum channel specifications
+  - `qconnections`, giving a list of two-way quantum connection specifications
+- At least one of the following:
   - `cchannels`, giving a list of classical channel specifications (similar to `qchannels`)
   - `cconnections`, giving a list of two-way classical connection specifications
 

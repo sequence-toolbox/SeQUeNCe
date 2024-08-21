@@ -10,6 +10,7 @@ Args:
     cc_delay (float): classical channel delay (in ms).
 
 Optional Args:
+    -d --directory (str): name of the output directory (default tmp)
     -o --output (str): name of the output file (default out.json).
     -s --stop (float): simulation stop time (in s) (default infinity).
     -p --parallel: sets simulation as parallel and requires addition args:
@@ -23,16 +24,13 @@ Optional Args:
 
 import argparse
 import json
+import os
 
-from generator_utils import add_default_args, get_node_csv, generate_node_procs, generate_nodes, \
-    generate_classical, final_config
-
+from sequence.utils.config_generator import add_default_args, get_node_csv, generate_node_procs, generate_nodes, generate_classical, final_config, router_name_func
 from sequence.topology.topology import Topology
 from sequence.topology.router_net_topo import RouterNetTopo
 
 
-def router_name_func(i):
-    return f"router_{i}"
 
 
 # parse args
@@ -51,14 +49,12 @@ else:
 router_names = list(node_procs.keys())
 nodes = generate_nodes(node_procs, router_names, args.memo_size)
 
-# generate quantum links and bsm connections
+# generate bsm nodes, quantum links (quantum channels + classical channels)
 qchannels = []
 cchannels = []
 bsm_names = ["BSM_{}_{}".format(i % args.ring_size, (i+1) % args.ring_size)
              for i in range(args.ring_size)]
-bsm_nodes = [{Topology.NAME: bsm_name,
-              Topology.TYPE: RouterNetTopo.BSM_NODE,
-              Topology.SEED: i}
+bsm_nodes = [{Topology.NAME: bsm_name, Topology.TYPE: RouterNetTopo.BSM_NODE, Topology.SEED: i}
              for i, bsm_name in enumerate(bsm_names)]
 if args.parallel:
     for i in range(args.ring_size):
@@ -92,8 +88,7 @@ nodes += bsm_nodes
 output_dict[Topology.ALL_NODE] = nodes
 output_dict[Topology.ALL_Q_CHANNEL] = qchannels
 
-# generate classical links
-# generate classical links
+# generate classical links (classical channels)
 router_cchannels = generate_classical(router_names, args.cc_delay)
 cchannels += router_cchannels
 output_dict[Topology.ALL_C_CHANNEL] = cchannels
@@ -102,6 +97,7 @@ output_dict[Topology.ALL_C_CHANNEL] = cchannels
 final_config(output_dict, args)
 
 # write final json
-output_file = open(args.output, 'w')
+path = os.path.join(args.directory, args.output)
+output_file = open(path, 'w')
 json.dump(output_dict, output_file, indent=4)
 

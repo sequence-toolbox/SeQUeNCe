@@ -1,4 +1,15 @@
-# SeQUeNCe: Simulator of QUantum Network Communication
+<p align="center">
+  <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sequence-toolbox/SeQUeNCe/master/docs/Sequence_Icon_Name_Dark.png">
+   <img src="https://raw.githubusercontent.com/sequence-toolbox/SeQUeNCe/master/docs/Sequence_Icon_Name.svg" alt="sequence icon" width="450" class="center">
+  </picture>
+</p>
+
+<h3><p align="center">Quantum Networking in SeQUeNCe: Scalable, Customizable, Easy Debugging</p></h3>
+
+<br>
+
+## SeQUeNCe: Simulator of QUantum Network Communication
 
 SeQUeNCe is an open source, discrete-event simulator for quantum networks. As described in our [paper](http://arxiv.org/abs/2009.12000), the simulator includes 5 modules on top of a simulation kernel:
 * Hardware
@@ -10,16 +21,19 @@ SeQUeNCe is an open source, discrete-event simulator for quantum networks. As de
 These modules can be edited by users to define additional functionality and test protocol schemes, or may be used as-is to test network parameters and topologies.
 
 ## Installing
-SeQUeNCe requires an installation of Python 3.8 or later. This can be found at the [Python Website](https://www.python.org/downloads/).
-Then, simply download the package, navigate to its directory, and install with
+SeQUeNCe requires [Python](https://www.python.org/downloads/) 3.9 or later. You can simply install SeQUeNCe using `pip`:
 ```
-$ pip install .
+pip install sequence
 ```
-Or, using the included makefile,
+
+For [development mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html) (a.k.a. editable install):
 ```
-$ make install
+git clone https://github.com/sequence-toolbox/SeQUeNCe.git
+cd SeQUeNCe
+pip install --editable . --config-settings editable_mode=strict
 ```
-This will install the sequence library as well as the package dependencies.
+
+Note: For issues related to editable install, see [link](https://stackoverflow.com/questions/76213501/python-packages-imported-in-editable-mode-cant-be-resolved-by-pylance-in-vscode).
 
 ## Citation
 Please cite us, thank you!
@@ -52,7 +66,7 @@ Many examples of SeQUeNCe in action can be found in the [example](/example) fold
 Code for the experiments performed in our paper can be found in the file `starlight_experiments.py`. This script uses the `starlight.json` file (also within the example folder) to specify the network topology.
 
 ### Jupyter Notebook Examples
-The example folder contains several scripts that can be run with jupyter notebook for easy editing and visualization. These files require that the notebook package be installed:
+The example folder contains several scripts that can be run with jupyter notebook for easy editing and visualization. These files require that the notebook package be installed (Anaconda recommended):
 ```
 $ pip install notebook
 $ pip install ipywidgets
