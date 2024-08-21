@@ -512,7 +512,7 @@ class EntanglementGenerationA(EntanglementProtocol):
                 self.own.timeline.remove_event(event)
 
     def _entanglement_succeed(self):
-        log.logger.info(self.own.name + " successful entanglement of memory {}".format(self.memory))
+        log.logger.info(self.own.name + " successful entanglement of memory {}".format(self.memory.name))
         self.memory.entangled_memory["node_id"] = self.remote_node_name
         self.memory.entangled_memory["memo_id"] = self.remote_memo_id
         self.memory.fidelity = self.raw_fidelity
@@ -522,7 +522,7 @@ class EntanglementGenerationA(EntanglementProtocol):
     def _entanglement_fail(self):
         for event in self.scheduled_events:
             self.own.timeline.remove_event(event)
-        log.logger.info(self.own.name + " failed entanglement of memory {}".format(self.memory))
+        log.logger.info(self.own.name + " failed entanglement of memory {}".format(self.memory.name))
 
         self.update_resource_manager(self.memory, 'RAW')
 

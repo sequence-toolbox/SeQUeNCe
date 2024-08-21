@@ -168,6 +168,7 @@ class Rule:
         """
 
         manager = self.rule_manager.get_memory_manager()
+        log.logger.debug('Rule manager checking validity for memory {}'.format(memory_info.memory.name))
         return self.condition(memory_info, manager, self.condition_args)
 
     def set_reservation(self, reservation: "Reservation") -> None:
