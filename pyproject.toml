@@ -13,7 +13,7 @@ authors = [
 version = "0.6.3"
 description = "Simulator of QUantum Network Communication (SeQUeNCe) is an open-source tool that allows modeling of quantum networks including photonic network components, control protocols, and applications."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dynamic = ["dependencies"]
 
 

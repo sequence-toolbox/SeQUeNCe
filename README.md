@@ -21,7 +21,7 @@ SeQUeNCe is an open source, discrete-event simulator for quantum networks. As de
 These modules can be edited by users to define additional functionality and test protocol schemes, or may be used as-is to test network parameters and topologies.
 
 ## Installing
-SeQUeNCe requires [Python](https://www.python.org/downloads/) 3.8 or later. You can simply install using `pip`:
+SeQUeNCe requires [Python](https://www.python.org/downloads/) 3.9 or later. You can simply install SeQUeNCe using `pip`:
 ```
 pip install sequence
 ```
