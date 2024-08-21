@@ -42,12 +42,10 @@ def test_log():
     tl = Timeline()
     de = DumbEntity()
 
-    lg.set_logger(__name__, tl, filename)
     lg.set_logger_level("DEBUG")
     lg.track_module(__name__)
 
     tl.init()
     de.log()
 
-    # TODO: fix (should be 1)
-    assert file_len(filename) == 2
+    assert file_len(filename) == 1
