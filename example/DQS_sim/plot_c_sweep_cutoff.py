@@ -9,7 +9,7 @@ from qutip import qload
 from qutip_integration import calc_scalar_c, calculate_fidelity
 
 
-DATA_DIR = "/Users/alexkolar/Desktop/Lab/dqs_sim/sweep_coherence_test/results"
+DATA_DIR = "/Users/alexkolar/Desktop/Lab/dqs_sim/testing/sweep_cutoff_test_3/results"
 
 # plotting params
 mpl.rcParams.update({'font.sans-serif': 'Helvetica',
@@ -21,8 +21,14 @@ percent_color = 'coral'
 
 results_files = glob.glob("*/main.json", root_dir=DATA_DIR)
 
+# get basic info
+with open(os.path.join(DATA_DIR, results_files[0])) as f:
+    results = json.load(f)
+net_config = results['network config']
+num_nodes = len(net_config['nodes'])
+
 # get all GHZ statistics
-coherences = []
+cutoffs = []
 c_vals = []
 fid_vals = []
 complete_percent = []
@@ -31,8 +37,8 @@ for file in results_files:
 
     with open(os.path.join(DATA_DIR, file)) as f:
         result_data = json.load(f)
-    coherence = result_data["network config"]["templates"]["DQS_template"]["MemoryArray"]["coherence_time"]
-    coherences.append(coherence)
+    cutoff_time = result_data["simulation config"]["cutoff_time"]
+    cutoffs.append(cutoff_time)
 
     qobjs = []
     for trial in result_data["results"]:
@@ -56,23 +62,21 @@ for file in results_files:
     complete_percent.append(num_completed / num_trials)
 
 # sort
-coherences, c_vals = zip(*sorted(zip(coherences, c_vals)))
+cutoffs, c_vals = zip(*sorted(zip(cutoffs, c_vals)))
 complete_percent = np.array(complete_percent)
 
 
 # plotting
 fig, ax = plt.subplots()
 ax2 = ax.twinx()
-ax.plot(coherences, c_vals,
+ax.plot(cutoffs, num_nodes*(1 - np.array(c_vals)),
         '-o', color=c_color)
-ax2.plot(coherences, 100*complete_percent,
+ax2.plot(cutoffs, 100 * complete_percent,
          '-o', color=percent_color)
 
-ax.set_xlabel("Coherence time (s)")
-ax.set_ylabel("C", color=c_color)
+ax.set_xlabel("Cutoff time (s)")
+ax.set_ylabel(r"$d(1 - C)$", color=c_color)
 ax2.set_ylabel("Completion Rate", color=percent_color)
-ax.set_xscale("log")
-ax.set_ylim((-0.1, 1.1))
 ax2.set_ylim((-10, 110))
 yticks = ticker.FormatStrFormatter(tick_fmt)
 ax2.yaxis.set_major_formatter(yticks)

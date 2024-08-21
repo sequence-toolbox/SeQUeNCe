@@ -19,7 +19,13 @@ c_color = 'cornflowerblue'
 percent_color = 'coral'
 
 
-results_files = glob.glob("(*km)*/main.json", root_dir=DATA_DIR)
+results_files = glob.glob("*/main.json", root_dir=DATA_DIR)
+
+# get basic info
+with open(os.path.join(DATA_DIR, results_files[0])) as f:
+    results = json.load(f)
+net_config = results['network config']
+num_nodes = len(net_config['nodes'])
 
 # get all GHZ statistics
 distances = []
@@ -59,15 +65,15 @@ complete_percent = np.array(complete_percent)
 # plotting
 fig, ax = plt.subplots()
 ax2 = ax.twinx()
-ax.plot(distances, c_vals,
+ax.plot(distances, num_nodes*(1 - np.array(c_vals)),
         '-o', color=c_color)
 ax2.plot(distances, 100*complete_percent,
          '-o', color=percent_color)
 
 ax.set_xlabel("Distance (km)")
-ax.set_ylabel("C", color=c_color)
+ax.set_ylabel(r"$d(1 - C)$", color=c_color)
 ax2.set_ylabel("Completion Rate", color=percent_color)
-ax.set_ylim((-0.1, 1.1))
+# ax.set_ylim((-0.1, 1.1))
 ax2.set_ylim((-10, 110))
 yticks = ticker.FormatStrFormatter(tick_fmt)
 ax2.yaxis.set_major_formatter(yticks)
