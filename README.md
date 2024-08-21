@@ -26,14 +26,15 @@ SeQUeNCe requires [Python](https://www.python.org/downloads/) 3.9 or later. You 
 pip install sequence
 ```
 
-For [development mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html) (a.k.a. editable install):
+If you wish to make your own edits to the codebase, SeQUeNCe should be installed in [development mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html) (a.k.a. editable install).
+To do so, clone and install the simulator as follows:
 ```
 git clone https://github.com/sequence-toolbox/SeQUeNCe.git
 cd SeQUeNCe
-pip install --editable . --config-settings editable_mode=strict
+make install_editable
 ```
 
-Note: For issues related to editable install, see [link](https://stackoverflow.com/questions/76213501/python-packages-imported-in-editable-mode-cant-be-resolved-by-pylance-in-vscode).
+Note: For issues related to editable install, see [here](https://stackoverflow.com/questions/76213501/python-packages-imported-in-editable-mode-cant-be-resolved-by-pylance-in-vscode).
 
 ## Citation
 Please cite us, thank you!
