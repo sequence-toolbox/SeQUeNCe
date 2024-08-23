@@ -42,7 +42,7 @@ class RequestApp:
         self.end_t: int = -1
         self.memo_size: int = 0
         self.fidelity: float = 0
-        self.reservation_result: bool = None
+        self.reservation_result: bool = False
         self.memory_counter: int = 0
         self.path: List[str] = []
         self.memo_to_reservation: Dict[int, Reservation] = {}
@@ -69,7 +69,8 @@ class RequestApp:
 
     def get_reservation_result(self, reservation: "Reservation", result: bool) -> None:
         """Method to receive reservation result from network manager. 
-           The initiator will call this method once received a responce from the responder
+
+        The initiator will call this method once received a response from the responder.
 
         Args:
             reservation (Reservation): reservation that has been completed.
@@ -84,18 +85,22 @@ class RequestApp:
             log.logger.info("Successful reservation of resources for request app on node {}".format(self.node.name))
 
     def add_memo_reservation_map(self, index: int, reservation: "Reservation") -> None:
-        '''map the memory index to the reservation
+        """Maps memory index to the corresponding reservation.
+
         Args:
-            index: the index of the memory
-            reservation: the reservation
-        '''
+            index (int): Memory index
+            reservation (Reservation): Reservation that index should map to.
+        """
         self.memo_to_reservation[index] = reservation
 
     def remove_memo_reservation_map(self, index: int) -> None:
-        '''when the reservation ended, remove it from the self.memo_to_reservation
+        """Function to remove mapping from self.memo_to_reservation.
+
+        When a reservation ends, it should be removed from mapping by this method.
+
         Args:
-            the index of the memory array
-        '''
+            index (int): The memory index to remove.
+        """
         self.memo_to_reservation.pop(index)
 
     def get_memory(self, info: "MemoryInfo") -> None:
@@ -140,7 +145,8 @@ class RequestApp:
 
     def schedule_reservation(self, reservation: "Reservation") -> None:
         if reservation.initiator == self.node.name:
-            self.path = reservation.path  # NOTE self.path will be an issue when there are multiple reservation.path at the same time
+            # NOTE: self.path will be an issue when there are multiple reservation.path at the same time
+            self.path = reservation.path
 
         reservation_protocol = self.node.network_manager.protocol_stack[1]
         for card in reservation_protocol.timecards:
