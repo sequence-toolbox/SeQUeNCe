@@ -77,8 +77,8 @@ class RuleManager:
             rule (Rule): rule to remove.
 
         Returns:
-            List[EntanglementProtocol]: list of protocols created by rule (if any). 
-                                        Note that when a protocol finishes, it will be removed from rule.protocols
+            List[EntanglementProtocol]: list of protocols created by rule (if any).
+                Note that when a protocol finishes, it will be removed from rule.protocols.
         """
 
         self.rules.remove(rule)

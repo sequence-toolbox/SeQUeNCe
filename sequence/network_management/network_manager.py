@@ -121,8 +121,8 @@ class NetworkManager:
         log.logger.info("{} network manager receives message from {}: {}".format(self.owner.name, src, msg))
         self.protocol_stack[0].pop(src=src, msg=msg.payload)
 
-    def request(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float, 
-                entanglement_number: int = 1, id: int = 0) -> None:
+    def request(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float,
+                entanglement_number: int = 1, identity: int = 0) -> None:
         """Method to make an entanglement request.
 
         Will defer request to top protocol in protocol stack.
@@ -133,14 +133,15 @@ class NetworkManager:
             end_time (int): simulation end time of entanglement.
             memory_size (int): number of entangled memory pairs to create.
             target_fidelity (float): desired fidelity of entanglement.
-            entanglement_number (int): the number of entanglement requested
-            id (int): the ID of the request
+            entanglement_number (int): the number of entanglement requested.
+            identity (int): the ID of the request.
 
         Side Effects:
-            Will invoke `push` method of -1 indexed protocol in `protocol_stack`, which is the resource reservation protocol
+            Will invoke `push` method of -1 indexed protocol in `protocol_stack`,
+            which is the resource reservation protocol.
         """
 
-        self.protocol_stack[-1].push(responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, id)
+        self.protocol_stack[-1].push(responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity)
 
 
 def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str) -> "NetworkManager":

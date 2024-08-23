@@ -45,8 +45,8 @@ class ResourceManagerMessage(Message):
     Attributes:
         ini_protocol_name (str): name of protocol that creates the original REQUEST message.
         ini_node_name (str): name of the node that creates the original REQUEST message.
-        ini_memories_name (str): name of the memories
-        string (str): for __str__() purpose
+        ini_memories_name (str): name of the memories.
+        string (str): for __str__() purpose.
         request_fun (func): a function using ResourceManager to search eligible protocols on remote node (if `msg_type` == REQUEST).
         is_approved (bool): acceptance/failure of condition function (if `msg_type` == RESPONSE).
         paired_protocol (str): protocol that is paired with ini_protocol (if `msg-type` == RESPONSE).
@@ -82,7 +82,6 @@ class ResourceManagerMessage(Message):
 
     def __str__(self) -> str:
         return self.string
-
 
 
 class ResourceManager:
@@ -123,7 +122,7 @@ class ResourceManager:
         """Method to load rules for entanglement management.
 
         Attempts to add rules to the rule manager.
-        Will automatically execute rule action if conditions met on a piece of memory.
+        Will automatically execute rule action if conditions met on a memory.
 
         Args:
             rule (Rule): rule to load.
@@ -174,7 +173,8 @@ class ResourceManager:
         """Method to update state of memory after completion of entanglement management protocol.
 
         Args:
-            protocol (EntanglementProtocol): concerned protocol. If not None, then remove it from everywhere
+            protocol (EntanglementProtocol): concerned protocol.
+                If not None, then remove all references.
             memory (Memory): memory to update.
             state (str): new state for the memory.
 
@@ -252,7 +252,8 @@ class ResourceManager:
 
         log.logger.debug("{} resource manager receive message from {}: {}".format(self.owner.name, src, msg))
         if msg.msg_type is ResourceManagerMsgType.REQUEST:
-            protocol = msg.req_condition_func(self.waiting_protocols, msg.req_args) # select the wait-for-request protocol to respond to the message
+            # select the wait-for-request protocol to respond to the message
+            protocol = msg.req_condition_func(self.waiting_protocols, msg.req_args)
             if protocol is not None:
                 protocol.set_others(msg.ini_protocol_name, msg.ini_node_name, msg.ini_memories_name)
                 memo_names = [memo.name for memo in protocol.memories]
@@ -264,7 +265,7 @@ class ResourceManager:
                 self.owner.protocols.append(protocol)
                 protocol.start()
             else:
-                # non of the self.waiting_protocol satisfy the req_condition_func --> is_approved=False
+                # none of the self.waiting_protocol satisfy the req_condition_func --> is_approved=False
                 new_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=msg.ini_protocol_name,
                                                  node=msg.ini_node_name, memories=msg.ini_memories_name, is_approved=False,
                                                  paired_protocol=None, paired_node=None, paired_memories=None)

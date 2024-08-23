@@ -17,6 +17,7 @@ from numpy.random import Generator
 from .quantum_utils import *
 from ..constants import EPSILON
 
+
 def swap_bits(num, pos1, pos2):
     """Swaps bits in num at positions 1 and 2.
 
@@ -58,7 +59,7 @@ class State(ABC):
         res = {"keys": self.keys}
         state = []
         for cplx_n in self.state:
-            if type(cplx_n) == float:
+            if type(cplx_n) is float:
                 state.append(cplx_n)
                 state.append(0)
             elif isinstance(cplx_n, complex):

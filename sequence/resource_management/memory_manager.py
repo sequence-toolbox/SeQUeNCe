@@ -104,8 +104,8 @@ class MemoryInfo:
         entangle_time (int): time at which most recent entanglement is achieved.
     """
 
-    RAW       = "RAW"
-    OCCUPIED  = "OCCUPIED"
+    RAW = "RAW"
+    OCCUPIED = "OCCUPIED"
     ENTANGLED = "ENTANGLED"
 
     def __init__(self, memory: "Memory", index: int, state="RAW"):

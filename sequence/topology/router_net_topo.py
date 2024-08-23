@@ -104,8 +104,7 @@ class RouterNetTopo(Topo):
                 r1.add_bsm_node(bsm, r0_str)
 
     def _add_qconnections(self, config: dict):
-        '''generate bsm_info, qc_info, and cc_info for the q_connections
-        '''
+        """generate bsm_info, qc_info, and cc_info for the q_connections."""
         for q_connect in config.get(Topo.ALL_QC_CONNECT, []):
             node1 = q_connect[Topo.CONNECT_NODE_1]
             node2 = q_connect[Topo.CONNECT_NODE_2]
@@ -172,8 +171,7 @@ class RouterNetTopo(Topo):
                 raise NotImplementedError("Unknown type of quantum connection")
 
     def _generate_forwarding_table(self, config: dict):
-        '''for static routing
-        '''
+        """For static routing."""
         graph = Graph()
         for node in config[Topo.ALL_NODE]:
             if node[Topo.TYPE] == self.QUANTUM_ROUTER:
@@ -209,7 +207,7 @@ class RouterNetTopo(Topo):
                         path = dijkstra_path(graph, dst_name, src.name)[::-1]
                     next_hop = path[1]
                     # routing protocol locates at the bottom of the stack
-                    routing_protocol = src.network_manager.protocol_stack[0]  # gaurantee that [0] is the routing protocol?
+                    routing_protocol = src.network_manager.protocol_stack[0]  # guarantee that [0] is the routing protocol?
                     routing_protocol.add_forwarding_rule(dst_name, next_hop)
                 except exception.NetworkXNoPath:
                     pass

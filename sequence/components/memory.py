@@ -28,8 +28,9 @@ def const(t):
 
 
 class MemoryArray(Entity):
-    """Aggregator for Memory objects. An array of single atom memories
+    """Aggregator for Memory objects.
 
+    Equivalent to an array of single atom memories.
     The MemoryArray can be accessed as a list to get individual memories.
 
     Attributes:
@@ -104,7 +105,6 @@ class MemoryArray(Entity):
         index = self.memory_name_to_index.get(name, -1)
         assert index >= 0, "Oops! name={} not exist!"
         return self.memories[index]
-
 
 
 class Memory(Entity):
