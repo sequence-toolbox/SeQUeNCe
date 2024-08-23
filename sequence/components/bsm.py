@@ -1,6 +1,7 @@
 """Models for simulating bell state measurement.
 
-This module defines a template bell state measurement (BSM) class, as well as implementations for polarization, time bin, and memory encoding schemes.
+This module defines a template bell state measurement (BSM) class,
+as well as implementations for polarization, time bin, and memory encoding schemes.
 Also defined is a function to automatically construct a BSM of a specified type.
 """
 
@@ -117,7 +118,8 @@ class BSM(Entity):
             name (str): name of the beamsplitter instance.
             timeline (Timeline): simulation timeline.
             phase_error (float): Phase error applied to polarization photons (default 0).
-            detectors (List[Dict[str, Any]]): List of parameters for attached detectors, in dictionary format (default []).
+            detectors (List[Dict[str, Any]]): List of parameters for attached detectors,
+                in dictionary format (default None).
         """
 
         super().__init__(name, timeline)
@@ -216,7 +218,8 @@ class PolarizationBSM(BSM):
             name (str): name of the BSM instance.
             timeline (Timeline): simulation timeline.
             phase_error (float): phase error applied to polarization photons (default 0).
-            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 4) (default []).
+            detectors (List[Dict]): list of parameters for attached detectors,
+                in dictionary format (must be of length 4) (default None).
         """
 
         super().__init__(name, timeline, phase_error, detectors)
@@ -316,7 +319,8 @@ class TimeBinBSM(BSM):
             name (str): name of the beamsplitter instance.
             timeline (Timeline): simulation timeline.
             phase_error (float): phase error applied to polarization qubits (unused) (default 0).
-            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2) (default []).
+            detectors (List[Dict]): list of parameters for attached detectors,
+                in dictionary format (must be of length 2) (default None).
         """
 
         super().__init__(name, timeline, phase_error, detectors)
@@ -433,7 +437,8 @@ class SingleAtomBSM(BSM):
             name (str): name of the beamsplitter instance.
             timeline (Timeline): simulation timeline.
             phase_error (float): phase error applied to polarization qubits (unused) (default 0).
-            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format (must be of length 2) (default []).
+            detectors (List[Dict]): list of parameters for attached detectors,
+                in dictionary format (must be of length 2) (default None).
         """
 
         if detectors is None:
@@ -481,31 +486,34 @@ class SingleAtomBSM(BSM):
                     # twice to assign state to psi+ or psi-
                     log.logger.info(self.name + " passed stage 2")
                     if _eq_psi_plus(state0, qm.formalism) ^ detector_num:
-                        _set_state_with_fidelity(keys, BSM._psi_minus, p0.encoding_type["raw_fidelity"], self.get_generator(), qm)
+                        _set_state_with_fidelity(keys, BSM._psi_minus, p0.encoding_type["raw_fidelity"],
+                                                 self.get_generator(), qm)
                     else:
-                        _set_state_with_fidelity(keys, BSM._psi_plus, p0.encoding_type["raw_fidelity"], self.get_generator(), qm)
+                        _set_state_with_fidelity(keys, BSM._psi_plus, p0.encoding_type["raw_fidelity"],
+                                                 self.get_generator(), qm)
                 else:
                     raise NotImplementedError("Unknown state")
 
                 photon = p0 if meas0 else p1
                 if self.get_generator().random() > photon.loss:
                     log.logger.info("Triggering detector {}".format(detector_num))
-                    self.detectors[detector_num].get()   # middle BSM node notify two end nodes via EntanglementGenerationB.bsm_update()
+                    # middle BSM node notify two end nodes via EntanglementGenerationB.bsm_update()
+                    self.detectors[detector_num].get()
                 else:
-                    log.logger.info(f'Oops! photon p{meas1} is lost')
+                    log.logger.info(self.name + f'lost photon p{meas1}')
 
-            else: # meas0, meas1 = 1, 1
+            else:  # meas0, meas1 = 1, 1 or 0, 0
                 if meas0 and self.get_generator().random() > p0.loss:
                     detector_num = self.get_generator().choice([0, 1])
                     self.detectors[detector_num].get()
                 else:
-                    log.logger.info(f'Oops! photon p0 is lost')
+                    log.logger.info(self.name + f'lost photon p0')
 
                 if meas1 and self.get_generator().random() > p1.loss:
                     detector_num = self.get_generator().choice([0, 1])
                     self.detectors[detector_num].get()
                 else:
-                    log.logger.info(f'Oops! photon p1 is lost')
+                    log.logger.info(self.name + f'lost photon p1')
 
     def trigger(self, detector: Detector, info: Dict[str, Any]):
         """See base class.
