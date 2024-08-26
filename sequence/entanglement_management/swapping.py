@@ -23,9 +23,7 @@ from ..message import Message
 from .entanglement_protocol import EntanglementProtocol
 from ..utils import log
 from ..components.circuit import Circuit
-from ..kernel.process import Process
-from ..kernel.event import Event
-
+from ..resource_management.memory_manager import MemoryInfo
 
 class SwappingMsgType(Enum):
     """Defines possible message types for entanglement generation."""
@@ -96,11 +94,11 @@ class EntanglementSwappingA(EntanglementProtocol):
     circuit.measure(0)
     circuit.measure(1)
 
-    def __init__(self, own: "Node", name: str, left_memo: "Memory", right_memo: "Memory", success_prob=1, degradation=0.95):
+    def __init__(self, owner: "Node", name: str, left_memo: "Memory", right_memo: "Memory", success_prob=1, degradation=0.95):
         """Constructor for entanglement swapping A protocol.
 
         Args:
-            own (Node): node that protocol instance is attached to.
+            owner (Node): node that protocol instance is attached to.
             name (str): label for swapping protocol instance.
             left_memo (Memory): memory entangled with a memory on one distant node.
             right_memo (Memory): memory entangled with a memory on the other distant node.
@@ -109,7 +107,7 @@ class EntanglementSwappingA(EntanglementProtocol):
         """
 
         assert left_memo != right_memo
-        EntanglementProtocol.__init__(self, own, name)
+        EntanglementProtocol.__init__(self, owner, name)
         self.memories = [left_memo, right_memo]
         self.left_memo = left_memo
         self.right_memo = right_memo
@@ -194,22 +192,8 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.owner.send_message(self.left_node, msg_l)
         self.owner.send_message(self.right_node, msg_r)
 
-        # original
-        # self.update_resource_manager(self.left_memo, "RAW")
-        # self.update_resource_manager(self.right_memo, "RAW")
-
-        # delay updating the memory, to update with the end node at the same time
-        left_delay = self.owner.cchannels[self.left_node].delay
-        future_time = round(self.owner.timeline.now() + int(left_delay))
-        process = Process(self, "update_resource_manager", [self.left_memo, "RAW"])
-        event = Event(future_time, process, self.owner.timeline.schedule_counter)
-        self.owner.timeline.schedule(event)
-
-        right_delay = self.owner.cchannels[self.right_node].delay
-        future_time = round(self.owner.timeline.now() + int(right_delay))
-        process = Process(self, "update_resource_manager", [self.right_memo, "RAW"])
-        event = Event(future_time, process, self.owner.timeline.schedule_counter)
-        self.owner.timeline.schedule(event)
+        self.update_resource_manager(self.left_memo, MemoryInfo.RAW)
+        self.update_resource_manager(self.right_memo, MemoryInfo.RAW)
 
 
     def success_probability(self) -> float:
@@ -262,9 +246,9 @@ class EntanglementSwappingA(EntanglementProtocol):
 
         for memo in self.memories:
             if memo == memory:
-                self.update_resource_manager(memo, "RAW")
+                self.update_resource_manager(memo, MemoryInfo.RAW)
             else:
-                self.update_resource_manager(memo, "ENTANGLED")
+                self.update_resource_manager(memo, MemoryInfo.ENTANGLED)
 
     def release_remote_protocol(self, remote_node: str):
         self.owner.resource_manager.release_remote_protocol(remote_node, self)
@@ -302,7 +286,7 @@ class EntanglementSwappingB(EntanglementProtocol):
     x_z_cir.x(0)
     x_z_cir.z(0)
 
-    def __init__(self, own: "Node", name: str, hold_memo: "Memory"):
+    def __init__(self, owner: "Node", name: str, hold_memo: "Memory"):
         """Constructor for entanglement swapping B protocol.
 
         Args:
@@ -311,7 +295,7 @@ class EntanglementSwappingB(EntanglementProtocol):
             hold_memo (Memory): memory entangled with a memory on middle node.
         """
 
-        EntanglementProtocol.__init__(self, own, name)
+        EntanglementProtocol.__init__(self, owner, name)
 
         self.memories = [hold_memo]
         self.memory = hold_memo
@@ -359,9 +343,9 @@ class EntanglementSwappingB(EntanglementProtocol):
             self.memory.entangled_memory["node_id"] = msg.remote_node
             self.memory.entangled_memory["memo_id"] = msg.remote_memo
             self.memory.update_expire_time(msg.expire_time)
-            self.update_resource_manager(self.memory, "ENTANGLED")
+            self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
         else:
-            self.update_resource_manager(self.memory, "RAW")
+            self.update_resource_manager(self.memory, MemoryInfo.RAW)
 
     def start(self) -> None:
         log.logger.debug(f"{self.owner.name} end protocol start with partner {self.remote_node_name}")
@@ -376,7 +360,7 @@ class EntanglementSwappingB(EntanglementProtocol):
             Will update memory in attached resource manager.
         """
 
-        self.update_resource_manager(self.memory, "RAW")
+        self.update_resource_manager(self.memory, MemoryInfo.RAW)
 
     def release(self) -> None:
-        self.update_resource_manager(self.memory, "ENTANGLED")
+        self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)

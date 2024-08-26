@@ -146,7 +146,7 @@ class Cascade(StackProtocol):
         privacy_throughput (int): throughput of not revealed bits.
     """
 
-    def __init__(self, own: "QKDNode", name: str, w=4, role=-1, secure_params=100):
+    def __init__(self, owner: "QKDNode", name: str, w=4, role=-1, secure_params=100):
         """Constructor for cascade class.
 
         Args:
@@ -159,7 +159,7 @@ class Cascade(StackProtocol):
             secure_params (int): security parameter (default 100).
         """
 
-        super().__init__(own, name)
+        super().__init__(owner, name)
 
         self.w = w
         self.role = role  # 0 for sender, 1 for receiver

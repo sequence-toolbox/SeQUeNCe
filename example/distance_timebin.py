@@ -13,8 +13,8 @@ from sequence.utils.encoding import time_bin
 
 # dummy parent class to receive BB84 keys and initiate BB84
 class Parent(StackProtocol):
-    def __init__(self, own: "Node", keysize: int, role: str):
-        super().__init__(own, "")
+    def __init__(self, owner: "Node", keysize: int, role: str):
+        super().__init__(owner, "")
         self.upper_protocols = []
         self.lower_protocols = []
         self.keysize = keysize

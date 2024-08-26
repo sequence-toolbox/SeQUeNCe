@@ -306,7 +306,7 @@ from sequence.message import Message
 
 class PingProtocol(Protocol):
     def __init__(self, owner: Node, name: str, other_name: str, other_node: str):
-        super().__init__(own, name)
+        super().__init__(owner, name)
         owner.protocols.append(self)
         self.other_name = other_name
         self.other_node = other_node
@@ -324,9 +324,9 @@ class PingProtocol(Protocol):
 
 
 class PongProtocol(Protocol):
-    def __init__(self, own: Node, name: str, other_name: str, other_node: str):
-        super().__init__(own, name)
-        own.protocols.append(self)
+    def __init__(self, owner: Node, name: str, other_name: str, other_node: str):
+        super().__init__(owner, name)
+        owner.protocols.append(self)
         self.other_name = other_name
         self.other_node = other_node
     

@@ -23,9 +23,9 @@ class Counter:
 
 
 class Sender:
-    def __init__(self, own, memory_name):
-        self.owner = own
-        self.memory = own.components[memory_name]
+    def __init__(self, owner, memory_name):
+        self.owner = owner
+        self.memory = owner.components[memory_name]
 
     def start(self, period):
         process1 = Process(self.memory, "update_state", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]])

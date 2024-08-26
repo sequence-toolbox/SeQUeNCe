@@ -43,7 +43,7 @@ class StaticRoutingProtocol(StackProtocol):
         forwarding_table (Dict[str, str]): mapping of destination node names to name of node for next hop.
     """
     
-    def __init__(self, own: "Node", name: str, forwarding_table: Dict):
+    def __init__(self, owner: "Node", name: str, forwarding_table: Dict):
         """Constructor for routing protocol.
 
         Args:
@@ -52,7 +52,7 @@ class StaticRoutingProtocol(StackProtocol):
             forwarding_table (Dict[str, str]): forwarding routing table in format {name of destination node: name of next node}.
         """
 
-        super().__init__(own, name)
+        super().__init__(owner, name)
         self.forwarding_table = forwarding_table
 
     def get_forwarding_table(self) -> dict:

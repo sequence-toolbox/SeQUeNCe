@@ -125,18 +125,18 @@ class EntanglementGenerationA(EntanglementProtocol):
     _z_circuit = Circuit(1)
     _z_circuit.z(0)
 
-    def __init__(self, own: "Node", name: str, middle: str, other: str, memory: "Memory"):
+    def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory"):
         """Constructor for entanglement generation A class.
 
         Args:
-            own (Node): node to attach protocol to.
+            owner (Node): node to attach protocol to.
             name (str): name of protocol instance.
             middle (str): name of middle measurement node.
             other (str): name of other node.
             memory (Memory): memory to entangle.
         """
 
-        super().__init__(own, name)
+        super().__init__(owner, name)
         self.middle: str = middle
         self.remote_node_name: str = other
         self.remote_protocol_name: str = None
@@ -404,7 +404,7 @@ class EntanglementGenerationB(EntanglementProtocol):
         others (List[str]): list of neighboring quantum router nodes
     """
 
-    def __init__(self, own: "BSMNode", name: str, others: List[str]):
+    def __init__(self, owner: "BSMNode", name: str, others: List[str]):
         """Constructor for entanglement generation B protocol.
 
         Args:
@@ -413,7 +413,7 @@ class EntanglementGenerationB(EntanglementProtocol):
             others (List[str]): name of protocol instance on end nodes.
         """
 
-        super().__init__(own, name)
+        super().__init__(owner, name)
         assert len(others) == 2
         self.others = others  # end nodes
 
