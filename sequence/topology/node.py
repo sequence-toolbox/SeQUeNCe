@@ -282,11 +282,13 @@ class QuantumRouter(Node):
         self.app = None
 
     def receive_message(self, src: str, msg: "Message") -> None:
-        """Determine what to do when a message is received, based on the msg.receiver
+        """Determine what to do when a message is received, based on the msg.receiver.
+
         Args:
-            src (str): name of node that sends the message
-            msg (Message): the message
+            src (str): name of node that sent the message.
+            msg (Message): the received message.
         """
+
         log.logger.info("{} receive message {} from {}".format(self.name, msg, src))
         if msg.receiver == "network_manager":
             self.network_manager.received_message(src, msg)
@@ -304,29 +306,28 @@ class QuantumRouter(Node):
                         break
 
     def init_managers(self, memo_arr_name: str):
-        '''initialize resource manager and network manager
+        """Initialize resource manager and network manager.
+
         Args:
-            memo_arr_name: the name of the memory array
-        '''
+            memo_arr_name (str): the name of the memory array.
+        """
         resource_manager = ResourceManager(self, memo_arr_name)
         network_manager = NewNetworkManager(self, memo_arr_name)
         self.set_resource_manager(resource_manager)
         self.set_network_manager(network_manager)
 
     def set_resource_manager(self, resource_manager: ResourceManager):
-        '''set the resource manager
-        '''
+        """Assigns the resource manager."""
         self.resource_manager = resource_manager
 
     def set_network_manager(self, network_manager: NetworkManager):
-        '''set the network manager
-        '''
+        """Assigns the network manager."""
         self.network_manager = network_manager
 
     def init(self):
         """Method to initialize quantum router node.
 
-        Inherit parent function
+        Inherit parent function.
         """
 
         super().init()
@@ -335,8 +336,8 @@ class QuantumRouter(Node):
         """Method to record connected BSM nodes
 
         Args:
-            bsm_name (str): the BSM node between nodes self and router_name
-            router_name (str): the name of another router connected with the BSM node
+            bsm_name (str): the BSM node between nodes self and router_name.
+            router_name (str): the name of another router connected with the BSM node.
         """
         self.map_to_middle_node[router_name] = bsm_name
 
@@ -362,10 +363,10 @@ class QuantumRouter(Node):
         self.app = app
 
     def reserve_net_resource(self, responder: str, start_time: int, end_time: int, memory_size: int,
-                             target_fidelity: float, entanglement_number: int = 1, id: int = 0) -> None:
+                             target_fidelity: float, entanglement_number: int = 1, identity: int = 0) -> None:
         """Method to request a reservation.
 
-        Can be used by local applications.
+        Can be used by local applications.`1
 
         Args:
             responder (str): name of the node with which entanglement is requested.
@@ -373,11 +374,11 @@ class QuantumRouter(Node):
             end_time (int): desired simulation end time of entanglement.
             memory_size (int): number of memories requested.
             target_fidelity (float): desired fidelity of entanglement.
-            entanglement_number (int): the number of entanglement that the request ask for.
-            id (int): the ID of the request.
+            entanglement_number (int): the number of entanglement that the request ask for (default 1).
+            identity (int): the ID of the request (default 0).
         """
 
-        self.network_manager.request(responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, id)
+        self.network_manager.request(responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity)
 
     def get_idle_memory(self, info: "MemoryInfo") -> None:
         """Method for application to receive available memories."""
@@ -389,8 +390,8 @@ class QuantumRouter(Node):
         """Method for application to receive reservations results
 
         Args:
-            reservation: the reservation created by the reservation protocol at this node (the initiator)
-            result: whether the reservation has been approved by the responder
+            reservation (Reservation): the reservation created by the reservation protocol at this node (the initiator).
+            result (bool): whether the reservation has been approved by the responder.
         """
 
         if self.app:
@@ -400,7 +401,7 @@ class QuantumRouter(Node):
         """Method for application to add the approved reservation that is requested by other nodes
         
         Args:
-            reservation: the reservation created by the other node (this node is the responder)
+            reservation (Reservation): the reservation created by the other node (this node is the responder)
         """
 
         if self.app:

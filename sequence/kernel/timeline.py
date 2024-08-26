@@ -25,13 +25,7 @@ from .quantum_manager import (QuantumManagerKet,
                               KET_STATE_FORMALISM,
                               DENSITY_MATRIX_FORMALISM,
                               FOCK_DENSITY_MATRIX_FORMALISM)
-
-CARRIAGE_RETURN = '\r'
-SLEEP_SECONDS = 3
-
-NANOSECONDS_PER_MILLISECOND = 1e6
-PICOSECONDS_PER_NANOSECOND = NANOSECONDS_PER_MICROSECOND = MILLISECONDS_PER_SECOND = 1e3
-SECONDS_PER_MINUTE = MINUTES_PER_HOUR = 60
+from ..constants import *
 
 
 class Timeline:

@@ -1,7 +1,8 @@
 """Models for photon detection devices.
 
 This module models a single photon detector (SPD) for measurement of individual photons.
-It also defines a QSDetector class, which combines models of different hardware devices to measure photon states in different bases.
+It also defines a QSDetector class,
+which combines models of different hardware devices to measure photon states in different bases.
 QSDetector is defined as an abstract template and as implementations for polarization and time bin qubits.
 """
 
@@ -84,7 +85,7 @@ class Detector(Entity):
         if self.get_generator().random() < self.efficiency:
             self.record_detection()
         else:
-            log.logger.debug(f'Oops! Photon loss in the detector {self.name}')
+            log.logger.debug(f'Photon loss in detector {self.name}')
 
     def add_dark_count(self) -> None:
         """Method to schedule false positive detection events.
@@ -489,7 +490,7 @@ class QSDetectorFockInterference(QSDetector):
         povm0_1 = eye((truncation+1) ** 2) - povm1_1
         # for detector2 (index 1)
         series_elem_list2 = [(-1)**i * fractional_matrix_power(create2, i+1).dot(
-            fractional_matrix_power(destroy2,i+1)) / factorial(i+1) for i in range(truncation)]
+            fractional_matrix_power(destroy2, i+1)) / factorial(i+1) for i in range(truncation)]
         povm1_2 = sum(series_elem_list2)
         povm0_2 = eye((truncation+1) ** 2) - povm1_2
 

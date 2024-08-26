@@ -124,7 +124,7 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.right_protocol_name = None
 
     def is_ready(self) -> bool:
-        """Return True if left_protocol and right_protocol are both set
+        """Return True if left_protocol and right_protocol are both set.
         """
 
         return (self.left_protocol_name is not None) and (self.right_protocol_name is not None)
@@ -162,7 +162,7 @@ class EntanglementSwappingA(EntanglementProtocol):
         assert self.right_memo.entangled_memory["node_id"] == self.right_node
 
         if self.owner.get_generator().random() < self.success_probability():
-            # swapping successed
+            # swapping succeeded
             fidelity = self.updated_fidelity(self.left_memo.fidelity, self.right_memo.fidelity)
             self.is_success = True
 
@@ -173,7 +173,7 @@ class EntanglementSwappingA(EntanglementProtocol):
                         self.circuit, [self.left_memo.qstate_key, self.right_memo.qstate_key], meas_samp)
             meas_res = [meas_res[self.left_memo.qstate_key], meas_res[self.right_memo.qstate_key]]
             
-            log.logger.info(f"{self.name} swapping successed, meas_res={meas_res[0]},{meas_res[1]}")
+            log.logger.info(f"{self.name} swapping succeeded, meas_res={meas_res[0]},{meas_res[1]}")
             
             msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,
                                                 self.left_protocol_name, fidelity=fidelity,
