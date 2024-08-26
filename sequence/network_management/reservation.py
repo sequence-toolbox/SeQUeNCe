@@ -637,13 +637,16 @@ class Reservation:
     def set_path(self, path: List[str]):
         self.path = path
 
-    def __eq__(self, other: "Reservation"):
+    def __eq__(self, other: "Reservation") -> bool:
         return other.initiator == self.initiator and \
                other.responder == self.responder and \
                other.start_time == self.start_time and \
                other.end_time == self.end_time and \
                other.memory_size == self.memory_size and \
                other.fidelity == self.fidelity
+
+    def __lt__(self, other: "Reservation") -> bool:
+        return self.id < other.id
 
     def __hash__(self):
         return hash((self.initiator, self.responder, self.start_time, self.end_time, self.memory_size, self.fidelity))

@@ -17,7 +17,7 @@ from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..message import Message
 from ..utils import log
 from .rule_manager import RuleManager
-from .memory_manager import MemoryManager
+from .memory_manager import MemoryManager, MemoryInfo
 
 
 RequestConditionFunc = Callable[[List["EntanglementProtocol"]], "EntanglementProtocol"]
@@ -154,7 +154,7 @@ class ResourceManager:
             rule (Rule): rule to remove.
         """
 
-        log.logger.info('{} expired rule {}'.format(self.owner.name, rule))
+        log.logger.info('{} expire rule {}'.format(self.owner.name, rule))
         created_protocols = self.rule_manager.expire(rule)
         while created_protocols:
             protocol = created_protocols.pop()
@@ -168,7 +168,7 @@ class ResourceManager:
                 raise Exception("Unknown place of protocol")
 
             for memory in protocol.memories:
-                self.update(protocol, memory, "RAW")
+                self.update(protocol, memory, MemoryInfo.RAW)
 
     def update(self, protocol: "EntanglementProtocol", memory: "Memory", state: str) -> None:
         """Method to update state of memory after completion of entanglement management protocol.
@@ -297,9 +297,9 @@ class ResourceManager:
                     memory.attach(memory.memory_array)
                     info = self.memory_manager.get_info_by_memory(memory)
                     if info.remote_node is None:
-                        self.update(None, memory, "RAW")
+                        self.update(None, memory, MemoryInfo.RAW)
                     else:
-                        self.update(None, memory, "ENTANGLED")
+                        self.update(None, memory, MemoryInfo.ENTANGLED)
                 self.pending_protocols.remove(protocol)
 
         elif msg.msg_type is ResourceManagerMsgType.RELEASE_PROTOCOL:
