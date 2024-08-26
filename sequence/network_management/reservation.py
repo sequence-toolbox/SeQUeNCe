@@ -335,7 +335,7 @@ class ResourceReservationProtocol(StackProtocol):
         self.accepted_reservations = []
 
     def push(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float,
-                   entanglement_number: int = 1, id: int = 0):
+                   entanglement_number: int = 1, identity: int = 0):
         """Method to receive reservation requests from higher level protocol.
 
         Will evaluate request and determine if node can meet it.
@@ -349,12 +349,12 @@ class ResourceReservationProtocol(StackProtocol):
             memory_size (int): number of memories to be entangled.
             target_fidelity (float): desired fidelity of entanglement.
             entanglement_number (int): the number of entanglement the request ask for.
-            id (int): the ID of the request.
+            identity (int): the ID of the request.
         Side Effects:
             May push/pop to lower/upper attached protocols (or network manager).
         """
 
-        reservation = Reservation(self.owner.name, responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, id)
+        reservation = Reservation(self.owner.name, responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity)
         if self.schedule(reservation):
             msg = ResourceReservationMessage(RSVPMsgType.REQUEST, self.name, reservation)
             qcap = QCap(self.owner.name)
@@ -596,11 +596,11 @@ class Reservation:
         memory_size (int): number of entangled memory pairs requested.
         path (list): a list of router names from the source to destination
         entanglement_number (int): the number of entanglement pair that the request ask for.
-        id (int): the ID of a request.
+        identity (int): the ID of a request.
     """
 
     def __init__(self, initiator: str, responder: str, start_time: int,
-                 end_time: int, memory_size: int, fidelity: float, entanglement_number: int = 1, id: int = 0):
+                 end_time: int, memory_size: int, fidelity: float, entanglement_number: int = 1, identity: int = 0):
         """Constructor for the reservation class.
 
         Args:
@@ -611,7 +611,7 @@ class Reservation:
             memory_size (int): number of entangled memories requested.
             fidelity (float): desired fidelity of entanglement.
             entanglement_number (int): the number of entanglement the request ask for.
-            id (int): the ID of a request
+            identity (int): the ID of a request
         """
 
         self.initiator = initiator
@@ -621,14 +621,14 @@ class Reservation:
         self.memory_size = memory_size
         self.fidelity = fidelity
         self.entanglement_number = entanglement_number
-        self.id = id
+        self.identity = identity
         self.path = []
         assert self.start_time < self.end_time
         assert self.memory_size > 0
 
     def __str__(self) -> str:
-        s = "|initiator={}; responder={}; start_time={:,}; end_time={:,}; memory_size={}; target_fidelity={}; entanglement_number={}; id={}|".format(
-              self.initiator, self.responder, int(self.start_time), int(self.end_time), self.memory_size, self.fidelity, self.entanglement_number, self.id)
+        s = "|initiator={}; responder={}; start_time={:,}; end_time={:,}; memory_size={}; target_fidelity={}; entanglement_number={}; identity={}|".format(
+              self.initiator, self.responder, int(self.start_time), int(self.end_time), self.memory_size, self.fidelity, self.entanglement_number, self.identity)
         return s
 
     def __repr__(self) -> str:
@@ -646,7 +646,7 @@ class Reservation:
                other.fidelity == self.fidelity
 
     def __lt__(self, other: "Reservation") -> bool:
-        return self.id < other.id
+        return self.identity < other.identity
 
     def __hash__(self):
         return hash((self.initiator, self.responder, self.start_time, self.end_time, self.memory_size, self.fidelity))

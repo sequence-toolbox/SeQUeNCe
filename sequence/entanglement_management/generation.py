@@ -177,7 +177,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         self.primary = self.owner.name > self.remote_node_name
 
     def start(self) -> None:
-        """Method to start "one round" in the entanglement generation protocol (two rounds in total, double heralded).
+        """Method to start "one round" in the entanglement generation protocol (there are two rounds in Barrett-Kok).
 
         Will start negotiations with other protocol (if primary).
 

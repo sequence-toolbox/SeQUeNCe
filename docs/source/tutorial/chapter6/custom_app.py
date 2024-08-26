@@ -30,7 +30,7 @@ class PeriodicApp:
         event = Event(now + PERIOD, process)
         self.node.timeline.schedule(event)
 
-    def get_reserve_res(self, reservation: "Reservation", result: bool):
+    def get_reservation_result(self, reservation: "Reservation", result: bool):
         if result:
             print("Reservation approved at time", self.node.timeline.now() * 1e-12)
         else:
@@ -84,13 +84,6 @@ if __name__ == "__main__":
     tl.stop_time = PERIOD * NUM_PERIODS
     tl.show_progress = False
 
-    log.set_logger(__name__, tl, log_filename)
-    log.set_logger_level('DEBUG')
-
-    modules = ['timeline', 'network_manager', 'resource_manager', 'generation', 'swapping', 'rule_manager']
-    for module in modules:
-        log.track_module(module)
-
     start_node_name = "end1"
     end_node_name = "end2"
     node1 = node2 = None
@@ -104,7 +97,7 @@ if __name__ == "__main__":
     memory_size = 1
     target_fidelity = 0.6
     app = PeriodicApp(node1, end_node_name, memory_size, target_fidelity)
-    reset_app = ResetApp(node2, start_node_name, memory_size, target_fidelity)
+    reset_app = ResetApp(node2, start_node_name, target_fidelity)
 
     tl.init()
     app.start()
