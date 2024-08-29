@@ -32,4 +32,4 @@ sequence = ["gui/user_templates.json", "gui/default_params.json", "gui/starlight
 Homepage = "https://github.com/sequence-toolbox/SeQUeNCe"
 Documentation = "https://sequence-toolbox.github.io/"
 Issues = "https://github.com/sequence-toolbox/SeQUeNCe/issues"
-Change Log = "https://github.com/sequence-toolbox/SeQUeNCe/blob/master/CHANGELOG.md"
+Change-log = "https://github.com/sequence-toolbox/SeQUeNCe/blob/master/CHANGELOG.md"
