@@ -27,23 +27,9 @@ from ..components.circuit import Circuit
 from ..utils import log
 
 
-# def valid_trigger_time(trigger_time, target_time, resolution):
-#     upper = target_time + resolution
-#     lower = 0
-#     if resolution % 2 == 0:
-#         upper = min(upper, target_time + resolution // 2)
-#         lower = max(lower, target_time - resolution // 2)
-#     else:
-#         upper = min(upper, target_time + resolution // 2 + 1)
-#         lower = max(lower, target_time - resolution // 2)
-#     if (upper / resolution) % 1 >= 0.5:
-#         upper -= 1
-#     if (lower / resolution) % 1 < 0.5:
-#         lower += 1
-#     return lower <= trigger_time <= upper
 
-
-def valid_trigger_time(trigger_time, target_time, resolution):
+def valid_trigger_time(trigger_time: int, target_time: int, resolution: int) -> bool:
+    """return True if the trigger time is valid, else return False."""
     lower = target_time - (resolution // 2)
     upper = target_time + (resolution // 2)
     return lower <= trigger_time <= upper
@@ -149,7 +135,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         # network and hardware info
         self.fidelity: float = memory.raw_fidelity
         self.qc_delay: int = 0
-        self.expected_time: int = -1
+        self.expected_time: int = -1   # expected time for middle BSM node to receive the photon
 
         # memory internal info
         self.ent_round = 0  # keep track of current stage of protocol
@@ -225,23 +211,22 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         elif self.ent_round == 2 and self.bsm_res[0] != -1:
             self.owner.timeline.quantum_manager.run_circuit(EntanglementGenerationA._flip_circuit, [self._qstate_key])
-
+            return True
+        
         elif self.ent_round == 3 and self.bsm_res[1] != -1:
-            # successful entanglement
-            # state correction
+            # entanglement succeeded, correction
             if self.primary:
                 self.owner.timeline.quantum_manager.run_circuit(EntanglementGenerationA._flip_circuit, [self._qstate_key])
             elif self.bsm_res[0] != self.bsm_res[1]:
                 self.owner.timeline.quantum_manager.run_circuit(EntanglementGenerationA._z_circuit, [self._qstate_key])
-
             self._entanglement_succeed()
+            return True
 
         else:
             # entanglement failed
             self._entanglement_fail()
             return False
 
-        return True
 
     def emit_event(self) -> None:
         """Method to set up memory and emit photons.
@@ -278,8 +263,8 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         msg_type = msg.msg_type
 
-        log.logger.debug("{} EG protocol received message from node {} of type {}, round={}".format(
-                         self.owner.name, src, msg.msg_type, self.ent_round))
+        log.logger.debug("{} {} received message from node {} of type {}, round={}".format(
+                         self.owner.name, self.name, src, msg.msg_type, self.ent_round))
 
         if msg_type is GenerationMsgType.NEGOTIATE:  # primary -> non-primary
             # configure params
@@ -307,7 +292,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
             # schedule start if necessary (current is first round, need second round), else schedule update_memory (currently second round)
             # TODO: base future start time on resolution
-            future_start_time = self.expected_time + self.owner.cchannels[self.middle].delay + 10  # NOTE caitao: delay is for sending the BSM_RES to end nodes, 10?
+            future_start_time = self.expected_time + self.owner.cchannels[self.middle].delay + 10  # delay is for sending the BSM_RES to end nodes, 10 is a small gap
             if self.ent_round == 1:
                 process = Process(self, "start", [])  # for the second round
             else:
@@ -359,6 +344,8 @@ class EntanglementGenerationA(EntanglementProtocol):
                     self.bsm_res[i] = detector  # save the measurement results (detector number)
                 else:
                     self.bsm_res[i] = -1  # BSM measured 1, 1 and both didn't lost
+            else:
+                log.logger.debug('{} BSM trigger time not valid'.format(self.owner.name))
 
         else:
             raise Exception("Invalid message {} received by EG on node {}".format(msg_type, self.owner.name))
@@ -431,8 +418,8 @@ class EntanglementGenerationB(EntanglementProtocol):
         time = info["time"]
         resolution = bsm.resolution
 
-        for i, node in enumerate(self.others):
-            message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES, None,   # NOTE: receiver is None (not paired)
+        for node in self.others:
+            message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES, None,              # receiver is None (not paired)
                                                     detector=res, time=time, resolution=resolution)
             self.owner.send_message(node, message)
 

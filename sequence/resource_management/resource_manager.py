@@ -208,7 +208,7 @@ class ResourceManager:
                     info.to_occupied()
                 return
 
-        self.owner.get_idle_memory(memo_info)
+        self.owner.get_idle_memory(memo_info)  # no new rules apply to this memory, thus "idle"
 
     def get_memory_manager(self):
         return self.memory_manager
