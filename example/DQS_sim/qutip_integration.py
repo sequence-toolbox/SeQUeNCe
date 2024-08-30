@@ -68,8 +68,8 @@ def calc_scalar_c(rho: qt.Qobj, tol=1e-09):
         # eigenvalues
         vec_plus = (vec1+vec2).unit()
         vec_minus = (vec1-vec2).unit()
-        val1 = (vec_plus * rho * vec_plus.trans().conj())
-        val2 = (vec_minus * rho * vec_minus.trans().conj())
+        val1 = (vec_plus * rho * vec_plus.trans().conj())[0][0]
+        val2 = (vec_minus * rho * vec_minus.trans().conj())[0][0]
         if abs(val1+val2) > tol:
             c_val += (val1*val2)/(val1+val2)
 
