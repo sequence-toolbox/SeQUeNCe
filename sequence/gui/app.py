@@ -355,7 +355,7 @@ class QuantumGUI:
         # collect and finalize
         output = {
             Topology.ALL_NODE: nodes_top,
-            Topology.ALL_QC_CONNECT: qconnections,
+            Topology.ALL_Q_CONNECT: qconnections,
             Topology.ALL_C_CHANNEL: cchannels,
             Topology.ALL_TEMPLATES: templates,
 

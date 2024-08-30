@@ -29,10 +29,10 @@ class Topology(ABC):
         tl (Timeline): the timeline used for simulation
     """
 
-    ALL_CC_CONNECT = "cconnections"    # NOTE why not name it ALL_C_CONNECT?
+    ALL_C_CONNECT = "cconnections"    # a connection consist of two opposite direction channels
     ALL_C_CHANNEL = "cchannels"
     ALL_NODE = "nodes"
-    ALL_QC_CONNECT = "qconnections"    # NOTE why not name it ALL_Q_CONNECT?
+    ALL_Q_CONNECT = "qconnections"
     ALL_Q_CHANNEL = "qchannels"
     ATTENUATION = "attenuation"
     CONNECT_NODE_1 = "node1"
@@ -99,7 +99,7 @@ class Topology(ABC):
                 self.cchannels.append(cc_obj)
 
     def _add_cconnections(self, config: Dict) -> None:
-        for c_connect in config.get(self.ALL_CC_CONNECT, []):
+        for c_connect in config.get(self.ALL_C_CONNECT, []):
             node1 = c_connect[self.CONNECT_NODE_1]
             node2 = c_connect[self.CONNECT_NODE_2]
             distance = c_connect.get(self.DISTANCE, 1000)

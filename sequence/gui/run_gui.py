@@ -69,7 +69,7 @@ class RunGui:
                 data=new_node.__dict__
             )
 
-        for edge in network_in[Topology.ALL_QC_CONNECT]:
+        for edge in network_in[Topology.ALL_Q_CONNECT]:
             graph.add_edge(
                 edge[Topology.CONNECT_NODE_1],
                 edge[Topology.CONNECT_NODE_2],
