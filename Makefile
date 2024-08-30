@@ -3,11 +3,11 @@ all: jupyter
 setup:
 	pip3 install -r ./requirements.txt
 
-install_no_pip:
-	python3 setup.py install
-
 install:
 	pip3 install .
+
+install_editable:
+	pip3 install --editable . --config-settings editable_mode=strict
 
 jupyter:
 	jupyter notebook ./example/two_node_eg.ipynb

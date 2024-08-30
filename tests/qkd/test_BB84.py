@@ -12,8 +12,8 @@ from sequence.utils.encoding import *
 
 # dummy parent class to test BB84 functionality
 class Parent(StackProtocol):
-    def __init__(self, own: "Node", keysize: int, role: str):
-        super().__init__(own, "")
+    def __init__(self, owner: "Node", keysize: int, role: str):
+        super().__init__(owner, "")
         self.upper_protocols = []
         self.lower_protocols = []
         self.keysize = keysize
@@ -107,4 +107,3 @@ def test_BB84_time_bin():
     tl.init()
     tl.run()
     assert pa.counter == pb.counter == 10
-

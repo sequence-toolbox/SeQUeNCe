@@ -15,8 +15,8 @@ from sequence.utils.encoding import time_bin
 
 # dummy parent class to receive cascade keys and end timeline
 class Parent(StackProtocol):
-    def __init__(self, own: "Node", keysize: int, keynum: int):
-        super().__init__(own, "")
+    def __init__(self, owner: "Node", keysize: int, keynum: int):
+        super().__init__(owner, "")
         self.upper_protocols = []
         self.lower_protocols = []
         self.keysize = keysize
@@ -29,7 +29,7 @@ class Parent(StackProtocol):
     def pop(self, key):
         self.keycounter += 1
         if self.keycounter >= self.keynum:
-            self.own.timeline.stop()
+            self.owner.timeline.stop()
 
     def push(self):
         self.lower_protocols[0].push(self.keysize, self.keynum)

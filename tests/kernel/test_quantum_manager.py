@@ -343,7 +343,7 @@ def test_qmanager__measure_density():
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
 
 
-def test_qmanager__prepare_state_fock():
+def test_qmanager_prepare_state_fock():
     qm = QuantumManagerDensityFock(truncation=2)
     state_0 = [1, 0, 0]
     state_1 = [0, 1, 0]

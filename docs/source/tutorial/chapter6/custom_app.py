@@ -3,6 +3,8 @@ from sequence.kernel.event import Event
 from sequence.topology.router_net_topo import RouterNetTopo
 from sequence.resource_management.memory_manager import MemoryInfo
 from sequence.network_management.reservation import Reservation
+import sequence.utils.log as log
+
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -20,15 +22,15 @@ class PeriodicApp:
     def start(self):
         now = self.node.timeline.now()
         nm = self.node.network_manager
-        nm.request(self.other, start_time=(now + 1e12), end_time=(now + 2e12),
+        nm.request(self.other, start_time=(now + 1e12), end_time=(now + PERIOD),
                    memory_size=self.memory_size,
                    target_fidelity=self.target_fidelity)
         # schedule future start
         process = Process(self, "start", [])
-        event = Event(now + 2e12, process)
+        event = Event(now + PERIOD, process)
         self.node.timeline.schedule(event)
 
-    def get_reserve_res(self, reservation: "Reservation", result: bool):
+    def get_reservation_result(self, reservation: "Reservation", result: bool):
         if result:
             print("Reservation approved at time", self.node.timeline.now() * 1e-12)
         else:
@@ -70,12 +72,16 @@ class ResetApp:
 
 
 if __name__ == "__main__":
+
+    log_filename = 'log'
+
     network_config = "star_network.json"
-    num_periods = 5
+    NUM_PERIODS = 5
+    PERIOD = 2e12
 
     network_topo = RouterNetTopo(network_config)
     tl = network_topo.get_timeline()
-    tl.stop_time = 2e12 * num_periods
+    tl.stop_time = PERIOD * NUM_PERIODS
     tl.show_progress = False
 
     start_node_name = "end1"
@@ -88,13 +94,11 @@ if __name__ == "__main__":
         elif router.name == end_node_name:
             node2 = router
 
-    app = PeriodicApp(node1, end_node_name)
-    reset_app = ResetApp(node2, start_node_name)
-    
+    memory_size = 1
+    target_fidelity = 0.6
+    app = PeriodicApp(node1, end_node_name, memory_size, target_fidelity)
+    reset_app = ResetApp(node2, start_node_name, target_fidelity)
+
     tl.init()
-
-    for name, component in tl.entities.items():
-        print("{}: {}".format(name, component.get_generator()))
-
     app.start()
     tl.run()

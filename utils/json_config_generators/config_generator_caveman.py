@@ -26,18 +26,11 @@ Optional Args:
 import networkx as nx
 import argparse
 import json
+import os
 
-from generator_utils import *
-
+from sequence.utils.config_generator import *
 from sequence.topology.topology import Topology
 
-
-def router_name_func(i):
-    return f"router_{i}"
-
-
-def bsm_name_func(i, j):
-    return f"BSM_{i}_{j}"
 
 
 parser = argparse.ArgumentParser()
@@ -75,5 +68,6 @@ output_dict[Topology.ALL_C_CHANNEL] = cchannels
 final_config(output_dict, args)
 
 # write final json
-output_file = open(args.output, 'w')
+path = os.path.join(args.directory, args.output)
+output_file = open(path, 'w')
 json.dump(output_dict, output_file, indent=4)

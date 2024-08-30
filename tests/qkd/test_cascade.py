@@ -10,8 +10,8 @@ from sequence.topology.node import QKDNode, Node
 
 # dummy parent class to test cascade functionality
 class Parent(StackProtocol):
-    def __init__(self, own: "Node", keysize: int, keynum: int):
-        super().__init__(own, "")
+    def __init__(self, owner: "Node", keysize: int, keynum: int):
+        super().__init__(owner, "")
         self.upper_protocols = []
         self.lower_protocols = []
         self.keysize = keysize

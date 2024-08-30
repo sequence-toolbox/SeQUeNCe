@@ -15,9 +15,9 @@ class MsgType(Enum):
 
 
 class PingProtocol(Protocol):
-    def __init__(self, own: Node, name: str, other_name: str, other_node: str):
-        super().__init__(own, name)
-        own.protocols.append(self)
+    def __init__(self, owner: Node, name: str, other_name: str, other_node: str):
+        super().__init__(owner, name)
+        owner.protocols.append(self)
         self.other_name = other_name
         self.other_node = other_node
 
@@ -26,17 +26,17 @@ class PingProtocol(Protocol):
 
     def start(self):
         new_msg = Message(MsgType.PING, self.other_name)
-        self.own.send_message(self.other_node, new_msg)
+        self.owner.send_message(self.other_node, new_msg)
 
     def received_message(self, src: str, message: Message):
         assert message.msg_type == MsgType.PONG
-        print("node {} received pong message at time {}".format(self.own.name, self.own.timeline.now()))
+        print("node {} received pong message at time {}".format(self.owner.name, self.owner.timeline.now()))
 
 
 class PongProtocol(Protocol):
-    def __init__(self, own: Node, name: str, other_name: str, other_node: str):
-        super().__init__(own, name)
-        own.protocols.append(self)
+    def __init__(self, owner: Node, name: str, other_name: str, other_node: str):
+        super().__init__(owner, name)
+        owner.protocols.append(self)
         self.other_name = other_name
         self.other_node = other_node
     
@@ -45,9 +45,9 @@ class PongProtocol(Protocol):
 
     def received_message(self, src: str, message: Message):
         assert message.msg_type == MsgType.PING
-        print("node {} received ping message at time {}".format(self.own.name, self.own.timeline.now()))
+        print("node {} received ping message at time {}".format(self.owner.name, self.owner.timeline.now()))
         new_msg = Message(MsgType.PONG, self.other_name)
-        self.own.send_message(self.other_node, new_msg)
+        self.owner.send_message(self.other_node, new_msg)
 
 
 if __name__ == "__main__":

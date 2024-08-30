@@ -222,8 +222,8 @@ We'll include all memory modification in the `start` method, which will activate
 import math
 
 class Sender:
-    def __init__(self, own, memory_name):
-        self.own = own
+    def __init__(self, owner, memory_name):
+        self.owner = owner
         self.memory = own.components[memory_name]
 
     def start(self, period):
@@ -232,8 +232,8 @@ class Sender:
         for i in range(NUM_TRIALS):
             event1 = Event(i * period, process1)
             event2 = Event(i * period + (period / 2), process2)
-            self.own.timeline.schedule(event1)
-            self.own.timeline.schedule(event2)
+            self.owner.timeline.schedule(event1)
+            self.owner.timeline.schedule(event2)
 ```
 
 We'll then place this protocol in the `SenderNode` class:
@@ -305,9 +305,9 @@ from sequence.protocol import Protocol
 from sequence.message import Message
 
 class PingProtocol(Protocol):
-    def __init__(self, own: Node, name: str, other_name: str, other_node: str):
-        super().__init__(own, name)
-        own.protocols.append(self)
+    def __init__(self, owner: Node, name: str, other_name: str, other_node: str):
+        super().__init__(owner, name)
+        owner.protocols.append(self)
         self.other_name = other_name
         self.other_node = other_node
 
@@ -316,17 +316,17 @@ class PingProtocol(Protocol):
 
     def start(self):
         new_msg = Message(MsgType.PING, self.other_name)
-        self.own.send_message(self.other_node, new_msg)
+        self.owner.send_message(self.other_node, new_msg)
 
     def received_message(self, src: str, message: Message):
         assert message.msg_type == MsgType.PONG
-        print("node {} received pong message at time {}".format(self.own.name, self.own.timeline.now()))
+        print("node {} received pong message at time {}".format(self.owner.name, self.owner.timeline.now()))
 
 
 class PongProtocol(Protocol):
-    def __init__(self, own: Node, name: str, other_name: str, other_node: str):
-        super().__init__(own, name)
-        own.protocols.append(self)
+    def __init__(self, owner: Node, name: str, other_name: str, other_node: str):
+        super().__init__(owner, name)
+        owner.protocols.append(self)
         self.other_name = other_name
         self.other_node = other_node
     
@@ -335,9 +335,9 @@ class PongProtocol(Protocol):
 
     def received_message(self, src: str, message: Message):
         assert message.msg_type == MsgType.PING
-        print("node {} received ping message at time {}".format(self.own.name, self.own.timeline.now()))
+        print("node {} received ping message at time {}".format(self.owner.name, self.owner.timeline.now()))
         new_msg = Message(MsgType.PONG, self.other_name)
-        self.own.send_message(self.other_node, new_msg)
+        self.owner.send_message(self.other_node, new_msg)
 ```
 
 In both cases, the constructor requires

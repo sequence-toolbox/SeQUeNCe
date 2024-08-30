@@ -45,8 +45,8 @@ from sequence.entanglement_management.generation import EntanglementGenerationA
 
 
 class SimpleManager:
-    def __init__(self, own, memo_name):
-        self.own = own
+    def __init__(self, owner, memo_name):
+        self.owner = owner
         self.memo_name = memo_name
         self.raw_counter = 0
         self.ent_counter = 0
@@ -59,8 +59,8 @@ class SimpleManager:
             self.ent_counter += 1
 
     def create_protocol(self, middle: str, other: str):
-        self.own.protocols = [EntanglementGenerationA(self.own, '%s.eg' % self.own.name, middle, other,
-                                                      self.own.components[self.memo_name])]
+        self.owner.protocols = [EntanglementGenerationA(self.owner, '%s.eg' % self.owner.name, middle, other,
+                                                      self.owner.components[self.memo_name])]
 
 
 class EntangleGenNode(Node):
@@ -250,8 +250,8 @@ from sequence.entanglement_management.purification import BBPSSW
 
 
 class SimpleManager:
-    def __init__(self, own, kept_memo_name, meas_memo_name):
-        self.own = own
+    def __init__(self, owner, kept_memo_name, meas_memo_name):
+        self.owner = owner
         self.kept_memo_name = kept_memo_name
         self.meas_memo_name = meas_memo_name
         self.raw_counter = 0
@@ -265,9 +265,9 @@ class SimpleManager:
             self.ent_counter += 1
 
     def create_protocol(self):
-        kept_memo = self.own.components[self.kept_memo_name]
-        meas_memo = self.own.components[self.meas_memo_name]
-        self.own.protocols = [BBPSSW(self.own, 'purification_protocol', kept_memo, meas_memo)]
+        kept_memo = self.owner.components[self.kept_memo_name]
+        meas_memo = self.owner.components[self.meas_memo_name]
+        self.owner.protocols = [BBPSSW(self.owner, 'purification_protocol', kept_memo, meas_memo)]
 
 
 class PurifyNode(Node):
@@ -493,8 +493,8 @@ We will set up the manager so that it automatically creates the right type of sw
 from sequence.entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 
 class SimpleManager:
-    def __init__(self, own, memo_names):
-        self.own = own
+    def __init__(self, owner, memo_names):
+        self.owner = owner
         self.memo_names = memo_names
         self.raw_counter = 0
         self.ent_counter = 0
@@ -507,13 +507,13 @@ class SimpleManager:
             self.ent_counter += 1
 
     def create_protocol(self):
-        if type(self.own) is SwapNodeA:
-            left_memo = self.own.components[self.memo_names[0]]
-            right_memo = self.own.components[self.memo_names[1]]
-            self.own.protocols = [EntanglementSwappingA(self.own, 'ESA', left_memo, right_memo, 1, 0.99)]
+        if type(self.owner) is SwapNodeA:
+            left_memo = self.owner.components[self.memo_names[0]]
+            right_memo = self.owner.components[self.memo_names[1]]
+            self.owner.protocols = [EntanglementSwappingA(self.owner, 'ESA', left_memo, right_memo, 1, 0.99)]
         else:
-            memo = self.own.components[self.memo_names[0]]
-            self.own.protocols = [EntanglementSwappingB(self.own, '%s.ESB' % self.own.name, memo)]
+            memo = self.owner.components[self.memo_names[0]]
+            self.owner.protocols = [EntanglementSwappingB(self.owner, '%s.ESB' % self.owner.name, memo)]
 ```
 
 ### Step 2: Create Network

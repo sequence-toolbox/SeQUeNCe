@@ -181,3 +181,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Modified the topology output of the GUI to be compatible with new topology upgrades
 - Several bug fixes in the GUI
+
+
+## [0.6.3]
+### Added
+- We have an Icon for SeQUeNCe!
+- `pip install sequence` is now available!
+- `src` folder is renamed to `sequence`
+- Add `sequence/constants.py` to organize the common constants
+- Add support for Python 3.12
+- Add `pyproject.toml`
+
+
+### Changed
+- Various refactoring, include but not limited to updating variable/method names, moving/deleting code, adding/rewriting comments, and making the code more succinct, etc.
+- In README.md, installation with option `--editable`  is encouraged.
+- `logging` looks better
+- In `class Reservation`, added attribute `entanglement_number` and `id`
+- Update `ResourceReservationProtocol.load_rules()`
+- Move `utils/json_config_generators/generator_utils.py` to `sequence/utils/config_generator.py`
+
+### Removed
+- Removed support for Python 3.8
+- Removed `setup.py`
+- Removed `MANIFEST.in`

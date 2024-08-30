@@ -59,7 +59,7 @@ def test_RandomRequestApp_start():
     assert abs(counter / (1000 - counter) - 1) < 0.1
 
 
-def test_RandomRequestApp_get_reserve_res():
+def test_RandomRequestApp_get_reservation_result():
     tl = Timeline()
     tl.time = 6
     node = FakeNode("n1", tl)
@@ -72,7 +72,7 @@ def test_RandomRequestApp_get_reserve_res():
             card.add(reservation)
 
     app.request_time = 5
-    app.get_reserve_res(reservation, True)
+    app.get_reservation_result(reservation, True)
     assert app.get_wait_time()[0] == 5
     assert len(tl.events) == 41 and tl.events.data[0].time == 10
 
@@ -84,7 +84,7 @@ def test_RandomRequestApp_get_reserve_res():
     app.memo_size, app.fidelity = 5, 0.9
     reservation = Reservation("n1", "n3", 10, 20, 5, 0.9)
     app.request_time = 5
-    app.get_reserve_res(reservation, False)
+    app.get_reservation_result(reservation, False)
     tl.run()
     assert len(app.get_wait_time()) == 0
     assert len(node.reserve_log) == 1
@@ -153,10 +153,10 @@ def test_RandomRequestApp_get_other_reservation():
 
     app = RandomRequestApp(node, [], 0, 1e13, 2e13, 10, 25, 0.8, 1.0)
     app.get_other_reservation(reservation)
-    assert len(app.memo_to_reserve) == 0
+    assert len(app.memo_to_reservation) == 0
     tl.stop_time = 11
     tl.run()
-    assert len(app.memo_to_reserve) == 10
+    assert len(app.memo_to_reservation) == 10
 
     info = node.resource_manager.memory_manager[0]
     info.memory.entangled_memory = {"node_id": "initiator", "memo_id": "memo"}
@@ -189,8 +189,8 @@ def test_RandomRequestApp_get_other_reservation():
     tl.stop_time = 101
     tl.run()
 
-    print(app.memo_to_reserve)
-    assert len(app.memo_to_reserve) == 0
+    print(app.memo_to_reservation)
+    assert len(app.memo_to_reservation) == 0
     info = node.resource_manager.memory_manager[0]
     info.memory.entangled_memory = {"node_id": "initiator", "memo_id": "memo"}
     info.memory.fidelity = 1
