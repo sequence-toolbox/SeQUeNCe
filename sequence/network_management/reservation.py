@@ -596,7 +596,7 @@ class Reservation:
         memory_size (int): number of entangled memory pairs requested.
         path (list): a list of router names from the source to destination
         entanglement_number (int): the number of entanglement pair that the request ask for.
-        id (int): the ID of a request.
+        identity (int): the ID of a request.
     """
 
     def __init__(self, initiator: str, responder: str, start_time: int,
@@ -621,14 +621,14 @@ class Reservation:
         self.memory_size = memory_size
         self.fidelity = fidelity
         self.entanglement_number = entanglement_number
-        self.id = identity
+        self.identity = identity
         self.path = []
         assert self.start_time < self.end_time
         assert self.memory_size > 0
 
     def __str__(self) -> str:
         s = "|initiator={}; responder={}; start_time={:,}; end_time={:,}; memory_size={}; target_fidelity={}; entanglement_number={}; identity={}|".format(
-              self.initiator, self.responder, int(self.start_time), int(self.end_time), self.memory_size, self.fidelity, self.entanglement_number, self.id)
+              self.initiator, self.responder, int(self.start_time), int(self.end_time), self.memory_size, self.fidelity, self.entanglement_number, self.identity)
         return s
 
     def __repr__(self) -> str:
@@ -637,13 +637,16 @@ class Reservation:
     def set_path(self, path: List[str]):
         self.path = path
 
-    def __eq__(self, other: "Reservation"):
+    def __eq__(self, other: "Reservation") -> bool:
         return other.initiator == self.initiator and \
                other.responder == self.responder and \
                other.start_time == self.start_time and \
                other.end_time == self.end_time and \
                other.memory_size == self.memory_size and \
                other.fidelity == self.fidelity
+
+    def __lt__(self, other: "Reservation") -> bool:
+        return self.identity < other.identity
 
     def __hash__(self):
         return hash((self.initiator, self.responder, self.start_time, self.end_time, self.memory_size, self.fidelity))

@@ -34,7 +34,8 @@ cd SeQUeNCe
 make install_editable
 ```
 
-Note: For issues related to editable install, see [here](https://stackoverflow.com/questions/76213501/python-packages-imported-in-editable-mode-cant-be-resolved-by-pylance-in-vscode).
+If you do not have `make` command (i.e., Windows user), replace `make install_editable` with `pip install --editable . --config-settings editable_mode=strict`.
+
 
 ## Citation
 Please cite us, thank you!

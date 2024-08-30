@@ -70,18 +70,18 @@ class BBPSSW(EntanglementProtocol):
     circuit.cx(0, 1)
     circuit.measure(1)
 
-    def __init__(self, own: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory"):
+    def __init__(self, owner: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory"):
         """Constructor for purification protocol.
 
         Args:
-            own (Node): node protocol is attached to.
+            owner (Node): node protocol is attached to.
             name (str): name of protocol instance.
             kept_memo (Memory): memory to have fidelity improved.
             meas_memo (Memory): memory to measure and discard.
         """
 
         assert kept_memo != meas_memo
-        EntanglementProtocol.__init__(self, own, name)
+        EntanglementProtocol.__init__(self, owner, name)
         self.memories: List[Memory] = [kept_memo, meas_memo]
         self.kept_memo: Memory = kept_memo
         self.meas_memo: Memory = meas_memo

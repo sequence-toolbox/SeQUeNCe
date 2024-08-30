@@ -80,9 +80,12 @@ class RuleManager:
             List[EntanglementProtocol]: list of protocols created by rule (if any).
                 Note that when a protocol finishes, it will be removed from rule.protocols.
         """
-
-        self.rules.remove(rule)
+        if rule in self.rules:
+            self.rules.remove(rule)
+        else:
+            log.logger.info(f'{self.resource_manager.owner} rule not exist: {rule}')
         return rule.protocols
+        
 
     def get_memory_manager(self):
         return self.resource_manager.get_memory_manager()

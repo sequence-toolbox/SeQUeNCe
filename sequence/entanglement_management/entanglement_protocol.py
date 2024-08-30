@@ -22,8 +22,8 @@ class EntanglementProtocol(Protocol):
         memories (List[Memory]): Any memories being operated on
     """
 
-    def __init__(self, own: "Node", name: str):
-        super().__init__(own, name)
+    def __init__(self, owner: "Node", name: str):
+        super().__init__(owner, name)
         self.rule = None
         self.memories = []
 

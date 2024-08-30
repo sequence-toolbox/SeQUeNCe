@@ -194,11 +194,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Changed
-- Various refactoring, include but not limited to updating variable/method names, moving code around, adding/rewriting comments, and making the code more succinct, etc.
+- Various refactoring, include but not limited to updating variable/method names, moving/deleting code, adding/rewriting comments, and making the code more succinct, etc.
 - In README.md, installation with option `--editable`  is encouraged.
 - `logging` looks better
 - In `class Reservation`, added attribute `entanglement_number` and `id`
-- In `class EntanglementSwappingA`, delay updating the memory at the middle node to RAW.
 - Update `ResourceReservationProtocol.load_rules()`
 - Move `utils/json_config_generators/generator_utils.py` to `sequence/utils/config_generator.py`
 

@@ -103,7 +103,7 @@ class BB84(StackProtocol):
         self.end_run_times (List[int]): simulation time for end of each request.
     """
 
-    def __init__(self, own: "QKDNode", name: str, lightsource: str, qsdetector: str, role=-1):
+    def __init__(self, owner: "QKDNode", name: str, lightsource: str, qsdetector: str, role=-1):
         """Constructor for BB84 class.
 
         Args:
@@ -116,9 +116,9 @@ class BB84(StackProtocol):
             role (int): 0/1 role defining Alice and Bob protocols (default -1).
         """
 
-        if own is None:  # used only for unit test purposes
+        if owner is None:  # used only for unit test purposes
             return
-        super().__init__(own, name)
+        super().__init__(owner, name)
         self.ls_name = lightsource
         self.qsd_name = qsdetector
         self.role = role

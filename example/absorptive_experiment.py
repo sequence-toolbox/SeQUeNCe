@@ -137,7 +137,7 @@ def add_channel(node1: Node, node2: Node, timeline: Timeline, **kwargs):
 
 # protocol to control photon emission on end node
 class EmitProtocol(Protocol):
-    def __init__(self, own: "EndNode", name: str, other_node: str, photon_pair_num: int,
+    def __init__(self, owner: "EndNode", name: str, other_node: str, photon_pair_num: int,
                  source_name: str, memory_name: str):
         """Constructor for Emission protocol.
 
@@ -150,7 +150,7 @@ class EmitProtocol(Protocol):
             memory_name (str): name of the memory on the node.
         """
 
-        super().__init__(own, name)
+        super().__init__(owner, name)
         self.other_node = other_node
         self.num_output = photon_pair_num
         self.source_name = source_name
