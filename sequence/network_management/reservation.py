@@ -299,7 +299,6 @@ def es_rule_conditionB2(memory_info: "MemoryInfo", manager: "MemoryManager", arg
         return []
 
 
-
 class ResourceReservationProtocol(StackProtocol):
     """ReservationProtocol for node resources.
 
@@ -309,7 +308,7 @@ class ResourceReservationProtocol(StackProtocol):
     If unsuccessful, the protocol will notify the network manager of failure.
 
     Attributes:
-        own (QuantumRouter): node that protocol instance is attached to.
+        owner (QuantumRouter): node that protocol instance is attached to.
         name (str): label for protocol instance.
         memo_arr (MemoryArray): memory array to track.
         timecards (List[MemoryTimeCard]): list of reservation cards for all memories on node.
@@ -335,7 +334,7 @@ class ResourceReservationProtocol(StackProtocol):
         self.accepted_reservations = []
 
     def push(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float,
-                   entanglement_number: int = 1, id: int = 0):
+             entanglement_number: int = 1, identity: int = 0):
         """Method to receive reservation requests from higher level protocol.
 
         Will evaluate request and determine if node can meet it.
@@ -349,12 +348,12 @@ class ResourceReservationProtocol(StackProtocol):
             memory_size (int): number of memories to be entangled.
             target_fidelity (float): desired fidelity of entanglement.
             entanglement_number (int): the number of entanglement the request ask for.
-            id (int): the ID of the request.
+            identity (int): the ID of the request.
         Side Effects:
             May push/pop to lower/upper attached protocols (or network manager).
         """
 
-        reservation = Reservation(self.owner.name, responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, id)
+        reservation = Reservation(self.owner.name, responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity)
         if self.schedule(reservation):
             msg = ResourceReservationMessage(RSVPMsgType.REQUEST, self.name, reservation)
             qcap = QCap(self.owner.name)
@@ -369,9 +368,11 @@ class ResourceReservationProtocol(StackProtocol):
            NOTE (caitao, 3/19/2024): argument "src" not used
         Messages may be of 3 types, causing different network manager behavior:
 
-        1. REQUEST: requests are evaluated, and forwarded along the path if accepted. Otherwise a REJECT message is sent back.
+        1. REQUEST: requests are evaluated, and forwarded along the path if accepted.
+            Otherwise, a REJECT message is sent back.
         2. REJECT: any reserved resources are released and the message forwarded back towards the initializer.
-        3. APPROVE: rules are created to achieve the approved request. The message is forwarded back towards the initializer.
+        3. APPROVE: rules are created to achieve the approved request.
+            The message is forwarded back towards the initializer.
 
         Args:
             src (str): source node of the message.
@@ -431,7 +432,7 @@ class ResourceReservationProtocol(StackProtocol):
 
         if self.owner.name in [reservation.initiator, reservation.responder]:
             counter = reservation.memory_size
-        else: # e.g., entanglement swapping nodes needs twice amount of memory
+        else:  # e.g., entanglement swapping nodes needs twice amount of memory
             counter = reservation.memory_size * 2
         timecards = []
         for timecard in self.timecards:
@@ -569,7 +570,6 @@ class ResourceReservationProtocol(StackProtocol):
                 event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
                 self.owner.timeline.schedule(event)
 
-
     def received_message(self, src, msg):
         """Method to receive messages directly (should not be used; receive through network manager)."""
 
@@ -600,7 +600,7 @@ class Reservation:
     """
 
     def __init__(self, initiator: str, responder: str, start_time: int,
-                 end_time: int, memory_size: int, fidelity: float, entanglement_number: int = 1, id: int = 0):
+                 end_time: int, memory_size: int, fidelity: float, entanglement_number: int = 1, identity: int = 0):
         """Constructor for the reservation class.
 
         Args:
@@ -611,7 +611,7 @@ class Reservation:
             memory_size (int): number of entangled memories requested.
             fidelity (float): desired fidelity of entanglement.
             entanglement_number (int): the number of entanglement the request ask for.
-            id (int): the ID of a request
+            identity (int): the ID of a request
         """
 
         self.initiator = initiator
@@ -621,13 +621,13 @@ class Reservation:
         self.memory_size = memory_size
         self.fidelity = fidelity
         self.entanglement_number = entanglement_number
-        self.id = id
+        self.id = identity
         self.path = []
         assert self.start_time < self.end_time
         assert self.memory_size > 0
 
     def __str__(self) -> str:
-        s = "|initiator={}; responder={}; start_time={:,}; end_time={:,}; memory_size={}; target_fidelity={}; entanglement_number={}; id={}|".format(
+        s = "|initiator={}; responder={}; start_time={:,}; end_time={:,}; memory_size={}; target_fidelity={}; entanglement_number={}; identity={}|".format(
               self.initiator, self.responder, int(self.start_time), int(self.end_time), self.memory_size, self.fidelity, self.entanglement_number, self.id)
         return s
 
@@ -647,7 +647,6 @@ class Reservation:
 
     def __hash__(self):
         return hash((self.initiator, self.responder, self.start_time, self.end_time, self.memory_size, self.fidelity))
-
 
 
 class MemoryTimeCard:
@@ -678,7 +677,7 @@ class MemoryTimeCard:
             reservation (Reservation): reservation to add.
 
         Returns:
-            bool: whether or not reservation was inserted successfully.
+            bool: whether reservation was inserted successfully.
         """
         
         position = self.schedule_reservation(reservation)
@@ -728,7 +727,7 @@ class MemoryTimeCard:
                 end = mid - 1
             elif self.reservations[mid].end_time < reservation.start_time:
                 start = mid + 1
-            elif (max(self.reservations[mid].start_time, reservation.start_time) <= \
+            elif (max(self.reservations[mid].start_time, reservation.start_time) <=
                     min(self.reservations[mid].end_time, reservation.end_time)):
                 return -1
             else:

@@ -36,11 +36,12 @@ from sequence.topology.router_net_topo import RouterNetTopo
 
 
 def create_random_waxman(area_length: int, number_nodes: int, edge_density: float) -> Tuple[list, list]:
-    '''create a random network using waxman
+    """create a random network using waxman.
+
     Return:
         a list of vertex in (x, y), where x, y are real number geographic coordinates
         a list of edges in (u, v), where u, v are integer vertex index
-    '''
+    """
     max_number_edges = (number_nodes - 1) * number_nodes // 2
     alpa_min, alpha_max = 0, 100
     while alpha_max - alpa_min > 0.001:

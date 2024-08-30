@@ -366,7 +366,7 @@ class QuantumRouter(Node):
                              target_fidelity: float, entanglement_number: int = 1, identity: int = 0) -> None:
         """Method to request a reservation.
 
-        Can be used by local applications.`1
+        Can be used by local applications.
 
         Args:
             responder (str): name of the node with which entanglement is requested.

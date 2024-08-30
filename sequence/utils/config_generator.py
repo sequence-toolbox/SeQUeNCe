@@ -9,12 +9,15 @@ from sequence.topology.router_net_topo import RouterNetTopo
 
 
 def add_default_args(parser):
-    '''
+    """Adds arguments to argument parser.
+
     Args:
-        parser: argparse.ArgummentParser
+        parser (argparse.ArgumentParser)
+
     Return:
-        argparse.ArgummentParser
-    '''
+        argparse.ArgumentParser
+    """
+
     parser.add_argument('memo_size', type=int, help='number of memories per node')
     parser.add_argument('qc_length', type=float, help='distance between nodes (in m)')
     parser.add_argument('qc_atten', type=float, help='quantum channel attenuation (in dB/m)')
@@ -40,8 +43,7 @@ def get_node_csv(node_file) -> dict:
 
 
 def generate_node_procs(parallel, net_size, naming_func) -> dict:
-    '''map a node to a process
-    '''
+    """map a node to a process"""
     if parallel:
         num_procs = int(parallel[2])
     else:
@@ -56,8 +58,7 @@ def generate_node_procs(parallel, net_size, naming_func) -> dict:
 
 
 def generate_nodes(node_procs: dict, router_names: str, memo_size: int, template: str = None) -> list:
-    '''generate a list of node configs
-    '''
+    """generate a list of node configs"""
     nodes = []
     for i, name in enumerate(router_names):
         config = {Topology.NAME: name,
@@ -137,12 +138,10 @@ def final_config(output_dict, parsed_args):
 
 
 def router_name_func(i) -> str:
-    '''a function that returns the name of the router
-    '''
+    """a function that returns the name of the router"""
     return f"router_{i}"
 
 
 def bsm_name_func(i, j) -> str:
-    '''a function that returns the name of the BSM node
-    '''
+    """a function that returns the name of the BSM node"""
     return f"BSM_{i}_{j}"

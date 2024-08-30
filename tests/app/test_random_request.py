@@ -197,6 +197,3 @@ def test_RandomRequestApp_get_other_reservation():
     info.to_entangled()
     app.get_memory(info)
     assert info.state == "ENTANGLED"
-
-
-test_RandomRequestApp_get_reservation_result()
