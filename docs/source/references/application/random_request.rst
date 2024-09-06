@@ -1,5 +1,5 @@
 Random Request
 ==============
 
-.. automodule:: src.app.random_request
+.. automodule:: sequence.app.random_request
     :members:

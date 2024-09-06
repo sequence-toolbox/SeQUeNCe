@@ -1,5 +1,5 @@
 Quantum Manager
 ===============
 
-.. automodule:: src.kernel.quantum_manager
+.. automodule:: sequence.kernel.quantum_manager
     :members:

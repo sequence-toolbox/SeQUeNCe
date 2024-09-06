@@ -1,5 +1,5 @@
 Memory Manager
 ==============
 
-.. automodule:: src.resource_management.memory_manager
+.. automodule:: sequence.resource_management.memory_manager
     :members:

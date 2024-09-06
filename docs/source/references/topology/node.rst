@@ -1,5 +1,5 @@
 Nodes
 =====
 
-.. automodule:: src.topology.node
+.. automodule:: sequence.topology.node
     :members:

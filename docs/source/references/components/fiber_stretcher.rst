@@ -1,5 +1,5 @@
 Fiber Stretcher
 ===============
 
-.. automodule:: src.components.fiber_stretcher
+.. automodule:: sequence.components.fiber_stretcher
     :members:

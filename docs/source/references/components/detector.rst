@@ -1,5 +1,5 @@
 Detector
 ========
 
-.. automodule:: src.components.detector
+.. automodule:: sequence.components.detector
     :members:

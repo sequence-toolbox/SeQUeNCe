@@ -1,5 +1,5 @@
 Routing
 =======
 
-.. automodule:: src.network_management.routing
+.. automodule:: sequence.network_management.routing
     :members:

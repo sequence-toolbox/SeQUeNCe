@@ -1,5 +1,5 @@
 SPDC Lens
 =========
 
-.. automodule:: src.components.spdc_lens
+.. automodule:: sequence.components.spdc_lens
     :members:

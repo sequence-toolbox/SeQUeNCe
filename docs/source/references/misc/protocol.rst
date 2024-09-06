@@ -1,5 +1,5 @@
 Protocol
 ========
 
-.. automodule:: src.protocol
+.. automodule:: sequence.protocol
     :members:

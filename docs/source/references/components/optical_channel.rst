@@ -1,5 +1,5 @@
 Optical Channel
 ===============
 
-.. automodule:: src.components.optical_channel
+.. automodule:: sequence.components.optical_channel
     :members:

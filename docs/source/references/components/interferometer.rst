@@ -1,5 +1,5 @@
 Interferometer
 ==============
 
-.. automodule:: src.components.interferometer
+.. automodule:: sequence.components.interferometer
     :members:
