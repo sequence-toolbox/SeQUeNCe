@@ -3,7 +3,6 @@ from qutip import basis, identity, sigmax, sigmaz, tensor, bell_state
 from qutip.measurement import measure_povm
 from qutip_qip.operations import hadamard_transform, cnot, swap
 import numpy as np
-from sequence.resource_management.memory_manager import MemoryManager 
 
 import qutip as qt
 from itertools import combinations
@@ -77,14 +76,25 @@ def calc_scalar_c(rho: qt.Qobj, tol=1e-09):
 
 
 def calculate_fidelity(state):
-    """Calculates fidelity of input GHZ state."""
+    """Calculates fidelity of input GHZ state.
+
+    Assumes GHZ is of form sqrt(1/2) * (|00...0> + |11...1>).
+
+    Args:
+        state (qutip.Qobj): input state
+
+    Returns:
+        float: calculated fidelity
+    """
     ghz_dim = state.dims[0]
     desired_ghz_arr = np.zeros(np.prod(ghz_dim))
     desired_ghz_arr[0] = np.sqrt(1/2)
     desired_ghz_arr[-1] = np.sqrt(1/2)
     desired_ghz = qt.Qobj(desired_ghz_arr, dims=[ghz_dim, [1]])
 
-    fidelity = np.abs(desired_ghz.dag() * state * desired_ghz)
+    fid_obj = desired_ghz.dag() * state * desired_ghz
+    fidelity = np.abs(fid_obj[0][0])
+
     return fidelity
 
 

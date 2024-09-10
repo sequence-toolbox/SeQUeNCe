@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+import pandas as pd
 from qutip import qload
 from qutip_integration import calc_scalar_c, calculate_fidelity
 
@@ -53,16 +54,21 @@ for file in results_files:
     c = calc_scalar_c(avg_ghz)
     c_vals.append(abs(c))  # c is complex
 
-    # # calculate fidelities
-    # fids = [calculate_fidelity(qobj) for qobj in qobjs]
-    # print(np.mean(fids), np.min(fids), np.max(fids))
-
     # calculate completion
     # num_trials = result_data["simulation config"]["num_trials"]
     num_successful_trials = len(result_data["results"])
     print(num_successful_trials)
     num_completed = result_data["results distribution"]["GHZ generated"]
     complete_percent.append(num_completed / num_successful_trials)
+
+    # calculate fidelities
+    fids = np.array([calculate_fidelity(qobj) for qobj in qobjs])
+    print("Fidelity statistics:")
+    print(f"\tMean: {np.mean(fids)}")
+    print(f"\tMin: {np.min(fids)}")
+    print(f"\tMax: {np.max(fids)}")
+    plt.hist(fids)
+    plt.show()
 
 # sort
 coherences, c_vals, complete_percent = zip(*sorted(zip(coherences, c_vals, complete_percent)))
@@ -82,8 +88,6 @@ ax.bar(x=x_points_eta, height=eta_tilde,
        color=c_color, edgecolor='k', width=bar_width, zorder=3)
 ax2.bar(x=x_points_percent, height=100*complete_percent,
         color=percent_color, edgecolor='k', width=bar_width)
-# ax.axhline(y=1,
-#            ls='--', color='k')
 
 ax.set_xlabel("Coherence time (s)")
 ax.set_ylabel(r"$\tilde{\eta}$", color=c_color)
@@ -95,3 +99,14 @@ ax.grid(True, zorder=0)
 
 fig.tight_layout()
 fig.show()
+
+
+# data saving
+data = {
+    "scenario": ["realistic", "near-term", "future"],
+    "eta": eta,
+    "completion percentage": complete_percent,
+    "eta scaled": eta_tilde,
+}
+data_df = pd.DataFrame(data)
+data_df.to_csv("3_points.csv", index=False)
