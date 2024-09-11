@@ -288,7 +288,7 @@ def merge(state1, state2, cnot_fid, meas_fid):
     if res == 0:
         ghz_state = post_meas_state
     if res == 1:
-        x_gate = tensor(sigmax(), identity([2, 2]))
+        x_gate = tensor(identity([2, 2]), sigmax())
         ghz_state = x_gate * post_meas_state * x_gate.dag()
 
     return ghz_state
