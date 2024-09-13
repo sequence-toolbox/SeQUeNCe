@@ -74,7 +74,7 @@ class Node(Entity):
     def set_seed(self, seed: int) -> None:
         self.generator = np.random.default_rng(seed)
 
-    def get_generator(self):
+    def get_generator(self) -> np.random.Generator:
         return self.generator
 
     def add_component(self, component: Entity) -> None:
