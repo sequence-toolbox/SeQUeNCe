@@ -1,5 +1,5 @@
 Encoding
 ========
 
-.. automodule:: src.utils.encoding
+.. automodule:: sequence.utils.encoding
     :members:

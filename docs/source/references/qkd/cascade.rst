@@ -1,5 +1,5 @@
 Cascade
 =======
 
-.. automodule:: src.qkd.cascade
+.. automodule:: sequence.qkd.cascade
     :members:

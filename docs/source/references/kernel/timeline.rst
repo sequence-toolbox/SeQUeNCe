@@ -1,5 +1,5 @@
 Timeline
 ========
 
-.. automodule:: src.kernel.timeline
+.. automodule:: sequence.kernel.timeline
     :members:

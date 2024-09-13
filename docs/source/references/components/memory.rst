@@ -1,5 +1,5 @@
 Memory
 ======
 
-.. automodule:: src.components.memory
+.. automodule:: sequence.components.memory
     :members:

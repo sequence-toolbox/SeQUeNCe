@@ -1,5 +1,5 @@
 Beam Splitter
 =============
 
-.. automodule:: src.components.beam_splitter
+.. automodule:: sequence.components.beam_splitter
     :members:

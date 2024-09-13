@@ -1,5 +1,5 @@
 Switch
 ======
 
-.. automodule:: src.components.switch
+.. automodule:: sequence.components.switch
     :members:

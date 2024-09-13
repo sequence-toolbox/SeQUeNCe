@@ -1,5 +1,5 @@
 Logging
 =======
 
-.. automodule:: src.utils.log
+.. automodule:: sequence.utils.log
     :members:

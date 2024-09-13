@@ -1,5 +1,5 @@
 Photon
 ======
 
-.. automodule:: src.components.photon
+.. automodule:: sequence.components.photon
     :members:

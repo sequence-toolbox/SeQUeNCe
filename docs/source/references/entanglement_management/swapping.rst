@@ -1,5 +1,5 @@
 Entanglement Swapping
 =====================
 
-.. automodule:: src.entanglement_management.swapping
+.. automodule:: sequence.entanglement_management.swapping
     :members:

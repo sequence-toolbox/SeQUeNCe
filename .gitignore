@@ -133,10 +133,10 @@ dmypy.json
 
 # vscode-workspace
 sequence_gui_testing.code-workspace
-src/gui/.vscode
+sequence/gui/.vscode
 
 # gui-testing
-src/gui/test_run.py
+sequence/gui/test_run.py
 
 # macos
 .DS_Store

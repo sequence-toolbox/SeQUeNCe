@@ -1,6 +1,6 @@
 BSM
 ===
 
-.. automodule:: src.components.bsm
+.. automodule:: sequence.components.bsm
     :members:
 

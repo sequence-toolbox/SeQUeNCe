@@ -1,5 +1,5 @@
 Entanglement Purification
 =========================
 
-.. automodule:: src.entanglement_management.purification
+.. automodule:: sequence.entanglement_management.purification
     :members:

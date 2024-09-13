@@ -1,5 +1,5 @@
 Mirror
 ======
 
-.. automodule:: src.components.mirror
+.. automodule:: sequence.components.mirror
     :members:

@@ -1,5 +1,5 @@
 Light Source
 ============
 
-.. automodule:: src.components.light_source
+.. automodule:: sequence.components.light_source
     :members:

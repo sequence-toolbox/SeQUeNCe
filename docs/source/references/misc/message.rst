@@ -1,5 +1,5 @@
 Message
 =======
 
-.. automodule:: src.message
+.. automodule:: sequence.message
     :members:

@@ -1,5 +1,5 @@
 Reservation
 ===========
 
-.. automodule:: src.network_management.reservation
+.. automodule:: sequence.network_management.reservation
     :members:

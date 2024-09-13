@@ -1,5 +1,5 @@
 Event
 =====
 
-.. automodule:: src.kernel.event
+.. automodule:: sequence.kernel.event
     :members:

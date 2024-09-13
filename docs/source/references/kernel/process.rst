@@ -1,5 +1,5 @@
 Process
 =======
 
-.. automodule:: src.kernel.process
+.. automodule:: sequence.kernel.process
     :members:

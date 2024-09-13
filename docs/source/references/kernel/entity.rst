@@ -1,5 +1,5 @@
 Entity
 ======
 
-.. automodule:: src.kernel.entity
+.. automodule:: sequence.kernel.entity
     :members:

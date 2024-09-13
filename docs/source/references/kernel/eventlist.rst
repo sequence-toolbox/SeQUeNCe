@@ -1,5 +1,5 @@
 Event List
 ==========
 
-.. automodule:: src.kernel.eventlist
+.. automodule:: sequence.kernel.eventlist
     :members:

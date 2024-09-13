@@ -1,5 +1,5 @@
 Topology
 ========
 
-.. automodule:: src.topology.topology
+.. automodule:: sequence.topology.topology
     :members:

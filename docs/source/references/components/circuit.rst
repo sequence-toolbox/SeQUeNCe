@@ -1,5 +1,5 @@
 Circuit
 =======
 
-.. automodule:: src.components.circuit
+.. automodule:: sequence.components.circuit
     :members:

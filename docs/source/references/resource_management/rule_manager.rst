@@ -1,5 +1,5 @@
 Rule Manager
 ============
 
-.. automodule:: src.resource_management.rule_manager
+.. automodule:: sequence.resource_management.rule_manager
     :members:
