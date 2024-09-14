@@ -131,7 +131,7 @@ def test_ResourceReservationProtocol_pop():
     msg.qcaps.append(QCap("n0"))
     n1.rsvp.pop("n0", msg)
     assert len(n1.pop_log) == 1 and len(n1.push_log) == 1
-    assert n1.push_log[0]["dst"] == "n0"
+    assert n1.push_log[0]["next_hop"] == "n0"
     assert n1.push_log[0]["msg"].msg_type == RSVPMsgType.APPROVE
     assert len(n1.push_log[0]["msg"].path) == 2
     for card in n1.rsvp.timecards:
@@ -144,7 +144,7 @@ def test_ResourceReservationProtocol_pop():
     msg.qcaps.append(QCap("n0"))
     n1.rsvp.pop("n0", msg)
     assert len(n1.pop_log) == 0 and len(n1.push_log) == 1
-    assert n1.push_log[0]["dst"] == "n0"
+    assert n1.push_log[0]["next_hop"] == "n0"
     assert n1.push_log[0]["msg"].msg_type == RSVPMsgType.REJECT
     for card in n1.rsvp.timecards:
         assert len(card.reservations) == 0
@@ -193,7 +193,7 @@ def test_ResourceReservationProtocol_pop():
     msg = ResourceReservationMessage(RSVPMsgType.APPROVE, n1.rsvp.name, reservation, path=["n0", "n1", "n2"])
     n1.rsvp.pop("n2", msg)
     assert len(n1.pop_log) == 0 and len(n1.push_log) == 1
-    assert n1.push_log[0]["dst"] == "n0" and n1.push_log[0]["msg"].msg_type == RSVPMsgType.APPROVE
+    assert n1.push_log[0]["next_hop"] == "n0" and n1.push_log[0]["msg"].msg_type == RSVPMsgType.APPROVE
     reset(n1)
 
 

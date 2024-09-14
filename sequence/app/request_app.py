@@ -145,7 +145,6 @@ class RequestApp:
 
     def schedule_reservation(self, reservation: "Reservation") -> None:
         if reservation.initiator == self.node.name:
-            # NOTE: self.path will be an issue when there are multiple reservation.path at the same time
             self.path = reservation.path
 
         reservation_protocol = self.node.network_manager.protocol_stack[1]
