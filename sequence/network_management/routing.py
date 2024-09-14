@@ -75,9 +75,9 @@ class StaticRoutingProtocol(StackProtocol):
         Routing packages the message and forwards it to the next node in the optimal path (determined by the forwarding table).
 
         Args:
-            dst (str): name of destination node. If not None, resort to the forwarding table to ger the next hop
+            dst (str): name of destination node. If not None, resort to the forwarding table to get the next hop.
             msg (Message): message to relay.
-            next_hop (str): name of next hop. If dst is None, next_hop shouldn't be None. next_hop directly tells the next_hop
+            next_hop (str): name of next hop. If dst is None, next_hop shouldn't be None. next_hop directly tells the next hop.
 
         Side Effects:
             Will invoke `push` method of lower protocol or network manager.
