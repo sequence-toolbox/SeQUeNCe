@@ -85,7 +85,7 @@ class BB84(StackProtocol):
     The BB84 protocol uses photons to create a secure key between two QKD Nodes.
 
     Attributes:
-        own (QKDNode): node that protocol instance is attached to.
+        owner (QKDNode): node that protocol instance is attached to.
         name (str): label for protocol instance.
         role (int): determines if instance is "alice" or "bob" node.
         working (bool): shows if protocol is currently working on a key.
@@ -107,7 +107,7 @@ class BB84(StackProtocol):
         """Constructor for BB84 class.
 
         Args:
-            own (QKDNode): node hosting protocol instance.
+            owner (QKDNode): node hosting protocol instance.
             name (str): name of protocol instance.
             lightsource (str): name of lightsource for QKD
             qsdetector (str): name of QSDetector for QKD
