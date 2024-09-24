@@ -5,7 +5,24 @@
   </picture>
 </p>
 
-<h3><p align="center">Quantum Networking in SeQUeNCe: Scalable, Customizable, Easy Debugging</p></h3>
+<h3><p align="center">Quantum Networking in SeQUeNCe: Customizable, Scalable, Easy Debugging</p></h3>
+
+
+
+<p align="center">
+    <a href="sequence-rtd-tutorial.readthedocs.io/">
+        <img alt="Documentation" src="https://img.shields.io/readthedocs/sequence-rtd-tutorial">
+    </a>
+   <a href="https://pypi.org/project/sequence/">
+        <img alt="Pypi" src="https://img.shields.io/pypi/v/sequence">
+    </a>
+   </a>
+       <a href="https://qutip.org/">
+        <img alt="Pypi" src="https://img.shields.io/badge/integration%20-Qutip-blue">
+    </a>
+    </a>
+
+</p>
 
 <br>
 

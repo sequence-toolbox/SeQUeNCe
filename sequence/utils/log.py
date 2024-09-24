@@ -67,7 +67,8 @@ def track_module(module_name: str):
     """Sets a given module to be tracked by logger."""
 
     global _log_modules
-    _log_modules.append(module_name)
+    if module_name not in _log_modules:
+        _log_modules.append(module_name)
 
 
 def remove_module(module_name: str):
