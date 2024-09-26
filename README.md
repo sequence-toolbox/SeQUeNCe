@@ -7,21 +7,18 @@
 
 <h3><p align="center">Quantum Networking in SeQUeNCe: Customizable, Scalable, Easy Debugging</p></h3>
 
-
-
 <p align="center">
     <a href="sequence-rtd-tutorial.readthedocs.io/">
         <img alt="Documentation" src="https://img.shields.io/readthedocs/sequence-rtd-tutorial">
     </a>
-   <a href="https://pypi.org/project/sequence/">
+    &nbsp;
+    <a href="https://pypi.org/project/sequence/">
         <img alt="Pypi" src="https://img.shields.io/pypi/v/sequence">
     </a>
-   </a>
-       <a href="https://qutip.org/">
+    &nbsp;
+    <a href="https://qutip.org/">
         <img alt="Pypi" src="https://img.shields.io/badge/integration%20-Qutip-blue">
     </a>
-    </a>
-
 </p>
 
 <br>
@@ -75,7 +72,7 @@ publisher = {IOP Publishing},
 ## Running the GUI
 Once SeQUeNCe has been installed as described above, simply run the `gui.py` script found in the root of the project directory
 ```
-$ python gui.py
+python gui.py
 ```
 
 ## Usage Examples
@@ -87,12 +84,12 @@ Code for the experiments performed in our paper can be found in the file `starli
 ### Jupyter Notebook Examples
 The example folder contains several scripts that can be run with jupyter notebook for easy editing and visualization. These files require that the notebook package be installed (Anaconda recommended):
 ```
-$ pip install notebook
-$ pip install ipywidgets
+pip install notebook
+pip install ipywidgets
 ```
 To run each file, simply run
 ```
-$ jupyter notebook <filename>
+jupyter notebook <filename>
 ```
 These examples include:
 * `BB84_eg.ipynb`, which uses the BB84 protocol to distribute secure keys between two quantum nodes
@@ -106,7 +103,7 @@ The example directory contains an example json file `starlight.json` to specify 
 
 To view a network, simply run the script and specify the relative location of your json file:
 ```
-$ python utils/draw_topo.py example/starlight.json
+python utils/draw_topo.py example/starlight.json
 ```
 This script also supports a flag `-m` to visualize BSM nodes created by default on quantum links between routers.
 
