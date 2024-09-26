@@ -8,7 +8,7 @@
 <h3><p align="center">Quantum Networking in SeQUeNCe: Customizable, Scalable, Easy Debugging</p></h3>
 
 <p align="center">
-    <a href="sequence-rtd-tutorial.readthedocs.io/">
+    <a href="https://sequence-rtd-tutorial.readthedocs.io/">
         <img alt="Documentation" src="https://img.shields.io/readthedocs/sequence-rtd-tutorial">
     </a>
     &nbsp;
