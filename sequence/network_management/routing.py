@@ -69,23 +69,29 @@ class StaticRoutingProtocol(StackProtocol):
 
         self.forwarding_table[dst] = next_node
 
-    def push(self, dst: str, msg: "Message"):
+    def push(self, dst: str, msg: "Message", next_hop: str = None):
         """Method to receive message from upper protocols.
 
         Routing packages the message and forwards it to the next node in the optimal path (determined by the forwarding table).
 
         Args:
-            dst (str): name of destination node.
+            dst (str): name of destination node. If not None, resort to the forwarding table to get the next hop.
             msg (Message): message to relay.
+            next_hop (str): name of next hop. If dst is None, next_hop shouldn't be None. next_hop directly tells the next hop.
 
         Side Effects:
             Will invoke `push` method of lower protocol or network manager.
         """
 
         assert dst != self.owner.name
-        dst = self.forwarding_table[dst]
         new_msg = StaticRoutingMessage(Enum, self.name, msg)
-        self._push(dst=dst, msg=new_msg)
+        if dst:                                     # if dst is not None, use the forwarding table
+            next_hop = self.forwarding_table[dst]
+            self._push(dst=next_hop, msg=new_msg)
+        elif next_hop:                              # if next_hop is not None, use next_hop
+            self._push(dst=next_hop, msg=new_msg)  
+        else:
+            raise Exception(f'Both dst and next_hop are None!')
 
     def pop(self, src: str, msg: "StaticRoutingMessage"):
         """Message to receive reservation messages.

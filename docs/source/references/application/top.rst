@@ -6,4 +6,5 @@ The Application module contains code to utilize and test quantum network resourc
 .. toctree::
     :maxdepth: 2
 
+    request_app
     random_request

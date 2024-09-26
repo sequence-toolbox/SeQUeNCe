@@ -19,7 +19,7 @@ def add_default_args(parser):
     """
 
     parser.add_argument('memo_size', type=int, help='number of memories per node')
-    parser.add_argument('qc_length', type=float, help='distance between nodes (in m)')
+    parser.add_argument('qc_length', type=float, help='distance between nodes (in km)')
     parser.add_argument('qc_atten', type=float, help='quantum channel attenuation (in dB/m)')
     parser.add_argument('cc_delay', type=float, help='classical channel delay (in ms)')
     parser.add_argument('-d', '--directory', type=str, default='tmp', help='name of output directory')

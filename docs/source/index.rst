@@ -24,15 +24,15 @@ Welcome to the SeQUeNCe documentation page
     :maxdepth: 1
     :caption: Module References:
 
-    references/kernel/top
+    references/application/top
     references/components/top
     references/entanglement_management/top
-    references/resource_management/top
-    references/network_management/top
-    references/application/top
-    references/topology/top
-    references/qkd/top
+    references/kernel/top
     references/misc/top
+    references/network_management/top
+    references/qkd/top
+    references/resource_management/top
+    references/topology/top
 
 .. toctree::
     :maxdepth: 1

@@ -119,7 +119,7 @@ class Memory(Entity):
         fidelity (float): (current) fidelity of memory.
         frequency (float): maximum frequency at which memory can be excited.
         efficiency (float): probability of emitting a photon when excited.
-        coherence_time (float): average usable lifetime of memory (in seconds).
+        coherence_time (float): average usable lifetime of memory (in seconds). Negative value means infinite coherence time.
         wavelength (float): wavelength (in nm) of emitted photons.
         qstate_key (int): key for associated quantum state in timeline's quantum manager.
         memory_array (MemoryArray): memory array aggregating current memory.
