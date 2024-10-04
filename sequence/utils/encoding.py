@@ -30,7 +30,8 @@ time_bin = \
 single_atom = \
     {"name": "single_atom",
      "bases": [((complex(1), complex(0)), (complex(0), complex(1))), None],
-     "raw_fidelity": 1
+     "raw_fidelity": 1,
+     "keep_photon": True
      }
 
 absorptive = \
@@ -41,4 +42,10 @@ absorptive = \
 fock = \
     {"name": "fock",
      "bases": None
+     }
+
+single_heralded = \
+    {"name": "single_heralded",
+     "bases": None,
+     "keep_photon": True
      }

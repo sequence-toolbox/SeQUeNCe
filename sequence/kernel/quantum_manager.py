@@ -21,12 +21,13 @@ from numpy import log, array, cumsum, base_repr, zeros
 from scipy.sparse import csr_matrix
 from scipy.special import binom
 
-from .quantum_state import KetState, DensityState
+from .quantum_state import KetState, DensityState, BellDiagonalState
 from .quantum_utils import *
 
 KET_STATE_FORMALISM = "ket_vector"
 DENSITY_MATRIX_FORMALISM = "density_matrix"
 FOCK_DENSITY_MATRIX_FORMALISM = "fock_density"
+BELL_DIAGONAL_STATE_FORMALISM = "bell_diagonal"
 
 
 class QuantumManager:
@@ -703,3 +704,57 @@ class QuantumManagerDensityFock(QuantumManager):
             output_state += kraus_op @ prepared_state @ kraus_op.conj().T
 
         self.set(all_keys, output_state)
+
+
+class QuantumManagerBellDiagonal(QuantumManager):
+    """Class to track and manage quantum states with the bell diagonal formalism.
+
+    To be aligned with analytical formulae, we have assumed that successfully generated EPR pair is in Phi+ form.
+    And note that the 4 BDS elements are in I, Z, X, Y order.
+
+    * BDS is only used for entanglement distribution (generation, swapping, purification), assuming underlying errors being purely Pauli.
+    * All manipulation results can be tracked analytically, without explicit quantum gates / channels / measurements.
+    """
+
+    def __init__(self):
+        super().__init__(BELL_DIAGONAL_STATE_FORMALISM)
+
+    def new(self, state=None) -> int:
+        """Generates new quantum state key for quantum manager.
+
+        NOTE: since this generates only one state, there will be no corresponding entangled state stored.
+        The Bell diagonal state formalism assumes entangled states;
+        thus, attempting to call `get` will return an exception until entangled.
+        The purpose of this function is thus mainly to avoid state key collisions.
+
+        Args:
+            state (Any): to conform to type definition (does nothing).
+
+        Returns:
+            int: quantum state key corresponding to state.
+        """
+        key = self._least_available
+        self._least_available += 1
+        return key
+
+    def get(self, key: int):
+        if key not in self.states:
+            raise Exception("Attempt to get Bell diagonal state before entanglement.")
+
+        return super().get(key)
+
+    def set(self, keys: List[int], diag_elems: List[float]) -> None:
+        super().set(keys, diag_elems)
+        # assert len(keys) == 2, "Bell diagonal states must have 2 keys."
+        if len(keys) != 2:
+            #raise Warning("bell diagonal quantum manager received invalid set request")  # optional
+            for key in keys:
+                if key in self.states:
+                    self.states.pop(key)
+            return
+        new_state = BellDiagonalState(diag_elems, keys)
+        for key in keys:
+            self.states[key] = new_state
+
+    def set_to_noiseless(self, keys: List[int]):
+        self.set(keys, [float(1), float(0), float(0), float(0)])
