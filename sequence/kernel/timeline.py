@@ -72,13 +72,14 @@ class Timeline:
         self.run_counter: int = 0
         self.is_running: bool = False
         self.show_progress: bool = False
-        self.set_quantum_manager(formalism)
+        self.set_quantum_manager(formalism, truncation)
         
-    def set_quantum_manager(self, formalism: str) -> None:
+    def set_quantum_manager(self, formalism: str, truncation: int) -> None:
         """Update the formalism
         
         Args:
-            formalism (str): the formalism
+            formalism (str): the formalism.
+            truncation (int): truncation of Hilbert space (currently only for Fock representation).
         """
         if formalism == KET_STATE_FORMALISM:
             self.quantum_manager = QuantumManagerKet()

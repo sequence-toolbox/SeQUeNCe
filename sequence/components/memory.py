@@ -163,14 +163,14 @@ class Memory(Entity):
         is_in_application (bool): whether the quantum memory is involved in application after successful distribution of EPR pair
     """
 
-    def __init__(self, name: str, timeline: "Timeline", raw_fidelity: float, frequency: float,
+    def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
                  efficiency: float, coherence_time: float, wavelength: int, decoherence_errors: List[float] = None, cutoff_ratio: float = 1):
         """Constructor for the Memory class.
 
         Args:
             name (str): name of the memory instance.
             timeline (Timeline): simulation timeline.
-            raw_fidelity (float): initial fidelity of memory.
+            fidelity (float): initial fidelity of memory.
             frequency (float): maximum frequency of excitation for memory.
             efficiency (float): efficiency of memories.
             coherence_time (float): average time (in s) that memory state is valid.
@@ -183,11 +183,11 @@ class Memory(Entity):
         """
 
         super().__init__(name, timeline)
-        assert 0 <= raw_fidelity <= 1
+        assert 0 <= fidelity <= 1
         assert 0 <= efficiency <= 1
 
         self.fidelity = 0
-        self.raw_fidelity = raw_fidelity
+        self.raw_fidelity = fidelity
         self.frequency = frequency
         self.efficiency = efficiency
         self.coherence_time = coherence_time  # coherence time in seconds

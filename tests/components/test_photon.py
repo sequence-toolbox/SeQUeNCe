@@ -3,6 +3,7 @@ import pytest
 
 from sequence.kernel.timeline import Timeline
 from sequence.components.photon import Photon
+from sequence.utils.encoding import single_atom
 
 rng = np.random.default_rng()
 
@@ -81,7 +82,7 @@ def test_measure_multiple():
 
 def test_add_loss():
     tl = Timeline()
-    photon = Photon("", tl, encoding_type={"name": "single_atom"})
+    photon = Photon("", tl, encoding_type=single_atom)
     assert photon.loss == 0
 
     photon.add_loss(0.5)
