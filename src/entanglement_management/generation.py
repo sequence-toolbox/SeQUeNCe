@@ -437,7 +437,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             # schedule start if necessary, else schedule update_memory
             # TODO: base future start time on resolution
             future_start_time = self.expected_time + self.own.cchannels[self.middle].delay + 10
-            if self.ent_round == 1:
+            if self.ent_round == 1 and not self.is_sh:
                 process = Process(self, "start", [])
             else:
                 process = Process(self, "update_memory", [])
@@ -465,7 +465,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             # schedule start if memory_stage is 0, else schedule update_memory
             # TODO: base future start time on resolution
             future_start_time = self.expected_time + self.own.cchannels[self.middle].delay + 10
-            if self.ent_round == 1:
+            if self.ent_round == 1 and not self.is_sh:
                 process = Process(self, "start", [])
             else:
                 process = Process(self, "update_memory", [])
