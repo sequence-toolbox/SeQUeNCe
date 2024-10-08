@@ -74,7 +74,7 @@ class Timeline:
         self.show_progress: bool = False
         self.set_quantum_manager(formalism, truncation)
         
-    def set_quantum_manager(self, formalism: str, truncation: int) -> None:
+    def set_quantum_manager(self, formalism: str, truncation: int = 1) -> None:
         """Update the formalism
         
         Args:
