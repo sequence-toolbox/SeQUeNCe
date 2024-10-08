@@ -124,5 +124,9 @@ If you have questions, please contact [Caitao Zhan](https://caitaozhan.github.io
 
 * X. Wu et al., ["Parallel Simulation of Quantum Networks with Distributed Quantum State Management"](https://dl.acm.org/doi/abs/10.1145/3634701), ACM Transactions on Modeling and Computer Simulation, 2024
 
+* C. Howe, M. Aziz, and A. Anwar, ["Towards Scalable Quantum Repeater Networks"](https://arxiv.org/abs/2409.08416), arXiv preprint, 2024
+
+* A. Zang et al., ["Quantum Advantage in Distributed Sensing with Noisy Quantum Networks"](https://arxiv.org/abs/2409.17089), arXiv preprint, 2024
+
 
 Please do a Pull Request to add your paper here! 
