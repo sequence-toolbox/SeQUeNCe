@@ -52,7 +52,7 @@ class Node(Entity):
         meas_fid (float): fidelity of single-qubit measurements (usually Z measurement) that can be performed on the node.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", seed=None, component_templates=None, gate_fid: float = 1, meas_fid: float = 1):
+    def __init__(self, name: str, timeline: "Timeline", seed=None, gate_fid: float = 1, meas_fid: float = 1):
         """Constructor for node.
 
         name (str): name of node instance.
