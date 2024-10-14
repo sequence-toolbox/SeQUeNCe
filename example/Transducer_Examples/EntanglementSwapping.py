@@ -338,9 +338,6 @@ if __name__ == "__main__":
     print(f"Percentage of Entangled detected by SPD real: {percentage_spd_real:.2f}%")
 
 
-    #ratio_spd_detector_photon_counter_ideal = (detector_photon_counter_ideal/spd_ideal) * 100
-    #print(f"Ratio SPD/detector_counter IDEAL: {ratio_spd_detector_photon_counter_ideal:.2f}%")
-
     
 #Plot
 
