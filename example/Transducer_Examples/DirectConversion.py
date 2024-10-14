@@ -27,7 +27,7 @@ import sequence.components.circuit as Circuit
 
 #GENERAL
 
-NUM_TRIALS = 10
+NUM_TRIALS = 50
 FREQUENCY = 1e9
 MICROWAVE_WAVELENGTH = 999308 # nm
 OPTICAL_WAVELENGTH = 1550 # nm
@@ -35,15 +35,15 @@ MEAN_PHOTON_NUM=1
 
 # Timeline
 START_TIME = 0
-EMISSION_DURATION = 10 # ms (scelta io)
-CONVERSION_DURATION = 10 # ms
+EMISSION_DURATION = 10 # ps
+CONVERSION_DURATION = 10 # ps
 PERIOD = EMISSION_DURATION + CONVERSION_DURATION + CONVERSION_DURATION
 
 #Trasmon
 ket1 = (0.0 + 0.0j, 1.0 + 0.0j) 
 ket0 = (1.0 + 0.0j, 0.0 + 0.0j) 
 state_list= [ket1, ket0] 
-TRASMON_EFFICIENCY = 0.9
+TRASMON_EFFICIENCY = 1
 
 # Transducer
 EFFICIENCY_UP = 0.5
@@ -61,7 +61,11 @@ DISTANCE = 1e3
 
 
 
+
+
+
 #NODES OF THE NETWORK 
+
 
 class SenderNode(Node):
     def __init__(self, name, timeline, node2):
@@ -100,6 +104,7 @@ class SenderNode(Node):
 
         self.emitting_protocol = EmittingProtocol(self, name + ".emitting_protocol", timeline, trasmon, transducer)
         self.upconversion_protocol = UpConversionProtocol(self, name + ".upconversion_protocol", timeline, transducer, node2, trasmon)
+
 
 
 
@@ -155,12 +160,9 @@ if __name__ == "__main__":
         print("Error: the efficiency must be between 0 and 1")
         exit(1)
 
-    
-
     tl.init()
 
     total_photons_successful = 0
-
     total_transducer_count = 0
     
 
@@ -189,7 +191,7 @@ if __name__ == "__main__":
         tl.run()
 
 
-
+        #Node1
         trasmon = node1.get_components_by_type("Trasmon")[0]
         trasmon_count = trasmon.photon_counter
         transducer = node1.get_components_by_type("Transducer")[0]
@@ -197,13 +199,13 @@ if __name__ == "__main__":
         detector = node1.get_components_by_type("FockDetector")[0]
         detector_count = detector.photon_counter
 
+        #Node2
         transducer2 = node2.get_components_by_type("Transducer")[0]
         trasmon2 = node2.get_components_by_type("Trasmon")[0]
         trasmon2_count = trasmon2.photon_counter
         detector2 = node2.get_components_by_type("FockDetector")[0]
         detector2_count = detector2.photon_counter
 
-        
         process0 = Process(node1.emitting_protocol, "start", [])
         event_time0 = (cumulative_time + EMISSION_DURATION) 
         event0 = Event(event_time0, process0)
@@ -219,19 +221,15 @@ if __name__ == "__main__":
         event2 = Event(event_time2, process2)
         tl.schedule(event2)
         
-
         failed_up_conversions.append(detector_count)
         failed_down_conversions.append(detector2_count)
         successful_conversions.append(trasmon2_count)
-
-        
 
         print(f"Number of photons converted at time {tl.time}: {trasmon2_count}") 
         
         #reset timeline
         tl.time = 0
         tl.init()
-
 
         total_photons_successful += trasmon2_count
         total_transducer_count += transducer_count
@@ -241,6 +239,7 @@ if __name__ == "__main__":
         emitted_photons.append(total_transducer_count)
         converted_photons.append(total_photons_successful)
         
+        #Reset counters
         trasmon.photon_counter = 0 
         trasmon2.photon_counter = 0 
         transducer.photon_counter = 0
@@ -252,68 +251,66 @@ if __name__ == "__main__":
     #RESULTS
 
     print(f"- - - - - - - - - -")
-    print(PERIOD)
+    print(f"Period: {PERIOD}")
 
-    total_photons_to_be_converted = NUM_TRIALS
+    total_photons_to_be_converted = NUM_TRIALS-1
     print(f"Total number of photons converted: {total_photons_successful}")
     print(f"Total number of photons EMITTED: {total_transducer_count}")
     
     conversion_percentage = (total_photons_successful / total_photons_to_be_converted) * 100 if total_photons_to_be_converted > 0 else 0
     print(f"Conversion efficiency of DQT protocol with no-idealities of trasmon: {conversion_percentage:.2f}%")
 
-
     conversion_percentage_2 = (total_photons_successful / total_transducer_count) * 100 if total_photons_to_be_converted > 0 else 0
     print(f"Conversion efficiency of DQT protocol: {conversion_percentage_2:.2f}%")
 
+    failed_down_conversions_adjusted = [x + 1 for x in failed_down_conversions]
+    successful_conversions_adjusted = [y + 2 for y in successful_conversions]
 
-
-    
-
-    
     print(f"- - - - - - - - - -")
 
     time_points = [i * PERIOD for i in range(NUM_TRIALS)]
 
-    trials = list(range(NUM_TRIALS))
-    plt.plot(time_points, failed_up_conversions,  'r-', label="Failed UpConversions")
-    plt.plot(time_points, failed_down_conversions, 'b-', label="Failed DownConversions")
-    plt.plot(time_points, successful_conversions, 'g-', label="Successful Conversions")
-
-    plt.xticks(fontsize=12)  
-    plt.yticks(fontsize=12) 
-    plt.legend(fontsize=12, loc='best')
-
-    plt.xlabel("Time (ps)", fontsize=14)
-
-    plt.ylabel("Number of Conversions", fontsize=14)
-    plt.title("Conversion over Time", fontsize=16, fontweight='bold')
-    plt.legend()
-    plt.show()
 
 
+plt.plot(time_points, ideal_photons, 'o-', label="Ideal Successfully Converted Photons", color='darkblue')  # Verde smeraldo
+plt.plot(time_points, converted_photons, 'o-g', label="Successfully Converted Photons", color='#FF00FF')  # Blu dodger
+plt.xlabel(r"Time ($\mu$s)", fontsize=24)
+plt.ylabel("Photon Number", fontsize=24)
+plt.title("Photon Conversion over Time", fontsize=24, fontweight='bold')
+plt.legend(fontsize=24, loc='upper left')
+plt.grid(True) 
 
-
-
-# Supponendo che queste variabili siano già definite nel tuo codice
-# time_points, ideal_photons, emitted_photons, converted_photons
-plt.plot(time_points, ideal_photons, 'o-', label="Ideal conversion", color='#1E90FF')  # Verde smeraldo
-plt.plot(time_points, emitted_photons, 'o-', label="Microwave Photons Emitted", color='#FF00FF')  # Magenta
-plt.plot(time_points, converted_photons, 'o-g', label="Successfully Converted Photons")  # Blu dodger
-
-plt.xlabel("Time (ps)", fontsize=14)
-plt.ylabel("Photon Number", fontsize=14)
-plt.title("Photon Conversion over Time", fontsize=16, fontweight='bold')
-plt.legend(fontsize=12, loc='upper left')
-plt.grid(True)  # Aggiunge una griglia per migliorare la leggibilità
-
-plt.xticks(fontsize=12)  # Ingrandisce le etichette dell'asse x
-plt.yticks(fontsize=12)  # Ingrandisce le etichette dell'asse y
+plt.xticks(fontsize=18)  
+plt.yticks(fontsize=18) 
 
 plt.show()
 
 
+results_matrix = np.zeros((NUM_TRIALS, 3))
 
+for i in range(NUM_TRIALS):
+    if failed_up_conversions[i] != 0:
+        results_matrix[i, 0] = 1  # Failed Up
+    if failed_down_conversions[i] != 0:
+        results_matrix[i, 1] = 1  # Failed Down
+    if successful_conversions[i] != 0:
+        results_matrix[i, 2] = 1  # Successful
 
+plt.figure(figsize=(10, 6))
 
+plt.bar(time_points, results_matrix[:, 0], color='#ED213C', label='Failed Up', alpha=0.7, width=PERIOD * 0.8)
+plt.bar(time_points, results_matrix[:, 1], color='blue', label='Failed Down', alpha=0.7, bottom=results_matrix[:, 0], width=PERIOD * 0.8)
+plt.bar(time_points, results_matrix[:, 2], color='#119B70', label='Successful', alpha=0.7, bottom=results_matrix[:, 0] + results_matrix[:, 1], width=PERIOD * 0.8)
 
-#da poter aggiungere: andamento rispetto al tempo con parallelizzazione degli eventi
+plt.ylabel('Conversions', fontsize=24)
+plt.xlabel(r"Time ($\mu$s)", fontsize=24)  
+plt.title('Conversions Over Time', fontsize=25, fontweight='bold')
+plt.ylim(0, 1)
+plt.yticks([]) 
+plt.legend(fontsize=24)
+plt.grid(axis='y', alpha=0.3)
+
+plt.xticks(np.arange(0, max(time_points) + 1, step=200), fontsize=24)  
+plt.yticks(fontsize=24)  
+plt.tight_layout()  
+plt.show()
