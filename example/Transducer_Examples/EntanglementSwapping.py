@@ -23,9 +23,6 @@ from example.Transducer_Examples.TransductionComponent import Counter
 from example.Transducer_Examples.TransductionComponent import FockBeamSplitter
 
 from sequence.components.detector import Detector
-from example.Transducer_Examples.ConversionProtocols import UpConversionProtocol
-from example.Transducer_Examples.ConversionProtocols import DownConversionProtocol
-from example.Transducer_Examples.ConversionProtocols import EmittingProtocol
 
 from example.Transducer_Examples.SwappingProtocols import UpConversionProtocolEntangle
 from example.Transducer_Examples.SwappingProtocols import Swapping
@@ -44,19 +41,21 @@ MEAN_PHOTON_NUM = 1
 
 # Timeline
 START_TIME = 0
-ENTANGLEMENT_GENERATION_DURATION = 10 # ps
+EMISSION_DURATION = 10 # ps
+ENTANGLEMENT_GENERATION_DURATION = 10 #ps
 SWAPPING_DUARTION = 10 # ps
 MEASURE_DURATION = 10 # ps
-PERIOD = ENTANGLEMENT_GENERATION_DURATION + SWAPPING_DUARTION + MEASURE_DURATION
+PERIOD = ENTANGLEMENT_GENERATION_DURATION + SWAPPING_DUARTION + MEASURE_DURATION + EMISSION_DURATION
 
-# Trasmon
+#Trasmon
 ket1 = (0.0 + 0.0j, 1.0 + 0.0j) 
 ket0 = (1.0 + 0.0j, 0.0 + 0.0j) 
 state_list= [ket1, ket0] 
+TRASMON_EFFICIENCY = 1
 
 
 # Transducer
-EFFICIENCY_UP = 0.5
+EFFICIENCY_UP = 0.8
 
 # Fock Detector
 MICROWAVE_DETECTOR_EFFICIENCY_Rx = 1
@@ -68,11 +67,76 @@ ATTENUATION = 0
 DISTANCE = 1e3
 
 
+
+
+class EmittingProtocol(Protocol):
+
+    "Protocol for emission of single microwave photon by trasmon"
+
+    def __init__(self, own: "Node", name: str, tl: "Timeline", trasmon="Trasmon", transducer="Transducer"):
+        super().__init__(own, name)
+        self.owner = own
+        self.name = name
+        self.tl = tl
+        self.trasmon = trasmon
+        self.transducer = transducer
+
+
+    def start(self) -> None:
+
+        self.transducer.photon_counter += 1 
+            
+        print(f"Microwave photons emitted by the Trasmon at Tx: {self.transducer.photon_counter}")
+
+
+    def received_message(self, src: str, msg):
+        pass
+
+
+
+
+class UpConversionProtocol(Protocol):
+    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", node: "Node", trasmon: "Trasmon"):
+        super().__init__(own, name)
+        self.owner = own
+        self.name = name
+        self.tl = tl
+        self.transducer = transducer
+        self.trasmon = trasmon
+        self.node = node
+
+
+    def start(self, photon: "Photon") -> None:
+        
+
+        #print(f"Trasduduttore receiver[0] {self.transducer._receivers[0]}")
+        #print(f"Transduttore receiver[1] {self.transducer._receivers[1]}")  
+
+        if self.transducer.photon_counter > 0:
+
+            if random.random() < self.transducer.efficiency:
+                self.transducer._receivers[0].receive_photon(self.node, photon)
+                print("Successful up-conversion")
+            else:
+                self.transducer._receivers[1].receive_photon_from_transducer(photon)
+                print("FAILED up-conversion")
+        else:
+            print("No photon to up-convert")
+
+    def received_message(self, src: str, msg):
+        pass
+
+
 # NODES OF THE NETWORK
 
 class SenderNode(Node):
     def __init__(self, name, timeline, node2):
         super().__init__(name, timeline)
+
+        self.trasmon0_name = name + ".trasmon0"
+        trasmon0 = Trasmon(name=self.trasmon0_name, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=1, photons_quantum_state= state_list)
+        self.add_component(trasmon0)
+        self.set_first_component(self.trasmon0_name)
 
         self.transducer_name = name + ".transducer"
         transducer = Transducer(name=self.transducer_name, owner=self, timeline=timeline, efficiency=EFFICIENCY_UP)
@@ -83,13 +147,17 @@ class SenderNode(Node):
         transducer.attach(self.counter)
         self.set_first_component(self.transducer_name)
 
+        trasmon0.add_receiver(transducer)
+
         self.trasmon_name = name + ".trasmon"
         trasmon = Trasmon(name=self.trasmon_name, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=1, photons_quantum_state= state_list)
         self.add_component(trasmon)
         self.set_first_component(self.trasmon_name)
+
         transducer.add_output([node2, trasmon])
 
-        self.upconversionentangle_protocol = UpConversionProtocolEntangle(self, name + ".upconversion_protocol", timeline, transducer, node2)
+        self.emitting_protocol = EmittingProtocol(self, name + ".emitting_protocol", timeline, trasmon0, transducer)
+        self.upconversion_protocol = UpConversionProtocol(self, name + ".upconversion_protocol", timeline, transducer, node2, trasmon)
 
 
 class EntangleNode(Node):
@@ -103,12 +171,12 @@ class EntangleNode(Node):
         self.set_first_component(self.fock_beam_splitter_name)
 
         detector_name = name + ".detector1"
-        detector = FockDetector(detector_name, timeline, efficiency=0.5)
+        detector = FockDetector(detector_name, timeline, efficiency=0.25)
         self.add_component(detector)
         self.set_first_component(detector_name)
 
         detector_name2 = name + ".detector2"
-        detector2 = FockDetector(detector_name2, timeline, efficiency=0.5)
+        detector2 = FockDetector(detector_name2, timeline, efficiency=0.25)
         self.add_component(detector2)
         self.set_first_component(detector_name2)
 
@@ -134,7 +202,7 @@ if __name__ == "__main__":
     nodoprimo_name = "Nodoo1"
     nodoterzo_name = "Nodoo3"
 
-    src_list = [nodoprimo_name, nodoterzo_name] 
+    src_list = [nodoprimo_name, nodoterzo_name]
 
 
     node2 = EntangleNode("node2", tl, src_list)
@@ -150,12 +218,12 @@ if __name__ == "__main__":
 
     cumulative_time = START_TIME
 
+    # List to store results
     times = []
     detector_photon_counters_real = []
     spd_reals = []
     detector_photon_counters_ideal = [] 
     spd_ideals = []
-    
     total_emitted_photons = NUM_TRIALS  
 
     print(f"--------------------")
@@ -165,12 +233,19 @@ if __name__ == "__main__":
         print(f"Trial {trial}:")
 
         tl.run()
-
         
+        #Node1 and Node3
         transducer = node1.get_components_by_type("Transducer")[0]
         transducer_count = transducer.photon_counter
-        trasmon = node1.get_components_by_type("Trasmon")[0]
-        trasmon_count = trasmon.photon_counter
+        transducer2 = node3.get_components_by_type("Transducer")[0]
+        transducer2_count = transducer2.photon_counter
+        trasmon0 = node1.get_components_by_type("Trasmon")[0]
+        trasmon_count = trasmon0.photon_counter  
+        trasmon = node1.get_components_by_type("Trasmon")[1]
+        trasmon_count = trasmon.photon_counter  
+
+
+        #Node2
         fock_beam_splitter = node2.get_components_by_type("FockBeamSplitter")[0]
         fock_beam_splitter_count = fock_beam_splitter.photon_counter
         detector1 = node2.get_components_by_type("FockDetector")[0]
@@ -181,12 +256,24 @@ if __name__ == "__main__":
         detector2_count2 = detector2.photon_counter2
 
 
-        process1 = Process(node1.upconversionentangle_protocol, "start", [Photon]) 
-        event_time1 = cumulative_time + ENTANGLEMENT_GENERATION_DURATION 
+
+        #Process scheduling
+
+        process0 = Process(node1.emitting_protocol, "start", [])
+        event_time0 = (cumulative_time+EMISSION_DURATION) 
+        event0 = Event(event_time0, process0)
+        tl.schedule(event0)
+
+        process2 = Process(node3.emitting_protocol, "start", []) 
+        event2 = Event(event_time0, process2)
+        tl.schedule(event2)
+
+        process1 = Process(node1.upconversion_protocol, "start", [Photon]) 
+        event_time1 = event_time0 + ENTANGLEMENT_GENERATION_DURATION
         event1 = Event(event_time1, process1)
         tl.schedule(event1)
 
-        process3 = Process(node3.upconversionentangle_protocol, "start", [Photon]) 
+        process3 = Process(node3.upconversion_protocol, "start", [Photon]) 
         event3 = Event(event_time1, process3)
         tl.schedule(event3)
 
@@ -200,35 +287,34 @@ if __name__ == "__main__":
         event5 = Event(event_time5, process5)
         tl.schedule(event5)
 
-        print(f"Photon count in FockBeamSplitter: {fock_beam_splitter_count}")
-        print(f"Photon count in detector1 REALE: {detector1_count}")
-        print(f"Photon count in detector2 REALE: {detector2_count}")
-        
-     
         detector_photon_counter_real = node2.measure_protocol.get_detector_photon_counter_real()
         spd_real = node2.measure_protocol.get_spd_real()
         detector_photon_counter_ideal =node2.measure_protocol.get_detector_photon_counter_ideal()
         spd_ideal = node2.measure_protocol.get_spd_ideal()
 
+        print(f"CUMULATIVE: Detector photon counter with IDEAL (cumulative): {detector_photon_counter_ideal}")
+        print(f"CUMULATIVE: SPD IDEAL: {spd_ideal}")
 
-        print(f"Detector photon counter with eta NOT 1 (cumulative): {detector_photon_counter_real}")
-        print(f"SPD with eta NOT 1 (cumulative): {spd_real}")
+        print(f"CUMILATIVE Detector photon counter REAL : {detector_photon_counter_real}")
+        print(f"CUMULATIVE SPD with eta NOT 1 REAL: {spd_real}")
 
-        print(f"Detector photon counter with IDEAL (cumulative): {detector_photon_counter_ideal}")
-        print(f"SPD IDEAL (cumulative): {spd_ideal}")
+        
 
         # Append results
-        times.append(trial * PERIOD)  # Time for each trial
+        times.append(trial * PERIOD)  #Time for each trial
         detector_photon_counters_real.append(detector_photon_counter_real)
         spd_reals.append(spd_real)
         detector_photon_counters_ideal.append(detector_photon_counter_ideal)
         spd_ideals.append(spd_ideal)
 
 
-        # Time and counters Reset 
+        # Reset timeline
         tl.time = 0
         tl.init()
 
+        # Reset counters
+        transducer.photon_counter=0
+        transducer2.photon_counter=0
         fock_beam_splitter.photon_counter = 0
         detector1.photon_counter = 0
         detector2.photon_counter = 0
@@ -236,21 +322,24 @@ if __name__ == "__main__":
         detector2.photon_counter2 = 0
 
         cumulative_time += PERIOD
+
+    # Calculate and print the percentage of ideal detector counters
     percentage_detector_counters_ideal = (detector_photon_counter_ideal / total_emitted_photons) * 100
-    print(f"Percentage of Entangled pairs generated: {percentage_detector_counters_ideal:.2f}%")
+    print(f"Percentage of Entangled pairs generated (PHOTON COUNTER IDEAL): {percentage_detector_counters_ideal:.2f}%")
     
     percentage_spd_ideal= (spd_ideal / total_emitted_photons) * 100
-    print(f"Percentage of Entangled detected by SPD: {percentage_spd_ideal:.2f}%")
+    print(f"Percentage of Entangled detected by SPD IDEAL: {percentage_spd_ideal:.2f}%")
 
-    percentage_detector_counters_real = (detector_photon_counter_ideal / total_emitted_photons) * 100
-    print(f"Percentage of Entangled pairs generated: {percentage_detector_counters_real:.2f}%")
+
+    percentage_detector_counters_real = (detector_photon_counter_real / total_emitted_photons) * 100
+    print(f"Percentage of Entangled pairs detected by photon counter real: {percentage_detector_counters_real:.2f}%")
     
     percentage_spd_real= (spd_real / total_emitted_photons) * 100
-    print(f"Percentage of Entangled detected by SPD: {percentage_spd_real:.2f}%")
+    print(f"Percentage of Entangled detected by SPD real: {percentage_spd_real:.2f}%")
 
 
-    ratio_spd_detector_photon_counter_ideal = (detector_photon_counter_ideal/spd_ideal) * 100
-    print(f"SPD/detector_counter: {ratio_spd_detector_photon_counter_ideal:.2f}%")
+    #ratio_spd_detector_photon_counter_ideal = (detector_photon_counter_ideal/spd_ideal) * 100
+    #print(f"Ratio SPD/detector_counter IDEAL: {ratio_spd_detector_photon_counter_ideal:.2f}%")
 
     
 #Plot
@@ -258,43 +347,25 @@ if __name__ == "__main__":
 color_blu = '#0047AB'
 color_red = '#FF0000'
 
-plt.figure(figsize=(12, 6))
-plt.plot(times, detector_photon_counters_ideal, 'o-', color=color_blu)
-plt.xlabel('Time (ps)', fontsize=14)
-plt.ylabel('Detector Photon Counters Ideal', fontsize=14)
-plt.legend()
-plt.grid(True)
-plt.title('Detector Photon Counters Ideal Over Time', fontsize=16, fontweight='bold')
-plt.show()
-
 
 plt.figure(figsize=(12, 6))
-plt.plot(times, spd_ideals, 'o-', color=color_blu)
-plt.xlabel('Time (ps)', fontsize=14)
-plt.ylabel('SPD Real', fontsize=14)
-plt.legend()
+plt.plot(times, detector_photon_counters_real, 'o-', color='#FF00FF', label='Detector Photon Counter Real')
+plt.plot(times, detector_photon_counters_ideal, 'o-', color='darkblue', label='Detector Photon Counter Ideal')
+plt.xlabel(r"Time ($\mu$s)", fontsize=24)
+plt.ylabel('Detector Photon Counters', fontsize=24)
+plt.legend(fontsize=24)
 plt.grid(True)
-plt.title('SPD Real Over Time', fontsize=16, fontweight='bold')
+plt.title('Ideal vs Real Detector Photon Counters Count Over Time', fontsize=24, fontweight='bold')
 plt.show()
 
 plt.figure(figsize=(12, 6))
-plt.plot(times, detector_photon_counters_real, 'o-', color=color_red, label='Detector Photon Counter Real')
-plt.plot(times, detector_photon_counters_ideal, 'o-', color=color_blu, label='Detector Photon Counter Ideal')
-plt.xlabel('Time (ps)', fontsize=14)
-plt.ylabel('Detector Photon Counters', fontsize=14)
-plt.legend(fontsize=12)
+plt.plot(times, spd_reals, 'o-', color='#FF00FF', label='SPD Real')
+plt.plot(times, spd_ideals, 'o-', color='darkblue', label='SPD Ideal')
+plt.xlabel(r"Time ($\mu$s)", fontsize=24)
+plt.ylabel('SPD Values', fontsize=24)
+plt.legend(fontsize=24)
 plt.grid(True)
-plt.title('Ideal vs Real Detector Photon Counters Over Time', fontsize=16, fontweight='bold')
-plt.show()
-
-plt.figure(figsize=(12, 6))
-plt.plot(times, spd_reals, 'o-', color=color_red, label='SPD Real')
-plt.plot(times, spd_ideals, 'o-', color=color_blu, label='SPD Ideal')
-plt.xlabel('Time (ps)', fontsize=14)
-plt.ylabel('SPD Values', fontsize=14)
-plt.legend(fontsize=12)
-plt.grid(True)
-plt.title('Ideal vs Real SPD Values Over Time', fontsize=16, fontweight='bold')
+plt.title('Ideal vs Real SPD Count Over Time', fontsize=24, fontweight='bold')
 plt.show()
 
 
