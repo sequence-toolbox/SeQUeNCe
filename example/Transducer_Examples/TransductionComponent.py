@@ -34,11 +34,11 @@ class Counter:
 
 
 
-class Trasmon(Entity):
+class Transmon(Entity):
 
     """Class modeling a transmon qubit.
 
-    The Trasmon class can be configured to emit microwave photons.
+    The Transmon class can be configured to emit microwave photons.
 
     """
 
@@ -109,7 +109,7 @@ class Transducer(Entity):
         for i in outputs:
             self.add_receiver(i)
     
-    def receive_photon_from_trasmon(self, photon: "Photon") -> None:
+    def receive_photon_from_transmon(self, photon: "Photon") -> None:
         self.photon_counter += 1 
 
     def receive_photon_from_channel(self, photon: "Photon") -> None:

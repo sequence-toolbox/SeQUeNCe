@@ -15,7 +15,7 @@ import sequence.utils.log as log
 import matplotlib.pyplot as plt
 from example.Transducer_Examples.TransductionComponent import Transducer
 from example.Transducer_Examples.TransductionComponent import FockDetector
-from example.Transducer_Examples.TransductionComponent import Trasmon
+from example.Transducer_Examples.TransductionComponent import Transmon
 from example.Transducer_Examples.TransductionComponent import Counter
 from example.Transducer_Examples.TransductionComponent import FockBeamSplitter
 

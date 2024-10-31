@@ -19,7 +19,7 @@ import sequence.utils.log as log
 import matplotlib.pyplot as plt
 from example.Transducer_Examples.TransductionComponent import Transducer
 from example.Transducer_Examples.TransductionComponent import FockDetector
-from example.Transducer_Examples.TransductionComponent import Trasmon
+from example.Transducer_Examples.TransductionComponent import Transmon
 from example.Transducer_Examples.TransductionComponent import Counter
 from sequence.components.detector import Detector
 from sequence.components.photon import Photon   
@@ -47,32 +47,32 @@ def get_conversion_matrix(efficiency: float) -> Qobj:
 
 class EmittingProtocol(Protocol):
 
-    "Protocol for emission of single microwave photon by trasmon"
+    "Protocol for emission of single microwave photon by transmon"
 
-    def __init__(self, own: "Node", name: str, tl: "Timeline", trasmon="Trasmon", transducer="Transducer"):
+    def __init__(self, own: "Node", name: str, tl: "Timeline", transmon="Transmon", transducer="Transducer"):
         super().__init__(own, name)
         self.owner = own
         self.name = name
         self.tl = tl
-        self.trasmon = trasmon
+        self.transmon = transmon
         self.transducer = transducer
 
 
     def start(self) -> None:
 
-        self.trasmon.get()
+        self.transmon.get()
 
-        if self.trasmon.photons_quantum_state[0] == ket1:
-            if random.random() < self.trasmon.efficiency:
-                self.trasmon._receivers[0].receive_photon_from_trasmon(self.trasmon.new_photon0) 
-                self.trasmon.photon_counter += 1 
+        if self.transmon.photons_quantum_state[0] == ket1:
+            if random.random() < self.transmon.efficiency:
+                self.transmon._receivers[0].receive_photon_from_transmon(self.transmon.new_photon0) 
+                self.transmon.photon_counter += 1 
             else:
                 pass
             
         else:
-                print("The trasmon is in the state 00, or 01, it doesn't emit microwave photons")
+                print("The transmon is in the state 00, or 01, it doesn't emit microwave photons")
         
-        print(f"Microwave photons emitted by the Trasmon at Tx: {self.trasmon.photon_counter}")
+        print(f"Microwave photons emitted by the Transmon at Tx: {self.transmon.photon_counter}")
 
 
 
@@ -85,13 +85,13 @@ class UpConversionProtocol(Protocol):
 
     "Protocol for Up-conversion of an input microwave photon into an output optical photon"
 
-    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", node: "Node", trasmon: "Trasmon"):
+    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", node: "Node", transmon: "Transmon"):
         super().__init__(own, name)
         self.owner = own
         self.name = name
         self.tl = tl
         self.transducer = transducer
-        self.trasmon = trasmon
+        self.transmon = transmon
         self.node = node
 
     def start(self, photon: "Photon") -> None:
@@ -100,8 +100,8 @@ class UpConversionProtocol(Protocol):
         if self.transducer.photon_counter > 0:
             custom_gate = get_conversion_matrix(self.transducer.efficiency)
 
-            trasmon_state_vector = np.array(self.trasmon.input_quantum_state).reshape((4, 1))
-            photon_state = Qobj(trasmon_state_vector, dims=[[4], [1]])
+            transmon_state_vector = np.array(self.transmon.input_quantum_state).reshape((4, 1))
+            photon_state = Qobj(transmon_state_vector, dims=[[4], [1]])
 
             new_photon_state = custom_gate * photon_state
             self.transducer.quantum_state = new_photon_state.full().flatten()
@@ -130,7 +130,7 @@ class DownConversionProtocol(Protocol):
 
     "Protocol for Down-conversion of an input optical photon into an output microwave photon"
 
-    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", trasmon: "Trasmon"):
+    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", transmon: "Transmon"):
         super().__init__(own, name)
         self.owner = own
         self.name = name

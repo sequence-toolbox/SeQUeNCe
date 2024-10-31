@@ -39,11 +39,11 @@ EMISSION_DURATION = 10 # ps
 CONVERSION_DURATION = 10 # ps
 PERIOD = EMISSION_DURATION + CONVERSION_DURATION + CONVERSION_DURATION
 
-#Trasmon
+#Transmon
 ket1 = (0.0 + 0.0j, 1.0 + 0.0j) 
 ket0 = (1.0 + 0.0j, 0.0 + 0.0j) 
 state_list= [ket1, ket0] 
-TRASMON_EFFICIENCY = 1
+TRANSMON_EFFICIENCY = 1
 
 # Transducer
 EFFICIENCY_UP = 0.5
@@ -74,10 +74,10 @@ class SenderNode(Node):
 
         #Hardware setup
 
-        self.trasmon_name = name + ".trasmon"
-        trasmon = Trasmon(name=self.trasmon_name, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=TRASMON_EFFICIENCY, photons_quantum_state= state_list)
-        self.add_component(trasmon)
-        self.set_first_component(self.trasmon_name)
+        self.transmon_name = name + ".transmon"
+        transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=TRANSMON_EFFICIENCY, photons_quantum_state= state_list)
+        self.add_component(transmon)
+        self.set_first_component(self.transmon_name)
 
 
         self.transducer_name = name + ".transducer"
@@ -90,7 +90,7 @@ class SenderNode(Node):
         self.set_first_component(self.transducer_name)
 
 
-        trasmon.add_receiver(transducer)
+        transmon.add_receiver(transducer)
 
 
         detector_name = name + ".fockdetector1"
@@ -102,8 +102,8 @@ class SenderNode(Node):
 
         transducer.add_output([node2, detector])
 
-        self.emitting_protocol = EmittingProtocol(self, name + ".emitting_protocol", timeline, trasmon, transducer)
-        self.upconversion_protocol = UpConversionProtocol(self, name + ".upconversion_protocol", timeline, transducer, node2, trasmon)
+        self.emitting_protocol = EmittingProtocol(self, name + ".emitting_protocol", timeline, transmon, transducer)
+        self.upconversion_protocol = UpConversionProtocol(self, name + ".upconversion_protocol", timeline, transducer, node2, transmon)
 
 
 
@@ -127,15 +127,15 @@ class ReceiverNode(Node):
         self.counter2 = Counter()
         detector2.attach(self.counter2)
 
-        self.trasmon_name2 = name + ".trasmon2"
-        trasmon2 = Trasmon(name=self.trasmon_name2, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photons_quantum_state= state_list, photon_counter=0, efficiency=1)
-        self.add_component(trasmon2)
-        self.set_first_component(self.trasmon_name2)
+        self.transmon_name2 = name + ".transmon2"
+        transmon2 = Transmon(name=self.transmon_name2, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photons_quantum_state= state_list, photon_counter=0, efficiency=1)
+        self.add_component(transmon2)
+        self.set_first_component(self.transmon_name2)
         
-        transducer2.add_output([trasmon2,detector2])
+        transducer2.add_output([transmon2,detector2])
         print(f"Transducer2 output: {transducer2._receivers}")
 
-        self.downconversion_protocol = DownConversionProtocol(self, name + ".downconversion_protocol", timeline, transducer2, trasmon2)
+        self.downconversion_protocol = DownConversionProtocol(self, name + ".downconversion_protocol", timeline, transducer2, transmon2)
 
     def receive_photon(self, src, photon):
         self.components[self.transducer2_name].receive_photon_from_channel(photon)
@@ -192,8 +192,8 @@ if __name__ == "__main__":
 
 
         #Node1
-        trasmon = node1.get_components_by_type("Trasmon")[0]
-        trasmon_count = trasmon.photon_counter
+        transmon = node1.get_components_by_type("Transmon")[0]
+        transmon_count = transmon.photon_counter
         transducer = node1.get_components_by_type("Transducer")[0]
         transducer_count = transducer.photon_counter
         detector = node1.get_components_by_type("FockDetector")[0]
@@ -201,8 +201,8 @@ if __name__ == "__main__":
 
         #Node2
         transducer2 = node2.get_components_by_type("Transducer")[0]
-        trasmon2 = node2.get_components_by_type("Trasmon")[0]
-        trasmon2_count = trasmon2.photon_counter
+        transmon2 = node2.get_components_by_type("Transmon")[0]
+        transmon2_count = transmon2.photon_counter
         detector2 = node2.get_components_by_type("FockDetector")[0]
         detector2_count = detector2.photon_counter
 
@@ -223,15 +223,15 @@ if __name__ == "__main__":
         
         failed_up_conversions.append(detector_count)
         failed_down_conversions.append(detector2_count)
-        successful_conversions.append(trasmon2_count)
+        successful_conversions.append(transmon2_count)
 
-        print(f"Number of photons converted at time {tl.time}: {trasmon2_count}") 
+        print(f"Number of photons converted at time {tl.time}: {transmon2_count}") 
         
         #reset timeline
         tl.time = 0
         tl.init()
 
-        total_photons_successful += trasmon2_count
+        total_photons_successful += transmon2_count
         total_transducer_count += transducer_count
         cumulative_time += PERIOD
 
@@ -240,12 +240,15 @@ if __name__ == "__main__":
         converted_photons.append(total_photons_successful)
         
         #Reset counters
-        trasmon.photon_counter = 0 
-        trasmon2.photon_counter = 0 
+        transmon.photon_counter = 0 
+        transmon2.photon_counter = 0 
         transducer.photon_counter = 0
         detector.photon_counter = 0
         detector2.photon_counter = 0
         transducer2.photon_counter = 0
+
+
+        
 
 
     #RESULTS
@@ -258,7 +261,7 @@ if __name__ == "__main__":
     print(f"Total number of photons EMITTED: {total_transducer_count}")
     
     conversion_percentage = (total_photons_successful / total_photons_to_be_converted) * 100 if total_photons_to_be_converted > 0 else 0
-    print(f"Conversion efficiency of DQT protocol with no-idealities of trasmon: {conversion_percentage:.2f}%")
+    print(f"Conversion efficiency of DQT protocol with no-idealities of transmon: {conversion_percentage:.2f}%")
 
     conversion_percentage_2 = (total_photons_successful / total_transducer_count) * 100 if total_photons_to_be_converted > 0 else 0
     print(f"Conversion efficiency of DQT protocol: {conversion_percentage_2:.2f}%")
@@ -296,21 +299,64 @@ for i in range(NUM_TRIALS):
     if successful_conversions[i] != 0:
         results_matrix[i, 2] = 1  # Successful
 
-plt.figure(figsize=(10, 6))
 
+
+plt.figure(figsize=(12, 2))  # Imposta l'altezza molto ridotta per creare una striscia sottile
+
+# Generazione delle barre per ciascun tipo di conversione
 plt.bar(time_points, results_matrix[:, 0], color='#ED213C', label='Failed Up', alpha=0.7, width=PERIOD * 0.8)
 plt.bar(time_points, results_matrix[:, 1], color='blue', label='Failed Down', alpha=0.7, bottom=results_matrix[:, 0], width=PERIOD * 0.8)
 plt.bar(time_points, results_matrix[:, 2], color='#119B70', label='Successful', alpha=0.7, bottom=results_matrix[:, 0] + results_matrix[:, 1], width=PERIOD * 0.8)
 
-plt.ylabel('Conversions', fontsize=24)
-plt.xlabel(r"Time ($\mu$s)", fontsize=24)  
-plt.title('Conversions Over Time', fontsize=25, fontweight='bold')
-plt.ylim(0, 1)
-plt.yticks([]) 
-plt.legend(fontsize=24)
+# Riduzione degli elementi visivi per ottimizzare l’aspetto della striscia
+plt.ylabel('')  # Rimuove l'etichetta dell'asse y
+plt.xlabel(r"Time ($\mu$s)", fontsize=24)  # Riduce la dimensione del font
+plt.ylim(0, 1)  # Mantiene l'altezza fissa
+plt.yticks([])  # Rimuove i tick sull'asse y
+plt.xticks(np.arange(0, max(time_points) + 1, step=200), fontsize=12)  
+plt.legend(fontsize=10, loc='upper left', ncol=3)  # Piccola leggenda sopra la striscia
 plt.grid(axis='y', alpha=0.3)
+plt.tight_layout()
+plt.show()
 
-plt.xticks(np.arange(0, max(time_points) + 1, step=200), fontsize=24)  
-plt.yticks(fontsize=24)  
-plt.tight_layout()  
+
+
+
+
+
+# Creazione della matrice dei risultati per la seconda barra
+results_matrix = np.zeros((NUM_TRIALS, 3))
+for i in range(NUM_TRIALS):
+    if failed_up_conversions[i] != 0:
+        results_matrix[i, 0] = 1  # Fallimenti Up
+    if failed_down_conversions[i] != 0:
+        results_matrix[i, 1] = 1  # Fallimenti Down
+    if successful_conversions[i] != 0:
+        results_matrix[i, 2] = 1  # Successi
+
+# Creazione della figura e dei due subplot
+fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(12, 8), gridspec_kw={'height_ratios': [4, 1]})
+
+# Primo grafico: Fotoni emessi e convertiti
+ax1.plot(time_points, ideal_photons, 'o-', label="Ideal Successfully Converted Photons", color='darkblue')
+ax1.plot(time_points, converted_photons, 'o-', label="Successfully Converted Photons", color='#FF00FF')
+ax1.set_ylabel("Photon Number", fontsize=24)
+ax1.set_title("Photon Conversion over Time", fontsize=24, fontweight='bold')
+ax1.legend(fontsize=24, loc='upper left')
+ax1.grid(True)
+ax1.tick_params(axis='both', labelsize=18)
+
+# Secondo grafico: Conversioni fallite e riuscite come barra sottile
+ax2.bar(time_points, results_matrix[:, 0], color='#ED213C', label='Failed Up', alpha=0.7, width=PERIOD * 0.8)
+ax2.bar(time_points, results_matrix[:, 1], color='blue', label='Failed Down', alpha=0.7, bottom=results_matrix[:, 0], width=PERIOD * 0.8)
+ax2.bar(time_points, results_matrix[:, 2], color='#119B70', label='Successful', alpha=0.7, bottom=results_matrix[:, 0] + results_matrix[:, 1], width=PERIOD * 0.8)
+ax2.set_xlabel(r"Time ($\mu$s)", fontsize=24)
+ax2.legend(fontsize=18, loc='upper left')
+ax2.tick_params(axis='both', labelsize=12)
+ax2.yaxis.set_visible(False)  # Nasconde completamente l'asse y
+ax2.legend(fontsize=12, loc='upper left')
+ax2.tick_params(axis='both', labelsize=12)
+
+# Mostra il grafico finale
+plt.tight_layout()
 plt.show()

@@ -18,7 +18,7 @@ import sequence.utils.log as log
 import matplotlib.pyplot as plt
 from example.Transducer_Examples.TransductionComponent import Transducer
 from example.Transducer_Examples.TransductionComponent import FockDetector
-from example.Transducer_Examples.TransductionComponent import Trasmon
+from example.Transducer_Examples.TransductionComponent import Transmon
 from example.Transducer_Examples.TransductionComponent import Counter
 from example.Transducer_Examples.TransductionComponent import FockBeamSplitter
 
@@ -47,11 +47,11 @@ SWAPPING_DUARTION = 10 # ps
 MEASURE_DURATION = 10 # ps
 PERIOD = ENTANGLEMENT_GENERATION_DURATION + SWAPPING_DUARTION + MEASURE_DURATION + EMISSION_DURATION
 
-#Trasmon
+#Transmon
 ket1 = (0.0 + 0.0j, 1.0 + 0.0j) 
 ket0 = (1.0 + 0.0j, 0.0 + 0.0j) 
 state_list= [ket1, ket0] 
-TRASMON_EFFICIENCY = 1
+TRANSMON_EFFICIENCY = 1
 
 
 # Transducer
@@ -71,14 +71,14 @@ DISTANCE = 1e3
 
 class EmittingProtocol(Protocol):
 
-    "Protocol for emission of single microwave photon by trasmon"
+    "Protocol for emission of single microwave photon by transmon"
 
-    def __init__(self, own: "Node", name: str, tl: "Timeline", trasmon="Trasmon", transducer="Transducer"):
+    def __init__(self, own: "Node", name: str, tl: "Timeline", transmon="Transmon", transducer="Transducer"):
         super().__init__(own, name)
         self.owner = own
         self.name = name
         self.tl = tl
-        self.trasmon = trasmon
+        self.transmon = transmon
         self.transducer = transducer
 
 
@@ -86,7 +86,7 @@ class EmittingProtocol(Protocol):
 
         self.transducer.photon_counter += 1 
             
-        print(f"Microwave photons emitted by the Trasmon at Tx: {self.transducer.photon_counter}")
+        print(f"Microwave photons emitted by the Transmon at Tx: {self.transducer.photon_counter}")
 
 
     def received_message(self, src: str, msg):
@@ -96,13 +96,13 @@ class EmittingProtocol(Protocol):
 
 
 class UpConversionProtocol(Protocol):
-    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", node: "Node", trasmon: "Trasmon"):
+    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", node: "Node", transmon: "Transmon"):
         super().__init__(own, name)
         self.owner = own
         self.name = name
         self.tl = tl
         self.transducer = transducer
-        self.trasmon = trasmon
+        self.transmon = transmon
         self.node = node
 
 
@@ -133,10 +133,10 @@ class SenderNode(Node):
     def __init__(self, name, timeline, node2):
         super().__init__(name, timeline)
 
-        self.trasmon0_name = name + ".trasmon0"
-        trasmon0 = Trasmon(name=self.trasmon0_name, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=1, photons_quantum_state= state_list)
-        self.add_component(trasmon0)
-        self.set_first_component(self.trasmon0_name)
+        self.transmon0_name = name + ".transmon0"
+        transmon0 = Transmon(name=self.transmon0_name, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=1, photons_quantum_state= state_list)
+        self.add_component(transmon0)
+        self.set_first_component(self.transmon0_name)
 
         self.transducer_name = name + ".transducer"
         transducer = Transducer(name=self.transducer_name, owner=self, timeline=timeline, efficiency=EFFICIENCY_UP)
@@ -147,17 +147,17 @@ class SenderNode(Node):
         transducer.attach(self.counter)
         self.set_first_component(self.transducer_name)
 
-        trasmon0.add_receiver(transducer)
+        transmon0.add_receiver(transducer)
 
-        self.trasmon_name = name + ".trasmon"
-        trasmon = Trasmon(name=self.trasmon_name, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=1, photons_quantum_state= state_list)
-        self.add_component(trasmon)
-        self.set_first_component(self.trasmon_name)
+        self.transmon_name = name + ".transmon"
+        transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=1, photons_quantum_state= state_list)
+        self.add_component(transmon)
+        self.set_first_component(self.transmon_name)
 
-        transducer.add_output([node2, trasmon])
+        transducer.add_output([node2, transmon])
 
-        self.emitting_protocol = EmittingProtocol(self, name + ".emitting_protocol", timeline, trasmon0, transducer)
-        self.upconversion_protocol = UpConversionProtocol(self, name + ".upconversion_protocol", timeline, transducer, node2, trasmon)
+        self.emitting_protocol = EmittingProtocol(self, name + ".emitting_protocol", timeline, transmon0, transducer)
+        self.upconversion_protocol = UpConversionProtocol(self, name + ".upconversion_protocol", timeline, transducer, node2, transmon)
 
 
 class EntangleNode(Node):
@@ -239,10 +239,10 @@ if __name__ == "__main__":
         transducer_count = transducer.photon_counter
         transducer2 = node3.get_components_by_type("Transducer")[0]
         transducer2_count = transducer2.photon_counter
-        trasmon0 = node1.get_components_by_type("Trasmon")[0]
-        trasmon_count = trasmon0.photon_counter  
-        trasmon = node1.get_components_by_type("Trasmon")[1]
-        trasmon_count = trasmon.photon_counter  
+        transmon0 = node1.get_components_by_type("Transmon")[0]
+        transmon_count = transmon0.photon_counter  
+        transmon = node1.get_components_by_type("Transmon")[1]
+        transmon_count = transmon.photon_counter  
 
 
         #Node2
