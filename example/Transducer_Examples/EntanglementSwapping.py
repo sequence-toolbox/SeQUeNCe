@@ -106,11 +106,7 @@ class UpConversionProtocol(Protocol):
         self.node = node
 
 
-    def start(self, photon: "Photon") -> None:
-        
-
-        #print(f"Trasduduttore receiver[0] {self.transducer._receivers[0]}")
-        #print(f"Transduttore receiver[1] {self.transducer._receivers[1]}")  
+    def start(self, photon: "Photon") -> None:  
 
         if self.transducer.photon_counter > 0:
 
