@@ -275,69 +275,18 @@ if __name__ == "__main__":
 
 
 
-plt.plot(time_points, ideal_photons, 'o-', label="Ideal Successfully Converted Photons", color='darkblue')  # Verde smeraldo
-plt.plot(time_points, converted_photons, 'o-g', label="Successfully Converted Photons", color='#FF00FF')  # Blu dodger
-plt.xlabel(r"Time ($\mu$s)", fontsize=24)
-plt.ylabel("Photon Number", fontsize=24)
-plt.title("Photon Conversion over Time", fontsize=24, fontweight='bold')
-plt.legend(fontsize=24, loc='upper left')
-plt.grid(True) 
 
-plt.xticks(fontsize=18)  
-plt.yticks(fontsize=18) 
-
-plt.show()
-
-
-results_matrix = np.zeros((NUM_TRIALS, 3))
-
-for i in range(NUM_TRIALS):
-    if failed_up_conversions[i] != 0:
-        results_matrix[i, 0] = 1  # Failed Up
-    if failed_down_conversions[i] != 0:
-        results_matrix[i, 1] = 1  # Failed Down
-    if successful_conversions[i] != 0:
-        results_matrix[i, 2] = 1  # Successful
-
-
-
-plt.figure(figsize=(12, 2))  # Imposta l'altezza molto ridotta per creare una striscia sottile
-
-# Generazione delle barre per ciascun tipo di conversione
-plt.bar(time_points, results_matrix[:, 0], color='#ED213C', label='Failed Up', alpha=0.7, width=PERIOD * 0.8)
-plt.bar(time_points, results_matrix[:, 1], color='blue', label='Failed Down', alpha=0.7, bottom=results_matrix[:, 0], width=PERIOD * 0.8)
-plt.bar(time_points, results_matrix[:, 2], color='#119B70', label='Successful', alpha=0.7, bottom=results_matrix[:, 0] + results_matrix[:, 1], width=PERIOD * 0.8)
-
-# Riduzione degli elementi visivi per ottimizzare l’aspetto della striscia
-plt.ylabel('')  # Rimuove l'etichetta dell'asse y
-plt.xlabel(r"Time ($\mu$s)", fontsize=24)  # Riduce la dimensione del font
-plt.ylim(0, 1)  # Mantiene l'altezza fissa
-plt.yticks([])  # Rimuove i tick sull'asse y
-plt.xticks(np.arange(0, max(time_points) + 1, step=200), fontsize=12)  
-plt.legend(fontsize=10, loc='upper left', ncol=3)  # Piccola leggenda sopra la striscia
-plt.grid(axis='y', alpha=0.3)
-plt.tight_layout()
-plt.show()
-
-
-
-
-
-
-# Creazione della matrice dei risultati per la seconda barra
 results_matrix = np.zeros((NUM_TRIALS, 3))
 for i in range(NUM_TRIALS):
     if failed_up_conversions[i] != 0:
-        results_matrix[i, 0] = 1  # Fallimenti Up
+        results_matrix[i, 0] = 1  
     if failed_down_conversions[i] != 0:
-        results_matrix[i, 1] = 1  # Fallimenti Down
+        results_matrix[i, 1] = 1  
     if successful_conversions[i] != 0:
-        results_matrix[i, 2] = 1  # Successi
+        results_matrix[i, 2] = 1  
 
-# Creazione della figura e dei due subplot
 fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(12, 8), gridspec_kw={'height_ratios': [4, 1]})
 
-# Primo grafico: Fotoni emessi e convertiti
 ax1.plot(time_points, ideal_photons, 'o-', label="Ideal Successfully Converted Photons", color='darkblue')
 ax1.plot(time_points, converted_photons, 'o-', label="Successfully Converted Photons", color='#FF00FF')
 ax1.set_ylabel("Photon Number", fontsize=24)
@@ -346,17 +295,15 @@ ax1.legend(fontsize=24, loc='upper left')
 ax1.grid(True)
 ax1.tick_params(axis='both', labelsize=18)
 
-# Secondo grafico: Conversioni fallite e riuscite come barra sottile
 ax2.bar(time_points, results_matrix[:, 0], color='#ED213C', label='Failed Up', alpha=0.7, width=PERIOD * 0.8)
 ax2.bar(time_points, results_matrix[:, 1], color='blue', label='Failed Down', alpha=0.7, bottom=results_matrix[:, 0], width=PERIOD * 0.8)
 ax2.bar(time_points, results_matrix[:, 2], color='#119B70', label='Successful', alpha=0.7, bottom=results_matrix[:, 0] + results_matrix[:, 1], width=PERIOD * 0.8)
 ax2.set_xlabel(r"Time ($\mu$s)", fontsize=24)
 ax2.legend(fontsize=18, loc='upper left')
 ax2.tick_params(axis='both', labelsize=12)
-ax2.yaxis.set_visible(False)  # Nasconde completamente l'asse y
+ax2.yaxis.set_visible(False)  
 ax2.legend(fontsize=12, loc='upper left')
 ax2.tick_params(axis='both', labelsize=12)
 
-# Mostra il grafico finale
 plt.tight_layout()
 plt.show()
