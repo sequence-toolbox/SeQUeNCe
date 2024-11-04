@@ -43,8 +43,8 @@ MEAN_PHOTON_NUM = 1
 START_TIME = 0
 EMISSION_DURATION = 10 # ps
 ENTANGLEMENT_GENERATION_DURATION = 10 #ps
-SWAPPING_DUARTION = 10 # ps
-MEASURE_DURATION = 10 # ps
+SWAPPING_DUARTION = 1 # ps
+MEASURE_DURATION = 9 # ps
 PERIOD = ENTANGLEMENT_GENERATION_DURATION + SWAPPING_DUARTION + MEASURE_DURATION + EMISSION_DURATION
 
 #Transmon
@@ -344,21 +344,25 @@ color_red = '#FF0000'
 plt.figure(figsize=(12, 6))
 plt.plot(times, detector_photon_counters_real, 'o-', color='#FF00FF', label='PCD Real')
 plt.plot(times, detector_photon_counters_ideal, 'o-', color='darkblue', label='PCD Ideal')
-plt.xlabel(r"Time ($\mu$s)", fontsize=24)
-plt.ylabel('Detector PCD', fontsize=24)
-plt.legend(fontsize=24)
+plt.xlabel(r"Time ($\mu$s)", fontsize=32)
+plt.ylabel('PCD Counts', fontsize=32)
+plt.legend(fontsize=30)
+plt.tick_params(axis='both', which='major', labelsize=28)  
+
 plt.grid(True)
-plt.title('Ideal vs Real Detector PCD Count Over Time', fontsize=24, fontweight='bold')
+plt.title('Ideal vs Real Detector PCD Count Over Time', fontsize=32, fontweight='bold')
 plt.show()
 
 plt.figure(figsize=(12, 6))
 plt.plot(times, spd_reals, 'o-', color='#FF00FF', label='SPD Real')
 plt.plot(times, spd_ideals, 'o-', color='darkblue', label='SPD Ideal')
-plt.xlabel(r"Time ($\mu$s)", fontsize=24)
-plt.ylabel('SPD Values', fontsize=24)
-plt.legend(fontsize=24)
+plt.xlabel(r"Time ($\mu$s)", fontsize=32)
+plt.ylabel('SPD Counts', fontsize=32)
+plt.legend(fontsize=30)
+plt.tick_params(axis='both', which='major', labelsize=28)  
+
 plt.grid(True)
-plt.title('Ideal vs Real SPD Count Over Time', fontsize=24, fontweight='bold')
+plt.title('Ideal vs Real SPD Count Over Time', fontsize=32, fontweight='bold')
 plt.show()
 
 
