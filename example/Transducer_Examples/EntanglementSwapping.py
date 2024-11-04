@@ -55,7 +55,7 @@ TRANSMON_EFFICIENCY = 1
 
 
 # Transducer
-EFFICIENCY_UP = 0.8
+EFFICIENCY_UP = 0.5
 
 # Fock Detector
 MICROWAVE_DETECTOR_EFFICIENCY_Rx = 1
@@ -342,13 +342,13 @@ color_red = '#FF0000'
 
 
 plt.figure(figsize=(12, 6))
-plt.plot(times, detector_photon_counters_real, 'o-', color='#FF00FF', label='Detector Photon Counter Real')
-plt.plot(times, detector_photon_counters_ideal, 'o-', color='darkblue', label='Detector Photon Counter Ideal')
+plt.plot(times, detector_photon_counters_real, 'o-', color='#FF00FF', label='PCD Real')
+plt.plot(times, detector_photon_counters_ideal, 'o-', color='darkblue', label='PCD Ideal')
 plt.xlabel(r"Time ($\mu$s)", fontsize=24)
-plt.ylabel('Detector Photon Counters', fontsize=24)
+plt.ylabel('Detector PCD', fontsize=24)
 plt.legend(fontsize=24)
 plt.grid(True)
-plt.title('Ideal vs Real Detector Photon Counters Count Over Time', fontsize=24, fontweight='bold')
+plt.title('Ideal vs Real Detector PCD Count Over Time', fontsize=24, fontweight='bold')
 plt.show()
 
 plt.figure(figsize=(12, 6))
