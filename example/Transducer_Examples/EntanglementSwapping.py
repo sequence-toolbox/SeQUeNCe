@@ -350,7 +350,7 @@ plt.legend(fontsize=30)
 plt.tick_params(axis='both', which='major', labelsize=28)  
 
 plt.grid(True)
-plt.title('Ideal vs Real Detector PCD Count Over Time', fontsize=32, fontweight='bold')
+plt.title('Ideal vs Real PCD Counts Over Time', fontsize=32, fontweight='bold')
 plt.show()
 
 plt.figure(figsize=(12, 6))
@@ -362,7 +362,7 @@ plt.legend(fontsize=30)
 plt.tick_params(axis='both', which='major', labelsize=28)  
 
 plt.grid(True)
-plt.title('Ideal vs Real SPD Count Over Time', fontsize=32, fontweight='bold')
+plt.title('Ideal vs Real SPD Counts Over Time', fontsize=32, fontweight='bold')
 plt.show()
 
 
