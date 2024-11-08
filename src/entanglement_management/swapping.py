@@ -201,6 +201,8 @@ class EntanglementSwappingA(EntanglementProtocol):
                 keys = [self.left_memo.qstate_key, self.left_memo.qstate_key]
                 self.own.timeline.quantum_manager.set(keys, new_bds)
 
+                meas_res = []
+
             msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,
                                                 self.left_protocol_name,
                                                 fidelity=fidelity,
