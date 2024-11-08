@@ -123,6 +123,20 @@ class QuantumChannel(OpticalChannel):
         self.receiver = receiver
         sender.assign_qchannel(self, receiver)
 
+
+    def _remove_lowest_time_bin(self):
+        if len(self.send_bins) > 0:
+            time = -1
+            while time < self.timeline.now():
+                time_bin = hq.heappop(self.send_bins)
+                time = int(time_bin * (1e12 / self.frequency))
+            assert time == self.timeline.now(), "qc {} transmit method called at invalid time".format(self.name)
+    def send_photon(self, photon, source):
+        future_time = self.timeline.now() + self.delay
+        process = Process(self.receiver, "receive_qubit", [source.name, photon])
+        event = Event(future_time, process)
+        self.timeline.schedule(event)
+
     def transmit(self, qubit: "Photon", source: "Node") -> None:
         """Method to transmit photon-encoded qubits.
 
@@ -140,13 +154,14 @@ class QuantumChannel(OpticalChannel):
         assert self.delay >= 0 and self.loss < 1, "QuantumChannel init() function has not been run for {}".format(self.name)
         assert source == self.sender
 
-        # remove lowest time bin
-        if len(self.send_bins) > 0:
-            time = -1
-            while time < self.timeline.now():
-                time_bin = hq.heappop(self.send_bins)
-                time = int(time_bin * (1e12 / self.frequency))
-            assert time == self.timeline.now(), "qc {} transmit method called at invalid time".format(self.name)
+        self._remove_lowest_time_bin()
+        ######## remove lowest time bin ##################
+        # if len(self.send_bins) > 0:
+        #     time = -1
+        #     while time < self.timeline.now():
+        #         time_bin = hq.heappop(self.send_bins)
+        #         time = int(time_bin * (1e12 / self.frequency))
+        #     assert time == self.timeline.now(), "qc {} transmit method called at invalid time".format(self.name)
 
         # check if photon state using Fock representation
         if qubit.encoding_type["name"] == "fock":
@@ -172,11 +187,12 @@ class QuantumChannel(OpticalChannel):
             if qubit.encoding_type["name"] == "polarization" and self.sender.get_generator().random() > self.polarization_fidelity:
                 qubit.random_noise(self.get_generator())
 
-            # schedule receiving node to receive photon at future time determined by light speed
-            future_time = self.timeline.now() + self.delay
-            process = Process(self.receiver, "receive_qubit", [source.name, qubit])
-            event = Event(future_time, process)
-            self.timeline.schedule(event)
+            self.send_photon(qubit, source)
+            ############# schedule receiving node to receive photon at future time determined by light speed ####################
+            # future_time = self.timeline.now() + self.delay
+            # process = Process(self.receiver, "receive_qubit", [source.name, qubit])
+            # event = Event(future_time, process)
+            # self.timeline.schedule(event)
 
         # if not using Fock representation, if photon lost, exit
         else:

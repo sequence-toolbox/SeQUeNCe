@@ -42,3 +42,13 @@ fock = \
     {"name": "fock",
      "bases": None
      }
+
+polarizationFock = \
+    {"name": "polarizationFock",
+     "bases": None
+     }
+
+polarizationFock_Tensor = \
+    {"name": "polarizationFock_Tensor",
+     "bases": None
+     }

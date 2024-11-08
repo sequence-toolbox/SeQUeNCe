@@ -11,6 +11,9 @@ from math import sqrt
 from numpy import array, kron, identity, zeros, trace, outer, eye
 from scipy.linalg import sqrtm
 
+from scipy import sparse as sp
+create_spare_matrix = lambda data, basis_dim, num_systems: sp.csr_matrix(data, (basis_dim**num_systems, basis_dim**num_systems))
+
 
 a = array([[0, 1], [0, 0]])
 a_dag = array([[0, 0], [1, 0]])
@@ -414,3 +417,182 @@ def density_partial_trace(state: Tuple[Tuple[complex]], indices: Tuple[int], num
     output_dim = (truncation + 1) ** (num_systems - len(indices))
     output_state = temp.reshape((output_dim, output_dim))
     return output_state
+
+
+@lru_cache(maxsize=1000)
+def sparse_measure_state_with_cache_fock_density(state: Tuple[Tuple[complex]], povms: Tuple[Tuple[Tuple[complex]]], sqrt_povms, basis_dim: int) \
+        -> Tuple[List[array], List[float]]:
+    
+    """
+    This function simply takes a single input state and measures it. Its a convenience function and could be done by the multiple/entangled 
+    methods as well. This is simply for better perfromance in the simpler case. 
+
+    Now, based on the previous implementations, we could use the square roots of the POVM operator as the measurement operators. This however,
+    is not a standard practice. POVM ops are generally used when the entire quantum circuit has been executed and the final step of the circuit 
+    is measurement and we do not care about the post measurement state anyways. This also what is done in most analytical descriptions.
+
+    Hence, to maintain backward compatibility, I provide the option to use the sqrt povms case, but I will generally use it to make the 
+    implementation easier to understand and relate with theory. 
+
+    So, in the regular case, we simply take in the POVM ops (which could be anything- regular POVMs for probability estimation or squares of POVMs
+    for variance estimation). Only restriction here is that there is a maximum of one system being measured in the total system which is also the 
+    very system being measured alone. 
+
+    Args:
+        state: the state being measured (this should be (basis_dim,basis_dim) in dimension) (check this)
+        povms: the povms used to measure the state. Again, (basis_dim,basis_dim) in dimension (check this)
+        sqrt_povms: Square root of the povms. Preferably set this to None and use regular measurments.
+        basis_dim: The dimensionality of the hilbert space where the quantum systems live. 
+
+
+    """
+    state = create_spare_matrix(state, basis_dim, 1)
+    povms = [create_spare_matrix(povm, basis_dim, 1) for povm in povms]
+
+    # probabilities of getting different outcomes according to POVM operators
+    prob_list = [(state @ povm).trace().real for povm in povms]
+    state_list = []
+
+    # All of this code is if the sqrt is not None and we are interested in the post-measurement state.
+    if not sqrt_povms == None:
+        sqrt_povms = [create_spare_matrix(povm, basis_dim, 1) for povm in sqrt_povms]
+        for i in range(len(prob_list)):
+            if prob_list[i] <= 0:
+                state_post_meas = None
+            else:
+                measure_op = sqrt_povms[i]
+                state_post_meas = (measure_op @ state @ measure_op) / prob_list[i]
+
+            state_list.append(state_post_meas)
+        
+        return state_list, prob_list
+
+    return None, prob_list
+
+
+@lru_cache(maxsize=1000)
+def sparse_measure_entangled_state_with_cache_fock_density(state: Tuple[Tuple[complex]], key_index: int, len_all_keys: int,
+                                                    povms: Tuple[Tuple[Tuple[complex]]], sqrt_povms=None, basis_dim: int = 4):
+
+    """
+    This is also a convenience function where unlike in '''sparse_measure_state_with_cache_fock_density''', the overall state could have 
+    multiple systems of which we are measuring just one subsystem. See the docstring for '''sparse_measure_state_with_cache_fock_density''' 
+    for a discussion on sqrt_povms which also applies here. 
+
+    Args:
+        state (Tuple[Tuple[complex]]): state to measure
+        key_index (int): index of measured subsystem within state.
+        len_all_keys (int): number of total systems in the state.
+        povms (Tuple[Tuple[Tuple[complex]]]): tuple listing all POVM operators to use for measurement
+        sqrt_povms: Square root of the povms. Preferably set this to None and use regular measurments.
+        basis_dim: The dimensionality of the hilbert space where the quantum systems live. 
+
+    """
+
+
+    state = create_spare_matrix(state, basis_dim, len_all_keys) # The overall state has len_all_keys number of sub-systems. You measure just one of them. 
+    povms = [create_spare_matrix(povm, basis_dim, 1) for povm in povms] # You put 1 there since you are measuring just one state
+
+    # ###### BASICALLY THE _prepare_operator_method FROM THE QUANTUM MANAGER ###############
+    # # generate POVM operators on total Hilbert space.
+    povm_list = []
+    sqrt_povm_list = []
+    left_dim = basis_dim ** key_index
+    right_dim = basis_dim ** (len_all_keys - key_index - 1)
+    # print(basis_dim ** len_all_keys, "left_dim", left_dim, "right_dim", right_dim, "povms[0].shape", povms[0].shape)
+    for i in range(len(povms)):
+        povm_list.append( sp.kron(sp.kron(sp.eye(left_dim), povms[i]), sp.eye(right_dim)) )
+        # sqrt_povm_list.append( sp.kron(sp.kron(sp.eye(left_dim), sqrt_povms[i]), sp.eye(right_dim)) )
+    ########################################################################################
+
+    # (prob = Tr(ρ.M)) list of probabilities of getting different outcomes from POVM.
+    # print("state.shape", state.shape, "povm.shape", povm_list[0].shape)
+    prob_list = [(state @ povm).trace().real for povm in povm_list]
+    state_list = []
+
+    if not sqrt_povms == None:
+        sqrt_povms = [create_spare_matrix(povm, basis_dim, 1) for povm in sqrt_povms]
+
+        for i in range(len(povms)):
+            sqrt_povm_list.append( sp.kron(sp.kron(sp.eye(left_dim), sqrt_povms[i]), sp.eye(right_dim)) )
+
+        for i in range(len(prob_list)):
+            if prob_list[i] <= 0:
+                state_post_meas = None
+            else:
+                measure_op = sqrt_povm_list[i]
+                state_post_meas = (measure_op @ state @ measure_op) / prob_list[i]
+
+            state_list.append(state_post_meas)
+    else:
+        return None, prob_list
+
+    return state_list, prob_list
+
+
+
+@lru_cache(maxsize=1000)
+def sparse_measure_multiple_with_cache_fock_density(state: Tuple[Tuple[complex]], key_indices: Tuple[int], len_all_keys: int,
+                                             povms: Tuple[Tuple[Tuple[complex]]], basis_dim: int) \
+        -> Tuple[List[array], List[float]]:
+
+    """Measure multiple subsystems of a larger composite system.
+
+    Args:
+        state (Tuple[Tuple[complex]]): state to measure.
+        indices (Tuple[int]): indices within combined state to measure.
+        num_systems (int): number of total systems in the state.
+        povms (Tuple[Tuple[Tuple[complex]]]): tuple listing all POVM operators to use for measurement.
+        truncation (int): fock space truncation, 1 for qubit system (default 1).
+
+    Returns:
+        Tuple[List[array], List[float]]: tuple with two sub-lists.
+            The first lists each output state, corresponding with the measurement of each POVM.
+            The second lists the probability for each measurement.
+    """
+
+    state = create_spare_matrix(state, basis_dim, len_all_keys)
+    povms = [create_spare_matrix(povm, basis_dim, len(key_indices)) for povm in povms]
+
+    # judge if elements in `indices` are consecutive
+    init_meas_sys_idx = min(key_indices)
+    fin_meas_sys_idx = max(key_indices)
+    num = len(key_indices)
+    if (fin_meas_sys_idx - init_meas_sys_idx + 1 != num) or (list(key_indices) != sorted(key_indices)):
+        raise ValueError("Indices should be consecutive; got {}".format(key_indices))
+
+    povm_list = []
+    left_dim = basis_dim ** init_meas_sys_idx
+    right_dim = basis_dim ** (len_all_keys - fin_meas_sys_idx - 1)
+    for povm in povms:
+        povm_tot = sp.kron(sp.kron(sp.eye(left_dim), povm), sp.eye(right_dim))
+        povm_list.append(povm_tot)
+
+    # list of probabilities of getting different outcomes from POVM
+    prob_list = [(state @ povm).trace().real for povm in povm_list]
+
+
+    return None, prob_list
+
+
+
+
+@lru_cache(maxsize=1000)
+def sparse_density_partial_trace(state: Tuple[Tuple[complex]], key_indices: Tuple[int], len_all_keys: int, basis_dim: int):
+
+    temp = create_spare_matrix(state, basis_dim, len_all_keys)
+
+    len_keys = len(key_indices)
+    len_left_indices = key_indices[0]
+    len_right_indices = len_all_keys-key_indices[-1]-1
+    
+    left_op = sp.eye(basis_dim**len_left_indices, format = "csr")
+    basis = sp.eye(basis_dim**len_keys, format = "csc")
+    right_op = sp.eye(basis_dim**len_right_indices, format = "csr")
+
+    output_state = 0
+    for i in range(basis_dim**len_keys):
+        op = sp.kron(left_op, basis[:,i])
+        op = sp.kron(op, right_op)
+        output_state += op.transpose() @ temp @ op
+    return sp.csr_matrix(output_state)

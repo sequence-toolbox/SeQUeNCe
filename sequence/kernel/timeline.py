@@ -24,7 +24,13 @@ from .quantum_manager import (QuantumManagerKet,
                               QuantumManagerDensityFock,
                               KET_STATE_FORMALISM,
                               DENSITY_MATRIX_FORMALISM,
-                              FOCK_DENSITY_MATRIX_FORMALISM)
+                              FOCK_DENSITY_MATRIX_FORMALISM,
+                              POLARIZATION_FOCK_FORMALISM,
+                              POLARIZATION_FOCK_TENSOR_FORMALISM)
+
+from ..components.polarizationFock.quantum_manager import QuantumManagerPolarizationFock
+from ..components.polarizationFock_Tensor.quantum_manager import QuantumManagerPolarizationFockTensor
+
 from ..constants import *
 
 
@@ -54,7 +60,7 @@ class Timeline:
         quantum_manager (QuantumManager): quantum state manager.
     """
 
-    def __init__(self, stop_time=inf, formalism=KET_STATE_FORMALISM, truncation=1):
+    def __init__(self, stop_time=inf, formalism=KET_STATE_FORMALISM, truncation=1, **kwargs):
         """Constructor for timeline.
 
         Args:
@@ -77,6 +83,10 @@ class Timeline:
             self.quantum_manager = QuantumManagerDensity()
         elif formalism == FOCK_DENSITY_MATRIX_FORMALISM:
             self.quantum_manager = QuantumManagerDensityFock(truncation=truncation)
+        elif formalism == POLARIZATION_FOCK_FORMALISM:
+            self.quantum_manager = QuantumManagerPolarizationFock(truncation=truncation)
+        elif formalism == POLARIZATION_FOCK_TENSOR_FORMALISM:
+            self.quantum_manager = QuantumManagerPolarizationFockTensor(truncation=truncation, error_tolerance = kwargs["error_tolerance"])
         else:
             raise ValueError(f"Invalid formalism {formalism}")
 

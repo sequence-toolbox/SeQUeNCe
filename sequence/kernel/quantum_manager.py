@@ -27,7 +27,8 @@ from .quantum_utils import *
 KET_STATE_FORMALISM = "ket_vector"
 DENSITY_MATRIX_FORMALISM = "density_matrix"
 FOCK_DENSITY_MATRIX_FORMALISM = "fock_density"
-
+POLARIZATION_FOCK_FORMALISM = "polarization_fock"
+POLARIZATION_FOCK_TENSOR_FORMALISM = "polarization_fock_tensor"
 
 class QuantumManager:
     """Class to track and manage quantum states (abstract).
@@ -489,7 +490,7 @@ class QuantumManagerDensityFock(QuantumManager):
                 all_keys += qstate.keys
 
         # construct compound state
-        new_state = [1]
+        new_state = 1
         for state in old_states:
             new_state = kron(new_state, state)
 
