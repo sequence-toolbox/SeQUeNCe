@@ -6,18 +6,19 @@ Thank you for downloading SeQUeNCe and welcome to the tutorial section of the do
 
 ### Python Version
 
-The simulator requires at least version 3.7 of Python. This can be found at the [Python Website](https://www.python.org/downloads/).
+The simulator requires at least version **3.9** of Python. This can be found at the [Python Website](https://www.python.org/downloads/).
 
 ### Dependencies
 
 The simulator requires the following Python libraries:
+* `qutip`,for quantum circuit management
+* `networkx`, for network topology related operations
 * `numpy`, for mathematical computing tasks
-* `json5` version 0.8.4, for interpretation of json configuration files
+* `scipy`, for linear algebra computing tasks
 * `pandas`, for data processing
 * `matplotlib`, for generating graphics
-* `qutip` version 4.6.0 or later, for quantum circuit management
 
-These will be installed automatically with the simulator if they are not already present. Also note that the `sequence` library found on PyPI cannot be installed, as it will conflict with the simulator library.
+These will be installed automatically with the simulator if they are not already present. 
 
 ## Installation
 
@@ -37,14 +38,20 @@ $ source path-to-venv/bin/activate
 
 The shell prompt should now show the name of the virtual environment.
 
+Using Anaconda/conda to create a virtual environment is also recommended.
+
 ### Install SeQUeNCe
 
-We can now download and install the simulator. The code can be cloned easily using `git`, and installed with the native python installer `pip`:
-
-```shell script
-$ git clone https://github.com/sequence-toolbox/SeQUeNCe.git
-$ cd Sequence-python
-$ pip install .
+You can simply install SeQUeNCe using `pip`:
+```
+pip install sequence
 ```
 
-`pip install` will use the `requirements.txt` file to install necessary dependencies and the `setup.py` file to build the `sequence` library. The simulator is now ready to use.
+If you wish to make your own edits to the codebase, SeQUeNCe should be installed in [development mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html) (a.k.a. editable install).
+To do so, clone and install the simulator as follows:
+```
+git clone https://github.com/sequence-toolbox/SeQUeNCe.git
+cd SeQUeNCe
+pip install --editable . --config-settings editable_mode=strict
+```
+
