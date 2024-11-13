@@ -387,7 +387,7 @@ class Memory(Entity):
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
 
-        decay_time = self.timeline.now() + int(self.coherence_time * 1e12)
+        decay_time = self.timeline.now() + int(self.cutoff_ratio * self.coherence_time * 1e12)
         process = Process(self, "expire", [])
         event = Event(decay_time, process)
         self.timeline.schedule(event)
