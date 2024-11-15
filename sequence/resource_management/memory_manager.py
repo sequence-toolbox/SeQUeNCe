@@ -126,6 +126,9 @@ class MemoryInfo:
         self.expire_event = None
         self.entangle_time = -1
 
+    def __str__(self) -> str:
+        return f'name={self.memory.name}, remote={self.remote_memo}, fidelity={self.fidelity:.6f}'
+
     def to_raw(self) -> None:
         """Method to set memory to raw (unentangled) state."""
 

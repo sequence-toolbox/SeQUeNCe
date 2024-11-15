@@ -93,6 +93,7 @@ def eg_rule_action2(memories_info: List["MemoryInfo"], args: Arguments) -> Tuple
 
 def eg_req_func(protocols: List["EntanglementProtocol"], args: Arguments) -> EntanglementGenerationA:
     """Function used by `eg_rule_action2` function for selecting generation protocols on the remote node
+
     Args:
         protocols: the waiting protocols (wait for request)
         args: arguments from the node who sent the request
@@ -143,6 +144,13 @@ def ep_rule_action2(memories_info: List["MemoryInfo"], args: Arguments) -> Tuple
 
 def ep_req_func1(protocols, args: Arguments) -> BBPSSW:
     """Function used by `ep_rule_action1` for selecting purification protocols on the remote node
+       Will 'combine two BBPSSW into one BBPSSW'
+
+    Args:
+        protocols (list): a list of waiting protocols
+        args (dict): the arguments
+    Return:
+        the selected protocol
     """
     remote0 = args["remote0"]
     remote1 = args["remote1"]
@@ -176,11 +184,11 @@ def ep_rule_condition1(memory_info: "MemoryInfo", memory_manager: "MemoryManager
     """
     memory_indices = args["memory_indices"]
     reservation = args["reservation"]
-    if (memory_info.index in memory_indices
+    if (memory_info.index in memory_indices                              # this memory (kept)
             and memory_info.state == "ENTANGLED"
             and memory_info.fidelity < reservation.fidelity):
         for info in memory_manager:
-            if (info != memory_info and info.index in memory_indices
+            if (info != memory_info and info.index in memory_indices     # another memory (meas)
                     and info.state == "ENTANGLED"
                     and info.remote_node == memory_info.remote_node
                     and info.fidelity == memory_info.fidelity):
@@ -227,6 +235,12 @@ def es_rule_actionB(memories_info: List["MemoryInfo"], args: Arguments) -> Tuple
 
 def es_req_func(protocols: List["EntanglementProtocol"], args: Arguments) -> EntanglementSwappingB:
     """Function used by `es_rule_actionA` for selecting swapping protocols on the remote node
+
+    Args:
+        protocols (list): a list of waiting protocols
+        args (dict): the arguments
+    Return:
+        the selected protocol
     """
     target_memo = args["target_memo"]
     for protocol in protocols:

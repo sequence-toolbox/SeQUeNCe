@@ -18,7 +18,7 @@ from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..utils import log
-from ..constants import SPEED_OF_LIGHT
+from ..constants import SPEED_OF_LIGHT, MICROSECOND
 
 
 class OpticalChannel(Entity):
@@ -243,7 +243,7 @@ class ClassicalChannel(OpticalChannel):
 
         super().__init__(name, timeline, 0, distance, 0, SPEED_OF_LIGHT)
         if delay == -1:
-            self.delay = distance / self.light_speed
+            self.delay = distance / self.light_speed + 10*MICROSECOND
         else:
             self.delay = delay
 

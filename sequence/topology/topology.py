@@ -47,7 +47,10 @@ class Topology(ABC):
     TYPE = "type"
     ALL_TEMPLATES = "templates"
     TEMPLATE = "template"
+    GATE_FIDELITY = "gate_fidelity"
+    MEASUREMENT_FIDELITY = "measurement_fidelity"
 
+    
     def __init__(self, conf_file_name: str):
         """Constructor for topology class.
 

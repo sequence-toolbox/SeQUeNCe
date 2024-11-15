@@ -122,8 +122,7 @@ class Rule:
         reservation (Reservation): associated reservation.
     """
 
-    def __init__(self, priority: int, action: ActionFunc, condition: ConditionFunc,
-                 action_args: Arguments, condition_args: Arguments):
+    def __init__(self, priority: int, action: ActionFunc, condition: ConditionFunc, action_args: Arguments, condition_args: Arguments):
         """Constructor for rule class."""
 
         self.priority: int = priority
