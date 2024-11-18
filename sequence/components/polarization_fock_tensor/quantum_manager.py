@@ -29,7 +29,7 @@ from quimb.tensor.tensor_arbgeom import  tensor_network_apply_op_vec # type: ign
 
 from ...kernel.quantum_utils import *
 from ...kernel.quantum_manager import QuantumManagerDensityFock, DENSITY_MATRIX_FORMALISM
-from sequence.components.polarizationFock_Tensor.quantum_state import Matrix_Product_State
+from .quantum_state import Matrix_Product_State
 
 
 

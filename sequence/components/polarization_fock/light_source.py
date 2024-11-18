@@ -243,7 +243,7 @@ class SPDCSource(LightSource):
 
         entangled_state = BS_U @ total_state
 
-        entangled_state.data = np.round(entangled_state.data, 5)
+        entangled_state.data = np.round(entangled_state.data, 10)
 
         state_indices, _ = entangled_state.nonzero()
 
@@ -264,9 +264,9 @@ class SPDCSource(LightSource):
         # print("TMSV state:\n", [f"{labels[i]}" for i in list(entangled_state.nonzero()[0])])
         # for i in list(entangled_state.nonzero()[0]): print(labels[i], entangled_state[i])
         output = [labels[i] for i in entangled_state.nonzero()[0]]
-        print("Output:", output)
+        # print("Output:", output)
 
-        print("entangled_state indices:", entangled_state.nonzero()[0])
+        # print("entangled_state indices:", entangled_state.nonzero()[0])
 
 
         if not dm:
@@ -289,7 +289,7 @@ class SPDCSource(LightSource):
         # Finding the reduced state by performing the partial trace
         # tuple_entangled_state = self.timeline.quantum_manager.extract_sparse_data(entangled_state@entangled_state.conjugate().transpose())
         # reduced_state = sparse_density_partial_trace(tuple_entangled_state, (0,), 2, dim**2)
-
+        # print("reduced_state", reduced_state)
         return reduced_state
         
 

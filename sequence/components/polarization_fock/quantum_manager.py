@@ -15,6 +15,7 @@ from scipy.special import binom
 import time
 import numpy as np
 import scipy.sparse as sp
+from matplotlib import pyplot as plt
 
 from ...kernel.quantum_state import KetState, DensityState
 from ...kernel.quantum_utils import *
@@ -200,6 +201,15 @@ class QuantumManagerPolarizationFock(QuantumManagerDensityFock):
 
         new_state.data = np.round(new_state.data, 10)
         new_state.eliminate_zeros()
+
+        # print("measuring:")
+        # plt.figure()
+        # plt.imshow(np.real(np.round(np.log(new_state.todense()))))
+        # plt.title(f"measured state real {outcome}")
+        # plt.figure()
+        # plt.imshow(np.imag(np.round(np.log(new_state.todense()))))
+        # plt.title(f"measured state imag {outcome}")
+
         # print("mat dim:", new_state.shape, "mat data:", len(new_state.data))
         if measure_all:
             return self._measure(new_state, all_keys, all_keys, povms, sqrt_povms, meas_samp, outcome = outcome, verbose = verbose)    
@@ -259,7 +269,7 @@ class QuantumManagerPolarizationFock(QuantumManagerDensityFock):
                                                          basis_dim=self.dim)
             # print("expectd coincidenced prob:", probs[-1], "square of op:", probs[1])
             # print("state is:", state)
-            if verbose:
+            if verbose: # verbose:
                 print("probs:", probs)
                 for state in states:
                     print("Possible next_state:")
@@ -273,14 +283,12 @@ class QuantumManagerPolarizationFock(QuantumManagerDensityFock):
         # Note that in the case when outcome is specified, you want the result returned from the function 
         # to be the probability of getting that output. Conversely, if you provide a random sample and expect to 
         # get a measurement result out randomly, you simply get the index of the measurement outcome and nothing else.  
-        if not states == None:
+        if states == None:
+            return probs
+        else: # what if you are finding the post measurement state. 
             new_state = None
-            if not outcome == None:
-                result = probs[outcome]
-                # print("state type", type(states[outcome]))
-                if states:
-                    new_state = sp.csr_matrix(states[outcome])
-            else:
+            
+            if outcome == None:
                 prob_sum = cumsum(probs)
                 for i, (output_state, p) in enumerate(zip(states, prob_sum)):
                     if meas_samp < p:
@@ -288,21 +296,12 @@ class QuantumManagerPolarizationFock(QuantumManagerDensityFock):
                             new_state = sp.csr_matrix(output_state)
                         result = i
                         break
-        else:
-            return probs
-
-        """
-        # for potential future work
-        result_digits = [int(x) for x in base_repr(result, base=self.dim)[2:]]
-        while len(result_digits) < len(keys):
-            result_digits.insert(0, 0)
-
-        # assign measured states
-        for key, result in zip(keys, result_digits):
-            state = [0] * self.dim
-            state[result] = 1
-            self.set([key], state)
-        """
+            else: # If you have an expected outcome, this simply selects that outcome and saves the probability of that outcome. 
+                result = probs[outcome]
+                # print("states[outcome]", outcome,  states[outcome])
+                new_state = sp.csr_matrix(states[outcome])
+            
+             
         
         if not new_state == None: # This is equivalent to checking if we had an output state from the measurent state at all.
             for key in keys:

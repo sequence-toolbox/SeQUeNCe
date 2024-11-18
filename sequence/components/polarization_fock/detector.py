@@ -117,7 +117,7 @@ class QSDetectorFockDirect(QSDetector):
     #     self.povms = tuple([self.timeline.quantum_manager.extract_sparse_data(povm) for povm in self.povms])
     #     self.sqrt_povms = tuple([self.timeline.quantum_manager.extract_sparse_data(povm) for povm in self.sqrt_povms])
         
-    @lru_cache(maxsize=1000)
+    # @lru_cache(maxsize=1000)
     def _generate_povm_pair(self, idx):
         """Method to generate POVM operators corresponding to photon detector having 0 and 1 click
         Will be used to generated outcome probability distribution.

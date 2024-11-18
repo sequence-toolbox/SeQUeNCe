@@ -8,11 +8,11 @@ from sequence.components.photon import Photon
 from sequence.topology.node import Node
 from sequence.components.optical_channel import ClassicalChannel
 
-from sequence.components.polarizationFock.optical_channel import QuantumChannel
-from sequence.components.polarizationFock.light_source import SPDCSource
-from sequence.components.polarizationFock.detector import QSDetectorFockDirect
-from sequence.components.polarizationFock.rotator import Rotator
-from sequence.components.polarizationFock.beam_splitter import Beamsplitter
+from .optical_channel import QuantumChannel
+from .light_source import SPDCSource
+from .detector import QSDetectorFockDirect
+from .rotator import Rotator
+from .beam_splitter import Beamsplitter
 
 from sequence.utils.encoding import polarizationFock
 
@@ -106,7 +106,7 @@ class PolarizationReceiverNode(Node):
         self.first_proxy_component_name = self.idler_rotator.name
         
         # self.detections = {self.signal_detector:[], self.idler_detector:[]}
-        self.temporal_coincidence_window = params["TEMPORAL_COINCIDENCE_WINDOW"]
+        # self.temporal_coincidence_window = params["TEMPORAL_COINCIDENCE_WINDOW"]
 
         self.signal_rotator_angle = 0
         self.idler_rotator_angle = 0
@@ -182,7 +182,7 @@ class PolarizationReceiverNode(Node):
         self.idler_singles = []
         self.standard_deviations = []
 
-        print("received vars:", self.idler_rotation_detection_vars)
+        # print("received vars:", self.idler_rotation_detection_vars)
 
         # We start self.idler_rotation_detection_probs from 1 because during the first reset, an empty 
         # list is added to self.idler_rotation_detection_probs. So, we ignore that here. 
@@ -200,7 +200,7 @@ class PolarizationReceiverNode(Node):
                 singles_probs_signal.append(detection_probs["11"]+detection_probs["10"])
                 singles_probs_idler.append(detection_probs["11"]+detection_probs["01"])
                 
-                coincidence_std.append(np.sqrt(detection_squared_probs["11"] - detection_probs["11"]**2)/np.sqrt(10**9))
+                coincidence_std.append(np.sqrt(detection_squared_probs["11"] - detection_probs["11"]**2)) # /np.sqrt(10**9)
 
 
             self.coincidences.append(coincidence_probs)

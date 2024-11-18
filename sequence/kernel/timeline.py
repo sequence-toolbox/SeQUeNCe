@@ -28,8 +28,8 @@ from .quantum_manager import (QuantumManagerKet,
                               POLARIZATION_FOCK_FORMALISM,
                               POLARIZATION_FOCK_TENSOR_FORMALISM)
 
-from ..components.polarizationFock.quantum_manager import QuantumManagerPolarizationFock
-from ..components.polarizationFock_Tensor.quantum_manager import QuantumManagerPolarizationFockTensor
+from ..components.polarization_fock.quantum_manager import QuantumManagerPolarizationFock
+from ..components.polarization_fock_tensor.quantum_manager import QuantumManagerPolarizationFockTensor
 
 from ..constants import *
 

@@ -8,10 +8,10 @@ from sequence.components.photon import Photon
 from sequence.topology.node import Node
 from sequence.components.optical_channel import ClassicalChannel
 
-from sequence.components.polarizationFock_Tensor.optical_channel import QuantumChannel
-from sequence.components.polarizationFock_Tensor.light_source import SPDCSource
-from sequence.components.polarizationFock_Tensor.detector import QSDetectorFockDirect
-from sequence.components.polarizationFock_Tensor.rotator import Rotator
+from .optical_channel import QuantumChannel
+from .light_source import SPDCSource
+from .detector import QSDetectorFockDirect
+from .rotator import Rotator
 # from sequence.components.polarizationFock_Tensor.beam_splitter import Beamsplitter
 
 from sequence.utils.encoding import polarizationFock
