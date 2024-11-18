@@ -297,9 +297,14 @@ class QuantumManagerPolarizationFock(QuantumManagerDensityFock):
                         result = i
                         break
             else: # If you have an expected outcome, this simply selects that outcome and saves the probability of that outcome. 
-                result = probs[outcome]
-                # print("states[outcome]", outcome,  states[outcome])
-                new_state = sp.csr_matrix(states[outcome])
+                result = np.round(probs[outcome], 15)
+                # print("result:", result)
+                # print("type(states[outcome])", type(states[outcome]))
+                # print("outcome:", outcome)
+                if not result == 0:
+                    new_state = sp.csr_matrix(states[outcome])
+                else:
+                    new_state = None
             
              
         

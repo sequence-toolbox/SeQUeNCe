@@ -240,6 +240,7 @@ class QSDetectorFockDirect(QSDetector):
             # If its the first photon arriving at the detectors, perform the joint measurement for finding the 
             # variance in the measurement. 
             # self.get_joint(photon)
+            # print("FIRST DETECTION")
             self.get_joint(photon)
             self.prev_prob = 1
             self.meas_index = (self.meas_index+1)%self.num_possible_outcomes
@@ -273,23 +274,14 @@ class QSDetectorFockDirect(QSDetector):
         #         result = self.timeline.quantum_manager.measure([key], self.povms[2:4], self.sqrt_povms[2:4], samp, outcome = outcome)
         #     else:
         #         raise Exception("too many input ports for QSDFockDirect {}".format(self.name))
-        
-        povms, sqrt_povms = self._generate_povm_pair(input_port)
-        result = self.timeline.quantum_manager.measure([key], povms, sqrt_povms, samp, outcome = outcome)
+        if self.prev_prob > 0:
+            povms, sqrt_povms = self._generate_povm_pair(input_port)
+            result = self.timeline.quantum_manager.measure([key], povms, sqrt_povms, samp, outcome = outcome)
 
-
-
-        if self.not_first_detection == len(self.detectors)-1:
-            self.meas_prob[self.meas_outcomes[self.meas_index]] = result * self.prev_prob
-            # print("got all measurements. total proability:", self.meas_prob)
-        else:
-            self.prev_prob *= result
-            # print("probability of this case:", self.prev_prob)
-
-        # assert result in list(range(len(self.povms))), "The measurement outcome is not valid."
-        # if result == 1:
-        #     # trigger time recording will be done by SPD
-        #     self.detectors[input_port].record_detection()
+            if self.not_first_detection == len(self.detectors)-1:
+                self.meas_prob[self.meas_outcomes[self.meas_index]] = result * self.prev_prob
+            else:
+                self.prev_prob *= result
 
 
 
