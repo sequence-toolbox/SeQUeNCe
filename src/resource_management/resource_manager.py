@@ -18,6 +18,8 @@ from ..message import Message
 from ..utils import log
 from .rule_manager import RuleManager
 from .memory_manager import MemoryManager
+from ..kernel.event import Event
+from ..kernel.process import Process
 
 
 class ResourceManagerMsgType(Enum):
@@ -108,6 +110,10 @@ class ResourceManager():
         self.waiting_protocols = []
         self.memory_to_protocol_map = {}
 
+        # QUISP EXPERIMENT
+        self.entanglement_attempt = 0
+        self.entanglement_success = 0
+
     def load(self, rule: "Rule") -> bool:
         """Method to load rules for entanglement management.
 
@@ -127,6 +133,7 @@ class ResourceManager():
         for memory_info in self.memory_manager:
             memories_info = rule.is_valid(memory_info)
             if len(memories_info) > 0:
+                # print(f"loading {rule} at {self.owner.timeline.now()} at {self.owner.name}")
                 rule.do(memories_info)
                 for info in memories_info:
                     info.to_occupied()
@@ -170,6 +177,12 @@ class ResourceManager():
         Side Effects:
             May modify memory state, and modify any attached protocols.
         """
+        # print("resource manager updates", state)
+
+        self.entanglement_attempt += 1
+
+        if state == "ENTANGLED":
+            self.entanglement_success += 1
 
         self.memory_manager.update(memory, state)
         if protocol:
@@ -197,6 +210,7 @@ class ResourceManager():
                     info.to_occupied()
                 return
 
+        # print("getting idle memory")
         self.owner.get_idle_memory(memo_info)
 
     def get_memory_manager(self):
@@ -224,13 +238,20 @@ class ResourceManager():
         if protocol not in self.pending_protocols:
             self.pending_protocols.append(protocol)
         memo_names = [memo.name for memo in protocol.memories]
+        # print(self.owner.name, "is sending", protocol.name, "request at", self.owner.timeline.now(), "to", req_dst)
         msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST,
                                      protocol=protocol.name,
                                      node=self.owner.name,
                                      memories=memo_names,
                                      req_condition_func=req_condition_func,
                                      req_args=req_args)
-        self.owner.send_message(req_dst, msg)
+        
+        process = Process(self.owner, "send_message", [req_dst, msg])
+        event = Event(self.owner.timeline.now()+1, process)
+        self.owner.timeline.schedule(event)
+        # self.owner.send_message(req_dst, msg)
+
+        # log.logger.warning(f"(ResourceManager_Request_sent) ({self.owner.timeline.now()}) owner: {self.owner.name}")
         log.logger.info(
             "{} network manager send {} message to {}".format(self.owner.name, msg.msg_type.name, req_dst))
 
@@ -247,9 +268,13 @@ class ResourceManager():
         log.logger.info("{} receive {} message from {}".format(self.name,
                                                                msg.msg_type.name,
                                                                src))
+        # print(f"res manager received mesdsage at: {self.owner.timeline.now()}, at {self.owner.name}: {msg.msg_type}")
+        # log.logger.warning(f"(ResourceManager_received) {msg.msg_type.name} ({self.owner.timeline.now()}) owner: {self.owner.name}")
         if msg.msg_type is ResourceManagerMsgType.REQUEST:
             protocol = msg.req_condition_func(self.waiting_protocols, msg.req_args)
+            
             if protocol is not None:
+                # print("request received at", self.owner.name, "protocol name:", protocol.name, "at time:", self.owner.timeline.now())
                 protocol.set_others(msg.ini_protocol_name, msg.ini_node_name,
                                     msg.ini_memories_name)
                 memo_names = [memo.name for memo in protocol.memories]
@@ -265,6 +290,7 @@ class ResourceManager():
                 self.owner.send_message(src, new_msg)
                 self.waiting_protocols.remove(protocol)
                 self.owner.protocols.append(protocol)
+                protocol.primary = True
                 protocol.start()
                 return
 
@@ -279,7 +305,10 @@ class ResourceManager():
             self.owner.send_message(src, new_msg)
 
         elif msg.msg_type is ResourceManagerMsgType.RESPONSE:
+            # log.logger.warning(f"(ResourceManager_Response_received) ({self.owner.timeline.now()}) owner: {self.owner.name}")
             protocol_name = msg.ini_protocol_name
+            # print("response received at", self.owner.name, "protocol name:", protocol_name, "at time:", self.owner.timeline.now())
+
 
             protocol: Optional[EntanglementProtocol] = None
             for p in self.pending_protocols:
@@ -290,13 +319,14 @@ class ResourceManager():
                 if msg.is_approved:
                     self.release_remote_protocol(src, msg.paired_protocol)
                 return
-
+            # log.logger.warning(f"(ResourceManager_response) is_approved:{msg.is_approved}")
             if msg.is_approved:
                 protocol.set_others(msg.paired_protocol, msg.paired_node, msg.paired_memories)
                 if protocol.is_ready():
                     self.pending_protocols.remove(protocol)
                     self.owner.protocols.append(protocol)
                     protocol.own = self.owner
+                    protocol.primary = False
                     protocol.start()
             else:
                 protocol.rule.protocols.remove(protocol)

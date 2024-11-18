@@ -299,6 +299,7 @@ class QuantumRouter(Node):
         memory_array = MemoryArray(memo_arr_name, tl, num_memories=memo_size, **memo_arr_args)
         self.add_component(memory_array)
         memory_array.add_receiver(self)
+        self.memory_array = memory_array
 
         # add protocols
         self.resource_manager = ResourceManager(self, memo_arr_name)
@@ -306,7 +307,13 @@ class QuantumRouter(Node):
         self.map_to_middle_node = {}
         self.app = None
 
+        # QUISP experiments (All these are updated in entanglement generation, under the success/failure functions)
+        self.total_attempts = 0
+        self.succesful_attempts = 0
+        self.time_to_thousand = 0
+
     def receive_message(self, src: str, msg: "Message") -> None:
+        # print("classical message received:", msg.msg_type, "at",self.timeline.now())
         log.logger.info("{} receive message {} from {}".format(self.name, msg, src))
         if msg.receiver == "resource_manager":
             self.resource_manager.received_message(src, msg)

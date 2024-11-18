@@ -107,6 +107,8 @@ class QuantumChannel(OpticalChannel):
             fid = (1 + np.exp(self.depolarizing_rate * self.distance)) / 2
             self.polarization_fidelity = fid
 
+        # print("light speed:", self.light_speed)
+
         self.delay = -1
         self.loss = 1
         self.frequency = frequency  # maximum frequency for sending qubits (measured in Hz)
@@ -114,8 +116,10 @@ class QuantumChannel(OpticalChannel):
 
     def init(self) -> None:
         """Implementation of Entity interface (see base class)."""
-
+        # print("light speed:", self.light_speed)
         self.delay = round(self.distance / self.light_speed)
+        # print("qchannel light speed:", self.light_speed, "delay:", self.delay)
+        # print("channel distance:", self.distance, "attenuation:", self.attenuation)
         self.loss = 1 - 10 ** (self.distance * self.attenuation / -10)
 
     def set_ends(self, sender: "Node", receiver: str) -> None:
@@ -156,6 +160,8 @@ class QuantumChannel(OpticalChannel):
             "QuantumChannel init() function has not been run for {}".format(self.name)
         assert source == self.sender
 
+        # print("transmitting qubit")
+
         # remove lowest time bin
         if len(self.send_bins) > 0:
             time = -1
@@ -184,11 +190,16 @@ class QuantumChannel(OpticalChannel):
 
             if qubit.is_null:
                 qubit.add_loss(self.loss)
+                # log.logger.warning(f"adding loss to photon: {self.loss}")
+                # print(")
 
             # check if polarization encoding and apply necessary noise
             if (qubit.encoding_type["name"] == "polarization") and (
                     self.sender.get_generator().random() > self.polarization_fidelity):
                 qubit.polarization_noise(self.get_generator())
+                # print("")
+
+            # print("photon loss on transmission:", qubit.loss, self.loss)
 
             # schedule receiving node to receive photon at future time determined by light speed
             future_time = self.timeline.now() + self.delay
@@ -198,6 +209,7 @@ class QuantumChannel(OpticalChannel):
 
         # if not using Fock representation, if photon lost, exit
         else:
+            # print("qubit was lost")
             pass
 
     def schedule_transmit(self, min_time: int) -> int:
@@ -260,6 +272,7 @@ class ClassicalChannel(OpticalChannel):
         """
 
         super().__init__(name, timeline, 0, distance, 0, 2e-4)
+        # print("passed delay:", delay)
         if delay == -1:
             self.delay = distance / self.light_speed
         else:
@@ -301,7 +314,7 @@ class ClassicalChannel(OpticalChannel):
                                                             self.receiver,
                                                             self.name))
         assert source == self.sender
-
+        # print("trans delay is", self.delay, "on", self.name)
         future_time = round(self.timeline.now() + int(self.delay))
         process = Process(self.receiver, "receive_message", [source.name, message])
         event = Event(future_time, process, priority)

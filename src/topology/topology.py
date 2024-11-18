@@ -94,6 +94,7 @@ class Topology(ABC):
                 name = cc.get(self.NAME, "cc.{}.{}".format(src_str, dst_str))
                 distance = cc.get(self.DISTANCE, 1000)
                 delay = cc.get(self.DELAY, -1)
+                # print(delay)
                 cc_obj = ClassicalChannel(name, self.tl, distance, delay)
                 cc_obj.set_ends(src_node, dst_str)
                 self.cchannels.append(cc_obj)

@@ -144,6 +144,7 @@ class Rule:
         Args:
             memories_info (List[MemoryInfo]): list of memory infos for memories meeting requirements.
         """
+        # print("rule", self.name, "at", self.own.name, )
 
         protocol, req_dsts, req_condition_funcs, req_args = self.action(
             memories_info, self.action_args)

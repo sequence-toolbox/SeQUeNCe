@@ -81,7 +81,7 @@ class Detector(Entity):
             # if we measure |0>, return (do not record detection)
             if not res[key]:
                 return
-
+        # print("Detector efficiency:", self.efficiency)
         if self.get_generator().random() < self.efficiency:
             self.record_detection()
 
@@ -116,11 +116,13 @@ class Detector(Entity):
 
         now = self.timeline.now()
 
-        if now > self.next_detection_time:
+        if now >= self.next_detection_time:
             time = round(now / self.time_resolution) * self.time_resolution
             self.notify({'time': time})
             self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
-
+        else:
+            print("stuck in dead time")
+        
     def notify(self, info: Dict[str, Any]):
         """Custom notify function (calls `trigger` method)."""
 

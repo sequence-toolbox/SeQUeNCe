@@ -79,9 +79,13 @@ class MemoryArray(Entity):
         Entity.__init__(self, name, timeline)
         self.memories = []
 
+        decoherence_errors = [1/3, 1/3, 1/3]
+
+        # print("fidelity:", fidelity)
+
         for i in range(num_memories):
             memory = Memory(self.name + "[%d]" % i, timeline, fidelity, frequency, efficiency, coherence_time,
-                            wavelength)
+                            wavelength, decoherence_errors)
             memory.attach(self)
             self.memories.append(memory)
             memory.set_memory_array(self)
@@ -168,7 +172,7 @@ class Memory(Entity):
         super().__init__(name, timeline)
         assert 0 <= fidelity <= 1, "Fidelity should be between 0 and 1."
         assert 0 <= efficiency <= 1, "Efficiency should be between 0 and 1."
-
+        # print("memory coherernce time:", coherence_time)
         self.fidelity = 0
         self.raw_fidelity = fidelity
         self.frequency = frequency
@@ -178,8 +182,12 @@ class Memory(Entity):
         self.wavelength = wavelength
         self.qstate_key = timeline.quantum_manager.new()
         self.memory_array = None
-
+        
         self.decoherence_errors = decoherence_errors
+        
+        # if self.coherence_time < 0:
+        #    self.decoherence_errors = None 
+        
         if self.decoherence_errors is not None:
             assert len(self.decoherence_errors) == 3 and abs(sum(self.decoherence_errors) - 1) < 0.001, \
                 "Decoherence errors refer to probabilities for each Pauli error to happen if an error happens, thus should be normalized."
@@ -249,11 +257,18 @@ class Memory(Entity):
 
         photon.timeline = None  # facilitate cross-process exchange of photons
         photon.is_null = True
+        # print("emission efficiency:", self.efficiency)
         photon.add_loss(1 - self.efficiency)
+
+        # print("photon loss on creation:", photon.loss)
+
+        # print("photon state:", self.timeline.quantum_manager.get(self.qstate_key))
 
         if self.frequency > 0:
             period = 1e12 / self.frequency
             self.next_excite_time = self.timeline.now() + period
+
+        self.last_update_time = self.timeline.now()
 
         # send to receiver
         self._receivers[0].get(photon, dst=dst)
@@ -333,16 +348,25 @@ class Memory(Entity):
             Will modify BDS diagonal elements and last_update_time.
         """
 
-        if self.decoherence_errors is None:
+        if self.decoherence_errors is None or self.coherence_time < 0:
+            # print("not considering time dependent er errors")
             # if not considering time-dependent decoherence then do nothing
             pass
 
         else:
-            time = self.timeline.now() - self.last_update_time  # duration of memory idling
+            # print("last_updated_time:", self.last_update_time, "NOW:", self.timeline.now())
+            time = 1e-12*(self.timeline.now() - self.last_update_time)  # duration of memory idling
+            # print("decoherence time:", time)
+
+
+            # print("memory decoherence time:", time, "at", self.owner.timeline.now(), "at memory:", self.name)
 
             x_rate, y_rate, z_rate = self.decoherence_rate * self.decoherence_errors[0], \
                                      self.decoherence_rate * self.decoherence_errors[1], \
                                      self.decoherence_rate * self.decoherence_errors[2]
+            
+            # print("x,y,z errors", x_rate*time, y_rate*time, z_rate*time)
+
             p_I, p_X, p_Y, p_Z = _p_id(x_rate, y_rate, z_rate, time), \
                                  _p_xerr(x_rate, y_rate, z_rate, time), \
                                  _p_yerr(x_rate, y_rate, z_rate, time), \

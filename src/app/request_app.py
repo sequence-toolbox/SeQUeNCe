@@ -65,6 +65,7 @@ class RequestApp:
         self.start_t = start_t
         self.end_t = end_t
         self.memo_size = memo_size
+        # print("memo size:", self.memo_size)
         self.fidelity = fidelity
 
         self.node.reserve_net_resource(responder, start_t, end_t, memo_size, fidelity)

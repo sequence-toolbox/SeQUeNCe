@@ -741,7 +741,7 @@ class QuantumManagerBellDiagonal(QuantumManager):
         if key not in self.states:
             raise Exception("Attempt to get Bell diagonal state before entanglement.")
 
-        super().get(key)
+        return super().get(key)
 
     def set(self, keys: List[int], diag_elems: List[float]) -> None:
         super().set(keys, diag_elems)
@@ -752,6 +752,7 @@ class QuantumManagerBellDiagonal(QuantumManager):
         new_state = BellDiagonalState(diag_elems, keys)
         for key in keys:
             self.states[key] = new_state
+        # print("just set", new_state, "to", keys)
 
     def set_to_noiseless(self, keys: List[int]):
         self.set(keys, [float(1), float(0), float(0), float(0)])

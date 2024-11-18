@@ -99,7 +99,7 @@ class EntanglementSwappingA(EntanglementProtocol):
     circuit.measure(1)
 
     def __init__(self, own: "Node", name: str, left_memo: "Memory", right_memo: "Memory", success_prob=1,
-                 degradation=0.95, is_bds=False):
+                 degradation=0.95):
         """Constructor for entanglement swapping A protocol.
 
         Args:
@@ -113,8 +113,14 @@ class EntanglementSwappingA(EntanglementProtocol):
         """
 
         assert left_memo != right_memo
+
+        # print("swapping inititted")
+
+
+        
         EntanglementProtocol.__init__(self, own, name)
         self.memories = [left_memo, right_memo]
+        # print("initted memories:", self.memories)
         self.left_memo = left_memo
         self.right_memo = right_memo
         self.left_node = left_memo.entangled_memory['node_id']
@@ -132,8 +138,6 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.left_protocol_name = None
         self.right_protocol_name = None
 
-        self.is_bds = is_bds
-
     def is_ready(self) -> bool:
         return self.left_protocol_name is not None \
                and self.right_protocol_name is not None
@@ -146,6 +150,11 @@ class EntanglementSwappingA(EntanglementProtocol):
             node (str): other node name.
             memories (List[str]): the list of memories name used on other node.
         """
+
+        if self.own.timeline.quantum_manager.formalism == BELL_DIAGONAL_STATE_FORMALISM:
+            self.is_bds = True
+        else:
+            self.is_bds = False
 
         if node == self.left_memo.entangled_memory["node_id"]:
             self.left_protocol_name = protocol
@@ -185,34 +194,48 @@ class EntanglementSwappingA(EntanglementProtocol):
                 meas_res = [meas_res[self.left_memo.qstate_key], meas_res[self.right_memo.qstate_key]]
                 
             elif self.is_bds:
+                # print("bds swap")
                 # first invoke single-memory decoherence channels on each involved quantum memory (in total 4)
                 # note that bds_decohere() has changed the last_update_time to now, 
                 # thus we don't need to change it for the udpated state from swapping
+
+                # print("left memo:", self.own.timeline.quantum_manager.get(self.left_memo.qstate_key))
+                # print("right memo after generation:", self.own.timeline.quantum_manager.get(self.right_memo.qstate_key))
+
                 self.left_memo.bds_decohere()
                 self.right_memo.bds_decohere()
-                self.own.timeline.get_entity_by_name(self.left_remote_memo).bds_decohere()
-                self.own.timeline.get_entity_by_name(self.right_remote_memo).bds_decohere()
+                left_remote_memory = self.own.timeline.get_entity_by_name(self.left_remote_memo)
+                right_remote_memory = self.own.timeline.get_entity_by_name(self.right_remote_memo)
+
+                left_remote_memory.bds_decohere()
+                right_remote_memory.bds_decohere()
+
+                # print("right memo after decoherence:", self.own.timeline.quantum_manager.get(self.right_memo.qstate_key))
 
                 # get BDS conditioned on success, fidelity is the first diagonal element
                 new_bds = self.swapping_res()
                 fidelity = new_bds[0]
-                keys = [self.left_memo.qstate_key, self.left_memo.qstate_key]
+
+                keys = [left_remote_memory.qstate_key, right_remote_memory.qstate_key]
+
+
+                # print("keys at center node:", keys)
                 self.own.timeline.quantum_manager.set(keys, new_bds)
+
+                # print("right memo after swapping:", self.own.timeline.quantum_manager.get(right_remote_memory.qstate_key))
 
             msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,
                                                 self.left_protocol_name,
                                                 fidelity=fidelity,
                                                 remote_node=self.right_memo.entangled_memory["node_id"],
                                                 remote_memo=self.right_memo.entangled_memory["memo_id"],
-                                                expire_time=expire_time,
-                                                meas_res=[])
+                                                expire_time=expire_time)
             msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,
                                                 self.right_protocol_name,
                                                 fidelity=fidelity,
                                                 remote_node=self.left_memo.entangled_memory["node_id"],
                                                 remote_memo=self.left_memo.entangled_memory["memo_id"],
-                                                expire_time=expire_time,
-                                                meas_res=meas_res)
+                                                expire_time=expire_time)
             
         else:
             msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,
@@ -257,12 +280,17 @@ class EntanglementSwappingA(EntanglementProtocol):
         assert self.own.timeline.quantum_manager.formalism == BELL_DIAGONAL_STATE_FORMALISM, \
             "Input states should be Bell diagonal states."
 
+        # print("left_qstate_key:", self.left_memo.qstate_key)
+        # print("right_qstate_key:", self.right_memo.qstate_key)
         left_state = self.own.timeline.quantum_manager.get(self.left_memo.qstate_key)
         right_state = self.own.timeline.quantum_manager.get(self.right_memo.qstate_key)
 
+        # print("left states:", left_state.state, "right states:", right_state.state)
+        # print("states:", right_state.state)
+
         left_elem_1, left_elem_2, left_elem_3, left_elem_4 = left_state.state  # BDS diagonal elements of left pair
         right_elem_1, right_elem_2, right_elem_3, right_elem_4 = right_state.state  # BDS diagonal elements of right pair
-        assert 1. >= left_elem_1 >= 0.5 and 1. >= right_elem_1 >= 0.5, "Input states should have fidelity above 1/2."
+        # assert 1. >= left_elem_1 >= 0.5 and 1. >= right_elem_1 >= 0.5, "Input states should have fidelity above 1/2."
 
         # gate and measurment fidelities on swapping node, assuming two single-qubit measurements have equal fidelity
         gate_fid, meas_fid = self.own.gate_fid, self.own.meas_fid
@@ -353,7 +381,7 @@ class EntanglementSwappingB(EntanglementProtocol):
     x_z_cir.x(0)
     x_z_cir.z(0)
 
-    def __init__(self, own: "Node", name: str, hold_memo: "Memory", is_bds=False):
+    def __init__(self, own: "Node", name: str, hold_memo: "Memory"):
         """Constructor for entanglement swapping B protocol.
 
         Args:
@@ -369,7 +397,6 @@ class EntanglementSwappingB(EntanglementProtocol):
         self.remote_protocol_name = None
         self.remote_node_name = None
 
-        self.is_bds = is_bds
 
     def is_ready(self) -> bool:
         return self.remote_protocol_name is not None
@@ -382,6 +409,12 @@ class EntanglementSwappingB(EntanglementProtocol):
             node (str): other node name.
             memories (List[str]): the list of memory names used on other node.
         """
+
+        if self.own.timeline.quantum_manager.formalism == BELL_DIAGONAL_STATE_FORMALISM:
+            self.is_bds = True
+        else:
+            self.is_bds = False
+
         self.remote_node_name = node
         self.remote_protocol_name = protocol
 
@@ -400,7 +433,7 @@ class EntanglementSwappingB(EntanglementProtocol):
             self.own.name + " protocol received_message from node {}, fidelity={}".format(src, msg.fidelity))
 
         assert src == self.remote_node_name
-
+        # print("swapping:", msg.fidelity)
         if msg.fidelity > 0 and self.own.timeline.now() < msg.expire_time:
             if not self.is_bds:
                 if msg.meas_res == [1, 0]:
@@ -415,7 +448,17 @@ class EntanglementSwappingB(EntanglementProtocol):
                 # thus need to do nothing
                 pass
 
-            self.memory.fidelity = msg.fidelity
+            # self.memory.fidelity = msg.fidelity
+            # print("new_fidelity:", msg.fidelity)
+            # print("qstatekey:", self.memory.qstate_key, "msg fidelity:", msg.fidelity, "original fidelity:", self.own.timeline.quantum_manager.get(self.memory.qstate_key).state[0])
+            self.memory.bds_decohere()
+            self.memory.fidelity = self.own.timeline.quantum_manager.get(self.memory.qstate_key).state[0]
+            # print("memo after msg transmission:", self.own.timeline.quantum_manager.get(self.memory.qstate_key).state)
+            self.own.new_fidelity = self.own.timeline.quantum_manager.get(self.memory.qstate_key).state[0]
+            # print("new_fidelity:", self.own.new_fidelity)
+            
+            
+            # self.own.new_fidelity = msg.fidelity
             self.memory.entangled_memory["node_id"] = msg.remote_node
             self.memory.entangled_memory["memo_id"] = msg.remote_memo
             self.memory.update_expire_time(msg.expire_time)
@@ -423,6 +466,7 @@ class EntanglementSwappingB(EntanglementProtocol):
             #  the current state should have undergone decoherence during classical communication
             self.update_resource_manager(self.memory, "ENTANGLED")
         else:
+            print("message fidelity was zero")
             self.update_resource_manager(self.memory, "RAW")
 
     def start(self) -> None:
