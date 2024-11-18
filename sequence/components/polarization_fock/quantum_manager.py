@@ -54,7 +54,7 @@ def _build_amp_damping_kraus_operators(loss_rate: float, N: int):
                 continue
 
             m = int((n1-k1)*N + (n2-k2))
-            op_subsystem += sqrt(binom(n1, k1) * binom(n2, k2)) * np.cos(loss_rate)**(n1+n2-k1-k2) * (-1j*np.sin(loss_rate))**(k1+k2) * basis[:,m]*basis[:,n].transpose()                
+            op_subsystem += sqrt(binom(n1, k1) * binom(n2, k2)) * np.sqrt(1-loss_rate)**(n1+n2-k1-k2) * (-1j*np.sqrt(loss_rate))**(k1+k2) * basis[:,m]*basis[:,n].transpose()                
         
         V.append(sp.csr_matrix(op_subsystem))
     return V
