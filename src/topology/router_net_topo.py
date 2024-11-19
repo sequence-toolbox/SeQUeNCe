@@ -4,7 +4,7 @@ from numpy import mean
 
 from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
-from ..kernel.quantum_manager import KET_STATE_FORMALISM
+from ..kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
 from .node import BSMNode, QuantumRouter
 
 
@@ -60,11 +60,12 @@ class RouterNetTopo(Topo):
 
     def _add_timeline(self, config):
         stop_time = config.get(Topo.STOP_TIME, float('inf'))
-        formalism = config.get(Topo.FORMALISM, KET_STATE_FORMALISM)
+        # formalism = config.get(Topo.FORMALISM, KET_STATE_FORMALISM)
         if config.get(self.IS_PARALLEL, False):
             raise Exception("Please install 'psequence' package for parallel simulations.")
         else:
-            self.tl = Timeline(stop_time, formalism=formalism)
+            # self.tl = Timeline(stop_time, formalism=formalism)
+            self.tl = Timeline(stop_time, formalism=BELL_DIAGONAL_STATE_FORMALISM)
 
     def _map_bsm_routers(self, config):
         for qc in config[Topo.ALL_Q_CHANNEL]:

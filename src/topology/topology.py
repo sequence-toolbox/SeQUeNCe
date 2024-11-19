@@ -47,7 +47,7 @@ class Topology(ABC):
     TYPE = "type"
     ALL_TEMPLATES = "templates"
     TEMPLATE = "template"
-    FORMALISM = "formalism"
+    # FORMALISM = "formalism"
 
     def __init__(self, conf_file_name: str):
         """Constructor for topology class.

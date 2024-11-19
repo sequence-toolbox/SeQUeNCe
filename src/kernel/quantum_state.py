@@ -99,6 +99,7 @@ class KetState(State):
 
         # check formatting
         assert all([abs(a) <= 1.01 for a in amplitudes]), "Illegal value with abs > 1 in ket vector"
+        print("amplitudes:", amplitudes)
         assert abs(sum([abs(a) ** 2 for a in amplitudes]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
 
         num_subsystems = log(len(amplitudes)) / log(dim)
