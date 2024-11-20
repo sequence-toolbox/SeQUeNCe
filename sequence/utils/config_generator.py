@@ -27,6 +27,8 @@ def add_default_args(parser):
     parser.add_argument('-s', '--stop', type=float, default=float('inf'), help='stop time (in s)')
     parser.add_argument('-p', '--parallel', nargs=4, help='optional parallel arguments: server ip, server port, num. processes, lookahead')
     parser.add_argument('-n', '--nodes', type=str, help='path to csv file to provide process for each node')
+    parser.add_argument('-gf', '--gate_fidelity', type=float, help='the fidelity of gate (CNOT)')
+    parser.add_argument('-mf', '--measurement_fidelity', type=float, help='the fidelity of measurment (Z measurement)')
     return parser
 
 
@@ -57,7 +59,7 @@ def generate_node_procs(parallel, net_size, naming_func) -> dict:
     return node_procs
 
 
-def generate_nodes(node_procs: dict, router_names: str, memo_size: int, template: str = None) -> list:
+def generate_nodes(node_procs: dict, router_names: str, memo_size: int, template: str = None, gate_fidelity: float = None, measurement_fidelity: float = None) -> list:
     """generate a list of node configs"""
     nodes = []
     for i, name in enumerate(router_names):
@@ -67,7 +69,11 @@ def generate_nodes(node_procs: dict, router_names: str, memo_size: int, template
                   RouterNetTopo.MEMO_ARRAY_SIZE: memo_size,
                   RouterNetTopo.GROUP: node_procs[name]}
         if template:
-            config[RouterNetTopo.TEMPLATE] = template
+            config[Topology.TEMPLATE] = template
+        if gate_fidelity:
+            config[Topology.GATE_FIDELITY] = gate_fidelity
+        if measurement_fidelity:
+            config[Topology.MEASUREMENT_FIDELITY] = measurement_fidelity
         nodes.append(config)
     return nodes
 

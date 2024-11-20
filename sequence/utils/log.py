@@ -20,7 +20,7 @@ def _init_logger():
     return lg
 
 
-logger = _init_logger()
+logger = _init_logger()  # global logger
 # LOG_FORMAT = '{asctime}  {simtime:<20,} {levelname:7} {module:20} {message}'
 LOG_FORMAT = '{simtime:<20,} {levelname:7} {module:20} {message}'   # no asctime
 _log_modules = []
@@ -39,6 +39,10 @@ def set_logger(name: str, timeline, logfile="out.log"):
 
     global logger
     logger = logging.getLogger(name)
+
+    # remove existing handleers
+    for h in logger.handlers:
+        logger.removeHandler(h)
 
     handler = logging.FileHandler(logfile)
     fmt = logging.Formatter(LOG_FORMAT, style='{')

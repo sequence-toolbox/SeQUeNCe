@@ -6,6 +6,7 @@ from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
 from .node import BSMNode, QuantumRouter
 from ..constants import SPEED_OF_LIGHT
+from ..kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
 
 
 class RouterNetTopo(Topo):
@@ -39,6 +40,7 @@ class RouterNetTopo(Topo):
 
     def __init__(self, conf_file_name: str):
         self.bsm_to_router_map = {}
+        self.encoding_type = None
         super().__init__(conf_file_name)
 
     def _load(self, filename: str):
