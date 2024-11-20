@@ -215,9 +215,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [0.6.5]
-### Changed
+### Added
 - Add new class BellDiagonalState for Bell Diagonal State.
 - Add new Quantum Manager for Bell Diagonal State, i.e., QuantumManagerBellDiagonal.
 - Add new class SingleHeralded BSM to support single heralded entanglement generation.
-- Update Memory class: add support for time-dependent decoherence for the Bell Diagonal State.
+- Add support for time-dependent decoherence for the Bell Diagonal State in Memory class.
+### Changed
 - Remove existing handlers in logging before setting the new handler
