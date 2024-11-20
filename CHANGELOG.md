@@ -212,3 +212,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use `Read the Docs` for documentation. Update documentation. Old documentation website becomes obsolete. 
 - Fix a bug in reservation protocol and routing protocol that may lead to route for src->dst being different than dst->src when the network has same length edges.
 - Update comments and README.md
+
+
+## [0.6.5]
+### Changed
+- Add new class BellDiagonalState for Bell Diagonal State.
+- Add new Quantum Manager for Bell Diagonal State, i.e., QuantumManagerBellDiagonal.
+- Add new class SingleHeralded BSM to support single heralded entanglement generation.
+- Update Memory class: add support for time-dependent decoherence for the Bell Diagonal State.
+- Remove existing handlers in logging before setting the new handler

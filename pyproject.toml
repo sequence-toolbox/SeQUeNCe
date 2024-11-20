@@ -1,6 +1,6 @@
 [project]
 name = "sequence"
-version = "0.6.4"
+version = "0.6.5"
 authors = [
     {name = "Xiaoliang Wu, Joaquin Chung, Alexander Kolar, Alexander Kiefer, Eugene Wang, Tian Zhong, Rajkumar Kettimuthu, Martin Suchara", email = "chungmiranda@anl.gov"}
 ]
