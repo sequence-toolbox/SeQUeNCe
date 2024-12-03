@@ -25,8 +25,7 @@ from math import factorial
 from quimb.tensor import MatrixProductState as mps  # type: ignore
 from quimb.tensor.tensor_core import rand_uuid, new_bond  # type: ignore
 from quimb.tensor import MatrixProductOperator as mpo  # type: ignore
-from quimb.tensor.tensor_arbgeom import  tensor_network_apply_op_vec # type: ignore
-
+from quimb.tensor.tensor_arbgeom import tensor_network_apply_op_vec, tensor_network_apply_op_op # type: ignore
 from ...kernel.quantum_utils import *
 from ...kernel.quantum_manager import QuantumManagerDensityFock, DENSITY_MATRIX_FORMALISM
 from .quantum_state import Matrix_Product_State
@@ -106,6 +105,23 @@ class QuantumManagerPolarizationFockTensor(QuantumManagerDensityFock):
                 new_label += f"{self.state_labels[(i//self.dim**j)%self.dim]}_{chr(65+j)} "
             labels.append(new_label[:-1])
         return labels
+
+    def read_quantum_state(self, TN_state, num_systems, sparse = False):
+        dense_state = TN_state.to_dense()
+        dense_state = np.reshape(dense_state.data, (self.dim**num_systems, self.dim**num_systems), order = 'C')
+        
+        if sparse:
+            dense_state = sp.csr_matrix(dense_state)
+            dense_state.data = np.round(dense_state.data, 10)
+            dense_state.eliminate_zeros()
+
+        # print(dense_state)
+        return dense_state
+
+        # labels = self.generate_labels(4,num_systems)
+        # state = dense_state.nonzero()[0]
+        # print("Corresponding Basis terms:")
+        # for k in state: print(labels[k],"-",k,"-",dense_state[k].data)
 
 
     def generate_mode_operators(self):
@@ -332,18 +348,22 @@ class QuantumManagerPolarizationFockTensor(QuantumManagerDensityFock):
         # new_state, all_keys = self._prepare_state(keys)
 
         # Assuming whaterver state you are measuring is already in one joint state and not the first key is sufficient to measure the entire state. 
-        new_mps = self.states[keys[0]]
+        new_rho = self.states[keys[0]]
 
         # For now, we are assuming that all the states are being measured simultaneousoly and we are
         # not interestd in the post-measurement state of the system.  
 
         meas_ops = self.generate_POVM_MPO(TN_inds, outcomes, 2*len(keys), efficiencies, self.N, tag = "POVM")
 
-        measured_mps = new_mps.state
+        measured_rho = new_rho.state
+
+        left_indices = [measured_rho.upper_ind_id.format(i) for i in range(measured_rho.L)]
+        right_indices = [measured_rho.lower_ind_id.format(i) for i in range(measured_rho.L)]
 
         for POVM_OP in meas_ops:
             POVM_OP.add_tag("L6")
-            measured_mps = tensor_network_apply_op_vec(POVM_OP, measured_mps, compress=True, contract = True, cutoff = self.error_tolerance)
+            measured_rho = tensor_network_apply_op_op(A = POVM_OP, B = measured_rho, which_A="lower", which_B="upper", contract = True)
         
-        return (measured_mps.norm())**2, measured_mps # returning mps only for debugging
+        # return (measured_rho.norm())**2, measured_rho # returning mps only for debugging
+        return measured_rho.trace(left_indices, right_indices), measured_rho
  

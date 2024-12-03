@@ -322,6 +322,14 @@ class SPDCSource(LightSource):
 
             # set shared state to squeezed state
             state = self._generate_tmsv_state()
+
+            # print("light source state:")
+            # print(state)
+            # plt.figure()
+            # plt.imshow(state.todense().real)
+            # plt.figure()
+            # plt.imshow(state.todense().imag)
+
             keys = [new_photon0.quantum_state, new_photon1.quantum_state]
             # print("entangled keys:", keys)
 

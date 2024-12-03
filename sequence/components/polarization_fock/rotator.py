@@ -8,7 +8,7 @@ from numpy import trace, pi
 from scipy.sparse import kron, eye
 from scipy.sparse.linalg import expm
 import scipy.sparse as sp
-
+from matplotlib import pyplot as plt
 from ..photon import Photon
 from ...kernel.quantum_utils import povm_0
 from ...utils.encoding import polarization
@@ -73,7 +73,17 @@ class Rotator(Entity):
         prepared_state, all_keys = self.timeline.quantum_manager._prepare_state([key])
         rotator_op = self.timeline.quantum_manager._prepare_operator(all_keys, [key], self.U)
         # print("prepard_state:", type(prepared_state), "rotator_op", type(rotator_op))
-        output_state = rotator_op @ prepared_state @ rotator_op.conjugate().transpose()
+        output_state = rotator_op @ prepared_state
+        
+        print("rotated state:")
+        print(output_state)
+        plt.figure()
+        plt.imshow(output_state.todense().real)
+        plt.figure()
+        plt.imshow(output_state.todense().imag)
+
+        output_state = output_state @ rotator_op.conjugate().transpose()
+
         # print(type(output_state))
         self.timeline.quantum_manager.set(all_keys, output_state)
 

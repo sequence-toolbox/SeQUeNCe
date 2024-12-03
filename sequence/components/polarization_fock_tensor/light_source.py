@@ -15,6 +15,7 @@ import qutip as qt
 from quimb.tensor import MatrixProductOperator as mpo # type: ignore
 from quimb.tensor.tensor_arbgeom import get_coordinate_formatter, tensor_network_apply_op_vec # type: ignore
 from quimb.tensor.tensor_1d_compress import tensor_network_1d_compress, enforce_1d_like # type: ignore
+from quimb.tensor.tensor_1d import TensorNetwork1DOperator # type: ignore
 from quimb.tensor import MatrixProductState as mps # type: ignore
 
 
@@ -228,13 +229,38 @@ class SPDCSource(LightSource):
             
 
 
-            state = self.polarization_entangled_MPS(vacuum, self.timeline.quantum_manager.N, self.mean_photon_num, num_modes, self.timeline.quantum_manager.error_tolerance)[0]
+            state, dense_state = self.polarization_entangled_MPS(vacuum, self.timeline.quantum_manager.N, self.mean_photon_num, num_modes, self.timeline.quantum_manager.error_tolerance)
             
+            # print(dense_state)
+            state_H = state.H
+            state_H.retag_({'In': 'Out'})
+            state_H.site_ind_id = 'b{}'
+            rho = (state_H | state)
+            for i in range(rho.L):
+                rho ^= f"I{i}"   
+            rho = TensorNetwork1DOperator(rho)
+            rho._upper_ind_id = state.site_ind_id
+            rho._lower_ind_id = state_H.site_ind_id
+            rho = rho.fuse_multibonds()
+
+
+            #### Simply printing the state. ########            
+            # print("density matrix output by light source")
+            # dense_state = self.timeline.quantum_manager.read_quantum_state(rho, 2, sparse=True)
+            # print("TN light source state:")
+            # print(dense_state)
+            # plt.figure()
+            # plt.imshow(dense_state.todense().real)
+            # plt.figure()
+            # plt.imshow(dense_state.todense().imag)
+            ########################################
+
+
             keys = [new_photon0.quantum_state, new_photon1.quantum_state]
             # print("entangled keys:", keys)
 
             # We are using the quantum state manager. 
-            self.timeline.quantum_manager.set(keys, state)
+            self.timeline.quantum_manager.set(keys, rho)
 
             # print("LS type:", type(self.timeline.quantum_manager.states[new_photon0.quantum_state].state))
 

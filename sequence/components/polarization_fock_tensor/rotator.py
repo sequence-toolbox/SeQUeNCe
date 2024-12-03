@@ -12,9 +12,10 @@ from numpy import kron
 # import scipy.sparse as sp
 import qutip as qt
 import numpy as np
+from matplotlib import pyplot as plt
 
 from quimb.tensor import MatrixProductOperator as mpo # type: ignore
-from quimb.tensor.tensor_arbgeom import tensor_network_apply_op_vec # type: ignore
+from quimb.tensor.tensor_arbgeom import tensor_network_apply_op_vec, tensor_network_apply_op_op # type: ignore
 
 from ..photon import Photon
 from ...kernel.quantum_utils import povm_0
@@ -42,7 +43,7 @@ class Rotator(Entity):
         # H polarized photons. Now, we have 2 modes of H polarized photons which need to be 
         # reflected. So, we create the unitaries for both individually and multiply them (not in this function.)
 
-        hamiltonian_BS = -theta * ( kron(I, a_dag)@kron(a, I) - kron(I, a)@kron(a_dag, I) )
+        hamiltonian_BS = -1j * theta * ( kron(I, a_dag)@kron(a, I) + kron(I, a)@kron(a_dag, I) )
         unitary_BS = expm(hamiltonian_BS)
 
         BS_MPO = mpo.from_dense(unitary_BS, dims = N, sites = (site1,site2), L=total_sites, tags=tag)
@@ -90,20 +91,45 @@ class Rotator(Entity):
         # print("rotator angle:", self.theta, "at", self.name)
 
         key = photon.quantum_state
-        # state_mps = self.timeline.quantum_manager.states[key].state[0]
-        prepared_state, all_keys = self.timeline.quantum_manager._prepare_state([key])
+        
+        # The main job of this function is to extend the density operator in case we multiple quantum states contributing to the 
+        # joint states. This would generally only be used when you have combining states like at BSM apparatuses.  
+        prepared_rho, all_keys = self.timeline.quantum_manager._prepare_state([key])
 
-        state_mps = prepared_state
+        print("rotatong the rho:", prepared_rho)
 
         sites = photon.TN_inds
+        print("self.name:", self.name)
+        rot_mpo = self.create_BS_MPO(site1 = sites[0], site2 = sites[1], theta=self.theta/2, total_sites = prepared_rho.L, N = self.timeline.quantum_manager.N, tag = f"{self.name[:6]}")
+        # enforce_1d_like(rot_mpo, site_tags=site_tags, inplace=True)
 
-        rot_mpo = self.create_BS_MPO(site1 = sites[0], site2 = sites[1], theta=self.theta/2, total_sites = state_mps.L, N = self.timeline.quantum_manager.N, tag = f"self.name")
+        # psi_rotated = tensor_network_apply_op_vec(rot_mpo, state_mps, compress=True, contract = True, cutoff = self.timeline.quantum_manager.error_tolerance)
+        # prepared_rho.draw()
+        # rot_mpo.draw()
+        # A@B
+        rho_rotated = tensor_network_apply_op_op(A = rot_mpo, B = prepared_rho, which_A="lower",which_B="upper", contract = True)
+        # plt.figure()
+        # rho_rotated.draw()
 
-        psi_rotated = tensor_network_apply_op_vec(rot_mpo, state_mps, compress=True, contract = True, cutoff = self.timeline.quantum_manager.error_tolerance)
+        #### Simply printing the state. ########            
+        print("density matrix output by light source")
+        dense_state = self.timeline.quantum_manager.read_quantum_state(rho_rotated, 2, sparse=True)
+        print("TN light source state:")
+        print(dense_state)
+        plt.figure()
+        plt.imshow(dense_state.todense().real)
+        plt.figure()
+        plt.imshow(dense_state.todense().imag)
+        ########################################
+
+        # B@A.T
+        rho_rotated = tensor_network_apply_op_op(A = rot_mpo.H, B = rho_rotated, which_A="lower",which_B="lower", contract = True)
+        
+        # rho_rotated.draw()
 
         # output_state = rotator_op @ prepared_state @ rotator_op.conjugate().transpose()
         # print(type(output_state))
-        self.timeline.quantum_manager.set(all_keys, psi_rotated)
+        self.timeline.quantum_manager.set(all_keys, rho_rotated)
 
         return photon
         # self._receivers[0].get(photon, **kwargs)

@@ -60,9 +60,6 @@ class QuantumChannel(QuantumChannel):
         key = photon.quantum_state
         
         # Not yet implemented tensor network error models. 
-        # self.timeline.quantum_manager.add_loss(key, self.loss)
-
-        # print("transmitted state:", self.timeline.quantum_manager.states[key].keys)
-        
+        # self.timeline.quantum_manager.add_loss(key, self.loss)        
 
         self.send_photon(photon, source)
