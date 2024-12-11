@@ -1,7 +1,8 @@
 {
-    "BSM_node": {
+    "BSMNode": {
         "default_BSM": {
-            "detector_type": "default_detector"
+            "detector_1": "default_detector",
+            "detector_2": "default_detector"
         }
     },
     "Detector": {
@@ -26,21 +27,17 @@
             "raw_fidelity": 0.85
         }
     },
-    "Photon_Source": {},
-    "Protocol": {},
-    "QKD": {
+    "PhotonSource": {},
+    "QKDNode": {
         "default_QKD": {
             "encoding": "polarization",
             "stack_size": 5
         }
     },
-    "QuantumErrorCorrection": {},
-    "QuantumRepeater": {},
     "QuantumRouter": {
         "default_router": {
             "mem_type": "default_memory",
             "memo_size": 50
         }
-    },
-    "Temp": {}
+    }
 }
