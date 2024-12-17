@@ -84,7 +84,7 @@ def test_phase():
     circuit = Circuit(1)
     circuit.phase(0, np.pi/2)
     expect = array([[1, 0], [0, complex(0, 1)]])
-    assert array_equal(expect, circuit.get_unitary_matrix())
+    assert np.allclose(expect, circuit.get_unitary_matrix())  # array_equal() return False
 
 
 def test_measure():
