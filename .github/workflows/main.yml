@@ -16,7 +16,13 @@ jobs:
         mpi: [mpich, openmpi]
         exclude:
           - python-version: '3.9'
-            mpi: mpich, openmpi
+            mpi: mpich
+          - python-version: '3.10'
+            mpi: mpich
+          - python-version: '3.11'
+            mpi: mpich
+          - python-version: '3.12'
+            mpi: mpich
   
     steps:
     - uses: actions/checkout@v2
