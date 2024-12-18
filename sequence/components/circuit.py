@@ -1,8 +1,3 @@
-"""Models for simulation of quantum circuit.
-
-This module introduces the QuantumCircuit class. The qutip library is used to calculate the unitary matrix of a circuit.
-"""
-
 from math import e, pi
 from typing import List, Dict, Union, Optional
 
@@ -42,6 +37,14 @@ def t_gate():
     mat = np.array([[1.,   0],
                     [0., e ** (1.j * (pi / 4))]])
     return Qobj(mat, dims=[[2], [2]])
+
+
+def custom_gate(p: float):
+    mat = np.array([[1, 0, 0, 0],
+                    [0, 1, 1 - p, 0],
+                    [0, 0, p, 0],
+                    [0, 0, 0, 1]])
+    return Qobj(mat, dims=[[2, 2], [2, 2]])
 
 
 def validator(func):
@@ -95,7 +98,8 @@ class Circuit:
                              "Y": y_gate,
                              "Z": z_gate,
                              "S": s_gate,
-                             "T": t_gate}
+                             "T": t_gate,
+                             "CUSTOM": custom_gate}
             for gate in self.gates:
                 name, indices, arg = gate
                 if name == 'h':
@@ -118,6 +122,8 @@ class Circuit:
                     qc.add_gate('S', indices[0])
                 elif name == 'phase':
                     qc.add_gate('PHASEGATE', indices[0], arg_value=arg)
+                elif name == 'custom':
+                    qc.add_gate('CUSTOM', indices, arg_value=arg)
                 else:
                     raise NotImplementedError
             self._cache = gate_sequence_product(qc.propagators()).full()
@@ -244,6 +250,17 @@ class Circuit:
         """
 
         self.gates.append(['phase', [qubit], theta])
+
+    @validator
+    def custom(self, qubit: int, p: float):
+        """Method to apply custom gate on two qubits.
+
+        Args:
+            qubit (int): the index of qubit in the circuit.
+            p (float): parameter for custom gate
+        """
+
+        self.gates.append(['custom', [qubit], p])
 
     @validator
     def measure(self, qubit: int):
