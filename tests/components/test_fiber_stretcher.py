@@ -14,7 +14,7 @@ def test_init():
     fs_circ = fs._circuit.get_unitary_matrix()
     desired = np.array([[complex(1), complex(0)],
                         [complex(0), complex(-1)]])
-    assert np.array_equal(fs_circ, desired)
+    assert np.allclose(fs_circ, desired)   # array_equal() return False
 
 
 def test_set_phase():
@@ -25,7 +25,7 @@ def test_set_phase():
     fs_circ = fs._circuit.get_unitary_matrix()
     desired = np.array([[complex(1), complex(0)],
                         [complex(0), complex(0, 1)]])
-    assert np.array_equal(fs_circ, desired)
+    assert np.allclose(fs_circ, desired)   # array_equal() return False
 
 
 def test_get():

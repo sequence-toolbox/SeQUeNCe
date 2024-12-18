@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Dict, List
 if TYPE_CHECKING:
     from ..kernel.quantum_manager import QuantumManager
     from ..kernel.quantum_state import State
+    from ..kernel.timeline import Timeline
 
 from numpy import outer, add, zeros, array_equal
 
@@ -25,7 +26,7 @@ from ..utils.encoding import *
 from ..utils import log
 
 
-def make_bsm(name, timeline, encoding_type='time_bin', phase_error=0, detectors=[]):
+def make_bsm(name, timeline: "Timeline", encoding_type='time_bin', phase_error=0, detectors=[]):
     """Function to construct BSM of specified type.
 
     Arguments:
@@ -111,7 +112,7 @@ class BSM(Entity):
     _psi_plus = [complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)]
     _psi_minus = [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]
 
-    def __init__(self, name, timeline, phase_error=0, detectors=None):
+    def __init__(self, name: str, timeline: "Timeline", phase_error: float = 0, detectors=None):
         """Constructor for base BSM object.
 
         Args:
@@ -632,7 +633,7 @@ class SingleHeraldedBSM(BSM):
         resolution (int): maximum time resolution achievable with attached detectors.
     """
 
-    def __init__(self, name, timeline, phase_error=0, detectors=None, success_rate: float = 0.5):
+    def __init__(self, name: str, timeline: "Timeline", phase_error: float = 0, detectors: List[dict] = None, success_rate: float = 0.5):
         """Constructor for the single atom BSM class.
 
         Args:
@@ -645,6 +646,8 @@ class SingleHeraldedBSM(BSM):
 
         if detectors is None:
             detectors = [{}, {}]
+        else:
+            assert len(detectors) == 2, f"length of detectors = {len(detectors)}, must be 2"
         super().__init__(name, timeline, phase_error, detectors)
         self.encoding = "single_heralded"
         assert len(self.detectors) == 2

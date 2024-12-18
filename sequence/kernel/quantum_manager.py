@@ -15,8 +15,8 @@ if TYPE_CHECKING:
     from ..components.circuit import Circuit
     from .quantum_state import State
 
-from qutip.qip.circuit import QubitCircuit, Gate
-from qutip.qip.operations import gate_sequence_product
+from qutip_qip.circuit import QubitCircuit
+from qutip_qip.operations import gate_sequence_product, Gate
 from numpy import log, array, cumsum, base_repr, zeros
 from scipy.sparse import csr_matrix
 from scipy.special import binom

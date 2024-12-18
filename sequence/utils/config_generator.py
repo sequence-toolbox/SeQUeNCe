@@ -27,8 +27,6 @@ def add_default_args(parser):
     parser.add_argument('-s', '--stop', type=float, default=float('inf'), help='stop time (in s)')
     parser.add_argument('-p', '--parallel', nargs=4, help='optional parallel arguments: server ip, server port, num. processes, lookahead')
     parser.add_argument('-n', '--nodes', type=str, help='path to csv file to provide process for each node')
-    parser.add_argument('-gf', '--gate_fidelity', type=float, help='the fidelity of gate (CNOT)')
-    parser.add_argument('-mf', '--measurement_fidelity', type=float, help='the fidelity of measurment (Z measurement)')
     return parser
 
 

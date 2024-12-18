@@ -105,8 +105,7 @@ class RandomRequestApp(RequestApp):
         self._update_last_rsvp_metrics()
 
         responder = self.rg.choice(self.others)
-        start_time = self.node.timeline.now() + \
-                     self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
+        start_time = self.node.timeline.now() + self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
         end_time = start_time + self.rg.integers(self.min_dur, self.max_dur)
         memory_size = self.rg.integers(self.min_size, self.max_size)
         fidelity = self.rg.uniform(self.min_fidelity, self.max_fidelity)
@@ -122,8 +121,7 @@ class RandomRequestApp(RequestApp):
         Side Effects:
             Will create request for network manager on node.
         """
-        start_time = self.node.timeline.now() + \
-                     self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
+        start_time = self.node.timeline.now() + self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
         end_time = start_time + self.rg.integers(self.min_dur, self.max_dur)
         memory_size = self.rg.integers(self.min_size, self.max_size)
         super().start(responder, start_time, end_time, memory_size, fidelity)
@@ -131,7 +129,7 @@ class RandomRequestApp(RequestApp):
     def _update_last_rsvp_metrics(self):
         if self.responder and len(self.all_throughput) < len(self.reserves):
             throughput = self.get_throughput()
-            self.all_throughput.append(throughput)
+            self.all_throughput.append(round(throughput, 4))
 
         self.request_time = self.node.timeline.now()
         self.memory_counter = 0
@@ -151,8 +149,7 @@ class RandomRequestApp(RequestApp):
         super().get_reservation_result(reservation, result)
         if result:
             process = Process(self, "start", [])
-            self.reserves.append([self.responder, self.start_t, self.end_t,
-                                  self.memo_size, self.fidelity])
+            self.reserves.append([self.responder, self.start_t, self.end_t, self.memo_size, self.fidelity])
             self.paths.append(self.path)
             event = Event(self.end_t + 1, process)
             self.node.timeline.schedule(event)

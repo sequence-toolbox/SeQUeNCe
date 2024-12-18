@@ -7,8 +7,8 @@ from math import e, pi
 from typing import List, Dict, Union, Optional
 
 import numpy as np
-from qutip.qip.circuit import QubitCircuit
-from qutip.qip.operations import gate_sequence_product
+from qutip_qip.circuit import QubitCircuit
+from qutip_qip.operations import gate_sequence_product
 from qutip import Qobj
 
 GATE_INFO_TYPE = List[Union[str, List[int], float]]
