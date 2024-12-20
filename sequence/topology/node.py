@@ -96,6 +96,11 @@ class Node(Entity):
         component.owner = self
 
     def set_first_component(self, name: str):
+        """set the name of component that first receives incoming qubits.
+
+        Args:
+            name (str): the name of component that first receives incoming qubits.
+        """
         self.first_component_name = name
 
     def assign_cchannel(self, cchannel: "ClassicalChannel", another: str) -> None:

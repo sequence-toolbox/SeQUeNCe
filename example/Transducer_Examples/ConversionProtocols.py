@@ -46,17 +46,16 @@ def get_conversion_matrix(efficiency: float) -> Qobj:
 
 
 class EmittingProtocol(Protocol):
+    """Protocol for emission of single microwave photon by transmon.
+    """
 
-    "Protocol for emission of single microwave photon by transmon"
-
-    def __init__(self, own: "Node", name: str, tl: "Timeline", transmon="Transmon", transducer="Transducer"):
-        super().__init__(own, name)
-        self.owner = own
+    def __init__(self, owner: "Node", name: str, tl: "Timeline", transmon="Transmon", transducer="Transducer"):
+        super().__init__(owner, name)
+        self.owner = owner
         self.name = name
         self.tl = tl
         self.transmon = transmon
         self.transducer = transducer
-
 
     def start(self) -> None:
 
@@ -68,12 +67,10 @@ class EmittingProtocol(Protocol):
                 self.transmon.photon_counter += 1 
             else:
                 pass
-            
         else:
-                print("The transmon is in the state 00, or 01, it doesn't emit microwave photons")
+            print("The transmon is in the state 00, or 01, it doesn't emit microwave photons")
         
         print(f"Microwave photons emitted by the Transmon at Tx: {self.transmon.photon_counter}")
-
 
 
     def received_message(self, src: str, msg):
@@ -82,12 +79,12 @@ class EmittingProtocol(Protocol):
 
 
 class UpConversionProtocol(Protocol):
+    """Protocol for Up-conversion of an input microwave photon into an output optical photon.
+    """
 
-    "Protocol for Up-conversion of an input microwave photon into an output optical photon"
-
-    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", node: "Node", transmon: "Transmon"):
-        super().__init__(own, name)
-        self.owner = own
+    def __init__(self, owner: "Node", name: str, tl: "Timeline", transducer: "Transducer", node: "Node", transmon: "Transmon"):
+        super().__init__(owner, name)
+        self.owner = owner
         self.name = name
         self.tl = tl
         self.transducer = transducer
@@ -95,8 +92,7 @@ class UpConversionProtocol(Protocol):
         self.node = node
 
     def start(self, photon: "Photon") -> None:
-       
-
+        """start the protocol"""
         if self.transducer.photon_counter > 0:
             custom_gate = get_conversion_matrix(self.transducer.efficiency)
 
@@ -127,19 +123,19 @@ class UpConversionProtocol(Protocol):
 
 
 class DownConversionProtocol(Protocol):
+    """Protocol for Down-conversion of an input optical photon into an output microwave photon.
+    """
 
-    "Protocol for Down-conversion of an input optical photon into an output microwave photon"
-
-    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", transmon: "Transmon"):
-        super().__init__(own, name)
-        self.owner = own
+    def __init__(self, owner: "Node", name: str, tl: "Timeline", transducer: "Transducer", transmon: "Transmon"):
+        super().__init__(owner, name)
+        self.owner = owner
         self.name = name
         self.tl = tl
         self.transducer = transducer
 
     def start(self, photon: "Photon") -> None:
+        """start the protocol"""
         if self.transducer.photon_counter > 0:
-
 
             transducer_state = [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j]
             custom_gate = get_conversion_matrix(self.transducer.efficiency)
