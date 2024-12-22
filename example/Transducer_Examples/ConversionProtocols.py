@@ -17,10 +17,10 @@ from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 import sequence.utils.log as log
 import matplotlib.pyplot as plt
-from example.Transducer_Examples.TransductionComponent import Transducer
-from example.Transducer_Examples.TransductionComponent import FockDetector
-from example.Transducer_Examples.TransductionComponent import Transmon
-from example.Transducer_Examples.TransductionComponent import Counter
+from sequence.components.transducer import Transducer
+from sequence.components.transmon import Transmon
+
+
 from sequence.components.detector import Detector
 from sequence.components.photon import Photon   
 from sequence.kernel.quantum_manager import QuantumManager

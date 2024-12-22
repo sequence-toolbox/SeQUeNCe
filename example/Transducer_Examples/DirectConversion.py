@@ -1,6 +1,9 @@
 import sys
-print(sys.path)
 sys.path.append('.')
+
+import numpy as np
+import sequence.utils.log as log
+import matplotlib.pyplot as plt
 
 from sequence.kernel.timeline import Timeline
 from sequence.components.optical_channel import QuantumChannel
@@ -8,10 +11,10 @@ from sequence.topology.node import Node
 from sequence.components.photon import Photon
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
-import sequence.utils.log as log
-import matplotlib.pyplot as plt
+from sequence.components.transmon import Transmon
+from sequence.components.transducer import Transducer
+from sequence.components.detector import FockDetector
 
-from example.Transducer_Examples.TransductionComponent import *
 from example.Transducer_Examples.ConversionProtocols import EmittingProtocol
 from example.Transducer_Examples.ConversionProtocols import UpConversionProtocol
 from example.Transducer_Examples.ConversionProtocols import DownConversionProtocol
@@ -32,8 +35,9 @@ CONVERSION_DURATION = 10 # ps
 PERIOD = EMISSION_DURATION + CONVERSION_DURATION + CONVERSION_DURATION
 
 # Transmon
-ket1 = (0.0 + 0.0j, 1.0 + 0.0j) 
 ket0 = (1.0 + 0.0j, 0.0 + 0.0j) 
+ket1 = (0.0 + 0.0j, 1.0 + 0.0j) 
+
 state_list= [ket1, ket0] 
 TRANSMON_EFFICIENCY = 1
 
@@ -50,6 +54,12 @@ OPTICAL_DETECTOR_EFFICIENCY = 1
 ATTENUATION = 0
 DISTANCE = 1e3
 
+class Counter:
+    def __init__(self):
+        self.count = 0
+
+    def trigger(self, detector, info):
+        self.count += 1
 
 
 #NODES OF THE NETWORK 
@@ -73,7 +83,7 @@ class SenderNode(Node):
 
         # transmon
         self.transmon_name = name + ".transmon"
-        transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=TRANSMON_EFFICIENCY, photons_quantum_state= state_list)
+        transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline, wavelengths=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=TRANSMON_EFFICIENCY, photons_quantum_state= state_list)
         self.add_component(transmon)
 
         # detector
@@ -126,7 +136,7 @@ class ReceiverNode(Node):
         self.counter = Counter()
 
         # transmon
-        transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photons_quantum_state=state_list, photon_counter=0, efficiency=1)
+        transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline, wavelengths=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photons_quantum_state=state_list, photon_counter=0, efficiency=1)
         self.add_component(transmon)
         
         # fock detector

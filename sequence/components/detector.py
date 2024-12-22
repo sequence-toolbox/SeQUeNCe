@@ -8,7 +8,7 @@ QSDetector is defined as an abstract template and as implementations for polariz
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List
-from numpy import eye, kron, exp, sqrt
+from numpy import eye, kron, exp, sqrt, random
 from scipy.linalg import fractional_matrix_power
 from math import factorial
 
@@ -23,7 +23,7 @@ from .circuit import Circuit
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
-from ..utils.encoding import time_bin
+from ..utils.encoding import time_bin, fock
 from ..utils import log
 
 
@@ -608,3 +608,51 @@ class QSDetectorFockInterference(QSDetector):
     def set_phase(self, phase: float):
         self.phase = phase
         self._generate_povms()
+
+
+
+class FockDetector(Detector):
+    """Class modeling a Fock detector.
+
+    A Fock detector can detect the number of photons in a given mode.
+
+    See https://arxiv.org/abs/2411.11377
+
+    Attributes:
+        name (str): name of the detector
+        timeline (Timeline): the simulation timeline
+        efficiency (float): the efficiency
+        wavelength (int): wave length in nm
+        photon_counter (int):
+        photon_counter2 (int):
+    """
+
+    def __init__(self, name: str, timeline: "Timeline", efficiency: float, wavelength: int):
+        super().__init__(name, timeline, efficiency)
+        self.name = name
+        self.photon_counter = 0
+        self.photon_counter2 = 0
+        self.wavelength = wavelength
+        self.encoding_type = fock
+        self.timeline = timeline
+        self.efficiency = efficiency
+    
+    def init(self):
+        pass
+
+    def get(self, photon=None, **kwargs) -> None:
+        if random.random() < self.efficiency:
+            self.photon_counter += 1
+
+    def get_2(self, photon=None, **kwargs) -> None:
+            self.photon_counter2 += 1
+    
+    def set_efficiency(self, efficiency):
+        self.efficiency = efficiency
+
+    def receive_photon(self, src: str, photon: "Photon") -> None:
+        if photon.wavelength == self.wavelength:
+            self.get(photon)
+        else:
+            pass
+
