@@ -2,7 +2,6 @@ import sys
 sys.path.append('.')
 
 import numpy as np
-import sequence.utils.log as log
 import matplotlib.pyplot as plt
 
 from sequence.kernel.timeline import Timeline
@@ -14,6 +13,7 @@ from sequence.kernel.process import Process
 from sequence.components.transmon import Transmon
 from sequence.components.transducer import Transducer
 from sequence.components.detector import FockDetector
+from sequence.constants import KET0, KET1
 
 from example.Transducer_Examples.ConversionProtocols import EmittingProtocol
 from example.Transducer_Examples.ConversionProtocols import UpConversionProtocol
@@ -26,7 +26,6 @@ NUM_TRIALS = 50
 FREQUENCY = 1e9
 MICROWAVE_WAVELENGTH = 999308 # nm
 OPTICAL_WAVELENGTH = 1550 # nm
-MEAN_PHOTON_NUM=1
 
 # Timeline
 START_TIME = 0
@@ -34,16 +33,13 @@ EMISSION_DURATION = 10 # ps
 CONVERSION_DURATION = 10 # ps
 PERIOD = EMISSION_DURATION + CONVERSION_DURATION + CONVERSION_DURATION
 
-# Transmon
-ket0 = (1.0 + 0.0j, 0.0 + 0.0j) 
-ket1 = (0.0 + 0.0j, 1.0 + 0.0j) 
 
-state_list= [ket1, ket0] 
+state_list= [KET1, KET0] 
 TRANSMON_EFFICIENCY = 1
 
 # Transducer
-EFFICIENCY_UP   = 0.5
-EFFICIENCY_DOWN = 0.5
+EFFICIENCY_UP   = 0.6
+EFFICIENCY_DOWN = 0.6
 
 # Fock Detector
 MICROWAVE_DETECTOR_EFFICIENCY_Rx = 1
@@ -54,6 +50,7 @@ OPTICAL_DETECTOR_EFFICIENCY = 1
 ATTENUATION = 0
 DISTANCE = 1e3
 
+
 class Counter:
     def __init__(self):
         self.count = 0
@@ -62,7 +59,7 @@ class Counter:
         self.count += 1
 
 
-#NODES OF THE NETWORK 
+# NODES OF THE NETWORK 
 
 
 class SenderNode(Node):
@@ -75,23 +72,27 @@ class SenderNode(Node):
         timeline (Timeline): timeline
         transmon_name (str): name of the transmon
         detector_name (str): name of the detector
+        counter2 (Counter):  the counter for the detector
         transducer_name (str): name of the transducer
-
+        counter (Counter):   the counter for the transducer
+        emitting_protocol (EmittingProtocol): the protocol for emitting photons
+        upconversion_protocol (UpConversionProtocol): the protocol for up converting the microwave to optical photon
     """
     def __init__(self, name, timeline, node2):
         super().__init__(name, timeline)
 
         # transmon
         self.transmon_name = name + ".transmon"
-        transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline, wavelengths=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=TRANSMON_EFFICIENCY, photons_quantum_state= state_list)
+        transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline, wavelengths=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], \
+                            photon_counter=0, efficiency=TRANSMON_EFFICIENCY, photons_quantum_state=state_list)
         self.add_component(transmon)
 
         # detector
         detector_name = name + ".fockdetector"
         detector = FockDetector(detector_name, timeline, wavelength=MICROWAVE_WAVELENGTH, efficiency=MICROWAVE_DETECTOR_EFFICIENCY_Tx)
         self.add_component(detector)
-        self.counter = Counter()
-        detector.attach(self.counter)
+        self.counter2 = Counter()
+        detector.attach(self.counter2)
 
         # transducer
         self.transducer_name = name + ".transducer"
@@ -108,7 +109,6 @@ class SenderNode(Node):
         # emitting protocol and upconversion protocol
         self.emitting_protocol     = EmittingProtocol(self, name + ".emitting_protocol", timeline, transmon, transducer)
         self.upconversion_protocol = UpConversionProtocol(self, name + ".upconversion_protocol", timeline, transducer, node2, transmon)
-
 
 
 class ReceiverNode(Node):
@@ -136,7 +136,8 @@ class ReceiverNode(Node):
         self.counter = Counter()
 
         # transmon
-        transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline, wavelengths=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photons_quantum_state=state_list, photon_counter=0, efficiency=1)
+        transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline, wavelengths=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], \
+                            photons_quantum_state=state_list, photon_counter=0, efficiency=1)
         self.add_component(transmon)
         
         # fock detector
@@ -155,12 +156,11 @@ class ReceiverNode(Node):
         # down conversion protocol
         self.downconversion_protocol = DownConversionProtocol(self, name + ".downconversion_protocol", timeline, transducer, transmon)
 
-
     def receive_photon(self, src, photon):
         self.components[self.transducer_name].receive_photon_from_channel(photon)
 
 
-#MAIN
+# MAIN
 
 if __name__ == "__main__":
 
@@ -170,7 +170,7 @@ if __name__ == "__main__":
     node2 = ReceiverNode("node2", tl)
     node1 = SenderNode("node1", tl, node2)
 
-    qc1 = QuantumChannel("qc.node1.node2", tl, attenuation=ATTENUATION, distance=DISTANCE)
+    qc1 = QuantumChannel("qc.node1.node2", tl, attenuation=ATTENUATION, distance=DISTANCE)  # NOTE: this quantum channel is not used
     qc1.set_ends(node1, node2.name)
 
     if EFFICIENCY_UP >= 0 and EFFICIENCY_UP <= 1 and EFFICIENCY_DOWN >= 0 and EFFICIENCY_DOWN <= 1:
@@ -205,14 +205,14 @@ if __name__ == "__main__":
     detector2   = node2.get_components_by_type("FockDetector")[0]
 
     print(f"--------------------")
-    print(f"Direct Quantum Transduction Protocol starts, the qubit that we are going to convert is: {ket1}")
+    print(f"Direct Quantum Transduction Protocol starts, the qubit that we are going to convert is: {KET1}")
     
     for trial in range(NUM_TRIALS): 
 
         print(f"--------------------")
         print(f"Trial {trial}:")
         
-        # reset timeline
+        # reset timeline   # NOTE should not reset timeline, instead, each experiment should keep running for some time.
         tl.time = 0
         tl.init()
 
@@ -224,17 +224,17 @@ if __name__ == "__main__":
         transducer2.photon_counter = 0
         detector2.photon_counter   = 0
 
-        process0 = Process(node1.emitting_protocol, "start", [])
+        process0 = Process(node1.emitting_protocol, "start", [])  # NOTE: there should only be one event to kick the simulation (following 2 events shouldn't exist here)
         event_time0 = (cumulative_time + EMISSION_DURATION) 
         event0 = Event(event_time0, process0)
         tl.schedule(event0)
-    
-        process1 = Process(node1.upconversion_protocol, "start", [Photon]) 
+
+        process1 = Process(node1.upconversion_protocol, "start", [Photon])    # NOTE: class Photon shouldn't be the parameter, it should be Photon object
         event_time1 = (event_time0 + CONVERSION_DURATION) 
         event1 = Event(event_time1, process1)
         tl.schedule(event1)
     
-        process2 = Process(node2.downconversion_protocol, "start", [Photon])
+        process2 = Process(node2.downconversion_protocol, "start", [Photon])  # NOTE: class Photon shouldn't be the parameter, it should be Photon object
         event_time2 =(event_time1 + CONVERSION_DURATION) 
         event2 = Event(event_time2, process2)
         tl.schedule(event2)
@@ -256,7 +256,6 @@ if __name__ == "__main__":
         emitted_photons.append(total_transducer_count)
         converted_photons.append(total_photons_successful)
         
-
 
     # RESULTS
 

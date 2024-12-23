@@ -4,7 +4,7 @@ This module defines the Photon class for tracking individual photons.
 Photons may be encoded directly with polarization or time bin schemes, or may herald the encoded state of single atom memories.
 """
 from typing import Dict, Any, List, Union, TYPE_CHECKING
-from numpy import log2
+from numpy import log2, ndarray
 
 if TYPE_CHECKING:
     from numpy.random._generator import Generator
@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 from ..components.circuit import Circuit
 from ..utils.encoding import polarization
 from ..kernel.quantum_state import FreeQuantumState
+from ..constants import EPSILON
 
 
 class Photon:
@@ -43,8 +44,7 @@ class Photon:
     _measure_circuit = Circuit(1)
     _measure_circuit.measure(0)
 
-    def __init__(self, name: str, timeline: "Timeline", wavelength=0, location=None, encoding_type=polarization,
-                 quantum_state=None, use_qm=False):
+    def __init__(self, name: str, timeline: "Timeline", wavelength=0, location=None, encoding_type=polarization, quantum_state=None, use_qm=False):
         """Constructor for the photon class.
 
         Args:
@@ -84,8 +84,8 @@ class Photon:
                 quantum_state = (complex(1), complex(0))
             else:
                 assert type(quantum_state) is tuple
-                assert all([abs(a) <= 1.01 for a in quantum_state]), "Illegal value with abs > 1 in photon state"
-                assert abs(sum([abs(a) ** 2 for a in quantum_state]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
+                assert all([abs(a) < 1 + EPSILON for a in quantum_state]), "Illegal value with abs > 1 in photon state"
+                assert abs(sum([abs(a) ** 2 for a in quantum_state]) - 1) < EPSILON, "Squared amplitudes do not sum to 1"
                 num_qubits = log2(len(quantum_state))
                 assert num_qubits == 1, "Length of amplitudes for single photon should be 2"
             self.quantum_state = FreeQuantumState()

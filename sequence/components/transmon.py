@@ -24,6 +24,9 @@ class Transmon(Entity):
         photon_counter (int): photon counter
         photongs_quantum_state (list): a list of quantum states
         efficiency (float): the efficiency of the transmon
+        input_quantum_state (np.array): two qubit state for microwave and optical photon
+        photon0 (Photon): microwave photon
+        photon1 (Photon): optical photon
     """
 
     def __init__(self, owner: "Node", name: str, timeline: "Timeline", wavelengths: List[int], photon_counter: int, photons_quantum_state: List[tuple], efficiency: float = 1):
@@ -35,7 +38,10 @@ class Transmon(Entity):
         self.wavelengths = wavelengths
         self.photon_counter = photon_counter 
         self.photons_quantum_state = photons_quantum_state 
-        self.efficiency = efficiency 
+        self.efficiency = efficiency
+        self.input_quantum_state = None
+        self.new_photon0 = None
+        self.new_photon1 = None        
 
     def init(self):
         pass
@@ -45,9 +51,9 @@ class Transmon(Entity):
             self.add_receiver(i)
 
     def get(self) -> None:
-
-        new_photon0 = Photon(name=self.name, timeline=self.timeline, wavelength=self.wavelengths[0], quantum_state=self.photons_quantum_state[0])
-        new_photon1 = Photon(name=self.name, timeline=self.timeline, wavelength=self.wavelengths[1], quantum_state=self.photons_quantum_state[1])
+        """Receives a photon"""
+        new_photon0 = Photon(name=self.name, timeline=self.timeline, wavelength=self.wavelengths[0], quantum_state=self.photons_quantum_state[0])  # microwave
+        new_photon1 = Photon(name=self.name, timeline=self.timeline, wavelength=self.wavelengths[1], quantum_state=self.photons_quantum_state[1])  # optical
 
         input_quantum_state = np.kron(self.photons_quantum_state[0], self.photons_quantum_state[1])
         self.input_quantum_state = input_quantum_state 
@@ -55,6 +61,8 @@ class Transmon(Entity):
         self.new_photon1 = new_photon1
     
     def receive_photon_from_transducer(self, photon: "Photon") -> None:
+        """Receive photon from the transducer, called when the receiver node's transducer successfully down convert the photon to microwave
+        """
         self.photon_counter += 1
 
     def receive_photon(self, photon: "Photon") -> None:

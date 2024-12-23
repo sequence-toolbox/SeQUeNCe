@@ -43,7 +43,8 @@ class Transducer(Entity):
             self.add_receiver(i)
     
     def receive_photon_from_transmon(self, photon: "Photon") -> None:
-        self.photon_counter += 1 
+        """Receive a photon from the transmon"""
+        self.photon_counter += 1 # NOTE should schedule an UpConvert event in the future and pass on the argument photon to the UpConverion protocol's convert() method
 
     def receive_photon_from_channel(self, photon: "Photon") -> None:
         self.photon_counter += 1
