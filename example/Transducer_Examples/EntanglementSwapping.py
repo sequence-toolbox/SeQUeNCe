@@ -1,35 +1,32 @@
-import random
+""" Quantum transduction via entanglement swapping
+"""
+
+import sys
+sys.path.append('.')
+
 from sequence.kernel.timeline import Timeline
 from sequence.components.optical_channel import QuantumChannel
-from sequence.protocol import Protocol
 from sequence.topology.node import Node
-from sequence.components.light_source import LightSource
-from sequence.utils.encoding import absorptive, single_atom
 from sequence.components.photon import Photon
-from sequence.kernel.entity import Entity
-from typing import List, Callable, TYPE_CHECKING
-from abc import ABC, abstractmethod
-from sequence.components.memory import Memory
-from sequence.utils.encoding import fock
-import math
+from typing import List
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
-import sequence.utils.log as log
 import matplotlib.pyplot as plt
-from example.Transducer_Examples.TransductionComponent import Transducer
-from example.Transducer_Examples.TransductionComponent import FockDetector
-from example.Transducer_Examples.TransductionComponent import Transmon
-from example.Transducer_Examples.TransductionComponent import Counter
-from example.Transducer_Examples.TransductionComponent import FockBeamSplitter
+from sequence.components.transducer import Transducer
+from sequence.components.detector import FockDetector
+from sequence.components.transmon import Transmon
+from sequence.components.beam_splitter import FockBeamSplitter2
+from sequence.constants import KET0, KET1
 
-from sequence.components.detector import Detector
+from example.Transducer_Examples.SwappingProtocols import Swapping, Measure, EmittingProtocol, UpConversionProtocol
 
-from example.Transducer_Examples.SwappingProtocols import UpConversionProtocolEntangle
-from example.Transducer_Examples.SwappingProtocols import Swapping
-from example.Transducer_Examples.SwappingProtocols import Measure
 
-from sequence.kernel.quantum_manager import QuantumManager
-import sequence.components.circuit as Circuit
+class Counter:
+    def __init__(self):
+        self.count = 0
+
+    def trigger(self, detector, info):
+        self.count += 1
 
 
 # GENERAL
@@ -41,16 +38,14 @@ MEAN_PHOTON_NUM = 1
 
 # Timeline
 START_TIME = 0
-EMISSION_DURATION = 10 # mus
-ENTANGLEMENT_GENERATION_DURATION = 10 #mus
-SWAPPING_DUARTION = 1 # mus
-MEASURE_DURATION = 9 # mus
+EMISSION_DURATION = 10 # ps
+ENTANGLEMENT_GENERATION_DURATION = 10 #ps
+SWAPPING_DUARTION = 1 # ps
+MEASURE_DURATION = 9 # ps
 PERIOD = ENTANGLEMENT_GENERATION_DURATION + SWAPPING_DUARTION + MEASURE_DURATION + EMISSION_DURATION
 
-#Transmon
-ket1 = (0.0 + 0.0j, 1.0 + 0.0j) 
-ket0 = (1.0 + 0.0j, 0.0 + 0.0j) 
-state_list= [ket1, ket0] 
+# Transmon
+state_list= [KET1, KET0] 
 TRANSMON_EFFICIENCY = 1
 
 
@@ -67,70 +62,23 @@ ATTENUATION = 0
 DISTANCE = 1e3
 
 
-
-
-class EmittingProtocol(Protocol):
-
-    "Protocol for emission of single microwave photon by transmon"
-
-    def __init__(self, own: "Node", name: str, tl: "Timeline", transmon="Transmon", transducer="Transducer"):
-        super().__init__(own, name)
-        self.owner = own
-        self.name = name
-        self.tl = tl
-        self.transmon = transmon
-        self.transducer = transducer
-
-
-    def start(self) -> None:
-
-        self.transducer.photon_counter += 1 
-            
-        print(f"Microwave photons emitted by the Transmon at Tx: {self.transducer.photon_counter}")
-
-
-    def received_message(self, src: str, msg):
-        pass
-
-
-
-
-class UpConversionProtocol(Protocol):
-    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", node: "Node", transmon: "Transmon"):
-        super().__init__(own, name)
-        self.owner = own
-        self.name = name
-        self.tl = tl
-        self.transducer = transducer
-        self.transmon = transmon
-        self.node = node
-
-
-    def start(self, photon: "Photon") -> None:  
-
-        if self.transducer.photon_counter > 0:
-
-            if random.random() < self.transducer.efficiency:
-                self.transducer._receivers[0].receive_photon(self.node, photon)
-                print("Successful up-conversion")
-            else:
-                self.transducer._receivers[1].receive_photon_from_transducer(photon)
-                print("FAILED up-conversion")
-        else:
-            print("No photon to up-convert")
-
-    def received_message(self, src: str, msg):
-        pass
-
-
 # NODES OF THE NETWORK
 
 class SenderNode(Node):
+    """The end nodes.
+
+    Attributes:
+        transmon0_name (str): the name of the transmon that emits
+        transducer_name (str): the name of the transducer
+        transmon_name (str): the name of the transmon
+        emitting_protocol (EmittingProtocol):
+        upconversion_protocol (UpConversionProtocol):
+    """
     def __init__(self, name, timeline, node2):
         super().__init__(name, timeline)
 
         self.transmon0_name = name + ".transmon0"
-        transmon0 = Transmon(name=self.transmon0_name, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=1, photons_quantum_state= state_list)
+        transmon0 = Transmon(name=self.transmon0_name, owner=self, timeline=timeline, wavelengths=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=1, photons_quantum_state= state_list)
         self.add_component(transmon0)
         self.set_first_component(self.transmon0_name)
 
@@ -146,23 +94,25 @@ class SenderNode(Node):
         transmon0.add_receiver(transducer)
 
         self.transmon_name = name + ".transmon"
-        transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline, wavelength=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=1, photons_quantum_state= state_list)
+        transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline, wavelengths=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=1, photons_quantum_state= state_list)
         self.add_component(transmon)
         self.set_first_component(self.transmon_name)
 
-        transducer.add_output([node2, transmon])
+        transducer.add_output([node2, transmon])  # NOTE node2 shouldn't be receiver, the quantum channel is skipped
 
         self.emitting_protocol = EmittingProtocol(self, name + ".emitting_protocol", timeline, transmon0, transducer)
         self.upconversion_protocol = UpConversionProtocol(self, name + ".upconversion_protocol", timeline, transducer, node2, transmon)
 
 
 class EntangleNode(Node):
+    """The node in the middle for entanglement swapping
+    """
     def __init__(self, name, timeline, src_list: List[str]):
         super().__init__(name, timeline)
 
         # Hardware setup
         self.fock_beam_splitter_name = name + ".FockBeamSplitter"
-        fock_beam_splitter = FockBeamSplitter(name=self.fock_beam_splitter_name, owner=self, timeline=timeline, efficiency=0.5, photon_counter=0, src_list=src_list)        
+        fock_beam_splitter = FockBeamSplitter2(name=self.fock_beam_splitter_name, owner=self, timeline=timeline, efficiency=0.5, photon_counter=0, src_list=src_list)        
         self.add_component(fock_beam_splitter)
         self.set_first_component(self.fock_beam_splitter_name)
 
@@ -187,19 +137,19 @@ class EntangleNode(Node):
         self.swapping_protocol = Swapping(self, name + ".swapping_protocol", timeline, fock_beam_splitter)
         self.measure_protocol = Measure(self, name + ".measure_protocol", timeline, fock_beam_splitter)
 
-    def receive_photon(self, photon, src_list):
+    def receive_photon(self, photon: Photon, src_list: List[str]):
         self.components[self.fock_beam_splitter_name].receive_photon_from_scr(photon, src_list)
+
 
 
 if __name__ == "__main__":
     runtime = 10e12
     tl = Timeline(runtime)
 
-    nodoprimo_name = "Nodoo1"
-    nodoterzo_name = "Nodoo3"
+    nodoprimo_name = "Node1"
+    nodoterzo_name = "Node3"
 
     src_list = [nodoprimo_name, nodoterzo_name]
-
 
     node2 = EntangleNode("node2", tl, src_list)
     node1 = SenderNode(nodoprimo_name, tl, node2)
@@ -222,87 +172,31 @@ if __name__ == "__main__":
     spd_ideals = []
     total_emitted_photons = NUM_TRIALS  
 
+    # Node1 and Node3
+    transducer = node1.get_components_by_type("Transducer")[0]
+    transducer_count = transducer.photon_counter
+    transducer2 = node3.get_components_by_type("Transducer")[0]
+    transducer2_count = transducer2.photon_counter
+    transmon0 = node1.get_components_by_type("Transmon")[0]
+    transmon_count = transmon0.photon_counter                   # NOTE transmon_count is not used anywhere
+    transmon = node1.get_components_by_type("Transmon")[1]
+    transmon_count = transmon.photon_counter  
+
+    # Node2
+    fock_beam_splitter = node2.get_components_by_type("FockBeamSplitter2")[0]
+    fock_beam_splitter_count = fock_beam_splitter.photon_counter
+    detector1 = node2.get_components_by_type("FockDetector")[0]
+    detector1_count = detector1.photon_counter
+    detector1_count2 = detector1.photon_counter2
+    detector2 = node2.get_components_by_type("FockDetector")[1]
+    detector2_count = detector2.photon_counter
+    detector2_count2 = detector2.photon_counter2
+
     print(f"--------------------")
 
     for trial in range(NUM_TRIALS): 
         print(f"--------------------")
         print(f"Trial {trial}:")
-
-        tl.run()
-        
-        #Node1 and Node3
-        transducer = node1.get_components_by_type("Transducer")[0]
-        transducer_count = transducer.photon_counter
-        transducer2 = node3.get_components_by_type("Transducer")[0]
-        transducer2_count = transducer2.photon_counter
-        transmon0 = node1.get_components_by_type("Transmon")[0]
-        transmon_count = transmon0.photon_counter  
-        transmon = node1.get_components_by_type("Transmon")[1]
-        transmon_count = transmon.photon_counter  
-
-
-        #Node2
-        fock_beam_splitter = node2.get_components_by_type("FockBeamSplitter")[0]
-        fock_beam_splitter_count = fock_beam_splitter.photon_counter
-        detector1 = node2.get_components_by_type("FockDetector")[0]
-        detector1_count = detector1.photon_counter
-        detector1_count2 = detector1.photon_counter2
-        detector2 = node2.get_components_by_type("FockDetector")[1]
-        detector2_count = detector2.photon_counter
-        detector2_count2 = detector2.photon_counter2
-
-
-
-        #Process scheduling
-
-        process0 = Process(node1.emitting_protocol, "start", [])
-        event_time0 = (cumulative_time+EMISSION_DURATION) 
-        event0 = Event(event_time0, process0)
-        tl.schedule(event0)
-
-        process2 = Process(node3.emitting_protocol, "start", []) 
-        event2 = Event(event_time0, process2)
-        tl.schedule(event2)
-
-        process1 = Process(node1.upconversion_protocol, "start", [Photon]) 
-        event_time1 = event_time0 + ENTANGLEMENT_GENERATION_DURATION
-        event1 = Event(event_time1, process1)
-        tl.schedule(event1)
-
-        process3 = Process(node3.upconversion_protocol, "start", [Photon]) 
-        event3 = Event(event_time1, process3)
-        tl.schedule(event3)
-
-        process4 = Process(node2.swapping_protocol, "start", [Photon])
-        event_time4 = event_time1 + SWAPPING_DUARTION
-        event4 = Event(event_time4, process4)
-        tl.schedule(event4)
-
-        process5 = Process(node2.measure_protocol, "start", [Photon])
-        event_time5 = event_time4 + MEASURE_DURATION
-        event5 = Event(event_time5, process5)
-        tl.schedule(event5)
-
-        detector_photon_counter_real = node2.measure_protocol.get_detector_photon_counter_real()
-        spd_real = node2.measure_protocol.get_spd_real()
-        detector_photon_counter_ideal =node2.measure_protocol.get_detector_photon_counter_ideal()
-        spd_ideal = node2.measure_protocol.get_spd_ideal()
-
-        print(f"CUMULATIVE: Detector photon counter with IDEAL (cumulative): {detector_photon_counter_ideal}")
-        print(f"CUMULATIVE: SPD IDEAL: {spd_ideal}")
-
-        print(f"CUMILATIVE Detector photon counter REAL : {detector_photon_counter_real}")
-        print(f"CUMULATIVE SPD with eta NOT 1 REAL: {spd_real}")
-
-        
-
-        # Append results
-        times.append(trial * PERIOD)  #Time for each trial
-        detector_photon_counters_real.append(detector_photon_counter_real)
-        spd_reals.append(spd_real)
-        detector_photon_counters_ideal.append(detector_photon_counter_ideal)
-        spd_ideals.append(spd_ideal)
-
 
         # Reset timeline
         tl.time = 0
@@ -317,6 +211,58 @@ if __name__ == "__main__":
         detector1.photon_counter2 = 0
         detector2.photon_counter2 = 0
 
+        # Process scheduling
+        # Node 1 & 3
+        process0 = Process(node1.emitting_protocol, "start", [])
+        event_time0 = (cumulative_time + EMISSION_DURATION) 
+        event0 = Event(event_time0, process0)
+        tl.schedule(event0)
+
+        process2 = Process(node3.emitting_protocol, "start", []) 
+        event2 = Event(event_time0, process2)
+        tl.schedule(event2)
+
+        process1 = Process(node1.upconversion_protocol, "start", [Photon])   # the parameter shouldn't be a class, it should be an object
+        event_time1 = event_time0 + ENTANGLEMENT_GENERATION_DURATION
+        event1 = Event(event_time1, process1)
+        tl.schedule(event1)
+
+        process3 = Process(node3.upconversion_protocol, "start", [Photon]) 
+        event3 = Event(event_time1, process3)
+        tl.schedule(event3)
+
+        # Node 2
+        process4 = Process(node2.swapping_protocol, "start", [Photon])
+        event_time4 = event_time1 + SWAPPING_DUARTION
+        event4 = Event(event_time4, process4)
+        tl.schedule(event4)
+
+        process5 = Process(node2.measure_protocol, "start", [Photon])
+        event_time5 = event_time4 + MEASURE_DURATION
+        event5 = Event(event_time5, process5)
+        tl.schedule(event5)
+
+        # run the simulation
+        tl.run()
+
+        detector_photon_counter_real = node2.measure_protocol.get_detector_photon_counter_real()
+        spd_real = node2.measure_protocol.get_spd_real()
+        detector_photon_counter_ideal =node2.measure_protocol.get_detector_photon_counter_ideal()
+        spd_ideal = node2.measure_protocol.get_spd_ideal()
+
+        print(f"CUMULATIVE: Detector photon counter with IDEAL (cumulative): {detector_photon_counter_ideal}")
+        print(f"CUMULATIVE: SPD IDEAL: {spd_ideal}")
+
+        print(f"CUMILATIVE Detector photon counter REAL : {detector_photon_counter_real}")
+        print(f"CUMULATIVE SPD with eta NOT 1 REAL: {spd_real}")
+
+        # Append results
+        times.append(trial * PERIOD)  #Time for each trial
+        detector_photon_counters_real.append(detector_photon_counter_real)
+        spd_reals.append(spd_real)
+        detector_photon_counters_ideal.append(detector_photon_counter_ideal)
+        spd_ideals.append(spd_ideal)
+
         cumulative_time += PERIOD
 
     # Calculate and print the percentage of ideal detector counters
@@ -325,7 +271,6 @@ if __name__ == "__main__":
     
     percentage_spd_ideal= (spd_ideal / total_emitted_photons) * 100
     print(f"Percentage of Entangled detected by SPD IDEAL: {percentage_spd_ideal:.2f}%")
-
 
     percentage_detector_counters_real = (detector_photon_counter_real / total_emitted_photons) * 100
     print(f"Percentage of Entangled pairs detected by photon counter real: {percentage_detector_counters_real:.2f}%")

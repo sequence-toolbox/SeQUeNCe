@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
+    from ..topology.node import Node
 
 from numpy import trace
 
@@ -122,7 +123,7 @@ class FockBeamSplitter(Entity):
 
 
 class FockBeamSplitter2(Entity):
-    """Class modeling a Fock beam splitter.
+    """Class modeling a Fock beam splitter. The '2' for avoiding naming conflicts.
 
     A Fock beam splitter can send a single photon randomly in one of its ports.
 
@@ -140,13 +141,14 @@ class FockBeamSplitter2(Entity):
     def init(self):
         assert len(self._receivers) == 2
 
-    def receive_photon_from_scr(self, photon: "Photon", source: List[str]) -> None:
+    def receive_photon_from_scr(self, photon: Photon, source: List[str]) -> None:
+        """Receive photon from two end nodes"""
         self.photon_counter += 1
 
     def add_output(self, outputs: List):
         for i in outputs:
             self.add_receiver(i)
 
-    def send_photon(self, receiver: "Entity", photon: "Photon") -> None:
+    def send_photon(self, receiver: Entity, photon: Photon) -> None:
         receiver.get(self.name, photon)
 

@@ -1,78 +1,80 @@
 import random
-import numpy as np
 from sequence.kernel.timeline import Timeline
-from sequence.components.optical_channel import QuantumChannel
 from sequence.protocol import Protocol
 from sequence.topology.node import Node
-from sequence.components.light_source import LightSource
 from sequence.components.photon import Photon
-from sequence.kernel.entity import Entity
-from sequence.components.memory import Memory
-from sequence.utils.encoding import fock
-from sequence.kernel.event import Event
-from sequence.kernel.process import Process
-import sequence.utils.log as log
-import matplotlib.pyplot as plt
-from example.Transducer_Examples.TransductionComponent import Transducer
-from example.Transducer_Examples.TransductionComponent import FockDetector
-from example.Transducer_Examples.TransductionComponent import Transmon
-from example.Transducer_Examples.TransductionComponent import Counter
-from example.Transducer_Examples.TransductionComponent import FockBeamSplitter
-
-from sequence.components.detector import Detector
 from sequence.components.photon import Photon   
-from sequence.kernel.quantum_manager import QuantumManager
-import sequence.components.circuit as Circuit
-from qutip import Qobj
-
-
-
-
-ket1 = (0.0 + 0.0j, 1.0 + 0.0j) 
-ket0 = (1.0 + 0.0j, 0.0 + 0.0j) 
+from sequence.components.beam_splitter import FockBeamSplitter2
+from sequence.components.transducer import Transducer
+from sequence.components.transmon import Transmon
 
 MICROWAVE_WAVELENGTH = 999308 # nm
 OPTICAL_WAVELENGTH = 1550 # nm
 
 
 
-class UpConversionProtocolEntangle(Protocol): 
-    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", node: "Node"):
+class EmittingProtocol(Protocol):
+
+    """Protocol for emission of single microwave photon by transmon"""
+
+    def __init__(self, own: Node, name: str, tl: Timeline, transmon: Transmon, transducer: Transducer):
         super().__init__(own, name)
         self.owner = own
         self.name = name
         self.tl = tl
+        self.transmon = transmon
         self.transducer = transducer
-        self.node = node
 
-    def start(self, photon: "Photon") -> None:
-            if random.random() < self.transducer.efficiency:
-                photon.wavelength = OPTICAL_WAVELENGTH
-                self.transducer._receivers[0].receive_photon(self.node, photon)
-                print("Successful up-conversion")
+    def start(self) -> None:
 
-                self.transducer.output_quantum_state = [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j]
-              
-            else:
-                photon.wavelength = MICROWAVE_WAVELENGTH
-                self.transducer._receivers[1].receive_photon(photon)
-                print("FAILED up-conversion")
-        
+        self.transducer.photon_counter += 1 
+        print(f"Microwave photons emitted by {self.name}: {self.transducer.photon_counter}")
 
     def received_message(self, src: str, msg):
         pass
 
 
+class UpConversionProtocol(Protocol):
+
+    """Convert Microwave photon into optical photon."""
+
+    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", node: "Node", transmon: "Transmon"):
+        super().__init__(own, name)
+        self.owner = own
+        self.name = name
+        self.tl = tl
+        self.transducer = transducer
+        self.transmon = transmon
+        self.node = node
+
+    def start(self, photon: Photon) -> None:  
+
+        if self.transducer.photon_counter > 0:
+
+            if random.random() < self.transducer.efficiency:
+                self.transducer._receivers[0].receive_photon(photon, [self.node.name])
+                print(f"{self.name}: Successful up-conversion")
+            else:
+                self.transducer._receivers[1].receive_photon_from_transducer(photon)
+                print(f"{self.name}: FAILED up-conversion")
+        else:
+            print(f"{self.name}: No photon to up-convert")
+
+    def received_message(self, src: str, msg):
+        pass
+
 
 class Swapping(Protocol):
-    def __init__(self, own: "Node", name: str, tl: "Timeline", FockBS: "FockBeamSplitter"):
+
+    """Entanglement swapping in the middle."""
+    
+    def __init__(self, own: Node, name: str, tl: Timeline, FockBS: FockBeamSplitter2):
         super().__init__(own, name)
         self.owner = own
         self.name = name
         self.tl = tl
         self.FockBS = FockBS
 
-       
     def start(self, photon: "Photon") -> None:
 
         receivers = self.FockBS._receivers
@@ -81,7 +83,6 @@ class Swapping(Protocol):
         if photon_count == 1: 
             selected_receiver = random.choice(receivers)
             selected_receiver.get(photon)
-            
             selected_receiver.get_2(photon) 
 
         elif photon_count == 2:
@@ -99,7 +100,7 @@ class Swapping(Protocol):
 
 
 class Measure(Protocol):
-    def __init__(self, own: "Node", name: str, tl: "Timeline", FockBS: "FockBeamSplitter"):
+    def __init__(self, own: Node, name: str, tl: Timeline, FockBS: FockBeamSplitter2):
         super().__init__(own, name)
         self.owner = own
         self.name = name
@@ -113,7 +114,7 @@ class Measure(Protocol):
         self.spd_ideal= 0 
 
 
-    def start(self, photon: "Photon") -> None:
+    def start(self, photon: Photon) -> None:
 
         if self.FockBS._receivers[0].photon_counter == 1 or self.FockBS._receivers[1].photon_counter == 1:
             self.detector_photon_counter_real += 1
@@ -145,14 +146,14 @@ class Measure(Protocol):
 
 
 class SwappingIdeal(Protocol):
-    def __init__(self, own: "Node", name: str, tl: "Timeline", FockBS: "FockBeamSplitter"):
+    def __init__(self, own: Node, name: str, tl: Timeline, FockBS: FockBeamSplitter2):
         super().__init__(own, name)
         self.owner = own
         self.name = name
         self.tl = tl
         self.FockBS = FockBS
     
-    def start(self, photon: "Photon") -> None:
+    def start(self, photon: Photon) -> None:
 
         receivers = self.FockBS._receivers
         photon_count = self.FockBS.photon_counter
@@ -180,7 +181,7 @@ class SwappingIdeal(Protocol):
 
 
 class MeasureIdeal(Protocol):
-    def __init__(self, own: "Node", name: str, tl: "Timeline", FockBS: "FockBeamSplitter"):
+    def __init__(self, own: Node, name: str, tl: Timeline, FockBS: FockBeamSplitter2):
         super().__init__(own, name)
         self.owner = own
         self.name = name
@@ -194,7 +195,7 @@ class MeasureIdeal(Protocol):
         self.detector_photon_counter_real = 0 
         self.spd_real= 0  
 
-    def start(self, photon: "Photon") -> None:
+    def start(self, photon: Photon) -> None:
         
         if self.FockBS._receivers[0].photon_counter2 == 1 or self.FockBS._receivers[1].photon_counter2 == 1:
             self.detector_photon_counter_real += 1

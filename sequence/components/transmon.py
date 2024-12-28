@@ -60,12 +60,15 @@ class Transmon(Entity):
         self.new_photon0 = new_photon0
         self.new_photon1 = new_photon1
     
-    def receive_photon_from_transducer(self, photon: "Photon") -> None:
-        """Receive photon from the transducer, called when the receiver node's transducer successfully down convert the photon to microwave
+    def receive_photon_from_transducer(self, photon: Photon) -> None:
+        """Receive photon from the transducer
+        
+        In the Direct Conversion, called when the receiver node's transducer successfully down convert the photon to microwave
+        In the Entanglement Swapping, called when the transducer at the end nodes fail to up convert the microwave into photon
         """
         self.photon_counter += 1
 
-    def receive_photon(self, photon: "Photon") -> None:
+    def receive_photon(self, photon: Photon) -> None:
         self.photon_counter += 1
         
       

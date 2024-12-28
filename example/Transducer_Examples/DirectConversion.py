@@ -1,3 +1,6 @@
+""" Quantum transduction via direct conversion
+"""
+
 import sys
 sys.path.append('.')
 
@@ -15,9 +18,7 @@ from sequence.components.transducer import Transducer
 from sequence.components.detector import FockDetector
 from sequence.constants import KET0, KET1
 
-from example.Transducer_Examples.ConversionProtocols import EmittingProtocol
-from example.Transducer_Examples.ConversionProtocols import UpConversionProtocol
-from example.Transducer_Examples.ConversionProtocols import DownConversionProtocol
+from example.Transducer_Examples.ConversionProtocols import EmittingProtocol, UpConversionProtocol, DownConversionProtocol
 
 
 # GENERAL

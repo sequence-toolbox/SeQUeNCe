@@ -621,13 +621,13 @@ class FockDetector(Detector):
     Attributes:
         name (str): name of the detector
         timeline (Timeline): the simulation timeline
-        efficiency (float): the efficiency
+        efficiency (float): the efficiency of the detector
         wavelength (int): wave length in nm
         photon_counter (int):
         photon_counter2 (int):
     """
 
-    def __init__(self, name: str, timeline: "Timeline", efficiency: float, wavelength: int):
+    def __init__(self, name: str, timeline: "Timeline", efficiency: float, wavelength: int = 0):
         super().__init__(name, timeline, efficiency)
         self.name = name
         self.photon_counter = 0
@@ -640,12 +640,14 @@ class FockDetector(Detector):
     def init(self):
         pass
 
-    def get(self, photon=None, **kwargs) -> None:
+    def get(self, photon: Photon = None, **kwargs) -> None:
+        """Not ideal detector, there is a chance for photon loss."""
         if random.random() < self.efficiency:
             self.photon_counter += 1
 
-    def get_2(self, photon=None, **kwargs) -> None:
-            self.photon_counter2 += 1
+    def get_2(self, photon: Photon = None, **kwargs) -> None:
+        """Ideal detector, no photon loss"""
+        self.photon_counter2 += 1
     
     def set_efficiency(self, efficiency):
         self.efficiency = efficiency
