@@ -106,25 +106,24 @@ class Rotator(Entity):
         # psi_rotated = tensor_network_apply_op_vec(rot_mpo, state_mps, compress=True, contract = True, cutoff = self.timeline.quantum_manager.error_tolerance)
         # prepared_rho.draw()
         # rot_mpo.draw()
+
+        
         # A@B
         rho_rotated = tensor_network_apply_op_op(A = rot_mpo, B = prepared_rho, which_A="lower",which_B="upper", contract = True)
-        # plt.figure()
-        # rho_rotated.draw()
-
-        #### Simply printing the state. ########            
-        print("density matrix output by light source")
-        dense_state = self.timeline.quantum_manager.read_quantum_state(rho_rotated, 2, sparse=True)
-        print("TN light source state:")
-        print(dense_state)
-        plt.figure()
-        plt.imshow(dense_state.todense().real)
-        plt.figure()
-        plt.imshow(dense_state.todense().imag)
-        ########################################
-
         # B@A.T
         rho_rotated = tensor_network_apply_op_op(A = rot_mpo.H, B = rho_rotated, which_A="lower",which_B="lower", contract = True)
         
+        # #### Simply printing the state. ########            
+        # print("density matrix output by light source")
+        # dense_state = self.timeline.quantum_manager.read_quantum_state(rho_rotated, 2, sparse=True)
+        # print("TN light source state:")
+        # print(dense_state)
+        # plt.figure()
+        # plt.imshow(dense_state.todense().real)
+        # plt.figure()
+        # plt.imshow(dense_state.todense().imag)
+        # ########################################
+
         # rho_rotated.draw()
 
         # output_state = rotator_op @ prepared_state @ rotator_op.conjugate().transpose()

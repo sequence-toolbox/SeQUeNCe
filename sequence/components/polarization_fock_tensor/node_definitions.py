@@ -9,7 +9,7 @@ from sequence.topology.node import Node
 from sequence.components.optical_channel import ClassicalChannel
 
 from .optical_channel import QuantumChannel
-from .light_source import SPDCSource
+from .light_source import SPDCSource, light_source_module
 from .detector import QSDetectorFockDirect
 from .rotator import Rotator
 # from sequence.components.polarizationFock_Tensor.beam_splitter import Beamsplitter
@@ -30,43 +30,48 @@ def add_classical_channel(node1: Node, node2: Node, timeline: Timeline, **kwargs
     return cc
 
 
-class PolarizationDistributionNode(Node):
-    def __init__(self, name: str, timeline: "Timeline", signal_node_name, idler_node_name, params):
+class PolarizationDistributionNode_module(Node):
+    def __init__(self, name: str, timeline: "Timeline", signal_node_names, idler_node_names, params):
         super().__init__(name, timeline)
 
         self.num_emissions = params["MODE_NUM"]
 
-        self.idler_node_name = idler_node_name
-        self.signal_node_name = signal_node_name
+        self.idler_node_names = idler_node_names
+        self.signal_node_names = signal_node_names
 
-        self.spdc_name = name + ".spdc_source"
-        spdc = SPDCSource(self.spdc_name, timeline, wavelengths=[params["QUANTUM_WAVELENGTH"], params["QUANTUM_WAVELENGTH"]],
+        # self.spdc_name = name + ".spdc_source"
+        self.light_source_module_name = name+".light_source_module"
+        self.light_source_module = light_source_module(self.light_source_module_name, timeline)
+        
+        for i in range(len(signal_node_names)):
+            self.light_source_module.add_SPDCSource(name = self.light_source_module_name+f"{i}", wavelengths=[params["QUANTUM_WAVELENGTH"], params["QUANTUM_WAVELENGTH"]],
                           frequency=params["SPDC_FREQUENCY"], mean_photon_num=params["MEAN_PHOTON_NUM"], encoding_type=polarizationFock, polarization_fidelity=params["POLARIZATION_FIDELITY"])
 
-        self.add_component(spdc)
+        self.add_component(self.light_source_module)
 
         # We receive the emitted photons back here so we can route them to the corresponding Idler or Signal node based on any addional stuff you may want to do.
         # This was originally meant to work with the memory and hence, may be redundant here. 
-        spdc.add_receiver(self)
-        spdc.add_receiver(self)
+        self.light_source_module.add_receiver(self)
+        self.light_source_module.add_receiver(self)
 
     def start(self):
         # states = [[1/np.sqrt(2),1/np.sqrt(2)]] * self.num_emissions
-        self.components[self.spdc_name].emit(self.num_emissions)
+        self.components[self.light_source_module_name].emit(self.num_emissions)
 
     def set_source_mpn(self, mpn):
         self.components[self.spdc_name].mean_photon_num = mpn
 
     def get(self, photon: "Photon", **kwargs):
-        # print("sending photons at node.")
-        if photon.name == "signal":
+        if photon.name[-6:] == "signal":
             # print("source node signal node name:", self.signal_node_name)
             # print("sending signal photon")
-            self.send_qubit(self.signal_node_name, photon)
-        elif photon.name == "idler":
+            # print("sending the photon ", photon.name, "to", self.signal_node_names[int(photon.name[-7])])
+            self.send_qubit(self.signal_node_names[int(photon.name[-7])], photon)
+        elif photon.name[-6:] == "_idler":
             # print("source node idler node name:", self.idler_node_name)
             # print("sending idler photon")
-            self.send_qubit(self.idler_node_name, photon)
+            # print("sending the photon ", photon.name, "to", self.idler_node_names[int(photon.name[-7])])
+            self.send_qubit(self.send_qubit(self.idler_node_names[int(photon.name[-7])], photon), photon)
 
 class PolarizationReceiverNode(Node):
     def __init__(self, name, timeline, params, detectors, port_list):

@@ -35,6 +35,28 @@ def fill_fn(shape):
     return arr
 
 
+class light_source_module(Entity):
+    def __init__(self, name, timeline):
+        super().__init__(name, timeline)
+        self.spdc_sources = []
+
+
+    def init(self):
+        pass
+
+    def add_SPDCSource(self, name, wavelengths=None, frequency=8e7, mean_photon_num=0.1,
+                 encoding_type=polarizationFock, phase_error=0, bandwidth=0, polarization_fidelity = 1):
+        self.spdc_sources.append(SPDCSource(name, self.timeline, wavelengths, frequency, mean_photon_num, encoding_type, phase_error, bandwidth, polarization_fidelity))
+
+    def add_receiver(self, receiver: "Entity") -> None:
+        for i in self.spdc_sources:
+            i.add_receiver(receiver)
+
+    def emit(self, num_emissions, debug = False):
+        for i in self.spdc_sources:
+            i.emit(num_emissions, debug)
+
+
 
 class SPDCSource(LightSource):
     """Model for a laser light source for entangled photons (via SPDC).
@@ -187,14 +209,14 @@ class SPDCSource(LightSource):
 
         return psi, TMSV_state
 
-    def create_vacuum_state(self, num_modes, N, bond_dim = 2):
+    def create_vacuum_state(self, num_modes, N, bond_dim = 2, tags = "In"):
         return mps.from_fill_fn(
                     fill_fn,
                     L=num_modes,
                     bond_dim=bond_dim,
                     phys_dim=N,
                     cyclic=False,
-                    tags="In"
+                    tags=tags
                 )
 
     def emit(self, num_emissions, debug = False):
@@ -212,12 +234,12 @@ class SPDCSource(LightSource):
  
         for i in range(num_emissions):
             # generate two new photons
-            new_photon0 = Photon("signal", self.timeline,
+            new_photon0 = Photon(self.name+"signal", self.timeline,
                                     wavelength=self.wavelengths[0],
                                     location=self,
                                     encoding_type=self.encoding_type,
                                     use_qm=True)
-            new_photon1 = Photon("idler", self.timeline,
+            new_photon1 = Photon(self.name+"_idler", self.timeline,
                                     wavelength=self.wavelengths[1],
                                     location=self,
                                     encoding_type=self.encoding_type,
