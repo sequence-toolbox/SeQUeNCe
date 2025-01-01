@@ -18,7 +18,7 @@ from sequence.components.transmon import Transmon
 from sequence.components.beam_splitter import FockBeamSplitter2
 from sequence.constants import KET0, KET1
 
-from example.Transducer_Examples.SwappingProtocols import Swapping, Measure, EmittingProtocol, UpConversionProtocol
+from example.QuantumTransduction.SwappingProtocols import Swapping, Measure, EmittingProtocol, UpConversionProtocol
 
 
 class Counter:
