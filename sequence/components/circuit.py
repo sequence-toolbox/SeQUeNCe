@@ -1,3 +1,8 @@
+"""Models for simulation of quantum circuit.
+
+This module introduces the QuantumCircuit class. The qutip library is used to calculate the unitary matrix of a circuit.
+"""
+
 from math import e, pi
 from typing import List, Dict, Union, Optional
 
