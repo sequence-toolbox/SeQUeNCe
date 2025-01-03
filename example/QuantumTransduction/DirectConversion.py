@@ -18,7 +18,7 @@ from sequence.components.transducer import Transducer
 from sequence.components.detector import FockDetector
 from sequence.constants import KET0, KET1
 
-from example.Transducer_Examples.ConversionProtocols import EmittingProtocol, UpConversionProtocol, DownConversionProtocol
+from example.QuantumTransduction.ConversionProtocols import EmittingProtocol, UpConversionProtocol, DownConversionProtocol
 
 
 # GENERAL
@@ -105,7 +105,7 @@ class SenderNode(Node):
 
         # add receivers
         transmon.add_receiver(transducer)
-        transducer.add_output([node2, detector])
+        transducer.add_outputs([node2, detector])
 
         # emitting protocol and upconversion protocol
         self.emitting_protocol     = EmittingProtocol(self, name + ".emitting_protocol", timeline, transmon, transducer)
@@ -152,7 +152,7 @@ class ReceiverNode(Node):
         transducer.attach(self)
         transducer.attach(self.counter)
         self.set_first_component(self.transducer_name)
-        transducer.add_output([transmon, detector])
+        transducer.add_outputs([transmon, detector])
 
         # down conversion protocol
         self.downconversion_protocol = DownConversionProtocol(self, name + ".downconversion_protocol", timeline, transducer, transmon)

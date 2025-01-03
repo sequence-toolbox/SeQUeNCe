@@ -29,7 +29,7 @@ class Transmon(Entity):
         photon1 (Photon): optical photon
     """
 
-    def __init__(self, owner: "Node", name: str, timeline: "Timeline", wavelengths: List[int], photon_counter: int, photons_quantum_state: List[tuple], efficiency: float = 1):
+    def __init__(self, owner: Node, name: str, timeline: Timeline, wavelengths: List[int], photon_counter: int, photons_quantum_state: List[tuple], efficiency: float = 1):
         Entity.__init__(self, name, timeline)
         self.name = name
         self.owner = owner
@@ -46,7 +46,9 @@ class Transmon(Entity):
     def init(self):
         pass
 
-    def add_output(self, outputs: List):
+    def add_outputs(self, outputs: List):
+        """Add outputs, i.e., receivers, of the transmon
+        """
         for i in outputs:
             self.add_receiver(i)
 
@@ -59,7 +61,7 @@ class Transmon(Entity):
         self.input_quantum_state = input_quantum_state 
         self.new_photon0 = new_photon0
         self.new_photon1 = new_photon1
-    
+
     def receive_photon_from_transducer(self, photon: Photon) -> None:
         """Receive photon from the transducer
         
@@ -70,5 +72,3 @@ class Transmon(Entity):
 
     def receive_photon(self, photon: Photon) -> None:
         self.photon_counter += 1
-        
-      

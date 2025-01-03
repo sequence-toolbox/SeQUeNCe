@@ -29,6 +29,10 @@ MICROWAVE_WAVELENGTH = 999308 # nm
 OPTICAL_WAVELENGTH = 1550 # nm
 
 def get_conversion_matrix(efficiency: float) -> Qobj:
+    """
+    Args:
+        efficiency (float): transducer efficiency
+    """
     custom_gate_matrix = np.array([
         [1, 0, 0, 0],
         [0, math.sqrt(1 - efficiency), math.sqrt(efficiency), 0],

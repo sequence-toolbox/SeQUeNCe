@@ -26,7 +26,7 @@ class Transducer(Entity):
         efficiency (float): the efficiency of the transducer
         photon_counter (int): photon counter
     """
-    def __init__(self, owner: "Node", name: str, timeline: "Timeline", efficiency: float = 1):
+    def __init__(self, owner: Node, name: str, timeline: Timeline, efficiency: float = 1):
         Entity.__init__(self, name, timeline)
         self.name = name
         self.owner = owner
@@ -37,14 +37,14 @@ class Transducer(Entity):
     def init(self):
         assert len(self._receivers) == 2
 
-    def add_output(self, outputs: List):
-        """Add receivers"""
+    def add_outputs(self, outputs: List):
+        """Add outputs, i.e., receivers"""
         for i in outputs:
             self.add_receiver(i)
     
-    def receive_photon_from_transmon(self, photon: "Photon") -> None:
+    def receive_photon_from_transmon(self, photon: Photon) -> None:
         """Receive a photon from the transmon"""
         self.photon_counter += 1 # NOTE should schedule an UpConvert event in the future and pass on the argument photon to the UpConverion protocol's convert() method
 
-    def receive_photon_from_channel(self, photon: "Photon") -> None:
+    def receive_photon_from_channel(self, photon: Photon) -> None:
         self.photon_counter += 1

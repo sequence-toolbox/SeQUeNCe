@@ -75,12 +75,12 @@ class Swapping(Protocol):
         self.tl = tl
         self.FockBS = FockBS
 
-    def start(self, photon: "Photon") -> None:
+    def start(self, photon: Photon) -> None:
 
         receivers = self.FockBS._receivers
         photon_count = self.FockBS.photon_counter
 
-        if photon_count == 1: 
+        if photon_count == 1:
             selected_receiver = random.choice(receivers)
             selected_receiver.get(photon)
             selected_receiver.get_2(photon) 
@@ -98,7 +98,6 @@ class Swapping(Protocol):
 
 
 
-
 class Measure(Protocol):
     def __init__(self, own: Node, name: str, tl: Timeline, FockBS: FockBeamSplitter2):
         super().__init__(own, name)
@@ -112,7 +111,6 @@ class Measure(Protocol):
 
         self.detector_photon_counter_ideal = 0
         self.spd_ideal= 0 
-
 
     def start(self, photon: Photon) -> None:
 
@@ -140,7 +138,6 @@ class Measure(Protocol):
     def get_spd_ideal(self):
         return self.spd_ideal
 
-
     def received_message(self, src: str, msg):
         pass
 
@@ -163,7 +160,6 @@ class SwappingIdeal(Protocol):
 
         self.FockBS._receivers[0].set_efficiency(1) 
         self.FockBS._receivers[1].set_efficiency(1)
-   
             
         if photon_count == 1: 
             selected_receiver = random.choice(receivers)
@@ -179,7 +175,6 @@ class SwappingIdeal(Protocol):
 
 
 
-
 class MeasureIdeal(Protocol):
     def __init__(self, own: Node, name: str, tl: Timeline, FockBS: FockBeamSplitter2):
         super().__init__(own, name)
@@ -191,7 +186,6 @@ class MeasureIdeal(Protocol):
         self.detector_photon_counter_ideal = 0
         self.spd_ideal= 0  
 
-
         self.detector_photon_counter_real = 0 
         self.spd_real= 0  
 
@@ -202,7 +196,6 @@ class MeasureIdeal(Protocol):
         
         if self.FockBS._receivers[0].photon_counter >= 1 or self.FockBS._receivers[1].photon_counter >= 1:
             self.spd_real += 1
-
       
         print(f"Ideal detector photon counter: {self.detector_photon_counter_ideal}")
         print(f"Ideal SPD: {self.spd_ideal}")
@@ -210,6 +203,5 @@ class MeasureIdeal(Protocol):
         print(f"Detector photon counter with eta NOT 1 : {self.entanglement_count_real}") 
         print(f"SPD with eta NOT 1: {self.spd_real}")
         
-
     def received_message(self, src: str, msg):
         pass

@@ -48,7 +48,6 @@ PERIOD = ENTANGLEMENT_GENERATION_DURATION + SWAPPING_DUARTION + MEASURE_DURATION
 state_list= [KET1, KET0] 
 TRANSMON_EFFICIENCY = 1
 
-
 # Transducer
 EFFICIENCY_UP = 0.5
 
@@ -80,7 +79,6 @@ class SenderNode(Node):
         self.transmon0_name = name + ".transmon0"
         transmon0 = Transmon(name=self.transmon0_name, owner=self, timeline=timeline, wavelengths=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=1, photons_quantum_state= state_list)
         self.add_component(transmon0)
-        self.set_first_component(self.transmon0_name)
 
         self.transducer_name = name + ".transducer"
         transducer = Transducer(name=self.transducer_name, owner=self, timeline=timeline, efficiency=EFFICIENCY_UP)
@@ -89,16 +87,14 @@ class SenderNode(Node):
         transducer.photon_counter = 0
         self.counter = Counter()
         transducer.attach(self.counter)
-        self.set_first_component(self.transducer_name)
 
         transmon0.add_receiver(transducer)
 
         self.transmon_name = name + ".transmon"
         transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline, wavelengths=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], photon_counter=0, efficiency=1, photons_quantum_state= state_list)
         self.add_component(transmon)
-        self.set_first_component(self.transmon_name)
 
-        transducer.add_output([node2, transmon])  # NOTE node2 shouldn't be receiver, the quantum channel is skipped
+        transducer.add_outputs([node2, transmon])  # NOTE node2 shouldn't be receiver, the quantum channel is skipped
 
         self.emitting_protocol = EmittingProtocol(self, name + ".emitting_protocol", timeline, transmon0, transducer)
         self.upconversion_protocol = UpConversionProtocol(self, name + ".upconversion_protocol", timeline, transducer, node2, transmon)
@@ -119,14 +115,12 @@ class EntangleNode(Node):
         detector_name = name + ".detector1"
         detector = FockDetector(detector_name, timeline, efficiency=0.25)
         self.add_component(detector)
-        self.set_first_component(detector_name)
 
         detector_name2 = name + ".detector2"
         detector2 = FockDetector(detector_name2, timeline, efficiency=0.25)
         self.add_component(detector2)
-        self.set_first_component(detector_name2)
 
-        fock_beam_splitter.add_output([detector, detector2])
+        fock_beam_splitter.add_outputs([detector, detector2])
 
         self.counter = Counter()
         self.counter2 = Counter()
@@ -146,14 +140,13 @@ if __name__ == "__main__":
     runtime = 10e12
     tl = Timeline(runtime)
 
-    nodoprimo_name = "Node1"
-    nodoterzo_name = "Node3"
-
-    src_list = [nodoprimo_name, nodoterzo_name]
+    node1_name = "Node1"
+    node3_name = "Node3"
+    src_list = [node1_name, node3_name]
 
     node2 = EntangleNode("node2", tl, src_list)
-    node1 = SenderNode(nodoprimo_name, tl, node2)
-    node3 = SenderNode(nodoterzo_name, tl, node2)
+    node1 = SenderNode(node1_name, tl, node2)
+    node3 = SenderNode(node3_name, tl, node2)
 
     qc1 = QuantumChannel("qc.node1.node2", tl, attenuation=ATTENUATION, distance=DISTANCE)
     qc2 = QuantumChannel("qc.node1.node3", tl, attenuation=ATTENUATION, distance=DISTANCE)
@@ -222,22 +215,22 @@ if __name__ == "__main__":
         event2 = Event(event_time0, process2)
         tl.schedule(event2)
 
-        process1 = Process(node1.upconversion_protocol, "start", [Photon])   # the parameter shouldn't be a class, it should be an object
+        process1 = Process(node1.upconversion_protocol, "start", [Photon])   # NOTE the parameter shouldn't be a class, it should be an object
         event_time1 = event_time0 + ENTANGLEMENT_GENERATION_DURATION
         event1 = Event(event_time1, process1)
         tl.schedule(event1)
 
-        process3 = Process(node3.upconversion_protocol, "start", [Photon]) 
+        process3 = Process(node3.upconversion_protocol, "start", [Photon])   # NOTE the parameter shouldn't be a class, it should be an object
         event3 = Event(event_time1, process3)
         tl.schedule(event3)
 
         # Node 2
-        process4 = Process(node2.swapping_protocol, "start", [Photon])
+        process4 = Process(node2.swapping_protocol, "start", [Photon])   # NOTE the parameter shouldn't be a class, it should be an object
         event_time4 = event_time1 + SWAPPING_DUARTION
         event4 = Event(event_time4, process4)
         tl.schedule(event4)
 
-        process5 = Process(node2.measure_protocol, "start", [Photon])
+        process5 = Process(node2.measure_protocol, "start", [Photon])   # NOTE the parameter shouldn't be a class, it should be an object
         event_time5 = event_time4 + MEASURE_DURATION
         event5 = Event(event_time5, process5)
         tl.schedule(event5)
@@ -279,8 +272,8 @@ if __name__ == "__main__":
     print(f"Percentage of Entangled detected by SPD real: {percentage_spd_real:.2f}%")
 
 
-    
-#Plot
+
+# Plot
 
 color_blu = '#0047AB'
 color_red = '#FF0000'
