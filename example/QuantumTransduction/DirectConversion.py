@@ -1,4 +1,6 @@
-""" Quantum transduction via direct conversion
+"""Quantum transduction via direct conversion
+
+NOTE: Work in progress
 """
 
 import sys

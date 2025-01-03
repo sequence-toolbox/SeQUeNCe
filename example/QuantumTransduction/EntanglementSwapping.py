@@ -1,4 +1,6 @@
-""" Quantum transduction via entanglement swapping
+"""Quantum transduction via entanglement swapping
+
+NOTE: Work in progress
 """
 
 import sys

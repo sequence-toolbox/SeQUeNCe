@@ -1,27 +1,19 @@
+"""Protocols for Quantum Transduction via Direct Conversion
+
+NOTE: work in progress
+"""
+
 import random
 import numpy as np
 from sequence.kernel.timeline import Timeline
-from sequence.components.optical_channel import QuantumChannel
 from sequence.protocol import Protocol
 from sequence.topology.node import Node
-from sequence.components.light_source import LightSource
-from sequence.utils.encoding import absorptive, single_atom
 from sequence.components.photon import Photon
-from sequence.kernel.entity import Entity
-from typing import List, Callable, TYPE_CHECKING
-from abc import ABC, abstractmethod
-from sequence.components.memory import Memory
-from sequence.utils.encoding import fock
 import math
-import sequence.utils.log as log
 from sequence.components.transducer import Transducer
 from sequence.components.transmon import Transmon
 from sequence.constants import KET0, KET1
-
-from sequence.components.detector import Detector
 from sequence.components.photon import Photon   
-from sequence.kernel.quantum_manager import QuantumManager
-import sequence.components.circuit as Circuit
 from qutip import Qobj
 
 

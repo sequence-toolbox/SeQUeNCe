@@ -1,3 +1,7 @@
+"""Protocols for Quantum Transduction via Entanglement Swapping
+
+NOTE: work in progress
+"""
 import random
 from sequence.kernel.timeline import Timeline
 from sequence.protocol import Protocol
