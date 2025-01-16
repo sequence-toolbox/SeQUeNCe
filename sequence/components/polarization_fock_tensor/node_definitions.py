@@ -222,116 +222,118 @@ class PolarizationReceiverNode(Node):
         return self.coincidences, self.signal_singles, self.idler_singles, self.standard_deviations
 
 
-class BSMNode(Node):
-    def __init__(self, name, timeline, params, detectors, port_list):
-        # print("receiver node")
-        super().__init__(name, timeline)
+# class BSMNode(Node):
+#     def __init__(self, name, timeline, params, detectors, port_list):
+#         # print("receiver node")
+#         super().__init__(name, timeline)
         
-        # if type(src) == str:
-        #     self.src_list = [src+"_det0", src+"_det1"]
-        # else:
-        #     self.src_list = src
-        #     for i in range(len(src)):
-        #         self.src_list[i] += f"_det{i}"
+#         # if type(src) == str:
+#         #     self.src_list = [src+"_det0", src+"_det1"]
+#         # else:
+#         #     self.src_list = src
+#         #     for i in range(len(src)):
+#         #         self.src_list[i] += f"_det{i}"
         
-        # print("bsm node src_list:", self.src_list)
+#         # print("bsm node src_list:", self.src_list)
         
-        # self.detectors = QSDetectorFockDirect(name = self.name+".detectors", timeline = timeline, src_list = self.src_list)
+#         # self.detectors = QSDetectorFockDirect(name = self.name+".detectors", timeline = timeline, src_list = self.src_list)
 
-        self.detectors = detectors
-        self.port_list = port_list
-        # This isn't used but could be used to run trigger commands. 
-        self.detectors.attach(self)
-
-
-        # Add BSM component. 
-
-        # self.beamsplitter = Beamsplitter("beamsplitter", timeline)
-        # self.add_component(self.beamsplitter)
-        # self.beamsplitter.add_receiver(self.detectors)
-        # self.beamsplitter.add_receiver(self.detectors)
+#         self.detectors = detectors
+#         self.port_list = port_list
+#         # This isn't used but could be used to run trigger commands. 
+#         self.detectors.attach(self)
 
 
+#         # Add BSM component. 
 
-        ############### Add beam splitter here. ######################
-        # self.signal_rotator = Rotator("signal_polarizer", timeline)
-        # self.signal_rotator.add_receiver(self.detectors)
+#         # self.beamsplitter = Beamsplitter("beamsplitter", timeline)
+#         # self.add_component(self.beamsplitter)
+#         # self.beamsplitter.add_receiver(self.detectors)
+#         # self.beamsplitter.add_receiver(self.detectors)
 
-        # self.idler_rotator = Rotator("idler_polarizer", timeline)
-        # self.idler_rotator.add_receiver(self.detectors)
-        # self.idler_rotator_name = self.idler_rotator.name
+
+
+#         ############### Add beam splitter here. ######################
+#         # self.signal_rotator = Rotator("signal_polarizer", timeline)
+#         # self.signal_rotator.add_receiver(self.detectors)
+
+#         # self.idler_rotator = Rotator("idler_polarizer", timeline)
+#         # self.idler_rotator.add_receiver(self.detectors)
+#         # self.idler_rotator_name = self.idler_rotator.name
         
-        # self.add_component(self.signal_rotator)
-        # self.add_component(self.idler_rotator)
+#         # self.add_component(self.signal_rotator)
+#         # self.add_component(self.idler_rotator)
 
-        self.first_photon_received = False
+#         self.first_photon_received = False
 
-        # self.first_component_name = self.beamsplitter.name
-        # self.first_proxy_component_name = self.beamsplitter.name
+#         # self.first_component_name = self.beamsplitter.name
+#         # self.first_proxy_component_name = self.beamsplitter.name
 
 
-        self.add_component(self.detectors)
-        # self.first_component_name = self.signal_rotator.name
+#         self.add_component(self.detectors)
+#         # self.first_component_name = self.signal_rotator.name
         
-        # self.detections = {self.signal_detector:[], self.idler_detector:[]}
-        self.temporal_coincidence_window = params["TEMPORAL_COINCIDENCE_WINDOW"]
+#         # self.detections = {self.signal_detector:[], self.idler_detector:[]}
+#         self.temporal_coincidence_window = params["TEMPORAL_COINCIDENCE_WINDOW"]
         
 
-    # def receive_qubit(self, src: str, qubit) -> None:
-    #     # print("receiving qubit at node")
-    #     self.components[self.first_component_name].get(qubit, src="signal")
+#     # def receive_qubit(self, src: str, qubit) -> None:
+#     #     # print("receiving qubit at node")
+#     #     self.components[self.first_component_name].get(qubit, src="signal")
 
-    def receive_qubit(self, src: str, qubit) -> None:
-        # print("receiving qubit at node")
+#     def receive_qubit(self, src: str, qubit) -> None:
+#         # print("receiving qubit at node")
 
-        if self.first_photon_received:
-            # print("qubit:", qubit)
-            # print("BSM received:", self.timeline.quantum_manager.states[qubit.quantum_state].keys, self.timeline.quantum_manager.states[self.first_photon.quantum_state].keys)
-            self.components[self.first_component_name].get(photon1 = qubit, photon2 = self.first_photon, ports = self.port_list)
-            self.first_photon_received = False
-        else:
-            self.first_photon_received = True
-            self.first_photon = qubit
+#         if self.first_photon_received:
+#             # print("qubit:", qubit)
+#             # print("BSM received:", self.timeline.quantum_manager.states[qubit.quantum_state].keys, self.timeline.quantum_manager.states[self.first_photon.quantum_state].keys)
+#             self.components[self.first_component_name].get(photon1 = qubit, photon2 = self.first_photon, ports = self.port_list)
+#             self.first_photon_received = False
+#         else:
+#             self.first_photon_received = True
+#             self.first_photon = qubit
 
-    def receive_proxy_qubit(self, src: str, qubit) -> None:
-        # print("receiving qubit at node")
-        # self.components[self.first_proxy_component_name].get(qubit, src=src+"_det1")
-        if self.first_photon_received:
-            # print("BSM received:", self.timeline.quantum_manager.states[qubit.quantum_state].keys, self.timeline.quantum_manager.states[self.first_photon.quantum_state].keys)
-            self.components[self.first_component_name].get(photon1 = self.first_photon, photon2 = qubit, ports = self.port_list)
-            self.first_photon_received = False
-        else:
-            self.first_photon_received = True
-            self.first_photon = qubit
+#     def receive_proxy_qubit(self, src: str, qubit) -> None:
+#         # print("receiving qubit at node")
+#         # self.components[self.first_proxy_component_name].get(qubit, src=src+"_det1")
+#         if self.first_photon_received:
+#             # print("BSM received:", self.timeline.quantum_manager.states[qubit.quantum_state].keys, self.timeline.quantum_manager.states[self.first_photon.quantum_state].keys)
+#             self.components[self.first_component_name].get(photon1 = self.first_photon, photon2 = qubit, ports = self.port_list)
+#             self.first_photon_received = False
+#         else:
+#             self.first_photon_received = True
+#             self.first_photon = qubit
 
-    def set_det_eff(self, eff):
-        self.detectors.detectors[0].efficiency = eff
-        self.detectors.detectors[1].efficiency = eff
+#     def set_det_eff(self, eff):
+#         self.detectors.detectors[0].efficiency = eff
+#         self.detectors.detectors[1].efficiency = eff
 
 
-    def trigger(self, detector, info):
-        self.detections[detector][-1].append(info["time"])
+#     def trigger(self, detector, info):
+#         self.detections[detector][-1].append(info["time"])
 
-    def get_data(self):
-        self.coincidences = []
-        self.signal_singles = []
-        self.idler_singles = []
+#     def get_data(self):
+#         self.coincidences = []
+#         self.signal_singles = []
+#         self.idler_singles = []
 
-        # We start self.idler_rotation_detection_probs from 1 because during the first reset, an empty 
-        # list is added to self.idler_rotation_detection_probs. So, we ignore that here. 
-        for idler_angle_detection_probs in self.idler_rotation_detection_probs:
-            coincidence_probs = []
-            singles_probs_signal = []
-            singles_probs_idler = []
-            # print("idler_angle_detection_probs", idler_angle_detection_probs)
-            for detection_probs in idler_angle_detection_probs:
-                coincidence_probs.append(detection_probs["11"])
-                singles_probs_signal.append(detection_probs["11"]+detection_probs["10"])
-                singles_probs_idler.append(detection_probs["11"]+detection_probs["01"])
-            self.coincidences.append(coincidence_probs)
-            self.signal_singles.append(singles_probs_signal)
-            self.idler_singles.append(singles_probs_idler)
-        return self.coincidences, self.signal_singles, self.idler_singles
+#         # We start self.idler_rotation_detection_probs from 1 because during the first reset, an empty 
+#         # list is added to self.idler_rotation_detection_probs. So, we ignore that here. 
+#         for idler_angle_detection_probs in self.idler_rotation_detection_probs:
+#             coincidence_probs = []
+#             singles_probs_signal = []
+#             singles_probs_idler = []
+#             # print("idler_angle_detection_probs", idler_angle_detection_probs)
+#             for detection_probs in idler_angle_detection_probs:
+#                 coincidence_probs.append(detection_probs["11"])
+#                 singles_probs_signal.append(detection_probs["11"]+detection_probs["10"])
+#                 singles_probs_idler.append(detection_probs["11"]+detection_probs["01"])
+#             self.coincidences.append(coincidence_probs)
+#             self.signal_singles.append(singles_probs_signal)
+#             self.idler_singles.append(singles_probs_idler)
+#         return self.coincidences, self.signal_singles, self.idler_singles
+
+
 
 
 # We have 2 receivers - the signal and idler. The signal is recieved by the 
