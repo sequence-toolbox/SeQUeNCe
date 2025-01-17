@@ -227,7 +227,7 @@ class QSDetectorPolarization(QSDetector):
     def get(self, photon: "Photon", **kwargs) -> None:
         """Method to receive a photon for measurement.
 
-        Forwards the photon to the internal polariaztion beamsplitter.
+        Forwards the photon to the internal polarization beamsplitter.
 
         Arguments:
             photon (Photon): photon to measure.
@@ -610,7 +610,6 @@ class QSDetectorFockInterference(QSDetector):
         self._generate_povms()
 
 
-
 class FockDetector(Detector):
     """Class modeling a Fock detector.
 
@@ -623,7 +622,7 @@ class FockDetector(Detector):
         timeline (Timeline): the simulation timeline
         efficiency (float): the efficiency of the detector
         wavelength (int): wave length in nm
-        photon_counter (int): counting photon for the non ideal detector
+        photon_counter (int): counting photon for the non-ideal detector
         photon_counter2 (int): counting photon for the ideal detector
     """
 
@@ -676,4 +675,3 @@ class FockDetector(Detector):
             self.get(photon)
         else:
             pass
-

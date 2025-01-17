@@ -121,7 +121,6 @@ class FockBeamSplitter(Entity):
             self._receivers[detector_num].get()
 
 
-
 class FockBeamSplitter2(Entity):
     """Class modeling a Fock beam splitter. The '2' for avoiding naming conflicts.
 
@@ -136,7 +135,8 @@ class FockBeamSplitter2(Entity):
         photon_counter (int): counter for counting photons
         src_list (str): a list of photon source names
     """
-    def __init__(self, name: str, owner: "Node", timeline: "Timeline", efficiency: float, photon_counter: int, src_list: List[str]):
+    def __init__(self, name: str, owner: "Node", timeline: "Timeline",
+                 efficiency: float, photon_counter: int, src_list: List[str]):
         Entity.__init__(self, name, timeline)
         self.owner = owner
         self.timeline = timeline

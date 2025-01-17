@@ -11,7 +11,6 @@ from ..topology.node import Node
 from .photon import Photon
 
 
-
 class Transducer(Entity):
     """Class modeling a transducer.
 
@@ -44,7 +43,9 @@ class Transducer(Entity):
     
     def receive_photon_from_transmon(self, photon: Photon) -> None:
         """Receive a photon from the transmon"""
-        self.photon_counter += 1 # NOTE should schedule an UpConvert event in the future and pass on the argument photon to the UpConverion protocol's convert() method
+        # NOTE should schedule an UpConvert event in the future,
+        # and pass on the argument photon to the UpConversion protocol's convert() method
+        self.photon_counter += 1
 
     def receive_photon_from_channel(self, photon: Photon) -> None:
         self.photon_counter += 1

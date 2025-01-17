@@ -22,14 +22,15 @@ class Transmon(Entity):
         owner (Node): the entity that owns or aggregates the current component
         wavelengths (list): two wavelengths, one for microwave, and one for optics
         photon_counter (int): photon counter
-        photongs_quantum_state (list): a list of quantum states
+        photons_quantum_state (list): a list of quantum states
         efficiency (float): the efficiency of the transmon
         input_quantum_state (np.array): two qubit state for microwave and optical photon
-        photon0 (Photon): microwave photon
-        photon1 (Photon): optical photon
+        new_photon0 (Photon): microwave photon
+        new_photon1 (Photon): optical photon
     """
 
-    def __init__(self, owner: Node, name: str, timeline: Timeline, wavelengths: List[int], photon_counter: int, photons_quantum_state: List[tuple], efficiency: float = 1):
+    def __init__(self, owner: Node, name: str, timeline: Timeline, wavelengths: List[int], photon_counter: int,
+                 photons_quantum_state: List[tuple], efficiency: float = 1):
         Entity.__init__(self, name, timeline)
         self.name = name
         self.owner = owner
@@ -54,8 +55,10 @@ class Transmon(Entity):
 
     def get(self) -> None:
         """Receives a photon"""
-        new_photon0 = Photon(name=self.name, timeline=self.timeline, wavelength=self.wavelengths[0], quantum_state=self.photons_quantum_state[0])  # microwave
-        new_photon1 = Photon(name=self.name, timeline=self.timeline, wavelength=self.wavelengths[1], quantum_state=self.photons_quantum_state[1])  # optical
+        new_photon0 = Photon(name=self.name, timeline=self.timeline,
+                             wavelength=self.wavelengths[0], quantum_state=self.photons_quantum_state[0])  # microwave
+        new_photon1 = Photon(name=self.name, timeline=self.timeline,
+                             wavelength=self.wavelengths[1], quantum_state=self.photons_quantum_state[1])  # optical
 
         input_quantum_state = np.kron(self.photons_quantum_state[0], self.photons_quantum_state[1])
         self.input_quantum_state = input_quantum_state 

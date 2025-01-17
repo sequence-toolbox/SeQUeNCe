@@ -4,7 +4,7 @@ This module defines the Photon class for tracking individual photons.
 Photons may be encoded directly with polarization or time bin schemes, or may herald the encoded state of single atom memories.
 """
 from typing import Dict, Any, List, Union, TYPE_CHECKING
-from numpy import log2, ndarray
+from numpy import log2
 
 if TYPE_CHECKING:
     from numpy.random._generator import Generator
