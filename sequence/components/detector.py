@@ -8,7 +8,7 @@ QSDetector is defined as an abstract template and as implementations for polariz
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List
-from numpy import eye, kron, exp, sqrt, random
+from numpy import eye, kron, exp, sqrt
 from scipy.linalg import fractional_matrix_power
 from math import factorial
 
@@ -645,7 +645,7 @@ class FockDetector(Detector):
         Args:
             photon (Photon): photon
         """
-        if random.random() < self.efficiency:
+        if self.get_generator().random() < self.efficiency:
             self.photon_counter += 1
 
     def get_2(self, photon: Photon = None, **kwargs) -> None:
