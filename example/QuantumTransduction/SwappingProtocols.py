@@ -12,9 +12,8 @@ from sequence.components.beam_splitter import FockBeamSplitter2
 from sequence.components.transducer import Transducer
 from sequence.components.transmon import Transmon
 
-MICROWAVE_WAVELENGTH = 999308 # nm
-OPTICAL_WAVELENGTH = 1550 # nm
-
+MICROWAVE_WAVELENGTH = 999308  # nm
+OPTICAL_WAVELENGTH = 1550  # nm
 
 
 class EmittingProtocol(Protocol):
@@ -101,7 +100,6 @@ class Swapping(Protocol):
         pass
 
 
-
 class Measure(Protocol):
     def __init__(self, own: Node, name: str, tl: Timeline, FockBS: FockBeamSplitter2):
         super().__init__(own, name)
@@ -111,10 +109,10 @@ class Measure(Protocol):
         self.FockBS = FockBS
 
         self.detector_photon_counter_real = 0
-        self.spd_real= 0  
+        self.spd_real = 0
 
         self.detector_photon_counter_ideal = 0
-        self.spd_ideal= 0 
+        self.spd_ideal = 0
 
     def start(self, photon: Photon) -> None:
 
@@ -177,6 +175,8 @@ class SwappingIdeal(Protocol):
         self.FockBS._receivers[0].set_efficiency(real_efficiency_0)
         self.FockBS._receivers[1].set_efficiency(real_efficiency_1)
 
+    def received_message(self, src: str, msg):
+        pass
 
 
 class MeasureIdeal(Protocol):
@@ -188,10 +188,10 @@ class MeasureIdeal(Protocol):
         self.FockBS = FockBS
 
         self.detector_photon_counter_ideal = 0
-        self.spd_ideal= 0  
+        self.spd_ideal = 0
 
         self.detector_photon_counter_real = 0 
-        self.spd_real= 0  
+        self.spd_real = 0
 
     def start(self, photon: Photon) -> None:
         

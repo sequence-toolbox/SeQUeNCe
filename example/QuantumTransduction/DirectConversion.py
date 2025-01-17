@@ -2,10 +2,6 @@
 
 NOTE: Work in progress
 """
-
-import sys
-sys.path.append('.')
-
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -20,28 +16,32 @@ from sequence.components.transducer import Transducer
 from sequence.components.detector import FockDetector
 from sequence.constants import KET0, KET1
 
-from example.QuantumTransduction.ConversionProtocols import EmittingProtocol, UpConversionProtocol, DownConversionProtocol
+from example.QuantumTransduction.ConversionProtocols import (
+    EmittingProtocol, UpConversionProtocol, DownConversionProtocol)
+
+import sys
+sys.path.append('.')
 
 
 # GENERAL
 
 NUM_TRIALS = 50
 FREQUENCY = 1e9
-MICROWAVE_WAVELENGTH = 999308 # nm
-OPTICAL_WAVELENGTH = 1550 # nm
+MICROWAVE_WAVELENGTH = 999308  # nm
+OPTICAL_WAVELENGTH = 1550  # nm
 
 # Timeline
 START_TIME = 0
-EMISSION_DURATION = 10 # ps
-CONVERSION_DURATION = 10 # ps
+EMISSION_DURATION = 10  # ps
+CONVERSION_DURATION = 10  # ps
 PERIOD = EMISSION_DURATION + CONVERSION_DURATION + CONVERSION_DURATION
 
 
-state_list= [KET1, KET0] 
+state_list = [KET1, KET0]
 TRANSMON_EFFICIENCY = 1
 
 # Transducer
-EFFICIENCY_UP   = 0.6
+EFFICIENCY_UP = 0.6
 EFFICIENCY_DOWN = 0.6
 
 # Fock Detector
@@ -86,13 +86,15 @@ class SenderNode(Node):
 
         # transmon
         self.transmon_name = name + ".transmon"
-        transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline, wavelengths=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], \
+        transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline,
+                            wavelengths=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH],
                             photon_counter=0, efficiency=TRANSMON_EFFICIENCY, photons_quantum_state=state_list)
         self.add_component(transmon)
 
         # detector
         detector_name = name + ".fockdetector"
-        detector = FockDetector(detector_name, timeline, wavelength=MICROWAVE_WAVELENGTH, efficiency=MICROWAVE_DETECTOR_EFFICIENCY_Tx)
+        detector = FockDetector(detector_name, timeline, wavelength=MICROWAVE_WAVELENGTH,
+                                efficiency=MICROWAVE_DETECTOR_EFFICIENCY_Tx)
         self.add_component(detector)
         self.counter2 = Counter()
         detector.attach(self.counter2)
@@ -110,8 +112,10 @@ class SenderNode(Node):
         transducer.add_outputs([node2, detector])
 
         # emitting protocol and upconversion protocol
-        self.emitting_protocol     = EmittingProtocol(self, name + ".emitting_protocol", timeline, transmon, transducer)
-        self.upconversion_protocol = UpConversionProtocol(self, name + ".upconversion_protocol", timeline, transducer, node2, transmon)
+        self.emitting_protocol = EmittingProtocol(self, name + ".emitting_protocol",
+                                                  timeline, transmon, transducer)
+        self.upconversion_protocol = UpConversionProtocol(self, name + ".upconversion_protocol",
+                                                          timeline, transducer, node2, transmon)
 
 
 class ReceiverNode(Node):
@@ -139,12 +143,14 @@ class ReceiverNode(Node):
         self.counter = Counter()
 
         # transmon
-        transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline, wavelengths=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH], \
+        transmon = Transmon(name=self.transmon_name, owner=self, timeline=timeline,
+                            wavelengths=[MICROWAVE_WAVELENGTH, OPTICAL_WAVELENGTH],
                             photons_quantum_state=state_list, photon_counter=0, efficiency=1)
         self.add_component(transmon)
         
         # fock detector
-        detector = FockDetector(self.detector_name, timeline, wavelength=OPTICAL_WAVELENGTH, efficiency=OPTICAL_DETECTOR_EFFICIENCY)
+        detector = FockDetector(self.detector_name, timeline, wavelength=OPTICAL_WAVELENGTH,
+                                efficiency=OPTICAL_DETECTOR_EFFICIENCY)
         self.add_component(detector)
         detector.attach(self.counter2)
 
@@ -157,7 +163,8 @@ class ReceiverNode(Node):
         transducer.add_outputs([transmon, detector])
 
         # down conversion protocol
-        self.downconversion_protocol = DownConversionProtocol(self, name + ".downconversion_protocol", timeline, transducer, transmon)
+        self.downconversion_protocol = DownConversionProtocol(self, name + ".downconversion_protocol",
+                                                              timeline, transducer, transmon)
 
     def receive_photon(self, src, photon):
         self.components[self.transducer_name].receive_photon_from_channel(photon)
@@ -173,16 +180,15 @@ if __name__ == "__main__":
     node2 = ReceiverNode("node2", tl)
     node1 = SenderNode("node1", tl, node2)
 
-    qc1 = QuantumChannel("qc.node1.node2", tl, attenuation=ATTENUATION, distance=DISTANCE)  # NOTE: this quantum channel is not used
+    # NOTE: this quantum channel is not used
+    qc1 = QuantumChannel("qc.node1.node2", tl, attenuation=ATTENUATION, distance=DISTANCE)
     qc1.set_ends(node1, node2.name)
 
-    if EFFICIENCY_UP >= 0 and EFFICIENCY_UP <= 1 and EFFICIENCY_DOWN >= 0 and EFFICIENCY_DOWN <= 1:
+    if 0 <= EFFICIENCY_UP <= 1 and 0 <= EFFICIENCY_DOWN <= 1:
         pass
     else:
-        print("Error: the efficiency must be between 0 and 1")
-        exit(1)
+        raise ValueError("Error: the efficiency must be between 0 and 1")
 
-    
     # Plot1
     failed_up_conversions = []
     failed_down_conversions = []
@@ -227,17 +233,20 @@ if __name__ == "__main__":
         transducer2.photon_counter = 0
         detector2.photon_counter   = 0
 
-        process0 = Process(node1.emitting_protocol, "start", [])  # NOTE: there should only be one event to kick the simulation (following 2 events shouldn't exist here)
+        # NOTE: there should only be one event to kick the simulation (following 2 events shouldn't exist here)
+        process0 = Process(node1.emitting_protocol, "start", [])
         event_time0 = (cumulative_time + EMISSION_DURATION) 
         event0 = Event(event_time0, process0)
         tl.schedule(event0)
 
-        process1 = Process(node1.upconversion_protocol, "start", [Photon])    # NOTE: class Photon shouldn't be the parameter, it should be Photon object
+        # NOTE: class Photon shouldn't be the parameter, it should be Photon object
+        process1 = Process(node1.upconversion_protocol, "start", [Photon])
         event_time1 = (event_time0 + CONVERSION_DURATION) 
         event1 = Event(event_time1, process1)
         tl.schedule(event1)
-    
-        process2 = Process(node2.downconversion_protocol, "start", [Photon])  # NOTE: class Photon shouldn't be the parameter, it should be Photon object
+
+        # NOTE: class Photon shouldn't be the parameter, it should be Photon object
+        process2 = Process(node2.downconversion_protocol, "start", [Photon])
         event_time2 =(event_time1 + CONVERSION_DURATION) 
         event2 = Event(event_time2, process2)
         tl.schedule(event2)
@@ -268,11 +277,17 @@ if __name__ == "__main__":
     total_photons_to_be_converted = NUM_TRIALS-1
     print(f"Total number of photons converted: {total_photons_successful}")
     print(f"Total number of photons EMITTED: {total_transducer_count}")
-    
-    conversion_percentage = (total_photons_successful / total_photons_to_be_converted) * 100 if total_photons_to_be_converted > 0 else 0
-    print(f"Conversion efficiency of DQT protocol with no-idealities of transmon: {conversion_percentage:.2f}%")
 
-    conversion_percentage_2 = (total_photons_successful / total_transducer_count) * 100 if total_photons_to_be_converted > 0 else 0
+    if total_photons_to_be_converted > 0:
+        conversion_percentage = (total_photons_successful / total_photons_to_be_converted) * 100
+    else:
+        conversion_percentage = 0
+    print(f"Conversion efficiency of DQT protocol with non-idealities of transmon: {conversion_percentage:.2f}%")
+
+    if total_photons_to_be_converted > 0:
+        conversion_percentage_2 = (total_photons_successful / total_transducer_count) * 100
+    else:
+        conversion_percentage_2 = 0
     print(f"Conversion efficiency of DQT protocol: {conversion_percentage_2:.2f}%")
 
     failed_down_conversions_adjusted = [x + 1 for x in failed_down_conversions]
@@ -281,8 +296,6 @@ if __name__ == "__main__":
     print(f"- - - - - - - - - -")
 
     time_points = [i * PERIOD for i in range(NUM_TRIALS)]
-
-
 
 
 results_matrix = np.zeros((NUM_TRIALS, 3))

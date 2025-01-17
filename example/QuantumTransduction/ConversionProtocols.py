@@ -17,8 +17,9 @@ from sequence.components.photon import Photon
 from qutip import Qobj
 
 
-MICROWAVE_WAVELENGTH = 999308 # nm
-OPTICAL_WAVELENGTH = 1550 # nm
+MICROWAVE_WAVELENGTH = 999308  # nm
+OPTICAL_WAVELENGTH = 1550  # nm
+
 
 def get_conversion_matrix(efficiency: float) -> Qobj:
     """
@@ -80,7 +81,8 @@ class UpConversionProtocol(Protocol):
         name (str): the name of the protocol
         tl (Timeline): the simulation timeline
         transducer (Transducer): the transducer component
-        node (Node): the receiver node (where DownConversionProtocol runs) -- NOTE this is an error! node's typing should be a str, instead of Node
+        node (Node): the receiver node (where DownConversionProtocol runs).
+            NOTE this is an error! node's typing should be a str, instead of Node
         transmon (Transmon): the transmon component
     """
 
@@ -97,7 +99,7 @@ class UpConversionProtocol(Protocol):
         """start the protocol  
 
         NOTE (caitao, 12/21/2024): this start() method should be empty. 
-             The content of this function should be at a new convert() method that receives photons from the from the transducer
+             The content of this function should be at a new convert() method that receives photons from the transducer.
 
         Args:
             photon (Photon): photon from arrived at the transducer from the transmon
@@ -151,7 +153,7 @@ class DownConversionProtocol(Protocol):
         """start the protocol
             
             NOTE (caitao, 12/21/2024): this start() method should be empty. 
-                 The content of this function should be at a new convert() method that receives photons from the from the transducer
+                 The content of this function should be at a new convert() method that receives photons from the transducer
         Args:
             photon (Photon): the photon received at the transducer from the quantum channel
         """
