@@ -227,6 +227,7 @@ class SPDCSource(LightSource):
         ampH = generate_amp_list(mean_num)
         ampV = generate_amp_list(mean_num)
 
+
         op_H = 0
         op_V = 0
         for i in range(truncation+1):
@@ -235,35 +236,42 @@ class SPDCSource(LightSource):
             new_op_V = ampV[i] * ( self.power(sp.kron(adag_V, adag_V), i) ) / factorial(i)
             op_H += new_op_H
             op_V += new_op_V
-        
+
         TMSV_H_state = op_H @ sp.kron(vacuum, vacuum)
         TMSV_V_state = op_V @ sp.kron(vacuum, vacuum)
 
         total_state = kron(TMSV_H_state, TMSV_V_state)
-
         entangled_state = BS_U @ total_state
+
+        if not dm:
+            entangled_state = op_H @ op_V @ sp.kron(vacuum, vacuum)
 
         entangled_state.data = np.round(entangled_state.data, 10)
 
         state_indices, _ = entangled_state.nonzero()
 
-        # num_photons = 2
-        # for n in state_indices:
-        #     for i in range(num_photons):
-        #         H = (n // (N**(2*i+1))) % N
-        #         V = (n // (N**(2*i+0))) % N
-        #         # print("n:", n, "H:", H, "V:", V, "i", i, "Val:", entangled_state[n,0])
-        #         if H+V > truncation:
-        #             # print("deleted:", n)
-        #             entangled_state[n,0] = 0        
+        num_photons = 2
+        if not dm: num_photons = 1
+        for n in state_indices:
+            for i in range(num_photons):
+                H = (n // (N**(2*i+1))) % N
+                V = (n // (N**(2*i+0))) % N
+                # print("n:", n, "H:", H, "V:", V, "i", i, "Val:", entangled_state[n,0])
+                if H+V > truncation:
+                    # print("deleted:", n)
+                    entangled_state[n,0] = 0        
         
 
         entangled_state.eliminate_zeros()
+        entangled_state = 1/np.sqrt((entangled_state.conjugate().transpose() @ entangled_state)[0,0]) * entangled_state
 
-        labels = self.timeline.quantum_manager.generate_labels(4)
+        if not dm:
+            return entangled_state
+
+        # labels = self.timeline.quantum_manager.generate_labels(4)
         # print("TMSV state:\n", [f"{labels[i]}" for i in list(entangled_state.nonzero()[0])])
         # for i in list(entangled_state.nonzero()[0]): print(labels[i], entangled_state[i])
-        output = [labels[i] for i in entangled_state.nonzero()[0]]
+        # output = [labels[i] for i in entangled_state.nonzero()[0]]
         # print("Output:", output)
 
         # print("entangled_state indices:", entangled_state.nonzero()[0])
@@ -271,8 +279,6 @@ class SPDCSource(LightSource):
 
         if not dm:
             return entangled_state
-
-        entangled_state = 1/np.sqrt((entangled_state.conjugate().transpose() @ entangled_state)[0,0]) * entangled_state
 
         # print("total_state:", entangled_state)
         # labels = self.timeline.quantum_manager.generate_labels(4)
