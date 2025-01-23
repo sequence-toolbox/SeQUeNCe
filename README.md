@@ -10,16 +10,16 @@
 
 <p align="center">
   <a href="https://sequence-rtd-tutorial.readthedocs.io/">
-    <img src="https://img.shields.io/readthedocs/sequence-rtd-tutorial">
+    <img src="https://img.shields.io/readthedocs/sequence-rtd-tutorial" style="display: inline-block;">
   </a>
   <a href="https://sequence-rtd-tutorial.readthedocs.io/">
-    <img src="https://img.shields.io/pypi/v/sequence">
+    <img src="https://img.shields.io/pypi/v/sequence" style="display: inline-block;">
   </a>
   <a href="https://qutip.org/">
-    <img src="https://img.shields.io/badge/integration%20-Qutip-blue">
+    <img src="https://img.shields.io/badge/integration%20-Qutip-blue" style="display: inline-block;">
   </a>
   <a href="https://iopscience.iop.org/article/10.1088/2058-9565/ac22f6">
-    <img src="https://img.shields.io/badge/10.1088%2F2058-9565%2Fac22f6?label=DOI">
+    <img src="https://img.shields.io/badge/10.1088%2F2058-9565%2Fac22f6?label=DOI" style="display: inline-block;">
   </a>
 </p>
 
