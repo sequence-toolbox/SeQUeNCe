@@ -57,6 +57,8 @@ class Entity(ABC):
         pass
 
     def add_receiver(self, receiver: "Entity") -> None:
+        """Method to add a receiver (to receive photons)."""
+        
         self._receivers.append(receiver)
 
     def attach(self, observer: Any) -> None:
@@ -88,6 +90,69 @@ class Entity(ABC):
         """
 
         raise Exception("get method called on non-receiving class.")
+
+    def remove_from_timeline(self) -> None:
+        """Method to remove entity from attached timeline.
+
+        This is to allow unused entities to be garbage collected.
+        """
+        self.timeline.remove_entity_by_name(self.name)
+
+    def get_generator(self) -> Generator:
+        """Method to get random generator of parent node.
+
+        If entity is not attached to a node, return default generator.
+        """
+        if hasattr(self.owner, "get_generator"):
+            return self.owner.get_generator()
+        else:
+            return default_rng()
+
+    def change_timeline(self, timeline: "Timeline"):
+        self.remove_from_timeline()
+        self.timeline = timeline
+        self.timeline.add_entity(self)
+
+
+class ClassicalEntity(ABC):
+    """Abstract Entity class for purely classical entities.
+    Entity should use the provided pseudo random number generator (PRNG) to
+    produce reproducible random numbers. As a result, simulations with the same
+    seed can reproduce identical results. Function "get_generator" returns the PRNG.
+
+    Compared with Entity, ClassicalEntity does not have _observers and _receivers
+
+    Attributes:
+        name (str): name of the entity.
+        timeline (Timeline): the simulation timeline for the entity.
+        owner (Entity): another entity that owns or aggregates the current entity.
+    """
+
+    def __init__(self, name: str, timeline: "Timeline") -> None:
+        """Constructor for entity class.
+
+        Args:
+            name (str): name of entity.
+            timeline (Timeline): timeline for simulation.
+        """
+        self.name = "" if name is None else name
+        self.timeline = timeline
+        self.owner = None
+
+        timeline.add_entity(self)
+
+    def __str__(self) -> str:
+        return self.name
+
+    @abstractmethod
+    def init(self) -> None:
+        """Method to initialize entity (abstract).
+
+        Entity `init` methods are invoked for all timeline entities when the timeline is initialized.
+        This method can be used to perform any necessary functions before simulation.
+        """
+
+        pass
 
     def remove_from_timeline(self) -> None:
         """Method to remove entity from attached timeline.

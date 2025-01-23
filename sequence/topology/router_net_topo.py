@@ -37,6 +37,7 @@ class RouterNetTopo(Topo):
     PORT = "port"
     PROC_NUM = "process_num"
     QUANTUM_ROUTER = "QuantumRouter"
+    CONTROLLER = "Controller"
 
     def __init__(self, conf_file_name: str):
         self.bsm_to_router_map = {}
