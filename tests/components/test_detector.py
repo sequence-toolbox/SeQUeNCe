@@ -329,3 +329,16 @@ def test_QSDetectorFockInterference():
 
     times = qsd.get_photon_times()
     assert len(times[0]) == NUM_TRIALS
+
+
+def test_FockDetector():
+    efficiency = 0.9
+    tl = Timeline()
+    fock_detector = FockDetector("fock detector", tl, efficiency=efficiency)
+    NUM_TRIALS = 1000
+    for _ in range(NUM_TRIALS):
+        fock_detector.get()
+        fock_detector.get_2()
+
+    ratio = fock_detector.photon_counter / fock_detector.photon_counter2
+    assert efficiency - 0.05 < ratio < efficiency + 0.05

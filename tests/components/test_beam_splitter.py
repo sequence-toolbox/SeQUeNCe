@@ -1,9 +1,11 @@
 import numpy as np
 
-from sequence.components.beam_splitter import BeamSplitter
+from sequence.components.beam_splitter import BeamSplitter, FockBeamSplitter2
+from sequence.components.detector import FockDetector
 from sequence.components.photon import Photon
 from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import polarization
+from sequence.topology.node import Node
 
 np.random.seed(0)
 SEED = 0
@@ -205,3 +207,28 @@ def test_BeamSplitter_get():
 #         tl.time += 1
 #
 #     assert len(rec_0.log) == NUM_TRIALS
+
+
+def test_FockBeamSplitter2():
+    """ Quantum transduction via entanglemenet swapping (node2).
+        A fock beamsplitter is attached to two detectors
+    """
+    tl = Timeline()
+    node1 = Node('Node1', tl)
+    node2 = Node('Node2', tl)  # swapping node
+    node3 = Node('Node3', tl)
+    src_list = [node1, node3]
+
+    detector1 = FockDetector(node2.name + '.detector1', tl, efficiency=0.5)
+    detector2 = FockDetector(node2.name + '.detector2', tl, efficiency=0.5)
+
+    fockbeamsplitter2 = FockBeamSplitter2('fock_beamsplitter2', node2, tl, efficiency=0.9, photon_counter=0, src_list=src_list)
+    fockbeamsplitter2.add_outputs([detector1, detector2])
+
+    photon = Photon('photon', tl)
+
+    photon_number = 10
+    for _ in range(photon_number):
+        fockbeamsplitter2.receive_photon_from_src(photon, src_list)
+
+    assert fockbeamsplitter2.photon_counter == photon_number

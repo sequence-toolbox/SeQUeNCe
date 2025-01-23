@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
+    from ..topology.node import Node
 
 from numpy import trace
 
@@ -118,3 +119,46 @@ class FockBeamSplitter(Entity):
             detector_num = self.get_generator().choice([0, 1], p=[prob_0, 1-prob_0])
             self.most_recent_time = self.timeline.now()
             self._receivers[detector_num].get()
+
+
+class FockBeamSplitter2(Entity):
+    """Class modeling a Fock beam splitter. The '2' for avoiding naming conflicts.
+
+    A Fock beam splitter can send a single photon randomly in one of its ports. 
+    See https://arxiv.org/abs/2411.11377, Simulation of Quantum Transduction Strategies for Quantum Networks
+
+    Attributes:
+        name (str): the name
+        owner (Node): the owner
+        timeline (Timeline): the timeline
+        efficiency (float): the efficiency of the beamsplitter
+        photon_counter (int): counter for counting photons
+        src_list (str): a list of photon source names
+    """
+    def __init__(self, name: str, owner: "Node", timeline: "Timeline",
+                 efficiency: float, photon_counter: int, src_list: List[str]):
+        Entity.__init__(self, name, timeline)
+        self.owner = owner
+        self.timeline = timeline
+        self.efficiency = efficiency
+        self.photon_counter = photon_counter
+        self.src_list = src_list
+
+    def init(self):
+        assert len(self._receivers) == 2
+
+    def receive_photon_from_src(self, photon: Photon, source: List[str]) -> None:
+        """Receive photon from two end nodes"""
+        self.photon_counter += 1
+
+    def add_outputs(self, outputs: List):
+        """Add outputs, i.e., receivers
+        
+        Args:
+            outputs (list): a list of entities, i.e., detectors
+        """
+        for i in outputs:
+            self.add_receiver(i)
+
+    def send_photon(self, receiver: Entity, photon: Photon) -> None:
+        receiver.get(self.name, photon)

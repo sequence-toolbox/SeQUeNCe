@@ -23,7 +23,7 @@ from .circuit import Circuit
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
-from ..utils.encoding import time_bin
+from ..utils.encoding import time_bin, fock
 from ..utils import log
 
 
@@ -227,7 +227,7 @@ class QSDetectorPolarization(QSDetector):
     def get(self, photon: "Photon", **kwargs) -> None:
         """Method to receive a photon for measurement.
 
-        Forwards the photon to the internal polariaztion beamsplitter.
+        Forwards the photon to the internal polarization beamsplitter.
 
         Arguments:
             photon (Photon): photon to measure.
@@ -608,3 +608,70 @@ class QSDetectorFockInterference(QSDetector):
     def set_phase(self, phase: float):
         self.phase = phase
         self._generate_povms()
+
+
+class FockDetector(Detector):
+    """Class modeling a Fock detector.
+
+    A Fock detector can detect the number of photons in a given mode.
+
+    See https://arxiv.org/abs/2411.11377
+
+    Attributes:
+        name (str): name of the detector
+        timeline (Timeline): the simulation timeline
+        efficiency (float): the efficiency of the detector
+        wavelength (int): wave length in nm
+        photon_counter (int): counting photon for the non-ideal detector
+        photon_counter2 (int): counting photon for the ideal detector
+    """
+
+    def __init__(self, name: str, timeline: "Timeline", efficiency: float, wavelength: int = 0):
+        super().__init__(name, timeline, efficiency)
+        self.name = name
+        self.photon_counter = 0
+        self.photon_counter2 = 0
+        self.wavelength = wavelength
+        self.encoding_type = fock
+        self.timeline = timeline
+        self.efficiency = efficiency
+    
+    def init(self):
+        pass
+
+    def get(self, photon: Photon = None, **kwargs) -> None:
+        """Not ideal detector, there is a chance for photon loss.
+        
+        Args:
+            photon (Photon): photon
+        """
+        if self.get_generator().random() < self.efficiency:
+            self.photon_counter += 1
+
+    def get_2(self, photon: Photon = None, **kwargs) -> None:
+        """Ideal detector, no photon loss
+        
+        Args:
+            photon (Photon): photon
+        """
+        self.photon_counter2 += 1
+    
+    def set_efficiency(self, efficiency: float):
+        """Set the efficiency of the fock detector.
+        
+        Args:
+            efficiency (float): the efficiency of the detector
+        """
+        self.efficiency = efficiency
+
+    def receive_photon(self, src: str, photon: Photon) -> None:
+        """receive a photon
+        
+        Args:
+            src (str): name of the source node
+            photon (Photon): photon
+        """
+        if photon.wavelength == self.wavelength:
+            self.get(photon)
+        else:
+            pass
