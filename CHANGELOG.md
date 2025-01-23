@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.7.0] - 2025-1-22
+
+### Added
+New Component Modules from this paper: https://arxiv.org/pdf/2411.11377. 
+- `Transducer`
+- `Transmon`
+- `FockDetector`
+- `FockBeamSplitter2`
+- The unit tests in the folder `tests`
+- Examples in the folder `example/quantum_transduction`. NOTE: Still work in progress.
+
+### Changed
+- Reorganized the `absorptive_memory` related files
+- Update the `requirements.txt`
+- Update `constants` module
+- Update comments here and there
+
 
 ## [0.6.6] - 2024-12-17
 
