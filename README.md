@@ -8,11 +8,20 @@
 <h3><p align="center">Quantum Networking in SeQUeNCe: Customizable, Scalable, Easy Debugging</p></h3>
 
 
-[![Documentation](https://img.shields.io/readthedocs/sequence-rtd-tutorial)](https://sequence-rtd-tutorial.readthedocs.io/)
-[![PyPi](https://img.shields.io/pypi/v/sequence)](https://pypi.org/project/sequence/)
-[![Qutip](https://img.shields.io/badge/integration%20-Qutip-blue)](https://qutip.org/)
-[![Paper](https://img.shields.io/badge/10.1088%2F2058-9565%2Fac22f6?label=DOI)](https://iopscience.iop.org/article/10.1088/2058-9565/ac22f6)
-
+<p align="center">
+  <a href="https://sequence-rtd-tutorial.readthedocs.io/">
+    <img src="https://img.shields.io/readthedocs/sequence-rtd-tutorial">
+  </a>
+  <a href="https://sequence-rtd-tutorial.readthedocs.io/">
+    <img src="https://img.shields.io/pypi/v/sequence">
+  </a>
+  <a href="https://qutip.org/">
+    <img src="https://img.shields.io/badge/integration%20-Qutip-blue">
+  </a>
+  <a href="https://iopscience.iop.org/article/10.1088/2058-9565/ac22f6">
+    <img src="https://img.shields.io/badge/10.1088%2F2058-9565%2Fac22f6?label=DOI">
+  </a>
+</p>
 
 
 <br>

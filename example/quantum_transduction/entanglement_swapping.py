@@ -16,10 +16,10 @@ from sequence.components.transmon import Transmon
 from sequence.components.beam_splitter import FockBeamSplitter2
 from sequence.constants import KET0, KET1
 
-from example.QuantumTransduction.SwappingProtocols import Swapping, Measure, EmittingProtocol, UpConversionProtocol
-
 import sys
 sys.path.append('.')
+from example.quantum_transduction.swapping_protocols import Swapping, Measure, EmittingProtocol, UpConversionProtocol
+
 
 
 class Counter:
@@ -140,7 +140,7 @@ class EntangleNode(Node):
         self.measure_protocol = Measure(self, name + ".measure_protocol", timeline, fock_beam_splitter)
 
     def receive_photon(self, photon: Photon, src_list: List[str]):
-        self.components[self.fock_beam_splitter_name].receive_photon_from_scr(photon, src_list)
+        self.components[self.fock_beam_splitter_name].receive_photon_from_src(photon, src_list)
 
 
 if __name__ == "__main__":

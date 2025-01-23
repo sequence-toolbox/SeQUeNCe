@@ -16,11 +16,11 @@ from sequence.components.transducer import Transducer
 from sequence.components.detector import FockDetector
 from sequence.constants import KET0, KET1
 
-from example.QuantumTransduction.ConversionProtocols import (
-    EmittingProtocol, UpConversionProtocol, DownConversionProtocol)
-
 import sys
 sys.path.append('.')
+from example.quantum_transduction.conversion_protocols import (
+    EmittingProtocol, UpConversionProtocol, DownConversionProtocol)
+
 
 
 # GENERAL
