@@ -5,6 +5,7 @@ from numpy import multiply, sqrt, zeros, outer
 from math import factorial
 import numpy as np
 from scipy import sparse as sp
+import qutip as qt
 from scipy.sparse import kron
 from scipy.sparse.linalg import expm
 from scipy.linalg import fractional_matrix_power
@@ -236,6 +237,20 @@ class SPDCSource(LightSource):
             new_op_V = ampV[i] * ( self.power(sp.kron(adag_V, adag_V), i) ) / factorial(i)
             op_H += new_op_H
             op_V += new_op_V
+
+
+        # Trying new TMSV op here:
+        def new_create_TMSV_OP_Dense(N, mean_photon_num, a, a_dag):
+            truncation = (N-1)   
+
+            op = expm(1j * mean_photon_num * (kron(a_dag, a_dag) + kron(a, a)))
+
+            return op
+
+        op_H = new_create_TMSV_OP_Dense(N, mean_num, a_H, adag_H)
+        op_V = new_create_TMSV_OP_Dense(N, mean_num, a_V, adag_V)
+
+        
 
         TMSV_H_state = op_H @ sp.kron(vacuum, vacuum)
         TMSV_V_state = op_V @ sp.kron(vacuum, vacuum)
