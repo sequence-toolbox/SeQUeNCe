@@ -110,10 +110,6 @@ python utils/draw_topo.py example/starlight.json
 ```
 This script also supports a flag `-m` to visualize BSM nodes created by default on quantum links between routers.
 
-## Libraries Used
-This project includes a modified fork of the Quantum++ library version 2.6.
-Please see the Quantum++ [`LICENSE`](https://github.com/softwareQinc/qpp/blob/main/LICENSE) file for more information.
-
 ## Contact
 If you have questions, please contact [Caitao Zhan](https://caitaozhan.github.io/) at [czhan@anl.gov](mailto:czhan@anl.gov).
 
@@ -136,6 +132,12 @@ If you have questions, please contact [Caitao Zhan](https://caitaozhan.github.io
 * C. Howe, M. Aziz, and A. Anwar, ["Towards Scalable Quantum Repeater Networks"](https://arxiv.org/abs/2409.08416), arXiv preprint, 2024
 
 * A. Zang et al., ["Quantum Advantage in Distributed Sensing with Noisy Quantum Networks"](https://arxiv.org/abs/2409.17089), arXiv preprint, 2024
+
+* L. d'Avossa et al., ["Simulation of Quantum Transduction Strategies for Quantum Networks"](https://arxiv.org/abs/2411.11377), arXiv preprint, 2024
+
+* F. Mazza et al., ["Simulation of Entanglement-Enabled Connectivity in QLANs using SeQUeNCe"](https://arxiv.org/abs/2411.11031), IEEE ICC 2025
+
+* C. Zhan et al., ["Design and Simulation of the Adaptive Continuous Entanglement Generation Protocol"](https://arxiv.org/abs/2502.01964), QCNC 2025
 
 
 Please do a Pull Request to add your paper here! 
