@@ -109,3 +109,7 @@ Note that the Quantum Manager Server program should be started before the simula
 ## Usage Examples
 Some examples of how to set up and run parallel simulations are found in the `example` directory.
 These showcase how a network may be allocated for parallel simulation with a few simple topologies, such as a linear and ring network.
+
+## Libraries Used
+This project includes a modified fork of the Quantum++ library version 2.6.
+Please see the Quantum++ [`LICENSE`](https://github.com/softwareQinc/qpp/blob/main/LICENSE) file for more information.
