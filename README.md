@@ -12,7 +12,7 @@
   <a href="https://sequence-rtd-tutorial.readthedocs.io/">
     <img src="https://img.shields.io/readthedocs/sequence-rtd-tutorial" style="vertical-align: middle;">
   </a>
-  <a href="https://sequence-rtd-tutorial.readthedocs.io/">
+  <a href="https://pypi.org/project/sequence/">
     <img src="https://img.shields.io/pypi/v/sequence" style="vertical-align: middle;">
   </a>
   <a href="https://qutip.org/">
