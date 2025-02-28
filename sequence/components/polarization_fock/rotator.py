@@ -75,12 +75,12 @@ class Rotator(Entity):
         # print("prepard_state:", type(prepared_state), "rotator_op", type(rotator_op))
         output_state = rotator_op @ prepared_state
         
-        print("rotated state:")
-        print(output_state)
-        plt.figure()
-        plt.imshow(output_state.todense().real)
-        plt.figure()
-        plt.imshow(output_state.todense().imag)
+        # print("rotated state:")
+        # print(output_state)
+        # plt.figure()
+        # plt.imshow(output_state.todense().real)
+        # plt.figure()
+        # plt.imshow(output_state.todense().imag)
 
         output_state = output_state @ rotator_op.conjugate().transpose()
 

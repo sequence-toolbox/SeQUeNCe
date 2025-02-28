@@ -486,19 +486,21 @@ def plot_coincidences(coincidence, idler_angles, signal_angles, title = ''):
         visibilities.append(visibility)
         print(visibility, coincidence[i])
 
+    idler_angles = np.array(list(map(float, idler_angles)))/np.pi
+
     plt.figure()
     plt.grid(True)
     for i in range(len(idler_angles)):
         # print(fringe_real[i])
-        plt.plot(signal_angles, coincidence[i], label=r'Idler $\theta$={:.2f}$\pi$'.format(idler_angles[i]/np.pi))
+        plt.plot(signal_angles, coincidence[i], label=r'{:.2f}$\pi$'.format(idler_angles[i]))
     plt.title(title)
     plt.ylabel("Coincidence probability")
     plt.xlabel(r"$\alpha$ (rad)")    
-    plt.legend()
+    plt.legend(title = "$\delta$")
 
     plt.figure()
     plt.grid(True)
-    plt.plot(idler_angles, visibilities)
+    plt.plot(idler_angles*np.pi, visibilities)
     plt.title("Visiblilities")
     plt.ylabel("Visibility")
-    plt.xlabel(r"Idler $\theta$")    
+    plt.xlabel(r"$\delta$")    
