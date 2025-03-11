@@ -7,7 +7,7 @@ from scipy import sparse as sp
 
 from sequence.components.polarization_fock import light_source as seq_ls
 from sequence.kernel.timeline import Timeline 
-from sequence.kernel.quantum_manager import POLARIZATION_FOCK_FORMALISM, _build_amp_damping_kraus_operators
+from sequence.kernel.quantum_manager import POLARIZATION_FOCK_FORMALISM
 
 # import tensornetwork as tn
 import numpy as np
