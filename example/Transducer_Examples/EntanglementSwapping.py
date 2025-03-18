@@ -33,7 +33,7 @@ import sequence.components.circuit as Circuit
 
 
 # GENERAL
-NUM_TRIALS = 50
+NUM_TRIALS = 5
 FREQUENCY = 1e9
 MICROWAVE_WAVELENGTH = 999308 # nm
 OPTICAL_WAVELENGTH = 1550 # nm
@@ -288,6 +288,8 @@ if __name__ == "__main__":
         detector_photon_counter_ideal =node2.measure_protocol.get_detector_photon_counter_ideal()
         spd_ideal = node2.measure_protocol.get_spd_ideal()
 
+
+        print(f"CIAOOOO")
         print(f"CUMULATIVE: Detector photon counter with IDEAL (cumulative): {detector_photon_counter_ideal}")
         print(f"CUMULATIVE: SPD IDEAL: {spd_ideal}")
 
@@ -320,6 +322,8 @@ if __name__ == "__main__":
         cumulative_time += PERIOD
 
     # Calculate and print the percentage of ideal detector counters
+
+    
     percentage_detector_counters_ideal = (detector_photon_counter_ideal / total_emitted_photons) * 100
     print(f"Percentage of Entangled pairs generated (PHOTON COUNTER IDEAL): {percentage_detector_counters_ideal:.2f}%")
     

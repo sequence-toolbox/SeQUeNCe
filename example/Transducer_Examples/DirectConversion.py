@@ -27,7 +27,7 @@ import sequence.components.circuit as Circuit
 
 #GENERAL
 
-NUM_TRIALS = 50
+NUM_TRIALS = 5
 FREQUENCY = 1e9
 MICROWAVE_WAVELENGTH = 999308 # nm
 OPTICAL_WAVELENGTH = 1550 # nm
@@ -285,25 +285,35 @@ for i in range(NUM_TRIALS):
     if successful_conversions[i] != 0:
         results_matrix[i, 2] = 1  
 
-fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(12, 8), gridspec_kw={'height_ratios': [4, 1]})
+fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(14, 8), gridspec_kw={'height_ratios': [4, 1]})
 
-ax1.plot(time_points, ideal_photons, 'o-', label="Ideal Successfully Converted Photons", color='darkblue')
-ax1.plot(time_points, converted_photons, 'o-', label="Successfully Converted Photons", color='#FF00FF')
+# Line plot for converted photons with filled markers
+ax1.plot(time_points, ideal_photons, 'o-', label="Ideal Successfully Converted Photons", color='darkblue', alpha=0.8)
+ax1.plot(time_points, converted_photons, 'o-', label="Successfully Converted Photons", color='#FF00FF', alpha=0.8)
 ax1.set_ylabel("Photon Number", fontsize=24)
 ax1.set_title("Photon Conversion over Time", fontsize=24, fontweight='bold')
-ax1.legend(fontsize=24, loc='upper left')
+ax1.legend(fontsize=16, loc='best', framealpha=0.5)
 ax1.grid(True)
 ax1.tick_params(axis='both', labelsize=18)
 
-ax2.bar(time_points, results_matrix[:, 0], color='#ED213C', label='Failed Up', alpha=0.7, width=PERIOD * 0.8)
-ax2.bar(time_points, results_matrix[:, 1], color='blue', label='Failed Down', alpha=0.7, bottom=results_matrix[:, 0], width=PERIOD * 0.8)
-ax2.bar(time_points, results_matrix[:, 2], color='#119B70', label='Successful', alpha=0.7, bottom=results_matrix[:, 0] + results_matrix[:, 1], width=PERIOD * 0.8)
+# Adjust x-axis limit to increase space on the right
+##extra_space = (time_points[-1] - time_points[0]) * 0.2  # Increased to 20% extra space
+#ax1.set_xlim(time_points[0] - extra_space, time_points[-1] + extra_space)  # Set x-axis limits with extra space
+
+# Restore y-axis limits to previous settings for ax1
+#ax1.set_ylim([min(ideal_photons) - 2, max(ideal_photons) + 2])  # Slightly larger buffer on y-axis
+
+# Bar plot for failed and successful conversions with legend positioned at the bottom-right
+bar_width = PERIOD * 0.6  # Reduced width for bars to avoid overlap
+ax2.bar(time_points, results_matrix[:, 0], color='#ED213C', label='Failed Up', alpha=0.7, width=bar_width)
+ax2.bar(time_points, results_matrix[:, 1], color='blue', label='Failed Down', alpha=0.7, bottom=results_matrix[:, 0], width=bar_width)
+ax2.bar(time_points, results_matrix[:, 2], color='#119B70', label='Successful', alpha=0.7, bottom=results_matrix[:, 0] + results_matrix[:, 1], width=bar_width)
 ax2.set_xlabel(r"Time ($\mu$s)", fontsize=24)
-ax2.legend(fontsize=18, loc='upper left')
-ax2.tick_params(axis='both', labelsize=12)
-ax2.yaxis.set_visible(False)  
-ax2.legend(fontsize=12, loc='upper left')
-ax2.tick_params(axis='both', labelsize=12)
+
+# Adjust legend position to move it further to the right
+ax2.legend(fontsize=13, loc='upper center', bbox_to_anchor=(0.8, -0.3), framealpha=0.5, ncol=3)
+ax2.tick_params(axis='both', labelsize=18)
+ax2.yaxis.set_visible(False)
 
 plt.tight_layout()
 plt.show()
