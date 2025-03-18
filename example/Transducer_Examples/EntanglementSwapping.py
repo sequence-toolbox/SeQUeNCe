@@ -289,7 +289,6 @@ if __name__ == "__main__":
         spd_ideal = node2.measure_protocol.get_spd_ideal()
 
 
-        print(f"CIAOOOO")
         print(f"CUMULATIVE: Detector photon counter with IDEAL (cumulative): {detector_photon_counter_ideal}")
         print(f"CUMULATIVE: SPD IDEAL: {spd_ideal}")
 
