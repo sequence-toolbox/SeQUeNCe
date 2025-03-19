@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
+    from ..topology.node import Node
 
 from numpy import trace
 
@@ -16,6 +17,7 @@ from .photon import Photon
 from ..kernel.quantum_utils import povm_0
 from ..utils.encoding import polarization
 from ..kernel.entity import Entity
+import random
 
 
 class BeamSplitter(Entity):
@@ -118,3 +120,91 @@ class FockBeamSplitter(Entity):
             detector_num = self.get_generator().choice([0, 1], p=[prob_0, 1-prob_0])
             self.most_recent_time = self.timeline.now()
             self._receivers[detector_num].get()
+
+
+
+class FockBeamSplitter2(Entity):
+    """Class modeling a Fock beam splitter. The '2' for avoiding naming conflicts.
+
+    A Fock beam splitter can send a single photon randomly in one of its ports. 
+    See https://arxiv.org/abs/2411.11377, Simulation of Quantum Transduction Strategies for Quantum Networks
+
+    Attributes:
+        name (str): the name
+        owner (Node): the owner
+        timeline (Timeline): the timeline
+        efficiency (float): the efficiency of the beamsplitter
+        photon_counter (int): counter for counting photons
+        src_list (str): a list of photon source names
+    """
+    def __init__(self, name: str, owner: "Node", timeline: "Timeline", efficiency: float, photon_counter: int, src_list: List[str]):
+    #def __init__(self, name: str, owner: "Node", timeline: "Timeline", efficiency: float, photon_counter: int):
+
+        Entity.__init__(self, name, timeline)
+        self.owner = owner
+        self.timeline = timeline
+        self.efficiency = efficiency
+        self.photon_counter = photon_counter
+        self.src_list = src_list
+        self.swapping_protocol = None
+
+    def init(self):
+        assert len(self._receivers) == 2
+
+        
+        #print(f"Photon received from {source} the photon is {photon}")        
+        #self.photon_counter += 1
+        #print(f"Photon counter: {self.photon_counter} at time {self.timeline.now()}")
+
+        
+        #photon_count = self.FockBS.photon_counter
+
+
+
+
+    def get(self, photon: Photon, source: List[str]) -> None:
+        """Receive photon from two end nodes"""
+        print(f"Photon received from {source} the photon is {photon}")        
+        self.photon_counter += 1
+        print(f"Photon counter BEAM SPLITTER: {self.photon_counter} at time {self.timeline.now()}")
+
+        #self.swap(photon)
+
+        #elif self.photon_counter == 1:
+            #print("No PHOTON RECEIVED BY THE BEAM SPLITTER") 
+        #ITALIANO: non è possibile questo caso perchè se non vengono messi fotoni non viene proprio richiamato il beam splitter
+
+
+
+        #self.swapping_protocol.swap(photon)
+        #self.photon_counter += 1
+        #print(f"Photon counter: {self.photon_counter}, received from {source}")
+        
+
+        #detector_num = self.get_generator()
+            #self.most_recent_time = self.timeline.now()
+        #self._receivers[detector_num].get()
+        
+        
+        #self.swapping_protocol.swap(photon)
+        #self.swapping_protocol.measure(photon)
+
+        
+
+
+    #def get(self, photon: Photon, src_list: List[str]) -> None:
+        #print("CIAO")
+    #    self.photon_counter += 1
+    #    print(f"Photon counter: {self.photon_counter}, received from {src_list}")
+
+    def add_outputs(self, outputs: List):
+        """Add outputs, i.e., receivers
+        
+        Args:
+            outputs (list): a list of entities, i.e., detectors
+        """
+        for i in outputs:
+            self.add_receiver(i)
+
+    #def send_photon(self, receiver: Entity, photon: Photon) -> None:
+    #    receiver.get(self.name, photon)

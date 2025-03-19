@@ -1,0 +1,84 @@
+"""Model for a transducer.
+
+See https://arxiv.org/abs/2411.11377, Simulation of Quantum Transduction Strategies for Quantum Networks
+"""
+
+from typing import List
+
+from sequence.kernel.entity import Entity
+
+import random
+import numpy as np
+from sequence.kernel.timeline import Timeline
+from sequence.protocol import Protocol
+from sequence.topology.node import Node
+from sequence.components.photon import Photon
+import math
+from sequence.components.transmon import Transmon
+from sequence.constants import KET0, KET1
+from sequence.components.photon import Photon   
+from qutip import Qobj
+
+#from example.QuantumTransduction.ConversionProtocols import UpConversionProtocol
+
+
+
+
+class Transducer(Entity):
+    """Class modeling a transducer.
+
+    A transducer can operate in two modes: up-conversion and down-conversion.
+    In up-conversion it can convert microwave photons to optical photons.
+    In down-conversion it can convert optical photons to microwave photons.
+
+    Attributes:
+        name (str): the name of the transducer
+        timeline (Timeline): the simulation timeline
+        owner (Node): the entity that owns or aggregates the current component
+        efficiency (float): the efficiency of the transducer
+        photon_counter (int): photon counter
+    """
+    def __init__(self, owner: Node, name: str, timeline: Timeline, efficiency: float = 1):
+        Entity.__init__(self, name, timeline)
+        self.name = name
+        self.owner = owner
+        self.timeline = timeline
+        self.efficiency = efficiency
+        self.photon_counter = 0
+        self.up_conversion_protocol = None
+        self.down_conversion_protocol = None 
+        
+            
+    def init(self):
+        pass
+    #    assert len(self._receivers) == 2
+
+    def add_outputs(self, outputs: List):
+        """Add outputs, i.e., receivers"""
+        for i in outputs:
+            self.add_receiver(i)
+    
+
+    def receive_photon_from_transmon(self, photon: Photon) -> None:
+        """Receive a photon from the transmon and call the Up_Conversion protocol"""
+        # NOTE should schedule an UpConvert event in the future and pass on the argument photon to the UpConversion protocol's convert() method
+        self.up_conversion_protocol.convert(photon)
+
+
+        #self.photon_counter += 1 
+        #ITALIANO questa è la funzione di un traduttore che riceve un fotone dal trasmone.
+        #ITALIANO quindi in entrambi i protocolli (direct e swap) doverei attivarla per fare una up_conversion /che è un protocollo? a quetso punto non più forse...) 
+        #ITALIANO una volta che il traduttore riceve un fotone fa una up-conversion e basta
+
+        
+        
+    def get(self, photon) -> None:
+
+        print("The optical photon reaches the destination")
+        self.photon_counter += 1
+        #ITALIANO: capiamo poi con questi contatori come fare
+        
+        self.down_conversion_protocol.convert(photon)
+
+        #ITALIANO: questo serve per dire che il cnaale con il metodo get ha mandato un fotone al trasduttore
+        #ITALIANO più precisamente qui a questo punto dovrei andare di downconversion per la direct

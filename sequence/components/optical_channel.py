@@ -8,17 +8,20 @@ OpticalChannels must be attached to nodes on both ends.
 import heapq as hq
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..topology.node import Node
     from ..components.photon import Photon
     from ..message import Message
+    from sequence.components.photon import Photon  
 
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..utils import log
-from ..constants import SPEED_OF_LIGHT
+from ..constants import SPEED_OF_LIGHT, MICROSECOND
 
 
 class OpticalChannel(Entity):
@@ -63,6 +66,100 @@ class OpticalChannel(Entity):
 
     def set_distance(self, distance: int) -> None:
         self.distance = distance
+
+class FockQuantumChannel(OpticalChannel):
+    """Optical channel for transmission of photons/qubits.
+
+    Attributes:
+        name (str): label for channel instance.
+        timeline (Timeline): timeline for simulation.
+        sender (Node): node at sending end of optical channel.
+        receiver (str): name of the node at receiving end of optical channel.
+        attenuation (float): attenuation of the fiber (in dB/m).
+        distance (int): length of the fiber (in m).
+
+    """
+    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int):
+            super().__init__(name, timeline, attenuation, distance, polarization_fidelity=1.0, light_speed=3e-4) 
+            #default parameters for the polarization_fidely and light_speed
+            
+            self.delay = round(self.distance / self.light_speed)
+            #self.loss = 1 - 10 ** (self.distance * self.attenuation / -10) #cambiare questo con l'esposnenziale + mettere l'approssimazione
+            self.loss = np.exp(self.distance/self.attenuation)
+
+    def set_ends(self, sender: "Node", receiver: str) -> None:
+        """Method to set endpoints for the quantum channel.
+
+        This must be performed before transmission.
+
+        Args:
+            sender (Node): node sending qubits.
+            receiver (str): name of node receiving qubits.
+        """
+
+        log.logger.info("Set {}, {} as ends of quantum channel {}".format(sender.name, receiver, self.name))
+        self.sender = sender
+        self.receiver = receiver
+        sender.assign_qchannel(self, receiver)
+
+    def transmit(self, photon):
+
+        print(f"Quantum Channel receiver: {self.receiver}")
+
+        if self.loss > 0.01: #nel caso cambia valore
+
+            print("The optical photon reaches the destination")
+            self.receiver.receive_qubit("node", photon) #ITALIANO questo è un oggetto fotone che dovrei sistemare
+            
+            
+            #ITALIANO
+            #il ricevitore di questo cnaale è il nodo destination
+            #la funzione receive_quibit fa si che il firstcomponent del nodo ricevutore implementi une get
+            
+            #process = Process(self.receiver, "receive_qubit", [source.name, qubit])
+            #event = Event(future_time, process)
+            #self.timeline.schedule(event)
+
+        else:
+            print("Photon loss in the quantum channel")
+
+        #ITALUANO DEVO DEFINIRE UN TRANSMIT 2
+               
+
+
+        #ITALUANO DEVO DEFINIRE UN TRANSMIT 2
+               
+
+    #def transmit(self, qubit: "Photon", source: "Node") -> None:
+    
+
+
+
+        #log.logger.info("{} send qubit with state {} to {} by Channel {}".format(
+                        #self.sender.name, qubit.quantum_state, self.receiver, self.name))
+
+        #assert self.delay >= 0 and self.loss < 1, "QuantumChannel init() function has not been run for {}".format(self.name)
+        #assert source == self.sender
+
+        # remove lowest time bin
+        #if len(self.send_bins) > 0:
+           # time = -1
+            #while time < self.timeline.now():
+             #   time_bin = hq.heappop(self.send_bins)
+             #   time = int(time_bin * (1e12 / self.frequency))
+            #assert time == self.timeline.now(), "qc {} transmit method called at invalid time".format(self.name)
+
+        # check if photon state using Fock representation
+        #if qubit.encoding_type["name"] == "fock":
+            #key = qubit.quantum_state  # if using Fock representation, the `quantum_state` field is the state key.
+            # apply loss channel on photonic statex
+            #self.timeline.quantum_manager.add_loss(key, self.loss)
+
+            # schedule receiving node to receive photon at future time determined by light speed
+            #future_time = self.timeline.now() + self.delay
+            #process = Process(self.receiver, "receive_qubit", [source.name, qubit])
+            #event = Event(future_time, process)
+            #self.timeline.schedule(event)
 
 
 class QuantumChannel(OpticalChannel):
@@ -200,7 +297,7 @@ class QuantumChannel(OpticalChannel):
         min_time = max(min_time, self.timeline.now())
         time_bin = min_time * (self.frequency / 1e12)
         if time_bin - int(time_bin) > 0.00001:
-            time_bin = int(time_bin) + 1
+            time_bin = int(time_bin) + 1       # round to the next time bin
         else:
             time_bin = int(time_bin)
 
@@ -243,7 +340,7 @@ class ClassicalChannel(OpticalChannel):
 
         super().__init__(name, timeline, 0, distance, 0, SPEED_OF_LIGHT)
         if delay == -1:
-            self.delay = distance / self.light_speed
+            self.delay = distance / self.light_speed + 10*MICROSECOND
         else:
             self.delay = delay
 

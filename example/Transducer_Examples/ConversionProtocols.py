@@ -1,40 +1,30 @@
+"""Protocols for Quantum Transduction via Direct Conversion
+
+NOTE: work in progress
+"""
+
 import random
 import numpy as np
 from sequence.kernel.timeline import Timeline
-from sequence.components.optical_channel import QuantumChannel
 from sequence.protocol import Protocol
 from sequence.topology.node import Node
-from sequence.components.light_source import LightSource
-from sequence.utils.encoding import absorptive, single_atom
 from sequence.components.photon import Photon
-from sequence.kernel.entity import Entity
-from typing import List, Callable, TYPE_CHECKING
-from abc import ABC, abstractmethod
-from sequence.components.memory import Memory
-from sequence.utils.encoding import fock
 import math
-from sequence.kernel.event import Event
-from sequence.kernel.process import Process
-import sequence.utils.log as log
-import matplotlib.pyplot as plt
-from example.Transducer_Examples.TransductionComponent import Transducer
-from example.Transducer_Examples.TransductionComponent import FockDetector
-from example.Transducer_Examples.TransductionComponent import Transmon
-from example.Transducer_Examples.TransductionComponent import Counter
-from sequence.components.detector import Detector
+from sequence.components.transducer import Transducer
+from sequence.components.transmon import Transmon
+from sequence.constants import KET0, KET1
 from sequence.components.photon import Photon   
-from sequence.kernel.quantum_manager import QuantumManager
-import sequence.components.circuit as Circuit
 from qutip import Qobj
 
-
-ket1 = (0.0 + 0.0j, 1.0 + 0.0j) 
-ket0 = (1.0 + 0.0j, 0.0 + 0.0j) 
 
 MICROWAVE_WAVELENGTH = 999308 # nm
 OPTICAL_WAVELENGTH = 1550 # nm
 
 def get_conversion_matrix(efficiency: float) -> Qobj:
+    """
+    Args:
+        efficiency (float): transducer efficiency
+    """
     custom_gate_matrix = np.array([
         [1, 0, 0, 0],
         [0, math.sqrt(1 - efficiency), math.sqrt(efficiency), 0],
@@ -44,130 +34,184 @@ def get_conversion_matrix(efficiency: float) -> Qobj:
     return Qobj(custom_gate_matrix, dims=[[4], [4]])
 
 
-
 class EmittingProtocol(Protocol):
+    """Protocol for emission of single microwave photon by transmon.
 
-    "Protocol for emission of single microwave photon by transmon"
+    Attributes:
+        owner (Node): the owner of this protocol, the protocol runs on the owner
+        name (str): the name of the protocol
+        tl (Timeline): the simulation timeline
+        transducer (Transducer): the transducer component
+        transmon (Transmon): the transmon component
+    """
 
-    def __init__(self, own: "Node", name: str, tl: "Timeline", transmon="Transmon", transducer="Transducer"):
-        super().__init__(own, name)
-        self.owner = own
+    def __init__(self, owner: "Node", name: str, tl: Timeline, transmon: Transmon, transducer: Transducer):
+    #def __init__(self, owner: "Node", name: str, tl: Timeline, transducer: Transducer):
+
+        super().__init__(owner, name)
+        self.owner = owner
         self.name = name
         self.tl = tl
         self.transmon = transmon
         self.transducer = transducer
 
+    def start(self):
+        print(f"EmittingProtocol started for {self.owner.name} at time {self.tl.now()}")
+        photon = self.transmon.generation()
+        print(f"Photon created: {photon}, Name: {photon. name}, Wavelength: {photon.wavelength}")
+        print(f"Transmon at Tx quantum state: {self.transmon.input_quantum_state} of of {self.owner.name}")
 
-    def start(self) -> None:
-
-        self.transmon.get()
-
-        if self.transmon.photons_quantum_state[0] == ket1:
+        if self.transmon.photons_quantum_state[0] == KET1:
             if random.random() < self.transmon.efficiency:
-                self.transmon._receivers[0].receive_photon_from_transmon(self.transmon.new_photon0) 
-                self.transmon.photon_counter += 1 
+                print(f"Transmon receiver " + str(self.transmon._receivers[0]))
+                self.transmon._receivers[0].receive_photon_from_transmon(photon)
             else:
-                pass
-            
+                print("Photon emission failed due to transmon efficiency")
         else:
-                print("The transmon is in the state 00, or 01, it doesn't emit microwave photons")
+            print("The transmon is in the state 00, or 01, it doesn't emit microwave photons")
         
-        print(f"Microwave photons emitted by the Transmon at Tx: {self.transmon.photon_counter}")
-
-
-
     def received_message(self, src: str, msg):
         pass
 
 
-
 class UpConversionProtocol(Protocol):
+    """Protocol for Up-conversion of an input microwave photon into an output optical photon.
 
-    "Protocol for Up-conversion of an input microwave photon into an output optical photon"
+    Attributes:
+        owner (Node): the owner of this protocol, the protocol runs on the owner
+        name (str): the name of the protocol
+        tl (Timeline): the simulation timeline
+        transducer (Transducer): the transducer component
+        node (Node): the receiver node (where DownConversionProtocol runs) -- NOTE this is an error! node's typing should be a str, instead of Node
+        transmon (Transmon): the transmon component
+    """
 
-    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", node: "Node", transmon: "Transmon"):
-        super().__init__(own, name)
-        self.owner = own
+    #def __init__(self, owner: Node, name: str, tl: Timeline, transducer: Transducer, transmon: Transmon):
+    #ITALIANO: qui ho deciso di non usare il trasmon
+    def __init__(self, owner: Node, name: str, tl: Timeline, transducer: Transducer):
+
+        super().__init__(owner, name)
+        self.owner = owner
         self.name = name
         self.tl = tl
         self.transducer = transducer
-        self.transmon = transmon
-        self.node = node
+        #self.transmon = transmon
 
-    def start(self, photon: "Photon") -> None:
-       
+    def start(self) -> None:
+        """start the protocol  
+        
+        NOTE (caitao, 12/21/2024): this start() method should be empty. 
+             The content of this function should be at a new convert() method that receives photons from the from the transducer
 
-        if self.transducer.photon_counter > 0:
-            custom_gate = get_conversion_matrix(self.transducer.efficiency)
+        Args:
+            photon (Photon): photon from arrived at the transducer from the transmon
+        """
 
-            transmon_state_vector = np.array(self.transmon.input_quantum_state).reshape((4, 1))
-            photon_state = Qobj(transmon_state_vector, dims=[[4], [1]])
+    def convert(self, photon) -> None:
 
-            new_photon_state = custom_gate * photon_state
-            self.transducer.quantum_state = new_photon_state.full().flatten()
+        #if self.transducer.photon_counter > 0:   # NOTE shouldn't use this photon_counter to determine
+            #custom_gate = get_conversion_matrix(self.transducer.efficiency)
 
-            print(f"Transducer at Tx quantum state: {self.transducer.quantum_state}")
+            #transmon_state_vector = np.array(self.transmon.input_quantum_state).reshape((4, 1))
+            #photon_state = Qobj(transmon_state_vector, dims=[[4], [1]])
+
+            #new_photon_state = custom_gate * photon_state
+            #self.transducer.quantum_state = new_photon_state.full().flatten()
+
+            #print(f"Transducer at Tx quantum state: {self.transducer.quantum_state}")
+
+            print(f"Transducer first receiver: {self.transducer._receivers[0]}")
+            print(f"Transducer second receiver: {self.transducer._receivers[1]}")
 
             if random.random() < self.transducer.efficiency:
                 photon.wavelength = OPTICAL_WAVELENGTH
-                self.transducer._receivers[0].receive_photon(self.node, photon)
                 print("Successful up-conversion")
-                self.transducer.output_quantum_state = [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j]
-                print(f"State after successful up-conversion: {self.transducer.output_quantum_state}")
+                print(f"The photon is: {photon} with wavelength: {photon.wavelength}")
+                #self.transducer.output_quantum_state = [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j]
+                #print(f"State after successful up-conversion: {self.transducer.output_quantum_state}")
+                print(f"Transducer receiver: {self.transducer._receivers[0]}")
+                self.transducer._receivers[0].transmit(photon) 
+                
+                #self.transducer._receivers[0].receive_qubit(photon, [self.node.name])
+
+                # #ITALIANO: QUESTOOOOOO
+                #self.transducer._receivers[0].transmit(photon)
+                #self.transducer._receivers[0].transmit(photon, ["node"])  # Passa una lista con il nome del nodo sorgente
+
+
+
+                
+                #self.transducer._receivers[0].receive_photon(self.node, photon)  # NOTE the receiver should be the quantum channel OK DONE
+            
             else:
                 photon.wavelength = MICROWAVE_WAVELENGTH
                 self.transducer._receivers[1].get(photon)
                 print("FAILED up-conversion")
-        else:
-            print("No photon to up-convert")
+        #else:
+        #    print("No photon to up-convert")
 
     def received_message(self, src: str, msg):
         pass
 
 
-
 class DownConversionProtocol(Protocol):
+    """Protocol for Down-conversion of an input optical photon into an output microwave photon.
 
-    "Protocol for Down-conversion of an input optical photon into an output microwave photon"
+    Attributes:
+        owner (Node): the owner of this protocol, the protocol runs on the owner
+        name (str): the name of the protocol
+        tl (Timeline): the simulation timeline
+        transducer (Transducer): the transducer component
+    """
 
-    def __init__(self, own: "Node", name: str, tl: "Timeline", transducer: "Transducer", transmon: "Transmon"):
-        super().__init__(own, name)
-        self.owner = own
+    def __init__(self, owner: "Node", name: str, tl: "Timeline", transducer: "Transducer"):
+        super().__init__(owner, name)
+        self.owner = owner
         self.name = name
         self.tl = tl
         self.transducer = transducer
 
-    def start(self, photon: "Photon") -> None:
-        if self.transducer.photon_counter > 0:
+    def start(self) -> None:
+        """start the protocol
+            
+            NOTE (caitao, 12/21/2024): this start() method should be empty. 
+                 The content of this function should be at a new convert() method that receives photons from the from the transducer
+        Args:
+            photon (Photon): the photon received at the transducer from the quantum channel
+        """
+    def convert(self, photon) -> None:
+        
+        #if self.transducer.photon_counter > 0:   # NOTE shouldn't use this photon_counter to determine
 
+            #transducer_state = [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j]  # NOTE Why is this the transducer's state 
+            #custom_gate = get_conversion_matrix(self.transducer.efficiency)
 
-            transducer_state = [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j]
-            custom_gate = get_conversion_matrix(self.transducer.efficiency)
+            #transducer_state_vector = np.array(transducer_state).reshape((4, 1))
+            #transducer_state = Qobj(transducer_state_vector, dims=[[4], [1]])
 
-            transducer_state_vector = np.array(transducer_state).reshape((4, 1))
-            transducer_state = Qobj(transducer_state_vector, dims=[[4], [1]])
+            #new_transducer_state = custom_gate * transducer_state
+            #self.transducer.quantum_state = new_transducer_state.full().flatten()
 
-            new_transducer_state = custom_gate * transducer_state
-            self.transducer.quantum_state = new_transducer_state.full().flatten()
-
-            print(f"Transducer at Rx quantum state: {self.transducer.quantum_state}")
+            #print(f"Transducer at Rx quantum state: {self.transducer.quantum_state}")
 
             if random.random() < self.transducer.efficiency:
                 photon.wavelength = MICROWAVE_WAVELENGTH
-                self.transducer._receivers[0].receive_photon_from_transducer(photon)
                 print("Successful down-conversion")
-                self.transducer.output_quantum_state = [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j]
-                print(f"State after successful down-conversion: {self.transducer.output_quantum_state}")
+                print(f"The photon is: {photon} with wavelength: {photon.wavelength}")
+                print(f"Transducer receiver: {self.transducer._receivers[0]}")
+                
+                self.transducer._receivers[0].get(photon)
+
+
+                #self.transducer.output_quantum_state = [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j]
+                #print(f"State after successful down-conversion: {self.transducer.output_quantum_state}")
             else:
                 photon.wavelength = OPTICAL_WAVELENGTH
                 self.transducer._receivers[1].get(photon)
                 print("FAILED down-conversion")
-        else:
-            print("No photon to down-convert")
+        #else:
+        #    print("No photon to down-convert")
 
     def received_message(self, src: str, msg):
         pass
-
-
-
 
