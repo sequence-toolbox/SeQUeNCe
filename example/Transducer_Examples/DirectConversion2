@@ -322,7 +322,7 @@ ax1.set_title("Photon Conversions over Time", fontsize=24, fontweight='bold')
 ax1.tick_params(axis='both', labelsize=18)
 
 # Imposta il limite dell'asse X per includere 0 e 2000
-ax1.set_xlim([0, 2000])
+#ax1.set_xlim([0, 2000])
 
 # Secondo subplot - Bar plot
 b1 = ax2.bar(time_points, results_matrix[:, 0], color='#ED213C', label='Failed Up-conversion', alpha=0.7, width=PERIOD * 0.8)
