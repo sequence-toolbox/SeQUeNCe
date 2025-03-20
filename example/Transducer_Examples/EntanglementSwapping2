@@ -347,29 +347,27 @@ color_blu = '#0047AB'
 color_red = '#FF0000'
 
 
-plt.figure(figsize=(12, 6))
-plt.plot(times, detector_photon_counters_real, 'o-', color='#FF00FF', label='PCD Real')
-plt.plot(times, detector_photon_counters_ideal, 'o-', color='darkblue', label='PCD Ideal')
+plt.figure(figsize=(14, 7))
+
+# SPD (Single Photon Detector) counts
+plt.plot(times, spd_ideals, 'o-', color='darkblue', label='SPD Ideal', markersize=4)  # blu pieno
+plt.plot(times, spd_reals, 'o-', color='darkblue', markerfacecolor='white', label='SPD Real', markersize=4)  # blu vuoto
+
+# PNRD (Photon Number Resolving Detector) counts
+plt.plot(times, detector_photon_counters_ideal, 'o-', color='#FF00FF', label='PNRD Ideal', markersize=4)  # fucsia pieno
+plt.plot(times, detector_photon_counters_real, 'o-', color='#FF00FF', markerfacecolor='white', label='PNRD Real', markersize=4)  # fucsia vuoto
+
+# Labels and title
 plt.xlabel(r"Time ($\mu$s)", fontsize=32)
-plt.ylabel('PCD Counts', fontsize=32)
-plt.legend(fontsize=30)
-plt.tick_params(axis='both', which='major', labelsize=28)  
+plt.ylabel('Counts', fontsize=32)
+plt.title('Ideal vs Real Counts Over Time', fontsize=32, fontweight='bold')
 
+# Legend and grid
+plt.legend(fontsize=26)
 plt.grid(True)
-plt.title('Ideal vs Real PNRD Counts Over Time', fontsize=32, fontweight='bold')
+
+# Tick size
+plt.tick_params(axis='both', which='major', labelsize=28)
+
+# Show the plot
 plt.show()
-
-plt.figure(figsize=(12, 6))
-plt.plot(times, spd_reals, 'o-', color='#FF00FF', label='SPD Real')
-plt.plot(times, spd_ideals, 'o-', color='darkblue', label='SPD Ideal')
-plt.xlabel(r"Time ($\mu$s)", fontsize=32)
-plt.ylabel('SPD Counts', fontsize=32)
-plt.legend(fontsize=30)
-plt.tick_params(axis='both', which='major', labelsize=28)  
-
-plt.grid(True)
-plt.title('Ideal vs Real SPD Counts Over Time', fontsize=32, fontweight='bold')
-plt.show()
-
-
-
