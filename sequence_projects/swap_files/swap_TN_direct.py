@@ -393,7 +393,7 @@ def extend_MPS(psi, psi_second = None):
 
 ########## SWAP OPERATORS ############
 
-def bell_state_measurement(psi, N, site_tags, num_modes, efficiency, error_tolerance, pnr = False, compress = True, contract = True):
+def bell_state_measurement(psi, N, site_tags, num_modes, efficiency, error_tolerance, measurements = {1:(2,7), 0:(3,6)}, pnr = False, compress = True, contract = True):
 
     U_BS_H = create_BS_MPO(site1 = 2, site2 = 6, theta=np.pi/4, total_sites = num_modes, N = N, tag = r"$U_{BS_H}$")
     enforce_1d_like(U_BS_H, site_tags=site_tags, inplace=True)
@@ -403,8 +403,8 @@ def bell_state_measurement(psi, N, site_tags, num_modes, efficiency, error_toler
     enforce_1d_like(U_BS_V, site_tags=site_tags, inplace=True)
     U_BS_V.add_tag("L3")
 
-    BSM_POVM_1_OPs = generate_sqrt_POVM_MPO(sites=(2,7), outcome = 1, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr)
-    BSM_POVM_1_OPs.extend(generate_sqrt_POVM_MPO(sites=(3,6), outcome = 0, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr))
+    BSM_POVM_1_OPs = generate_sqrt_POVM_MPO(sites=measurements[1], outcome = 1, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr)
+    BSM_POVM_1_OPs.extend(generate_sqrt_POVM_MPO(sites=measurements[0], outcome = 0, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr))
 
 
     psi = tensor_network_apply_op_vec(U_BS_H, psi, compress=compress, contract = contract, cutoff = error_tolerance)
@@ -472,7 +472,7 @@ def rotate_and_measure(psi, N, site_tags, num_modes, efficiency, error_tolerance
             coincidence_probs.append((rho_rotated.norm())**2)
         coincidence.append(coincidence_probs)
     
-    return coincidence
+    return np.array(coincidence)
 
 # coincidence = rotate_and_measure(psi, N, psi.site_tags, num_modes, efficiency, error_tolerance)
 
