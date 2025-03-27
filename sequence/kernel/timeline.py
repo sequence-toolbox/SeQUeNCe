@@ -47,7 +47,7 @@ class Timeline:
     Attributes:
         events (EventList): the event list of timeline.
         entities (List[Entity]): the entity list of timeline used for initialization.
-        time (int): current simulation time (picoseconds).
+        time (float/int): current simulation time (picoseconds).
         stop_time (int): the stop (simulation) time of the simulation.
         schedule_counter (int): the counter of scheduled events
         run_counter (int): the counter of executed events
