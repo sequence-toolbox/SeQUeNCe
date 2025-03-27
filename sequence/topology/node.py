@@ -6,7 +6,8 @@ Node types can be used to collect all the necessary hardware and software for a 
 """
 
 from math import inf
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, TypeVar, Type
+
 import numpy as np
 
 if TYPE_CHECKING:
@@ -33,6 +34,7 @@ from ..network_management.network_manager import NewNetworkManager, NetworkManag
 from ..utils.encoding import *
 from ..utils import log
 
+T = TypeVar("T", bound=Entity)
 
 class Node(Entity):
     """Base node type.
@@ -183,9 +185,9 @@ class Node(Entity):
 
         self.components[self.first_component_name].get(qubit)
 
-    def get_components_by_type(self, component_type: str) -> List[Entity]:
-        return [comp for comp in self.components.values() if type(comp).__name__ == component_type]
-
+    def get_components_by_type(self, component_type: Type[T]) -> List[T]:
+        #return [comp for comp in self.components.values() if type(comp).__name__ == component_type]
+        return [comp for comp in self.components.values() if isinstance(comp, component_type)]
     def change_timeline(self, timeline: "Timeline"):
         self.timeline = timeline
         for component in self.components.values():
