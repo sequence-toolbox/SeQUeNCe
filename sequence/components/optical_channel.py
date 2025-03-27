@@ -30,12 +30,12 @@ class OpticalChannel(Entity):
         sender (Node): node at sending end of optical channel.
         receiver (str): name of the node at receiving end of optical channel.
         attenuation (float): attenuation of the fiber (in dB/m).
-        distance (int): length of the fiber (in m).
+        distance (float): length of the fiber (in m).
         polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
         light_speed (float): speed of light within the fiber (in m/ps).
     """
 
-    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int,
+    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: float,
                  polarization_fidelity: float, light_speed: float):
         """Constructor for abstract Optical Channel class.
 
@@ -43,7 +43,7 @@ class OpticalChannel(Entity):
             name (str): name of the beamsplitter instance.
             timeline (Timeline): simulation timeline.
             attenuation (float): loss rate of optical fiber (in dB/m).
-            distance (int): length of fiber (in m).
+            distance (float): length of fiber (in m).
             polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
             light_speed (float): speed of light within the fiber (in m/ps).
         """
@@ -61,7 +61,7 @@ class OpticalChannel(Entity):
     def init(self) -> None:
         pass
 
-    def set_distance(self, distance: int) -> None:
+    def set_distance(self, distance: float) -> None:
         self.distance = distance
 
 
@@ -74,7 +74,7 @@ class QuantumChannel(OpticalChannel):
         sender (Node): node at sending end of optical channel.
         receiver (str): name of the node at receiving end of optical channel.
         attenuation (float): attenuation of the fiber (in dB/m).
-        distance (int): length of the fiber (in m).
+        distance (float): length of the fiber (in m).
         polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
         light_speed (float): speed of light within the fiber (in m/ps).
         loss (float): loss rate for transmitted photons (determined by attenuation).
@@ -82,7 +82,7 @@ class QuantumChannel(OpticalChannel):
         frequency (float): maximum frequency of qubit transmission (in Hz).
     """
 
-    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int,
+    def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: float,
                  polarization_fidelity=1.0, light_speed=SPEED_OF_LIGHT, frequency=8e7):
         """Constructor for Quantum Channel class.
 
@@ -90,7 +90,7 @@ class QuantumChannel(OpticalChannel):
             name (str): name of the quantum channel instance.
             timeline (Timeline): simulation timeline.
             attenuation (float): loss rate of optical fiber (in dB/m).
-            distance (int): length of fiber (in m).
+            distance (float): length of fiber (in m).
             polarization_fidelity (float): probability of no polarization error for a transmitted qubit (default 1).
             light_speed (float): speed of light within the fiber (in m/ps).
             frequency (float): maximum frequency of qubit transmission (in Hz) (default 8e7).
@@ -231,13 +231,13 @@ class ClassicalChannel(OpticalChannel):
         delay (float): delay (in ps) of message transmission (default distance / light_speed).
     """
 
-    def __init__(self, name: str, timeline: "Timeline", distance: int, delay=-1):
+    def __init__(self, name: str, timeline: "Timeline", distance: float, delay=-1):
         """Constructor for Classical Channel class.
 
         Args:
             name (str): name of the classical channel instance.
             timeline (Timeline): simulation timeline.
-            distance (int): length of the fiber (in m).
+            distance (float): length of the fiber (in m).
             delay (float): delay (in ps) of message transmission (default distance / light_speed).
         """
 
