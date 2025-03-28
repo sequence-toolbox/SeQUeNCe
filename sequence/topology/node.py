@@ -4,7 +4,7 @@ This module provides definitions for various types of quantum network nodes.
 All node types inherit from the base Node type, which inherits from Entity.
 Node types can be used to collect all the necessary hardware and software for a network usage scenario.
 """
-
+import sys
 from math import inf
 from typing import TYPE_CHECKING, Any, List, TypeVar, Type, Union
 
@@ -195,8 +195,14 @@ class Node(Entity):
             """
         # IF component_type is passed as a string, convert it to a class
         if isinstance(component_type, str):
-            component_type = globals()[component_type]
-        if not issubclass(component_type, Entity):
+            if hasattr(sys.modules[__name__], component_type):
+                component_type = getattr(sys.modules[__name__], component_type)
+            elif component_type in globals():
+                component_type = globals()[component_type]
+            else:
+                matches = [comp for comp in self.components.values() if comp.__class__.__name__ == component_type]
+                return matches
+        if not isinstance(component_type, type) or not issubclass(component_type, Entity):
             raise TypeError(f'Component type {component_type} must be a subclass of Entity')
         return [comp for comp in self.components.values() if isinstance(comp, component_type)]
 
