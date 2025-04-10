@@ -81,10 +81,8 @@ class FockQuantumChannel(OpticalChannel):
     """
     def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: int):
             super().__init__(name, timeline, attenuation, distance, polarization_fidelity=1.0, light_speed=3e-4) 
-            #default parameters for the polarization_fidely and light_speed
             
             self.delay = round(self.distance / self.light_speed)
-            #self.loss = 1 - 10 ** (self.distance * self.attenuation / -10) #cambiare questo con l'esposnenziale + mettere l'approssimazione
             self.loss = np.exp(self.distance/self.attenuation)
 
     def set_ends(self, sender: "Node", receiver: str) -> None:
@@ -102,64 +100,23 @@ class FockQuantumChannel(OpticalChannel):
         self.receiver = receiver
         sender.assign_qchannel(self, receiver)
 
-    def transmit(self, photon):
 
+    def transmit(self, photon) -> None:
         print(f"Quantum Channel receiver: {self.receiver}")
 
-        if self.loss > 0.01: #nel caso cambia valore
+        #if self.loss > 0.01:  # nel caso cambia valore
+        future_time = self.timeline.now() + 0.000000001  # Delay opzionale
+        # Crea un processo che richiama `receive_qubit` con il fotone e i canali
+        process = Process(self.receiver, "receive_qubit", [self.sender.name, photon])
+        event = Event(future_time, process)
+        self.timeline.schedule(event)
+        print("The optical photon reaches the destination")
+      
 
-            print("The optical photon reaches the destination")
-            self.receiver.receive_qubit("node", photon) #ITALIANO questo è un oggetto fotone che dovrei sistemare
-            
-            
-            #ITALIANO
-            #il ricevitore di questo cnaale è il nodo destination
-            #la funzione receive_quibit fa si che il firstcomponent del nodo ricevutore implementi une get
-            
-            #process = Process(self.receiver, "receive_qubit", [source.name, qubit])
-            #event = Event(future_time, process)
-            #self.timeline.schedule(event)
-
-        else:
-            print("Photon loss in the quantum channel")
-
-        #ITALUANO DEVO DEFINIRE UN TRANSMIT 2
-               
+        
 
 
-        #ITALUANO DEVO DEFINIRE UN TRANSMIT 2
-               
-
-    #def transmit(self, qubit: "Photon", source: "Node") -> None:
-    
-
-
-
-        #log.logger.info("{} send qubit with state {} to {} by Channel {}".format(
-                        #self.sender.name, qubit.quantum_state, self.receiver, self.name))
-
-        #assert self.delay >= 0 and self.loss < 1, "QuantumChannel init() function has not been run for {}".format(self.name)
-        #assert source == self.sender
-
-        # remove lowest time bin
-        #if len(self.send_bins) > 0:
-           # time = -1
-            #while time < self.timeline.now():
-             #   time_bin = hq.heappop(self.send_bins)
-             #   time = int(time_bin * (1e12 / self.frequency))
-            #assert time == self.timeline.now(), "qc {} transmit method called at invalid time".format(self.name)
-
-        # check if photon state using Fock representation
-        #if qubit.encoding_type["name"] == "fock":
-            #key = qubit.quantum_state  # if using Fock representation, the `quantum_state` field is the state key.
-            # apply loss channel on photonic statex
-            #self.timeline.quantum_manager.add_loss(key, self.loss)
-
-            # schedule receiving node to receive photon at future time determined by light speed
-            #future_time = self.timeline.now() + self.delay
-            #process = Process(self.receiver, "receive_qubit", [source.name, qubit])
-            #event = Event(future_time, process)
-            #self.timeline.schedule(event)
+     
 
 
 class QuantumChannel(OpticalChannel):
