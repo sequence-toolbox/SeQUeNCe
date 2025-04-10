@@ -1,13 +1,14 @@
 """Models for photon detection devices.
 
 This module models a single photon detector (SPD) for measurement of individual photons.
-It also defines a QSDetector class, which combines models of different hardware devices to measure photon states in different bases.
+It also defines a QSDetector class,
+which combines models of different hardware devices to measure photon states in different bases.
 QSDetector is defined as an abstract template and as implementations for polarization and time bin qubits.
 """
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List
-from numpy import eye, kron, exp, sqrt
+from numpy import eye, kron, exp, sqrt, random
 from scipy.linalg import fractional_matrix_power
 from math import factorial
 
@@ -22,7 +23,8 @@ from .circuit import Circuit
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
-from ..utils.encoding import time_bin
+from ..utils.encoding import time_bin, fock
+from ..utils import log
 
 
 class Detector(Entity):
@@ -44,7 +46,7 @@ class Detector(Entity):
     _meas_circuit = Circuit(1)
     _meas_circuit.measure(0)
 
-    def __init__(self, name: str, timeline: "Timeline", efficiency=0.9, dark_count=0, count_rate=int(25e6), time_resolution=150):
+    def __init__(self, name: str, timeline: "Timeline", efficiency: float = 0.9, dark_count: float = 0, count_rate: float = 25e6, time_resolution: int = 150):
         Entity.__init__(self, name, timeline)  # Detector is part of the QSDetector, and does not have its own name
         self.efficiency = efficiency
         self.dark_count = dark_count  # measured in 1/s
@@ -82,6 +84,8 @@ class Detector(Entity):
 
         if self.get_generator().random() < self.efficiency:
             self.record_detection()
+        else:
+            log.logger.debug(f'Photon loss in detector {self.name}')
 
     def add_dark_count(self) -> None:
         """Method to schedule false positive detection events.
@@ -486,7 +490,7 @@ class QSDetectorFockInterference(QSDetector):
         povm0_1 = eye((truncation+1) ** 2) - povm1_1
         # for detector2 (index 1)
         series_elem_list2 = [(-1)**i * fractional_matrix_power(create2, i+1).dot(
-            fractional_matrix_power(destroy2,i+1)) / factorial(i+1) for i in range(truncation)]
+            fractional_matrix_power(destroy2, i+1)) / factorial(i+1) for i in range(truncation)]
         povm1_2 = sum(series_elem_list2)
         povm0_2 = eye((truncation+1) ** 2) - povm1_2
 
@@ -604,3 +608,124 @@ class QSDetectorFockInterference(QSDetector):
     def set_phase(self, phase: float):
         self.phase = phase
         self._generate_povms()
+
+
+
+class FockDetector(Detector):
+    """Class modeling a Fock detector.
+
+    A Fock detector can detect the number of photons in a given mode.
+
+    See https://arxiv.org/abs/2411.11377
+
+    Attributes:
+        name (str): name of the detector
+        timeline (Timeline): the simulation timeline
+        efficiency (float): the efficiency of the detector
+        wavelength (int): wave length in nm
+        photon_counter (int): counting photon for the non ideal detector
+        photon_counter2 (int): counting photon for the ideal detector
+    """
+
+    def __init__(self, name: str, timeline: "Timeline", efficiency: float, wavelength: int = 0):
+        super().__init__(name, timeline, efficiency)
+        self.name = name
+        self.photon_counter = 0
+        self.photon_counter2 = 0
+        self.wavelength = wavelength
+        self.encoding_type = fock
+        self.timeline = timeline
+        self.efficiency = efficiency
+        self.measure_protocol= None
+    
+    def init(self):
+        pass
+
+    
+
+    def get(self, photon: Photon = None, **kwargs) -> None:
+        """Not ideal detector, there is a chance for photon loss.
+        
+        Args:
+            photon (Photon): photon
+        """
+        if self.get_generator().random() < self.efficiency:
+            self.photon_counter += 1
+            return self.photon_counter
+
+    def get_2(self, photon: Photon = None, **kwargs) -> None: #IDEAL
+        """Ideal detector, no photon loss
+        
+        Args:
+            photon (Photon): photon
+        """
+        self.photon_counter2 += 1
+        return self.photon_counter2
+
+    def getx2(self, photon: Photon = None, **kwargs) -> None:
+        if self.get_generator().random() < self.efficiency:
+            self.photon_counter += 1
+        if self.get_generator().random() < self.efficiency:
+            self.photon_counter += 1
+        return self.photon_counter
+
+    def get_2x2(self, photon: Photon = None, **kwargs) -> None: #IDEAL
+        self.photon_counter2 += 2
+        return self.photon_counter2
+
+
+
+
+
+    def measure(self, photon: Photon) -> None:
+        
+        self.detector_photon_counter_ideal=0
+        self.spd_ideal=0
+        self.detector_photon_counter_real=0
+        self.spd_real=0
+
+        print("--------")
+
+        #if self.FockBS._receivers[0].photon_counter2 == 0 and self.FockBS._receivers[1].photon_counter2 == 0:
+            #print("No photon reach the beam splitter")
+    
+        #if self.FockBS._receivers[0].photon_counter2 == 1 or self.FockBS._receivers[1].photon_counter2 == 1:
+            #self.detector_photon_counter_ideal += 1
+        if self.photon_counter2 == 1 or self.photon_counter2 == 1:
+            self.detector_photon_counter_ideal += 1
+        
+
+        #if self.FockBS._receivers[0].photon_counter2 >= 1 or self.FockBS._receivers[1].photon_counter2 >= 1:
+        if self.photon_counter2 >= 1 or self.photon_counter2 >= 1:
+            self.spd_ideal += 1
+
+
+        #print("efficinecy del primo receiver: ", self.FockBS._receivers[0].efficiency)
+        #print("efficinecy del secondo receiver: ", self.FockBS._receivers[1].efficiency)
+
+        #if self.FockBS._receivers[0].photon_counter == 1 or self.FockBS._receivers[1].photon_counter == 1:
+        if self.photon_counter == 1 or self.photon_counter == 1:
+            self.detector_photon_counter_real += 1
+
+        if self.photon_counter >= 1 or self.photon_counter >= 1:
+            self.spd_real += 1
+
+        
+    
+        
+
+
+
+        return self.detector_photon_counter_ideal, self.spd_ideal, self.detector_photon_counter_real, self.spd_real 
+    
+
+
+    def received_message(self, src: str, msg):
+        pass
+
+
+    
+
+
+
+
