@@ -120,15 +120,7 @@ class Measure(Protocol):
            
         if self.FockBS._receivers[0].photon_counter >= 1 or self.FockBS._receivers[1].photon_counter >= 1:
             self.spd_real += 1
-        
-
-        print("il conteggio del PRIMO RICEVITORE è: ", self.FockBS._receivers[0].photon_counter)
-        print("il conteggio del SEONCONDO ricevitore è : ", self.FockBS._receivers[1].photon_counter)
-
-        print("il conteggio del PRIMO RICEVITORE IDEALE: ", self.FockBS._receivers[0].photon_counter2)
-        print("il conteggio del SECONDO RICEVITORE IDEALE: ", self.FockBS._receivers[1].photon_counter2)
-        print("Fock beams photon counter: ", self.FockBS.photon_counter)
-        print("--------")
+    
         
 
         return self.detector_photon_counter_ideal, self.spd_ideal, self.detector_photon_counter_real, self.spd_real 
