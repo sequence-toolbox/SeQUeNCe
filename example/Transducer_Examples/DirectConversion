@@ -24,14 +24,13 @@ from example.QuantumTransduction.ConversionProtocols import EmittingProtocol, Up
 
 # GENERAL
 
-NUM_TRIALS = 200 
-FREQUENCY = 1e9
+NUM_TRIALS = 100
 MICROWAVE_WAVELENGTH = 999308 # nm
 OPTICAL_WAVELENGTH = 1550 # nm
 
 # Timeline
 START_TIME = 0
-PERIOD = 10 # ps
+PERIOD = 1 # mus
 
 
 state_list= [KET1, KET0] 
@@ -172,7 +171,6 @@ if __name__ == "__main__":
     qc1 = FockQuantumChannel("qc.node1.node2", tl, attenuation=ATTENUATION, distance=DISTANCE)    
     qc1.set_ends(node1, node2)
 
-    #print(f"First component name of Receiver {node2.first_component_name}")
     
 
     if EFFICIENCY_UP >= 0 and EFFICIENCY_UP <= 1 and EFFICIENCY_DOWN >= 0 and EFFICIENCY_DOWN <= 1:
@@ -224,11 +222,9 @@ if __name__ == "__main__":
         tl.init()
 
         # Reset counters
-        #transmon1.photon_counter   = 0 
-        #transducer1.photon_counter = 0
+
         detector1.photon_counter   = 0
         transmon2.photon_counter   = 0 
-        #transducer2.photon_counter = 0
         detector2.photon_counter   = 0
 
         process0 = Process(node1.emitting_protocol, "start", [])  # NOTE: there should only be one event to kick the simulation (following 2 events shouldn't exist here)
@@ -246,12 +242,11 @@ if __name__ == "__main__":
         
         print(f"Number of photons converted at time {tl.time}: {transmon2.photon_counter}") 
         total_photons_successful += transmon2.photon_counter
-        #ITALIANO: quelli che sono stati sia up- che down- convertiti 
 
         total_transducer_count += transducer1.photon_counter
         cumulative_time += PERIOD
 
-        ideal_photons.append(trial + 1)
+        ideal_photons.append(trial+1)
         emitted_photons.append(total_transducer_count)
         converted_photons.append(total_photons_successful)
         
@@ -263,24 +258,25 @@ if __name__ == "__main__":
 
     total_photons_to_be_converted = NUM_TRIALS
     print(f"Total number of photons converted: {total_photons_successful}")
-    #print(f"Total number of photons EMITTED: {total_transducer_count}")
-    #ITALIANO: DA CAPIRE SE è CORRETTO QUESTO
+
 
     conversion_percentage = (total_photons_successful / total_photons_to_be_converted) * 100 if total_photons_to_be_converted > 0 else 0
     print(f"Conversion efficiency of DQT protocol with no-idealities of transmon: {conversion_percentage:.2f}%")
 
-    #conversion_percentage_2 = (total_photons_successful / total_transducer_count) * 100 if total_photons_to_be_converted > 0 else 0
-    #print(f"Conversion efficiency of DQT protocol: {conversion_percentage_2:.2f}%")
-    #ITALIANO: DA CAPIRE SE è CORRETTO QUESTO
 
 
     failed_down_conversions_adjusted = [x + 1 for x in failed_down_conversions]
     successful_conversions_adjusted = [y + 2 for y in successful_conversions]
 
+
+
     print(f"- - - - - - - - - -")
 
     time_points = [i * PERIOD for i in range(NUM_TRIALS)]
 
+
+
+#Plot
 
 plt.figure(figsize=(10, 6))
 
@@ -289,8 +285,7 @@ plt.plot(time_points, failed_up_conversions, color='blue', label='Failed Up Conv
 plt.plot(time_points, failed_down_conversions, color='red', label='Failed Down Conversions', linewidth=2)
 plt.plot(time_points, successful_conversions, color='green', label='Successful Conversions', linewidth=2)
 
-# Add labels and title for better readability
-plt.xlabel('Time (ps)', fontsize=14)
+plt.xlabel(r"Time ($\mu$s)", fontsize=14)
 plt.ylabel('Number of Conversions', fontsize=14)
 plt.title('Quantum Transduction Results', fontsize=16)
 plt.legend()
@@ -299,7 +294,6 @@ plt.grid(True)
 plt.show()
 
 
-# Preparo la results_matrix
 results_matrix = np.zeros((NUM_TRIALS, 3))
 for i in range(NUM_TRIALS):
     if failed_up_conversions[i] != 0:
@@ -309,31 +303,25 @@ for i in range(NUM_TRIALS):
     if successful_conversions[i] != 0:
         results_matrix[i, 2] = 1  
 
-# Crea il plot
 fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(12, 8), gridspec_kw={'height_ratios': [4, 1]})
 
-# Primo subplot - Line plot
 l1, = ax1.plot(time_points, ideal_photons, 'o-', label="Ideal Successfully Converted Photons", color='darkblue', markersize=3)
 l2, = ax1.plot(time_points, converted_photons, 'o-', label="Successfully Converted Photons", color='#FF00FF', markersize=3)
-ax1.set_ylabel("Photon Number", fontsize=24)
-ax1.set_title("Photon Conversions over Time", fontsize=24, fontweight='bold')
-# Rimuovi la griglia
-# ax1.grid(True)
-ax1.tick_params(axis='both', labelsize=18)
+ax1.set_ylabel("Photon Number", fontsize=34)
+ax1.set_title("Photon Conversions over Time", fontsize=34, fontweight='bold')
 
-# Imposta il limite dell'asse X per includere 0 e 2000
-#ax1.set_xlim([0, 2000])
+ax1.tick_params(axis='both', labelsize=30)
 
-# Secondo subplot - Bar plot
-b1 = ax2.bar(time_points, results_matrix[:, 0], color='#ED213C', label='Failed Up-conversion', alpha=0.7, width=PERIOD * 0.8)
-b2 = ax2.bar(time_points, results_matrix[:, 1], color='blue', label='Failed Down-conversion', alpha=0.7, bottom=results_matrix[:, 0], width=PERIOD * 0.8)
-b3 = ax2.bar(time_points, results_matrix[:, 2], color='#119B70', label='Successful conversions', alpha=0.7, bottom=results_matrix[:, 0] + results_matrix[:, 1], width=PERIOD * 0.8)
-ax2.set_xlabel(r"Time (ps)", fontsize=24)
+
+b1 = ax2.bar(time_points, results_matrix[:, 0], color='#ED213C', label='Failed Up-conversion', alpha=0.8, width=PERIOD* 0.8, align='edge')
+b2 = ax2.bar(time_points, results_matrix[:, 1], color='blue', label='Failed Down-conversion', alpha=0.8, bottom=results_matrix[:, 0], width=PERIOD * 0.8, align='edge')
+b3 = ax2.bar(time_points, results_matrix[:, 2], color='#119B70', label='Successful conversions', alpha=0.8, bottom=results_matrix[:, 0] + results_matrix[:, 1], width=PERIOD * 0.8, align='edge')
+ax2.set_xlabel(r"Time ($\mu$s)", fontsize=34)
 ax2.yaxis.set_visible(False)  
 ax2.grid(True)
-ax2.tick_params(axis='both', labelsize=12)
+ax2.tick_params(axis='both', labelsize=30)
 
-# Legenda unica DENTRO al primo subplot (ax1)
+
 ax1.legend(
     handles=[l1, l2, b1, b2, b3],
     labels=[
@@ -344,7 +332,7 @@ ax1.legend(
         "Successful conversions"
     ],
     loc='upper left',     
-    fontsize=16,
+    fontsize=20,
     frameon=True,
     shadow=False
 )
