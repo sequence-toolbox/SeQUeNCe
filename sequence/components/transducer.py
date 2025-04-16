@@ -8,7 +8,8 @@ from typing import List
 from ..kernel.entity import Entity
 from ..kernel.timeline import Timeline
 from ..topology.node import Node
-from .photon import Photon
+from ..components.photon import Photon
+
 
 
 class Transducer(Entity):
@@ -32,20 +33,31 @@ class Transducer(Entity):
         self.timeline = timeline
         self.efficiency = efficiency
         self.photon_counter = 0
+        self.up_conversion_protocol = None
+        self.down_conversion_protocol = None 
         
+
     def init(self):
-        assert len(self._receivers) == 2
+        pass
+
 
     def add_outputs(self, outputs: List):
         """Add outputs, i.e., receivers"""
         for i in outputs:
             self.add_receiver(i)
     
-    def receive_photon_from_transmon(self, photon: Photon) -> None:
-        """Receive a photon from the transmon"""
-        # NOTE should schedule an UpConvert event in the future,
-        # and pass on the argument photon to the UpConversion protocol's convert() method
-        self.photon_counter += 1
 
-    def receive_photon_from_channel(self, photon: Photon) -> None:
+    def receive_photon_from_transmon(self, photon: Photon) -> None:
+        """Receive a photon from the transmon and call the Up_Conversion protocol"""
+        # NOTE should schedule an UpConvert event in the future and pass on the argument photon to the UpConversion protocol's convert() method
+        self.up_conversion_protocol.convert(photon)
+       
+        
+    def get(self, photon) -> None:
+
+        print("The optical photon reaches the destination")
         self.photon_counter += 1
+        
+        self.down_conversion_protocol.convert(photon)
+
+       

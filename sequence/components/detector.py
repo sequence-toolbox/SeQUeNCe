@@ -635,9 +635,11 @@ class FockDetector(Detector):
         self.encoding_type = fock
         self.timeline = timeline
         self.efficiency = efficiency
+        self.measure_protocol= None
     
     def init(self):
         pass
+
 
     def get(self, photon: Photon = None, **kwargs) -> None:
         """Not ideal detector, there is a chance for photon loss.
@@ -647,31 +649,49 @@ class FockDetector(Detector):
         """
         if self.get_generator().random() < self.efficiency:
             self.photon_counter += 1
+            return self.photon_counter
 
-    def get_2(self, photon: Photon = None, **kwargs) -> None:
+    def get_2(self, photon: Photon = None, **kwargs) -> None: #IDEAL
         """Ideal detector, no photon loss
         
         Args:
             photon (Photon): photon
         """
         self.photon_counter2 += 1
-    
-    def set_efficiency(self, efficiency: float):
-        """Set the efficiency of the fock detector.
-        
-        Args:
-            efficiency (float): the efficiency of the detector
-        """
-        self.efficiency = efficiency
+        return self.photon_counter2
 
-    def receive_photon(self, src: str, photon: Photon) -> None:
-        """receive a photon
+    def getx2(self, photon: Photon = None, **kwargs) -> None:
+        if self.get_generator().random() < self.efficiency:
+            self.photon_counter += 1
+        if self.get_generator().random() < self.efficiency:
+            self.photon_counter += 1
+        return self.photon_counter
+
+    def get_2x2(self, photon: Photon = None, **kwargs) -> None: #IDEAL
+        self.photon_counter2 += 2
+        return self.photon_counter2
+
+
+    def measure(self, photon: Photon) -> None:
+        self.detector_photon_counter_ideal=0
+        self.spd_ideal=0
+        self.detector_photon_counter_real=0
+        self.spd_real=0
+
+        if self.photon_counter2 == 1 or self.photon_counter2 == 1:
+            self.detector_photon_counter_ideal += 1
         
-        Args:
-            src (str): name of the source node
-            photon (Photon): photon
-        """
-        if photon.wavelength == self.wavelength:
-            self.get(photon)
-        else:
-            pass
+        if self.photon_counter2 >= 1 or self.photon_counter2 >= 1:
+            self.spd_ideal += 1
+
+        if self.photon_counter == 1 or self.photon_counter == 1:
+            self.detector_photon_counter_real += 1
+
+        if self.photon_counter >= 1 or self.photon_counter >= 1:
+            self.spd_real += 1
+
+        return self.detector_photon_counter_ideal, self.spd_ideal, self.detector_photon_counter_real, self.spd_real 
+    
+
+    def received_message(self, src: str, msg):
+        pass
