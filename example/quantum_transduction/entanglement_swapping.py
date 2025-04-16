@@ -3,8 +3,8 @@
 
 import sys
 sys.path.append('.')
+from fock_quantum_channel import FockQuantumChannel
 from sequence.kernel.timeline import Timeline
-from sequence.components.optical_channel import FockQuantumChannel
 from sequence.topology.node import Node
 from sequence.components.photon import Photon
 from typing import List

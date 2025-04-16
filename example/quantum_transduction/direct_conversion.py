@@ -7,8 +7,8 @@ sys.path.append('.')
 import numpy as np
 import matplotlib.pyplot as plt
 
+from fock_quantum_channel import FockQuantumChannel
 from sequence.kernel.timeline import Timeline
-from sequence.components.optical_channel import FockQuantumChannel
 from sequence.topology.node import Node
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
