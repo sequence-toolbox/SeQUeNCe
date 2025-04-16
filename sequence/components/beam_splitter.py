@@ -17,6 +17,8 @@ from .photon import Photon
 from ..kernel.quantum_utils import povm_0
 from ..utils.encoding import polarization
 from ..kernel.entity import Entity
+import random
+
 
 
 class BeamSplitter(Entity):
@@ -135,21 +137,45 @@ class FockBeamSplitter2(Entity):
         photon_counter (int): counter for counting photons
         src_list (str): a list of photon source names
     """
-    def __init__(self, name: str, owner: "Node", timeline: "Timeline",
-                 efficiency: float, photon_counter: int, src_list: List[str]):
+    def __init__(self, name: str, owner: "Node", timeline: "Timeline", efficiency: float, photon_counter: int, src_list: List[str]):
+
         Entity.__init__(self, name, timeline)
         self.owner = owner
         self.timeline = timeline
         self.efficiency = efficiency
         self.photon_counter = photon_counter
         self.src_list = src_list
+        self.swapping_protocol = None
+        self.update_counter = 0
+
 
     def init(self):
         assert len(self._receivers) == 2
 
-    def receive_photon_from_src(self, photon: Photon, source: List[str]) -> None:
+
+    def get(self, source: str, photon: Photon) -> None:
         """Receive photon from two end nodes"""
+
         self.photon_counter += 1
+            
+        print(f"Photon counter BEAM SPLITTER: {self.photon_counter} at time {self.timeline.now()}")
+
+        selected_receiver = random.choice(self._receivers)
+
+        if self.photon_counter == 1:
+            
+            selected_receiver.get(photon)
+            selected_receiver.get_2(photon) 
+
+        elif self.photon_counter == 2:
+            
+            self._receivers[0].photon_counter = 0
+            self._receivers[1].photon_counter = 0
+            self._receivers[0].photon_counter2 = 0
+            self._receivers[1].photon_counter2 = 0
+            selected_receiver.getx2(photon)
+            selected_receiver.get_2x2(photon)
+
 
     def add_outputs(self, outputs: List):
         """Add outputs, i.e., receivers
@@ -159,6 +185,3 @@ class FockBeamSplitter2(Entity):
         """
         for i in outputs:
             self.add_receiver(i)
-
-    def send_photon(self, receiver: Entity, photon: Photon) -> None:
-        receiver.get(self.name, photon)

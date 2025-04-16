@@ -8,6 +8,8 @@ OpticalChannels must be attached to nodes on both ends.
 import heapq as hq
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
     from ..topology.node import Node
