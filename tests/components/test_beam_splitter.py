@@ -227,8 +227,11 @@ def test_FockBeamSplitter2():
 
     photon = Photon('photon', tl)
 
+    # receives 10 photons from node1 and 10 photons from node3
     photon_number = 10
     for _ in range(photon_number):
-        fockbeamsplitter2.receive_photon_from_src(photon, src_list)
+        fockbeamsplitter2.get(node1.name, photon)
+    for _ in range(photon_number):
+        fockbeamsplitter2.get(node2.name, photon)
 
-    assert fockbeamsplitter2.photon_counter == photon_number
+    assert fockbeamsplitter2.photon_counter == photon_number * 2

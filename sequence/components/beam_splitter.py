@@ -153,7 +153,7 @@ class FockBeamSplitter2(Entity):
         assert len(self._receivers) == 2
 
 
-    def get(self, source, photon: Photon) -> None:
+    def get(self, source: str, photon: Photon) -> None:
         """Receive photon from two end nodes"""
 
         self.photon_counter += 1

@@ -12,11 +12,11 @@ from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
-from sequence.components.transmon import Transmon
-from sequence.components.transducer import Transducer
+from sequence.components.transmon import Transmon, EmittingProtocol
+from sequence.components.transducer import Transducer, UpConversionProtocol, DownConversionProtocol
 from sequence.components.detector import FockDetector
 from sequence.constants import KET0, KET1
-from example.quantum_transduction.conversion_protocols import EmittingProtocol, UpConversionProtocol, DownConversionProtocol
+from sequence.components.transmon import EmittingProtocol
 
 
 # GENERAL
