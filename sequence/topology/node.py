@@ -694,7 +694,7 @@ class ClassicalNode(ClassicalEntity):
         generator (np.random.Generator): random number generator used by node.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", seed=None, gate_fid: float = 1, meas_fid: float = 1):
+    def __init__(self, name: str, timeline: "Timeline", seed: int = None):
         """Constructor for node.
 
         name (str): name of node instance.

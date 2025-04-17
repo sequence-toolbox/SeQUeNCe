@@ -69,4 +69,3 @@ def test_sequential_simulation():
     for r in topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
         assert len(r.network_manager.protocol_stack[0].forwarding_table) > 0
 
-# TODO: unit test for the parallel simulation
