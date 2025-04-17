@@ -22,7 +22,7 @@ def _init_logger():
 
 logger = _init_logger()  # global logger
 # LOG_FORMAT = '{asctime}  {simtime:<20,} {levelname:7} {module:20} {message}'
-LOG_FORMAT = '{simtime:<20,} {levelname:7} {module:20} {message}'   # no asctime
+LOG_FORMAT = '{simtime:<20,} {levelname:7} {module:22} {message}'   # no asctime
 _log_modules = []
 
 

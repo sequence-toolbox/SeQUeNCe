@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from ..components.photon import Photon
     from ..app.request_app import RequestApp
 
-from ..kernel.entity import Entity
+from ..kernel.entity import Entity, ClassicalEntity
 from ..components.memory import MemoryArray
 from ..components.bsm import SingleAtomBSM, SingleHeraldedBSM
 from ..components.light_source import LightSource
@@ -36,7 +36,7 @@ from ..utils import log
 
 
 class Node(Entity):
-    """Base node type.
+    """Base node type that has both classical and quantum capabilties.
     
     Provides default interfaces for network.
 
@@ -179,7 +179,7 @@ class Node(Entity):
 
         Args:
             src (str): name of node where qubit was sent from.
-            qubit (any): transmitted qubit.
+            qubit (any): transmitted qubit. Typically a Photon object.
         """
 
         self.components[self.first_component_name].get(qubit)
@@ -695,3 +695,95 @@ class QKDNode(Node):
 
     def get(self, photon: "Photon", **kwargs):
         self.send_qubit(self.destination, photon)
+
+
+class ClassicalNode(ClassicalEntity):
+    """Base node type that has only classical capabilties.
+    
+    Provides default interfaces for network.
+
+    Attributes:
+        name (str): label for node instance.
+        timeline (Timeline): timeline for simulation.
+        cchannels (Dict[str, ClassicalChannel]): mapping of destination node names to classical channel instances.
+        protocols (List[Protocol]): list of attached protocols.
+        generator (np.random.Generator): random number generator used by node.
+    """
+
+    def __init__(self, name: str, timeline: "Timeline", seed: int = None):
+        """Constructor for node.
+
+        name (str): name of node instance.
+        timeline (Timeline): timeline for simulation.
+        seed (int): seed for random number generator, default None
+        """
+
+        log.logger.info("Create Node {}".format(name))
+        super().__init__(name, timeline)
+        self.owner = self
+        self.cchannels = {}  # mapping of destination node names to classical channels
+        self.protocols = []
+        self.generator = np.random.default_rng(seed)
+        self.components = {}
+
+    def init(self) -> None:
+        pass
+
+    def set_seed(self, seed: int) -> None:
+        self.generator = np.random.default_rng(seed)
+
+    def get_generator(self) -> np.random.Generator:
+        return self.generator
+
+    def assign_cchannel(self, cchannel: "ClassicalChannel", another: str) -> None:
+        """Method to assign a classical channel to the node.
+
+        This method is usually called by the `ClassicalChannel.set_ends` method and not called individually.
+
+        Args:
+            cchannel (ClassicalChannel): channel to add.
+            another (str): name of node at other end of channel.
+        """
+
+        self.cchannels[another] = cchannel
+
+    def send_message(self, dst: str, msg: "Message", priority=inf) -> None:
+        """Method to send classical message.
+
+        Args:
+            dst (str): name of destination node for message.
+            msg (Message): message to transmit.
+            priority (int): priority for transmitted message (default inf).
+        """
+        log.logger.info("{} send message {} to {}".format(self.name, msg, dst))
+
+        if priority == inf:
+            priority = self.timeline.schedule_counter
+        self.cchannels[dst].transmit(msg, self, priority)
+
+    def receive_message(self, src: str, msg: "Message") -> None:
+        """Method to receive message from classical channel.
+
+        Searches through attached protocols for those matching message, then invokes `received_message` method of protocol(s).
+
+        Args:
+            src (str): name of node sending the message.
+            msg (Message): message transmitted from node.
+        """
+        log.logger.info("{} receive message {} from {}".format(self.name, msg, src))
+        # signal to protocol that we've received a message
+        if msg.receiver is not None:
+            for protocol in self.protocols:
+                if protocol.name == msg.receiver and protocol.received_message(src, msg):
+                    return
+        else:
+            matching = [p for p in self.protocols if type(p) == msg.protocol_type]
+            for p in matching:
+                p.received_message(src, msg)
+
+    def change_timeline(self, timeline: "Timeline"):
+        self.timeline = timeline
+        for component in self.components.values():
+            component.change_timeline(timeline)
+        for cc in self.cchannels.values():
+            cc.change_timeline(timeline)

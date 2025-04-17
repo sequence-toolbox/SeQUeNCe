@@ -102,11 +102,23 @@ class MemoryArray(Entity):
         for memory in self.memories:
             memory.__setattr__(arg_name, value)
 
-    def add_receiver(self, receiver: "Entity"):
-        for m in self.memories:
-            m.add_receiver(receiver)
+    def add_receiver(self, receiver: "Entity") -> None:
+        """Add receiver to each memory in the memory array to receive photons.
+        
+        Args:
+            receiver (Entity): receiver of the memory
+        """
+        for memory in self.memories:
+            memory.add_receiver(receiver)
 
     def get_memory_by_name(self, name: str) -> "Memory":
+        """Given the memory's name, get the memory object.
+        
+        Args:
+            name (str): name of memory
+        Return:
+            (Memory): the memory object
+        """
         index = self.memory_name_to_index.get(name, -1)
         assert index >= 0, "Oops! name={} not exist!"
         return self.memories[index]
