@@ -176,7 +176,7 @@ class QlanStarTopo(Topo):
     def _add_qconnections(self, config: dict):
         '''generate bsm_info, qc_info, and cc_info for the q_connections
         '''
-        for q_connect in config.get(Topo.ALL_QC_CONNECT, []):
+        for q_connect in config.get(Topo.ALL_Q_CONNECT, []):
             node1 = q_connect[Topo.CONNECT_NODE_1]
             node2 = q_connect[Topo.CONNECT_NODE_2]
             attenuation = q_connect[Topo.ATTENUATION]
@@ -191,7 +191,7 @@ class QlanStarTopo(Topo):
                     delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
                     cc_delay.append(delay)
 
-            for cc in config.get(self.ALL_CC_CONNECT, []):  
+            for cc in config.get(self.ALL_C_CONNECT, []):  
                 if (cc[self.CONNECT_NODE_1] == node1 and cc[self.CONNECT_NODE_2] == node2) \
                         or (cc[self.CONNECT_NODE_1] == node2 and cc[self.CONNECT_NODE_2] == node1):
                     delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
