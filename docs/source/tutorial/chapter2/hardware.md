@@ -159,7 +159,7 @@ We can obtain the memory object using the `Node.get_components_by_type` method, 
 The memory state can then be set with the `update_state` method.
 
 ```python
-memories = node1.get_components_by_type("Memory")
+memories = node1.get_components_by_type(Memory)
 memory = memories[0]
 memory.update_state([complex(0), complex(1)])
 ```

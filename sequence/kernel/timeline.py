@@ -47,7 +47,7 @@ class Timeline:
     Attributes:
         events (EventList): the event list of timeline.
         entities (List[Entity]): the entity list of timeline used for initialization.
-        time (int): current simulation time (picoseconds).
+        time (float/int): current simulation time (picoseconds).
         stop_time (int): the stop (simulation) time of the simulation.
         schedule_counter (int): the counter of scheduled events
         run_counter (int): the counter of executed events
@@ -56,7 +56,7 @@ class Timeline:
         quantum_manager (QuantumManager): quantum state manager.
     """
 
-    def __init__(self, stop_time=inf, formalism=KET_STATE_FORMALISM, truncation=1):
+    def __init__(self, stop_time: Union[float, int]=inf, formalism=KET_STATE_FORMALISM, truncation=1):
         """Constructor for timeline.
 
         Args:
@@ -92,7 +92,7 @@ class Timeline:
         else:
             raise ValueError(f"Invalid formalism {formalism}")
 
-    def now(self) -> int:
+    def now(self) -> float:
         """Returns current simulation time."""
 
         return self.time
@@ -154,7 +154,7 @@ class Timeline:
     def remove_event(self, event: "Event") -> None:
         self.events.remove(event)
 
-    def update_event_time(self, event: "Event", time: int) -> None:
+    def update_event_time(self, event: "Event", time: Union[int, float]) -> None:
         """Method to change execution time of an event.
 
         Args:
@@ -176,7 +176,8 @@ class Timeline:
     def get_entity_by_name(self, name: str) -> Optional["Entity"]:
         return self.entities.get(name, None)
 
-    def seed(self, seed: int) -> None:
+    @staticmethod
+    def seed(seed: int) -> None:
         """Sets random seed for simulation."""
 
         random.seed(seed)
@@ -202,7 +203,8 @@ class Timeline:
             stdout.flush()
             sleep(SLEEP_SECONDS)
 
-    def ns_to_human_time(self, nanoseconds: float) -> str:
+    @staticmethod
+    def ns_to_human_time(nanoseconds: float) -> str:
         """Returns a string in the form [D day[s], ][H]H:MM:SS[.UUUUUU]
         """
         milliseconds = nanoseconds / NANOSECONDS_PER_MILLISECOND

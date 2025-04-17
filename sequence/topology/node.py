@@ -4,9 +4,10 @@ This module provides definitions for various types of quantum network nodes.
 All node types inherit from the base Node type, which inherits from Entity.
 Node types can be used to collect all the necessary hardware and software for a network usage scenario.
 """
-
+import sys
 from math import inf
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, Union
+
 import numpy as np
 
 if TYPE_CHECKING:
@@ -183,8 +184,18 @@ class Node(Entity):
 
         self.components[self.first_component_name].get(qubit)
 
-    def get_components_by_type(self, component_type: str) -> List[Entity]:
-        return [comp for comp in self.components.values() if type(comp).__name__ == component_type]
+    def get_components_by_type(self, component_type: Union[str, type]) -> list:
+        """Method to return all components of a specific type.
+        Args:
+            component_type (str/type): The type of components to filter for.
+        Returns:
+            list: A list of components matching the requested type.
+        """
+        if isinstance(component_type, str):
+            return [comp for comp in self.components.values() if comp.__class__.__name__ == component_type]
+        if isinstance(component_type, type):
+            return [comp for comp in self.components.values() if isinstance(comp, component_type)]
+        return []
 
     def change_timeline(self, timeline: "Timeline"):
         self.timeline = timeline

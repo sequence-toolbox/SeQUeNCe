@@ -191,7 +191,7 @@ class Memory(Entity):
         self.frequency = frequency
         self.efficiency = efficiency
         self.coherence_time = coherence_time  # coherence time in seconds
-        self.decoherence_rate = 1 / self.coherence_time  # rate of decoherence to implement time dependent decoherence
+        self.decoherence_rate = 1 / self.coherence_time if self.coherence_time > 0 else 0 # rate of decoherence to implement time dependent decoherence
         self.wavelength = wavelength
         self.qstate_key = timeline.quantum_manager.new()
         self.memory_array = None
