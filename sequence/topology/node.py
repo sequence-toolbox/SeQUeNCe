@@ -6,7 +6,7 @@ Node types can be used to collect all the necessary hardware and software for a 
 """
 import sys
 from math import inf
-from typing import TYPE_CHECKING, Any, List, TypeVar, Type, Union
+from typing import TYPE_CHECKING, Any, List, Union
 
 import numpy as np
 
@@ -34,7 +34,6 @@ from ..network_management.network_manager import NewNetworkManager, NetworkManag
 from ..utils.encoding import *
 from ..utils import log
 
-T = TypeVar("T", bound=Entity) # Type variable for components in Node class
 
 class Node(Entity):
     """Base node type.
@@ -185,26 +184,18 @@ class Node(Entity):
 
         self.components[self.first_component_name].get(qubit)
 
-    def get_components_by_type(self, component_type: Union[Type[T], str]) -> List[T]:
+    def get_components_by_type(self, component_type: Union[str, type]) -> list:
         """Method to return all components of a specific type.
         Args:
-            component_type (Type[T]): The type of components to filter for.
-                Must be a subclass of Entity.
+            component_type (str/type): The type of components to filter for.
         Returns:
-            List[T]: A list of components matching the requested type.
-            """
-        # IF component_type is passed as a string, convert it to a class
+            list: A list of components matching the requested type.
+        """
         if isinstance(component_type, str):
-            if hasattr(sys.modules[__name__], component_type):
-                component_type = getattr(sys.modules[__name__], component_type)
-            elif component_type in globals():
-                component_type = globals()[component_type]
-            else:
-                matches = [comp for comp in self.components.values() if comp.__class__.__name__ == component_type]
-                return matches
-        if not isinstance(component_type, type) or not issubclass(component_type, Entity):
-            raise TypeError(f'Component type {component_type} must be a subclass of Entity')
-        return [comp for comp in self.components.values() if isinstance(comp, component_type)]
+            return [comp for comp in self.components.values() if comp.__class__.__name__ == component_type]
+        if isinstance(component_type, type):
+            return [comp for comp in self.components.values() if isinstance(comp, component_type)]
+        return []
 
     def change_timeline(self, timeline: "Timeline"):
         self.timeline = timeline
