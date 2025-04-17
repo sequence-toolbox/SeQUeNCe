@@ -56,7 +56,7 @@ class Timeline:
         quantum_manager (QuantumManager): quantum state manager.
     """
 
-    def __init__(self, stop_time :Union[float, int]=inf, formalism=KET_STATE_FORMALISM, truncation=1):
+    def __init__(self, stop_time: Union[float, int]=inf, formalism=KET_STATE_FORMALISM, truncation=1):
         """Constructor for timeline.
 
         Args:
