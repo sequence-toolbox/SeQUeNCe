@@ -1,0 +1,155 @@
+{
+    "is_parallel": false,
+    "stop_time": 5000000000000,
+    "local_memories": 6,
+    "client_number": 7,
+    "memo_fidelity_orch": 0.9,
+    "memo_frequency_orch": 2000,
+    "memo_efficiency_orch": 1,
+    "memo_coherence_orch": -1,
+    "memo_wavelength_orch": 500,
+    "memo_fidelity_client": 0.9,
+    "memo_frequency_client": 2000,
+    "memo_efficiency_client": 1,
+    "memo_coherence_client": -1,
+    "memo_wavelength_client": 500,
+    "measurement_bases": "yyyyyy",
+    "nodes": [
+      {
+        "name": "Orchestrator",
+        "type": "QlanOrchestratorNode",
+        "seed": 3, 
+        "memo_size": 3
+      },
+      {
+        "name": "client1",
+        "type": "QlanClientNode",
+        "memo_size": 1,
+        "seed": 0
+      },
+      {
+        "name": "client2",
+        "type": "QlanClientNode",
+        "memo_size": 1,
+        "seed": 1
+      },
+      {
+        "name": "client3",
+        "type": "QlanClientNode",
+        "memo_size": 1,
+        "seed": 2
+      },
+      {
+        "name": "client4",
+        "type": "QlanClientNode",
+        "memo_size": 1,
+        "seed": 3
+      },
+      {
+        "name": "client5",
+        "type": "QlanClientNode",
+        "memo_size": 1,
+        "seed": 3
+      },
+      {
+        "name": "client6",
+        "type": "QlanClientNode",
+        "memo_size": 1,
+        "seed": 3
+      },
+      {
+        "name": "client7",
+        "type": "QlanClientNode",
+        "memo_size": 1,
+        "seed": 3
+      }
+    ],
+    "qconnections": [
+      {
+        "node1": "Orchestrator",
+        "node2": "client1",
+        "attenuation": 0.0002,
+        "distance": 500,
+        "type": "meet_in_the_middle"
+      },
+      {
+        "node1": "Orchestrator",
+        "node2": "client2",
+        "attenuation": 0.0002,
+        "distance": 500,
+        "type": "meet_in_the_middle"
+      },
+      {
+        "node1": "Orchestrator",
+        "node2": "client3",
+        "attenuation": 0.0002,
+        "distance": 500,
+        "type": "meet_in_the_middle"
+      },
+      {
+        "node1": "Orchestrator",
+        "node2": "client4",
+        "attenuation": 0.0002,
+        "distance": 500,
+        "type": "meet_in_the_middle"
+      },
+      {
+        "node1": "Orchestrator",
+        "node2": "client5",
+        "attenuation": 0.0002,
+        "distance": 500,
+        "type": "meet_in_the_middle"
+      },
+      {
+        "node1": "Orchestrator",
+        "node2": "client6",
+        "attenuation": 0.0002,
+        "distance": 500,
+        "type": "meet_in_the_middle"
+      },
+      {
+        "node1": "Orchestrator",
+        "node2": "client7",
+        "attenuation": 0.0002,
+        "distance": 500,
+        "type": "meet_in_the_middle"
+      }
+    ],
+    "cconnections": [
+      {
+        "node1": "Orchestrator",
+        "node2": "client1",
+        "delay": 500000000
+      },
+      {
+        "node1": "Orchestrator",
+        "node2": "client2",
+        "delay": 500000000
+      },
+      {
+        "node1": "Orchestrator",
+        "node2": "client3",
+        "delay": 500000000
+      },
+      {
+        "node1": "Orchestrator",
+        "node2": "client4",
+        "delay": 500000000
+      },
+      {
+        "node1": "Orchestrator",
+        "node2": "client5",
+        "delay": 500000000
+      },
+      {
+        "node1": "Orchestrator",
+        "node2": "client6",
+        "delay": 500000000
+      },
+      {
+        "node1": "Orchestrator",
+        "node2": "client7",
+        "delay": 500000000
+      }
+    ]
+}
