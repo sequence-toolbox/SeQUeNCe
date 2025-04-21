@@ -236,7 +236,7 @@ def create_TMSV_OP_Dense(N, mean_photon_num):
 
 ########## Light Source ###########
 
-def light_source(vacuum, N, mean_photon_num, num_modes, error_tolerance, compress = True, contract = True):
+def light_source(vacuum, N, mean_photon_num, num_modes, error_tolerance, TMSV_indices = ((0,2),(5,7)), compress = True, contract = True):
 
     psi = vacuum.copy()
     psi.add_tag("L0")
@@ -245,11 +245,11 @@ def light_source(vacuum, N, mean_photon_num, num_modes, error_tolerance, compres
     # Creating TMSV ops:
     TMSV_op_dense = create_TMSV_OP_Dense(N, mean_photon_num)
 
-    TMSV_MPO_H = create_MPO(site1 = 0, site2 = 2, total_sites = num_modes, op = TMSV_op_dense, N = N, tag = r"$TMSV_H$")
+    TMSV_MPO_H = create_MPO(site1 = TMSV_indices[0][0], site2 = TMSV_indices[0][1], total_sites = num_modes, op = TMSV_op_dense, N = N, tag = r"$TMSV_H$")
     enforce_1d_like(TMSV_MPO_H, site_tags=site_tags, inplace=True)
     TMSV_MPO_H.add_tag("L1")
 
-    TMSV_MPO_V = create_MPO(site1 = 5, site2 = 7, total_sites = num_modes, op = TMSV_op_dense, N = N, tag = r"$TMSV_V$")
+    TMSV_MPO_V = create_MPO(site1 = TMSV_indices[1][0], site2 = TMSV_indices[1][1], total_sites = num_modes, op = TMSV_op_dense, N = N, tag = r"$TMSV_V$")
     enforce_1d_like(TMSV_MPO_V, site_tags=site_tags, inplace=True)
     TMSV_MPO_V.add_tag("L1")
 
@@ -392,6 +392,29 @@ def extend_MPS(psi, psi_second = None):
 
 
 ########## SWAP OPERATORS ############
+
+# def bell_state_measurement(psi, N, site_tags, num_modes, efficiency, error_tolerance, beamsplitters = [[2,6],[3,7]], measurements = {1:(2,7), 0:(3,6)}, pnr = False, compress = True, contract = True):
+
+#     U_BS_H = create_BS_MPO(site1 = beamsplitters[0][0], site2 = beamsplitters[0][1], theta=np.pi/4, total_sites = num_modes, N = N, tag = r"$U_{BS_H}$")
+#     enforce_1d_like(U_BS_H, site_tags=site_tags, inplace=True)
+#     U_BS_H.add_tag("L2")
+
+#     U_BS_V = create_BS_MPO(site1 = beamsplitters[1][0], site2 = beamsplitters[1][1], theta=np.pi/4, total_sites = num_modes, N = N, tag = r"$U_{BS_V}$")
+#     enforce_1d_like(U_BS_V, site_tags=site_tags, inplace=True)
+#     U_BS_V.add_tag("L3")
+
+#     BSM_POVM_1_OPs = generate_sqrt_POVM_MPO(sites=measurements[1], outcome = 1, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr)
+#     BSM_POVM_1_OPs.extend(generate_sqrt_POVM_MPO(sites=measurements[0], outcome = 0, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr))
+
+
+#     psi = tensor_network_apply_op_vec(U_BS_H, psi, compress=compress, contract = contract, cutoff = error_tolerance)
+#     psi = tensor_network_apply_op_vec(U_BS_V, psi, compress=compress, contract = contract, cutoff = error_tolerance)
+
+#     for POVM_OP in BSM_POVM_1_OPs:
+#         POVM_OP.add_tag("L4")
+#         psi = tensor_network_apply_op_vec(POVM_OP, psi, compress=compress, contract = contract, cutoff = error_tolerance)
+
+#     return psi
 
 def bell_state_measurement(psi, N, site_tags, num_modes, efficiency, error_tolerance, measurements = {1:(2,7), 0:(3,6)}, pnr = False, compress = True, contract = True):
 
