@@ -5,12 +5,8 @@
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.components.memory import Memory
-
-import sequence.utils.log as log
-from sequence.utils import log
-
 from sequence.qlan.graph_gen import entangle_memory
-from sequence.qlan.qlan_measurement import QlanMeasurementProtocol
+from sequence.qlan.measurement import QlanMeasurementProtocol
 
 
 class GraphStateManager:
@@ -62,7 +58,7 @@ class GraphStateManager:
         """
         memory_objects = [self.owner.components[memory_name] for memory_name in self.memory_names]
 
-        self.owner.protocols = [AdaptiveMeasurementProtocol(self.owner, 'Measurement Protocol', memory_objects, bases = 'yyzzz')]
+        self.owner.protocols = [QlanMeasurementProtocol(self.owner, 'Measurement Protocol', memory_objects, bases = 'yyzzz')]
 
 # GraphStateNode: network node that shares a GHZ state. It inherits from the class "Node" then adds the memories as components and the simple manager.
 # In this case, we suppose that the Graph state node has 5 memories

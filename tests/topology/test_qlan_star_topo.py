@@ -1,7 +1,5 @@
-import unittest
 from sequence.topology.qlan_star_topo import QlanStarTopo
-from sequence.qlan.qlan_client import QlanClientNode
-from sequence.qlan.qlan_orchestrator import QlanOrchestratorNode
+from sequence.qlan.orchestrator import QlanOrchestratorNode
 from sequence.kernel.timeline import Timeline
 
 TOPOLOGY = "tests/topology/qlan_topo_sample_config.json"

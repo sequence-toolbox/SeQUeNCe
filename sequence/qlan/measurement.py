@@ -3,7 +3,7 @@ from ..components.circuit import Circuit
 from ..components.memory import Memory
 from ..topology.node import Node
 from ..entanglement_management.entanglement_protocol import EntanglementProtocol
-
+from ..kernel.timeline import Timeline
 from ..message import Message
 from ..utils import log
 

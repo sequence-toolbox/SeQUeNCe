@@ -7,12 +7,9 @@ from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.components.memory import Memory
 
-import sequence.utils.log as log
-from sequence.utils import log
-
 import sys
 sys.path.append('.')
-from example.QLAN.local_ghz_protocol import LocalGHZ3protocol
+from example.qlan.local_ghz_protocol import LocalGHZ3protocol
 
 
 class GHZStateManager:

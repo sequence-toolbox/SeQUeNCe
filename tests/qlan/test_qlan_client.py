@@ -1,41 +1,28 @@
-from typing import List
-
-from sequence.components.memory import Memory
-from sequence.topology.node import Node
 from sequence.kernel.timeline import Timeline
-from sequence.message import Message
-from sequence.utils import log
-from sequence.qlan.qlan_client import QlanClientNode
-from sequence.qlan.qlan_orchestrator import QlanOrchestratorNode
+from sequence.qlan.client import QlanClientNode
+from sequence.qlan.orchestrator import QlanOrchestratorNode
 
 
 def test_update_orchestrator_valid():
         
     tl = Timeline()
-    client1 = QlanClientNode(name='test_client1',
-                            tl=tl, 
-                            num_local_memories=1)
-    client2 = QlanClientNode(name='test_client2',
-                            tl=tl, 
-                            num_local_memories=1)
+    client1 = QlanClientNode(name='test_client1', tl=tl, num_local_memories=1)
+    client2 = QlanClientNode(name='test_client2', tl=tl, num_local_memories=1)
     
     client1_memo = client1.get_components_by_type("Memory")[0]
     client2_memo = client2.get_components_by_type("Memory")[0]
 
-    orchestrator = QlanOrchestratorNode("node1",
-                                        tl, 
-                                        num_local_memories=1, remote_memories=[client1_memo, client2_memo])
+    orchestrator = QlanOrchestratorNode("node1", tl, num_local_memories=1, remote_memories=[client1_memo, client2_memo])
 
     client1.update_orchestrator(orchestrator.local_memory_names)
     client2.update_orchestrator(orchestrator.local_memory_names)
 
     assert client1.resource_manager.remote_memories == client1.remote_memories == client2.resource_manager.remote_memories == client2.remote_memories
 
+
 def test_update_orchestrator_invalid():
     tl = Timeline()
-    client1 = QlanClientNode(name='test_client1',
-                            tl=tl, 
-                            num_local_memories=1)
+    client1 = QlanClientNode(name='test_client1', tl=tl, num_local_memories=1)
     
     dumb_memo = []  # or some invalid state
 

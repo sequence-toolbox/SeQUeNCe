@@ -5,8 +5,8 @@ from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
 from ..constants import SPEED_OF_LIGHT
 
-from ..qlan.qlan_orchestrator import QlanOrchestratorNode
-from ..qlan.qlan_client import QlanClientNode
+from ..qlan.orchestrator import QlanOrchestratorNode
+from ..qlan.client import QlanClientNode
 
 
 class QlanStarTopo(Topo):

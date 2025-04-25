@@ -1,9 +1,9 @@
 
-from sequence.qlan.qlan_orchestrator import QlanOrchestratorNode
-from sequence.qlan.qlan_client import QlanClientNode
+from sequence.qlan.orchestrator import QlanOrchestratorNode
+from sequence.qlan.client import QlanClientNode
 from sequence.kernel.timeline import Timeline
 from sequence.components.optical_channel import ClassicalChannel
-from sequence.qlan.qlan_measurement import QlanMeasurementMsgType, QlanB0MsgType
+from sequence.qlan.measurement import QlanMeasurementMsgType, QlanB0MsgType
 
 def pair_protocol(orchestrator: QlanOrchestratorNode, clients: list[QlanClientNode]):
     
@@ -27,20 +27,13 @@ def pair_protocol(orchestrator: QlanOrchestratorNode, clients: list[QlanClientNo
 def test_send_ack_messages_z_0():
     tl = Timeline()
 
-    test_client1 = QlanClientNode(name='test_client1',
-                            tl=tl, 
-                            num_local_memories=1)
-    test_client2 = QlanClientNode(name='test_client2',
-                            tl=tl, 
-                            num_local_memories=1)
+    test_client1 = QlanClientNode(name='test_client1', tl=tl, num_local_memories=1)
+    test_client2 = QlanClientNode(name='test_client2', tl=tl, num_local_memories=1)
 
     test_memo1 = test_client1.get_components_by_type("Memory")[0]
     test_memo2 = test_client2.get_components_by_type("Memory")[0]
 
-    test_orch = QlanOrchestratorNode("test_orch",
-                                tl, 
-                                num_local_memories=1, 
-                                remote_memories=[test_memo1, test_memo2])
+    test_orch = QlanOrchestratorNode("test_orch", tl, num_local_memories=1, remote_memories=[test_memo1, test_memo2])
     test_orch.set_seed(2)
     test_orch.update_bases('z')
     
@@ -77,20 +70,13 @@ def test_send_ack_messages_z_0():
 def test_send_ack_messages_z_1():
     tl = Timeline()
 
-    test_client1 = QlanClientNode(name='test_client1',
-                            tl=tl, 
-                            num_local_memories=1)
-    test_client2 = QlanClientNode(name='test_client2',
-                            tl=tl, 
-                            num_local_memories=1)
+    test_client1 = QlanClientNode(name='test_client1', tl=tl, num_local_memories=1)
+    test_client2 = QlanClientNode(name='test_client2', tl=tl, num_local_memories=1)
 
     test_memo1 = test_client1.get_components_by_type("Memory")[0]
     test_memo2 = test_client2.get_components_by_type("Memory")[0]
 
-    test_orch = QlanOrchestratorNode("test_orch",
-                                tl, 
-                                num_local_memories=1, 
-                                remote_memories=[test_memo1, test_memo2])
+    test_orch = QlanOrchestratorNode("test_orch", tl, num_local_memories=1, remote_memories=[test_memo1, test_memo2])
     test_orch.set_seed(0)
     test_orch.update_bases('z')
     
@@ -128,20 +114,13 @@ def test_send_ack_messages_z_1():
 def test_send_ack_messages_y_0():
     tl = Timeline()
 
-    test_client1 = QlanClientNode(name='test_client1',
-                            tl=tl, 
-                            num_local_memories=1)
-    test_client2 = QlanClientNode(name='test_client2',
-                            tl=tl, 
-                            num_local_memories=1)
+    test_client1 = QlanClientNode(name='test_client1', tl=tl, num_local_memories=1)
+    test_client2 = QlanClientNode(name='test_client2', tl=tl, num_local_memories=1)
 
     test_memo1 = test_client1.get_components_by_type("Memory")[0]
     test_memo2 = test_client2.get_components_by_type("Memory")[0]
 
-    test_orch = QlanOrchestratorNode("test_orch",
-                                tl, 
-                                num_local_memories=1, 
-                                remote_memories=[test_memo1, test_memo2])
+    test_orch = QlanOrchestratorNode("test_orch", tl, num_local_memories=1, remote_memories=[test_memo1, test_memo2])
     test_orch.set_seed(2)
     test_orch.update_bases('y')
     
@@ -178,20 +157,13 @@ def test_send_ack_messages_y_0():
 def test_send_ack_messages_y_1():
     tl = Timeline()
 
-    test_client1 = QlanClientNode(name='test_client1',
-                            tl=tl, 
-                            num_local_memories=1)
-    test_client2 = QlanClientNode(name='test_client2',
-                            tl=tl, 
-                            num_local_memories=1)
+    test_client1 = QlanClientNode(name='test_client1', tl=tl, num_local_memories=1)
+    test_client2 = QlanClientNode(name='test_client2', tl=tl, num_local_memories=1)
 
     test_memo1 = test_client1.get_components_by_type("Memory")[0]
     test_memo2 = test_client2.get_components_by_type("Memory")[0]
 
-    test_orch = QlanOrchestratorNode("test_orch",
-                                tl, 
-                                num_local_memories=1, 
-                                remote_memories=[test_memo1, test_memo2])
+    test_orch = QlanOrchestratorNode("test_orch", tl, num_local_memories=1, remote_memories=[test_memo1, test_memo2])
     test_orch.set_seed(0)
     test_orch.update_bases('y')
     
@@ -228,20 +200,13 @@ def test_send_ack_messages_y_1():
 def test_send_ack_messages_x_0():
     tl = Timeline()
 
-    test_client1 = QlanClientNode(name='test_client1',
-                            tl=tl, 
-                            num_local_memories=1)
-    test_client2 = QlanClientNode(name='test_client2',
-                            tl=tl, 
-                            num_local_memories=1)
+    test_client1 = QlanClientNode(name='test_client1', tl=tl, num_local_memories=1)
+    test_client2 = QlanClientNode(name='test_client2', tl=tl, num_local_memories=1)
 
     test_memo1 = test_client1.get_components_by_type("Memory")[0]
     test_memo2 = test_client2.get_components_by_type("Memory")[0]
 
-    test_orch = QlanOrchestratorNode("test_orch",
-                                tl, 
-                                num_local_memories=1, 
-                                remote_memories=[test_memo1, test_memo2])
+    test_orch = QlanOrchestratorNode("test_orch", tl, num_local_memories=1, remote_memories=[test_memo1, test_memo2])
     test_orch.set_seed(2)
     test_orch.update_bases('x')
     
@@ -278,20 +243,13 @@ def test_send_ack_messages_x_0():
 def test_send_ack_messages_x_1():
     tl = Timeline()
 
-    test_client1 = QlanClientNode(name='test_client1',
-                            tl=tl, 
-                            num_local_memories=1)
-    test_client2 = QlanClientNode(name='test_client2',
-                            tl=tl, 
-                            num_local_memories=1)
+    test_client1 = QlanClientNode(name='test_client1', tl=tl, num_local_memories=1)
+    test_client2 = QlanClientNode(name='test_client2', tl=tl, num_local_memories=1)
 
     test_memo1 = test_client1.get_components_by_type("Memory")[0]
     test_memo2 = test_client2.get_components_by_type("Memory")[0]
 
-    test_orch = QlanOrchestratorNode("test_orch",
-                                tl, 
-                                num_local_memories=1, 
-                                remote_memories=[test_memo1, test_memo2])
+    test_orch = QlanOrchestratorNode("test_orch", tl, num_local_memories=1, remote_memories=[test_memo1, test_memo2])
     test_orch.set_seed(0)
     test_orch.update_bases('x')
     

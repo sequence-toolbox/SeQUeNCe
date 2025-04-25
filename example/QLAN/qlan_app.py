@@ -8,10 +8,9 @@ from sequence.network_management.reservation import Reservation
 from sequence.kernel.timeline import Timeline
 import sequence.utils.log as log
 
-from sequence.qlan.qlan_orchestrator import QlanOrchestratorNode
+from sequence.qlan.orchestrator import QlanOrchestratorNode
 from sequence.qlan.graph_gen import qlan_entangle_memory
-from sequence.qlan.qlan_client import QlanClientNode
-from sequence.qlan.qlan_correction import QlanCorrectionProtocol
+from sequence.qlan.client import QlanClientNode
 
 '''
 This benchmark file is WIP. 

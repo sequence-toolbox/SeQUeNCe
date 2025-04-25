@@ -4,8 +4,8 @@ from ..topology.node import Node
 from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..message import Message
 from ..utils import log
-
-from .qlan_measurement import QlanMeasurementMsgType, QlanB0MsgType
+from ..kernel.timeline import Timeline
+from .measurement import QlanMeasurementMsgType, QlanB0MsgType
 
 from enum import Enum, auto
 

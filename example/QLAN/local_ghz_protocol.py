@@ -2,7 +2,6 @@ from sequence.components.circuit import Circuit
 from sequence.components.memory import Memory
 from sequence.topology.node import Node
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
-
 from sequence.message import Message
 from sequence.utils import log
 

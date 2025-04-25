@@ -4,7 +4,7 @@ from ..kernel.timeline import Timeline
 from ..components.memory import Memory
 from ..message import Message
 from ..utils import log
-from .qlan_correction import QlanCorrectionProtocol
+from .correction import QlanCorrectionProtocol
 
 class QlanClientStateManager:
     """
