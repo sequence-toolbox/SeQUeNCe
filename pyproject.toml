@@ -19,7 +19,7 @@ dependencies = {file = ["requirements.txt"]}
 [tool.setuptools]
 packages = ['sequence', 'sequence.app', 'sequence.kernel', 'sequence.components',
             'sequence.network_management', 'sequence.entanglement_management', 'sequence.qkd',
-            'sequence.resource_management', 'sequence.topology', 'sequence.utils', 'sequence.gui']
+            'sequence.resource_management', 'sequence.topology', 'sequence.utils', 'sequence.gui', 'sequence.qlan']
 
 [tool.setuptools.package-data]
 sequence = ["gui/user_templates.json", "gui/default_params.json", "gui/starlight.json"]
