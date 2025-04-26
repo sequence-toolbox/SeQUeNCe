@@ -28,10 +28,6 @@ New classes for classical nodes (no quantum attributes)
 - Minor bug fixes and cosmetic updates
 - Add new publications to README.md
 
-### Removed
-- Removed `sequence.__all__.py`
-
-
 
 ## [0.7.0] - 2025-1-22
 
