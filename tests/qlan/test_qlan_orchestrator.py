@@ -1,7 +1,7 @@
 
 from sequence.kernel.timeline import Timeline
 from sequence.components.memory import Memory
-from sequence.qlan.orchestrator import QlanOrchestratorNode
+from sequence.topology.qlan.orchestrator import QlanOrchestratorNode
 
 def test_find_adjacent_nodes():
     tl = Timeline()

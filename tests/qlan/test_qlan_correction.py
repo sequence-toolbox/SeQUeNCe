@@ -1,6 +1,5 @@
-
-from sequence.qlan.orchestrator import QlanOrchestratorNode
-from sequence.qlan.client import QlanClientNode
+from sequence.topology.qlan.orchestrator import QlanOrchestratorNode
+from sequence.topology.qlan.client import QlanClientNode
 from sequence.kernel.timeline import Timeline
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.qlan.measurement import QlanMeasurementMsgType, QlanB0MsgType

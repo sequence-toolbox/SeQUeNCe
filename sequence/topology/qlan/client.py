@@ -1,10 +1,9 @@
 from typing import List
-from ..topology.node import Node
-from ..kernel.timeline import Timeline
-from ..components.memory import Memory
-from ..message import Message
-from ..utils import log
-from .correction import QlanCorrectionProtocol
+from ..node import Node
+from ...kernel.timeline import Timeline
+from ...components.memory import Memory
+from ...message import Message
+from ...qlan.correction import QlanCorrectionProtocol
 
 class QlanClientStateManager:
     """

@@ -1,6 +1,6 @@
 [project]
 name = "sequence"
-version = "0.7.0"
+version = "0.7.1"
 authors = [
     {name = "Xiaoliang Wu, Joaquin Chung, Alexander Kolar, Alexander Kiefer, Eugene Wang, Tian Zhong, Rajkumar Kettimuthu, Martin Suchara", email = "chungmiranda@anl.gov"}
 ]
@@ -19,7 +19,7 @@ dependencies = {file = ["requirements.txt"]}
 [tool.setuptools]
 packages = ['sequence', 'sequence.app', 'sequence.kernel', 'sequence.components',
             'sequence.network_management', 'sequence.entanglement_management', 'sequence.qkd',
-            'sequence.resource_management', 'sequence.topology', 'sequence.utils', 'sequence.gui', 'sequence.qlan']
+            'sequence.resource_management', 'sequence.topology', 'sequence.utils', 'sequence.gui', 'sequence.qlan', 'sequence.topology.qlan']
 
 [tool.setuptools.package-data]
 sequence = ["gui/user_templates.json", "gui/default_params.json", "gui/starlight.json"]

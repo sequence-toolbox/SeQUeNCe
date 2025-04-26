@@ -1,6 +1,6 @@
 from sequence.kernel.timeline import Timeline
-from sequence.qlan.client import QlanClientNode
-from sequence.qlan.orchestrator import QlanOrchestratorNode
+from sequence.topology.qlan.client import QlanClientNode
+from sequence.topology.qlan.orchestrator import QlanOrchestratorNode
 
 
 def test_update_orchestrator_valid():

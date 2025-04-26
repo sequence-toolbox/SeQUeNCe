@@ -4,8 +4,8 @@ from sequence.kernel.event import Event
 from sequence.topology.qlan_star_topo import QlanStarTopo
 from sequence.kernel.timeline import Timeline
 import sequence.utils.log as log
-from sequence.qlan.orchestrator import QlanOrchestratorNode
-from sequence.qlan.client import QlanClientNode
+from sequence.topology.qlan.orchestrator import QlanOrchestratorNode
+from sequence.topology.qlan.client import QlanClientNode
 
 
 class QlanApp:
@@ -34,13 +34,14 @@ class QlanApp:
     def start(self):
         """start measurement at the orchestrator, then schedule a future start() event
         """
-        self.orch.timeline.schedule(event)        
+        # measure at the orchestrator
         self.perform_measurements()
 
         # schedule a future event        
         now = self.orch.timeline.now()
         process = Process(self, "start", [])
         event = Event(now + PERIOD, process)
+        self.orch.timeline.schedule(event)      
 
     
     def perform_measurements(self):

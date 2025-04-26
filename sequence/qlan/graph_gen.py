@@ -1,10 +1,5 @@
 import numpy as np
 from ..kernel.timeline import Timeline
-from ..topology.node import Node
-from ..components.memory import Memory
-
-import sequence.utils.log as log
-from sequence.utils import log
 
 
 def generate_g_state(num_memories):
@@ -21,6 +16,7 @@ def generate_g_state(num_memories):
             g_state[i] = constant
             
     return g_state
+
 
 def entangle_memory(tl: Timeline, memories: list, n: int):
 

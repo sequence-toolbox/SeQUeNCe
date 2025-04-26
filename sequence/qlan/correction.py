@@ -9,9 +9,11 @@ from .measurement import QlanMeasurementMsgType, QlanB0MsgType
 
 from enum import Enum, auto
 
+
 class QlanCorrectionMsgType(Enum):
     ACK_Outcome0 = auto()
     ACK_Outcome1 = auto()
+
 
 class QlanCorrectionProtocol(EntanglementProtocol):
     """This class provides the protocol for the correction after the measurements performed at the QLAN Orchestrator node. 

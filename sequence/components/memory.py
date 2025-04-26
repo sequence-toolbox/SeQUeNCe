@@ -316,7 +316,7 @@ class Memory(Entity):
     def reset(self) -> None:
         """Method to clear quantum memory.
 
-        Will reset quantum state to \|0> and will clear entanglement information.
+        Will reset quantum state to |0> and will clear entanglement information.
 
         Side Effects:
             Will modify internal parameters and quantum state.
