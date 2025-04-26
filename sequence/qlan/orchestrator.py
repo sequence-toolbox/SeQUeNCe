@@ -7,6 +7,7 @@ from ..app.request_app import RequestApp
 from .measurement import QlanMeasurementProtocol
 from .graph_gen import generate_g_state
 
+
 class QlanOrchestratorStateManager:
     """ 
     This class represents a state manager for the QLAN Orchestrator node.
@@ -29,7 +30,6 @@ class QlanOrchestratorStateManager:
             setattr(self, f"memory{i+1}_name", memory_name)
         self.raw_counter = 0
         self.ent_counter = 0
-
 
     def update(self, memories: list, states: list):
         """
@@ -57,11 +57,12 @@ class QlanOrchestratorStateManager:
             QlanMeasurementProtocol(owner=self.owner, name='Measurement Protocol', tl=self.tl, local_memories=memory_objects, remote_memories = self.owner.remote_memory_names, bases = self.bases),
         ]
     
-    # TODO: function for state generation (abstract generation, without real distribution of states). May be extended with teleportation protocols
     def generate_chain_state(self, tl, local_memories: List[Memory], remote_memories: List[Memory]):
-        
+        """function for linear graph state generation (abstract generation, without real distribution of states, i.e., cheating)
+           TODO: May be extended with teleportation protocols
+        """
         # Requires memory objects to work! (abstraction: it should be able to set only local memories)
-        n = len(local_memories)+len(remote_memories)
+        n = len(local_memories) + len(remote_memories)
         
         # 1/sqrt(2)|000> + 0 +...+ 0 + 1/sqrt(2)|111>
         g_state = generate_g_state(n)
@@ -85,9 +86,7 @@ class QlanOrchestratorStateManager:
             combined_memories.extend(local_memories[min_size:])
 
         qstate_keys = [memo.qstate_key for memo in combined_memories]
-
         tl.quantum_manager.set(qstate_keys, g_state)
-
         self.owner.find_adjacent_nodes(tl, remote_memories)
 
 
@@ -100,7 +99,7 @@ class QlanOrchestratorNode(Node):
         name (str): The name of the node.
         tl (Timeline): The timeline object.
         num_local_memories (int): The number of local memories to add as components.
-        remote_memories (List[Memory]): The list of remote memories to add as components.
+        remote_memories (List[Memory]): The list of remote memories to add as components. NOTE: orchestrator node should not have access to remote memory
         memo_fidelity (float): The fidelity of the memories.
         memo_frequency (int): The frequency of the memories.
         memo_efficiency (float): The efficiency of the memories.
@@ -126,10 +125,8 @@ class QlanOrchestratorNode(Node):
         self.memory_efficiency = memo_efficiency
         self.memory_coherence_time = memo_coherence_time
         self.memory_wavelength = memo_wavelength
-        
         self.remote_memories = remote_memories
         self.remote_memory_names = [memory.name for memory in remote_memories]
-
         self.local_memory_names = [f'{name}.memo_o_{i}' for i in range(1, num_local_memories+1)]
         
         self.local_memories = [Memory(name=memory_name, 
@@ -149,20 +146,15 @@ class QlanOrchestratorNode(Node):
 
         # Set the bases (default is all 'z' measurements)
         self.bases = 'z' * len(self.local_memories)
-
         self.resource_manager = QlanOrchestratorStateManager(owner=self, tl=tl, memory_names=self.local_memory_names)
-
         self.resource_manager.generate_chain_state(tl, self.local_memories, remote_memories)
 
     def find_adjacent_nodes(self, tl: "Timeline", remote_memories: List[Memory]):
 
         self.adjacent_nodes = {}
-        
         target_keys = list(range(len(remote_memories), len(remote_memories) + len(self.local_memory_names)))
-
         target_array = tl.quantum_manager.states[0].keys
         print("Target keys: ",target_keys)
-        
         print("Target array: ",target_array)
         for key in target_keys:
             for i in range(len(target_array)):

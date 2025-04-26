@@ -10,6 +10,8 @@ from ..utils import log
 from enum import Enum, auto
 
 class QlanMeasurementMsgType(Enum):
+    """Measurement outcomes at the orchestrator
+    """
     Z_Outcome0 = auto()
     Z_Outcome1 = auto()
     Y_Outcome0 = auto()
@@ -179,7 +181,7 @@ class QlanMeasurementProtocol(EntanglementProtocol):
                 elif self.bases[base_count] == "x" or self.bases[base_count] == "X":
                     msg_type = QlanMeasurementMsgType.X_Outcome0
                     b0 = Na[1]
-                    # Sending "b_0" message to che chosen node (first available node in the adjacency list -- choice is arbitary):
+                    # Sending "b_0" message to the chosen node (first available node in the adjacency list -- choice is arbitary):
                     
                     log.logger.info(f"\nORCHESTRATOR: Selected b0 = {b0} from {self.owner.adjacent_nodes}")
                     
@@ -286,7 +288,6 @@ class QlanMeasurementProtocol(EntanglementProtocol):
 
         # Sending the messages outcomes
         for dest, msg_type in self.message_list.items():
-                    
             # Fixing corrections at orchestrator
             if int(dest) >= len(self.remote_node_names):
                 dest = dest % len(self.remote_node_names) + 1

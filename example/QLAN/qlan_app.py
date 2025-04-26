@@ -1,23 +1,17 @@
 from typing import List
-
 from sequence.kernel.process import Process
 from sequence.kernel.event import Event
 from sequence.topology.qlan_star_topo import QlanStarTopo
-from sequence.resource_management.memory_manager import MemoryInfo
-from sequence.network_management.reservation import Reservation
 from sequence.kernel.timeline import Timeline
 import sequence.utils.log as log
-
 from sequence.qlan.orchestrator import QlanOrchestratorNode
-from sequence.qlan.graph_gen import qlan_entangle_memory
 from sequence.qlan.client import QlanClientNode
 
-'''
-This benchmark file is WIP. 
-It is intended to be a more user-friendly way to run experiments with QLAN.
-'''
 
-class PeriodicApp:
+class QlanApp:
+    """A simple app for QLAN
+       NOTE: this app has access to both orchestrator and each of the clients, it is a 'global app'
+    """
     def __init__(self, tl: "Timeline", orchestrator: "QlanOrchestratorNode", clients: List["QlanClientNode"]):
         self.orch = orchestrator
         self.orch.set_app(self)
@@ -38,13 +32,15 @@ class PeriodicApp:
         self.display_state_information()
 
     def start(self):
-        now = self.orch.timeline.now()
-                
-        process = Process(self, "start", [])
-        event = Event(now + PERIOD, process)
-
+        """start measurement at the orchestrator, then schedule a future start() event
+        """
         self.orch.timeline.schedule(event)        
         self.perform_measurements()
+
+        # schedule a future event        
+        now = self.orch.timeline.now()
+        process = Process(self, "start", [])
+        event = Event(now + PERIOD, process)
 
     
     def perform_measurements(self):
@@ -62,9 +58,9 @@ class PeriodicApp:
 
 
     def pair_protocol(self):
-        
-        # Assuming that protocol 0 is the measurement protocol!
-        p_orch = self.orch.protocols[0]
+        """Directly pair the protocols between the orchestrator and the client
+        """
+        p_orch = self.orch.protocols[0] # Assuming that protocol 0 is the measurement protocol!
         
         protocols_names = []
         clients_names = []
@@ -99,6 +95,7 @@ class PeriodicApp:
             print(f"  {self.tl.quantum_manager.states[i]}")
             print("----------------------------------------")
 
+
 if __name__ == "__main__":
 
     NUM_CLIENTS= 3
@@ -113,15 +110,15 @@ if __name__ == "__main__":
     tl.stop_time = PERIOD * NUM_PERIODS
     tl.show_progress = True
 
-    log_filename = "example/qlan_app.log"
+    log_filename = "example/qlan/qlan_app.log"
     log.set_logger(__name__, tl, log_filename)
     log.set_logger_level('DEBUG')
     #log.set_logger_level('INFO')
     
-    log.track_module('qlan_orchestrator')
-    log.track_module('qlan_correction')
-    log.track_module('qlan_measurement')
-    log.track_module('qlan_client')
+    log.track_module('orchestrator')
+    log.track_module('correction')
+    log.track_module('measurement')
+    log.track_module('client')
     #log.track_module('timeline')
 
     for node in network_topo.get_nodes_by_type(QlanStarTopo.ORCHESTRATOR):
@@ -129,7 +126,7 @@ if __name__ == "__main__":
     for node in network_topo.get_nodes_by_type(QlanStarTopo.CLIENT):
         client_nodes.append(node)
 
-    app = PeriodicApp(tl=tl, orchestrator=orchestrator, clients=client_nodes)
+    app = QlanApp(tl=tl, orchestrator=orchestrator, clients=client_nodes)
     
     tl.init()
     app.start()

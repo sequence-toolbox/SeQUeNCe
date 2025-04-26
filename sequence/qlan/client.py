@@ -50,10 +50,7 @@ class QlanClientStateManager:
         Sets the protocol to the QlanCorrectionProtocol (from the owner) and sets the memories of the manager equal to the owner's memories.
         """
         memory_objects = [self.owner.components[memory_name] for memory_name in self.memory_names]
-
-        self.owner.protocols = [
-            QlanCorrectionProtocol(owner=self.owner, name='Correction Protocol', tl=self.tl, local_memories=memory_objects),
-        ]
+        self.owner.protocols = [QlanCorrectionProtocol(owner=self.owner, name='Correction Protocol', tl=self.tl, local_memories=memory_objects)]
 
 
 class QlanClientNode(Node):

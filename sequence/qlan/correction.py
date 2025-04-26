@@ -77,8 +77,7 @@ class QlanCorrectionProtocol(EntanglementProtocol):
         # Execute the quantum circuit to perform the measurements
         result = self.owner.timeline.quantum_manager.run_circuit(
                             self.circuit, 
-                            [memory.qstate_key for memory in self.local_memories],
-                            meas_samp = self.owner.get_generator().random())
+                            [memory.qstate_key for memory in self.local_memories])
 
         log.logger.info(f"\nPROTOCOL ENDED: {self.owner.name} executed {self.name} at {format(self.tl.now())}")
     
