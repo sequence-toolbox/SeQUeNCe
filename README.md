@@ -8,20 +8,17 @@
 <h3><p align="center">Quantum Networking in SeQUeNCe: Customizable, Scalable, Easy Debugging</p></h3>
 
 
-<p align="center" style="white-space: nowrap;">
-  <a href="https://sequence-rtd-tutorial.readthedocs.io/">
-    <img src="https://img.shields.io/readthedocs/sequence-rtd-tutorial" style="vertical-align: middle;">
-  </a>
-  <a href="https://pypi.org/project/sequence/">
-    <img src="https://img.shields.io/pypi/v/sequence" style="vertical-align: middle;">
-  </a>
-  <a href="https://qutip.org/">
-    <img src="https://img.shields.io/badge/integration%20-Qutip-blue" style="vertical-align: middle;">
-  </a>
-  <a href="https://iopscience.iop.org/article/10.1088/2058-9565/ac22f6">
-    <img src="https://img.shields.io/badge/10.1088%2F2058-9565%2Fac22f6?label=DOI" style="vertical-align: middle;">
-  </a>
-</p>
+
+<div align="center">
+
+[![Documentation](https://img.shields.io/readthedocs/sequence-rtd-tutorial)](https://sequence-rtd-tutorial.readthedocs.io/)
+[![PyPi](https://img.shields.io/pypi/v/sequence)](https://pypi.org/project/sequence/)
+[![Qutip](https://img.shields.io/badge/integration%20-Qutip-blue)](https://qutip.org/)
+[![Paper](https://img.shields.io/badge/10.1088%2F2058-9565%2Fac22f6?label=DOI)](https://iopscience.iop.org/article/10.1088/2058-9565/ac22f6)
+[![Download-month](https://img.shields.io/pypi/dm/sequence)](https://pypistats.org/packages/sequence)
+
+</div>
+
 
 
 <br>
@@ -48,10 +45,10 @@ To do so, clone and install the simulator as follows:
 ```
 git clone https://github.com/sequence-toolbox/SeQUeNCe.git
 cd SeQUeNCe
-make install_editable
+pip install --editable . --config-settings editable_mode=strict
 ```
 
-If you do not have `make` command (i.e., Windows user), replace `make install_editable` with `pip install --editable . --config-settings editable_mode=strict`.
+For Linux and Mac users, you could use `make install_editable` instead of `pip install --editable . --config-settings editable_mode=strict`.
 
 
 ## Citation
