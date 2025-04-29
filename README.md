@@ -11,12 +11,12 @@
 
 <div align="center">
 
-[![Documentation](https://img.shields.io/readthedocs/sequence-rtd-tutorial)](https://sequence-rtd-tutorial.readthedocs.io/)
 [![PyPi](https://img.shields.io/pypi/v/sequence)](https://pypi.org/project/sequence/)
+![pyversions](https://img.shields.io/pypi/pyversions/sequence)
+[![Documentation](https://img.shields.io/readthedocs/sequence-rtd-tutorial)](https://sequence-rtd-tutorial.readthedocs.io/)
 [![Qutip](https://img.shields.io/badge/integration%20-Qutip-blue)](https://qutip.org/)
 [![Paper](https://img.shields.io/badge/10.1088%2F2058-9565%2Fac22f6?label=DOI)](https://iopscience.iop.org/article/10.1088/2058-9565/ac22f6)
 [![Download-month](https://img.shields.io/pypi/dm/sequence)](https://pypistats.org/packages/sequence)
-![pyversions](https://img.shields.io/pypi/pyversions/sequence)
 
 </div>
 
