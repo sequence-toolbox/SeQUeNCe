@@ -23,11 +23,12 @@ import re
 
 
 # %config InlineBackend.figure_formats = ['svg']
-from quimb.tensor import MatrixProductState as mps
-from quimb.tensor import MatrixProductOperator as mpo
-from quimb.tensor.tensor_arbgeom import tensor_network_apply_op_vec
-from quimb.tensor.tensor_core import new_bond
-from quimb.tensor.tensor_1d_compress import enforce_1d_like
+from quimb.tensor import MatrixProductState as mps #type: ignore
+from quimb.tensor import MatrixProductOperator as mpo #type: ignore
+from quimb.tensor.tensor_arbgeom import tensor_network_apply_op_vec #type: ignore
+from quimb.tensor.tensor_core import new_bond #type: ignore
+from quimb.tensor.tensor_1d_compress import enforce_1d_like #type: ignore
+from quimb.tensor.tensor_1d import TensorNetwork1DOperator #type: ignore
 
 from functools import lru_cache
 
@@ -66,8 +67,9 @@ def generate_labels(num_systems, N):
         labels.append(new_label[:-1])
     return labels
 
-def read_quantum_state(TN_state, N, num_states = 4):
+def read_quantum_state(TN_state, N, num_states = 4, return_dense = False):
     dense_state = TN_state.to_dense()
+    if return_dense: return dense_state
     dense_state = np.reshape(dense_state.data, (-1, 1), order = 'C')
     dense_state = sp.csr_matrix(dense_state)
     dense_state.data = np.round(dense_state.data, 10)
@@ -246,7 +248,10 @@ def light_source(vacuum, N, mean_photon_num, num_modes, error_tolerance, TMSV_in
     TMSV_op_dense = create_TMSV_OP_Dense(N, mean_photon_num)
 
     TMSV_MPO_H = create_MPO(site1 = TMSV_indices[0][0], site2 = TMSV_indices[0][1], total_sites = num_modes, op = TMSV_op_dense, N = N, tag = r"$TMSV_H$")
+    TMSV_MPO_H.draw()
+    print("sites present in light_source:", TMSV_MPO_H.sites)
     enforce_1d_like(TMSV_MPO_H, site_tags=site_tags, inplace=True)
+    print("sites present in light_source:", TMSV_MPO_H.sites)
     TMSV_MPO_H.add_tag("L1")
 
     TMSV_MPO_V = create_MPO(site1 = TMSV_indices[1][0], site2 = TMSV_indices[1][1], total_sites = num_modes, op = TMSV_op_dense, N = N, tag = r"$TMSV_V$")
@@ -490,6 +495,8 @@ def rotate_and_measure(psi, N, site_tags, num_modes, efficiency, error_tolerance
                 rho_rotated = tensor_network_apply_op_vec(POVM_OP, rho_rotated, compress=compress, contract = contract, cutoff = error_tolerance)
         
             if draw:
+                # only for drawing the TN. Not used otherwise
+                fix = {(f"L{j}",f"I{num_modes - i-1}"):(3*j,i+5) for j in range(10) for i in range(10)}
                 rho_rotated.draw(color = [r'$HH+VV$', r'$U_{BS_H}$', r"$U_{BS_V}$", 'POVM', r'$Rotator_I$', r'$Rotator_S$'], title = "Polarization entanglement swapping MPS", fix = fix, show_inds = True, show_tags = False)
                 # rho_rotated.draw_tn()
             coincidence_probs.append((rho_rotated.norm())**2)
@@ -500,6 +507,90 @@ def rotate_and_measure(psi, N, site_tags, num_modes, efficiency, error_tolerance
 # coincidence = rotate_and_measure(psi, N, psi.site_tags, num_modes, efficiency, error_tolerance)
 
 
+def calc_fidelity(state, reference_state, N, error_tolerance):
+    reference_mps = create_polarization_bell_state(reference_state, N)
+    projector_mpo = outer_product_mps(reference_mps)
+
+    projector_mpo.reindex({"k0":"k0","k1":"k1","k2":"k4","k3":"k5"}, inplace = True)
+    projector_mpo.reindex({"b0":"b0","b1":"b1","b2":"b4","b3":"b5"}, inplace = True)
+    projector_mpo.retag({"I0":"I0","I1":"I1","I2":"I4","I3":"I5"}, inplace = True)
+
+    # print("sites present in projector_mpo:", projector_mpo.sites)
+    enforce_1d_like(projector_mpo, site_tags=state.site_tags, inplace=True, verbose = True)
+    # print("sites present in projector_mpo:", projector_mpo.sites)
+
+    # print("projector.lower_ind_id", projector_mpo.lower_inds, "projector.upper_ind_id", projector_mpo.upper_inds)
+
+    
+    # for site in projector_mpo.gen_site_coos():
+    #     print(site)
+
+
+    projector_mpo.draw()
+    state.draw()
+    state = tensor_network_apply_op_vec(projector_mpo, state, compress=True, contract = True, cutoff = error_tolerance, verbose = True)
+    state.draw()
+    return state.norm()**2
+
+    
+    
+    # Calculate and return fidelity of the projected state. 
+
+
+def create_polarization_bell_state(bell_state, N, error_tolerance = 1e-12):
+    I = np.eye(N)
+
+    a_dag = qt.create(N).full()
+    a = qt.destroy(N).full()
+
+    vacuum_state = np.zeros((N,1))
+    vacuum_state[0] = 1
+    vac_projector = np.outer(vacuum_state, vacuum_state)
+
+    one_state = a_dag @ vacuum_state # For now, we're defining the 1 state as having only one photon. This could be changed to have any number of non-zero photons.
+    print("one_state:", one_state)   # This is because the ideal case is having exactly one photon for the 1 state. 
+    one_projector = np.outer(one_state, one_state)                                 
+
+    NOT_gate = vacuum_state @ one_state.conj().T + one_state @ vacuum_state.conj().T
+    H_gate = (I + NOT_gate)/sqrt(2)
+    print("NOT_gate:", NOT_gate)
+
+    C_NOT_close = np.kron(vac_projector, I) + np.kron(one_projector, NOT_gate)
+    C_NOT_open = np.kron(one_projector, I) + np.kron(vac_projector, NOT_gate)
+
+    if bell_state == "psi_plus":
+        H_MPO = mpo.from_dense(H_gate, dims = N, sites = (0,), L=4, tags="H")
+        NOT_MPO = mpo.from_dense(NOT_gate, dims = N, sites = (1,), L=4, tags="a_dag")
+        C_NOT_close_MPO_1 = mpo.from_dense(C_NOT_close, dims = N, sites = (0,1), L=4, tags="C_NOT_close_1")
+        C_NOT_close_MPO_2 = mpo.from_dense(C_NOT_close, dims = N, sites = (1,2), L=4, tags="C_NOT_close_2")
+        C_NOT_open_MPO = mpo.from_dense(C_NOT_open, dims = N, sites = (2,3), L=4, tags="C_create_open")
+        
+        vacuum = create_vacuum_state(4, N, bond_dim = 2)
+        psi = tensor_network_apply_op_vec(H_MPO, vacuum, compress=True, contract = True, cutoff = error_tolerance)
+        psi = tensor_network_apply_op_vec(NOT_MPO, psi, compress=True, contract = True, cutoff = error_tolerance)
+        # read_quantum_state(psi, N, num_states = 2)
+        psi = tensor_network_apply_op_vec(C_NOT_close_MPO_1, psi, compress=True, contract = True, cutoff = error_tolerance)
+        # read_quantum_state(psi, N, num_states = 2)
+        psi = tensor_network_apply_op_vec(C_NOT_close_MPO_2, psi, compress=True, contract = True, cutoff = error_tolerance)
+        psi = tensor_network_apply_op_vec(C_NOT_open_MPO, psi, compress=True, contract = True, cutoff = error_tolerance)
+    
+    read_quantum_state(psi, N, num_states = 2)
+    return psi
+
+
+def outer_product_mps(psi):
+    psi_H = psi.H
+    psi_H.retag_({'In': 'Out'})
+    psi_H.site_ind_id = 'b{}'
+    rho = (psi_H | psi)
+    for i in range(rho.L):
+        rho ^= f"I{i}"   
+    rho = TensorNetwork1DOperator(rho)
+    rho._upper_ind_id = psi.site_ind_id
+    rho._lower_ind_id = psi_H.site_ind_id
+    rho = rho.fuse_multibonds()
+    rho_MPO = rho.view_as_(mpo, cyclic = False, L = 8)
+    return rho_MPO
 
 
 def plot_coincidences(coincidence, idler_angles, signal_angles, title = ''):
