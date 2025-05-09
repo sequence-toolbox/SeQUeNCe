@@ -421,7 +421,7 @@ def extend_MPS(psi, psi_second = None):
 
 #     return psi
 
-def bell_state_measurement(psi, N, site_tags, num_modes, efficiency, error_tolerance, measurements = {1:(2,7), 0:(3,6)}, pnr = False, compress = True, contract = True):
+def bell_state_measurement(psi, N, site_tags, num_modes, efficiency, error_tolerance, measurements = {1:(2,7), 0:(3,6)}, pnr = False, return_MPOs = False, compress = True, contract = True):
 
     U_BS_H = create_BS_MPO(site1 = 2, site2 = 6, theta=np.pi/4, total_sites = num_modes, N = N, tag = r"$U_{BS_H}$")
     enforce_1d_like(U_BS_H, site_tags=site_tags, inplace=True)
@@ -434,6 +434,10 @@ def bell_state_measurement(psi, N, site_tags, num_modes, efficiency, error_toler
     BSM_POVM_1_OPs = generate_sqrt_POVM_MPO(sites=measurements[1], outcome = 1, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr)
     BSM_POVM_1_OPs.extend(generate_sqrt_POVM_MPO(sites=measurements[0], outcome = 0, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr))
 
+    if return_MPOs:
+        returned_MPOs = [U_BS_H, U_BS_V]
+        returned_MPOs.extend(BSM_POVM_1_OPs) # Collect all the MPOs in a list and return them. The operators are ordered as such: 
+        return returned_MPOs
 
     psi = tensor_network_apply_op_vec(U_BS_H, psi, compress=compress, contract = contract, cutoff = error_tolerance)
     psi = tensor_network_apply_op_vec(U_BS_V, psi, compress=compress, contract = contract, cutoff = error_tolerance)
@@ -449,7 +453,7 @@ def bell_state_measurement(psi, N, site_tags, num_modes, efficiency, error_toler
 
 
 
-def rotate_and_measure(psi, N, site_tags, num_modes, efficiency, error_tolerance, idler_angles, signal_angles, pnr = False, compress = True, contract = True, draw = False):
+def rotate_and_measure(psi, N, site_tags, num_modes, efficiency, error_tolerance, idler_angles, signal_angles, pnr = False, return_MPOs = False, compress = True, contract = True, draw = False):
     # idler_angles = [0]
     # angles = [np.pi/4]
 
@@ -474,7 +478,8 @@ def rotate_and_measure(psi, N, site_tags, num_modes, efficiency, error_tolerance
         rotator_node_1 = create_BS_MPO(site1 = 0, site2 = 1, theta=idler_angle, total_sites = num_modes, N = N, tag = r"$Rotator_I$")
         enforce_1d_like(rotator_node_1, site_tags=site_tags, inplace=True)
         rotator_node_1.add_tag("L5")
-        idler_rotated_psi = tensor_network_apply_op_vec(rotator_node_1, psi, compress=compress, contract = contract, cutoff = error_tolerance)
+        if not return_MPOs: # If the user wants the MPOs, we don't need to apply the rotator to the state.
+            idler_rotated_psi = tensor_network_apply_op_vec(rotator_node_1, psi, compress=compress, contract = contract, cutoff = error_tolerance)
 
 
         for j, angle in enumerate(signal_angles):
@@ -482,6 +487,10 @@ def rotate_and_measure(psi, N, site_tags, num_modes, efficiency, error_tolerance
         
             rotator_node_2 = create_BS_MPO(site1 = 4, site2 = 5, theta=angle, total_sites = num_modes, N = N, tag = r"$Rotator_S$")
             enforce_1d_like(rotator_node_2, site_tags=site_tags, inplace=True)
+
+            if return_MPOs:
+                meas_ops.extend([rotator_node_1, rotator_node_2]) # Collect all the MPOs in a list and return them
+                return meas_ops
         
             # Rotate and measure:
             rotator_node_2.add_tag("L5")
@@ -516,7 +525,7 @@ def calc_fidelity(state, reference_state, N, error_tolerance):
     projector_mpo.retag({"I0":"I0","I1":"I1","I2":"I4","I3":"I5"}, inplace = True)
 
     # print("sites present in projector_mpo:", projector_mpo.sites)
-    enforce_1d_like(projector_mpo, site_tags=state.site_tags, inplace=True, verbose = True)
+    enforce_1d_like(projector_mpo, site_tags=state.site_tags, inplace=True)
     # print("sites present in projector_mpo:", projector_mpo.sites)
 
     # print("projector.lower_ind_id", projector_mpo.lower_inds, "projector.upper_ind_id", projector_mpo.upper_inds)
@@ -528,7 +537,7 @@ def calc_fidelity(state, reference_state, N, error_tolerance):
 
     projector_mpo.draw()
     state.draw()
-    state = tensor_network_apply_op_vec(projector_mpo, state, compress=True, contract = True, cutoff = error_tolerance, verbose = True)
+    state = tensor_network_apply_op_vec(projector_mpo, state, compress=True, contract = True, cutoff = error_tolerance)
     state.draw()
     return state.norm()**2
 
@@ -589,7 +598,7 @@ def outer_product_mps(psi):
     rho._upper_ind_id = psi.site_ind_id
     rho._lower_ind_id = psi_H.site_ind_id
     rho = rho.fuse_multibonds()
-    rho_MPO = rho.view_as_(mpo, cyclic = False, L = 8)
+    rho_MPO = rho.view_as_(mpo, cyclic = False, L = 8) # L is important. Its hard coded now, but must be configutrable based on the input state. 
     return rho_MPO
 
 
