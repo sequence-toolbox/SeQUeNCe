@@ -224,7 +224,7 @@ import math
 class Sender:
     def __init__(self, owner, memory_name):
         self.owner = owner
-        self.memory = own.components[memory_name]
+        self.memory = self.owner.components[memory_name]
 
     def start(self, period):
         process1 = Process(self.memory, "update_state", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]])
