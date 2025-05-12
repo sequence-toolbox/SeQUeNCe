@@ -261,6 +261,8 @@ We will also add a call to the `start` method of our protocol, using a calculate
 We'll use a predetermined frequency `FREQUENCY` (given in Hz) for a set number of trials `NUM_TRIALS`.
 
 ```python
+FREQUENCY = 150 # Hz
+NUM_TRIALS = 100
 tl.init()
 period = int(1e12 / FREQUENCY)
 node1.sender.start(period)
