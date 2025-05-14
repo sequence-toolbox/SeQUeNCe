@@ -49,7 +49,7 @@ cd SeQUeNCe
 pip install --editable . --config-settings editable_mode=strict
 ```
 
-For Linux and Mac users, you could use `make install_editable` instead of `pip install --editable . --config-settings editable_mode=strict`.
+For Linux and Mac users, you could use `make install_editable` instead of `pip install --editable . --config-settings editable_mode=strict`
 
 
 ## Citation
@@ -83,16 +83,7 @@ Many examples of SeQUeNCe in action can be found in the [example](/example) fold
 Code for the experiments performed in our paper can be found in the file `starlight_experiments.py`. This script uses the `starlight.json` file (also within the example folder) to specify the network topology.
 
 ### Jupyter Notebook Examples
-The example folder contains several scripts that can be run with jupyter notebook for easy editing and visualization. These files require that the notebook package be installed (Anaconda recommended):
-```
-pip install notebook
-pip install ipywidgets
-```
-To run each file, simply run
-```
-jupyter notebook <filename>
-```
-These examples include:
+The example folder contains several scripts that can be run with jupyter notebook for easy editing and visualization. These examples include:
 * `BB84_eg.ipynb`, which uses the BB84 protocol to distribute secure keys between two quantum nodes
 * `two_node_eg.ipynb`, which performs entanglement generation between two adjacent quantum routers
 * `three_node_eg_ep_es.ipynb`, which performs entanglement generation, purification, and swapping for a linear network of three quantum routers
