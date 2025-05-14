@@ -142,7 +142,7 @@ node1.set_seed(0)
 node2.set_seed(1)
 ```
 
-Note that we also set the random generator seed for our nodes to ensure reproducability. Next, we create the quantum channel to provide connectivity between the nodes. We won’t need a classical channel, as we’re not sending any messages between nodes. In the initializer, we again specify the name and timeline, and include the additional required attenuation and distance parameters. We set attenuation to 0, so that we do not lose any photons in the channel (try changing it to see the effects!), and set the distance to one kilometer (note that the distance is given in meters). The `set_ends` method finally sets the sender and receiver for the channel, where the receiver is given as the name of the receiving node.
+Note that we also set the random generator seed for our nodes to ensure reproducibility. Next, we create the quantum channel to provide connectivity between the nodes. We won’t need a classical channel, as we’re not sending any messages between nodes. In the initializer, we again specify the name and timeline, and include the additional required attenuation and distance parameters. We set attenuation to 0, so that we do not lose any photons in the channel (try changing it to see the effects!), and set the distance to one kilometer (note that the distance is given in meters). The `set_ends` method finally sets the sender and receiver for the channel, where the receiver is given as the name of the receiving node.
 
 ```python
 from sequence.components.optical_channel import QuantumChannel
@@ -205,7 +205,7 @@ print("detection time: {}".format(node2.counter.time))
 
 ### Step 5: Repeated Operation
 
-Next, let's repeatedly set the memeory to the |+&#10217; state and record detection events. To give us a clean state, we'll remove the code we wrote for step 4.
+Next, let's repeatedly set the memory to the |+&#10217; state and record detection events. To give us a clean state, we'll remove the code we wrote for step 4.
 
 The events we wish to schedule are all for the memory.
 We want to first set it to a |+&#10217; state with the `update_state` method, and then excite the memory to measure emitted photons with the `excite` method.
@@ -224,7 +224,7 @@ import math
 class Sender:
     def __init__(self, owner, memory_name):
         self.owner = owner
-        self.memory = own.components[memory_name]
+        self.memory = self.owner.components[memory_name]
 
     def start(self, period):
         process1 = Process(self.memory, "update_state", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]])
@@ -261,6 +261,8 @@ We will also add a call to the `start` method of our protocol, using a calculate
 We'll use a predetermined frequency `FREQUENCY` (given in Hz) for a set number of trials `NUM_TRIALS`.
 
 ```python
+FREQUENCY = 150 # Hz
+NUM_TRIALS = 100
 tl.init()
 period = int(1e12 / FREQUENCY)
 node1.sender.start(period)
