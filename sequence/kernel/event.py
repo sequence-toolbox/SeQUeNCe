@@ -33,7 +33,7 @@ class Event:
             priority (int): the priority of the event, lower value denotes a higher priority (default inf).
         """
 
-        self.time = time
+        self.time: int | float = time
         self.priority = priority
         self.process = process
         self._is_removed = False

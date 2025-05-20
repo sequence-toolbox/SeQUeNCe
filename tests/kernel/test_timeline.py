@@ -1,4 +1,5 @@
 from math import inf
+from typing import cast
 
 from numpy import random
 
@@ -16,7 +17,7 @@ class Dummy(Entity):
         Entity.__init__(self, name, timeline)
         self.initialized = False
         self.counter = _INITIAL_COUNT
-        self.click_time = None
+        self.click_time: float | None = None
 
     def init(self):
         self.initialized = True
@@ -25,7 +26,7 @@ class Dummy(Entity):
         self.counter += 1
 
     def click(self):
-        self.click_time = self.timeline.now()
+        self.click_time = cast(Timeline, self.timeline).now()
 
 
 def test_init():
@@ -39,7 +40,7 @@ def test_init():
     assert dummy.initialized
 
 
-def _set_up_test(activation_method: str, stop_time=inf, number_of_dummys: int = 1, event_time: int = 10, event_priority=inf) -> Timeline:
+def _set_up_test(activation_method: str, stop_time=inf, number_of_dummys: int = 1, event_time: int = 10, event_priority=inf):
     timeline = Timeline(stop_time)
     dummys = [Dummy(f'{dummy_number}', timeline)
               for dummy_number in range(number_of_dummys)]

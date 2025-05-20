@@ -4,7 +4,7 @@ This module defines the EventList class, used by the timeline to order and execu
 EventList is implemented as a min heap ordered by simulation time.
 """
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .event import Event
@@ -22,7 +22,7 @@ class EventList:
     """
 
     def __init__(self):
-        self.data = []
+        self.data: list["Event"] = []
 
     def __len__(self):
         return len(self.data)
@@ -51,13 +51,13 @@ class EventList:
 
         event.set_invalid()
 
-    def update_event_time(self, event: "Event", time: int):
+    def update_event_time(self, event: "Event", time: int | float):
         """Method to update the timestamp of event and maintain the min-heap structure.
         """
         if time == event.time:
             return
 
-        def _pop_updated_event(heap: "List", index: int):
+        def _pop_updated_event(heap: list["Event"], index: int):
             parent_i = (index - 1) // 2
             while index > 0 and event < self.data[parent_i]:
                 heap[index], heap[parent_i] = heap[parent_i], heap[index]

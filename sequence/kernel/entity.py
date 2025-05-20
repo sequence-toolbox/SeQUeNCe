@@ -4,7 +4,7 @@ This module defines the Entity class, inherited by all physical simulation eleme
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, cast
 
 from numpy.random import default_rng
 from numpy.random._generator import Generator
@@ -36,8 +36,8 @@ class Entity(ABC):
             timeline (Timeline): timeline for simulation.
         """
         self.name = "" if name is None else name
-        self.timeline = timeline
-        self.owner = None
+        self.timeline: Timeline | None = timeline
+        self.owner: Entity | None = None
 
         self._receivers = []
         self._observers = []
@@ -73,7 +73,7 @@ class Entity(ABC):
 
         self._observers.remove(observer)
 
-    def notify(self, info: Dict[str, Any]) -> None:
+    def notify(self, info: dict[str, Any]) -> None:
         """Method to notify all attached observers of an update."""
 
         for observer in self._observers:
@@ -97,7 +97,7 @@ class Entity(ABC):
 
         This is to allow unused entities to be garbage collected.
         """
-        self.timeline.remove_entity_by_name(self.name)
+        cast("Timeline", self.timeline).remove_entity_by_name(self.name)
 
     def get_generator(self) -> Generator:
         """Method to get random generator of parent node.
@@ -105,7 +105,7 @@ class Entity(ABC):
         If entity is not attached to a node, return default generator.
         """
         if hasattr(self.owner, "get_generator"):
-            return self.owner.get_generator()
+            return cast(Entity, self.owner).get_generator()
         else:
             return default_rng()
 
@@ -137,7 +137,7 @@ class ClassicalEntity(ABC):
             timeline (Timeline): timeline for simulation.
         """
         self.name = "" if name is None else name
-        self.timeline = timeline
+        self.timeline: "Timeline|None" = timeline
         self.owner = None
 
         timeline.add_entity(self)
@@ -160,7 +160,7 @@ class ClassicalEntity(ABC):
 
         This is to allow unused entities to be garbage collected.
         """
-        self.timeline.remove_entity_by_name(self.name)
+        cast("Timeline", self.timeline).remove_entity_by_name(self.name)
 
     def get_generator(self) -> Generator:
         """Method to get random generator of parent node.
@@ -168,7 +168,7 @@ class ClassicalEntity(ABC):
         If entity is not attached to a node, return default generator.
         """
         if hasattr(self.owner, "get_generator"):
-            return self.owner.get_generator()
+            return cast(Entity, self.owner).get_generator()
         else:
             return default_rng()
 

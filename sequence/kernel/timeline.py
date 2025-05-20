@@ -9,13 +9,13 @@ from datetime import timedelta
 from math import inf
 from sys import stdout
 from time import sleep, time_ns
-from typing import TYPE_CHECKING, Dict, Optional, Union
+from typing import TYPE_CHECKING
 
 from numpy import random
 
 if TYPE_CHECKING:
     from .event import Event
-    from .entity import Entity
+    from .entity import Entity, ClassicalEntity
 
 from ..constants import *
 from ..utils import log
@@ -54,7 +54,7 @@ class Timeline:
         quantum_manager (QuantumManager): quantum state manager.
     """
 
-    def __init__(self, stop_time: Union[float, int] = inf, formalism=KET_STATE_FORMALISM, truncation=1):
+    def __init__(self, stop_time: int | float = inf, formalism=KET_STATE_FORMALISM, truncation=1):
         """Constructor for timeline.
 
         Args:
@@ -63,9 +63,9 @@ class Timeline:
             truncation (int): truncation of Hilbert space (currently only for Fock representation).
         """
         self.events: EventList = EventList()
-        self.entities: Dict[str, "Entity"] = {}
-        self.time: Union[int, float] = 0
-        self.stop_time: Union[int, float] = stop_time
+        self.entities: dict[str, "Entity|ClassicalEntity"] = {}
+        self.time: int | float = 0
+        self.stop_time: int | float = stop_time
         self.schedule_counter: int = 0
         self.run_counter: int = 0
         self.is_running: bool = False
@@ -154,7 +154,7 @@ class Timeline:
     def remove_event(self, event: "Event") -> None:
         self.events.remove(event)
 
-    def update_event_time(self, event: "Event", time: Union[int, float]) -> None:
+    def update_event_time(self, event: "Event", time: int | float) -> None:
         """Method to change execution time of an event.
 
         Args:
@@ -164,7 +164,7 @@ class Timeline:
 
         self.events.update_event_time(event, time)
 
-    def add_entity(self, entity: "Entity") -> None:
+    def add_entity(self, entity: "Entity|ClassicalEntity") -> None:
         assert entity.name not in self.entities, f'{entity.name} already exists!'
         entity.timeline = self
         self.entities[entity.name] = entity
@@ -173,7 +173,7 @@ class Timeline:
         entity = self.entities.pop(name)
         entity.timeline = None
 
-    def get_entity_by_name(self, name: str) -> Optional["Entity"]:
+    def get_entity_by_name(self, name: str) -> "Entity|ClassicalEntity|None":
         return self.entities.get(name, None)
 
     @staticmethod
@@ -213,5 +213,5 @@ class Timeline:
         return str(timedelta(milliseconds=milliseconds))
 
     @staticmethod
-    def convert_to_nanoseconds(picoseconds: int) -> float:
+    def convert_to_nanoseconds(picoseconds: float) -> float:
         return picoseconds / PICOSECONDS_PER_NANOSECOND
