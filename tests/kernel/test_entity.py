@@ -1,7 +1,8 @@
-from sequence.kernel.entity import Entity, ClassicalEntity
-from sequence.kernel.timeline import Timeline
 from numpy.random import default_rng
 from numpy.random._generator import Generator
+
+from sequence.kernel.entity import ClassicalEntity, Entity
+from sequence.kernel.timeline import Timeline
 
 
 class FakeOwnerNoGen:

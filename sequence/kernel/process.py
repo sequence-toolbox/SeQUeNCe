@@ -2,7 +2,7 @@
 
 This module defines a process, which is performed when an event is executed.
 """
-from typing import Any, List, Dict
+from typing import Any, Dict, List
 
 
 class Process:

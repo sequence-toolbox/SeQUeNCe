@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, List
 if TYPE_CHECKING:
     from .event import Event
 
-from heapq import heappush, heappop
+from heapq import heappop, heappush
 
 
 class EventList:
