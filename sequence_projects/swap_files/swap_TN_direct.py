@@ -248,10 +248,10 @@ def light_source(vacuum, N, mean_photon_num, num_modes, error_tolerance, TMSV_in
     TMSV_op_dense = create_TMSV_OP_Dense(N, mean_photon_num)
 
     TMSV_MPO_H = create_MPO(site1 = TMSV_indices[0][0], site2 = TMSV_indices[0][1], total_sites = num_modes, op = TMSV_op_dense, N = N, tag = r"$TMSV_H$")
-    TMSV_MPO_H.draw()
-    print("sites present in light_source:", TMSV_MPO_H.sites)
+    # TMSV_MPO_H.draw()
+    # print("sites present in light_source:", TMSV_MPO_H.sites)
     enforce_1d_like(TMSV_MPO_H, site_tags=site_tags, inplace=True)
-    print("sites present in light_source:", TMSV_MPO_H.sites)
+    # print("sites present in light_source:", TMSV_MPO_H.sites)
     TMSV_MPO_H.add_tag("L1")
 
     TMSV_MPO_V = create_MPO(site1 = TMSV_indices[1][0], site2 = TMSV_indices[1][1], total_sites = num_modes, op = TMSV_op_dense, N = N, tag = r"$TMSV_V$")
@@ -516,7 +516,7 @@ def rotate_and_measure(psi, N, site_tags, num_modes, efficiency, error_tolerance
 # coincidence = rotate_and_measure(psi, N, psi.site_tags, num_modes, efficiency, error_tolerance)
 
 
-def calc_fidelity(state, reference_state, N, error_tolerance):
+def calc_fidelity_swapping(state, reference_state, N, error_tolerance):
     reference_mps = create_polarization_bell_state(reference_state, N)
     projector_mpo = outer_product_mps(reference_mps)
 
@@ -535,10 +535,10 @@ def calc_fidelity(state, reference_state, N, error_tolerance):
     #     print(site)
 
 
-    projector_mpo.draw()
-    state.draw()
+    # projector_mpo.draw()
+    # state.draw()
     state = tensor_network_apply_op_vec(projector_mpo, state, compress=True, contract = True, cutoff = error_tolerance)
-    state.draw()
+    # state.draw()
     return state.norm()**2
 
     
@@ -557,33 +557,41 @@ def create_polarization_bell_state(bell_state, N, error_tolerance = 1e-12):
     vac_projector = np.outer(vacuum_state, vacuum_state)
 
     one_state = a_dag @ vacuum_state # For now, we're defining the 1 state as having only one photon. This could be changed to have any number of non-zero photons.
-    print("one_state:", one_state)   # This is because the ideal case is having exactly one photon for the 1 state. 
+    # print("one_state:", one_state)   # This is because the ideal case is having exactly one photon for the 1 state. 
     one_projector = np.outer(one_state, one_state)                                 
 
     NOT_gate = vacuum_state @ one_state.conj().T + one_state @ vacuum_state.conj().T
-    H_gate = (I + NOT_gate)/sqrt(2)
-    print("NOT_gate:", NOT_gate)
-
+    H_gate = (1/sqrt(2)) * ((vacuum_state - one_state) @ one_state.conj().T + (vacuum_state + one_state) @ vacuum_state.conj().T)
     C_NOT_close = np.kron(vac_projector, I) + np.kron(one_projector, NOT_gate)
     C_NOT_open = np.kron(one_projector, I) + np.kron(vac_projector, NOT_gate)
 
-    if bell_state == "psi_plus":
-        H_MPO = mpo.from_dense(H_gate, dims = N, sites = (0,), L=4, tags="H")
-        NOT_MPO = mpo.from_dense(NOT_gate, dims = N, sites = (1,), L=4, tags="a_dag")
-        C_NOT_close_MPO_1 = mpo.from_dense(C_NOT_close, dims = N, sites = (0,1), L=4, tags="C_NOT_close_1")
-        C_NOT_close_MPO_2 = mpo.from_dense(C_NOT_close, dims = N, sites = (1,2), L=4, tags="C_NOT_close_2")
-        C_NOT_open_MPO = mpo.from_dense(C_NOT_open, dims = N, sites = (2,3), L=4, tags="C_create_open")
-        
-        vacuum = create_vacuum_state(4, N, bond_dim = 2)
-        psi = tensor_network_apply_op_vec(H_MPO, vacuum, compress=True, contract = True, cutoff = error_tolerance)
-        psi = tensor_network_apply_op_vec(NOT_MPO, psi, compress=True, contract = True, cutoff = error_tolerance)
-        # read_quantum_state(psi, N, num_states = 2)
-        psi = tensor_network_apply_op_vec(C_NOT_close_MPO_1, psi, compress=True, contract = True, cutoff = error_tolerance)
-        # read_quantum_state(psi, N, num_states = 2)
-        psi = tensor_network_apply_op_vec(C_NOT_close_MPO_2, psi, compress=True, contract = True, cutoff = error_tolerance)
-        psi = tensor_network_apply_op_vec(C_NOT_open_MPO, psi, compress=True, contract = True, cutoff = error_tolerance)
+    NOT_MPO_0 = mpo.from_dense(NOT_gate, dims = N, sites = (0,), L=4, tags="a_dag")
+    NOT_MPO_1 = mpo.from_dense(NOT_gate, dims = N, sites = (1,), L=4, tags="a_dag")
+    H_MPO = mpo.from_dense(H_gate, dims = N, sites = (0,), L=4, tags="H")
+    C_NOT_close_MPO_1 = mpo.from_dense(C_NOT_close, dims = N, sites = (0,1), L=4, tags="C_NOT_close_1")
+    C_NOT_close_MPO_2 = mpo.from_dense(C_NOT_close, dims = N, sites = (1,2), L=4, tags="C_NOT_close_2")
+    C_NOT_open_MPO = mpo.from_dense(C_NOT_open, dims = N, sites = (2,3), L=4, tags="C_create_open")
     
-    read_quantum_state(psi, N, num_states = 2)
+    vacuum = create_vacuum_state(4, N, bond_dim = 2)
+
+    if bell_state == "psi_minus":
+        psi = tensor_network_apply_op_vec(NOT_MPO_0, vacuum, compress=True, contract = True, cutoff = error_tolerance)
+        psi = tensor_network_apply_op_vec(NOT_MPO_1, psi, compress=True, contract = True, cutoff = error_tolerance)
+    elif bell_state == "psi_plus":
+        psi = tensor_network_apply_op_vec(NOT_MPO_1, vacuum, compress=True, contract = True, cutoff = error_tolerance)
+    elif bell_state == "phi_plus":
+        psi = vacuum
+    elif bell_state == "phi_minus":
+        psi = tensor_network_apply_op_vec(NOT_MPO_0, vacuum, compress=True, contract = True, cutoff = error_tolerance)
+
+    
+    psi = tensor_network_apply_op_vec(H_MPO, psi, compress=True, contract = True, cutoff = error_tolerance)
+    # read_quantum_state(psi, N, num_states = 2)
+    psi = tensor_network_apply_op_vec(C_NOT_close_MPO_1, psi, compress=True, contract = True, cutoff = error_tolerance)
+    # read_quantum_state(psi, N, num_states = 2)
+    psi = tensor_network_apply_op_vec(C_NOT_close_MPO_2, psi, compress=True, contract = True, cutoff = error_tolerance)
+    psi = tensor_network_apply_op_vec(C_NOT_open_MPO, psi, compress=True, contract = True, cutoff = error_tolerance)
+    
     return psi
 
 

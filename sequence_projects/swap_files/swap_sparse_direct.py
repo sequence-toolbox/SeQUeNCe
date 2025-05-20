@@ -37,13 +37,14 @@ def extend_state_sparse(state):
     return sp.kron(state, state)
 # TMSV_state_dense = extend_state_sparse(TMSV_state)
 
-def bell_state_measurement_sparse(TMSV_state_dense, N, efficiency, a_dag):
+def bell_state_measurement_sparse(TMSV_state_dense, N, efficiency, a_dag, is_dm = False):
     # BSM BS implementation
     BSM_H_0_Mode_op = create_op(2, a_dag, 5, N)
     print(BSM_H_0_Mode_op.shape, len(BSM_H_0_Mode_op.nonzero()[0]), len(BSM_H_0_Mode_op.nonzero()[1]))
     BSM_V_0_Mode_op = create_op(3, a_dag, 4, N)
     BSM_H_1_Mode_op = create_op(6, a_dag, 1, N)
     BSM_V_1_Mode_op = create_op(7, a_dag, 0, N)
+
     hamiltonian_BS_H = -np.pi/4 * ( BSM_H_0_Mode_op.T@BSM_H_1_Mode_op - BSM_H_0_Mode_op@BSM_H_1_Mode_op.T )
     unitary_BS_H = _find_mat_exp(hamiltonian_BS_H)
 
@@ -61,8 +62,15 @@ def bell_state_measurement_sparse(TMSV_state_dense, N, efficiency, a_dag):
 
     # print(unitary_BS_V.shape, unitary_BS_H.shape, TMSV_state_dense.shape)
     
-    post_BS_State = unitary_BS_V @ unitary_BS_H @ TMSV_state_dense
-    post_BSM_State = BSM_povm @ post_BS_State
+    if is_dm:
+        post_BS_State = unitary_BS_V @ unitary_BS_H @ TMSV_state_dense @ (unitary_BS_V @ unitary_BS_H).conj().T
+        post_BSM_State = BSM_povm @ post_BS_State @ BSM_povm.conj().T
+    else:
+        post_BS_State = unitary_BS_V @ unitary_BS_H @ TMSV_state_dense
+        post_BSM_State = BSM_povm @ post_BS_State
+
+    # post_BSM_State.data = np.round(post_BSM_State.data, 10)
+    # post_BSM_State.eliminate_zeros()
 
     return post_BSM_State
 # post_BSM_State = bell_state_measurement_sparse(TMSV_state_dense, N, efficiency)
