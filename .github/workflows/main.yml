@@ -4,7 +4,7 @@ on:
   push:
     branches: [master, RnD]
   pull_request:
-    branches: [master. RnD]
+    branches: [master, RnD]
 
 jobs:
   build:
@@ -16,10 +16,10 @@ jobs:
         mpi: [openmpi]
   
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -39,11 +39,9 @@ jobs:
         mpi: ${{ matrix.mpi }}
 
     - name: Set up parallel code
-      run: |
-        cd parallel
-        make install
+      run: make install
+      working-directory: ./parallel
 
     - name: Test parallel with pytest
-      run: |
-        cd parallel
-        make test_parallel
+      run: make test_parallel
+      working-directory: ./parallel
