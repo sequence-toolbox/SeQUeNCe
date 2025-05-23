@@ -47,7 +47,7 @@ class Timeline:
     Attributes:
         events (EventList): the event list of timeline.
         entities (List[Entity]): the entity list of timeline used for initialization.
-        time (float/int): current simulation time (picoseconds).
+        time (int): current simulation time (picoseconds). The smallest amount of time in the simulation timeline is 1 picosecond
         stop_time (int): the stop (simulation) time of the simulation.
         schedule_counter (int): the counter of scheduled events
         run_counter (int): the counter of executed events
@@ -56,7 +56,7 @@ class Timeline:
         quantum_manager (QuantumManager): quantum state manager.
     """
 
-    def __init__(self, stop_time: Union[float, int]=inf, formalism=KET_STATE_FORMALISM, truncation=1):
+    def __init__(self, stop_time: int = inf, formalism = KET_STATE_FORMALISM, truncation = 1):
         """Constructor for timeline.
 
         Args:
@@ -66,8 +66,8 @@ class Timeline:
         """
         self.events: EventList = EventList()
         self.entities: Dict[str, "Entity"] = {}
-        self.time: Union[int, float] = 0
-        self.stop_time: Union[int, float] = stop_time
+        self.time: int = 0
+        self.stop_time: int = stop_time
         self.schedule_counter: int = 0
         self.run_counter: int = 0
         self.is_running: bool = False
@@ -92,9 +92,8 @@ class Timeline:
         else:
             raise ValueError(f"Invalid formalism {formalism}")
 
-    def now(self) -> float:
+    def now(self) -> int:
         """Returns current simulation time."""
-
         return self.time
 
     def schedule(self, event: "Event") -> None:
@@ -107,7 +106,6 @@ class Timeline:
     def init(self) -> None:
         """Method to initialize all simulated entities."""
         log.logger.info("Timeline initial network")
-
         for entity in self.entities.values():
             entity.init()
 
@@ -152,16 +150,16 @@ class Timeline:
         self.stop_time = self.now()
 
     def remove_event(self, event: "Event") -> None:
+        """Remove an event from the event list"""
         self.events.remove(event)
 
-    def update_event_time(self, event: "Event", time: Union[int, float]) -> None:
+    def update_event_time(self, event: "Event", time: int) -> None:
         """Method to change execution time of an event.
 
         Args:
             event (Event): event to reschedule.
             time (int): new simulation time (should be >= current time).
         """
-
         self.events.update_event_time(event, time)
 
     def add_entity(self, entity: "Entity") -> None:
@@ -179,7 +177,6 @@ class Timeline:
     @staticmethod
     def seed(seed: int) -> None:
         """Sets random seed for simulation."""
-
         random.seed(seed)
 
     def progress_bar(self):
@@ -187,7 +184,6 @@ class Timeline:
 
         Progress bar will display the execution time of simulation, as well as the current simulation time.
         """
-
         start_new_thread(self.print_time, ())
 
     def print_time(self):
