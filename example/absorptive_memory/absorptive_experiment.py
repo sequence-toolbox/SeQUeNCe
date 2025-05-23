@@ -12,7 +12,7 @@ If you find the codes in this repository useful, please cite this work as follow
 --- A. Zang, A. Kolar, J. Chung, M. Suchara, T. Zhong and R. Kettimuthu, "Simulation of Entanglement Generation between Absorptive Quantum Memories," 2022 IEEE International Conference on Quantum Computing and Engineering (QCE), Broomfield, CO, USA, 2022, pp. 617-623, doi: 10.1109/QCE53715.2022.00084. 
 """
 
-from typing import List, Callable, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING
 from pathlib import Path
 from copy import copy
 
@@ -211,7 +211,7 @@ class EndNode(Node):
 
 
 class EntangleNode(Node):
-    def __init__(self, name: str, timeline: "Timeline", src_list: List[str]):
+    def __init__(self, name: str, timeline: "Timeline", src_list: list[str]):
         super().__init__(name, timeline)
 
         # hardware setup
@@ -240,7 +240,7 @@ class EntangleNode(Node):
             frequency (float): frequency of photon arrival (in Hz).
 
         Returns:
-            List[int]: list of length (num_bins) with result for each time bin.
+            list[int]: list of length (num_bins) with result for each time bin.
         """
 
         trigger_times = self.components[detector_name].get_photon_times()
@@ -262,7 +262,7 @@ class EntangleNode(Node):
 
 
 class MeasureNode(Node):
-    def __init__(self, name: str, timeline: "Timeline", other_nodes: List[str]):
+    def __init__(self, name: str, timeline: "Timeline", other_nodes: list[str]):
         super().__init__(name, timeline)
 
         self.direct_detector_name = name + ".direct"
@@ -302,7 +302,7 @@ class MeasureNode(Node):
             frequency (float): frequency of photon arrival (in Hz).
 
         Returns:
-            List[int]: list of length (num_bins) with result for each time bin.
+            list[int]: list of length (num_bins) with result for each time bin.
         """
 
         trigger_times = self.components[detector_name].get_photon_times()

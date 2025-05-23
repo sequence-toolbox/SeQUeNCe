@@ -7,7 +7,7 @@ This module also defines the message type used by the resource manager.
 
 from __future__ import annotations
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 if TYPE_CHECKING:
     from ..components.memory import Memory
     from ..topology.node import QuantumRouter
@@ -20,7 +20,7 @@ from .rule_manager import RuleManager
 from .memory_manager import MemoryManager, MemoryInfo
 
 
-RequestConditionFunc = Callable[[List["EntanglementProtocol"]], "EntanglementProtocol"]
+RequestConditionFunc = Callable[[list["EntanglementProtocol"]], "EntanglementProtocol"]
 
 
 class ResourceManagerMsgType(Enum):
@@ -95,8 +95,8 @@ class ResourceManager:
         owner (QuantumRouter): node that resource manager is attached to.
         memory_manager (MemoryManager): internal memory manager object.
         rule_manager (RuleManager): internal rule manager object.
-        pending_protocols (List[Protocol]): list of protocols awaiting a response for a remote resource request.
-        waiting_protocols (List[Protocol]): list of protocols awaiting a request from a remote protocol.
+        pending_protocols (list[Protocol]): list of protocols awaiting a response for a remote resource request.
+        waiting_protocols (list[Protocol]): list of protocols awaiting a request from a remote protocol.
     """
 
     def __init__(self, owner: "QuantumRouter", memory_array_name: str):
@@ -223,9 +223,9 @@ class ResourceManager:
         Args:
             protocol (EntanglementProtocol): protocol sending the request.
             req_dst (str): name of destination node.
-            req_condition_func (Callable[[List[EntanglementProtocol]], EntanglementProtocol]):
+            req_condition_func (Callable[[list[EntanglementProtocol]], EntanglementProtocol]):
                 function used to evaluate condition on distant node.
-            req_args (Dict[str, Any]): arguments for req_cond_func.
+            req_args (dict[str, Any]): arguments for req_cond_func.
         """
 
         protocol.owner = self.owner

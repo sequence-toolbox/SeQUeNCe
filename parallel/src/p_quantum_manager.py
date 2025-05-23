@@ -6,7 +6,7 @@ The states may currently be defined in two possible ways:
 
 The manager defines an API for interacting with quantum states.
 """
-from typing import List, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from sequence.kernel.quantum_manager import QuantumManagerKet, QuantumManagerDensity
 
 if TYPE_CHECKING:
@@ -20,8 +20,8 @@ class ParallelQuantumManagerKet(QuantumManagerKet):
         super().__init__()
         self.states = states
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int],
-                    meas_samp=None) -> Dict[int, int]:
+    def run_circuit(self, circuit: "Circuit", keys: list[int],
+                    meas_samp=None) -> dict[int, int]:
         ret_dict = super().run_circuit(circuit, keys, meas_samp)
         return ret_dict
 
@@ -36,8 +36,8 @@ class ParallelQuantumManagerDensity(QuantumManagerDensity):
         super().__init__()
         self.states = states
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int],
-                    meas_samp=None) -> Dict[int, int]:
+    def run_circuit(self, circuit: "Circuit", keys: list[int],
+                    meas_samp=None) -> dict[int, int]:
         ret_dict = super().run_circuit(circuit, keys, meas_samp)
         return ret_dict
 

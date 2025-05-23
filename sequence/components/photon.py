@@ -3,7 +3,7 @@
 This module defines the Photon class for tracking individual photons.
 Photons may be encoded directly with polarization or time bin schemes, or may herald the encoded state of single atom memories.
 """
-from typing import Dict, Any, List, Union, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 from numpy import log2
 
 if TYPE_CHECKING:
@@ -25,8 +25,8 @@ class Photon:
         name (str): label for photon instance.
         wavelength (float): wavelength of photon (in nm).
         location (Entity): current location of photon.
-        encoding_type (Dict[str, Any]): encoding type of photon (as defined in encoding module).
-        quantum_state (Union[int, Tuple[complex]]): quantum state of photon.
+        encoding_type (dict[str, Any]): encoding type of photon (as defined in encoding module).
+        quantum_state (int | tuple[complex]): quantum state of photon.
             If `use_qm` is false, this will be a QuantumState object.
             Otherwise, it will be an integer key for the quantum manager.
         is_null (bool): defines whether photon is real or a "ghost" photon (not detectable but used in memory encoding).
@@ -52,8 +52,8 @@ class Photon:
             timeline (Timeline): simulation timeline reference
             wavelength (int): wavelength of photon (in nm) (default 0).
             location (Entity): location of the photon (default None).
-            encoding_type (Dict[str, Any]): encoding type of photon (from encoding module) (default polarization).
-            quantum_state (Union[int, Tuple[complex]]):
+            encoding_type (dict[str, Any]): encoding type of photon (from encoding module) (default polarization).
+            quantum_state (int | tuple[complex]):
                 reference key for quantum manager, or complex coefficients for photon's quantum state.
                 Default state is (1, 0).
                 If left blank and `use_qm` is true, will create new key from timeline quantum manager.
@@ -67,12 +67,12 @@ class Photon:
         self.timeline = timeline
         self.wavelength: int = wavelength
         self.location: Entity = location
-        self.encoding_type: Dict[str, Any] = encoding_type
+        self.encoding_type: dict[str, Any] = encoding_type
         self.is_null: bool = False
         self.loss: float = 0
         self.use_qm = use_qm
 
-        self.quantum_state: Union[State, int] = -1
+        self.quantum_state: State | int = -1
         if self.use_qm:
             if quantum_state is None:
                 self.quantum_state = timeline.quantum_manager.new()
@@ -128,7 +128,7 @@ class Photon:
         """Method to measure a photon (see `QuantumState` module).
 
         Args:
-            basis (List[List[complex]]): basis (given as lists of complex coefficients) with which to measure the photon.
+            basis (list[list[complex]]): basis (given as lists of complex coefficients) with which to measure the photon.
             photon (Photon): photon to measure.
             rng (Generator): PRNG to use for measurement results.
 
@@ -157,12 +157,12 @@ class Photon:
             return photon.quantum_state.measure(basis, rng)
 
     @staticmethod
-    def measure_multiple(basis, photons: List["Photon"], rng: "Generator"):
+    def measure_multiple(basis, photons: list["Photon"], rng: "Generator"):
         """Method to measure 2 entangled photons (see `FreeQuantumState` module).
 
         Args:
-            basis (List[List[complex]]): basis (given as lists of complex coefficients) with which to measure the photons.
-            photons (List[Photon]): list of 2 photons to measure.
+            basis (list[list[complex]]): basis (given as lists of complex coefficients) with which to measure the photons.
+            photons (list[Photon]): list of 2 photons to measure.
             rng (Generator): PRNG to use for measurement results.
 
         Returns:

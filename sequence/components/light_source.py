@@ -4,8 +4,6 @@ This module defines the LightSource class to supply individual photons and the S
 These classes should be connected to one or two entities, respectively, that are capable of receiving photons.
 """
 
-from typing import List
-
 from numpy import multiply, sqrt, zeros, kron, outer
 
 from .photon import Photon
@@ -28,7 +26,7 @@ class LightSource(Entity):
         wavelength (float): wavelength (in nm) of emitted photons.
         linewidth (float): st. dev. in photon wavelength (in nm).
         mean_photon_num (float): mean number of photons emitted each period.
-        encoding_type (Dict[str, Any]): encoding scheme of emitted photons (as defined in the encoding module).
+        encoding_type (dict[str, Any]): encoding scheme of emitted photons (as defined in the encoding module).
         phase_error (float): phase error applied to qubits.
         photon_counter (int): counter for number of photons emitted.
     """
@@ -44,7 +42,7 @@ class LightSource(Entity):
             wavelength (float): wavelength (in nm) of emitted photons (default 1550).
             bandwidth (float): st. dev. in photon wavelength (default 0).
             mean_photon_num (float): mean number of photons emitted each period (default 0.1).
-            encoding_type (Dict): encoding scheme of emitted photons (as defined in the encoding module) (default polarization).
+            encoding_type (dict): encoding scheme of emitted photons (as defined in the encoding module) (default polarization).
             phase_error (float): phase error applied to qubits (default 0).
         """
 
@@ -70,7 +68,7 @@ class LightSource(Entity):
         The number of photons emitted per period is calculated as a poisson random variable.
 
         Arguments:
-            state_list (List[List[complex]]): list of complex coefficient arrays to send as photon-encoded qubits.
+            state_list (list[list[complex]]): list of complex coefficient arrays to send as photon-encoded qubits.
         """
 
         log.logger.info("{} emitting {} photons".format(self.name, len(state_list)))
@@ -109,11 +107,11 @@ class SPDCSource(LightSource):
         name (str): label for beamsplitter instance
         timeline (Timeline): timeline for simulation
         frequency (float): frequency (in Hz) of photon creation.
-        wavelengths (List[float]): wavelengths (in nm) of emitted entangled photons.
+        wavelengths (list[float]): wavelengths (in nm) of emitted entangled photons.
             If a list is given, it should contain two elements (corresponding to two modes).
         linewidth (float): st. dev. in photon wavelength (in nm) (currently unused).
         mean_photon_num (float): mean number of photons emitted each period.
-        encoding_type (Dict): encoding scheme of emitted photons (as defined in the encoding module).
+        encoding_type (dict): encoding scheme of emitted photons (as defined in the encoding module).
         phase_error (float): phase error applied to qubits.
     """
 
@@ -161,7 +159,7 @@ class SPDCSource(LightSource):
         The number of photons emitted per period is calculated as a poisson random variable.
 
         Arguments:
-            state_list (List[List[complex]]): list of complex coefficient arrays to send as photon-encoded qubits.
+            state_list (list[list[complex]]): list of complex coefficient arrays to send as photon-encoded qubits.
                 This is ignored for absorptive and Fock encoding types.
                 For these encoding types only the length of list matters and elements can be arbitrary.
         """
@@ -262,7 +260,7 @@ class SPDCSource(LightSource):
 
                 time += 1e12 / self.frequency
 
-    def send_photons(self, time, photons: List["Photon"]):
+    def send_photons(self, time, photons: list["Photon"]):
         log.logger.debug("SPDC source {} sending photons to {} at time {}".format(
             self.name, self._receivers, time
         ))

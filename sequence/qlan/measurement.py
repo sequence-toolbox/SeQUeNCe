@@ -38,7 +38,7 @@ class QlanMeasurementProtocol(EntanglementProtocol):
         local_memories (list[Memory]): Memories at the orchestrator.
         remote_memories (list[str]): Names of memories on the client nodes.
         bases (str): Bases for the measurements (one for each qubit).
-        sent_messages (list): List of sent messages.
+        sent_messages (list): list of sent messages.
         remote_node_names (list[str]): Names of the remote nodes.
         remote_protocol_names (list[str]): Names of the remote protocols.
         message_list (defaultdict): Dictionary to store the outcome messages.
@@ -99,9 +99,9 @@ class QlanMeasurementProtocol(EntanglementProtocol):
         """Set other entanglement protocol instances for coordination.
 
         Args:
-            protocols (List[str]): List of other protocol names.
-            nodes (List[str]): List of other node names.
-            memories (List[List[str]]): List of lists of memory names used on the other nodes.
+            protocols (list[str]): list of other protocol names.
+            nodes (list[str]): list of other node names.
+            memories (list[list[str]]): list of lists of memory names used on the other nodes.
         """
         self.remote_node_names = nodes
         self.remote_protocol_names = protocols

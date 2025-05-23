@@ -28,14 +28,13 @@ import os
 import numpy as np
 import random
 from networkx.generators.geometric import waxman_graph
-from typing import Tuple
 
 from sequence.utils.config_generator import add_default_args, get_node_csv, generate_node_procs, generate_nodes, final_config, router_name_func
 from sequence.topology.topology import Topology
 from sequence.topology.router_net_topo import RouterNetTopo
 
 
-def create_random_waxman(area_length: int, number_nodes: int, edge_density: float) -> Tuple[list, list]:
+def create_random_waxman(area_length: int, number_nodes: int, edge_density: float) -> tuple[list, list]:
     """create a random network using waxman.
 
     Return:

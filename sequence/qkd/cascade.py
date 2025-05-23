@@ -126,19 +126,19 @@ class Cascade(StackProtocol):
         frame_len (int): length of frame to use to generate keys.
         frame_num (int): frame number.
         run_time (int): time to run protocol.
-        bits (List[int]): bits to operate on (received from BB84).
+        bits (list[int]): bits to operate on (received from BB84).
         t1 (int): cascade parameter.
         t2 (int): cascade parameter.
         k1 (int): cascade parameter.
-        checksum_tables (List[List[int]]): lists of generated checksums.
-        another_checksums (List[List[int]]): checksums of paired protocol.
-        index_to_block_id_lists (List): store block ids.
-        block_id_to_index_lists (List): store index ids.
+        checksum_tables (list[list[int]]): lists of generated checksums.
+        another_checksums (list[list[int]]): checksums of paired protocol.
+        index_to_block_id_lists (list): store block ids.
+        block_id_to_index_lists (list): store index ids.
         time_cost (int): time penalty for key generation.
         setup_time (int): time of cascade protocol setup.
         start_time (int): time to start generating corrected keys.
         end_time (int): time to stop generating keys.
-        valid_keys (List[int]): list of keys generated.
+        valid_keys (list[int]): list of keys generated.
         throughput (float): protocol throughput in bits/s.
         error_bit_rate (float): rate of errors in finished keys.
         latency (int): average latency of generated keys.

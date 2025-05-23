@@ -5,7 +5,7 @@ The switch is usually created as part of a time bin QSDetector object, and will 
 A more general switch class is in development.
 """
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -24,7 +24,7 @@ class Switch(Entity):
         timeline (Timeline): timeline for simulation.
         start_time (int): simulation start time (in ps) for transmission.
         frequency (float): frequency with which to switch destinations.
-        basis_list (List[int]): 0/1 list denoting which receiver to rout photons to each period.
+        basis_list (list[int]): 0/1 list denoting which receiver to rout photons to each period.
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
@@ -45,7 +45,7 @@ class Switch(Entity):
 
         pass
 
-    def set_basis_list(self, basis_list: "List[int]", start_time: int, frequency: float) -> None:
+    def set_basis_list(self, basis_list: "list[int]", start_time: int, frequency: float) -> None:
         self.basis_list = basis_list
         self.start_time = start_time
         self.frequency = frequency

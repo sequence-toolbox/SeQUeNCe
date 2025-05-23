@@ -7,7 +7,7 @@ QSDetector is defined as an abstract template and as implementations for polariz
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any
 from numpy import eye, kron, exp, sqrt
 from scipy.linalg import fractional_matrix_power
 from math import factorial
@@ -123,7 +123,7 @@ class Detector(Entity):
             self.notify({'time': time})
             self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
 
-    def notify(self, info: Dict[str, Any]):
+    def notify(self, info: dict[str, Any]):
         """Custom notify function (calls `trigger` method)."""
 
         for observer in self._observers:
@@ -138,9 +138,9 @@ class QSDetector(Entity, ABC):
     Attributes:
         name (str): label for QSDetector instance.
         timeline (Timeline): timeline for simulation.
-        components (List[entity]): list of all aggregated hardware components.
-        detectors (List[Detector]): list of attached detectors.
-        trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
+        components (list[entity]): list of all aggregated hardware components.
+        detectors (list[Detector]): list of attached detectors.
+        trigger_times (list[list[int]]): tracks simulation time of detection events for each detector.
     """
 
     def __init__(self, name: str, timeline: "Timeline"):
@@ -163,7 +163,7 @@ class QSDetector(Entity, ABC):
 
         pass
 
-    def trigger(self, detector: Detector, info: Dict[str, Any]) -> None:
+    def trigger(self, detector: Detector, info: dict[str, Any]) -> None:
         # TODO: rewrite
         detector_index = self.detectors.index(detector)
         self.trigger_times[detector_index].append(info['time'])
@@ -187,7 +187,7 @@ class QSDetector(Entity, ABC):
         return self.trigger_times
 
     @abstractmethod
-    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:
+    def set_basis_list(self, basis_list: list[int], start_time: int, frequency: float) -> None:
         pass
 
 
@@ -200,8 +200,8 @@ class QSDetectorPolarization(QSDetector):
     Attributes:
         name (str): label for QSDetector instance.
         timeline (Timeline): timeline for simulation.
-        detectors (List[Detector]): list of attached detectors (length 2).
-        trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
+        detectors (list[Detector]): list of attached detectors (length 2).
+        trigger_times (list[list[int]]): tracks simulation time of detection events for each detector.
         splitter (BeamSplitter): internal beamsplitter object.
     """
 
@@ -243,7 +243,7 @@ class QSDetectorPolarization(QSDetector):
         self.trigger_times = [[], []]
         return times
 
-    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:
+    def set_basis_list(self, basis_list: list[int], start_time: int, frequency: float) -> None:
         self.splitter.set_basis_list(basis_list, start_time, frequency)
 
     def update_splitter_params(self, arg_name: str, value: Any) -> None:
@@ -260,8 +260,8 @@ class QSDetectorTimeBin(QSDetector):
     Attributes:
         name (str): label for QSDetector instance.
         timeline (Timeline): timeline for simulation.
-        detectors (List[Detector]): list of attached detectors (length 3).
-        trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
+        detectors (list[Detector]): list of attached detectors (length 3).
+        trigger_times (list[list[int]]): tracks simulation time of detection events for each detector.
         switch (Switch): internal optical switch component.
         interferometer (Interferometer): internal interferometer component.
     """
@@ -303,7 +303,7 @@ class QSDetectorTimeBin(QSDetector):
         times, self.trigger_times = self.trigger_times, [[], [], []]
         return times
 
-    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:
+    def set_basis_list(self, basis_list: list[int], start_time: int, frequency: float) -> None:
         self.switch.set_basis_list(basis_list, start_time, frequency)
 
     def update_interferometer_params(self, arg_name: str, value: Any) -> None:
@@ -318,13 +318,13 @@ class QSDetectorFockDirect(QSDetector):
     Attributes:
         name (str): label for QSDetector instance.
         timeline (Timeline): timeline for simulation.
-        src_list (List[str]): list of two sources which send photons to this detector (length 2).
-        detectors (List[Detector]): list of attached detectors (length 2).
-        trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
-        arrival_times (List[List[int]]): tracks simulation time of Photon arrival at each input port
+        src_list (list[str]): list of two sources which send photons to this detector (length 2).
+        detectors (list[Detector]): list of attached detectors (length 2).
+        trigger_times (list[list[int]]): tracks simulation time of detection events for each detector.
+        arrival_times (list[list[int]]): tracks simulation time of Photon arrival at each input port
     """
 
-    def __init__(self, name: str, timeline: "Timeline", src_list: List[str]):
+    def __init__(self, name: str, timeline: "Timeline", src_list: list[str]):
         super().__init__(name, timeline)
         assert len(src_list) == 2
         self.src_list = src_list
@@ -391,13 +391,13 @@ class QSDetectorFockDirect(QSDetector):
             # trigger time recording will be done by SPD
             self.detectors[input_port].record_detection()
 
-    def get_photon_times(self) -> List[List[int]]:
+    def get_photon_times(self) -> list[list[int]]:
         trigger_times = self.trigger_times
         self.trigger_times = [[], []]
         return trigger_times
 
     # does nothing for this class
-    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: int) -> None:
+    def set_basis_list(self, basis_list: list[int], start_time: int, frequency: int) -> None:
         pass
 
 
@@ -414,22 +414,22 @@ class QSDetectorFockInterference(QSDetector):
     Attributes:
         name (str): label for QSDetector instance.
         timeline (Timeline): timeline for simulation.
-        src_list (List[str]): list of two sources which send photons to this detector (length 2).
-        detectors (List[Detector]): list of attached detectors (length 2).
+        src_list (list[str]): list of two sources which send photons to this detector (length 2).
+        detectors (list[Detector]): list of attached detectors (length 2).
         phase (float): relative phase between two input optical paths.
-        trigger_times (List[List[int]]): tracks simulation time of detection events for each detector.
-        detect_info (List[List[Dict]]): tracks detection information, including simulation time of detection events
+        trigger_times (list[list[int]]): tracks simulation time of detection events for each detector.
+        detect_info (list[list[dict]]): tracks detection information, including simulation time of detection events
             and detection outcome for each detector.
-        arrival_times (List[List[int]]): tracks simulation time of arrival of photons at each input mode.
+        arrival_times (list[list[int]]): tracks simulation time of arrival of photons at each input mode.
 
-        temporary_photon_info (List[Dict]): temporary list of information of Photon arriving at each input port.
+        temporary_photon_info (list[dict]): temporary list of information of Photon arriving at each input port.
             Specific to current implementation. At most 1 Photon's information will be recorded in a dictionary.
             When there are 2 non-empty dictionaries,
             e.g. [{"photon":Photon1, "time":arrival_time1}, {"photon":Photon2, "time":arrival_time2}],
             the entangling measurement will be carried out. After measurement, the temporary list will be reset.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", src_list: List[str], phase: float = 0):
+    def __init__(self, name: str, timeline: "Timeline", src_list: list[str], phase: float = 0):
         super().__init__(name, timeline)
         assert len(src_list) == 2
         self.src_list = src_list
@@ -590,7 +590,7 @@ class QSDetectorFockInterference(QSDetector):
             self.beamsplitter.get(photon)
         """
 
-    def get_photon_times(self) -> List[List[int]]:
+    def get_photon_times(self) -> list[list[int]]:
         """Method to get detector trigger times and detection information.
         Will clear `trigger_times` and `detect_info`.
         """
@@ -602,7 +602,7 @@ class QSDetectorFockInterference(QSDetector):
         return trigger_times
 
     # does nothing for this class
-    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:
+    def set_basis_list(self, basis_list: list[int], start_time: int, frequency: float) -> None:
         pass
 
     def set_phase(self, phase: float):

@@ -6,7 +6,7 @@ Node types can be used to collect all the necessary hardware and software for a 
 """
 import sys
 from math import inf
-from typing import TYPE_CHECKING, Any, List, Union
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -43,11 +43,11 @@ class Node(Entity):
     Attributes:
         name (str): label for node instance.
         timeline (Timeline): timeline for simulation.
-        cchannels (Dict[str, ClassicalChannel]): mapping of destination node names to classical channel instances.
-        qchannels (Dict[str, QuantumChannel]): mapping of destination node names to quantum channel instances.
-        protocols (List[Protocol]): list of attached protocols.
+        cchannels (dict[str, ClassicalChannel]): mapping of destination node names to classical channel instances.
+        qchannels (dict[str, QuantumChannel]): mapping of destination node names to quantum channel instances.
+        protocols (list[Protocol]): list of attached protocols.
         generator (np.random.Generator): random number generator used by node.
-        components (Dict[str, Entity]): mapping of local component names to objects.
+        components (dict[str, Entity]): mapping of local component names to objects.
         first_component_name (str): name of component that first receives incoming qubits.
         gate_fid (float): fidelity of multi-qubit gates (usually CNOT) that can be performed on the node.
         meas_fid (float): fidelity of single-qubit measurements (usually Z measurement) that can be performed on the node.
@@ -184,7 +184,7 @@ class Node(Entity):
 
         self.components[self.first_component_name].get(qubit)
 
-    def get_components_by_type(self, component_type: Union[str, type]) -> list:
+    def get_components_by_type(self, component_type: str | type) -> list:
         """Method to return all components of a specific type.
         Args:
             component_type (str/type): The type of components to filter for.
@@ -217,14 +217,14 @@ class BSMNode(Node):
         eg (EntanglementGenerationB): entanglement generation protocol instance.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", other_nodes: List[str],
+    def __init__(self, name: str, timeline: "Timeline", other_nodes: list[str],
                  seed=None, component_templates=None) -> None:
         """Constructor for BSM node.
 
         Args:
             name (str): name of node.
             timeline (Timeline): simulation timeline.
-            other_nodes (List[str]): 2-member list of node names for adjacent quantum routers.
+            other_nodes (list[str]): 2-member list of node names for adjacent quantum routers.
         """
 
         super().__init__(name, timeline, seed)
@@ -283,7 +283,7 @@ class QuantumRouter(Node):
     Attributes:
         resource_manager (ResourceManager): resource management module.
         network_manager (NetworkManager): network management module.
-        map_to_middle_node (Dict[str, str]): mapping of router names to intermediate bsm node names.
+        map_to_middle_node (dict[str, str]): mapping of router names to intermediate bsm node names.
         app (any): application in use on node.
         gate_fid (float): fidelity of multi-qubit gates (usually CNOT) that can be performed on the node.
         meas_fid (float): fidelity of single-qubit measurements (usually Z measurement) that can be performed on the node.
@@ -471,9 +471,9 @@ class QKDNode(Node):
     Attributes:
         name (str): label for node instance.
         timeline (Timeline): timeline for simulation.
-        encoding (Dict[str, Any]): encoding type for qkd qubits (from encoding module).
+        encoding (dict[str, Any]): encoding type for qkd qubits (from encoding module).
         destination (str): name of destination node for photons
-        protocol_stack (List[StackProtocol]): protocols for QKD process.
+        protocol_stack (list[StackProtocol]): protocols for QKD process.
     """
 
     def __init__(self, name: str, timeline: "Timeline", encoding=polarization, stack_size=5,
@@ -483,7 +483,7 @@ class QKDNode(Node):
         Args:
             name (str): label for the node instance.
             timeline (Timeline): simulation timeline.
-            encoding (Dict[str, Any]): encoding scheme for qubits (from encoding module) (default polarization).
+            encoding (dict[str, Any]): encoding scheme for qubits (from encoding module) (default polarization).
             stack_size (int): number of qkd protocols to include in the protocol stack (default 5).
         """
 
@@ -581,7 +581,7 @@ class QKDNode(Node):
             detector_name (str): name of the QSDetector measuring qubits.
 
         Returns:
-            List[int]: list of calculated bits.
+            list[int]: list of calculated bits.
         """
 
         qsdetector = self.components[detector_name]
@@ -649,11 +649,11 @@ class QKDNode(Node):
 
         return bits
 
-    def set_bases(self, basis_list: List[int], start_time: int, frequency: float, component_name: str):
+    def set_bases(self, basis_list: list[int], start_time: int, frequency: float, component_name: str):
         """Method to set basis list for measurement component.
 
         Args:
-            basis_list (List[int]): list of bases to measure in.
+            basis_list (list[int]): list of bases to measure in.
             start_time (int): time to start measurement.
             frequency (float): frequency with which to measure.
             component_name (str): name of measurement component to edit (normally a QSDetector).
@@ -705,8 +705,8 @@ class ClassicalNode(ClassicalEntity):
     Attributes:
         name (str): label for node instance.
         timeline (Timeline): timeline for simulation.
-        cchannels (Dict[str, ClassicalChannel]): mapping of destination node names to classical channel instances.
-        protocols (List[Protocol]): list of attached protocols.
+        cchannels (dict[str, ClassicalChannel]): mapping of destination node names to classical channel instances.
+        protocols (list[Protocol]): list of attached protocols.
         generator (np.random.Generator): random number generator used by node.
     """
 

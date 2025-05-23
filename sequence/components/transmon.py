@@ -4,7 +4,6 @@ See https://arxiv.org/abs/2411.11377, Simulation of Quantum Transduction Strateg
 """
 
 import random
-from typing import List
 import numpy as np
 from ..kernel.entity import Entity
 from ..kernel.timeline import Timeline
@@ -33,7 +32,7 @@ class Transmon(Entity):
         photon1 (Photon): optical photon
     """
 
-    def __init__(self, owner: Node, name: str, timeline: Timeline, wavelengths: List[int], photon_counter: int, photons_quantum_state: List[tuple], efficiency: float = 1):
+    def __init__(self, owner: Node, name: str, timeline: Timeline, wavelengths: list[int], photon_counter: int, photons_quantum_state: list[tuple], efficiency: float = 1):
         Entity.__init__(self, name, timeline)
         self.name = name
         self.owner = owner
@@ -48,7 +47,7 @@ class Transmon(Entity):
     def init(self):
         pass
 
-    def add_outputs(self, outputs: List):
+    def add_outputs(self, outputs: list):
         """Add outputs, i.e., receivers, of the transmon
         """
         for i in outputs:

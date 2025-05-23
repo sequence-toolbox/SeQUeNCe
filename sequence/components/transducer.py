@@ -3,7 +3,6 @@
 See https://arxiv.org/abs/2411.11377, Simulation of Quantum Transduction Strategies for Quantum Networks
 """
 
-from typing import List
 import random
 import math
 import numpy as np
@@ -50,7 +49,7 @@ class Transducer(Entity):
         pass
 
 
-    def add_outputs(self, outputs: List):
+    def add_outputs(self, outputs: list):
         """Add outputs, i.e., receivers"""
         for i in outputs:
             self.add_receiver(i)

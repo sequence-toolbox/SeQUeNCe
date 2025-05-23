@@ -4,7 +4,7 @@ This module defines the Entity class, inherited by all physical simulation eleme
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 from numpy.random import default_rng
 from numpy.random._generator import Generator
 
@@ -23,8 +23,8 @@ class Entity(ABC):
         name (str): name of the entity.
         timeline (Timeline): the simulation timeline for the entity.
         owner (Entity): another entity that owns or aggregates the current entity.
-        _observers (List): a list of observers for the entity.
-        _receivers (List[Entity]): a list of entities that receive photons from current component.
+        _observers (list): a list of observers for the entity.
+        _receivers (list[Entity]): a list of entities that receive photons from current component.
     """
 
     def __init__(self, name: str, timeline: "Timeline") -> None:
@@ -72,7 +72,7 @@ class Entity(ABC):
 
         self._observers.remove(observer)
 
-    def notify(self, info: Dict[str, Any]) -> None:
+    def notify(self, info: dict[str, Any]) -> None:
         """Method to notify all attached observers of an update."""
 
         for observer in self._observers:

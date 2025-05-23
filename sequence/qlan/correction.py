@@ -28,8 +28,8 @@ class QlanCorrectionProtocol(EntanglementProtocol):
         remote_node_names (list[str]): Names of the remote nodes.
         remote_protocol_names (list[str]): Names of the remote protocols.
         remote_memories (list[list[str]]): Names of the remote memories.
-        received_messages (list[Message]): List of received messages.
-        sent_messages (list[Message]): List of sent messages.
+        received_messages (list[Message]): list of received messages.
+        sent_messages (list[Message]): list of sent messages.
         B0 (bool): Flag indicating if B0 designation is received.
     """
 
@@ -63,9 +63,9 @@ class QlanCorrectionProtocol(EntanglementProtocol):
         """Set other entanglement protocol instances for coordination.
 
         Args:
-            protocols (List[str]): List of other protocol names.
-            nodes (List[str]): List of other node names.
-            memories (List[List[str]]): List of lists of memory names used on the other nodes.
+            protocols (list[str]): list of other protocol names.
+            nodes (list[str]): list of other node names.
+            memories (list[list[str]]): list of lists of memory names used on the other nodes.
         """
         self.remote_node_names = nodes
         self.remote_protocol_names = protocols

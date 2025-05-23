@@ -13,9 +13,9 @@ class QKDTopo(Topo):
     this class.
 
     Attributes:
-        nodes (Dict[str, List[Node]]): mapping of type of node to a list of same type node.
-        qchannels (List[QuantumChannel]): list of quantum channel objects in network.
-        cchannels (List[ClassicalChannel]): list of classical channel objects in network.
+        nodes (dict[str, list[Node]]): mapping of type of node to a list of same type node.
+        qchannels (list[QuantumChannel]): list of quantum channel objects in network.
+        cchannels (list[ClassicalChannel]): list of classical channel objects in network.
         tl (Timeline): the timeline used for simulation
     """
     QKD_NODE = "QKDNode"

@@ -1,6 +1,6 @@
 from collections import defaultdict
 from time import time
-from typing import Dict, List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from mpi4py import MPI
 from json import load, dump
 import pandas as pd
@@ -21,7 +21,7 @@ class ExpRandomReqApp(RandomRequestApp):
                  max_dur: int, min_size: int, max_size: int,
                  min_fidelity: float, max_fidelity: float, start_prob: float,
                  scale: float, sleep_time: float,
-                 hop_to_others: Dict[int, List[str]]):
+                 hop_to_others: dict[int, list[str]]):
         super(ExpRandomReqApp, self).__init__(node, [], seed, min_dur, max_dur,
                                               min_size, max_size, min_fidelity,
                                               max_fidelity)
@@ -74,7 +74,7 @@ def get_net_qc_graph(config_file: str):
     return graph
 
 
-def get_hop_to_others(graph: Dict, node: str):
+def get_hop_to_others(graph: dict, node: str):
     res = {}
 
     cur_queue = [node]

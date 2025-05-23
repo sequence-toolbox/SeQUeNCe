@@ -49,8 +49,8 @@ class StackProtocol(Protocol):
     Attributes:
         own (Node): node protocol is attached to.
         name (str): label for protocol instance.
-        upper_protocols (List[StackProtocol]): Protocols to pop to.
-        lower_protocols (List[StackProtocol]): Protocols to push to.
+        upper_protocols (list[StackProtocol]): Protocols to pop to.
+        lower_protocols (list[StackProtocol]): Protocols to push to.
     """
 
     def __init__(self, owner: "Node", name: str):

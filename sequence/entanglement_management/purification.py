@@ -6,7 +6,7 @@ Also defined is the message type used by the BBPSSW code.
 """
 
 from enum import Enum, auto
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from functools import lru_cache
 
 if TYPE_CHECKING:
@@ -63,7 +63,7 @@ class BBPSSW(EntanglementProtocol):
         meas_res (int): measurement result from circuit.
         remote_node_name (str): name of other node.
         remote_protocol_name (str): name of other protocol
-        remote_memories (List[str]): name of remote memories
+        remote_memories (list[str]): name of remote memories
     """
 
     circuit = Circuit(2)
@@ -82,12 +82,12 @@ class BBPSSW(EntanglementProtocol):
 
         assert kept_memo != meas_memo
         EntanglementProtocol.__init__(self, owner, name)
-        self.memories: List[Memory] = [kept_memo, meas_memo]
+        self.memories: list[Memory] = [kept_memo, meas_memo]
         self.kept_memo: Memory = kept_memo
         self.meas_memo: Memory = meas_memo
         self.remote_node_name: str = None
         self.remote_protocol_name: str = None
-        self.remote_memories: List[str] = None
+        self.remote_memories: list[str] = None
         self.meas_res = None
         if self.meas_memo is None:
             self.memories.pop()
@@ -95,13 +95,13 @@ class BBPSSW(EntanglementProtocol):
     def is_ready(self) -> bool:
         return self.remote_node_name is not None
 
-    def set_others(self, protocol: str, node: str, memories: List[str]) -> None:
+    def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
         """Method to set other entanglement protocol instance.
 
         Args:
             protocol (str): other protocol name.
             node (str): other node name.
-            memories (List[str]): the list of memory names used on other node.
+            memories (list[str]): the list of memory names used on other node.
         """
         self.remote_node_name = node
         self.remote_protocol_name = protocol

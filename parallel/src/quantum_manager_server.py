@@ -10,7 +10,6 @@ import socket
 import argparse
 from ipaddress import ip_address
 import select
-from typing import List
 from time import time
 from json import dump
 from .communication import send_msg_with_length, recv_msg_with_length
@@ -58,11 +57,11 @@ class QuantumManagerMessage:
 
     Attributes:
         type (Enum): type of message.
-        keys (List[int]): list of ALL keys serviced by request.
-        args (List[any]): list of other arguments for the request.
+        keys (list[int]): list of ALL keys serviced by request.
+        args (list[any]): list of other arguments for the request.
     """
 
-    def __init__(self, msg_type: QuantumManagerMsgType, keys: List[int], args: List[any]):
+    def __init__(self, msg_type: QuantumManagerMsgType, keys: list[int], args: list[any]):
         self.type = msg_type
         self.keys = keys
         self.args = args
@@ -74,7 +73,7 @@ class QuantumManagerMessage:
         """Serializes the data stored in the message.
 
         Returns:
-            Dict[str, any]: A dictionary with the following keys:
+            dict[str, any]: A dictionary with the following keys:
             - "type": name of the type for the message.
             - "keys": keys for all modified qubits in the quantum state manager, in hex format.
             - "args": JSON-like serialized version of arguments

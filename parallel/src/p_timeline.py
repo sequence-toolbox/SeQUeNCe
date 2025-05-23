@@ -1,5 +1,3 @@
-from typing import List
-
 from mpi4py import MPI
 from time import time
 from sequence.kernel.timeline import Timeline
@@ -21,8 +19,8 @@ class ParallelTimeline(Timeline):
 
     Attributes:
         id (int): rank of MPI process running the Parallel Timeline instance.
-        foreign_entities (Dict[str, int]): mapping of object names on other processes to process id.
-        event_buffer(List[List[Event]]): stores events for execution on foreign entities;
+        foreign_entities (dict[str, int]): mapping of object names on other processes to process id.
+        event_buffer(list[list[Event]]): stores events for execution on foreign entities;
             swapped during synchronization.
         lookahead (int): defines width of time window for execution (simulation time between synchronization).
         quantum_manager (QuantumManagerClient): local quantum manager client to communicate with server.

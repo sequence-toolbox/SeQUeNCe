@@ -1,4 +1,3 @@
-from typing import List
 from ..node import Node
 from ...kernel.timeline import Timeline
 from ...components.memory import Memory
@@ -66,9 +65,9 @@ class QlanClientNode(Node):
         memo_efficiency (float): The efficiency of the memories.
         memo_coherence_time (float): The coherence time of the memories.
         memo_wavelength (float): The wavelength of the memories.
-        remote_memories (List[Memory]): The list of remote memories.
+        remote_memories (list[Memory]): The list of remote memories.
         adjacent_nodes (dict): A dictionary of adjacent nodes.
-        local_memories (List[Memory]): The list of local memories to add as components.
+        local_memories (list[Memory]): The list of local memories to add as components.
     """
     def __init__(self, name: str, tl: Timeline, num_local_memories: int = 1, memo_fidelity = 0.9, memo_frequency: int = 2000, memo_efficiency: float = 1, memo_coherence_time: float = -1, memo_wavelength: float = 500):
         super().__init__(name, tl)
@@ -105,12 +104,12 @@ class QlanClientNode(Node):
 
         self.resource_manager = QlanClientStateManager(owner=self, tl=tl, memory_names=local_memory_names, remote_memories=self.remote_memories)
 
-    def update_orchestrator(self, remote_memories: List[Memory]):
+    def update_orchestrator(self, remote_memories: list[Memory]):
         """
         Updates the orchestrator with the list of remote memories.
 
         Args:
-            remote_memories (List[Memory]): The list of remote memories.
+            remote_memories (list[Memory]): The list of remote memories.
         """
         if len(remote_memories) <= 0:
             raise ValueError("Update the orchestrator with at least one memory.")

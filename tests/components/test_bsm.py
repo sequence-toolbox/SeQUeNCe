@@ -14,7 +14,7 @@ class Parent:
         def __init__(self):
             self.results = []
 
-        def bsm_update(self, src: BSM, msg: Dict[str, Any]):
+        def bsm_update(self, src: BSM, msg: dict[str, Any]):
             entity = msg.get("entity")
             if entity == "BSM":
                 res = msg.get("res")

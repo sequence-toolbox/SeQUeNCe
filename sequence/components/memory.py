@@ -7,7 +7,7 @@ Photons should be routed to a BSM device for entanglement generation, or through
 
 from copy import copy
 from math import inf
-from typing import Any, List, TYPE_CHECKING, Dict, Callable, Union
+from typing import Any, TYPE_CHECKING, Callable
 from numpy import exp, array
 from scipy import stats
 
@@ -38,12 +38,12 @@ class MemoryArray(Entity):
     Attributes:
         name (str): label for memory array instance.
         timeline (Timeline): timeline for simulation.
-        memories (List[Memory]): list of all memories.
+        memories (list[Memory]): list of all memories.
     """
 
     def __init__(self, name: str, timeline: "Timeline", num_memories=10,
                  fidelity=0.85, frequency=80e6, efficiency=1, coherence_time=-1, wavelength=500,
-                 decoherence_errors: List[float] = None, cutoff_ratio = 1):
+                 decoherence_errors: list[float] = None, cutoff_ratio = 1):
         """Constructor for the Memory Array class.
 
         Args:
@@ -55,7 +55,7 @@ class MemoryArray(Entity):
             efficiency (float): efficiency of memories (default 1).
             coherence_time (float): average time (in s) that memory state is valid (default -1 -> inf).
             wavelength (int): wavelength (in nm) of photons emitted by memories (default 500).
-            decoherence_errors (List[int]): pauli decoherence errors. Passed to memory object.
+            decoherence_errors (list[int]): pauli decoherence errors. Passed to memory object.
             cutoff_ratio (float): the ratio between cutoff time and memory coherence time (default 1, should be between 0 and 1).
         """
 
@@ -162,8 +162,8 @@ class Memory(Entity):
         wavelength (float): wavelength (in nm) of emitted photons.
         qstate_key (int): key for associated quantum state in timeline's quantum manager.
         memory_array (MemoryArray): memory array aggregating current memory.
-        entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
-        docoherence_errors (List[float]): assumeing the memory (qubit) decoherence channel being Pauli channel,
+        entangled_memory (dict[str, Any]): tracks entanglement state of memory.
+        docoherence_errors (list[float]): assumeing the memory (qubit) decoherence channel being Pauli channel,
             Probability distribution of X, Y, Z Pauli errors;
             (default value is -1, meaning not using BDS or further density matrix representation)
             Question: is it general enough? Dephasing/damping channel, multipartite entanglement?
@@ -176,7 +176,7 @@ class Memory(Entity):
     """
 
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
-                 efficiency: float, coherence_time: float, wavelength: int, decoherence_errors: List[float] = None, cutoff_ratio: float = 1):
+                 efficiency: float, coherence_time: float, wavelength: int, decoherence_errors: list[float] = None, cutoff_ratio: float = 1):
         """Constructor for the Memory class.
 
         Args:
@@ -188,7 +188,7 @@ class Memory(Entity):
             coherence_time (float): average time (in s) that memory state is valid.
             decoherence_rate (float): rate of decoherence to implement time dependent decoherence.
             wavelength (int): wavelength (in nm) of photons emitted by memories.
-            decoherence_errors (List[float]): assuming the memory (qubit) decoherence channel being Pauli channel,
+            decoherence_errors (list[float]): assuming the memory (qubit) decoherence channel being Pauli channel,
                 probability distribution of X, Y, Z Pauli errors
                 (default value is None, meaning not using BDS or further density matrix representation)
             cutoff_ratio (float): the ratio between cutoff time and memory coherence time (default 1, should be between 0 and 1).
@@ -332,11 +332,11 @@ class Memory(Entity):
             self.timeline.remove_event(self.expiration_event)
             self.expiration_event = None
 
-    def update_state(self, state: List[complex]) -> None:
+    def update_state(self, state: list[complex]) -> None:
         """Method to set the memory state to an arbitrary pure state.
 
         Args:
-            state (List[complex]): array of amplitudes for pure state in Z-basis.
+            state (list[complex]): array of amplitudes for pure state in Z-basis.
 
         Side Effects:
             Will modify internal quantum state and parameters.
@@ -427,7 +427,7 @@ class Memory(Entity):
     def get_expire_time(self) -> int:
         return self.expiration_event.time if self.expiration_event else inf
 
-    def notify(self, msg: Dict[str, Any]):
+    def notify(self, msg: dict[str, Any]):
         for observer in self._observers:
             observer.memory_expire(self)
 
@@ -497,8 +497,8 @@ class AbsorptiveMemory(Entity):
         is_prepared (Bool): determines if AFC is successfully prepared.
         memory_array (MemoryArray): memory array aggregating current memory.
         destination (str): name of predetermined re-emission destination node, default None.
-        entangled_memory (Dict[str, Any]): tracks entanglement state of memory with a memory.
-        stored_photons (List[Dict]): photons stored in memory temporal modes.
+        entangled_memory (dict[str, Any]): tracks entanglement state of memory with a memory.
+        stored_photons (list[dict]): photons stored in memory temporal modes.
     """
 
     def __init__(self, name: str, timeline: "Timeline", frequency: float, absorption_efficiency: float,
@@ -569,7 +569,7 @@ class AbsorptiveMemory(Entity):
         self.excited_photons = []
 
         # initialization of stored_photons dictionary
-        self.stored_photons: List[Union[None, Dict]] = [None] * self.mode_number
+        self.stored_photons: list[None | dict] = [None] * self.mode_number
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
@@ -841,7 +841,7 @@ class AbsorptiveMemory(Entity):
 
         return self.expiration_event.time if self.expiration_event else inf
 
-    def notify(self, msg: Dict[str, Any]):
+    def notify(self, msg: dict[str, Any]):
         for observer in self._observers:
             observer.memory_expire(self)
 
@@ -870,7 +870,7 @@ class MemoryWithRandomCoherenceTime(Memory):
         coherence_time_stdev (float): standard deviation of coherence time
         wavelength (float): wavelength (in nm) of emitted photons.
         qstate_key (int): key for associated quantum state in timeline's quantum manager.
-        entangled_memory (Dict[str, Any]): tracks entanglement state of memory.
+        entangled_memory (dict[str, Any]): tracks entanglement state of memory.
     """
 
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,

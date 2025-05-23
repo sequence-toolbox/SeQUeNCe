@@ -1,4 +1,3 @@
-from typing import List
 from sequence.kernel.process import Process
 from sequence.kernel.event import Event
 from sequence.topology.qlan_star_topo import QlanStarTopo
@@ -12,7 +11,7 @@ class QlanApp:
     """A simple app for QLAN
        NOTE: this app has access to both orchestrator and each of the clients, it is a 'global app'
     """
-    def __init__(self, tl: "Timeline", orchestrator: "QlanOrchestratorNode", clients: List["QlanClientNode"]):
+    def __init__(self, tl: "Timeline", orchestrator: "QlanOrchestratorNode", clients: list["QlanClientNode"]):
         self.orch = orchestrator
         self.orch.set_app(self)
         self.clients = clients
