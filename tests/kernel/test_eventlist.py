@@ -1,10 +1,17 @@
+from numpy import random
 from sequence.kernel.event import Event
 from sequence.kernel.eventlist import EventList
-from numpy import random
-
+from sequence.kernel.process import Process
 
 MAX_TS = 100
 MIN_TS = 0
+
+class FakeOwner:
+    def action(self):
+        pass
+
+owner = FakeOwner()
+process = Process(owner, 'action', [])
 
 
 def generate_event_list_with_random_time(seed: int, length: int) -> EventList:
@@ -12,16 +19,16 @@ def generate_event_list_with_random_time(seed: int, length: int) -> EventList:
     times = list(random.randint(MIN_TS, MAX_TS, length))
     el = EventList()
     for t in times:
-        e = Event(t, None)
+        e = Event(t, process)
         el.push(e)
     return el
 
 
 def test_push():
     el = EventList()
-    e = Event(0, None)
+    e = Event(0, process)
     el.push(e)
-    e = Event(0, None, 1)
+    e = Event(0, process, 1)
     el.push(e)
 
 
@@ -37,7 +44,7 @@ def test_pop():
     priorities = list(random.randint(MIN_TS, MAX_TS, 10))
     el = EventList()
     for p in priorities:
-        e = Event(5, None, p)
+        e = Event(5, process, p)
         el.push(e)
     last_priority = -float("inf")
     while not el.isempty():
@@ -49,7 +56,7 @@ def test_pop():
 def test_isempty():
     el = EventList()
     assert el.isempty() is True
-    e = Event(0, None)
+    e = Event(0, process)
     el.push(e)
     assert el.isempty() is False
     e1 = el.pop()
@@ -59,7 +66,7 @@ def test_isempty():
 def test_len():
     el = EventList()
     assert len(el) == 0
-    e = Event(0, None)
+    e = Event(0, process)
     el.push(e)
     assert len(el) == 1
     e1 = el.pop()
@@ -69,8 +76,8 @@ def test_len():
 
 def test_remove():
     el = EventList()
-    e1 = Event(0, None)
-    e2 = Event(1, None)
+    e1 = Event(0, process)
+    e2 = Event(1, process)
     el.push(e1)
     el.push(e2)
     for e in el:
@@ -94,7 +101,7 @@ def test_update_event_time():
         e = EventList()
         ts = [random.randint(1, 100) for _ in range(i + 10)]
         for t in ts:
-            event = Event(t, None)
+            event = Event(t, process)
             e.push(event)
 
         index = random.randint(len(ts))
@@ -115,7 +122,7 @@ def test_update_event_time():
         e = EventList()
         ts = [random.randint(1, 100) for _ in range(i + 10)]
         for t in ts:
-            event = Event(t, None)
+            event = Event(t, process)
             e.push(event)
 
         index = random.randint(len(ts))
@@ -135,7 +142,7 @@ def test_update_event_time():
         e = EventList()
         ts = [random.randint(1, 100) for _ in range(i + 10)]
         for t in ts:
-            event = Event(t, None)
+            event = Event(t, process)
             e.push(event)
 
         index = random.randint(len(ts))

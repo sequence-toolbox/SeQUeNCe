@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .event import Event
 
-from heapq import heappush, heappop
+from heapq import heappop, heappush
 
 
 class EventList:
@@ -22,7 +22,7 @@ class EventList:
     """
 
     def __init__(self):
-        self.data = []
+        self.data: list["Event"] = []
 
     def __len__(self):
         return len(self.data)
@@ -57,7 +57,7 @@ class EventList:
         if time == event.time:
             return
 
-        def _pop_updated_event(heap: "list", index: int):
+        def _pop_updated_event(heap: list, index: int):
             parent_i = (index - 1) // 2
             while index > 0 and event < self.data[parent_i]:
                 heap[index], heap[parent_i] = heap[parent_i], heap[index]

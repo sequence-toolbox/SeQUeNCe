@@ -8,7 +8,7 @@ from _thread import start_new_thread
 from datetime import timedelta
 from math import inf
 from sys import stdout
-from time import time_ns, sleep
+from time import sleep, time_ns
 from typing import TYPE_CHECKING, Optional
 
 from numpy import random
@@ -18,7 +18,6 @@ if TYPE_CHECKING:
     from .entity import Entity
 
 from .eventlist import EventList
-from ..utils import log
 from .quantum_manager import (QuantumManagerKet,
                               QuantumManagerDensity,
                               QuantumManagerDensityFock,
@@ -28,6 +27,7 @@ from .quantum_manager import (QuantumManagerKet,
                               FOCK_DENSITY_MATRIX_FORMALISM,
                               BELL_DIAGONAL_STATE_FORMALISM)
 from ..constants import *
+from ..utils import log
 
 
 class Timeline:
@@ -55,7 +55,6 @@ class Timeline:
         show_progress (bool): show/hide the progress bar of simulation.
         quantum_manager (QuantumManager): quantum state manager.
     """
-
     def __init__(self, stop_time: int = inf, formalism = KET_STATE_FORMALISM, truncation = 1):
         """Constructor for timeline.
 

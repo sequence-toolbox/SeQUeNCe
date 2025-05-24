@@ -22,11 +22,10 @@ class Entity(ABC):
     Attributes:
         name (str): name of the entity.
         timeline (Timeline): the simulation timeline for the entity.
-        owner (Entity): another entity that owns or aggregates the current entity.
-        _observers (list): a list of observers for the entity.
+        owner (Entity | None): another entity that owns or aggregates the current entity.
+        _observers (list[Any]): a list of observers for the entity.
         _receivers (list[Entity]): a list of entities that receive photons from current component.
     """
-
     def __init__(self, name: str, timeline: "Timeline") -> None:
         """Constructor for entity class.
 
@@ -34,13 +33,11 @@ class Entity(ABC):
             name (str): name of entity.
             timeline (Timeline): timeline for simulation.
         """
-        self.name = "" if name is None else name
-        self.timeline = timeline
-        self.owner = None
-
-        self._receivers = []
-        self._observers = []
-
+        self.name: str                  = name
+        self.timeline: Timeline         = timeline
+        self.owner: "Entity" | None     = None
+        self._observers: list[Any]      = []
+        self._receivers: list["Entity"] = []
         timeline.add_entity(self)
 
     def __str__(self) -> str:
@@ -53,28 +50,23 @@ class Entity(ABC):
         Entity `init` methods are invoked for all timeline entities when the timeline is initialized.
         This method can be used to perform any necessary functions before simulation.
         """
-
         pass
 
     def add_receiver(self, receiver: "Entity") -> None:
         """Method to add a receiver (to receive photons)."""
-        
         self._receivers.append(receiver)
 
     def attach(self, observer: Any) -> None:
         """Method to add an observer (to receive hardware updates)."""
-
         if observer not in self._observers:
             self._observers.append(observer)
 
     def detach(self, observer: Any) -> None:
         """Method to remove an observer."""
-
         self._observers.remove(observer)
 
     def notify(self, info: dict[str, Any]) -> None:
         """Method to notify all attached observers of an update."""
-
         for observer in self._observers:
             observer.update(self, info)
 
@@ -88,7 +80,6 @@ class Entity(ABC):
             photon (Photon): photon received by the entity.
             **kwargs: other arguments required by a particular hardware component.
         """
-
         raise Exception("get method called on non-receiving class.")
 
     def remove_from_timeline(self) -> None:
@@ -114,7 +105,7 @@ class Entity(ABC):
         self.timeline.add_entity(self)
 
 
-class ClassicalEntity(ABC):
+class ClassicalEntity(Entity):
     """Abstract Entity class for purely classical entities.
     Entity should use the provided pseudo random number generator (PRNG) to
     produce reproducible random numbers. As a result, simulations with the same
@@ -135,10 +126,9 @@ class ClassicalEntity(ABC):
             name (str): name of entity.
             timeline (Timeline): timeline for simulation.
         """
-        self.name = "" if name is None else name
-        self.timeline = timeline
-        self.owner = None
-
+        self.name: str                       = name
+        self.timeline: Timeline              = timeline
+        self.owner: "ClassicalEntity" | None = None
         timeline.add_entity(self)
 
     def __str__(self) -> str:
@@ -151,7 +141,6 @@ class ClassicalEntity(ABC):
         Entity `init` methods are invoked for all timeline entities when the timeline is initialized.
         This method can be used to perform any necessary functions before simulation.
         """
-
         pass
 
     def remove_from_timeline(self) -> None:
@@ -175,3 +164,26 @@ class ClassicalEntity(ABC):
         self.remove_from_timeline()
         self.timeline = timeline
         self.timeline.add_entity(self)
+
+    @property
+    def _receivers(self):
+        raise AttributeError('ClassicalEntity does not support _receivers attribute')
+
+    @property
+    def _observers(self):
+        raise AttributeError('ClassicalEntity does not support _observers attribute')
+
+    def add_receiver(self, receiver):
+        raise NotImplementedError('ClassicalEntity does not support add_receiver method')
+    
+    def attach(self, observer):
+        raise NotImplementedError('ClassicalEntity does not support attach method')
+
+    def detach(self, observer):
+        raise NotImplementedError('ClassicalEntity does not support detach method')
+    
+    def notify(self, info):
+        raise NotImplementedError('ClassicalEntity does not support notify method')
+    
+    def get(self, photon, **kwargs):
+        raise NotImplementedError('ClassicalEntity does not support get method')
