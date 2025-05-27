@@ -1,3 +1,6 @@
+from typing import Any, cast
+
+import pytest
 from numpy.random import default_rng
 from numpy.random._generator import Generator
 
@@ -12,7 +15,7 @@ class FakeOwnerNoGen:
 
 class FakeOwner:
     def __init__(self):
-        self.generator = None
+        self.generator: Generator | None = None
 
     def get_generator(self):
         return self.generator
@@ -32,71 +35,51 @@ class Bar(ClassicalEntity):
         pass
 
 
-def test_get_generator():
+@pytest.mark.parametrize(["EntityType"], [(Foo, ), (Bar, )])
+def test_get_generator(EntityType: type[Foo | Bar]):
     tl = Timeline()
 
-    # Entity
+    # no owner
+    ent = EntityType("ent0", tl)
+    assert isinstance(ent.get_generator(), Generator)
 
     # owner does not have generator
-    owner = FakeOwnerNoGen()
-    foo = Foo("foo", tl)
-    foo.owner = owner
-    assert isinstance(foo.get_generator(), Generator)
+    owner1 = FakeOwnerNoGen()
+    ent = EntityType("ent1", tl)
+    ent.owner = cast(Any, owner1)
+    assert isinstance(ent.get_generator(), Generator)
 
     # owner has generator
     rng = default_rng()
-    owner = FakeOwner()
-    owner.generator = rng
-    foo = Foo("foo2", tl)
-    foo.owner = owner
-    assert foo.get_generator() == rng
-
-    # ClassicalEntity
-
-    # owner does not have generator
-    owner = FakeOwnerNoGen()
-    bar = Bar("bar", tl)
-    bar.owner = owner
-    assert isinstance(bar.get_generator(), Generator)
-
-    # owner has generator
-    rng = default_rng()
-    owner = FakeOwner()
-    owner.generator = rng
-    bar = Bar("bar2", tl)
-    bar.owner = owner
-    assert bar.get_generator() == rng
+    owner2 = FakeOwner()
+    owner2.generator = rng
+    ent = EntityType("ent2", tl)
+    ent.owner = cast(Any, owner2)
+    assert ent.get_generator() == rng
 
 
-def test_change_timeline():
+@pytest.mark.parametrize(["EntityType"], [(Foo, ), (Bar, )])
+def test_change_timeline(EntityType: type[Foo | Bar]):
     tl1 = Timeline()
     tl2 = Timeline()
 
     # Entitity
 
-    ENTITY_NAME = "foo"
-    foo = Foo(ENTITY_NAME, tl1)
-    assert foo.timeline == tl1
-    assert tl1.get_entity_by_name(ENTITY_NAME) == foo
+    ENTITY_NAME = "ent"
+    ent = EntityType(ENTITY_NAME, tl1)
+    assert ent.timeline == tl1
+    assert tl1.get_entity_by_name(ENTITY_NAME) == ent
     assert tl2.get_entity_by_name(ENTITY_NAME) is None
 
-    foo.change_timeline(tl2)
-    assert foo.timeline == tl2
+    ent.change_timeline(tl2)
+    assert ent.timeline == tl2
     assert tl1.get_entity_by_name(ENTITY_NAME) is None
-    assert tl2.get_entity_by_name(ENTITY_NAME) == foo
+    assert tl2.get_entity_by_name(ENTITY_NAME) == ent
 
-    # ClassicalEntity
 
-    ENTITY_NAME = "bar"
-    bar = Bar(ENTITY_NAME, tl1)
-    assert bar.timeline == tl1
-    assert tl1.get_entity_by_name(ENTITY_NAME) == bar
-    assert tl2.get_entity_by_name(ENTITY_NAME) is None
-
-    bar.change_timeline(tl2)
-    assert bar.timeline == tl2
-    assert tl1.get_entity_by_name(ENTITY_NAME) is None
-    assert tl2.get_entity_by_name(ENTITY_NAME) == bar
+def test_classical_entity_unsupported():
+    tl = Timeline()
+    bar = Bar("bar", tl)
 
     observer = FakeObserver()
 

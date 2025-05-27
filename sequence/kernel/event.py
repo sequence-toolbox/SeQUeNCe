@@ -5,7 +5,7 @@ Events should be scheduled through the timeline to take effect.
 """
 
 from math import inf
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from .process import Process
@@ -24,7 +24,9 @@ class Event:
         _is_removed (bool): the flag to denotes if it's a valid event
     """
 
-    def __init__(self, time: int, process: "Process", priority=inf):
+    PRIORITY_LOWEST = cast(int, inf)
+
+    def __init__(self, time: int, process: "Process", priority: int = PRIORITY_LOWEST):
         """Constructor for event class.
 
         Args:
@@ -33,9 +35,9 @@ class Event:
             priority (int): the priority of the event, lower value denotes a higher priority (default inf).
         """
 
-        self.time = time
-        self.priority = priority
-        self.process = process
+        self.time: int = time
+        self.priority: int = priority
+        self.process: "Process" = process
         self._is_removed = False
 
     def __eq__(self, another):

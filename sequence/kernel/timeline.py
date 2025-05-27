@@ -9,13 +9,14 @@ from datetime import timedelta
 from math import inf
 from sys import stdout
 from time import sleep, time_ns
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, cast
 
 from numpy import random
 
 if TYPE_CHECKING:
     from .event import Event
     from .entity import Entity
+    from .quantum_manager import QuantumManager
 
 from ..constants import *
 from ..utils import log
@@ -53,7 +54,10 @@ class Timeline:
         show_progress (bool): show/hide the progress bar of simulation.
         quantum_manager (QuantumManager): quantum state manager.
     """
-    def __init__(self, stop_time: int = inf, formalism = KET_STATE_FORMALISM, truncation = 1):
+
+    STOP_TIME_INFINITE = cast(int, inf)
+
+    def __init__(self, stop_time: int = STOP_TIME_INFINITE, formalism=KET_STATE_FORMALISM, truncation=1):
         """Constructor for timeline.
 
         Args:
@@ -69,11 +73,12 @@ class Timeline:
         self.run_counter: int = 0
         self.is_running: bool = False
         self.show_progress: bool = False
+        self.quantum_manager: "QuantumManager"
         self.set_quantum_manager(formalism, truncation)
-        
+
     def set_quantum_manager(self, formalism: str, truncation: int = 1) -> None:
         """Update the formalism
-        
+
         Args:
             formalism (str): the formalism.
             truncation (int): truncation of Hilbert space (currently only for Fock representation).
@@ -83,7 +88,8 @@ class Timeline:
         elif formalism == DENSITY_MATRIX_FORMALISM:
             self.quantum_manager = QuantumManagerDensity()
         elif formalism == FOCK_DENSITY_MATRIX_FORMALISM:
-            self.quantum_manager = QuantumManagerDensityFock(truncation=truncation)
+            self.quantum_manager = QuantumManagerDensityFock(
+                truncation=truncation)
         elif formalism == BELL_DIAGONAL_STATE_FORMALISM:
             self.quantum_manager = QuantumManagerBellDiagonal()
         else:
@@ -131,15 +137,16 @@ class Timeline:
                 continue
 
             self.time = event.time
-            
-            log.logger.debug("Event #{}: process owner={}, activation={}".format(self.run_counter, event.process.owner, event.process.activation))
+
+            log.logger.debug("Event #{}: process owner={}, activation={}".format(
+                self.run_counter, event.process.owner, event.process.activation))
             event.process.run()
             self.run_counter += 1
 
         self.is_running = False
         time_elapsed = time_ns() - tick
         log.logger.info("Timeline end simulation. Execution Time: {}; Scheduled Event: {}; Executed Event: {}".format(
-                         self.ns_to_human_time(time_elapsed), self.schedule_counter, self.run_counter))
+            self.ns_to_human_time(time_elapsed), self.schedule_counter, self.run_counter))
 
     def stop(self) -> None:
         """Method to stop simulation."""
@@ -166,9 +173,9 @@ class Timeline:
 
     def remove_entity_by_name(self, name: str) -> None:
         entity = self.entities.pop(name)
-        entity.timeline = None
+        entity.timeline = None  # type: ignore
 
-    def get_entity_by_name(self, name: str) -> Optional["Entity"]:
+    def get_entity_by_name(self, name: str) -> "Entity|None":
         return self.entities.get(name, None)
 
     @staticmethod
@@ -188,8 +195,10 @@ class Timeline:
 
         while self.is_running:
             execution_time = self.ns_to_human_time(time_ns() - start_time)
-            simulation_time = self.ns_to_human_time(self.convert_to_nanoseconds(self.time))
-            stop_time = 'NaN' if self.stop_time == float('inf') else self.ns_to_human_time(self.convert_to_nanoseconds(self.stop_time))
+            simulation_time = self.ns_to_human_time(
+                self.convert_to_nanoseconds(self.time))
+            stop_time = 'NaN' if self.stop_time == float('inf') else self.ns_to_human_time(
+                self.convert_to_nanoseconds(self.stop_time))
             process_bar = f'{CARRIAGE_RETURN}execution time: {execution_time};     simulation time: {simulation_time} / {stop_time}'
 
             print(f'{process_bar}', end=CARRIAGE_RETURN)
