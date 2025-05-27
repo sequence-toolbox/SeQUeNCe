@@ -17,17 +17,15 @@ if TYPE_CHECKING:
     from .event import Event
     from .entity import Entity
 
-from .eventlist import EventList
-from .quantum_manager import (QuantumManagerKet,
-                              QuantumManagerDensity,
-                              QuantumManagerDensityFock,
-                              QuantumManagerBellDiagonal,
-                              KET_STATE_FORMALISM,
-                              DENSITY_MATRIX_FORMALISM,
-                              FOCK_DENSITY_MATRIX_FORMALISM,
-                              BELL_DIAGONAL_STATE_FORMALISM)
 from ..constants import *
 from ..utils import log
+from .eventlist import EventList
+from .quantum_manager import (BELL_DIAGONAL_STATE_FORMALISM,
+                              DENSITY_MATRIX_FORMALISM,
+                              FOCK_DENSITY_MATRIX_FORMALISM,
+                              KET_STATE_FORMALISM, QuantumManagerBellDiagonal,
+                              QuantumManagerDensity, QuantumManagerDensityFock,
+                              QuantumManagerKet)
 
 
 class Timeline:

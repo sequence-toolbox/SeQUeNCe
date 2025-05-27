@@ -1,4 +1,5 @@
 from numpy import random
+
 from sequence.kernel.event import Event
 from sequence.kernel.eventlist import EventList
 from sequence.kernel.process import Process
@@ -6,9 +7,11 @@ from sequence.kernel.process import Process
 MAX_TS = 100
 MIN_TS = 0
 
+
 class FakeOwner:
     def action(self):
         pass
+
 
 owner = FakeOwner()
 process = Process(owner, 'action', [])

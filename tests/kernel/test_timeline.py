@@ -1,4 +1,5 @@
 from math import inf
+
 from numpy import random
 
 from sequence.kernel.entity import Entity

@@ -5,12 +5,13 @@ This module defines the Entity class, inherited by all physical simulation eleme
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
+
 from numpy.random import default_rng
 from numpy.random._generator import Generator
 
 if TYPE_CHECKING:
-    from .timeline import Timeline
     from ..components.photon import Photon
+    from .timeline import Timeline
 
 
 class Entity(ABC):
