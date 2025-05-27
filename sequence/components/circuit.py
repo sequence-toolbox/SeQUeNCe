@@ -7,9 +7,9 @@ from math import e, pi, sqrt
 from typing import Optional
 
 import numpy as np
+from qutip import Qobj
 from qutip_qip.circuit import QubitCircuit
 from qutip_qip.operations import gate_sequence_product
-from qutip import Qobj
 
 GATE_INFO_TYPE = list[str | list[int] | float]
 
@@ -37,30 +37,36 @@ def s_gate():
                     [0., 1.j]])
     return Qobj(mat, dims=[[2], [2]])
 
+
 def sdg_gate():
     mat = np.array([[1.,   0],
                     [0., -1.j]])
     return Qobj(mat, dims=[[2], [2]])
+
 
 def t_gate():
     mat = np.array([[1.,   0],
                     [0., e ** (1.j * (pi / 4))]])
     return Qobj(mat, dims=[[2], [2]])
 
+
 def root_iZ_gate():
     mat = 1/sqrt(2)*np.array([[1.+1.j,   0],
                               [0, 1.-1.j]])
     return Qobj(mat, dims=[[2], [2]])
+
 
 def minus_root_iZ_gate():
     mat = 1/sqrt(2)*np.array([[1.-1.j,   0],
                               [0, 1.+1.j]])
     return Qobj(mat, dims=[[2], [2]])
 
+
 def root_iY_gate():
     mat = 1/sqrt(2)*np.array([[1.,   1.],
                               [-1., 1.]])
     return Qobj(mat, dims=[[2], [2]])
+
 
 def minus_root_iY_gate():
     mat = 1/sqrt(2)*np.array([[1.,   -1.],
@@ -136,11 +142,13 @@ class Circuit:
                 elif name == 'z':
                     qc.add_gate('Z', indices[0])
                 elif name == 'cx':
-                    qc.add_gate('CNOT', controls=indices[0], targets=indices[1])
+                    qc.add_gate(
+                        'CNOT', controls=indices[0], targets=indices[1])
                 elif name == 'cz':
                     qc.add_gate('CZ', controls=indices[0], targets=indices[1])
                 elif name == 'ccx':
-                    qc.add_gate('TOFFOLI', controls=indices[:2], targets=indices[2])
+                    qc.add_gate(
+                        'TOFFOLI', controls=indices[:2], targets=indices[2])
                 elif name == 'swap':
                     qc.add_gate('SWAP', indices)
                 elif name == 't':
@@ -285,7 +293,7 @@ class Circuit:
         """
 
         self.gates.append(['s', [qubit], None])
-    
+
     @validator
     def sdg(self, qubit: int):
         """Method to apply single Sdg gate on a qubit.
@@ -335,7 +343,7 @@ class Circuit:
         """
 
         self.gates.append(['minus_root_iY', [qubit], None])
-    
+
     @validator
     def phase(self, qubit: int, theta: float):
         """Method to apply a phase gate to a qubit.

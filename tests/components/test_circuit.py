@@ -1,9 +1,10 @@
-import numpy as np
 from math import sqrt
 
-from sequence.components.circuit import Circuit
+import numpy as np
 from numpy import array, array_equal, identity
 from pytest import raises
+
+from sequence.components.circuit import Circuit
 
 
 def test_h():
@@ -127,7 +128,8 @@ def test_phase():
     circuit = Circuit(1)
     circuit.phase(0, np.pi/2)
     expect = array([[1, 0], [0, complex(0, 1)]])
-    assert np.allclose(expect, circuit.get_unitary_matrix())  # array_equal() return False
+    assert np.allclose(expect, circuit.get_unitary_matrix()
+                       )  # array_equal() return False
 
 
 def test_measure():
