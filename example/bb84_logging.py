@@ -21,7 +21,7 @@ tl.show_progress = True
 log.set_logger(__name__, tl, log_filename)
 log.set_logger_level('DEBUG')
 log.track_module('BB84')
-log.track_module('timeline')
+# log.track_module('timeline')
 log.track_module('light_source')
 
 qc0 = QuantumChannel("qc0", tl, distance=distance, polarization_fidelity=0.97, attenuation=0.0002)

@@ -6,7 +6,7 @@ Thank you for downloading SeQUeNCe and welcome to the tutorial section of the do
 
 ### Python Version
 
-The simulator requires at least version **3.9** of Python. This can be found at the [Python Website](https://www.python.org/downloads/).
+The simulator requires at least version **3.10** of Python. This can be found at the [Python Website](https://www.python.org/downloads/).
 
 ### Dependencies
 

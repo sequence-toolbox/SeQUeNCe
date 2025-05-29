@@ -229,3 +229,75 @@ for t in [15, 32, 52]:
     print(store.opening)
 # True, True, False
 ```
+
+## Logging
+
+To help track the numerous events that could be occurring during our simulation, and errors of varying levels of severity, we can use SeQUeNCe's **logging**, based off of Python's built-in logging system. This system has 5 built-in log levels, which in increasing level of significance are DEBUG, INFO, WARNING, ERROR, and CRITICAL. **DEBUG** is detailed information about the working of the program, **INFO** is specific important steps that are occuring, **WARNING** indicates an unexpected but non-detrimental issue is occuring, **ERROR** indicates some bug is causing a method to malfunction, and **CRITICIAL** indicates that some bug is halting the ability of the program to run at all. One should note that the default is for the 'log level' to be set to WARNING such that only logs of level WARNING or above are noticed. Now, we want to include logging in the `Store` class and must decide which occurances must be at which levels. As there are really only two things to log here, we only include INFO and WARNING levels:
+
+* INFO: As the logging level meant to notate important steps, INFO will record each time the `self.opening` value changes.
+* WARNING: As the logging level with fine but unexpected occurances, WARNING will record each time the `open()` or `close()` methods are called when the store is already respectively open or closed. 
+
+Now, we update the `Store` class:
+
+```python
+from sequence.kernel.timeline import Timeline
+from sequence.kernel.event import Event
+from sequence.kernel.process import Process
+
+import sequence.utils.log as log
+
+log.set_logger_level('DEBUG') # to ensure all logs are noted
+
+class Store(object):
+    def __init__(self, tl: Timeline):
+        self.opening = False
+        self.timeline = tl
+
+    def open(self) -> None:
+        if self.timeline.now() >= 60:
+            self.timeline.stop()
+        
+        log.logger.debug('Store being opened.')
+        if self.opening == True:
+            log.logger.warning('Store was already open.')
+
+        self.opening = True
+        process = Process(self, 'close', [])
+        event = Event(self.timeline.now() + 12, process)
+        self.timeline.schedule(event)
+
+    def close(self) -> None:
+        if self.timeline.now() >= 60:
+            self.timeline.stop()
+
+        log.logger.debug('Store being closed.')
+        if self.opening == False:
+            log.logger.warning('Store was already closed.')
+
+        self.opening = False
+        process = Process(self, 'open', [])
+        event = Event(self.timeline.now() + 12, process)
+        self.timeline.schedule(event)
+```
+
+Then we will can run a simulation in a seperate file, using the earlier example, but now including loggers:
+
+```python
+tl = Timeline()
+tl.show_progress = False
+store = Store(tl)
+process = Process(store, 'open', [])
+event = Event(7, process)
+tl.schedule(event)
+```
+
+If we were to write `tl.run()`, it would result in the debug log 'Store being opened.' at time seven, and then each twelve steps onwards until 55, the log would alteralternate between the debug logs 'Store being closed.' and 'Store being opened.' with no other logs. Alternatively, if we were to start with the store opening at time seven, the first log would have been a warning log of 'Store was already closed.' as the store begins as closed.
+
+Python's native logger would print out these logs, but SeQUeNCe's version only adds them to the log record which we can save into a **.log** file. To do this, prior to running the simulation, we would include:
+
+```python
+log_filename = ''
+log.set_logger(__name__, tl, log_filename)
+log.track_module(store_file)
+```
+where store_file is the file in which the `Store` class is defined and `log_filename` is the file we are saving the log to.
