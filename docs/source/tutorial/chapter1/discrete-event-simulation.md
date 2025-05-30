@@ -243,12 +243,10 @@ Now, we update the `Store` class:
 from sequence.kernel.timeline import Timeline
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
-
 import sequence.utils.log as log
 
-log.set_logger_level('DEBUG') # to ensure all logs are noted
 
-class Store(object):
+class Store:
     def __init__(self, tl: Timeline):
         self.opening = False
         self.timeline = tl
@@ -257,7 +255,7 @@ class Store(object):
         if self.timeline.now() >= 60:
             self.timeline.stop()
         
-        log.logger.debug('Store being opened.')
+        log.logger.info('Store being opened.')
         if self.opening == True:
             log.logger.warning('Store was already open.')
 
@@ -270,7 +268,7 @@ class Store(object):
         if self.timeline.now() >= 60:
             self.timeline.stop()
 
-        log.logger.debug('Store being closed.')
+        log.logger.info('Store being closed.')
         if self.opening == False:
             log.logger.warning('Store was already closed.')
 
@@ -280,24 +278,35 @@ class Store(object):
         self.timeline.schedule(event)
 ```
 
-Then we will can run a simulation in a seperate file, using the earlier example, but now including loggers:
+Assume the class `Store` is in a file named `des_example3.py`. To let the logging system work, we need to use the following code.
 
 ```python
-tl = Timeline()
-tl.show_progress = False
-store = Store(tl)
-process = Process(store, 'open', [])
-event = Event(7, process)
-tl.schedule(event)
+if __name__ == '__main__':
+    tl = Timeline()
+    tl.show_progress = False
+    store = Store(tl)
+    process = Process(store, 'open', [])
+    event = Event(7, process)
+    tl.schedule(event)
+    
+    log_filename = 'store.log'
+    log.set_logger(__name__, tl, log_filename)
+    log.set_logger_level('INFO')
+    log.track_module('des_example3')
+    tl.run()
 ```
 
-If we were to write `tl.run()`, it would result in the debug log 'Store being opened.' at time seven, and then each twelve steps onwards until 55, the log would alteralternate between the debug logs 'Store being closed.' and 'Store being opened.' with no other logs. Alternatively, if we were to start with the store opening at time seven, the first log would have been a warning log of 'Store was already closed.' as the store begins as closed.
+The key parameters are:
+- `log_filename`: the name of the log file, which is `store.log` in this example
+- `level`: levels of severity, which is `INFO` in this example
+- `module`: the modules that we want to log, which is `des_example3` in this example, because we assumed class `Store` is written in the file named `des_example3.py`.
 
-Python's native logger would print out these logs, but SeQUeNCe's version only adds them to the log record which we can save into a **.log** file. To do this, prior to running the simulation, we would include:
-
-```python
-log_filename = ''
-log.set_logger(__name__, tl, log_filename)
-log.track_module(store_file)
+After running the code, and open the log file named `store.log`, we will see the following:
 ```
-where store_file is the file in which the `Store` class is defined and `log_filename` is the file we are saving the log to.
+7                    INFO    des_example3           Store being opened.
+19                   INFO    des_example3           Store being closed.
+31                   INFO    des_example3           Store being opened.
+43                   INFO    des_example3           Store being closed.
+55                   INFO    des_example3           Store being opened.
+67                   INFO    des_example3           Store being closed.
+```
