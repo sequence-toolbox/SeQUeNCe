@@ -5,7 +5,7 @@ The beam splitter receives photons with polarization encoding and forwards photo
 attached receivers (which can be any entity).
 """
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -33,7 +33,7 @@ class BeamSplitter(Entity):
         fidelity (float): probability of transmitting a received photon.
         start_time (int): start time (in ps) of photon interaction.
         frequency (float): frequency with which to switch measurement bases.
-        basis_list (List[int]): 0/1 indices of measurement bases over time.
+        basis_list (list[int]): 0/1 indices of measurement bases over time.
     """
 
     def __init__(self, name: str, timeline: "Timeline", fidelity=1):
@@ -79,7 +79,7 @@ class BeamSplitter(Entity):
                                  photon, self.get_generator())
             self._receivers[res].get(photon)
 
-    def set_basis_list(self, basis_list: List[int], start_time: int, frequency: float) -> None:
+    def set_basis_list(self, basis_list: list[int], start_time: int, frequency: float) -> None:
         """Sets the basis_list, start_time, and frequency attributes."""
 
         self.basis_list = basis_list
@@ -137,7 +137,7 @@ class FockBeamSplitter2(Entity):
         photon_counter (int): counter for counting photons
         src_list (str): a list of photon source names
     """
-    def __init__(self, name: str, owner: "Node", timeline: "Timeline", efficiency: float, photon_counter: int, src_list: List[str]):
+    def __init__(self, name: str, owner: "Node", timeline: "Timeline", efficiency: float, photon_counter: int, src_list: list[str]):
 
         Entity.__init__(self, name, timeline)
         self.owner = owner
@@ -177,7 +177,7 @@ class FockBeamSplitter2(Entity):
             selected_receiver.get_2x2(photon)
 
 
-    def add_outputs(self, outputs: List):
+    def add_outputs(self, outputs: list):
         """Add outputs, i.e., receivers
         
         Args:

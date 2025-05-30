@@ -1,7 +1,7 @@
-from sequence.kernel.entity import Entity, ClassicalEntity
-from sequence.kernel.timeline import Timeline
 from numpy.random import default_rng
 from numpy.random._generator import Generator
+from sequence.kernel.entity import Entity, ClassicalEntity
+from sequence.kernel.timeline import Timeline
 
 
 class FakeOwnerNoGen:
@@ -15,6 +15,10 @@ class FakeOwner:
 
     def get_generator(self):
         return self.generator
+
+
+class FakeObserver:
+    pass
 
 
 class Foo(Entity):
@@ -92,3 +96,15 @@ def test_change_timeline():
     assert bar.timeline == tl2
     assert tl1.get_entity_by_name(ENTITY_NAME) is None
     assert tl2.get_entity_by_name(ENTITY_NAME) == bar
+
+    observer = FakeObserver()
+
+    try:
+        bar._observers
+    except Exception as e:
+        assert type(e) is AttributeError
+
+    try:
+        bar.attach(observer)
+    except Exception as e:
+        assert type(e) is NotImplementedError

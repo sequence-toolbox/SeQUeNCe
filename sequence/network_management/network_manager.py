@@ -5,7 +5,7 @@ Also included in this module is the message type used by the network manager and
 """
 
 from enum import Enum
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
@@ -43,15 +43,15 @@ class NetworkManager:
     Attributes:
         name (str): name of the network manager instance.
         owner (QuantumRouter): node that protocol instance is attached to.
-        protocol_stack (List[StackProtocol]): network manager protocol stack.
+        protocol_stack (list[StackProtocol]): network manager protocol stack.
     """
 
-    def __init__(self, owner: "QuantumRouter", protocol_stack: "List[StackProtocol]"):
+    def __init__(self, owner: "QuantumRouter", protocol_stack: "list[StackProtocol]"):
         """Constructor for network manager.
 
         Args:
             owner (QuantumRouter): node network manager is attached to.
-            protocol_stack (List[StackProtocol]): stack of protocols to use for processing.
+            protocol_stack (list[StackProtocol]): stack of protocols to use for processing.
         """
 
         log.logger.info("Create network manager of Node {}".format(owner.name))
@@ -60,11 +60,11 @@ class NetworkManager:
         self.protocol_stack = protocol_stack
         self.load_stack(protocol_stack)
 
-    def load_stack(self, stack: "List[StackProtocol]"):
+    def load_stack(self, stack: "list[StackProtocol]"):
         """Method to load a defined protocol stack.
 
         Args:
-            stack (List[StackProtocol]): new protocol stack.
+            stack (list[StackProtocol]): new protocol stack.
         """
 
         self.protocol_stack = stack

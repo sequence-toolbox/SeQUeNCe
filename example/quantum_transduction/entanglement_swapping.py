@@ -7,7 +7,6 @@ from fock_quantum_channel import FockQuantumChannel
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.components.photon import Photon
-from typing import List
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 import matplotlib.pyplot as plt
@@ -101,7 +100,7 @@ class SenderNode(Node):
 
 class EntangleNode(Node):
     """The node in the middle for entanglement swapping"""
-    def __init__(self, name, timeline, src_list: List[str]):
+    def __init__(self, name, timeline, src_list: list[str]):
         super().__init__(name, timeline)
 
         # Hardware setup
@@ -161,7 +160,7 @@ if __name__ == "__main__":
 
     cumulative_time = START_TIME
 
-    # List to store results
+    # list to store results
     times = []
     detector_photon_counters_real = []
     spd_reals = []

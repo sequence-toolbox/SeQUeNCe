@@ -11,7 +11,7 @@ Entanglement generation is asymmetric:
 from __future__ import annotations
 from enum import Enum, auto
 from math import sqrt
-from typing import List, TYPE_CHECKING, Dict, Any
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..components.memory import Memory
@@ -129,7 +129,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         # memory info
         self.memory: Memory = memory
-        self.memories: List[Memory] = [memory]
+        self.memories: list[Memory] = [memory]
         self.remote_memo_id: str = ""  # memory index used by corresponding protocol on other node
 
         # network and hardware info
@@ -149,13 +149,13 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         self._qstate_key: int = self.memory.qstate_key
 
-    def set_others(self, protocol: str, node: str, memories: List[str]) -> None:
+    def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
         """Method to set other entanglement protocol instance.
 
         Args:
             protocol (str): other protocol name.
             node (str): other node name.
-            memories (List[str]): the list of memory names used on other node.
+            memories (list[str]): the list of memory names used on other node.
         """
         assert self.remote_protocol_name is None
         self.remote_protocol_name = protocol
@@ -388,28 +388,28 @@ class EntanglementGenerationB(EntanglementProtocol):
     Attributes:
         own (BSMNode): node that protocol instance is attached to.
         name (str): label for protocol instance.
-        others (List[str]): list of neighboring quantum router nodes
+        others (list[str]): list of neighboring quantum router nodes
     """
 
-    def __init__(self, owner: "BSMNode", name: str, others: List[str]):
+    def __init__(self, owner: "BSMNode", name: str, others: list[str]):
         """Constructor for entanglement generation B protocol.
 
         Args:
             own (Node): attached node.
             name (str): name of protocol instance.
-            others (List[str]): name of protocol instance on end nodes.
+            others (list[str]): name of protocol instance on end nodes.
         """
 
         super().__init__(owner, name)
         assert len(others) == 2
         self.others = others  # end nodes
 
-    def bsm_update(self, bsm: "SingleAtomBSM", info: Dict[str, Any]):
+    def bsm_update(self, bsm: "SingleAtomBSM", info: dict[str, Any]):
         """Method to receive detection events from BSM on node.
 
         Args:
             bsm (SingleAtomBSM): bsm object calling method.
-            info (Dict[str, any]): information passed from bsm.
+            info (dict[str, any]): information passed from bsm.
         """
 
         assert info['info_type'] == "BSM_res"
@@ -430,7 +430,7 @@ class EntanglementGenerationB(EntanglementProtocol):
     def start(self) -> None:
         pass
 
-    def set_others(self, protocol: str, node: str, memories: List[str]) -> None:
+    def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
         pass
 
     def is_ready(self) -> bool:

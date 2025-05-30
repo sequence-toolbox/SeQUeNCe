@@ -10,7 +10,6 @@ These include 2 classes used by a quantum manager, and one used for individual p
 
 import math
 from abc import ABC
-from typing import Tuple, Dict, List
 from numpy import pi, cos, sin, arange, log, log2
 from numpy.random import Generator
 
@@ -36,7 +35,7 @@ class State(ABC):
 
     Attributes:
         state (any): internal representation of the state, may vary by state type.
-        keys (List[int]): list of keys pointing to the state, for use with a quantum manager.
+        keys (list[int]): list of keys pointing to the state, for use with a quantum manager.
     """
 
     def __init__(self, **kwargs):
@@ -55,7 +54,7 @@ class State(ABC):
                                   json_data["state"][i + 1])
             self.state.append(complex_val)
 
-    def serialize(self) -> Dict:
+    def serialize(self) -> dict:
         res = {"keys": self.keys}
         state = []
         for cplx_n in self.state:
@@ -81,12 +80,12 @@ class KetState(State):
     Attributes:
         state (np.array): state vector. Should be of length d ** len(keys), where d is dimension of elementary
             Hilbert space. Default is 2 for qubits.
-        keys (List[int]): list of keys (subsystems) associated with this state.
+        keys (list[int]): list of keys (subsystems) associated with this state.
         truncation (int): maximally allowed number of excited states for elementary subsystems.
                 Default is 1 for qubit. dim = truncation + 1
     """
 
-    def __init__(self, amplitudes: List[complex], keys: List[int], truncation: int = 1):
+    def __init__(self, amplitudes: list[complex], keys: list[int], truncation: int = 1):
         """Constructor for ket state class.
 
         Args:
@@ -123,18 +122,18 @@ class DensityState(State):
     Attributes:
         state (np.array): density matrix values. NxN matrix with N = d ** len(keys), where d is dimension of elementary
             Hilbert space. Default is d = 2 for qubits.
-        keys (List[int]): list of keys (subsystems) associated with this state.
+        keys (list[int]): list of keys (subsystems) associated with this state.
         truncation (int): maximally allowed number of excited states for elementary subsystems.
             Default is 1 for qubit. dim = truncation + 1
     """
 
-    def __init__(self, state: List[List[complex]], keys: List[int], truncation: int = 1):
+    def __init__(self, state: list[list[complex]], keys: list[int], truncation: int = 1):
         """Constructor for density state class.
 
         Args:
-            state (List[List[complex]]): density matrix elements given as a list.
+            state (list[list[complex]]): density matrix elements given as a list.
                 If the list is one-dimensional, will be converted to matrix with outer product operation.
-            keys (List[int]): list of keys to this state in quantum manager.
+            keys (list[int]): list of keys to this state in quantum manager.
             truncation (int): maximally allowed number of excited states for elementary subsystems.
                 Default is 1 for qubit. dim = truncation + 1
         """
@@ -182,8 +181,8 @@ class FreeQuantumState(State):
     This module uses the ket vector formalism for storing and manipulating states.
 
     Attributes:
-        state (Tuple[complex]): list of complex coefficients in Z-basis.
-        entangled_states (List[QuantumState]): list of entangled states (including self).
+        state (tuple[complex]): list of complex coefficients in Z-basis.
+        entangled_states (list[QuantumState]): list of entangled states (including self).
     """
 
     def __init__(self):
@@ -224,11 +223,11 @@ class FreeQuantumState(State):
         self.state = (complex(cos(angle)), complex(sin(angle)))
 
     # only for use with entangled state
-    def set_state(self, state: Tuple[complex]):
+    def set_state(self, state: tuple[complex]):
         """Method to change entangled state of multiple quantum states.
 
         Args:
-            state (Tuple[complex]): new coefficients for state.
+            state (tuple[complex]): new coefficients for state.
                 Should be 2^n in length, where n is the length of `entangled_states`.
 
         Side Effects:
@@ -256,11 +255,11 @@ class FreeQuantumState(State):
             qs.state = state
 
     # for use with single, unentangled state
-    def set_state_single(self, state: Tuple[complex]):
+    def set_state_single(self, state: tuple[complex]):
         """Method to unentangle and set the state of a single quantum state object.
 
         Args:
-            state (Tuple[complex]): 2-element list of new complex coefficients.
+            state (tuple[complex]): 2-element list of new complex coefficients.
 
         Side Effects:
             Will remove current state from any entangled states (if present).
@@ -274,11 +273,11 @@ class FreeQuantumState(State):
         self.entangled_states = [self]
         self.state = state
 
-    def measure(self, basis: Tuple[Tuple[complex]], rng: Generator) -> int:
+    def measure(self, basis: tuple[tuple[complex]], rng: Generator) -> int:
         """Method to measure a single quantum state.
 
         Args:
-            basis (Tuple[Tuple[complex]]): measurement basis, given as list of states
+            basis (tuple[tuple[complex]]): measurement basis, given as list of states
                 (that are themselves lists of complex coefficients).
             rng (Generator): random number generator for measurement
 
@@ -327,8 +326,8 @@ class FreeQuantumState(State):
         May be used for bell state measurement.
 
         Args:
-            basis (List[List[complex]]): list of basis vectors.
-            states (List[QuantumState]): list of quantum state objects to measure.
+            basis (list[list[complex]]): list of basis vectors.
+            states (list[QuantumState]): list of quantum state objects to measure.
             rng (Generator): random number generator for measurement
 
         Returns:
@@ -387,16 +386,16 @@ class BellDiagonalState(State):
 
     Attributes:
         state (np.array): diagonal elements of 2-qubit density matrix in Bell bases. Should be of length 4.
-        keys (List[int]): list of keys (subsystems) associated with this state. Should be length 2.
+        keys (list[int]): list of keys (subsystems) associated with this state. Should be length 2.
     """
 
-    def __init__(self, diag_elems: List[float], keys: List[int]):
+    def __init__(self, diag_elems: list[float], keys: list[int]):
         """Constructor for Bell diagonal state class.
 
         Args:
-            diag_elems (List[float]): 4 diagonal elements of 2-qubit density matrix in Bell bases. 
+            diag_elems (list[float]): 4 diagonal elements of 2-qubit density matrix in Bell bases. 
                 Default order: Phi+, Phi-, Psi+, Psi- (i.e. I, Z, X, Y errors).
-            keys (List[int]): list of keys to this state in quantum manager. Should be length 2.
+            keys (list[int]): list of keys to this state in quantum manager. Should be length 2.
         """
         super().__init__()
 

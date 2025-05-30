@@ -4,7 +4,7 @@ from .photon import Photon
 from ..kernel.entity import Entity
 from ..utils.encoding import polarization
 
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
 
@@ -20,7 +20,7 @@ class Mirror(Entity):
         timeline (Timeline): timeline for simulation.
         fidelity (float): fraction of qubits not lost on the reflective surface
         destination (str): destination node for reflected photons
-        encoding_type (Dict[str, Any]): encoding scheme of emitted photons (as defined in the encoding module).
+        encoding_type (dict[str, Any]): encoding scheme of emitted photons (as defined in the encoding module).
         phase_error (float): phase error applied to qubits.
     """
 

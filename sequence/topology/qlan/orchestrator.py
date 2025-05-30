@@ -1,4 +1,3 @@
-from typing import List
 from ..node import Node
 from ...kernel.timeline import Timeline
 from ...components.memory import Memory
@@ -57,7 +56,7 @@ class QlanOrchestratorStateManager:
             QlanMeasurementProtocol(owner=self.owner, name='Measurement Protocol', tl=self.tl, local_memories=memory_objects, remote_memories = self.owner.remote_memory_names, bases = self.bases),
         ]
     
-    def generate_chain_state(self, tl, local_memories: List[Memory], remote_memories: List[Memory]):
+    def generate_chain_state(self, tl, local_memories: list[Memory], remote_memories: list[Memory]):
         """function for linear graph state generation (abstract generation, without real distribution of states, i.e., cheating)
            TODO: May be extended with teleportation protocols
         """
@@ -99,7 +98,7 @@ class QlanOrchestratorNode(Node):
         name (str): The name of the node.
         tl (Timeline): The timeline object.
         num_local_memories (int): The number of local memories to add as components.
-        remote_memories (List[Memory]): The list of remote memories to add as components. NOTE: orchestrator node should not have access to remote memory
+        remote_memories (list[Memory]): The list of remote memories to add as components. NOTE: orchestrator node should not have access to remote memory
         memo_fidelity (float): The fidelity of the memories.
         memo_frequency (int): The frequency of the memories.
         memo_efficiency (float): The efficiency of the memories.
@@ -108,15 +107,15 @@ class QlanOrchestratorNode(Node):
         bases (str): The set of bases.
     """
     
-    def __init__(self, name: str, tl: Timeline, num_local_memories: int, remote_memories: List[Memory], memo_fidelity = 0.9, memo_frequency: int = 2000, memo_efficiency: float = 1, memo_coherence_time: float = -1, memo_wavelength: float = 500):
+    def __init__(self, name: str, tl: Timeline, num_local_memories: int, remote_memories: list[Memory], memo_fidelity = 0.9, memo_frequency: int = 2000, memo_efficiency: float = 1, memo_coherence_time: float = -1, memo_wavelength: float = 500):
         """
         Initializes a new instance of the OrchestratorNode class.
 
         Args:
             name (str): The name of the node.
             tl (Timeline): The timeline object.
-            local_memories (List[Memory]): The list of local memories to add as components.
-            remote_memories (List[Memory]): The list of remote memories to add as components.
+            local_memories (list[Memory]): The list of local memories to add as components.
+            remote_memories (list[Memory]): The list of remote memories to add as components.
         """
         super().__init__(name, tl)
 
@@ -149,7 +148,7 @@ class QlanOrchestratorNode(Node):
         self.resource_manager = QlanOrchestratorStateManager(owner=self, tl=tl, memory_names=self.local_memory_names)
         self.resource_manager.generate_chain_state(tl, self.local_memories, remote_memories)
 
-    def find_adjacent_nodes(self, tl: "Timeline", remote_memories: List[Memory]):
+    def find_adjacent_nodes(self, tl: "Timeline", remote_memories: list[Memory]):
 
         self.adjacent_nodes = {}
         target_keys = list(range(len(remote_memories), len(remote_memories) + len(self.local_memory_names)))

@@ -9,7 +9,7 @@ The manager defines an API for interacting with quantum states.
 
 from __future__ import annotations
 from abc import abstractmethod
-from typing import List, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..components.circuit import Circuit
@@ -36,14 +36,14 @@ class QuantumManager:
     All states stored are of a single formalism (by default as a ket vector).
 
     Attributes:
-        states (Dict[int, State]): mapping of state keys to quantum state objects.
+        states (dict[int, State]): mapping of state keys to quantum state objects.
         truncation (int): maximally allowed number of excited states for elementary subsystems.
                 Default is 1 for qubit.
         dim (int): subsystem Hilbert space dimension. dim = truncation + 1
     """
 
     def __init__(self, formalism: str, truncation: int = 1):
-        self.states: Dict[int, State] = {}
+        self.states: dict[int, State] = {}
         self._least_available: int = 0
         self.formalism: str = formalism
         self.truncation = truncation
@@ -73,23 +73,23 @@ class QuantumManager:
         return self.states[key]
 
     @abstractmethod
-    def run_circuit(self, circuit: Circuit, keys: List[int], meas_samp=None) -> Dict[int, int]:
+    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> dict[int, int]:
         """Method to run a circuit on a given set of quantum states.
 
         Args:
             circuit (Circuit): quantum circuit to apply.
-            keys (List[int]): list of keys for quantum states to apply circuit to.
+            keys (list[int]): list of keys for quantum states to apply circuit to.
             meas_samp (float): random sample used for measurement.
 
         Returns:
-            Dict[int, int]: dictionary mapping qstate keys to measurement results.
+            dict[int, int]: dictionary mapping qstate keys to measurement results.
         """
 
         assert len(keys) == circuit.size, "mismatch between circuit size and supplied qubits"
         if len(circuit.measured_qubits) > 0:
             assert meas_samp, "must specify random sample when measuring qubits"
 
-    def _prepare_circuit(self, circuit: Circuit, keys: List[int]):
+    def _prepare_circuit(self, circuit: Circuit, keys: list[int]):
         old_states = []
         all_keys = []
 
@@ -131,11 +131,11 @@ class QuantumManager:
         return all_keys, swap_mat
 
     @abstractmethod
-    def set(self, keys: List[int], amplitudes: any) -> None:
+    def set(self, keys: list[int], amplitudes: any) -> None:
         """Method to set quantum state at a given key(s).
 
         Args:
-            keys (List[int]): key(s) of state(s) to change.
+            keys (list[int]): key(s) of state(s) to change.
             amplitudes (any): Amplitudes to set state to, type determined by type of subclass.
         """
 
@@ -160,7 +160,7 @@ class QuantumManager:
         """Method to remove state stored at key."""
         del self.states[key]
 
-    def set_states(self, states: Dict):
+    def set_states(self, states: dict):
         self.states = states
 
 
@@ -176,7 +176,7 @@ class QuantumManagerKet(QuantumManager):
         self.states[key] = KetState(state, [key])
         return key
 
-    def run_circuit(self, circuit: Circuit, keys: List[int], meas_samp=None) -> Dict[int, int]:
+    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> dict[int, int]:
         super().run_circuit(circuit, keys, meas_samp)
         new_state, all_keys, circ_mat = self._prepare_circuit(circuit, keys)
 
@@ -193,7 +193,7 @@ class QuantumManagerKet(QuantumManager):
             keys = [all_keys[i] for i in circuit.measured_qubits]
             return self._measure(new_state, keys, all_keys, meas_samp)
 
-    def set(self, keys: List[int], amplitudes: List[complex]) -> None:
+    def set(self, keys: list[int], amplitudes: list[complex]) -> None:
         super().set(keys, amplitudes)
         new_state = KetState(amplitudes, keys)
         for key in keys:
@@ -205,21 +205,21 @@ class QuantumManagerKet(QuantumManager):
     def set_to_one(self, key: int):
         self.set([key], [complex(0), complex(1)])
 
-    def _measure(self, state: List[complex], keys: List[int],
-                 all_keys: List[int], meas_samp: float) -> Dict[int, int]:
+    def _measure(self, state: list[complex], keys: list[int],
+                 all_keys: list[int], meas_samp: float) -> dict[int, int]:
         """Method to measure qubits at given keys.
 
         SHOULD NOT be called individually; only from circuit method (unless for unit testing purposes).
         Modifies quantum state of all qubits given by all_keys.
 
         Args:
-            state (List[complex]): state to measure.
-            keys (List[int]): list of keys to measure.
-            all_keys (List[int]): list of all keys corresponding to state.
+            state (list[complex]): state to measure.
+            keys (list[int]): list of keys to measure.
+            all_keys (list[int]): list of all keys corresponding to state.
             meas_samp (float): random sample used for measurement result.
 
         Returns:
-            Dict[int, int]: mapping of measured keys to measurement results.
+            dict[int, int]: mapping of measured keys to measurement results.
         """
 
         if len(keys) == 1:
@@ -297,7 +297,7 @@ class QuantumManagerDensity(QuantumManager):
         self.states[key] = DensityState(state, [key])
         return key
 
-    def run_circuit(self, circuit: Circuit, keys: List[int], meas_samp=None) -> Dict[int, int]:
+    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> dict[int, int]:
         super().run_circuit(circuit, keys, meas_samp)
         new_state, all_keys, circ_mat = super()._prepare_circuit(circuit, keys)
 
@@ -314,15 +314,15 @@ class QuantumManagerDensity(QuantumManager):
             keys = [all_keys[i] for i in circuit.measured_qubits]
             return self._measure(new_state, keys, all_keys, meas_samp)
 
-    def set(self, keys: List[int], state: List[List[complex]]) -> None:
+    def set(self, keys: list[int], state: list[list[complex]]) -> None:
         """Method to set the quantum state at the given keys.
 
-        The `state` argument should be passed as List[List[complex]], where each internal list is a row.
+        The `state` argument should be passed as list[list[complex]], where each internal list is a row.
         However, the `state` may also be given as a one-dimensional pure state.
         If the list is one-dimensional, will be converted to matrix with the outer product operation.
 
         Args:
-            keys (List[int]): list of quantum manager keys to modify.
+            keys (list[int]): list of quantum manager keys to modify.
             state: quantum state to set input keys to.
         """
 
@@ -337,21 +337,21 @@ class QuantumManagerDensity(QuantumManager):
     def set_to_one(self, key: int):
         self.set([key], [[complex(0), complex(0)], [complex(0), complex(1)]])
 
-    def _measure(self, state: List[List[complex]], keys: List[int],
-                 all_keys: List[int], meas_samp: float) -> Dict[int, int]:
+    def _measure(self, state: list[list[complex]], keys: list[int],
+                 all_keys: list[int], meas_samp: float) -> dict[int, int]:
         """Method to measure qubits at given keys.
 
         SHOULD NOT be called individually; only from circuit method (unless for unit testing purposes).
         Modifies quantum state of all qubits given by all_keys.
 
         Args:
-            state (List[complex]): state to measure.
-            keys (List[int]): list of keys to measure.
-            all_keys (List[int]): list of all keys corresponding to state.
+            state (list[complex]): state to measure.
+            keys (list[int]): list of keys to measure.
+            all_keys (list[int]): list of all keys corresponding to state.
             meas_samp (float): random sample used for measurement result.
 
         Returns:
-            Dict[int, int]: mapping of measured keys to measurement results.
+            dict[int, int]: mapping of measured keys to measurement results.
         """
 
         if len(keys) == 1:
@@ -419,7 +419,7 @@ class QuantumManagerDensityFock(QuantumManager):
         """Method to create a new state with key
 
         Args:
-            state (Union[str, List[complex], List[List[complex]]]): amplitudes of new state.
+            state (str | list[complex] | list[list[complex]]): amplitudes of new state.
                 Default value is 'gnd': create zero-excitation state with current truncation.
                 Other inputs are passed to the constructor of `DensityState`.
         """
@@ -434,7 +434,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
         return key
 
-    def run_circuit(self, circuit: Circuit, keys: List[int], meas_samp=None) -> Dict[int, int]:
+    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> dict[int, int]:
         """Currently the Fock states do not support quantum circuits.
         This method is only to implement abstract method of parent class and SHOULD NOT be called after instantiation.
         """
@@ -464,17 +464,17 @@ class QuantumManagerDensityFock(QuantumManager):
 
         return swap_unitary
 
-    def _prepare_state(self, keys: List[int]):
+    def _prepare_state(self, keys: list[int]):
         """Function to prepare states at given keys for operator application.
 
         Will take composite quantum state and swap subsystems to correspond with listed keys.
         Should not be called directly, but from method to apply operator or measure state.
 
         Args:
-            keys (List[int]): keys for states to apply operator to.
+            keys (list[int]): keys for states to apply operator to.
 
         Returns:
-            Tuple(List[List[complex]], List[int]): Tuple containing:
+            tuple(list[list[complex]], list[int]): tuple containing:
                 1. new state to apply operator to, with keys swapped to be consecutive.
                 2. list of keys corresponding to new state.
         """
@@ -512,7 +512,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
         return new_state, all_keys
 
-    def _prepare_operator(self, all_keys: List[int], keys: List[int], operator) -> array:
+    def _prepare_operator(self, all_keys: list[int], keys: list[int], operator) -> array:
         # pad operator with identity
         left_dim = self.dim ** all_keys.index(keys[0])
         right_dim = self.dim ** (len(all_keys) - all_keys.index(keys[-1]) - 1)
@@ -525,21 +525,21 @@ class QuantumManagerDensityFock(QuantumManager):
 
         return prepared_operator
 
-    def apply_operator(self, operator: array, keys: List[int]):
+    def apply_operator(self, operator: array, keys: list[int]):
         prepared_state, all_keys = self._prepare_state(keys)
         prepared_operator = self._prepare_operator(all_keys, keys, operator)
         new_state = prepared_operator @ prepared_state @ prepared_operator.conj().T
         self.set(all_keys, new_state)
 
-    def set(self, keys: List[int], state: List[List[complex]]) -> None:
+    def set(self, keys: list[int], state: list[list[complex]]) -> None:
         """Method to set the quantum state at the given keys.
 
-        The `state` argument should be passed as List[List[complex]], where each internal list is a row.
+        The `state` argument should be passed as list[list[complex]], where each internal list is a row.
         However, the `state` may also be given as a one-dimensional pure state.
         If the list is one-dimensional, will be converted to matrix with the outer product operation.
 
         Args:
-            keys (List[int]): list of quantum manager keys to modify.
+            keys (list[int]): list of quantum manager keys to modify.
             state: quantum state to set input keys to.
         """
 
@@ -564,14 +564,14 @@ class QuantumManagerDensityFock(QuantumManager):
 
         return create, destroy
 
-    def measure(self, keys: List[int], povms: List[array], meas_samp: float) -> int:
+    def measure(self, keys: list[int], povms: list[array], meas_samp: float) -> int:
         """Method to measure subsystems at given keys in POVM formalism.
 
         Serves as wrapper for private `_measure` method, performing quantum manager specific operations.
 
         Args:
-            keys (List[int]): list of keys to measure.
-            povms: (List[array]): list of POVM operators to use for measurement.
+            keys (list[int]): list of keys to measure.
+            povms: (list[array]): list of POVM operators to use for measurement.
             meas_samp (float): random measurement sample to use for computing resultant state.
 
         Returns:
@@ -581,18 +581,18 @@ class QuantumManagerDensityFock(QuantumManager):
         new_state, all_keys = self._prepare_state(keys)
         return self._measure(new_state, keys, all_keys, povms, meas_samp)
 
-    def _measure(self, state: List[List[complex]], keys: List[int],
-                 all_keys: List[int], povms: List[array], meas_samp: float) -> int:
+    def _measure(self, state: list[list[complex]], keys: list[int],
+                 all_keys: list[int], povms: list[array], meas_samp: float) -> int:
         """Method to measure subsystems at given keys in POVM formalism.
 
         Modifies quantum state of all qubits given by all_keys, post-measurement operator determined
         by measurement operators which are chosen as square root of POVM operators.
 
         Args:
-            state (List[List[complex]]): state to measure.
-            keys (List[int]): list of keys to measure.
-            all_keys (List[int]): list of all keys corresponding to state.
-            povms: (List[array]): list of POVM operators to use for measurement.
+            state (list[list[complex]]): state to measure.
+            keys (list[int]): list of keys to measure.
+            all_keys (list[int]): list of all keys corresponding to state.
+            povms: (list[array]): list of POVM operators to use for measurement.
             meas_samp (float): random measurement sample to use for computing resultant state.
 
         Returns:
@@ -657,18 +657,18 @@ class QuantumManagerDensityFock(QuantumManager):
 
         return result
 
-    def _build_loss_kraus_operators(self, loss_rate: float, all_keys: List[int], key: int) -> List[array]:
+    def _build_loss_kraus_operators(self, loss_rate: float, all_keys: list[int], key: int) -> list[array]:
         """Method to build Kraus operators of a generalized amplitude damping channel.
 
         This represents the effect of photon loss.
 
         Args:
             loss_rate (float): loss rate for the quantum channel.
-            all_keys (List[int]): list of all keys in affected state.
+            all_keys (list[int]): list of all keys in affected state.
             key (int): key for subsystem experiencing loss.
 
         Returns:
-            List[array]: list of generated Kraus operators.
+            list[array]: list of generated Kraus operators.
         """
 
         assert 0 <= loss_rate <= 1
@@ -743,7 +743,7 @@ class QuantumManagerBellDiagonal(QuantumManager):
 
         return super().get(key)
 
-    def set(self, keys: List[int], diag_elems: List[float]) -> None:
+    def set(self, keys: list[int], diag_elems: list[float]) -> None:
         super().set(keys, diag_elems)
         # assert len(keys) == 2, "Bell diagonal states must have 2 keys."
         if len(keys) != 2:
@@ -756,5 +756,5 @@ class QuantumManagerBellDiagonal(QuantumManager):
         for key in keys:
             self.states[key] = new_state
 
-    def set_to_noiseless(self, keys: List[int]):
+    def set_to_noiseless(self, keys: list[int]):
         self.set(keys, [float(1), float(0), float(0), float(0)])

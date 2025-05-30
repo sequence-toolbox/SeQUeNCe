@@ -1,7 +1,7 @@
 """Entanglement protocol definition (abstract)"""
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..topology.node import Node
@@ -19,7 +19,7 @@ class EntanglementProtocol(Protocol):
         own (Node): Node object to attach to
         name (str): Name of the protocol instance
         rule (Rule): Rule which created this protocol instance (from the rule manager).
-        memories (List[Memory]): Any memories being operated on
+        memories (list[Memory]): Any memories being operated on
     """
 
     def __init__(self, owner: "Node", name: str):
@@ -28,13 +28,13 @@ class EntanglementProtocol(Protocol):
         self.memories = []
 
     @abstractmethod
-    def set_others(self, remote_protocol: str, remote_node: str, memories: List[str]) -> None:
+    def set_others(self, remote_protocol: str, remote_node: str, memories: list[str]) -> None:
         """Method to set other entanglement protocol instance.
 
         Args:
             remote_protocol (str): other protocol name.
             remote_node (str): other node name.
-            memories (List[str]): the list of memory names used on other node.
+            memories (list[str]): the list of memory names used on other node.
         """
 
         pass

@@ -103,7 +103,7 @@ def entangle_memory(tl, memories, n):
 
     Args:
         tl (Timeline): The timeline object.
-        memories (list[Memory]): List of memory objects.
+        memories (list[Memory]): list of memory objects.
         n (int): Number of memories.
 
     Returns:

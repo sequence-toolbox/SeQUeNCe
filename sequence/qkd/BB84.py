@@ -57,8 +57,8 @@ class BB84Message(Message):
         light_time (float): lenght of time to send qubits (if `msg_type == BEGIN_PHOTON_PULSE`).
         start_time (int): simulation start time of qubit pulse (if `msg_type == BEGIN_PHOTON_PULSE`).
         wavelength (float): wavelength (in nm) of photons (if `msg_type == BEGIN_PHOTON_PULSE`).
-        bases (List[int]): list of measurement bases (if `msg_type == BASIS_LIST`).
-        indices (List[int]): list of indices for matching bases (if `msg_type == MATCHING_INDICES`).
+        bases (list[int]): list of measurement bases (if `msg_type == BASIS_LIST`).
+        indices (list[int]): list of indices for matching bases (if `msg_type == MATCHING_INDICES`).
     """
 
     def __init__(self, msg_type: BB84MsgType, receiver: str, **kwargs):
@@ -93,14 +93,14 @@ class BB84(StackProtocol):
         light_time (float): time to use laser (in s).
         start_time (int): simulation start time of key generation.
         photon_delay (int): time delay of photon (ps).
-        basis_lists (List[int]): list of bases that qubits are sent in.
-        bit_lists (List[int]): list of 0/1 qubits sent (in bases from basis_lists).
+        basis_lists (list[int]): list of bases that qubits are sent in.
+        bit_lists (list[int]): list of 0/1 qubits sent (in bases from basis_lists).
         key (int): generated key as an integer.
-        key_bits (List[int]): generated key as a list of 0/1 bits.
+        key_bits (list[int]): generated key as a list of 0/1 bits.
         another (BB84): other BB84 protocol instance (on opposite node).
-        key_lengths (List[int]): list of desired key lengths.
-        self.keys_left_list (List[int]): list of desired number of keys.
-        self.end_run_times (List[int]): simulation time for end of each request.
+        key_lengths (list[int]): list of desired key lengths.
+        self.keys_left_list (list[int]): list of desired number of keys.
+        self.end_run_times (list[int]): simulation time for end of each request.
     """
 
     def __init__(self, owner: "QKDNode", name: str, lightsource: str, qsdetector: str, role=-1):
@@ -412,7 +412,7 @@ class BB84(StackProtocol):
                     self.another.working = False
 
     def set_key(self):
-        """Method to convert `bit_list` field (List[int]) to a single key (int)."""
+        """Method to convert `bit_list` field (list[int]) to a single key (int)."""
 
         key_bits = self.key_bits[0:self.key_lengths[0]]
         del self.key_bits[0:self.key_lengths[0]]

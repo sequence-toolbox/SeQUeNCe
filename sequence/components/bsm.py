@@ -6,7 +6,7 @@ Also defined is a function to automatically construct a BSM of a specified type.
 """
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..kernel.quantum_manager import QuantumManager
@@ -34,7 +34,7 @@ def make_bsm(name, timeline: "Timeline", encoding_type='time_bin', phase_error=0
         timeline (Timeline): timeline to be used for BSM instance.
         encoding_type (str): type of BSM to generate (default "time_bin").
         phase_error (float): error to apply to incoming qubits (default 0).
-        detectors (List[Dict[str, any]): list of detector objects given as dicts (default []).
+        detectors (list[dict[str, any]): list of detector objects given as dicts (default []).
     """
 
     if encoding_type == "polarization":
@@ -49,7 +49,7 @@ def make_bsm(name, timeline: "Timeline", encoding_type='time_bin', phase_error=0
         raise Exception("invalid encoding {} given for BSM {}".format(encoding_type, name))
 
 
-def _set_state_with_fidelity(keys: List[int], desired_state: List[complex], fidelity: float, rng, qm: "QuantumManager"):
+def _set_state_with_fidelity(keys: list[int], desired_state: list[complex], fidelity: float, rng, qm: "QuantumManager"):
     possible_states = [BSM._phi_plus, BSM._phi_minus,
                        BSM._psi_plus, BSM._psi_minus]
     assert desired_state in possible_states
@@ -72,7 +72,7 @@ def _set_state_with_fidelity(keys: List[int], desired_state: List[complex], fide
         raise Exception("Invalid quantum manager with formalism {}".format(qm.formalism))
 
 
-def _set_pure_state(keys: List[int], ket_state: List[complex], qm: "QuantumManager"):
+def _set_pure_state(keys: list[int], ket_state: list[complex], qm: "QuantumManager"):
     if qm.formalism == KET_STATE_FORMALISM:
         qm.set(keys, ket_state)
     elif qm.formalism == DENSITY_MATRIX_FORMALISM:
@@ -103,7 +103,7 @@ class BSM(Entity):
         name (str): label for BSM instance.
         timeline (Timeline): timeline for simulation.
         phase_error (float): phase error applied to measurement.
-        detectors (List[Detector]): list of attached photon detection devices.
+        detectors (list[Detector]): list of attached photon detection devices.
         resolution (int): maximum time resolution achievable with attached detectors.
     """
 
@@ -119,7 +119,7 @@ class BSM(Entity):
             name (str): name of the beamsplitter instance.
             timeline (Timeline): simulation timeline.
             phase_error (float): Phase error applied to polarization photons (default 0).
-            detectors (List[Dict[str, Any]]): List of parameters for attached detectors,
+            detectors (list[dict[str, Any]]): list of parameters for attached detectors,
                 in dictionary format (default None).
         """
 
@@ -180,17 +180,17 @@ class BSM(Entity):
             self.photons.append(photon)
 
     @abstractmethod
-    def trigger(self, detector: Detector, info: Dict[str, Any]):
+    def trigger(self, detector: Detector, info: dict[str, Any]):
         """Method to receive photon detection events from attached detectors (abstract).
 
         Arguments:
             detector (Detector): the source of the detection message.
-            info (Dict[str, Any]): the message from the source detector.
+            info (dict[str, Any]): the message from the source detector.
         """
 
         pass
 
-    def notify(self, info: Dict[str, Any]):
+    def notify(self, info: dict[str, Any]):
         for observer in self._observers:
             observer.bsm_update(self, info)
 
@@ -209,7 +209,7 @@ class PolarizationBSM(BSM):
         name (str): label for BSM instance.
         timeline (Timeline): timeline for simulation.
         phase_error (float): phase error applied to measurement.
-        detectors (List[Detector]): list of attached photon detection devices.
+        detectors (list[Detector]): list of attached photon detection devices.
     """
 
     def __init__(self, name, timeline, phase_error=0, detectors=None):
@@ -219,7 +219,7 @@ class PolarizationBSM(BSM):
             name (str): name of the BSM instance.
             timeline (Timeline): simulation timeline.
             phase_error (float): phase error applied to polarization photons (default 0).
-            detectors (List[Dict]): list of parameters for attached detectors,
+            detectors (list[dict]): list of parameters for attached detectors,
                 in dictionary format (must be of length 4) (default None).
         """
 
@@ -274,7 +274,7 @@ class PolarizationBSM(BSM):
         else:
             raise Exception("Invalid result from photon.measure_multiple")
 
-    def trigger(self, detector: Detector, info: Dict[str, Any]):
+    def trigger(self, detector: Detector, info: dict[str, Any]):
         """See base class.
 
         This method adds additional side effects not present in the base class.
@@ -310,7 +310,7 @@ class TimeBinBSM(BSM):
     Attributes:
         name (str): label for BSM instance
         timeline (Timeline): timeline for simulation
-        detectors (List[Detector]): list of attached photon detection devices
+        detectors (list[Detector]): list of attached photon detection devices
     """
 
     def __init__(self, name, timeline, phase_error=0, detectors=None):
@@ -320,7 +320,7 @@ class TimeBinBSM(BSM):
             name (str): name of the beamsplitter instance.
             timeline (Timeline): simulation timeline.
             phase_error (float): phase error applied to polarization qubits (unused) (default 0).
-            detectors (List[Dict]): list of parameters for attached detectors,
+            detectors (list[dict]): list of parameters for attached detectors,
                 in dictionary format (must be of length 2) (default None).
         """
 
@@ -388,7 +388,7 @@ class TimeBinBSM(BSM):
         else:
             raise Exception("Invalid result from photon.measure_multiple")
 
-    def trigger(self, detector: Detector, info: Dict[str, Any]):
+    def trigger(self, detector: Detector, info: dict[str, Any]):
         """See base class.
 
         This method adds additional side effects not present in the base class.
@@ -425,7 +425,7 @@ class SingleAtomBSM(BSM):
         name (str): label for BSM instance
         timeline (Timeline): timeline for simulation
         phase_error (float): phase error applied to measurement.
-        detectors (List[Detector]): list of attached photon detection devices
+        detectors (list[Detector]): list of attached photon detection devices
         resolution (int): maximum time resolution achievable with attached detectors  
     """
     _meas_circuit = Circuit(1)
@@ -438,7 +438,7 @@ class SingleAtomBSM(BSM):
             name (str): name of the beamsplitter instance.
             timeline (Timeline): simulation timeline.
             phase_error (float): phase error applied to polarization qubits (unused) (default 0).
-            detectors (List[Dict]): list of parameters for attached detectors,
+            detectors (list[dict]): list of parameters for attached detectors,
                 in dictionary format (must be of length 2) (default None).
         """
 
@@ -516,7 +516,7 @@ class SingleAtomBSM(BSM):
                 else:
                     log.logger.info(f'{self.name} lost photon p1')
 
-    def trigger(self, detector: Detector, info: Dict[str, Any]):
+    def trigger(self, detector: Detector, info: dict[str, Any]):
         """See base class.
 
         This method adds additional side effects not present in the base class.
@@ -541,7 +541,7 @@ class AbsorptiveBSM(BSM):
     Attributes:
         name (str): label for BSM instance
         timeline (Timeline): timeline for simulation
-        detectors (List[Detector]): list of attached photon detection devices (length 2).
+        detectors (list[Detector]): list of attached photon detection devices (length 2).
     """
 
     def __init__(self, name, timeline, phase_error=0, detectors=None):
@@ -592,7 +592,7 @@ class AbsorptiveBSM(BSM):
                 combined = other_keys_0 + other_keys_1
                 self.timeline.quantum_manager.set(combined, BSM._psi_plus)
 
-    def trigger(self, detector: Detector, info: Dict[str, Any]):
+    def trigger(self, detector: Detector, info: dict[str, Any]):
         """See base class.
 
         This method adds additional side effects not present in the base class.
@@ -629,18 +629,18 @@ class SingleHeraldedBSM(BSM):
     Attributes:
         name (str): label for BSM instance.
         timeline (Timeline): timeline for simulation.
-        detectors (List[Detector]): list of attached photon detection devices.
+        detectors (list[Detector]): list of attached photon detection devices.
         resolution (int): maximum time resolution achievable with attached detectors.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", phase_error: float = 0, detectors: List[dict] = None, success_rate: float = 0.5):
+    def __init__(self, name: str, timeline: "Timeline", phase_error: float = 0, detectors: list[dict] = None, success_rate: float = 0.5):
         """Constructor for the single atom BSM class.
 
         Args:
             name (str): name of the BSM instance.
             timeline (Timeline): simulation timeline.
             phase_error (float): phase error applied to polarization qubits (unused) (default 0).
-            detectors (List[Dict]): list of parameters for attached detectors, in dictionary format; must be of length 2
+            detectors (list[dict]): list of parameters for attached detectors, in dictionary format; must be of length 2
                 (default is None for default parameters).
         """
 
@@ -685,7 +685,7 @@ class SingleHeraldedBSM(BSM):
                 else:
                     log.logger.debug(f'{self.name}: photon lost (memory or optical fiber)')
 
-    def trigger(self, detector: Detector, info: Dict[str, Any]):
+    def trigger(self, detector: Detector, info: dict[str, Any]):
         """See base class.
 
         This method adds additional side effects not present in the base class.

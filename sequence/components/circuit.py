@@ -4,14 +4,14 @@ This module introduces the QuantumCircuit class. The qutip library is used to ca
 """
 
 from math import e, pi, sqrt
-from typing import List, Dict, Union, Optional
+from typing import Optional
 
 import numpy as np
 from qutip_qip.circuit import QubitCircuit
 from qutip_qip.operations import gate_sequence_product
 from qutip import Qobj
 
-GATE_INFO_TYPE = List[Union[str, List[int], float]]
+GATE_INFO_TYPE = list[str | list[int] | float]
 
 
 def x_gate():
@@ -86,8 +86,8 @@ class Circuit:
 
     Attributes:
         size (int): the number of qubits in the circuit.
-        gates (List[GATE_INFO_TYPE]): a list of commands bound to register.
-        measured_qubits (List[int]): a list of indices of measured qubits.
+        gates (list[GATE_INFO_TYPE]): a list of commands bound to register.
+        measured_qubits (list[int]): a list of indices of measured qubits.
     """
 
     def __init__(self, size: int) -> None:
@@ -98,8 +98,8 @@ class Circuit:
         """
 
         self.size: int = size
-        self.gates: List[GATE_INFO_TYPE] = []
-        self.measured_qubits: List[int] = []
+        self.gates: list[GATE_INFO_TYPE] = []
+        self.measured_qubits: list[int] = []
         self._cache: Optional[np.ndarray] = None
 
     def get_unitary_matrix(self) -> np.ndarray:
@@ -165,17 +165,17 @@ class Circuit:
 
         return self._cache
 
-    def serialize(self) -> Dict:
+    def serialize(self) -> dict:
         gates = [{"name": g_name, "indices": indices, "arg": arg}
                  for g_name, indices, arg in self.gates]
         return {"size": self.size, "gates": gates,
                 "measured_qubits": self.measured_qubits}
 
-    def deserialize(self, json_data: Dict):
+    def deserialize(self, json_data: dict):
         self.size = json_data["size"]
         for gate in json_data["gates"]:
             name: str = gate["name"]
-            indices: List[int] = gate["indices"]
+            indices: list[int] = gate["indices"]
             arg: float = gate["arg"]
             self.gates.append([name, indices, arg])
         self.measured_qubits = json_data["measured_qubits"]

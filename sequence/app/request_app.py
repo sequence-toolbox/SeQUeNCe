@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, List, Dict
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
@@ -29,8 +29,8 @@ class RequestApp:
             fidelity (float): the target fidelity of the entanglement
             reservation_result (bool): if network approves the request
             memory_counter (int): number of successfully received memories
-            path (List[str]): the path of flow denoted by a list of node names
-            memo_to_reserve (Dict[int, Reservation]): mapping of memory index to corresponding reservation.
+            path (list[str]): the path of flow denoted by a list of node names
+            memo_to_reserve (dict[int, Reservation]): mapping of memory index to corresponding reservation.
             name (str): the name of the app
     """
 
@@ -44,8 +44,8 @@ class RequestApp:
         self.fidelity: float = 0
         self.reservation_result: bool = False
         self.memory_counter: int = 0
-        self.path: List[str] = []
-        self.memo_to_reservation: Dict[int, Reservation] = {}
+        self.path: list[str] = []
+        self.memo_to_reservation: dict[int, Reservation] = {}
         self.name: str = f"{self.node.name}.RequestApp"
 
     def start(self, responder: str, start_t: int, end_t: int, memo_size: int, fidelity: float):

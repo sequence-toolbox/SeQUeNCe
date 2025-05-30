@@ -87,14 +87,14 @@ class QuantumGUI:
             though the gui uses the __dict__ of GraphNode (defined in graph_comp.py) for consistency.
         cc_delays (DataFrame): Pandas DataFrame which represents an adjacency matrix of classical channel time delays.
         qc_tdm (DataFrame): Pandas DataFrame which represents an adjacency matrix of quantum channel tdm frames.
-        defaults (Dict): Dictionary containing the default values of all node types.
-        templates (Dict): Dictionary containing any user defined templates, loaded from file or given as parameter.
-        edge_table (List[Dict]): A list of dictionaries which represents a table listing all edges in the current
+        defaults (dict): Dictionary containing the default values of all node types.
+        templates (dict): Dictionary containing any user defined templates, loaded from file or given as parameter.
+        edge_table (list[dict]): A list of dictionaries which represents a table listing all edges in the current
             network. Should not be directly edited.
-        node_table (List[Dict]): A list of dictionaries which represents a table listing all nodes in the current
+        node_table (list[dict]): A list of dictionaries which represents a table listing all nodes in the current
             network. Should not be directly edited.
-        edge_columns (List[str]): A list containing the column heading for the edge_table.
-        node_columns (List[str]): A list containing the column heading for the node_table.
+        edge_columns (list[str]): A list containing the column heading for the edge_table.
+        node_columns (list[str]): A list containing the column heading for the node_table.
     """
 
     def __init__(self, graph_in, templates=None, delays=None, tdm=None):
@@ -182,7 +182,7 @@ class QuantumGUI:
         For their use in a Dash DataTable.
 
         Args:
-            columns (List[str]): columns to convert to datatable column dictionary.
+            columns (list[str]): columns to convert to datatable column dictionary.
             case_norm (bool): whether to capitalize the columns displayed (default True).
         """
 
@@ -416,7 +416,7 @@ class QuantumGUI:
                 a string identifier for the source of the edge (must exist)
             node_to (str):
                 a string identifier for the destination of the edge (must exist)
-            attributes (List):
+            attributes (list):
                 a list of attributes of the given edge
                 (must be json serializable)
         """
@@ -483,7 +483,7 @@ class QuantumGUI:
                 a string identifier for the destination of the edge (must exist)
             type_in (str):
                 a string (Classical or Quantum) which identifies the type of edge
-            children (Dict[any,any]):
+            children (dict[any,any]):
                 raw user input read from the edge_properties form in menu
         """
 
@@ -508,7 +508,7 @@ class QuantumGUI:
         Returns it as a python dictionary that follows the format of a Cytoscape node
 
         Args:
-            children (Dict[any,any]):
+            children (dict[any,any]):
                 raw user input read from the edge_properties form in menu
         """
 
@@ -544,7 +544,7 @@ class QuantumGUI:
         """Function which parses input from the edit menu.
 
         Args:
-            children (Dict[any,any]):
+            children (dict[any,any]):
                 raw user input read from the edge_properties form in menu
         """
 
@@ -646,7 +646,7 @@ class QuantumGUI:
 
         Args:
             name (str): name for dash app.
-            vis_opts (Dict[str,any]): optional visualization parameters for the network graph.
+            vis_opts (dict[str,any]): optional visualization parameters for the network graph.
         """
 
         # create the app

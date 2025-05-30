@@ -12,7 +12,7 @@ Also defined in this module is the message type used by these protocols.
 """
 
 from enum import Enum, auto
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 from functools import lru_cache
 
 if TYPE_CHECKING:
@@ -127,13 +127,13 @@ class EntanglementSwappingA(EntanglementProtocol):
 
         return (self.left_protocol_name is not None) and (self.right_protocol_name is not None)
 
-    def set_others(self, protocol: str, node: str, memories: List[str]) -> None:
+    def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
         """Method to set other entanglement protocol instance.
 
         Args:
             protocol (str): other protocol name.
             node (str): other node name.
-            memories (List[str]): the list of memories name used on other node.
+            memories (list[str]): the list of memories name used on other node.
         """
 
         if node == self.left_memo.entangled_memory["node_id"]:
@@ -305,13 +305,13 @@ class EntanglementSwappingB(EntanglementProtocol):
     def is_ready(self) -> bool:
         return self.remote_protocol_name is not None
 
-    def set_others(self, protocol: str, node: str, memories: List[str]) -> None:
+    def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
         """Method to set other entanglement protocol instance.
 
         Args:
             protocol (str): other protocol name.
             node (str): other node name.
-            memories (List[str]): the list of memory names used on other node.
+            memories (list[str]): the list of memory names used on other node.
         """
         self.remote_node_name = node
         self.remote_protocol_name = protocol

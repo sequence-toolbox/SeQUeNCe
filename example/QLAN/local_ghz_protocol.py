@@ -57,7 +57,7 @@ class LocalGHZ3protocol(EntanglementProtocol):
         Args:
             protocol (str): Other protocol name.
             node (str): Other node name.
-            memories (List[str]): The list of memory names used on the other node.
+            memories (list[str]): The list of memory names used on the other node.
         """
         self.remote_node_name = node
         self.remote_protocol_name = protocol
@@ -152,7 +152,7 @@ class LocalGHZprotocol(EntanglementProtocol):
         Args:
             protocol (str): Other protocol name.
             node (str): Other node name.
-            memories (List[str]): The list of memory names used on the other node.
+            memories (list[str]): The list of memory names used on the other node.
         """
         self.remote_node_name = node
         self.remote_protocol_name = protocol

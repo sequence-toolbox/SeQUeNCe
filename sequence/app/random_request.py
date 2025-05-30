@@ -4,7 +4,7 @@ This module defines the RandomRequestApp, which will create random entanglement 
 Useful for testing network properties and throughputs.
 """
 from __future__ import annotations
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..network_management.reservation import Reservation
@@ -33,14 +33,14 @@ class RandomRequestApp(RequestApp):
 
     Attributes:
         node (QuantumRouter): Node that code is attached to.
-        others (List[str]): list of names for available other nodes.
+        others (list[str]): list of names for available other nodes.
         rg (numpy.random.default_rng): random number generator for application.
         request_time (int): simulation time at which current reservation requested.
         memory_counter (int): number of successfully received memories.
-        wait_time (List[int]): aggregates times between request and accepted reservation.
-        all_throughput (List[float]): aggregates average rate of memory entanglement per reservation.
-        reserves (List[List[any]]): aggregates previous reservations.
-        memo_to_reserve (Dict[int, Reservation]): mapping of memory index to corresponding reservation.
+        wait_time (list[int]): aggregates times between request and accepted reservation.
+        all_throughput (list[float]): aggregates average rate of memory entanglement per reservation.
+        reserves (list[list[any]]): aggregates previous reservations.
+        memo_to_reserve (dict[int, Reservation]): mapping of memory index to corresponding reservation.
         min_dur (int): the minimum duration of request (ps).
         max_dur (int): the maximum duration of request (ps).
         min_size (int): the minimum required memory of request.
@@ -49,14 +49,14 @@ class RandomRequestApp(RequestApp):
         max_fidelity (float): the maximum required fidelity of entanglement.
     """
 
-    def __init__(self, node: QuantumRouter, others: List[str], seed: int,
+    def __init__(self, node: QuantumRouter, others: list[str], seed: int,
                  min_dur: int, max_dur: int, min_size: int, max_size: int,
                  min_fidelity: float, max_fidelity: float):
         """Constructor for the random application class.
 
         Args:
             node (QuantumRouter): node that application is attached to.
-            others (List[str]): list of names for other available routers.
+            others (list[str]): list of names for other available routers.
             seed (int): seed for internal random number generator.
             min_dur (int): the minimum duration of request (ps).
             max_dur (int): the maximum duration of request (ps).
@@ -70,15 +70,15 @@ class RandomRequestApp(RequestApp):
         assert 0 < min_size <= max_size
         assert 0 < min_fidelity <= max_fidelity <= 1
 
-        self.others: List[str] = others
+        self.others: list[str] = others
         self.rg: random.Generator = random.default_rng(seed)
 
         self.request_time: int = 0
 
-        self.wait_time: List[int] = []
-        self.all_throughput: List[float] = []
+        self.wait_time: list[int] = []
+        self.all_throughput: list[float] = []
         self.reserves = []
-        self.paths: List[List[str]] = []
+        self.paths: list[list[str]] = []
 
         self.min_dur: int = min_dur
         self.max_dur: int = max_dur
@@ -159,8 +159,8 @@ class RandomRequestApp(RequestApp):
             event = Event(self.node.timeline.now() + 1e12, process)
             self.node.timeline.schedule(event)
 
-    def get_wait_time(self) -> List[int]:
+    def get_wait_time(self) -> list[int]:
         return self.wait_time
 
-    def get_all_throughput(self) -> List[float]:
+    def get_all_throughput(self) -> list[float]:
         return self.all_throughput

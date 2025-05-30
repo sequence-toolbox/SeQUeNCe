@@ -4,7 +4,7 @@ This module defines the rule manager, which is used by the resource manager to i
 This is achieved through rules (also defined in this module), which if met define a set of actions to take.
 """
 
-from typing import Callable, TYPE_CHECKING, List, Tuple, Any, Dict
+from typing import Callable, TYPE_CHECKING, Any
 from ..utils import log
 if TYPE_CHECKING:
     from ..entanglement_management.entanglement_protocol import EntanglementProtocol
@@ -12,12 +12,12 @@ if TYPE_CHECKING:
     from .resource_manager import ResourceManager
     from ..network_management.reservation import Reservation
 
-ActionFunc = Callable[[List["MemoryInfo"], Dict[str, Any]], 
-                      Tuple["EntanglementProtocol", List["str"], List[Callable[["EntanglementProtocol"], bool]]]]
+ActionFunc = Callable[[list["MemoryInfo"], dict[str, Any]], 
+                      tuple["EntanglementProtocol", list["str"], list[Callable[["EntanglementProtocol"], bool]]]]
 
-ConditionFunc = Callable[["MemoryInfo", "MemoryManager", Dict[str, Any]], List["MemoryInfo"]]
+ConditionFunc = Callable[["MemoryInfo", "MemoryManager", dict[str, Any]], list["MemoryInfo"]]
 
-Arguments = Dict[str, Any]
+Arguments = dict[str, Any]
 
 
 class RuleManager:
@@ -27,7 +27,7 @@ class RuleManager:
     Rules that are met have their action executed by the rule manager.
 
     Attributes:
-        rules (List[Rules]): List of installed rules.
+        rules (list[Rules]): list of installed rules.
         resource_manager (ResourceManager): reference to the resource manager using this rule manager.
     """
 
@@ -70,14 +70,14 @@ class RuleManager:
         self.rules.insert(left, rule)
         return True
 
-    def expire(self, rule: "Rule") -> List["EntanglementProtocol"]:
+    def expire(self, rule: "Rule") -> list["EntanglementProtocol"]:
         """Method to remove expired protocol.
 
         Args:
             rule (Rule): rule to remove.
 
         Returns:
-            List[EntanglementProtocol]: list of protocols created by rule (if any).
+            list[EntanglementProtocol]: list of protocols created by rule (if any).
                 Note that when a protocol finishes, it will be removed from rule.protocols.
         """
         if rule in self.rules:
@@ -114,10 +114,10 @@ class Rule:
 
     Attributes:
         priority (int): priority of the rule, used as a tiebreaker when conditions of multiple rules are met.
-        action (Callable[[List["MemoryInfo"]], Tuple["Protocol", List["str"], List[Callable[["Protocol"], bool]]]]):
+        action (Callable[[list["MemoryInfo"]], tuple["Protocol", list["str"], list[Callable[["Protocol"], bool]]]]):
             action to take when rule condition is met.
-        condition (Callable[["MemoryInfo", "MemoryManager"], List["MemoryInfo"]]): condition required by rule.
-        protocols (List[Protocols]): protocols created by rule.
+        condition (Callable[["MemoryInfo", "MemoryManager"], list["MemoryInfo"]]): condition required by rule.
+        protocols (list[Protocols]): protocols created by rule.
         rule_manager (RuleManager): reference to rule manager object where rule is installed.
         reservation (Reservation): associated reservation.
     """
@@ -130,7 +130,7 @@ class Rule:
         self.action_args: Arguments = action_args
         self.condition: ConditionFunc = condition
         self.condition_args: Arguments = condition_args
-        self.protocols: List[EntanglementProtocol] = []
+        self.protocols: list[EntanglementProtocol] = []
         self.rule_manager = None
         self.reservation = None
 
@@ -150,11 +150,11 @@ class Rule:
 
         self.rule_manager = rule_manager
 
-    def do(self, memories_info: List["MemoryInfo"]) -> None:
+    def do(self, memories_info: list["MemoryInfo"]) -> None:
         """Method to perform rule activation and send requirements to other nodes.
 
         Args:
-            memories_info (List[MemoryInfo]): list of memory infos for memories meeting requirements.
+            memories_info (list[MemoryInfo]): list of memory infos for memories meeting requirements.
         """
 
         protocol, req_dsts, req_condition_funcs, req_args = self.action(memories_info, self.action_args)
@@ -168,14 +168,14 @@ class Rule:
         for dst, req_func, args in zip(req_dsts, req_condition_funcs, req_args):
             self.rule_manager.send_request(protocol, dst, req_func, args)
 
-    def is_valid(self, memory_info: "MemoryInfo") -> List["MemoryInfo"]:
+    def is_valid(self, memory_info: "MemoryInfo") -> list["MemoryInfo"]:
         """Method to check for memories meeting condition.
 
         Args:
             memory_info (MemoryInfo): memory info object to test.
 
         Returns:
-            List[memory_info]: list of memory info objects meeting requirements of rule.
+            list[memory_info]: list of memory info objects meeting requirements of rule.
         """
 
         manager = self.rule_manager.get_memory_manager()

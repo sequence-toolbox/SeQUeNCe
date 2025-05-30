@@ -8,7 +8,7 @@ If a file is not set, no output will be recorded.
 Attributes:
     logger (Logger): logger object used for logging by sequence modules.
     LOG_FORMAT (str): formatting string for logging as '{real time}\t{simulation time}\t%{log level}\t{module name}\t{message}'.
-    _log_modules (List[str]): modules to track with logging (given as list of names)
+    _log_modules (list[str]): modules to track with logging (given as list of names)
 """
 
 import logging

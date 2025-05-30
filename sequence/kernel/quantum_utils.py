@@ -5,7 +5,6 @@ These should not be used directly, but accessed by a QuantumManager instance or 
 """
 
 from functools import lru_cache
-from typing import List, Tuple
 from math import sqrt
 
 from numpy import array, kron, identity, zeros, trace, outer, eye
@@ -20,7 +19,7 @@ povm_1 = (1/2) * (kron(a_dag @ a, eye(2)) + 1j*kron(a, a_dag) - 1j*kron(a_dag, a
 
 
 @lru_cache(maxsize=1000)
-def measure_state_with_cache(state: Tuple[complex, complex], basis: Tuple[Tuple[complex]]) -> float:
+def measure_state_with_cache(state: tuple[complex, complex], basis: tuple[tuple[complex]]) -> float:
 
     state = array(state)
     u = array(basis[0], dtype=complex)
@@ -33,9 +32,9 @@ def measure_state_with_cache(state: Tuple[complex, complex], basis: Tuple[Tuple[
 
 
 @lru_cache(maxsize=1000)
-def measure_entangled_state_with_cache(state: Tuple[complex], basis: Tuple[Tuple[complex]], state_index: int,
+def measure_entangled_state_with_cache(state: tuple[complex], basis: tuple[tuple[complex]], state_index: int,
                                        num_states: int) -> \
-        Tuple[array, array, float]:
+        tuple[array, array, float]:
 
     state = array(state)
     u = array(basis[0], dtype=complex)
@@ -72,8 +71,8 @@ def measure_entangled_state_with_cache(state: Tuple[complex], basis: Tuple[Tuple
 
 
 @lru_cache(maxsize=1000)
-def measure_multiple_with_cache(state: Tuple[complex], basis: Tuple[Tuple[complex]], length_diff: int) \
-        -> Tuple[List[array], List[float]]:
+def measure_multiple_with_cache(state: tuple[complex], basis: tuple[tuple[complex]], length_diff: int) \
+        -> tuple[list[array], list[float]]:
 
     state = array(state)
     # construct measurement operators, projectors, and probabilities of measurement
@@ -98,7 +97,7 @@ def measure_multiple_with_cache(state: Tuple[complex], basis: Tuple[Tuple[comple
 
 
 @lru_cache(maxsize=1000)
-def measure_state_with_cache_ket(state: Tuple[complex, complex]) -> float:
+def measure_state_with_cache_ket(state: tuple[complex, complex]) -> float:
 
     state = array(state)
     M0 = array([[1, 0], [0, 0]], dtype=complex)
@@ -109,8 +108,8 @@ def measure_state_with_cache_ket(state: Tuple[complex, complex]) -> float:
 
 
 @lru_cache(maxsize=1000)
-def measure_entangled_state_with_cache_ket(state: Tuple[complex], state_index: int, num_states: int) \
-        -> Tuple[array, array, float]:
+def measure_entangled_state_with_cache_ket(state: tuple[complex], state_index: int, num_states: int) \
+        -> tuple[array, array, float]:
 
     state = array(state)
 
@@ -142,8 +141,8 @@ def measure_entangled_state_with_cache_ket(state: Tuple[complex], state_index: i
 
 
 @lru_cache(maxsize=1000)
-def measure_multiple_with_cache_ket(state: Tuple[complex], num_states: int, length_diff: int) \
-        -> Tuple[List[array], List[float]]:
+def measure_multiple_with_cache_ket(state: tuple[complex], num_states: int, length_diff: int) \
+        -> tuple[list[array], list[float]]:
 
     state = array(state)
     basis_count = 2 ** num_states
@@ -173,7 +172,7 @@ def measure_multiple_with_cache_ket(state: Tuple[complex], num_states: int, leng
 
 
 @lru_cache(maxsize=1000)
-def measure_state_with_cache_density(state: Tuple[Tuple[complex, complex]]) -> float:
+def measure_state_with_cache_density(state: tuple[tuple[complex, complex]]) -> float:
 
     state = array(state)
     M0 = array([[1, 0], [0, 0]], dtype=complex)
@@ -184,8 +183,8 @@ def measure_state_with_cache_density(state: Tuple[Tuple[complex, complex]]) -> f
 
 
 @lru_cache(maxsize=1000)
-def measure_entangled_state_with_cache_density(state: Tuple[Tuple[complex]], state_index: int, num_states: int) \
-        -> Tuple[array, array, float]:
+def measure_entangled_state_with_cache_density(state: tuple[tuple[complex]], state_index: int, num_states: int) \
+        -> tuple[array, array, float]:
 
     state = array(state)
 
@@ -217,8 +216,8 @@ def measure_entangled_state_with_cache_density(state: Tuple[Tuple[complex]], sta
 
 
 @lru_cache(maxsize=1000)
-def measure_multiple_with_cache_density(state: Tuple[Tuple[complex]], num_states: int, length_diff: int) \
-        -> Tuple[List[array], List[float]]:
+def measure_multiple_with_cache_density(state: tuple[tuple[complex]], num_states: int, length_diff: int) \
+        -> tuple[list[array], list[float]]:
 
     state = array(state)
     basis_count = 2 ** num_states
@@ -248,8 +247,8 @@ def measure_multiple_with_cache_density(state: Tuple[Tuple[complex]], num_states
 
 
 @lru_cache(maxsize=1000)
-def measure_state_with_cache_fock_density(state: Tuple[Tuple[complex]], povms: Tuple[Tuple[Tuple[complex]]]) \
-        -> Tuple[List[array], List[float]]:
+def measure_state_with_cache_fock_density(state: tuple[tuple[complex]], povms: tuple[tuple[tuple[complex]]]) \
+        -> tuple[list[array], list[float]]:
     state = array(state)
     povms = [array(povm) for povm in povms]
 
@@ -271,9 +270,9 @@ def measure_state_with_cache_fock_density(state: Tuple[Tuple[complex]], povms: T
 
 
 @lru_cache(maxsize=1000)
-def measure_entangled_state_with_cache_fock_density(state: Tuple[Tuple[complex]], system_index: int, num_systems: int,
-                                                    povms: Tuple[Tuple[Tuple[complex]]], truncation: int = 1) \
-        -> Tuple[List[array], List[float]]:
+def measure_entangled_state_with_cache_fock_density(state: tuple[tuple[complex]], system_index: int, num_systems: int,
+                                                    povms: tuple[tuple[tuple[complex]]], truncation: int = 1) \
+        -> tuple[list[array], list[float]]:
 
     """Measure one subsystem of a larger composite system.
 
@@ -281,14 +280,14 @@ def measure_entangled_state_with_cache_fock_density(state: Tuple[Tuple[complex]]
     operators on the subsystem's Hilbert space alone.
 
     Args:
-        state (Tuple[Tuple[complex]]): state to measure
+        state (tuple[tuple[complex]]): state to measure
         system_index (int): index of measured subsystem within state.
         num_systems (int): number of total systems in the state.
-        povms (Tuple[Tuple[Tuple[complex]]]): tuple listing all POVM operators to use for measurement
+        povms (tuple[tuple[tuple[complex]]]): tuple listing all POVM operators to use for measurement
         truncation (int): fock space truncation, 1 for qubit system (default 1).
 
     Returns:
-        Tuple[List[array], List[float]]: tuple with two sub-lists.
+        tuple[list[array], list[float]]: tuple with two sub-lists.
             The first lists each output state, corresponding with the measurement of each POVM.
             The second lists the probability for each measurement.
     """
@@ -321,9 +320,9 @@ def measure_entangled_state_with_cache_fock_density(state: Tuple[Tuple[complex]]
 
 
 @lru_cache(maxsize=1000)
-def measure_multiple_with_cache_fock_density(state: Tuple[Tuple[complex]], indices: Tuple[int], num_systems: int,
-                                             povms: Tuple[Tuple[Tuple[complex]]], truncation: int = 1) \
-        -> Tuple[List[array], List[float]]:
+def measure_multiple_with_cache_fock_density(state: tuple[tuple[complex]], indices: tuple[int], num_systems: int,
+                                             povms: tuple[tuple[tuple[complex]]], truncation: int = 1) \
+        -> tuple[list[array], list[float]]:
 
     """Measure multiple subsystems of a larger composite system.
 
@@ -341,14 +340,14 @@ def measure_multiple_with_cache_fock_density(state: Tuple[Tuple[complex]], indic
     where the measurement operator on (1, 2) subspace needs to be generated beforehand to feed in the function.
 
     Args:
-        state (Tuple[Tuple[complex]]): state to measure.
-        indices (Tuple[int]): indices within combined state to measure.
+        state (tuple[tuple[complex]]): state to measure.
+        indices (tuple[int]): indices within combined state to measure.
         num_systems (int): number of total systems in the state.
-        povms (Tuple[Tuple[Tuple[complex]]]): tuple listing all POVM operators to use for measurement.
+        povms (tuple[tuple[tuple[complex]]]): tuple listing all POVM operators to use for measurement.
         truncation (int): fock space truncation, 1 for qubit system (default 1).
 
     Returns:
-        Tuple[List[array], List[float]]: tuple with two sub-lists.
+        tuple[list[array], list[float]]: tuple with two sub-lists.
             The first lists each output state, corresponding with the measurement of each POVM.
             The second lists the probability for each measurement.
     """
@@ -388,14 +387,14 @@ def measure_multiple_with_cache_fock_density(state: Tuple[Tuple[complex]], indic
 
 
 @lru_cache(maxsize=1000)
-def density_partial_trace(state: Tuple[Tuple[complex]], indices: Tuple[int], num_systems: int, truncation: int = 1) \
+def density_partial_trace(state: tuple[tuple[complex]], indices: tuple[int], num_systems: int, truncation: int = 1) \
         -> array:
 
     """Traces out subsystems systems at given indices.
 
     Args:
-        state (Tuple[Tuple[complex]]: input state.
-        indices (Tuple[int]): indices of subsystems to trace out of state.
+        state (tuple[tuple[complex]]: input state.
+        indices (tuple[int]): indices of subsystems to trace out of state.
             should be sorted in increasing order.
         num_systems (int): number of total subsystems in the state.
         truncation (int): fock space truncation, 1 for qubit system (default 1).

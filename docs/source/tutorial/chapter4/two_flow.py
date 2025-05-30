@@ -1,5 +1,3 @@
-from typing import List
-
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import BSMNode, Node
 from sequence.components.memory import MemoryArray
@@ -75,7 +73,7 @@ def eg_req_func(protocols, args):
             return protocol
 
 
-def eg_rule_action1(memories_info: List["MemoryInfo"], args):
+def eg_rule_action1(memories_info: list["MemoryInfo"], args):
     mid_name = args["mid_name"]
     other_name = args["other_name"]
 
@@ -90,7 +88,7 @@ def eg_rule_action1(memories_info: List["MemoryInfo"], args):
     return [protocol, [other_name], [eg_req_func], [req_args]]
 
 
-def eg_rule_action2(memories_info: List["MemoryInfo"], args):
+def eg_rule_action2(memories_info: list["MemoryInfo"], args):
     mid_name = args["mid_name"]
     other_name = args["other_name"]
     memories = [info.memory for info in memories_info]
@@ -104,7 +102,7 @@ def eg_rule_action2(memories_info: List["MemoryInfo"], args):
 
 # entanglement generation
 
-def add_eg_rules(index: int, path: List[RouterNode], middles: List[BSMNode]):
+def add_eg_rules(index: int, path: list[RouterNode], middles: list[BSMNode]):
     assert len(path) == len(middles) + 1
     node_names = [node.name for node in path]
     middle_names = [node.name for node in middles]
@@ -192,7 +190,7 @@ def ep_req_func(protocols, args):
     return _protocols[0]
 
 
-def ep_rule_action1(memories_info: List["MemoryInfo"], args):
+def ep_rule_action1(memories_info: list["MemoryInfo"], args):
     memories = [info.memory for info in memories_info]
     name = "EP.%s.%s" % (memories[0].name, memories[1].name)
     protocol = BBPSSW(None, name, memories[0], memories[1])
@@ -215,14 +213,14 @@ def ep_rule_condition2(memory_info: "MemoryInfo", manager: "MemoryManager",
     return []
 
 
-def ep_rule_action2(memories_info: List["MemoryInfo"], args):
+def ep_rule_action2(memories_info: list["MemoryInfo"], args):
     memories = [info.memory for info in memories_info]
     name = "EP.%s" % (memories[0].name)
     protocol = BBPSSW(None, name, memories[0], None)
     return [protocol, [None], [None], [None]]
 
 
-def add_ep_rules(index: int, path: List[RouterNode], target_fidelity: float):
+def add_ep_rules(index: int, path: list[RouterNode], target_fidelity: float):
     node_mems = [[10, 20], [10, 30], [0, 10]]
 
     node = path[index]
@@ -290,7 +288,7 @@ def es_req_func(protocols, args):
             return protocol
 
 
-def es_rule_actionA(memories_info: List["MemoryInfo"], args):
+def es_rule_actionA(memories_info: list["MemoryInfo"], args):
     succ_prob = args["succ_prob"]
     degradation = args["degradation"]
 
@@ -324,7 +322,7 @@ def es_rule_conditionB(memory_info: "MemoryInfo", manager: "MemoryManager",
         return []
 
 
-def es_rule_actionB(memories_info: List["MemoryInfo"], args):
+def es_rule_actionB(memories_info: list["MemoryInfo"], args):
     memories = [info.memory for info in memories_info]
     memory = memories[0]
     protocol = EntanglementSwappingB(None, "ESB." + memory.name, memory)

@@ -24,7 +24,7 @@ class MemoryManager:
 
     Attributes:
         memory_array (MemoryArray): memory array object to be tracked.
-        memory_map (List[MemoryInfo]): array of memory info objects corresponding to memory array.
+        memory_map (list[MemoryInfo]): array of memory info objects corresponding to memory array.
         resource_manager (ResourceManager): resource manager object using the memory manager.
     """
 

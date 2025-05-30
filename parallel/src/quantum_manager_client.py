@@ -6,7 +6,6 @@ Qubits managed or accessed between processes are stored on a remote quantum mana
 """
 from collections import defaultdict
 from socket import socket
-from typing import List
 from time import time
 from uuid import uuid4
 from sequence.kernel.quantum_manager import QuantumManagerKet, QuantumManagerDensity, KetState, \
@@ -29,7 +28,7 @@ class QuantumManagerClient:
         port (int): port of quantum manager server.
         socket (socket): socket for communication with server.
         managed_qubits (set): keys for all qubits managed locally by client.
-        message_buffer (List): list of messages to send to quantum manager server.
+        message_buffer (list): list of messages to send to quantum manager server.
     """
 
     def __init__(self, formalism: str, ip: str, port: int):
@@ -81,7 +80,7 @@ class QuantumManagerClient:
         """Method to get a new state from server.
 
         Args:
-            state (List): if None, state will be in default state. Otherwise, must match formalism of server.
+            state (list): if None, state will be in default state. Otherwise, must match formalism of server.
 
         Returns:
             int: key for the new state generated.
@@ -105,7 +104,7 @@ class QuantumManagerClient:
             state.deserialize(state_raw)
             return state
 
-    def run_circuit(self, circuit: "Circuit", keys: List[int], meas_samp=None) -> any:
+    def run_circuit(self, circuit: "Circuit", keys: list[int], meas_samp=None) -> any:
         self.client_call_counter += 1
         if self._check_local(keys):
             return self.qm.run_circuit(circuit, keys, meas_samp)
@@ -147,7 +146,7 @@ class QuantumManagerClient:
                     self.move_manage_to_client([measured_q], [1, 0])
             return ret_val
 
-    def set(self, keys: List[int], amplitudes: any) -> None:
+    def set(self, keys: list[int], amplitudes: any) -> None:
         self.client_call_counter += 1
         if self._check_local(keys):
             self.qm.set(keys, amplitudes)
@@ -197,20 +196,20 @@ class QuantumManagerClient:
                 self._send_message(QuantumManagerMsgType.SET, state.keys,
                                    [state.state], False)
 
-    def move_manage_to_client(self, qubit_keys: List[int], amplitude: any):
+    def move_manage_to_client(self, qubit_keys: list[int], amplitude: any):
         assert all(qubit_key in self.qm.states for qubit_key in qubit_keys)
         for key in qubit_keys:
             self.managed_qubits.add(key)
         self.qm.set(qubit_keys, amplitude)
 
-    def _send_message(self, msg_type, keys: List, args: List,
+    def _send_message(self, msg_type, keys: list, args: list,
                       expecting_receive=True) -> any:
         """Sends a message to the remote quantum manager server.
 
         Args:
             msg_type (QuantumManagerMsgType): type of message to send.
-            keys (List[int]): list of all keys affected by message process.
-            args (List[any]): any other arguments used for the message.
+            keys (list[int]): list of all keys affected by message process.
+            args (list[any]): any other arguments used for the message.
             expecting_receive (bool): indicates if client should block until response received (default `True`).
 
         Returns:
@@ -241,5 +240,5 @@ class QuantumManagerClient:
         if len(self.message_buffer) > 0:
             self._send_message(QuantumManagerMsgType.SYNC, [], [])
 
-    def _check_local(self, keys: List[int]):
+    def _check_local(self, keys: list[int]):
         return not any([self.is_managed_by_server(key) for key in keys])
