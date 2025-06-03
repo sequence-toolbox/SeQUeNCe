@@ -421,7 +421,27 @@ def extend_MPS(psi, psi_second = None):
 
 #     return psi
 
-def bell_state_measurement(psi, N, site_tags, num_modes, efficiency, error_tolerance, measurements = {1:(2,7), 0:(3,6)}, pnr = False, return_MPOs = False, compress = True, contract = True):
+def bell_state_measurement(psi, N, site_tags, num_modes, efficiency, error_tolerance, measurements = {1:(2,7), 0:(3,6)}, pnr = False, det_outcome = 1, return_MPOs = False, compress = True, contract = True):
+
+    """Perform Bell state measrement or return the MPOs used in the measurement.
+    Args:
+        psi (mps): The input state to be measured.
+        N (int): local Hilbert space dimension
+        site_tags (list): The tags for the sites in the MPS.
+        num_modes (int): The number of modes in the MPS.
+        efficiency (float): The efficiency of the detectors.
+        error_tolerance (float): The error tolerance for the tensor network.
+        measurements (dict): The sites for the measurements. Default is {1:(2,7), 0:(3,6)}.
+        pnr (bool): Whether to use photon number resolving measurement. Default is False.
+        pnr_outcome (int): The outcome for the photon number resolving measurement. Default is 1. When not using PNR, this can be anything other than 1 since threshold detectors don't distinguish between photon numbers. 
+        return_MPOs (bool): Whether to return the MPOs used in the measurement. Default is False.
+        compress (bool): Whether to compress the MPS after applying the MPOs. Default is True.
+        contract (bool): Whether to contract the MPS after applying the MPOs. Default is True.
+        
+        Returns:
+            mps: The measured state after the Bell state measurement.
+            
+    """
 
     U_BS_H = create_BS_MPO(site1 = 2, site2 = 6, theta=np.pi/4, total_sites = num_modes, N = N, tag = r"$U_{BS_H}$")
     enforce_1d_like(U_BS_H, site_tags=site_tags, inplace=True)
@@ -431,7 +451,7 @@ def bell_state_measurement(psi, N, site_tags, num_modes, efficiency, error_toler
     enforce_1d_like(U_BS_V, site_tags=site_tags, inplace=True)
     U_BS_V.add_tag("L3")
 
-    BSM_POVM_1_OPs = generate_sqrt_POVM_MPO(sites=measurements[1], outcome = 1, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr)
+    BSM_POVM_1_OPs = generate_sqrt_POVM_MPO(sites=measurements[1], outcome = det_outcome, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr)
     BSM_POVM_1_OPs.extend(generate_sqrt_POVM_MPO(sites=measurements[0], outcome = 0, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr))
 
     if return_MPOs:
@@ -448,12 +468,9 @@ def bell_state_measurement(psi, N, site_tags, num_modes, efficiency, error_toler
 
     return psi
 
-# psi = bell_state_measurement(psi, N, psi.site_tags, num_modes, efficiency, error_tolerance)
 
 
-
-
-def rotate_and_measure(psi, N, site_tags, num_modes, efficiency, error_tolerance, idler_angles, signal_angles, pnr = False, return_MPOs = False, compress = True, contract = True, draw = False):
+def rotate_and_measure(psi, N, site_tags, num_modes, efficiency, error_tolerance, idler_angles, signal_angles, pnr = False, det_outcome = 1, return_MPOs = False, compress = True, contract = True, draw = False):
     # idler_angles = [0]
     # angles = [np.pi/4]
 
@@ -464,7 +481,7 @@ def rotate_and_measure(psi, N, site_tags, num_modes, efficiency, error_tolerance
 
     coincidence = []
 
-    POVM_1_OPs = generate_sqrt_POVM_MPO(sites=(0,4), outcome = 1, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr)
+    POVM_1_OPs = generate_sqrt_POVM_MPO(sites=(0,4), outcome = det_outcome, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr)
     POVM_0_OPs = generate_sqrt_POVM_MPO(sites=(1,5), outcome = 0, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr)
     # POVM_0_OPs = generate_sqrt_POVM_MPO(sites=(0,4), outcome = 0, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr)
     # enforce_1d_like(POVM_OP, site_tags=site_tags, inplace=True)
@@ -615,7 +632,7 @@ def plot_coincidences(coincidence, idler_angles, signal_angles, title = ''):
     for i in range(len(coincidence)):
         visibility = (max(coincidence[i]) - min(coincidence[i])) / (max(coincidence[i]) + min(coincidence[i]))
         visibilities.append(visibility)
-        print(visibility, coincidence[i])
+        # print(visibility, coincidence[i])
 
     idler_angles = np.array(list(map(float, idler_angles)))/np.pi
 
