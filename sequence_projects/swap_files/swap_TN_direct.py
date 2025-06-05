@@ -470,7 +470,7 @@ def bell_state_measurement(psi, N, site_tags, num_modes, efficiency, error_toler
 
 
 
-def rotate_and_measure(psi, N, site_tags, num_modes, efficiency, error_tolerance, idler_angles, signal_angles, pnr = False, det_outcome = 1, return_MPOs = False, compress = True, contract = True, draw = False):
+def rotate_and_measure(psi, N, site_tags, num_modes, efficiency, error_tolerance, idler_angles, signal_angles, rotations = {"signal":(4,5), "idler":(0,1)}, measurements = {1:(0,4), 0:(1,5)}, pnr = False, det_outcome = 1, return_MPOs = False, compress = True, contract = True, draw = False):
     # idler_angles = [0]
     # angles = [np.pi/4]
 
@@ -481,8 +481,8 @@ def rotate_and_measure(psi, N, site_tags, num_modes, efficiency, error_tolerance
 
     coincidence = []
 
-    POVM_1_OPs = generate_sqrt_POVM_MPO(sites=(0,4), outcome = det_outcome, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr)
-    POVM_0_OPs = generate_sqrt_POVM_MPO(sites=(1,5), outcome = 0, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr)
+    POVM_1_OPs = generate_sqrt_POVM_MPO(sites = measurements[1], outcome = det_outcome, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr)
+    POVM_0_OPs = generate_sqrt_POVM_MPO(sites = measurements[0], outcome = 0, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr)
     # POVM_0_OPs = generate_sqrt_POVM_MPO(sites=(0,4), outcome = 0, total_sites=num_modes, efficiency=efficiency, N=N, pnr = pnr)
     # enforce_1d_like(POVM_OP, site_tags=site_tags, inplace=True)
 
@@ -492,7 +492,7 @@ def rotate_and_measure(psi, N, site_tags, num_modes, efficiency, error_tolerance
     for i, idler_angle in enumerate(idler_angles):
         coincidence_probs = []
 
-        rotator_node_1 = create_BS_MPO(site1 = 0, site2 = 1, theta=idler_angle, total_sites = num_modes, N = N, tag = r"$Rotator_I$")
+        rotator_node_1 = create_BS_MPO(site1 = rotations["idler"][0], site2 = rotations["idler"][1], theta=idler_angle, total_sites = num_modes, N = N, tag = r"$Rotator_I$")
         enforce_1d_like(rotator_node_1, site_tags=site_tags, inplace=True)
         rotator_node_1.add_tag("L5")
         if not return_MPOs: # If the user wants the MPOs, we don't need to apply the rotator to the state.
@@ -502,7 +502,7 @@ def rotate_and_measure(psi, N, site_tags, num_modes, efficiency, error_tolerance
         for j, angle in enumerate(signal_angles):
             # print("idler:", i, "signal:", j)
         
-            rotator_node_2 = create_BS_MPO(site1 = 4, site2 = 5, theta=angle, total_sites = num_modes, N = N, tag = r"$Rotator_S$")
+            rotator_node_2 = create_BS_MPO(site1 = rotations["signal"][0], site2 = rotations["signal"][1], theta=angle, total_sites = num_modes, N = N, tag = r"$Rotator_S$")
             enforce_1d_like(rotator_node_2, site_tags=site_tags, inplace=True)
 
             if return_MPOs:
