@@ -99,7 +99,6 @@ class ControlledUApp(RequestApp):
 
         self.results.append(res)
 
-        # Memory is now consumed
         self.node.resource_manager.update(None, mem, "RAW")
     def entangle_and_measure(self, ctrl_key: int, bell_key: int) -> tuple[int, int]:
         circ = Circuit(2)
