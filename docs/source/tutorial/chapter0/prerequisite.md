@@ -24,16 +24,18 @@ These will be installed automatically with the simulator if they are not already
 
 ### Create virtual environment
 
-It is often useful to create a clean working directory from which to run the simulator. This can be easily achieved with the Python `venv` module. A new virtual environment can be created as
+It is often useful to create a clean working directory from which to run the simulator. This can be easily achieved with the Python `uv` module. A new virtual environment can be created as
+
+*To install `uv` run `curl -LsSf https://astral.sh/uv/install.sh | sh`
 
 ```shell script
-$ python3 -m venv path-to-venv
+$ uv venv
 ```
 
 which will create a new virtual environment at the specified path. It can then be activated with
 
 ```shell script
-$ source path-to-venv/bin/activate
+$ source .venv/bin/activate
 ```
 
 The shell prompt should now show the name of the virtual environment.
@@ -44,7 +46,7 @@ Using Anaconda/conda to create a virtual environment is also recommended.
 
 You can simply install SeQUeNCe using `pip`:
 ```
-pip install sequence
+uv pip install sequence
 ```
 
 If you wish to make your own edits to the codebase, SeQUeNCe should be installed in [development mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html) (a.k.a. editable install).
@@ -52,6 +54,6 @@ To do so, clone and install the simulator as follows:
 ```
 git clone https://github.com/sequence-toolbox/SeQUeNCe.git
 cd SeQUeNCe
-pip install --editable . --config-settings editable_mode=strict
+uv pip install --editable . --config-settings editable_mode=strict
 ```
 
