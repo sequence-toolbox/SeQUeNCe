@@ -116,7 +116,7 @@ def create_BS_MPO(site1, site2, theta, total_sites, N, tag = 'BS'):
     hamiltonian_BS = -theta * ( kron(I, a_dag)@kron(a, I) - kron(I, a)@kron(a_dag, I) )
     unitary_BS = expm(hamiltonian_BS)
 
-    print("unitary_BS", unitary_BS)
+    # print("unitary_BS", unitary_BS)
 
     BS_MPO = mpo.from_dense(unitary_BS, dims = N, sites = (site1,site2), L=total_sites, tags=tag)
     # BS_MPO = BS_MPO.fill_empty_sites(mode = "full")
@@ -376,11 +376,20 @@ def create_truncation_filter_Dense(truncation):
 ########## EXTEND MPS ###########
 
 def extend_MPS(psi, psi_second = None):
+    # print("inside extend_MPS")
+    # psi_second.draw()
+    # print(psi_second)
+    
     psi.permute_arrays('lrp')
+
+    # psi_second.draw()
+    # print(psi_second)
 
     # This is supposed to be passed as the second MPS to extend the first MPS with. 
     if psi_second == None:
         psi_second = psi.copy()
+    else:
+        psi_second.permute_arrays('lrp')
     
     psi_num_modes = len(psi.site_tags)
     psi2_num_modes = len(psi_second.site_tags)
@@ -417,8 +426,10 @@ def extend_MPS(psi, psi_second = None):
 
     psi = mps(sorted_arrays)
 
-    psi.add_tag("L1")
-    psi.add_tag(r'$HH+VV$')
+    # psi.add_tag("L1")
+    # psi.add_tag(r'$HH+VV$')
+
+    # print("outside extend_MPS")
 
     return psi
 
