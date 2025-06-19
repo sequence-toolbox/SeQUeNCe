@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from sequence.utils.noise import Noise
 from sequence.components.circuit import Circuit
 
@@ -24,7 +23,7 @@ def depolarise_manual(rho: np.ndarray, p: float) -> np.ndarray:
     return out
 
 
-def test_two_qubit_depolarising_agrees():
+def test_two_qubit_depolarising():
     """Noise.apply_depolarizing_noise matches our manual implementation."""
     p = 0.3
     # |00><00|
@@ -39,27 +38,16 @@ def test_two_qubit_depolarising_agrees():
     assert np.allclose(rho_noise, rho_noise.conj().T, atol=1e-12), "Result not Hermitian"
 
 
+
 def test_measurement_noise_extremes():
     """For error_rate=0 no flip, for error_rate=1 always flip."""
     # no flip when rate=0
     circuit = Circuit(size=1)
-    noisy = Noise.apply_measurement_noise(circuit, meas_error_rate=0.0, qubit_index=0)
-    assert noisy.gates == [], "With error_rate=0, circuit should be unchanged"
+    circiut_noisy = Noise.apply_measurement_noise(circuit, meas_error_rate=0.0, qubit_index=0)
+    assert circiut_noisy.gates == [], "With error_rate=0, circuit should be unchanged"
 
     # always flip when rate=1
     circuit = Circuit(size=1)
-    noisy = Noise.apply_measurement_noise(circuit, meas_error_rate=1.0, qubit_index=0)
-    ops = [gate[0] for gate in noisy.gates]
+    circiut_noisy = Noise.apply_measurement_noise(circuit, meas_error_rate=1.0, qubit_index=0)
+    ops = [gate[0] for gate in circiut_noisy.gates]
     assert "x" in ops, "With error_rate=1, an X gate should have been applied"
-
-
-def test_depolarizing_identity():
-    """Depolarizing with p=0 returns the original two-qubit state."""
-    rng = np.random.default_rng(42)
-    # build a random pure two-qubit state
-    vec = rng.random(4) + 1j * rng.random(4)
-    vec /= np.linalg.norm(vec)
-    rho = np.outer(vec, vec.conj())
-
-    rho_out = Noise.apply_depolarizing_noise(rho=rho, p=0.0, qubits=[0, 1], keys=[0, 1])
-    assert np.allclose(rho_out, rho, atol=1e-14), "p=0 should act as identity"

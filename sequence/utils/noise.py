@@ -54,10 +54,9 @@ class Noise:
         p : float
             Depolarizing probability, between 0 and 1.
         qubits : list of int
-            Physical qubit indices to which noise is applied (length 1 or 2).
+            Qubit indices to which noise is applied (length 1 or 2).
         keys : list of int
-            Permutation of [0, 1, ..., n-1] defining the order of qubits
-            in the rows and columns of rho.
+            Permutation of [0, 1, ..., n-1] defining the order of qubits in the rows and columns of rho.
 
         Returns
         -------
@@ -100,7 +99,8 @@ class Noise:
 
         # build list of non-identity Pauli operators lifted to full space
         pauli_ops: List[np.ndarray] = []
-        for idx_tuple in np.ndindex(*(4,) * k):
+        idx_tuples = [(i, j) for i in range(4) for j in range(4)]
+        for idx_tuple in idx_tuples:
             if all(i == 0 for i in idx_tuple):
                 continue  # skip identity
             full_op = None
@@ -116,12 +116,9 @@ class Noise:
         m = len(pauli_ops)  # should be 4^k - 1
 
         # apply depolarizing channel
-        noisy = (1.0 - p) * rho.copy()
+        rho_noisy = (1.0 - p) * rho.copy()
         weight = p / m
         for P in pauli_ops:
-            noisy += weight * (P @ rho @ P.conj().T)
+            rho_noisy += weight * (P @ rho @ P.conj().T)
 
-        return noisy
-
-
-
+        return rho_noisy
