@@ -6,8 +6,8 @@ This includes the name of the encoding scheme, bases available, and any other ne
 Attributes:
     polarization (dict[str, any]): defines the polarization encoding scheme, including the Z- and X-basis.
     time_bin (dict[str, any]): defines the time bin encoding scheme, including the Z- and X-basis. Also defines the bin separation time.
-    single_atom (dict[str, any]): defines the emissive memory scheme, including the Z-basis.
-    absorptive (dict[str, any]): defines the absorptive memory scheme, including the Z-basis.
+    single_atom (dict[str, any]): defines the emissive memories scheme, including the Z-basis.
+    absorptive (dict[str, any]): defines the absorptive memories scheme, including the Z-basis.
 """
 
 from math import sqrt
@@ -26,7 +26,7 @@ time_bin = \
      "bin_separation": 1400  # measured in ps
      }
 
-# single_atom must be copied by a memory object so the fidelity field can be overwritten
+# single_atom must be copied by a memories object so the fidelity field can be overwritten
 single_atom = \
     {"name": "single_atom",
      "bases": [((complex(1), complex(0)), (complex(0), complex(1))), None],

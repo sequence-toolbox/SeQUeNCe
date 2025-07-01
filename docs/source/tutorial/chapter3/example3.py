@@ -1,9 +1,9 @@
-from sequence.kernel.timeline import Timeline
-from sequence.topology.node import Node
-from sequence.components.memory import Memory
+from sequence.components.memories import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
+from sequence.kernel.timeline import Timeline
 from sequence.message import Message
+from sequence.topology.node import Node
 
 
 class SimpleManager:

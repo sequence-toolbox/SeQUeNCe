@@ -40,7 +40,7 @@ The code for the `EntangleGenNode` and `SimpleManager` classes is shown below:
 
 ```python
 from sequence.topology.node import Node
-from sequence.components.memory import Memory
+from sequence.components.memories import Memory
 from sequence.entanglement_management.generation import EntanglementGenerationA
 
 
@@ -60,7 +60,7 @@ class SimpleManager:
 
     def create_protocol(self, middle: str, other: str):
         self.owner.protocols = [EntanglementGenerationA(self.owner, '%s.eg' % self.owner.name, middle, other,
-                                                      self.owner.components[self.memo_name])]
+                                                        self.owner.components[self.memo_name])]
 
 
 class EntangleGenNode(Node):

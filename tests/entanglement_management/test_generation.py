@@ -1,10 +1,7 @@
-import numpy as np
-
-from sequence.components.bsm import *
-from sequence.components.memory import MemoryArray
+from sequence.components.memories import MemoryArray
 from sequence.components.optical_channel import *
-from sequence.kernel.timeline import Timeline
 from sequence.entanglement_management.generation import *
+from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 
 
@@ -58,7 +55,7 @@ def test_generation_receive_message():
     qc = QuantumChannel("qc_nodem1", tl, 0, 1e3)
     qc.frequency = 1e12
     qc.set_ends(node, m0.name)
-    node.memory_array = MemoryArray("memory", tl)
+    node.memory_array = MemoryArray("memories", tl)
     node.assign_cchannel(ClassicalChannel("cc", tl, 0, delay=1), "m1")
 
     eg = EntanglementGenerationA(node, "EG", middle="m1", other="e2", memory=node.memory_array[0])

@@ -1,5 +1,5 @@
 from numpy import random
-from sequence.components.memory import Memory
+from sequence.components.memories import Memory
 from sequence.kernel.timeline import Timeline
 from sequence.resource_management.memory_manager import MemoryInfo
 from sequence.resource_management.rule_manager import RuleManager, Rule

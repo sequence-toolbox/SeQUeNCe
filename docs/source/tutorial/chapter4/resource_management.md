@@ -30,8 +30,9 @@ Finally, we modify the `get` method as in previous tutorials to direct photons f
 
 ```python
 from sequence.topology.node import Node
-from sequence.components.memory import MemoryArray
+from sequence.components.memories import MemoryArray
 from sequence.resource_management.resource_manager import ResourceManager
+
 
 class RouterNode(Node):
     def __init__(self, name, tl, memo_size=50):

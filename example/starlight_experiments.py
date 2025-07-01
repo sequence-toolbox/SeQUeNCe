@@ -25,13 +25,13 @@ if __name__ == "__main__":
     routers = network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER)
     bsm_nodes = network_topo.get_nodes_by_type(RouterNetTopo.BSM_NODE)
 
-    # set memory parameters
+    # set memories parameters
     MEMO_FREQ = 2e3
     MEMO_EXPIRE = 1.3
     MEMO_EFFICIENCY = 0.75
     MEMO_FIDELITY = 0.9349367588934053
     for node in routers:
-        memory_array = node.get_components_by_type("MemoryArray")[0]  # assume only 1 memory array
+        memory_array = node.get_components_by_type("MemoryArray")[0]  # assume only 1 memories array
         memory_array.update_memory_params("frequency", MEMO_FREQ)
         memory_array.update_memory_params("coherence_time", MEMO_EXPIRE)
         memory_array.update_memory_params("efficiency", MEMO_EFFICIENCY)
@@ -81,7 +81,7 @@ if __name__ == "__main__":
         for reserve, wait_t, tp in zip(app.reserves, app.get_wait_time(),
                                        app.get_all_throughput()):
             print("    responder={}, start time={} sec, end time={} sec, "
-                  "used memory={}, fidelity thredshold={}, wait time={} sec, "
+                  "used memories={}, fidelity thredshold={}, wait time={} sec, "
                   "throughput={} pairs/sec".format(reserve[0],
                                                    reserve[1] / 1e12,
                                                    reserve[2] / 1e12,

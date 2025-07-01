@@ -1,10 +1,10 @@
-from sequence.kernel.process import Process
-from sequence.kernel.event import Event
-from sequence.topology.qlan_star_topo import QlanStarTopo
-from sequence.kernel.timeline import Timeline
 import sequence.utils.log as log
-from sequence.topology.qlan.orchestrator import QlanOrchestratorNode
+from sequence.kernel.event import Event
+from sequence.kernel.process import Process
+from sequence.kernel.timeline import Timeline
 from sequence.topology.qlan.client import QlanClientNode
+from sequence.topology.qlan.orchestrator import QlanOrchestratorNode
+from sequence.topology.qlan_star_topo import QlanStarTopo
 
 
 class QlanApp:
@@ -82,7 +82,7 @@ class QlanApp:
         for i, memory in enumerate(self.local_memories):
             print(f"Memory {memory.name}:")
             print(f"  Entangled Memory: {memory.entangled_memory}")
-            print(f"  Quantum state stored in memory{memory.qstate_key+1}:")
+            print(f"  Quantum state stored in memories{memory.qstate_key+1}:")
             print(f"  {self.tl.quantum_manager.states[i+len(self.local_memories)+1]}")
             print("----------------------------------------")
         
@@ -91,7 +91,7 @@ class QlanApp:
         for i, memory in enumerate(self.remote_memories):
             print(f"Memory {memory.name}:")
             print(f"  Entangled Memory: {memory.entangled_memory}")
-            print(f"  Quantum state stored in memory{memory.qstate_key+1}:")
+            print(f"  Quantum state stored in memories{memory.qstate_key+1}:")
             print(f"  {self.tl.quantum_manager.states[i]}")
             print("----------------------------------------")
 

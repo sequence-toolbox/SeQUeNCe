@@ -3,11 +3,12 @@
 # - (Protocol = False -- ideal) the state is generated without distribution.
 # - (Protocol = True -- circuit) the state is generated with qcircuit.
 
+import sys
+
+from sequence.components.memories import Memory
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
-from sequence.components.memory import Memory
 
-import sys
 sys.path.append('.')
 from example.qlan.local_ghz_protocol import LocalGHZ3protocol
 
@@ -19,9 +20,9 @@ class GHZStateManager:
 
     Attributes:
         owner (object): The owner object.
-        memory1_name (str): The name of the first memory.
-        memory2_name (str): The name of the second memory.
-        memory3_name (str): The name of the third memory.
+        memory1_name (str): The name of the first memories.
+        memory2_name (str): The name of the second memories.
+        memory3_name (str): The name of the third memories.
         raw_counter (int): The counter for the number of RAW states.
         ent_counter (int): The counter for the number of entangled states.
     """
@@ -32,9 +33,9 @@ class GHZStateManager:
 
         Args:
             owner (object): The owner object.
-            memory1_name (str): The name of the first memory.
-            memory2_name (str): The name of the second memory.
-            memory3_name (str): The name of the third memory.
+            memory1_name (str): The name of the first memories.
+            memory2_name (str): The name of the second memories.
+            memory3_name (str): The name of the third memories.
         """
         self.owner = owner
         self.memory1_name = memory1_name
@@ -109,9 +110,9 @@ def entangle_memory(tl: Timeline, memo1: Memory, memo2: Memory, memo3: Memory, f
 
     Args:
         tl (Timeline): The timeline object.
-        memo1 (Memory): The first memory object.
-        memo2 (Memory): The second memory object.
-        memo3 (Memory): The third memory object.
+        memo1 (Memory): The first memories object.
+        memo2 (Memory): The second memories object.
+        memo3 (Memory): The third memories object.
         fidelity (float): The fidelity of the quantum state.
 
     Returns:
@@ -146,9 +147,9 @@ def run_experiment(tl, memo_1, memo_2, memo_3, use_protocol):
 
     Args:
         tl (Timeline): The timeline object.
-        memo_1 (Memory): The first memory object.
-        memo_2 (Memory): The second memory object.
-        memo_3 (Memory): The third memory object.
+        memo_1 (Memory): The first memories object.
+        memo_2 (Memory): The second memories object.
+        memo_3 (Memory): The third memories object.
         use_protocol (bool): Flag indicating whether to use the protocol or not.
     """
     tl.init()
@@ -168,18 +169,18 @@ def display_state_information(tl, memo_1, memo_2, memo_3):
 
     Args:
         tl (Timeline): The timeline object.
-        memo_1 (Memory): The first memory object.
-        memo_2 (Memory): The second memory object.
-        memo_3 (Memory): The third memory object.
+        memo_1 (Memory): The first memories object.
+        memo_2 (Memory): The second memories object.
+        memo_3 (Memory): The third memories object.
     """
     
     print(memo_1.name, memo_1.entangled_memory, memo_1.fidelity)
     print(memo_2.name, memo_2.entangled_memory, memo_2.fidelity)
     print(memo_3.name, memo_3.entangled_memory, memo_3.fidelity)
     
-    print(f"Quantum state stored in memory{memo_1.qstate_key+1}:\n {tl.quantum_manager.states[0]}")
-    print(f"Quantum state stored in memory{memo_2.qstate_key+1}:\n {tl.quantum_manager.states[1]}")
-    print(f"Quantum state stored in memory{memo_3.qstate_key+1}:\n {tl.quantum_manager.states[2]}")
+    print(f"Quantum state stored in memories{memo_1.qstate_key+1}:\n {tl.quantum_manager.states[0]}")
+    print(f"Quantum state stored in memories{memo_2.qstate_key+1}:\n {tl.quantum_manager.states[1]}")
+    print(f"Quantum state stored in memories{memo_3.qstate_key+1}:\n {tl.quantum_manager.states[2]}")
 
 # MAIN PROCESS:
 # 1. Instantiate the timeline and nodes.

@@ -1,14 +1,13 @@
 import math
 
-from sequence.kernel.timeline import Timeline
+import sequence.utils.log as log
+from sequence.components.detector import Detector
+from sequence.components.memories import Memory
+from sequence.components.optical_channel import QuantumChannel
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
-from sequence.components.memory import Memory
-from sequence.components.optical_channel import QuantumChannel
-from sequence.components.detector import Detector
+from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
-
-import sequence.utils.log as log
 
 NUM_TRIALS = 1000
 FREQUENCY = 1e3
@@ -40,7 +39,7 @@ class Sender:
 class SenderNode(Node):
     def __init__(self, name, timeline):
         super().__init__(name, timeline)
-        memory_name = name + ".memory"
+        memory_name = name + ".memories"
         memory = Memory(memory_name, timeline, fidelity=1, frequency=0, efficiency=1, coherence_time=0, wavelength=500)
         self.add_component(memory)
         memory.add_receiver(self)

@@ -226,7 +226,7 @@ These provide an iterable list of all connections in the network that may be edi
 
 ```python
 def set_parameters(topology: RouterNetTopo):
-    # set memory parameters
+    # set memories parameters
     MEMO_FREQ = 2e3
     MEMO_EXPIRE = 0
     MEMO_EFFICIENCY = 1

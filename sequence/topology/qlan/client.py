@@ -1,8 +1,9 @@
 from ..node import Node
+from ...components.memories import Memory
 from ...kernel.timeline import Timeline
-from ...components.memory import Memory
 from ...message import Message
 from ...qlan.correction import QlanCorrectionProtocol
+
 
 class QlanClientStateManager:
     """
@@ -24,7 +25,7 @@ class QlanClientStateManager:
         self.remote_memories = remote_memories
 
         for i, memory_name in enumerate(self.memory_names):
-            setattr(self, f"memory{i+1}_name", memory_name)
+            setattr(self, f"memories{i+1}_name", memory_name)
         self.raw_counter = 0
         self.ent_counter = 0
         
@@ -112,7 +113,7 @@ class QlanClientNode(Node):
             remote_memories (list[Memory]): The list of remote memories.
         """
         if len(remote_memories) <= 0:
-            raise ValueError("Update the orchestrator with at least one memory.")
+            raise ValueError("Update the orchestrator with at least one memories.")
         self.remote_memories = remote_memories
         self.resource_manager.remote_memories = remote_memories
     

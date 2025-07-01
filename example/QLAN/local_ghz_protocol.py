@@ -1,9 +1,10 @@
 from sequence.components.circuit import Circuit
-from sequence.components.memory import Memory
-from sequence.topology.node import Node
+from sequence.components.memories import Memory
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 from sequence.message import Message
+from sequence.topology.node import Node
 from sequence.utils import log
+
 
 class LocalGHZ3protocol(EntanglementProtocol):
     """Generation of a 3-qubit GHZ state (local).
@@ -33,9 +34,9 @@ class LocalGHZ3protocol(EntanglementProtocol):
         Args:
             owner (Node): The node that owns this protocol instance.
             name (str): The name of this protocol instance.
-            memory1 (Memory): The first quantum memory.
-            memory2 (Memory): The second quantum memory.
-            memory3 (Memory): The third quantum memory.
+            memory1 (Memory): The first quantum memories.
+            memory2 (Memory): The second quantum memories.
+            memory3 (Memory): The third quantum memories.
         """
         self.owner = owner
         self.name = name
@@ -57,7 +58,7 @@ class LocalGHZ3protocol(EntanglementProtocol):
         Args:
             protocol (str): Other protocol name.
             node (str): Other node name.
-            memories (list[str]): The list of memory names used on the other node.
+            memories (list[str]): The list of memories names used on the other node.
         """
         self.remote_node_name = node
         self.remote_protocol_name = protocol
@@ -78,13 +79,13 @@ class LocalGHZ3protocol(EntanglementProtocol):
         print("The key of the first qubit is: ", result)
 
     def memory_expire(self, memory: "Memory") -> None:
-        """Handle memory expiration events.
+        """Handle memories expiration events.
 
         Args:
-            memory (Memory): The memory that has expired.
+            memory (Memory): The memories that has expired.
         """
         assert memory in [self.memory1, self.memory2, self.memory3]
-        # Update the resource manager about the expired memory
+        # Update the resource manager about the expired memories
 
     def received_message(self, src: str, msg: Message):
         """Handle received messages.
@@ -152,20 +153,20 @@ class LocalGHZprotocol(EntanglementProtocol):
         Args:
             protocol (str): Other protocol name.
             node (str): Other node name.
-            memories (list[str]): The list of memory names used on the other node.
+            memories (list[str]): The list of memories names used on the other node.
         """
         self.remote_node_name = node
         self.remote_protocol_name = protocol
         self.remote_memories = memories
 
     def memory_expire(self, memory: "Memory") -> None:
-        """Handle memory expiration events.
+        """Handle memories expiration events.
 
         Args:
-            memory (Memory): The memory that has expired.
+            memory (Memory): The memories that has expired.
         """
         assert memory in self.memories
-        # Update the resource manager about the expired memory
+        # Update the resource manager about the expired memories
 
     def received_message(self, src: str, msg: Message):
         """Handle received messages.

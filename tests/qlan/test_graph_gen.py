@@ -1,9 +1,7 @@
-
-from matplotlib.pylab import randint
-from sequence.qlan.graph_gen import generate_g_state, entangle_memory, qlan_entangle_memory
 from sequence.components.circuit import Circuit
+from sequence.components.memories import Memory
 from sequence.kernel.timeline import Timeline
-from sequence.components.memory import Memory
+from sequence.qlan.graph_gen import generate_g_state, qlan_entangle_memory
 
 
 def check_minus_and_numeric_values(g1, g2):

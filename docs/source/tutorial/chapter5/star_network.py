@@ -2,7 +2,7 @@ from sequence.topology.router_net_topo import RouterNetTopo
 
 
 def set_parameters(topology: RouterNetTopo):
-    # set memory parameters
+    # set memories parameters
     MEMO_FREQ = 2e3
     MEMO_EXPIRE = 0
     MEMO_EFFICIENCY = 1

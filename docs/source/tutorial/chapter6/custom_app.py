@@ -1,12 +1,11 @@
-from sequence.kernel.process import Process
-from sequence.kernel.event import Event
-from sequence.topology.router_net_topo import RouterNetTopo
-from sequence.resource_management.memory_manager import MemoryInfo
-from sequence.network_management.reservation import Reservation
-import sequence.utils.log as log
-
-
 from typing import TYPE_CHECKING
+
+from sequence.kernel.event import Event
+from sequence.kernel.process import Process
+from sequence.network_management.reservation import Reservation
+from sequence.resource_management.memory_manager import MemoryInfo
+from sequence.topology.router_net_topo import RouterNetTopo
+
 if TYPE_CHECKING:
     from sequence.topology.node import QuantumRouter
 
@@ -38,7 +37,7 @@ class PeriodicApp:
 
     def get_memory(self, info: "MemoryInfo"):
         if info.state == "ENTANGLED" and info.remote_node == self.other:
-            print("\t{} app received memory {} ENTANGLED at time {}".format(
+            print("\t{} app received memories {} ENTANGLED at time {}".format(
                 self.node.name, info.index, self.node.timeline.now() * 1e-12))
             self.node.resource_manager.update(None, info.memory, "RAW")
 
@@ -61,9 +60,9 @@ class ResetApp:
     def get_memory(self, info):
         """Similar to the get_memory method of the main application.
 
-        We check if the memory info meets the request first,
-        by noting the remote entangled memory and entanglement fidelity.
-        We then free the memory for future use.
+        We check if the memories info meets the request first,
+        by noting the remote entangled memories and entanglement fidelity.
+        We then free the memories for future use.
         """
 
         if (info.state == "ENTANGLED" and info.remote_node == self.other_node_name

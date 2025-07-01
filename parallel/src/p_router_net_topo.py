@@ -1,8 +1,8 @@
 from mpi4py import MPI
-from sequence.topology.topology import Topology as Topo
-from sequence.topology.router_net_topo import RouterNetTopo
-from sequence.topology.node import QuantumRouter, BSMNode
 
+from sequence.topology.node import QuantumRouter, BSMNode
+from sequence.topology.router_net_topo import RouterNetTopo
+from sequence.topology.topology import Topology as Topo
 from .p_timeline import ParallelTimeline
 
 
@@ -33,7 +33,7 @@ class ParallelRouterNetTopo(RouterNetTopo):
                     if memo_size:
                         node_obj = QuantumRouter(name, self.tl, memo_size)
                     else:
-                        print("WARN: the size of memory on quantum router {} "
+                        print("WARN: the size of memories on quantum router {} "
                               "is not set".format(name))
                         node_obj = QuantumRouter(name, self.tl)
                 else:

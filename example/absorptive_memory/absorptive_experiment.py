@@ -1,9 +1,9 @@
 """The main script for simulating experiment of entanglement generation between two remote AFC absorptive quantum memories.
 
-There are 4 nodes involved: 2 memory nodes, 1 entangling node (for BSM) and 1 measurement node (for measurement of retrieved photonic state).
-Each memory node is connected with both entangling node and measurement node, but there is no direct connection between memory nodes.
+There are 4 nodes involved: 2 memories nodes, 1 entangling node (for BSM) and 1 measurement node (for measurement of retrieved photonic state).
+Each memories node is connected with both entangling node and measurement node, but there is no direct connection between memories nodes.
 
-Each memory node contains an AFC memory instance and an SPDC source instance.
+Each memories node contains an AFC memories instance and an SPDC source instance.
 The entangling node contains a QSDetectorFockInterference instance (BSM device with a beamsplitter and two photon detectors behind).
 The measurement node contians a QSDetectorFockDirect instance and a QSDetectorFockInterference instance, for measurement of 
     diagonal and off-diagonal elements of the effective 4-d density matrix, respectively.
@@ -12,9 +12,9 @@ If you find the codes in this repository useful, please cite this work as follow
 --- A. Zang, A. Kolar, J. Chung, M. Suchara, T. Zhong and R. Kettimuthu, "Simulation of Entanglement Generation between Absorptive Quantum Memories," 2022 IEEE International Conference on Quantum Computing and Engineering (QCE), Broomfield, CO, USA, 2022, pp. 617-623, doi: 10.1109/QCE53715.2022.00084. 
 """
 
-from typing import Callable, TYPE_CHECKING
-from pathlib import Path
 from copy import copy
+from pathlib import Path
+from typing import Callable, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from sequence.components.photon import Photon
@@ -28,7 +28,7 @@ from sequence.kernel.timeline import Timeline
 from sequence.kernel.quantum_manager import FOCK_DENSITY_MATRIX_FORMALISM
 from sequence.components.detector import QSDetectorFockDirect, QSDetectorFockInterference
 from sequence.components.light_source import SPDCSource
-from sequence.components.memory import AbsorptiveMemory
+from sequence.components.memories import AbsorptiveMemory
 from sequence.components.optical_channel import QuantumChannel
 from sequence.components.photon import Photon
 from sequence.topology.node import Node
@@ -43,8 +43,8 @@ TRUNCATION = 2  # truncation of Fock space (=dimension-1)
 
 # photon sources
 TELECOM_WAVELENGTH = 1436  # telecom band wavelength of SPDC source idler photon
-WAVELENGTH = 606  # wavelength of AFC memory resonant absorption, of SPDC source signal photon
-SPDC_FREQUENCY = 80e6  # frequency of both SPDC sources' photon creation (same as memory frequency and detector count rate)
+WAVELENGTH = 606  # wavelength of AFC memories resonant absorption, of SPDC source signal photon
+SPDC_FREQUENCY = 80e6  # frequency of both SPDC sources' photon creation (same as memories frequency and detector count rate)
 MEAN_PHOTON_NUM1 = 0.1  # mean photon number of SPDC source on node 1
 MEAN_PHOTON_NUM2 = 0.1  # mean photon number of SPDC source on node 2
 
@@ -62,22 +62,22 @@ MEAS_DET2_DARK = 150
 DIST_ANL_ERC = 20  # distance between ANL and ERC, in km
 DIST_HC_ERC = 20  # distance between HC and ERC, in km
 ATTENUATION = 0.2  # attenuation rate of optical fibre (in dB/km)
-DELAY_CLASSICAL = 5e-3  # delay for classical communication between BSM node and memory nodes (in s)
+DELAY_CLASSICAL = 5e-3  # delay for classical communication between BSM node and memories nodes (in s)
 
 # memories
-MODE_NUM = 100  # number of temporal modes of AFC memory (same for both memories)
-MEMO_FREQUENCY1 = SPDC_FREQUENCY  # frequency of memory 1
-MEMO_FREQUENCY2 = SPDC_FREQUENCY  # frequency of memory 2
-ABS_EFFICIENCY1 = 0.35  # absorption efficiency of AFC memory 1
-ABS_EFFICIENCY2 = 0.35  # absorption efficiency of AFC memory 2
-PREPARE_TIME1 = 0  # time required for AFC structure preparation of memory 1
-PREPARE_TIME2 = 0  # time required for AFC structure preparation of memory 2
-COHERENCE_TIME1 = -1  # spin coherence time for AFC memory 1 spinwave storage, -1 means infinite time
-COHERENCE_TIME2 = -1  # spin coherence time for AFC memory 2 spinwave storage, -1 means infinite time
-AFC_LIFETIME1 = -1  # AFC structure lifetime of memory 1, -1 means infinite time
-AFC_LIFETIME2 = -1  # AFC structure lifetime of memory 2, -1 means infinite time
-DECAY_RATE1 = 4.3e-8  # retrieval efficiency decay rate for memory 1
-DECAY_RATE2 = 4.3e-8  # retrieval efficiency decay rate for memory 2
+MODE_NUM = 100  # number of temporal modes of AFC memories (same for both memories)
+MEMO_FREQUENCY1 = SPDC_FREQUENCY  # frequency of memories 1
+MEMO_FREQUENCY2 = SPDC_FREQUENCY  # frequency of memories 2
+ABS_EFFICIENCY1 = 0.35  # absorption efficiency of AFC memories 1
+ABS_EFFICIENCY2 = 0.35  # absorption efficiency of AFC memories 2
+PREPARE_TIME1 = 0  # time required for AFC structure preparation of memories 1
+PREPARE_TIME2 = 0  # time required for AFC structure preparation of memories 2
+COHERENCE_TIME1 = -1  # spin coherence time for AFC memories 1 spinwave storage, -1 means infinite time
+COHERENCE_TIME2 = -1  # spin coherence time for AFC memories 2 spinwave storage, -1 means infinite time
+AFC_LIFETIME1 = -1  # AFC structure lifetime of memories 1, -1 means infinite time
+AFC_LIFETIME2 = -1  # AFC structure lifetime of memories 2, -1 means infinite time
+DECAY_RATE1 = 4.3e-8  # retrieval efficiency decay rate for memories 1
+DECAY_RATE2 = 4.3e-8  # retrieval efficiency decay rate for memories 2
 
 # experiment settings
 time = int(1e12)
@@ -119,7 +119,7 @@ def build_bell_state(truncation, sign, phase=0, formalism="dm"):
         raise ValueError("Invalid quantum state formalism " + formalism)
 
 
-# retrieval efficiency as function of storage time for absorptive quantum memory, using exponential decay model
+# retrieval efficiency as function of storage time for absorptive quantum memories, using exponential decay model
 def efficiency1(t: int) -> float:
     return np.exp(-t*DECAY_RATE1)
 
@@ -147,7 +147,7 @@ class EmitProtocol(Protocol):
             other_node (str): name of the other node to generate entanglement with
             photon_pair_num (int): number of output photon pulses to send in one execution.
             source_name (str): name of the light source on the node.
-            memory_name (str): name of the memory on the node.
+            memory_name (str): name of the memories on the node.
         """
 
         super().__init__(owner, name)
@@ -169,9 +169,9 @@ class EmitProtocol(Protocol):
 
 
 class EndNode(Node):
-    """Node for each end of the network (the memory node).
+    """Node for each end of the network (the memories node).
 
-    This node stores an SPDC photon source and a quantum memory.
+    This node stores an SPDC photon source and a quantum memories.
     The properties of attached devices are made customizable for each individual node.
     """
 
@@ -185,7 +185,7 @@ class EndNode(Node):
 
         # hardware setup
         self.spdc_name = name + ".spdc_source"
-        self.memo_name = name + ".memory"
+        self.memo_name = name + ".memories"
         spdc = SPDCSource(self.spdc_name, timeline, wavelengths=[TELECOM_WAVELENGTH, WAVELENGTH],
                           frequency=spdc_frequency, mean_photon_num=mean_photon_num)
         memory = AbsorptiveMemory(self.memo_name, timeline, frequency=memo_frequency,
@@ -206,7 +206,7 @@ class EndNode(Node):
             # from spdc source: send to bsm node
             self.send_qubit(self.bsm_name, photon)
         else:
-            # from memory: send to destination (measurement) node
+            # from memories: send to destination (measurement) node
             self.send_qubit(dst, photon)
 
 
@@ -599,7 +599,7 @@ if __name__ == "__main__":
             delay_fiber_hc = hc.qchannels[erc_name].delay
             assert delay_fiber_anl == delay_fiber_hc
             delay_fiber = delay_fiber_anl  # time for photon to travel from SPDC source to BSM device
-            delay_classical = DELAY_CLASSICAL  # delay for classical communication between BSM node and memory nodes
+            delay_classical = DELAY_CLASSICAL  # delay for classical communication between BSM node and memories nodes
 
             # total duration from first photon emitted to last photon's detection result communicated back
             duration_tot = duration_photon + delay_fiber + delay_classical

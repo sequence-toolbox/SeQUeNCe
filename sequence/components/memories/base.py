@@ -19,7 +19,7 @@ from math import inf
 
 
 def const(t):
-    """Constant function thal always returns 1. For AFC memory default spin efficiency."""
+    """Constant function thal always returns 1. For AFC memories default spin efficiency."""
     return 1
 
 
@@ -51,7 +51,7 @@ class MemoryArray(Entity):
     The MemoryArray can be accessed as a list to get individual memories.
 
     Attributes:
-        name (str): label for memory array instance.
+        name (str): label for memories array instance.
         timeline (Timeline): timeline for simulation.
         memories (list[Memory]): list of all memories.
     """
@@ -62,16 +62,16 @@ class MemoryArray(Entity):
         """Constructor for the Memory Array class.
 
         Args:
-            name (str): name of the memory array instance.
+            name (str): name of the memories array instance.
             timeline (Timeline): simulation timeline.
             num_memories (int): number of memories in the array (default 10).
             fidelity (float): fidelity of memories (default 0.85).
             frequency (float): maximum frequency of excitation for memories (default 80e6).
             efficiency (float): efficiency of memories (default 1).
-            coherence_time (float): average time (in s) that memory state is valid (default -1 -> inf).
+            coherence_time (float): average time (in s) that memories state is valid (default -1 -> inf).
             wavelength (int): wavelength (in nm) of photons emitted by memories (default 500).
-            decoherence_errors (list[int]): pauli decoherence errors. Passed to memory object.
-            cutoff_ratio (float): the ratio between cutoff time and memory coherence time (default 1, should be between 0 and 1).
+            decoherence_errors (list[int]): pauli decoherence errors. Passed to memories object.
+            cutoff_ratio (float): the ratio between cutoff time and memories coherence time (default 1, should be between 0 and 1).
         """
 
         Entity.__init__(self, name, timeline)
@@ -99,7 +99,7 @@ class MemoryArray(Entity):
     def init(self):
         """Implementation of Entity interface (see base class).
 
-        Set the owner of memory as the owner of memory array.
+        Set the owner of memories as the owner of memories array.
         """
 
         for memory in self.memories:
@@ -109,7 +109,7 @@ class MemoryArray(Entity):
         """Method to receive expiration events from memories.
 
         Args:
-            memory (Memory): expired memory.
+            memory (Memory): expired memories.
         """
 
         self.owner.memory_expire(memory)
@@ -119,21 +119,21 @@ class MemoryArray(Entity):
             memory.__setattr__(arg_name, value)
 
     def add_receiver(self, receiver: "Entity") -> None:
-        """Add receiver to each memory in the memory array to receive photons.
+        """Add receiver to each memories in the memories array to receive photons.
 
         Args:
-            receiver (Entity): receiver of the memory
+            receiver (Entity): receiver of the memories
         """
         for memory in self.memories:
             memory.add_receiver(receiver)
 
     def get_memory_by_name(self, name: str) -> "Memory":
-        """Given the memory's name, get the memory object.
+        """Given the memories's name, get the memories object.
 
         Args:
-            name (str): name of memory
+            name (str): name of memories
         Return:
-            (Memory): the memory object
+            (Memory): the memories object
         """
         index = self.memory_name_to_index.get(name, -1)
         assert index >= 0, "Oops! name={} not exist!"
@@ -141,33 +141,33 @@ class MemoryArray(Entity):
 
 
 class Memory(Entity):
-    """Individual single-atom memory.
+    """Individual single-atom memories.
 
-    This class models a single-atom memory, where the quantum state is stored as the spin of a single ion.
+    This class models a single-atom memories, where the quantum state is stored as the spin of a single ion.
     This class will replace the older implementation once completed.
 
     Attributes:
-        name (str): label for memory instance.
+        name (str): label for memories instance.
         timeline (Timeline): timeline for simulation.
-        fidelity (float):     (current) fidelity of memory.
-        raw_fidelity (float): (initial) fidelity of memory.
-        frequency (float): maximum frequency at which memory can be excited.
+        fidelity (float):     (current) fidelity of memories.
+        raw_fidelity (float): (initial) fidelity of memories.
+        frequency (float): maximum frequency at which memories can be excited.
         efficiency (float): probability of emitting a photon when excited.
-        coherence_time (float): average usable lifetime of memory (in seconds). Negative value means infinite coherence time.
+        coherence_time (float): average usable lifetime of memories (in seconds). Negative value means infinite coherence time.
         wavelength (float): wavelength (in nm) of emitted photons.
         qstate_key (int): key for associated quantum state in timeline's quantum manager.
-        memory_array (MemoryArray): memory array aggregating current memory.
-        entangled_memory (dict[str, Any]): tracks entanglement state of memory.
-        docoherence_errors (list[float]): assumeing the memory (qubit) decoherence channel being Pauli channel,
+        memory_array (MemoryArray): memories array aggregating current memories.
+        entangled_memory (dict[str, Any]): tracks entanglement state of memories.
+        docoherence_errors (list[float]): assumeing the memories (qubit) decoherence channel being Pauli channel,
             Probability distribution of X, Y, Z Pauli errors;
             (default value is -1, meaning not using BDS or further density matrix representation)
             Question: is it general enough? Dephasing/damping channel, multipartite entanglement?
-        cutoff_ratio (float): ratio between cutoff time and memory coherence time (default 1, should be between 0 and 1).
+        cutoff_ratio (float): ratio between cutoff time and memories coherence time (default 1, should be between 0 and 1).
         generation_time (float): time when the EPR is first generated (float or int depends on timeing unit)
             (default -1 before generation or not used). Used only for logging
         last_update_time (float): last time when the EPR pair is updated (usually when decoherence channel applied),
             used to determine decoherence channel (default -1 before generation or not used)
-        is_in_application (bool): whether the quantum memory is involved in application after successful distribution of EPR pair
+        is_in_application (bool): whether the quantum memories is involved in application after successful distribution of EPR pair
     """
 
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
@@ -176,18 +176,18 @@ class Memory(Entity):
         """Constructor for the Memory class.
 
         Args:
-            name (str): name of the memory instance.
+            name (str): name of the memories instance.
             timeline (Timeline): simulation timeline.
-            fidelity (float): initial fidelity of memory.
-            frequency (float): maximum frequency of excitation for memory.
+            fidelity (float): initial fidelity of memories.
+            frequency (float): maximum frequency of excitation for memories.
             efficiency (float): efficiency of memories.
-            coherence_time (float): average time (in s) that memory state is valid.
+            coherence_time (float): average time (in s) that memories state is valid.
             decoherence_rate (float): rate of decoherence to implement time dependent decoherence.
             wavelength (int): wavelength (in nm) of photons emitted by memories.
-            decoherence_errors (list[float]): assuming the memory (qubit) decoherence channel being Pauli channel,
+            decoherence_errors (list[float]): assuming the memories (qubit) decoherence channel being Pauli channel,
                 probability distribution of X, Y, Z Pauli errors
                 (default value is None, meaning not using BDS or further density matrix representation)
-            cutoff_ratio (float): the ratio between cutoff time and memory coherence time (default 1, should be between 0 and 1).
+            cutoff_ratio (float): the ratio between cutoff time and memories coherence time (default 1, should be between 0 and 1).
         """
 
         super().__init__(name, timeline)
@@ -228,7 +228,7 @@ class Memory(Entity):
         # keep track of entanglement
         self.entangled_memory = {'node_id': None, 'memo_id': None}
 
-        # keep track of current memory write (ignore expiration of past states)
+        # keep track of current memories write (ignore expiration of past states)
         self.expiration_event = None
         self.excited_photon = None
 
@@ -241,16 +241,16 @@ class Memory(Entity):
         self.memory_array = memory_array
 
     def excite(self, dst="", protocol="bk") -> None:
-        """Method to excite memory and potentially emit a photon.
+        """Method to excite memories and potentially emit a photon.
 
-        If it is possible to emit a photon, the photon may be marked as null based on the state of the memory.
+        If it is possible to emit a photon, the photon may be marked as null based on the state of the memories.
 
         Args:
             dst (str): name of destination node for emitted photon (default "").
             protocol (str): Valid values are "bk" (for Barrett-Kok protocol) or "sh" (for single heralded)
 
         Side Effects:
-            May modify quantum state of memory.
+            May modify quantum state of memories.
             May schedule photon transmission to destination node.
         """
 
@@ -267,7 +267,7 @@ class Memory(Entity):
             photon = Photon("", self.timeline, wavelength=self.wavelength, location=self.name,
                             encoding_type=self.encoding_sh,
                             quantum_state=self.qstate_key, use_qm=True)
-            # keep track of memory initialization time
+            # keep track of memories initialization time
             self.generation_time = self.timeline.now()
             self.last_update_time = self.timeline.now()
         else:
@@ -286,18 +286,18 @@ class Memory(Entity):
         self.excited_photon = photon
 
     def expire(self) -> None:
-        """Method to handle memory expiration.
+        """Method to handle memories expiration.
 
-        Is scheduled automatically by the `set_plus` memory operation.
+        Is scheduled automatically by the `set_plus` memories operation.
 
-        If the quantum memory has been explicitly involved in application after entanglement distribution, do not expire.
+        If the quantum memories has been explicitly involved in application after entanglement distribution, do not expire.
             Some simplified applications do not necessarily need to modify the is_in_application attribute.
             Some more complicated applications, such as probe state preparation for distributed quantum sensing,
-            may change is_in_application attribute to keep memory from expiring during study.
+            may change is_in_application attribute to keep memories from expiring during study.
 
         Side Effects:
             Will notify upper entities of expiration via the `pop` interface.
-            Will modify the quantum state of the memory.
+            Will modify the quantum state of the memories.
         """
 
         if self.is_in_application:
@@ -312,7 +312,7 @@ class Memory(Entity):
             self.notify(self)
 
     def reset(self) -> None:
-        """Method to clear quantum memory.
+        """Method to clear quantum memories.
 
         Will reset quantum state to |0> and will clear entanglement information.
 
@@ -331,7 +331,7 @@ class Memory(Entity):
             self.expiration_event = None
 
     def update_state(self, state: list[complex]) -> None:
-        """Method to set the memory state to an arbitrary pure state.
+        """Method to set the memories state to an arbitrary pure state.
 
         Args:
             state (list[complex]): array of amplitudes for pure state in Z-basis.
@@ -350,7 +350,7 @@ class Memory(Entity):
             self._schedule_expiration()
 
     def bds_decohere(self) -> None:
-        """Method to decohere stored BDS in quantum memory according to the single-qubit Pauli channels.
+        """Method to decohere stored BDS in quantum memories according to the single-qubit Pauli channels.
 
         During entanglement distribution (before application phase),
         BDS decoherence can be treated analytically (see entanglement purification paper for explicit formulae).
@@ -364,8 +364,8 @@ class Memory(Entity):
             pass
 
         else:
-            time = (self.timeline.now() - self.last_update_time) * 1e-12  # duration of memory idling (in s)
-            if time > 0 and self.last_update_time > 0:  # time > 0 means time has progressed, self.last_update_time > 0 means the memory has not been reset
+            time = (self.timeline.now() - self.last_update_time) * 1e-12  # duration of memories idling (in s)
+            if time > 0 and self.last_update_time > 0:  # time > 0 means time has progressed, self.last_update_time > 0 means the memories has not been reset
 
                 x_rate, y_rate, z_rate = self.decoherence_rate * self.decoherence_errors[0], \
                                          self.decoherence_rate * self.decoherence_errors[1], \
@@ -384,12 +384,12 @@ class Memory(Entity):
 
                 log.logger.debug(f'{self.name}: before f={state_now[0]:.6f}, after f={state_new[0]:.6f}')
 
-                # update the quantum state stored in quantum manager for self and entangled memory
+                # update the quantum state stored in quantum manager for self and entangled memories
                 keys = self.timeline.quantum_manager.states[self.qstate_key].keys
                 self.timeline.quantum_manager.set(keys, state_new)
 
                 # update the last_update_time of self
-                # note that the attr of entangled memory should not be updated right now,
+                # note that the attr of entangled memories should not be updated right now,
                 # because decoherence has not been applied there
                 self.last_update_time = self.timeline.now()
 
@@ -434,7 +434,7 @@ class Memory(Entity):
             self._observers.remove(observer)
 
     def get_bds_state(self):
-        """Method to get state of memory in BDS formalism.
+        """Method to get state of memories in BDS formalism.
 
         Will automatically call the `bds_decohere` method.
         """
@@ -455,9 +455,9 @@ class Memory(Entity):
 
 
 class AbsorptiveMemory(Entity):
-    """Atomic ensemble absorptive memory.
+    """Atomic ensemble absorptive memories.
 
-    This class models an AFC(-spinwave) absorptive memory, where the quantum state is stored as collective excitation of atomic ensemble.
+    This class models an AFC(-spinwave) absorptive memories, where the quantum state is stored as collective excitation of atomic ensemble.
     Rephasing time (predetermined storage time for AFC type) is given by temporal mode number and length of each temporal mode bin.
     This class does not support qubit state manipulation, individual photons should be manipulated instead.
 
@@ -465,18 +465,18 @@ class AbsorptiveMemory(Entity):
     Retrieved photon sequence might be reversed (only for AFC-spinwave), which is physically determined by RF pulses used during spinwave.
     Note that for AFC (not spinwave) type, is_reversed must be False.
 
-    Note that the memory is reusable (available for other rounds of absorption) as long as AFC structure is still usable.
-    Once AFC structure expires the memory also expires, and the memory needs to be re-prepared so stored photons cannot be retrieved.
+    Note that the memories is reusable (available for other rounds of absorption) as long as AFC structure is still usable.
+    Once AFC structure expires the memories also expires, and the memories needs to be re-prepared so stored photons cannot be retrieved.
     Spinwave coherence time determines whether a certain cycle of absorption and re-emission will be successful.
     Eg. If on-demand storage time is longer than spinwave coherence time, the information stored in this cycle will be cleared.
-        However, if the AFC structure retains usability (in this example AFC_lifetime > coherence_time), the memory itself is not expired.
+        However, if the AFC structure retains usability (in this example AFC_lifetime > coherence_time), the memories itself is not expired.
 
     Attributes:
-        name (str): label for memory instance.
+        name (str): label for memories instance.
         timeline (Timeline): timeline for simulation.
-        fidelity (float): (current) fidelity of memory's entanglement.
-        frequency (float): maximum frequency of absorption for memory (total frequency bandwidth of AFC memory) (in Hz).
-        absorption_efficiency (float): probability of absorbing a photon when arriving at the memory.
+        fidelity (float): (current) fidelity of memories's entanglement.
+        frequency (float): maximum frequency of absorption for memories (total frequency bandwidth of AFC memories) (in Hz).
+        absorption_efficiency (float): probability of absorbing a photon when arriving at the memories.
         afc_efficiency (Callable): probability of emitting a photon as a function of AFC re-emission time of optical AFC.
         spin_efficiency (Callable): effeciency of spinwave storage as a function of storage time.
         mode_number (int): number of temporal modes available for storing photons, i.e. number of peaks in Atomic Frequency Comb.
@@ -490,13 +490,13 @@ class AbsorptiveMemory(Entity):
         photon_counter (int): counts number of detection events.
         absorb_start_time (int): start time (in ps) of photon absorption.
         retrieve_start_time (int): start time (in ps) of photon retrieval.
-        is_spinwave (Bool): determines if the memory is AFC or AFC-spinwave, default False.
+        is_spinwave (Bool): determines if the memories is AFC or AFC-spinwave, default False.
         is_reversed (Bool): determines re-emission sequence, physically determined by RF pulses during spinwave, default False.
         is_prepared (Bool): determines if AFC is successfully prepared.
-        memory_array (MemoryArray): memory array aggregating current memory.
+        memory_array (MemoryArray): memories array aggregating current memories.
         destination (str): name of predetermined re-emission destination node, default None.
-        entangled_memory (dict[str, Any]): tracks entanglement state of memory with a memory.
-        stored_photons (list[dict]): photons stored in memory temporal modes.
+        entangled_memory (dict[str, Any]): tracks entanglement state of memories with a memories.
+        stored_photons (list[dict]): photons stored in memories temporal modes.
     """
 
     def __init__(self, name: str, timeline: "Timeline", frequency: float, absorption_efficiency: float,
@@ -506,11 +506,11 @@ class AbsorptiveMemory(Entity):
         """Constructor for the AbsorptiveMemory class.
 
         Args:
-            name (str): name of the memory instance.
+            name (str): name of the memories instance.
             timeline (Timeline): simulation timeline.
-            fidelity (float): fidelity of memory.
-            frequency (float): maximum frequency of absorption for memory (total frequency bandwidth of AFC memory).
-            absorption_efficiency (float): probability of absorbing a photon when arriving at the memory.
+            fidelity (float): fidelity of memories.
+            frequency (float): maximum frequency of absorption for memories (total frequency bandwidth of AFC memories).
+            absorption_efficiency (float): probability of absorbing a photon when arriving at the memories.
             afc_efficiency (Callable): probability of emitting a photon as a function of AFC re-emission time of optical AFC.
             spin_efficiency (Callable): effeciency of spinwave storage as a function of storage time. Default contant unity.
             mode_number (int): number of modes supported for storing photons.
@@ -519,7 +519,7 @@ class AbsorptiveMemory(Entity):
             wavelength (int): wavelength (in nm) of photons emitted by memories.
             overlap_error (float): error due to photon overlap in one temporal mode.
             prepare_time (float): time to prepare AFC (in ps).
-            is_spinwave (Bool): determines if the memory is AFC or AFC-spinwave (default False).
+            is_spinwave (Bool): determines if the memories is AFC or AFC-spinwave (default False).
             is_reversed (Bool): determines re-emission sequence, physically determined by RF pulses during spinwave (default False).
             destination (str): name of predetermined re-emission destination node (default None).
         """
@@ -558,11 +558,11 @@ class AbsorptiveMemory(Entity):
         # -1 = no result, 0/1 give detector number
         self.previous_bsm = -1
 
-        # keep track of entanglement with memory
+        # keep track of entanglement with memories
         # photon entanglement stored internally within photons
         self.entangled_memory = {'node_id': None, 'memo_id': None}
 
-        # keep track of current memory write (ignore expiration of past states)
+        # keep track of current memories write (ignore expiration of past states)
         self.expiration_event = None
         self.excited_photons = []
 
@@ -575,10 +575,10 @@ class AbsorptiveMemory(Entity):
         pass
 
     def set_memory_array(self, memory_array: MemoryArray):
-        """Method to set the memory array to which the memory belongs
+        """Method to set the memories array to which the memories belongs
 
         Args:
-            memory_array (MemoryArray): memory array to which the memory belongs
+            memory_array (MemoryArray): memories array to which the memories belongs
         """
 
         self.memory_array = memory_array
@@ -610,7 +610,7 @@ class AbsorptiveMemory(Entity):
                 self._schedule_expiration()
 
     def get(self, photon: "Photon", **kwargs):
-        """Method to receive a photon to store in the absorptive memory."""
+        """Method to receive a photon to store in the absorptive memories."""
 
         # AFC needs to be prepared first
         if not self.is_prepared:
@@ -647,7 +647,7 @@ class AbsorptiveMemory(Entity):
         elif photon.wavelength == self.wavelength and self.get_generator().random() < self.absorption_efficiency:
             # keep one photon per mode since most hardware cannot resolve photon number
             # photon_counter might be larger than mode_number, multi-photon events counted by "number"
-            # if "overlap" is True, memory fidelity will be corrected by overlap_error
+            # if "overlap" is True, memories fidelity will be corrected by overlap_error
             if self.stored_photons[index] is None:
                 self.stored_photons[index] = {"photon": photon, "time": absorb_time, "number": 1, "overlap": False}
                 self.excited_photons.append(photon)
@@ -659,7 +659,7 @@ class AbsorptiveMemory(Entity):
         if self.photon_counter == 1:
             self.absorb_start_time = now
 
-            # schedule re-emission if memory is not spinwave type
+            # schedule re-emission if memories is not spinwave type
             if not self.is_spinwave:
                 process = Process(self, "retrieve", [])
                 event = Event(self.absorb_start_time + self.total_time, process)
@@ -676,7 +676,7 @@ class AbsorptiveMemory(Entity):
         """
 
         # AFC needs to be prepared first
-        # for simplicity, do not allow memory to re-emit if AFC expires
+        # for simplicity, do not allow memories to re-emit if AFC expires
         if not self.is_prepared:
             raise Exception("AFC is not prepared yet or has expired.")
 
@@ -706,7 +706,7 @@ class AbsorptiveMemory(Entity):
 
                         if self.is_reversed:
                             if not self.is_spinwave:
-                                raise Exception("AFC memory can only have normal order of re-emission")
+                                raise Exception("AFC memories can only have normal order of re-emission")
                             emit_time = self.total_time - self.mode_bin - absorb_time  # reversed order of re-emission
                         else:
                             emit_time = absorb_time  # normal order of re-emission
@@ -724,7 +724,7 @@ class AbsorptiveMemory(Entity):
 
                     if self.is_reversed:
                         if not self.is_spinwave:
-                            raise Exception("AFC memory can only have normal order of re-emission")
+                            raise Exception("AFC memories can only have normal order of re-emission")
                         emit_time = self.total_time - self.mode_bin - absorb_time  # reversed order of re-emission
                     else:
                         emit_time = absorb_time  # normal order of re-emission
@@ -742,18 +742,18 @@ class AbsorptiveMemory(Entity):
         self.storage_reset()
 
     def expire(self) -> None:
-        """Method to handle memory expiration due to AFC expiration.
+        """Method to handle memories expiration due to AFC expiration.
 
         Side Effects:
             Will notify upper entities of expiration via the `pop` interface.
-            Will modify information stored by the memory.
+            Will modify information stored by the memories.
         """
 
         # AFC needs to be prepared first
         if not self.is_prepared:
             raise Exception("AFC is not prepared yet.")
 
-        # if stored photons have not been re-emitted when memory expires
+        # if stored photons have not been re-emitted when memories expires
         if self.excited_photons:
             for i in range(len(self.excited_photons)):
                 self.excited_photons[i].is_null = True
@@ -763,9 +763,9 @@ class AbsorptiveMemory(Entity):
         self.notify(self)
 
     def reset(self) -> None:
-        """Method to clear quantum memory.
+        """Method to clear quantum memories.
 
-        Will reset memory state to no photon stored and will clear entanglement information.
+        Will reset memories state to no photon stored and will clear entanglement information.
         Will reset AFC to unprepared state.
 
         Side Effects:
@@ -787,12 +787,12 @@ class AbsorptiveMemory(Entity):
         self.photon_counter = 0
         self.absorb_start_time = 0
         # no photon should be retrieved after storage reset
-        # re-emitted photons' is_null attribute should not be modified when memory expires
+        # re-emitted photons' is_null attribute should not be modified when memories expires
         self.excited_photons = []
         self.stored_photons = [None] * self.mode_number
 
     def _schedule_expiration(self) -> None:
-        """Schedule the expiration of memory according to AFC lifetime."""
+        """Schedule the expiration of memories according to AFC lifetime."""
 
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
@@ -807,7 +807,7 @@ class AbsorptiveMemory(Entity):
     def _schedule_storage_reset(self) -> None:
         """Schedule the resetting of a cycle of photon storage in spinwave.
 
-        Only invoked when the memory type is AFC-spinwave.
+        Only invoked when the memories type is AFC-spinwave.
         Storage resetting time is determined by AFC rephasing time and spinwave coherence time.
         """
 
@@ -835,7 +835,7 @@ class AbsorptiveMemory(Entity):
             self.timeline.update_event_time(self.expiration_event, time)
 
     def get_expire_time(self) -> int:
-        """Method to get the simulation time when the memory is expired"""
+        """Method to get the simulation time when the memories is expired"""
 
         return self.expiration_event.time if self.expiration_event else inf
 

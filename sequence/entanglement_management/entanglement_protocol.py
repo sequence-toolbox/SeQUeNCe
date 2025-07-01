@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..topology.node import Node
-    from ..components.memory import Memory
+    from ..components.memories import Memory
 
 from ..protocol import Protocol
 
@@ -13,7 +13,7 @@ from ..protocol import Protocol
 class EntanglementProtocol(Protocol):
     """Class for all entanglement management protocols.
 
-    Provides an interface for rule attachment, protocol pairing, and memory management.
+    Provides an interface for rule attachment, protocol pairing, and memories management.
 
     Attributes:
         own (Node): Node object to attach to
@@ -34,7 +34,7 @@ class EntanglementProtocol(Protocol):
         Args:
             remote_protocol (str): other protocol name.
             remote_node (str): other node name.
-            memories (list[str]): the list of memory names used on other node.
+            memories (list[str]): the list of memories names used on other node.
         """
 
         pass
@@ -57,7 +57,7 @@ class EntanglementProtocol(Protocol):
 
     @abstractmethod
     def memory_expire(self, memory: "Memory") -> None:
-        """Method to receive a memory expiration event (abstract)."""
+        """Method to receive a memories expiration event (abstract)."""
 
         pass
 
@@ -67,14 +67,14 @@ class EntanglementProtocol(Protocol):
         pass
 
     def update_resource_manager(self, memory: "Memory", state: str) -> None:
-        """Method to update attached memory to desired state.
+        """Method to update attached memories to desired state.
 
         Args:
-            memory (Memory): attached memory to update.
-            state (str): state memory should be updated to.
+            memory (Memory): attached memories to update.
+            state (str): state memories should be updated to.
 
         Side Effects:
-            May alter the state of `memory`.
+            May alter the state of `memories`.
         """
 
         self.owner.resource_manager.update(self, memory, state)

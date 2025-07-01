@@ -12,11 +12,11 @@ Also defined in this module is the message type used by these protocols.
 """
 
 from enum import Enum, auto
-from typing import TYPE_CHECKING
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..components.memory import Memory
+    from ..components.memories import Memory
     from ..topology.node import Node
 
 from ..message import Message
@@ -39,10 +39,10 @@ class EntanglementSwappingMessage(Message):
     Attributes:
         msg_type (SwappingMsgType): defines the message type.
         receiver (str): name of destination protocol instance.
-        fidelity (float): fidelity of the newly swapped memory pair.
-        remote_node (str): name of the distant node holding the entangled memory of the new pair.
-        remote_memo (int): index of the entangled memory on the remote node.
-        expire_time (int): expiration time of the new memory pair.
+        fidelity (float): fidelity of the newly swapped memories pair.
+        remote_node (str): name of the distant node holding the entangled memories of the new pair.
+        remote_memo (int): index of the entangled memories on the remote node.
+        expire_time (int): expiration time of the new memories pair.
     """
 
     def __init__(self, msg_type: SwappingMsgType, receiver: str, **kwargs):
@@ -66,7 +66,7 @@ class EntanglementSwappingA(EntanglementProtocol):
     """Entanglement swapping protocol for middle router.
 
     The entanglement swapping protocol is an asymmetric protocol.
-    EntanglementSwappingA should be instantiated on the middle node, where it measures a memory from each pair to be swapped.
+    EntanglementSwappingA should be instantiated on the middle node, where it measures a memories from each pair to be swapped.
     Results of measurement and swapping are sent to the end routers.
 
     Variables:
@@ -75,14 +75,14 @@ class EntanglementSwappingA(EntanglementProtocol):
     Attributes:
         own (Node): node that protocol instance is attached to.
         name (str): label for protocol instance.
-        left_memo (Memory): a memory from one pair to be swapped.
-        right_memo (Memory): a memory from the other pair to be swapped.
-        left_node (str): name of node that contains memory entangling with left_memo.
-        left_remote_memo (str): name of memory that entangles with left_memo.
-        right_node (str): name of node that contains memory entangling with right_memo.
-        right_remote_memo (str): name of memory that entangles with right_memo.
+        left_memo (Memory): a memories from one pair to be swapped.
+        right_memo (Memory): a memories from the other pair to be swapped.
+        left_node (str): name of node that contains memories entangling with left_memo.
+        left_remote_memo (str): name of memories that entangles with left_memo.
+        right_node (str): name of node that contains memories entangling with right_memo.
+        right_remote_memo (str): name of memories that entangles with right_memo.
         success_prob (float): probability of a successful swapping operation.
-        degradation (float): degradation factor of memory fidelity after swapping.
+        degradation (float): degradation factor of memories fidelity after swapping.
         is_success (bool): flag to show the result of swapping
         left_protocol_name (str): name of left protocol.
         right_protocol_name (str): name of right protocol.
@@ -100,10 +100,10 @@ class EntanglementSwappingA(EntanglementProtocol):
         Args:
             owner (Node): node that protocol instance is attached to.
             name (str): label for swapping protocol instance.
-            left_memo (Memory): memory entangled with a memory on one distant node.
-            right_memo (Memory): memory entangled with a memory on the other distant node.
+            left_memo (Memory): memories entangled with a memories on one distant node.
+            right_memo (Memory): memories entangled with a memories on the other distant node.
             success_prob (float): probability of a successful swapping operation (default 1).
-            degradation (float): degradation factor of memory fidelity after swapping (default 0.95).
+            degradation (float): degradation factor of memories fidelity after swapping (default 0.95).
         """
 
         assert left_memo != right_memo
@@ -221,13 +221,13 @@ class EntanglementSwappingA(EntanglementProtocol):
         raise Exception("EntanglementSwappingA protocol '{}' should not receive messages.".format(self.name))
 
     def memory_expire(self, memory: "Memory") -> None:
-        """Method to receive memory expiration events.
+        """Method to receive memories expiration events.
 
         Releases held memories on current node.
         Memories at the remote node are released as well.
 
         Args:
-            memory (Memory): memory that expired.
+            memory (Memory): memories that expired.
 
         Side Effects:
             Will invoke `update` method of attached resource manager.
@@ -271,7 +271,7 @@ class EntanglementSwappingB(EntanglementProtocol):
     Attributes:
         own (QuantumRouter): node that protocol instance is attached to.
         name (str): name of protocol instance.
-        memory (Memory): memory to swap.
+        memory (Memory): memories to swap.
         remote_protocol_name (str): name of another protocol to communicate with for swapping.
         remote_node_name (str): name of node hosting the other protocol.
     """
@@ -292,7 +292,7 @@ class EntanglementSwappingB(EntanglementProtocol):
         Args:
             own (Node): node protocol instance is attached to.
             name (str): name of protocol instance.
-            hold_memo (Memory): memory entangled with a memory on middle node.
+            hold_memo (Memory): memories entangled with a memories on middle node.
         """
 
         EntanglementProtocol.__init__(self, owner, name)
@@ -311,7 +311,7 @@ class EntanglementSwappingB(EntanglementProtocol):
         Args:
             protocol (str): other protocol name.
             node (str): other node name.
-            memories (list[str]): the list of memory names used on other node.
+            memories (list[str]): the list of memories names used on other node.
         """
         self.remote_node_name = node
         self.remote_protocol_name = protocol
@@ -354,10 +354,10 @@ class EntanglementSwappingB(EntanglementProtocol):
         """Method to deal with expired memories.
 
         Args:
-            memory (Memory): memory that expired.
+            memory (Memory): memories that expired.
 
         Side Effects:
-            Will update memory in attached resource manager.
+            Will update memories in attached resource manager.
         """
 
         self.update_resource_manager(self.memory, MemoryInfo.RAW)

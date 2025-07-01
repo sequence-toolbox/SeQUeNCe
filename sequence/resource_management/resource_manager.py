@@ -1,15 +1,17 @@
 """Definition of resource managemer.
 
 This module defines the resource manager, which composes the SeQUeNCe resource management module.
-The manager uses a memory manager and rule manager to track memories and control entanglement operations, respectively.
+The manager uses a memories manager and rule manager to track memories and control entanglement operations, respectively.
 This module also defines the message type used by the resource manager.
 """
 
 from __future__ import annotations
+
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Callable, Optional
+
 if TYPE_CHECKING:
-    from ..components.memory import Memory
+    from ..components.memories import Memory
     from ..topology.node import QuantumRouter
     from .rule_manager import Rule, Arguments
 
@@ -40,7 +42,7 @@ class ResourceManagerMessage(Message):
     * REQUEST: request eligible protocols from remote resource manager to pair entanglement protocols.
     * RESPONSE: approve or reject received request.
     * RELEASE_PROTOCOL: release the protocol on the remote node
-    * RELEASE_MEMORY: release the memory on the remote node
+    * RELEASE_MEMORY: release the memories on the remote node
 
     Attributes:
         ini_protocol_name (str): name of protocol that creates the original REQUEST message.
@@ -87,13 +89,13 @@ class ResourceManagerMessage(Message):
 class ResourceManager:
     """Class to define the resource manager.
 
-    The resource manager uses a memory manager to track memory states for the entanglement protocols.
+    The resource manager uses a memories manager to track memories states for the entanglement protocols.
     It also uses a rule manager to direct the creation and operation of entanglement protocols.
 
     Attributes:
         name (str): label for manager instance.
         owner (QuantumRouter): node that resource manager is attached to.
-        memory_manager (MemoryManager): internal memory manager object.
+        memory_manager (MemoryManager): internal memories manager object.
         rule_manager (RuleManager): internal rule manager object.
         pending_protocols (list[Protocol]): list of protocols awaiting a response for a remote resource request.
         waiting_protocols (list[Protocol]): list of protocols awaiting a request from a remote protocol.
@@ -122,7 +124,7 @@ class ResourceManager:
         """Method to load rules for entanglement management.
 
         Attempts to add rules to the rule manager.
-        Will automatically execute rule action if conditions met on a memory.
+        Will automatically execute rule action if conditions met on a memories.
 
         Args:
             rule (Rule): rule to load.
@@ -134,7 +136,7 @@ class ResourceManager:
         log.logger.info('{} load rule={}'.format(self.owner.name, rule))
         self.rule_manager.load(rule)
 
-        for memory_info in self.memory_manager:  # iterate through each memory, and check if the rule is valid on each memory
+        for memory_info in self.memory_manager:  # iterate through each memories, and check if the rule is valid on each memories
             memories_info = rule.is_valid(memory_info)  # is valid means condition is satisfied
             if len(memories_info) > 0:
                 rule.do(memories_info)
@@ -170,16 +172,16 @@ class ResourceManager:
                 self.update(protocol, memory, MemoryInfo.RAW)
 
     def update(self, protocol: "EntanglementProtocol", memory: "Memory", state: str) -> None:
-        """Method to update state of memory after completion of entanglement management protocol.
+        """Method to update state of memories after completion of entanglement management protocol.
 
         Args:
             protocol (EntanglementProtocol): concerned protocol.
                 If not None, then remove all references.
-            memory (Memory): memory to update.
-            state (str): new state for the memory.
+            memory (Memory): memories to update.
+            state (str): new state for the memories.
 
         Side Effects:
-            May modify memory state, and modify any attached protocols.
+            May modify memories state, and modify any attached protocols.
         """
 
         self.memory_manager.update(memory, state)
@@ -208,7 +210,7 @@ class ResourceManager:
                     info.to_occupied()
                 return
 
-        self.owner.get_idle_memory(memo_info)  # no new rules apply to this memory, thus "idle"
+        self.owner.get_idle_memory(memo_info)  # no new rules apply to this memories, thus "idle"
 
     def get_memory_manager(self):
         return self.memory_manager
@@ -317,7 +319,7 @@ class ResourceManager:
                         return
 
     def memory_expire(self, memory: "Memory"):
-        """Method to receive memory expiration events."""
+        """Method to receive memories expiration events."""
 
         self.update(None, memory, "RAW")
 
@@ -339,14 +341,14 @@ class ResourceManager:
     def release_remote_memory(self, dst: str, memory_id: str) -> None:
         """Method to release memories on distant nodes.
 
-        Release the remote memory 'memory_id' on the node 'dst'.
-        The entanglement protocol of remote memory was paired with the local protocol 'init_protocol', but local
+        Release the remote memories 'memory_id' on the node 'dst'.
+        The entanglement protocol of remote memories was paired with the local protocol 'init_protocol', but local
         protocol becomes invalid.
-        The resource manager needs to notify the remote node to release the occupied memory.
+        The resource manager needs to notify the remote node to release the occupied memories.
 
         Args:
             dst (str): name of destination node.
-            memory_id (str): name of memory to release.
+            memory_id (str): name of memories to release.
         """
 
         msg = ResourceManagerMessage(ResourceManagerMsgType.RELEASE_MEMORY, protocol="", 

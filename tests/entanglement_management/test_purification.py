@@ -1,12 +1,11 @@
 import numpy as np
 import pytest
 
-from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
-from sequence.kernel.timeline import Timeline
-from sequence.entanglement_management.purification import *
-from sequence.topology.node import Node
 from sequence.constants import SQRT_HALF, PHI_PLUS, PHI_MINUS, PSI_PLUS, PSI_MINUS
+from sequence.entanglement_management.purification import *
+from sequence.kernel.timeline import Timeline
+from sequence.topology.node import Node
 
 np.random.seed(0)
 
@@ -61,7 +60,7 @@ def test_BBPSSWMessage():
 
 
 def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline, Memory, Memory, Memory, Memory, BBPSSW, BBPSSW]:
-    '''create the whole quantum network (timeline, nodes, channels, memory, protocols)
+    '''create the whole quantum network (timeline, nodes, channels, memories, protocols)
     '''
     tl = Timeline()
     tl.show_progress = False
@@ -76,9 +75,9 @@ def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline,
     cc0.set_ends(a1, a2.name)
     cc1.set_ends(a2, a1.name)
 
-    kept1 = Memory('kept1', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)  # memory kept
+    kept1 = Memory('kept1', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)  # memories kept
     kept2 = Memory('kept2', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
-    meas1 = Memory('meas1', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)  # memory measured
+    meas1 = Memory('meas1', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)  # memories measured
     meas2 = Memory('meas2', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
 
     tl.init()

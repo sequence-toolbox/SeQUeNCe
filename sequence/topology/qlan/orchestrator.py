@@ -1,10 +1,10 @@
 from ..node import Node
-from ...kernel.timeline import Timeline
-from ...components.memory import Memory
-from ...message import Message
 from ...app.request_app import RequestApp
-from ...qlan.measurement import QlanMeasurementProtocol
+from ...components.memories import Memory
+from ...kernel.timeline import Timeline
+from ...message import Message
 from ...qlan.graph_gen import generate_g_state
+from ...qlan.measurement import QlanMeasurementProtocol
 
 
 class QlanOrchestratorStateManager:
@@ -26,7 +26,7 @@ class QlanOrchestratorStateManager:
         self.memory_names = memory_names
         self.bases = self.owner.bases
         for i, memory_name in enumerate(memory_names):
-            setattr(self, f"memory{i+1}_name", memory_name)
+            setattr(self, f"memories{i+1}_name", memory_name)
         self.raw_counter = 0
         self.ent_counter = 0
 
@@ -60,7 +60,7 @@ class QlanOrchestratorStateManager:
         """function for linear graph state generation (abstract generation, without real distribution of states, i.e., cheating)
            TODO: May be extended with teleportation protocols
         """
-        # Requires memory objects to work! (abstraction: it should be able to set only local memories)
+        # Requires memories objects to work! (abstraction: it should be able to set only local memories)
         n = len(local_memories) + len(remote_memories)
         
         # 1/sqrt(2)|000> + 0 +...+ 0 + 1/sqrt(2)|111>
@@ -98,7 +98,7 @@ class QlanOrchestratorNode(Node):
         name (str): The name of the node.
         tl (Timeline): The timeline object.
         num_local_memories (int): The number of local memories to add as components.
-        remote_memories (list[Memory]): The list of remote memories to add as components. NOTE: orchestrator node should not have access to remote memory
+        remote_memories (list[Memory]): The list of remote memories to add as components. NOTE: orchestrator node should not have access to remote memories
         memo_fidelity (float): The fidelity of the memories.
         memo_frequency (int): The frequency of the memories.
         memo_efficiency (float): The efficiency of the memories.

@@ -2,7 +2,7 @@ from sequence.app.random_request import RandomRequestApp
 from sequence.kernel.timeline import Timeline
 from sequence.network_management.reservation import Reservation
 from sequence.topology.node import QuantumRouter
-from sequence.components.memory import MemoryArray
+from sequence.components.memories import MemoryArray
 
 
 class FakeNode(QuantumRouter):
@@ -19,7 +19,7 @@ def get_memo_name(node):
     for name in node.components.keys():
         if type(node.components[name]) is MemoryArray:
             return name
-    raise Exception("no memory array on node {}".format(node.name))
+    raise Exception("no memories array on node {}".format(node.name))
 
 
 def test_RandomRequestApp_update_last_rsvp_metrics():

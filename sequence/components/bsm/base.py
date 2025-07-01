@@ -4,7 +4,7 @@ This module defines an abstract class for a 'BSM'
 
 
 This module defines a template bell state measurement (BSM) class,
-as well as implementations for polarization, time bin, and memory encoding schemes.
+as well as implementations for polarization, time bin, and memories encoding schemes.
 Also defined is a function to automatically construct a BSM of a specified type.
 """
 

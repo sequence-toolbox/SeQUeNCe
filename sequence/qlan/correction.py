@@ -1,13 +1,13 @@
-from ..components.circuit import Circuit
-from ..components.memory import Memory
-from ..topology.node import Node
-from ..entanglement_management.entanglement_protocol import EntanglementProtocol
-from ..message import Message
-from ..utils import log
-from ..kernel.timeline import Timeline
-from .measurement import QlanMeasurementMsgType, QlanB0MsgType
-
 from enum import Enum, auto
+
+from .measurement import QlanMeasurementMsgType, QlanB0MsgType
+from ..components.circuit import Circuit
+from ..components.memories import Memory
+from ..entanglement_management.entanglement_protocol import EntanglementProtocol
+from ..kernel.timeline import Timeline
+from ..message import Message
+from ..topology.node import Node
+from ..utils import log
 
 
 class QlanCorrectionMsgType(Enum):
@@ -65,7 +65,7 @@ class QlanCorrectionProtocol(EntanglementProtocol):
         Args:
             protocols (list[str]): list of other protocol names.
             nodes (list[str]): list of other node names.
-            memories (list[list[str]]): list of lists of memory names used on the other nodes.
+            memories (list[list[str]]): list of lists of memories names used on the other nodes.
         """
         self.remote_node_names = nodes
         self.remote_protocol_names = protocols
@@ -178,13 +178,13 @@ class QlanCorrectionProtocol(EntanglementProtocol):
             raise ValueError(f"Unknown message type received: {message.msg_type}")
             
     def memory_expire(self, memory: "Memory") -> None:
-        """Handle memory expiration events.
+        """Handle memories expiration events.
 
         Args:
-            memory (Memory): The memory that has expired.
+            memory (Memory): The memories that has expired.
         """
         assert memory in self.local_memories
-        # Update the resource manager about the expired memory
+        # Update the resource manager about the expired memories
 
     def release(self) -> None:
         """Release resources used by the protocol."""

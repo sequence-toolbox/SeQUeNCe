@@ -2,11 +2,11 @@
 # Simple generation of a n-qubit Linear Graph state in a single node network.
 # - IDEAL: the state is generated without distribution.
 
+from sequence.components.memories import Memory
 from sequence.kernel.timeline import Timeline
-from sequence.topology.node import Node
-from sequence.components.memory import Memory
 from sequence.qlan.graph_gen import entangle_memory
 from sequence.qlan.measurement import QlanMeasurementProtocol
+from sequence.topology.node import Node
 
 
 class GraphStateManager:

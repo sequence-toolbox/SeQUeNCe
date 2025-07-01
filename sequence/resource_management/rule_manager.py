@@ -5,10 +5,12 @@ This is achieved through rules (also defined in this module), which if met defin
 """
 
 from typing import Callable, TYPE_CHECKING, Any
+
 from ..utils import log
+
 if TYPE_CHECKING:
     from ..entanglement_management.entanglement_protocol import EntanglementProtocol
-    from .memory_manager import MemoryInfo, MemoryManager
+    from .memory_manager import MemoryInfo
     from .resource_manager import ResourceManager
     from ..network_management.reservation import Reservation
 
@@ -23,7 +25,7 @@ Arguments = dict[str, Any]
 class RuleManager:
     """Class to manage and follow installed rules.
 
-    The RuleManager checks available rules when the state of a memory is updated.
+    The RuleManager checks available rules when the state of a memories is updated.
     Rules that are met have their action executed by the rule manager.
 
     Attributes:
@@ -154,7 +156,7 @@ class Rule:
         """Method to perform rule activation and send requirements to other nodes.
 
         Args:
-            memories_info (list[MemoryInfo]): list of memory infos for memories meeting requirements.
+            memories_info (list[MemoryInfo]): list of memories infos for memories meeting requirements.
         """
 
         protocol, req_dsts, req_condition_funcs, req_args = self.action(memories_info, self.action_args)
@@ -172,10 +174,10 @@ class Rule:
         """Method to check for memories meeting condition.
 
         Args:
-            memory_info (MemoryInfo): memory info object to test.
+            memory_info (MemoryInfo): memories info object to test.
 
         Returns:
-            list[memory_info]: list of memory info objects meeting requirements of rule.
+            list[memory_info]: list of memories info objects meeting requirements of rule.
         """
 
         manager = self.rule_manager.get_memory_manager()

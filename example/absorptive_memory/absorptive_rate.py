@@ -2,8 +2,9 @@
 --- A. Zang, A. Kolar, J. Chung, M. Suchara, T. Zhong and R. Kettimuthu, "Simulation of Entanglement Generation between Absorptive Quantum Memories," 2022 IEEE International Conference on Quantum Computing and Engineering (QCE), Broomfield, CO, USA, 2022, pp. 617-623, doi: 10.1109/QCE53715.2022.00084. 
 """
 
-from absorptive_experiment import *
 from matplotlib import pyplot as plt
+
+from absorptive_experiment import *
 
 num = 4
 mean_num_list = np.linspace(0.02, 0.05, num=num, endpoint=True)
@@ -108,7 +109,7 @@ for mean_num in mean_num_list:
         delay_fiber_hc = hc.qchannels[erc_name].delay
         assert delay_fiber_anl == delay_fiber_hc
         delay_fiber = delay_fiber_anl  # time for photon to travel from SPDC source to BSM device
-        delay_classical = DELAY_CLASSICAL * 1e12  # delay for classical communication between BSM node and memory nodes
+        delay_classical = DELAY_CLASSICAL * 1e12  # delay for classical communication between BSM node and memories nodes
 
         # total duration from first photon emitted to last photon's detection result communicated back
         duration_tot = duration_photon + delay_fiber + delay_classical

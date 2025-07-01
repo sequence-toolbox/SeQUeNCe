@@ -1,6 +1,6 @@
 import numpy
 import pytest
-from sequence.components.memory import Memory
+from sequence.components.memories import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.kernel.timeline import Timeline
 from sequence.entanglement_management.swapping import *

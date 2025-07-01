@@ -4,6 +4,7 @@ This module defines the Photon class for tracking individual photons.
 Photons may be encoded directly with polarization or time bin schemes, or may herald the encoded state of single atom memories.
 """
 from typing import Any, TYPE_CHECKING
+
 from numpy import log2
 
 if TYPE_CHECKING:
@@ -29,9 +30,9 @@ class Photon:
         quantum_state (int | tuple[complex]): quantum state of photon.
             If `use_qm` is false, this will be a QuantumState object.
             Otherwise, it will be an integer key for the quantum manager.
-        is_null (bool): defines whether photon is real or a "ghost" photon (not detectable but used in memory encoding).
+        is_null (bool): defines whether photon is real or a "ghost" photon (not detectable but used in memories encoding).
                         if True, then it is a "ghost" photon
-        loss (float): similarly defined for memory encoding, used to track loss and improve performance.
+        loss (float): similarly defined for memories encoding, used to track loss and improve performance.
             Does not need to be utilized for all encoding schemes.
         use_qm (bool): determines if photon stores state locally (False) or uses timeline quantum manager (True).
 

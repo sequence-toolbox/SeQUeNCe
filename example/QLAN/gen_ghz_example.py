@@ -3,11 +3,12 @@
 # - (Protocol = False -- ideal) the state is generated without distribution.
 # - (Protocol = True -- circuit) the state is generated with qcircuit.
 
+from example.qlan.local_ghz_protocol import LocalGHZprotocol
+
+from sequence.components.memories import Memory
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
-from sequence.components.memory import Memory
 
-from example.qlan.local_ghz_protocol import LocalGHZprotocol
 
 class GHZStateManager:
     """
@@ -32,7 +33,7 @@ class GHZStateManager:
         self.owner = owner
         self.memory_names = memory_names
         for i, memory_name in enumerate(memory_names):
-            setattr(self, f"memory{i+1}_name", memory_name)
+            setattr(self, f"memories{i+1}_name", memory_name)
         self.raw_counter = 0
         self.ent_counter = 0
 
@@ -103,7 +104,7 @@ def entangle_memory(tl, memories, n):
 
     Args:
         tl (Timeline): The timeline object.
-        memories (list[Memory]): list of memory objects.
+        memories (list[Memory]): list of memories objects.
         n (int): Number of memories.
 
     Returns:
@@ -130,10 +131,10 @@ def run_experiment(tl, memo_1, memo_2, memo_3, memo_4, use_protocol):
 
     Args:
         tl (Timeline): The timeline object.
-        memo_1 (Memory): The first memory object.
-        memo_2 (Memory): The second memory object.
-        memo_3 (Memory): The third memory object.
-        memo_4 (Memory): The fourth memory object.
+        memo_1 (Memory): The first memories object.
+        memo_2 (Memory): The second memories object.
+        memo_3 (Memory): The third memories object.
+        memo_4 (Memory): The fourth memories object.
         use_protocol (bool): Flag indicating whether to use the protocol or not.
     """
     tl.init()
@@ -153,20 +154,20 @@ def display_state_information(tl, memo_1, memo_2, memo_3, memo_4):
 
     Args:
         tl (Timeline): The timeline object.
-        memo_1 (Memory): The first memory object.
-        memo_2 (Memory): The second memory object.
-        memo_3 (Memory): The third memory object.
-        memo_4 (Memory): The fourth memory object.
+        memo_1 (Memory): The first memories object.
+        memo_2 (Memory): The second memories object.
+        memo_3 (Memory): The third memories object.
+        memo_4 (Memory): The fourth memories object.
     """
     print(memo_1.name, memo_1.entangled_memory, memo_1.fidelity)
     print(memo_2.name, memo_2.entangled_memory, memo_2.fidelity)
     print(memo_3.name, memo_3.entangled_memory, memo_3.fidelity)
     print(memo_4.name, memo_4.entangled_memory, memo_4.fidelity)
 
-    print(f"Quantum state stored in memory{memo_1.qstate_key+1}:\n {tl.quantum_manager.states[0]}")
-    print(f"Quantum state stored in memory{memo_2.qstate_key+1}:\n {tl.quantum_manager.states[1]}")
-    print(f"Quantum state stored in memory{memo_3.qstate_key+1}:\n {tl.quantum_manager.states[2]}")
-    print(f"Quantum state stored in memory{memo_4.qstate_key+1}:\n {tl.quantum_manager.states[3]}")
+    print(f"Quantum state stored in memories{memo_1.qstate_key+1}:\n {tl.quantum_manager.states[0]}")
+    print(f"Quantum state stored in memories{memo_2.qstate_key+1}:\n {tl.quantum_manager.states[1]}")
+    print(f"Quantum state stored in memories{memo_3.qstate_key+1}:\n {tl.quantum_manager.states[2]}")
+    print(f"Quantum state stored in memories{memo_4.qstate_key+1}:\n {tl.quantum_manager.states[3]}")
 
 # MAIN PROCESS:
 # 1. Instantiate the timeline and nodes.

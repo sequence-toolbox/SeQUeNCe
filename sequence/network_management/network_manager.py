@@ -131,7 +131,7 @@ class NetworkManager:
             responder (str): name of node to establish entanglement with.
             start_time (int): simulation start time of entanglement.
             end_time (int): simulation end time of entanglement.
-            memory_size (int): number of entangled memory pairs to create.
+            memory_size (int): number of entangled memories pairs to create.
             target_fidelity (float): desired fidelity of entanglement.
             entanglement_number (int): the number of entanglement requested.
             identity (int): the ID of the request.
@@ -152,7 +152,7 @@ def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str) -> "Networ
 
     Args:
         owner (QuantumRouter): node to attach network manager to.
-        memory_array_name (str): name of the memory array component on owner.
+        memory_array_name (str): name of the memories array component on owner.
 
     Returns:
         NetworkManager: network manager object created.

@@ -1,11 +1,12 @@
-import numpy as np
 import math
 
-from sequence.components.memory import *
+import numpy as np
+
+from sequence.components.memories import *
+from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
-from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 
 SEED = 0
 
@@ -164,7 +165,7 @@ def test_Memory_expire():
     entangled_memory = {"node_id": "node", "memo_id": 0}
     mem.entangled_memory = entangled_memory
 
-    # expire when the protocol controls memory
+    # expire when the protocol controls memories
     mem.detach(parent)
     assert len(parent.pop_log) == 0 and protocol.is_expire is False
     mem.expire()
@@ -172,7 +173,7 @@ def test_Memory_expire():
     assert mem.entangled_memory == {"node_id": None, "memo_id": None}
     assert len(parent.pop_log) == 0 and protocol.is_expire is True
 
-    # expire when the resource manager controls memory
+    # expire when the resource manager controls memories
     mem.attach(parent)
     mem.detach(protocol)
     mem.update_state([math.sqrt(1/2), math.sqrt(1/2)])

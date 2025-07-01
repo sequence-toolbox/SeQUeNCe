@@ -1,12 +1,12 @@
-import pytest
 import numpy as np
+import pytest
 
 from sequence.components.bsm import *
-from sequence.components.memory import *
 from sequence.components.circuit import Circuit
-from sequence.kernel.timeline import Timeline
-from sequence.kernel.process import Process
+from sequence.components.memories import *
 from sequence.kernel.event import Event
+from sequence.kernel.process import Process
+from sequence.kernel.timeline import Timeline
 from sequence.utils.encoding import *
 
 

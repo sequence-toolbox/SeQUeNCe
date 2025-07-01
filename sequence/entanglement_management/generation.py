@@ -9,12 +9,13 @@ Entanglement generation is asymmetric:
 """
 
 from __future__ import annotations
+
 from enum import Enum, auto
 from math import sqrt
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from ..components.memory import Memory
+    from ..components.memories import Memory
     from ..components.bsm import SingleAtomBSM
     from ..topology.node import Node, BSMNode
 
@@ -53,7 +54,7 @@ class EntanglementGenerationMessage(Message):
         msg_type (GenerationMsgType): defines the message type.
         receiver (str): name of destination protocol instance.
         qc_delay (int): quantum channel delay to BSM node (if `msg_type == NEGOTIATE`).
-        frequency (float): frequency with which local memory can be excited (if `msg_type == NEGOTIATE`).
+        frequency (float): frequency with which local memories can be excited (if `msg_type == NEGOTIATE`).
         emit_time (int): time to emit photon for measurement (if `msg_type == NEGOTIATE_ACK`).
         res (int): detector number at BSM node (if `msg_type == MEAS_RES`).
         time (int): detection time at BSM node (if `msg_type == MEAS_RES`).
@@ -101,8 +102,8 @@ class EntanglementGenerationA(EntanglementProtocol):
         own (QuantumRouter): node that protocol instance is attached to.
         name (str): label for protocol instance.
         middle (str): name of BSM measurement node where emitted photons should be directed.
-        remote_node_name (str): name of distant QuantumRouter node, containing a memory to be entangled with local memory.
-        memory (Memory): quantum memory object to attempt entanglement for.
+        remote_node_name (str): name of distant QuantumRouter node, containing a memories to be entangled with local memories.
+        memory (Memory): quantum memories object to attempt entanglement for.
     """
 
     _plus_state = [sqrt(1/2), sqrt(1/2)]
@@ -119,7 +120,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             name (str): name of protocol instance.
             middle (str): name of middle measurement node.
             other (str): name of other node.
-            memory (Memory): memory to entangle.
+            memory (Memory): memories to entangle.
         """
 
         super().__init__(owner, name)
@@ -127,17 +128,17 @@ class EntanglementGenerationA(EntanglementProtocol):
         self.remote_node_name: str = other
         self.remote_protocol_name: str = None
 
-        # memory info
+        # memories info
         self.memory: Memory = memory
         self.memories: list[Memory] = [memory]
-        self.remote_memo_id: str = ""  # memory index used by corresponding protocol on other node
+        self.remote_memo_id: str = ""  # memories index used by corresponding protocol on other node
 
         # network and hardware info
         self.fidelity: float = memory.raw_fidelity
         self.qc_delay: int = 0
         self.expected_time: int = -1   # expected time for middle BSM node to receive the photon
 
-        # memory internal info
+        # memories internal info
         self.ent_round = 0  # keep track of current stage of protocol
         self.bsm_res = [-1, -1]  # keep track of bsm measurements to distinguish Psi+ and Psi-
 
@@ -155,7 +156,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         Args:
             protocol (str): other protocol name.
             node (str): other node name.
-            memories (list[str]): the list of memory names used on other node.
+            memories (list[str]): the list of memories names used on other node.
         """
         assert self.remote_protocol_name is None
         self.remote_protocol_name = protocol
@@ -177,7 +178,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         if self not in self.owner.protocols:
             return
 
-        # update memory, and if necessary start negotiations for round
+        # update memories, and if necessary start negotiations for round
         if self.update_memory() and self.primary:
             # send NEGOTIATE message
             self.qc_delay = self.owner.qchannels[self.middle].delay
@@ -187,17 +188,17 @@ class EntanglementGenerationA(EntanglementProtocol):
             self.owner.send_message(self.remote_node_name, message)
 
     def update_memory(self) -> bool:
-        """Method to handle necessary memory operations.
+        """Method to handle necessary memories operations.
 
         Called on both nodes.
-        Will check the state of the memory and protocol.
+        Will check the state of the memories and protocol.
 
         Returns:
             bool: if current round was successfull.
 
         Side Effects:
-            May change state of attached memory.
-            May update memory state in the attached node's resource manager.
+            May change state of attached memories.
+            May update memories state in the attached node's resource manager.
         """
 
         # to avoid start after protocol removed
@@ -229,15 +230,15 @@ class EntanglementGenerationA(EntanglementProtocol):
 
 
     def emit_event(self) -> None:
-        """Method to set up memory and emit photons.
+        """Method to set up memories and emit photons.
 
-        If the protocol is in round 1, the memory will be first set to the |+> state.
-        Otherwise, it will apply an x_gate to the memory.
-        Regardless of the round, the memory `excite` method will be invoked.
+        If the protocol is in round 1, the memories will be first set to the |+> state.
+        Otherwise, it will apply an x_gate to the memories.
+        Regardless of the round, the memories `excite` method will be invoked.
 
         Side Effects:
-            May change state of attached memory.
-            May cause attached memory to emit photon.
+            May change state of attached memories.
+            May cause attached memories to emit photon.
         """
 
         if self.ent_round == 1:
@@ -276,7 +277,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             # get time for first excite event
             memory_excite_time = self.memory.next_excite_time
             min_time = max(self.owner.timeline.now(), memory_excite_time) + total_quantum_delay - self.qc_delay + cc_delay  # cc_delay time for NEGOTIATE_ACK
-            emit_time = self.owner.schedule_qubit(self.middle, min_time)  # used to send memory
+            emit_time = self.owner.schedule_qubit(self.middle, min_time)  # used to send memories
             self.expected_time = emit_time + self.qc_delay  # expected time for middle BSM node to receive the photon
 
             # schedule emit
@@ -364,7 +365,7 @@ class EntanglementGenerationA(EntanglementProtocol):
                 self.owner.timeline.remove_event(event)
 
     def _entanglement_succeed(self):
-        log.logger.info(self.owner.name + " successful entanglement of memory {}".format(self.memory))
+        log.logger.info(self.owner.name + " successful entanglement of memories {}".format(self.memory))
         self.memory.entangled_memory["node_id"] = self.remote_node_name
         self.memory.entangled_memory["memo_id"] = self.remote_memo_id
         self.memory.fidelity = self.memory.raw_fidelity
@@ -374,7 +375,7 @@ class EntanglementGenerationA(EntanglementProtocol):
     def _entanglement_fail(self):
         for event in self.scheduled_events:
             self.owner.timeline.remove_event(event)
-        log.logger.info(self.owner.name + " failed entanglement of memory {}".format(self.memory))
+        log.logger.info(self.owner.name + " failed entanglement of memories {}".format(self.memory))
         
         self.update_resource_manager(self.memory, MemoryInfo.RAW)
 

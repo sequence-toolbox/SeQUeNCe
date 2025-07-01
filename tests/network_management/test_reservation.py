@@ -1,6 +1,6 @@
 from numpy import random
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
-from sequence.components.memory import MemoryArray
+from sequence.components.memories import MemoryArray
 from sequence.kernel.timeline import Timeline
 from sequence.network_management.reservation import *
 

@@ -184,11 +184,11 @@ def ep_rule_condition1(memory_info: "MemoryInfo", memory_manager: "MemoryManager
     """
     memory_indices = args["memory_indices"]
     reservation = args["reservation"]
-    if (memory_info.index in memory_indices                              # this memory (kept)
+    if (memory_info.index in memory_indices                              # this memories (kept)
             and memory_info.state == "ENTANGLED"
             and memory_info.fidelity < reservation.fidelity):
         for info in memory_manager:
-            if (info != memory_info and info.index in memory_indices     # another memory (meas)
+            if (info != memory_info and info.index in memory_indices     # another memories (meas)
                     and info.state == "ENTANGLED"
                     and info.remote_node == memory_info.remote_node
                     and info.fidelity == memory_info.fidelity):
@@ -245,7 +245,7 @@ def es_req_func(protocols: list["EntanglementProtocol"], args: Arguments) -> Ent
     target_memo = args["target_memo"]
     for protocol in protocols:
         if (isinstance(protocol, EntanglementSwappingB)
-                # and protocol.memory.name == memories_info[0].remote_memo):
+                # and protocol.memories.name == memories_info[0].remote_memo):
                 and protocol.memory.name == target_memo):
             return protocol
 
@@ -324,7 +324,7 @@ class ResourceReservationProtocol(StackProtocol):
     Attributes:
         owner (QuantumRouter): node that protocol instance is attached to.
         name (str): label for protocol instance.
-        memo_arr (MemoryArray): memory array to track.
+        memo_arr (MemoryArray): memories array to track.
         timecards (list[MemoryTimeCard]): list of reservation cards for all memories on node.
         es_succ_prob (float): sets `success_probability` of `EntanglementSwappingA` protocols created by rules.
         es_degradation (float): sets `degradation` of `EntanglementSwappingA` protocols created by rules.
@@ -337,7 +337,7 @@ class ResourceReservationProtocol(StackProtocol):
         Args:
             owner (QuantumRouter): node to attach protocol to.
             name (str): label for reservation protocol instance.
-            memory_array_name (str): name of the memory array component on own.
+            memory_array_name (str): name of the memories array component on own.
         """
 
         super().__init__(owner, name)
@@ -460,17 +460,17 @@ class ResourceReservationProtocol(StackProtocol):
 
         if self.owner.name in [reservation.initiator, reservation.responder]:
             counter = reservation.memory_size
-        else:  # e.g., entanglement swapping nodes needs twice amount of memory
+        else:  # e.g., entanglement swapping nodes needs twice amount of memories
             counter = reservation.memory_size * 2
         timecards = []
         for timecard in self.timecards:
             if timecard.add(reservation):
                 counter -= 1
                 timecards.append(timecard)
-            if counter == 0:  # attempt reservation succeeded: enough memory (timecard)
+            if counter == 0:  # attempt reservation succeeded: enough memories (timecard)
                 break
 
-        if counter > 0:       # attempt reservation failed: not enough memory (timecard)
+        if counter > 0:       # attempt reservation failed: not enough memories (timecard)
             for timecard in timecards:
                 timecard.remove(reservation)  # remove reservation from the timecard that have added the reservation
             return False
@@ -621,7 +621,7 @@ class Reservation:
         responder (str): name of distant node with witch entanglement is requested.
         start_time (int): simulation time at which entanglement should be attempted.
         end_time (int): simulation time at which resources may be released.
-        memory_size (int): number of entangled memory pairs requested.
+        memory_size (int): number of entangled memories pairs requested.
         path (list): a list of router names from the source to destination
         entanglement_number (int): the number of entanglement pair that the request ask for.
         identity (int): the ID of a request.
@@ -681,19 +681,19 @@ class Reservation:
 
 
 class MemoryTimeCard:
-    """Class for tracking reservations on a specific memory.
-       Each quantum memory in a memory array is associated with a memory time card
+    """Class for tracking reservations on a specific memories.
+       Each quantum memories in a memories array is associated with a memories time card
 
     Attributes:
-        memory_index (int): index of memory being tracked (in memory array).
-        reservations (list[Reservation]): list of reservations for the memory.
+        memory_index (int): index of memories being tracked (in memories array).
+        reservations (list[Reservation]): list of reservations for the memories.
     """
 
     def __init__(self, memory_index: int):
         """Constructor for time card class.
 
         Args:
-            memory_index (int): index of memory to track.
+            memory_index (int): index of memories to track.
         """
 
         self.memory_index = memory_index
@@ -725,7 +725,7 @@ class MemoryTimeCard:
             reservation (Reservation): reservation to remove.
 
         Returns:
-            bool: if reservation was already on the memory (return True) or not (return False).
+            bool: if reservation was already on the memories (return True) or not (return False).
         """
 
         try:
@@ -736,9 +736,9 @@ class MemoryTimeCard:
             return False
 
     def schedule_reservation(self, reservation: "Reservation") -> int:
-        """Method to add reservation to a memory.
+        """Method to add reservation to a memories.
 
-        Will return index at which reservation can be inserted into memory reservation list.
+        Will return index at which reservation can be inserted into memories reservation list.
         If no space found for reservation, will raise an exception.
 
         Args:

@@ -10,6 +10,7 @@ These include 2 classes used by a quantum manager, and one used for individual p
 
 import math
 from abc import ABC
+
 from numpy import pi, cos, sin, arange, log, log2
 from numpy.random import Generator
 
@@ -175,7 +176,7 @@ class FreeQuantumState(State):
 
     This is an alternative to tracking states in a dedicated quantum manager, which adds simulation overhead.
     It defines several operations, including entanglement and measurement.
-    For memories with an internal quantum state and certain photons, such as those stored in a memory or in parallel
+    For memories with an internal quantum state and certain photons, such as those stored in a memories or in parallel
     simulation, this class should not be used.
     Quantum states stored in a quantum manager class should be used instead.
     This module uses the ket vector formalism for storing and manipulating states.

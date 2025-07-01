@@ -4,7 +4,6 @@ This module provides definitions for various types of quantum network nodes.
 All node types inherit from the base Node type, which inherits from Entity.
 Node types can be used to collect all the necessary hardware and software for a network usage scenario.
 """
-import sys
 from math import inf
 from typing import TYPE_CHECKING, Any
 
@@ -17,12 +16,12 @@ if TYPE_CHECKING:
     from ..resource_management.memory_manager import MemoryInfo
     from ..network_management.reservation import Reservation
     from ..components.optical_channel import QuantumChannel, ClassicalChannel
-    from ..components.memory import Memory
+    from ..components.memories import Memory
     from ..components.photon import Photon
     from ..app.request_app import RequestApp
 
 from ..kernel.entity import Entity, ClassicalEntity
-from ..components.memory import MemoryArray
+from ..components.memories import MemoryArray
 from ..components.bsm import SingleAtomBSM, SingleHeraldedBSM
 from ..components.light_source import LightSource
 from ..components.detector import QSDetector, QSDetectorPolarization, QSDetectorTimeBin
@@ -277,8 +276,8 @@ class BSMNode(Node):
 class QuantumRouter(Node):
     """Node for entanglement distribution networks.
 
-    This node type comes pre-equipped with memory hardware, along with the default SeQUeNCe modules (sans application).
-    By default, a quantum memory array is included in the components of this node.
+    This node type comes pre-equipped with memories hardware, along with the default SeQUeNCe modules (sans application).
+    By default, a quantum memories array is included in the components of this node.
 
     Attributes:
         resource_manager (ResourceManager): resource management module.
@@ -308,7 +307,7 @@ class QuantumRouter(Node):
         if not component_templates:
             component_templates = {}
 
-        # create memory array object with optional args
+        # create memories array object with optional args
         self.memo_arr_name = name + ".MemoryArray"
         memo_arr_args = component_templates.get("MemoryArray", {})
         memory_array = MemoryArray(self.memo_arr_name, tl, num_memories=memo_size, **memo_arr_args)
@@ -350,7 +349,7 @@ class QuantumRouter(Node):
         """Initialize resource manager and network manager.
 
         Args:
-            memo_arr_name (str): the name of the memory array.
+            memo_arr_name (str): the name of the memories array.
         """
         resource_manager = ResourceManager(self, memo_arr_name)
         network_manager = NewNetworkManager(self, memo_arr_name)
@@ -383,7 +382,7 @@ class QuantumRouter(Node):
         self.map_to_middle_node[router_name] = bsm_name
 
     def get(self, photon: "Photon", **kwargs):
-        """Receives photon from last hardware element (in this case, quantum memory)."""
+        """Receives photon from last hardware element (in this case, quantum memories)."""
         dst = kwargs.get("dst", None)
         if dst is None:
             raise ValueError("Destination should be supplied for 'get' method on QuantumRouter")
@@ -393,7 +392,7 @@ class QuantumRouter(Node):
         """Method to receive expired memories.
 
         Args:
-            memory (Memory): memory that has expired.
+            memory (Memory): memories that has expired.
         """
 
         self.resource_manager.memory_expire(memory)

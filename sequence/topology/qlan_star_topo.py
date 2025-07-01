@@ -1,12 +1,12 @@
 import json
+
 import numpy as np
 
-from .topology import Topology as Topo
-from ..kernel.timeline import Timeline
-from ..constants import SPEED_OF_LIGHT
-
-from .qlan.orchestrator import QlanOrchestratorNode
 from .qlan.client import QlanClientNode
+from .qlan.orchestrator import QlanOrchestratorNode
+from .topology import Topology as Topo
+from ..constants import SPEED_OF_LIGHT
+from ..kernel.timeline import Timeline
 
 
 class QlanStarTopo(Topo):
@@ -21,7 +21,7 @@ class QlanStarTopo(Topo):
         tl (Timeline): the timeline used for simulation
         orchestrator_nodes (list[QlanOrchestratorNode]): list of orchestrator nodes in the network.
         client_nodes (list[QlanClientNode]): list of client nodes in the network.
-        remote_memories_array (list[Memory]): list of remote memory objects in the network.
+        remote_memories_array (list[Memory]): list of remote memories objects in the network.
         n_local_memories (int): number of local memories in each orchestrator node.
         n_clients (int): number of client nodes in the network.
         meas_bases (str): measurement bases used by the client nodes.

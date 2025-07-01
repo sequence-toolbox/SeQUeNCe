@@ -4,6 +4,7 @@ This module defines the RandomRequestApp, which will create random entanglement 
 Useful for testing network properties and throughputs.
 """
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -27,7 +28,7 @@ class RandomRequestApp(RequestApp):
 
     The RandomRequestApp class inherits three functions from the RequsetApp class:
     get_memory(memory_info), get_throughput(), get_other_reservation(reservation).
-    The "get_memory" function consumes the memory when the qualified entanglement is generated.
+    The "get_memory" function consumes the memories when the qualified entanglement is generated.
     The "get_throughput" function provides the throughput of the serving reservation.
     The "get_other_reservation" function accepts reservation when node is the responder node.
 
@@ -38,13 +39,13 @@ class RandomRequestApp(RequestApp):
         request_time (int): simulation time at which current reservation requested.
         memory_counter (int): number of successfully received memories.
         wait_time (list[int]): aggregates times between request and accepted reservation.
-        all_throughput (list[float]): aggregates average rate of memory entanglement per reservation.
+        all_throughput (list[float]): aggregates average rate of memories entanglement per reservation.
         reserves (list[list[any]]): aggregates previous reservations.
-        memo_to_reserve (dict[int, Reservation]): mapping of memory index to corresponding reservation.
+        memo_to_reserve (dict[int, Reservation]): mapping of memories index to corresponding reservation.
         min_dur (int): the minimum duration of request (ps).
         max_dur (int): the maximum duration of request (ps).
-        min_size (int): the minimum required memory of request.
-        max_size (int): the maximum required memory of request.
+        min_size (int): the minimum required memories of request.
+        max_size (int): the maximum required memories of request.
         min_fidelity (float): the minimum required fidelity of entanglement.
         max_fidelity (float): the maximum required fidelity of entanglement.
     """
@@ -60,8 +61,8 @@ class RandomRequestApp(RequestApp):
             seed (int): seed for internal random number generator.
             min_dur (int): the minimum duration of request (ps).
             max_dur (int): the maximum duration of request (ps).
-            min_size (int): the minimum required memory of request.
-            max_size (int): the maximum required memory of request.
+            min_size (int): the minimum required memories of request.
+            max_size (int): the maximum required memories of request.
             min_fidelity (float): the minimum required fidelity of entanglement.
             max_fidelity (float): the maximum required fidelity of entanglement.
         """

@@ -6,11 +6,11 @@ Also defined is the message type used by the BBPSSW code.
 """
 
 from enum import Enum, auto
-from typing import TYPE_CHECKING
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..components.memory import Memory
+    from ..components.memories import Memory
     from ..topology.node import Node
 
 from ..message import Message
@@ -58,8 +58,8 @@ class BBPSSW(EntanglementProtocol):
     Attributes:
         own (QuantumRouter): node that protocol instance is attached to.
         name (str): label for protocol instance.
-        kept_memo: memory to be purified by the protocol (should already be entangled).
-        meas_memo: memory to measure and discart (should already be entangled).
+        kept_memo: memories to be purified by the protocol (should already be entangled).
+        meas_memo: memories to measure and discart (should already be entangled).
         meas_res (int): measurement result from circuit.
         remote_node_name (str): name of other node.
         remote_protocol_name (str): name of other protocol
@@ -76,8 +76,8 @@ class BBPSSW(EntanglementProtocol):
         Args:
             owner (Node): node protocol is attached to.
             name (str): name of protocol instance.
-            kept_memo (Memory): memory to have fidelity improved.
-            meas_memo (Memory): memory to measure and discard.
+            kept_memo (Memory): memories to have fidelity improved.
+            meas_memo (Memory): memories to measure and discard.
         """
 
         assert kept_memo != meas_memo
@@ -101,7 +101,7 @@ class BBPSSW(EntanglementProtocol):
         Args:
             protocol (str): other protocol name.
             node (str): other node name.
-            memories (list[str]): the list of memory names used on other node.
+            memories (list[str]): the list of memories names used on other node.
         """
         self.remote_node_name = node
         self.remote_protocol_name = protocol
@@ -133,7 +133,7 @@ class BBPSSW(EntanglementProtocol):
          o -------(x)----------| M |
 
         Side Effects:
-            May update parameters of kept memory.
+            May update parameters of kept memories.
             Will send message to other protocol instance.
         """
 
@@ -183,10 +183,10 @@ class BBPSSW(EntanglementProtocol):
             self.update_resource_manager(self.kept_memo, state="RAW")
 
     def memory_expire(self, memory: "Memory") -> None:
-        """Method to receive memory expiration events.
+        """Method to receive memories expiration events.
 
         Args:
-            memory (Memory): memory that has expired.
+            memory (Memory): memories that has expired.
 
         Side Effects:
             Will call `update_resource_manager` method.

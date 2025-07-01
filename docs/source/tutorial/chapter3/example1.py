@@ -1,9 +1,9 @@
-from sequence.kernel.timeline import Timeline
-from sequence.topology.node import Node, BSMNode
-from sequence.components.memory import Memory
+from sequence.components.memories import Memory
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.entanglement_management.generation import EntanglementGenerationA
+from sequence.kernel.timeline import Timeline
 from sequence.message import Message
+from sequence.topology.node import Node, BSMNode
 
 
 class SimpleManager:

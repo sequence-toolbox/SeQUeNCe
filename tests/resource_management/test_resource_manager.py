@@ -1,7 +1,7 @@
 import math
 import numpy
 
-from sequence.components.memory import MemoryArray
+from sequence.components.memories import MemoryArray
 from sequence.components.bsm import SingleAtomBSM
 from sequence.kernel.timeline import Timeline
 from sequence.resource_management.resource_manager import ResourceManager, ResourceManagerMessage, ResourceManagerMsgType
@@ -450,10 +450,10 @@ def test_ResourceManager2():
     tl.run()
 
     # for info in node1.resource_manager.memory_manager:
-    #     print(info.memory.name, info.state, info.remote_memo)
+    #     print(info.memories.name, info.state, info.remote_memo)
     #
     # for info in node2.resource_manager.memory_manager:
-    #     print(info.memory.name, info.state, info.remote_memo)
+    #     print(info.memories.name, info.state, info.remote_memo)
 
     for info in node1.resource_manager.memory_manager:
         assert info.state == "RAW"

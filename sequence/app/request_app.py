@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -25,12 +26,12 @@ class RequestApp:
             responder (str): name of the responder node
             start_t (int): the start time of request (ps)
             end_t (int): the end time of request (ps)
-            memo_size (int): the size of memory used for the request
+            memo_size (int): the size of memories used for the request
             fidelity (float): the target fidelity of the entanglement
             reservation_result (bool): if network approves the request
             memory_counter (int): number of successfully received memories
             path (list[str]): the path of flow denoted by a list of node names
-            memo_to_reserve (dict[int, Reservation]): mapping of memory index to corresponding reservation.
+            memo_to_reserve (dict[int, Reservation]): mapping of memories index to corresponding reservation.
             name (str): the name of the app
     """
 
@@ -85,7 +86,7 @@ class RequestApp:
             log.logger.info("Successful reservation of resources for request app on node {}".format(self.node.name))
 
     def add_memo_reservation_map(self, index: int, reservation: "Reservation") -> None:
-        """Maps memory index to the corresponding reservation.
+        """Maps memories index to the corresponding reservation.
 
         Args:
             index (int): Memory index
@@ -99,22 +100,22 @@ class RequestApp:
         When a reservation ends, it should be removed from mapping by this method.
 
         Args:
-            index (int): The memory index to remove.
+            index (int): The memories index to remove.
         """
         self.memo_to_reservation.pop(index)
 
     def get_memory(self, info: "MemoryInfo") -> None:
         """Method to receive entangled memories.
 
-        Will check if the received memory is qualified.
-        If it's a qualified memory, the application sets memory to RAW state
+        Will check if the received memories is qualified.
+        If it's a qualified memories, the application sets memories to RAW state
         and release back to resource manager.
         The counter of entanglement memories, 'memory_counter', is added.
-        Otherwise, the application does not modify the state of memory and
+        Otherwise, the application does not modify the state of memories and
         release back to the resource manager.
 
         Args:
-            info (MemoryInfo): info on the qualified entangled memory.
+            info (MemoryInfo): info on the qualified entangled memories.
         """
 
         if info.state != "ENTANGLED":

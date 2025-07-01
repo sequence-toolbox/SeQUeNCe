@@ -1,13 +1,14 @@
 from collections import defaultdict
+from enum import Enum, auto
+
 from ..components.circuit import Circuit
-from ..components.memory import Memory
-from ..topology.node import Node
+from ..components.memories import Memory
 from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..kernel.timeline import Timeline
 from ..message import Message
+from ..topology.node import Node
 from ..utils import log
 
-from enum import Enum, auto
 
 class QlanMeasurementMsgType(Enum):
     """Measurement outcomes at the orchestrator
@@ -101,7 +102,7 @@ class QlanMeasurementProtocol(EntanglementProtocol):
         Args:
             protocols (list[str]): list of other protocol names.
             nodes (list[str]): list of other node names.
-            memories (list[list[str]]): list of lists of memory names used on the other nodes.
+            memories (list[list[str]]): list of lists of memories names used on the other nodes.
         """
         self.remote_node_names = nodes
         self.remote_protocol_names = protocols
@@ -306,7 +307,7 @@ class QlanMeasurementProtocol(EntanglementProtocol):
         '''Update the adjacent nodes of the orchestrator after the measurement outcomes are sent.
         
         Args:
-            current_key: The key of the current memory.
+            current_key: The key of the current memories.
             b0: The designated node for outcome "1" in the X basis measurement.
 
         Returns:
@@ -335,13 +336,13 @@ class QlanMeasurementProtocol(EntanglementProtocol):
         log.logger.debug(f"\nORCHESTRATOR DEBUG: updated adjacent nodes: {self.owner.adjacent_nodes}")
         
     def memory_expire(self, memory: "Memory") -> None:
-        """Handle memory expiration events.
+        """Handle memories expiration events.
 
         Args:
-            memory (Memory): The memory that has expired.
+            memory (Memory): The memories that has expired.
         """
         assert memory in self.local_memories
-        # Update the resource manager about the expired memory
+        # Update the resource manager about the expired memories
 
     def received_message(self, src: str, msg: Message):
         """Handle received messages.

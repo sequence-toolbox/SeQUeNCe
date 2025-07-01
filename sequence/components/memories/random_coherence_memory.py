@@ -11,26 +11,26 @@ if TYPE_CHECKING:
 
 
 class MemoryWithRandomCoherenceTime(Memory):
-    """Individual single-atom memory.
+    """Individual single-atom memories.
 
     This class inherits Memory class and provides possibility to use stochastic model of
-    coherence time. This means that loss of entanglement of the memory with a photon occurs
+    coherence time. This means that loss of entanglement of the memories with a photon occurs
     at random time given by truncated normal distribution with average value set by
     'coherence_time' input parameter and with standard deviation set by 'coherence_time_stdev'
     input parameter. If coherence_time_stdev <= 0.0 is passed, the class behaves exactly as
     original Memory class.
 
     Attributes:
-        name (str): label for memory instance.
+        name (str): label for memories instance.
         timeline (Timeline): timeline for simulation.
-        fidelity (float): (current) fidelity of memory.
-        frequency (float): maximum frequency at which memory can be excited.
+        fidelity (float): (current) fidelity of memories.
+        frequency (float): maximum frequency at which memories can be excited.
         efficiency (float): probability of emitting a photon when excited.
-        coherence_time (float): average usable lifetime of memory (in seconds).
+        coherence_time (float): average usable lifetime of memories (in seconds).
         coherence_time_stdev (float): standard deviation of coherence time
         wavelength (float): wavelength (in nm) of emitted photons.
         qstate_key (int): key for associated quantum state in timeline's quantum manager.
-        entangled_memory (dict[str, Any]): tracks entanglement state of memory.
+        entangled_memory (dict[str, Any]): tracks entanglement state of memories.
     """
 
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
@@ -38,12 +38,12 @@ class MemoryWithRandomCoherenceTime(Memory):
         """Constructor for the Memory class.
 
         Args:
-            name (str): name of the memory instance.
+            name (str): name of the memories instance.
             timeline (Timeline): simulation timeline.
-            fidelity (float): fidelity of memory.
-            frequency (float): maximum frequency of excitation for memory.
+            fidelity (float): fidelity of memories.
+            frequency (float): maximum frequency of excitation for memories.
             efficiency (float): efficiency of memories.
-            coherence_time (float): average time (in s) that memory state is valid
+            coherence_time (float): average time (in s) that memories state is valid
             coherence_time_stdev (float): standard deviation of coherence time
             wavelength (int): wavelength (in nm) of photons emitted by memories.
         """

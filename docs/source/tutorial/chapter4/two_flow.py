@@ -1,6 +1,6 @@
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import BSMNode, Node
-from sequence.components.memory import MemoryArray
+from sequence.components.memories import MemoryArray
 from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.entanglement_management.generation import EntanglementGenerationA
 from sequence.entanglement_management.purification import BBPSSW

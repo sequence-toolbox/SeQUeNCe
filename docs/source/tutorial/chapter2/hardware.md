@@ -40,14 +40,15 @@ We'll put the detector on the receiver node, and the memory on the sender node.
 ```python
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
-from sequence.components.memory import Memory
+from sequence.components.memories import Memory
 from sequence.components.detector import Detector
+
 
 class SenderNode(Node):
     def __init__(self, name, timeline):
         super().__init__(name, timeline)
-        
-        memory_name = name + ".memory"
+
+        memory_name = name + ".memories"
         memory = Memory(memory_name, timeline, fidelity=1, frequency=0,
                         efficiency=1, coherence_time=0, wavelength=500)
         self.add_component(memory)
@@ -55,6 +56,7 @@ class SenderNode(Node):
 
     def get(self, photon, **kwargs):
         self.send_qubit(kwargs['dst'], photon)
+
 
 class ReceiverNode(Node):
     def __init__(self, name, timeline):
@@ -242,7 +244,7 @@ We'll then place this protocol in the `SenderNode` class:
 class SenderNode(Node):
     def __init__(self, name, timeline):
         super().__init__(name, timeline)
-        memory_name = name + ".memory"
+        memory_name = name + ".memories"
         memory = Memory(memory_name, timeline, fidelity=1, frequency=0,
                         efficiency=1, coherence_time=0, wavelength=500)
         self.add_component(memory)

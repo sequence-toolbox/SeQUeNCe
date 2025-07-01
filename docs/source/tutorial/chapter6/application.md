@@ -64,7 +64,7 @@ The other method we require, `get_memory`, is called by the resource manager whe
 
     def get_memory(self, info: "MemoryInfo"):
         if info.state == "ENTANGLED" and info.remote_node == self.other:
-            print("\t{} app received memory {} ENTANGLED at time {}".format(self.node.name, info.index, self.node.timeline.now() * 1e-12))
+            print("\t{} app received memories {} ENTANGLED at time {}".format(self.node.name, info.index, self.node.timeline.now() * 1e-12))
             self.node.resource_manager.update(None, info.memory, "RAW")
 ```
 
@@ -93,9 +93,9 @@ class ResetApp:
     def get_memory(self, info):
         """Similar to the get_memory method of the main application.
 
-        We check if the memory info meets the request first,
-        by noting the remote entangled memory and entanglement fidelity.
-        We then free the memory for future use.
+        We check if the memories info meets the request first,
+        by noting the remote entangled memories and entanglement fidelity.
+        We then free the memories for future use.
         """
 
         if (info.state == "ENTANGLED" and info.remote_node == self.other_node_name

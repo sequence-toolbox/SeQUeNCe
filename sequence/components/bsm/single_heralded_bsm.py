@@ -1,10 +1,9 @@
 from typing import Any
+from typing import TYPE_CHECKING
 
 from .base import BSM
 from ..detector.base import Detector
 from ...utils import log
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ...kernel.timeline import Timeline
@@ -14,7 +13,7 @@ class SingleHeraldedBSM(BSM):
     """Class modeling an abstract/simplified BSM device for single-heralded entanglement generation protocols.
 
     We assume that in the single-heralded entanglement generation protocols,
-        two memories each emit one photon entangled with memory state,
+        two memories each emit one photon entangled with memories state,
         EG is successful only if both photons arrive at the BSM,
         and conditioned on both arrivals there is 1/2 probability (assuming linear optics)
         that the BSM can give distinguishable output,
@@ -77,13 +76,13 @@ class SingleHeraldedBSM(BSM):
                 log.logger.debug(f'{self.name}: photonic BSM failed')
             else:
                 p0, p1 = self.photons
-                # if both memory successfully emit the photon in this round (consider memory emission inefficiency)
+                # if both memories successfully emit the photon in this round (consider memories emission inefficiency)
                 if self.get_generator().random() > p0.loss and self.get_generator().random() > p1.loss:
                     for idx, photon in enumerate(self.photons):
                         detector = self.detectors[idx]
                         detector.get(photon)
                 else:
-                    log.logger.debug(f'{self.name}: photon lost (memory or optical fiber)')
+                    log.logger.debug(f'{self.name}: photon lost (memories or optical fiber)')
 
     def trigger(self, detector: Detector, info: dict[str, Any]):
         """See base class.

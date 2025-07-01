@@ -1,6 +1,6 @@
-from sequence.resource_management.memory_manager import *
+from sequence.components.memories import *
 from sequence.kernel.timeline import Timeline
-from sequence.components.memory import *
+from sequence.resource_management.memory_manager import *
 
 
 def test_update():
