@@ -1,3 +1,13 @@
+"""Models for simulating bell state measurement.
+
+This module defines an abstract class for a 'BSM'
+
+
+This module defines a template bell state measurement (BSM) class,
+as well as implementations for polarization, time bin, and memory encoding schemes.
+Also defined is a function to automatically construct a BSM of a specified type.
+"""
+
 from math import sqrt
 from typing import TYPE_CHECKING, Any
 
@@ -24,6 +34,14 @@ class BSM(Entity):
     _phi_minus = [complex(sqrt(1 / 2)), complex(0), complex(0), -complex(sqrt(1 / 2))]
     _psi_plus = [complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)]
     _psi_minus = [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]
+
+    # Get all children
+    _subclasses = []
+    @classmethod
+    def get_children(cls):
+        return list(cls._subclasses)
+    def __init_subclass__(cls):
+        BSM._subclasses.append(cls)
 
     def __init__(self, name: str, timeline: "Timeline", phase_error: float = 0, detectors=None):
         """Constructor for base BSM object.
