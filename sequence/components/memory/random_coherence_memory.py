@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from scipy import stats
 
-from .memory_base import Memory
+from .base import Memory
 from ...kernel.event import Event
 from ...kernel.process import Process
 
