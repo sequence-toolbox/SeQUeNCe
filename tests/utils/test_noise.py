@@ -23,7 +23,7 @@ def depolarise_manual(rho: np.ndarray, p: float) -> np.ndarray:
     return out
 
 
-def test_two_qubit_depolarising():
+def test_apply_depolarizing_noise():
     """Noise.apply_depolarizing_noise matches our manual implementation."""
     p = 0.3
     # |00><00|
@@ -39,15 +39,16 @@ def test_two_qubit_depolarising():
 
 
 
-def test_measurement_noise_extremes():
-    """For error_rate=0 no flip, for error_rate=1 always flip."""
-    # no flip when rate=0
+def test_apply_measurement_noise():
+    """Test measurement noise behavior at edge cases: 0 (no flip) and 1 (always flip)."""
+    
+    # Case 1: error_rate = 0 → no flip should occur
     circuit = Circuit(size=1)
-    circiut_noisy = Noise.apply_measurement_noise(circuit, meas_error_rate=0.0, qubit_index=0)
-    assert circiut_noisy.gates == [], "With error_rate=0, circuit should be unchanged"
+    Noise.apply_measurement_noise(circuit, meas_error_rate=0.0, qubit_index=0)
+    assert circuit.gates == [], "With error_rate=0, circuit should remain unchanged"
 
-    # always flip when rate=1
+    # Case 2: error_rate = 1 → flip (X gate) should always occur
     circuit = Circuit(size=1)
-    circiut_noisy = Noise.apply_measurement_noise(circuit, meas_error_rate=1.0, qubit_index=0)
-    ops = [gate[0] for gate in circiut_noisy.gates]
-    assert "x" in ops, "With error_rate=1, an X gate should have been applied"
+    Noise.apply_measurement_noise(circuit, meas_error_rate=1.0, qubit_index=0)
+    ops = [gate[0] for gate in circuit.gates]
+    assert "x" in ops or "X" in ops, "With error_rate=1, an X gate should have been applied"
