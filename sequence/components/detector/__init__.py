@@ -1,6 +1,4 @@
-from .base import Detector, QSDetector
-from .fock_detector import FockDetector
-from .qs_timebin_detector import QSDetectorTimeBin
-from .qs_direct_fock_detector import QSDetectorFockDirect
-from .qs_polarization_detector import QSDetectorPolarization
-from .qs_interference_fock_detector import QSDetectorFockInterference
+__all__ = ['base.py', 'fock_detector', 'qs_direct_fock_detector', 'qs_interference_fock_detector', 'qs_polarization_detector', 'qs_timebin_detector']
+
+def __dir__():
+    return sorted(__all__)
