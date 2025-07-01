@@ -5,7 +5,7 @@ from ...kernel.entity import Entity
 if TYPE_CHECKING:
     from ...kernel.timeline import Timeline
 
-from .memory import Memory
+from .memory_base import Memory
 
 
 class MemoryArray(Entity):
