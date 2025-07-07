@@ -67,12 +67,12 @@ def generate_labels(num_systems, N):
         labels.append(new_label[:-1])
     return labels
 
-def read_quantum_state(TN_state, N, num_states = 4, return_dense = False):
+def read_quantum_state(TN_state, N, num_states = 4, return_dense = False, precision = 10):
     dense_state = TN_state.to_dense()
     if return_dense: return dense_state
     dense_state = np.reshape(dense_state.data, (-1, 1), order = 'C')
     dense_state = sp.csr_matrix(dense_state)
-    dense_state.data = np.round(dense_state.data, 10)
+    dense_state.data = np.round(dense_state.data, precision)
     dense_state.eliminate_zeros()
 
     print_quantum_state(N, dense_state, num_states)
