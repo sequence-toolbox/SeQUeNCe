@@ -17,7 +17,7 @@ PSI_PLUS:  Final = (0, SQRT_HALF,  SQRT_HALF, 0)
 PSI_MINUS: Final = (0, SQRT_HALF, -SQRT_HALF, 0)
 
 # machine epsilon, i.e., a small number
-EPSILON: Final = 1e-7
+EPSILON: Final = 1e-8
 
 # convert to picosecond
 NANOSECOND:  Final = 1e3

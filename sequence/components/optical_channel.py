@@ -200,7 +200,7 @@ class QuantumChannel(OpticalChannel):
         # TODO: move this to node?
 
         min_time = max(min_time, self.timeline.now())
-        time_bin = min_time * (self.frequency / 1e12)
+        time_bin = (min_time * self.frequency)/1e12
         if time_bin - int(time_bin) > 0.00001:
             time_bin = int(time_bin) + 1       # round to the next time bin
         else:
