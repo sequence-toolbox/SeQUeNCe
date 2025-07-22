@@ -7,7 +7,7 @@ from ..kernel.timeline import Timeline
 from .node import BSMNode, QuantumRouter
 from ..constants import SPEED_OF_LIGHT
 from ..kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
-
+from ..config import USER_CONFIG_PATH
 
 class RouterNetTopo(Topo):
     """Class for generating quantum communication network with quantum routers
@@ -39,9 +39,14 @@ class RouterNetTopo(Topo):
     QUANTUM_ROUTER = "QuantumRouter"
     CONTROLLER = "Controller"
 
-    def __init__(self, conf_file_name: str):
+    def __init__(self, conf_file_name):
         self.bsm_to_router_map = {}
         self.encoding_type = None
+
+        # you can pass the config file as an environment variable or as an argument to RouterNetTopo. If not using 
+        # RouterNetTopo directly or, if you're using the Trajectree backend, pass the config as environment variable.  
+        if not USER_CONFIG_PATH == None:
+            conf_file_name = USER_CONFIG_PATH
         super().__init__(conf_file_name)
 
     def _load(self, filename: str):

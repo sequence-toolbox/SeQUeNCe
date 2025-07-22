@@ -13,8 +13,15 @@ if TYPE_CHECKING:
     from ..resource_management.memory_manager import MemoryInfo, MemoryManager
     from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 
+from importlib import import_module
+from ..config import CONFIG
+import_formalism = CONFIG.get('formalism', "")
+try:
+    EntanglementGenerationA = getattr(import_module(f'sequence.entanglement_management.generation_{import_formalism}'), 'EntanglementGenerationA')
+except:
+    EntanglementGenerationA = getattr(import_module(f'sequence.entanglement_management.generation'), 'EntanglementGenerationA')
+
 from ..resource_management.rule_manager import Rule, Arguments
-from ..entanglement_management.generation import EntanglementGenerationA
 from ..entanglement_management.purification import BBPSSW
 from ..entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 from ..message import Message

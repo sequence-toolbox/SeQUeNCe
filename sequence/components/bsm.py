@@ -151,7 +151,8 @@ class BSM(Entity):
         """Implementation of Entity interface (see base class)."""
 
         # get resolution
-        self.resolution = max(d.time_resolution for d in self.detectors)
+        if not self.encoding == "trajectree":
+            self.resolution = max(d.time_resolution for d in self.detectors)
 
         self.photons = []
         self.photon_arrival_time = -1
@@ -707,3 +708,14 @@ class SingleHeraldedBSM(BSM):
         info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
         self.notify(info)
 
+class TrajectreeBSM(BSM):
+    def __init__(self, name, timeline):
+        super(BSM, self).__init__(name, timeline)
+        self.encoding = "trajectree"
+        self.encoding_type = time_bin
+
+    def get(self, photon, **kwargs):
+        pass
+
+    def trigger(self, detector: Detector, info: dict[str, Any]):
+        pass
