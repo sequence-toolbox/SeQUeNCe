@@ -75,6 +75,7 @@ class Node(Entity):
         self.owner = self
         self.cchannels = {}  # mapping of destination node names to classical channels
         self.qchannels = {}  # mapping of destination node names to quantum channels
+        self.cached_entanglement = {}
         self.protocols = []
         self.generator = np.random.default_rng(seed)
         self.components = {}

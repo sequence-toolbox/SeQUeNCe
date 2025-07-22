@@ -39,7 +39,8 @@
                 "coherence_time": -1,
                 "efficiency": 1,
                 "fidelity": 1
-            }
+            },
+            "mean_photon_num": 0.5
         },
         "perfect_bsm": {
             "encoding_type": "TrajectreeBSM",
@@ -62,5 +63,8 @@
         }
     },
     "is_parallel": false,
-    "formalism": "trajectree"
+    "formalism": "trajectree",
+    "truncation": 4,
+    "error_tolerance": 1e-15,
+    "num_simulations": 256
 }

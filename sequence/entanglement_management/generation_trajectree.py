@@ -26,8 +26,12 @@ from ..kernel.process import Process
 from ..components.circuit import Circuit
 from ..utils import log
 
+from functools import lru_cache
+
 import numpy as np
 from trajectree.sequence.swap import perform_swapping_simulation # type: ignore
+
+from ..config import CONFIG
 
 print("Using Trajectree backend for entanglement generation")
 
@@ -76,7 +80,7 @@ class EntanglementGenerationMessage(Message):
             self.attempt_time = kwargs.get("attempt_time")
             self.start_time = kwargs.get("start_time")
         elif msg_type is GenerationMsgType.ENTANGLEMENT_SUCCESS:
-            pass
+            self.fidelity = kwargs.get("fidelity")
         else:
             raise Exception("EntanglementGeneration generated invalid message type {}".format(msg_type))
 
@@ -176,7 +180,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         log.logger.info(f"{self.name} protocol start with partner {self.remote_protocol_name}")
 
-        print("protocols start at:", self.owner.timeline.now(), "for primary:", self.primary)
+        # print("protocols start at:", self.owner.timeline.now(), "for primary:", self.primary)
 
         # to avoid start after remove protocol
         if self not in self.owner.protocols:
@@ -225,7 +229,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
             end_node_cc_delay = self.owner.cchannels[self.remote_node_name].delay
 
-            print("delays: self.qc_delay, other_qc_delay, total_quantum_delay, self.cc_delay, other_cc_delay, total_classical_delay", self.qc_delay, other_qc_delay, total_quantum_delay, self.cc_delay, other_cc_delay, total_classical_delay)
+            # print("delays: self.qc_delay, other_qc_delay, total_quantum_delay, self.cc_delay, other_cc_delay, total_classical_delay", self.qc_delay, other_qc_delay, total_quantum_delay, self.cc_delay, other_cc_delay, total_classical_delay)
 
             # get time for first excite event
             memory_excite_time = self.memory.next_excite_time
@@ -233,13 +237,14 @@ class EntanglementGenerationA(EntanglementProtocol):
             start_time = max(self.owner.timeline.now(), memory_excite_time) + total_quantum_delay - self.qc_delay + end_node_cc_delay  # end_node_cc_delay time for NEGOTIATE_ACK
             attempt_time = total_quantum_delay + total_classical_delay # expected time for middle BSM node to receive the photon
 
-            print("attempt time:", attempt_time, "start time:", start_time, "now", self.owner.timeline.now())
+            # print("attempt time:", attempt_time, "start time:", start_time, "now", self.owner.timeline.now())
 
             message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, self.remote_protocol_name, start_time=start_time, attempt_time=attempt_time)
             self.owner.send_message(src, message)
 
         elif msg_type is GenerationMsgType.NEGOTIATE_ACK:  # non-primary --> primary
-            success_probability = self.entanglement_generation_trajectree()
+            print("calling trajectree ent generation")
+            success_probability, fidelity = self.entanglement_generation_trajectree()
 
             num_attempts = 1
             while not np.random.random() < success_probability:
@@ -247,53 +252,60 @@ class EntanglementGenerationA(EntanglementProtocol):
 
             success_time = msg.start_time + (msg.attempt_time + 1e12/self.memory_frequency) * num_attempts
 
-            print("neg ack present time:", self.owner.timeline.now(), "success time:", success_time, "attempt time:", msg.attempt_time, "num attempts:", num_attempts)
+            # print("neg ack present time:", self.owner.timeline.now(), "success time:", success_time, "attempt time:", msg.attempt_time, "num attempts:", num_attempts)
 
-            message = EntanglementGenerationMessage(GenerationMsgType.ENTANGLEMENT_SUCCESS, self.remote_protocol_name)
+            message = EntanglementGenerationMessage(GenerationMsgType.ENTANGLEMENT_SUCCESS, self.remote_protocol_name, fidelity=fidelity)
             process = Process(self.owner, "send_message", [src, message])
             event = Event(success_time - self.owner.cchannels[self.remote_node_name].delay, process)
             self.owner.timeline.schedule(event)
 
-            process = Process(self, "_entanglement_succeed", [])
+            process = Process(self, "_entanglement_succeed", [fidelity])
             event = Event(success_time, process)
             self.owner.timeline.schedule(event)
 
 
         elif msg_type is GenerationMsgType.ENTANGLEMENT_SUCCESS:
-            print("running entanglement success at", self.name, "at time:", self.owner.timeline.now())
-            self._entanglement_succeed()
+            # print("running entanglement success at", self.name, "at time:", self.owner.timeline.now())
+            self._entanglement_succeed(msg.fidelity)
 
 
-
+    @lru_cache(maxsize=5)
     def entanglement_generation_trajectree(self):
-        # # Set simulation params
-        # trunc = 4
-        # N = trunc+1
-        # error_tolerance = 1e-15
+        # Set simulation params
+        print("checking for cached entanglement")
 
-        # mean_photon_num = 0.5 # (0.5)
-        # det_eff = 1 # 0.9
-        # channel_loss = 0.75
+        if self.owner.cached_entanglement.get(self.remote_node_name, None) == None:
 
+            print("cached entanglement not found, running simulation")
 
-        # num_modes = 8
+            N = CONFIG["truncation"]+1
+            error_tolerance = CONFIG["error_tolerance"]
 
-        # num_simulations = 256
+            mean_photon_num = CONFIG["templates"]["perfect_router"]["mean_photon_num"] # Here we are assuming that all the nodes in the network have the same mean photon number.
+            det_eff = CONFIG["templates"]["perfect_bsm"]["TrajectreeBSM"]["detectors"][0]["efficiency"]
+            channel_loss = 1 - 10 ** (CONFIG["qconnections"][0]["distance"] * CONFIG["qconnections"][0]["attenuation"] / -10)
 
+            num_modes = 8
 
-        # cache_sizes = [2]
+            num_simulations = CONFIG["num_simulations"]
+            
+            cache_sizes = [2]
 
-        # fidelities, probabilities, t_eval = perform_swapping_simulation(N, num_modes, mean_photon_num, det_eff, channel_loss, num_simulations, error_tolerance)
+            fidelities, probabilities, t_eval = perform_swapping_simulation(N, num_modes, mean_photon_num, det_eff, channel_loss, num_simulations, error_tolerance)
+            
+            self.owner.cached_entanglement[self.remote_node_name] = (np.mean(probabilities), np.mean(fidelities))
+        else:
+            print("cached entanglement found:", self.owner.cached_entanglement[self.remote_node_name])
 
-        # return np.mean(probabilities), np.mean(fidelities) # Placeholder for the success probability of entanglement generation. Update this. 
+        return self.owner.cached_entanglement[self.remote_node_name] 
 
-        return 1
+        # return 1
 
-    def _entanglement_succeed(self):
+    def _entanglement_succeed(self, fidelity):
         log.logger.info(self.owner.name + " successful entanglement of memory {}".format(self.memory))
         self.memory.entangled_memory["node_id"] = self.remote_node_name
         self.memory.entangled_memory["memo_id"] = self.remote_memo_id
-        self.memory.fidelity = self.memory.raw_fidelity
+        self.memory.fidelity = fidelity
 
         self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
 

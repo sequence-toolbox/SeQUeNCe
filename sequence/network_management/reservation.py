@@ -72,8 +72,8 @@ class ResourceReservationMessage(Message):
 
 
 # entanglement generation
-
-def eg_rule_action1(memories_info: list["MemoryInfo"], args: dict[str, Any]) -> tuple[EntanglementGenerationA, list[None], list[None], list[None]]:
+# The first return argument (Any) is an EntanglementGenerationA protocol instance from the referenced plugin.
+def eg_rule_action1(memories_info: list["MemoryInfo"], args: dict[str, Any]) -> tuple[Any, list[None], list[None], list[None]]:
     """Action function used by entanglement generation protocol on nodes except the initiator, i.e., index > 0
     """
     memories = [info.memory for info in memories_info]
@@ -84,8 +84,8 @@ def eg_rule_action1(memories_info: list["MemoryInfo"], args: dict[str, Any]) -> 
     protocol = EntanglementGenerationA(None, "EGA." + memory.name, mid, path[index - 1], memory)
     return protocol, [None], [None], [None]
 
-
-def eg_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[EntanglementGenerationA, list[str], list["eg_req_func"], list[dict]]:
+# The first return argument (Any) is an EntanglementGenerationA protocol instance from the referenced plugin.
+def eg_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[Any, list[str], list["eg_req_func"], list[dict]]:
     """Action function used by entanglement generation protocol on nodes except the responder, i.e., index < len(path) - 1
     """
     mid = args["mid"]
@@ -97,8 +97,8 @@ def eg_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple
     req_args = {"name": args["name"], "reservation": args["reservation"]}
     return protocol, [path[index + 1]], [eg_req_func], [req_args]
 
-
-def eg_req_func(protocols: list["EntanglementProtocol"], args: Arguments) -> EntanglementGenerationA:
+# The return argument is an EntanglementGenerationA protocol instance from the referenced plugin.
+def eg_req_func(protocols: list["EntanglementProtocol"], args: Arguments) -> Any:
     """Function used by `eg_rule_action2` function for selecting generation protocols on the remote node
 
     Args:

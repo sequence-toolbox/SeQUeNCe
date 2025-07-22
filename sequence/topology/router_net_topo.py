@@ -68,10 +68,11 @@ class RouterNetTopo(Topo):
 
     def _add_timeline(self, config: dict):
         stop_time = config.get(Topo.STOP_TIME, float('inf'))
+        trunc = config.get(Topo.TRUNC, float(4))
         if config.get(self.IS_PARALLEL, False):
             raise Exception("Please install 'psequence' package for parallel simulations.")
         else:
-            self.tl = Timeline(stop_time)
+            self.tl = Timeline(stop_time, truncation = trunc)
 
     def _map_bsm_routers(self, config):
         for qc in config[Topo.ALL_Q_CHANNEL]:
