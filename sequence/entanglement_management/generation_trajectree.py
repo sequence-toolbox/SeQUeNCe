@@ -288,7 +288,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             num_modes = 8
 
             num_simulations = CONFIG["num_simulations"]
-            
+
             cache_sizes = [2]
 
             fidelities, probabilities, t_eval = perform_swapping_simulation(N, num_modes, mean_photon_num, det_eff, channel_loss, num_simulations, error_tolerance)
@@ -298,10 +298,11 @@ class EntanglementGenerationA(EntanglementProtocol):
             print("cached entanglement found:", self.owner.cached_entanglement[self.remote_node_name])
 
         return self.owner.cached_entanglement[self.remote_node_name] 
+        # return 0.5, 0.6
 
-        # return 1
 
     def _entanglement_succeed(self, fidelity):
+        print("succeeding entanglement gen at", self.owner.name, "at time:", self.owner.timeline.now())
         log.logger.info(self.owner.name + " successful entanglement of memory {}".format(self.memory))
         self.memory.entangled_memory["node_id"] = self.remote_node_name
         self.memory.entangled_memory["memo_id"] = self.remote_memo_id
