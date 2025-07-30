@@ -787,3 +787,54 @@ class ClassicalNode(ClassicalEntity):
             component.change_timeline(timeline)
         for cc in self.cchannels.values():
             cc.change_timeline(timeline)
+
+
+class QuantumNode(QuantumRouter):
+    """Code for QuantumNode class.
+
+    A small helper that on init adds:
+      - data_mem     - your data qubits
+    
+      Attributes:
+        name (str): Name of the quantum node.
+        timeline (Timeline): The timeline for scheduling operations.
+        data_size (int): Number of data qubits.
+        memo_size (int): Number of communication qubits (default is 1).  
+    """
+    def __init__(self, name: str, timeline: "Timeline", data_size: int, memo_size: int=1):
+        super().__init__(name, timeline, memo_size)
+        # your data qubits
+        self.components["data_mem"] = MemoryArray(f"{name}_data", timeline, data_size)
+        self.teleport_app: None
+        self.teledata_app: None
+        self.telegate_app: None
+
+    def receive_message(self, src: str, msg: "Message") -> None:
+        """Determine what to do when a message is received, based on the msg.receiver.
+
+        Args:
+            src (str): name of node that sent the message.
+            msg (Message): the received message.
+        """
+
+        log.logger.info("{} receive message {} from {}".format(self.name, msg, src))
+        if msg.receiver == "network_manager":
+            self.network_manager.received_message(src, msg)
+        elif msg.receiver == "resource_manager":
+            self.resource_manager.received_message(src, msg)
+        elif msg.receiver == "teleport_app":
+            self.teleport_app.received_message(src, msg)
+        elif msg.receiver == "teledata_app":
+            self.teledata_app.received_message(src, msg)
+        elif msg.receiver == "telegate_app":
+            self.telegate_app.received_message(src, msg)
+        else:
+            if msg.receiver is None:  # the msg sent by EntanglementGenerationB doesn't have a receiver (EGA & EGB not paired)
+                matching = [p for p in self.protocols if type(p) == msg.protocol_type]
+                for p in matching:    # the valid_trigger_time() function resolves multiple matching issue
+                    p.received_message(src, msg)
+            else:
+                for protocol in self.protocols:
+                    if protocol.name == msg.receiver:
+                        protocol.received_message(src, msg)
+                        break
