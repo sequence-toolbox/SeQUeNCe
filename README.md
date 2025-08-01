@@ -126,7 +126,7 @@ If you have questions, please contact [Caitao Zhan](https://caitaozhan.github.io
 
 * F. Mazza et al., ["Simulation of Entanglement-Enabled Connectivity in QLANs using SeQUeNCe"](https://arxiv.org/abs/2411.11031), IEEE ICC 2025
 
-* C. Zhan et al., ["Design and Simulation of the Adaptive Continuous Entanglement Generation Protocol"](https://arxiv.org/abs/2502.01964), QCNC 2025
+* C. Zhan et al., ["Design and Simulation of the Adaptive Continuous Entanglement Generation Protocol"](https://arxiv.org/abs/2502.01964), QCNC 2025. [GitHub Repository](https://github.com/caitaozhan/adaptive-continuous)
 
 
 Please do a Pull Request to add your paper here! 
