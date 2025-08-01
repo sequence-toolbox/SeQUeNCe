@@ -69,6 +69,6 @@
             "delay": 500000000.0
         }
     ],
-    "stop_time": 10000000000000,
+    "stop_time": 10000000000000.0,
     "is_parallel": false
 }

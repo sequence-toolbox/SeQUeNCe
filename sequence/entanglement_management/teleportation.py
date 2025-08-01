@@ -22,7 +22,7 @@ class TeleportMessage(Message):
 
     Attributes:
         idx (int): Index of the memory in the receiver's memory manager.
-        x_flip (int): Whether to apply X correction (1 for yes, 0 for
+        x_flip (int): Whether to apply X correction (1 for yes, 0 for no).
         z_flip (int): Whether to apply Z correction (1 for yes, 0 for no).
     """
     def __init__(self, idx: int, x_flip: int, z_flip: int):

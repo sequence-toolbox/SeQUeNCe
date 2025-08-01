@@ -805,9 +805,9 @@ class QuantumNode(QuantumRouter):
         super().__init__(name, timeline, memo_size)
         # your data qubits
         self.components["data_mem"] = MemoryArray(f"{name}_data", timeline, data_size)
-        self.teleport_app: None
-        self.teledata_app: None
-        self.telegate_app: None
+        self.teleport_app = None
+        self.teledata_app = None
+        self.telegate_app = None
 
     def receive_message(self, src: str, msg: "Message") -> None:
         """Determine what to do when a message is received, based on the msg.receiver.

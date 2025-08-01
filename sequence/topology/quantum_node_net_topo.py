@@ -1,4 +1,4 @@
-# File: router_net_topo.py
+# File: quantum_node_net_topo.py
 
 
 import json
@@ -41,7 +41,6 @@ class QuantumNodeNetTopo(Topo):
     MEMO_ARRAY_SIZE = "memo_size"     # NOTE meant for communication memories
     PORT = "port"
     PROC_NUM = "process_num"
-    QUANTUM_NODE = "QuantumNode"
     CONTROLLER = "Controller"
     QUANTUM_NODE = "QuantumNode"
     DATA_MEMO_ARRAY_SIZE = "data_memo_size"
@@ -260,7 +259,7 @@ class QuantumNodeNetTopo(Topo):
         """
         qubit_to_node = self.infer_qubit_to_node(total_wires)
 
-        data_owners    = {name:{} for name in self.nodes}
+        data_owners    = {name:{} for name in self.nodes.keys()}
 
         for q, owner in qubit_to_node.items():
             slot = len(data_owners[owner])
@@ -275,8 +274,7 @@ class QuantumNodeNetTopo(Topo):
         return self.nodes
 
     def get_nodes_by_type(self, node_type: Type[Node]) -> List[Node]:
-        return [n for n in self.nodes.values() if isinstance(n, node_type)]
-
+        return [n for node_list in self.nodes.values() for n in node_list if isinstance(n, node_type)]
 
 
 
