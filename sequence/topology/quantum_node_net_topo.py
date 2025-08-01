@@ -1,3 +1,6 @@
+# File: quantum_node_net_topo.py
+
+
 import json
 import numpy as np
 from networkx import Graph, dijkstra_path, exception
@@ -7,9 +10,11 @@ from ..kernel.timeline import Timeline
 from .node import BSMNode, QuantumRouter
 from ..constants import SPEED_OF_LIGHT
 from ..kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
+from typing import Dict, List, Type
+from .node import Node, QuantumNode
 
 
-class RouterNetTopo(Topo):
+class QuantumNodeNetTopo(Topo):
     """Class for generating quantum communication network with quantum routers
 
     Class RouterNetTopo is the child of class Topology. Quantum routers, BSM
@@ -36,8 +41,9 @@ class RouterNetTopo(Topo):
     MEMO_ARRAY_SIZE = "memo_size"     # NOTE meant for communication memories
     PORT = "port"
     PROC_NUM = "process_num"
-    QUANTUM_ROUTER = "QuantumRouter"
     CONTROLLER = "Controller"
+    QUANTUM_NODE = "QuantumNode"
+    DATA_MEMO_ARRAY_SIZE = "data_memo_size"
 
     def __init__(self, conf_file_name: str):
         self.bsm_to_router_map = {}
@@ -87,9 +93,10 @@ class RouterNetTopo(Topo):
             if node_type == self.BSM_NODE:
                 others = self.bsm_to_router_map[name]
                 node_obj = BSMNode(name, self.tl, others, component_templates=template)
-            elif node_type == self.QUANTUM_ROUTER:
-                memo_size = node.get(self.MEMO_ARRAY_SIZE, 0)
-                node_obj = QuantumRouter(name, self.tl, memo_size, component_templates=template)
+            elif node_type == self.QUANTUM_NODE:
+                data_size = node.get(self.DATA_MEMO_ARRAY_SIZE, 0)
+                comm_size = node.get(self.MEMO_ARRAY_SIZE, 0)
+                node_obj = QuantumNode(name, self.tl, data_size=data_size, memo_size=comm_size)
             else:
                 raise ValueError("Unknown type of node '{}'".format(node_type))
 
@@ -177,7 +184,7 @@ class RouterNetTopo(Topo):
         """For static routing."""
         graph = Graph()
         for node in config[Topo.ALL_NODE]:
-            if node[Topo.TYPE] == self.QUANTUM_ROUTER:
+            if node[Topo.TYPE] == self.QUANTUM_NODE:
                 graph.add_node(node[Topo.NAME])
 
         costs = {}
@@ -199,7 +206,7 @@ class RouterNetTopo(Topo):
                     costs[bsm][-1] += qc.distance
 
         graph.add_weighted_edges_from(costs.values())
-        for src in self.nodes[self.QUANTUM_ROUTER]:
+        for src in self.nodes[self.QUANTUM_NODE]:
             for dst_name in graph.nodes:
                 if src.name == dst_name:
                     continue
@@ -214,3 +221,61 @@ class RouterNetTopo(Topo):
                     routing_protocol.add_forwarding_rule(dst_name, next_hop)
                 except exception.NetworkXNoPath:
                     pass
+
+    def infer_qubit_to_node(self, total_wires: int) -> Dict[int, str]:
+            """
+            Auto‐infer the {wire_index: node_name} map by
+            first assigning every node's n_data qubits in JSON order,
+            then every node's n_ancilla qubits.
+            """
+            mapping: Dict[int, str] = {}
+            next_wire = 0
+
+            # 1) data wires
+            for nd in self._raw_cfg["nodes"]:
+                name   = nd["name"]
+                n_data = nd.get("n_data", 1)
+                for _ in range(n_data):
+                    if next_wire >= total_wires:
+                        raise ValueError(f"Mapping overflow: more data qubits than {total_wires}")
+                    mapping[next_wire] = name
+                    next_wire += 1
+
+            # 3) (optionally) any communication‐only qubits, etc.
+            #    If your circuit has exactly data+ancilla qubits, you can assert:
+            if next_wire != total_wires:
+                raise ValueError(f"Configured for {next_wire} wires but circuit has {total_wires}")
+
+            return mapping
+    
+    def infer_memory_owners(self,
+                            total_wires:  int,
+                            ancilla_inds: list[int]
+                           ) -> tuple[dict[str,dict[int,int]],
+                                      dict[str,dict[int,int]]]:
+        """
+        Returns (data_owners, ancilla_owners) where each is
+        node_name → { wire_index: slot_index_in_memory_array }.
+        """
+        qubit_to_node = self.infer_qubit_to_node(total_wires)
+
+        data_owners    = {name:{} for name in self.nodes.keys()}
+
+        for q, owner in qubit_to_node.items():
+            slot = len(data_owners[owner])
+            data_owners[owner][q] = slot
+
+        return data_owners
+    
+    def get_timeline(self) -> Timeline:
+        return self.tl
+
+    def get_nodes(self) -> Dict[str, QuantumNode]:
+        return self.nodes
+
+    def get_nodes_by_type(self, node_type: Type[Node]) -> List[Node]:
+        return [n for node_list in self.nodes.values() for n in node_list if isinstance(n, node_type)]
+
+
+
+

@@ -6,6 +6,7 @@ import pandas as pd
 
 from sequence.topology.topology import Topology
 from sequence.topology.router_net_topo import RouterNetTopo
+from sequence.topology.quantum_node_net_topo import QuantumNodeNetTopo
 
 
 def add_default_args(parser):
@@ -18,7 +19,7 @@ def add_default_args(parser):
         argparse.ArgumentParser
     """
 
-    parser.add_argument('memo_size', type=int, help='number of memories per node')
+    parser.add_argument('memo_size', type=int, help='number of communication memories per node')
     parser.add_argument('qc_length', type=float, help='distance between nodes (in km)')
     parser.add_argument('qc_atten', type=float, help='quantum channel attenuation (in dB/m)')
     parser.add_argument('cc_delay', type=float, help='classical channel delay (in ms)')
@@ -58,7 +59,8 @@ def generate_node_procs(parallel, net_size, naming_func) -> dict:
 
 
 def generate_nodes(node_procs: dict, router_names: str, memo_size: int, template: str = None, gate_fidelity: float = None, measurement_fidelity: float = None) -> list:
-    """generate a list of node configs"""
+    """generate a list of node configs for quantum routers
+    """
     nodes = []
     for i, name in enumerate(router_names):
         config = {Topology.NAME: name,
@@ -66,6 +68,27 @@ def generate_nodes(node_procs: dict, router_names: str, memo_size: int, template
                   Topology.SEED: i,
                   RouterNetTopo.MEMO_ARRAY_SIZE: memo_size,
                   RouterNetTopo.GROUP: node_procs[name]}
+        if template:
+            config[Topology.TEMPLATE] = template
+        if gate_fidelity:
+            config[Topology.GATE_FIDELITY] = gate_fidelity
+        if measurement_fidelity:
+            config[Topology.MEASUREMENT_FIDELITY] = measurement_fidelity
+        nodes.append(config)
+    return nodes
+
+
+def generate_quantum_nodes(node_procs: dict, router_names: str, memo_size: int, data_memo_size: int, template: str = None, gate_fidelity: float = None, measurement_fidelity: float = None) -> list:
+    """generate a list of node configs for quantum nodes
+    """
+    nodes = []
+    for i, name in enumerate(router_names):
+        config = {Topology.NAME: name,
+                  Topology.TYPE: QuantumNodeNetTopo.QUANTUM_NODE,
+                  Topology.SEED: i,
+                  QuantumNodeNetTopo.MEMO_ARRAY_SIZE: memo_size,
+                  QuantumNodeNetTopo.DATA_MEMO_ARRAY_SIZE: data_memo_size,
+                  QuantumNodeNetTopo.GROUP: node_procs[name]}
         if template:
             config[Topology.TEMPLATE] = template
         if gate_fidelity:
