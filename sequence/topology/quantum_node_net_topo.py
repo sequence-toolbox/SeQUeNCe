@@ -224,7 +224,7 @@ class QuantumNodeNetTopo(Topo):
 
     def infer_qubit_to_node(self, total_wires: int) -> Dict[int, str]:
             """
-            Auto‐infer the {wire_index: node_name} map by
+            Auto-infer the {wire_index: node_name} map by
             first assigning every node's n_data qubits in JSON order,
             then every node's n_ancilla qubits.
             """
@@ -266,16 +266,12 @@ class QuantumNodeNetTopo(Topo):
             data_owners[owner][q] = slot
 
         return data_owners
-    
+
     def get_timeline(self) -> Timeline:
         return self.tl
 
-    def get_nodes(self) -> Dict[str, QuantumNode]:
+    def get_nodes(self) -> Dict[str, List[Node]]:
         return self.nodes
 
     def get_nodes_by_type(self, node_type: Type[Node]) -> List[Node]:
         return [n for node_list in self.nodes.values() for n in node_list if isinstance(n, node_type)]
-
-
-
-

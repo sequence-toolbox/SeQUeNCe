@@ -99,11 +99,3 @@ class TeleportApp(RequestApp):
         psi = my_qubit.state # get qubit state
         log.logger.info(f"{self.name}: teleport done, state={psi}")
         self.results.append(psi) #append result to the list
-
-
-
-
-
-
-
-
