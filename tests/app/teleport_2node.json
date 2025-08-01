@@ -41,34 +41,34 @@
         {
             "source": "router_0",
             "destination": "BSM_router_0_router_1",
-            "delay": 500000000.0
+            "delay": 500000000
         },
         {
             "source": "router_1",
             "destination": "BSM_router_0_router_1",
-            "delay": 500000000.0
+            "delay": 500000000
         },
         {
             "source": "BSM_router_0_router_1",
             "destination": "router_0",
-            "delay": 500000000.0
+            "delay": 500000000
         },
         {
             "source": "BSM_router_0_router_1",
             "destination": "router_1",
-            "delay": 500000000.0
+            "delay": 500000000
         },
         {
             "source": "router_0",
             "destination": "router_1",
-            "delay": 500000000.0
+            "delay": 500000000
         },
         {
             "source": "router_1",
             "destination": "router_0",
-            "delay": 500000000.0
+            "delay": 500000000
         }
     ],
-    "stop_time": 10000000000000.0,
+    "stop_time": 10000000000000,
     "is_parallel": false
 }

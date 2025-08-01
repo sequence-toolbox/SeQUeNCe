@@ -1,6 +1,6 @@
 {
   "is_parallel": false,
-  "stop_time": 100.0,
+  "stop_time": 100,
 
   "nodes": [
     { "name": "q1", "type": "QuantumNode", "seed": 1, "memo_size": 4, "data_memo_size": 1 },
@@ -19,7 +19,7 @@
   ],
 
   "cconnections": [
-    { "type": "classical", "node1": "q1", "node2": "q2", "delay": 1000000000.0 }
+    { "type": "classical", "node1": "q1", "node2": "q2", "delay": 1000000000 }
   ]
 }
 
