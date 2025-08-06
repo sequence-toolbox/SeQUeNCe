@@ -147,7 +147,6 @@ class BSM(Entity):
                            (complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)),
                            (complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)))
 
-        self.rng = self.get_generator()
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
@@ -654,6 +653,7 @@ class SingleHeraldedBSM(BSM):
         self.encoding = "single_heralded"
         assert len(self.detectors) == 2
         self.success_rate = success_rate
+        self.rng = self.get_generator()
 
     def get(self, photon, **kwargs):
         """See base class.
