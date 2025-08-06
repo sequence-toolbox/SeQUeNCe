@@ -165,9 +165,10 @@ def test_send_request():
     protocol = FakeProtocol("send")
     node.resource_manager.send_request(protocol, "dst_id",
                                        "req_condition_func", {})
+    tl.run()
     assert len(node.send_log) == 1
     assert protocol in resource_manager.pending_protocols
-    len(resource_manager.waiting_protocols) == 1
+    assert len(resource_manager.waiting_protocols) == 1
     assert protocol.owner == node
 
 

@@ -13,6 +13,8 @@ if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
     from .rule_manager import Rule, Arguments
 
+from ..kernel.process import Process
+from ..kernel.event import Event
 from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..message import Message
 from ..utils import log
