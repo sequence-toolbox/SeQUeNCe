@@ -57,7 +57,7 @@ class EventList:
         if time == event.time:
             return
 
-        def _pop_updated_event(heap: list, index: int):
+        def _pop_updated_event(heap: list["Event"], index: int):
             parent_i = (index - 1) // 2
             while index > 0 and event < self.data[parent_i]:
                 heap[index], heap[parent_i] = heap[parent_i], heap[index]
