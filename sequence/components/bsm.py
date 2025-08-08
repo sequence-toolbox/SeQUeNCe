@@ -147,8 +147,6 @@ class BSM(Entity):
                            (complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)),
                            (complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)))
 
-        self.rng = self.get_generator()
-
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
@@ -254,7 +252,7 @@ class PolarizationBSM(BSM):
         self.photons[0].combine_state(self.photons[1])
 
         # measure in bell basis
-        res = Photon.measure_multiple(self.bell_basis, self.photons, self.rng)
+        res = Photon.measure_multiple(self.bell_basis, self.photons, self.get_generator())
 
         # check if we've measured as Phi+ or Phi-; these cannot be measured by the BSM
         if res == 0 or res == 1:
@@ -263,14 +261,14 @@ class PolarizationBSM(BSM):
         # measured as Psi+
         # photon detected in corresponding detectors
         if res == 2:
-            detector_num = self.rng.choice([0, 2])
+            detector_num = self.get_generator().choice([0, 2])
             self.detectors[detector_num].get()
             self.detectors[detector_num + 1].get()
 
         # measured as Psi-
         # photon detected in opposite detectors
         elif res == 3:
-            detector_num = self.rng.choice([0, 2])
+            detector_num = self.get_generator().choice([0, 2])
             self.detectors[detector_num].get()
             self.detectors[3 - detector_num].get()
 
@@ -676,12 +674,12 @@ class SingleHeraldedBSM(BSM):
         # assumed simultaneous arrival of both photons
         if len(self.photons) == 2:
             # at most 1/2 probability of success according to LO assumption
-            if self.rng.random() > self.success_rate:
+            if self.get_generator().random() > self.success_rate:
                 log.logger.debug(f'{self.name}: photonic BSM failed')
             else:
                 p0, p1 = self.photons
                 # if both memory successfully emit the photon in this round (consider memory emission inefficiency)
-                if self.rng.random() > p0.loss and self.rng.random() > p1.loss:
+                if self.get_generator().random() > p0.loss and self.get_generator().random() > p1.loss:
                     for idx, photon in enumerate(self.photons):
                         detector = self.detectors[idx]
                         detector.get(photon)
