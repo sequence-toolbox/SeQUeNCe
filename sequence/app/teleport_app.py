@@ -3,21 +3,23 @@ This module implements the TeleportApp class, which is responsible for managing 
 between quantum nodes. It utilizes the TeleportProtocol to handle the teleportation process,
 including the reservation of entangled pairs and the application of corrections based on classical messages.
 """
-from sequence.app.request_app import RequestApp
-import sequence.utils.log as log
-from sequence.entanglement_management.teleportation import TeleportProtocol, TeleportMessage
-from sequence.topology.node import QuantumNode
+from .request_app import RequestApp
+from ..utils import log
+from ..entanglement_management.teleportation import TeleportProtocol, TeleportMessage
+from ..topology.node import DQCNode
 
 class TeleportApp(RequestApp):
-    """
+    """Code for the teleport application.
+
     TeleportApp is a specialized RequestApp that implements quantum teleportation.
     It handles the teleportation protocol between two quantum nodes (Alice and Bob).
+
     Attributes:
         node (QuantumNode): The quantum node this app is attached to.
         protocol (TeleportProtocol): The teleportation protocol instance.
         results (list): List to store the results of teleportation.
     """
-    def __init__(self, node: QuantumNode):
+    def __init__(self, node: DQCNode):
         super().__init__(node)
         self.name = f"{self.node.name}.TeleportApp"
         # register ourselves so incoming TeleportMessage lands here:
@@ -31,6 +33,7 @@ class TeleportApp(RequestApp):
 
     def start(self, responder: str, start_t: int, end_t: int, memory_size: int, fidelity: float, data_src: int):
         """Start the teleportation process.
+
         Args: 
             responder (str): Name of the responder node (Bob).
             start_t (int): Start time of the teleportation (in ps).
@@ -59,6 +62,7 @@ class TeleportApp(RequestApp):
 
     def get_reservation_result(self, reservation, result: bool):
         """Handle the reservation result from the network manager.
+
         Args:
             reservation (Reservation): The reservation object.
             result (bool): True if the reservation was successful, False otherwise.
@@ -68,6 +72,7 @@ class TeleportApp(RequestApp):
 
     def get_memory(self, info):
         """Handle memory state changes.
+
         Args:
             info (MemoryInfo): Information about the memory state change.
         """
@@ -79,6 +84,7 @@ class TeleportApp(RequestApp):
 
     def received_message(self, src: str, msg: TeleportMessage):
         """Handle incoming teleport messages.
+
         Args:
             src (str): Source node name.
             msg (TeleportMessage): The teleport message received.
@@ -87,11 +93,9 @@ class TeleportApp(RequestApp):
         # feed Bob’s corrections into the protocol
         self.teleport_protocol.received_message(src, msg)
 
-
     def teleport_complete(self, comm_key: int):
-        """
-        Called by TeleportProtocol once Bob's qubit is corrected.
-        comm_key holds the teleported |ψ⟩.
+        """Called by TeleportProtocol once Bob's qubit is corrected. comm_key holds the teleported |ψ⟩.
+
         Args:
             comm_key (int): The key of the comm memory where the teleported state is stored.
         """

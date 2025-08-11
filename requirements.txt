@@ -16,3 +16,4 @@ networkx
 pytest
 jupyterlab
 ipywidgets
+gmpy2

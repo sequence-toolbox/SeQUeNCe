@@ -6,9 +6,9 @@ OpticalChannels must be attached to nodes on both ends.
 """
 
 import heapq as hq
+import gmpy2
+gmpy2.get_context().precision = 200
 from typing import TYPE_CHECKING
-
-import numpy as np
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -20,7 +20,7 @@ from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..utils import log
-from ..constants import SPEED_OF_LIGHT, MICROSECOND
+from ..constants import SPEED_OF_LIGHT, MICROSECOND, SECOND, EPSILON
 
 
 class OpticalChannel(Entity):
@@ -147,7 +147,7 @@ class QuantumChannel(OpticalChannel):
             time = -1
             while time < self.timeline.now():
                 time_bin = hq.heappop(self.send_bins)
-                time = int(time_bin * (1e12 / self.frequency))
+                time = self.timebin_to_time(time_bin, self.frequency)
             assert time == self.timeline.now(), "qc {} transmit method called at invalid time".format(self.name)
 
         # check if photon state using Fock representation
@@ -184,6 +184,46 @@ class QuantumChannel(OpticalChannel):
         else:
             pass
 
+    def time_to_timebin(self, time: int, frequency: float) -> int:
+        """Convert simulation time to time bin.
+           Use the gmpy2.mpfr for high precision floating points.
+           The precision is set to 200 bits, equivalent to around 54 significant decimal digits.
+           The float in Python is 64 bits,   equivalent to around 16 significant decimal digits.
+
+        Args:
+            time (int): simulation time to convert.
+            frequency (float): frequency of the channel.
+        Returns:
+            int: time bin corresponding to the given simulation time.
+        """
+        time = gmpy2.mpfr(time)
+        frequency = gmpy2.mpfr(frequency)
+        ps_per_second = gmpy2.mpfr(SECOND)
+        time_bin = time * frequency / ps_per_second
+        if time_bin - gmpy2.floor(time_bin) > gmpy2.mpfr(EPSILON):
+            time_bin = int(time_bin) + 1       # round to the next time bin
+        else:
+            time_bin = int(time_bin)
+        return time_bin
+
+    def timebin_to_time(self, time_bin: int, frequency: float) -> int:
+        """Convert time bin to simulation time (picoseconds).
+           Use the gmpy2.mpz  for high precision integers.
+           Use the gmpy2.mpfr for high precision floating points.
+
+        Args:
+            time_bin (int): time bin to convert.
+            frequency (float): frequency of the channel.
+
+        Returns:
+            int: simulation time (picoseconds) corresponding to the given time bin.
+        """
+        time_bin = gmpy2.mpz(time_bin)
+        ps_per_second = gmpy2.mpz(SECOND)
+        frequency = gmpy2.mpfr(frequency)
+        time = gmpy2.mpfr(time_bin * ps_per_second) / frequency
+        return int(time)
+
     def schedule_transmit(self, min_time: int) -> int:
         """Method to schedule a time for photon transmission.
 
@@ -196,23 +236,15 @@ class QuantumChannel(OpticalChannel):
         Returns:
             int: simulation time for next available transmission window.
         """
-
-        # TODO: move this to node?
-
         min_time = max(min_time, self.timeline.now())
-        time_bin = (min_time * self.frequency)/1e12
-        if time_bin - int(time_bin) > 0.00001:
-            time_bin = int(time_bin) + 1       # round to the next time bin
-        else:
-            time_bin = int(time_bin)
+        time_bin = self.time_to_timebin(min_time, self.frequency)
 
         # find earliest available time bin
         while time_bin in self.send_bins:
             time_bin += 1
         hq.heappush(self.send_bins, time_bin)
 
-        # calculate time
-        time = int(time_bin * (1e12 / self.frequency))
+        time = self.timebin_to_time(time_bin, self.frequency)
         return time
 
     def _receiver_on_other_tl(self) -> bool:
