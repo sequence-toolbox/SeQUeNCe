@@ -26,8 +26,14 @@ from .quantum_manager import (QuantumManagerKet,
                               DENSITY_MATRIX_FORMALISM,
                               FOCK_DENSITY_MATRIX_FORMALISM,
                               BELL_DIAGONAL_STATE_FORMALISM)
-from ..constants import *
 from ..utils import log
+
+# for timeline formatting
+NANOSECONDS_PER_MILLISECOND = 10**6
+PICOSECONDS_PER_NANOSECOND  = 10**3
+NANOSECONDS_PER_MICROSECOND = 10**3
+MILLISECONDS_PER_SECOND = 10**3
+CARRIAGE_RETURN = '\r'
 
 
 class Timeline:
