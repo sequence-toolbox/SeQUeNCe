@@ -1,4 +1,5 @@
 from swap_TN_direct import *
+from sequence.components.polarization_fock.quantum_manager import _build_amp_damping_kraus_operators
 
 from numpy import kron
 import scipy.sparse as sp
@@ -37,10 +38,9 @@ def extend_state_sparse(state):
     return sp.kron(state, state)
 # TMSV_state_dense = extend_state_sparse(TMSV_state)
 
-def bell_state_measurement_sparse(TMSV_state_dense, N, efficiency, a_dag, is_dm = False):
+def bell_state_measurement_sparse(TMSV_state_dense, N, efficiency, a_dag, use_kraus = False, is_dm = False):
     # BSM BS implementation
     BSM_H_0_Mode_op = create_op(2, a_dag, 5, N)
-    print(BSM_H_0_Mode_op.shape, len(BSM_H_0_Mode_op.nonzero()[0]), len(BSM_H_0_Mode_op.nonzero()[1]))
     BSM_V_0_Mode_op = create_op(3, a_dag, 4, N)
     BSM_H_1_Mode_op = create_op(6, a_dag, 1, N)
     BSM_V_1_Mode_op = create_op(7, a_dag, 0, N)
@@ -53,8 +53,14 @@ def bell_state_measurement_sparse(TMSV_state_dense, N, efficiency, a_dag, is_dm 
 
 
     # BSM povm implementation
-    povm_op_1 = sp.csr_matrix(create_threshold_POVM_OP_Dense(efficiency, 1, N))
-    povm_op_0 = sp.csr_matrix(create_threshold_POVM_OP_Dense(efficiency, 0, N))
+    if not use_kraus:
+        print("not using kraus")
+        povm_op_1 = sp.csr_matrix(create_threshold_POVM_OP_Dense(efficiency, 1, N))
+        povm_op_0 = sp.csr_matrix(create_threshold_POVM_OP_Dense(efficiency, 0, N))
+    else:
+        print("using kraus")
+        povm_op_1 = sp.csr_matrix(create_threshold_POVM_OP_Dense(1, 1, N))
+        povm_op_0 = sp.csr_matrix(create_threshold_POVM_OP_Dense(1, 0, N))
 
     BSM_povm = create_op(2, povm_op_1, 0, N)
     BSM_povm = create_op(0, sp.kron(BSM_povm, povm_op_0), 2, N)
@@ -63,7 +69,23 @@ def bell_state_measurement_sparse(TMSV_state_dense, N, efficiency, a_dag, is_dm 
     # print(unitary_BS_V.shape, unitary_BS_H.shape, TMSV_state_dense.shape)
     
     if is_dm:
+        print(unitary_BS_V.shape)
         post_BS_State = unitary_BS_V @ unitary_BS_H @ TMSV_state_dense @ (unitary_BS_V @ unitary_BS_H).conj().T
+        if use_kraus:
+            print("using kraus")
+            damping_kraus_ops = _build_amp_damping_kraus_operators(loss_rate = 1-efficiency, N = N)
+            damping_kraus_ops_1 = [create_op(2, op, 4, N) for op in damping_kraus_ops]
+            damping_kraus_ops_2 = [create_op(6, op, 0, N) for op in damping_kraus_ops]
+
+            new_dm = 0
+            for kraus_op in damping_kraus_ops_1:
+                new_dm += kraus_op @ post_BS_State @ kraus_op.conj().T
+
+            old_dm = new_dm
+            post_BS_State = 0
+            for kraus_op in damping_kraus_ops_2:
+                post_BS_State += kraus_op @ old_dm @ kraus_op.conj().T
+
         post_BSM_State = BSM_povm @ post_BS_State @ BSM_povm.conj().T
     else:
         post_BS_State = unitary_BS_V @ unitary_BS_H @ TMSV_state_dense
@@ -90,9 +112,9 @@ def rotate_and_measure_sparse(post_BSM_State, N, efficiency, a_dag):
 
     # Applying rotations and measuring
 
-    signal_angles = np.linspace(0, np.pi, 10)
+    signal_angles = [0, np.pi/2] # np.linspace(0, np.pi, 20)
     # idler_angles = np.linspace(0, np.pi, 20)
-    idler_angles = [0]
+    idler_angles = [0] # np.linspace(0, np.pi, 20)
     coincidence = []
 
     for i, idler_angle in enumerate(idler_angles):
