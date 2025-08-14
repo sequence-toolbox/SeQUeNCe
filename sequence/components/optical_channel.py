@@ -6,9 +6,8 @@ OpticalChannels must be attached to nodes on both ends.
 """
 
 import heapq as hq
+import gmpy2
 from typing import TYPE_CHECKING
-
-import numpy as np
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -20,7 +19,11 @@ from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..utils import log
-from ..constants import SPEED_OF_LIGHT, MICROSECOND
+from ..constants import SPEED_OF_LIGHT, MICROSECOND, SECOND, EPSILON
+
+gmpy2.get_context().precision = 200
+EPSILON_MPFR = gmpy2.mpfr(EPSILON)
+PS_PER_SECOND = gmpy2.mpz(SECOND)
 
 
 class OpticalChannel(Entity):
@@ -58,7 +61,6 @@ class OpticalChannel(Entity):
         self.distance = distance  # (measured in m)
         self.polarization_fidelity = polarization_fidelity
         self.light_speed = light_speed  # used for photon timing calculations (measured in m/ps)
-        # self.chromatic_dispersion = kwargs.get("cd", 17)  # measured in ps / (nm * km)
 
     def init(self) -> None:
         pass
@@ -85,7 +87,7 @@ class QuantumChannel(OpticalChannel):
     """
 
     def __init__(self, name: str, timeline: "Timeline", attenuation: float, distance: float,
-                 polarization_fidelity=1.0, light_speed=SPEED_OF_LIGHT, frequency=8e7):
+                 polarization_fidelity: float = 1.0, light_speed: float = SPEED_OF_LIGHT, frequency: float = 8e7):
         """Constructor for Quantum Channel class.
 
         Args:
@@ -95,14 +97,16 @@ class QuantumChannel(OpticalChannel):
             distance (float): length of fiber (in m).
             polarization_fidelity (float): probability of no polarization error for a transmitted qubit (default 1).
             light_speed (float): speed of light within the fiber (in m/ps).
+            delay (int): delay (in ps) of photon transmission (determined by light speed, distance).
+            loss (float): loss rate for transmitted photons (determined by attenuation).
             frequency (float): maximum frequency of qubit transmission (in Hz) (default 8e7).
         """
 
         super().__init__(name, timeline, attenuation, distance, polarization_fidelity, light_speed)
-        self.delay = -1
-        self.loss = 1
-        self.frequency = frequency  # maximum frequency for sending qubits (measured in Hz)
-        self.send_bins = []
+        self.delay: int = -1
+        self.loss: float = 1
+        self.frequency: float = frequency  # maximum frequency for sending qubits (measured in Hz)
+        self.send_bins: list = []
 
     def init(self) -> None:
         """Implementation of Entity interface (see base class)."""
@@ -147,7 +151,7 @@ class QuantumChannel(OpticalChannel):
             time = -1
             while time < self.timeline.now():
                 time_bin = hq.heappop(self.send_bins)
-                time = int(time_bin * (1e12 / self.frequency))
+                time = self.timebin_to_time(time_bin, self.frequency)
             assert time == self.timeline.now(), "qc {} transmit method called at invalid time".format(self.name)
 
         # check if photon state using Fock representation
@@ -184,6 +188,44 @@ class QuantumChannel(OpticalChannel):
         else:
             pass
 
+    def time_to_timebin(self, time: int, frequency: float) -> int:
+        """Convert simulation time to time bin.
+           Use the gmpy2.mpfr for high precision floating points.
+           The precision is set to 200 bits, equivalent to around 54 significant decimal digits.
+           The float in Python is 64 bits,   equivalent to around 16 significant decimal digits.
+
+        Args:
+            time (int): simulation time (picoseconds) to convert.
+            frequency (float): frequency of the channel.
+        Returns:
+            int: time bin corresponding to the given simulation time.
+        """
+        time = gmpy2.mpfr(time)
+        frequency = gmpy2.mpfr(frequency)
+        time_bin = time * frequency / PS_PER_SECOND
+        if time_bin - gmpy2.floor(time_bin) > EPSILON_MPFR:
+            time_bin = int(time_bin) + 1       # round to the next time bin
+        else:
+            time_bin = int(time_bin)
+        return time_bin
+
+    def timebin_to_time(self, time_bin: int, frequency: float) -> int:
+        """Convert time bin to simulation time (picoseconds).
+           Use the gmpy2.mpz  for high precision integers.
+           Use the gmpy2.mpfr for high precision floating points.
+
+        Args:
+            time_bin (int): time bin to convert.
+            frequency (float): frequency of the channel.
+
+        Returns:
+            int: simulation time (picoseconds) corresponding to the given time bin.
+        """
+        time_bin = gmpy2.mpz(time_bin)
+        frequency = gmpy2.mpfr(frequency)
+        time = gmpy2.mpfr(time_bin * PS_PER_SECOND) / frequency
+        return int(time)
+
     def schedule_transmit(self, min_time: int) -> int:
         """Method to schedule a time for photon transmission.
 
@@ -196,23 +238,15 @@ class QuantumChannel(OpticalChannel):
         Returns:
             int: simulation time for next available transmission window.
         """
-
-        # TODO: move this to node?
-
         min_time = max(min_time, self.timeline.now())
-        time_bin = min_time * (self.frequency/1e12)
-        if time_bin - int(time_bin) > 0.00001:
-            time_bin = int(time_bin) + 1       # round to the next time bin
-        else:
-            time_bin = int(time_bin)
+        time_bin = self.time_to_timebin(min_time, self.frequency)
 
         # find earliest available time bin
         while time_bin in self.send_bins:
             time_bin += 1
         hq.heappush(self.send_bins, time_bin)
 
-        # calculate time
-        time = int(time_bin * (1e12 / self.frequency))
+        time = self.timebin_to_time(time_bin, self.frequency)
         return time
 
     def _receiver_on_other_tl(self) -> bool:
@@ -233,7 +267,7 @@ class ClassicalChannel(OpticalChannel):
         delay (float): delay (in ps) of message transmission (default distance / light_speed).
     """
 
-    def __init__(self, name: str, timeline: "Timeline", distance: float, delay=-1):
+    def __init__(self, name: str, timeline: "Timeline", distance: float, delay: int = -1):
         """Constructor for Classical Channel class.
 
         Args:
@@ -245,9 +279,9 @@ class ClassicalChannel(OpticalChannel):
 
         super().__init__(name, timeline, 0, distance, 0, SPEED_OF_LIGHT)
         if delay == -1:
-            self.delay = distance / self.light_speed + 10*MICROSECOND
+            self.delay = round(distance / self.light_speed + 10 * MICROSECOND)
         else:
-            self.delay = delay
+            self.delay = round(delay)
 
     def set_ends(self, sender: "Node", receiver: str) -> None:
         """Method to set endpoints for the classical channel.

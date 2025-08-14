@@ -143,6 +143,19 @@ class NetworkManager:
 
         self.protocol_stack[-1].push(responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity)
 
+    def update_forwarding_table(self, forwarding_table: dict) -> None:
+        """Method to set the forwarding table in the routing_protocol in the network manager's protocol stack.
+
+        Args:
+            forwarding_table (dict): the forwarding table for this node, where the key is the destination node name
+                                     and the value is the next hop
+        """
+        log.logger.info(f"{self.owner.name} update forwarding table: {forwarding_table}")
+        static_routing_protocol = self.protocol_stack[0]   # [0] is the static routing protocol
+        for dst, next_hop in forwarding_table.items():
+            static_routing_protocol.update_forwarding_rule(dst, next_hop)
+
+
 
 def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str) -> "NetworkManager":
     """Function to create a new network manager.

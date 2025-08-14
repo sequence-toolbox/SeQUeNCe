@@ -1,17 +1,13 @@
-# File: quantum_node_net_topo.py
-
-
 import json
 import numpy as np
 from networkx import Graph, dijkstra_path, exception
 
 from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
-from .node import BSMNode, QuantumRouter
+from .node import BSMNode
 from ..constants import SPEED_OF_LIGHT
-from ..kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
 from typing import Dict, List, Type
-from .node import Node, QuantumNode
+from .node import Node, DQCNode
 
 
 class QuantumNodeNetTopo(Topo):
@@ -38,12 +34,12 @@ class QuantumNodeNetTopo(Topo):
     IS_PARALLEL = "is_parallel"
     LOOKAHEAD = "lookahead"
     MEET_IN_THE_MID = "meet_in_the_middle"
-    MEMO_ARRAY_SIZE = "memo_size"     # NOTE meant for communication memories
+    MEMO_ARRAY_SIZE = "memo_size"             # communication memories
     PORT = "port"
     PROC_NUM = "process_num"
     CONTROLLER = "Controller"
     QUANTUM_NODE = "QuantumNode"
-    DATA_MEMO_ARRAY_SIZE = "data_memo_size"
+    DATA_MEMO_ARRAY_SIZE = "data_memo_size"   # data memories
 
     def __init__(self, conf_file_name: str):
         self.bsm_to_router_map = {}
@@ -96,7 +92,7 @@ class QuantumNodeNetTopo(Topo):
             elif node_type == self.QUANTUM_NODE:
                 data_size = node.get(self.DATA_MEMO_ARRAY_SIZE, 0)
                 comm_size = node.get(self.MEMO_ARRAY_SIZE, 0)
-                node_obj = QuantumNode(name, self.tl, data_size=data_size, memo_size=comm_size)
+                node_obj = DQCNode(name, self.tl, data_size=data_size, memo_size=comm_size)
             else:
                 raise ValueError("Unknown type of node '{}'".format(node_type))
 
@@ -223,39 +219,37 @@ class QuantumNodeNetTopo(Topo):
                     pass
 
     def infer_qubit_to_node(self, total_wires: int) -> Dict[int, str]:
-            """
-            Auto-infer the {wire_index: node_name} map by
-            first assigning every node's n_data qubits in JSON order,
-            then every node's n_ancilla qubits.
-            """
-            mapping: Dict[int, str] = {}
-            next_wire = 0
-
-            # 1) data wires
-            for nd in self._raw_cfg["nodes"]:
-                name   = nd["name"]
-                n_data = nd.get("n_data", 1)
-                for _ in range(n_data):
-                    if next_wire >= total_wires:
-                        raise ValueError(f"Mapping overflow: more data qubits than {total_wires}")
-                    mapping[next_wire] = name
-                    next_wire += 1
-
-            # 3) (optionally) any communication‐only qubits, etc.
-            #    If your circuit has exactly data+ancilla qubits, you can assert:
-            if next_wire != total_wires:
-                raise ValueError(f"Configured for {next_wire} wires but circuit has {total_wires}")
-
-            return mapping
-    
-    def infer_memory_owners(self,
-                            total_wires:  int,
-                            ancilla_inds: list[int]
-                           ) -> tuple[dict[str,dict[int,int]],
-                                      dict[str,dict[int,int]]]:
+        """Auto-infer the {wire_index: node_name} map by 
+           first assigning every node's n_data qubits in JSON order, then every node's n_ancilla qubits.
+        
+        Args:
+            total_wires (int): The total number of wires (qubits) in the system.
+        Return:
+            dict[int, str]: A mapping from wire indices to node names.
         """
-        Returns (data_owners, ancilla_owners) where each is
-        node_name → { wire_index: slot_index_in_memory_array }.
+        mapping: Dict[int, str] = {}
+        next_wire = 0
+        # 1) data wires
+        for nd in self._raw_cfg["nodes"]:
+            name   = nd["name"]
+            n_data = nd.get("n_data", 1)
+            for _ in range(n_data):
+                if next_wire >= total_wires:
+                    raise ValueError(f"Mapping overflow: more data qubits than {total_wires}")
+                mapping[next_wire] = name
+                next_wire += 1
+        # 3) (optionally) any communication‐only qubits, etc.
+        #    If your circuit has exactly data+ancilla qubits, you can assert:
+        if next_wire != total_wires:
+            raise ValueError(f"Configured for {next_wire} wires but circuit has {total_wires}")
+        return mapping
+    
+    def infer_memory_owners(self, total_wires:  int, ancilla_inds: list[int]) -> tuple[dict[str,dict[int,int]], dict[str,dict[int,int]]]:
+        """ Returns (data_owners, ancilla_owners) where each is node_name → { wire_index: slot_index_in_memory_array }.
+
+        Args:
+            total_wires (int): The total number of wires (qubits) in the system.
+            ancilla_inds (list[int]): The list of indices for the ancilla qubits.
         """
         qubit_to_node = self.infer_qubit_to_node(total_wires)
 

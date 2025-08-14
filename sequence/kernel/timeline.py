@@ -19,8 +19,14 @@ if TYPE_CHECKING:
 
 from .eventlist import EventList
 from .quantum_manager import (QuantumFactory, KET_STATE_FORMALISM)
-from ..constants import *
 from ..utils import log
+
+# for timeline formatting
+NANOSECONDS_PER_MILLISECOND = 10**6
+PICOSECONDS_PER_NANOSECOND  = 10**3
+NANOSECONDS_PER_MICROSECOND = 10**3
+MILLISECONDS_PER_SECOND = 10**3
+CARRIAGE_RETURN = '\r'
 
 
 class Timeline:
@@ -172,7 +178,7 @@ class Timeline:
 
             print(f'{process_bar}', end=CARRIAGE_RETURN)
             stdout.flush()
-            sleep(SLEEP_SECONDS)
+            sleep(seconds=3)
 
     @staticmethod
     def ns_to_human_time(nanoseconds: float) -> str:

@@ -9,7 +9,7 @@ from ..components.circuit import Circuit
 from ..message import Message
 from ..utils import log
 from ..protocol import Protocol
-from ..topology.node import QuantumNode
+from ..topology.node import DQCNode
 
 
 class TeleportMsgType(Enum):
@@ -52,7 +52,7 @@ class TeleportProtocol(Protocol):
     _x_flip_circuit = Circuit(1)
     _x_flip_circuit.x(0)
 
-    def __init__(self, owner: QuantumNode, data_src=None):
+    def __init__(self, owner: DQCNode, data_src=None):
         """ Initialize the teleportation protocol.
             
         Args:

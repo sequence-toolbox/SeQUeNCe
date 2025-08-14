@@ -7,12 +7,12 @@ from sequence.kernel.timeline import Timeline
 from sequence.components.memory import MemoryArray
 from sequence.components.photon import Photon
 
-from sequence.topology.node import QuantumNode 
+from sequence.topology.node import DQCNode 
 
 
 def test_QuantumNode_init_sets_data_memory():
     tl = Timeline()
-    qn = QuantumNode("qn1", tl, data_size=4, memo_size=2)
+    qn = DQCNode("qn1", tl, data_size=4, memo_size=2)
 
     assert "data_mem" in qn.components
     dm = qn.components["data_mem"]
@@ -29,7 +29,7 @@ def test_QuantumNode_init_sets_data_memory():
 
 def test_QuantumNode_assign_cchannel():
     tl = Timeline()
-    qn = QuantumNode("qn1", tl, data_size=1)
+    qn = DQCNode("qn1", tl, data_size=1)
     cc = ClassicalChannel("cc", tl, 1e3)
     qn.assign_cchannel(cc, "qn2")
     assert "qn2" in qn.cchannels and qn.cchannels["qn2"] == cc
@@ -37,14 +37,14 @@ def test_QuantumNode_assign_cchannel():
 
 def test_QuantumNode_assign_qchannel():
     tl = Timeline()
-    qn = QuantumNode("qn1", tl, data_size=1)
+    qn = DQCNode("qn1", tl, data_size=1)
     qc = QuantumChannel("qc", tl, 2e-4, 1e3)
     qn.assign_qchannel(qc, "qn2")
     assert "qn2" in qn.qchannels and qn.qchannels["qn2"] == qc
 
 
 def test_QuantumNode_send_message_like_Node():
-    class FakeQNode(QuantumNode):
+    class FakeQNode(DQCNode):
         def __init__(self, name, tl):
             super().__init__(name, tl, data_size=1, memo_size=1)
             self.log = []
@@ -88,7 +88,7 @@ def test_QuantumNode_send_qubit_like_Node():
     import numpy as np
     np.random.seed(0)
 
-    class FakeQNode(QuantumNode):
+    class FakeQNode(DQCNode):
         def __init__(self, name, tl):
             super().__init__(name, tl, data_size=1, memo_size=1)
             self.log = []
@@ -142,7 +142,7 @@ def test_QuantumNode_receive_message_dispatch_to_apps_and_managers():
             self.protocol_type = None
 
     tl = Timeline()
-    qn = QuantumNode("qn", tl, data_size=1, memo_size=1)
+    qn = DQCNode("qn", tl, data_size=1, memo_size=1)
 
     nm = _Sink()
     rm = _Sink()
@@ -184,7 +184,7 @@ def test_QuantumNode_receive_message_dispatch_to_named_protocol():
             self.calls.append((src, msg))
 
     tl = Timeline()
-    qn = QuantumNode("qn", tl, data_size=1, memo_size=1)
+    qn = DQCNode("qn", tl, data_size=1, memo_size=1)
 
     p = ProtoA("protoA")
     qn.protocols.append(p)
@@ -217,7 +217,7 @@ def test_QuantumNode_receive_message_dispatch_by_protocol_type_when_receiver_Non
             self.calls.append((src, msg))
 
     tl = Timeline()
-    qn = QuantumNode("qn", tl, data_size=1, memo_size=1)
+    qn = DQCNode("qn", tl, data_size=1, memo_size=1)
 
     pA = ProtoTypeA()
     pB = ProtoTypeB()

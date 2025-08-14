@@ -4,7 +4,7 @@ This module provides definitions for various types of quantum network nodes.
 All node types inherit from the base Node type, which inherits from Entity.
 Node types can be used to collect all the necessary hardware and software for a network usage scenario.
 """
-import sys
+
 from math import inf
 from typing import TYPE_CHECKING, Any
 
@@ -789,8 +789,10 @@ class ClassicalNode(ClassicalEntity):
             cc.change_timeline(timeline)
 
 
-class QuantumNode(QuantumRouter):
-    """Code for QuantumNode class.
+class DQCNode(QuantumRouter):
+    """Code for DQCNode class -- node that supports Distributed Quantum Computing
+
+    It is inherited from the QuantumRouter class so that DQCNode can do all what a QuantumRouter can do, such as routing.
 
     A small helper that on init adds:
       - data_mem     - your data qubits
@@ -799,7 +801,10 @@ class QuantumNode(QuantumRouter):
         name (str): Name of the quantum node.
         timeline (Timeline): The timeline for scheduling operations.
         data_size (int): Number of data qubits.
-        memo_size (int): Number of communication qubits (default is 1).  
+        memo_size (int): Number of communication qubits (default is 1).
+        teleport_app (TeleportApp): The teleportation application instance.
+        teledata_app (TeledataApp): The teledata application instance.
+        telegate_app (TelegateApp): The telegate application instance.
     """
     def __init__(self, name: str, timeline: "Timeline", data_size: int, memo_size: int=1):
         super().__init__(name, timeline, memo_size)
