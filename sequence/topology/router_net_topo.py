@@ -6,7 +6,6 @@ from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
 from .node import BSMNode, QuantumRouter
 from ..constants import SPEED_OF_LIGHT
-from ..kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
 
 
 class RouterNetTopo(Topo):
