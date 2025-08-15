@@ -647,7 +647,6 @@ class SingleHeraldedBSM(BSM):
         super().__init__(name, timeline, phase_error, detectors)
         self.encoding = "single_heralded"
         assert len(self.detectors) == 2
-        self.rng = self.get_generator()
 
     def get(self, photon, **kwargs):
         """See base class.
@@ -663,6 +662,11 @@ class SingleHeraldedBSM(BSM):
             May alter the quantum state of memories corresponding to the photons.
         """
 
+        # print("rng:", self.get_generator().random())
+        # print("rng:", self.get_generator().random())
+        # print("rng:", self.get_generator().random())
+        # print("rng:", self.get_generator().random())
+
         super().get(photon)
         log.logger.debug(self.name + " received photon")
         # print("photon received")
@@ -671,7 +675,7 @@ class SingleHeraldedBSM(BSM):
             # at most 1/2 probability of success according to LO assumption
             # TODO: make this parameter of class?
             
-            if self.rng.random() > 1/2:
+            if self.get_generator().random() > 1/2:
             # if self.rng.random() > 1:
             # if self.rng.random() < 0.95:
                 # print("bsm failed")
@@ -685,7 +689,7 @@ class SingleHeraldedBSM(BSM):
 
                 # if both memory successfully emit the photon in this round (consider memory emission inefficiency)
                 # log.logger.warning(f"prob of reaching BSM: {(1-p0.loss)*(1-p1.loss)}")
-                if self.rng.random() > p0.loss and self.rng.random() > p1.loss:
+                if self.get_generator().random() > p0.loss and self.get_generator().random() > p1.loss:
                 # if self.rng.random() < (1-p0.loss)*(1-p1.loss):
                     for idx, photon in enumerate(self.photons):
                         detector = self.detectors[idx]

@@ -315,6 +315,10 @@ class QuantumRouter(Node):
     def receive_message(self, src: str, msg: "Message") -> None:
         # print("classical message received:", msg.msg_type, "at",self.timeline.now())
         log.logger.info("{} receive message {} from {}".format(self.name, msg, src))
+        try:
+            print(self.name, "received message", msg.msg_type, "from", src, "at", self.timeline.now(), msg.req_condition_func)
+        except: 
+            print(self.name, "received message", msg.msg_type, "from", src, "at", self.timeline.now())
         if msg.receiver == "resource_manager":
             self.resource_manager.received_message(src, msg)
         elif msg.receiver == "network_manager":

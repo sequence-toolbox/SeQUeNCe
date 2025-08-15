@@ -476,7 +476,8 @@ class EntanglementGenerationA(EntanglementProtocol):
             else:
                 # log.logger.warning(f"(ent_round=2, never reached for single heralded protocol) (Calling update_memory) at ({future_start_time}) on {self.memory.name}")
                 process = Process(self, "update_memory", [])
-            event = Event(future_start_time, process)
+            priority = self.own.timeline.schedule_counter
+            event = Event(future_start_time, process, priority)
             self.own.timeline.schedule(event)
             self.scheduled_events.append(event)
 
@@ -509,7 +510,8 @@ class EntanglementGenerationA(EntanglementProtocol):
             else:
                 # log.logger.warning(f"(ent_round=2, never reached for single heralded protocol) (Calling update_memory) at ({future_start_time}) on {self.memory.name}")
                 process = Process(self, "update_memory", [])
-            event = Event(future_start_time, process)
+            priority = self.own.timeline.schedule_counter
+            event = Event(future_start_time, process, priority)
             self.own.timeline.schedule(event)
             self.scheduled_events.append(event)
         elif msg_type is GenerationMsgType.MEAS_RES:
@@ -572,6 +574,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         self.own.succesful_attempts += 1
         if self.own.succesful_attempts == 1000:
             self.own.time_to_thousand = self.own.timeline.now()-1e12
+        print(f"{self.own.name} entanglement success! success={self.own.succesful_attempts}, total={self.own.total_attempts} at {self.own.timeline.now()}")
 
     def _entanglement_fail(self):
         # log.logger.warning(f"(entanglement failure) at ({self.own.timeline.now()}) on {self.memory.name}")
@@ -581,7 +584,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         self.update_resource_manager(self.memory, 'RAW')
         self.own.total_attempts += 1
-
+        print(f"{self.own.name} entanglement failed! total={self.own.total_attempts} at {self.own.timeline.now()}")
 
 class EntanglementGenerationB(EntanglementProtocol):
     """Single heralded entanglement generation protocol for BSM node.

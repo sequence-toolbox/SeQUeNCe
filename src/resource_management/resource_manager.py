@@ -246,8 +246,9 @@ class ResourceManager():
                                      req_condition_func=req_condition_func,
                                      req_args=req_args)
         
+        # self.owner.send_message(req_dst, msg, priority= -1)
         process = Process(self.owner, "send_message", [req_dst, msg])
-        event = Event(self.owner.timeline.now()+1, process)
+        event = Event(self.owner.timeline.now(), process)
         self.owner.timeline.schedule(event)
         # self.owner.send_message(req_dst, msg)
 
