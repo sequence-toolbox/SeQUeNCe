@@ -297,7 +297,8 @@ class EntanglementGenerationA(EntanglementProtocol):
                 process = Process(self, "start", [])  # for the second round
             else:
                 process = Process(self, "update_memory", [])
-            event = Event(future_start_time, process)
+            priority = self.owner.timeline.schedule_counter
+            event = Event(future_start_time, process, priority)
             self.owner.timeline.schedule(event)
             self.scheduled_events.append(event)
 
@@ -325,7 +326,8 @@ class EntanglementGenerationA(EntanglementProtocol):
                 process = Process(self, "start", [])  # for the second round
             else:
                 process = Process(self, "update_memory", [])
-            event = Event(future_start_time, process)
+            priority = self.owner.timeline.schedule_counter
+            event = Event(future_start_time, process, priority)
             self.owner.timeline.schedule(event)
             self.scheduled_events.append(event)
 
