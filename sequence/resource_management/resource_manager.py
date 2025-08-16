@@ -13,8 +13,6 @@ if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
     from .rule_manager import Rule, Arguments
 
-from ..kernel.process import Process
-from ..kernel.event import Event
 from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..message import Message
 from ..utils import log
@@ -239,11 +237,7 @@ class ResourceManager:
         memo_names = [memo.name for memo in protocol.memories]
         msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST, protocol=protocol.name, node=self.owner.name,
                                      memories=memo_names, req_condition_func=req_condition_func, req_args=req_args)
-        
-        process = Process(self.owner, "send_message", [req_dst, msg])
-        event = Event(self.owner.timeline.now()+1, process)
-        self.owner.timeline.schedule(event)
-        
+        self.owner.send_message(req_dst, msg)
         log.logger.debug("{} send {} message to {}".format(self.owner.name, msg.msg_type.name, req_dst))
 
     def received_message(self, src: str, msg: "ResourceManagerMessage") -> None:
