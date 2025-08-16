@@ -12,12 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New method `NetworkManager.update_forwarding_table()` to update the forwarding table in a quantum router.
 
 ### Fixed
-- Fixed a floating piont issue in *QuantumChannel.schedule_transmit()* and *QuantumChannel.transmit()* caused by the `float`'s precision limitations in Python. Package `gmpy2` is used for high precision computation.
-  - Version 0.7.3 attempted to fix this issue, but the fix was unseccessful.
+- Fixed a floating point issue in *QuantumChannel.schedule_transmit()* and *QuantumChannel.transmit()* caused by the `float`'s precision limitations in Python. Package `gmpy2` is used for high precision computation.
+  - Version 0.7.3 attempted to fix this issue, but the fix was unsuccessful.
 - In `EntanglementGenerationA.received_message()`, explicitly set the *priority* of the events for future *start* or *update_memory* to *schedule_counter*. It fixes an issue for the edge case when the BSM node is at the end nodes, i.e., distance to one end node is zero.
 
 ### Changed
-- Changed the delay in EntanglmentGenerationA.received_message() to make it more efficient when the BSM node is not exactly at the middle of two end quantum routers.
+- Changed the delay in EntanglementGenerationA.received_message() to make it more efficient when the BSM node is not exactly at the middle of two end quantum routers.
 - Rename `QuantumNode` to `DQCNode`, a node designed for distributed quantum computing.
 - Some constants in module `constants` are changed from `float` to `int`.
 - Several cosmetic updates.
