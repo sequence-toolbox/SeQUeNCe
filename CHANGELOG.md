@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.4] - 2025-8-15
+
+### Added
+- New class `QuantumFactory` that uses the Factory Method design pattern to manage creating various quantum state managers.
+- New method `NetworkManager.update_forwarding_table()` to update the forwarding table in a quantum router.
+
+### Fixed
+- Fixed a floating piont issue in *QuantumChannel.schedule_transmit()* and *QuantumChannel.transmit()* caused by the `float`'s precision limitations in Python. Package `gmpy2` is used for high precision computation.
+  - Version 0.7.3 attempted to fix this issue, but the fix was unseccessful.
+- In `EntanglementGenerationA.received_message()`, explicitly set the *priority* of the events for future *start* or *update_memory* to *schedule_counter*. It fixes an issue for the edge case when the BSM node is at the end nodes, i.e., distance to one end node is zero.
+
+### Changed
+- Changed the delay in EntanglmentGenerationA.received_message() to make it more efficient when the BSM node is not exactly at the middle of two end quantum routers.
+- Rename `QuantumNode` to `DQCNode`, a node designed for distributed quantum computing.
+- Some constants in module `constants` are changed from `float` to `int`.
+- Several cosmetic updates.
+- Some constants in module `constants` are moved back to module `timeline`.
+
+### Removed
+- The badge for sequence monthly downloads is removed, because the website pypistats.org is down.
+
 
 ## [0.7.3] - 2025-8-1
 
