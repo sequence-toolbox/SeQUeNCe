@@ -15,7 +15,8 @@ if TYPE_CHECKING:
 
 from ..resource_management.rule_manager import Rule, Arguments
 from ..entanglement_management.generation import EntanglementGenerationA
-from ..entanglement_management.purification.bbpssw_base import BBPSSWProtocol, BBPSSWProtocolFactory
+from ..entanglement_management.purification.bbpssw_base import BBPSSWProtocol
+from ..entanglement_management.purification.bbpssw_circuit import BBPSSWCircuit
 from ..entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 from ..message import Message
 from ..protocol import StackProtocol
@@ -126,7 +127,7 @@ def ep_rule_action1(memories_info: list["MemoryInfo"], args: Arguments) -> tuple
     """
     memories = [info.memory for info in memories_info]
     name = "EP.%s.%s" % (memories[0].name, memories[1].name)
-    protocol = BBPSSWProtocolFactory.create('circuit', None, name, memories[0], memories[1])
+    protocol = BBPSSWCircuit(None, name, memories[0], memories[1])
     dsts = [memories_info[0].remote_node]
     req_funcs = [ep_req_func1]
     req_args = [{"remote0": memories_info[0].remote_memo, "remote1": memories_info[1].remote_memo}]
@@ -138,7 +139,7 @@ def ep_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple
     """
     memories = [info.memory for info in memories_info]
     name = "EP.%s" % memories[0].name
-    protocol = BBPSSWProtocolFactory.create('circuit',None, name, memories[0], None)
+    protocol = BBPSSWCircuit(None, name, memories[0], None)
     return protocol, [None], [None], [None]
 
 
