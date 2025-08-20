@@ -1,4 +1,4 @@
-__all__ = ['base']
+__all__ = ['base', 'bbpssw_circuit', 'bbpssw_bds']
 
 def __dir__():
     return sorted(__all__)

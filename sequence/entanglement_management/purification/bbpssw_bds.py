@@ -9,7 +9,11 @@ from typing import List, Tuple
 
 import numpy as np
 
-from sequence.components.memory import Memory
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ...components.memory import Memory
+    from ...topology.node import Node
+
 from sequence.kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
 from sequence.topology.node import Node
 from sequence.utils import log
@@ -254,4 +258,4 @@ class BBPSSW_BDS(BBPSSWProtocol):
 
 
 # Register BBPSSW protocol with BDS formalism to the factory
-BBPSSWProtocolFactory.register('BBPSSW_BDS', BBPSSW_BDS)
+BBPSSWProtocolFactory.register('bds', BBPSSW_BDS)
