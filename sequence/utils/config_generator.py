@@ -80,17 +80,16 @@ def generate_nodes(node_procs: dict, router_names: str, memo_size: int, template
     return nodes
 
 
-def generate_quantum_nodes(node_procs: dict, router_names: str, memo_size: int, data_memo_size: int, template: str = None, gate_fidelity: float = None, measurement_fidelity: float = None) -> list:
+def generate_quantum_dqc_nodes(node_procs: dict, router_names: str, memo_size: int, data_memo_size: int, template: str = None, gate_fidelity: float = None, measurement_fidelity: float = None) -> list:
     """generate a list of node configs for quantum nodes
     """
     nodes = []
     for i, name in enumerate(router_names):
         config = {Topology.NAME: name,
-                  Topology.TYPE: DQCNetTopo.QUANTUM_NODE,
+                  Topology.TYPE: DQCNetTopo.DQC_NODE,
                   Topology.SEED: i,
                   DQCNetTopo.MEMO_ARRAY_SIZE: memo_size,
-                  DQCNetTopo.DATA_MEMO_ARRAY_SIZE: data_memo_size,
-                  DQCNetTopo.GROUP: node_procs[name]}
+                  DQCNetTopo.DATA_MEMO_ARRAY_SIZE: data_memo_size}
         if template:
             config[Topology.TEMPLATE] = template
         if gate_fidelity:

@@ -197,7 +197,7 @@ class Node(Entity):
             return [comp for comp in self.components.values() if isinstance(comp, component_type)]
         return []
 
-    def get_component_by_name(self, name: str) ->  Optional["Entity"]:
+    def get_component_by_name(self, name: str) -> Optional["Entity"]:
         """Method to return the component with the given name.
 
         Args:
