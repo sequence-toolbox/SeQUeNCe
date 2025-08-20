@@ -42,7 +42,7 @@ class BBPSSW_BDS(BBPSSWProtocol):
     def __init__(self, owner: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory", is_twirled=True):
         """Constructor for purification protocol.
 
-        Args:
+        args:
             owner (Node): Node the protocol of which the protocol is attached.
             name (str): Name of protocol instance.
             kept_memo (Memory): Memory to keep and improve the fidelity.
@@ -63,20 +63,7 @@ class BBPSSW_BDS(BBPSSWProtocol):
             May update parameters of kept memory.
             Will send message to other protocol instance.
         """
-
-        log.logger.info(f"{self.owner.name} protocol start with partner {self.remote_node_name}")
-
-        assert self.is_ready(), "other protocol is not set; please use set_others function to set it."
-        kept_memo_ent_node = self.kept_memo.entangled_memory["node_id"]
-        meas_memo_ent_node = self.meas_memo.entangled_memory["node_id"]
-        if kept_memo_ent_node is None or meas_memo_ent_node is None:
-            log.logger.info(
-                f'Purification failed, because the memories {kept_memo_ent_node}, {meas_memo_ent_node} is None, no entanglement.')
-            return
-
-        assert kept_memo_ent_node == meas_memo_ent_node, "mismatch of remote nodes {}, {} on node {}".format(
-            kept_memo_ent_node, meas_memo_ent_node, self.owner.name)
-
+        super().start()
         # get remote memories
         remote_memos = [self.owner.timeline.get_entity_by_name(memo) for memo in self.remote_memories]
         remote_kept_memo: Memory = remote_memos[0]
@@ -128,7 +115,7 @@ class BBPSSW_BDS(BBPSSWProtocol):
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:
         """Method to receive messages.
 
-        Args:
+        args:
             src (str): name of node that sent the message.
             msg (BBPSSW message): message received.
 

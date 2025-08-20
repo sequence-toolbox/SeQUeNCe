@@ -57,7 +57,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
     def __init__(self, owner: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory"):
         """Constructor for purification protocol.
 
-        Args:
+        args:
             owner (Node): Node the protocol of which the protocol is attached.
             name (str): Name of protocol instance.
             kept_memo (Memory): Memory to keep and improve the fidelity.
@@ -77,7 +77,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
 
     def is_ready(self) -> bool:
         """Check if the protocol is ready to start."""
-        return self.remote_node_name is not None
+        return self.remote_node_name != ''
 
     def set_others(self, protocol: str, node: str, memories: List[str]) -> None:
         """Method to set other entanglement protocol instance
@@ -101,8 +101,8 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         logger.info(f'{self.owner.name} protocol start with partner {self.remote_node_name}')
 
         # Validation before starting the protocol
-        kept_entangled_memo = self.kept_memo.entangled_memory('node_id')
-        meas_entangled_memo = self.meas_memo.entangled_memory('node_id')
+        kept_entangled_memo = self.kept_memo.entangled_memory['node_id']
+        meas_entangled_memo = self.meas_memo.entangled_memory['node_id']
         assert self.is_ready(), \
             "Protocol is not ready to start. Remote node not set, please use set_others() function to set it."
         assert kept_entangled_memo == meas_entangled_memo, \

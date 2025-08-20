@@ -45,7 +45,7 @@ class BBPSSWCircuit(BBPSSWProtocol):
     def __init__(self, owner: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory", is_twirled=True):
         """Constructor for purification protocol.
 
-        Args:
+        args:
             owner (Node): Node the protocol of which the protocol is attached.
             name (str): Name of protocol instance.
             kept_memo (Memory): Memory to keep and improve the fidelity.
@@ -83,16 +83,7 @@ class BBPSSWCircuit(BBPSSWProtocol):
             May update parameters of kept memory.
             Will send message to other protocol instance.
         """
-
-        log.logger.info(f"{self.owner.name} protocol start with partner {self.remote_node_name}")
-
-        assert self.is_ready(), "other protocol is not set; please use set_others function to set it."
-        kept_memo_ent = self.kept_memo.entangled_memory["node_id"]
-        meas_memo_ent = self.meas_memo.entangled_memory["node_id"]
-        assert kept_memo_ent == meas_memo_ent, "mismatch of entangled memories {}, {} on node {}".format(
-            kept_memo_ent, meas_memo_ent, self.owner.name)
-        assert self.kept_memo.fidelity == self.meas_memo.fidelity > 0.5
-
+        super().start()
         meas_samp = self.owner.get_generator().random()
         self.meas_res = self.owner.timeline.quantum_manager.run_circuit(
             self.circuit, [self.kept_memo.qstate_key,
@@ -109,7 +100,7 @@ class BBPSSWCircuit(BBPSSWProtocol):
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:
         """Method to receive messages.
 
-        Args:
+        args:
             src (str): name of node that sent the message.
             msg (BBPSSW message): message received.
 
