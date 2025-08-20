@@ -9,7 +9,7 @@ from datetime import timedelta
 from math import inf
 from sys import stdout
 from time import sleep, time_ns
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, TypeVar
 
 from numpy import random
 
@@ -28,6 +28,7 @@ NANOSECONDS_PER_MICROSECOND = 10**3
 MILLISECONDS_PER_SECOND = 10**3
 CARRIAGE_RETURN = '\r'
 
+T = TypeVar("T", bound="Entity")
 
 class Timeline:
     """Class for a simulation timeline.
@@ -152,7 +153,7 @@ class Timeline:
         entity = self.entities.pop(name)
         entity.timeline = None
 
-    def get_entity_by_name(self, name: str) -> Optional["Entity"]:
+    def get_entity_by_name(self, name: str) -> Optional[T]:
         return self.entities.get(name, None)
 
     @staticmethod
