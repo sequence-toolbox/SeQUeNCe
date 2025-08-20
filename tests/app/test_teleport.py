@@ -22,11 +22,8 @@ def single_trial(psi):
     alice = next(n for n in nodes if n.name=="router_0")
     bob   = next(n for n in nodes if n.name=="router_1")
     # 1) Prepare |ψ> in Alice’s data qubit
-    # a_key = alice.components["data_mem"].memories[0].qstate_key
-    # alice.timeline.quantum_manager.set([a_key], psi)
-    # memory = alice.components["data_mem"].memories[0]
-    memory_arr = tl.get_entity_by_name(alice.data_memo_arr_name)
-    memory_arr[0].update_state(psi)
+    data_memo_arr = alice.get_component_by_name(alice.data_memo_arr_name)
+    data_memo_arr[0].update_state(psi)
 
     # 2) Attach the TeleportApp on both nodes
     A = TeleportApp(alice)
@@ -59,5 +56,3 @@ def test_teleport_recreates_state():
     # check that Bob's final state matches the original |ψ⟩
     assert out.shape == psi.shape
     assert np.allclose(out, psi, atol=1e-6), f"teleported state {out} != original {psi}"
-
-test_teleport_recreates_state()

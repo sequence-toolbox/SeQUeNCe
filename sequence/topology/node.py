@@ -6,7 +6,7 @@ Node types can be used to collect all the necessary hardware and software for a 
 """
 
 from math import inf
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 
@@ -196,6 +196,17 @@ class Node(Entity):
         if isinstance(component_type, type):
             return [comp for comp in self.components.values() if isinstance(comp, component_type)]
         return []
+
+    def get_component_by_name(self, name: str) ->  Optional["Entity"]:
+        """Method to return the component with the given name.
+
+        Args:
+            name (str): The name of the component to retrieve.
+
+        Returns:
+            Optional[Entity]: The component with the given name, or None if not found.
+        """
+        return self.timeline.get_entity_by_name(name)
 
     def change_timeline(self, timeline: "Timeline"):
         self.timeline = timeline

@@ -11,12 +11,12 @@ def test_sequential_simulation_quantum_node_topo_simple():
 
     # nodes dict has QuantumNode and BSMNode
     nodes = topo.get_nodes()
-    assert DQCNetTopo.QUANTUM_NODE in nodes
+    assert DQCNetTopo.DQC_NODE in nodes
     assert DQCNetTopo.BSM_NODE in nodes
-    assert len(nodes[DQCNetTopo.QUANTUM_NODE]) == 2
+    assert len(nodes[DQCNetTopo.DQC_NODE]) == 2
     assert len(nodes[DQCNetTopo.BSM_NODE]) == 1
 
-    q1, q2 = sorted(nodes[DQCNetTopo.QUANTUM_NODE], key=lambda n: n.name)
+    q1, q2 = sorted(nodes[DQCNetTopo.DQC_NODE], key=lambda n: n.name)
     # channels: 2 QCs (q1->BSM, q2->BSM), 6 CCs (4 via BSM, 2 direct)
     assert len(topo.get_qchannels()) == 2
     assert len(topo.get_cchannels()) == 6
@@ -38,10 +38,10 @@ def test_sequential_simulation_quantum_node_topo_simple():
             assert {cc.sender.name, cc.receiver} == {"q1", "q2"}
             assert cc.delay == 1_000_000_000
 
-    # each node should have a data memory array (name endswith "_data")
+    # each node should have a data memory array (name include "Data")
     for qn in (q1, q2):
-        mas = qn.get_components_by_type("MemoryArray")
-        assert any(getattr(ma, "name", "").endswith("_data") for ma in mas)
+        memory_array = qn.get_components_by_type("MemoryArray")
+        assert any("Data" in getattr(ma, "name", "") for ma in memory_array)
 
     # wiring presence checks
     assert bsm_name in q1.qchannels and bsm_name in q2.qchannels

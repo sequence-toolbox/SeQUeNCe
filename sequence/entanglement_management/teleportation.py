@@ -89,7 +89,8 @@ class TeleportProtocol(Protocol):
             bob_name (str): The name of the Bob node to send corrections to.
         """
         comm_key = info.memory.qstate_key
-        data_key = self.owner.components["data_mem"].memories[self.data_src].qstate_key
+        memory_array = self.owner.get_component_by_name(self.owner.data_memo_arr_name)
+        data_key = memory_array[self.data_src].qstate_key
 
         log.logger.debug(f"[TeleportProtocol:{self.owner.name}] _alice_bell_measure data_key={data_key}, comm_key={comm_key}")
 

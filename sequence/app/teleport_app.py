@@ -48,9 +48,10 @@ class TeleportApp(RequestApp):
         self.teleport_protocol.remote       = responder
 
         # cache Alice’s data‐qubit key for the Bell measurement
-        dm = self.node.components["data_mem"].memories[data_src]
-        self.teleport_protocol.data_memory = dm
-        self.teleport_protocol._q_data     = dm.qstate_key
+        memory_array = self.node.get_component_by_name(self.node.data_memo_arr_name)
+        data_memory = memory_array[data_src]
+        self.teleport_protocol.data_memory = data_memory
+        self.teleport_protocol._q_data     = data_memory.qstate_key
 
         log.logger.debug(f"[TeleportApp:{self.node.name}] start() → responder={responder}, data_src={data_src}")
 
