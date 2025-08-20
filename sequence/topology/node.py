@@ -281,15 +281,20 @@ class QuantumRouter(Node):
     By default, a quantum memory array is included in the components of this node.
 
     Attributes:
+        name (str): name of the node.
+        timeline (Timeline): timeline for simulation.
+        seed (int): the seed for the random number generator.
+        component_templates (dict): templates for the components of this node.
+        gate_fid (float): fidelity of multi-qubit gates (usually CNOT) that can be performed on the node.
+        meas_fid (float): fidelity of single-qubit measurements (usually Z measurement) that can be performed on the node.
+        memo_arr_name (str): name of the communication memory array.
         resource_manager (ResourceManager): resource management module.
         network_manager (NetworkManager): network management module.
         map_to_middle_node (dict[str, str]): mapping of router names to intermediate bsm node names.
         app (any): application in use on node.
-        gate_fid (float): fidelity of multi-qubit gates (usually CNOT) that can be performed on the node.
-        meas_fid (float): fidelity of single-qubit measurements (usually Z measurement) that can be performed on the node.
     """
 
-    def __init__(self, name, tl, memo_size=50, seed=None, component_templates=None, gate_fid: float = 1, meas_fid: float = 1):
+    def __init__(self, name: str, tl: "Timeline", memo_size: int = 50, seed: int = None, component_templates: dict = {}, gate_fid: float = 1, meas_fid: float = 1):
         """Constructor for quantum router class.
 
         Args:
@@ -305,11 +310,8 @@ class QuantumRouter(Node):
         """
 
         super().__init__(name, tl, seed, gate_fid, meas_fid)
-        if not component_templates:
-            component_templates = {}
-
         # create memory array object with optional args
-        self.memo_arr_name = name + ".MemoryArray"
+        self.memo_arr_name = f"{name}.MemoryArray"
         memo_arr_args = component_templates.get("MemoryArray", {})
         memory_array = MemoryArray(self.memo_arr_name, tl, num_memories=memo_size, **memo_arr_args)
         self.add_component(memory_array)
@@ -794,22 +796,32 @@ class DQCNode(QuantumRouter):
 
     It is inherited from the QuantumRouter class so that DQCNode can do all what a QuantumRouter can do, such as routing.
 
-    A small helper that on init adds:
-      - data_mem     - your data qubits
-    
-      Attributes:
+    Attributes:
         name (str): Name of the quantum node.
         timeline (Timeline): The timeline for scheduling operations.
-        data_size (int): Number of data qubits.
-        memo_size (int): Number of communication qubits (default is 1).
+        seed (int): the seed of the this node's random number generator.
+        component_templates (dict): templates for the components of this node.
+        gate_fid (float): fidelity of gate operations (default is 1).
+        meas_fid (float): fidelity of measurement operations (default is 1).
+        memo_arr_name (str): name of the communication memory array.
+        resource_manager (ResourceManager): resource management module.
+        network_manager (NetworkManager): network management module.
+        map_to_middle_node (dict[str, str]): mapping of router names to intermediate bsm node names.
+        app (any): application in use on node.
+
+        data_memo_arr_name (str): name of the data memory array.
         teleport_app (TeleportApp): The teleportation application instance.
         teledata_app (TeledataApp): The teledata application instance.
         telegate_app (TelegateApp): The telegate application instance.
     """
-    def __init__(self, name: str, timeline: "Timeline", data_size: int, memo_size: int=1):
-        super().__init__(name, timeline, memo_size)
+    def __init__(self, name: str, timeline: "Timeline", memo_size: int = 1, seed: int = None, component_templates: dict = {}, 
+                 gate_fid: float = 1, meas_fid: float = 1, data_memo_size: int = 1):
+        super().__init__(name, timeline, memo_size, seed, component_templates, gate_fid, meas_fid)
         # your data qubits
-        self.components["data_mem"] = MemoryArray(f"{name}_data", timeline, data_size)
+        self.data_memo_arr_name = f"{name}.DataMemoryArray"
+        data_memo_arr_args = component_templates.get("DataMemoryArray", {})
+        data_memory_array = MemoryArray(self.data_memo_arr_name, timeline, data_memo_size, **data_memo_arr_args)
+        self.add_component(data_memory_array)
         self.teleport_app = None
         self.teledata_app = None
         self.telegate_app = None

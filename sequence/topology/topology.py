@@ -49,6 +49,7 @@ class Topology(ABC):
     TEMPLATE = "template"
     GATE_FIDELITY = "gate_fidelity"
     MEASUREMENT_FIDELITY = "measurement_fidelity"
+    FORMALISM = "formalism"  # "ket_vector", "density_matrix", "bell_diagonal", etc
 
     
     def __init__(self, conf_file_name: str):

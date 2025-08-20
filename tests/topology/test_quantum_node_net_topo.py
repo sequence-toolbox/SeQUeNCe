@@ -1,9 +1,9 @@
-from sequence.topology.quantum_node_net_topo import QuantumNodeNetTopo
+from sequence.topology.dqc_net_topo import DQCNetTopo
 from sequence.kernel.timeline import Timeline
 
 
 def test_sequential_simulation_quantum_node_topo_simple():
-    topo = QuantumNodeNetTopo("tests/topology/quantum_node_net_topo_simple.json")
+    topo = DQCNetTopo("tests/topology/quantum_node_net_topo_simple.json")
 
     # timeline
     assert isinstance(topo.get_timeline(), Timeline)
@@ -11,12 +11,12 @@ def test_sequential_simulation_quantum_node_topo_simple():
 
     # nodes dict has QuantumNode and BSMNode
     nodes = topo.get_nodes()
-    assert QuantumNodeNetTopo.QUANTUM_NODE in nodes
-    assert QuantumNodeNetTopo.BSM_NODE in nodes
-    assert len(nodes[QuantumNodeNetTopo.QUANTUM_NODE]) == 2
-    assert len(nodes[QuantumNodeNetTopo.BSM_NODE]) == 1
+    assert DQCNetTopo.QUANTUM_NODE in nodes
+    assert DQCNetTopo.BSM_NODE in nodes
+    assert len(nodes[DQCNetTopo.QUANTUM_NODE]) == 2
+    assert len(nodes[DQCNetTopo.BSM_NODE]) == 1
 
-    q1, q2 = sorted(nodes[QuantumNodeNetTopo.QUANTUM_NODE], key=lambda n: n.name)
+    q1, q2 = sorted(nodes[DQCNetTopo.QUANTUM_NODE], key=lambda n: n.name)
     # channels: 2 QCs (q1->BSM, q2->BSM), 6 CCs (4 via BSM, 2 direct)
     assert len(topo.get_qchannels()) == 2
     assert len(topo.get_cchannels()) == 6
