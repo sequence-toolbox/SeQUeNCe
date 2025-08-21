@@ -3,8 +3,9 @@ import pytest
 
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
+from sequence.entanglement_management.purification.bbpssw_base import BBPSSWMessage, BBPSSWMsgType, BBPSSWProtocol
+from sequence.entanglement_management.purification.bbpssw_circuit import BBPSSWCircuit
 from sequence.kernel.timeline import Timeline
-from sequence.entanglement_management.purification import *
 from sequence.topology.node import Node
 from sequence.constants import SQRT_HALF, PHI_PLUS, PHI_MINUS, PSI_PLUS, PSI_MINUS
 
@@ -60,7 +61,7 @@ def test_BBPSSWMessage():
         BBPSSWMessage("unknown type")
 
 
-def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline, Memory, Memory, Memory, Memory, BBPSSW, BBPSSW]:
+def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline, Memory, Memory, Memory, Memory, BBPSSWProtocol, BBPSSWProtocol]:
     '''create the whole quantum network (timeline, nodes, channels, memory, protocols)
     '''
     tl = Timeline()
@@ -92,8 +93,8 @@ def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline,
     meas2.entangled_memory = {'node_id': 'a1', 'memo_id': 'meas1'}
     kept1.fidelity = kept2.fidelity = meas1.fidelity = meas2.fidelity = fidelity
 
-    ep1 = BBPSSW(a1, "a1.ep1", kept1, meas1)
-    ep2 = BBPSSW(a2, "a2.ep2", kept2, meas2)
+    ep1 = BBPSSWCircuit(a1, "a1.ep1", kept1, meas1)
+    ep2 = BBPSSWCircuit(a2, "a2.ep2", kept2, meas2)
     a1.protocols.append(ep1)
     a2.protocols.append(ep2)
     ep1.set_others(ep2.name, a2.name, [kept2.name, meas2.name])
@@ -639,7 +640,7 @@ def test_BBPSSW_fidelity():
         assert kept1.fidelity == kept2.fidelity
 
         if ep1.meas_res == ep2.meas_res:
-            assert kept1.fidelity == BBPSSW.improved_fidelity(fidelity)
+            assert kept1.fidelity == BBPSSWCircuit.improved_fidelity(fidelity)
             assert kept1.entangled_memory["node_id"] == "a2" and \
                    kept2.entangled_memory["node_id"] == "a1"
             assert a1.resource_manager.log[-1] == (kept1, ENTANGLED)

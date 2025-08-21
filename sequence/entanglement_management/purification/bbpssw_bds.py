@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 from sequence.kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
 from sequence.topology.node import Node
 from sequence.utils import log
-from .base import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType, BBPSSWProtocolFactory
+from .bbpssw_base import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType, BBPSSWProtocolFactory
 
 
 class BBPSSW_BDS(BBPSSWProtocol):

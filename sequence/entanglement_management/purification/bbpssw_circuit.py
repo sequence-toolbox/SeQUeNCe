@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from ...topology.node import Node
 
 from sequence.utils import log
-from .base import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType, BBPSSWProtocolFactory
+from .bbpssw_base import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType, BBPSSWProtocolFactory
 
 
 class BBPSSWCircuit(BBPSSWProtocol):
