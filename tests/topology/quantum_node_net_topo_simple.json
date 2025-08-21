@@ -1,0 +1,25 @@
+{
+  "is_parallel": false,
+  "stop_time": 100,
+
+  "nodes": [
+    { "name": "q1", "type": "DQCNode", "seed": 1, "memo_size": 4, "data_memo_size": 1 },
+    { "name": "q2", "type": "DQCNode", "seed": 2, "memo_size": 4, "data_memo_size": 1 }
+  ],
+
+  "qconnections": [
+    {
+      "type": "meet_in_the_middle",
+      "node1": "q1",
+      "node2": "q2",
+      "distance": 1000,
+      "attenuation": 0.0002,
+      "seed": 42
+    }
+  ],
+
+  "cconnections": [
+    { "type": "classical", "node1": "q1", "node2": "q2", "delay": 1000000000 }
+  ]
+}
+

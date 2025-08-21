@@ -1,0 +1,74 @@
+{
+    "nodes": [
+        {
+            "name": "router_0",
+            "type": "DQCNode",
+            "seed": 0,
+            "memo_size": 1,
+            "data_memo_size": 1,
+            "group": 0
+        },
+        {
+            "name": "router_1",
+            "type": "DQCNode",
+            "seed": 1,
+            "memo_size": 1,
+            "data_memo_size": 1,
+            "group": 0
+        },
+        {
+            "name": "BSM_router_0_router_1",
+            "type": "BSMNode",
+            "seed": 0,
+            "group": 0
+        }
+    ],
+    "qchannels": [
+        {
+            "source": "router_0",
+            "destination": "BSM_router_0_router_1",
+            "distance": 500.0,
+            "attenuation": 0.0002
+        },
+        {
+            "source": "router_1",
+            "destination": "BSM_router_0_router_1",
+            "distance": 500.0,
+            "attenuation": 0.0002
+        }
+    ],
+    "cchannels": [
+        {
+            "source": "router_0",
+            "destination": "BSM_router_0_router_1",
+            "delay": 500000000
+        },
+        {
+            "source": "router_1",
+            "destination": "BSM_router_0_router_1",
+            "delay": 500000000
+        },
+        {
+            "source": "BSM_router_0_router_1",
+            "destination": "router_0",
+            "delay": 500000000
+        },
+        {
+            "source": "BSM_router_0_router_1",
+            "destination": "router_1",
+            "delay": 500000000
+        },
+        {
+            "source": "router_0",
+            "destination": "router_1",
+            "delay": 500000000
+        },
+        {
+            "source": "router_1",
+            "destination": "router_0",
+            "delay": 500000000
+        }
+    ],
+    "stop_time": 10000000000000,
+    "is_parallel": false
+}

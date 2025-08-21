@@ -6,9 +6,9 @@ The states may currently be defined in two possible ways:
 
 The manager defines an API for interacting with quantum states.
 """
-
 from __future__ import annotations
-from abc import abstractmethod
+
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 from qutip_qip.circuit import QubitCircuit
 from qutip_qip.operations import gate_sequence_product, Gate
-from numpy import log, array, cumsum, base_repr, zeros
+from numpy import cumsum, base_repr
 from scipy.sparse import csr_matrix
 from scipy.special import binom
 
@@ -30,7 +30,39 @@ FOCK_DENSITY_MATRIX_FORMALISM = "fock_density"
 BELL_DIAGONAL_STATE_FORMALISM = "bell_diagonal"
 
 
-class QuantumManager:
+class QuantumFactory:
+    """Factory class to create quantum manager instances.
+    """
+    _registry = {}  # registry of quantum manager classes
+
+    @classmethod
+    def register(cls, name, manager_class):
+        """Register a new quantum manager class.
+        
+        Args:
+            name (str): Name of the quantum manager.
+            manager_class (type): Class of the quantum manager.
+        """
+        cls._registry[name] = manager_class
+
+    @classmethod
+    def create(cls, name, *args, **kwargs):
+        """Create a new quantum manager instance.
+
+        Args:
+            name (str): Name of the quantum manager.
+            *args: Positional arguments to pass to the manager class constructor.
+            **kwargs: Keyword arguments to pass to the manager class constructor.
+
+        Returns:
+            QuantumManager: A new instance of the specified quantum manager.
+        """
+        if name not in cls._registry:
+            raise ValueError(f"Quantum manager '{name}' is not registered.")
+        return cls._registry[name](*args, **kwargs)
+
+
+class QuantumManager(ABC):
     """Class to track and manage quantum states (abstract).
 
     All states stored are of a single formalism (by default as a ket vector).
@@ -119,7 +151,8 @@ class QuantumManager:
 
         return new_state, all_keys, circ_mat
 
-    def _swap_qubits(self, all_keys, keys):
+    @staticmethod
+    def _swap_qubits(all_keys, keys):
         swap_circuit = QubitCircuit(N=len(all_keys))
         for i, key in enumerate(keys):
             j = all_keys.index(key)
@@ -167,7 +200,7 @@ class QuantumManager:
 class QuantumManagerKet(QuantumManager):
     """Class to track and manage quantum states with the ket vector formalism."""
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__(KET_STATE_FORMALISM)
 
     def new(self, state=(complex(1), complex(0))) -> int:
@@ -275,19 +308,19 @@ class QuantumManagerKet(QuantumManager):
             # set to state measured
             new_state_obj = KetState(result_states[res], [key])
             self.states[key] = new_state_obj
-        
+
         if len(all_keys) > 0:
             new_state_obj = KetState(new_state, all_keys)
             for key in all_keys:
                 self.states[key] = new_state_obj
-        
+
         return dict(zip(keys, result_digits))
 
 
 class QuantumManagerDensity(QuantumManager):
     """Class to track and manage states with the density matrix formalism."""
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__(DENSITY_MATRIX_FORMALISM)
 
     def new(self,
@@ -368,7 +401,7 @@ class QuantumManagerDensity(QuantumManager):
                 key = keys[0]
                 num_states = len(all_keys)
                 state_index = all_keys.index(key)
-                state_0, state_1, prob_0 =\
+                state_0, state_1, prob_0 = \
                     measure_entangled_state_with_cache_density(tuple(map(tuple, state)), state_index, num_states)
                 if meas_samp < prob_0:
                     new_state = array(state_0, dtype=complex)
@@ -411,7 +444,7 @@ class QuantumManagerDensity(QuantumManager):
 class QuantumManagerDensityFock(QuantumManager):
     """Class to track and manage Fock states with the density matrix formalism."""
 
-    def __init__(self, truncation: int = 1):
+    def __init__(self, truncation: int = 1, **kwargs):
         # default truncation is 1 for 2-d Fock space.
         super().__init__(DENSITY_MATRIX_FORMALISM, truncation=truncation)
 
@@ -427,7 +460,7 @@ class QuantumManagerDensityFock(QuantumManager):
         key = self._least_available
         self._least_available += 1
         if state is None:
-            gnd = [1] + [0]*self.truncation
+            gnd = [1] + [0] * self.truncation
             self.states[key] = DensityState(gnd, [key], truncation=self.truncation)
         else:
             self.states[key] = DensityState(state, [key], truncation=self.truncation)
@@ -458,7 +491,7 @@ class QuantumManagerDensityFock(QuantumManager):
         for old_index in range(size):
             old_str = base_repr(old_index, self.dim)
             old_str = old_str.zfill(num_systems)
-            new_str = ''.join((old_str[:i], old_str[j], old_str[i+1:j], old_str[i], old_str[j+1:]))
+            new_str = ''.join((old_str[:i], old_str[j], old_str[i + 1:j], old_str[i], old_str[j + 1:]))
             new_index = int(new_str, base=self.dim)
             swap_unitary[new_index, old_index] = 1
 
@@ -550,16 +583,16 @@ class QuantumManagerDensityFock(QuantumManager):
 
     def set_to_zero(self, key: int):
         """set the state to ground (zero) state."""
-        gnd = [1] + [0]*self.truncation
+        gnd = [1] + [0] * self.truncation
         self.set([key], gnd)
 
     def build_ladder(self):
         """Generate matrix of creation and annihilation (ladder) operators on truncated Hilbert space."""
         truncation = self.truncation
-        data = array([sqrt(i+1) for i in range(truncation)])  # elements in create/annihilation operator matrix
-        row = array([i+1 for i in range(truncation)])
+        data = array([sqrt(i + 1) for i in range(truncation)])  # elements in create/annihilation operator matrix
+        row = array([i + 1 for i in range(truncation)])
         col = array([i for i in range(truncation)])
-        create = csr_matrix((data, (row, col)), shape=(truncation+1, truncation+1)).toarray()
+        create = csr_matrix((data, (row, col)), shape=(truncation + 1, truncation + 1)).toarray()
         destroy = create.conj().T
 
         return create, destroy
@@ -678,9 +711,9 @@ class QuantumManagerDensityFock(QuantumManager):
             total_kraus_op = zeros((self.dim ** len(all_keys), self.dim ** len(all_keys)))
 
             for n in range(k, self.dim):
-                coeff = sqrt(binom(n, k)) * sqrt(((1-loss_rate) ** (n-k)) * (loss_rate ** k))
+                coeff = sqrt(binom(n, k)) * sqrt(((1 - loss_rate) ** (n - k)) * (loss_rate ** k))
                 single_op = zeros((self.dim, self.dim))
-                single_op[n-k, n] = 1
+                single_op[n - k, n] = 1
                 total_op = self._prepare_operator(all_keys, [key], single_op)
                 total_kraus_op += coeff * total_op
 
@@ -716,7 +749,7 @@ class QuantumManagerBellDiagonal(QuantumManager):
     * All manipulation results can be tracked analytically, without explicit quantum gates / channels / measurements.
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__(BELL_DIAGONAL_STATE_FORMALISM)
 
     def new(self, state=None) -> int:
@@ -747,7 +780,7 @@ class QuantumManagerBellDiagonal(QuantumManager):
         super().set(keys, diag_elems)
         # assert len(keys) == 2, "Bell diagonal states must have 2 keys."
         if len(keys) != 2:
-            #raise Warning("bell diagonal quantum manager received invalid set request")  # optional
+            # raise Warning("bell diagonal quantum manager received invalid set request")  # optional
             for key in keys:
                 if key in self.states:
                     self.states.pop(key)
@@ -758,3 +791,12 @@ class QuantumManagerBellDiagonal(QuantumManager):
 
     def set_to_noiseless(self, keys: list[int]):
         self.set(keys, [float(1), float(0), float(0), float(0)])
+    def run_circuit(self, *args, **kwargs):
+        pass
+
+
+# Register built-in managers
+QuantumFactory.register(KET_STATE_FORMALISM, QuantumManagerKet)
+QuantumFactory.register(DENSITY_MATRIX_FORMALISM, QuantumManagerDensity)
+QuantumFactory.register(FOCK_DENSITY_MATRIX_FORMALISM, QuantumManagerDensityFock)
+QuantumFactory.register(BELL_DIAGONAL_STATE_FORMALISM, QuantumManagerBellDiagonal)

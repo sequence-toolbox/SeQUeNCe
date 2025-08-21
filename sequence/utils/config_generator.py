@@ -6,6 +6,8 @@ import pandas as pd
 
 from sequence.topology.topology import Topology
 from sequence.topology.router_net_topo import RouterNetTopo
+from sequence.topology.dqc_net_topo import DQCNetTopo
+from sequence.constants import SECOND
 
 
 def add_default_args(parser):
@@ -18,10 +20,11 @@ def add_default_args(parser):
         argparse.ArgumentParser
     """
 
-    parser.add_argument('memo_size', type=int, help='number of memories per node')
+    parser.add_argument('memo_size', type=int, help='number of communication memories per node')
     parser.add_argument('qc_length', type=float, help='distance between nodes (in km)')
     parser.add_argument('qc_atten', type=float, help='quantum channel attenuation (in dB/m)')
     parser.add_argument('cc_delay', type=float, help='classical channel delay (in ms)')
+    parser.add_argument('-f', '--formalism', type=str, default='ket_vector', help='the formalism of the quantum state. Options: ket_vector, density_matrix, bell_diagonal')
     parser.add_argument('-d', '--directory', type=str, default='tmp', help='name of output directory')
     parser.add_argument('-o', '--output', type=str, default='out.json', help='name of output config file')
     parser.add_argument('-s', '--stop', type=float, default=float('inf'), help='stop time (in s)')
@@ -58,7 +61,8 @@ def generate_node_procs(parallel, net_size, naming_func) -> dict:
 
 
 def generate_nodes(node_procs: dict, router_names: str, memo_size: int, template: str = None, gate_fidelity: float = None, measurement_fidelity: float = None) -> list:
-    """generate a list of node configs"""
+    """generate a list of node configs for quantum routers
+    """
     nodes = []
     for i, name in enumerate(router_names):
         config = {Topology.NAME: name,
@@ -66,6 +70,26 @@ def generate_nodes(node_procs: dict, router_names: str, memo_size: int, template
                   Topology.SEED: i,
                   RouterNetTopo.MEMO_ARRAY_SIZE: memo_size,
                   RouterNetTopo.GROUP: node_procs[name]}
+        if template:
+            config[Topology.TEMPLATE] = template
+        if gate_fidelity:
+            config[Topology.GATE_FIDELITY] = gate_fidelity
+        if measurement_fidelity:
+            config[Topology.MEASUREMENT_FIDELITY] = measurement_fidelity
+        nodes.append(config)
+    return nodes
+
+
+def generate_quantum_dqc_nodes(node_procs: dict, router_names: str, memo_size: int, data_memo_size: int, template: str = None, gate_fidelity: float = None, measurement_fidelity: float = None) -> list:
+    """generate a list of node configs for quantum nodes
+    """
+    nodes = []
+    for i, name in enumerate(router_names):
+        config = {Topology.NAME: name,
+                  Topology.TYPE: DQCNetTopo.DQC_NODE,
+                  Topology.SEED: i,
+                  DQCNetTopo.MEMO_ARRAY_SIZE: memo_size,
+                  DQCNetTopo.DATA_MEMO_ARRAY_SIZE: data_memo_size}
         if template:
             config[Topology.TEMPLATE] = template
         if gate_fidelity:
@@ -121,9 +145,10 @@ def generate_classical(router_names: list, cc_delay: int) -> list:
     return cchannels
 
 
-# add final touches to config dict: 1) stop_time, 2)parallel related
+# add final touches to config dict: 1) stop_time, 2) formalism, 3)parallel related
 def final_config(output_dict, parsed_args):
-    output_dict[Topology.STOP_TIME] = parsed_args.stop * 1e12
+    output_dict[Topology.STOP_TIME] = int(parsed_args.stop * SECOND)
+    output_dict[Topology.FORMALISM] = parsed_args.formalism
     if parsed_args.parallel:
         output_dict[RouterNetTopo.IS_PARALLEL] = True
         output_dict[RouterNetTopo.PROC_NUM] = int(parsed_args.parallel[2])
