@@ -5,7 +5,7 @@ Also defined is the message type used by this implementation.
 Entanglement generation is asymmetric:
 
 * EntanglementGenerationA should be used on the QuantumRouter (with one node set as the primary) and should be started via the "start" method
-* EntanglementGeneraitonB should be used on the BSMNode and does not need to be started
+* EntanglementGenerationB should be used on the BSMNode and does not need to be started
 """
 
 from __future__ import annotations
@@ -269,11 +269,10 @@ class EntanglementGenerationA(EntanglementProtocol):
             other_qc_delay = msg.qc_delay
             self.qc_delay = self.owner.qchannels[self.middle].delay
             cc_delay = int(self.owner.cchannels[src].delay)
-            total_quantum_delay = max(self.qc_delay, other_qc_delay)  # two qc_delays are the same for "meet_in_the_middle"
 
             # get time for first excite event
             memory_excite_time = self.memory.next_excite_time
-            min_time = max(self.owner.timeline.now(), memory_excite_time) + total_quantum_delay - self.qc_delay + cc_delay  # cc_delay time for NEGOTIATE_ACK
+            min_time = max(self.owner.timeline.now(), memory_excite_time) + other_qc_delay - self.qc_delay + cc_delay  # cc_delay time for NEGOTIATE_ACK
             emit_time = self.owner.schedule_qubit(self.middle, min_time)  # used to send memory
             self.expected_time = emit_time + self.qc_delay  # expected time for middle BSM node to receive the photon
 
@@ -295,7 +294,8 @@ class EntanglementGenerationA(EntanglementProtocol):
                 process = Process(self, "start", [])  # for the second round
             else:
                 process = Process(self, "update_memory", [])
-            event = Event(future_start_time, process)
+            priority = self.owner.timeline.schedule_counter
+            event = Event(future_start_time, process, priority)
             self.owner.timeline.schedule(event)
             self.scheduled_events.append(event)
 
@@ -323,7 +323,8 @@ class EntanglementGenerationA(EntanglementProtocol):
                 process = Process(self, "start", [])  # for the second round
             else:
                 process = Process(self, "update_memory", [])
-            event = Event(future_start_time, process)
+            priority = self.owner.timeline.schedule_counter
+            event = Event(future_start_time, process, priority)
             self.owner.timeline.schedule(event)
             self.scheduled_events.append(event)
 

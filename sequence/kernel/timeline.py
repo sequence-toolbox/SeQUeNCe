@@ -18,16 +18,15 @@ if TYPE_CHECKING:
     from .entity import Entity
 
 from .eventlist import EventList
-from .quantum_manager import (QuantumManagerKet,
-                              QuantumManagerDensity,
-                              QuantumManagerDensityFock,
-                              QuantumManagerBellDiagonal,
-                              KET_STATE_FORMALISM,
-                              DENSITY_MATRIX_FORMALISM,
-                              FOCK_DENSITY_MATRIX_FORMALISM,
-                              BELL_DIAGONAL_STATE_FORMALISM)
-from ..constants import *
+from .quantum_manager import (QuantumFactory, KET_STATE_FORMALISM)
 from ..utils import log
+
+# for timeline formatting
+NANOSECONDS_PER_MILLISECOND = 10**6
+PICOSECONDS_PER_NANOSECOND  = 10**3
+NANOSECONDS_PER_MICROSECOND = 10**3
+MILLISECONDS_PER_SECOND = 10**3
+CARRIAGE_RETURN = '\r'
 
 
 class Timeline:
@@ -71,25 +70,8 @@ class Timeline:
         self.run_counter: int = 0
         self.is_running: bool = False
         self.show_progress: bool = False
-        self.set_quantum_manager(formalism, truncation)
-        
-    def set_quantum_manager(self, formalism: str, truncation: int = 1) -> None:
-        """Update the formalism
-        
-        Args:
-            formalism (str): the formalism.
-            truncation (int): truncation of Hilbert space (currently only for Fock representation).
-        """
-        if formalism == KET_STATE_FORMALISM:
-            self.quantum_manager = QuantumManagerKet()
-        elif formalism == DENSITY_MATRIX_FORMALISM:
-            self.quantum_manager = QuantumManagerDensity()
-        elif formalism == FOCK_DENSITY_MATRIX_FORMALISM:
-            self.quantum_manager = QuantumManagerDensityFock(truncation=truncation)
-        elif formalism == BELL_DIAGONAL_STATE_FORMALISM:
-            self.quantum_manager = QuantumManagerBellDiagonal()
-        else:
-            raise ValueError(f"Invalid formalism {formalism}")
+        self.quantum_manager = QuantumFactory.create(formalism, truncation=truncation)
+
 
     def now(self) -> int:
         """Returns current simulation time."""
@@ -196,7 +178,7 @@ class Timeline:
 
             print(f'{process_bar}', end=CARRIAGE_RETURN)
             stdout.flush()
-            sleep(SLEEP_SECONDS)
+            sleep(seconds=3)
 
     @staticmethod
     def ns_to_human_time(nanoseconds: float) -> str:

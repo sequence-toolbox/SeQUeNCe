@@ -4,9 +4,9 @@ This module provides definitions for various types of quantum network nodes.
 All node types inherit from the base Node type, which inherits from Entity.
 Node types can be used to collect all the necessary hardware and software for a network usage scenario.
 """
-import sys
+
 from math import inf
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 
@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from ..components.memory import Memory
     from ..components.photon import Photon
     from ..app.request_app import RequestApp
+    from ..app.teleport_app import TeleportApp
 
 from ..kernel.entity import Entity, ClassicalEntity
 from ..components.memory import MemoryArray
@@ -207,6 +208,17 @@ class Node(Entity):
             return [comp for comp in self.components.values() if isinstance(comp, component_type)]
         return []
 
+    def get_component_by_name(self, name: str) -> Optional["Entity"]:
+        """Method to return the component with the given name.
+
+        Args:
+            name (str): The name of the component to retrieve.
+
+        Returns:
+            Optional[Entity]: The component with the given name, or None if not found.
+        """
+        return self.timeline.get_entity_by_name(name)
+
     def change_timeline(self, timeline: "Timeline"):
         self.timeline = timeline
         for component in self.components.values():
@@ -291,15 +303,20 @@ class QuantumRouter(Node):
     By default, a quantum memory array is included in the components of this node.
 
     Attributes:
+        name (str): name of the node.
+        timeline (Timeline): timeline for simulation.
+        seed (int): the seed for the random number generator.
+        component_templates (dict): templates for the components of this node.
+        gate_fid (float): fidelity of multi-qubit gates (usually CNOT) that can be performed on the node.
+        meas_fid (float): fidelity of single-qubit measurements (usually Z measurement) that can be performed on the node.
+        memo_arr_name (str): name of the communication memory array.
         resource_manager (ResourceManager): resource management module.
         network_manager (NetworkManager): network management module.
         map_to_middle_node (dict[str, str]): mapping of router names to intermediate bsm node names.
         app (any): application in use on node.
-        gate_fid (float): fidelity of multi-qubit gates (usually CNOT) that can be performed on the node.
-        meas_fid (float): fidelity of single-qubit measurements (usually Z measurement) that can be performed on the node.
     """
 
-    def __init__(self, name, tl, memo_size=50, seed=None, component_templates=None, gate_fid: float = 1, meas_fid: float = 1):
+    def __init__(self, name: str, tl: "Timeline", memo_size: int = 50, seed: int = None, component_templates: dict = {}, gate_fid: float = 1, meas_fid: float = 1):
         """Constructor for quantum router class.
 
         Args:
@@ -315,11 +332,8 @@ class QuantumRouter(Node):
         """
 
         super().__init__(name, tl, seed, gate_fid, meas_fid)
-        if not component_templates:
-            component_templates = {}
-
         # create memory array object with optional args
-        self.memo_arr_name = name + ".MemoryArray"
+        self.memo_arr_name = f"{name}.MemoryArray"
         memo_arr_args = component_templates.get("MemoryArray", {})
         memory_array = MemoryArray(self.memo_arr_name, tl, num_memories=memo_size, **memo_arr_args)
         self.add_component(memory_array)
@@ -380,7 +394,6 @@ class QuantumRouter(Node):
 
         Inherit parent function.
         """
-
         super().init()
 
     def add_bsm_node(self, bsm_name: str, router_name: str):
@@ -393,7 +406,11 @@ class QuantumRouter(Node):
         self.map_to_middle_node[router_name] = bsm_name
 
     def get(self, photon: "Photon", **kwargs):
-        """Receives photon from last hardware element (in this case, quantum memory)."""
+        """Receives photon from last hardware element (in this case, quantum memory).
+
+        Args:
+            photon (Photon): the received photon.
+        """
         dst = kwargs.get("dst", None)
         if dst is None:
             raise ValueError("Destination should be supplied for 'get' method on QuantumRouter")
@@ -405,12 +422,15 @@ class QuantumRouter(Node):
         Args:
             memory (Memory): memory that has expired.
         """
-
         self.resource_manager.memory_expire(memory)
 
     def set_app(self, app: "RequestApp"):
-        """Method to add an application to the node."""
+        """Method to add an application to the node.
+        NOTE: a quantum router can only have one application at a time.
 
+        Args:
+            app (RequestApp): the application to add.
+        """
         self.app = app
 
     def reserve_net_resource(self, responder: str, start_time: int, end_time: int, memory_size: int,
@@ -428,12 +448,14 @@ class QuantumRouter(Node):
             entanglement_number (int): the number of entanglement that the request ask for (default 1).
             identity (int): the ID of the request (default 0).
         """
-
         self.network_manager.request(responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity)
 
     def get_idle_memory(self, info: "MemoryInfo") -> None:
-        """Method for application to receive available memories."""
+        """Method for application to receive available memories.
 
+        Args:
+            info (MemoryInfo): information about the available memory.
+        """
         if self.app:
             self.app.get_memory(info)
 
@@ -444,7 +466,6 @@ class QuantumRouter(Node):
             reservation (Reservation): the reservation created by the reservation protocol at this node (the initiator).
             result (bool): whether the reservation has been approved by the responder.
         """
-
         if self.app:
             self.app.get_reservation_result(reservation, result)
 
@@ -454,7 +475,6 @@ class QuantumRouter(Node):
         Args:
             reservation (Reservation): the reservation created by the other node (this node is the responder)
         """
-
         if self.app:
             self.app.get_other_reservation(reservation)
 
@@ -797,3 +817,69 @@ class ClassicalNode(ClassicalEntity):
             component.change_timeline(timeline)
         for cc in self.cchannels.values():
             cc.change_timeline(timeline)
+
+
+class DQCNode(QuantumRouter):
+    """Code for DQCNode class -- node that supports Distributed Quantum Computing
+
+    It is inherited from the QuantumRouter class so that DQCNode can do all what a QuantumRouter can do, such as routing.
+
+    Attributes:
+        name (str): Name of the quantum node.
+        timeline (Timeline): The timeline for scheduling operations.
+        seed (int): the seed of the this node's random number generator.
+        component_templates (dict): templates for the components of this node.
+        gate_fid (float): fidelity of gate operations (default is 1).
+        meas_fid (float): fidelity of measurement operations (default is 1).
+        memo_arr_name (str): name of the communication memory array.
+        resource_manager (ResourceManager): resource management module.
+        network_manager (NetworkManager): network management module.
+        map_to_middle_node (dict[str, str]): mapping of router names to intermediate bsm node names.
+        app (any): application in use on node.
+
+        data_memo_arr_name (str): name of the data memory array.
+        teleport_app (TeleportApp): The teleportation application instance.
+        teledata_app (TeledataApp): The teledata application instance.
+        telegate_app (TelegateApp): The telegate application instance.
+    """
+    def __init__(self, name: str, timeline: "Timeline", memo_size: int = 1, seed: int = None, component_templates: dict = {}, 
+                 gate_fid: float = 1, meas_fid: float = 1, data_memo_size: int = 1):
+        super().__init__(name, timeline, memo_size, seed, component_templates, gate_fid, meas_fid)
+        # your data qubits
+        self.data_memo_arr_name = f"{name}.DataMemoryArray"
+        data_memo_arr_args = component_templates.get("DataMemoryArray", {})
+        data_memory_array = MemoryArray(self.data_memo_arr_name, timeline, data_memo_size, **data_memo_arr_args)
+        self.add_component(data_memory_array)
+        self.teleport_app: TeleportApp = None
+        self.teledata_app = None
+        self.telegate_app = None
+
+    def receive_message(self, src: str, msg: "Message") -> None:
+        """Determine what to do when a message is received, based on the msg.receiver.
+
+        Args:
+            src (str): name of node that sent the message.
+            msg (Message): the received message.
+        """
+
+        log.logger.info("{} receive message {} from {}".format(self.name, msg, src))
+        if msg.receiver == "network_manager":
+            self.network_manager.received_message(src, msg)
+        elif msg.receiver == "resource_manager":
+            self.resource_manager.received_message(src, msg)
+        elif msg.receiver == "teleport_app":
+            self.teleport_app.received_message(src, msg)
+        elif msg.receiver == "teledata_app":
+            self.teledata_app.received_message(src, msg)
+        elif msg.receiver == "telegate_app":
+            self.telegate_app.received_message(src, msg)
+        else:
+            if msg.receiver is None:  # the msg sent by EntanglementGenerationB doesn't have a receiver (EGA & EGB not paired)
+                matching = [p for p in self.protocols if type(p) == msg.protocol_type]
+                for p in matching:    # the valid_trigger_time() function resolves multiple matching issue
+                    p.received_message(src, msg)
+            else:
+                for protocol in self.protocols:
+                    if protocol.name == msg.receiver:
+                        protocol.received_message(src, msg)
+                        break

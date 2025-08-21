@@ -16,7 +16,8 @@
 [![Documentation](https://img.shields.io/readthedocs/sequence-rtd-tutorial)](https://sequence-rtd-tutorial.readthedocs.io/)
 [![Qutip](https://img.shields.io/badge/integration%20-Qutip-blue)](https://qutip.org/)
 [![Paper](https://img.shields.io/badge/10.1088%2F2058-9565%2Fac22f6?label=DOI)](https://iopscience.iop.org/article/10.1088/2058-9565/ac22f6)
-[![Download-month](https://img.shields.io/pypi/dm/sequence)](https://pypistats.org/packages/sequence)
+[![PyPI Downloads](https://static.pepy.tech/badge/sequence/month)](https://pepy.tech/projects/sequence)
+<!-- [![Download-month](https://img.shields.io/pypi/dm/sequence)](https://pypistats.org/packages/sequence) -->
 
 </div>
 
@@ -126,7 +127,7 @@ If you have questions, please contact [Caitao Zhan](https://caitaozhan.github.io
 
 * F. Mazza et al., ["Simulation of Entanglement-Enabled Connectivity in QLANs using SeQUeNCe"](https://arxiv.org/abs/2411.11031), IEEE ICC 2025
 
-* C. Zhan et al., ["Design and Simulation of the Adaptive Continuous Entanglement Generation Protocol"](https://arxiv.org/abs/2502.01964), QCNC 2025
+* C. Zhan et al., ["Design and Simulation of the Adaptive Continuous Entanglement Generation Protocol"](https://arxiv.org/abs/2502.01964), QCNC 2025. [GitHub Repository](https://github.com/caitaozhan/adaptive-continuous)
 
 
 Please do a Pull Request to add your paper here! 

@@ -21,7 +21,7 @@ class SimpleManager:
             self.ent_counter += 1
 
     def create_protocol(self):
-        if type(self.own) is SwapNodeA:
+        if type(self.owner) is SwapNodeA:
             left_memo = self.owner.components[self.memo_names[0]]
             right_memo = self.owner.components[self.memo_names[1]]
             self.owner.protocols = [EntanglementSwappingA(self.owner, 'ESA', left_memo, right_memo, 1, 0.99)]
