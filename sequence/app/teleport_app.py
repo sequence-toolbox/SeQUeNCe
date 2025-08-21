@@ -8,6 +8,7 @@ from ..utils import log
 from ..entanglement_management.teleportation import TeleportProtocol, TeleportMessage
 from ..topology.node import DQCNode
 
+
 class TeleportApp(RequestApp):
     """Code for the teleport application.
 
@@ -15,21 +16,18 @@ class TeleportApp(RequestApp):
     It handles the teleportation protocol between two quantum nodes (Alice and Bob).
 
     Attributes:
-        node (QuantumNode): The quantum node this app is attached to.
-        protocol (TeleportProtocol): The teleportation protocol instance.
+        node (DQCNode): The quantum node this app is attached to.
+        name (str): The name of the teleport application.
         results (list): List to store the results of teleportation.
+        teleport_protocol (TeleportProtocol): The teleportation protocol instance.
     """
     def __init__(self, node: DQCNode):
         super().__init__(node)
         self.name = f"{self.node.name}.TeleportApp"
-        # register ourselves so incoming TeleportMessage lands here:
-        node.teleport_app = self
-        # where we’ll collect Bob’s teleported state
-        self.results = []
-        # create a single protocol instance, on both Alice & Bob
-        self.teleport_protocol = TeleportProtocol(owner=node, data_src=None)
-
-        log.logger.debug(f"[TeleportApp:{node.name}] initialized")
+        node.teleport_app = self   # register ourselves so incoming TeleportMessage lands here:
+        self.results = []          # where we’ll collect Bob’s teleported state
+        self.teleport_protocol = TeleportProtocol(owner=node, data_src=None)  # create a single protocol instance, on both Alice & Bob
+        log.logger.debug(f"{self.name}: initialized")
 
     def start(self, responder: str, start_t: int, end_t: int, memory_size: int, fidelity: float, data_src: int):
         """Start the teleportation process.
@@ -48,11 +46,12 @@ class TeleportApp(RequestApp):
         self.teleport_protocol.remote       = responder
 
         # cache Alice’s data‐qubit key for the Bell measurement
-        dm = self.node.components["data_mem"].memories[data_src]
-        self.teleport_protocol.data_memory = dm
-        self.teleport_protocol._q_data     = dm.qstate_key
+        memory_array = self.node.get_component_by_name(self.node.data_memo_arr_name)
+        data_memory = memory_array[data_src]
+        self.teleport_protocol.data_memory = data_memory
+        self.teleport_protocol._q_data     = data_memory.qstate_key
 
-        log.logger.debug(f"[TeleportApp:{self.node.name}] start() → responder={responder}, data_src={data_src}")
+        log.logger.debug(f"{self.name}: start() → responder={responder}, data_src={data_src}")
 
         # reserve and generate EPR pair
         super().start(responder, start_t, end_t, memory_size, fidelity)
@@ -68,7 +67,7 @@ class TeleportApp(RequestApp):
             result (bool): True if the reservation was successful, False otherwise.
         """
         super().get_reservation_result(reservation, result)
-        log.logger.debug(f"[TeleportApp:{self.node.name}] reservation_result → {result}")
+        log.logger.debug(f"{self.name}: reservation_result → {result}")
 
     def get_memory(self, info):
         """Handle memory state changes.

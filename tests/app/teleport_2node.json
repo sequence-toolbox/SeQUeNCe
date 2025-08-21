@@ -2,7 +2,7 @@
     "nodes": [
         {
             "name": "router_0",
-            "type": "QuantumNode",
+            "type": "DQCNode",
             "seed": 0,
             "memo_size": 1,
             "data_memo_size": 1,
@@ -10,7 +10,7 @@
         },
         {
             "name": "router_1",
-            "type": "QuantumNode",
+            "type": "DQCNode",
             "seed": 1,
             "memo_size": 1,
             "data_memo_size": 1,

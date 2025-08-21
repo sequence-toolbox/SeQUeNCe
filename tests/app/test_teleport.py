@@ -4,7 +4,7 @@ It verifies that the teleportation process correctly recreates the original quan
 """
 import math
 import numpy as np
-from sequence.topology.quantum_node_net_topo import QuantumNodeNetTopo
+from sequence.topology.dqc_net_topo import DQCNetTopo
 from sequence.app.teleport_app import TeleportApp
 from sequence.constants import MILLISECOND
 
@@ -16,14 +16,14 @@ def single_trial(psi):
         np.ndarray: The quantum state after teleportation, as received by Bob.
     """
     # set up the 2-node network
-    topo = QuantumNodeNetTopo("tests/app/teleport_2node.json")
+    topo = DQCNetTopo("tests/app/teleport_2node.json")
     tl   = topo.tl
-    nodes = topo.nodes[QuantumNodeNetTopo.QUANTUM_NODE]
+    nodes = topo.nodes[DQCNetTopo.DQC_NODE]
     alice = next(n for n in nodes if n.name=="router_0")
     bob   = next(n for n in nodes if n.name=="router_1")
     # 1) Prepare |ψ> in Alice’s data qubit
-    a_key = alice.components["data_mem"].memories[0].qstate_key
-    alice.timeline.quantum_manager.set([a_key], psi)
+    data_memo_arr = alice.get_component_by_name(alice.data_memo_arr_name)
+    data_memo_arr[0].update_state(psi)
 
     # 2) Attach the TeleportApp on both nodes
     A = TeleportApp(alice)
