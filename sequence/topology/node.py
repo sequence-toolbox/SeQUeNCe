@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from ..components.memory import Memory
     from ..components.photon import Photon
     from ..app.request_app import RequestApp
+    from ..app.teleport_app import TeleportApp
 
 from ..kernel.entity import Entity, ClassicalEntity
 from ..components.memory import MemoryArray
@@ -383,7 +384,6 @@ class QuantumRouter(Node):
 
         Inherit parent function.
         """
-
         super().init()
 
     def add_bsm_node(self, bsm_name: str, router_name: str):
@@ -396,7 +396,11 @@ class QuantumRouter(Node):
         self.map_to_middle_node[router_name] = bsm_name
 
     def get(self, photon: "Photon", **kwargs):
-        """Receives photon from last hardware element (in this case, quantum memory)."""
+        """Receives photon from last hardware element (in this case, quantum memory).
+
+        Args:
+            photon (Photon): the received photon.
+        """
         dst = kwargs.get("dst", None)
         if dst is None:
             raise ValueError("Destination should be supplied for 'get' method on QuantumRouter")
@@ -408,12 +412,15 @@ class QuantumRouter(Node):
         Args:
             memory (Memory): memory that has expired.
         """
-
         self.resource_manager.memory_expire(memory)
 
     def set_app(self, app: "RequestApp"):
-        """Method to add an application to the node."""
+        """Method to add an application to the node.
+        NOTE: a quantum router can only have one application at a time.
 
+        Args:
+            app (RequestApp): the application to add.
+        """
         self.app = app
 
     def reserve_net_resource(self, responder: str, start_time: int, end_time: int, memory_size: int,
@@ -431,12 +438,14 @@ class QuantumRouter(Node):
             entanglement_number (int): the number of entanglement that the request ask for (default 1).
             identity (int): the ID of the request (default 0).
         """
-
         self.network_manager.request(responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity)
 
     def get_idle_memory(self, info: "MemoryInfo") -> None:
-        """Method for application to receive available memories."""
+        """Method for application to receive available memories.
 
+        Args:
+            info (MemoryInfo): information about the available memory.
+        """
         if self.app:
             self.app.get_memory(info)
 
@@ -447,7 +456,6 @@ class QuantumRouter(Node):
             reservation (Reservation): the reservation created by the reservation protocol at this node (the initiator).
             result (bool): whether the reservation has been approved by the responder.
         """
-
         if self.app:
             self.app.get_reservation_result(reservation, result)
 
@@ -457,7 +465,6 @@ class QuantumRouter(Node):
         Args:
             reservation (Reservation): the reservation created by the other node (this node is the responder)
         """
-
         if self.app:
             self.app.get_other_reservation(reservation)
 
@@ -833,7 +840,7 @@ class DQCNode(QuantumRouter):
         data_memo_arr_args = component_templates.get("DataMemoryArray", {})
         data_memory_array = MemoryArray(self.data_memo_arr_name, timeline, data_memo_size, **data_memo_arr_args)
         self.add_component(data_memory_array)
-        self.teleport_app = None
+        self.teleport_app: TeleportApp = None
         self.teledata_app = None
         self.telegate_app = None
 
