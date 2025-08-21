@@ -46,7 +46,7 @@ class RouterNetTopo(Topo):
         self.encoding_type = None
 
         # you can pass the config file as an environment variable or as an argument to RouterNetTopo. If not using 
-        # RouterNetTopo directly or, if you're using the Trajectree backend, pass the config as environment variable.  
+        # RouterNetTopo directly or, if you're using a custom backend, pass the config as environment variable.  
         if not USER_CONFIG_PATH == None:
             conf_file_name = USER_CONFIG_PATH
         super().__init__(conf_file_name)

@@ -14,11 +14,17 @@ if TYPE_CHECKING:
     from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 
 from importlib import import_module
+# The config file is loaded as a dictionary in CONFIG and is imported directly as such: 
 from ..config import CONFIG
 
+# This file requires the EntanglementGenerationB class from the generation module. So, first we check if the generation module is specified in the CONFIG.
 if not CONFIG.get("generation_module", None): 
+    # If the generation module is not specified, we use the default EntanglementGenerationB class.
     from ..entanglement_management.generation import EntanglementGenerationA # if no generation module is specified, use the default one
 else:
+    # If the generation module is specified, we import the EntanglementGenerationB class from the specified module. The module can be in any location on the host 
+    # machine as log as the absolute path to the module is provided in the "plugin_path" field of the CONFIG. The name of the generation module should be different from
+    # the default "generation" module to avoid conflicts. 
     EntanglementGenerationA = getattr(import_module(CONFIG.get("generation_module")), 'EntanglementGenerationA')
 
 from ..resource_management.rule_manager import Rule, Arguments
