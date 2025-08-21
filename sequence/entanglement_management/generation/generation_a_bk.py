@@ -1,104 +1,30 @@
-"""Code for Barrett-Kok entanglement Generation protocol
-
-This module defines code to support entanglement generation between single-atom memories on distant nodes.
-Also defined is the message type used by this implementation.
-Entanglement generation is asymmetric:
-
-* EntanglementGenerationA should be used on the QuantumRouter (with one node set as the primary) and should be started via the "start" method
-* EntanglementGenerationB should be used on the BSMNode and does not need to be started
-"""
-
 from __future__ import annotations
 from enum import Enum, auto
 from math import sqrt
 from typing import TYPE_CHECKING, Any
 
+from .generation_message import EntanglementGenerationMessage, GenerationMsgType, valid_trigger_time
+
 if TYPE_CHECKING:
-    from ..components.memory import Memory
-    from ..components.bsm import SingleAtomBSM
-    from ..topology.node import Node, BSMNode
+    from ...components.memory import Memory
+    from ...topology.node import Node
 
-from ..resource_management.memory_manager import MemoryInfo
-from .entanglement_protocol import EntanglementProtocol
-from ..message import Message
-from ..kernel.event import Event
-from ..kernel.process import Process
-from ..components.circuit import Circuit
-from ..utils import log
+from ...resource_management.memory_manager import MemoryInfo
+from ..entanglement_protocol import EntanglementProtocol
+from ...kernel.event import Event
+from ...kernel.process import Process
+from ...components.circuit import Circuit
+from ...utils import log
 
 
-
-def valid_trigger_time(trigger_time: int, target_time: int, resolution: int) -> bool:
-    """return True if the trigger time is valid, else return False."""
-    lower = target_time - (resolution // 2)
-    upper = target_time + (resolution // 2)
-    return lower <= trigger_time <= upper
-
-
-class GenerationMsgType(Enum):
-    """Defines possible message types for entanglement generation."""
-
-    NEGOTIATE = auto()
-    NEGOTIATE_ACK = auto()
-    MEAS_RES = auto()
-
-
-class EntanglementGenerationMessage(Message):
-    """Message used by entanglement generation protocols.
-
-    This message contains all information passed between generation protocol instances.
-    Messages of different types contain different information.
-
-    Attributes:
-        msg_type (GenerationMsgType): defines the message type.
-        receiver (str): name of destination protocol instance.
-        qc_delay (int): quantum channel delay to BSM node (if `msg_type == NEGOTIATE`).
-        frequency (float): frequency with which local memory can be excited (if `msg_type == NEGOTIATE`).
-        emit_time (int): time to emit photon for measurement (if `msg_type == NEGOTIATE_ACK`).
-        res (int): detector number at BSM node (if `msg_type == MEAS_RES`).
-        time (int): detection time at BSM node (if `msg_type == MEAS_RES`).
-        resolution (int): time resolution of BSM detectors (if `msg_type == MEAS_RES`).
-    """
-
-    def __init__(self, msg_type: GenerationMsgType, receiver: str, **kwargs):
-        super().__init__(msg_type, receiver)
-        self.protocol_type = EntanglementGenerationA
-
-        if msg_type is GenerationMsgType.NEGOTIATE:
-            self.qc_delay = kwargs.get("qc_delay")
-            self.frequency = kwargs.get("frequency")
-
-        elif msg_type is GenerationMsgType.NEGOTIATE_ACK:
-            self.emit_time = kwargs.get("emit_time")
-
-        elif msg_type is GenerationMsgType.MEAS_RES:
-            self.detector = kwargs.get("detector")
-            self.time = kwargs.get("time")
-            self.resolution = kwargs.get("resolution")
-
-        else:
-            raise Exception("EntanglementGeneration generated invalid message type {}".format(msg_type))
-
-    def __repr__(self):
-        if self.msg_type is GenerationMsgType.NEGOTIATE:
-            return "type:{}, qc_delay:{}, frequency:{}".format(self.msg_type, self.qc_delay, self.frequency)
-        elif self.msg_type is GenerationMsgType.NEGOTIATE_ACK:
-            return "type:{}, emit_time:{}".format(self.msg_type, self.emit_time)
-        elif self.msg_type is GenerationMsgType.MEAS_RES:
-            return "type:{}, detector:{}, time:{}, resolution={}".format(self.msg_type, self.detector, 
-                                                                         self.time, self.resolution)
-        else:
-            raise Exception("EntanglementGeneration generated invalid message type {}".format(self.msg_type))
-
-
-class EntanglementGenerationA(EntanglementProtocol):
+class EntanglementGenerationBarretKokA(EntanglementProtocol):
     """Entanglement generation protocol for quantum router.
 
     The EntanglementGenerationA protocol should be instantiated on a quantum router node.
     Instances will communicate with each other (and with the B instance on a BSM node) to generate entanglement.
 
     Attributes:
-        own (QuantumRouter): node that protocol instance is attached to.
+        owner (QuantumRouter): node that protocol instance is attached to.
         name (str): label for protocol instance.
         middle (str): name of BSM measurement node where emitted photons should be directed.
         remote_node_name (str): name of distant QuantumRouter node, containing a memory to be entangled with local memory.
@@ -125,7 +51,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         super().__init__(owner, name)
         self.middle: str = middle
         self.remote_node_name: str = other
-        self.remote_protocol_name: str = None
+        self.remote_protocol_name: str = ''
 
         # memory info
         self.memory: Memory = memory
@@ -157,7 +83,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             node (str): other node name.
             memories (list[str]): the list of memory names used on other node.
         """
-        assert self.remote_protocol_name is None
+        assert self.remote_protocol_name == ''
         self.remote_protocol_name = protocol
         self.remote_memo_id = memories[0]
         self.primary = self.owner.name > self.remote_node_name
@@ -182,11 +108,14 @@ class EntanglementGenerationA(EntanglementProtocol):
             # send NEGOTIATE message
             self.qc_delay = self.owner.qchannels[self.middle].delay
             frequency = self.memory.frequency
-            message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE, self.remote_protocol_name,
-                                                    qc_delay=self.qc_delay, frequency=frequency)
+            message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE,
+                                                    self.remote_protocol_name,
+                                                    protocol_type=self,
+                                                    qc_delay=self.qc_delay,
+                                                    frequency=frequency)
             self.owner.send_message(self.remote_node_name, message)
 
-    def update_memory(self) -> bool:
+    def update_memory(self) -> bool | None:
         """Method to handle necessary memory operations.
 
         Called on both nodes.
@@ -210,15 +139,15 @@ class EntanglementGenerationA(EntanglementProtocol):
             return True
 
         elif self.ent_round == 2 and self.bsm_res[0] != -1:
-            self.owner.timeline.quantum_manager.run_circuit(EntanglementGenerationA._flip_circuit, [self._qstate_key])
+            self.owner.timeline.quantum_manager.run_circuit(self._flip_circuit, [self._qstate_key])
             return True
-        
+
         elif self.ent_round == 3 and self.bsm_res[1] != -1:
             # entanglement succeeded, correction
             if self.primary:
-                self.owner.timeline.quantum_manager.run_circuit(EntanglementGenerationA._flip_circuit, [self._qstate_key])
+                self.owner.timeline.quantum_manager.run_circuit(self._flip_circuit, [self._qstate_key])
             elif self.bsm_res[0] != self.bsm_res[1]:
-                self.owner.timeline.quantum_manager.run_circuit(EntanglementGenerationA._z_circuit, [self._qstate_key])
+                self.owner.timeline.quantum_manager.run_circuit(self._z_circuit, [self._qstate_key])
             self._entanglement_succeed()
             return True
 
@@ -241,7 +170,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         """
 
         if self.ent_round == 1:
-            self.memory.update_state(EntanglementGenerationA._plus_state)
+            self.memory.update_state(self._plus_state)
         self.memory.excite(self.middle)
 
     def received_message(self, src: str, msg: EntanglementGenerationMessage) -> None:
@@ -286,7 +215,10 @@ class EntanglementGenerationA(EntanglementProtocol):
 
             # send negotiate_ack
             other_emit_time = emit_time + self.qc_delay - other_qc_delay
-            message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, self.remote_protocol_name, emit_time=other_emit_time)
+            message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK,
+                                                    self.remote_protocol_name,
+                                                    protocol_type=self,
+                                                    emit_time=other_emit_time)
             self.owner.send_message(src, message)
 
             # schedule start if necessary (current is first round, need second round), else schedule update_memory (currently second round)
@@ -350,7 +282,7 @@ class EntanglementGenerationA(EntanglementProtocol):
             raise Exception("Invalid message {} received by EG on node {}".format(msg_type, self.owner.name))
 
     def is_ready(self) -> bool:
-        return self.remote_protocol_name is not None
+        return self.remote_protocol_name != ''
 
     def memory_expire(self, memory: "Memory") -> None:
         """Method to receive expired memories."""
@@ -374,66 +306,6 @@ class EntanglementGenerationA(EntanglementProtocol):
         for event in self.scheduled_events:
             self.owner.timeline.remove_event(event)
         log.logger.info(self.owner.name + " failed entanglement of memory {}".format(self.memory))
-        
+
         self.update_resource_manager(self.memory, MemoryInfo.RAW)
 
-
-class EntanglementGenerationB(EntanglementProtocol):
-    """Entanglement generation protocol for BSM node.
-
-    The EntanglementGenerationB protocol should be instantiated on a BSM node.
-    Instances will communicate with the A instance on neighboring quantum router nodes to generate entanglement.
-
-    Attributes:
-        own (BSMNode): node that protocol instance is attached to.
-        name (str): label for protocol instance.
-        others (list[str]): list of neighboring quantum router nodes
-    """
-
-    def __init__(self, owner: "BSMNode", name: str, others: list[str]):
-        """Constructor for entanglement generation B protocol.
-
-        Args:
-            own (Node): attached node.
-            name (str): name of protocol instance.
-            others (list[str]): name of protocol instance on end nodes.
-        """
-
-        super().__init__(owner, name)
-        assert len(others) == 2
-        self.others = others  # end nodes
-
-    def bsm_update(self, bsm: "SingleAtomBSM", info: dict[str, Any]):
-        """Method to receive detection events from BSM on node.
-
-        Args:
-            bsm (SingleAtomBSM): bsm object calling method.
-            info (dict[str, any]): information passed from bsm.
-        """
-
-        assert info['info_type'] == "BSM_res"
-
-        res = info["res"]
-        time = info["time"]
-        resolution = bsm.resolution
-
-        for node in self.others:
-            message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES, None,              # receiver is None (not paired)
-                                                    detector=res, time=time, resolution=resolution)
-            self.owner.send_message(node, message)
-
-    def received_message(self, src: str, msg: EntanglementGenerationMessage):
-        raise Exception("EntanglementGenerationB protocol '{}' should not "
-                        "receive message".format(self.name))
-
-    def start(self) -> None:
-        pass
-
-    def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
-        pass
-
-    def is_ready(self) -> bool:
-        return True
-
-    def memory_expire(self, memory: "Memory") -> None:
-        raise Exception("Memory expire called for EntanglementGenerationB protocol '{}'".format(self.name))

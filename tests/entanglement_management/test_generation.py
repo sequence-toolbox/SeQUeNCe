@@ -4,7 +4,8 @@ from sequence.components.bsm import *
 from sequence.components.memory import MemoryArray
 from sequence.components.optical_channel import *
 from sequence.kernel.timeline import Timeline
-from sequence.entanglement_management.generation import *
+from sequence.entanglement_management.generation.generation import EntanglementGenerationProtocol, EntanglementGenerationMessage, GenerationMsgType, EntanglementGenerationBarretKokA
+
 from sequence.topology.node import Node
 
 
@@ -44,7 +45,7 @@ class FakeBSMNode(Node):
 
 
 def test_generation_message():
-    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE, "alice", qc_delay=1)
+    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE, "alice", protocol_type=EntanglementGenerationBarretKokA, qc_delay=1)
 
     assert msg.receiver == "alice"
     assert msg.msg_type == GenerationMsgType.NEGOTIATE
@@ -61,11 +62,11 @@ def test_generation_receive_message():
     node.memory_array = MemoryArray("memory", tl)
     node.assign_cchannel(ClassicalChannel("cc", tl, 0, delay=1), "m1")
 
-    eg = EntanglementGenerationA(node, "EG", middle="m1", other="e2", memory=node.memory_array[0])
+    eg = EntanglementGenerationProtocol.create('BarretKokA', node, "EG", middle="m1", other="e2", memory=node.memory_array[0])
     eg.qc_delay = 1
 
     # negotiate message
-    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG", emit_time=0)
+    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG", protocol_type=EntanglementGenerationBarretKokA, emit_time=0)
     eg.received_message("e2", msg)
     assert eg.expected_time == 1
     assert len(tl.events.data) == 2  # two excites, flip state, end time
@@ -88,7 +89,7 @@ def test_generation_pop():
 
     m0 = DumbNode()
 
-    middle = EntanglementGenerationB(m0, "middle", others=["e0", "e1"])
+    middle = EntanglementGenerationProtocol.create('BarretKokB',m0, "middle", others=["e0", "e1"])
 
     # BSM result
     middle.bsm_update(m0.bsm, {'info_type': "BSM_res", 'res': 0, 'time': 100})
@@ -131,8 +132,8 @@ def test_generation_expire():
 
     tl.init()
 
-    protocol0 = EntanglementGenerationA(e0, "e0prot", middle="m0", other="e1", memory=e0.memory_array[0])
-    protocol1 = EntanglementGenerationA(e1, "e1prot", middle="m0", other="e0", memory=e1.memory_array[0])
+    protocol0 = EntanglementGenerationProtocol.create('BarretKokA', e0, "e0prot", middle="m0", other="e1", memory=e0.memory_array[0])
+    protocol1 = EntanglementGenerationProtocol.create('BarretKokA', e1, "e1prot", middle="m0", other="e0", memory=e1.memory_array[0])
     e0.protocols.append(protocol0)
     e1.protocols.append(protocol1)
     protocol0.set_others(protocol1.name, e1.name, [e1.memory_array[0].name])
@@ -183,7 +184,7 @@ def test_generation_run():
     m0.bsm.owner = m0
 
     # add middle protocol
-    eg_m0 = EntanglementGenerationB(m0, "eg_m0", others=["e0", "e1"])
+    eg_m0 = EntanglementGenerationProtocol.create('BarretKokB', m0, "eg_m0", others=["e0", "e1"])
     m0.bsm.attach(eg_m0)
 
     tl.init()
@@ -193,10 +194,10 @@ def test_generation_run():
 
     for i in range(NUM_TESTS):
         name0, name1 = [f"eg_e{j}[{i}]" for j in range(2)]
-        protocol0 = EntanglementGenerationA(e0, name0, middle="m0", other="e1", memory=e0.memory_array[i])
+        protocol0 = EntanglementGenerationProtocol.create('BarretKokA', e0, name0, middle="m0", other="e1", memory=e0.memory_array[i])
         e0.protocols.append(protocol0)
         protocols_e0.append(protocol0)
-        protocol1 = EntanglementGenerationA(e1, name1, middle="m0", other="e0", memory=e1.memory_array[i])
+        protocol1 = EntanglementGenerationProtocol.create('BarretKokA', e1, name1, middle="m0", other="e0", memory=e1.memory_array[i])
         e1.protocols.append(protocol1)
         protocols_e1.append(protocol1)
         protocol0.set_others(protocol1.name, e1.name, [e1.memory_array[i].name])
@@ -264,7 +265,7 @@ def test_generation_fidelity_ket():
     m0.bsm.owner = m0
 
     # add middle protocol
-    eg_m0 = EntanglementGenerationB(m0, "eg_m0", others=["e0", "e1"])
+    eg_m0 = EntanglementGenerationProtocol.create('BarretKokB', m0, "eg_m0", others=["e0", "e1"])
     m0.bsm.attach(eg_m0)
 
     tl.init()
@@ -275,10 +276,10 @@ def test_generation_fidelity_ket():
     for i in range(NUM_TESTS):
         name0 = "eg_e0[{}]".format(i)
         name1 = "eg_e1[{}]".format(i)
-        protocol0 = EntanglementGenerationA(e0, name0, middle="m0", other="e1", memory=e0.memory_array[i])
+        protocol0 = EntanglementGenerationProtocol.create('BarretKokA', e0, name0, middle="m0", other="e1", memory=e0.memory_array[i])
         e0.protocols.append(protocol0)
         protocols_e0.append(protocol0)
-        protocol1 = EntanglementGenerationA(e1, name1, middle="m0", other="e0", memory=e1.memory_array[i])
+        protocol1 = EntanglementGenerationProtocol.create('BarretKokA', e1, name1, middle="m0", other="e0", memory=e1.memory_array[i])
         e1.protocols.append(protocol1)
         protocols_e1.append(protocol1)
         protocol0.set_others(protocol1.name, e1.name, [e1.memory_array[i].name])

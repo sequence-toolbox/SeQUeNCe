@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 
 from ..resource_management.rule_manager import Rule, Arguments
-from ..entanglement_management.generation import EntanglementGenerationA
+from ..entanglement_management.generation.generation import EntanglementGenerationProtocol, EntanglementGenerationBarretKokA
 from ..entanglement_management.purification.bbpssw_base import BBPSSWProtocol
 from ..entanglement_management.purification.bbpssw_circuit import BBPSSWCircuit
 from ..entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
@@ -25,7 +25,6 @@ from ..kernel.process import Process
 
 ENTANGLED = 'ENTANGLED'
 RAW = 'RAW'
-
 
 class RSVPMsgType(Enum):
     """Defines possible message types for the reservation protocol."""
@@ -67,7 +66,7 @@ class ResourceReservationMessage(Message):
 
 # entanglement generation
 
-def eg_rule_action1(memories_info: list["MemoryInfo"], args: dict[str, Any]) -> tuple[EntanglementGenerationA, list[None], list[None], list[None]]:
+def eg_rule_action1(memories_info: list["MemoryInfo"], args: dict[str, Any]) -> tuple[EntanglementGenerationBarretKokA, list[None], list[None], list[None]]:
     """Action function used by entanglement generation protocol on nodes except the initiator, i.e., index > 0
     """
     memories = [info.memory for info in memories_info]
@@ -75,11 +74,11 @@ def eg_rule_action1(memories_info: list["MemoryInfo"], args: dict[str, Any]) -> 
     mid = args["mid"]
     path = args["path"]
     index = args["index"]
-    protocol = EntanglementGenerationA(None, "EGA." + memory.name, mid, path[index - 1], memory)
+    protocol = EntanglementGenerationProtocol.create('BarretKokA', None, "EGA." + memory.name, mid, path[index - 1], memory)
     return protocol, [None], [None], [None]
 
 
-def eg_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[EntanglementGenerationA, list[str], list["eg_req_func"], list[dict]]:
+def eg_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[EntanglementGenerationBarretKokA, list[str], list["eg_req_func"], list[dict]]:
     """Action function used by entanglement generation protocol on nodes except the responder, i.e., index < len(path) - 1
     """
     mid = args["mid"]
@@ -87,12 +86,12 @@ def eg_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple
     index = args["index"]
     memories = [info.memory for info in memories_info]
     memory = memories[0]
-    protocol = EntanglementGenerationA(None, "EGA." + memory.name, mid, path[index + 1], memory)
+    protocol = EntanglementGenerationProtocol.create('BarretKokA', None, "EGA." + memory.name, mid, path[index + 1], memory)
     req_args = {"name": args["name"], "reservation": args["reservation"]}
     return protocol, [path[index + 1]], [eg_req_func], [req_args]
 
 
-def eg_req_func(protocols: list["EntanglementProtocol"], args: Arguments) -> EntanglementGenerationA:
+def eg_req_func(protocols: list["EntanglementProtocol"], args: Arguments) -> EntanglementGenerationBarretKokA:
     """Function used by `eg_rule_action2` function for selecting generation protocols on the remote node
 
     Args:
@@ -104,7 +103,7 @@ def eg_req_func(protocols: list["EntanglementProtocol"], args: Arguments) -> Ent
     name = args["name"]
     reservation = args["reservation"]
     for protocol in protocols:
-        if (isinstance(protocol, EntanglementGenerationA)
+        if (isinstance(protocol, EntanglementGenerationBarretKokA)
                 and protocol.remote_node_name == name
                 and protocol.rule.get_reservation() == reservation):
             return protocol
