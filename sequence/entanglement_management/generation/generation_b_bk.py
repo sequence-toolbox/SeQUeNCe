@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 from .generation_message import EntanglementGenerationMessage, GenerationMsgType
 from ..entanglement_protocol import EntanglementProtocol
+from ..generation.generation_a_bk import EntanglementGenerationBarretKokA
 
 
 class EntanglementGenerationBarretKokB(EntanglementProtocol):
@@ -53,7 +54,7 @@ class EntanglementGenerationBarretKokB(EntanglementProtocol):
         for node in self.others:
             message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES,
                                                     receiver=None, # receiver is None (not paired)
-                                                    protocol_type=self,
+                                                    protocol_type=EntanglementGenerationBarretKokA,
                                                     detector=res,
                                                     time=time,
                                                     resolution=resolution)

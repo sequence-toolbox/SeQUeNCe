@@ -4,7 +4,10 @@ from sequence.components.bsm import *
 from sequence.components.memory import MemoryArray
 from sequence.components.optical_channel import *
 from sequence.kernel.timeline import Timeline
-from sequence.entanglement_management.generation.generation import EntanglementGenerationProtocol, EntanglementGenerationMessage, GenerationMsgType, EntanglementGenerationBarretKokA
+from sequence.entanglement_management.generation.generation import (EntanglementGenerationProtocol,
+                                                                    EntanglementGenerationMessage,
+                                                                    GenerationMsgType,
+                                                                    EntanglementGenerationBarretKokA)
 
 from sequence.topology.node import Node
 
