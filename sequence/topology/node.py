@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 from ..kernel.entity import Entity, ClassicalEntity
 from ..components.memory import MemoryArray
-from ..components.bsm import SingleAtomBSM, SingleHeraldedBSM, TrajectreeBSM
+from ..components.bsm import SingleAtomBSM, SingleHeraldedBSM, ShellBSM
 from ..components.light_source import LightSource
 from ..components.detector import QSDetector, QSDetectorPolarization, QSDetectorTimeBin
 from ..qkd.BB84 import BB84
@@ -32,11 +32,11 @@ from ..qkd.cascade import Cascade
 
 from importlib import import_module
 from ..config import CONFIG
-import_formalism = CONFIG.get('formalism', "")
-try:
-    EntanglementGenerationB = getattr(import_module(f'sequence.entanglement_management.generation_{import_formalism}'), 'EntanglementGenerationB')
-except:
-    EntanglementGenerationB = getattr(import_module(f'sequence.entanglement_management.generation'), 'EntanglementGenerationB')
+
+if not CONFIG.get("generation_module", None): 
+    from ..entanglement_management.generation import EntanglementGenerationB # if no generation module is specified, use the default one
+else:
+    EntanglementGenerationB = getattr(import_module(CONFIG.get("generation_module")), 'EntanglementGenerationB')
 
 from ..resource_management.resource_manager import ResourceManager
 from ..network_management.network_manager import NewNetworkManager, NetworkManager
@@ -251,17 +251,14 @@ class BSMNode(Node):
         elif self.encoding_type == 'single_heralded':
             bsm_args = component_templates.get("SingleHeraldedBSM", {})
             bsm = SingleHeraldedBSM(bsm_name, timeline, **bsm_args)
-        elif self.encoding_type == 'TrajectreeBSM':
-            bsm = TrajectreeBSM(bsm_name, timeline)
         else:
-            raise ValueError(f'Encoding type {self.encoding_type} not supported')
-
+            bsm = ShellBSM(bsm_name, timeline)
+        
         self.add_component(bsm)
         self.set_first_component(bsm_name)
 
-        if not self.encoding_type == 'TrajectreeBSM':
-            self.eg = EntanglementGenerationB(self, "{}_eg".format(name), other_nodes)
-            bsm.attach(self.eg)
+        self.eg = EntanglementGenerationB(self, "{}_eg".format(name), other_nodes)
+        bsm.attach(self.eg)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         # signal to protocol that we've received a message

@@ -151,7 +151,7 @@ class BSM(Entity):
         """Implementation of Entity interface (see base class)."""
 
         # get resolution
-        if not self.encoding == "trajectree":
+        if not self.encoding == "shell":
             self.resolution = max(d.time_resolution for d in self.detectors)
 
         self.photons = []
@@ -199,7 +199,6 @@ class BSM(Entity):
         """Updates parameters of attached detectors."""
         for detector in self.detectors:
             detector.__setattr__(arg_name, value)
-
 
 class PolarizationBSM(BSM):
     """Class modeling a polarization BSM device.
@@ -708,11 +707,10 @@ class SingleHeraldedBSM(BSM):
         info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
         self.notify(info)
 
-class TrajectreeBSM(BSM):
+class ShellBSM(BSM):
     def __init__(self, name, timeline):
         super(BSM, self).__init__(name, timeline)
-        self.encoding = "trajectree"
-        self.encoding_type = time_bin
+        self.encoding = "shell"
 
     def get(self, photon, **kwargs):
         pass

@@ -26,8 +26,6 @@ from ..kernel.process import Process
 from ..components.circuit import Circuit
 from ..utils import log
 
-print("Using default backend for entanglement generation")
-
 def valid_trigger_time(trigger_time: int, target_time: int, resolution: int) -> bool:
     """return True if the trigger time is valid, else return False."""
     lower = target_time - (resolution // 2)

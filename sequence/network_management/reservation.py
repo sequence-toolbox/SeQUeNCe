@@ -15,11 +15,11 @@ if TYPE_CHECKING:
 
 from importlib import import_module
 from ..config import CONFIG
-import_formalism = CONFIG.get('formalism', "")
-try:
-    EntanglementGenerationA = getattr(import_module(f'sequence.entanglement_management.generation_{import_formalism}'), 'EntanglementGenerationA')
-except:
-    EntanglementGenerationA = getattr(import_module(f'sequence.entanglement_management.generation'), 'EntanglementGenerationA')
+
+if not CONFIG.get("generation_module", None): 
+    from ..entanglement_management.generation import EntanglementGenerationA # if no generation module is specified, use the default one
+else:
+    EntanglementGenerationA = getattr(import_module(CONFIG.get("generation_module")), 'EntanglementGenerationA')
 
 from ..resource_management.rule_manager import Rule, Arguments
 from ..entanglement_management.purification import BBPSSW

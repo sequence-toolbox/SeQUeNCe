@@ -14,24 +14,24 @@ from math import sqrt
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from ..components.memory import Memory
-    from ..components.bsm import SingleAtomBSM
-    from ..topology.node import Node, BSMNode
+    from sequence.components.memory import Memory
+    from sequence.components.bsm import SingleAtomBSM
+    from sequence.topology.node import Node, BSMNode
 
-from ..resource_management.memory_manager import MemoryInfo
-from .entanglement_protocol import EntanglementProtocol
-from ..message import Message
-from ..kernel.event import Event
-from ..kernel.process import Process
-from ..components.circuit import Circuit
-from ..utils import log
+from sequence.resource_management.memory_manager import MemoryInfo
+from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
+from sequence.message import Message
+from sequence.kernel.event import Event
+from sequence.kernel.process import Process
+from sequence.components.circuit import Circuit
+from sequence.utils import log
 
 from functools import lru_cache
 
 import numpy as np
 from trajectree.sequence.swap import perform_swapping_simulation # type: ignore
 
-from ..config import CONFIG
+from sequence.config import CONFIG
 
 print("Using Trajectree backend for entanglement generation")
 
@@ -246,9 +246,10 @@ class EntanglementGenerationA(EntanglementProtocol):
             print("calling trajectree ent generation")
             success_probability, fidelity = self.entanglement_generation_trajectree()
 
-            num_attempts = 1
-            while not np.random.random() < success_probability:
-                num_attempts += 1
+            num_attempts = np.random.geometric(success_probability)  # time to first occurence in a Bernoulli process is a geometric distribution. 
+            # while not np.random.random() < success_probability:
+            #     num_attempts += 1
+            print("success_probability", success_probability, "num_attempts", num_attempts)
 
             success_time = msg.start_time + (msg.attempt_time + 1e12/self.memory_frequency) * num_attempts
 
@@ -281,9 +282,19 @@ class EntanglementGenerationA(EntanglementProtocol):
             N = CONFIG["truncation"]+1
             error_tolerance = CONFIG["error_tolerance"]
 
-            mean_photon_num = CONFIG["templates"]["perfect_router"]["mean_photon_num"] # Here we are assuming that all the nodes in the network have the same mean photon number.
-            det_eff = CONFIG["templates"]["perfect_bsm"]["TrajectreeBSM"]["detectors"][0]["efficiency"]
-            channel_loss = 1 - 10 ** (CONFIG["qconnections"][0]["distance"] * CONFIG["qconnections"][0]["attenuation"] / -10)
+            params = {
+                "PA_det_loss": CONFIG["templates"]["perfect_bsm"]["TrajectreeBSM"]["detectors"][0]["efficiency"],
+                "BSM_det_loss_1": 1e-3+1-CONFIG["templates"]["perfect_bsm"]["TrajectreeBSM"]["detectors"][0]["efficiency"], #  0.045,
+                "BSM_det_loss_2": 1e-3+1-CONFIG["templates"]["perfect_bsm"]["TrajectreeBSM"]["detectors"][0]["efficiency"], # 0.135,
+                "BSM_dark_counts_1": 1+1e-3,
+                "BSM_dark_counts_2": 1+1e-3,
+                "channel_loss": 1 - 10 ** (CONFIG["qconnections"][0]["distance"] * CONFIG["qconnections"][0]["attenuation"] / -10),
+                "chi": CONFIG["templates"]["perfect_router"]["mean_photon_num"], # Here we are assuming that all the nodes in the network have the same mean photon number.
+                "BSM_meas": {0:(2,3), 1:(6,7)},
+
+                "if_analyze_entanglement": False,
+                "calc_fidelity": True,
+            }
 
             num_modes = 8
 
@@ -291,7 +302,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
             cache_sizes = [2]
 
-            fidelities, probabilities, t_eval = perform_swapping_simulation(N, num_modes, mean_photon_num, det_eff, channel_loss, num_simulations, error_tolerance)
+            fidelities, probabilities, t_eval = perform_swapping_simulation(N, num_modes, num_simulations, params, error_tolerance)
             
             self.owner.cached_entanglement[self.remote_node_name] = (np.mean(probabilities), np.mean(fidelities))
         else:
@@ -313,4 +324,43 @@ class EntanglementGenerationA(EntanglementProtocol):
 
 class EntanglementGenerationB(EntanglementProtocol):
     # Dummy class to make it compatible with imports. 
-    pass 
+    
+
+    def __init__(self, owner: "BSMNode", name: str, others: list[str]):
+        """Constructor for entanglement generation B protocol.
+
+        Args:
+            own (Node): attached node.
+            name (str): name of protocol instance.
+            others (list[str]): name of protocol instance on end nodes.
+        """
+
+        super().__init__(owner, name)
+        assert len(others) == 2
+        self.others = others  # end nodes
+
+
+    def start(self) -> None:
+        """Method to start entanglement protocol process (abstract)."""
+
+        pass
+
+    def is_ready(self) -> bool:
+        """Method to check if protocol is ready to start (abstract).
+
+        Returns:
+            bool: if protocol is ready or not.
+        """
+
+        pass
+
+    def memory_expire(self, memory: "Memory") -> None:
+        """Method to receive a memory expiration event (abstract)."""
+
+        pass
+
+    def received_message(self, src: str, msg: EntanglementGenerationMessage):
+        pass
+
+    def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
+        pass
