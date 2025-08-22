@@ -135,7 +135,7 @@ def ep_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple
     """
     memories = [info.memory for info in memories_info]
     name = "EP.%s" % memories[0].name
-    protocol = BBPSSWProtocol.create('create', None, name, memories[0], None)
+    protocol = BBPSSWProtocol.create('circuit', None, name, memories[0], None)
     return protocol, [None], [None], [None]
 
 
