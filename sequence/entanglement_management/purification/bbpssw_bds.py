@@ -6,18 +6,16 @@ Also defined is the message type used by the BBPSSW code.
 """
 
 from typing import List, Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ...components.memory import Memory
-    from ...topology.node import Node
 
-from sequence.kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
-from sequence.topology.node import Node
-from sequence.utils import log
-from .bbpssw_base import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType, BBPSSWProtocolFactory
+from ...kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
+from ...utils import log
+from .bbpssw_protocol import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType
 
 
 class BBPSSW_BDS(BBPSSWProtocol):
@@ -245,4 +243,4 @@ class BBPSSW_BDS(BBPSSWProtocol):
 
 
 # Register BBPSSW protocol with BDS formalism to the factory
-BBPSSWProtocolFactory.register('bds', BBPSSW_BDS)
+BBPSSWProtocol.register('bds', BBPSSW_BDS)

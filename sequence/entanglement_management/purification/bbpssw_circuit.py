@@ -11,11 +11,10 @@ from typing import TYPE_CHECKING
 from ...components.circuit import Circuit
 
 if TYPE_CHECKING:
-    from ...components.memory import Memory
-    from ...topology.node import Node
+    pass
 
-from sequence.utils import log
-from .bbpssw_base import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType, BBPSSWProtocolFactory
+from ...utils import log
+from .bbpssw_protocol import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType
 
 
 class BBPSSWCircuit(BBPSSWProtocol):
@@ -42,7 +41,7 @@ class BBPSSWCircuit(BBPSSWProtocol):
     circuit.cx(0, 1)
     circuit.measure(1)
 
-    def __init__(self, owner: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory", is_twirled=True):
+    def __init__(self, owner: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory"):
         """Constructor for purification protocol.
 
         args:
@@ -50,7 +49,6 @@ class BBPSSWCircuit(BBPSSWProtocol):
             name (str): Name of protocol instance.
             kept_memo (Memory): Memory to keep and improve the fidelity.
             meas_memo (Memory): Memory to measure and discard.
-            is_twirled (bool): Whether we twirl the input and output BDS. True: BBPSSW, False: DEJMPS. (default True)
         """
         super().__init__(owner, name, kept_memo, meas_memo)
 
@@ -134,5 +132,4 @@ class BBPSSWCircuit(BBPSSWProtocol):
         return (f ** 2 + ((1 - f) / 3) ** 2) / (f ** 2 + 2 * f * (1 - f) / 3 + 5 * ((1 - f) / 3) ** 2)
 
 
-# Register the protocol with the factory
-BBPSSWProtocolFactory.register('circuit', BBPSSWCircuit)
+BBPSSWProtocol.register('circuit', BBPSSWCircuit)

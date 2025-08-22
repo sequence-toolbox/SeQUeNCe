@@ -10,13 +10,10 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
-    from ..resource_management.memory_manager import MemoryInfo, MemoryManager
-    from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 
 from ..resource_management.rule_manager import Rule, Arguments
 from ..entanglement_management.generation.generation import EntanglementGenerationProtocol, EntanglementGenerationBarretKokA
-from ..entanglement_management.purification.bbpssw_base import BBPSSWProtocol
-from ..entanglement_management.purification.bbpssw_circuit import BBPSSWCircuit
+from ..entanglement_management.purification.bbpssw_protocol import BBPSSWProtocol
 from ..entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 from ..message import Message
 from ..protocol import StackProtocol
@@ -126,7 +123,7 @@ def ep_rule_action1(memories_info: list["MemoryInfo"], args: Arguments) -> tuple
     """
     memories = [info.memory for info in memories_info]
     name = "EP.%s.%s" % (memories[0].name, memories[1].name)
-    protocol = BBPSSWCircuit(None, name, memories[0], memories[1])
+    protocol = BBPSSWProtocol.create('circuit', None, name, memories[0], memories[1])
     dsts = [memories_info[0].remote_node]
     req_funcs = [ep_req_func1]
     req_args = [{"remote0": memories_info[0].remote_memo, "remote1": memories_info[1].remote_memo}]
@@ -138,7 +135,7 @@ def ep_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple
     """
     memories = [info.memory for info in memories_info]
     name = "EP.%s" % memories[0].name
-    protocol = BBPSSWCircuit(None, name, memories[0], None)
+    protocol = BBPSSWProtocol.create('create', None, name, memories[0], None)
     return protocol, [None], [None], [None]
 
 

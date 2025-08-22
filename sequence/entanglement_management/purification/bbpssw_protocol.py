@@ -1,6 +1,6 @@
 from abc import ABC
 from enum import Enum, auto
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Dict, Type
 
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 from sequence.utils.log import logger
@@ -8,7 +8,6 @@ from ...message import Message
 
 if TYPE_CHECKING:
     from ...components.memory import Memory
-    from ...topology.node import Node
 
 
 class BBPSSWMsgType(Enum):
@@ -38,23 +37,10 @@ class BBPSSWMessage(Message):
         return f"\"BBPSSW: type={self.msg_type}, meas_res={self.meas_res}\""
 
 
-class BBPSSWProtocolFactory:
-    """Factory for creating BBPSSW protocol instances."""
-    _registry = {}
-
-    @classmethod
-    def register(cls, name, manager_class):
-        cls._registry[name] = manager_class
-
-    @classmethod
-    def create(cls, name, *args, **kwargs):
-        if name not in cls._registry:
-            raise ValueError(f"BBPSSW Protocol '{name}' is not registered.")
-        return cls._registry[name](*args, **kwargs)
-
-
 class BBPSSWProtocol(EntanglementProtocol, ABC):
-    def __init__(self, owner: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory"):
+    _registry: Dict[str, Type['BBPSSWProtocol']] = {}
+
+    def __init__(self, owner: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory", **kwargs):
         """Constructor for purification protocol.
 
         args:
@@ -74,6 +60,67 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         self.meas_res = None
         if self.meas_memo is None:
             self.memories.pop()
+
+    @classmethod
+    def register(cls, name: str, protocol_class: Type['BBPSSWProtocol'] = None):
+        """Register a BBPSSW protocol class. Can be used as a decorator or as a normal function.
+
+        Recommended Usage: Use a decorator to register a BBPSSW protocol class on the user side.
+        Use as a direct call on the backend.
+
+        args:
+            name (str): Name of the protocol to register.
+            protocol_class (Type[BBPSSWProtocol], optional): The protocol class to register
+
+        returns:
+            If used as a decorator, returns the decorator function.
+            If used as a direct call, returns None.
+
+        Examples:
+            # Using as a decorator
+            @BBPSSWProtocol.register('new_fancy_bbpssw')
+            class NewFancyBBPSSW(BBPSSWProtocol):
+                pass
+                ...
+
+            # Using as a direct call
+            class AnotherFancyBBPSSW(BBPSSWProtocol):
+                pass
+                ...
+            BBPSSWProtocol.register('another_fancy_bbpssw', AnotherFancyBBPSSW)
+        """
+        if protocol_class is not None:
+            cls._registry[name] = protocol_class
+            return None
+
+        def decorator(protocol_class: Type['BBPSSWProtocol']) -> Type['BBPSSWProtocol']:
+            cls._registry[name] = protocol_class
+            return protocol_class
+
+        return decorator
+
+    @classmethod
+    def create(cls, protocol_name: str, owner: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory",
+               **kwargs) -> 'BBPSSWProtocol':
+        """Create an instance of a registered BBPSSW protocol.
+
+        args:
+            protocol_name (str): Name of the protocol to create.
+            owner (Node): Node the protocol is attached to.
+            name (str): Name of the protocol instance.
+            kept_memo (Memory): Memory to keep and improve the fidelity.
+            meas_memo (Memory): Memory to measure and discard.
+
+        returns:
+            An instance of the requested BBPSSW protocol class.
+        """
+        protocol_class = cls._registry[protocol_name]
+        return protocol_class(owner, name, kept_memo, meas_memo, **kwargs)
+
+    @classmethod
+    def list_protocols(cls) -> List[str]:
+        """List all registered BBPSSW protocols."""
+        return list(cls._registry.keys())
 
     def is_ready(self) -> bool:
         """Check if the protocol is ready to start."""
