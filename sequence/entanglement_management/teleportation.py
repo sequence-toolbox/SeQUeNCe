@@ -16,7 +16,8 @@ from ..network_management.reservation import Reservation
 
 class TeleportMsgType(Enum):
     """Enumeration for different types of teleportation messages."""
-    MEASUREMENT_RESULT = auto()
+    MEASUREMENT_RESULT = auto() # Alice informs Bob of her measurement result
+    ACK = auto()                # Bob acknowledges Alice the teleportation is complete
 
 
 class TeleportMessage(Message):
@@ -24,18 +25,28 @@ class TeleportMessage(Message):
     sender to receiver during teleportation.
 
     Attributes:
+        reservation (Reservation): The reservation object associated with this teleportation message.
         bob_comm_memory_name (str): Name of the memory on Bob's side to be corrected.
-        x_flip (int): Whether to apply X correction (1 for yes, 0 for no).
-        z_flip (int): Whether to apply Z correction (1 for yes, 0 for no).
+        x_flip (int): MEASUREMENT_RESULT only, whether to apply X correction (1 for yes, 0 for no).
+        z_flip (int): MEASUREMENT_RESULT only, whether to apply Z correction (1 for yes, 0 for no).
     """
     def __init__(self, msg_type: TeleportMsgType, **kwargs):
         super().__init__(msg_type, 'teleport_app')  # this app name must match what TeleportApp expects
+
         if msg_type is TeleportMsgType.MEASUREMENT_RESULT:
+            self.reservation = kwargs['reservation']
             self.bob_comm_memory_name = kwargs['bob_comm_memory_name']
             self.x_flip = kwargs['x_flip']
             self.z_flip = kwargs['z_flip']
-            self.reservation = kwargs['reservation']
             self.string = f'type={TeleportMsgType.MEASUREMENT_RESULT}, bob_comm_memory={self.bob_comm_memory_name}, x_flip={self.x_flip}, z_flip={self.z_flip}, reservation={self.reservation}'
+        
+        elif msg_type is TeleportMsgType.ACK:
+            self.reservation = kwargs['reservation']
+            self.bob_comm_memory_name = kwargs['bob_comm_memory_name']
+            self.string = f'type={TeleportMsgType.ACK}, bob_comm_memory={self.bob_comm_memory_name}, reservation={self.reservation}'
+
+        else:
+            raise Exception(f"TeleportProtocol created unknown type of message: {msg_type}")
 
     def __str__(self):
         return self.string
@@ -177,3 +188,13 @@ class TeleportProtocol(Protocol):
             log.logger.info(f"{self.name}: Z-flip applied on memory {msg.bob_comm_memory_name}")
 
         self.owner.teleport_app.teleport_complete(bob_comm_memory_key)
+
+    def bob_acknowledge_complete(self, reservation: Reservation):
+        """Acknowledge the completion of the teleportation process.
+
+        Args:
+            reservation (Reservation): The reservation object associated with the teleportation.
+        """
+        msg = TeleportMessage(TeleportMsgType.ACK, bob_comm_memory_name=self.bob_comm_memory_name, reservation=reservation)
+        self.owner.send_message(self.remote_node_name, msg)
+        log.logger.debug(f"{self.name}: sent ACK to {self.remote_node_name}")

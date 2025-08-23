@@ -6,7 +6,7 @@ including the reservation of entangled pairs and the application of corrections 
 
 from .request_app import RequestApp
 from ..utils import log
-from ..entanglement_management.teleportation import TeleportProtocol, TeleportMessage
+from ..entanglement_management.teleportation import TeleportMsgType, TeleportProtocol, TeleportMessage
 from ..topology.node import DQCNode
 from ..resource_management.memory_manager import MemoryInfo
 
@@ -85,9 +85,7 @@ class TeleportApp(RequestApp):
                         teleport_protocol.set_bob_comm_memory_name(info.remote_memo)
                         reservation = self.memo_to_reservation[info.index]
                         teleport_protocol.alice_bell_measurement(reservation)
-                        self.node.resource_manager.expire_rules_by_reservation(reservation)  # expire the rules
-                        self.node.resource_manager.update(None, teleport_protocol.alice_comm_memory, MemoryInfo.RAW) # release the alice comm memory
-                        break # if never reached this break, then go to else, i.e., this node is Bob
+                        break # if never reached this break, then go to else
                 else:
                     # this node is Bob, create the new teleport protocol instance, then append to self.teleport_protocols
                     teleport_protocol = TeleportProtocol(self.node, alice=False, remote_node_name=info.remote_node)
@@ -104,14 +102,27 @@ class TeleportApp(RequestApp):
             msg (TeleportMessage): The teleport message received.
         """
         log.logger.debug(f"{self.name} received_message from {src}: {msg}")
-        for teleport_protocol in self.teleport_protocols:  # find the correct teleport protocol on Bob's side
-            if src == teleport_protocol.remote_node_name and msg.bob_comm_memory_name == teleport_protocol.bob_comm_memory_name:
-                teleport_protocol.received_message(src, msg)
-                self.node.resource_manager.expire_rules_by_reservation(msg.reservation)                    # early release of resources
-                self.node.resource_manager.update(None, teleport_protocol.bob_comm_memory, MemoryInfo.RAW) # release the bob comm memory
-                break
-        else:
-            log.logger.warning(f"{self.name}: received_message: no matching teleport protocol for msg={msg} from {src}")
+        if msg.msg_type is TeleportMsgType.MEASUREMENT_RESULT:  # Bob receives measurement result from Alice
+            for teleport_protocol in self.teleport_protocols:   # find the correct teleport protocol on Bob's side
+                if src == teleport_protocol.remote_node_name and msg.bob_comm_memory_name == teleport_protocol.bob_comm_memory_name:
+                    teleport_protocol.received_message(src, msg)
+                    self.node.resource_manager.expire_rules_by_reservation(msg.reservation)                    # early release of resources
+                    self.node.resource_manager.update(None, teleport_protocol.bob_comm_memory, MemoryInfo.RAW) # release the bob comm memory
+                    teleport_protocol.bob_acknowledge_complete(msg.reservation)
+                    self.teleport_protocols.remove(teleport_protocol)  # remove the protocol instance, it's lifecycle is complete
+                    break
+            else:
+                log.logger.warning(f"{self.name}: received_message: no matching teleport protocol for msg={msg} from {src}")
+
+        elif msg.msg_type is TeleportMsgType.ACK:              # Alice receives acknowledgment from Bob
+            for teleport_protocol in self.teleport_protocols:  # find the correct teleport protocol on Alice's side
+                if src == teleport_protocol.remote_node_name and msg.bob_comm_memory_name == teleport_protocol.bob_comm_memory_name:
+                    self.node.resource_manager.expire_rules_by_reservation(msg.reservation)                      # expire the rules
+                    self.node.resource_manager.update(None, teleport_protocol.alice_comm_memory, MemoryInfo.RAW) # release the alice comm memory
+                    self.teleport_protocols.remove(teleport_protocol)  # remove the protocol instance, it's lifecycle is complete
+                    break
+            else:
+                log.logger.warning(f"{self.name}: received_message: no matching teleport protocol for msg={msg} from {src}")
 
     def teleport_complete(self, comm_key: int):
         """Called by TeleportProtocol once Bob's qubit is corrected. comm_key holds the teleported |ψ⟩.
