@@ -114,8 +114,12 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         returns:
             An instance of the requested BBPSSW protocol class.
         """
-        protocol_class = cls._registry[protocol_name]
-        return protocol_class(owner, name, kept_memo, meas_memo, **kwargs)
+        try:
+            protocol_class = cls._registry[protocol_name]
+            return protocol_class(owner, name, kept_memo, meas_memo, **kwargs)
+        except KeyError:
+            raise ValueError(f"Protocol class '{protocol_name}' is not registered.")
+
 
     @classmethod
     def list_protocols(cls) -> List[str]:

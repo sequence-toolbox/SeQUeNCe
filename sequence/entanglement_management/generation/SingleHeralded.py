@@ -1,43 +1,28 @@
 from __future__ import annotations
 
-from math import sqrt
 from typing import TYPE_CHECKING, List
 
 from .generation_message import EntanglementGenerationMessage, GenerationMsgType, valid_trigger_time
 from ...resource_management.memory_manager import MemoryInfo
 
 if TYPE_CHECKING:
-    from ...components.memory import Memory
+    pass
 from ...kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
-from ..entanglement_protocol import EntanglementProtocol
+from .generation_a import EntanglementGenerationA
 from ...kernel.event import Event
 from ...kernel.process import Process
-from ...components.circuit import Circuit
 from ...utils import log
 
 
-class EntanglementGenerationSingleHeraldedA(EntanglementProtocol):
-    _plus_state = [sqrt(1 / 2), sqrt(1 / 2)]
-    _flip_circuit = Circuit(1)
-    _flip_circuit.x(0)
-    _z_circuit = Circuit(1)
-    _z_circuit.z(0)
-
+class SingleHeraldedA(EntanglementGenerationA):
     def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory",
                  raw_fidelity: float = None, raw_epr_errors: List[float] = None):
-        super().__init__(owner, name)
+        super().__init__(owner, name, middle, other, memory)
 
         assert self.owner.timeline.quantum_manager.formalism == BELL_DIAGONAL_STATE_FORMALISM, \
             "Single Heralded Entanglement generation protocol only supports Bell diagonal state formalism."
 
-        self.middle: str = middle
-        self.remote_node_name: str = other
-        self.remote_protocol_name: str = ''
-
-        if raw_fidelity:
-            self.raw_fidelity: float = raw_fidelity
-        else:
-            self.raw_fidelity: float = memory.raw_fidelity
+        self.raw_fidelity: float = raw_fidelity
 
         assert 0.5 <= self.raw_fidelity <= 1, "Raw fidelity must be in [0.5, 1]."
 
@@ -48,45 +33,6 @@ class EntanglementGenerationSingleHeraldedA(EntanglementProtocol):
             assert len(self.raw_epr_errors) == 3, \
                 "Raw EPR pair pauli error list should have three elements in X, Y, Z order."
 
-        # Memory Info
-        self.memory: Memory = memory
-        self.memories: List[Memory] = [memory]
-        self.remote_memo_id: str = ''
-
-        # Network and Hardware Info
-        self.qc_delay: int = 0
-        self.expected_time: int = -1
-
-        # Memory Internal Info
-        self.ent_round = 0
-        self.bsm_res = [0, 0]
-
-        self.scheduled_events = []
-
-        # Misc.
-        self.primary: bool = False
-        self.debug: bool = False
-        self._qstate_key: int = self.memory.qstate_key
-
-    def set_others(self, protocol: str, node: str, memories: List[str]):
-        """Method to set other entanglement protocol instance.
-
-        Args:
-            protocol (str): other protocol name.
-            node (str): other node name.
-            memories (List[str]): the list of memory names used on other node.
-        """
-        assert self.remote_protocol_name != '', \
-            "Remote protocol name is already set, cannot set again."
-
-        remote_node = self.owner.timeline.get_entity_by_name(node)
-        """try:
-            remote_protocol = next(p for p in remote_node.protocols if p.name == protocol)
-
-        except StopIteration:
-            pass"""
-        self.remote_protocol_name = protocol
-        self.remote_memo_id = memories[0]
 
     def update_memory(self) -> bool:
         """Method to handle necessary memory operations.
@@ -133,28 +79,6 @@ class EntanglementGenerationSingleHeraldedA(EntanglementProtocol):
 
         return True
 
-    def start(self) -> None:
-        """Method to start entanglement generation protocol.
-
-        Will start negotiations with other protocol (if primary).
-
-        Side Effects:
-            Will send message through attached node.
-        """
-        log.logger.info(f'{self.owner.name} protocol start with partner {self.remote_node_name}')
-
-        if self not in self.owner.protocols:
-            return
-
-        if self.update_memory() and self.primary:
-            self.qc_delay = self.owner.qchannels[self.middle].delay
-            frequency = self.memory.frequency
-            message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE,
-                                                    self.remote_protocol_name,
-                                                    protocol_type=self,
-                                                    qc_delay=self.qc_delay,
-                                                    frequency=frequency)
-            self.owner.send_message(self.remote_node_name, message)
 
     def emit_event(self) -> None:
         self.memory.excite(self.middle, protocol='sh')
@@ -264,27 +188,11 @@ class EntanglementGenerationSingleHeraldedA(EntanglementProtocol):
         else:
             raise Exception("Invalid message {} received by EG on node {}".format(msg_type, self.owner.name))
 
-    def is_ready(self) -> bool:
-        return self.remote_protocol_name != ''
-
-    def memory_expire(self, memory: "Memory") -> None:
-        assert memory == self.memory, "Memory to expire does not match the protocol's memory."
-        self.update_resource_manager(memory, MemoryInfo.RAW)
-        for event in self.scheduled_events:
-            if event.time >= self.owner.timeline.now():
-                self.owner.timeline.remove_event(event)
 
     def _entanglement_succeed(self):
-        log.logger.info(f'{self.owner.name} successful entanglement of memory {self.memory}')
-        self.memory.entangled_memory['node_id'] = self.remote_node_name
-        self.memory.entangled_memory['memo_id'] = self.remote_memo_id
+        super()._entanglement_succeed()
         self.memory.fidelity = self.raw_fidelity
 
         self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
 
-    def _entanglement_fail(self):
-        for event in self.scheduled_events:
-            self.owner.timeline.remove_event(event)
-        log.logger.info(f'{self.owner.name} failed entanglement of memory {self.memory}')
-
-        self.update_resource_manager(self.memory, MemoryInfo.RAW)
+EntanglementGenerationA.register('singleheraldedA', SingleHeraldedA)
