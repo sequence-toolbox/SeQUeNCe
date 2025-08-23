@@ -11,6 +11,7 @@ from ..message import Message
 from ..utils import log
 from ..protocol import Protocol
 from ..topology.node import DQCNode
+from ..network_management.reservation import Reservation
 
 
 class TeleportMsgType(Enum):
@@ -27,13 +28,14 @@ class TeleportMessage(Message):
         x_flip (int): Whether to apply X correction (1 for yes, 0 for no).
         z_flip (int): Whether to apply Z correction (1 for yes, 0 for no).
     """
-    def __init__(self, msg_type: TeleportMsgType, bob_comm_memory_name: str, x_flip: int, z_flip: int):
+    def __init__(self, msg_type: TeleportMsgType, **kwargs):
         super().__init__(msg_type, 'teleport_app')  # this app name must match what TeleportApp expects
         if msg_type is TeleportMsgType.MEASUREMENT_RESULT:
-            self.bob_comm_memory_name = bob_comm_memory_name
-            self.x_flip = x_flip
-            self.z_flip = z_flip
-            self.string = f'type={TeleportMsgType.MEASUREMENT_RESULT}, bob_comm_memory={self.bob_comm_memory_name}, x_flip={self.x_flip}, z_flip={self.z_flip}'
+            self.bob_comm_memory_name = kwargs['bob_comm_memory_name']
+            self.x_flip = kwargs['x_flip']
+            self.z_flip = kwargs['z_flip']
+            self.reservation = kwargs['reservation']
+            self.string = f'type={TeleportMsgType.MEASUREMENT_RESULT}, bob_comm_memory={self.bob_comm_memory_name}, x_flip={self.x_flip}, z_flip={self.z_flip}, reservation={self.reservation}'
 
     def __str__(self):
         return self.string
@@ -127,7 +129,7 @@ class TeleportProtocol(Protocol):
         """
         self.bob_comm_memory = memory
 
-    def alice_bell_measurement(self):
+    def alice_bell_measurement(self, reservation: Reservation):
         """ Perform Bell measurement on the entangled memory and send corrections to Bob. 
         """
         comm_key = self.alice_comm_memory.qstate_key
@@ -139,9 +141,9 @@ class TeleportProtocol(Protocol):
         meas = self.owner.timeline.quantum_manager.run_circuit(TeleportProtocol._bsm_circuit, [data_key, comm_key], rnd)
         z, x = meas[data_key], meas[comm_key]
         # send classical corrections to Bob
-        msg = TeleportMessage(TeleportMsgType.MEASUREMENT_RESULT, self.bob_comm_memory_name, x_flip=x, z_flip=z)
+        msg = TeleportMessage(TeleportMsgType.MEASUREMENT_RESULT, bob_comm_memory_name=self.bob_comm_memory_name, x_flip=x, z_flip=z, reservation=reservation)
         self.owner.send_message(self.remote_node_name, msg)
-        log.logger.info(f"{self.name}: sent measurement results to {self.remote_node_name}: bob_comm_memory={self.bob_comm_memory_name}, x={x}, z={z}")
+        log.logger.info(f"{self.name}: sent measurement results to {self.remote_node_name}: bob_comm_memory={self.bob_comm_memory_name}, x={x}, z={z}, reservation={reservation}")
 
     def received_message(self, src: str, msg: TeleportMessage):
         """ Handle incoming messages, specifically teleportation corrections.

@@ -18,6 +18,7 @@ from ..message import Message
 from ..utils import log
 from .rule_manager import RuleManager
 from .memory_manager import MemoryManager, MemoryInfo
+from ..network_management.reservation import Reservation
 
 
 RequestConditionFunc = Callable[[list["EntanglementProtocol"]], "EntanglementProtocol"]
@@ -355,3 +356,17 @@ class ResourceManager:
 
     def __str__(self) -> str:
         return self.name
+
+    def expire_rules_by_reservation(self, reservation: Reservation) -> None:
+        '''expire rules created by the reservation
+        
+        Args:
+            reservation: the rules created by this reservation will expire
+        '''
+        rule_to_expire = []
+        for rule in self.rule_manager.rules:
+            if rule.reservation == reservation:
+                rule_to_expire.append(rule)
+        
+        for rule in rule_to_expire:
+            self.expire(rule)

@@ -68,6 +68,3 @@ def test_teleport_recreates_state():
     # check that Bob's final state matches the original |ψ⟩
     assert out.shape == psi.shape
     assert np.allclose(out, psi, atol=1e-6), f"teleported state {out} != original {psi}"
-
-
-# test_teleport_recreates_state()

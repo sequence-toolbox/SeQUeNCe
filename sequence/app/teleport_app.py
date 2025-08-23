@@ -35,6 +35,8 @@ class TeleportApp(RequestApp):
     def start(self, responder: str, start_t: int, end_t: int, memory_size: int, fidelity: float, data_memory_index: int):
         """Start the teleportation process.
 
+        NOTE: only teleport one data memory qubit
+
         Args: 
             responder (str): Name of the responder node (Bob).
             start_t (int): Start time of the teleportation (in ps).
@@ -81,7 +83,10 @@ class TeleportApp(RequestApp):
                         teleport_protocol.set_alice_comm_memory_name(info.memory.name)
                         teleport_protocol.set_alice_comm_memory(info.memory)
                         teleport_protocol.set_bob_comm_memory_name(info.remote_memo)
-                        teleport_protocol.alice_bell_measurement()
+                        reservation = self.memo_to_reservation[info.index]
+                        teleport_protocol.alice_bell_measurement(reservation)
+                        self.node.resource_manager.expire_rules_by_reservation(reservation)  # expire the rules
+                        self.node.resource_manager.update(None, teleport_protocol.alice_comm_memory, MemoryInfo.RAW) # release the alice comm memory
                         break # if never reached this break, then go to else, i.e., this node is Bob
                 else:
                     # this node is Bob, create the new teleport protocol instance, then append to self.teleport_protocols
@@ -102,6 +107,8 @@ class TeleportApp(RequestApp):
         for teleport_protocol in self.teleport_protocols:  # find the correct teleport protocol on Bob's side
             if src == teleport_protocol.remote_node_name and msg.bob_comm_memory_name == teleport_protocol.bob_comm_memory_name:
                 teleport_protocol.received_message(src, msg)
+                self.node.resource_manager.expire_rules_by_reservation(msg.reservation)                    # early release of resources
+                self.node.resource_manager.update(None, teleport_protocol.bob_comm_memory, MemoryInfo.RAW) # release the bob comm memory
                 break
         else:
             log.logger.warning(f"{self.name}: received_message: no matching teleport protocol for msg={msg} from {src}")
