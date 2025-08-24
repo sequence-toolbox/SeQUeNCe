@@ -18,9 +18,19 @@ def single_trial(psi):
     # set up the 2-node network
     topo = DQCNetTopo("tests/app/teleport_2node.json")
     tl   = topo.tl
+
+    # import sequence.utils.log as log
+    # log_filename = 'test_teleport.log'
+    # log.set_logger(__name__, tl, log_filename)
+    # log.set_logger_level('DEBUG')
+    # modules = ['generation', 'teleport_app', 'teleportation']
+    # for module in modules:
+    #     log.track_module(module)
+
     nodes = topo.nodes[DQCNetTopo.DQC_NODE]
-    alice = next(n for n in nodes if n.name=="router_0")
-    bob   = next(n for n in nodes if n.name=="router_1")
+    alice = next(n for n in nodes if n.name=="alice")
+    bob   = next(n for n in nodes if n.name=="bob")
+
     # 1) Prepare |ψ> in Alice’s data qubit
     data_memo_arr = alice.get_component_by_name(alice.data_memo_arr_name)
     data_memo_arr[0].update_state(psi)
@@ -36,13 +46,15 @@ def single_trial(psi):
         end_t       = 30 * MILLISECOND,
         memory_size = 1,
         fidelity    = 0.8,
-        data_src    = 0
+        data_memory_index = 0
     )
+
     # 4) Run the simulation
     tl.init()
     tl.run()
+
     # 5) Read out Bob’s data qubit state
-    teleported_qubit = B.results[0]
+    teleported_qubit = B.results[0][1]  # each result is (timestamp, state)
     return np.array(teleported_qubit)
 
 def test_teleport_recreates_state():

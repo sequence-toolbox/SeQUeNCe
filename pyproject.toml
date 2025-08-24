@@ -2,7 +2,7 @@
 name = "sequence"
 version = "0.7.4"
 authors = [
-    {name = "Xiaoliang Wu, Joaquin Chung, Alexander Kolar, Alexander Kiefer, Eugene Wang, Tian Zhong, Rajkumar Kettimuthu, Martin Suchara", email = "chungmiranda@anl.gov"}
+    {name = "Xiaoliang Wu, Joaquin Chung, Alexander Kolar, Alexander Kiefer, Eugene Wang, Tian Zhong, Rajkumar Kettimuthu, Martin Suchara, Robert Hayek, Ansh Singal, Caitao Zhan", email = "czhan@anl.gov"}
 ]
 maintainers = [
     {name = "Caitao Zhan", email = "czhan@anl.gov"}

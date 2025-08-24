@@ -137,7 +137,7 @@ class BBPSSW(EntanglementProtocol):
             Will send message to other protocol instance.
         """
 
-        log.logger.info(f"{self.owner.name} protocol start with partner {self.remote_node_name}")
+        log.logger.debug(f"{self.owner.name} protocol start with partner {self.remote_node_name}")
 
         assert self.is_ready(), "other protocol is not set; please use set_others function to set it."
         kept_memo_ent = self.kept_memo.entangled_memory["node_id"]
