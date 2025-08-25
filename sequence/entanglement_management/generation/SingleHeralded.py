@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Dict, Any
 
 from .generation_message import EntanglementGenerationMessage, GenerationMsgType, valid_trigger_time
+from ...components.bsm import SingleHeraldedBSM
 from ...resource_management.memory_manager import MemoryInfo
 
 if TYPE_CHECKING:
-    pass
+    from ...components.memory import Memory
+    from ...topology.node import Node, BSMNode
 from ...kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
-from .generation_a import EntanglementGenerationA
+from .generation import EntanglementGenerationA, EntanglementGenerationB
 from ...kernel.event import Event
 from ...kernel.process import Process
 from ...utils import log
@@ -32,7 +34,6 @@ class SingleHeraldedA(EntanglementGenerationA):
         if self.raw_epr_errors:
             assert len(self.raw_epr_errors) == 3, \
                 "Raw EPR pair pauli error list should have three elements in X, Y, Z order."
-
 
     def update_memory(self) -> bool:
         """Method to handle necessary memory operations.
@@ -78,7 +79,6 @@ class SingleHeraldedA(EntanglementGenerationA):
             return False
 
         return True
-
 
     def emit_event(self) -> None:
         self.memory.excite(self.middle, protocol='sh')
@@ -188,11 +188,29 @@ class SingleHeraldedA(EntanglementGenerationA):
         else:
             raise Exception("Invalid message {} received by EG on node {}".format(msg_type, self.owner.name))
 
-
     def _entanglement_succeed(self):
         super()._entanglement_succeed()
         self.memory.fidelity = self.raw_fidelity
 
         self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
 
+
+class SingleHeraldedB(EntanglementGenerationB):
+    def __init__(self, owner: "BSMNode", name: str, others: List[str]):
+        super().__init__(owner, name, others)
+
+    def bsm_update(self, bsm: "SingleHeraldedBSM", info: Dict['str', Any]) -> None:
+        """Method to receive detection events from BSM on node.
+
+        Args:
+            bsm (SingleAtomBSM or SingleHeraldedBSM): bsm object calling method.
+            info (Dict[str, any]): information passed from bsm.
+        """
+        assert bsm.encoding == 'single_heralded', \
+            "SingleHeraldedB should only be used with SingleHeraldedBSM."
+
+        super().bsm_update(bsm, info)
+
+
 EntanglementGenerationA.register('singleheraldedA', SingleHeraldedA)
+EntanglementGenerationB.register('singleheraldedB', SingleHeraldedB)
