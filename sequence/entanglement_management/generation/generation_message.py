@@ -1,5 +1,5 @@
 from enum import auto, Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Type, Optional
 
 from ..entanglement_protocol import EntanglementProtocol
 from ...message import Message
@@ -32,37 +32,45 @@ class EntanglementGenerationMessage(Message):
         qc_delay (int): quantum channel delay to BSM node (if `msg_type == NEGOTIATE`).
         frequency (float): frequency with which local memory can be excited (if `msg_type == NEGOTIATE`).
         emit_time (int): time to emit photon for measurement (if `msg_type == NEGOTIATE_ACK`).
-        res (int): detector number at BSM node (if `msg_type == MEAS_RES`).
+        detector (int): detector number at BSM node (if `msg_type == MEAS_RES`).
         time (int): detection time at BSM node (if `msg_type == MEAS_RES`).
         resolution (int): time resolution of BSM detectors (if `msg_type == MEAS_RES`).
     """
 
-    def __init__(self, msg_type: GenerationMsgType, receiver: str, protocol_type: EntanglementProtocol, **kwargs):
+    def __init__(self, msg_type: GenerationMsgType, receiver: str | None, protocol_type: Type[EntanglementProtocol],
+                 **kwargs):
         super().__init__(msg_type, receiver)
         self.protocol_type = protocol_type
 
-        if msg_type is GenerationMsgType.NEGOTIATE:
-            self.qc_delay = kwargs.get("qc_delay")
-            self.frequency = kwargs.get("frequency")
+        self.qc_delay: Optional[int] = None
+        self.frequency: Optional[float] = None
+        self.emit_time: Optional[int] = None
+        self.detector: Optional[int] = None
+        self.time: Optional[int] = None
+        self.resolution: Optional[int] = None
 
-        elif msg_type is GenerationMsgType.NEGOTIATE_ACK:
-            self.emit_time = kwargs.get("emit_time")
+        match msg_type:
+            case GenerationMsgType.NEGOTIATE:
+                self.qc_delay = kwargs.get("qc_delay")
+                self.frequency = kwargs.get("frequency")
 
-        elif msg_type is GenerationMsgType.MEAS_RES:
-            self.detector = kwargs.get("detector")
-            self.time = kwargs.get("time")
-            self.resolution = kwargs.get("resolution")
+            case GenerationMsgType.NEGOTIATE_ACK:
+                self.emit_time = kwargs.get("emit_time")
 
-        else:
-            raise Exception("EntanglementGeneration generated invalid message type {}".format(msg_type))
+            case GenerationMsgType.MEAS_RES:
+                self.detector = kwargs.get("detector")
+                self.time = kwargs.get("time")
+                self.resolution = kwargs.get("resolution")
+            case _:
+                raise Exception(f'EntanglementGeneration generated invalid message type {msg_type}')
 
     def __repr__(self):
-        if self.msg_type is GenerationMsgType.NEGOTIATE:
-            return "type:{}, qc_delay:{}, frequency:{}".format(self.msg_type, self.qc_delay, self.frequency)
-        elif self.msg_type is GenerationMsgType.NEGOTIATE_ACK:
-            return "type:{}, emit_time:{}".format(self.msg_type, self.emit_time)
-        elif self.msg_type is GenerationMsgType.MEAS_RES:
-            return "type:{}, detector:{}, time:{}, resolution={}".format(self.msg_type, self.detector,
-                                                                         self.time, self.resolution)
-        else:
-            raise Exception("EntanglementGeneration generated invalid message type {}".format(self.msg_type))
+        match self.msg_type:
+            case GenerationMsgType.NEGOTIATE:
+                return f'type: {self.msg_type}, qc_delay: {self.qc_delay}, frequency: {self.frequency}'
+            case GenerationMsgType.NEGOTIATE_ACK:
+                return f'type: {self.msg_type}, emit_time: {self.emit_time}'
+            case GenerationMsgType.MEAS_RES:
+                return f'type: {self.msg_type}, detector: {self.detector}, time: {self.time}, resolution: {self.resolution}'
+            case _:
+                raise Exception(f'EntanglementGeneration generated invalid message type {self.msg_type}')
