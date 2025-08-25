@@ -24,8 +24,10 @@ class SingleHeraldedA(EntanglementGenerationA):
         assert self.owner.timeline.quantum_manager.formalism == BELL_DIAGONAL_STATE_FORMALISM, \
             "Single Heralded Entanglement generation protocol only supports Bell diagonal state formalism."
 
-        self.raw_fidelity: float = raw_fidelity
-
+        if raw_fidelity:
+            self.raw_fidelity = raw_fidelity
+        else:
+            self.raw_fidelity = memory.raw_fidelity
         assert 0.5 <= self.raw_fidelity <= 1, "Raw fidelity must be in [0.5, 1]."
 
         self.raw_epr_errors = raw_epr_errors
@@ -34,6 +36,8 @@ class SingleHeraldedA(EntanglementGenerationA):
         if self.raw_epr_errors:
             assert len(self.raw_epr_errors) == 3, \
                 "Raw EPR pair pauli error list should have three elements in X, Y, Z order."
+
+        self.bsm_res = [0, 0]
 
     def update_memory(self) -> bool:
         """Method to handle necessary memory operations.

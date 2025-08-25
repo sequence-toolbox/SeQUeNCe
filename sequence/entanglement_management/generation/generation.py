@@ -4,13 +4,14 @@ from abc import ABC
 from math import sqrt
 from typing import TYPE_CHECKING, List, Dict, Type, Any
 
-from sequence.topology.node import BSMNode
 from .generation_message import EntanglementGenerationMessage, GenerationMsgType
 from ...resource_management.memory_manager import MemoryInfo
 
 if TYPE_CHECKING:
     from ...components.memory import Memory
     from ...topology import Node
+    from sequence.topology.node import BSMNode
+
 from ..entanglement_protocol import EntanglementProtocol
 from ...components.circuit import Circuit
 from ...utils import log
@@ -39,10 +40,11 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         # Network and Hardware Info
         self.qc_delay: int = 0
         self.expected_time: int = -1
+        self.fidelity: float = memory.raw_fidelity
 
         # Memory Internal Info
         self.ent_round = 0
-        self.bsm_res = [0, 0]
+        self.bsm_res = [-1, -1]
 
         self.scheduled_events = []
 
@@ -55,7 +57,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
     @classmethod
     def register(cls, name: str, protocol_class: Type['EntanglementGenerationA'] = None):
         if protocol_class is not None:
-            cls._registry['name'] = protocol_class
+            cls._registry[name] = protocol_class
             return None
 
         def decorator(protocol_class: Type['EntanglementGenerationA']):
@@ -64,12 +66,12 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         return decorator
 
     @classmethod
-    def create(cls, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs) -> 'EntanglementGenerationA':
+    def create(cls, protocol_name: str, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs) -> 'EntanglementGenerationA':
         try:
-            protocol_class = cls._registry[name]
+            protocol_class = cls._registry[protocol_name]
             return protocol_class(owner, name, middle, other, memory, **kwargs)
         except KeyError:
-            raise ValueError(f"Protocol class '{name}' is not registered.")
+            raise ValueError(f"Protocol class '{protocol_name}' is not registered.")
 
     @classmethod
     def list_protocols(cls) -> List[str]:
@@ -77,7 +79,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         return list(cls._registry.keys())
 
     def set_others(self, protocol: str, node: str, memories: List[str]) -> None:
-        assert self.remote_protocol_name != '', \
+        assert self.remote_protocol_name == '', \
             "Remote protocol name has been set before, cannot set again."
 
         self.remote_protocol_name = protocol
@@ -103,7 +105,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
             frequency = self.memory.frequency
             message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE,
                                                     self.remote_protocol_name,
-                                                    protocol_type=self,
+                                                    protocol_type=EntanglementGenerationA,
                                                     qc_delay=self.qc_delay,
                                                     frequency=frequency)
             self.owner.send_message(self.remote_node_name, message)
@@ -153,7 +155,7 @@ class EntanglementGenerationB(EntanglementProtocol, ABC):
     @classmethod
     def register(cls, name: str, protocol_class: Type['EntanglementGenerationB'] = None):
         if protocol_class is not None:
-            cls._registry['name'] = protocol_class
+            cls._registry[name] = protocol_class
             return None
 
         def decorator(protocol_class: Type['EntanglementGenerationB']):
@@ -162,12 +164,12 @@ class EntanglementGenerationB(EntanglementProtocol, ABC):
         return decorator
 
     @classmethod
-    def create(cls, owner: "Node", name: str, others, **kwargs) -> 'EntanglementGenerationB':
+    def create(cls, protocol_name: str, owner: "Node", name: str, others, **kwargs) -> 'EntanglementGenerationB':
         try:
-            protocol_class = cls._registry[name]
+            protocol_class = cls._registry[protocol_name]
             return protocol_class(owner, name, others, **kwargs)
         except KeyError:
-            raise ValueError(f"Protocol class '{name}' is not registered.")
+            raise ValueError(f"Protocol class '{protocol_name}' is not registered.")
 
     @classmethod
     def list_protocols(cls) -> List[str]:
@@ -175,20 +177,7 @@ class EntanglementGenerationB(EntanglementProtocol, ABC):
         return list(cls._registry.keys())
 
     def bsm_update(self, bsm, info: Dict['str', Any]) -> None:
-        assert info['info_type'] == "BSM_res"
-
-        res = info["res"]
-        time = info["time"]
-        resolution = bsm.resolution
-
-        for node in self.others:
-            message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES,
-                                                    receiver=None,  # receiver is None (not paired)
-                                                    protocol_type=EntanglementGenerationA,
-                                                    detector=res,
-                                                    time=time,
-                                                    resolution=resolution)
-            self.owner.send_message(node, message)
+        pass
 
     def set_others(self, protocol: str, node: str, memories: List[str]) -> None:
         pass

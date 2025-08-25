@@ -307,7 +307,7 @@ def test_expire():
 def test_ResourceManager1():
     from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
     from sequence.topology.node import BSMNode
-    from sequence.entanglement_management.generation.generation import EntanglementGenerationProtocol, EntanglementGenerationBarretKokA
+    from sequence.entanglement_management.generation.generation import EntanglementGenerationA
 
     def eg_rule_condition(memory_info, manager, args):
         if memory_info.state == "RAW":
@@ -317,20 +317,20 @@ def test_ResourceManager1():
 
     def eg_req_func(protocols, args):
         for protocol in protocols:
-            if isinstance(protocol, EntanglementGenerationBarretKokA):
+            if isinstance(protocol, EntanglementGenerationA):
                 return protocol
 
     def eg_rule_action1(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationProtocol.create('BarretKokA', None, "EGA." + memory.name, "mid_node", "node2", memory)
+        protocol = EntanglementGenerationA.create('BarretKokA', None, "EGA." + memory.name, "mid_node", "node2", memory)
         protocol.primary = True
         return [protocol, ["node2"], [eg_req_func], [{}]]
 
     def eg_rule_action2(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationProtocol.create('BarretKokA', None, "EGA." + memory.name,
+        protocol = EntanglementGenerationA.create('BarretKokA', None, "EGA." + memory.name,
                                            "mid_node", "node1", memory)
         return protocol, [None], [None], [{}]
 
@@ -382,7 +382,7 @@ def test_ResourceManager2():
     from sequence.kernel.event import Event
     from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
     from sequence.topology.node import BSMNode
-    from sequence.entanglement_management.generation.generation import EntanglementGenerationProtocol, EntanglementGenerationBarretKokA
+    from sequence.entanglement_management.generation.generation import EntanglementGenerationA
 
     def eg_rule_condition(memory_info, manager, args):
         if memory_info.state == "RAW":
@@ -392,20 +392,20 @@ def test_ResourceManager2():
 
     def eg_req_func(protocols, args):
         for protocol in protocols:
-            if isinstance(protocol, EntanglementGenerationBarretKokA):
+            if isinstance(protocol, EntanglementGenerationA):
                 return protocol
 
     def eg_rule_action1(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationProtocol.create('BarretKokA', None, "EGA." + memory.name, "mid_node", "node2", memory)
+        protocol = EntanglementGenerationA.create('BarretKokA', None, "EGA." + memory.name, "mid_node", "node2", memory)
         protocol.primary = True
         return [protocol, ["node2"], [eg_req_func], [{}]]
 
     def eg_rule_action2(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationProtocol.create('BarretKokA', None, "EGA." + memory.name,
+        protocol = EntanglementGenerationA.create('BarretKokA', None, "EGA." + memory.name,
                                            "mid_node", "node1", memory)
         return protocol, [None], [None], [{}]
 

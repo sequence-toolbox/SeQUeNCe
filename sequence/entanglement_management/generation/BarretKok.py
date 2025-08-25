@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from gmpy2 import sqrt
+
 from .generation_message import EntanglementGenerationMessage, GenerationMsgType, valid_trigger_time
 from ...components.bsm import SingleAtomBSM
+from ...components.circuit import Circuit
 
 if TYPE_CHECKING:
     from ...components.memory import Memory
@@ -18,7 +21,7 @@ from ...kernel.process import Process
 from ...utils import log
 
 
-class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
+class BarretKokA(EntanglementGenerationA):
     """Entanglement generation protocol for quantum router.
 
     The EntanglementGenerationA protocol should be instantiated on a quantum router node.
@@ -31,6 +34,11 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
         remote_node_name (str): name of distant QuantumRouter node, containing a memory to be entangled with local memory.
         memory (Memory): quantum memory object to attempt entanglement for.
     """
+    _plus_state = [sqrt(1 / 2), sqrt(1 / 2)]
+    _flip_circuit = Circuit(1)
+    _flip_circuit.x(0)
+    _z_circuit = Circuit(1)
+    _z_circuit.z(0)
 
     def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs: Any):
         """Constructor for entanglement generation A class.
@@ -48,6 +56,8 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
             raise ValueError(f"Unexpected keyword arguments: {kwargs}")
 
         super().__init__(owner, name, middle, other, memory)
+        self.bsm_res = [-1, -1]
+        self.fidelity: float = memory.raw_fidelity
 
     def update_memory(self) -> bool | None:
         """Method to handle necessary memory operations.
@@ -248,19 +258,20 @@ class BarretKokB(EntanglementGenerationB):
         super().__init__(owner, name, others)
 
     def bsm_update(self, bsm: "SingleAtomBSM", info: dict[str, Any]):
-        """Method to receive detection events from BSM on node.
+        assert info['info_type'] == "BSM_res"
 
-        Args:
-            bsm (SingleAtomBSM): bsm object calling method.
-            info (dict[str, any]): information passed from bsm.
-        """
+        res = info["res"]
+        time = info["time"]
+        resolution = bsm.resolution
 
-        assert bsm.encoding == 'single_atom'
+        for node in self.others:
+            message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES,
+                                                    receiver=None,  # receiver is None (not paired)
+                                                    protocol_type=BarretKokA,
+                                                    detector=res,
+                                                    time=time,
+                                                    resolution=resolution)
+            self.owner.send_message(node, message)
 
-        super().bsm_update(bsm, info)
-
-
-
-EntanglementGenerationA.register('barretkokA', BarretKokA)
-EntanglementGenerationB.register('barretkokB', BarretKokB)
-
+EntanglementGenerationA.register('BarretKokA', BarretKokA)
+EntanglementGenerationB.register('BarretKokB', BarretKokB)
