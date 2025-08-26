@@ -574,7 +574,7 @@ class EntanglementGenerationA(EntanglementProtocol):
         self.own.succesful_attempts += 1
         if self.own.succesful_attempts == 1000:
             self.own.time_to_thousand = self.own.timeline.now()-1e12
-        print(f"{self.own.name} entanglement success! success={self.own.succesful_attempts}, total={self.own.total_attempts} at {self.own.timeline.now()}")
+        # print(f"{self.own.name} entanglement success! success={self.own.succesful_attempts}, total={self.own.total_attempts} at {self.own.timeline.now()}")
 
     def _entanglement_fail(self):
         # log.logger.warning(f"(entanglement failure) at ({self.own.timeline.now()}) on {self.memory.name}")
@@ -584,7 +584,7 @@ class EntanglementGenerationA(EntanglementProtocol):
 
         self.update_resource_manager(self.memory, 'RAW')
         self.own.total_attempts += 1
-        print(f"{self.own.name} entanglement failed! total={self.own.total_attempts} at {self.own.timeline.now()}")
+        # print(f"{self.own.name} entanglement failed! total={self.own.total_attempts} at {self.own.timeline.now()}")
 
 class EntanglementGenerationB(EntanglementProtocol):
     """Single heralded entanglement generation protocol for BSM node.
