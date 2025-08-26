@@ -85,7 +85,7 @@ class DQCNetTopo(Topo):
             elif node_type == self.DQC_NODE:
                 data_size = node.get(self.DATA_MEMO_ARRAY_SIZE, 0)
                 comm_size = node.get(self.MEMO_ARRAY_SIZE, 0)
-                node_obj = DQCNode(name, self.tl, memo_size=comm_size, data_memo_size=data_size)
+                node_obj = DQCNode(name, self.tl, memo_size=comm_size, data_memo_size=data_size, component_templates=template)
             else:
                 raise ValueError("Unknown type of node '{}'".format(node_type))
 
@@ -258,7 +258,4 @@ class DQCNetTopo(Topo):
         return self.tl
 
     def get_nodes(self) -> Dict[str, List[Node]]:
-        return self.nodes
-
-    def get_nodes_by_type(self, node_type: Type[Node]) -> List[Node]:
-        return [n for node_list in self.nodes.values() for n in node_list if isinstance(n, node_type)]
+        return self.nodes  
