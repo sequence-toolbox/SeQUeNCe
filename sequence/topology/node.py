@@ -6,7 +6,7 @@ Node types can be used to collect all the necessary hardware and software for a 
 """
 
 from math import inf
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Type
 
 import numpy as np
 
@@ -53,7 +53,7 @@ class Node(Entity):
         gate_fid (float): fidelity of multi-qubit gates (usually CNOT) that can be performed on the node.
         meas_fid (float): fidelity of single-qubit measurements (usually Z measurement) that can be performed on the node.
     """
-
+    _registry: dict = {}
     def __init__(self, name: str, timeline: "Timeline", seed=None, gate_fid: float = 1, meas_fid: float = 1):
         """Constructor for node.
 
@@ -77,6 +77,26 @@ class Node(Entity):
         self.gate_fid = gate_fid
         self.meas_fid = meas_fid
         assert 0 <= gate_fid <= 1 and 0 <= meas_fid <= 1, "Gate fidelity and measurement fidelity must be between 0 and 1."
+
+    @classmethod
+    def register(cls, class_name: str, node_class: Type['Node']):
+        if node_class is not None:
+            cls._registry[class_name] = node_class
+            return None
+
+        def decorator(node_class: Type['Node']):
+            cls._registry[class_name] = node_class
+            return node_class
+
+        return decorator
+
+    @classmethod
+    def create(cls, class_name: str, name: str, timeline: "Timeline", **kwargs) -> 'Node':
+        try:
+            node_class = cls._registry[class_name]
+            return node_class(name, timeline, **kwargs)
+        except KeyError:
+            raise ValueError(f"Node class '{class_name}' is not registered.")
 
     def init(self) -> None:
         pass
