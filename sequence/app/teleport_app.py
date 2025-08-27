@@ -22,15 +22,14 @@ class TeleportApp(RequestApp):
     Attributes:
         node (DQCNode): The quantum node this app is attached to.
         name (str): The name of the teleport application.
-        results (list): List to store the results of teleportation and timestamp
-        teleport_protocol (TeleportProtocol): The teleportation protocol instance.
+        results (list): A list of results of (timestamp, teleported_state)
+        teleport_protocols (list[TeleportProtocol]): A list of teleportation protocol instances.
     """
     def __init__(self, node: DQCNode):
         super().__init__(node)
         self.name = f"{self.node.name}.TeleportApp"
         node.teleport_app = self   # register ourselves so incoming TeleportMessage lands here:
         self.results = []          # where we’ll collect Bob’s teleported state
-        # self.teleport_protocol = TeleportProtocol(owner=node, data_src=None)  # create a single protocol instance, on both Alice & Bob
         self.teleport_protocols: list[TeleportProtocol] = [] # a list of teleport protocol instances
         log.logger.debug(f"{self.name}: initialized")
 
@@ -89,7 +88,7 @@ class TeleportApp(RequestApp):
                         # Let Bob first execute EntanglementGenerationA._entanglement_succeed(), then let Alice do the Bell measurement
                         time_now = self.node.timeline.now()
                         process = Process(teleport_protocol, 'alice_bell_measurement', [reservation])
-                        priority = 0  # Use explicit priority value instead of schedule_counter
+                        priority = self.node.timeline.schedule_counter
                         event = Event(time_now, process, priority)
                         self.node.timeline.schedule(event)
                         break # if never reached this break, then go to else
