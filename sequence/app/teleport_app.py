@@ -4,7 +4,6 @@ between quantum nodes. It utilizes the TeleportProtocol to handle the teleportat
 including the reservation of entangled pairs and the application of corrections based on classical messages.
 """
 
-from sched import Event
 from .request_app import RequestApp
 from ..utils import log
 from ..entanglement_management.teleportation import TeleportMsgType, TeleportProtocol, TeleportMessage
