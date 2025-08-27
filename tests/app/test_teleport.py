@@ -97,15 +97,15 @@ def dual_trial(psi_b: np.ndarray, psi_c: np.ndarray):
     topo = DQCNetTopo("tests/app/teleport_3node.json")
     tl   = topo.tl
 
-    import sequence.utils.log as log
-    log_filename = 'tmp/test_teleport.log'
-    log.set_logger(__name__, tl, log_filename)
-    log.set_logger_level('INFO')
-    # modules = ['generation', 'teleport_app', 'teleportation', 'network_manager', 'resource_manager']
-    modules = ['generation', 'teleport_app', 'teleportation']
+    # import sequence.utils.log as log
+    # log_filename = 'tmp/test_teleport.log'
+    # log.set_logger(__name__, tl, log_filename)
+    # log.set_logger_level('INFO')
+    # # modules = ['generation', 'teleport_app', 'teleportation', 'network_manager', 'resource_manager']
+    # modules = ['generation', 'teleport_app', 'teleportation']
 
-    for module in modules:
-        log.track_module(module)
+    # for module in modules:
+    #     log.track_module(module)
 
     nodes   = topo.nodes[DQCNetTopo.DQC_NODE]
     alice   = next(n for n in nodes if n.name == "alice")
@@ -162,5 +162,5 @@ def test_dual_teleport_recreates_states():
     assert check_bob and check_charlie, f"Bob:{check_bob}, got={out_b}, correct={psi_b}. Charlie:{check_charlie}, got={out_c}, correct={psi_c}"
 
 
-test_dual_teleport_recreates_states()
+# test_dual_teleport_recreates_states()
 # test_teleport_recreates_state()
