@@ -35,7 +35,14 @@ class QuantumFactory:
 
     @classmethod
     def register(cls, name, manager_class):
-        cls._registry[name] = manager_class
+        if name is not None:
+            cls._registry[name] = manager_class
+            return None
+
+        def decorator(manager_class):
+            cls._registry[name] = manager_class
+            return manager_class
+        return decorator
 
     @classmethod
     def create(cls, name, *args, **kwargs):
