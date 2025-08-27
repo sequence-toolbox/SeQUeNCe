@@ -4,6 +4,7 @@ from typing import Type, Optional
 from ..entanglement_protocol import EntanglementProtocol
 from ...message import Message
 
+
 def valid_trigger_time(trigger_time: int, target_time: int, resolution: int) -> bool:
     """return True if the trigger time is valid, else return False."""
     lower = target_time - (resolution // 2)
