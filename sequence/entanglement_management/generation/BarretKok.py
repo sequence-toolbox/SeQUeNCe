@@ -21,7 +21,7 @@ from ...kernel.process import Process
 from ...utils import log
 
 
-class BarretKokA(EntanglementGenerationA):
+class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
     """Entanglement generation protocol for quantum router.
 
     The EntanglementGenerationA protocol should be instantiated on a quantum router node.
@@ -34,11 +34,6 @@ class BarretKokA(EntanglementGenerationA):
         remote_node_name (str): name of distant QuantumRouter node, containing a memory to be entangled with local memory.
         memory (Memory): quantum memory object to attempt entanglement for.
     """
-    _plus_state = [sqrt(1 / 2), sqrt(1 / 2)]
-    _flip_circuit = Circuit(1)
-    _flip_circuit.x(0)
-    _z_circuit = Circuit(1)
-    _z_circuit.z(0)
 
     def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs: Any):
         """Constructor for entanglement generation A class.
