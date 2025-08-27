@@ -111,13 +111,17 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
             self.owner.send_message(self.remote_node_name, message)
 
     def update_memory(self) -> bool | None:
-        pass
+        """Update memory state. Must be implemented in a subclass"""
+        raise NotImplementedError
+
 
     def emit_event(self) -> None:
-        pass
+        """Must be implemented in a subclass"""
+        raise NotImplementedError
 
     def received_message(self, src: str, msg: EntanglementGenerationMessage) -> None:
-        pass
+        """Must be implemented in a subclass"""
+        raise NotImplementedError
 
     def is_ready(self) -> bool:
         return self.remote_protocol_name != ''
@@ -177,7 +181,8 @@ class EntanglementGenerationB(EntanglementProtocol, ABC):
         return list(cls._registry.keys())
 
     def bsm_update(self, bsm, info: Dict['str', Any]) -> None:
-        pass
+        """Must be implemented in a subclass"""
+        raise NotImplementedError
 
     def set_others(self, protocol: str, node: str, memories: List[str]) -> None:
         pass
