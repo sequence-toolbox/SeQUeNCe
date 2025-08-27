@@ -1,9 +1,8 @@
 from enum import auto, Enum
-from typing import TYPE_CHECKING, Any, Type, Optional
+from typing import Type, Optional
 
 from ..entanglement_protocol import EntanglementProtocol
 from ...message import Message
-
 
 def valid_trigger_time(trigger_time: int, target_time: int, resolution: int) -> bool:
     """return True if the trigger time is valid, else return False."""
@@ -37,6 +36,8 @@ class EntanglementGenerationMessage(Message):
         resolution (int): time resolution of BSM detectors (if `msg_type == MEAS_RES`).
     """
 
+    __slots__ = ['protocol_type', 'qc_delay', 'frequency', 'emit_time', 'detector', 'time', 'resolution']
+
     def __init__(self, msg_type: GenerationMsgType, receiver: str | None, protocol_type: Type[EntanglementProtocol],
                  **kwargs):
         super().__init__(msg_type, receiver)
@@ -49,20 +50,17 @@ class EntanglementGenerationMessage(Message):
         self.time: Optional[int] = None
         self.resolution: Optional[int] = None
 
-        match msg_type:
-            case GenerationMsgType.NEGOTIATE:
-                self.qc_delay = kwargs.get("qc_delay")
-                self.frequency = kwargs.get("frequency")
+        fields = {
+            GenerationMsgType.NEGOTIATE: ['qc_delay', 'frequency'],
+            GenerationMsgType.NEGOTIATE_ACK: ['emit_time'],
+            GenerationMsgType.MEAS_RES: ['detector', 'time', 'resolution']
+        }
 
-            case GenerationMsgType.NEGOTIATE_ACK:
-                self.emit_time = kwargs.get("emit_time")
-
-            case GenerationMsgType.MEAS_RES:
-                self.detector = kwargs.get("detector")
-                self.time = kwargs.get("time")
-                self.resolution = kwargs.get("resolution")
-            case _:
-                raise Exception(f'EntanglementGeneration generated invalid message type {msg_type}')
+        if msg_type in fields:
+            for field in fields[msg_type]:
+                setattr(self, field, kwargs.get(field))
+        else:
+            raise ValueError(f'EntanglementGeneration generated invalid message type {msg_type}')
 
     def __repr__(self):
         match self.msg_type:
