@@ -488,11 +488,9 @@ class SingleAtomBSM(BSM):
                     # twice to assign state to psi+ or psi-
                     log.logger.info(self.name + " passed stage 2")
                     if _eq_psi_plus(state0, qm.formalism) ^ detector_num:
-                        _set_state_with_fidelity(keys, BSM._psi_minus, p0.encoding_type["raw_fidelity"],
-                                                 self.get_generator(), qm)
+                        _set_state_with_fidelity(keys, BSM._psi_minus, p0.encoding_type["raw_fidelity"], self.get_generator(), qm)
                     else:
-                        _set_state_with_fidelity(keys, BSM._psi_plus, p0.encoding_type["raw_fidelity"],
-                                                 self.get_generator(), qm)
+                        _set_state_with_fidelity(keys, BSM._psi_plus, p0.encoding_type["raw_fidelity"], self.get_generator(), qm)
                 else:
                     raise NotImplementedError("Unknown state")
 

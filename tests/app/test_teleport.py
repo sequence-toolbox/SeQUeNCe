@@ -7,6 +7,9 @@ import numpy as np
 from sequence.topology.dqc_net_topo import DQCNetTopo
 from sequence.app.teleport_app import TeleportApp
 from sequence.constants import MILLISECOND
+from sequence.kernel.quantum_utils import verify_same_state_vector
+
+
 
 def single_trial(psi):
     """Run a single trial of teleportation with the given quantum state psi.
@@ -67,7 +70,7 @@ def test_teleport_recreates_state():
 
     # check that Bob's final state matches the original |ψ⟩
     assert out.shape == psi.shape
-    assert np.allclose(out, psi, atol=1e-6), f"teleported state {out} != original {psi}"
+    assert verify_same_state_vector(out, psi), f"teleported state {out} != original {psi}"
 
 
 
@@ -83,8 +86,6 @@ A single TeleportApp is attached to Alice and .start(...) is called twice.
 Bob and Charlie each get their own TeleportApp to record results.
 """
 
-
-
 def dual_trial(psi_b: np.ndarray, psi_c: np.ndarray):
     """Run a dual-teleport trial on a 3-node network (alice, bob, charlie).
     Args:
@@ -96,7 +97,8 @@ def dual_trial(psi_b: np.ndarray, psi_c: np.ndarray):
     topo = DQCNetTopo("tests/app/teleport_3node.json")
     tl   = topo.tl
 
-    # log_filename = 'tmp/test_teleport_10.log'
+    # import sequence.utils.log as log
+    # log_filename = 'tmp/test_teleport.log'
     # log.set_logger(__name__, tl, log_filename)
     # log.set_logger_level('INFO')
     # # modules = ['generation', 'teleport_app', 'teleportation', 'network_manager', 'resource_manager']
@@ -121,10 +123,10 @@ def dual_trial(psi_b: np.ndarray, psi_c: np.ndarray):
     C = TeleportApp(charlie)
 
     # Give the protocol enough time
-    start_t1  = 1 * MILLISECOND
-    end_t1    = 20 * MILLISECOND
-    start_t2  = 1 * MILLISECOND
-    end_t2    = 20 * MILLISECOND
+    start_t1 = 1 * MILLISECOND
+    end_t1   = 200   * MILLISECOND
+    start_t2 = 1 * MILLISECOND
+    end_t2   = 200   * MILLISECOND
     fidelity = 0.1
     mem_size = 1
 
@@ -152,11 +154,13 @@ def test_dual_teleport_recreates_states():
 
     out_b, out_c = dual_trial(psi_b, psi_c)
 
-    atol = 1e-6
     assert out_b.shape == psi_b.shape
     assert out_c.shape == psi_c.shape
-    assert np.allclose(out_b, psi_b, atol=atol), f"Bob got {out_b} != {psi_b}"
-    assert np.allclose(out_c, psi_c, atol=atol), f"Charlie got {out_c} != {psi_c}"
+
+    check_bob     = verify_same_state_vector(out_b, psi_b)
+    check_charlie = verify_same_state_vector(out_c, psi_c)
+    assert check_bob and check_charlie, f"Bob:{check_bob}, got={out_b}, correct={psi_b}. Charlie:{check_charlie}, got={out_c}, correct={psi_c}"
+
 
 # test_dual_teleport_recreates_states()
 # test_teleport_recreates_state()

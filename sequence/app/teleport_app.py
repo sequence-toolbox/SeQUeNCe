@@ -9,6 +9,8 @@ from ..utils import log
 from ..entanglement_management.teleportation import TeleportMsgType, TeleportProtocol, TeleportMessage
 from ..topology.node import DQCNode
 from ..resource_management.memory_manager import MemoryInfo
+from ..kernel.process import Process
+from ..kernel.event import Event
 
 
 class TeleportApp(RequestApp):
@@ -20,15 +22,14 @@ class TeleportApp(RequestApp):
     Attributes:
         node (DQCNode): The quantum node this app is attached to.
         name (str): The name of the teleport application.
-        results (list): List to store the results of teleportation and timestamp
-        teleport_protocol (TeleportProtocol): The teleportation protocol instance.
+        results (list): A list of results of (timestamp, teleported_state)
+        teleport_protocols (list[TeleportProtocol]): A list of teleportation protocol instances.
     """
     def __init__(self, node: DQCNode):
         super().__init__(node)
         self.name = f"{self.node.name}.TeleportApp"
         node.teleport_app = self   # register ourselves so incoming TeleportMessage lands here:
         self.results = []          # where we’ll collect Bob’s teleported state
-        # self.teleport_protocol = TeleportProtocol(owner=node, data_src=None)  # create a single protocol instance, on both Alice & Bob
         self.teleport_protocols: list[TeleportProtocol] = [] # a list of teleport protocol instances
         log.logger.debug(f"{self.name}: initialized")
 
@@ -84,7 +85,12 @@ class TeleportApp(RequestApp):
                         teleport_protocol.set_alice_comm_memory(info.memory)
                         teleport_protocol.set_bob_comm_memory_name(info.remote_memo)
                         reservation = self.memo_to_reservation[info.index]
-                        teleport_protocol.alice_bell_measurement(reservation)
+                        # Let Bob first execute EntanglementGenerationA._entanglement_succeed(), then let Alice do the Bell measurement
+                        time_now = self.node.timeline.now()
+                        process = Process(teleport_protocol, 'alice_bell_measurement', [reservation])
+                        priority = self.node.timeline.schedule_counter
+                        event = Event(time_now, process, priority)
+                        self.node.timeline.schedule(event)
                         break # if never reached this break, then go to else
                 else:
                     # this node is Bob, create the new teleport protocol instance, then append to self.teleport_protocols
