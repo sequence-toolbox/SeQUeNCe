@@ -89,7 +89,7 @@ class TeleportApp(RequestApp):
                         # Let Bob first execute EntanglementGenerationA._entanglement_succeed(), then let Alice do the Bell measurement
                         time_now = self.node.timeline.now()
                         process = Process(teleport_protocol, 'alice_bell_measurement', [reservation])
-                        priority = self.node.timeline.schedule_counter
+                        priority = 0  # Use explicit priority value instead of schedule_counter
                         event = Event(time_now, process, priority)
                         self.node.timeline.schedule(event)
                         break # if never reached this break, then go to else
