@@ -146,15 +146,15 @@ class TeleportProtocol(Protocol):
         comm_key = self.alice_comm_memory.qstate_key
         data_memory_array = self.owner.get_component_by_name(self.owner.data_memo_arr_name)
         data_key = data_memory_array[self.data_memory_index].qstate_key
-        log.logger.debug(f"{self.name}: _alice_bell_measure data_key={data_key}, comm_key={comm_key}")
+        log.logger.debug(f"{self.name}: alice_bell_measure data_key={data_key}, comm_key={comm_key}")
         # Perform Bell measurement
         rnd  = self.owner.get_generator().random()
         meas = self.owner.timeline.quantum_manager.run_circuit(TeleportProtocol._bsm_circuit, [data_key, comm_key], rnd)
         z, x = meas[data_key], meas[comm_key]
+        log.logger.info(f"{self.name} bell measurement results: x={x}, z={z}, remote memory={self.bob_comm_memory_name}")
         # send classical corrections to Bob
         msg = TeleportMessage(TeleportMsgType.MEASUREMENT_RESULT, bob_comm_memory_name=self.bob_comm_memory_name, x_flip=x, z_flip=z, reservation=reservation)
         self.owner.send_message(self.remote_node_name, msg)
-        log.logger.info(f"{self.name}: sent measurement results to {self.remote_node_name}: bob_comm_memory={self.bob_comm_memory_name}, x={x}, z={z}, reservation={reservation}")
 
     def received_message(self, src: str, msg: TeleportMessage):
         """ Handle incoming messages, specifically teleportation corrections.

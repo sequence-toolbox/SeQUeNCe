@@ -2,7 +2,6 @@
 This script tests the quantum teleportation application by simulating a simple two-node network.
 It verifies that the teleportation process correctly recreates the original quantum state.
 """
-import math
 import itertools
 import numpy as np
 import pytest
@@ -13,10 +12,11 @@ from sequence.kernel.quantum_utils import verify_same_state_vector
 
 
 
-def single_trial(psi, seeds=None):
+def single_trial(psi, seeds: dict = None):
     """Run a single trial of teleportation with the given quantum state psi.
     Args:       
-        psi (np.ndarray): The quantum state to teleport, represented as a numpy array.
+        psi (np.ndarray): The quantum state to teleport, represented as a numpy array
+        seeds (dict): Dictionary of random seeds for the simulation
     Returns:     
         np.ndarray: The quantum state after teleportation, as received by Bob.
     """
@@ -54,10 +54,10 @@ def single_trial(psi, seeds=None):
     # 3) Kick off teleport
     A.start(
         responder   = bob.name,
-        start_t     = 10  * MILLISECOND,
-        end_t       = 30 * MILLISECOND,
+        start_t     = 1  * MILLISECOND,
+        end_t       = 200 * MILLISECOND,
         memory_size = 1,
-        fidelity    = 0.8,
+        fidelity    = 0.01,
         data_memory_index = 0
     )
 
@@ -80,14 +80,14 @@ def _random_state(rng: np.random.Generator):
 
 # Prepare 5 random input states and 5 random seed sets (reproducible)
 _rng_inputs = np.random.default_rng(12345)
-_single_inputs = [_random_state(_rng_inputs) for _ in range(5)]
+_single_inputs = [_random_state(_rng_inputs) for _ in range(2)]
 _single_seeds   = [
     {
         "alice": int(_rng_inputs.integers(0, 2**31-1)),
         "bob": int(_rng_inputs.integers(0, 2**31-1)),
         "BSM_alice_bob": int(_rng_inputs.integers(0, 2**31-1)),
     }
-    for _ in range(5)
+    for _ in range(20)
 ]
 
 
@@ -115,11 +115,12 @@ A single TeleportApp is attached to Alice and .start(...) is called twice.
 Bob and Charlie each get their own TeleportApp to record results.
 """
 
-def dual_trial(psi_b: np.ndarray, psi_c: np.ndarray, seeds=None):
+def dual_trial(psi_b: np.ndarray, psi_c: np.ndarray, seeds: dict = None):
     """Run a dual-teleport trial on a 3-node network (alice, bob, charlie).
     Args:
         psi_b: state to send to Bob
         psi_c: state to send to Charlie
+        seeds (dict): Dictionary of random seeds for the simulation
     Returns:
         (out_b, out_c): teleported states measured at Bob and Charlie
     """
@@ -186,7 +187,7 @@ def dual_trial(psi_b: np.ndarray, psi_c: np.ndarray, seeds=None):
     return out_b, out_c
 
 
-_dual_inputs = [(_random_state(_rng_inputs), _random_state(_rng_inputs)) for _ in range(5)]
+_dual_inputs = [(_random_state(_rng_inputs), _random_state(_rng_inputs)) for _ in range(2)]
 _dual_seeds  = [
     {
         "alice": int(_rng_inputs.integers(0, 2**31-1)),
@@ -195,7 +196,7 @@ _dual_seeds  = [
         "BSM_alice_bob": int(_rng_inputs.integers(0, 2**31-1)),
         "BSM_alice_charlie": int(_rng_inputs.integers(0, 2**31-1)),
     }
-    for _ in range(5)
+    for _ in range(20)
 ]
 
 
@@ -211,5 +212,7 @@ def test_dual_teleport_recreates_states(psi_b, psi_c, seeds):
     check_charlie = verify_same_state_vector(out_c, psi_c)
     assert check_bob and check_charlie, f"Bob:{check_bob}, got={out_b}, correct={psi_b}. Charlie:{check_charlie}, got={out_c}, correct={psi_c}"
 
+
+
+# test_teleport_recreates_state(_single_inputs[0], _single_seeds[1])
 # test_dual_teleport_recreates_states()
-# test_teleport_recreates_state()

@@ -1,4 +1,12 @@
 {
+    "templates": {
+        "teleportation": {
+            "MemoryArray": {
+                "fidelity": 1,
+                "efficiency": 0.7
+            }
+        }
+    },
     "nodes": [
         {
             "name": "alice",
@@ -6,7 +14,8 @@
             "seed": 0,
             "memo_size": 1,
             "data_memo_size": 1,
-            "group": 0
+            "group": 0,
+            "template": "teleportation"
         },
         {
             "name": "bob",
@@ -14,13 +23,15 @@
             "seed": 1,
             "memo_size": 1,
             "data_memo_size": 1,
-            "group": 0
+            "group": 0,
+            "template": "teleportation"
         },
         {
             "name": "BSM_alice_bob",
             "type": "BSMNode",
             "seed": 0,
-            "group": 0
+            "group": 0,
+            "template": "teleportation"
         }
     ],
     "qchannels": [
