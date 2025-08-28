@@ -55,7 +55,7 @@ class Timeline:
         show_progress (bool): show/hide the progress bar of simulation.
         quantum_manager (QuantumManager): quantum state manager.
     """
-    def __init__(self, stop_time: int = inf, formalism = KET_STATE_FORMALISM, truncation = 1):
+    def __init__(self, stop_time: int = inf, formalism: str = '', truncation = 1):
         """Constructor for timeline.
 
         Args:
@@ -71,7 +71,8 @@ class Timeline:
         self.run_counter: int = 0
         self.is_running: bool = False
         self.show_progress: bool = False
-        self.quantum_manager = QuantumFactory.create(formalism, truncation=truncation)
+        active_formalism = formalism if formalism != '' else QuantumFactory.get_active_formalism()
+        self.quantum_manager = QuantumFactory.create(active_formalism, truncation=truncation)
 
 
     def now(self) -> int:

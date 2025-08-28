@@ -31,7 +31,20 @@ BELL_DIAGONAL_STATE_FORMALISM = "bell_diagonal"
 
 
 class QuantumFactory:
-    _registry = {}
+    _registry: dict = {}
+    _global_formalism: str = None
+    _global_config: dict = {}
+
+    @classmethod
+    def set_global_manager_formalism(cls, formalism: str, **config):
+        if formalism not in cls._registry:
+            raise ValueError(f"Quantum manager '{formalism}' is not registered.")
+        cls._global_formalism = formalism
+        cls._global_config.update(config)
+
+    @classmethod
+    def get_active_formalism(cls):
+        return cls._global_formalism if cls._global_formalism is not None else KET_STATE_FORMALISM
 
     @classmethod
     def register(cls, name, manager_class):
@@ -46,9 +59,14 @@ class QuantumFactory:
 
     @classmethod
     def create(cls, name, *args, **kwargs):
-        if name not in cls._registry:
-            raise ValueError(f"Quantum manager '{name}' is not registered.")
-        return cls._registry[name](*args, **kwargs)
+        active_formalism = cls._global_formalism if cls._global_formalism else name
+
+        if active_formalism not in cls._registry:
+            raise ValueError(f"Quantum manager '{active_formalism}' is not registered.")
+
+        merged_kwargs = {**cls._global_config, **kwargs}
+        return cls._registry[active_formalism](*args, **merged_kwargs)
+
 
 
 class QuantumManager(ABC):
