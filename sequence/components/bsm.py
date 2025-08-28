@@ -21,7 +21,7 @@ from .photon import Photon
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
-from ..kernel.quantum_manager import KET_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM
+from ..constants import KET_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM
 from ..utils.encoding import *
 from ..utils import log
 
@@ -54,13 +54,13 @@ def _set_state_with_fidelity(keys: list[int], desired_state: list[complex], fide
                        BSM._psi_plus, BSM._psi_minus]
     assert desired_state in possible_states
 
-    if qm.formalism == KET_STATE_FORMALISM:
+    if qm.get_active_formalism() == KET_STATE_FORMALISM:
         probabilities = [(1 - fidelity) / 3] * 4
         probabilities[possible_states.index(desired_state)] = fidelity
         state_ind = rng.choice(4, p=probabilities)
         qm.set(keys, possible_states[state_ind])
 
-    elif qm.formalism == DENSITY_MATRIX_FORMALISM:
+    elif qm.get_active_formalism() == DENSITY_MATRIX_FORMALISM:
         multipliers = [(1 - fidelity) / 3] * 4
         multipliers[possible_states.index(desired_state)] = fidelity
         state = zeros((4, 4))
@@ -69,19 +69,19 @@ def _set_state_with_fidelity(keys: list[int], desired_state: list[complex], fide
         qm.set(keys, state)
 
     else:
-        raise Exception("Invalid quantum manager with formalism {}".format(qm.formalism))
+        raise Exception("Invalid quantum manager with formalism {}".format(qm.get_active_formalism()))
 
 
 def _set_pure_state(keys: list[int], ket_state: list[complex], qm: "QuantumManager"):
-    if qm.formalism == KET_STATE_FORMALISM:
+    if qm.get_active_formalism() == KET_STATE_FORMALISM:
         qm.set(keys, ket_state)
-    elif qm.formalism == DENSITY_MATRIX_FORMALISM:
+    elif qm.get_active_formalism() == DENSITY_MATRIX_FORMALISM:
         state = outer(ket_state, ket_state)
         qm.set(keys, state)
     else:
         raise NotImplementedError("formalism of quantum state {} is not "
                                   "implemented in the set_pure_quantum_state "
-                                  "function of bsm.py".format(qm.formalism))
+                                  "function of bsm.py".format(qm.get_active_formalism()))
 
 
 def _eq_psi_plus(state: "State", formalism: str):
@@ -487,7 +487,7 @@ class SingleAtomBSM(BSM):
                     # if we're in stage 2: check if the same detector is triggered
                     # twice to assign state to psi+ or psi-
                     log.logger.info(self.name + " passed stage 2")
-                    if _eq_psi_plus(state0, qm.formalism) ^ detector_num:
+                    if _eq_psi_plus(state0, qm.get_active_formalism()) ^ detector_num:
                         _set_state_with_fidelity(keys, BSM._psi_minus, p0.encoding_type["raw_fidelity"],
                                                  self.get_generator(), qm)
                     else:

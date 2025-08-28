@@ -21,7 +21,7 @@ class SingleHeraldedA(EntanglementGenerationA):
                  raw_fidelity: float = None, raw_epr_errors: List[float] = None):
         super().__init__(owner, name, middle, other, memory)
 
-        assert self.owner.timeline.quantum_manager.formalism == BELL_DIAGONAL_STATE_FORMALISM, \
+        assert self.owner.timeline.quantum_manager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, \
             "Single Heralded Entanglement generation protocol only supports Bell diagonal state formalism."
 
         if raw_fidelity:

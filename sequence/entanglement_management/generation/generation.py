@@ -89,6 +89,10 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
             raise ValueError(f"Protocol class '{protocol_name}' is not registered.")
 
     @classmethod
+    def clear_global(cls):
+        cls._global_type = 'single_atom'
+
+    @classmethod
     def list_protocols(cls) -> List[str]:
         """List all registered EntanglementGenerationA protocols."""
         return list(cls._registry.keys())

@@ -1,6 +1,6 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from enum import Enum, auto
-from typing import TYPE_CHECKING, List, Dict, Type
+from typing import TYPE_CHECKING, List, Dict, Type, Optional, Callable
 
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 from sequence.utils.log import logger
@@ -8,6 +8,7 @@ from ...message import Message
 
 if TYPE_CHECKING:
     from ...components.memory import Memory
+    from ...topology.node import Node
 
 
 class BBPSSWMsgType(Enum):
@@ -26,12 +27,9 @@ class BBPSSWMessage(Message):
         receiver (str): name of destination protocol instance.
     """
 
-    def __init__(self, msg_type: BBPSSWMsgType, receiver: str, **kwargs):
+    def __init__(self, msg_type: BBPSSWMsgType, receiver: str, meas_res: int, **kwargs):
         super().__init__(msg_type, receiver)
-        try:
-            self.meas_res = kwargs['meas_res']
-        except KeyError:
-            raise ValueError("Missing required argument 'meas_res' for BBPSSWMessage")
+        self.meas_res = meas_res
 
     def __str__(self):
         return f"\"BBPSSW: type={self.msg_type}, meas_res={self.meas_res}\""
@@ -73,22 +71,28 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
 
     @classmethod
     def set_formalism(cls, formalism: str) -> None:
+        """Set the global formalism used by BBPSSW protocols.
+
+        Valid Built-formalisms:
+            1. Bell Diagonal -> bds
+            2. Circuit -> circuit (DEFAULT)
+        """
         if formalism not in cls._registry:
             raise ValueError(f"Formalism '{formalism}' is not registered.")
         cls._global_formalism = formalism
 
     @classmethod
-    def register(cls, name: str, protocol_class: Type['BBPSSWProtocol'] = None):
+    def register(cls, name: str, protocol_class: Optional[Type['BBPSSWProtocol']] = None) -> Optional[Callable[[Type['BBPSSWProtocol']], Type['BBPSSWProtocol']]]:
         """Register a BBPSSW protocol class. Can be used as a decorator or as a normal function.
 
         Recommended Usage: Use a decorator to register a BBPSSW protocol class on the user side.
         Use as a direct call on the backend.
 
-        args:
+        Args:
             name (str): Name of the protocol to register.
             protocol_class (Type[BBPSSWProtocol], optional): The protocol class to register
 
-        returns:
+        Returns:
             If used as a decorator, returns the decorator function.
             If used as a direct call, returns None.
 
@@ -105,13 +109,18 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
                 ...
             BBPSSWProtocol.register('another_fancy_bbpssw', AnotherFancyBBPSSW)
         """
+        if name in cls._registry:
+            raise ValueError(f"'{name}' is already registered.")
+
         if protocol_class is not None:
             cls._registry[name] = protocol_class
             return None
 
-        def decorator(protocol_class: Type['BBPSSWProtocol']) -> Type['BBPSSWProtocol']:
-            cls._registry[name] = protocol_class
-            return protocol_class
+        def decorator(protocol_cls: Type['BBPSSWProtocol']) -> Type['BBPSSWProtocol']:
+            if name in cls._registry:
+                raise ValueError(f"'{name}' is already registered.")
+            cls._registry[name] = protocol_cls
+            return protocol_cls
 
         return decorator
 
@@ -120,14 +129,13 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
                **kwargs) -> 'BBPSSWProtocol':
         """Create an instance of a registered BBPSSW protocol.
 
-        args:
-            protocol_name (str): Name of the protocol to create.
+        Args:
             owner (Node): Node the protocol is attached to.
             name (str): Name of the protocol instance.
             kept_memo (Memory): Memory to keep and improve the fidelity.
             meas_memo (Memory): Memory to measure and discard.
 
-        returns:
+        Returns:
             An instance of the requested BBPSSW protocol class.
         """
         protocol_name: str = BBPSSWProtocol.get_formalism()
@@ -138,10 +146,13 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
             raise ValueError(f"Protocol class '{protocol_name}' is not registered.")
 
 
-    @classmethod
     def list_protocols(cls) -> List[str]:
         """List all registered BBPSSW protocols."""
         return list(cls._registry.keys())
+
+    def clear_global_formalism(cls) -> None:
+        """Resets the global formalism to default"""
+        cls._global_formalism = 'circuit'
 
     def is_ready(self) -> bool:
         """Check if the protocol is ready to start."""
@@ -159,6 +170,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         self.remote_protocol_name = protocol
         self.remote_memories = memories
 
+    @abstractmethod
     def start(self) -> None:
         """Method to start the entanglement purification protocol.
 
@@ -180,6 +192,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         assert self.meas_memo.fidelity > 0.5, \
             f'Fidelity of measurement memory is too low: {self.meas_memo.fidelity}.'
 
+    @abstractmethod
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:
         """Method to receive messages.
 
@@ -190,8 +203,8 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
          Side Effects:
             Will call `update_resource_manager` method.
          """
+        raise NotImplementedError
 
-        pass
 
     def memory_expire(self, memory: "Memory") -> None:
         """Method to receive memory expiration events.
@@ -210,6 +223,3 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         else:
             for memory in self.memories:
                 self.update_resource_manager(memory, 'RAW')
-
-    def release(self) -> None:
-        pass
