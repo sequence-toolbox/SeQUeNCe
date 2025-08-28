@@ -127,6 +127,7 @@ class QuantumGUI:
         # TODO: re-add simulation
         # self.simulation = GUI_Sim(0, 0, 'NOTSET', 'init', self)
         self.simulation = None
+        self.run_thread = None
         self.sim_params = None
 
         # nodes = list(self.data.edges.data())
@@ -1088,17 +1089,19 @@ class QuantumGUI:
                         self.simulation.init_logging()
                         self.simulation.random_request_simulation()
                         func = self.simulation.timeline.run
-                        run_thread = threading.Thread(
+                        self.run_thread = threading.Thread(
                             target=func,
                             name="run_simulation"
                         )
-                        run_thread.start()
-                        print('start')
+                        self.run_thread.start()
+                        print('simulation start')
+                        # self.simulation.timeline.run()
                         return [False, '00:00:00', '', '']
 
                     else:
                         self.simulation.timeline.stop()
-                        print('stop')
+                        self.run_thread.join()
+                        print('simulation stop')
                         return [True, '', '', '']
 
             elif input_id == 'running':
