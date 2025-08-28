@@ -247,7 +247,7 @@ class BSMNode(Node):
         self.add_component(bsm)
         self.set_first_component(bsm_name)
 
-        self.eg = EntanglementGenerationB.create(self.encoding_type, self, f'{name}_eg', other_nodes)
+        self.eg = EntanglementGenerationB.create(self, f'{name}_eg', other_nodes)
         bsm.attach(self.eg)
 
     def receive_message(self, src: str, msg: "Message") -> None:

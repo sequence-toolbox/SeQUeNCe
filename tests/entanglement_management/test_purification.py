@@ -93,9 +93,8 @@ def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline,
     meas2.entangled_memory = {'node_id': 'a1', 'memo_id': 'meas1'}
     kept1.fidelity = kept2.fidelity = meas1.fidelity = meas2.fidelity = fidelity
 
-    pur_type = BBPSSWProtocol.get_formalism()
-    ep1 = BBPSSWProtocol.create(pur_type, a1, "a1.ep1", kept1, meas1)
-    ep2 = BBPSSWProtocol.create(pur_type, a2, "a2.ep2", kept2, meas2)
+    ep1 = BBPSSWProtocol.create(a1, "a1.ep1", kept1, meas1)
+    ep2 = BBPSSWProtocol.create(a2, "a2.ep2", kept2, meas2)
     a1.protocols.append(ep1)
     a2.protocols.append(ep2)
     ep1.set_others(ep2.name, a2.name, [kept2.name, meas2.name])

@@ -7,7 +7,6 @@ from sequence.kernel.timeline import Timeline
 from sequence.entanglement_management.generation.generation import (EntanglementGenerationA,
                                                                     EntanglementGenerationB)
 from sequence.entanglement_management.generation.generation_message import EntanglementGenerationMessage, GenerationMsgType
-from sequence.entanglement_management.generation.BarretKok import BarretKokA, BarretKokB
 
 from sequence.topology.node import Node
 
@@ -65,8 +64,7 @@ def test_generation_receive_message():
     node.memory_array = MemoryArray("memory", tl)
     node.assign_cchannel(ClassicalChannel("cc", tl, 0, delay=1), "m1")
 
-    gen_type = EntanglementGenerationA.get_global_type()
-    eg = EntanglementGenerationA.create(gen_type, node, "EG", middle="m1", other="e2", memory=node.memory_array[0])
+    eg = EntanglementGenerationA.create(node, "EG", middle="m1", other="e2", memory=node.memory_array[0])
     eg.qc_delay = 1
 
     # negotiate message
@@ -94,8 +92,7 @@ def test_generation_pop():
 
     m0 = DumbNode()
 
-    gen_type = EntanglementGenerationB.get_global_type()
-    middle = EntanglementGenerationB.create(gen_type, m0, "middle", others=["e0", "e1"])
+    middle = EntanglementGenerationB.create(m0, "middle", others=["e0", "e1"])
 
     # BSM result
     middle.bsm_update(m0.bsm, {'info_type': "BSM_res", 'res': 0, 'time': 100})
@@ -138,9 +135,8 @@ def test_generation_expire():
 
     tl.init()
 
-    gen_type = EntanglementGenerationA.get_global_type()
-    protocol0 = EntanglementGenerationA.create(gen_type, e0, "e0prot", middle="m0", other="e1", memory=e0.memory_array[0])
-    protocol1 = EntanglementGenerationA.create(gen_type, e1, "e1prot", middle="m0", other="e0", memory=e1.memory_array[0])
+    protocol0 = EntanglementGenerationA.create(e0, "e0prot", middle="m0", other="e1", memory=e0.memory_array[0])
+    protocol1 = EntanglementGenerationA.create(e1, "e1prot", middle="m0", other="e0", memory=e1.memory_array[0])
     e0.protocols.append(protocol0)
     e1.protocols.append(protocol1)
     protocol0.set_others(protocol1.name, e1.name, [e1.memory_array[0].name])
@@ -191,8 +187,7 @@ def test_generation_run():
     m0.bsm.owner = m0
 
     # add middle protocol
-    gen_type = EntanglementGenerationB.get_global_type()
-    eg_m0 = EntanglementGenerationB.create(gen_type, m0, "eg_m0", others=["e0", "e1"])
+    eg_m0 = EntanglementGenerationB.create(m0, "eg_m0", others=["e0", "e1"])
     m0.bsm.attach(eg_m0)
 
     tl.init()
@@ -202,11 +197,10 @@ def test_generation_run():
 
     for i in range(NUM_TESTS):
         name0, name1 = [f"eg_e{j}[{i}]" for j in range(2)]
-        gen_type = EntanglementGenerationA.get_global_type()
-        protocol0 = EntanglementGenerationA.create(gen_type, e0, name0, middle="m0", other="e1", memory=e0.memory_array[i])
+        protocol0 = EntanglementGenerationA.create(e0, name0, middle="m0", other="e1", memory=e0.memory_array[i])
         e0.protocols.append(protocol0)
         protocols_e0.append(protocol0)
-        protocol1 = EntanglementGenerationA.create(gen_type, e1, name1, middle="m0", other="e0", memory=e1.memory_array[i])
+        protocol1 = EntanglementGenerationA.create(e1, name1, middle="m0", other="e0", memory=e1.memory_array[i])
         e1.protocols.append(protocol1)
         protocols_e1.append(protocol1)
         protocol0.set_others(protocol1.name, e1.name, [e1.memory_array[i].name])
@@ -274,8 +268,7 @@ def test_generation_fidelity_ket():
     m0.bsm.owner = m0
 
     # add middle protocol
-    gen_type = EntanglementGenerationB.get_global_type()
-    eg_m0 = EntanglementGenerationB.create(gen_type, m0, "eg_m0", others=["e0", "e1"])
+    eg_m0 = EntanglementGenerationB.create(m0, "eg_m0", others=["e0", "e1"])
     m0.bsm.attach(eg_m0)
 
     tl.init()
@@ -286,11 +279,10 @@ def test_generation_fidelity_ket():
     for i in range(NUM_TESTS):
         name0 = "eg_e0[{}]".format(i)
         name1 = "eg_e1[{}]".format(i)
-        gen_type = EntanglementGenerationA.get_global_type()
-        protocol0 = EntanglementGenerationA.create(gen_type, e0, name0, middle="m0", other="e1", memory=e0.memory_array[i])
+        protocol0 = EntanglementGenerationA.create(e0, name0, middle="m0", other="e1", memory=e0.memory_array[i])
         e0.protocols.append(protocol0)
         protocols_e0.append(protocol0)
-        protocol1 = EntanglementGenerationA.create(gen_type, e1, name1, middle="m0", other="e0", memory=e1.memory_array[i])
+        protocol1 = EntanglementGenerationA.create(e1, name1, middle="m0", other="e0", memory=e1.memory_array[i])
         e1.protocols.append(protocol1)
         protocols_e1.append(protocol1)
         protocol0.set_others(protocol1.name, e1.name, [e1.memory_array[i].name])

@@ -27,7 +27,7 @@ class QuantumCircuitMixin:
 
 class EntanglementGenerationA(EntanglementProtocol, ABC):
     _registry: Dict[str, Type['EntanglementGenerationA']] = {}
-    _global_type: str = None
+    _global_type: str = 'single_atom'
 
     def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs):
         super().__init__(owner, name)
@@ -64,7 +64,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
 
     @classmethod
     def get_global_type(cls) -> str:
-        return cls._global_type if cls._global_type is not None else 'single_atom'
+        return cls._global_type
 
     @classmethod
     def register(cls, name: str, protocol_class: Type['EntanglementGenerationA'] = None):
@@ -79,8 +79,9 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         return decorator
 
     @classmethod
-    def create(cls, protocol_name: str, owner: "Node", name: str, middle: str, other: str, memory: "Memory",
+    def create(cls, owner: "Node", name: str, middle: str, other: str, memory: "Memory",
                **kwargs) -> 'EntanglementGenerationA':
+        protocol_name = cls.get_global_type()
         try:
             protocol_class = cls._registry[protocol_name]
             return protocol_class(owner, name, middle, other, memory, **kwargs)
@@ -162,7 +163,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
 
 class EntanglementGenerationB(EntanglementProtocol, ABC):
     _registry: Dict[str, Type['EntanglementGenerationB']] = {}
-    _global_type: str = None
+    _global_type: str = 'single_atom'
 
     def __init__(self, owner: "BSMNode", name: str, others: List[str], **kwargs) -> None:
         super().__init__(owner, name)
@@ -177,7 +178,7 @@ class EntanglementGenerationB(EntanglementProtocol, ABC):
 
     @classmethod
     def get_global_type(cls) -> str:
-        return cls._global_type if cls._global_type is not None else 'single_atom'
+        return cls._global_type
 
     @classmethod
     def register(cls, name: str, protocol_class: Type['EntanglementGenerationB'] = None):
@@ -192,7 +193,8 @@ class EntanglementGenerationB(EntanglementProtocol, ABC):
         return decorator
 
     @classmethod
-    def create(cls, protocol_name: str, owner: "Node", name: str, others, **kwargs) -> 'EntanglementGenerationB':
+    def create(cls, owner: "BSMNode", name: str, others, **kwargs) -> 'EntanglementGenerationB':
+        protocol_name: str = cls.get_global_type()
         try:
             protocol_class = cls._registry[protocol_name]
             return protocol_class(owner, name, others, **kwargs)
