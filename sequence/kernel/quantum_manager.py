@@ -9,6 +9,7 @@ The manager defines an API for interacting with quantum states.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from threading import activeCount
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -42,7 +43,7 @@ class QuantumManager(ABC):
         dim (int): subsystem Hilbert space dimension. dim = truncation + 1
     """
     _registry: dict = {}
-    _global_formalism: str = None
+    _global_formalism: str = KET_STATE_FORMALISM
 
     def __init__(self, formalism: str, truncation: int = 1):
         self.states: dict[int, State] = {}
@@ -59,7 +60,11 @@ class QuantumManager(ABC):
 
     @classmethod
     def get_active_formalism(cls):
-        return cls._global_formalism if cls._global_formalism is not None else KET_STATE_FORMALISM
+        return cls._global_formalism
+
+    @classmethod
+    def clear_active_formalism(cls):
+        cls._global_formalism = KET_STATE_FORMALISM
 
     @classmethod
     def register(cls, name: str, manager_class=None):
@@ -74,9 +79,8 @@ class QuantumManager(ABC):
         return decorator
 
     @classmethod
-    def create(cls, name, *args, **kwargs):
-        active_formalism = cls._global_formalism if cls._global_formalism else name
-
+    def create(cls, *args, **kwargs):
+        active_formalism = cls.get_active_formalism()
         if active_formalism not in cls._registry:
             raise ValueError(f"Quantum manager '{active_formalism}' is not registered.")
 

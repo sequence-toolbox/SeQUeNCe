@@ -71,9 +71,11 @@ class Timeline:
         self.run_counter: int = 0
         self.is_running: bool = False
         self.show_progress: bool = False
-        active_formalism = formalism if formalism != '' else QuantumManager.get_active_formalism()
-        self.quantum_manager = QuantumManager.create(active_formalism, truncation=truncation)
 
+        if formalism:
+            raise NotImplementedError('Please use the QuantumManager.set_global_manager_formalism method instead.')
+
+        self.quantum_manager = QuantumManager.create(truncation=truncation)
 
     def now(self) -> int:
         """Returns current simulation time."""
