@@ -1,71 +1,82 @@
 {
+    "templates": {
+        "teleportation": {
+            "MemoryArray": {
+                "fidelity": 1,
+                "efficiency": 0.7
+            }
+        }
+    },
     "nodes": [
         {
-            "name": "router_0",
-            "type": "QuantumNode",
+            "name": "alice",
+            "type": "DQCNode",
             "seed": 0,
             "memo_size": 1,
             "data_memo_size": 1,
-            "group": 0
+            "group": 0,
+            "template": "teleportation"
         },
         {
-            "name": "router_1",
-            "type": "QuantumNode",
+            "name": "bob",
+            "type": "DQCNode",
             "seed": 1,
             "memo_size": 1,
             "data_memo_size": 1,
-            "group": 0
+            "group": 0,
+            "template": "teleportation"
         },
         {
-            "name": "BSM_router_0_router_1",
+            "name": "BSM_alice_bob",
             "type": "BSMNode",
             "seed": 0,
-            "group": 0
+            "group": 0,
+            "template": "teleportation"
         }
     ],
     "qchannels": [
         {
-            "source": "router_0",
-            "destination": "BSM_router_0_router_1",
+            "source": "alice",
+            "destination": "BSM_alice_bob",
             "distance": 500.0,
             "attenuation": 0.0002
         },
         {
-            "source": "router_1",
-            "destination": "BSM_router_0_router_1",
+            "source": "bob",
+            "destination": "BSM_alice_bob",
             "distance": 500.0,
             "attenuation": 0.0002
         }
     ],
     "cchannels": [
         {
-            "source": "router_0",
-            "destination": "BSM_router_0_router_1",
+            "source": "alice",
+            "destination": "BSM_alice_bob",
             "delay": 500000000
         },
         {
-            "source": "router_1",
-            "destination": "BSM_router_0_router_1",
+            "source": "bob",
+            "destination": "BSM_alice_bob",
             "delay": 500000000
         },
         {
-            "source": "BSM_router_0_router_1",
-            "destination": "router_0",
+            "source": "BSM_alice_bob",
+            "destination": "alice",
             "delay": 500000000
         },
         {
-            "source": "BSM_router_0_router_1",
-            "destination": "router_1",
+            "source": "BSM_alice_bob",
+            "destination": "bob",
             "delay": 500000000
         },
         {
-            "source": "router_0",
-            "destination": "router_1",
+            "source": "alice",
+            "destination": "bob",
             "delay": 500000000
         },
         {
-            "source": "router_1",
-            "destination": "router_0",
+            "source": "bob",
+            "destination": "alice",
             "delay": 500000000
         }
     ],

@@ -31,14 +31,32 @@ BELL_DIAGONAL_STATE_FORMALISM = "bell_diagonal"
 
 
 class QuantumFactory:
-    _registry = {}
+    """Factory class to create quantum manager instances.
+    """
+    _registry = {}  # registry of quantum manager classes
 
     @classmethod
     def register(cls, name, manager_class):
+        """Register a new quantum manager class.
+        
+        Args:
+            name (str): Name of the quantum manager.
+            manager_class (type): Class of the quantum manager.
+        """
         cls._registry[name] = manager_class
 
     @classmethod
     def create(cls, name, *args, **kwargs):
+        """Create a new quantum manager instance.
+
+        Args:
+            name (str): Name of the quantum manager.
+            *args: Positional arguments to pass to the manager class constructor.
+            **kwargs: Keyword arguments to pass to the manager class constructor.
+
+        Returns:
+            QuantumManager: A new instance of the specified quantum manager.
+        """
         if name not in cls._registry:
             raise ValueError(f"Quantum manager '{name}' is not registered.")
         return cls._registry[name](*args, **kwargs)

@@ -12,24 +12,25 @@ from sequence.topology.node import DQCNode
 
 def test_QuantumNode_init_sets_data_memory():
     tl = Timeline()
-    qn = DQCNode("qn1", tl, data_size=4, memo_size=2)
+    qn = DQCNode("qn1", tl, data_memo_size=4, memo_size=2)
 
-    assert "data_mem" in qn.components
-    dm = qn.components["data_mem"]
-    assert isinstance(dm, MemoryArray)
-    assert dm.name == "qn1_data"
+    data_memory_arr_name = qn.data_memo_arr_name
 
-    if hasattr(dm, "memories"):
-        assert len(dm.memories) == 4
-    elif hasattr(dm, "size"):
-        assert dm.size == 4
+    assert data_memory_arr_name in qn.components
+    data_memory_arr = qn.components[data_memory_arr_name]
+    assert isinstance(data_memory_arr, MemoryArray)
+
+    if hasattr(data_memory_arr, "memories"):
+        assert len(data_memory_arr.memories) == 4
+    elif hasattr(data_memory_arr, "size"):
+        assert data_memory_arr.size == 4
     else:
-        pytest.skip("MemoryArray does not expose size; cannot assert data_size.")
+        pytest.skip("MemoryArray does not expose size; cannot assert data_memo_size.")
 
 
 def test_QuantumNode_assign_cchannel():
     tl = Timeline()
-    qn = DQCNode("qn1", tl, data_size=1)
+    qn = DQCNode("qn1", tl, data_memo_size=1)
     cc = ClassicalChannel("cc", tl, 1e3)
     qn.assign_cchannel(cc, "qn2")
     assert "qn2" in qn.cchannels and qn.cchannels["qn2"] == cc
@@ -37,7 +38,7 @@ def test_QuantumNode_assign_cchannel():
 
 def test_QuantumNode_assign_qchannel():
     tl = Timeline()
-    qn = DQCNode("qn1", tl, data_size=1)
+    qn = DQCNode("qn1", tl, data_memo_size=1)
     qc = QuantumChannel("qc", tl, 2e-4, 1e3)
     qn.assign_qchannel(qc, "qn2")
     assert "qn2" in qn.qchannels and qn.qchannels["qn2"] == qc
@@ -46,7 +47,7 @@ def test_QuantumNode_assign_qchannel():
 def test_QuantumNode_send_message_like_Node():
     class FakeQNode(DQCNode):
         def __init__(self, name, tl):
-            super().__init__(name, tl, data_size=1, memo_size=1)
+            super().__init__(name, tl, data_memo_size=1, memo_size=1)
             self.log = []
 
         def receive_message(self, src, msg):
@@ -90,7 +91,7 @@ def test_QuantumNode_send_qubit_like_Node():
 
     class FakeQNode(DQCNode):
         def __init__(self, name, tl):
-            super().__init__(name, tl, data_size=1, memo_size=1)
+            super().__init__(name, tl, data_memo_size=1, memo_size=1)
             self.log = []
 
         def receive_qubit(self, src, qubit):
@@ -127,7 +128,7 @@ def test_QuantumNode_send_qubit_like_Node():
 
 # ---- Dispatch behavior specific to QuantumNode.receive_message ----
 
-class _Sink:
+class Sink:
     def __init__(self):
         self.calls = []
 
@@ -142,13 +143,13 @@ def test_QuantumNode_receive_message_dispatch_to_apps_and_managers():
             self.protocol_type = None
 
     tl = Timeline()
-    qn = DQCNode("qn", tl, data_size=1, memo_size=1)
+    qn = DQCNode("qn", tl, data_memo_size=1, memo_size=1)
 
-    nm = _Sink()
-    rm = _Sink()
-    ta = _Sink()  # teleport_app
-    tda = _Sink()  # teledata_app
-    tga = _Sink()  # telegate_app
+    nm = Sink()
+    rm = Sink()
+    ta = Sink()  # teleport_app
+    tda = Sink()  # teledata_app
+    tga = Sink()  # telegate_app
 
     qn.network_manager = nm
     qn.resource_manager = rm
@@ -184,7 +185,7 @@ def test_QuantumNode_receive_message_dispatch_to_named_protocol():
             self.calls.append((src, msg))
 
     tl = Timeline()
-    qn = DQCNode("qn", tl, data_size=1, memo_size=1)
+    qn = DQCNode("qn", tl, data_memo_size=1, memo_size=1)
 
     p = ProtoA("protoA")
     qn.protocols.append(p)
@@ -217,7 +218,7 @@ def test_QuantumNode_receive_message_dispatch_by_protocol_type_when_receiver_Non
             self.calls.append((src, msg))
 
     tl = Timeline()
-    qn = DQCNode("qn", tl, data_size=1, memo_size=1)
+    qn = DQCNode("qn", tl, data_memo_size=1, memo_size=1)
 
     pA = ProtoTypeA()
     pB = ProtoTypeB()
@@ -228,3 +229,4 @@ def test_QuantumNode_receive_message_dispatch_by_protocol_type_when_receiver_Non
 
     assert len(pA.calls) == 1 and pA.calls[0][0] == "peer"
     assert len(pB.calls) == 0
+

@@ -6,9 +6,11 @@ These should not be used directly, but accessed by a QuantumManager instance or 
 
 from functools import lru_cache
 from math import sqrt
-
+import random
+import math
 from numpy import array, kron, identity, zeros, trace, outer, eye
 from scipy.linalg import sqrtm
+from ..constants import EPSILON
 
 
 a = array([[0, 1], [0, 0]])
@@ -32,9 +34,8 @@ def measure_state_with_cache(state: tuple[complex, complex], basis: tuple[tuple[
 
 
 @lru_cache(maxsize=1000)
-def measure_entangled_state_with_cache(state: tuple[complex], basis: tuple[tuple[complex]], state_index: int,
-                                       num_states: int) -> \
-        tuple[array, array, float]:
+def measure_entangled_state_with_cache(state: tuple[complex], basis: tuple[tuple[complex]], state_index: int, num_states: int) \
+        -> tuple[array, array, float]:
 
     state = array(state)
     u = array(basis[0], dtype=complex)
@@ -413,3 +414,50 @@ def density_partial_trace(state: tuple[tuple[complex]], indices: tuple[int], num
     output_dim = (truncation + 1) ** (num_systems - len(indices))
     output_state = temp.reshape((output_dim, output_dim))
     return output_state
+
+
+def random_state() -> list:
+    """Generate a random pure state vector for a single qubit.
+    
+    The function returns a list of two elements representing the amplitudes of the quantum state
+    in the computational basis [|0>, |1>]. The first element is a real number (float) corresponding
+    to the amplitude of |0>, and the second element is a complex number corresponding to the amplitude of |1>.
+    Returns:
+        list: [float, complex] -- A list containing the amplitudes of the random qubit state.
+    """
+    u = random.random()
+    θ = 2 * math.acos(math.sqrt(u))
+    φ = 2 * math.pi * random.random()
+    return [math.cos(θ / 2), complex(math.sin(θ / 2) * math.cos(φ), math.sin(θ / 2) * math.sin(φ))]
+
+
+def verify_same_state_vector(state1: list, state2: list) -> bool:
+    """Verify if two quantum state vectors are the same.
+       Note that two state vectors are the same regardless of the global phase
+
+    Args:
+        state1 (list): The first quantum state vector.
+        state2 (list): The second quantum state vector.
+    
+    Returns:
+        bool: True if the state vectors are the same, False otherwise.
+    """
+    if len(state1) != len(state2):    # Length check
+        return False
+
+    global_phase = None               # Find the first non-zero element in state1/state2 to estimate the global phase
+    for a, b in zip(state1, state2):
+        if abs(a) > EPSILON and abs(b) > EPSILON:
+            global_phase = b / a
+            break
+
+    if global_phase is None:
+        return False
+
+    global_phase /= abs(global_phase) # Normalize phase to have unit magnitude (global phase must be on the unit circle)
+
+    for a, b in zip(state1, state2):  # Check if all elements match up to this global phase
+        if abs(b - global_phase * a) > EPSILON:
+            return False
+
+    return True
