@@ -17,7 +17,7 @@ from ...kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
 from ...utils import log
 from .bbpssw_protocol import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType
 
-
+@BBPSSWProtocol.register('bds')
 class BBPSSW_BDS(BBPSSWProtocol):
     """Purification protocol instance.
 
@@ -240,7 +240,3 @@ class BBPSSW_BDS(BBPSSWProtocol):
             f"{self.name}, before: f = {kept_elem_1:.6f}, {meas_elem_1:.6f}; after: f = {bds_elems[0]:.6f}")
 
         return p_succ, bds_elems
-
-
-# Register BBPSSW protocol with BDS formalism to the factory
-BBPSSWProtocol.register('bds', BBPSSW_BDS)

@@ -39,6 +39,7 @@ class BBPSSWMessage(Message):
 
 class BBPSSWProtocol(EntanglementProtocol, ABC):
     _registry: Dict[str, Type['BBPSSWProtocol']] = {}
+    _global_formalism: str = None
 
     def __init__(self, owner: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory", **kwargs):
         """Constructor for purification protocol.
@@ -60,6 +61,21 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         self.meas_res = None
         if self.meas_memo is None:
             self.memories.pop()
+
+    @classmethod
+    def get_formalism(cls) -> str:
+        """Get the global formalism used by BBPSSW protocols.
+
+        Returns:
+            The global formalism used by BBPSSW protocols.
+        """
+        return cls._global_formalism if cls._global_formalism is not None else 'circuit'
+
+    @classmethod
+    def set_formalism(cls, formalism: str) -> None:
+        if formalism not in cls._registry:
+            raise ValueError(f"Formalism '{formalism}' is not registered.")
+        cls._global_formalism = formalism
 
     @classmethod
     def register(cls, name: str, protocol_class: Type['BBPSSWProtocol'] = None):

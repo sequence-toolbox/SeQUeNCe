@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 from ...utils import log
 from .bbpssw_protocol import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType
 
-
+@BBPSSWProtocol.register('circuit')
 class BBPSSWCircuit(BBPSSWProtocol):
     """Purification protocol instance.
 
@@ -130,6 +130,3 @@ class BBPSSWCircuit(BBPSSWProtocol):
         """
 
         return (f ** 2 + ((1 - f) / 3) ** 2) / (f ** 2 + 2 * f * (1 - f) / 3 + 5 * ((1 - f) / 3) ** 2)
-
-
-BBPSSWProtocol.register('circuit', BBPSSWCircuit)
