@@ -6,7 +6,8 @@ Topology instances automatically perform many useful network functions.
 """
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Any
+import json
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -51,25 +52,30 @@ class Topology(ABC):
     MEASUREMENT_FIDELITY = "measurement_fidelity"
 
     
-    def __init__(self, conf_file_name: str):
+    def __init__(self, config: [str, dict[str, Any]]):
         """Constructor for topology class.
 
         Args:
-            conf_file_name (str): the name of configuration file
+            config (str, dict): if str, interpreted as name of JSON configuration file.
+                if dict, interpreted as already loaded configuration dictionary.
         """
         self.nodes: dict[str, list[Node]] = defaultdict(list)
         self.qchannels: list[QuantumChannel] = []
         self.cchannels: list[ClassicalChannel] = []
         self.templates: dict[str, dict] = {}
         self.tl: Optional[Timeline] = None
-        self._load(conf_file_name)
+
+        if type(config) is str:
+            with open(config, "r") as f:
+                config = json.load(f)
+        self._load(config)
 
     @abstractmethod
-    def _load(self, filename: str):
-        """Method for parsing configuration file and generate network
+    def _load(self, config: dict[str, Any]) -> None:
+        """Method for parsing configuration and generating network
 
         Args:
-            filename (str): the name of configuration file
+            config (dict): configuration dictionary
         """
         pass
 

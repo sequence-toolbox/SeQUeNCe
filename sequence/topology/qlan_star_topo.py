@@ -1,5 +1,5 @@
-import json
 import numpy as np
+from typing import Any
 
 from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
@@ -62,10 +62,7 @@ class QlanStarTopo(Topo):
         super().__init__(conf_file_name)
 
 
-    def _load(self, filename: str):
-        with open(filename, 'r') as fh:
-            config = json.load(fh)
-
+    def _load(self, config: dict[str, Any]):
         self._get_templates(config)
         self._add_parameters(config)
 

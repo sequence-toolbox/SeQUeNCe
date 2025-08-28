@@ -1,6 +1,6 @@
-import json
 import numpy as np
 from networkx import Graph, dijkstra_path, exception
+from typing import Any
 
 from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
@@ -46,10 +46,7 @@ class QuantumNodeNetTopo(Topo):
         self.encoding_type = None
         super().__init__(conf_file_name)
 
-    def _load(self, filename: str):
-        with open(filename, 'r') as fh:
-            config = json.load(fh)
-
+    def _load(self, config: dict[str, Any]):
         self._get_templates(config)
         # quantum connections are only supported by sequential simulation so far
         if not config[self.IS_PARALLEL]:
