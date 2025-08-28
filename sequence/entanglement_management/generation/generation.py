@@ -9,12 +9,12 @@ from ...resource_management.memory_manager import MemoryInfo
 
 if TYPE_CHECKING:
     from ...components.memory import Memory
-    from ...topology import Node
-    from sequence.topology.node import BSMNode
+    from ...topology import Node, BSMNode
 
 from ..entanglement_protocol import EntanglementProtocol
 from ...components.circuit import Circuit
 from ...utils import log
+
 
 class QuantumCircuitMixin:
     _plus_state = [sqrt(1 / 2), sqrt(1 / 2)]
@@ -23,8 +23,10 @@ class QuantumCircuitMixin:
     _z_circuit = Circuit(1)
     _z_circuit.z(0)
 
+
 class EntanglementGenerationA(EntanglementProtocol, ABC):
     _registry: Dict[str, Type['EntanglementGenerationA']] = {}
+    _global_type: str = None
 
     def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs):
         super().__init__(owner, name)
@@ -53,6 +55,15 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         self.debug: bool = False
         self._qstate_key: int = self.memory.qstate_key
 
+    @classmethod
+    def set_global_type(cls, protocol_type: str) -> None:
+        if protocol_type not in cls._registry:
+            raise ValueError(f"Protocol type '{protocol_type}' is not registered.")
+        cls._global_type = protocol_type
+
+    @classmethod
+    def get_global_type(cls) -> str:
+        return cls._global_type if cls._global_type is not None else 'BarretKokA'
 
     @classmethod
     def register(cls, name: str, protocol_class: Type['EntanglementGenerationA'] = None):
@@ -63,10 +74,12 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         def decorator(protocol_class: Type['EntanglementGenerationA']):
             cls._registry[name] = protocol_class
             return protocol_class
+
         return decorator
 
     @classmethod
-    def create(cls, protocol_name: str, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs) -> 'EntanglementGenerationA':
+    def create(cls, protocol_name: str, owner: "Node", name: str, middle: str, other: str, memory: "Memory",
+               **kwargs) -> 'EntanglementGenerationA':
         try:
             protocol_class = cls._registry[protocol_name]
             return protocol_class(owner, name, middle, other, memory, **kwargs)
@@ -114,7 +127,6 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         """Update memory state. Must be implemented in a subclass"""
         raise NotImplementedError
 
-
     def emit_event(self) -> None:
         """Must be implemented in a subclass"""
         raise NotImplementedError
@@ -149,12 +161,22 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
 
 class EntanglementGenerationB(EntanglementProtocol, ABC):
     _registry: Dict[str, Type['EntanglementGenerationB']] = {}
+    _global_type: str = None
 
     def __init__(self, owner: "BSMNode", name: str, others: List[str], **kwargs) -> None:
         super().__init__(owner, name)
         assert len(others) == 2
         self.others = others
 
+    @classmethod
+    def set_global_type(cls, protocol_type: str) -> None:
+        if protocol_type not in cls._registry:
+            raise ValueError(f"Protocol type '{protocol_type}' is not registered.")
+        cls._global_type = protocol_type
+
+    @classmethod
+    def get_global_type(cls) -> str:
+        return cls._global_type if cls._global_type is not None else 'BarretKokB'
 
     @classmethod
     def register(cls, name: str, protocol_class: Type['EntanglementGenerationB'] = None):
@@ -165,6 +187,7 @@ class EntanglementGenerationB(EntanglementProtocol, ABC):
         def decorator(protocol_class: Type['EntanglementGenerationB']):
             cls._registry[name] = protocol_class
             return protocol_class
+
         return decorator
 
     @classmethod

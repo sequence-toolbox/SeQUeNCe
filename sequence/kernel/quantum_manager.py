@@ -43,7 +43,6 @@ class QuantumManager(ABC):
     """
     _registry: dict = {}
     _global_formalism: str = None
-    _global_config: dict = {}
 
     def __init__(self, formalism: str, truncation: int = 1):
         self.states: dict[int, State] = {}
@@ -53,11 +52,10 @@ class QuantumManager(ABC):
         self.dim = self.truncation + 1
 
     @classmethod
-    def set_global_manager_formalism(cls, formalism: str, **config):
+    def set_global_manager_formalism(cls, formalism: str):
         if formalism not in cls._registry:
             raise ValueError(f"Quantum manager '{formalism}' is not registered.")
         cls._global_formalism = formalism
-        cls._global_config.update(config)
 
     @classmethod
     def get_active_formalism(cls):
@@ -82,8 +80,7 @@ class QuantumManager(ABC):
         if active_formalism not in cls._registry:
             raise ValueError(f"Quantum manager '{active_formalism}' is not registered.")
 
-        merged_kwargs = {**cls._global_config, **kwargs}
-        return cls._registry[active_formalism](*args, **merged_kwargs)
+        return cls._registry[active_formalism](*args, **kwargs)
 
 
     @abstractmethod

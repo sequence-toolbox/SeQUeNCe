@@ -20,7 +20,7 @@ from ...kernel.event import Event
 from ...kernel.process import Process
 from ...utils import log
 
-
+@EntanglementGenerationA.register('BarretKokA')
 class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
     """Entanglement generation protocol for quantum router.
 
@@ -228,7 +228,7 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
         self.memory.fidelity = self.memory.raw_fidelity
         self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
 
-
+@EntanglementGenerationB.register('BarretKokB')
 class BarretKokB(EntanglementGenerationB):
     """Entanglement generation protocol for BSM node.
 
@@ -268,5 +268,3 @@ class BarretKokB(EntanglementGenerationB):
                                                     resolution=resolution)
             self.owner.send_message(node, message)
 
-EntanglementGenerationA.register('BarretKokA', BarretKokA)
-EntanglementGenerationB.register('BarretKokB', BarretKokB)
