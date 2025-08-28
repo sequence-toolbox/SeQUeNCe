@@ -19,7 +19,7 @@ from collections import OrderedDict
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 
-from .simulator_bindings import GUI_Sim
+from .simulator_bindings import GuiSimulator
 from .menus import *
 from .graph_comp import GraphNode
 from .layout import get_app_layout
@@ -126,6 +126,7 @@ class QuantumGUI:
 
         # TODO: re-add simulation
         # self.simulation = GUI_Sim(0, 0, 'NOTSET', 'init', self)
+        self.simulation = None
         self.sim_params = None
 
         # nodes = list(self.data.edges.data())
@@ -416,10 +417,11 @@ class QuantumGUI:
                 a string identifier for the source of the edge (must exist)
             node_to (str):
                 a string identifier for the destination of the edge (must exist)
-            attributes (list):
+            attributes (dict):
                 a list of attributes of the given edge
                 (must be json serializable)
         """
+        print(attributes)
 
         # Check if input was given, if not, silently do nothing
         if (node_from is None) or (node_to is None):
@@ -1070,31 +1072,35 @@ class QuantumGUI:
             input_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
             if input_id == 'run_sim':
+
                 if time_to_run is None or units is None or sim_name is None:
                     return [dash.no_update, '', '', '']
+
                 else:
-                    if not self.simulation.timeline.is_running:
-                        self.simulation = GUI_Sim(
+                    if not self.simulation:
+                        self.simulation = GuiSimulator(
                             int(time_to_run),
                             int(units),
                             logging,
                             sim_name,
-                            self
+                            self.graph_to_topology()
                         )
                         self.simulation.init_logging()
                         self.simulation.random_request_simulation()
                         func = self.simulation.timeline.run
-                        toRun = threading.Thread(
+                        run_thread = threading.Thread(
                             target=func,
                             name="run_simulation"
                         )
-                        toRun.start()
+                        run_thread.start()
                         print('start')
                         return [False, '00:00:00', '', '']
+
                     else:
                         self.simulation.timeline.stop()
                         print('stop')
                         return [True, '', '', '']
+
             elif input_id == 'running':
                 if self.simulation.timeline.is_running:
                     h, m, s = runtime.split(':')
@@ -1111,6 +1117,7 @@ class QuantumGUI:
                     new_simtime = self.simulation.getSimTime()
 
                     return [dash.no_update, new_runtime, new_simtime, '']
+
                 else:
                     self.simulation.write_to_file()
                     sim_results = self.simulation.sim_name + '_results.txt'
@@ -1118,7 +1125,10 @@ class QuantumGUI:
                     with open(DIRECTORY + '/'+sim_results, 'r') as outfile:
                         sim_results = outfile.read()
                     outfile.close()
+
+                    self.simulation = None
                     return [True, dash.no_update, dash.no_update, sim_results]
+
             else:
                 return [True, '', '', '']
 

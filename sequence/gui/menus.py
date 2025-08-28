@@ -45,10 +45,10 @@ OPTIONS_NODE = [
         'label': 'BSM Node',
         'value': 'BSMNode'
     },
-    {
-        'label': 'QKD Node',
-        'value': 'QKDNode'
-    }
+    # {
+    #     'label': 'QKD Node',
+    #     'value': 'QKDNode'
+    # }
 ]
 
 OPTIONS_TEMPLATE = [

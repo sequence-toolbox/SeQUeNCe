@@ -24,7 +24,7 @@
             "coherence_time": 1300000000000.0,
             "efficiency": 0.75,
             "frequency": 2000.0,
-            "raw_fidelity": 0.85
+            "fidelity": 0.85
         }
     },
     "PhotonSource": {},
