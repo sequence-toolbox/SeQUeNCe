@@ -127,17 +127,28 @@ class GuiSimulator:
 
     def random_request_simulation(self):
         # construct random request applications
+        nodes = self.topology.get_nodes_by_type("QuantumRouter")
         node_names = []
-        for node in self.topology.get_nodes_by_type("QuantumRouter"):
+        for node in nodes:
             node_names.append(node.name)
         apps_new = []
-        for i, name in enumerate(node_names):
+        for i, (name, node) in enumerate(zip(node_names, nodes)):
+            # TODO: Add in more arguments through GUI
+            min_dur = int(10e12)  # 10 seconds
+            max_dur = int(20e12)  # 20 seconds
+            memory_array = node.get_components_by_type('MemoryArray')[0]
+            min_size = 1
+            max_size = len(memory_array) // 2
+            min_fidelity = 0.8
+            max_fidelity = 1
+
             other_nodes = node_names[:]  # copy node name list
             other_nodes.remove(name)
             # create our application
-            # arguments are the host node, possible destination node names,
-            # and a seed for the random number generator.
-            app = RandomRequestApp(self.topology.nodes[name], other_nodes, i)
+            app = RandomRequestApp(node, other_nodes, i,
+                                   min_dur, max_dur,
+                                   min_size, max_size,
+                                   min_fidelity, max_fidelity)
             apps_new.append(app)
             app.start()
 
