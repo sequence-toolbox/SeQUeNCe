@@ -71,7 +71,8 @@ def eg_rule_action1(memories_info: list["MemoryInfo"], args: dict[str, Any]) -> 
     mid = args["mid"]
     path = args["path"]
     index = args["index"]
-    protocol = EntanglementGenerationA.create('BarretKokA', None, "EGA." + memory.name, mid, path[index - 1], memory)
+    gen_type = EntanglementGenerationA.get_global_type()
+    protocol = EntanglementGenerationA.create(gen_type, None, "EGA." + memory.name, mid, path[index - 1], memory)
     return protocol, [None], [None], [None]
 
 
@@ -83,7 +84,8 @@ def eg_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple
     index = args["index"]
     memories = [info.memory for info in memories_info]
     memory = memories[0]
-    protocol = EntanglementGenerationA.create('BarretKokA', None, "EGA." + memory.name, mid, path[index + 1], memory)
+    gen_type = EntanglementGenerationA.get_global_type()
+    protocol = EntanglementGenerationA.create(gen_type, None, "EGA." + memory.name, mid, path[index + 1], memory)
     req_args = {"name": args["name"], "reservation": args["reservation"]}
     return protocol, [path[index + 1]], [eg_req_func], [req_args]
 
@@ -123,7 +125,8 @@ def ep_rule_action1(memories_info: list["MemoryInfo"], args: Arguments) -> tuple
     """
     memories = [info.memory for info in memories_info]
     name = "EP.%s.%s" % (memories[0].name, memories[1].name)
-    protocol = BBPSSWProtocol.create('circuit', None, name, memories[0], memories[1])
+    pur_type = BBPSSWProtocol.get_formalism()
+    protocol = BBPSSWProtocol.create(pur_type, None, name, memories[0], memories[1])
     dsts = [memories_info[0].remote_node]
     req_funcs = [ep_req_func1]
     req_args = [{"remote0": memories_info[0].remote_memo, "remote1": memories_info[1].remote_memo}]
@@ -135,7 +138,8 @@ def ep_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple
     """
     memories = [info.memory for info in memories_info]
     name = "EP.%s" % memories[0].name
-    protocol = BBPSSWProtocol.create('circuit', None, name, memories[0], None)
+    pur_type = BBPSSWProtocol.get_formalism()
+    protocol = BBPSSWProtocol.create(pur_type, None, name, memories[0], None)
     return protocol, [None], [None], [None]
 
 

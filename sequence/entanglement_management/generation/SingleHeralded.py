@@ -15,7 +15,7 @@ from ...kernel.event import Event
 from ...kernel.process import Process
 from ...utils import log
 
-@EntanglementGenerationA.register('SingleHeraldedA')
+@EntanglementGenerationA.register('single_heralded')
 class SingleHeraldedA(EntanglementGenerationA):
     def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory",
                  raw_fidelity: float = None, raw_epr_errors: List[float] = None):
@@ -198,7 +198,7 @@ class SingleHeraldedA(EntanglementGenerationA):
 
         self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
 
-@EntanglementGenerationB.register('SingleHeraldedB')
+@EntanglementGenerationB.register('single_heralded')
 class SingleHeraldedB(EntanglementGenerationB):
     def __init__(self, owner: "BSMNode", name: str, others: List[str]):
         super().__init__(owner, name, others)

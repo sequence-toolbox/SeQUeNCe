@@ -323,14 +323,16 @@ def test_ResourceManager1():
     def eg_rule_action1(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA.create('BarretKokA', None, "EGA." + memory.name, "mid_node", "node2", memory)
+        gen_type = EntanglementGenerationA.get_global_type()
+        protocol = EntanglementGenerationA.create(gen_type, None, "EGA." + memory.name, "mid_node", "node2", memory)
         protocol.primary = True
         return [protocol, ["node2"], [eg_req_func], [{}]]
 
     def eg_rule_action2(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA.create('BarretKokA', None, "EGA." + memory.name,
+        gen_type = EntanglementGenerationA.get_global_type()
+        protocol = EntanglementGenerationA.create(gen_type, None, "EGA." + memory.name,
                                            "mid_node", "node1", memory)
         return protocol, [None], [None], [{}]
 
@@ -398,14 +400,16 @@ def test_ResourceManager2():
     def eg_rule_action1(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA.create('BarretKokA', None, "EGA." + memory.name, "mid_node", "node2", memory)
+        gen_type = EntanglementGenerationA.get_global_type()
+        protocol = EntanglementGenerationA.create(gen_type, None, "EGA." + memory.name, "mid_node", "node2", memory)
         protocol.primary = True
         return [protocol, ["node2"], [eg_req_func], [{}]]
 
     def eg_rule_action2(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA.create('BarretKokA', None, "EGA." + memory.name,
+        gen_type = EntanglementGenerationA.get_global_type()
+        protocol = EntanglementGenerationA.create(gen_type, None, "EGA." + memory.name,
                                            "mid_node", "node1", memory)
         return protocol, [None], [None], [{}]
 

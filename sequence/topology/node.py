@@ -28,7 +28,7 @@ from ..components.light_source import LightSource
 from ..components.detector import QSDetector, QSDetectorPolarization, QSDetectorTimeBin
 from ..qkd.BB84 import BB84
 from ..qkd.cascade import Cascade
-from ..entanglement_management.generation.generation import EntanglementGenerationA, EntanglementGenerationB
+from ..entanglement_management.generation.generation import EntanglementGenerationB
 from ..resource_management.resource_manager import ResourceManager
 from ..network_management.network_manager import NewNetworkManager, NetworkManager
 from ..utils.encoding import *
@@ -247,7 +247,7 @@ class BSMNode(Node):
         self.add_component(bsm)
         self.set_first_component(bsm_name)
 
-        self.eg = EntanglementGenerationB.create('BarretKokB', self, f'{name}_eg', other_nodes)
+        self.eg = EntanglementGenerationB.create(self.encoding_type, self, f'{name}_eg', other_nodes)
         bsm.attach(self.eg)
 
     def receive_message(self, src: str, msg: "Message") -> None:

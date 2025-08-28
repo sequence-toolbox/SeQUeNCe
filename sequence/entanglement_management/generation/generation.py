@@ -7,9 +7,10 @@ from typing import TYPE_CHECKING, List, Dict, Type, Any
 from .generation_message import EntanglementGenerationMessage, GenerationMsgType
 from ...resource_management.memory_manager import MemoryInfo
 
+
 if TYPE_CHECKING:
     from ...components.memory import Memory
-    from ...topology import Node, BSMNode
+    from ...topology.node import Node, BSMNode
 
 from ..entanglement_protocol import EntanglementProtocol
 from ...components.circuit import Circuit
@@ -63,7 +64,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
 
     @classmethod
     def get_global_type(cls) -> str:
-        return cls._global_type if cls._global_type is not None else 'BarretKokA'
+        return cls._global_type if cls._global_type is not None else 'single_atom'
 
     @classmethod
     def register(cls, name: str, protocol_class: Type['EntanglementGenerationA'] = None):
@@ -176,7 +177,7 @@ class EntanglementGenerationB(EntanglementProtocol, ABC):
 
     @classmethod
     def get_global_type(cls) -> str:
-        return cls._global_type if cls._global_type is not None else 'BarretKokB'
+        return cls._global_type if cls._global_type is not None else 'single_atom'
 
     @classmethod
     def register(cls, name: str, protocol_class: Type['EntanglementGenerationB'] = None):
