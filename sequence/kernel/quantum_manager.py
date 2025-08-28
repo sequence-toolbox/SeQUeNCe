@@ -8,14 +8,15 @@ The states may currently be defined in two possible ways:
 
 The manager defines an API for interacting with quantum states.
 """
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 
-from numpy._typing import NDArray
+from numpy.typing import NDArray
 
-from ..components.circuit import Circuit
-from .quantum_state import State
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ..components.circuit import Circuit
+    from .quantum_state import State
 
 from qutip_qip.circuit import QubitCircuit
 from qutip_qip.operations import gate_sequence_product, Gate
@@ -43,7 +44,7 @@ class QuantumManager(ABC):
     _global_formalism: str = KET_STATE_FORMALISM
 
     def __init__(self, formalism: str = None, truncation: int = 1):
-        self.states: dict[int, State] = {}
+        self.states: dict[int, "State"] = {}
         self._least_available: int = 0
         self.formalism: str = formalism
         self.truncation = truncation
@@ -99,7 +100,7 @@ class QuantumManager(ABC):
         """
         pass
 
-    def get(self, key: int) -> State:
+    def get(self, key: int) -> "State":
         """Method to get quantum state stored at an index.
 
         Args:
@@ -111,7 +112,7 @@ class QuantumManager(ABC):
         return self.states[key]
 
     @abstractmethod
-    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> Any:
+    def run_circuit(self, circuit: "Circuit", keys: list[int], meas_samp=None):
         """Method to run a circuit on a given set of quantum states.
 
         Args:
@@ -127,7 +128,7 @@ class QuantumManager(ABC):
         if len(circuit.measured_qubits) > 0:
             assert meas_samp, "must specify random sample when measuring qubits"
 
-    def _prepare_circuit(self, circuit: Circuit, keys: list[int]):
+    def _prepare_circuit(self, circuit: "Circuit", keys: list[int]):
         old_states = []
         all_keys = []
 
@@ -200,7 +201,7 @@ class QuantumManagerKet(QuantumManager):
         self.states[key] = KetState(state, [key])
         return key
 
-    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> dict[int, int]:
+    def run_circuit(self, circuit: "Circuit", keys: list[int], meas_samp=None) -> dict[int, int]:
         super().run_circuit(circuit, keys, meas_samp)
         new_state, all_keys, circ_mat = self._prepare_circuit(circuit, keys)
 
@@ -321,7 +322,7 @@ class QuantumManagerDensity(QuantumManager):
         self.states[key] = DensityState(state, [key])
         return key
 
-    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> dict[int, int]:
+    def run_circuit(self, circuit: "Circuit", keys: list[int], meas_samp=None) -> dict[int, int]:
         super().run_circuit(circuit, keys, meas_samp)
         new_state, all_keys, circ_mat = super()._prepare_circuit(circuit, keys)
 
@@ -458,7 +459,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
         return key
 
-    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> dict[int, int]:
+    def run_circuit(self, circuit: "Circuit", keys: list[int], meas_samp=None) -> dict[int, int]:
         """Currently the Fock states do not support quantum circuits.
         This method is only to implement abstract method of parent class and SHOULD NOT be called after instantiation.
         """
