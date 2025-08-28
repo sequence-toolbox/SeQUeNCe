@@ -1,20 +1,21 @@
 """This module defines the quantum manager class, to track quantum states.
 
 The states may currently be defined in two possible ways:
-    - KetState (with the QuantumManagerKet class)
-    - DensityMatrix (with the QuantumManagerDensity class)
+    - KetState
+    - DensityMatrix
+    - FockDensityMatrix
+    - Bell Diagonal
 
 The manager defines an API for interacting with quantum states.
 """
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from threading import activeCount
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from ..components.circuit import Circuit
-    from .quantum_state import State
+from numpy._typing import NDArray
+
+from ..components.circuit import Circuit
+from .quantum_state import State
 
 from qutip_qip.circuit import QubitCircuit
 from qutip_qip.operations import gate_sequence_product, Gate
@@ -24,11 +25,7 @@ from scipy.special import binom
 
 from .quantum_state import KetState, DensityState, BellDiagonalState
 from .quantum_utils import *
-
-KET_STATE_FORMALISM = "ket_vector"
-DENSITY_MATRIX_FORMALISM = "density_matrix"
-FOCK_DENSITY_MATRIX_FORMALISM = "fock_density"
-BELL_DIAGONAL_STATE_FORMALISM = "bell_diagonal"
+from ..constants import KET_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM, FOCK_DENSITY_MATRIX_FORMALISM, BELL_DIAGONAL_STATE_FORMALISM
 
 
 class QuantumManager(ABC):
@@ -45,12 +42,15 @@ class QuantumManager(ABC):
     _registry: dict = {}
     _global_formalism: str = KET_STATE_FORMALISM
 
-    def __init__(self, formalism: str, truncation: int = 1):
+    def __init__(self, formalism: str = None, truncation: int = 1):
         self.states: dict[int, State] = {}
         self._least_available: int = 0
         self.formalism: str = formalism
         self.truncation = truncation
         self.dim = self.truncation + 1
+
+        if formalism is not None:
+            raise NotImplementedError('No longer supported. Use global formalism instead supplied by class attr..')
 
     @classmethod
     def set_global_manager_formalism(cls, formalism: str):
@@ -72,9 +72,9 @@ class QuantumManager(ABC):
             cls._registry[name] = manager_class
             return None
 
-        def decorator(manager_class):
-            cls._registry[name] = manager_class
-            return manager_class
+        def decorator(manager_cls):
+            cls._registry[name] = manager_cls
+            return manager_cls
 
         return decorator
 
@@ -88,18 +88,18 @@ class QuantumManager(ABC):
 
 
     @abstractmethod
-    def new(self, state: any) -> int:
+    def new(self, state) -> int:
         """Method to create a new quantum state.
 
         Args:
-            state (any): complex amplitudes of new state. Type depends on type of subclass.
+            state: complex amplitudes of new state. Type depends on type of subclass.
 
         Returns:
             int: key for new state generated.
         """
         pass
 
-    def get(self, key: int) -> "State":
+    def get(self, key: int) -> State:
         """Method to get quantum state stored at an index.
 
         Args:
@@ -111,7 +111,7 @@ class QuantumManager(ABC):
         return self.states[key]
 
     @abstractmethod
-    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> dict[int, int]:
+    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> Any:
         """Method to run a circuit on a given set of quantum states.
 
         Args:
@@ -170,28 +170,13 @@ class QuantumManager(ABC):
         return all_keys, swap_mat
 
     @abstractmethod
-    def set(self, keys: list[int], amplitudes: any) -> None:
+    def set(self, keys: list[int], amplitudes: Any) -> None:
         """Method to set quantum state at a given key(s).
 
         Args:
             keys (list[int]): key(s) of state(s) to change.
             amplitudes (any): Amplitudes to set state to, type determined by type of subclass.
         """
-
-        # num_subsystems = log(len(amplitudes)) / log(self.dim)
-        # assert self.dim ** int(round(num_subsystems)) == len(amplitudes),\
-        #     "Length of amplitudes should be d ** n, " \
-        #     "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
-        #     "Actual amplitude length: {}, dim: {}, num subsystems: {}".format(
-        #         len(amplitudes), self.dim, num_subsystems
-        #     )
-        # num_subsystems = int(round(num_subsystems))
-        # assert num_subsystems == len(keys),\
-        #     "Length of amplitudes should be d ** n, " \
-        #     "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
-        #     "Amplitude length: {}, expected subsystems: {}, num keys: {}".format(
-        #         len(amplitudes), num_subsystems, len(keys)
-        #     )
 
         pass
 
@@ -207,7 +192,7 @@ class QuantumManagerKet(QuantumManager):
     """Class to track and manage quantum states with the ket vector formalism."""
 
     def __init__(self, **kwargs):
-        super().__init__(KET_STATE_FORMALISM)
+        super().__init__()
 
     def new(self, state=(complex(1), complex(0))) -> int:
         key = self._least_available
@@ -327,7 +312,7 @@ class QuantumManagerDensity(QuantumManager):
     """Class to track and manage states with the density matrix formalism."""
 
     def __init__(self, **kwargs):
-        super().__init__(DENSITY_MATRIX_FORMALISM)
+        super().__init__()
 
     def new(self,
             state=([complex(1), complex(0)], [complex(0), complex(0)])) -> int:
@@ -452,7 +437,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
     def __init__(self, truncation: int = 1, **kwargs):
         # default truncation is 1 for 2-d Fock space.
-        super().__init__(DENSITY_MATRIX_FORMALISM, truncation=truncation)
+        super().__init__(truncation=truncation)
 
     def new(self, state=None) -> int:
         """Method to create a new state with key
@@ -551,7 +536,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
         return new_state, all_keys
 
-    def _prepare_operator(self, all_keys: list[int], keys: list[int], operator) -> array:
+    def _prepare_operator(self, all_keys: list[int], keys: list[int], operator) -> NDArray:
         # pad operator with identity
         left_dim = self.dim ** all_keys.index(keys[0])
         right_dim = self.dim ** (len(all_keys) - all_keys.index(keys[-1]) - 1)
@@ -564,7 +549,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
         return prepared_operator
 
-    def apply_operator(self, operator: array, keys: list[int]):
+    def apply_operator(self, operator: NDArray, keys: list[int]):
         prepared_state, all_keys = self._prepare_state(keys)
         prepared_operator = self._prepare_operator(all_keys, keys, operator)
         new_state = prepared_operator @ prepared_state @ prepared_operator.conj().T
@@ -603,7 +588,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
         return create, destroy
 
-    def measure(self, keys: list[int], povms: list[array], meas_samp: float) -> int:
+    def measure(self, keys: list[int], povms: list[NDArray], meas_samp: float) -> int:
         """Method to measure subsystems at given keys in POVM formalism.
 
         Serves as wrapper for private `_measure` method, performing quantum manager specific operations.
@@ -621,7 +606,7 @@ class QuantumManagerDensityFock(QuantumManager):
         return self._measure(new_state, keys, all_keys, povms, meas_samp)
 
     def _measure(self, state: list[list[complex]], keys: list[int],
-                 all_keys: list[int], povms: list[array], meas_samp: float) -> int:
+                 all_keys: list[int], povms: list[NDArray], meas_samp: float) -> int:
         """Method to measure subsystems at given keys in POVM formalism.
 
         Modifies quantum state of all qubits given by all_keys, post-measurement operator determined
@@ -631,7 +616,7 @@ class QuantumManagerDensityFock(QuantumManager):
             state (list[list[complex]]): state to measure.
             keys (list[int]): list of keys to measure.
             all_keys (list[int]): list of all keys corresponding to state.
-            povms: (list[array]): list of POVM operators to use for measurement.
+            povms: (list[NDArray]): list of POVM operators to use for measurement.
             meas_samp (float): random measurement sample to use for computing resultant state.
 
         Returns:
@@ -756,7 +741,7 @@ class QuantumManagerBellDiagonal(QuantumManager):
     """
 
     def __init__(self, **kwargs):
-        super().__init__(BELL_DIAGONAL_STATE_FORMALISM)
+        super().__init__()
 
     def new(self, state=None) -> int:
         """Generates new quantum state key for quantum manager.
