@@ -46,7 +46,7 @@ class TeleportMessage(Message):
             self.string = f'type={TeleportMsgType.ACK}, bob_comm_memory={self.bob_comm_memory_name}, reservation={self.reservation}'
 
         else:
-            raise Exception(f"TeleportProtocol created unknown type of message: {msg_type}")
+            raise Exception(f"TeleportMessage created with unknown message type: {msg_type}")
 
     def __str__(self):
         return self.string

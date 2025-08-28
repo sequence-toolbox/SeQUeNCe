@@ -133,7 +133,6 @@ def dual_trial(psi_b: np.ndarray, psi_c: np.ndarray, seeds: dict = None):
     # log.set_logger_level('INFO')
     # # modules = ['generation', 'teleport_app', 'teleportation', 'network_manager', 'resource_manager']
     # modules = ['generation', 'teleport_app', 'teleportation']
-
     # for module in modules:
     #     log.track_module(module)
 
@@ -211,8 +210,3 @@ def test_dual_teleport_recreates_states(psi_b, psi_c, seeds):
     check_bob     = verify_same_state_vector(out_b, psi_b)
     check_charlie = verify_same_state_vector(out_c, psi_c)
     assert check_bob and check_charlie, f"Bob:{check_bob}, got={out_b}, correct={psi_b}. Charlie:{check_charlie}, got={out_c}, correct={psi_c}"
-
-
-
-# test_teleport_recreates_state(_single_inputs[0], _single_seeds[1])
-# test_dual_teleport_recreates_states()

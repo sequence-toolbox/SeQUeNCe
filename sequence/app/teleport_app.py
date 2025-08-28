@@ -91,7 +91,7 @@ class TeleportApp(RequestApp):
                         priority = self.node.timeline.schedule_counter
                         event = Event(time_now, process, priority)
                         self.node.timeline.schedule(event)
-                        break # if never reached this break, then go to else
+                        break # if no matching protocol found, go to else clause
                 else:
                     # this node is Bob, create the new teleport protocol instance, then append to self.teleport_protocols
                     teleport_protocol = TeleportProtocol(self.node, alice=False, remote_node_name=info.remote_node)
