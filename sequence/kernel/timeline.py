@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from .entity import Entity
 
 from .eventlist import EventList
-from .quantum_manager import (QuantumFactory, KET_STATE_FORMALISM)
+from .quantum_manager import QuantumManager
 from ..utils import log
 
 # for timeline formatting
@@ -71,8 +71,8 @@ class Timeline:
         self.run_counter: int = 0
         self.is_running: bool = False
         self.show_progress: bool = False
-        active_formalism = formalism if formalism != '' else QuantumFactory.get_active_formalism()
-        self.quantum_manager = QuantumFactory.create(active_formalism, truncation=truncation)
+        active_formalism = formalism if formalism != '' else QuantumManager.get_active_formalism()
+        self.quantum_manager = QuantumManager.create(active_formalism, truncation=truncation)
 
 
     def now(self) -> int:

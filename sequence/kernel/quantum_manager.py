@@ -30,10 +30,27 @@ FOCK_DENSITY_MATRIX_FORMALISM = "fock_density"
 BELL_DIAGONAL_STATE_FORMALISM = "bell_diagonal"
 
 
-class QuantumFactory:
+class QuantumManager(ABC):
+    """Class to track and manage quantum states (abstract).
+
+    All states stored are of a single formalism (by default as a ket vector).
+
+    Attributes:
+        states (dict[int, State]): mapping of state keys to quantum state objects.
+        truncation (int): maximally allowed number of excited states for elementary subsystems.
+                Default is 1 for qubit.
+        dim (int): subsystem Hilbert space dimension. dim = truncation + 1
+    """
     _registry: dict = {}
     _global_formalism: str = None
     _global_config: dict = {}
+
+    def __init__(self, formalism: str, truncation: int = 1):
+        self.states: dict[int, State] = {}
+        self._least_available: int = 0
+        self.formalism: str = formalism
+        self.truncation = truncation
+        self.dim = self.truncation + 1
 
     @classmethod
     def set_global_manager_formalism(cls, formalism: str, **config):
@@ -47,14 +64,15 @@ class QuantumFactory:
         return cls._global_formalism if cls._global_formalism is not None else KET_STATE_FORMALISM
 
     @classmethod
-    def register(cls, name, manager_class):
-        if name is not None:
+    def register(cls, name: str, manager_class=None):
+        if manager_class is not None:
             cls._registry[name] = manager_class
             return None
 
         def decorator(manager_class):
             cls._registry[name] = manager_class
             return manager_class
+
         return decorator
 
     @classmethod
@@ -67,26 +85,6 @@ class QuantumFactory:
         merged_kwargs = {**cls._global_config, **kwargs}
         return cls._registry[active_formalism](*args, **merged_kwargs)
 
-
-
-class QuantumManager(ABC):
-    """Class to track and manage quantum states (abstract).
-
-    All states stored are of a single formalism (by default as a ket vector).
-
-    Attributes:
-        states (dict[int, State]): mapping of state keys to quantum state objects.
-        truncation (int): maximally allowed number of excited states for elementary subsystems.
-                Default is 1 for qubit.
-        dim (int): subsystem Hilbert space dimension. dim = truncation + 1
-    """
-
-    def __init__(self, formalism: str, truncation: int = 1):
-        self.states: dict[int, State] = {}
-        self._least_available: int = 0
-        self.formalism: str = formalism
-        self.truncation = truncation
-        self.dim = self.truncation + 1
 
     @abstractmethod
     def new(self, state: any) -> int:
@@ -203,7 +201,7 @@ class QuantumManager(ABC):
     def set_states(self, states: dict):
         self.states = states
 
-
+@QuantumManager.register(KET_STATE_FORMALISM)
 class QuantumManagerKet(QuantumManager):
     """Class to track and manage quantum states with the ket vector formalism."""
 
@@ -323,7 +321,7 @@ class QuantumManagerKet(QuantumManager):
 
         return dict(zip(keys, result_digits))
 
-
+@QuantumManager.register(DENSITY_MATRIX_FORMALISM)
 class QuantumManagerDensity(QuantumManager):
     """Class to track and manage states with the density matrix formalism."""
 
@@ -447,7 +445,7 @@ class QuantumManagerDensity(QuantumManager):
 
         return dict(zip(keys, result_digits))
 
-
+@QuantumManager.register(FOCK_DENSITY_MATRIX_FORMALISM)
 class QuantumManagerDensityFock(QuantumManager):
     """Class to track and manage Fock states with the density matrix formalism."""
 
@@ -745,7 +743,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
         self.set(all_keys, output_state)
 
-
+@QuantumManager.register(BELL_DIAGONAL_STATE_FORMALISM)
 class QuantumManagerBellDiagonal(QuantumManager):
     """Class to track and manage quantum states with the bell diagonal formalism.
 
@@ -800,10 +798,3 @@ class QuantumManagerBellDiagonal(QuantumManager):
         self.set(keys, [float(1), float(0), float(0), float(0)])
     def run_circuit(self, *args, **kwargs):
         pass
-
-
-# Register built-in managers
-QuantumFactory.register(KET_STATE_FORMALISM, QuantumManagerKet)
-QuantumFactory.register(DENSITY_MATRIX_FORMALISM, QuantumManagerDensity)
-QuantumFactory.register(FOCK_DENSITY_MATRIX_FORMALISM, QuantumManagerDensityFock)
-QuantumFactory.register(BELL_DIAGONAL_STATE_FORMALISM, QuantumManagerBellDiagonal)
