@@ -7,6 +7,8 @@ from ..kernel.timeline import Timeline
 from ..kernel.quantum_manager import KET_STATE_FORMALISM
 from .node import BSMNode, QuantumRouter
 from ..constants import SPEED_OF_LIGHT
+from ..kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
+from ..config import USER_CONFIG_PATH
 
 
 class RouterNetTopo(Topo):
@@ -42,6 +44,11 @@ class RouterNetTopo(Topo):
     def __init__(self, conf_file_name: str):
         self.bsm_to_router_map = {}
         self.encoding_type = None
+
+        # you can pass the config file as an environment variable or as an argument to RouterNetTopo. If not using 
+        # RouterNetTopo directly or, if you're using a custom backend, pass the config as environment variable.  
+        if USER_CONFIG_PATH is not None:
+            conf_file_name = USER_CONFIG_PATH
         super().__init__(conf_file_name)
 
     def _load(self, filename: str):
@@ -64,10 +71,11 @@ class RouterNetTopo(Topo):
     def _add_timeline(self, config: dict):
         stop_time = config.get(Topo.STOP_TIME, float('inf'))
         formalism = config.get(Topo.FORMALISM, KET_STATE_FORMALISM)
+        truncation = config.get(Topo.TRUNC, 1)
         if config.get(self.IS_PARALLEL, False):
             raise Exception("Please install 'psequence' package for parallel simulations.")
         else:
-            self.tl = Timeline(stop_time, formalism)
+            self.tl = Timeline(stop_time, formalism, truncation)
 
     def _map_bsm_routers(self, config):
         for qc in config[Topo.ALL_Q_CHANNEL]:
