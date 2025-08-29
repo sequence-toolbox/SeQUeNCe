@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.7.6] - 2025-8-29
+
+### Added
+- Adds a configuration system to load plugins from external modules
+- Implements dynamic import of EntanglementGeneration classes from specified plugins (Trajectree as the first example)
+- Introduces a new ShellBSM component and truncation parameter support
+
+
+
 ## [0.7.5] - 2025-8-28
 
 ### Added

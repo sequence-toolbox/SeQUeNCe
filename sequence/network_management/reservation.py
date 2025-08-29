@@ -23,7 +23,7 @@ if not CONFIG.get("generation_module", None):
     from ..entanglement_management.generation import EntanglementGenerationA # if no generation module is specified, use the default one
 else:
     # If the generation module is specified, we import the EntanglementGenerationB class from the specified module. The module can be in any location on the host 
-    # machine as log as the absolute path to the module is provided in the "plugin_path" field of the CONFIG. The name of the generation module should be different from
+    # machine as long as the absolute path to the module is provided in the "plugin_path" field of the CONFIG. The name of the generation module should be different from
     # the default "generation" module to avoid conflicts. 
     EntanglementGenerationA = getattr(import_module(CONFIG.get("generation_module")), 'EntanglementGenerationA')
 
