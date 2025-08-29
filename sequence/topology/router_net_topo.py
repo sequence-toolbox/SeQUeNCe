@@ -2,7 +2,6 @@ import json
 import numpy as np
 from networkx import Graph, dijkstra_path, exception
 
-from build.lib.sequence.constants import DENSITY_MATRIX_FORMALISM
 from .topology import Topology as Topo
 from ..components.bsm import SingleHeraldedBSM
 from ..kernel.timeline import Timeline
