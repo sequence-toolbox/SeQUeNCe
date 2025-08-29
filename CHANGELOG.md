@@ -6,6 +6,51 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+
+## [0.7.5] - 2025-8-28
+
+### Added
+- Added method `Node.get_component_by_name()`, `ResourceManager.expire_rules_by_reservation()`, and `kernel.quantum_utils.verify_same_state_vector()`
+- Added a new badge for monthly downloads from pepy.tech
+- Added Caitao, Ansh, and Robert to the SeQUeNCe author list
+- New `pytest` for the teleportation module.
+
+### Fixed
+- Fixed `TeleportApp` and `TeleportProtocol`, a lot of redesigns, the major ones are:
+  - Each `TeleportApp` has a list of `TeleportProtocol` instances, and each instances owns quantum memories
+  - Fix timing issues in the `TeleportApp`: Let Bob first execute `EntanglementGenerationA._entanglement_succeed()`, then let Alice do the Bell measurement
+  - Optimize the `TeleportApp` by expiring the rules and setting the comm memory to RAW right after the teleportation is done. Remove `teleport_protocol` from `TeleportApp.teleport_protocols` after its lifecycle is complete
+
+### Changed
+- Rename `QuantumNodeNetTopo` to `DQCNetTopo`
+- Updates to class `DQCNode` and `TeleportMessage`
+- `random_state()` is moved from `utils.random_state` to `kernel.quantum_utils`
+- Cosmetic updates, including doc strings
+
+
+
+## [0.7.4] - 2025-8-15
+
+### Added
+- New class `QuantumFactory` that uses the Factory Method design pattern to manage creating various quantum state managers.
+- New method `NetworkManager.update_forwarding_table()` to update the forwarding table in a quantum router.
+
+### Fixed
+- Fixed a floating point issue in *QuantumChannel.schedule_transmit()* and *QuantumChannel.transmit()* caused by the `float`'s precision limitations in Python. Package `gmpy2` is used for high precision computation.
+  - Version 0.7.3 attempted to fix this issue, but the fix was unsuccessful.
+- In `EntanglementGenerationA.received_message()`, explicitly set the *priority* of the events for future *start* or *update_memory* to *schedule_counter*. It fixes an issue for the edge case when the BSM node is at the end nodes, i.e., distance to one end node is zero.
+
+### Changed
+- Changed the delay in EntanglementGenerationA.received_message() to make it more efficient when the BSM node is not exactly at the middle of two end quantum routers.
+- Rename `QuantumNode` to `DQCNode`, a node designed for distributed quantum computing.
+- Some constants in module `constants` are changed from `float` to `int`.
+- Several cosmetic updates.
+- Some constants in module `constants` are moved back to module `timeline`.
+
+### Removed
+- The badge for sequence monthly downloads is removed, because the website pypistats.org is down.
+
+
 ## [0.7.3] - 2025-8-1
 
 ### Added

@@ -14,6 +14,7 @@ from collections import defaultdict
 
 from sequence.topology.router_net_topo import RouterNetTopo
 from sequence.topology.qkd_topo import QKDTopo
+from sequence.topology.dqc_net_topo import DQCNetTopo
 
 
 parser = argparse.ArgumentParser()
@@ -38,6 +39,9 @@ if node_type == RouterNetTopo.BSM_NODE or node_type == RouterNetTopo.QUANTUM_ROU
 
 elif node_type == QKDTopo.QKD_NODE:
     topo = QKDTopo(args.config_file)
+
+elif node_type == DQCNetTopo.DQC_NODE:
+    topo = DQCNetTopo(args.config_file)
 
 else:
     raise Exception("Unknown node type '{}' in config file {}".format(node_type, args.config_file))

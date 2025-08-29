@@ -1,0 +1,147 @@
+{
+    "templates": {
+        "teleportation": {
+            "MemoryArray": {
+                "fidelity": 1,
+                "efficiency": 0.5
+            }
+        }
+    },
+  "nodes": [
+    {
+      "name": "alice",
+      "type": "DQCNode",
+      "seed": 1,
+      "memo_size": 2,
+      "data_memo_size": 2,
+      "group": 0,
+      "template": "teleportation"
+    },
+    {
+      "name": "bob",
+      "type": "DQCNode",
+      "seed": 2,
+      "memo_size": 2,
+      "data_memo_size": 1,
+      "group": 0,
+      "template": "teleportation"
+    },
+    {
+      "name": "charlie",
+      "type": "DQCNode",
+      "seed": 3,
+      "memo_size": 2,
+      "data_memo_size": 1,
+      "group": 0,
+      "template": "teleportation"
+    },
+    {
+      "name": "BSM_alice_bob",
+      "type": "BSMNode",
+      "seed": 3,
+      "group": 0
+    },
+    {
+      "name": "BSM_alice_charlie",
+      "type": "BSMNode",
+      "seed": 5,
+      "group": 0
+    }
+  ],
+
+  "qchannels": [
+    {
+      "source": "alice",
+      "destination": "BSM_alice_bob",
+      "distance": 500.0,
+      "attenuation": 0.0002
+    },
+    {
+      "source": "bob",
+      "destination": "BSM_alice_bob",
+      "distance": 500.0,
+      "attenuation": 0.0002
+    },
+    {
+      "source": "alice",
+      "destination": "BSM_alice_charlie",
+      "distance": 500.0,
+      "attenuation": 0.0002
+    },
+    {
+      "source": "charlie",
+      "destination": "BSM_alice_charlie",
+      "distance": 500.0,
+      "attenuation": 0.0002
+    }
+  ],
+
+  "cchannels": [
+    {
+      "source": "alice",
+      "destination": "BSM_alice_bob",
+      "delay": 500000000
+    },
+    {
+      "source": "bob",
+      "destination": "BSM_alice_bob",
+      "delay": 500000000
+    },
+    {
+      "source": "BSM_alice_bob",
+      "destination": "alice",
+      "delay": 500000000
+    },
+    {
+      "source": "BSM_alice_bob",
+      "destination": "bob",
+      "delay": 500000000
+    },
+
+    {
+      "source": "alice",
+      "destination": "BSM_alice_charlie",
+      "delay": 500000000
+    },
+    {
+      "source": "charlie",
+      "destination": "BSM_alice_charlie",
+      "delay": 500000000
+    },
+    {
+      "source": "BSM_alice_charlie",
+      "destination": "alice",
+      "delay": 500000000
+    },
+    {
+      "source": "BSM_alice_charlie",
+      "destination": "charlie",
+      "delay": 500000000
+    },
+
+    {
+      "source": "alice",
+      "destination": "bob",
+      "delay": 500000000
+    },
+    {
+      "source": "bob",
+      "destination": "alice",
+      "delay": 500000000
+    },
+    {
+      "source": "alice",
+      "destination": "charlie",
+      "delay": 500000000
+    },
+    {
+      "source": "charlie",
+      "destination": "alice",
+      "delay": 500000000
+    }
+  ],
+
+  "stop_time": 10000000000000,
+  "is_parallel": false
+}
+

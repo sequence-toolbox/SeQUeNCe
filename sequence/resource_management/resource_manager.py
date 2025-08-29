@@ -13,13 +13,12 @@ if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
     from .rule_manager import Rule, Arguments
 
-from ..kernel.process import Process
-from ..kernel.event import Event
 from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..message import Message
 from ..utils import log
 from .rule_manager import RuleManager
 from .memory_manager import MemoryManager, MemoryInfo
+from ..network_management.reservation import Reservation
 
 
 RequestConditionFunc = Callable[[list["EntanglementProtocol"]], "EntanglementProtocol"]
@@ -239,11 +238,7 @@ class ResourceManager:
         memo_names = [memo.name for memo in protocol.memories]
         msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST, protocol=protocol.name, node=self.owner.name,
                                      memories=memo_names, req_condition_func=req_condition_func, req_args=req_args)
-        
-        process = Process(self.owner, "send_message", [req_dst, msg])
-        event = Event(self.owner.timeline.now()+1, process)
-        self.owner.timeline.schedule(event)
-        
+        self.owner.send_message(req_dst, msg)
         log.logger.debug("{} send {} message to {}".format(self.owner.name, msg.msg_type.name, req_dst))
 
     def received_message(self, src: str, msg: "ResourceManagerMessage") -> None:
@@ -361,3 +356,17 @@ class ResourceManager:
 
     def __str__(self) -> str:
         return self.name
+
+    def expire_rules_by_reservation(self, reservation: Reservation) -> None:
+        '''expire rules created by the reservation
+        
+        Args:
+            reservation: the rules created by this reservation will expire
+        '''
+        rule_to_expire = []
+        for rule in self.rule_manager.rules:
+            if rule.reservation == reservation:
+                rule_to_expire.append(rule)
+        
+        for rule in rule_to_expire:
+            self.expire(rule)
