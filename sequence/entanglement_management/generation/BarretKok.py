@@ -46,6 +46,7 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
             raise ValueError(f"Unexpected keyword arguments: {kwargs}")
 
         super().__init__(owner, name, middle, other, memory)
+        self.protocol_type = BARRET_KOK
         self.bsm_res = [-1, -1]
         self.fidelity: float = memory.raw_fidelity
 
@@ -151,7 +152,7 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
             other_emit_time = emit_time + self.qc_delay - other_qc_delay
             message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK,
                                                     self.remote_protocol_name,
-                                                    protocol_type=self,
+                                                    protocol_type=self.protocol_type,
                                                     emit_time=other_emit_time)
             self.owner.send_message(src, message)
 
@@ -219,7 +220,6 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
             raise Exception("Invalid message {} received by EG on node {}".format(msg_type, self.owner.name))
 
     def _entanglement_succeed(self):
-        log.logger.info(f'{self.owner.name} successful entanglement of memory {self.memory}')
         self.memory.entangled_memory['node_id'] = self.remote_node_name
         self.memory.entangled_memory['memo_id'] = self.remote_memo_id
         self.memory.fidelity = self.memory.raw_fidelity
@@ -246,8 +246,8 @@ class BarretKokB(EntanglementGenerationB):
             name (str): name of protocol instance.
             others (list[str]): name of protocol instance on end nodes.
         """
-
         super().__init__(owner, name, others)
+        self.protocol_type = BARRET_KOK
 
     def bsm_update(self, bsm: "SingleAtomBSM", info: dict[str, Any]):
         assert info['info_type'] == "BSM_res"
@@ -259,7 +259,7 @@ class BarretKokB(EntanglementGenerationB):
         for node in self.others:
             message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES,
                                                     receiver=None,  # receiver is None (not paired)
-                                                    protocol_type=BarretKokA,
+                                                    protocol_type=self.protocol_type,
                                                     detector=res,
                                                     time=time,
                                                     resolution=resolution)

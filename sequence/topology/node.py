@@ -159,7 +159,7 @@ class Node(Entity):
                 if protocol.name == msg.receiver and protocol.received_message(src, msg):
                     return
         else:
-            matching = [p for p in self.protocols if type(p) == msg.protocol_type]
+            matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
             for p in matching:
                 p.received_message(src, msg)
 
@@ -266,7 +266,7 @@ class BSMNode(Node):
     def receive_message(self, src: str, msg: "Message") -> None:
         # signal to protocol that we've received a message
         for protocol in self.protocols:
-            if type(protocol) == msg.protocol_type:
+            if protocol.protocol_type or protocol.type == msg.protocol_type:
                 if protocol.received_message(src, msg):
                     return
 
@@ -337,6 +337,15 @@ class QuantumRouter(Node):
         self.map_to_middle_node = {}
         self.app = None
 
+        # ADDIN
+        self.successful_attempts = 0
+        self.total_attempts = 0
+        self.time_to_thousand = 0
+        self.ep_count = 0
+        self.ep_success = 0
+        self.time_to_ep = 0
+        self.new_fid = 0.0
+
     def receive_message(self, src: str, msg: "Message") -> None:
         """Determine what to do when a message is received, based on the msg.receiver.
 
@@ -352,7 +361,7 @@ class QuantumRouter(Node):
             self.resource_manager.received_message(src, msg)
         else:
             if msg.receiver is None:  # the msg sent by EntanglementGenerationB doesn't have a receiver (EGA & EGB not paired)
-                matching = [p for p in self.protocols if type(p) == msg.protocol_type]
+                matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
                 for p in matching:    # the valid_trigger_time() function resolves multiple matching issue
                     p.received_message(src, msg)
             else:
@@ -706,7 +715,7 @@ class QKDNode(Node):
     def receive_message(self, src: str, msg: "Message") -> None:
         # signal to protocol that we've received a message
         for protocol in self.protocols:
-            if type(protocol) == msg.protocol_type:
+            if protocol.protocol_type == msg.protocol_type:
                 protocol.received_message(src, msg)
                 return
 
@@ -798,7 +807,7 @@ class ClassicalNode(ClassicalEntity):
                 if protocol.name == msg.receiver and protocol.received_message(src, msg):
                     return
         else:
-            matching = [p for p in self.protocols if type(p) == msg.protocol_type]
+            matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
             for p in matching:
                 p.received_message(src, msg)
 
@@ -866,7 +875,7 @@ class DQCNode(QuantumRouter):
             self.telegate_app.received_message(src, msg)
         else:
             if msg.receiver is None:  # the msg sent by EntanglementGenerationB doesn't have a receiver (EGA & EGB not paired)
-                matching = [p for p in self.protocols if type(p) == msg.protocol_type]
+                matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
                 for p in matching:    # the valid_trigger_time() function resolves multiple matching issue
                     p.received_message(src, msg)
             else:

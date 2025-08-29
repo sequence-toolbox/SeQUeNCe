@@ -29,6 +29,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
 
     def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs):
         super().__init__(owner, name)
+        self.protocol_type = BARRET_KOK
         self.middle: str = middle
         self.remote_node_name: str = other
         self.remote_protocol_name: str = ''
@@ -122,9 +123,10 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
             frequency = self.memory.frequency
             message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE,
                                                     self.remote_protocol_name,
-                                                    protocol_type=EntanglementGenerationA,
+                                                    protocol_type=self.protocol_type,
                                                     qc_delay=self.qc_delay,
-                                                    frequency=frequency)
+                                                    frequency=frequency,
+                                                    encoding_type='single_atom')
             self.owner.send_message(self.remote_node_name, message)
 
     def update_memory(self) -> bool | None:
@@ -165,10 +167,11 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
 
 class EntanglementGenerationB(EntanglementProtocol, ABC):
     _registry: Dict[str, Type['EntanglementGenerationB']] = {}
-    _global_type: str = 'single_atom'
+    _global_type: str = BARRET_KOK
 
     def __init__(self, owner: "BSMNode", name: str, others: List[str], **kwargs) -> None:
         super().__init__(owner, name)
+        self.protocol_type = BARRET_KOK
         assert len(others) == 2
         self.others = others
 

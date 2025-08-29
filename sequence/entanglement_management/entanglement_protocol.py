@@ -25,6 +25,7 @@ class EntanglementProtocol(Protocol):
     def __init__(self, owner: "Node", name: str):
         super().__init__(owner, name)
         self.rule = None
+        self.protocol_type = None
         self.memories = []
 
     @abstractmethod
