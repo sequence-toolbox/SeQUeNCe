@@ -44,6 +44,7 @@ class Topology(ABC):
     SEED = "seed"
     SRC = "source"
     STOP_TIME = "stop_time"
+    TRUNC = "truncation"
     TYPE = "type"
     ALL_TEMPLATES = "templates"
     TEMPLATE = "template"
