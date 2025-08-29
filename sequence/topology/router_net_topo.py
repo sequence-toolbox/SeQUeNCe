@@ -41,7 +41,7 @@ class RouterNetTopo(Topo):
     QUANTUM_ROUTER = "QuantumRouter"
     CONTROLLER = "Controller"
 
-    def __init__(self, conf_file_name):
+    def __init__(self, conf_file_name: str):
         self.bsm_to_router_map = {}
         self.encoding_type = None
 
