@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from math import sqrt
 from typing import TYPE_CHECKING, List, Dict, Type, Any
 
@@ -131,6 +131,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         """Update memory state. Must be implemented in a subclass"""
         raise NotImplementedError
 
+    @abstractmethod
     def emit_event(self) -> None:
         """Must be implemented in a subclass"""
         raise NotImplementedError
@@ -150,10 +151,9 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
             if event.time >= self.owner.timeline.now():
                 self.owner.timeline.remove_event(event)
 
+    @abstractmethod
     def _entanglement_succeed(self):
-        log.logger.info(f'{self.owner.name} successful entanglement of memory {self.memory}')
-        self.memory.entangled_memory['node_id'] = self.remote_node_name
-        self.memory.entangled_memory['memo_id'] = self.remote_memo_id
+        raise NotImplementedError("This method must be implemented in a subclass")
 
     def _entanglement_fail(self):
         for event in self.scheduled_events:

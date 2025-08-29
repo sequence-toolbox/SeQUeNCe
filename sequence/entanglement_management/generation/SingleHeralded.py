@@ -8,21 +8,20 @@ from ...resource_management.memory_manager import MemoryInfo
 
 if TYPE_CHECKING:
     from ...components.memory import Memory
-    from ...topology.node import Node, BSMNode
-from ...constants import BELL_DIAGONAL_STATE_FORMALISM, SINGLE_HERALDED
-from .generation import EntanglementGenerationA, EntanglementGenerationB
+from ...constants import SINGLE_HERALDED
+from .generation import EntanglementGenerationA, EntanglementGenerationB, QuantumCircuitMixin
 from ...kernel.event import Event
 from ...kernel.process import Process
 from ...utils import log
 
 @EntanglementGenerationA.register(SINGLE_HERALDED)
-class SingleHeraldedA(EntanglementGenerationA):
+class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
     def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory",
                  raw_fidelity: float = None, raw_epr_errors: List[float] = None):
         super().__init__(owner, name, middle, other, memory)
 
-        assert self.owner.timeline.quantum_manager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, \
-            "Single Heralded Entanglement generation protocol only supports Bell diagonal state formalism."
+        #assert self.owner.timeline.quantum_manager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, \
+        #    "Single Heralded Entanglement generation protocol only supports Bell diagonal state formalism."
 
         if raw_fidelity:
             self.raw_fidelity = raw_fidelity
@@ -46,36 +45,38 @@ class SingleHeraldedA(EntanglementGenerationA):
         Will check the state of the memory and protocol.
 
         Returns:
-            bool: if current round was successfull.
+            bool: if current round was successful.
 
         Side Effects:
             May change state of attached memory.
             May update memory state in the attached node's resource manager.
         """
+
+        # Avoid starting if the protocol is removed.
+        if self not in self.owner.protocols:
+            return
+
         self.ent_round += 1
         if self.ent_round == 1:
             return True
 
         elif self.ent_round == 2:
             if self.bsm_res[0] >= 1 and self.bsm_res[1] >= 1:
+                quantum_manager = self.owner.timeline.quantum_manager
                 self_key = self._qstate_key
-                tl = self.owner.timeline
-                remote_memory = tl.get_entity_by_name(self.remote_memo_id)
+                remote_memory: Memory = self.owner.timeline.get_entity_by_name(self.remote_memo_id)
+
                 remote_key = remote_memory.qstate_key
-                keys = [self.key, remote_key]
+                keys = [self_key, remote_key]
 
-                fidelity = self.raw_fidelity
-                if fidelity == 1:
-                    state = [1., 0., 0., 0.]
+                if self_key not in quantum_manager.states:
+                    in_fidelity = 1 - self.raw_fidelity
+                    x_elem, y_elem, z_elem = [error * in_fidelity for error in self.raw_epr_errors]
+                    state = [self.raw_fidelity, z_elem, x_elem, y_elem]
+                    quantum_manager.set(keys, state)
+                    self.memory.bds_decohere()
+                    remote_memory.bds_decohere()
 
-                else:
-                    assert self.raw_fidelity is not None, \
-                        "Raw EPR pair Pauli error is required for BDS formalism with raw fidelity below 1."
-                    inverse_fidelity = 1 - fidelity
-                    x_element, y_element, z_element = [error * inverse_fidelity for error in self.raw_epr_errors]
-                    state = [fidelity, x_element, y_element, z_element]
-
-                tl.quantum_manager.set(keys, state)
                 self._entanglement_succeed()
 
         else:
@@ -85,6 +86,22 @@ class SingleHeraldedA(EntanglementGenerationA):
         return True
 
     def emit_event(self) -> None:
+        """Method to set up memory and emit photons.
+
+        If the protocol is in round 1, the memory will be first set to the |+> state.
+        Otherwise, it will apply an x_gate to the memory.
+        Regardless of the round, the memory `excite` method will be invoked.
+
+        Side Effects:
+            May change state of attached memory.
+            May cause attached memory to emit photon.
+        """
+        if not self.is_ready():
+            log.logger.info(f'{self} is not valid, emit_event() failed.')
+            return
+
+        if self.ent_round == 1:
+            self.memory.update_state(QuantumCircuitMixin._plus_state)
         self.memory.excite(self.middle, protocol='sh')
 
     def received_message(self, src: str, msg: EntanglementGenerationMessage) -> None:
@@ -193,15 +210,19 @@ class SingleHeraldedA(EntanglementGenerationA):
             raise Exception("Invalid message {} received by EG on node {}".format(msg_type, self.owner.name))
 
     def _entanglement_succeed(self):
-        super()._entanglement_succeed()
+        log.logger.info(f'{self.owner.name} successful entanglement of memory {self.memory}')
+        self.memory.entangled_memory['node_id'] = self.remote_node_name
+        self.memory.entangled_memory['memo_id'] = self.remote_memo_id
         self.memory.fidelity = self.raw_fidelity
 
         self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
 
 @EntanglementGenerationB.register(SINGLE_HERALDED)
 class SingleHeraldedB(EntanglementGenerationB):
-    def __init__(self, owner: "BSMNode", name: str, others: List[str]):
+    def __init__(self, owner: "SingleHeraldedBSM", name: str, others: List[str]):
         super().__init__(owner, name, others)
+        assert len(others) == 2
+        self.others = others
 
     def bsm_update(self, bsm: "SingleHeraldedBSM", info: Dict['str', Any]) -> None:
         """Method to receive detection events from BSM on node.
@@ -213,4 +234,17 @@ class SingleHeraldedB(EntanglementGenerationB):
         assert bsm.encoding == SINGLE_HERALDED, \
             "SingleHeraldedB should only be used with SingleHeraldedBSM."
 
-        super().bsm_update(bsm, info)
+        assert info['info_type'] == 'BSM_res'
+
+        res = info['res']
+        time = info['time']
+        resolution = bsm.resolution
+
+        for node in self.others:
+            message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES,
+                                                    receiver=None,
+                                                    protocol_type=SingleHeraldedA,
+                                                    detector=res,
+                                                    time=time,
+                                                    resolution=resolution)
+            self.owner.send_message(node, message)

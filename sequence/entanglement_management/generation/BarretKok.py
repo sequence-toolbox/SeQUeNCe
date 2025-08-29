@@ -219,7 +219,9 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
             raise Exception("Invalid message {} received by EG on node {}".format(msg_type, self.owner.name))
 
     def _entanglement_succeed(self):
-        super()._entanglement_succeed()
+        log.logger.info(f'{self.owner.name} successful entanglement of memory {self.memory}')
+        self.memory.entangled_memory['node_id'] = self.remote_node_name
+        self.memory.entangled_memory['memo_id'] = self.remote_memo_id
         self.memory.fidelity = self.memory.raw_fidelity
         self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
 

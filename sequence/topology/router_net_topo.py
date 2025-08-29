@@ -2,7 +2,9 @@ import json
 import numpy as np
 from networkx import Graph, dijkstra_path, exception
 
+from build.lib.sequence.constants import DENSITY_MATRIX_FORMALISM
 from .topology import Topology as Topo
+from ..components.bsm import SingleHeraldedBSM
 from ..kernel.timeline import Timeline
 from ..kernel.quantum_manager import KET_STATE_FORMALISM, QuantumManager
 from .node import BSMNode, QuantumRouter
@@ -68,7 +70,7 @@ class RouterNetTopo(Topo):
         if config.get(self.IS_PARALLEL, False):
             raise Exception("Please install 'psequence' package for parallel simulations.")
         else:
-            self.tl = Timeline(int(stop_time))
+            self.tl = Timeline(stop_time)
 
     def _map_bsm_routers(self, config):
         for qc in config[Topo.ALL_Q_CHANNEL]:

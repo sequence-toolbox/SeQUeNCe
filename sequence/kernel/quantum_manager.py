@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 
 from numpy.typing import NDArray
 from threading import Lock
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Type
 
 if TYPE_CHECKING:
     from ..components.circuit import Circuit
@@ -84,7 +84,7 @@ class QuantumManager(ABC):
         return decorator
 
     @classmethod
-    def create(cls, *args, **kwargs):
+    def create(cls, *args, **kwargs) -> Type['QuantumManager']:
         active_formalism = cls.get_active_formalism()
         if active_formalism not in cls._registry:
             raise ValueError(f"Quantum manager '{active_formalism}' is not registered.")

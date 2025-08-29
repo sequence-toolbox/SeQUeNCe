@@ -76,7 +76,7 @@ class Timeline:
             QuantumManager.set_global_manager_formalism(formalism)
             warnings.warn('Please use the QuantumManager.set_global_manager_formalism method instead.')
 
-        self.quantum_manager = QuantumManager.create(truncation=truncation)
+        self.quantum_manager: QuantumManager = QuantumManager.create(truncation=truncation)
 
     def now(self) -> int:
         """Returns current simulation time."""
