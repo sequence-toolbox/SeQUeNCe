@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any
 
 from .generation_message import EntanglementGenerationMessage, GenerationMsgType, valid_trigger_time
@@ -10,14 +8,14 @@ if TYPE_CHECKING:
     from ...components.bsm import SingleAtomBSM
 
 from ...resource_management.memory_manager import MemoryInfo
-
+from ...constants import BARRET_KOK
 from .generation import EntanglementGenerationA, EntanglementGenerationB, QuantumCircuitMixin
 
 from ...kernel.event import Event
 from ...kernel.process import Process
 from ...utils import log
 
-@EntanglementGenerationA.register('single_atom')
+@EntanglementGenerationA.register(BARRET_KOK)
 class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
     """Entanglement generation protocol for quantum router.
 
@@ -225,7 +223,7 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
         self.memory.fidelity = self.memory.raw_fidelity
         self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
 
-@EntanglementGenerationB.register('single_atom')
+@EntanglementGenerationB.register(BARRET_KOK)
 class BarretKokB(EntanglementGenerationB):
     """Entanglement generation protocol for BSM node.
 

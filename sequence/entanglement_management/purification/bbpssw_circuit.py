@@ -11,12 +11,14 @@ from typing import TYPE_CHECKING
 from ...components.circuit import Circuit
 
 if TYPE_CHECKING:
-    pass
+    from ...components.memory import Memory
+    from ...topology.node import Node
 
 from ...utils import log
+from ...constants import KET_STATE_FORMALISM
 from .bbpssw_protocol import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType
 
-@BBPSSWProtocol.register('circuit')
+@BBPSSWProtocol.register(KET_STATE_FORMALISM)
 class BBPSSWCircuit(BBPSSWProtocol):
     """Purification protocol instance.
 

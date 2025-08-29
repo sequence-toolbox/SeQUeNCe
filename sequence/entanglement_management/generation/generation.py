@@ -1,12 +1,10 @@
-from __future__ import annotations
-
 from abc import ABC
 from math import sqrt
 from typing import TYPE_CHECKING, List, Dict, Type, Any
 
 from .generation_message import EntanglementGenerationMessage, GenerationMsgType
 from ...resource_management.memory_manager import MemoryInfo
-
+from ...constants import BARRET_KOK
 
 if TYPE_CHECKING:
     from ...components.memory import Memory
@@ -27,7 +25,7 @@ class QuantumCircuitMixin:
 
 class EntanglementGenerationA(EntanglementProtocol, ABC):
     _registry: Dict[str, Type['EntanglementGenerationA']] = {}
-    _global_type: str = 'single_atom'
+    _global_type: str = BARRET_KOK
 
     def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs):
         super().__init__(owner, name)
@@ -72,9 +70,9 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
             cls._registry[name] = protocol_class
             return None
 
-        def decorator(protocol_class: Type['EntanglementGenerationA']):
-            cls._registry[name] = protocol_class
-            return protocol_class
+        def decorator(protocol_cls: Type['EntanglementGenerationA']):
+            cls._registry[name] = protocol_cls
+            return protocol_cls
 
         return decorator
 
@@ -90,7 +88,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
 
     @classmethod
     def clear_global(cls):
-        cls._global_type = 'single_atom'
+        cls._global_type = BARRET_KOK
 
     @classmethod
     def list_protocols(cls) -> List[str]:

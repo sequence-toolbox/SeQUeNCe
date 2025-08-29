@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, List, Dict, Type, Optional, Callable
 
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 from sequence.utils.log import logger
+from ...constants import KET_STATE_FORMALISM
 from ...message import Message
 
 if TYPE_CHECKING:
@@ -37,7 +38,7 @@ class BBPSSWMessage(Message):
 
 class BBPSSWProtocol(EntanglementProtocol, ABC):
     _registry: Dict[str, Type['BBPSSWProtocol']] = {}
-    _global_formalism: str = 'circuit'
+    _global_formalism: str = KET_STATE_FORMALISM
 
     def __init__(self, owner: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory", **kwargs):
         """Constructor for purification protocol.
@@ -152,7 +153,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
 
     def clear_global_formalism(cls) -> None:
         """Resets the global formalism to default"""
-        cls._global_formalism = 'circuit'
+        cls._global_formalism = KET_STATE_FORMALISM
 
     def is_ready(self) -> bool:
         """Check if the protocol is ready to start."""

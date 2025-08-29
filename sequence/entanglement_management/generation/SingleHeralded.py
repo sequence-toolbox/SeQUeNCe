@@ -9,13 +9,13 @@ from ...resource_management.memory_manager import MemoryInfo
 if TYPE_CHECKING:
     from ...components.memory import Memory
     from ...topology.node import Node, BSMNode
-from ...kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
+from ...constants import BELL_DIAGONAL_STATE_FORMALISM, SINGLE_HERALDED
 from .generation import EntanglementGenerationA, EntanglementGenerationB
 from ...kernel.event import Event
 from ...kernel.process import Process
 from ...utils import log
 
-@EntanglementGenerationA.register('single_heralded')
+@EntanglementGenerationA.register(SINGLE_HERALDED)
 class SingleHeraldedA(EntanglementGenerationA):
     def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory",
                  raw_fidelity: float = None, raw_epr_errors: List[float] = None):
@@ -198,7 +198,7 @@ class SingleHeraldedA(EntanglementGenerationA):
 
         self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
 
-@EntanglementGenerationB.register('single_heralded')
+@EntanglementGenerationB.register(SINGLE_HERALDED)
 class SingleHeraldedB(EntanglementGenerationB):
     def __init__(self, owner: "BSMNode", name: str, others: List[str]):
         super().__init__(owner, name, others)
@@ -210,7 +210,7 @@ class SingleHeraldedB(EntanglementGenerationB):
             bsm (SingleAtomBSM or SingleHeraldedBSM): bsm object calling method.
             info (Dict[str, any]): information passed from bsm.
         """
-        assert bsm.encoding == 'single_heralded', \
+        assert bsm.encoding == SINGLE_HERALDED, \
             "SingleHeraldedB should only be used with SingleHeraldedBSM."
 
         super().bsm_update(bsm, info)

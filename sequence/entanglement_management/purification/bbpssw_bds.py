@@ -10,14 +10,16 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+
 if TYPE_CHECKING:
     from ...components.memory import Memory
+    from ...topology.node import Node
 
-from ...kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
+from ...constants import BELL_DIAGONAL_STATE_FORMALISM
 from ...utils import log
 from .bbpssw_protocol import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType
 
-@BBPSSWProtocol.register('bds')
+@BBPSSWProtocol.register(BELL_DIAGONAL_STATE_FORMALISM)
 class BBPSSW_BDS(BBPSSWProtocol):
     """Purification protocol instance.
 
