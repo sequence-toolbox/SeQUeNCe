@@ -1,4 +1,4 @@
-# test_quantum_node.py
+# test_dqc_node.py
 
 import pytest
 
@@ -10,7 +10,7 @@ from sequence.components.photon import Photon
 from sequence.topology.node import DQCNode 
 
 
-def test_QuantumNode_init_sets_data_memory():
+def test_DQCNode_init_sets_data_memory():
     tl = Timeline()
     qn = DQCNode("qn1", tl, data_memo_size=4, memo_size=2)
 
@@ -28,7 +28,7 @@ def test_QuantumNode_init_sets_data_memory():
         pytest.skip("MemoryArray does not expose size; cannot assert data_memo_size.")
 
 
-def test_QuantumNode_assign_cchannel():
+def test_DQCNode_assign_cchannel():
     tl = Timeline()
     qn = DQCNode("qn1", tl, data_memo_size=1)
     cc = ClassicalChannel("cc", tl, 1e3)
@@ -36,7 +36,7 @@ def test_QuantumNode_assign_cchannel():
     assert "qn2" in qn.cchannels and qn.cchannels["qn2"] == cc
 
 
-def test_QuantumNode_assign_qchannel():
+def test_DQCNode_assign_qchannel():
     tl = Timeline()
     qn = DQCNode("qn1", tl, data_memo_size=1)
     qc = QuantumChannel("qc", tl, 2e-4, 1e3)
@@ -44,7 +44,7 @@ def test_QuantumNode_assign_qchannel():
     assert "qn2" in qn.qchannels and qn.qchannels["qn2"] == qc
 
 
-def test_QuantumNode_send_message_like_Node():
+def test_DQCNode_send_message_like_Node():
     class FakeQNode(DQCNode):
         def __init__(self, name, tl):
             super().__init__(name, tl, data_memo_size=1, memo_size=1)
@@ -85,7 +85,7 @@ def test_QuantumNode_send_message_like_Node():
         assert actual == expect
 
 
-def test_QuantumNode_send_qubit_like_Node():
+def test_DQCNode_send_qubit_like_Node():
     import numpy as np
     np.random.seed(0)
 
@@ -126,7 +126,7 @@ def test_QuantumNode_send_qubit_like_Node():
     assert abs(len(qn2.log) / N - expect_rate_0) < 0.1
 
 
-# ---- Dispatch behavior specific to QuantumNode.receive_message ----
+# ---- Dispatch behavior specific to DQCNode.receive_message ----
 
 class Sink:
     def __init__(self):
@@ -136,7 +136,7 @@ class Sink:
         self.calls.append((src, msg))
 
 
-def test_QuantumNode_receive_message_dispatch_to_apps_and_managers():
+def test_DQCNode_receive_message_dispatch_to_apps_and_managers():
     class SimpleMsg:
         def __init__(self, receiver):
             self.receiver = receiver
@@ -170,7 +170,7 @@ def test_QuantumNode_receive_message_dispatch_to_apps_and_managers():
     assert len(tga.calls) == 1 and tga.calls[0][0] == "peer"
 
 
-def test_QuantumNode_receive_message_dispatch_to_named_protocol():
+def test_DQCNode_receive_message_dispatch_to_named_protocol():
     class SimpleMsg:
         def __init__(self, receiver):
             self.receiver = receiver
@@ -195,9 +195,9 @@ def test_QuantumNode_receive_message_dispatch_to_named_protocol():
     assert p.calls[0][0] == "peer"
 
 
-def test_QuantumNode_receive_message_dispatch_by_protocol_type_when_receiver_None():
+def test_DQCNode_receive_message_dispatch_by_protocol_type_when_receiver_None():
     class SimpleMsg:
-        def __init__(self, protocol_type):
+        def __init__(self, protocol_type: str = None):
             self.receiver = None
             self.protocol_type = protocol_type
 
@@ -205,6 +205,7 @@ def test_QuantumNode_receive_message_dispatch_by_protocol_type_when_receiver_Non
         def __init__(self):
             self.name = "pta"
             self.calls = []
+            self.protocol_type = "ProtoTypeA"
 
         def received_message(self, src, msg):
             self.calls.append((src, msg))
@@ -213,6 +214,7 @@ def test_QuantumNode_receive_message_dispatch_by_protocol_type_when_receiver_Non
         def __init__(self):
             self.name = "ptb"
             self.calls = []
+            self.protocol_type = "ProtoTypeB"
 
         def received_message(self, src, msg):
             self.calls.append((src, msg))
@@ -225,7 +227,7 @@ def test_QuantumNode_receive_message_dispatch_by_protocol_type_when_receiver_Non
     qn.protocols.extend([pA, pB])
 
     # Should go only to protocols where type(p) == msg.protocol_type
-    qn.receive_message("peer", SimpleMsg(protocol_type=ProtoTypeA))
+    qn.receive_message("peer", SimpleMsg(protocol_type="ProtoTypeA"))
 
     assert len(pA.calls) == 1 and pA.calls[0][0] == "peer"
     assert len(pB.calls) == 0
