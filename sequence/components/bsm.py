@@ -714,7 +714,15 @@ class ShellBSM(BSM):
         self.encoding = "shell"
 
     def get(self, photon, **kwargs):
+        """Override of abstract method.
+        This method is intentionally left empty as ShellBSM serves as a placeholder BSM implementation.
+        No action is performed when a photon is received.
+        """
         pass
 
     def trigger(self, detector: Detector, info: dict[str, Any]):
+        """Override of abstract method.
+        This method is intentionally left empty as ShellBSM serves as a placeholder BSM implementation.
+        No action is performed when a detector is triggered.
+        """
         pass
