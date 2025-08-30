@@ -266,7 +266,7 @@ class BSMNode(Node):
     def receive_message(self, src: str, msg: "Message") -> None:
         # signal to protocol that we've received a message
         for protocol in self.protocols:
-            if protocol.protocol_type or protocol.type == msg.protocol_type:
+            if protocol.protocol_type == msg.protocol_type or type(protocol) == msg.protocol_type:
                 if protocol.received_message(src, msg):
                     return
 

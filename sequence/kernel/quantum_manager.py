@@ -84,7 +84,7 @@ class QuantumManager(ABC):
         return decorator
 
     @classmethod
-    def create(cls, *args, **kwargs) -> Type['QuantumManager']:
+    def create(cls, *args, **kwargs) -> 'QuantumManager':
         active_formalism = cls.get_active_formalism()
         if active_formalism not in cls._registry:
             raise ValueError(f"Quantum manager '{active_formalism}' is not registered.")

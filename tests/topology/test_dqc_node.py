@@ -1,4 +1,5 @@
 # test_dqc_node.py
+from typing import Optional
 
 import pytest
 
@@ -197,7 +198,7 @@ def test_DQCNode_receive_message_dispatch_to_named_protocol():
 
 def test_DQCNode_receive_message_dispatch_by_protocol_type_when_receiver_None():
     class SimpleMsg:
-        def __init__(self, protocol_type: str = None):
+        def __init__(self, protocol_type: Optional[str] = None):
             self.receiver = None
             self.protocol_type = protocol_type
 

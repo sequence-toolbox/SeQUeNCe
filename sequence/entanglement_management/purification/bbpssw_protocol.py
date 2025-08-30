@@ -146,11 +146,12 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         except KeyError:
             raise ValueError(f"Protocol class '{protocol_name}' is not registered.")
 
-
+    @classmethod
     def list_protocols(cls) -> List[str]:
         """List all registered BBPSSW protocols."""
         return list(cls._registry.keys())
 
+    @classmethod
     def clear_global_formalism(cls) -> None:
         """Resets the global formalism to default"""
         cls._global_formalism = KET_STATE_FORMALISM
