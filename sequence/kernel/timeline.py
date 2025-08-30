@@ -3,13 +3,13 @@
 This module defines the Timeline class, which provides an interface for the simulation kernel and drives event execution.
 All entities are required to have an attached timeline for simulation.
 """
-
+import warnings
 from _thread import start_new_thread
 from datetime import timedelta
 from math import inf
 from sys import stdout
 from time import sleep, time_ns
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, TypeVar
 
 from numpy import random
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from .entity import Entity
 
 from .eventlist import EventList
-from .quantum_manager import (QuantumFactory, KET_STATE_FORMALISM)
+from .quantum_manager import QuantumManager
 from ..utils import log
 
 # for timeline formatting
@@ -28,6 +28,7 @@ NANOSECONDS_PER_MICROSECOND = 10**3
 MILLISECONDS_PER_SECOND = 10**3
 CARRIAGE_RETURN = '\r'
 
+T = TypeVar("T", bound="Entity")
 
 class Timeline:
     """Class for a simulation timeline.
@@ -54,7 +55,7 @@ class Timeline:
         show_progress (bool): show/hide the progress bar of simulation.
         quantum_manager (QuantumManager): quantum state manager.
     """
-    def __init__(self, stop_time: int = inf, formalism = KET_STATE_FORMALISM, truncation = 1):
+    def __init__(self, stop_time: int = inf, formalism: str = None, truncation: int = 1):
         """Constructor for timeline.
 
         Args:
@@ -70,8 +71,12 @@ class Timeline:
         self.run_counter: int = 0
         self.is_running: bool = False
         self.show_progress: bool = False
-        self.quantum_manager = QuantumFactory.create(formalism, truncation=truncation)
 
+        if formalism:
+            QuantumManager.set_global_manager_formalism(formalism)
+            warnings.warn('Please use the QuantumManager.set_global_manager_formalism method instead.')
+
+        self.quantum_manager: QuantumManager = QuantumManager.create(truncation=truncation)
 
     def now(self) -> int:
         """Returns current simulation time."""
@@ -152,7 +157,7 @@ class Timeline:
         entity = self.entities.pop(name)
         entity.timeline = None
 
-    def get_entity_by_name(self, name: str) -> Optional["Entity"]:
+    def get_entity_by_name(self, name: str) -> Optional[T]:
         return self.entities.get(name, None)
 
     @staticmethod

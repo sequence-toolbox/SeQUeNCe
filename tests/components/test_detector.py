@@ -4,7 +4,7 @@ import numpy as np
 from sequence.components.detector import *
 from sequence.components.photon import Photon
 from sequence.kernel.timeline import Timeline
-from sequence.kernel.quantum_manager import FOCK_DENSITY_MATRIX_FORMALISM
+from sequence.kernel.quantum_manager import FOCK_DENSITY_MATRIX_FORMALISM, QuantumManager
 from sequence.utils.encoding import polarization, time_bin, absorptive, fock
 
 SEED = 0
@@ -204,7 +204,8 @@ def test_QSDetectorFockDirect():
     period = (1e12 / COUNT_RATE) + 1
     src_list = ["a", "b"]
 
-    tl = Timeline(formalism=FOCK_DENSITY_MATRIX_FORMALISM)
+    QuantumManager.set_global_manager_formalism(FOCK_DENSITY_MATRIX_FORMALISM)
+    tl = Timeline()
 
     qsd = QSDetectorFockDirect("qsd", tl, src_list)
     [qsd.update_detector_params(i, "efficiency", 1) for i in range(2)]
@@ -231,6 +232,9 @@ def test_QSDetectorFockDirect():
     times = qsd.get_photon_times()
     assert len(times[1]) == NUM_TRIALS
 
+    # Clear it
+    QuantumManager.clear_active_formalism()
+
 
 def test_QSDetectorFockInterference():
     class RandomControl:
@@ -246,7 +250,9 @@ def test_QSDetectorFockInterference():
     psi_minus = [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]
     src_list = ["a", "b"]
 
-    tl = Timeline(formalism=FOCK_DENSITY_MATRIX_FORMALISM)
+
+    QuantumManager.set_global_manager_formalism(FOCK_DENSITY_MATRIX_FORMALISM)
+    tl = Timeline()
 
     qsd = QSDetectorFockInterference("qsd", tl, src_list)
     random_control = RandomControl(0)
@@ -329,6 +335,7 @@ def test_QSDetectorFockInterference():
 
     times = qsd.get_photon_times()
     assert len(times[0]) == NUM_TRIALS
+    QuantumManager.clear_active_formalism()
 
 
 def test_FockDetector():
