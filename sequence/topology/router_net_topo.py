@@ -3,7 +3,6 @@ import numpy as np
 from networkx import Graph, dijkstra_path, exception
 
 from .topology import Topology as Topo
-from ..components.bsm import SingleHeraldedBSM
 from ..kernel.timeline import Timeline
 from ..kernel.quantum_manager import KET_STATE_FORMALISM, QuantumManager
 from .node import BSMNode, QuantumRouter

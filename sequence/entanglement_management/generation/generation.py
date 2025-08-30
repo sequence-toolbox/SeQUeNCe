@@ -52,7 +52,6 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
 
         # Misc.
         self.primary: bool = False
-        self.debug: bool = False
         self._qstate_key: int = self.memory.qstate_key
 
     @classmethod
@@ -78,8 +77,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         return decorator
 
     @classmethod
-    def create(cls, owner: "Node", name: str, middle: str, other: str, memory: "Memory",
-               **kwargs) -> 'EntanglementGenerationA':
+    def create(cls, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs) -> 'EntanglementGenerationA':
         protocol_name = cls.get_global_type()
         try:
             protocol_class = cls._registry[protocol_name]

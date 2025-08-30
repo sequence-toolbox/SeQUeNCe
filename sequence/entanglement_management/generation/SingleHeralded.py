@@ -8,6 +8,8 @@ from ...resource_management.memory_manager import MemoryInfo
 
 if TYPE_CHECKING:
     from ...components.memory import Memory
+    from ...topology.node import Node
+    
 from ...constants import SINGLE_HERALDED
 from .generation import EntanglementGenerationA, EntanglementGenerationB, QuantumCircuitMixin
 from ...kernel.event import Event

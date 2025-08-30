@@ -9,10 +9,9 @@ The states may currently be defined in two possible ways:
 The manager defines an API for interacting with quantum states.
 """
 from abc import ABC, abstractmethod
-
 from numpy.typing import NDArray
 from threading import Lock
-from typing import TYPE_CHECKING, Any, Type
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..components.circuit import Circuit
@@ -36,13 +35,15 @@ class QuantumManager(ABC):
 
     Attributes:
         states (dict[int, State]): mapping of state keys to quantum state objects.
-        truncation (int): maximally allowed number of excited states for elementary subsystems.
-                Default is 1 for qubit.
+        _least_available (int): tracking the total number of quantum states in the quantum network
+        formalism (str): the formalism of the quantum state. Default is KET_STATE_FORMALISM
+        truncation (int): maximally allowed number of excited states for elementary subsystems. Default is 1 for qubit.
         dim (int): subsystem Hilbert space dimension. dim = truncation + 1
     """
-    _registry: dict = {}
-    _global_formalism_lock = Lock()
-    _global_formalism: str = KET_STATE_FORMALISM
+    # Class-level attributes
+    _registry: dict = {}                           # mapping of formalism names to manager classes
+    _global_formalism_lock = Lock()                # lock for managing global formalism
+    _global_formalism: str = KET_STATE_FORMALISM   # global formalism
 
     def __init__(self, formalism: str = None, truncation: int = 1):
         self.states: dict[int, "State"] = {}
@@ -56,6 +57,11 @@ class QuantumManager(ABC):
 
     @classmethod
     def set_global_manager_formalism(cls, formalism: str):
+        """Set the global manager formalism.
+
+        Args:
+            formalism (str): The formalism to set as the global manager formalism.
+        """
         with cls._global_formalism_lock:
             if formalism not in cls._registry:
                 raise ValueError(f"Quantum manager '{formalism}' is not registered.")
@@ -73,6 +79,12 @@ class QuantumManager(ABC):
 
     @classmethod
     def register(cls, name: str, manager_class=None):
+        """Register a quantum manager class.
+
+        Args:
+            name (str): The name of the quantum manager.
+            manager_class (type, optional): The manager class to register.
+        """
         if manager_class is not None:
             cls._registry[name] = manager_class
             return None
@@ -85,12 +97,13 @@ class QuantumManager(ABC):
 
     @classmethod
     def create(cls, *args, **kwargs) -> 'QuantumManager':
+        """Create a new instance of the quantum manager.
+        """
         active_formalism = cls.get_active_formalism()
         if active_formalism not in cls._registry:
             raise ValueError(f"Quantum manager '{active_formalism}' is not registered.")
 
         return cls._registry[active_formalism](*args, **kwargs)
-
 
     @abstractmethod
     def new(self, state) -> int:
@@ -133,6 +146,12 @@ class QuantumManager(ABC):
             assert meas_samp, "must specify random sample when measuring qubits"
 
     def _prepare_circuit(self, circuit: "Circuit", keys: list[int]):
+        """Prepare the circuit for execution by constructing the necessary state and transformation matrices.
+        
+        Args:
+            circuit (Circuit): quantum circuit to apply.
+            keys (list[int]): list of keys for quantum states to apply circuit to.
+        """
         old_states = []
         all_keys = []
 
@@ -163,7 +182,13 @@ class QuantumManager(ABC):
         return new_state, all_keys, circ_mat
 
     @staticmethod
-    def _swap_qubits(all_keys, keys):
+    def _swap_qubits(all_keys: list[int], keys: list[int]):
+        """Swap qubits in the circuit.
+        
+        Args:
+            all_keys (list[int]): The list of all qubit keys.
+            keys (list[int]): The list of qubit keys to swap.
+        """
         swap_circuit = QubitCircuit(N=len(all_keys))
         for i, key in enumerate(keys):
             j = all_keys.index(key)
@@ -186,11 +211,21 @@ class QuantumManager(ABC):
         pass
 
     def remove(self, key: int) -> None:
-        """Method to remove state stored at key."""
+        """Method to remove state stored at key.
+        
+        Args:
+            key (int): The key of the state to remove.
+        """
         del self.states[key]
 
     def set_states(self, states: dict):
+        """Set multiple quantum states.
+
+        Args:
+            states (dict): A dictionary mapping keys to their corresponding quantum states.
+        """
         self.states = states
+
 
 @QuantumManager.register(KET_STATE_FORMALISM)
 class QuantumManagerKet(QuantumManager):
@@ -311,6 +346,7 @@ class QuantumManagerKet(QuantumManager):
                 self.states[key] = new_state_obj
 
         return dict(zip(keys, result_digits))
+
 
 @QuantumManager.register(DENSITY_MATRIX_FORMALISM)
 class QuantumManagerDensity(QuantumManager):
@@ -435,6 +471,7 @@ class QuantumManagerDensity(QuantumManager):
             self.states[key] = new_state_obj
 
         return dict(zip(keys, result_digits))
+
 
 @QuantumManager.register(FOCK_DENSITY_MATRIX_FORMALISM)
 class QuantumManagerDensityFock(QuantumManager):
@@ -734,6 +771,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
         self.set(all_keys, output_state)
 
+
 @QuantumManager.register(BELL_DIAGONAL_STATE_FORMALISM)
 class QuantumManagerBellDiagonal(QuantumManager):
     """Class to track and manage quantum states with the bell diagonal formalism.
@@ -787,5 +825,6 @@ class QuantumManagerBellDiagonal(QuantumManager):
 
     def set_to_noiseless(self, keys: list[int]):
         self.set(keys, [float(1), float(0), float(0), float(0)])
+
     def run_circuit(self, *args, **kwargs):
         pass

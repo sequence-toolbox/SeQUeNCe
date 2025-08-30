@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from enum import auto, Enum
-from typing import Type, Optional, TYPE_CHECKING
-
+from typing import Optional
 
 from ...message import Message
 
@@ -41,8 +40,7 @@ class EntanglementGenerationMessage(Message):
 
     __slots__ = ['protocol_type', 'qc_delay', 'frequency', 'emit_time', 'detector', 'time', 'resolution']
 
-    def __init__(self, msg_type: GenerationMsgType, receiver: str | None, protocol_type: str,
-                 **kwargs):
+    def __init__(self, msg_type: GenerationMsgType, receiver: str | None, protocol_type: str, **kwargs):
         super().__init__(msg_type, receiver)
 
         self.protocol_type = protocol_type

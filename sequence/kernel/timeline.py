@@ -55,7 +55,7 @@ class Timeline:
         show_progress (bool): show/hide the progress bar of simulation.
         quantum_manager (QuantumManager): quantum state manager.
     """
-    def __init__(self, stop_time: int = inf, formalism: str = None, truncation = 1):
+    def __init__(self, stop_time: int = inf, formalism: str = None, truncation: int = 1):
         """Constructor for timeline.
 
         Args:
