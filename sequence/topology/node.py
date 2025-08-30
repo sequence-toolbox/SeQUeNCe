@@ -337,15 +337,6 @@ class QuantumRouter(Node):
         self.map_to_middle_node = {}
         self.app = None
 
-        # ADDIN
-        self.successful_attempts = 0
-        self.total_attempts = 0
-        self.time_to_thousand = 0
-        self.ep_count = 0
-        self.ep_success = 0
-        self.time_to_ep = 0
-        self.new_fid = 0.0
-
     def receive_message(self, src: str, msg: "Message") -> None:
         """Determine what to do when a message is received, based on the msg.receiver.
 
