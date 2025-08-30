@@ -20,6 +20,7 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
                  raw_fidelity: float = None, raw_epr_errors: List[float] = None):
         super().__init__(owner, name, middle, other, memory)
 
+        self.protocol_type = SINGLE_HERALDED
         #assert self.owner.timeline.quantum_manager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, \
         #    "Single Heralded Entanglement generation protocol only supports Bell diagonal state formalism."
 
@@ -149,7 +150,7 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
             other_emit_time = emit_time + self.qc_delay - other_qc_delay
             message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK,
                                                     self.remote_protocol_name,
-                                                    protocol_type=self,
+                                                    protocol_type=SINGLE_HERALDED,
                                                     emit_time=other_emit_time)
             self.owner.send_message(src, message)
 
@@ -223,6 +224,7 @@ class SingleHeraldedB(EntanglementGenerationB):
         super().__init__(owner, name, others)
         assert len(others) == 2
         self.others = others
+        self.protocol_type = SINGLE_HERALDED
 
     def bsm_update(self, bsm: "SingleHeraldedBSM", info: Dict['str', Any]) -> None:
         """Method to receive detection events from BSM on node.
@@ -243,7 +245,7 @@ class SingleHeraldedB(EntanglementGenerationB):
         for node in self.others:
             message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES,
                                                     receiver=None,
-                                                    protocol_type=SingleHeraldedA,
+                                                    protocol_type=SINGLE_HERALDED,
                                                     detector=res,
                                                     time=time,
                                                     resolution=resolution)
