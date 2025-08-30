@@ -32,5 +32,5 @@ FOCK_DENSITY_MATRIX_FORMALISM: Final = "fock_density"
 BELL_DIAGONAL_STATE_FORMALISM: Final = "bell_diagonal"
 
 # Built-In Generation Protocols
-BARRET_KOK: Final = 'single_atom'
+BARRET_KOK: Final = 'barret_kok'
 SINGLE_HERALDED: Final = 'single_heralded'

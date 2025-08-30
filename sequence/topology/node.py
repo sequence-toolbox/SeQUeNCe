@@ -243,8 +243,7 @@ class BSMNode(Node):
         if not component_templates:
             component_templates = {}
 
-        #self.encoding_type = component_templates.get('encoding_type', 'single_atom')
-        self.encoding_type = EntanglementGenerationB.get_global_type()
+        self.encoding_type = component_templates.get('encoding_type', 'single_atom')
 
         # create BSM object with optional args
         bsm_name = name + ".BSM"
