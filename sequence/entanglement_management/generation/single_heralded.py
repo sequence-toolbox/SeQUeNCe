@@ -8,13 +8,14 @@ from ...resource_management.memory_manager import MemoryInfo
 
 if TYPE_CHECKING:
     from ...components.memory import Memory
-    from ...topology.node import Node
+    from ...topology.node import Node, BSMNode
     
 from ...constants import SINGLE_HERALDED
 from .generation_base import EntanglementGenerationA, EntanglementGenerationB, QuantumCircuitMixin
 from ...kernel.event import Event
 from ...kernel.process import Process
 from ...utils import log
+
 
 @EntanglementGenerationA.register(SINGLE_HERALDED)
 class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
@@ -23,8 +24,8 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
         super().__init__(owner, name, middle, other, memory)
 
         self.protocol_type = SINGLE_HERALDED
-        #assert self.owner.timeline.quantum_manager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, \
-        #    "Single Heralded Entanglement generation protocol only supports Bell diagonal state formalism."
+        # assert self.owner.timeline.quantum_manager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, \
+        #     "Single Heralded Entanglement generation protocol only supports Bell diagonal state formalism."
 
         if raw_fidelity:
             self.raw_fidelity = raw_fidelity
@@ -41,7 +42,7 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
 
         self.bsm_res = [0, 0]
 
-    def update_memory(self) -> bool:
+    def update_memory(self) -> bool | None:
         """Method to handle necessary memory operations.
 
         Called on both nodes.
@@ -156,7 +157,8 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
                                                     emit_time=other_emit_time)
             self.owner.send_message(src, message)
 
-            # schedule start if necessary (current is first round, need second round), else schedule update_memory (currently second round)
+            # schedule start if necessary (current is first round, need second round),
+            # else schedule update_memory (currently second round)
             # TODO: base future start time on resolution
             future_start_time = self.expected_time + self.owner.cchannels[
                 self.middle].delay + 10  # delay is for sending the BSM_RES to end nodes, 10 is a small gap
@@ -170,7 +172,7 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
 
         elif msg_type is GenerationMsgType.NEGOTIATE_ACK:  # non-primary --> primary
             # configure params
-            self.expected_time = msg.emit_time + self.qc_delay  # expected time for middle BSM node to receive the photon
+            self.expected_time = msg.emit_time + self.qc_delay  # expected time for middle BSM node to receive photon
 
             if msg.emit_time < self.owner.timeline.now():  # emit time calculated by the non-primary node
                 msg.emit_time = self.owner.timeline.now()
@@ -185,7 +187,8 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
             self.owner.timeline.schedule(event)
             self.scheduled_events.append(event)
 
-            # schedule start if necessary (current is first round, need second round), else schedule update_memory (currently second round)
+            # schedule start if necessary (current is first round, need second round),
+            # else schedule update_memory (currently second round)
             # TODO: base future start time on resolution
             future_start_time = self.expected_time + self.owner.cchannels[self.middle].delay + 10
             if self.ent_round == 1:
@@ -220,9 +223,10 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
 
         self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
 
+
 @EntanglementGenerationB.register(SINGLE_HERALDED)
 class SingleHeraldedB(EntanglementGenerationB):
-    def __init__(self, owner: "SingleHeraldedBSM", name: str, others: List[str]):
+    def __init__(self, owner: "BSMNode", name: str, others: List[str]):
         super().__init__(owner, name, others)
         assert len(others) == 2
         self.others = others
