@@ -15,6 +15,7 @@ from ...kernel.event import Event
 from ...kernel.process import Process
 from ...utils import log
 
+
 @EntanglementGenerationA.register(BARRET_KOK)
 class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
     """Entanglement generation protocol for quantum router.
@@ -57,7 +58,7 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
         Will check the state of the memory and protocol.
 
         Returns:
-            bool: if current round was successfull.
+            bool: if current round was successful.
 
         Side Effects:
             May change state of attached memory.
@@ -156,7 +157,8 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
                                                     emit_time=other_emit_time)
             self.owner.send_message(src, message)
 
-            # schedule start if necessary (current is first round, need second round), else schedule update_memory (currently second round)
+            # schedule start if necessary (current is first round, need second round),
+            # else schedule update_memory (currently second round)
             # TODO: base future start time on resolution
             future_start_time = self.expected_time + self.owner.cchannels[
                 self.middle].delay + 10  # delay is for sending the BSM_RES to end nodes, 10 is a small gap
@@ -186,7 +188,8 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
             self.owner.timeline.schedule(event)
             self.scheduled_events.append(event)
 
-            # schedule start if necessary (current is first round, need second round), else schedule update_memory (currently second round)
+            # schedule start if necessary (current is first round, need second round),
+            # else schedule update_memory (currently second round)
             # TODO: base future start time on resolution
             future_start_time = self.expected_time + self.owner.cchannels[self.middle].delay + 10
             if self.ent_round == 1:
@@ -212,7 +215,7 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
                 if self.bsm_res[i] == -1:
                     self.bsm_res[i] = detector  # save the measurement results (detector number)
                 else:
-                    self.bsm_res[i] = -1  # BSM measured 1, 1 and both didn't lost
+                    self.bsm_res[i] = -1  # BSM measured 1, 1 (both photons kept)
             else:
                 log.logger.debug('{} BSM trigger time not valid'.format(self.owner.name))
 
@@ -224,6 +227,7 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
         self.memory.entangled_memory['memo_id'] = self.remote_memo_id
         self.memory.fidelity = self.memory.raw_fidelity
         self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
+
 
 @EntanglementGenerationB.register(BARRET_KOK)
 class BarretKokB(EntanglementGenerationB):
@@ -264,4 +268,3 @@ class BarretKokB(EntanglementGenerationB):
                                                     time=time,
                                                     resolution=resolution)
             self.owner.send_message(node, message)
-
