@@ -5,9 +5,7 @@ from sequence.components.bsm import *
 from sequence.components.memory import MemoryArray
 from sequence.components.optical_channel import *
 from sequence.kernel.timeline import Timeline
-from sequence.entanglement_management.generation.generation import (EntanglementGenerationA,
-                                                                    EntanglementGenerationB)
-from sequence.entanglement_management.generation.generation_message import EntanglementGenerationMessage, GenerationMsgType
+from sequence.entanglement_management.generation import EntanglementGenerationA, EntanglementGenerationB, EntanglementGenerationMessage, GenerationMsgType
 
 from sequence.topology.node import Node
 

@@ -307,7 +307,7 @@ def test_expire():
 def test_ResourceManager1():
     from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
     from sequence.topology.node import BSMNode
-    from sequence.entanglement_management.generation.generation import EntanglementGenerationA
+    from sequence.entanglement_management.generation import EntanglementGenerationA
 
     def eg_rule_condition(memory_info, manager, args):
         if memory_info.state == "RAW":
@@ -382,7 +382,7 @@ def test_ResourceManager2():
     from sequence.kernel.event import Event
     from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
     from sequence.topology.node import BSMNode
-    from sequence.entanglement_management.generation.generation import EntanglementGenerationA
+    from sequence.entanglement_management.generation import EntanglementGenerationA
 
     def eg_rule_condition(memory_info, manager, args):
         if memory_info.state == "RAW":

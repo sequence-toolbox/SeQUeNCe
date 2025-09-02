@@ -12,8 +12,8 @@ if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
 
 from ..resource_management.rule_manager import Rule, Arguments
-from ..entanglement_management.generation.generation import EntanglementGenerationA
-from ..entanglement_management.purification.bbpssw_protocol import BBPSSWProtocol
+from ..entanglement_management.generation import EntanglementGenerationA
+from ..entanglement_management.purification import BBPSSWProtocol
 from ..entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 from ..message import Message
 from ..protocol import StackProtocol

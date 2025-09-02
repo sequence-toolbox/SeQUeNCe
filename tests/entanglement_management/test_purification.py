@@ -4,8 +4,7 @@ import pytest
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
 from sequence.constants import SQRT_HALF, PHI_PLUS, PHI_MINUS, PSI_PLUS, PSI_MINUS
-from sequence.entanglement_management.purification.bbpssw_circuit import BBPSSWCircuit
-from sequence.entanglement_management.purification.bbpssw_protocol import BBPSSWMessage, BBPSSWMsgType, BBPSSWProtocol
+from sequence.entanglement_management.purification import BBPSSWCircuit, BBPSSWMessage, BBPSSWMsgType, BBPSSWProtocol
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 

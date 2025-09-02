@@ -29,7 +29,7 @@ from ..components.light_source import LightSource
 from ..components.detector import QSDetector, QSDetectorPolarization, QSDetectorTimeBin
 from ..qkd.BB84 import BB84
 from ..qkd.cascade import Cascade
-from ..entanglement_management.generation.generation import EntanglementGenerationB
+from ..entanglement_management.generation import EntanglementGenerationB
 from ..resource_management.resource_manager import ResourceManager
 from ..network_management.network_manager import NewNetworkManager, NetworkManager
 from ..utils.encoding import *
