@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 from ...resource_management.memory_manager import MemoryInfo
 from ...constants import BARRET_KOK
-from .generation import EntanglementGenerationA, EntanglementGenerationB, QuantumCircuitMixin
+from .generation_base import EntanglementGenerationA, EntanglementGenerationB, QuantumCircuitMixin
 
 from ...kernel.event import Event
 from ...kernel.process import Process

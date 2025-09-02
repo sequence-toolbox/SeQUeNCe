@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from ...topology.node import Node
     
 from ...constants import SINGLE_HERALDED
-from .generation import EntanglementGenerationA, EntanglementGenerationB, QuantumCircuitMixin
+from .generation_base import EntanglementGenerationA, EntanglementGenerationB, QuantumCircuitMixin
 from ...kernel.event import Event
 from ...kernel.process import Process
 from ...utils import log
