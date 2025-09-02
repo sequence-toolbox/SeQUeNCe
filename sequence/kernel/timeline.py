@@ -55,7 +55,7 @@ class Timeline:
         show_progress (bool): show/hide the progress bar of simulation.
         quantum_manager (QuantumManager): quantum state manager.
     """
-    def __init__(self, stop_time: int = inf, formalism: str = None, truncation: int = 1):
+    def __init__(self, stop_time: int | float = inf, formalism: str = None, truncation: int = 1):
         """Constructor for timeline.
 
         Args:
@@ -66,7 +66,7 @@ class Timeline:
         self.events: EventList = EventList()
         self.entities: dict[str, "Entity"] = {}
         self.time: int = 0
-        self.stop_time: int = stop_time
+        self.stop_time: int | float = stop_time # This becomes a float when inf is passed
         self.schedule_counter: int = 0
         self.run_counter: int = 0
         self.is_running: bool = False
