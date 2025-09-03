@@ -123,8 +123,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
                                                     self.remote_protocol_name,
                                                     protocol_type=self.protocol_type,
                                                     qc_delay=self.qc_delay,
-                                                    frequency=frequency,
-                                                    encoding_type='single_atom')
+                                                    frequency=frequency)
             self.owner.send_message(self.remote_node_name, message)
 
     def update_memory(self) -> bool | None:

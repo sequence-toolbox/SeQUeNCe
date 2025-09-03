@@ -156,7 +156,7 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
             other_emit_time = emit_time + self.qc_delay - other_qc_delay
             message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK,
                                                     self.remote_protocol_name,
-                                                    protocol_type=SINGLE_HERALDED,
+                                                    protocol_type=self.protocol_type,
                                                     emit_time=other_emit_time)
             self.owner.send_message(src, message)
 
@@ -254,7 +254,7 @@ class SingleHeraldedB(EntanglementGenerationB):
         for node in self.others:
             message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES,
                                                     receiver=None,
-                                                    protocol_type=SINGLE_HERALDED,
+                                                    protocol_type=self.protocol_type,
                                                     detector=res,
                                                     time=time,
                                                     resolution=resolution)
