@@ -24,27 +24,12 @@ if TYPE_CHECKING:
 
 from ..kernel.entity import Entity, ClassicalEntity
 from ..components.memory import MemoryArray
-from ..components.bsm import SingleAtomBSM, SingleHeraldedBSM, ShellBSM
+from ..components.bsm import SingleAtomBSM, SingleHeraldedBSM
 from ..components.light_source import LightSource
 from ..components.detector import QSDetector, QSDetectorPolarization, QSDetectorTimeBin
 from ..qkd.BB84 import BB84
 from ..qkd.cascade import Cascade
-
-
-from importlib import import_module
-# The config file is loaded as a dictionary in CONFIG and is imported directly as such: 
-from ..config import CONFIG
-
-# This file requires the EntanglementGenerationB class from the generation module. So, first we check if the generation module is specified in the CONFIG.
-if not CONFIG.get("generation_module", None): 
-    # If the generation module is not specified, we use the default EntanglementGenerationB class.
-    from ..entanglement_management.generation import EntanglementGenerationB # if no generation module is specified, use the default one
-else:
-    # If the generation module is specified, we import the EntanglementGenerationB class from the specified module. The module can be in any location on the host 
-    # machine as long as the absolute path to the module is provided in the "plugin_path" field of the CONFIG. The name of the generation module should be different from
-    # the default "generation" module to avoid conflicts. 
-    EntanglementGenerationB = getattr(import_module(CONFIG.get("generation_module")), 'EntanglementGenerationB')
-
+from ..entanglement_management.generation import EntanglementGenerationB
 from ..resource_management.resource_manager import ResourceManager
 from ..network_management.network_manager import NewNetworkManager, NetworkManager
 from ..utils.encoding import *
@@ -174,7 +159,7 @@ class Node(Entity):
                 if protocol.name == msg.receiver and protocol.received_message(src, msg):
                     return
         else:
-            matching = [p for p in self.protocols if type(p) == msg.protocol_type]
+            matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
             for p in matching:
                 p.received_message(src, msg)
 
@@ -269,18 +254,18 @@ class BSMNode(Node):
             bsm_args = component_templates.get("SingleHeraldedBSM", {})
             bsm = SingleHeraldedBSM(bsm_name, timeline, **bsm_args)
         else:
-            bsm = ShellBSM(bsm_name, timeline)
-        
+            raise ValueError(f'Encoding type {self.encoding_type} not supported')
+
         self.add_component(bsm)
         self.set_first_component(bsm_name)
 
-        self.eg = EntanglementGenerationB(self, "{}_eg".format(name), other_nodes)
+        self.eg = EntanglementGenerationB.create(self, f'{name}_eg', other_nodes)
         bsm.attach(self.eg)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         # signal to protocol that we've received a message
         for protocol in self.protocols:
-            if type(protocol) == msg.protocol_type:
+            if protocol.protocol_type == msg.protocol_type or type(protocol) == msg.protocol_type:
                 if protocol.received_message(src, msg):
                     return
 
@@ -366,7 +351,7 @@ class QuantumRouter(Node):
             self.resource_manager.received_message(src, msg)
         else:
             if msg.receiver is None:  # the msg sent by EntanglementGenerationB doesn't have a receiver (EGA & EGB not paired)
-                matching = [p for p in self.protocols if type(p) == msg.protocol_type]
+                matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
                 for p in matching:    # the valid_trigger_time() function resolves multiple matching issue
                     p.received_message(src, msg)
             else:
@@ -720,7 +705,7 @@ class QKDNode(Node):
     def receive_message(self, src: str, msg: "Message") -> None:
         # signal to protocol that we've received a message
         for protocol in self.protocols:
-            if type(protocol) == msg.protocol_type:
+            if getattr(protocol, "protocol_type", None) or type(protocol) == msg.protocol_type:
                 protocol.received_message(src, msg)
                 return
 
@@ -812,7 +797,7 @@ class ClassicalNode(ClassicalEntity):
                 if protocol.name == msg.receiver and protocol.received_message(src, msg):
                     return
         else:
-            matching = [p for p in self.protocols if type(p) == msg.protocol_type]
+            matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
             for p in matching:
                 p.received_message(src, msg)
 
@@ -880,7 +865,7 @@ class DQCNode(QuantumRouter):
             self.telegate_app.received_message(src, msg)
         else:
             if msg.receiver is None:  # the msg sent by EntanglementGenerationB doesn't have a receiver (EGA & EGB not paired)
-                matching = [p for p in self.protocols if type(p) == msg.protocol_type]
+                matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
                 for p in matching:    # the valid_trigger_time() function resolves multiple matching issue
                     p.received_message(src, msg)
             else:

@@ -10,25 +10,10 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
-    from ..resource_management.memory_manager import MemoryInfo, MemoryManager
-    from ..entanglement_management.entanglement_protocol import EntanglementProtocol
-
-from importlib import import_module
-# The config file is loaded as a dictionary in CONFIG and is imported directly as such: 
-from ..config import CONFIG
-
-# This file requires the EntanglementGenerationB class from the generation module. So, first we check if the generation module is specified in the CONFIG.
-if not CONFIG.get("generation_module", None): 
-    # If the generation module is not specified, we use the default EntanglementGenerationB class.
-    from ..entanglement_management.generation import EntanglementGenerationA # if no generation module is specified, use the default one
-else:
-    # If the generation module is specified, we import the EntanglementGenerationB class from the specified module. The module can be in any location on the host 
-    # machine as long as the absolute path to the module is provided in the "plugin_path" field of the CONFIG. The name of the generation module should be different from
-    # the default "generation" module to avoid conflicts. 
-    EntanglementGenerationA = getattr(import_module(CONFIG.get("generation_module")), 'EntanglementGenerationA')
 
 from ..resource_management.rule_manager import Rule, Arguments
-from ..entanglement_management.purification import BBPSSW
+from ..entanglement_management.generation import EntanglementGenerationA
+from ..entanglement_management.purification import BBPSSWProtocol
 from ..entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 from ..message import Message
 from ..protocol import StackProtocol
@@ -37,7 +22,6 @@ from ..kernel.process import Process
 
 ENTANGLED = 'ENTANGLED'
 RAW = 'RAW'
-
 
 class RSVPMsgType(Enum):
     """Defines possible message types for the reservation protocol."""
@@ -78,8 +62,8 @@ class ResourceReservationMessage(Message):
 
 
 # entanglement generation
-# The first return argument (Any) is an EntanglementGenerationA protocol instance from the referenced plugin.
-def eg_rule_action1(memories_info: list["MemoryInfo"], args: dict[str, Any]) -> tuple[Any, list[None], list[None], list[None]]:
+
+def eg_rule_action1(memories_info: list["MemoryInfo"], args: dict[str, Any]) -> tuple[EntanglementGenerationA, list[None], list[None], list[None]]:
     """Action function used by entanglement generation protocol on nodes except the initiator, i.e., index > 0
     """
     memories = [info.memory for info in memories_info]
@@ -87,11 +71,11 @@ def eg_rule_action1(memories_info: list["MemoryInfo"], args: dict[str, Any]) -> 
     mid = args["mid"]
     path = args["path"]
     index = args["index"]
-    protocol = EntanglementGenerationA(None, "EGA." + memory.name, mid, path[index - 1], memory)
+    protocol = EntanglementGenerationA.create(None, "EGA." + memory.name, mid, path[index - 1], memory)
     return protocol, [None], [None], [None]
 
-# The first return argument (Any) is an EntanglementGenerationA protocol instance from the referenced plugin.
-def eg_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[Any, list[str], list["eg_req_func"], list[dict]]:
+
+def eg_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[EntanglementGenerationA, list[str], list["eg_req_func"], list[dict]]:
     """Action function used by entanglement generation protocol on nodes except the responder, i.e., index < len(path) - 1
     """
     mid = args["mid"]
@@ -99,12 +83,12 @@ def eg_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple
     index = args["index"]
     memories = [info.memory for info in memories_info]
     memory = memories[0]
-    protocol = EntanglementGenerationA(None, "EGA." + memory.name, mid, path[index + 1], memory)
+    protocol = EntanglementGenerationA.create(None, "EGA." + memory.name, mid, path[index + 1], memory)
     req_args = {"name": args["name"], "reservation": args["reservation"]}
     return protocol, [path[index + 1]], [eg_req_func], [req_args]
 
-# The return argument is an EntanglementGenerationA protocol instance from the referenced plugin.
-def eg_req_func(protocols: list["EntanglementProtocol"], args: Arguments) -> Any:
+
+def eg_req_func(protocols: list["EntanglementProtocol"], args: Arguments) -> EntanglementGenerationA:
     """Function used by `eg_rule_action2` function for selecting generation protocols on the remote node
 
     Args:
@@ -134,28 +118,28 @@ def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager", args:
 
 # entanglement purification
 
-def ep_rule_action1(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[BBPSSW, list[str], list["ep_req_func1"], list[dict]]:
+def ep_rule_action1(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[BBPSSWProtocol, list[str], list["ep_req_func1"], list[dict]]:
     """Action function used by BBPSSW protocol on nodes except the responder node
     """
     memories = [info.memory for info in memories_info]
     name = "EP.%s.%s" % (memories[0].name, memories[1].name)
-    protocol = BBPSSW(None, name, memories[0], memories[1])
+    protocol = BBPSSWProtocol.create(None, name, memories[0], memories[1])
     dsts = [memories_info[0].remote_node]
     req_funcs = [ep_req_func1]
     req_args = [{"remote0": memories_info[0].remote_memo, "remote1": memories_info[1].remote_memo}]
     return protocol, dsts, req_funcs, req_args
 
 
-def ep_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[BBPSSW, list[None], list[None], list[None]]:
+def ep_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[BBPSSWProtocol, list[None], list[None], list[None]]:
     """Action function used by BBPSSW protocol on nodes except the responder
     """
     memories = [info.memory for info in memories_info]
     name = "EP.%s" % memories[0].name
-    protocol = BBPSSW(None, name, memories[0], None)
+    protocol = BBPSSWProtocol.create(None, name, memories[0], None)
     return protocol, [None], [None], [None]
 
 
-def ep_req_func1(protocols, args: Arguments) -> BBPSSW:
+def ep_req_func1(protocols, args: Arguments) -> BBPSSWProtocol:
     """Function used by `ep_rule_action1` for selecting purification protocols on the remote node
        Will 'combine two BBPSSW into one BBPSSW'
 
@@ -170,7 +154,7 @@ def ep_req_func1(protocols, args: Arguments) -> BBPSSW:
 
     _protocols = []
     for protocol in protocols:
-        if not isinstance(protocol, BBPSSW):
+        if not isinstance(protocol, BBPSSWProtocol):
             continue
 
         if protocol.kept_memo.name == remote0:
