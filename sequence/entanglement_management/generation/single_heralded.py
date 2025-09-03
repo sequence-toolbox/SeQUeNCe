@@ -2,20 +2,22 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Dict, Any
 
-from ...constants import BELL_DIAGONAL_STATE_FORMALISM
+from .generation_base import EntanglementGenerationA, EntanglementGenerationB, QuantumCircuitMixin
 from .generation_message import EntanglementGenerationMessage, GenerationMsgType, valid_trigger_time
 from ...components.bsm import SingleHeraldedBSM
+from ...constants import BELL_DIAGONAL_STATE_FORMALISM
+from ...constants import SINGLE_HERALDED
+from ...kernel.event import Event
+from ...kernel.process import Process
+from ...kernel.quantum_manager import QuantumManager
 from ...resource_management.memory_manager import MemoryInfo
+from ...utils import log
 
 if TYPE_CHECKING:
     from ...components.memory import Memory
     from ...topology.node import Node, BSMNode
-    
-from ...constants import SINGLE_HERALDED
-from .generation_base import EntanglementGenerationA, EntanglementGenerationB, QuantumCircuitMixin
-from ...kernel.event import Event
-from ...kernel.process import Process
-from ...utils import log
+
+
 
 
 @EntanglementGenerationA.register(SINGLE_HERALDED)
@@ -25,8 +27,8 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
         super().__init__(owner, name, middle, other, memory)
 
         self.protocol_type = SINGLE_HERALDED
-        assert owner.timeline.quantum_manager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, \
-            "Single Heralded Entanglement generation protocol only supports Bell diagonal state formalism."
+        assert QuantumManager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, \
+            f"Single Heralded Entanglement generation protocol only supports Bell diagonal state formalism; got {QuantumManager.get_active_formalism()}"
 
         if raw_fidelity:
             self.raw_fidelity = raw_fidelity
