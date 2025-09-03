@@ -7,16 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8] - 2025-09-03
 # Added
-- Class factory support for generation, purification, and quantum manager.
+- Class factory support for generation, purification.
 - Implements BDS formalism
 - Implements single heralded entanglement generation protocol
 
 # Changed
 - Modified related code to account for the new factory pattern.
 - Modified constants.py to include the new purification and generation protocols.
+- Change QuantumManager to use internal factory pattern.
 
 # Removed
 - Removed the old generation and purification protocol classes.
+- Remove standalone factory class for quantum manager.
 
 
 ## [0.7.6] - 2025-8-29
