@@ -1,6 +1,4 @@
 import json
-from math import inf
-
 import numpy as np
 from networkx import Graph, dijkstra_path, exception
 
@@ -64,7 +62,7 @@ class RouterNetTopo(Topo):
         self._generate_forwarding_table(config)
 
     def _add_timeline(self, config: dict):
-        stop_time = config.get(Topo.STOP_TIME, inf)
+        stop_time = config.get(Topo.STOP_TIME, 10 ** 23)
         formalism = config.get(Topo.FORMALISM, KET_STATE_FORMALISM)
         truncation = config.get(Topo.TRUNC, 1)
         QuantumManager.set_global_manager_formalism(formalism)
