@@ -14,7 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # Changed
 - Modified related code to account for the new factory pattern.
 - Modified constants.py to include the new purification and generation protocols.
-- 
+
+# Removed
+- Removed the old generation and purification protocol classes.
 
 
 ## [0.7.6] - 2025-8-29
