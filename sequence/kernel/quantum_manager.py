@@ -48,7 +48,7 @@ class QuantumManager(ABC):
     _global_formalism_lock = Lock()
     _global_formalism: str = KET_STATE_FORMALISM
 
-    def __init__(self, formalism: str = None, truncation: int = 1):
+    def __init__(self, truncation: int = 1):
         self.states: dict[int, "State"] = {}
         self._least_available: int = 0
         self.truncation = truncation
