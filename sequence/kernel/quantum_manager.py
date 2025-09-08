@@ -33,27 +33,26 @@ class QuantumManager(ABC):
 
     All states stored are of a single formalism (by default as a ket vector).
 
+    Class Attributes:
+        _registry (dict): mapping of formalism names to manager classes.
+        _global_formalism_lock (Lock): lock for managing global formalism.
+        _global_formalism (str): global formalism.
+
     Attributes:
         states (dict[int, State]): mapping of state keys to quantum state objects.
         _least_available (int): tracking the total number of quantum states in the quantum network
-        formalism (str): the formalism of the quantum state. Default is KET_STATE_FORMALISM
         truncation (int): maximally allowed number of excited states for elementary subsystems. Default is 1 for qubit.
         dim (int): subsystem Hilbert space dimension. dim = truncation + 1
     """
-    # Class-level attributes
-    _registry: dict = {}                           # mapping of formalism names to manager classes
-    _global_formalism_lock = Lock()                # lock for managing global formalism
-    _global_formalism: str = KET_STATE_FORMALISM   # global formalism
+    _registry: dict = {}
+    _global_formalism_lock = Lock()
+    _global_formalism: str = KET_STATE_FORMALISM
 
     def __init__(self, formalism: str = None, truncation: int = 1):
         self.states: dict[int, "State"] = {}
         self._least_available: int = 0
-        self.formalism: str = formalism
         self.truncation = truncation
         self.dim = self.truncation + 1
-
-        if formalism is not None:
-            raise NotImplementedError('No longer supported. Use global formalism instead supplied by class attr..')
 
     @classmethod
     def set_global_manager_formalism(cls, formalism: str):

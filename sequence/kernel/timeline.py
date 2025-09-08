@@ -3,7 +3,6 @@
 This module defines the Timeline class, which provides an interface for the simulation kernel and drives event execution.
 All entities are required to have an attached timeline for simulation.
 """
-import warnings
 from _thread import start_new_thread
 from datetime import timedelta
 from sys import stdout
@@ -73,7 +72,6 @@ class Timeline:
 
         if formalism:
             QuantumManager.set_global_manager_formalism(formalism)
-            warnings.warn('Please use the QuantumManager.set_global_manager_formalism method instead.')
 
         self.quantum_manager: QuantumManager = QuantumManager.create(truncation=truncation)
 
