@@ -24,3 +24,13 @@ NANOSECOND:  Final = 10**3
 MICROSECOND: Final = 10**6
 MILLISECOND: Final = 10**9
 SECOND:      Final = 10**12
+
+# Built-In Formalisms
+KET_STATE_FORMALISM: Final = "ket_vector"
+DENSITY_MATRIX_FORMALISM: Final = "density_matrix"
+FOCK_DENSITY_MATRIX_FORMALISM: Final = "fock_density"
+BELL_DIAGONAL_STATE_FORMALISM: Final = "bell_diagonal"
+
+# Built-In Generation Protocols
+BARRET_KOK: Final = 'barret_kok'
+SINGLE_HERALDED: Final = 'single_heralded'

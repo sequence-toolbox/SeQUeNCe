@@ -67,7 +67,7 @@ class FakeNode2(Node):
             self.resource_manager.received_message(src, msg)
         else:
             if msg.receiver is None:
-                matching = [p for p in self.protocols if type(p) == msg.protocol_type]
+                matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
                 for p in matching:
                     p.received_message(src, msg)
             else:
@@ -323,14 +323,14 @@ def test_ResourceManager1():
     def eg_rule_action1(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA(None, "EGA." + memory.name, "mid_node", "node2", memory)
+        protocol = EntanglementGenerationA.create(None, "EGA." + memory.name, "mid_node", "node2", memory)
         protocol.primary = True
         return [protocol, ["node2"], [eg_req_func], [{}]]
 
     def eg_rule_action2(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA(None, "EGA." + memory.name,
+        protocol = EntanglementGenerationA.create(None, "EGA." + memory.name,
                                            "mid_node", "node1", memory)
         return protocol, [None], [None], [{}]
 
@@ -398,14 +398,14 @@ def test_ResourceManager2():
     def eg_rule_action1(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA(None, "EGA." + memory.name, "mid_node", "node2", memory)
+        protocol = EntanglementGenerationA.create(None, "EGA." + memory.name, "mid_node", "node2", memory)
         protocol.primary = True
         return [protocol, ["node2"], [eg_req_func], [{}]]
 
     def eg_rule_action2(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA(None, "EGA." + memory.name,
+        protocol = EntanglementGenerationA.create(None, "EGA." + memory.name,
                                            "mid_node", "node1", memory)
         return protocol, [None], [None], [{}]
 

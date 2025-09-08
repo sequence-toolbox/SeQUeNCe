@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8] - 2025-09-08
+### Added
+- Class factory support for generation, purification.
+- Implements BDS formalism
+- Implements single heralded entanglement generation protocol. See `entanglement_management.generation.single_heralded`
+
+### Changed
+- Modified related code to account for the new factory pattern.
+- Modified `constants.py` to include the new purification and generation protocols.
+- Change `QuantumManager` to use internal factory pattern.
+    - The previous instance-level attribute `formalism` is changed into a class-level attribute `_global_formalism`.
+    - Class-level attribute `_registry` is used to register the subclasses of `QuantumManager`
+
+### Removed
+- Removed the old generation and purification protocol classes.
+- Remove standalone factory class for quantum manager.
 
 
 ## [0.7.6] - 2025-8-29

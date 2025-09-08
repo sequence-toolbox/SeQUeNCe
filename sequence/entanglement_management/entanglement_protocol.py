@@ -16,7 +16,7 @@ class EntanglementProtocol(Protocol):
     Provides an interface for rule attachment, protocol pairing, and memory management.
 
     Attributes:
-        own (Node): Node object to attach to
+        owner (Node): Node object to attach to
         name (str): Name of the protocol instance
         rule (Rule): Rule which created this protocol instance (from the rule manager).
         memories (list[Memory]): Any memories being operated on
@@ -25,6 +25,7 @@ class EntanglementProtocol(Protocol):
     def __init__(self, owner: "Node", name: str):
         super().__init__(owner, name)
         self.rule = None
+        self.protocol_type = None
         self.memories = []
 
     @abstractmethod

@@ -3,13 +3,11 @@
 This module defines the Timeline class, which provides an interface for the simulation kernel and drives event execution.
 All entities are required to have an attached timeline for simulation.
 """
-
 from _thread import start_new_thread
 from datetime import timedelta
-from math import inf
 from sys import stdout
 from time import sleep, time_ns
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, TypeVar
 
 from numpy import random
 
@@ -18,7 +16,7 @@ if TYPE_CHECKING:
     from .entity import Entity
 
 from .eventlist import EventList
-from .quantum_manager import (QuantumFactory, KET_STATE_FORMALISM)
+from .quantum_manager import QuantumManager
 from ..utils import log
 
 # for timeline formatting
@@ -28,6 +26,7 @@ NANOSECONDS_PER_MICROSECOND = 10**3
 MILLISECONDS_PER_SECOND = 10**3
 CARRIAGE_RETURN = '\r'
 
+T = TypeVar("T", bound="Entity")
 
 class Timeline:
     """Class for a simulation timeline.
@@ -54,11 +53,11 @@ class Timeline:
         show_progress (bool): show/hide the progress bar of simulation.
         quantum_manager (QuantumManager): quantum state manager.
     """
-    def __init__(self, stop_time: int = inf, formalism = KET_STATE_FORMALISM, truncation = 1):
+    def __init__(self, stop_time: int = 10 ** 23, formalism: str = None, truncation: int = 1):
         """Constructor for timeline.
 
         Args:
-            stop_time (int): stop time (in ps) of simulation (default inf).
+            stop_time (int): stop time (in ps) of simulation (default 10 ** 23, approximately 3000 years).
             formalism (str): formalism of quantum state representation.
             truncation (int): truncation of Hilbert space (currently only for Fock representation).
         """
@@ -70,8 +69,11 @@ class Timeline:
         self.run_counter: int = 0
         self.is_running: bool = False
         self.show_progress: bool = False
-        self.quantum_manager = QuantumFactory.create(formalism, truncation=truncation)
 
+        if formalism:
+            QuantumManager.set_global_manager_formalism(formalism)
+
+        self.quantum_manager: QuantumManager = QuantumManager.create(truncation=truncation)
 
     def now(self) -> int:
         """Returns current simulation time."""
@@ -152,7 +154,7 @@ class Timeline:
         entity = self.entities.pop(name)
         entity.timeline = None
 
-    def get_entity_by_name(self, name: str) -> Optional["Entity"]:
+    def get_entity_by_name(self, name: str) -> Optional[T]:
         return self.entities.get(name, None)
 
     @staticmethod
@@ -173,7 +175,7 @@ class Timeline:
         while self.is_running:
             execution_time = self.ns_to_human_time(time_ns() - start_time)
             simulation_time = self.ns_to_human_time(self.convert_to_nanoseconds(self.time))
-            stop_time = 'NaN' if self.stop_time == float('inf') else self.ns_to_human_time(self.convert_to_nanoseconds(self.stop_time))
+            stop_time = self.ns_to_human_time(self.convert_to_nanoseconds(self.stop_time))
             process_bar = f'{CARRIAGE_RETURN}execution time: {execution_time};     simulation time: {simulation_time} / {stop_time}'
 
             print(f'{process_bar}', end=CARRIAGE_RETURN)
