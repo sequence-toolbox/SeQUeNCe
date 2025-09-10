@@ -28,7 +28,7 @@ class StaticRoutingMessage(Message):
         self.payload = payload
 
     def __str__(self):
-        return "type={}, receiver={}, payload={}".format(self.msg_type, self.receiver, self.payload)
+        return f"type={self.msg_type}, receiver={self.receiver}, payload={self.payload}"
 
 
 class StaticRoutingProtocol(StackProtocol):

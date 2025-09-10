@@ -58,7 +58,7 @@ class EntanglementSwappingMessage(Message):
 
     def __str__(self):
         if self.msg_type == SwappingMsgType.SWAP_RES:
-            return "EntanglementSwappingMessage: msg_type: %s; fidelity: %.2f; remote_node: %s; remote_memo: %s; " % (
+            return "EntanglementSwappingMessage: msg_type: {}; fidelity: {:.2f}; remote_node: {}; remote_memo: {}; ".format(
                 self.msg_type, self.fidelity, self.remote_node, self.remote_memo)
 
 
@@ -141,7 +141,7 @@ class EntanglementSwappingA(EntanglementProtocol):
         elif node == self.right_memo.entangled_memory["node_id"]:
             self.right_protocol_name = protocol
         else:
-            raise Exception("Cannot pair protocol %s with %s" % (self.name, protocol))
+            raise Exception("Cannot pair protocol {} with {}".format(self.name, protocol))
 
     def start(self) -> None:
         """Method to start entanglement swapping protocol.
@@ -218,7 +218,7 @@ class EntanglementSwappingA(EntanglementProtocol):
     def received_message(self, src: str, msg: "Message") -> None:
         """Method to receive messages (should not be used on A protocol)."""
 
-        raise Exception("EntanglementSwappingA protocol '{}' should not receive messages.".format(self.name))
+        raise Exception(f"EntanglementSwappingA protocol '{self.name}' should not receive messages.")
 
     def memory_expire(self, memory: "Memory") -> None:
         """Method to receive memory expiration events.
@@ -327,7 +327,7 @@ class EntanglementSwappingB(EntanglementProtocol):
             Will invoke `update_resource_manager` method.
         """
 
-        log.logger.debug(self.owner.name + " protocol received_message from node {}, fidelity={}".format(src, msg.fidelity))
+        log.logger.debug(self.owner.name + f" protocol received_message from node {src}, fidelity={msg.fidelity}")
 
         assert src == self.remote_node_name
 

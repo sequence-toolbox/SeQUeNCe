@@ -108,7 +108,7 @@ class QuantumGUI:
 
         if templates is None:
             if os.path.exists(DIRECTORY + TEMPLATES):
-                with open(DIRECTORY + TEMPLATES, 'r') as json_file:
+                with open(DIRECTORY + TEMPLATES) as json_file:
                     self.templates = json.load(json_file)
 
             else:
@@ -1115,7 +1115,7 @@ class QuantumGUI:
                     self.simulation.write_to_file()
                     sim_results = self.simulation.sim_name + '_results.txt'
 
-                    with open(DIRECTORY + '/'+sim_results, 'r') as outfile:
+                    with open(DIRECTORY + '/'+sim_results) as outfile:
                         sim_results = outfile.read()
                     outfile.close()
                     return [True, dash.no_update, dash.no_update, sim_results]

@@ -71,7 +71,7 @@ class LightSource(Entity):
             state_list (list[list[complex]]): list of complex coefficient arrays to send as photon-encoded qubits.
         """
 
-        log.logger.info("{} emitting {} photons".format(self.name, len(state_list)))
+        log.logger.info(f"{self.name} emitting {len(state_list)} photons")
 
         time = self.timeline.now()
         period = int(round(1e12 / self.frequency))
@@ -164,7 +164,7 @@ class SPDCSource(LightSource):
                 For these encoding types only the length of list matters and elements can be arbitrary.
         """
 
-        log.logger.info("SPDC sourcee {} emitting {} photons".format(self.name, len(state_list)))
+        log.logger.info(f"SPDC sourcee {self.name} emitting {len(state_list)} photons")
 
         time = self.timeline.now()
 
