@@ -17,3 +17,4 @@ pytest
 jupyterlab
 ipywidgets
 gmpy2
+pyyaml

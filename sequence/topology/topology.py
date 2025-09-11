@@ -5,9 +5,10 @@ manage a network's structure.
 Topology instances automatically perform many useful network functions.
 """
 import json
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections import defaultdict
 
+import yaml
 from networkx import Graph, dijkstra_path, exception
 
 from . import topology_constants as tc
@@ -58,7 +59,7 @@ class Topology(ABC):
         self._get_templates(config)
 
         # Preprocess (HOOK)
-        self._preprocess_hook(config)
+        self._pre_hook(config)
 
         # Create the timeline
         self.tl = self._create_timeline(config)
@@ -77,13 +78,16 @@ class Topology(ABC):
         self._post_hook(config)
 
 
-    def _preprocess_hook(self, config: dict) -> None:
+    def _pre_hook(self, config: dict) -> None:
+        """Preprocess hook for topology setup."""
         pass
 
     def _node_setup_hook(self, config: dict) -> None:
+        """Node setup hook for topology setup."""
         pass
 
     def _post_hook(self, config: dict) -> None:
+        """Postprocess hook for topology setup."""
         pass
 
     @staticmethod
@@ -100,13 +104,17 @@ class Topology(ABC):
 
     @staticmethod
     def _load_json(filename: str) -> dict:
-        with open(filename) as f:
-            config = json.load(f)
-        return config
+        if filename.endswith(".json"):
+            with open(filename) as f:
+                return json.load(f)
+        elif filename.endswith(('.yaml', '.yml')):
+            with open(filename) as f:
+                return yaml.safe_load(f)
 
-    @abstractmethod
     def _add_nodes(self, config: dict) -> None:
         pass
+
+
 
     def _get_templates(self, config: dict) -> None:
         templates = config.get(tc.ALL_TEMPLATES, {})
