@@ -7,7 +7,8 @@ Photons should be routed to a BSM device for entanglement generation, or through
 
 from copy import copy
 from math import inf
-from typing import Any, TYPE_CHECKING, Callable
+from typing import Any, TYPE_CHECKING
+from collections.abc import Callable
 from numpy import exp, array
 from scipy import stats
 
@@ -273,7 +274,7 @@ class Memory(Entity):
             self.generation_time = self.timeline.now()
             self.last_update_time = self.timeline.now()
         else:
-            raise ValueError("Invalid protocol type {} specified for meomory.exite()".format(protocol))
+            raise ValueError(f"Invalid protocol type {protocol} specified for meomory.exite()")
 
         photon.timeline = None  # facilitate cross-process exchange of photons
         photon.is_null = True
@@ -888,7 +889,7 @@ class MemoryWithRandomCoherenceTime(Memory):
             wavelength (int): wavelength (in nm) of photons emitted by memories.
         """
 
-        super(MemoryWithRandomCoherenceTime, self).__init__(name, timeline, fidelity, frequency, 
+        super().__init__(name, timeline, fidelity, frequency, 
                          efficiency, coherence_time, wavelength)
         
         # coherence time standard deviation in seconds

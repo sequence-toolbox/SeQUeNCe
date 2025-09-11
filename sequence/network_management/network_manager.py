@@ -31,7 +31,7 @@ class NetworkManagerMessage(Message):
         self.payload = payload
 
     def __str__(self) -> str:
-        return "type={}; receiver={}; payload={}".format(self.msg_type, self.receiver, self.payload)
+        return f"type={self.msg_type}; receiver={self.receiver}; payload={self.payload}"
 
 
 class NetworkManager:
@@ -54,7 +54,7 @@ class NetworkManager:
             protocol_stack (list[StackProtocol]): stack of protocols to use for processing.
         """
 
-        log.logger.info("Create network manager of Node {}".format(owner.name))
+        log.logger.info(f"Create network manager of Node {owner.name}")
         self.name = "network_manager"
         self.owner = owner
         self.protocol_stack = protocol_stack
@@ -118,7 +118,7 @@ class NetworkManager:
             Will invoke `pop` method of 0 indexed protocol in `protocol_stack`.
         """
 
-        log.logger.info("{} network manager receives message from {}: {}".format(self.owner.name, src, msg))
+        log.logger.info(f"{self.owner.name} network manager receives message from {src}: {msg}")
         self.protocol_stack[0].pop(src=src, msg=msg.payload)
 
     def request(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float,

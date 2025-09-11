@@ -52,7 +52,7 @@ class OpticalChannel(Entity):
             polarization_fidelity (float): probability of no polarization error for a transmitted qubit.
             light_speed (float): speed of light within the fiber (in m/ps).
         """
-        log.logger.info("Create channel {}".format(name))
+        log.logger.info(f"Create channel {name}")
 
         Entity.__init__(self, name, timeline)
         self.sender = None
@@ -124,7 +124,7 @@ class QuantumChannel(OpticalChannel):
             receiver (str): name of node receiving qubits.
         """
 
-        log.logger.info("Set {}, {} as ends of quantum channel {}".format(sender.name, receiver, self.name))
+        log.logger.info(f"Set {sender.name}, {receiver} as ends of quantum channel {self.name}")
         self.sender = sender
         self.receiver = receiver
         sender.assign_qchannel(self, receiver)
@@ -143,7 +143,7 @@ class QuantumChannel(OpticalChannel):
         log.logger.info("{} send qubit with state {} to {} by Channel {}".format(
                         self.sender.name, qubit.quantum_state, self.receiver, self.name))
 
-        assert self.delay >= 0 and self.loss < 1, "QuantumChannel init() function has not been run for {}".format(self.name)
+        assert self.delay >= 0 and self.loss < 1, f"QuantumChannel init() function has not been run for {self.name}"
         assert source == self.sender
 
         # remove lowest time bin
@@ -152,7 +152,7 @@ class QuantumChannel(OpticalChannel):
             while time < self.timeline.now():
                 time_bin = hq.heappop(self.send_bins)
                 time = self.timebin_to_time(time_bin, self.frequency)
-            assert time == self.timeline.now(), "qc {} transmit method called at invalid time".format(self.name)
+            assert time == self.timeline.now(), f"qc {self.name} transmit method called at invalid time"
 
         # check if photon state using Fock representation
         if qubit.encoding_type["name"] == "fock":
@@ -293,7 +293,7 @@ class ClassicalChannel(OpticalChannel):
             receiver (str): name of node receiving classical messages.
         """
 
-        log.logger.info("Set {}, {} as ends of classical channel {}".format(sender.name, receiver, self.name))
+        log.logger.info(f"Set {sender.name}, {receiver} as ends of classical channel {self.name}")
         self.sender = sender
         self.receiver = receiver
         sender.assign_cchannel(self, receiver)
@@ -310,7 +310,7 @@ class ClassicalChannel(OpticalChannel):
             Receiver node may receive the qubit (via the `receive_qubit` method).
         """
 
-        log.logger.info("{} send message {} to {} by Channel {}".format(self.sender.name, message, self.receiver, self.name))
+        log.logger.info(f"{self.sender.name} send message {message} to {self.receiver} by Channel {self.name}")
         assert source == self.sender
 
         future_time = round(self.timeline.now() + int(self.delay))

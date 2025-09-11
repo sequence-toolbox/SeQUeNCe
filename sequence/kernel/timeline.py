@@ -118,7 +118,7 @@ class Timeline:
 
             self.time = event.time
             
-            log.logger.debug("Event #{}: process owner={}, activation={}".format(self.run_counter, event.process.owner, event.process.activation))
+            log.logger.debug(f"Event #{self.run_counter}: process owner={event.process.owner}, activation={event.process.activation}")
             event.process.run()
             self.run_counter += 1
 
@@ -154,7 +154,7 @@ class Timeline:
         entity = self.entities.pop(name)
         entity.timeline = None
 
-    def get_entity_by_name(self, name: str) -> Optional[T]:
+    def get_entity_by_name(self, name: str) -> T | None:
         return self.entities.get(name, None)
 
     @staticmethod

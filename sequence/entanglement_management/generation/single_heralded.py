@@ -22,8 +22,8 @@ if TYPE_CHECKING:
 
 @EntanglementGenerationA.register(SINGLE_HERALDED)
 class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
-    def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory",
-                 raw_fidelity: float = None, raw_epr_errors: List[float] = None):
+    def __init__(self, owner: Node, name: str, middle: str, other: str, memory: Memory,
+                 raw_fidelity: float = None, raw_epr_errors: list[float] = None):
         super().__init__(owner, name, middle, other, memory)
 
         self.protocol_type = SINGLE_HERALDED
@@ -78,7 +78,7 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
 
                 if self_key not in quantum_manager.states:
                     in_fidelity = 1 - self.raw_fidelity
-                    x_elem, y_elem, z_elem = [error * in_fidelity for error in self.raw_epr_errors]
+                    x_elem, y_elem, z_elem = (error * in_fidelity for error in self.raw_epr_errors)
                     state = [self.raw_fidelity, z_elem, x_elem, y_elem]
                     quantum_manager.set(keys, state)
                     self.memory.bds_decohere()
@@ -183,7 +183,7 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
             # schedule emit
             emit_time = self.owner.schedule_qubit(self.middle, msg.emit_time)
             assert emit_time == msg.emit_time, \
-                "Invalid eg emit times {} {} {}".format(emit_time, msg.emit_time, self.owner.timeline.now())
+                f"Invalid eg emit times {emit_time} {msg.emit_time} {self.owner.timeline.now()}"
 
             process = Process(self, "emit_event", [])
             event = Event(msg.emit_time, process)
@@ -213,10 +213,10 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
             if valid_trigger_time(time, self.expected_time, resolution):
                 self.bsm_res[detector] += 1
             else:
-                log.logger.debug('{} BSM trigger time not valid'.format(self.owner.name))
+                log.logger.debug(f'{self.owner.name} BSM trigger time not valid')
 
         else:
-            raise Exception("Invalid message {} received by EG on node {}".format(msg_type, self.owner.name))
+            raise Exception(f"Invalid message {msg_type} received by EG on node {self.owner.name}")
 
     def _entanglement_succeed(self):
         log.logger.info(f'{self.owner.name} successful entanglement of memory {self.memory}')
@@ -229,13 +229,13 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
 
 @EntanglementGenerationB.register(SINGLE_HERALDED)
 class SingleHeraldedB(EntanglementGenerationB):
-    def __init__(self, owner: "BSMNode", name: str, others: List[str]):
+    def __init__(self, owner: BSMNode, name: str, others: list[str]):
         super().__init__(owner, name, others)
         assert len(others) == 2
         self.others = others
         self.protocol_type = SINGLE_HERALDED
 
-    def bsm_update(self, bsm: "SingleHeraldedBSM", info: Dict['str', Any]) -> None:
+    def bsm_update(self, bsm: SingleHeraldedBSM, info: dict[str, Any]) -> None:
         """Method to receive detection events from BSM on node.
 
         Args:

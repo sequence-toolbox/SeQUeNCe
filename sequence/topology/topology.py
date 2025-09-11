@@ -63,7 +63,7 @@ class Topology(ABC):
         self.qchannels: list[QuantumChannel] = []
         self.cchannels: list[ClassicalChannel] = []
         self.templates: dict[str, dict] = {}
-        self.tl: Optional[Timeline] = None
+        self.tl: Timeline | None = None
         self._load(conf_file_name)
 
     @abstractmethod
@@ -84,7 +84,7 @@ class Topology(ABC):
             src_str, dst_str = qc[self.SRC], qc[self.DST]
             src_node = self.tl.get_entity_by_name(src_str)
             if src_node is not None:
-                name = qc.get(self.NAME, "qc.{}.{}".format(src_str, dst_str))
+                name = qc.get(self.NAME, f"qc.{src_str}.{dst_str}")
                 distance = qc[self.DISTANCE]
                 attenuation = qc[self.ATTENUATION]
                 qc_obj = QuantumChannel(name, self.tl, attenuation, distance)
@@ -96,7 +96,7 @@ class Topology(ABC):
             src_str, dst_str = cc[self.SRC], cc[self.DST]
             src_node = self.tl.get_entity_by_name(src_str)
             if src_node is not None:
-                name = cc.get(self.NAME, "cc.{}.{}".format(src_str, dst_str))
+                name = cc.get(self.NAME, f"cc.{src_str}.{dst_str}")
                 distance = cc.get(self.DISTANCE, 1000)
                 delay = cc.get(self.DELAY, -1)
                 cc_obj = ClassicalChannel(name, self.tl, distance, delay)
@@ -110,7 +110,7 @@ class Topology(ABC):
             distance = c_connect.get(self.DISTANCE, 1000)
             delay = c_connect.get(self.DELAY, -1)
             for src_str, dst_str in zip([node1, node2], [node2, node1]):
-                name = "cc.{}.{}".format(src_str, dst_str)
+                name = f"cc.{src_str}.{dst_str}"
                 src_obj = self.tl.get_entity_by_name(src_str)
                 if src_obj is not None:
                     cc_obj = ClassicalChannel(name, self.tl, distance, delay)

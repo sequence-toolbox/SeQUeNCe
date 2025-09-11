@@ -4,7 +4,8 @@ This module defines the rule manager, which is used by the resource manager to i
 This is achieved through rules (also defined in this module), which if met define a set of actions to take.
 """
 
-from typing import Callable, TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any
+from collections.abc import Callable
 from ..utils import log
 if TYPE_CHECKING:
     from ..entanglement_management.entanglement_protocol import EntanglementProtocol
@@ -91,7 +92,7 @@ class RuleManager:
         return self.resource_manager.get_memory_manager()
 
     def send_request(self, protocol, req_dst, req_condition_func, req_args):
-        log.logger.info('{} Rule Manager send request for protocol {} to {}'.format(self.resource_manager.owner, protocol.name, req_dst))
+        log.logger.info(f'{self.resource_manager.owner} Rule Manager send request for protocol {protocol.name} to {req_dst}')
         return self.resource_manager.send_request(protocol, req_dst, req_condition_func, req_args)
 
     def __len__(self):
@@ -139,7 +140,7 @@ class Rule:
         action_name = action_name_list[1] if len(action_name_list) >= 2 else action_name_list[0]  # in case action_name = ['None']
         condition_name_list = str(self.condition).split(' ')
         condition_name = condition_name_list[1] if len(condition_name_list) >= 2 else condition_name_list[0]
-        return "|action={}, args={}; condition={}; args={}|".format(action_name, self.action_args, condition_name, self.condition_args)
+        return f"|action={action_name}, args={self.action_args}; condition={condition_name}; args={self.condition_args}|"
 
     def set_rule_manager(self, rule_manager: "RuleManager") -> None:
         """Method to assign rule to a rule manager.
@@ -158,7 +159,7 @@ class Rule:
         """
 
         protocol, req_dsts, req_condition_funcs, req_args = self.action(memories_info, self.action_args)
-        log.logger.info('{} rule generates protocol {}'.format(self.rule_manager, protocol.name))
+        log.logger.info(f'{self.rule_manager} rule generates protocol {protocol.name}')
 
         protocol.rule = self  # the protocol is connected to the reservation via the rule
         self.protocols.append(protocol)

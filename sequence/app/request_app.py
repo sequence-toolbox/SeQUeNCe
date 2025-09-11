@@ -67,7 +67,7 @@ class RequestApp:
 
         self.node.reserve_net_resource(responder, start_t, end_t, memo_size, fidelity)
 
-    def get_reservation_result(self, reservation: "Reservation", result: bool) -> None:
+    def get_reservation_result(self, reservation: Reservation, result: bool) -> None:
         """Method to receive reservation result from network manager. 
 
         The initiator will call this method once received a response from the responder.
@@ -82,9 +82,9 @@ class RequestApp:
         self.reservation_result = result
         if result:
             self.schedule_reservation(reservation)
-            log.logger.info("Successful reservation of resources for request app on node {}".format(self.node.name))
+            log.logger.info(f"Successful reservation of resources for request app on node {self.node.name}")
 
-    def add_memo_reservation_map(self, index: int, reservation: "Reservation") -> None:
+    def add_memo_reservation_map(self, index: int, reservation: Reservation) -> None:
         """Maps memory index to the corresponding reservation.
 
         Args:
@@ -103,7 +103,7 @@ class RequestApp:
         """
         self.memo_to_reservation.pop(index)
 
-    def get_memory(self, info: "MemoryInfo") -> None:
+    def get_memory(self, info: MemoryInfo) -> None:
         """Method to receive entangled memories.
 
         Will check if the received memory is qualified.
@@ -126,13 +126,13 @@ class RequestApp:
                 self.node.resource_manager.update(None, info.memory, "RAW")
             elif info.remote_node == reservation.responder and info.fidelity >= reservation.fidelity:
                 self.memory_counter += 1
-                log.logger.info("Successfully generated entanglement. Counter is at {}.".format(self.memory_counter))
+                log.logger.info(f"Successfully generated entanglement. Counter is at {self.memory_counter}.")
                 self.node.resource_manager.update(None, info.memory, "RAW")
 
     def get_throughput(self) -> float:
         return self.memory_counter / (self.end_t - self.start_t) * 1e12
 
-    def get_other_reservation(self, reservation: "Reservation") -> None:
+    def get_other_reservation(self, reservation: Reservation) -> None:
         """Method to add the approved reservation that is requested by other nodes. The responder will call this method
 
         Args:
@@ -143,7 +143,7 @@ class RequestApp:
         """
         self.schedule_reservation(reservation)
 
-    def schedule_reservation(self, reservation: "Reservation") -> None:
+    def schedule_reservation(self, reservation: Reservation) -> None:
         if reservation.initiator == self.node.name:
             self.path = reservation.path
 

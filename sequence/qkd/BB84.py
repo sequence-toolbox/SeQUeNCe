@@ -76,7 +76,7 @@ class BB84Message(Message):
         elif self.msg_type is BB84MsgType.MATCHING_INDICES:
             self.indices = kwargs["indices"]
         else:
-            raise Exception("BB84 generated invalid message type {}".format(msg_type))
+            raise Exception(f"BB84 generated invalid message type {msg_type}")
 
 
 class BB84(StackProtocol):
@@ -164,7 +164,7 @@ class BB84(StackProtocol):
         if self.role != 0:
             raise AssertionError("generate key must be called from Alice")
 
-        log.logger.info(self.name + " generating keys, keylen={}, keynum={}".format(length, key_num))
+        log.logger.info(self.name + f" generating keys, keylen={length}, keynum={key_num}")
 
         self.key_lengths.append(length)
         self.another.key_lengths.append(length)
@@ -331,7 +331,7 @@ class BB84(StackProtocol):
                 self.ls_freq = msg.frequency
                 self.light_time = msg.light_time
 
-                log.logger.debug(self.name + " received BEGIN_PHOTON_PULSE, ls_freq={}, light_time={}".format(self.ls_freq, self.light_time))
+                log.logger.debug(self.name + f" received BEGIN_PHOTON_PULSE, ls_freq={self.ls_freq}, light_time={self.light_time}")
 
                 self.start_time = int(msg.start_time) + self.owner.qchannels[src].delay
 

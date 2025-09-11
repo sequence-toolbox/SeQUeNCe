@@ -45,7 +45,7 @@ class RouterNetTopo(Topo):
         super().__init__(conf_file_name)
 
     def _load(self, filename: str):
-        with open(filename, 'r') as fh:
+        with open(filename) as fh:
             config = json.load(fh)
 
         self._get_templates(config)
@@ -94,7 +94,7 @@ class RouterNetTopo(Topo):
                 memo_size = node.get(self.MEMO_ARRAY_SIZE, 0)
                 node_obj = QuantumRouter(name, self.tl, memo_size, component_templates=template)
             else:
-                raise ValueError("Unknown type of node '{}'".format(node_type))
+                raise ValueError(f"Unknown type of node '{node_type}'")
 
             node_obj.set_seed(seed)
             self.nodes[node_type].append(node_obj)
@@ -136,7 +136,7 @@ class RouterNetTopo(Topo):
             cc_delay = np.mean(cc_delay) // 2
 
             if channel_type == self.MEET_IN_THE_MID:
-                bsm_name = "BSM.{}.{}.auto".format(node1, node2)  # the intermediate BSM node
+                bsm_name = f"BSM.{node1}.{node2}.auto"  # the intermediate BSM node
                 bsm_seed = q_connect.get(Topo.SEED, 0)
                 bsm_template_name = q_connect.get(Topo.TEMPLATE, None)
                 bsm_info = {self.NAME: bsm_name,
@@ -146,7 +146,7 @@ class RouterNetTopo(Topo):
                 config[self.ALL_NODE].append(bsm_info)
 
                 for src in [node1, node2]:
-                    qc_name = "QC.{}.{}".format(src, bsm_name)  # the quantum channel
+                    qc_name = f"QC.{src}.{bsm_name}"  # the quantum channel
                     qc_info = {self.NAME: qc_name,
                                self.SRC: src,
                                self.DST: bsm_name,
@@ -156,7 +156,7 @@ class RouterNetTopo(Topo):
                         config[self.ALL_Q_CHANNEL] = []
                     config[self.ALL_Q_CHANNEL].append(qc_info)
 
-                    cc_name = "CC.{}.{}".format(src, bsm_name)  # the classical channel
+                    cc_name = f"CC.{src}.{bsm_name}"  # the classical channel
                     cc_info = {self.NAME: cc_name,
                                self.SRC: src,
                                self.DST: bsm_name,
@@ -166,7 +166,7 @@ class RouterNetTopo(Topo):
                         config[self.ALL_C_CHANNEL] = []
                     config[self.ALL_C_CHANNEL].append(cc_info)
 
-                    cc_name = "CC.{}.{}".format(bsm_name, src)
+                    cc_name = f"CC.{bsm_name}.{src}"
                     cc_info = {self.NAME: cc_name,
                                self.SRC: bsm_name,
                                self.DST: src,

@@ -100,7 +100,7 @@ class Circuit:
         self.size: int = size
         self.gates: list[GATE_INFO_TYPE] = []
         self.measured_qubits: list[int] = []
-        self._cache: Optional[np.ndarray] = None
+        self._cache: np.ndarray | None = None
 
     def get_unitary_matrix(self) -> np.ndarray:
         """Method to get unitary matrix of circuit without measurement.

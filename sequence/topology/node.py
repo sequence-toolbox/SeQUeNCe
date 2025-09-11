@@ -62,7 +62,7 @@ class Node(Entity):
         seed (int): seed for random number generator, default None
         """
 
-        log.logger.info("Create Node {}".format(name))
+        log.logger.info(f"Create Node {name}")
         super().__init__(name, timeline)
         self.owner = self
         self.cchannels = {}  # mapping of destination node names to classical channels
@@ -137,7 +137,7 @@ class Node(Entity):
             msg (Message): message to transmit.
             priority (int): priority for transmitted message (default inf).
         """
-        log.logger.info("{} send message {} to {}".format(self.name, msg, dst))
+        log.logger.info(f"{self.name} send message {msg} to {dst}")
 
         if priority == inf:
             priority = self.timeline.schedule_counter
@@ -152,7 +152,7 @@ class Node(Entity):
             src (str): name of node sending the message.
             msg (Message): message transmitted from node.
         """
-        log.logger.info("{} receive message {} from {}".format(self.name, msg, src))
+        log.logger.info(f"{self.name} receive message {msg} from {src}")
         # signal to protocol that we've received a message
         if msg.receiver is not None:
             for protocol in self.protocols:
@@ -344,7 +344,7 @@ class QuantumRouter(Node):
             msg (Message): the received message.
         """
 
-        log.logger.info("{} receive message {} from {}".format(self.name, msg, src))
+        log.logger.info(f"{self.name} receive message {msg} from {src}")
         if msg.receiver == "network_manager":
             self.network_manager.received_message(src, msg)
         elif msg.receiver == "resource_manager":
@@ -561,7 +561,7 @@ class QKDNode(Node):
         """
 
         if layer < 0 or layer > 4:
-            raise ValueError("layer must be between 0 and 4; given {}".format(layer))
+            raise ValueError(f"layer must be between 0 and 4; given {layer}")
 
         if self.protocol_stack[layer] is not None:
             self.protocols.remove(self.protocol_stack[layer])
@@ -665,7 +665,7 @@ class QKDNode(Node):
                         bits[index] = -1
 
         else:
-            raise Exception("QKD node {} has illegal encoding type {}".format(self.name, encoding))
+            raise Exception(f"QKD node {self.name} has illegal encoding type {encoding}")
 
         return bits
 
@@ -711,7 +711,7 @@ class QKDNode(Node):
 
         # if we reach here, we didn't successfully receive the message in any protocol
         print(self.protocols)
-        raise Exception("Message received for unknown protocol '{}' on node {}".format(msg.protocol_type, self.name))
+        raise Exception(f"Message received for unknown protocol '{msg.protocol_type}' on node {self.name}")
 
     def get(self, photon: "Photon", **kwargs):
         self.send_qubit(self.destination, photon)
@@ -738,7 +738,7 @@ class ClassicalNode(ClassicalEntity):
         seed (int): seed for random number generator, default None
         """
 
-        log.logger.info("Create Node {}".format(name))
+        log.logger.info(f"Create Node {name}")
         super().__init__(name, timeline)
         self.owner = self
         self.cchannels = {}  # mapping of destination node names to classical channels
@@ -775,7 +775,7 @@ class ClassicalNode(ClassicalEntity):
             msg (Message): message to transmit.
             priority (int): priority for transmitted message (default inf).
         """
-        log.logger.info("{} send message {} to {}".format(self.name, msg, dst))
+        log.logger.info(f"{self.name} send message {msg} to {dst}")
 
         if priority == inf:
             priority = self.timeline.schedule_counter
@@ -790,7 +790,7 @@ class ClassicalNode(ClassicalEntity):
             src (str): name of node sending the message.
             msg (Message): message transmitted from node.
         """
-        log.logger.info("{} receive message {} from {}".format(self.name, msg, src))
+        log.logger.info(f"{self.name} receive message {msg} from {src}")
         # signal to protocol that we've received a message
         if msg.receiver is not None:
             for protocol in self.protocols:
@@ -852,7 +852,7 @@ class DQCNode(QuantumRouter):
             msg (Message): the received message.
         """
 
-        log.logger.info("{} receive message {} from {}".format(self.name, msg, src))
+        log.logger.info(f"{self.name} receive message {msg} from {src}")
         if msg.receiver == "network_manager":
             self.network_manager.received_message(src, msg)
         elif msg.receiver == "resource_manager":

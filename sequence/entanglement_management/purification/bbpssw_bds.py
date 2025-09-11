@@ -133,7 +133,7 @@ class BBPSSW_BDS(BBPSSWProtocol):
         if msg.msg_type == BBPSSWMsgType.PURIFICATION_RES:
 
             purification_success = (self.meas_res == msg.meas_res)
-            log.logger.info(self.owner.name + " received result message, succeeded={}".format(purification_success))
+            log.logger.info(self.owner.name + f" received result message, succeeded={purification_success}")
             assert src == self.remote_node_name
 
             self.update_resource_manager(self.meas_memo, "RAW")
@@ -153,7 +153,7 @@ class BBPSSW_BDS(BBPSSWProtocol):
         else:
             raise Exception(f'{msg.msg_type} unknown')
 
-    def purification_res(self) -> Tuple[float, np.array]:
+    def purification_res(self) -> tuple[float, np.array]:
         """Method to calculate the correct success probabilty of a purification trial with BDS input.
 
         The four BDS density matrix elements of kept entangled pair conditioned on successful purification.
