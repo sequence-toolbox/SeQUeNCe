@@ -1,5 +1,6 @@
-from sequence.topology.router_net_topo import RouterNetTopo
+import sequence.topology.topology_constants as tc
 from sequence.kernel.timeline import Timeline
+from sequence.topology.router_net_topo import RouterNetTopo
 
 
 def test_sequential_simulation():
@@ -8,15 +9,15 @@ def test_sequential_simulation():
     assert topo.get_timeline().stop_time == 100
     all_nodes = topo.get_nodes()
     assert len(all_nodes) == 2
-    assert RouterNetTopo.QUANTUM_ROUTER in all_nodes
-    assert RouterNetTopo.BSM_NODE in all_nodes
-    assert len(all_nodes[RouterNetTopo.QUANTUM_ROUTER]) == 4
-    assert len(all_nodes[RouterNetTopo.BSM_NODE]) == 2
+    assert tc.QUANTUM_ROUTER in all_nodes
+    assert tc.BSM_NODE in all_nodes
+    assert len(all_nodes[tc.QUANTUM_ROUTER]) == 4
+    assert len(all_nodes[tc.BSM_NODE]) == 2
     assert len(topo.get_qchannels()) == 4
     assert len(topo.get_cchannels()) == 10
 
     # check if all nodes are correctly generated
-    routers = all_nodes[RouterNetTopo.QUANTUM_ROUTER]
+    routers = all_nodes[tc.QUANTUM_ROUTER]
     e1 = e2 = e3 = e4 = None
     for router in routers:
         memory_array = router.get_components_by_type("MemoryArray")[0]
@@ -66,6 +67,6 @@ def test_sequential_simulation():
         else:
             assert cc.delay == 1000000000
 
-    for r in topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
+    for r in topo.get_nodes_by_type(tc.QUANTUM_ROUTER):
         assert len(r.network_manager.protocol_stack[0].forwarding_table) > 0
 

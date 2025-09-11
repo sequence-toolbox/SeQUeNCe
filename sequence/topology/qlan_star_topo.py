@@ -1,12 +1,13 @@
 import json
+
 import numpy as np
 
-from .topology import Topology as Topo
-from ..kernel.timeline import Timeline
-from ..constants import SPEED_OF_LIGHT
-
-from .qlan.orchestrator import QlanOrchestratorNode
+from . import topology_constants as tc
 from .qlan.client import QlanClientNode
+from .qlan.orchestrator import QlanOrchestratorNode
+from .topology import Topology as Topo
+from ..constants import SPEED_OF_LIGHT
+from ..kernel.timeline import Timeline
 
 
 class QlanStarTopo(Topo):
@@ -36,24 +37,7 @@ class QlanStarTopo(Topo):
         memo_coherence_client (float): coherence of the memories in the client nodes.
         memo_wavelength_client (int): wavelength of the memories in the client nodes.
     """
-    IS_PARALLEL = "is_parallel"
-    MEET_IN_THE_MID = "meet_in_the_middle"
-    ORCHESTRATOR = "QlanOrchestratorNode"
-    CLIENT = "QlanClientNode"
-    LOCAL_MEMORIES = "local_memories"
-    CLIENT_NUMBER = "client_number"
-    MEM_FIDELITY_ORCH = "memo_fidelity_orch"
-    MEM_FREQUENCY_ORCH = "memo_frequency_orch"
-    MEM_EFFICIENCY_ORCH = "memo_efficiency_orch"
-    MEM_COHERENCE_ORCH = "memo_coherence_orch"
-    MEM_WAVELENGTH_ORCH = "memo_wavelength_orch"
-    MEM_FIDELITY_CLIENT = "memo_fidelity_client"
-    MEM_FREQUENCY_CLIENT = "memo_frequency_client"
-    MEM_EFFICIENCY_CLIENT = "memo_efficiency_client"
-    MEM_COHERENCE_CLIENT = "memo_coherence_client"
-    MEM_WAVELENGTH_CLIENT = "memo_wavelength_client"
-    MEASUREMENT_BASES = "measurement_bases"
-    MEM_SIZE = "memo_size"
+
 
     def __init__(self, conf_file_name: str):
         self.orchestrator_nodes = []
@@ -70,7 +54,7 @@ class QlanStarTopo(Topo):
         self._add_parameters(config)
 
         # quantum connections are only supported by sequential simulation so far
-        if not config[self.IS_PARALLEL]:
+        if not config[tc.IS_PARALLEL]:
             self._add_qconnections(config)
 
         self._add_timeline(config)
@@ -81,43 +65,43 @@ class QlanStarTopo(Topo):
         self._add_protocols()
 
     def _add_timeline(self, config: dict):
-        stop_time = config.get(Topo.STOP_TIME, float('inf'))
-        if config.get(self.IS_PARALLEL, False):
+        stop_time = config.get(tc.STOP_TIME, float('inf'))
+        if config.get(tc.IS_PARALLEL, False):
             raise Exception("Please install 'psequence' package for parallel simulations.")
         else:
             self.tl = Timeline(stop_time)
     
     def _add_parameters(self, config: dict):
 
-        self.n_local_memories = config.get(self.LOCAL_MEMORIES, 1)
-        self.n_clients = config.get(self.CLIENT_NUMBER, 1)
-        self.meas_bases = config.get(self.MEASUREMENT_BASES, 'zz')
+        self.n_local_memories = config.get(tc.LOCAL_MEMORIES, 1)
+        self.n_clients = config.get(tc.CLIENT_NUMBER, 1)
+        self.meas_bases = config.get(tc.MEASUREMENT_BASES, 'zz')
 
-        self.memo_fidelity_orch = config.get(self.MEM_FIDELITY_ORCH, 0.9)
-        self.memo_freq_orch = config.get(self.MEM_FREQUENCY_ORCH, 2000)
-        self.memo_efficiency_orch = config.get(self.MEM_EFFICIENCY_ORCH, 1)
-        self.memo_coherence_orch = config.get(self.MEM_COHERENCE_ORCH, -1)
-        self.memo_wavelength_orch = config.get(self.MEM_WAVELENGTH_ORCH, 500)
+        self.memo_fidelity_orch = config.get(tc.MEM_FIDELITY_ORCH, 0.9)
+        self.memo_freq_orch = config.get(tc.MEM_FREQUENCY_ORCH, 2000)
+        self.memo_efficiency_orch = config.get(tc.MEM_EFFICIENCY_ORCH, 1)
+        self.memo_coherence_orch = config.get(tc.MEM_COHERENCE_ORCH, -1)
+        self.memo_wavelength_orch = config.get(tc.MEM_WAVELENGTH_ORCH, 500)
 
-        self.memo_fidelity_client = config.get(self.MEM_FIDELITY_CLIENT, 0.9)
-        self.memo_freq_client = config.get(self.MEM_FREQUENCY_CLIENT, 2000)
-        self.memo_efficiency_client = config.get(self.MEM_EFFICIENCY_CLIENT, 1)
-        self.memo_coherence_client = config.get(self.MEM_COHERENCE_CLIENT, -1)
-        self.memo_wavelength_client = config.get(self.MEM_WAVELENGTH_CLIENT, 500)
+        self.memo_fidelity_client = config.get(tc.MEM_FIDELITY_CLIENT, 0.9)
+        self.memo_freq_client = config.get(tc.MEM_FREQUENCY_CLIENT, 2000)
+        self.memo_efficiency_client = config.get(tc.MEM_EFFICIENCY_CLIENT, 1)
+        self.memo_coherence_client = config.get(tc.MEM_COHERENCE_CLIENT, -1)
+        self.memo_wavelength_client = config.get(tc.MEM_WAVELENGTH_CLIENT, 500)
 
     def _add_nodes(self, config: dict):
         self._add_client_nodes(config)
         self._add_orchestrator_nodes(config)
 
     def _add_client_nodes(self, config: dict):
-        for node in config[Topo.ALL_NODE]:
-            seed = node[Topo.SEED]
-            node_type = node[Topo.TYPE]
-            name = node[Topo.NAME]
-            template_name = node.get(Topo.TEMPLATE, None)
+        for node in config[tc.ALL_NODE]:
+            seed = node[tc.SEED]
+            node_type = node[tc.TYPE]
+            name = node[tc.NAME]
+            template_name = node.get(tc.TEMPLATE, None)
             template = self.templates.get(template_name, {})
 
-            if node_type == self.CLIENT:
+            if node_type == tc.CLIENT:
                 node_obj = QlanClientNode(name, 
                                             self.tl, 
                                             1, 
@@ -132,7 +116,7 @@ class QlanStarTopo(Topo):
                 self.client_nodes.append(node_obj)
                 self.nodes[node_type].append(node_obj)
             
-            elif node_type == self.ORCHESTRATOR:
+            elif node_type == tc.ORCHESTRATOR:
                 pass
 
             else:
@@ -140,14 +124,14 @@ class QlanStarTopo(Topo):
 
             
     def _add_orchestrator_nodes(self, config: dict):
-        for node in config[Topo.ALL_NODE]:
-            seed = node[Topo.SEED]
-            node_type = node[Topo.TYPE]
-            name = node[Topo.NAME]
-            template_name = node.get(Topo.TEMPLATE, None)
+        for node in config[tc.ALL_NODE]:
+            seed = node[tc.SEED]
+            node_type = node[tc.TYPE]
+            name = node[tc.NAME]
+            template_name = node.get(tc.TEMPLATE, None)
             template = self.templates.get(template_name, {})
 
-            if node_type == self.ORCHESTRATOR:
+            if node_type == tc.ORCHESTRATOR:
                 node_obj = QlanOrchestratorNode(name, 
                                                 self.tl,
                                                 self.n_local_memories, 
@@ -161,7 +145,7 @@ class QlanStarTopo(Topo):
                 self.orchestrator_nodes.append(node_obj)
                 self.nodes[node_type].append(node_obj)
             
-            elif node_type == self.CLIENT:
+            elif node_type == tc.CLIENT:
                 pass
             
             else:
@@ -176,25 +160,25 @@ class QlanStarTopo(Topo):
     def _add_qconnections(self, config: dict):
         '''generate bsm_info, qc_info, and cc_info for the q_connections
         '''
-        for q_connect in config.get(Topo.ALL_Q_CONNECT, []):
-            node1 = q_connect[Topo.CONNECT_NODE_1]
-            node2 = q_connect[Topo.CONNECT_NODE_2]
-            attenuation = q_connect[Topo.ATTENUATION]
-            distance = q_connect[Topo.DISTANCE] // 2
-            channel_type = q_connect[Topo.TYPE]
+        for q_connect in config.get(tc.ALL_Q_CONNECT, []):
+            node1 = q_connect[tc.CONNECT_NODE_1]
+            node2 = q_connect[tc.CONNECT_NODE_2]
+            attenuation = q_connect[tc.ATTENUATION]
+            distance = q_connect[tc.DISTANCE] // 2
+            channel_type = q_connect[tc.TYPE]
             cc_delay = []                                   
-            for cc in config.get(self.ALL_C_CHANNEL, []):   
-                if cc[self.SRC] == node1 and cc[self.DST] == node2:
-                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
+            for cc in config.get(tc.ALL_C_CHANNEL, []):   
+                if cc[tc.SRC] == node1 and cc[tc.DST] == node2:
+                    delay = cc.get(tc.DELAY, cc.get(tc.DISTANCE, 1000) / SPEED_OF_LIGHT)
                     cc_delay.append(delay)
-                elif cc[self.SRC] == node2 and cc[self.DST] == node1:
-                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
+                elif cc[tc.SRC] == node2 and cc[tc.DST] == node1:
+                    delay = cc.get(tc.DELAY, cc.get(tc.DISTANCE, 1000) / SPEED_OF_LIGHT)
                     cc_delay.append(delay)
 
-            for cc in config.get(self.ALL_C_CONNECT, []):  
-                if (cc[self.CONNECT_NODE_1] == node1 and cc[self.CONNECT_NODE_2] == node2) \
-                        or (cc[self.CONNECT_NODE_1] == node2 and cc[self.CONNECT_NODE_2] == node1):
-                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
+            for cc in config.get(tc.ALL_C_CONNECT, []):  
+                if (cc[tc.CONNECT_NODE_1] == node1 and cc[tc.CONNECT_NODE_2] == node2) \
+                        or (cc[tc.CONNECT_NODE_1] == node2 and cc[tc.CONNECT_NODE_2] == node1):
+                    delay = cc.get(tc.DELAY, cc.get(tc.DISTANCE, 1000) / SPEED_OF_LIGHT)
                     cc_delay.append(delay)
             if len(cc_delay) == 0:
                 assert 0, q_connect

@@ -6,13 +6,13 @@ Topology instances automatically perform many useful network functions.
 """
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import TYPE_CHECKING, Optional
-
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
 
 from .node import *
 from ..components.optical_channel import QuantumChannel, ClassicalChannel
+from . import topology_constants as tc
 
 
 class Topology(ABC):
@@ -28,30 +28,6 @@ class Topology(ABC):
         cchannels (list[ClassicalChannel]): list of classical channel objects in network.
         tl (Timeline): the timeline used for simulation
     """
-
-    ALL_C_CONNECT = "cconnections"    # a connection consist of two opposite direction channels
-    ALL_C_CHANNEL = "cchannels"
-    ALL_NODE = "nodes"
-    ALL_Q_CONNECT = "qconnections"
-    ALL_Q_CHANNEL = "qchannels"
-    ATTENUATION = "attenuation"
-    CONNECT_NODE_1 = "node1"
-    CONNECT_NODE_2 = "node2"
-    DELAY = "delay"
-    DISTANCE = "distance"
-    DST = "destination"
-    NAME = "name"
-    SEED = "seed"
-    SRC = "source"
-    STOP_TIME = "stop_time"
-    TRUNC = "truncation"
-    TYPE = "type"
-    ALL_TEMPLATES = "templates"
-    TEMPLATE = "template"
-    GATE_FIDELITY = "gate_fidelity"
-    MEASUREMENT_FIDELITY = "measurement_fidelity"
-    FORMALISM = "formalism"  # "ket_vector", "density_matrix", "bell_diagonal", etc
-
     
     def __init__(self, conf_file_name: str):
         """Constructor for topology class.
@@ -76,39 +52,39 @@ class Topology(ABC):
         pass
 
     def _get_templates(self, config: dict) -> None:
-        templates = config.get(Topology.ALL_TEMPLATES, {})
+        templates = config.get(tc.ALL_TEMPLATES, {})
         self.templates = templates
 
     def _add_qchannels(self, config: dict) -> None:
-        for qc in config.get(self.ALL_Q_CHANNEL, []):
-            src_str, dst_str = qc[self.SRC], qc[self.DST]
+        for qc in config.get(tc.ALL_Q_CHANNEL, []):
+            src_str, dst_str = qc[tc.SRC], qc[tc.DST]
             src_node = self.tl.get_entity_by_name(src_str)
             if src_node is not None:
-                name = qc.get(self.NAME, f"qc.{src_str}.{dst_str}")
-                distance = qc[self.DISTANCE]
-                attenuation = qc[self.ATTENUATION]
+                name = qc.get(tc.NAME, f"qc.{src_str}.{dst_str}")
+                distance = qc[tc.DISTANCE]
+                attenuation = qc[tc.ATTENUATION]
                 qc_obj = QuantumChannel(name, self.tl, attenuation, distance)
                 qc_obj.set_ends(src_node, dst_str)
                 self.qchannels.append(qc_obj)
 
     def _add_cchannels(self, config: dict) -> None:
-        for cc in config.get(self.ALL_C_CHANNEL, []):
-            src_str, dst_str = cc[self.SRC], cc[self.DST]
+        for cc in config.get(tc.ALL_C_CHANNEL, []):
+            src_str, dst_str = cc[tc.SRC], cc[tc.DST]
             src_node = self.tl.get_entity_by_name(src_str)
             if src_node is not None:
-                name = cc.get(self.NAME, f"cc.{src_str}.{dst_str}")
-                distance = cc.get(self.DISTANCE, 1000)
-                delay = cc.get(self.DELAY, -1)
+                name = cc.get(tc.NAME, f"cc.{src_str}.{dst_str}")
+                distance = cc.get(tc.DISTANCE, 1000)
+                delay = cc.get(tc.DELAY, -1)
                 cc_obj = ClassicalChannel(name, self.tl, distance, delay)
                 cc_obj.set_ends(src_node, dst_str)
                 self.cchannels.append(cc_obj)
 
     def _add_cconnections(self, config: dict) -> None:
-        for c_connect in config.get(self.ALL_C_CONNECT, []):
-            node1 = c_connect[self.CONNECT_NODE_1]
-            node2 = c_connect[self.CONNECT_NODE_2]
-            distance = c_connect.get(self.DISTANCE, 1000)
-            delay = c_connect.get(self.DELAY, -1)
+        for c_connect in config.get(tc.ALL_C_CONNECT, []):
+            node1 = c_connect[tc.CONNECT_NODE_1]
+            node2 = c_connect[tc.CONNECT_NODE_2]
+            distance = c_connect.get(tc.DISTANCE, 1000)
+            delay = c_connect.get(tc.DELAY, -1)
             for src_str, dst_str in zip([node1, node2], [node2, node1]):
                 name = f"cc.{src_str}.{dst_str}"
                 src_obj = self.tl.get_entity_by_name(src_str)

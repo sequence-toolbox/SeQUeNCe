@@ -1,7 +1,8 @@
 import json
 
-from .topology import Topology as Topo
+from . import topology_constants as tc
 from .node import QKDNode
+from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
 
 
@@ -18,7 +19,7 @@ class QKDTopo(Topo):
         cchannels (list[ClassicalChannel]): list of classical channel objects in network.
         tl (Timeline): the timeline used for simulation
     """
-    QKD_NODE = "QKDNode"
+
 
     def _load(self, filename):
         topo_config = json.load(open(filename))
@@ -31,19 +32,19 @@ class QKDTopo(Topo):
         self._add_cconnections(topo_config)
 
     def _add_timeline(self, config):
-        stop_time = config.get(Topo.STOP_TIME, float('inf'))
+        stop_time = config.get(tc.STOP_TIME, float('inf'))
         self.tl = Timeline(stop_time)
 
     def _add_nodes(self, config):
-        for node in config[Topo.ALL_NODE]:
+        for node in config[tc.ALL_NODE]:
             # TODO: add encoding configuration for QKD nodes
-            seed = node[Topo.SEED]
-            node_type = node[Topo.TYPE]
-            name = node[Topo.NAME]
-            template_name = node.get(Topo.TEMPLATE, None)
+            seed = node[tc.SEED]
+            node_type = node[tc.TYPE]
+            name = node[tc.NAME]
+            template_name = node.get(tc.TEMPLATE, None)
             template = self.templates.get(template_name, {})
 
-            if node_type == self.QKD_NODE:
+            if node_type == tc.QKD_NODE:
                 node = QKDNode(name, self.tl,
                                seed=seed, component_templates=template)
             else:
