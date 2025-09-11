@@ -1,15 +1,15 @@
-from json import dump
 import os
-import pandas as pd
+from json import dump
 from time import time
-import numpy as np
 
-from sequence.topology.node import QuantumRouter, BSMNode
-from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
-from sequence.app.request_app import RequestApp
+import pandas as pd
 from psequence.p_timeline import ParallelTimeline
-import sequence.utils.log as log
 
+from sequence.app.request_app import RequestApp
+from sequence.components.optical_channel import (ClassicalChannel,
+                                                 QuantumChannel)
+from sequence.resource_management.memory_manager import MemoryInfo
+from sequence.topology.node import BSMNode, QuantumRouter
 
 SQRT_HALF = 0.5 ** 0.5
 desired_state = [SQRT_HALF, 0, 0, SQRT_HALF]
@@ -64,7 +64,8 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
     ATTENUATION = 0.0002
     SWAP_DEG_RATE = 1
 
-    tl = ParallelTimeline(lookahead=lookahead, stop_time=stop_time, qm_ip=qm_ip, qm_port=qm_port)
+    tl = ParallelTimeline(lookahead=lookahead,
+                          stop_time=stop_time, qm_ip=qm_ip, qm_port=qm_port)
 
     # log.set_logger(__name__, tl, "mpi_%d.log" % rank)
     # log.set_logger_level("DEBUG")
@@ -81,8 +82,8 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
         if node_id // group_size == rank:
             node = QuantumRouter(node_name, tl, MEMO_SIZE)
             node.set_seed(node_id)
-            node.memory_array.update_memory_params('raw_fidelity',
-                                                   RAW_FIDELITY)
+            memory_array = node.components[node.memo_arr_name]
+            memory_array.update_memory_params('raw_fidelity', RAW_FIDELITY)
             routers.append(node)
         else:
             tl.foreign_entities[node_name] = node_id // group_size
@@ -237,20 +238,25 @@ def ring_network(ring_size: int, lookahead: int, stop_time: int, rank: int,
 
 if __name__ == "__main__":
     import argparse
+
     from mpi4py import MPI
-    from sequence.kernel.quantum_manager_server import valid_port, valid_ip
+    from psequence.quantum_manager_server import valid_ip, valid_port
 
     rank = MPI.COMM_WORLD.Get_rank()
     size = MPI.COMM_WORLD.Get_size()
 
-    parser = argparse.ArgumentParser(description='Example of parallel quantum network')
+    parser = argparse.ArgumentParser(
+        description='Example of parallel quantum network')
     parser.add_argument('ip', type=valid_ip, help='quantum server IP address')
-    parser.add_argument('port', type=valid_port, help='quantum server port number')
+    parser.add_argument('port', type=valid_port,
+                        help='quantum server port number')
     parser.add_argument('ring_size', type=int, help='the size of ring network')
     parser.add_argument('lookahead', type=int,
                         help='the lookahead of parallel simulation (ps); longer lookahead generates a longer quantum channel')
-    parser.add_argument('stop_time', type=int, help='the end time of the simulation (sec)')
-    parser.add_argument('log_path', type=str, help='the path for storing log files')
+    parser.add_argument('stop_time', type=int,
+                        help='the end time of the simulation (sec)')
+    parser.add_argument('log_path', type=str,
+                        help='the path for storing log files')
 
     args = parser.parse_args()
 
