@@ -4,16 +4,18 @@ This module provides a definition of the Topology class, which can be used to
 manage a network's structure.
 Topology instances automatically perform many useful network functions.
 """
+import json
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from ..kernel.timeline import Timeline
+
 from networkx import Graph, dijkstra_path, exception
 
+from . import topology_constants as tc
 from .node import *
 from ..components.optical_channel import QuantumChannel, ClassicalChannel
-from . import topology_constants as tc
+from ..constants import KET_STATE_FORMALISM
+from ..kernel.quantum_manager import QuantumManager
+from ..kernel.timeline import Timeline
 
 
 class Topology(ABC):
@@ -43,13 +45,67 @@ class Topology(ABC):
         self.tl: Timeline | None = None
         self._load(conf_file_name)
 
-    @abstractmethod
     def _load(self, filename: str):
         """Method for parsing configuration file and generate network
+
+        Defines the standard control flow
 
         Args:
             filename (str): the name of configuration file
         """
+        # Load the config.
+        config = self._load_json(filename)
+        self._get_templates(config)
+
+        # Preprocess (HOOK)
+        self._preprocess_hook(config)
+
+        # Create the timeline
+        self.tl = self._create_timeline(config)
+
+        # Nodes (HOOK)
+        self._node_setup_hook(config)
+
+        # Channels
+        self._add_qchannels(config)
+        self._add_cchannels(config)
+
+        # Connections
+        self._add_cconnections(config)
+
+        # Setup routing
+        self._post_hook(config)
+
+
+    def _preprocess_hook(self, config: dict) -> None:
+        pass
+
+    def _node_setup_hook(self, config: dict) -> None:
+        pass
+
+    def _post_hook(self, config: dict) -> None:
+        pass
+
+    @staticmethod
+    def _create_timeline(config):
+        stop_time = config.get(tc.STOP_TIME, 10 ** 23)
+        formalism = config.get(tc.FORMALISM, KET_STATE_FORMALISM)
+        truncation = config.get(tc.TRUNC, 1)
+        QuantumManager.set_global_manager_formalism(formalism)
+        if config.get(tc.IS_PARALLEL, False):
+            raise Exception("Please install 'psequence' package for parallel simulations.")
+        else:
+            timeline = Timeline(stop_time=stop_time, truncation=truncation)
+        return timeline
+
+    @staticmethod
+    def _load_json(filename: str) -> dict:
+        with open(filename) as f:
+            config = json.load(f)
+        return config
+
+    @abstractmethod
+    def _add_nodes(self, config: dict) -> None:
         pass
 
     def _get_templates(self, config: dict) -> None:
@@ -93,6 +149,7 @@ class Topology(ABC):
                     cc_obj = ClassicalChannel(name, self.tl, distance, delay)
                     cc_obj.set_ends(src_obj, dst_str)
                     self.cchannels.append(cc_obj)
+
 
     def _generate_forwarding_table(self, config: dict, node_type: str):
         """For static routing."""

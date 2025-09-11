@@ -1,5 +1,3 @@
-import json
-
 from . import topology_constants as tc
 from .node import QKDNode
 from .topology import Topology as Topo
@@ -20,20 +18,8 @@ class QKDTopo(Topo):
         tl (Timeline): the timeline used for simulation
     """
 
-
-    def _load(self, filename):
-        topo_config = json.load(open(filename))
-
-        self._get_templates(topo_config)
-        self._add_timeline(topo_config)
-        self._add_nodes(topo_config)
-        self._add_qchannels(topo_config)
-        self._add_cchannels(topo_config)
-        self._add_cconnections(topo_config)
-
-    def _add_timeline(self, config):
-        stop_time = config.get(tc.STOP_TIME, float('inf'))
-        self.tl = Timeline(stop_time)
+    def _node_setup_hook(self, config: dict) -> None:
+        self._add_nodes(config)
 
     def _add_nodes(self, config):
         for node in config[tc.ALL_NODE]:

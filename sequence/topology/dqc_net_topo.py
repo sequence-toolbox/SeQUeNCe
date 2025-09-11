@@ -1,5 +1,3 @@
-import json
-
 import numpy as np
 
 from . import topology_constants as tc
@@ -27,35 +25,24 @@ class DQCNetTopo(Topo):
         tl (Timeline): the timeline used for simulation
     """
 
-
     def __init__(self, conf_file_name: str):
         self.bsm_to_router_map = {}
         self.encoding_type = None
         super().__init__(conf_file_name)
 
-    def _load(self, filename: str):
-        with open(filename) as fh:
-            config = json.load(fh)
 
-        self._get_templates(config)
+    def _preprocess_hook(self, config: dict) -> None:
         # quantum connections are only supported by sequential simulation so far
         if not config[tc.IS_PARALLEL]:
             self._add_qconnections(config)
-        self._add_timeline(config)
+
+    def _node_setup_hook(self, config: dict) -> None:
         self._map_bsm_routers(config)
         self._add_nodes(config)
         self._add_bsm_node_to_router()
-        self._add_qchannels(config)
-        self._add_cchannels(config)
-        self._add_cconnections(config)
-        self._generate_forwarding_table(config, tc.DQC_NODE)
 
-    def _add_timeline(self, config: dict):
-        stop_time = config.get(tc.STOP_TIME, float('inf'))
-        if config.get(tc.IS_PARALLEL, False):
-            raise Exception("Please install 'psequence' package for parallel simulations.")
-        else:
-            self.tl = Timeline(stop_time)
+    def _post_hook(self, config: dict) -> None:
+        self._generate_forwarding_table(config, tc.DQC_NODE)
 
     def _map_bsm_routers(self, config):
         for qc in config[tc.ALL_Q_CHANNEL]:
@@ -206,8 +193,9 @@ class DQCNetTopo(Topo):
 
         return data_owners
 
-    def get_timeline(self) -> Timeline:
+    """def get_timeline(self) -> Timeline:
         return self.tl
 
     def get_nodes(self) -> dict[str, list[Node]]:
         return self.nodes  
+"""

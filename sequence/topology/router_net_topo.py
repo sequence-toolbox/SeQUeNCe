@@ -1,12 +1,9 @@
-import json
-
 import numpy as np
 
 from . import topology_constants as tc
 from .node import BSMNode, QuantumRouter
 from .topology import Topology as Topo
 from ..constants import SPEED_OF_LIGHT
-from ..kernel.quantum_manager import KET_STATE_FORMALISM, QuantumManager
 from ..kernel.timeline import Timeline
 
 
@@ -31,32 +28,17 @@ class RouterNetTopo(Topo):
         self.encoding_type = None
         super().__init__(conf_file_name)
 
-    def _load(self, filename: str):
-        with open(filename) as fh:
-            config = json.load(fh)
-
-        self._get_templates(config)
-        # quantum connections are only supported by sequential simulation so far
-        if not config[tc.IS_PARALLEL]:
+    def _preprocess_hook(self, config: dict) -> None:
+        if not config[tc.IS_PARALLEL]:  # quantum connections are only supported by sequential simulation so far
             self._add_qconnections(config)
-        self._add_timeline(config)
+
+    def _node_setup_hook(self, config: dict) -> None:
         self._map_bsm_routers(config)
         self._add_nodes(config)
         self._add_bsm_node_to_router()
-        self._add_qchannels(config)
-        self._add_cchannels(config)
-        self._add_cconnections(config)
-        self._generate_forwarding_table(config, tc.QUANTUM_ROUTER)
 
-    def _add_timeline(self, config: dict):
-        stop_time = config.get(tc.STOP_TIME, 10 ** 23)
-        formalism = config.get(tc.FORMALISM, KET_STATE_FORMALISM)
-        truncation = config.get(tc.TRUNC, 1)
-        QuantumManager.set_global_manager_formalism(formalism)
-        if config.get(tc.IS_PARALLEL, False):
-            raise Exception("Please install 'psequence' package for parallel simulations.")
-        else:
-            self.tl = Timeline(stop_time=stop_time, truncation=truncation)
+    def _post_hook(self, config: dict) -> None:
+        self._generate_forwarding_table(config, tc.QUANTUM_ROUTER)
 
     def _map_bsm_routers(self, config):
         for qc in config[tc.ALL_Q_CHANNEL]:

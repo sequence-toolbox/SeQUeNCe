@@ -1,5 +1,3 @@
-import json
-
 import numpy as np
 
 from . import topology_constants as tc
@@ -45,34 +43,20 @@ class QlanStarTopo(Topo):
         self.remote_memories_array = []
         super().__init__(conf_file_name)
 
-
-    def _load(self, filename: str):
-        with open(filename) as fh:
-            config = json.load(fh)
-
-        self._get_templates(config)
+    def _preprocess_hook(self, config: dict) -> None:
         self._add_parameters(config)
-
         # quantum connections are only supported by sequential simulation so far
         if not config[tc.IS_PARALLEL]:
             self._add_qconnections(config)
 
-        self._add_timeline(config)
+    def _node_setup_hook(self, config: dict) -> None:
         self._add_nodes(config)
-        self._add_qchannels(config)
-        self._add_cchannels(config)
-        self._add_cconnections(config)
+
+    def _post_hook(self, config: dict) -> None:
         self._add_protocols()
 
-    def _add_timeline(self, config: dict):
-        stop_time = config.get(tc.STOP_TIME, float('inf'))
-        if config.get(tc.IS_PARALLEL, False):
-            raise Exception("Please install 'psequence' package for parallel simulations.")
-        else:
-            self.tl = Timeline(stop_time)
     
     def _add_parameters(self, config: dict):
-
         self.n_local_memories = config.get(tc.LOCAL_MEMORIES, 1)
         self.n_clients = config.get(tc.CLIENT_NUMBER, 1)
         self.meas_bases = config.get(tc.MEASUREMENT_BASES, 'zz')
