@@ -1,7 +1,6 @@
 import json
 
 import numpy as np
-from networkx import Graph, dijkstra_path, exception
 
 from . import topology_constants as tc
 from .node import BSMNode, QuantumRouter
@@ -47,7 +46,7 @@ class RouterNetTopo(Topo):
         self._add_qchannels(config)
         self._add_cchannels(config)
         self._add_cconnections(config)
-        self._generate_forwarding_table(config)
+        self._generate_forwarding_table(config, tc.QUANTUM_ROUTER)
 
     def _add_timeline(self, config: dict):
         stop_time = config.get(tc.STOP_TIME, 10 ** 23)
@@ -163,45 +162,3 @@ class RouterNetTopo(Topo):
                     config[tc.ALL_C_CHANNEL].append(cc_info)
             else:
                 raise NotImplementedError("Unknown type of quantum connection")
-
-    def _generate_forwarding_table(self, config: dict):
-        """For static routing."""
-        graph = Graph()
-        for node in config[tc.ALL_NODE]:
-            if node[tc.TYPE] == tc.QUANTUM_ROUTER:
-                graph.add_node(node[tc.NAME])
-
-        costs = {}
-        if config[tc.IS_PARALLEL]:
-            for qc in config[tc.ALL_Q_CHANNEL]:
-                router, bsm = qc[tc.SRC], qc[tc.DST]
-                if bsm not in costs:
-                    costs[bsm] = [router, qc[tc.DISTANCE]]
-                else:
-                    costs[bsm] = [router] + costs[bsm]
-                    costs[bsm][-1] += qc[tc.DISTANCE]
-        else:
-            for qc in self.qchannels:
-                router, bsm = qc.sender.name, qc.receiver
-                if bsm not in costs:
-                    costs[bsm] = [router, qc.distance]
-                else:
-                    costs[bsm] = [router] + costs[bsm]
-                    costs[bsm][-1] += qc.distance
-
-        graph.add_weighted_edges_from(costs.values())
-        for src in self.nodes[tc.QUANTUM_ROUTER]:
-            for dst_name in graph.nodes:
-                if src.name == dst_name:
-                    continue
-                try:
-                    if dst_name > src.name:
-                        path = dijkstra_path(graph, src.name, dst_name)
-                    else:
-                        path = dijkstra_path(graph, dst_name, src.name)[::-1]
-                    next_hop = path[1]
-                    # routing protocol locates at the bottom of the stack
-                    routing_protocol = src.network_manager.protocol_stack[0]  # guarantee that [0] is the routing protocol?
-                    routing_protocol.add_forwarding_rule(dst_name, next_hop)
-                except exception.NetworkXNoPath:
-                    pass

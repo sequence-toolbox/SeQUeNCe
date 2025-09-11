@@ -9,6 +9,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
+from networkx import Graph, dijkstra_path, exception
 
 from .node import *
 from ..components.optical_channel import QuantumChannel, ClassicalChannel
@@ -92,6 +93,48 @@ class Topology(ABC):
                     cc_obj = ClassicalChannel(name, self.tl, distance, delay)
                     cc_obj.set_ends(src_obj, dst_str)
                     self.cchannels.append(cc_obj)
+
+    def _generate_forwarding_table(self, config: dict, node_type: str):
+        """For static routing."""
+        graph = Graph()
+        for node in config[tc.ALL_NODE]:
+            if node[tc.TYPE] == node_type:
+                graph.add_node(node[tc.NAME])
+
+        costs = {}
+        if config[tc.IS_PARALLEL]:
+            for qc in config[tc.ALL_Q_CHANNEL]:
+                router, bsm = qc[tc.SRC], qc[tc.DST]
+                if bsm not in costs:
+                    costs[bsm] = [router, qc[tc.DISTANCE]]
+                else:
+                    costs[bsm] = [router] + costs[bsm]
+                    costs[bsm][-1] += qc[tc.DISTANCE]
+        else:
+            for qc in self.qchannels:
+                router, bsm = qc.sender.name, qc.receiver
+                if bsm not in costs:
+                    costs[bsm] = [router, qc.distance]
+                else:
+                    costs[bsm] = [router] + costs[bsm]
+                    costs[bsm][-1] += qc.distance
+
+        graph.add_weighted_edges_from(costs.values())
+        for src in self.nodes[node_type]:
+            for dst_name in graph.nodes:
+                if src.name == dst_name:
+                    continue
+                try:
+                    if dst_name > src.name:
+                        path = dijkstra_path(graph, src.name, dst_name)
+                    else:
+                        path = dijkstra_path(graph, dst_name, src.name)[::-1]
+                    next_hop = path[1]
+                    # routing protocol locates at the bottom of the stack
+                    routing_protocol = src.network_manager.protocol_stack[0]  # guarantee that [0] is the routing protocol?
+                    routing_protocol.add_forwarding_rule(dst_name, next_hop)
+                except exception.NetworkXNoPath:
+                    pass
 
     def get_timeline(self) -> "Timeline":
         assert self.tl is not None, "timeline is not set properly."
