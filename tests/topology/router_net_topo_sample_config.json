@@ -1,5 +1,4 @@
 {
-    "is_parallel": false,
     "stop_time": 100,
     "templates": {
         "perfect_memo": {
