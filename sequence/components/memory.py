@@ -11,6 +11,8 @@ from typing import Any, TYPE_CHECKING, Callable
 from numpy import exp, array
 from scipy import stats
 
+from ..kernel.quantum_manager import QuantumManager
+
 if TYPE_CHECKING:
     from ..entanglement_management.entanglement_protocol import EntanglementProtocol
     from ..kernel.timeline import Timeline
@@ -20,7 +22,7 @@ from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..utils.encoding import single_atom, single_heralded
-from ..constants import EPSILON
+from ..constants import EPSILON, BELL_DIAGONAL_STATE_FORMALISM
 from ..utils import log
 
 
@@ -62,6 +64,14 @@ class MemoryArray(Entity):
         Entity.__init__(self, name, timeline)
         self.memories = []
         self.memory_name_to_index = {}
+
+        if decoherence_errors is not None:
+            assert QuantumManager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, \
+                "Decoherence errors can only be set when formalism is Bell Diagonal"
+
+        # Set the default pauli errors if BDS formalism
+        if QuantumManager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM and decoherence_errors is None:
+            decoherence_errors = [1/3, 1/3, 1/3]
 
         for i in range(num_memories):
             memory_name = self.name + f"[{i}]"
