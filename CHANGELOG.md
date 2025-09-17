@@ -4,11 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-## [0.8.1] - 2025-09-10
-# Changed
-- Update minimum python version to 3.11
+
+## [0.8.1] - 2025-09-17
+### Changed
 - Migrate code to fit PEP requirements for py3.11
 
+### Fixed
+- Fixed the Tutorial so it is compatible with SeQUeNCe version 0.8
+- Add `decoherence_error` and validation for var in `Memory.__init__`
+
+### Removed
+- Removed support for Python version 3.10
 
 ## [0.8] - 2025-09-08
 ### Added
