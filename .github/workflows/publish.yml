@@ -2,13 +2,12 @@ name: CD Pipeline
 
 on:
   push:
-    branches: [master, RnD]
+    branches: [master]
   workflow_dispatch:
 
 jobs:
   build-release:
     name: Build the release
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -69,7 +68,7 @@ jobs:
       - name: Download all the dists
         uses: actions/download-artifact@v5
         with:
-          name: python-package-distributions
+          name: python-release-package-dist
           path: dist/
       - name: Publish dist to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
