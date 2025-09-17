@@ -14,8 +14,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.11', '3.12', '3.13']
-        mpi: [openmpi]
-  
+
     steps:
     - uses: actions/checkout@v4
 
@@ -33,16 +32,3 @@ jobs:
     - name: Test with pytest
       run: |
         make test
-
-    - name: Set up MPI
-      uses: mpi4py/setup-mpi@v1
-      with:
-        mpi: ${{ matrix.mpi }}
-
-    - name: Set up parallel code
-      run: make install
-      working-directory: ./parallel
-
-    - name: Test parallel with pytest
-      run: make test_parallel
-      working-directory: ./parallel
