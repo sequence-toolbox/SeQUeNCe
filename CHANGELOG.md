@@ -12,28 +12,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8] - 2025-09-08
 ### Added
-- Class factory support for generation, purification.
+- Class factory support for generation, purification
 - Implements BDS formalism
 - Implements single heralded entanglement generation protocol. See `entanglement_management.generation.single_heralded`
 
 ### Changed
 - Modified related code to account for the new factory pattern.
-- Modified `constants.py` to include the new purification and generation protocols.
-- Change `QuantumManager` to use internal factory pattern.
-    - The previous instance-level attribute `formalism` is changed into a class-level attribute `_global_formalism`.
+    - The generation-related modules are under `entanglement_management.generation`
+    - The purification-related modules are under `entanglement_management.purification`
+- Modified `constants.py` to include the new purification and generation protocols
+- Change `QuantumManager` to use the internal factory pattern
+    - The previous instance-level attribute `formalism` is changed into a class-level attribute `_global_formalism`
     - Class-level attribute `_registry` is used to register the subclasses of `QuantumManager`
 
 ### Removed
-- Removed the old generation and purification protocol classes.
-- Remove standalone factory class for quantum manager.
+- Removed the old generation and purification protocol classes
+- Remove standalone factory class for quantum manager
+- Most stuff introduced in v0.7.6 has been temporarily removed
 
 
 ## [0.7.6] - 2025-8-29
 
 ### Added
 - Adds a configuration system to load plugins from external modules
-- Implements dynamic import of EntanglementGeneration classes from specified plugins (Trajectree as the first example)
-- Introduces a new ShellBSM component and truncation parameter support
+- Implements dynamic import of `EntanglementGeneration` classes from specified plugins (Trajectree as the first example)
+- Introduces a new `ShellBSM` component and truncation parameter support
 
 
 

@@ -16,6 +16,8 @@ from ...utils import log
 
 
 class QuantumCircuitMixin:
+    """Mixin class providing common quantum circuits used in entanglement generation protocols.
+    """
     _plus_state = [sqrt(1 / 2), sqrt(1 / 2)]
     _flip_circuit = Circuit(1)
     _flip_circuit.x(0)
@@ -24,6 +26,30 @@ class QuantumCircuitMixin:
 
 
 class EntanglementGenerationA(EntanglementProtocol, ABC):
+    """Abstract base class for Entanglement Generation Protocol A.
+       This class provides a framework for implementing entanglement generation protocols
+    
+    Class Attributes:
+        _registry (dict[str, Type['EntanglementGenerationA']]): A registry mapping protocol names to their corresponding classes.
+        _global_type (str): The globally set protocol type used when creating new instances. Defaults to BARRET_KOK, other options: SINGLE_HERALDED
+
+    Instance Attributes:
+        protocol_type (str): The type of the entanglement generation protocol.
+        middle (str): The name of the middle BSM node used in the protocol.
+        remote_node_name (str): The name of the remote node involved in the protocol.
+        remote_protocol_name (str): The name of the remote protocol instance paired to this protocol.
+        memory (Memory): The memory managed by this protocol.
+        memories (List[Memory]): A list containing the single memory managed by this protocol.
+        remote_memo_id (str): The identifier (name) of the remote memory used in the protocol.
+        qc_delay (int): The quantum channel delay to the middle node (in ps).
+        expected_time (int): expected time for middle BSM node to receive the photon (in ps).
+        fidelity (float): The fidelity of the entangled state produced by the protocol.
+        ent_round (int): The current round of entanglement generation (total two rounds in Barrett-Kok).
+        bsm_res (List[int]): The result of the Bell State Measurement (BSM), initialized to [-1, -1].
+        scheduled_events (List[Event]): A list of scheduled events for the protocol.
+        primary (bool): Indicates if this node is the primary node in the protocol (based on lexicographical order of node names).
+        _qstate_key (int): The key of the quantum states associated with the memory used in the protocol.
+    """
     _registry: dict[str, type['EntanglementGenerationA']] = {}
     _global_type: str = BARRET_KOK
 
