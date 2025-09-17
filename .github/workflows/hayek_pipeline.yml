@@ -1,4 +1,4 @@
-name: main
+name: CI/CD Pi
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
     branches: [master, RnD]
 
 jobs:
-  build:
-    
+  validation:
+    name: Run Unit Tests
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -45,3 +45,35 @@ jobs:
     - name: Test parallel with pytest
       run: make test_parallel
       working-directory: ./parallel
+
+  nightly:
+    name: Build nightly distribution
+    if: github.event_name == 'push' && github.ref == 'refs/heads/RnD'
+    needs: validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: 'true'
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+      - name: Install pypa/build
+        run: >-
+          python3 -m
+          pip install 
+          build
+          --user
+      - name: Build wheel and tarball
+        run: python3 -m build
+      - name: Store dist as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-nightly-package-dist
+          path: dist/
+
+
+
+
