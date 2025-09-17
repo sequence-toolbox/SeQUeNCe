@@ -1,0 +1,21 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]  # runs when you publish a release
+  workflow_dispatch:    # allows manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.13"
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine upload dist/* \
+          -u ${{ secrets.PYPI_USERNAME }} \
+          -p ${{ secrets.PYPI_PASSWORD }}
