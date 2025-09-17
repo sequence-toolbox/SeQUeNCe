@@ -5,7 +5,7 @@ In this chapter, we will use protocols in the entanglement management module to 
 We will also use a simple manager protocol to control the entanglement generation protocols.
 We will show
 
-* how to use `EntanglementGenerationA` (Barret-Kok generation protocol) to entangle memories on different nodes
+* how to use `EntanglementGenerationA` (by default creates Barret-Kok generation protocol) to entangle memories on different nodes
 * how to use `BBPSSW` (BBPSSW purification protocol) to improve the fidelity of entanglement
 * how to use `EntanglementSwappingA` and `EntanglementSwappingB` (swapping protocol) to extend the distance of entanglement
 
@@ -24,12 +24,12 @@ Classical channels and nodes create a complete classical graph, which is not sho
 `BSMNode` includes:
 
 * **Hardware**: two detectors in a bell state measurement device (BSM) to record the arrival time of photons.
-* **Software**: the `EntanglementGenerationB` protocol to collect the arrival time of photons and notify the `EntanglementGenerationA` protocols on the other nodes.
+* **Software**: the `EntanglementGenerationB` (`BarretKokB`) protocol to collect the arrival time of photons and notify the `EntanglementGenerationA` protocols on the other nodes.
 
 `EntangleGenNode` includes:
 
 * **Hardware**: one quantum memory in the |+&#10217; state, prepared to entangle with the remote memory on the other node.
-* **Software**: the `EntanglementGenerationA` protocol to excite the controlled memory and determine the quantum state via messages from `EntanglementGenerationB`; 
+* **Software**: the `EntanglementGenerationA` (`BarretKokA`) protocol to excite the controlled memory and determine the quantum state via messages from `EntanglementGenerationB`; 
 a `SimpleManager` which uses the `update` function to get the state of the memory after the procedures in `EntanglementGenerationA`.
 
 ### Step 1: Customize Node 
@@ -59,8 +59,8 @@ class SimpleManager:
             self.ent_counter += 1
 
     def create_protocol(self, middle: str, other: str):
-        self.owner.protocols = [EntanglementGenerationA(self.owner, '%s.eg' % self.owner.name, middle, other,
-                                                      self.owner.components[self.memo_name])]
+        self.owner.protocols = [EntanglementGenerationA.create(self.owner, '%s.eg' % self.owner.name, middle, other,
+                                                               self.owner.components[self.memo_name])]
 
 
 class EntangleGenNode(Node):
@@ -94,13 +94,15 @@ Finally, for the `receive_message` method, the node will receive a classical mes
 We also add a function `create_protocol(self, middle: str, other: str)` to the manager to create the local instance of the generation protocol.
 The `middle` and `other` parameters declare the name of the `BSMNode` and `EntangleGenNode`, respectively, used for generating entanglement.
 
-The constructor function of `EntanglementGenerationA` needs five arguments: 
+The `create` function of `EntanglementGenerationA` needs five arguments: 
 
 1. the node that holds the protocol instance
 2. the identity (name) of the protocol instance
 3. the name of the `BSMNode` involved in entanglement generation
 4. the name of the remote `EntangleGenNode` involved in entanglement generation
 5. the memory used for generating entanglement
+
+The abstract parent class `EntanglementGenerationA` by default creates a subclass `BarretKokA`.
 
 #### Q&A
 
@@ -146,8 +148,9 @@ nodes = [node1, node2, bsm_node]
 
 for i in range(3):
     for j in range(3):
-        cc= ClassicalChannel('cc_%s_%s'%(nodes[i].name, nodes[j].name), tl, 1000, 1e8)
-        cc.set_ends(nodes[i], nodes[j].name)
+        if i != j:
+            cc= ClassicalChannel('cc_%s_%s'%(nodes[i].name, nodes[j].name), tl, 1000, 1e8)
+            cc.set_ends(nodes[i], nodes[j].name)
 ```
 
 ### Step 3: Configure and Start the `EntanglementGenerationA` Protocol
@@ -246,7 +249,7 @@ We will also rewrite the code for the manager class to reflect our usage of two 
 
 
 ```python
-from sequence.entanglement_management.purification import BBPSSW
+from sequence.entanglement_management.purification import BBPSSWProtocol
 
 
 class SimpleManager:
@@ -267,7 +270,7 @@ class SimpleManager:
     def create_protocol(self):
         kept_memo = self.owner.components[self.kept_memo_name]
         meas_memo = self.owner.components[self.meas_memo_name]
-        self.owner.protocols = [BBPSSW(self.owner, 'purification_protocol', kept_memo, meas_memo)]
+        self.owner.protocols = [BBPSSWProtocol.create(self.owner, 'purification_protocol', kept_memo, meas_memo)]
 
 
 class PurifyNode(Node):
@@ -286,12 +289,14 @@ class PurifyNode(Node):
         self.protocols[0].received_message(src, msg)
 ```
 
-The constructor function of BBPSSW requires four arguments:
+The `create` function of `BBPSSWProtocol` requires four arguments:
 
 1. The node that holds the protocol instance
 2. The identity of the protocol instance
 3. The memory used as the `kept_memo`
 4. the memory used as the `meas_memo`
+
+By default, `BBPSSWProtocol` will create a `BBPSSWCircuit` instance.
 
 ### Step 2: Create Network
 
