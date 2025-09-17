@@ -1,4 +1,4 @@
-name: CI/CD Pi
+name: CI/CD Pipeline
 
 on:
   push:
@@ -46,9 +46,9 @@ jobs:
       run: make test_parallel
       working-directory: ./parallel
 
-  nightly:
-    name: Build nightly distribution
-    if: github.event_name == 'push' && github.ref == 'refs/heads/RnD'
+  release:
+    name: Build nightly distribution and release as pre
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: validation
     runs-on: ubuntu-latest
 
@@ -71,9 +71,29 @@ jobs:
       - name: Store dist as an artifact
         uses: actions/upload-artifact@v4
         with:
-          name: python-nightly-package-dist
+          name: python-release-package-dist
           path: dist/
 
+  publish-to-pypi:
+    name: Publish dist to PyPi
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+      - release
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/sequence
+    permissions:
+      id-token: write
 
-
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v5
+        with:
+          name: python-release-package-dist
+          path: dist/
+      - name: Publish dist to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
 
