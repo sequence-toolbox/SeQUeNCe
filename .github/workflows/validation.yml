@@ -1,0 +1,48 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches: [master, RnD]
+  pull_request:
+    branches: [master, RnD]
+  workflow_dispatch:
+
+jobs:
+  validation:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+        mpi: [openmpi]
+  
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        pip install pytest
+        make setup
+        make install
+
+    - name: Test with pytest
+      run: |
+        make test
+
+    - name: Set up MPI
+      uses: mpi4py/setup-mpi@v1
+      with:
+        mpi: ${{ matrix.mpi }}
+
+    - name: Set up parallel code
+      run: make install
+      working-directory: ./parallel
+
+    - name: Test parallel with pytest
+      run: make test_parallel
+      working-directory: ./parallel
