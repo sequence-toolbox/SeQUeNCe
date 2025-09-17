@@ -37,11 +37,3 @@ jobs:
       uses: mpi4py/setup-mpi@v1
       with:
         mpi: ${{ matrix.mpi }}
-
-    - name: Set up parallel code
-      run: make install
-      working-directory: ./parallel
-
-    - name: Test parallel with pytest
-      run: make test_parallel
-      working-directory: ./parallel

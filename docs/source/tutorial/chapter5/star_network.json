@@ -61,7 +61,6 @@
       "type": "meet_in_the_middle"
     }
   ],
-  "is_parallel": false,
   "stop_time": 2000000000000,
   "cconnections": [
     {
