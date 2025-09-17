@@ -138,7 +138,7 @@ def getLogo(filename, width, link=None):
     image_filename = os.path.join(DIRECTORY, 'assets', filename)
     encoded_image = base64.b64encode(open(image_filename, 'rb').read())
     image = html.Img(
-        src='data:image/png;base64,{}'.format(encoded_image.decode()),
+        src=f'data:image/png;base64,{encoded_image.decode()}',
         width=width,
         style={'border-radius': '20%'})
     if link is None:

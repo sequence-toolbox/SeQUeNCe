@@ -40,7 +40,7 @@ class DQCNetTopo(Topo):
         super().__init__(conf_file_name)
 
     def _load(self, filename: str):
-        with open(filename, 'r') as fh:
+        with open(filename) as fh:
             config = json.load(fh)
 
         self._get_templates(config)
@@ -87,7 +87,7 @@ class DQCNetTopo(Topo):
                 comm_size = node.get(self.MEMO_ARRAY_SIZE, 0)
                 node_obj = DQCNode(name, self.tl, memo_size=comm_size, data_memo_size=data_size, component_templates=template)
             else:
-                raise ValueError("Unknown type of node '{}'".format(node_type))
+                raise ValueError(f"Unknown type of node '{node_type}'")
 
             node_obj.set_seed(seed)
             self.nodes[node_type].append(node_obj)
@@ -129,7 +129,7 @@ class DQCNetTopo(Topo):
             cc_delay = np.mean(cc_delay) // 2
 
             if channel_type == self.MEET_IN_THE_MID:
-                bsm_name = "BSM.{}.{}.auto".format(node1, node2)  # the intermediate BSM node
+                bsm_name = f"BSM.{node1}.{node2}.auto"  # the intermediate BSM node
                 bsm_seed = q_connect.get(Topo.SEED, 0)
                 bsm_template_name = q_connect.get(Topo.TEMPLATE, None)
                 bsm_info = {self.NAME: bsm_name,
@@ -139,7 +139,7 @@ class DQCNetTopo(Topo):
                 config[self.ALL_NODE].append(bsm_info)
 
                 for src in [node1, node2]:
-                    qc_name = "QC.{}.{}".format(src, bsm_name)  # the quantum channel
+                    qc_name = f"QC.{src}.{bsm_name}"  # the quantum channel
                     qc_info = {self.NAME: qc_name,
                                self.SRC: src,
                                self.DST: bsm_name,
@@ -149,7 +149,7 @@ class DQCNetTopo(Topo):
                         config[self.ALL_Q_CHANNEL] = []
                     config[self.ALL_Q_CHANNEL].append(qc_info)
 
-                    cc_name = "CC.{}.{}".format(src, bsm_name)  # the classical channel
+                    cc_name = f"CC.{src}.{bsm_name}"  # the classical channel
                     cc_info = {self.NAME: cc_name,
                                self.SRC: src,
                                self.DST: bsm_name,
@@ -159,7 +159,7 @@ class DQCNetTopo(Topo):
                         config[self.ALL_C_CHANNEL] = []
                     config[self.ALL_C_CHANNEL].append(cc_info)
 
-                    cc_name = "CC.{}.{}".format(bsm_name, src)
+                    cc_name = f"CC.{bsm_name}.{src}"
                     cc_info = {self.NAME: cc_name,
                                self.SRC: bsm_name,
                                self.DST: src,
@@ -211,7 +211,7 @@ class DQCNetTopo(Topo):
                 except exception.NetworkXNoPath:
                     pass
 
-    def infer_qubit_to_node(self, total_wires: int) -> Dict[int, str]:
+    def infer_qubit_to_node(self, total_wires: int) -> dict[int, str]:
         """Auto-infer the {wire_index: node_name} map by 
            first assigning every node's n_data qubits in JSON order, then every node's n_ancilla qubits.
         
@@ -220,7 +220,7 @@ class DQCNetTopo(Topo):
         Return:
             dict[int, str]: A mapping from wire indices to node names.
         """
-        mapping: Dict[int, str] = {}
+        mapping: dict[int, str] = {}
         next_wire = 0
         # 1) data wires
         for nd in self._raw_cfg["nodes"]:
@@ -257,5 +257,5 @@ class DQCNetTopo(Topo):
     def get_timeline(self) -> Timeline:
         return self.tl
 
-    def get_nodes(self) -> Dict[str, List[Node]]:
+    def get_nodes(self) -> dict[str, list[Node]]:
         return self.nodes  

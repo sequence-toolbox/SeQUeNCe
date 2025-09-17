@@ -181,7 +181,7 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
             # schedule emit
             emit_time = self.owner.schedule_qubit(self.middle, msg.emit_time)
             assert emit_time == msg.emit_time, \
-                "Invalid eg emit times {} {} {}".format(emit_time, msg.emit_time, self.owner.timeline.now())
+                f"Invalid eg emit times {emit_time} {msg.emit_time} {self.owner.timeline.now()}"
 
             process = Process(self, "emit_event", [])
             event = Event(msg.emit_time, process)
@@ -217,10 +217,10 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
                 else:
                     self.bsm_res[i] = -1  # BSM measured 1, 1 (both photons kept)
             else:
-                log.logger.debug('{} BSM trigger time not valid'.format(self.owner.name))
+                log.logger.debug(f'{self.owner.name} BSM trigger time not valid')
 
         else:
-            raise Exception("Invalid message {} received by EG on node {}".format(msg_type, self.owner.name))
+            raise Exception(f"Invalid message {msg_type} received by EG on node {self.owner.name}")
 
     def _entanglement_succeed(self):
         self.memory.entangled_memory['node_id'] = self.remote_node_name

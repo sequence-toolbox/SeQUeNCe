@@ -54,7 +54,7 @@ class Noise:
 
 
     @staticmethod
-    def apply_depolarizing_noise(rho: np.ndarray, p: float, qubits: List[int], keys: List[int]) -> np.ndarray:
+    def apply_depolarizing_noise(rho: np.ndarray, p: float, qubits: list[int], keys: list[int]) -> np.ndarray:
         """
         Apply depolarizing noise to selected qubits in an n-qubit density matrix.
 
@@ -144,7 +144,7 @@ class Noise:
         positions = [keys.index(q) for q in qubits]
 
         # build list of non-identity Pauli operators lifted to full space
-        pauli_ops: List[np.ndarray] = []
+        pauli_ops: list[np.ndarray] = []
         idx_tuples = [(i, j) for i in range(4) for j in range(4)]
         for idx_tuple in idx_tuples:
             if all(i == 0 for i in idx_tuple):

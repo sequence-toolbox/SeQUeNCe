@@ -63,7 +63,7 @@ class QlanStarTopo(Topo):
 
 
     def _load(self, filename: str):
-        with open(filename, 'r') as fh:
+        with open(filename) as fh:
             config = json.load(fh)
 
         self._get_templates(config)
@@ -136,7 +136,7 @@ class QlanStarTopo(Topo):
                 pass
 
             else:
-                raise ValueError("Unknown type of node '{}'".format(node_type))
+                raise ValueError(f"Unknown type of node '{node_type}'")
 
             
     def _add_orchestrator_nodes(self, config: dict):
@@ -165,7 +165,7 @@ class QlanStarTopo(Topo):
                 pass
             
             else:
-                raise ValueError("Unknown type of node '{}'".format(node_type))
+                raise ValueError(f"Unknown type of node '{node_type}'")
             
     def _add_protocols(self):
         for orch in self.orchestrator_nodes:

@@ -361,7 +361,7 @@ def measure_multiple_with_cache_fock_density(state: tuple[tuple[complex]], indic
     fin_meas_sys_idx = max(indices)
     num = len(indices)
     if (fin_meas_sys_idx - init_meas_sys_idx + 1 != num) or (list(indices) != sorted(indices)):
-        raise ValueError("Indices should be consecutive; got {}".format(indices))
+        raise ValueError(f"Indices should be consecutive; got {indices}")
 
     povm_list = []
     left_dim = (truncation + 1) ** init_meas_sys_idx

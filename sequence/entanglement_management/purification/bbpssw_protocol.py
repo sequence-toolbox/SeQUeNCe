@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import Enum, auto
-from typing import TYPE_CHECKING, List, Dict, Type, Optional, Callable
+from typing import TYPE_CHECKING, List, Dict, Type, Optional
+from collections.abc import Callable
 
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 from sequence.utils.log import logger
@@ -37,7 +38,7 @@ class BBPSSWMessage(Message):
 
 
 class BBPSSWProtocol(EntanglementProtocol, ABC):
-    _registry: Dict[str, Type['BBPSSWProtocol']] = {}
+    _registry: dict[str, type['BBPSSWProtocol']] = {}
     _global_formalism: str = KET_STATE_FORMALISM
 
     def __init__(self, owner: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory", **kwargs):
@@ -51,12 +52,12 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         """
         assert kept_memo != meas_memo
         super().__init__(owner, name)
-        self.memories: List[Memory] = [kept_memo, meas_memo]
+        self.memories: list[Memory] = [kept_memo, meas_memo]
         self.kept_memo: Memory = kept_memo
         self.meas_memo: Memory = meas_memo
         self.remote_node_name: str = ''
         self.remote_protocol_name: str = ''
-        self.remote_memories: List[str] = []
+        self.remote_memories: list[str] = []
         self.meas_res = None
         if self.meas_memo is None:
             self.memories.pop()
@@ -83,7 +84,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         cls._global_formalism = formalism
 
     @classmethod
-    def register(cls, name: str, protocol_class: Optional[Type['BBPSSWProtocol']] = None) -> Optional[Callable[[Type['BBPSSWProtocol']], Type['BBPSSWProtocol']]]:
+    def register(cls, name: str, protocol_class: type['BBPSSWProtocol'] | None = None) -> Callable[[type['BBPSSWProtocol']], type['BBPSSWProtocol']] | None:
         """Register a BBPSSW protocol class. Can be used as a decorator or as a normal function.
 
         Recommended Usage: Use a decorator to register a BBPSSW protocol class on the user side.
@@ -117,7 +118,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
             cls._registry[name] = protocol_class
             return None
 
-        def decorator(protocol_cls: Type['BBPSSWProtocol']) -> Type['BBPSSWProtocol']:
+        def decorator(protocol_cls: type['BBPSSWProtocol']) -> type['BBPSSWProtocol']:
             if name in cls._registry:
                 raise ValueError(f"'{name}' is already registered.")
             cls._registry[name] = protocol_cls
@@ -147,7 +148,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
             raise ValueError(f"Protocol class '{protocol_name}' is not registered.")
 
     @classmethod
-    def list_protocols(cls) -> List[str]:
+    def list_protocols(cls) -> list[str]:
         """List all registered BBPSSW protocols."""
         return list(cls._registry.keys())
 
@@ -160,7 +161,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         """Check if the protocol is ready to start."""
         return self.remote_node_name != ''
 
-    def set_others(self, protocol: str, node: str, memories: List[str]) -> None:
+    def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
         """Method to set other entanglement protocol instance
 
         args:

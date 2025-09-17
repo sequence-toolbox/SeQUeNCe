@@ -46,7 +46,7 @@ def make_bsm(name, timeline: "Timeline", encoding_type='time_bin', phase_error=0
     elif encoding_type == "absorptive":
         return AbsorptiveBSM(name, timeline, phase_error, detectors)
     else:
-        raise Exception("invalid encoding {} given for BSM {}".format(encoding_type, name))
+        raise Exception(f"invalid encoding {encoding_type} given for BSM {name}")
 
 
 def _set_state_with_fidelity(keys: list[int], desired_state: list[complex], fidelity: float, rng, qm: "QuantumManager"):
@@ -69,7 +69,7 @@ def _set_state_with_fidelity(keys: list[int], desired_state: list[complex], fide
         qm.set(keys, state)
 
     else:
-        raise Exception("Invalid quantum manager with formalism {}".format(qm.get_active_formalism()))
+        raise Exception(f"Invalid quantum manager with formalism {qm.get_active_formalism()}")
 
 
 def _set_pure_state(keys: list[int], ket_state: list[complex], qm: "QuantumManager"):
@@ -134,7 +134,7 @@ class BSM(Entity):
         if detectors is not None:
             for i, d in enumerate(detectors):
                 if d is not None:
-                    detector = Detector("{}_{}".format(self.name, i), timeline, **d)
+                    detector = Detector(f"{self.name}_{i}", timeline, **d)
                     detector.attach(self)
                     detector.owner = self
                 else:
@@ -468,10 +468,10 @@ class SingleAtomBSM(BSM):
             key0, key1 = p0.quantum_state, p1.quantum_state
             keys = [key0, key1]
             state0, state1 = qm.get(key0), qm.get(key1)
-            meas0, meas1 = [qm.run_circuit(self._meas_circuit, [key], self.get_generator().random())[key]
-                            for key in keys]
+            meas0, meas1 = (qm.run_circuit(self._meas_circuit, [key], self.get_generator().random())[key]
+                            for key in keys)
 
-            log.logger.debug(self.name + " measured photons as {}, {}".format(meas0, meas1))
+            log.logger.debug(self.name + f" measured photons as {meas0}, {meas1}")
 
             if meas0 ^ meas1:  # meas0, meas1 = 1, 0 or 0, 1
                 detector_num = self.get_generator().choice([0, 1])   # randomly select a detector number
@@ -498,7 +498,7 @@ class SingleAtomBSM(BSM):
 
                 photon = p0 if meas0 else p1
                 if self.get_generator().random() > photon.loss:
-                    log.logger.info("Triggering detector {}".format(detector_num))
+                    log.logger.info(f"Triggering detector {detector_num}")
                     # middle BSM node notify two end nodes via EntanglementGenerationB.bsm_update()
                     self.detectors[detector_num].get()
                 else:

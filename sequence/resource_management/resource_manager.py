@@ -7,7 +7,8 @@ This module also defines the message type used by the resource manager.
 
 from __future__ import annotations
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Optional
+from collections.abc import Callable
 if TYPE_CHECKING:
     from ..components.memory import Memory
     from ..topology.node import QuantumRouter
@@ -64,7 +65,7 @@ class ResourceManagerMessage(Message):
         if msg_type is ResourceManagerMsgType.REQUEST:
             self.req_condition_func = kwargs["req_condition_func"]
             self.req_args = kwargs["req_args"]
-            self.string += ", req_condition_func={}, req_args={}".format(self.req_condition_func, self.req_args)
+            self.string += f", req_condition_func={self.req_condition_func}, req_args={self.req_args}"
         elif msg_type is ResourceManagerMsgType.RESPONSE:
             self.is_approved = kwargs["is_approved"]
             self.paired_protocol = kwargs["paired_protocol"]
@@ -74,12 +75,12 @@ class ResourceManagerMessage(Message):
                             self.is_approved, self.paired_protocol, self.paired_node, self.paired_memories)
         elif msg_type is ResourceManagerMsgType.RELEASE_PROTOCOL:
             self.protocol = kwargs["protocol"]
-            self.string += ", release_protocol={}".format(self.protocol)
+            self.string += f", release_protocol={self.protocol}"
         elif msg_type is ResourceManagerMsgType.RELEASE_MEMORY:
             self.memory = kwargs["memory_id"]
-            self.string += ", release_memory={}".format(self.memory)
+            self.string += f", release_memory={self.memory}"
         else:
-            raise Exception("ResourceManagerMessage gets unknown type of message: {}".format(str(msg_type)))
+            raise Exception(f"ResourceManagerMessage gets unknown type of message: {str(msg_type)}")
 
     def __str__(self) -> str:
         return self.string
@@ -100,7 +101,7 @@ class ResourceManager:
         waiting_protocols (list[Protocol]): list of protocols awaiting a request from a remote protocol.
     """
 
-    def __init__(self, owner: "QuantumRouter", memory_array_name: str):
+    def __init__(self, owner: QuantumRouter, memory_array_name: str):
         """Constructor for resource manager.
         
         Args:
@@ -119,7 +120,7 @@ class ResourceManager:
         self.waiting_protocols = []
         self.memory_to_protocol_map = {}
 
-    def load(self, rule: "Rule") -> bool:
+    def load(self, rule: Rule) -> bool:
         """Method to load rules for entanglement management.
 
         Attempts to add rules to the rule manager.
@@ -132,7 +133,7 @@ class ResourceManager:
             bool: if rule was loaded successfully.
         """
 
-        log.logger.info('{} load rule={}'.format(self.owner.name, rule))
+        log.logger.info(f'{self.owner.name} load rule={rule}')
         self.rule_manager.load(rule)
 
         for memory_info in self.memory_manager:  # iterate through each memory, and check if the rule is valid on each memory
@@ -144,7 +145,7 @@ class ResourceManager:
 
         return True
 
-    def expire(self, rule: "Rule") -> None:
+    def expire(self, rule: Rule) -> None:
         """Method to remove expired rule.
 
         Will update (remove) rule in rule manager.
@@ -154,7 +155,7 @@ class ResourceManager:
             rule (Rule): rule to remove.
         """
 
-        log.logger.info('{} expire rule {}'.format(self.owner.name, rule))
+        log.logger.info(f'{self.owner.name} expire rule {rule}')
         created_protocols = self.rule_manager.expire(rule)
         while created_protocols:
             protocol = created_protocols.pop()
@@ -170,7 +171,7 @@ class ResourceManager:
             for memory in protocol.memories:
                 self.update(protocol, memory, MemoryInfo.RAW)
 
-    def update(self, protocol: "EntanglementProtocol", memory: "Memory", state: str) -> None:
+    def update(self, protocol: EntanglementProtocol, memory: Memory, state: str) -> None:
         """Method to update state of memory after completion of entanglement management protocol.
 
         Args:
@@ -214,7 +215,7 @@ class ResourceManager:
     def get_memory_manager(self):
         return self.memory_manager
 
-    def send_request(self, protocol: "EntanglementProtocol", req_dst: Optional[str],
+    def send_request(self, protocol: EntanglementProtocol, req_dst: str | None,
                      req_condition_func: RequestConditionFunc, req_args: Arguments):
         """Method to send protocol request to another node.
 
@@ -239,9 +240,9 @@ class ResourceManager:
         msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST, protocol=protocol.name, node=self.owner.name,
                                      memories=memo_names, req_condition_func=req_condition_func, req_args=req_args)
         self.owner.send_message(req_dst, msg)
-        log.logger.debug("{} send {} message to {}".format(self.owner.name, msg.msg_type.name, req_dst))
+        log.logger.debug(f"{self.owner.name} send {msg.msg_type.name} message to {req_dst}")
 
-    def received_message(self, src: str, msg: "ResourceManagerMessage") -> None:
+    def received_message(self, src: str, msg: ResourceManagerMessage) -> None:
         """Method to receive resource manager messages.
 
         Messages come in 4 types, as detailed in the `ResourceManagerMessage` class.
@@ -251,7 +252,7 @@ class ResourceManager:
             msg (ResourceManagerMessage): message received.
         """
 
-        log.logger.debug("{} resource manager receive message from {}: {}".format(self.owner.name, src, msg))
+        log.logger.debug(f"{self.owner.name} resource manager receive message from {src}: {msg}")
         if msg.msg_type is ResourceManagerMsgType.REQUEST:
             # select the wait-for-request protocol to respond to the message
             protocol = msg.req_condition_func(self.waiting_protocols, msg.req_args)
@@ -275,7 +276,7 @@ class ResourceManager:
         elif msg.msg_type is ResourceManagerMsgType.RESPONSE:
             protocol_name = msg.ini_protocol_name
 
-            protocol: Optional[EntanglementProtocol] = None
+            protocol: EntanglementProtocol | None = None
             for p in self.pending_protocols:
                 if p.name == protocol_name:
                     protocol = p
@@ -317,7 +318,7 @@ class ResourceManager:
                         protocol.release()
                         return
 
-    def memory_expire(self, memory: "Memory"):
+    def memory_expire(self, memory: Memory):
         """Method to receive memory expiration events."""
 
         self.update(None, memory, "RAW")
