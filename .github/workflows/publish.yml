@@ -4,13 +4,14 @@ on:
   push:
     branches: [master]
   release:
-    types: [ published ]
+    types: [published]
   workflow_dispatch:
 
 jobs:
   build-release:
     name: Build the release
     runs-on: ubuntu-latest
+    if: github.event_name == 'release'
     steps:
       - uses: actions/checkout@v5
         with:
@@ -36,6 +37,7 @@ jobs:
   build-test-release:
     name: Build the test release
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v5
         with:
@@ -84,6 +86,7 @@ jobs:
 
   publish-to-test-pypi:
     name: Publish dist to TestPyPi
+    if: github.event_name == 'push'
     needs:
       - build-test-release
     runs-on: ubuntu-latest
@@ -104,3 +107,4 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
