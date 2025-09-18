@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/ssequence
+      url: https://pypi.org/p/sequence
     permissions:
       id-token: write
 
