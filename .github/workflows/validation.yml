@@ -1,20 +1,20 @@
-name: main
+name: CI Pipeline
 
 on:
   push:
     branches: [master, RnD]
   pull_request:
     branches: [master, RnD]
+  workflow_dispatch:
 
 jobs:
-  build:
-    
+  validation:
+    name: Run Unit Tests
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ['3.11', '3.12', '3.13']
-        mpi: [openmpi]
-  
+
     steps:
     - uses: actions/checkout@v4
 
@@ -32,8 +32,3 @@ jobs:
     - name: Test with pytest
       run: |
         make test
-
-    - name: Set up MPI
-      uses: mpi4py/setup-mpi@v1
-      with:
-        mpi: ${{ matrix.mpi }}
