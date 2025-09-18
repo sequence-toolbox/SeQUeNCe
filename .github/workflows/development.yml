@@ -65,7 +65,7 @@ jobs:
 
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/sequence
+      url: https://test.pypi.org/p/ssequence
 
     permissions:
       id-token: write
