@@ -3,6 +3,8 @@ name: CD Pipeline
 on:
   push:
     branches: [master]
+  release:
+    types: [ published ]
   workflow_dispatch:
 
 jobs:
@@ -61,7 +63,7 @@ jobs:
 
   publish-to-pypi:
     name: Publish dist to PyPi
-    if: startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'release' && github.event.action == 'published'
     needs:
       - build-release
     runs-on: ubuntu-latest
