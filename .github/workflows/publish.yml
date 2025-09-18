@@ -31,6 +31,34 @@ jobs:
           name: python-release-package-dist
           path: dist/
 
+  build-test-release:
+    name: Build the test release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: 'true'
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+      - name: Install pypa/build
+        run: >-
+          python3 -m
+          pip install 
+          build
+          --user
+      - name: Modify package name for TestPyPI
+        run: |
+          sed -i 's/^name = "sequence"/name = "ssequence"/' pyproject.toml
+      - name: Build wheel and tarball for test
+        run: python3 -m build
+      - name: Store test dist as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-test-package-dist
+          path: dist/
+
   publish-to-pypi:
     name: Publish dist to PyPi
     if: startsWith(github.ref, 'refs/tags/')
@@ -55,7 +83,7 @@ jobs:
   publish-to-test-pypi:
     name: Publish dist to TestPyPi
     needs:
-      - build-release
+      - build-test-release
     runs-on: ubuntu-latest
     environment:
       name: testpypi
@@ -65,10 +93,10 @@ jobs:
       id-token: write
 
     steps:
-      - name: Download all the dists
+      - name: Download all the test dists
         uses: actions/download-artifact@v5
         with:
-          name: python-release-package-dist
+          name: python-test-package-dist
           path: dist/
       - name: Publish dist to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
