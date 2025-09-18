@@ -4,7 +4,6 @@ input: relative path to json file
 Graphviz library must be installed
 
 NOTE: this file currently only works for sequential simulation files.
-If your JSON file contains parallel simulation information, please remove before use.
 """
 
 import argparse

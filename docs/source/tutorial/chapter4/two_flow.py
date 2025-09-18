@@ -3,7 +3,7 @@ from sequence.topology.node import BSMNode, Node
 from sequence.components.memory import MemoryArray
 from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.entanglement_management.generation import EntanglementGenerationA
-from sequence.entanglement_management.purification import BBPSSW
+from sequence.entanglement_management.purification import BBPSSWProtocol
 from sequence.entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 from sequence.resource_management.resource_manager import ResourceManager
 from sequence.resource_management.rule_manager import Rule
@@ -28,7 +28,7 @@ class RouterNode(Node):
             self.resource_manager.received_message(src, msg)
         else:
             if msg.receiver is None:
-                matching = [p for p in self.protocols if type(p) == msg.protocol_type]
+                matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
                 for p in matching:
                     p.received_message(src, msg)
             else:
@@ -79,9 +79,7 @@ def eg_rule_action1(memories_info: list["MemoryInfo"], args):
 
     memories = [info.memory for info in memories_info]
     memory = memories[0]
-    protocol = EntanglementGenerationA(None, "EGA." + memory.name, mid_name,
-                                       other_name,
-                                       memory)
+    protocol = EntanglementGenerationA.create(None, "EGA." + memory.name, mid_name, other_name, memory)
     req_args = {"remote_node": args["node_name"],
                 "index_upper": args["index_upper"],
                 "index_lower": args["index_lower"]}
@@ -93,8 +91,7 @@ def eg_rule_action2(memories_info: list["MemoryInfo"], args):
     other_name = args["other_name"]
     memories = [info.memory for info in memories_info]
     memory = memories[0]
-    protocol = EntanglementGenerationA(None, "EGA." + memory.name,
-                                       mid_name, other_name, memory)
+    protocol = EntanglementGenerationA.create(None, "EGA." + memory.name, mid_name, other_name, memory)
     return [protocol, [None], [None], [None]]
 
 
@@ -142,8 +139,7 @@ def add_eg_rules(index: int, path: list[RouterNode], middles: list[BSMNode]):
 
 # entanglement purification
 
-def ep_rule_condition1(memory_info: "MemoryInfo", manager: "MemoryManager",
-                       args):
+def ep_rule_condition1(memory_info: "MemoryInfo", manager: "MemoryManager", args):
     index_upper = args["index_upper"]
     index_lower = args["index_lower"]
     target_fidelity = args["target_fidelity"]
@@ -166,7 +162,7 @@ def ep_req_func(protocols, args):
 
     _protocols = []
     for protocol in protocols:
-        if not isinstance(protocol, BBPSSW):
+        if not isinstance(protocol, BBPSSWProtocol):
             continue
 
         if protocol.kept_memo.name == remote1:
@@ -193,7 +189,7 @@ def ep_req_func(protocols, args):
 def ep_rule_action1(memories_info: list["MemoryInfo"], args):
     memories = [info.memory for info in memories_info]
     name = "EP.%s.%s" % (memories[0].name, memories[1].name)
-    protocol = BBPSSW(None, name, memories[0], memories[1])
+    protocol = BBPSSWProtocol.create(None, name, memories[0], memories[1])
     dsts = [memories_info[0].remote_node]
     req_funcs = [ep_req_func]
     req_args = {"remote1": memories_info[0].remote_memo,
@@ -201,8 +197,7 @@ def ep_rule_action1(memories_info: list["MemoryInfo"], args):
     return [protocol, dsts, req_funcs, [req_args]]
 
 
-def ep_rule_condition2(memory_info: "MemoryInfo", manager: "MemoryManager",
-                       args):
+def ep_rule_condition2(memory_info: "MemoryInfo", manager: "MemoryManager", args):
     index_upper = args["index_upper"]
     index_lower = args["index_lower"]
     target_fidelity = args["target_fidelity"]
@@ -216,7 +211,7 @@ def ep_rule_condition2(memory_info: "MemoryInfo", manager: "MemoryManager",
 def ep_rule_action2(memories_info: list["MemoryInfo"], args):
     memories = [info.memory for info in memories_info]
     name = "EP.%s" % (memories[0].name)
-    protocol = BBPSSW(None, name, memories[0], None)
+    protocol = BBPSSWProtocol.create(None, name, memories[0], None)
     return [protocol, [None], [None], [None]]
 
 
@@ -250,8 +245,7 @@ def add_ep_rules(index: int, path: list[RouterNode], target_fidelity: float):
 
 # entanglement swapping
 
-def es_rule_conditionA(memory_info: "MemoryInfo", manager: "MemoryManager",
-                       args):
+def es_rule_conditionA(memory_info: "MemoryInfo", manager: "MemoryManager", args):
     index_lower = args["index_lower"]
     index_upper = args["index_upper"]
     target_fidelity = args["target_fidelity"]
@@ -306,8 +300,7 @@ def es_rule_actionA(memories_info: list["MemoryInfo"], args):
     return [protocol, dsts, req_funcs, req_args]
 
 
-def es_rule_conditionB(memory_info: "MemoryInfo", manager: "MemoryManager",
-                       args):
+def es_rule_conditionB(memory_info: "MemoryInfo", manager: "MemoryManager", args):
     index_lower = args["index_lower"]
     index_upper = args["index_upper"]
     target_node = args["target_node"]
@@ -350,8 +343,7 @@ if __name__ == "__main__":
     for node1 in node_list:
         for node2 in node_list:
             if node1.name != node2.name:
-                cc = ClassicalChannel("cc_%s_%s" % (node1.name, node2.name), tl,
-                                    1e3, delay=cc_delay)
+                cc = ClassicalChannel("cc_%s_%s" % (node1.name, node2.name), tl, 1e3, delay=cc_delay)
                 cc.set_ends(node1, node2.name)
 
     # create quantum channels linking r1 and r2 to m1
@@ -370,15 +362,12 @@ if __name__ == "__main__":
     tl.init()
 
     # load rules for flow 1
-    action_args = {"mid_name": "m12", "other_name": "r2", "node_name": "r1",
-                   "index_upper": 9, "index_lower": 0}
+    action_args = {"mid_name": "m12", "other_name": "r2", "node_name": "r1", "index_upper": 9, "index_lower": 0}
     condition_args = {"index_lower": 0, "index_upper": 9}
-    rule1 = Rule(10, eg_rule_action1, eg_rule_condition, action_args,
-                 condition_args)
+    rule1 = Rule(10, eg_rule_action1, eg_rule_condition, action_args, condition_args)
     r1.resource_manager.load(rule1)
     action_args2 = {"mid_name": "m12", "other_name": "r1"}
-    rule2 = Rule(10, eg_rule_action2, eg_rule_condition, action_args2,
-                 condition_args)
+    rule2 = Rule(10, eg_rule_action2, eg_rule_condition, action_args2, condition_args)
     r2.resource_manager.load(rule2)
 
     # load rules for flow 2

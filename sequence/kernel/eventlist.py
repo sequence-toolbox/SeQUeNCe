@@ -28,8 +28,7 @@ class EventList:
         return len(self.data)
 
     def __iter__(self):
-        for data in self.data:
-            yield data
+        yield from self.data
 
     def push(self, event: "Event") -> "None":
         heappush(self.data, event)

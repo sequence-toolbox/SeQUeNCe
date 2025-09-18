@@ -222,7 +222,7 @@ TYPE_IMAGES = genImages()
 def getNodeImage(node_type):
     image_filename = TYPE_IMAGES[node_type]
     encoded_image = base64.b64encode(open(image_filename, 'rb').read())
-    return 'data:image/png;base64,{}'.format(encoded_image.decode())
+    return f'data:image/png;base64,{encoded_image.decode()}'
 
 
 # Generate HTML Layout #

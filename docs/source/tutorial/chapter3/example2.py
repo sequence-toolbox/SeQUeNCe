@@ -1,9 +1,8 @@
-from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
-from sequence.entanglement_management.purification import BBPSSW
+from sequence.entanglement_management.purification import BBPSSWProtocol
 from sequence.message import Message
 
 
@@ -25,7 +24,7 @@ class SimpleManager:
     def create_protocol(self):
         kept_memo = self.owner.components[self.kept_memo_name]
         meas_memo = self.owner.components[self.meas_memo_name]
-        self.owner.protocols = [BBPSSW(self.owner, 'purification_protocol', kept_memo, meas_memo)]
+        self.owner.protocols = [BBPSSWProtocol.create(self.owner, 'purification_protocol', kept_memo, meas_memo)]
 
 
 class PurifyNode(Node):
@@ -71,36 +70,37 @@ def pair_protocol(node1: Node, node2: Node):
     p2.set_others(p1.name, node1.name, [kept_memo_1_name, meas_memo_1_name])
 
 
-tl = Timeline()
+if __name__ == '__main__':
+    tl = Timeline()
 
-node1 = PurifyNode('node1', tl)
-node2 = PurifyNode('node2', tl)
-node1.set_seed(0)
-node2.set_seed(1)
+    node1 = PurifyNode('node1', tl)
+    node2 = PurifyNode('node2', tl)
+    node1.set_seed(0)
+    node2.set_seed(1)
 
-cc0 = ClassicalChannel('cc0', tl, 1000, 1e9)
-cc1 = ClassicalChannel('cc1', tl, 1000, 1e9)
-cc0.set_ends(node1, node2.name)
-cc1.set_ends(node2, node1.name)
+    cc0 = ClassicalChannel('cc0', tl, 1000, 1e9)
+    cc1 = ClassicalChannel('cc1', tl, 1000, 1e9)
+    cc0.set_ends(node1, node2.name)
+    cc1.set_ends(node2, node1.name)
 
-kept_memo_1 = node1.components[node1.resource_manager.kept_memo_name]
-kept_memo_2 = node2.components[node2.resource_manager.kept_memo_name]
-meas_memo_1 = node1.components[node1.resource_manager.meas_memo_name]
-meas_memo_2 = node2.components[node2.resource_manager.meas_memo_name]
+    kept_memo_1 = node1.components[node1.resource_manager.kept_memo_name]
+    kept_memo_2 = node2.components[node2.resource_manager.kept_memo_name]
+    meas_memo_1 = node1.components[node1.resource_manager.meas_memo_name]
+    meas_memo_2 = node2.components[node2.resource_manager.meas_memo_name]
 
-tl.init()
-for i in range(10):
-    entangle_memory(tl, kept_memo_1, kept_memo_2, 0.9)  # this version of purification always success, need to fix
-    entangle_memory(tl, meas_memo_1, meas_memo_2, 0.9)
+    tl.init()
+    for i in range(10):
+        entangle_memory(tl, kept_memo_1, kept_memo_2, 0.9)  # this version of purification always success, need to fix
+        entangle_memory(tl, meas_memo_1, meas_memo_2, 0.9)
 
-    node1.resource_manager.create_protocol()
-    node2.resource_manager.create_protocol()
+        node1.resource_manager.create_protocol()
+        node2.resource_manager.create_protocol()
 
-    pair_protocol(node1, node2)
+        pair_protocol(node1, node2)
 
-    node1.protocols[0].start()
-    node2.protocols[0].start()
-    tl.run()
+        node1.protocols[0].start()
+        node2.protocols[0].start()
+        tl.run()
 
-    print(kept_memo_1.name, kept_memo_1.entangled_memory, kept_memo_1.fidelity)
-    print(meas_memo_1.name, meas_memo_1.entangled_memory, meas_memo_1.fidelity)
+        print(kept_memo_1.name, kept_memo_1.entangled_memory, kept_memo_1.fidelity)
+        print(meas_memo_1.name, meas_memo_1.entangled_memory, meas_memo_1.fidelity)

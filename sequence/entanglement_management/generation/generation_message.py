@@ -45,12 +45,12 @@ class EntanglementGenerationMessage(Message):
 
         self.protocol_type = protocol_type
 
-        self.qc_delay: Optional[int] = None
-        self.frequency: Optional[float] = None
-        self.emit_time: Optional[int] = None
-        self.detector: Optional[int] = None
-        self.time: Optional[int] = None
-        self.resolution: Optional[int] = None
+        self.qc_delay: int | None = None
+        self.frequency: float | None = None
+        self.emit_time: int | None = None
+        self.detector: int | None = None
+        self.time: int | None = None
+        self.resolution: int | None = None
 
         fields = {
             GenerationMsgType.NEGOTIATE: ['qc_delay', 'frequency'],

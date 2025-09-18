@@ -122,7 +122,7 @@ def ep_rule_action1(memories_info: list["MemoryInfo"], args: Arguments) -> tuple
     """Action function used by BBPSSW protocol on nodes except the responder node
     """
     memories = [info.memory for info in memories_info]
-    name = "EP.%s.%s" % (memories[0].name, memories[1].name)
+    name = "EP.{}.{}".format(memories[0].name, memories[1].name)
     protocol = BBPSSWProtocol.create(None, name, memories[0], memories[1])
     dsts = [memories_info[0].remote_node]
     req_funcs = [ep_req_func1]
@@ -213,7 +213,7 @@ def es_rule_actionA(memories_info: list["MemoryInfo"], args: Arguments) -> tuple
     es_succ_prob = args["es_succ_prob"]
     es_degradation = args["es_degradation"]
     memories = [info.memory for info in memories_info]
-    protocol = EntanglementSwappingA(None, "ESA.{}.{}".format(memories[0].name, memories[1].name),
+    protocol = EntanglementSwappingA(None, f"ESA.{memories[0].name}.{memories[1].name}",
                                      memories[0], memories[1], success_prob=es_succ_prob, degradation=es_degradation)
     dsts = [info.remote_node for info in memories_info]
     req_funcs = [es_req_func, es_req_func]
@@ -598,7 +598,7 @@ class ResourceReservationProtocol(StackProtocol):
     def received_message(self, src, msg):
         """Method to receive messages directly (should not be used; receive through network manager)."""
 
-        raise Exception("RSVP protocol {} received a message (disallowed)".format(self.name))
+        raise Exception(f"RSVP protocol {self.name} received a message (disallowed)")
 
     def set_swapping_success_rate(self, prob: float) -> None:
         assert 0 <= prob <= 1
