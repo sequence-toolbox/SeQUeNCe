@@ -4,82 +4,109 @@ on:
   push:
     branches: [RnD]
   workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.x'
+  PROD_PYPI_NAME: 'sequence'
+  TEST_PYPI_NAME: 'ssequence'
+
 jobs:
-  build-test-rnd:
-    name: Build RnD Development Package
+  build-rnd:
+    name: Build RnD Package
     runs-on: ubuntu-latest
+    outputs:
+      dev_version: ${{ steps.set-dev-version.outputs.dev_version }}
+      commit_hash: ${{ steps.set-dev-version.outputs.commit_hash}}
+
+    strategy:
+      matrix:
+        target: [pypi, testpypi]
 
     steps:
-    - uses: actions/checkout@v5
-      with:
-        persist-credentials: 'true'
-        ref: RnD
+      - name: Checkout RnD branch
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: 'true'
+          ref: RnD
 
-    - name: Setup Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: '3.x'
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Install pypa/build
-      run: >-
-        python3 -m
-        pip install 
-        build
-        --user
+      - name: Install pypa/build
+        run: >-
+          python3 -m
+          pip install 
+          build
+          --user
 
-    - name: Update version for dev
-      run: |
-        # Get current date for dev versioning
-        DEV_DATE=$(date +%Y%m%d)
-        
-        # Read current version from pyproject.toml
-        CURRENT_VERSION=$(grep '^version = ' pyproject.toml | cut -d'"' -f2)
-        
-        # Create development version from RnD: e.g., 0.8.1.dev20241218
-        DEV_VERSION="${CURRENT_VERSION}.dev${DEV_DATE}"
-        
-        # Update version in pyproject.toml
-        sed -i "s/^version = .*/version = \"${DEV_VERSION}\"/" pyproject.toml
-        
-        echo "DEV_VERSION=${DEV_VERSION}" >> $GITHUB_ENV
-        echo "Building development version from RnD: ${DEV_VERSION}"
+      - name: Generate development version
+        id: version
+        run: |
+          GIT_HASH=$(git rev-parse --short HEAD)
+          CURRENT_VERSION=$(grep '^version = ' pyproject.toml | cut -d'"' -f2)
+          
+          DEV_VERSION = "${CURRENT_VERSION}.dev${GIT_HASH}"
+          
+          echo "dev_version=${DEV_VERSION}" >> $GITHUB_OUTPUT
+          echo "commit_hash=${GIT_HASH}" >> $GITHUB_OUTPUT
+          echo "DEV_VERSION=${DEV_VERSION}" >> $GITHUB_ENV
+  
+          echo "Building development version from RnD: ${DEV_VERSION}"
+      
+      - name: Update package configuration
+        run: |
+          # Update version in pyproject.toml
+          sed -i "s/^version = .*/version = \"${DEV_VERSION}\"/" pyproject.toml
+          
+          if [ "${{ matrix.target }}" = "testpypi" ]; then
+            sed -i 's/^name = "sequence"/name = "ssequence"/' pyproject.toml
+          fi
 
-    - name: Modify package name for TestPyPI
-      run: |
-        sed -i 's/^name = "sequence"/name = "ssequence"/' pyproject.toml
+      - name: Build wheel and tarball
+        run: python3 -m build
 
-    - name: Build wheel and tarball
-      run: python3 -m build
-
-    - name: Store development build as artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-dev-build-RnD-${{ env.DEV_VERSION }}
-        path: dist/
-        retention-days: 4
-
-  publish-dev-to-test-pypi:
-    name: Publish RnD Development to TestPyPI
-    needs: build-test-rnd
+      - name: Store build as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-RnD-${{ matrix.target }}-${{ env.DEV_VERSION }}
+          path: dist/
+          retention-days: 4
+  publish-rnd:
+    name: Publish RnD to TestPyPI and PyPi
+    needs: build-rnd
     runs-on: ubuntu-latest
+    if: success()
+
+    strategy:
+      matrix:
+        include:
+          - target: pypi
+            environment: pypi
+            repository_url: https://pypi.org/p/${{ env.PROD_PYPI_NAME }}
+          - target: testpypi
+            environment: testpypi
+            repository_url: https://test.pypi.org/p/${{ env.TEST_PYPI_NAME }}
+            pypi_url: https://test.pypi.org/legacy/
 
     environment:
-      name: testpypi
-      url: https://test.pypi.org/p/ssequence
+        name: ${{ matrix.environment }}
+        url: ${{ matrix.repository_url }}
 
     permissions:
       id-token: write
 
     steps:
-    - name: Download development build
-      uses: actions/download-artifact@v4
-      with:
-        pattern: test-dev-build-RnD-*
-        path: dist/
-        merge-multiple: true
+      - name: Download the builds
+        uses: actions/download-artifact@v5
+        with:
+          name: build-RnD-${{ matrix.target }}-${{ env.DEV_VERSION }}
+          path: dist/
 
-    - name: Publish development build to TestPyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        repository-url: https://test.pypi.org/legacy/
-        skip-existing: true
+      - name: Publish dist
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: ${{ matrix.pypi_url || '' }}
+          skip-existing: true
+          verbose: true
