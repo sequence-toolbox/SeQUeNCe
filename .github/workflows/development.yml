@@ -61,7 +61,7 @@ jobs:
           sed -i "s/^version = .*/version = \"${DEV_VERSION}\"/" pyproject.toml
           
           if [ "${{ matrix.target }}" = "testpypi" ]; then
-            sed -i "s/^name = \"${{ env.PROD_PYPI_NAME }}\"/name = \"${{ env.TEST_PYPI_NAME }}\"/" pyproject.toml
+            sed -i "s/^name = \"sequence\"/name = \"ssequence\"/" pyproject.toml
           fi
 
       - name: Build wheel and tarball
@@ -85,10 +85,12 @@ jobs:
         include:
           - target: pypi
             environment: pypi
-            repository_url: https://pypi.org/p/${{ env.PROD_PYPI_NAME }}
+            repository_url: https://pypi.org/p/sequence
+            package_name: sequence
           - target: testpypi
             environment: testpypi
-            repository_url: https://test.pypi.org/p/${{ env.TEST_PYPI_NAME }}
+            repository_url: https://test.pypi.org/p/ssequence
+            package_name: ssequence
             pypi_url: https://test.pypi.org/legacy/
 
     environment:
