@@ -15,8 +15,8 @@ jobs:
     name: Build RnD Package
     runs-on: ubuntu-latest
     outputs:
-      dev_version: ${{ steps.set-dev-version.outputs.dev_version }}
-      commit_hash: ${{ steps.set-dev-version.outputs.commit_hash}}
+      dev_version: ${{ steps.version.outputs.dev_version }}
+      commit_hash: ${{ steps.version.outputs.commit_hash }}
 
     strategy:
       matrix:
@@ -47,21 +47,21 @@ jobs:
           GIT_HASH=$(git rev-parse --short HEAD)
           CURRENT_VERSION=$(grep '^version = ' pyproject.toml | cut -d'"' -f2)
           
-          DEV_VERSION = "${CURRENT_VERSION}.dev${GIT_HASH}"
+          DEV_VERSION="${CURRENT_VERSION}.dev${GIT_HASH}"
           
           echo "dev_version=${DEV_VERSION}" >> $GITHUB_OUTPUT
           echo "commit_hash=${GIT_HASH}" >> $GITHUB_OUTPUT
           echo "DEV_VERSION=${DEV_VERSION}" >> $GITHUB_ENV
   
           echo "Building development version from RnD: ${DEV_VERSION}"
-      
+
       - name: Update package configuration
         run: |
           # Update version in pyproject.toml
           sed -i "s/^version = .*/version = \"${DEV_VERSION}\"/" pyproject.toml
           
           if [ "${{ matrix.target }}" = "testpypi" ]; then
-            sed -i 's/^name = "sequence"/name = "ssequence"/' pyproject.toml
+            sed -i "s/^name = \"${{ env.PROD_PYPI_NAME }}\"/name = \"${{ env.TEST_PYPI_NAME }}\"/" pyproject.toml
           fi
 
       - name: Build wheel and tarball
@@ -70,11 +70,12 @@ jobs:
       - name: Store build as an artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-RnD-${{ matrix.target }}-${{ env.DEV_VERSION }}
+          name: build-RnD-${{ matrix.target }}-${{ steps.version.outputs.dev_version }}
           path: dist/
           retention-days: 4
+
   publish-rnd:
-    name: Publish RnD to TestPyPI and PyPi
+    name: Publish RnD to TestPyPI and PyPI
     needs: build-rnd
     runs-on: ubuntu-latest
     if: success()
@@ -91,17 +92,17 @@ jobs:
             pypi_url: https://test.pypi.org/legacy/
 
     environment:
-        name: ${{ matrix.environment }}
-        url: ${{ matrix.repository_url }}
+      name: ${{ matrix.environment }}
+      url: ${{ matrix.repository_url }}
 
     permissions:
       id-token: write
 
     steps:
       - name: Download the builds
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v4
         with:
-          name: build-RnD-${{ matrix.target }}-${{ env.DEV_VERSION }}
+          name: build-RnD-${{ matrix.target }}-${{ needs.build-rnd.outputs.dev_version }}
           path: dist/
 
       - name: Publish dist
