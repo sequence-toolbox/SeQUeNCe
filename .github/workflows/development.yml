@@ -12,6 +12,7 @@ env:
 
 jobs:
   build-rnd:
+    if: github.repository == 'sequence-toolbox/SeQUeNCe'
     name: Build RnD Package
     runs-on: ubuntu-latest
     outputs:
@@ -79,7 +80,7 @@ jobs:
     name: Publish RnD to TestPyPI and PyPI
     needs: build-rnd
     runs-on: ubuntu-latest
-    if: success()
+    if: success() && github.repository == 'sequence-toolbox/SeQUeNCe'
 
     strategy:
       matrix:

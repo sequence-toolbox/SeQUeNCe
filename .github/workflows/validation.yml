@@ -9,6 +9,7 @@ on:
 
 jobs:
   validation:
+    if: github.repository == 'sequence-toolbox/SeQUeNCe'
     name: Run Unit Tests
     runs-on: ubuntu-latest
     strategy:

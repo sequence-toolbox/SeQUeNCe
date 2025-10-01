@@ -11,7 +11,7 @@ jobs:
   build-release:
     name: Build the release
     runs-on: ubuntu-latest
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && github.repository == 'sequence-toolbox/SeQUeNCe'
     steps:
       - uses: actions/checkout@v5
         with:
@@ -37,7 +37,7 @@ jobs:
   build-test-release:
     name: Build the test release
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.repository == 'sequence-toolbox/SeQUeNCe'
     steps:
       - uses: actions/checkout@v5
         with:
@@ -65,7 +65,7 @@ jobs:
 
   publish-to-pypi:
     name: Publish dist to PyPi
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: github.event_name == 'release' && github.event.action == 'published' && github.repository == 'sequence-toolbox/SeQUeNCe'
     needs:
       - build-release
     runs-on: ubuntu-latest
@@ -86,7 +86,7 @@ jobs:
 
   publish-to-test-pypi:
     name: Publish dist to TestPyPi
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.repository == 'sequence-toolbox/SeQUeNCe'
     needs:
       - build-test-release
     runs-on: ubuntu-latest
