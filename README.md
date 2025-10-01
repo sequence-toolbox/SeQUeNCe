@@ -8,7 +8,7 @@
 <h3><p align="center">Quantum Networking in SeQUeNCe: Customizable, Scalable, Easy Debugging</p></h3>
 
 
-<div align="center">
+<div style="text-align: center;">
 
 [![PyPi](https://img.shields.io/pypi/v/sequence)](https://pypi.org/project/sequence/)
 ![pyversions](https://img.shields.io/pypi/pyversions/sequence)
@@ -20,7 +20,6 @@
 <!-- [![Download-month](https://img.shields.io/pypi/dm/sequence)](https://pypistats.org/packages/sequence) -->
 
 </div>
-
 
 
 <br>
@@ -69,34 +68,8 @@ publisher = {IOP Publishing},
 
 <!-- * X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: Simulator of QUantum Network Communication." GitHub repository, https://github.com/sequence-toolbox/SeQUeNCe, 2021. -->
 
-## Running the GUI
-Once SeQUeNCe has been installed as described above, simply run the `gui.py` script found in the root of the project directory
-```
-python gui.py
-```
-
 ## Usage Examples
-Many examples of SeQUeNCe in action can be found in the [example](/example) folder. These include both quantum key distribution and entanglement distribution examples.
-
-### Starlight Experiments
-Code for the experiments performed in our paper can be found in the file `starlight_experiments.py`. This script uses the `starlight.json` file (also within the example folder) to specify the network topology.
-
-### Jupyter Notebook Examples
-The example folder contains several scripts that can be run with jupyter notebook for easy editing and visualization. These examples include:
-* `BB84_eg.ipynb`, which uses the BB84 protocol to distribute secure keys between two quantum nodes
-* `two_node_eg.ipynb`, which performs entanglement generation between two adjacent quantum routers
-* `three_node_eg_ep_es.ipynb`, which performs entanglement generation, purification, and swapping for a linear network of three quantum routers
-
-## Additional Tools
-
-### Network Visualization
-The example directory contains an example json file `starlight.json` to specify a network topology, and the utils directory contains the script `draw_topo.py` to visualize json files. To use this script, the Graphviz library must be installed. Installation information can be found on the [Graphviz website](https://www.graphviz.org/download/).
-
-To view a network, simply run the script and specify the relative location of your json file:
-```
-python utils/draw_topo.py example/starlight.json
-```
-This script also supports a flag `-m` to visualize BSM nodes created by default on quantum links between routers.
+Many examples of SeQUeNCe in action can be found in the [example](https://github.com/sequence-toolbox/SeQUeNCe-Examples) repository. These include both quantum key distribution and entanglement distribution examples.
 
 ## Contact
 If you have questions, please contact [Caitao Zhan](https://caitaozhan.github.io/) at [czhan@anl.gov](mailto:czhan@anl.gov).

@@ -1,0 +1,80 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: >-
+  SeQUeNCe: a customizable discrete-event simulator of
+  quantum networks
+message: 'If you use this software, please cite it as below.'
+type: software
+authors:
+  - given-names: Xiaoliang
+    family-names: Wu
+    orcid: 'https://orcid.org/0000-0003-2209-870X'
+    affiliation: Illinois Institute of Technology
+  - given-names: Alexander
+    family-names: Kolar
+    affiliation: Northwestern University
+    orcid: 'https://orcid.org/0000-0001-5638-9826'
+  - given-names: Joaquin
+    family-names: Chung
+    affiliation: Argonne National Laboratory
+    orcid: 'https://orcid.org/0000-0001-7383-3810'
+  - affiliation: University of Arkansas
+    orcid: 'https://orcid.org/0000-0001-9955-1432'
+    given-names: Dong
+    family-names: Jin
+  - given-names: Tian
+    family-names: Zhong
+    orcid: 'https://orcid.org/0000-0003-3884-7453'
+    affiliation: University of Chicago
+  - orcid: 'https://orcid.org/0000-0002-0046-9883'
+    given-names: Rajkumar
+    family-names: Kettimuthu
+    affiliation: Argonne National Laboratory
+  - given-names: Martin
+    family-names: Suchara
+    orcid: 'https://orcid.org/0000-0001-8808-1367'
+    email: msuchara@anl.gov
+    affiliation: Argonne National Laboratory
+identifiers:
+  - type: doi
+    value: 10.1088/2058-9565/ac22f6
+    description: 'IOP Science: Quantum Science and Technology'
+  - type: url
+    value: 'https://arxiv.org/abs/2009.12000'
+    description: Arxiv
+repository-code: 'https://github.com/sequence-toolbox/SeQUeNCe'
+url: 'https://sequence-rtd-tutorial.readthedocs.io/en/latest/'
+abstract: >-
+  Recent advances in quantum information science enabled the
+  development of quantum communication network prototypes
+  and created an opportunity to study full-stack quantum
+  network architectures. This work develops SeQUeNCe, a
+  comprehensive, customizable quantum network simulator. Our
+  simulator consists of five modules: hardware models,
+  entanglement management protocols, resource management,
+  network management, and application. This framework is
+  suitable for simulation of quantum network prototypes that
+  capture the breadth of current and future hardware
+  technologies and protocols. We implement a comprehensive
+  suite of network protocols and demonstrate the use of
+  SeQUeNCe by simulating a photonic quantum network with
+  nine routers equipped with quantum memories. The
+  simulation capabilities are illustrated in three use
+  cases. We show the dependence of quantum network
+  throughput on several key hardware parameters and study
+  the impact of classical control message latency. We also
+  investigate quantum memory usage efficiency in routers and
+  demonstrate that redistributing memory according to
+  anticipated load increases network capacity by 69.1% and
+  throughput by 6.8%. We design SeQUeNCe to enable
+  comparisons of alternative quantum network technologies,
+  experiment planning, and validation and to aid with new
+  protocol design. We are releasing SeQUeNCe as an open
+  source tool and aim to generate community interest in
+  extending it.
+keywords:
+  - >-
+    quantum network simulator, quantum internet, quantum
+    network architecture, network protocol design
