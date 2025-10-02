@@ -5,6 +5,7 @@ The states may currently be defined in two possible ways:
     - DensityMatrix
     - FockDensityMatrix
     - Bell Diagonal
+    - Stabilizer (not yet implemented)
 
 The manager defines an API for interacting with quantum states.
 """
