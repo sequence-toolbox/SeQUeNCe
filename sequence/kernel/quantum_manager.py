@@ -9,9 +9,10 @@ The states may currently be defined in two possible ways:
 The manager defines an API for interacting with quantum states.
 """
 from abc import ABC, abstractmethod
-from numpy.typing import NDArray
 from threading import Lock
 from typing import TYPE_CHECKING, Any
+
+from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     from ..components.circuit import Circuit
@@ -25,7 +26,8 @@ from scipy.special import binom
 
 from .quantum_state import KetState, DensityState, BellDiagonalState
 from .quantum_utils import *
-from ..constants import KET_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM, FOCK_DENSITY_MATRIX_FORMALISM, BELL_DIAGONAL_STATE_FORMALISM
+from ..constants import (KET_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM, FOCK_DENSITY_MATRIX_FORMALISM,
+                         BELL_DIAGONAL_STATE_FORMALISM, STABILIZER_STATE_FORMALISM)
 
 
 class QuantumManager(ABC):
@@ -826,4 +828,19 @@ class QuantumManagerBellDiagonal(QuantumManager):
         self.set(keys, [float(1), float(0), float(0), float(0)])
 
     def run_circuit(self, *args, **kwargs):
+        pass
+
+@QuantumManager.register(STABILIZER_STATE_FORMALISM)
+class QuantumManagerStabilizer(QuantumManager):
+    def __init__(self):
+        super().__init__()
+        pass
+
+    def new(self, state=None) -> int:
+        pass
+
+    def run_circuit(self, circuit: "Circuit", keys: list[int], meas_samp=None):
+        pass
+
+    def set(self, keys: list[int], amplitudes: Any) -> None:
         pass

@@ -8,8 +8,8 @@ These include 2 classes used by a quantum manager, and one used for individual p
 3. The `FreeQuantumState` class uses the ket vector formalism, and is used by individual photons (not the quantum manager).
 """
 
-import math
 from abc import ABC
+
 from numpy import pi, cos, sin, arange, log, log2
 from numpy.random import Generator
 
@@ -409,3 +409,8 @@ class BellDiagonalState(State):
         # note: density matrix diagonal elements are guaranteed to be real from Hermiticity
         self.state = array(diag_elems, dtype=float)
         self.keys = keys
+
+class StabilizerState(State):
+    """Class to represent the stabilizer state"""
+    def __init__(self):
+        super().__init__()
