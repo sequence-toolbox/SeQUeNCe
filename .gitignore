@@ -143,3 +143,6 @@ sequence/gui/test_run.py
 
 # tmp folder
 tmp/
+
+# config file
+utils/json_config_generators/*.json

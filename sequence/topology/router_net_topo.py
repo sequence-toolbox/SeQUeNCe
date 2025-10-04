@@ -23,12 +23,7 @@ class RouterNetTopo(Topo):
         cchannels (list[ClassicalChannel]): list of classical channel objects in network.
         tl (Timeline): the timeline used for simulation
     """
-    ALL_GROUP = "groups"
-    ASYNC = "async"
     BSM_NODE = "BSMNode"
-    GROUP = "group"
-    IP = "ip"
-    LOOKAHEAD = "lookahead"
     MEET_IN_THE_MID = "meet_in_the_middle"
     MEMO_ARRAY_SIZE = "memo_size"     # NOTE meant for communication memories
     PORT = "port"
