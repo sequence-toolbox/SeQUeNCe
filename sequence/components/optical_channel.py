@@ -143,7 +143,7 @@ class QuantumChannel(OpticalChannel):
         log.logger.info("{} send qubit with state {} to {} by Channel {}".format(
                         self.sender.name, qubit.quantum_state, self.receiver, self.name))
 
-        assert self.delay >= 0 and self.loss < 1, f"QuantumChannel init() function has not been run for {self.name}"
+        assert self.delay >= 0 and self.loss <= 1, f"QuantumChannel init() function has not been run for {self.name}"
         assert source == self.sender
 
         # remove lowest time bin
