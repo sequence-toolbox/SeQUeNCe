@@ -117,16 +117,14 @@ class RequestApp:
             info (MemoryInfo): info on the qualified entangled memory.
         """
 
-        if info.state not in ["ENTANGLED", "PURIFIED"]:
+        if info.state != "ENTANGLED":
             return
 
         if info.index in self.memo_to_reservation:
             reservation = self.memo_to_reservation[info.index]
-            check1 = info.remote_node == reservation.initiator
-            check2 = info.remote_node == reservation.responder
-            if check1 and (info.fidelity >= reservation.fidelity or info.state == "PURIFIED"):
+            if info.remote_node == reservation.initiator and info.fidelity >= reservation.fidelity:
                 self.node.resource_manager.update(None, info.memory, "RAW")
-            elif check2 and (info.fidelity >= reservation.fidelity or info.state == "PURIFIED"):
+            elif info.remote_node == reservation.responder and info.fidelity >= reservation.fidelity:
                 self.memory_counter += 1
                 log.logger.info(f"Successfully generated entanglement. Counter is at {self.memory_counter}.")
                 self.node.resource_manager.update(None, info.memory, "RAW")
