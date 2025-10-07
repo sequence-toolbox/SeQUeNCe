@@ -155,6 +155,16 @@ class NetworkManager:
         for dst, next_hop in forwarding_table.items():
             static_routing_protocol.update_forwarding_rule(dst, next_hop)
 
+    def get_reservation_protocol(self) -> ResourceReservationProtocol:
+        """Method to get the resource reservation protocol in the network manager's protocol stack.
+
+        Returns:
+            ResourceReservationProtocol: the resource reservation protocol in the network manager's protocol stack
+        """
+        for protocol in self.protocol_stack:
+            if isinstance(protocol, ResourceReservationProtocol):
+                return protocol
+        raise ValueError("No resource reservation protocol found in the network manager's protocol stack")
 
 
 def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str) -> "NetworkManager":
