@@ -53,6 +53,7 @@ class BBPSSW_BDS(BBPSSWProtocol):
 
         self.is_twirled = is_twirled
         self.ep_matched = False
+        self.protocol_type = 'bbpssw_bds'
 
     def start(self) -> None:
         """Method to start entanglement purification.
@@ -109,7 +110,8 @@ class BBPSSW_BDS(BBPSSWProtocol):
             keys = [self.kept_memo.qstate_key, remote_kept_memo.qstate_key]
             self.owner.timeline.quantum_manager.set(keys, new_bds)
 
-        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.remote_protocol_name, meas_res=self.meas_res)
+        log.logger.debug(f'Starting BBPSSW from {self.owner} to {self.remote_node_name}')
+        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.remote_protocol_name, meas_res=self.meas_res, protocol_type=self.protocol_type)
         self.owner.send_message(self.remote_node_name, message)
 
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:
@@ -122,16 +124,7 @@ class BBPSSW_BDS(BBPSSWProtocol):
         Side Effects:
             Will call `update_resource_manager` method.
         """
-
-        # check the status of entanglement
-        if self.meas_memo.entangled_memory['node_id'] is None or self.kept_memo.entangled_memory['node_id'] is None:
-            log.logger.info(f'No entanglement for {self.meas_memo} or {self.kept_memo}.')
-            # when the AC Protocol expires, the purification protocol on the primary node will get removed, but the purification protocol on the non-primary node is still there
-            self.owner.protocols.remove(self)
-            return
-
         if msg.msg_type == BBPSSWMsgType.PURIFICATION_RES:
-
             purification_success = (self.meas_res == msg.meas_res)
             log.logger.info(self.owner.name + f" received result message, succeeded={purification_success}")
             assert src == self.remote_node_name

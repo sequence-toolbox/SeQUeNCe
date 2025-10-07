@@ -84,6 +84,9 @@ class Timeline:
         if type(event.process.owner) is str:
             event.process.owner = self.get_entity_by_name(event.process.owner)
         self.schedule_counter += 1
+        event.process.number = self.schedule_counter
+        if event.process.activation == 'expire':
+            log.logger.debug(f'Scheduled expiry with ID:#{event.process.number}: Process owner={event.process.owner}, at time {event.time}')  # Log scheduled events
         self.events.push(event)
 
     def init(self) -> None:
@@ -117,7 +120,9 @@ class Timeline:
                 continue
 
             self.time = event.time
-            
+            if event.process.activation == 'expire':
+                log.logger.debug(
+                    f"Event #{self.run_counter}: executing expire event={event.process.number}, process owner={event.process.owner}, activation={event.process.activation}")
             log.logger.debug(f"Event #{self.run_counter}: process owner={event.process.owner}, activation={event.process.activation}")
             event.process.run()
             self.run_counter += 1

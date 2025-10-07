@@ -29,9 +29,10 @@ class BBPSSWMessage(Message):
         receiver (str): name of destination protocol instance.
     """
 
-    def __init__(self, msg_type: BBPSSWMsgType, receiver: str, meas_res: int, **kwargs):
+    def __init__(self, msg_type: BBPSSWMsgType, receiver: str, meas_res: int, protocol_type: str):
         super().__init__(msg_type, receiver)
         self.meas_res = meas_res
+        self.protocol_type = protocol_type
 
     def __str__(self):
         return f"\"BBPSSW: type={self.msg_type}, meas_res={self.meas_res}\""
@@ -58,6 +59,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         self.remote_node_name: str = ''
         self.remote_protocol_name: str = ''
         self.remote_memories: list[str] = []
+        self.protocol_type = 'bbpssw'
         self.meas_res = None
         if self.meas_memo is None:
             self.memories.pop()

@@ -19,6 +19,7 @@ class Process:
 
     def __init__(self, owner: Any, activation_method: str, activation_args: list[Any], activation_kwargs: dict[Any, Any] = {}):
         self.owner = owner
+        self.number = None
         self.activation = activation_method
         self.activation_args = activation_args
         self.activation_kwargs = activation_kwargs

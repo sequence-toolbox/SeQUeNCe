@@ -63,6 +63,8 @@ class MemoryManager:
             info.to_occupied()
         elif state == "ENTANGLED":
             info.to_entangled()
+        elif state == "PURIFIED":
+            info.to_purified()
         else:
             raise Exception("Unknown state '%s'" % state)
 
@@ -107,6 +109,7 @@ class MemoryInfo:
     RAW = "RAW"
     OCCUPIED = "OCCUPIED"
     ENTANGLED = "ENTANGLED"
+    PURIFIED = "PURIFIED"
 
     def __init__(self, memory: "Memory", index: int, state="RAW"):
         """Constructor for memory info class.
@@ -149,6 +152,13 @@ class MemoryInfo:
         """Method to set memory to entangled state."""
 
         self.state = self.ENTANGLED
+        self.remote_node = self.memory.entangled_memory["node_id"]
+        self.remote_memo = self.memory.entangled_memory["memo_id"]
+        self.fidelity = self.memory.fidelity
+        self.entangle_time = self.memory.timeline.now()
+
+    def to_purified(self) -> None:
+        self.state = self.PURIFIED
         self.remote_node = self.memory.entangled_memory["node_id"]
         self.remote_memo = self.memory.entangled_memory["memo_id"]
         self.fidelity = self.memory.fidelity

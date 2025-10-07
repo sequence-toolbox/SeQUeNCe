@@ -200,7 +200,7 @@ class ResourceManager:
         if protocol in self.pending_protocols:
             self.pending_protocols.remove(protocol)
 
-        # iterate all the ruls and check if there is a valid rule
+        # iterate all the rules and check if there is a valid rule
         memo_info = self.memory_manager.get_info_by_memory(memory)
         for rule in self.rule_manager:
             memories_info = rule.is_valid(memo_info)

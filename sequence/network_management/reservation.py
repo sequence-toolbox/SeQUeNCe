@@ -200,7 +200,7 @@ def ep_rule_condition2(memory_info: "MemoryInfo", manager: "MemoryManager", args
     memory_indices = args["memory_indices"]
     fidelity = args["fidelity"]
 
-    if (memory_info.index in memory_indices and memory_info.state == "ENTANGLED" and memory_info.fidelity < fidelity):
+    if memory_info.index in memory_indices and memory_info.state == "ENTANGLED" and memory_info.fidelity < fidelity:
         return [memory_info]
     return []
 
@@ -254,22 +254,22 @@ def es_rule_conditionA(memory_info: "MemoryInfo", memory_manager: "MemoryManager
     left = args["left"]
     right = args["right"]
     fidelity = args["fidelity"]
-    if (memory_info.state == "ENTANGLED"
+    if (memory_info.state in ["ENTANGLED", "PURIFIED"]
             and memory_info.index in memory_indices
             and memory_info.remote_node == left
             and memory_info.fidelity >= fidelity):
         for memory_info2 in memory_manager:
-            if (memory_info2.state == "ENTANGLED"
+            if (memory_info2.state in ["ENTANGLED", "PURIFIED"]
                     and memory_info2.index in memory_indices
                     and memory_info2.remote_node == right
                     and memory_info2.fidelity >= fidelity):
                 return [memory_info, memory_info2]
-    elif (memory_info.state == "ENTANGLED"
+    elif (memory_info.state in ["ENTANGLED", "PURIFIED"]
             and memory_info.index in memory_indices
             and memory_info.remote_node == right
             and memory_info.fidelity >= fidelity):
         for memory_info2 in memory_manager:
-            if (memory_info2.state == "ENTANGLED"
+            if (memory_info2.state in ["ENTANGLED", "PURIFIED"]
                     and memory_info2.index in memory_indices
                     and memory_info2.remote_node == left
                     and memory_info2.fidelity >= fidelity):
@@ -283,7 +283,7 @@ def es_rule_conditionB1(memory_info: "MemoryInfo", manager: "MemoryManager", arg
     memory_indices = args["memory_indices"]
     target_remote = args["target_remote"]  # A - B - C. For A: B is the remote node, C is the target remote
     fidelity = args["fidelity"]
-    if (memory_info.state == "ENTANGLED"
+    if (memory_info.state in ["ENTANGLED", "PURIFIED"]
             and memory_info.index in memory_indices
             # and memory_info.remote_node != path[-1]
             and memory_info.remote_node != target_remote
@@ -301,7 +301,7 @@ def es_rule_conditionB2(memory_info: "MemoryInfo", manager: "MemoryManager", arg
     left = args["left"]
     right = args["right"]
     fidelity = args["fidelity"]
-    if (memory_info.state == ENTANGLED
+    if (memory_info.state in ["ENTANGLED", "PURIFIED"]
             and memory_info.index in memory_indices
             and memory_info.remote_node not in [left, right]
             and memory_info.fidelity >= fidelity):
