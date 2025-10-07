@@ -29,7 +29,7 @@ class BBPSSWMessage(Message):
         receiver (str): name of destination protocol instance.
     """
 
-    def __init__(self, msg_type: BBPSSWMsgType, receiver: str, meas_res: int, protocol_type: str):
+    def __init__(self, msg_type: BBPSSWMsgType, receiver: str, meas_res: int, protocol_type: str='bbpssw'):
         super().__init__(msg_type, receiver)
         self.meas_res = meas_res
         self.protocol_type = protocol_type
