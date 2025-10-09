@@ -183,7 +183,6 @@ def ep_rule_condition1(memory_info: "MemoryInfo", memory_manager: "MemoryManager
     reservation = args["reservation"]
     purification_mode = args["purification_mode"]
 
-
     if purification_mode == 'until_target':
         if (memory_info.index in memory_indices                              # this memory (kept)
                 and memory_info.state in ["ENTANGLED", "PURIFIED"]
