@@ -122,7 +122,7 @@ def ep_rule_action1(memories_info: list["MemoryInfo"], args: Arguments) -> tuple
     """Action function used by BBPSSW protocol on nodes except the responder node
     """
     memories = [info.memory for info in memories_info]
-    name = "EP.{}.{}".format(memories[0].name, memories[1].name)
+    name = f"EP.{memories[0].name}.{memories[1].name}"
     protocol = BBPSSWProtocol.create(None, name, memories[0], memories[1])
     dsts = [memories_info[0].remote_node]
     req_funcs = [ep_req_func1]
