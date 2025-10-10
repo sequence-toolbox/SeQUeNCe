@@ -86,9 +86,9 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
 
                 self._entanglement_succeed()
 
-        else:
-            self._entanglement_fail()
-            return False
+            else:
+                self._entanglement_fail()
+                return False
 
         return True
 
@@ -169,7 +169,8 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
                 process = Process(self, "start", [])  # for the second round
             else:
                 process = Process(self, "update_memory", [])
-            event = Event(future_start_time, process)
+            priority = self.owner.timeline.schedule_counter
+            event = Event(future_start_time, process, priority)
             self.owner.timeline.schedule(event)
             self.scheduled_events.append(event)
 
@@ -198,7 +199,8 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
                 process = Process(self, "start", [])  # for the second round
             else:
                 process = Process(self, "update_memory", [])
-            event = Event(future_start_time, process)
+            priority = self.owner.timeline.schedule_counter
+            event = Event(future_start_time, process, priority)
             self.owner.timeline.schedule(event)
             self.scheduled_events.append(event)
 

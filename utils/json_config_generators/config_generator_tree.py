@@ -27,9 +27,10 @@ import argparse
 import json
 import os
 
-from sequence.utils.config_generator import add_default_args, get_node_csv, generate_node_procs, generate_nodes, generate_classical, final_config, router_name_func
+from sequence.utils.config_generator import add_default_args, generate_nodes, generate_classical, final_config, router_name_func
 from sequence.topology.topology import Topology
 from sequence.topology.router_net_topo import RouterNetTopo
+from sequence.constants import MILLISECOND
 
 
 
@@ -61,16 +62,16 @@ def add_branches(node_names, nodes, index, bsm_names, bsm_nodes, qchannels, ccha
             # cchannels
             cchannels.append({Topology.SRC: node1,
                               Topology.DST: bsm_name,
-                              Topology.DELAY: args.cc_delay * 1e9})
+                              Topology.DELAY: int(args.cc_delay * MILLISECOND)})
             cchannels.append({Topology.SRC: node2,
                               Topology.DST: bsm_name,
-                              Topology.DELAY: args.cc_delay * 1e9})
+                              Topology.DELAY: int(args.cc_delay * MILLISECOND)})
             cchannels.append({Topology.SRC: bsm_name,
                               Topology.DST: node1,
-                              Topology.DELAY: args.cc_delay * 1e9})
+                              Topology.DELAY: int(args.cc_delay * MILLISECOND)})
             cchannels.append({Topology.SRC: bsm_name,
                               Topology.DST: node2,
-                              Topology.DELAY: args.cc_delay * 1e9})
+                              Topology.DELAY: int(args.cc_delay * MILLISECOND)})
 
             bsm_names, bsm_nodes, qchannels, cchannels = \
                 add_branches(node_names, nodes, i, bsm_names, bsm_nodes,
@@ -87,13 +88,8 @@ args = parser.parse_args()
 
 output_dict = {}
 
-# get csv file (if present)
-if args.nodes:
-    node_procs = get_node_csv(args.nodes)
-else:
-    node_procs = generate_node_procs(args.parallel, args.tree_size, router_name_func)
-router_names = list(node_procs.keys())
-nodes = generate_nodes(node_procs, router_names, args.memo_size)
+router_names = [router_name_func(i) for i in range(args.tree_size)]
+nodes = generate_nodes(router_names, args.memo_size)
 
 # generate quantum links and bsm connections
 bsm_names, bsm_nodes, qchannels, cchannels = \

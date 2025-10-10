@@ -13,23 +13,16 @@ Optional Args:
     -d --directory (str): name of the output directory (default tmp)
     -o --output (str): name of the output file (default out.json).
     -s --stop (float): simulation stop time (in s) (default infinity).
-    -p --parallel: sets simulation as parallel and requires addition args:
-        server ip (str): IP address of quantum manager server.
-        server port (int): port quantum manager server is attached to.
-        num. processes (int): number of processes to use for simulation.
-        sync/async (bool): denotes if timelines should be synchronous (true) or not (false).
-        lookahead (int): simulation lookahead time for timelines (in ps).
-    -n --nodes (str): path to csv file providing process information for nodes.
 """
 
 import os
 import argparse
 import json
 
-from sequence.utils.config_generator import add_default_args, get_node_csv, generate_node_procs, generate_nodes, final_config, router_name_func
+from sequence.utils.config_generator import add_default_args, generate_nodes, final_config, router_name_func
 from sequence.topology.topology import Topology
 from sequence.topology.router_net_topo import RouterNetTopo
-
+from sequence.constants import MILLISECOND
 
 
 # parse args
@@ -40,13 +33,8 @@ args = parser.parse_args()
 
 output_dict = {}
 
-# get node names, processes
-if args.nodes:
-    node_procs = get_node_csv(args.nodes)
-else:
-    node_procs = generate_node_procs(args.parallel, args.net_size, router_name_func)
-router_names = list(node_procs.keys())
-nodes = generate_nodes(node_procs, router_names, args.memo_size)
+router_names = [router_name_func(i) for i in range(args.net_size)]
+nodes = generate_nodes(router_names, args.memo_size)
 
 # generate quantum links, classical links, and bsm nodes
 qchannels = []
@@ -58,8 +46,7 @@ for i, node1 in enumerate(router_names):
         bsm_name = "BSM_{}_{}".format(node1, node2)
         bsm_node = {Topology.NAME: bsm_name,
                     Topology.TYPE: RouterNetTopo.BSM_NODE,
-                    Topology.SEED: seed,
-                    RouterNetTopo.GROUP: node_procs[node1]}
+                    Topology.SEED: seed}
         bsm_nodes.append(bsm_node)
         # qchannels
         qchannels.append({Topology.SRC: node1,
@@ -73,22 +60,22 @@ for i, node1 in enumerate(router_names):
         # cchannels
         cchannels.append({Topology.SRC: node1,
                           Topology.DST: bsm_name,
-                          Topology.DELAY: args.cc_delay * 1e9})
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
         cchannels.append({Topology.SRC: node2,
                           Topology.DST: bsm_name,
-                          Topology.DELAY: args.cc_delay * 1e9})
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
         cchannels.append({Topology.SRC: bsm_name,
                           Topology.DST: node1,
-                          Topology.DELAY: args.cc_delay * 1e9})
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
         cchannels.append({Topology.SRC: bsm_name,
                           Topology.DST: node2,
-                          Topology.DELAY: args.cc_delay * 1e9})
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
         cchannels.append({Topology.SRC: node1,
                           Topology.DST: node2,
-                          Topology.DELAY: args.cc_delay * 1e9})
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
         cchannels.append({Topology.SRC: node2,
                           Topology.DST: node1,
-                          Topology.DELAY: args.cc_delay * 1e9})
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
         seed += 1
 
 nodes += bsm_nodes
