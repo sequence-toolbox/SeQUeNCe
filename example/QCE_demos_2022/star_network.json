@@ -1,0 +1,118 @@
+{
+  "nodes": [
+    {
+      "name": "center",
+      "type": "QuantumRouter",
+      "seed": 0,
+      "memo_size": 50
+    },
+    {
+      "name": "router1",
+      "type": "QuantumRouter",
+      "seed": 1,
+      "memo_size": 50
+    },
+    {
+      "name": "router2",
+      "type": "QuantumRouter",
+      "seed": 2,
+      "memo_size": 50
+    },
+    {
+      "name": "router3",
+      "type": "QuantumRouter",
+      "seed": 3,
+      "memo_size": 50
+    },
+    {
+      "name": "router4",
+      "type": "QuantumRouter",
+      "seed": 4,
+      "memo_size": 50
+    }
+  ],
+  "qconnections": [
+    {
+      "node1": "center",
+      "node2": "router1",
+      "attenuation": 0.0002,
+      "distance": 500,
+      "type": "meet_in_the_middle"
+    },
+    {
+      "node1": "center",
+      "node2": "router2",
+      "attenuation": 0.0002,
+      "distance": 500,
+      "type": "meet_in_the_middle"
+    },
+    {
+      "node1": "center",
+      "node2": "router3",
+      "attenuation": 0.0002,
+      "distance": 500,
+      "type": "meet_in_the_middle"
+    },
+    {
+      "node1": "center",
+      "node2": "router4",
+      "attenuation": 0.0002,
+      "distance": 500,
+      "type": "meet_in_the_middle"
+    }
+  ],
+  "is_parallel": false,
+  "stop_time": 2000000000000,
+  "cconnections": [
+    {
+      "node1": "center",
+      "node2": "router1",
+      "delay": 500000000
+    },
+    {
+      "node1": "center",
+      "node2": "router2",
+      "delay": 500000000
+    },
+    {
+      "node1": "center",
+      "node2": "router3",
+      "delay": 500000000
+    },
+    {
+      "node1": "center",
+      "node2": "router4",
+      "delay": 500000000
+    },
+    {
+      "node1": "router1",
+      "node2": "router2",
+      "delay": 1000000000
+    },
+    {
+      "node1": "router1",
+      "node2": "router3",
+      "delay": 1000000000
+    },
+    {
+      "node1": "router1",
+      "node2": "router4",
+      "delay": 1000000000
+    },
+    {
+      "node1": "router2",
+      "node2": "router3",
+      "delay": 1000000000
+    },
+    {
+      "node1": "router2",
+      "node2": "router4",
+      "delay": 1000000000
+    },
+    {
+      "node1": "router3",
+      "node2": "router4",
+      "delay": 1000000000
+    }
+  ]
+}
