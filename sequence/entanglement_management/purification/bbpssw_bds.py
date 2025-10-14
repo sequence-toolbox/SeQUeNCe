@@ -4,12 +4,13 @@ This module defines code to support the BBPSSW protocol for entanglement purific
 Success results are pre-determined based on network parameters.
 Also defined is the message type used by the BBPSSW code.
 """
+from __future__ import annotations
 
 from typing import List, Tuple
 from typing import TYPE_CHECKING
 
 import numpy as np
-
+import numpy.typing as npt
 
 if TYPE_CHECKING:
     from ...components.memory import Memory
@@ -39,7 +40,7 @@ class BBPSSW_BDS(BBPSSWProtocol):
         is_twirled (bool): whether we twirl the input and output BDS. True: BBPSSW, False: DEJMPS. (default True)
     """
 
-    def __init__(self, owner: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory", is_twirled=True):
+    def __init__(self, owner: Node, name: str, kept_memo: Memory, meas_memo: Memory, is_twirled=True):
         """Constructor for purification protocol.
 
         args:
@@ -126,7 +127,7 @@ class BBPSSW_BDS(BBPSSWProtocol):
         """
         if msg.msg_type == BBPSSWMsgType.PURIFICATION_RES:
             purification_success = (self.meas_res == msg.meas_res)
-            log.logger.info(self.owner.name + f" received result message, succeeded={purification_success}")
+            log.logger.info(self.owner.name + f'received result message, succeeded={purification_success}')
             assert src == self.remote_node_name
 
             self.update_resource_manager(self.meas_memo, "RAW")
@@ -138,7 +139,7 @@ class BBPSSW_BDS(BBPSSWProtocol):
                 remote_kept_memory.bds_decohere()
                 self.kept_memo.bds_decohere()
                 self.kept_memo.fidelity = self.kept_memo.get_bds_fidelity()
-                self.update_resource_manager(self.kept_memo, state="ENTANGLED")
+                self.update_resource_manager(self.kept_memo, state="PURIFIED")
             else:
                 log.logger.info(f'Purification failed because measure results: {self.meas_res}, {msg.meas_res}')
                 self.update_resource_manager(self.kept_memo, state="RAW")
@@ -146,8 +147,8 @@ class BBPSSW_BDS(BBPSSWProtocol):
         else:
             raise Exception(f'{msg.msg_type} unknown')
 
-    def purification_res(self) -> tuple[float, np.array]:
-        """Method to calculate the correct success probabilty of a purification trial with BDS input.
+    def purification_res(self) -> tuple[float, npt.NDArray]:
+        """Method to calculate the correct success probability of a purification trial with BDS input.
 
         The four BDS density matrix elements of kept entangled pair conditioned on successful purification.
 

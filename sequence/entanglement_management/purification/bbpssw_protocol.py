@@ -1,3 +1,4 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 from typing import TYPE_CHECKING, List, Dict, Type, Optional
@@ -42,7 +43,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
     _registry: dict[str, type['BBPSSWProtocol']] = {}
     _global_formalism: str = KET_STATE_FORMALISM
 
-    def __init__(self, owner: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory", **kwargs):
+    def __init__(self, owner: Node, name: str, kept_memo: Memory, meas_memo: Memory, **kwargs):
         """Constructor for purification protocol.
 
         args:
