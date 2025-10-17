@@ -10,6 +10,7 @@ from sequence.topology.node import Node
 
 np.random.seed(0)
 
+PURIFIED = 'PURIFIED'
 ENTANGLED = 'ENTANGLED'
 RAW = 'RAW'
 
@@ -642,8 +643,8 @@ def test_BBPSSW_fidelity():
             assert kept1.fidelity == BBPSSWCircuit.improved_fidelity(fidelity)
             assert kept1.entangled_memory["node_id"] == "a2" and \
                    kept2.entangled_memory["node_id"] == "a1"
-            assert a1.resource_manager.log[-1] == (kept1, ENTANGLED)
-            assert a2.resource_manager.log[-1] == (kept2, ENTANGLED)
+            assert a1.resource_manager.log[-1] == (kept1, PURIFIED)
+            assert a2.resource_manager.log[-1] == (kept2, PURIFIED)
         else:
             assert kept1.fidelity == 0
             assert kept1.entangled_memory["node_id"] == kept2.entangled_memory["node_id"] == None
