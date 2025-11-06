@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 from ..message import Message
 from ..protocol import StackProtocol
-
+import random
 
 class StaticRoutingMessage(Message):
     """Message used for communications between routing protocol instances.
@@ -58,11 +58,29 @@ class StaticRoutingProtocol(StackProtocol):
     def get_forwarding_table(self) -> dict:
         return self.forwarding_table
 
-    def add_forwarding_rule(self, dst: str, next_node: str):
-        """Adds mapping {dst: next_node} to forwarding table."""
+def add_forwarding_rule(self, dst: str, next_node_arr: list, prob_arr: list):
+    """Adds multiple mappings to forwarding table (i.e. Multipath Routing).
+        Each element in next_node_arr repersents a different path's next hop from the src to dst.
+        prob_arr contains the probabilities of choosing each path, to provide a probablistic routing mechanism.
+        For only a single node prob_arr should only contain a single element with value 1.0.
 
-        assert dst not in self.forwarding_table
-        self.forwarding_table[dst] = next_node
+        E.g:
+        n1.add_forwarding_rule("r4", ["r2", "r3"], [0.6, 0.4])
+        This means that when n1 needs to forward to r4, it will forward to r2 with probability 0.6 and to r3 with probability 0.4.
+        Note: sum(prob_arr) must equal 1.0
+
+        E.g:
+        n1.add_forwarding_rule("r4", ["r2"], [1.0])
+        This means that when n1 needs to forward to r4, it will always forward to r2.
+    
+    """
+    assert abs(sum(prob_arr) - 1.0) < 1e-6 
+    assert len(next_node_arr) == len(prob_arr)
+    assert dst not in self.forwarding_table, f"Rule for {dst} already exists"
+
+    # Draw one random next hop according to prob_arr
+    chosen_next = random.choices(next_node_arr, weights=prob_arr, k=1)[0]
+    self.forwarding_table[dst] = chosen_next
 
     def update_forwarding_rule(self, dst: str, next_node: str):
         """updates dst to map to next_node in forwarding table."""
