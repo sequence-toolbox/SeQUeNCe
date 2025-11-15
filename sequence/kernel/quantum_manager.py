@@ -26,7 +26,6 @@ from scipy.special import binom
 from .quantum_state import KetState, DensityState, BellDiagonalState
 from .quantum_utils import *
 from ..constants import KET_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM, FOCK_DENSITY_MATRIX_FORMALISM, BELL_DIAGONAL_STATE_FORMALISM
-from ..utils import log
 
 
 class QuantumManager(ABC):
@@ -265,7 +264,7 @@ class QuantumManagerKet(QuantumManager):
         
         Returns:
             If measurement, dict[int, int]: dictionary mapping qstate keys to measurement results.
-            If non-measuremement, dict: empty dictionary.
+            If non-measurement, dict: empty dictionary.
         """
         super().run_circuit(circuit, keys, meas_samp)
         new_state, all_keys, circ_mat = self._prepare_circuit(circuit, keys)
