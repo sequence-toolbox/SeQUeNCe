@@ -233,22 +233,6 @@ class QuantumManager(ABC):
         """
         self.states = states
 
-    def reorder_qubits_ascending_keys(self, state: KetState | DensityState):
-        """Update the quantum state (in-place) to match the ascending order of keys.
-           Applies only to KetState and DensityState, not BellDiagonalState.
-        
-        Args:
-            state (KetState | DensityState): The quantum state to reorder.
-        """
-        if isinstance(state, KetState | DensityState):
-            target_all_keys = sorted(state.keys)
-            if state.keys != target_all_keys:
-                _, swap_matrix = self._swap_qubits(state.keys, target_all_keys)
-                reordered_state = swap_matrix @ state.state
-                self.set(target_all_keys, reordered_state)
-        else:
-            log.logger.warning(f"reorder_qubits_ascending_keys called on unsupported state type {type(state)}.")
-
 
 @QuantumManager.register(KET_STATE_FORMALISM)
 class QuantumManagerKet(QuantumManager):
@@ -323,6 +307,18 @@ class QuantumManagerKet(QuantumManager):
         """
         self.reorder_qubits_ascending_keys(super().get(key))
         return super().get(key)
+
+    def reorder_qubits_ascending_keys(self, state: KetState):
+        """Update the quantum state (in-place) to match the ascending order of keys.
+        
+        Args:
+            state (KetState): The quantum state to reorder.
+        """
+        target_all_keys = sorted(state.keys)
+        if state.keys != target_all_keys:
+            _, swap_matrix = self._swap_qubits(state.keys, target_all_keys)
+            reordered_state = swap_matrix @ state.state
+            self.set(target_all_keys, reordered_state)
 
     def set_to_zero(self, key: int) -> None:
         """Set the qubit at the given key to the |0> state.
@@ -508,6 +504,18 @@ class QuantumManagerDensity(QuantumManager):
         self.reorder_qubits_ascending_keys(super().get(key))
         return super().get(key)
 
+    def reorder_qubits_ascending_keys(self, state: DensityState):
+        """Update the quantum state (in-place) to match the ascending order of keys.
+        
+        Args:
+            state (DensityState): The quantum state to reorder.
+        """
+        target_all_keys = sorted(state.keys)
+        if state.keys != target_all_keys:
+            _, swap_matrix = self._swap_qubits(state.keys, target_all_keys)
+            reordered_state = swap_matrix @ state.state @ swap_matrix.conj().T
+            self.set(target_all_keys, reordered_state)
+
     def _measure(self, state: list[list[complex]], keys: list[int], all_keys: list[int], meas_samp: float) -> dict[int, int]:
         """Method to measure qubits at given keys.
 
@@ -551,7 +559,7 @@ class QuantumManagerDensity(QuantumManager):
             # swap states into correct position
             if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
                 all_keys, swap_mat = self._swap_qubits(all_keys, keys)
-                state = swap_mat @ state @ swap_mat.T
+                state = swap_mat @ state @ swap_mat.conj().T
 
             # calculate meas probabilities and projected states
             len_diff = len(all_keys) - len(keys)
