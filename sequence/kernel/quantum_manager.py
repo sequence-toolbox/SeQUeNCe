@@ -240,7 +240,7 @@ class QuantumManagerKet(QuantumManager):
     def __init__(self, **kwargs):
         super().__init__()
 
-    def new(self, state=(complex(1), complex(0))) -> int:
+    def new(self, state=[complex(1), complex(0)]) -> int:
         """Method to create a new ket state.
 
         Args:
@@ -304,11 +304,13 @@ class QuantumManagerKet(QuantumManager):
         Returns:
             KetState: quantum state at supplied key.
         """
-        self.reorder_qubits_ascending_keys(super().get(key))
-        return super().get(key)
+        state = super().get(key)
+        self.reorder_qubits_ascending_keys(state)
+        return state
 
-    def reorder_qubits_ascending_keys(self, state: KetState):
+    def reorder_qubits_ascending_keys(self, state: KetState) -> None:
         """Update the quantum state (in-place) to match the ascending order of keys.
+           Meanwhile, the reordered state is also set in the quantum manager.
         
         Args:
             state (KetState): The quantum state to reorder.
@@ -317,6 +319,7 @@ class QuantumManagerKet(QuantumManager):
         if state.keys != target_all_keys:
             _, swap_matrix = self._swap_qubits(state.keys, target_all_keys)
             reordered_state = swap_matrix @ state.state
+            state.state = reordered_state
             self.set(target_all_keys, reordered_state)
 
     def set_to_zero(self, key: int) -> None:
@@ -440,7 +443,7 @@ class QuantumManagerDensity(QuantumManager):
 
         Returns:
             If measurement, dict[int, int]: dictionary mapping qstate keys to measurement results.
-            If non-measuremement, dict: empty dictionary.
+            If non-measurement, dict: empty dictionary.
         """
         super().run_circuit(circuit, keys, meas_samp)
         new_state, all_keys, circ_mat = super()._prepare_circuit(circuit, keys)
@@ -500,11 +503,13 @@ class QuantumManagerDensity(QuantumManager):
         Returns:
             DensityState: quantum state at supplied key.
         """
-        self.reorder_qubits_ascending_keys(super().get(key))
-        return super().get(key)
+        state = super().get(key)
+        self.reorder_qubits_ascending_keys(state)
+        return state
 
-    def reorder_qubits_ascending_keys(self, state: DensityState):
+    def reorder_qubits_ascending_keys(self, state: DensityState) -> None:
         """Update the quantum state (in-place) to match the ascending order of keys.
+           Meanwhile, the reordered state is also set in the quantum manager.
         
         Args:
             state (DensityState): The quantum state to reorder.
@@ -513,6 +518,7 @@ class QuantumManagerDensity(QuantumManager):
         if state.keys != target_all_keys:
             _, swap_matrix = self._swap_qubits(state.keys, target_all_keys)
             reordered_state = swap_matrix @ state.state @ swap_matrix.conj().T
+            state.state = reordered_state
             self.set(target_all_keys, reordered_state)
 
     def _measure(self, state: list[list[complex]], keys: list[int], all_keys: list[int], meas_samp: float) -> dict[int, int]:
