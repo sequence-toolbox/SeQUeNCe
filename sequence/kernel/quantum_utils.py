@@ -8,7 +8,7 @@ from functools import lru_cache
 from math import sqrt
 import random
 import math
-from numpy import array, kron, identity, zeros, trace, outer, eye
+from numpy import array, kron, identity, zeros, trace, outer, eye, clip
 from scipy.linalg import sqrtm
 from ..constants import EPSILON
 
@@ -113,30 +113,24 @@ def measure_entangled_state_with_cache_ket(state: tuple[complex], state_index: i
         -> tuple[array, array, float]:
 
     state = array(state)
-
-    # generate projectors
-    projector0 = [1]
-    projector1 = [1]
+    # generate measurement operators. measure qubit at state_index, with the measured qubit traced out
+    operator0 = [1]
+    operator1 = [1]
     for i in range(num_states):
         if i == state_index:
-            projector0 = kron(projector0, [1, 0])
-            projector1 = kron(projector1, [0, 1])
+            operator0 = kron(operator0, [1, 0])
+            operator1 = kron(operator1, [0, 1])
         else:
-            projector0 = kron(projector0, identity(2))
-            projector1 = kron(projector1, identity(2))
+            operator0 = kron(operator0, identity(2))
+            operator1 = kron(operator1, identity(2))
 
     # probability of measuring basis[0]
-    prob_0 = (state.conj().T @ projector0.T @ projector0 @ state).real
+    prob_0 = (state.conj().T @ operator0.conj().T @ operator0 @ state).real
+    prob_0 = clip(prob_0, 0, 1)
+    prob_1 = 1 - prob_0
 
-    if prob_0 >= 1:
-        state1 = None
-    else:
-        state1 = (projector1 @ state) / sqrt(1 - prob_0)
-
-    if prob_0 <= 0:
-        state0 = None
-    else:
-        state0 = (projector0 @ state) / sqrt(prob_0)
+    state0 = (operator0 @ state) / sqrt(prob_0) if prob_0 > EPSILON else None
+    state1 = (operator1 @ state) / sqrt(prob_1) if prob_1 > EPSILON else None
 
     return state0, state1, prob_0
 
@@ -461,3 +455,42 @@ def verify_same_state_vector(state1: list, state2: list) -> bool:
             return False
 
     return True
+
+
+def pretty_ket(vector, precision: int = 4, tolerance: float = EPSILON) -> str:
+    """Convert a state vector into a pretty-printed ket string.
+       Example:
+           print(vector)      -- [0.70710678+0.j 0.        +0.j 0.        +0.j 0.70710678+0.j]
+           pretty_ket(vector) -- (0.7071) |0⟩ + (0.7071) |3⟩
+
+    Args:
+        vector (array-like): The state vector to convert.
+        precision (int): The number of decimal places to round the coefficients.
+        tolerance (float): The tolerance for considering a coefficient as zero.
+
+    Returns:
+        str: A pretty-printed ket string representation of the state vector.
+    """
+    terms = []
+    vector = array(vector, dtype=complex)
+    for k, a in enumerate(vector):
+        if abs(a) < tolerance: 
+            continue
+        re = round(a.real, precision)
+        im = round(a.imag, precision)
+        # avoid "-0.0"
+        if abs(re) < 10**(-precision): 
+            re = 0.0
+        if abs(im) < 10**(-precision): 
+            im = 0.0
+
+        if im == 0:
+            coef = f"{re:.{precision}f}"
+        elif re == 0:
+            coef = f"{im:.{precision}f}i"
+        else:
+            sign = "+" if im > 0 else "-"
+            coef = f"{re:.{precision}f} {sign} {abs(im):.{precision}f}i"
+        terms.append(f"({coef}) |{k}⟩")
+
+    return " + ".join(terms) if terms else "0"

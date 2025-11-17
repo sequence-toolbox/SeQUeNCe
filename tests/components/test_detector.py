@@ -85,7 +85,7 @@ def test_Detector_get():
     times = np.random.randint(0, 1e12, 100, dtype=np.int64)
     times.sort()
     for t in times:
-        tl.time = t
+        tl.time = int(t)
         detector.get()
         assert parent.log[-1][1] % time_resolution == 0
 

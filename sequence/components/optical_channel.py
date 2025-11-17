@@ -21,7 +21,7 @@ from ..kernel.process import Process
 from ..utils import log
 from ..constants import SPEED_OF_LIGHT, MICROSECOND, SECOND, EPSILON
 
-gmpy2.get_context().precision = 200
+gmpy2.get_context().precision = 80 # 80 bits ~ 24 decimal digits ~ sufficient for 10,000 years of ps timing 
 EPSILON_MPFR = gmpy2.mpfr(EPSILON)
 PS_PER_SECOND = gmpy2.mpz(SECOND)
 
