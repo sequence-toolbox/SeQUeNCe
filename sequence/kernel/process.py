@@ -12,6 +12,7 @@ class Process:
 
     Attributes:
         owner (Any): the object of process.
+        number (int): the process number.
         activation (str): the function name of object.
         activation_args  (list[Any]): the (non-keyword) arguments of object's function.
         activation_kwargs (dict[Any, Any]): the keyword arguments of object's function.
