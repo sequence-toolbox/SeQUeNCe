@@ -1,0 +1,85 @@
+{
+    "templates": {
+        "teleportation": {
+            "MemoryArray": {
+                "fidelity": 1,
+                "efficiency": 0.7
+            }
+        }
+    },
+    "nodes": [
+        {
+            "name": "alice",
+            "type": "DQCNode",
+            "seed": 0,
+            "memo_size": 1,
+            "data_memo_size": 1,
+            "group": 0,
+            "template": "teleportation"
+        },
+        {
+            "name": "bob",
+            "type": "DQCNode",
+            "seed": 1,
+            "memo_size": 1,
+            "data_memo_size": 1,
+            "group": 0,
+            "template": "teleportation"
+        },
+        {
+            "name": "BSM_alice_bob",
+            "type": "BSMNode",
+            "seed": 0,
+            "group": 0,
+            "template": "teleportation"
+        }
+    ],
+    "qchannels": [
+        {
+            "source": "alice",
+            "destination": "BSM_alice_bob",
+            "distance": 500.0,
+            "attenuation": 0.0002
+        },
+        {
+            "source": "bob",
+            "destination": "BSM_alice_bob",
+            "distance": 500.0,
+            "attenuation": 0.0002
+        }
+    ],
+    "cchannels": [
+        {
+            "source": "alice",
+            "destination": "BSM_alice_bob",
+            "delay": 500000000
+        },
+        {
+            "source": "bob",
+            "destination": "BSM_alice_bob",
+            "delay": 500000000
+        },
+        {
+            "source": "BSM_alice_bob",
+            "destination": "alice",
+            "delay": 500000000
+        },
+        {
+            "source": "BSM_alice_bob",
+            "destination": "bob",
+            "delay": 500000000
+        },
+        {
+            "source": "alice",
+            "destination": "bob",
+            "delay": 500000000
+        },
+        {
+            "source": "bob",
+            "destination": "alice",
+            "delay": 500000000
+        }
+    ],
+    "stop_time": 10000000000000,
+    "is_parallel": false
+}

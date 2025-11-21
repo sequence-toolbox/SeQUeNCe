@@ -1,0 +1,1 @@
+Code for the experiments performed in SeQUeNCe orginal paper can be found in the file `starlight_experiments.py`. This script uses the `starlight.json` file (also within the example folder) to specify the network topology.
