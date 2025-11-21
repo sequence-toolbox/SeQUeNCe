@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 from numpy import eye, kron, exp, sqrt
 from scipy.linalg import fractional_matrix_power
 from math import factorial
+import gmpy2
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -26,6 +27,9 @@ from ..kernel.process import Process
 from ..utils.encoding import time_bin, fock
 from ..utils import log
 
+gmpy2.get_context().precision = 80  # 80 bits ~ 24 decimal digits ~ sufficient for 10,000 years of ps timing 
+from gmpy2 import mpfr, rint, ceil
+
 
 class Detector(Entity):
     """Single photon detector device.
@@ -40,6 +44,7 @@ class Detector(Entity):
         dark_count (float): average number of false positive detections per second.
         count_rate (float): maximum detection rate; defines detector cooldown time.
         time_resolution (int): minimum resolving power of photon arrival time (in ps).
+        next_detection_time (int): time of next possible detection event.
         photon_counter (int): counts number of detection events.
     """
 
@@ -119,9 +124,11 @@ class Detector(Entity):
         now = self.timeline.now()
 
         if now > self.next_detection_time:
-            time = round(now / self.time_resolution) * self.time_resolution
+            index = rint(mpfr(now) / mpfr(self.time_resolution))
+            time = int(index) * self.time_resolution
             self.notify({'time': time})
-            self.next_detection_time = now + (1e12 / self.count_rate)  # period in ps
+            period = int(ceil(mpfr("1e12") / mpfr(self.count_rate))) # period in ps
+            self.next_detection_time = now + period
 
     def notify(self, info: dict[str, Any]):
         """Custom notify function (calls `trigger` method)."""

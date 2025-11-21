@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.8.2] - 2025-11-19
+### Added
+- A new state `PURIFIED` in `MemoryInfo` is introduced to enable the new purify strategy `once`, i.e. only purify one time. The previous existing stragety is renamed to `until_target`, i.e., keep purifing until reaching the target fidelity.
+- `QuantumManagerKet.get_ascending_keys()`: call `reorder_qubits_ascending_keys()` before getting the state
+- `QuantumManagerKet.reorder_qubits_ascending_keys()`: reorder the quantum state such that the corresponding keys are in ascending order.
+- `QuantumManagerDensity.get_ascending_keys()` and `QuantumManagerDensity.reorder_qubits_ascending_keys()`: same reording qubits for density matrix formalism.
+- `quantum_utils.pretty_ket()`: return a pretty-looking state vector string
+- `NetworkManager.get_reservation_protocol()`: Method to get the resource reservation protocol in the network manager's protocol stack.
+
+### Changed
+- Updated workflows `development.yml`, `publish.yml`, `validation.yml`. Only run on the main repository (sequence-toolbox/SeQUeNCe), preventing unintended builds and publishes from forks.
+- Standardized `gmpy2` context precision to 80 bits in timing-related modules (`detector.py`, `optical_channel.py`) for computation efficiency and sufficient accuracy.
+- `quantum_utils.measure_entangled_state_with_cache_ket()`: make code more mathematically sound.
+- A lot of minor refactoring (spacing, indentation, f-string, comments, docstring, etc.)
+- Updated related `pytest`
+
+### Fixed
+- Improved time calculations in `Detector.record_detection` to use high-precision `gmpy2`
+
+### Removed
+- Remove all parallel module related stuff under `utils/json_config_gnerators/*`, `config_generator.py` and `router_net_topo.py`.
+
+
+
 ## [0.8.1] - 2025-09-17
 ### Changed
 - Migrate code to fit PEP requirements for py3.11

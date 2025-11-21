@@ -12,6 +12,7 @@ class Process:
 
     Attributes:
         owner (Any): the object of process.
+        number (int): the process number.
         activation (str): the function name of object.
         activation_args  (list[Any]): the (non-keyword) arguments of object's function.
         activation_kwargs (dict[Any, Any]): the keyword arguments of object's function.
@@ -19,6 +20,7 @@ class Process:
 
     def __init__(self, owner: Any, activation_method: str, activation_args: list[Any], activation_kwargs: dict[Any, Any] = {}):
         self.owner = owner
+        self.number = None
         self.activation = activation_method
         self.activation_args = activation_args
         self.activation_kwargs = activation_kwargs

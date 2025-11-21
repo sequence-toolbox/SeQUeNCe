@@ -8,10 +8,13 @@ Also included is the definition of the message type used by the reservation prot
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any
 
+from ..resource_management.memory_manager import MemoryManager
+
 if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
 
 from ..resource_management.rule_manager import Rule, Arguments
+from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..entanglement_management.generation import EntanglementGenerationA
 from ..entanglement_management.purification import BBPSSWProtocol
 from ..entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
@@ -19,9 +22,11 @@ from ..message import Message
 from ..protocol import StackProtocol
 from ..kernel.event import Event
 from ..kernel.process import Process
+from ..resource_management.resource_manager import MemoryInfo
 
 ENTANGLED = 'ENTANGLED'
 RAW = 'RAW'
+
 
 class RSVPMsgType(Enum):
     """Defines possible message types for the reservation protocol."""
@@ -45,7 +50,7 @@ class ResourceReservationMessage(Message):
         path (list[str]): cumulative node list for entanglement path (if `msg_type == APPROVE` or `msg_type == REJECT`)
     """
 
-    def __init__(self, msg_type: any, receiver: str, reservation: "Reservation", **kwargs):
+    def __init__(self, msg_type, receiver: str, reservation: "Reservation", **kwargs):
         super().__init__(msg_type, receiver)
         self.reservation = reservation
         if self.msg_type is RSVPMsgType.REQUEST:
@@ -63,7 +68,8 @@ class ResourceReservationMessage(Message):
 
 # entanglement generation
 
-def eg_rule_action1(memories_info: list["MemoryInfo"], args: dict[str, Any]) -> tuple[EntanglementGenerationA, list[None], list[None], list[None]]:
+def eg_rule_action1(memories_info: list["MemoryInfo"], args: dict[str, Any]) -> tuple[
+    EntanglementGenerationA, list[None], list[None], list[None]]:
     """Action function used by entanglement generation protocol on nodes except the initiator, i.e., index > 0
     """
     memories = [info.memory for info in memories_info]
@@ -75,7 +81,8 @@ def eg_rule_action1(memories_info: list["MemoryInfo"], args: dict[str, Any]) -> 
     return protocol, [None], [None], [None]
 
 
-def eg_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[EntanglementGenerationA, list[str], list["eg_req_func"], list[dict]]:
+def eg_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[
+    EntanglementGenerationA, list[str], list["eg_req_func"], list[dict]]:
     """Action function used by entanglement generation protocol on nodes except the responder, i.e., index < len(path) - 1
     """
     mid = args["mid"]
@@ -118,11 +125,12 @@ def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager", args:
 
 # entanglement purification
 
-def ep_rule_action1(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[BBPSSWProtocol, list[str], list["ep_req_func1"], list[dict]]:
+def ep_rule_action1(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[
+    BBPSSWProtocol, list[str], list["ep_req_func1"], list[dict]]:
     """Action function used by BBPSSW protocol on nodes except the responder node
     """
     memories = [info.memory for info in memories_info]
-    name = "EP.{}.{}".format(memories[0].name, memories[1].name)
+    name = f"EP.{memories[0].name}.{memories[1].name}"
     protocol = BBPSSWProtocol.create(None, name, memories[0], memories[1])
     dsts = [memories_info[0].remote_node]
     req_funcs = [ep_req_func1]
@@ -130,7 +138,8 @@ def ep_rule_action1(memories_info: list["MemoryInfo"], args: Arguments) -> tuple
     return protocol, dsts, req_funcs, req_args
 
 
-def ep_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[BBPSSWProtocol, list[None], list[None], list[None]]:
+def ep_rule_action2(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[
+    BBPSSWProtocol, list[None], list[None], list[None]]:
     """Action function used by BBPSSW protocol on nodes except the responder
     """
     memories = [info.memory for info in memories_info]
@@ -176,21 +185,37 @@ def ep_req_func1(protocols, args: Arguments) -> BBPSSWProtocol:
     return _protocols[0]
 
 
-def ep_rule_condition1(memory_info: "MemoryInfo", memory_manager: "MemoryManager", args: Arguments) -> list["MemoryInfo"]:
+def ep_rule_condition1(memory_info: "MemoryInfo", memory_manager: "MemoryManager", args: Arguments) -> list[
+    "MemoryInfo"]:
     """Condition function used by BBPSSW protocol on nodes except the initiator
     """
     memory_indices = args["memory_indices"]
     reservation = args["reservation"]
-    if (memory_info.index in memory_indices                              # this memory (kept)
-            and memory_info.state == "ENTANGLED"
-            and memory_info.fidelity < reservation.fidelity):
-        for info in memory_manager:
-            if (info != memory_info and info.index in memory_indices     # another memory (meas)
-                    and info.state == "ENTANGLED"
-                    and info.remote_node == memory_info.remote_node
-                    and info.fidelity == memory_info.fidelity):
-                assert memory_info.remote_memo != info.remote_memo
-                return [memory_info, info]
+    purification_mode = args["purification_mode"]
+
+    if purification_mode == 'until_target':
+        if (memory_info.index in memory_indices  # this memory (kept)
+                and memory_info.state in ["ENTANGLED", "PURIFIED"]
+                and memory_info.fidelity < reservation.fidelity):
+            for info in memory_manager:
+                if (info != memory_info and info.index in memory_indices  # another memory (meas)
+                        and info.state in ["ENTANGLED", "PURIFIED"]
+                        and info.remote_node == memory_info.remote_node
+                        and info.fidelity == memory_info.fidelity):
+                    assert memory_info.remote_memo != info.remote_memo
+                    return [memory_info, info]
+    elif purification_mode == 'once':
+        if (memory_info.index in memory_indices  # this memory (kept)
+                and memory_info.state == "ENTANGLED"
+                and memory_info.fidelity < reservation.fidelity):
+            for info in memory_manager:
+                if (info != memory_info and info.index in memory_indices  # another memory (meas)
+                        and info.state == "ENTANGLED"
+                        and info.remote_node == memory_info.remote_node
+                        and info.fidelity == memory_info.fidelity):
+                    assert memory_info.remote_memo != info.remote_memo
+                    return [memory_info, info]
+
     return []
 
 
@@ -199,15 +224,21 @@ def ep_rule_condition2(memory_info: "MemoryInfo", manager: "MemoryManager", args
     """
     memory_indices = args["memory_indices"]
     fidelity = args["fidelity"]
+    purification_mode = args["purification_mode"]
 
-    if (memory_info.index in memory_indices and memory_info.state == "ENTANGLED" and memory_info.fidelity < fidelity):
-        return [memory_info]
+    if purification_mode == 'until_target':
+        if memory_info.index in memory_indices and memory_info.state in ["ENTANGLED",
+                                                                         "PURIFIED"] and memory_info.fidelity < fidelity:
+            return [memory_info]
+    elif purification_mode == 'once':
+        if memory_info.index in memory_indices and memory_info.state == "ENTANGLED" and memory_info.fidelity < fidelity:
+            return [memory_info]
     return []
 
 
 # entanglement swapping
-
-def es_rule_actionA(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[EntanglementSwappingA, list[str], list["es_req_func"], list[dict]]:
+def es_rule_actionA(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[
+    EntanglementSwappingA, list[str], list["es_req_func"], list[dict]]:
     """Action function used by EntanglementSwappingA protocol on nodes
     """
     es_succ_prob = args["es_succ_prob"]
@@ -221,7 +252,8 @@ def es_rule_actionA(memories_info: list["MemoryInfo"], args: Arguments) -> tuple
     return protocol, dsts, req_funcs, req_args
 
 
-def es_rule_actionB(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[EntanglementSwappingB, list[None], list[None], list[None]]:
+def es_rule_actionB(memories_info: list["MemoryInfo"], args: Arguments) -> tuple[
+    EntanglementSwappingB, list[None], list[None], list[None]]:
     """Action function used by EntanglementSwappingB protocol
     """
     memories = [info.memory for info in memories_info]
@@ -247,29 +279,30 @@ def es_req_func(protocols: list["EntanglementProtocol"], args: Arguments) -> Ent
             return protocol
 
 
-def es_rule_conditionA(memory_info: "MemoryInfo", memory_manager: "MemoryManager", args: Arguments) -> list["MemoryInfo"]:
+def es_rule_conditionA(memory_info: "MemoryInfo", memory_manager: "MemoryManager", args: Arguments) -> list[
+    "MemoryInfo"]:
     """Condition function used by EntanglementSwappingA protocol on nodes
     """
     memory_indices = args["memory_indices"]
     left = args["left"]
     right = args["right"]
     fidelity = args["fidelity"]
-    if (memory_info.state == "ENTANGLED"
+    if (memory_info.state in ["ENTANGLED", "PURIFIED"]
             and memory_info.index in memory_indices
             and memory_info.remote_node == left
             and memory_info.fidelity >= fidelity):
         for memory_info2 in memory_manager:
-            if (memory_info2.state == "ENTANGLED"
+            if (memory_info2.state in ["ENTANGLED", "PURIFIED"]
                     and memory_info2.index in memory_indices
                     and memory_info2.remote_node == right
                     and memory_info2.fidelity >= fidelity):
                 return [memory_info, memory_info2]
-    elif (memory_info.state == "ENTANGLED"
-            and memory_info.index in memory_indices
-            and memory_info.remote_node == right
-            and memory_info.fidelity >= fidelity):
+    elif (memory_info.state in ["ENTANGLED", "PURIFIED"]
+          and memory_info.index in memory_indices
+          and memory_info.remote_node == right
+          and memory_info.fidelity >= fidelity):
         for memory_info2 in memory_manager:
-            if (memory_info2.state == "ENTANGLED"
+            if (memory_info2.state in ["ENTANGLED", "PURIFIED"]
                     and memory_info2.index in memory_indices
                     and memory_info2.remote_node == left
                     and memory_info2.fidelity >= fidelity):
@@ -283,7 +316,7 @@ def es_rule_conditionB1(memory_info: "MemoryInfo", manager: "MemoryManager", arg
     memory_indices = args["memory_indices"]
     target_remote = args["target_remote"]  # A - B - C. For A: B is the remote node, C is the target remote
     fidelity = args["fidelity"]
-    if (memory_info.state == "ENTANGLED"
+    if (memory_info.state in ["ENTANGLED", "PURIFIED"]
             and memory_info.index in memory_indices
             # and memory_info.remote_node != path[-1]
             and memory_info.remote_node != target_remote
@@ -301,7 +334,7 @@ def es_rule_conditionB2(memory_info: "MemoryInfo", manager: "MemoryManager", arg
     left = args["left"]
     right = args["right"]
     fidelity = args["fidelity"]
-    if (memory_info.state == ENTANGLED
+    if (memory_info.state in ["ENTANGLED", "PURIFIED"]
             and memory_info.index in memory_indices
             and memory_info.remote_node not in [left, right]
             and memory_info.fidelity >= fidelity):
@@ -342,6 +375,7 @@ class ResourceReservationProtocol(StackProtocol):
         self.timecards = [MemoryTimeCard(i) for i in range(len(self.memo_arr))]
         self.es_succ_prob = 1
         self.es_degradation = 0.95
+        self.purification_mode = 'until_target'  # once or until_target.
         self.accepted_reservations = []
 
     def push(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float,
@@ -364,7 +398,8 @@ class ResourceReservationProtocol(StackProtocol):
             May push/pop to lower/upper attached protocols (or network manager).
         """
 
-        reservation = Reservation(self.owner.name, responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity)
+        reservation = Reservation(self.owner.name, responder, start_time, end_time, memory_size, target_fidelity,
+                                  entanglement_number, identity)
         if self.schedule(reservation):
             msg = ResourceReservationMessage(RSVPMsgType.REQUEST, self.name, reservation)
             qcap = QCap(self.owner.name)
@@ -410,7 +445,7 @@ class ResourceReservationProtocol(StackProtocol):
                     self._push(dst=None, msg=new_msg, next_hop=src)
                 else:
                     self._push(dst=msg.reservation.responder, msg=msg)
-            else:                               # schedule failed
+            else:  # schedule failed
                 new_msg = ResourceReservationMessage(RSVPMsgType.REJECT, self.name, msg.reservation, path=path)
                 self._push(dst=None, msg=new_msg, next_hop=src)
         elif msg.msg_type == RSVPMsgType.REJECT:
@@ -467,7 +502,7 @@ class ResourceReservationProtocol(StackProtocol):
             if counter == 0:  # attempt reservation succeeded: enough memory (timecard)
                 break
 
-        if counter > 0:       # attempt reservation failed: not enough memory (timecard)
+        if counter > 0:  # attempt reservation failed: not enough memory (timecard)
             for timecard in timecards:
                 timecard.remove(reservation)  # remove reservation from the timecard that have added the reservation
             return False
@@ -516,16 +551,20 @@ class ResourceReservationProtocol(StackProtocol):
 
         # 2. create rules for entanglement purification
         if index > 0:
-            condition_args = {"memory_indices": memory_indices[:reservation.memory_size], "reservation": reservation}
+            condition_args = {"memory_indices": memory_indices[:reservation.memory_size], "reservation": reservation,
+                              "purification_mode": self.purification_mode}
             action_args = {}
             rule = Rule(10, ep_rule_action1, ep_rule_condition1, action_args, condition_args)
             rules.append(rule)
 
         if index < len(path) - 1:
             if index == 0:
-                condition_args = {"memory_indices": memory_indices, "fidelity": reservation.fidelity}
+                condition_args = {"memory_indices": memory_indices, "fidelity": reservation.fidelity,
+                                  "purification_mode": self.purification_mode}
             else:
-                condition_args = {"memory_indices": memory_indices[reservation.memory_size:], "fidelity": reservation.fidelity}
+                condition_args = {"memory_indices": memory_indices[reservation.memory_size:],
+                                  "fidelity": reservation.fidelity,
+                                  "purification_mode": self.purification_mode}
 
             action_args = {}
             rule = Rule(10, ep_rule_action2, ep_rule_condition2, action_args, condition_args)
@@ -533,13 +572,15 @@ class ResourceReservationProtocol(StackProtocol):
 
         # 3. create rules for entanglement swapping
         if index == 0:
-            condition_args = {"memory_indices": memory_indices, "target_remote": path[-1], "fidelity": reservation.fidelity}
+            condition_args = {"memory_indices": memory_indices, "target_remote": path[-1],
+                              "fidelity": reservation.fidelity}
             action_args = {}
             rule = Rule(10, es_rule_actionB, es_rule_conditionB1, action_args, condition_args)
             rules.append(rule)
         elif index == len(path) - 1:
             action_args = {}
-            condition_args = {"memory_indices": memory_indices, "target_remote": path[0], "fidelity": reservation.fidelity}
+            condition_args = {"memory_indices": memory_indices, "target_remote": path[0],
+                              "fidelity": reservation.fidelity}
             rule = Rule(10, es_rule_actionB, es_rule_conditionB1, action_args, condition_args)
             rules.append(rule)
         else:
@@ -553,7 +594,8 @@ class ResourceReservationProtocol(StackProtocol):
             _index = _path.index(self.owner.name)
             left, right = _path[_index - 1], _path[_index + 1]
 
-            condition_args = {"memory_indices": memory_indices, "left": left, "right": right, "fidelity": reservation.fidelity}
+            condition_args = {"memory_indices": memory_indices, "left": left, "right": right,
+                              "fidelity": reservation.fidelity}
             action_args = {"es_succ_prob": self.es_succ_prob, "es_degradation": self.es_degradation}
             rule = Rule(10, es_rule_actionA, es_rule_conditionA, action_args, condition_args)
             rules.append(rule)
@@ -584,14 +626,15 @@ class ResourceReservationProtocol(StackProtocol):
             process = Process(self.owner.resource_manager, "load", [rule])
             event = Event(reservation.start_time, process, self.owner.timeline.schedule_counter)
             self.owner.timeline.schedule(event)
-            
+
             process = Process(self.owner.resource_manager, "expire", [rule])
             event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
             self.owner.timeline.schedule(event)
 
         for card in self.timecards:
             if reservation in card.reservations:
-                process = Process(self.owner.resource_manager, "update", [None, self.memo_arr[card.memory_index], "RAW"])
+                process = Process(self.owner.resource_manager, "update",
+                                  [None, self.memo_arr[card.memory_index], "RAW"])
                 event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
                 self.owner.timeline.schedule(event)
 
@@ -607,6 +650,11 @@ class ResourceReservationProtocol(StackProtocol):
     def set_swapping_degradation(self, degradation: float) -> None:
         assert 0 <= degradation <= 1
         self.es_degradation = degradation
+
+    def set_purification_mode(self, mode: str) -> None:
+        assert mode in ['once', 'until_target'], \
+            f'Purification mode {mode} not supported, should be either "once" or "until_target"'
+        self.purification_mode = mode
 
 
 class Reservation:
@@ -653,7 +701,8 @@ class Reservation:
 
     def __str__(self) -> str:
         s = "|initiator={}; responder={}; start_time={:,}; end_time={:,}; memory_size={}; target_fidelity={}; entanglement_number={}; identity={}|".format(
-              self.initiator, self.responder, int(self.start_time), int(self.end_time), self.memory_size, self.fidelity, self.entanglement_number, self.identity)
+            self.initiator, self.responder, int(self.start_time), int(self.end_time), self.memory_size, self.fidelity,
+            self.entanglement_number, self.identity)
         return s
 
     def __repr__(self) -> str:
@@ -664,11 +713,11 @@ class Reservation:
 
     def __eq__(self, other: "Reservation") -> bool:
         return other.initiator == self.initiator and \
-               other.responder == self.responder and \
-               other.start_time == self.start_time and \
-               other.end_time == self.end_time and \
-               other.memory_size == self.memory_size and \
-               other.fidelity == self.fidelity
+            other.responder == self.responder and \
+            other.start_time == self.start_time and \
+            other.end_time == self.end_time and \
+            other.memory_size == self.memory_size and \
+            other.fidelity == self.fidelity
 
     def __lt__(self, other: "Reservation") -> bool:
         return self.identity < other.identity
@@ -707,7 +756,7 @@ class MemoryTimeCard:
         Returns:
             bool: whether reservation was inserted successfully.
         """
-        
+
         position = self.schedule_reservation(reservation)
         if position >= 0:
             self.reservations.insert(position, reservation)
@@ -756,7 +805,7 @@ class MemoryTimeCard:
             elif self.reservations[mid].end_time < reservation.start_time:
                 start = mid + 1
             elif (max(self.reservations[mid].start_time, reservation.start_time) <=
-                    min(self.reservations[mid].end_time, reservation.end_time)):
+                  min(self.reservations[mid].end_time, reservation.end_time)):
                 return -1
             else:
                 raise Exception("Unexpected status")

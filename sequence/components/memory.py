@@ -312,7 +312,7 @@ class Memory(Entity):
             Will notify upper entities of expiration via the `pop` interface.
             Will modify the quantum state of the memory.
         """
-
+        #log.logger.debug(f'Memory {self.name} has expired at time {self.timeline.now()}')
         if self.is_in_application:
             pass
 
@@ -411,6 +411,7 @@ class Memory(Entity):
             self.timeline.remove_event(self.expiration_event)
 
         decay_time = self.timeline.now() + int(self.cutoff_ratio * self.coherence_time * 1e12)
+        #log.logger.debug(f'Memory {self.name} is set to expire at time {decay_time}')
         process = Process(self, "expire", [])
         event = Event(decay_time, process)
         self.timeline.schedule(event)
@@ -425,7 +426,7 @@ class Memory(Entity):
         Args:
             time (int): new expiration time.
         """
-
+        #log.logger.debug(f'Memory expiry is updated')
         time = max(time, self.timeline.now())
         if self.expiration_event is None:
             if time >= self.timeline.now():

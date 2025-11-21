@@ -141,7 +141,7 @@ class EntanglementSwappingA(EntanglementProtocol):
         elif node == self.right_memo.entangled_memory["node_id"]:
             self.right_protocol_name = protocol
         else:
-            raise Exception("Cannot pair protocol {} with {}".format(self.name, protocol))
+            raise Exception(f"Cannot pair protocol {self.name} with {protocol}")
 
     def start(self) -> None:
         """Method to start entanglement swapping protocol.
