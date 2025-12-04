@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [0.8.2] - 2025-11-19
+## [0.8.2] - 2025-11-21
 ### Added
 - A new state `PURIFIED` in `MemoryInfo` is introduced to enable the new purify strategy `once`, i.e. only purify one time. The previous existing stragety is renamed to `until_target`, i.e., keep purifing until reaching the target fidelity.
 - `QuantumManagerKet.get_ascending_keys()`: call `reorder_qubits_ascending_keys()` before getting the state
@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Remove all parallel module related stuff under `utils/json_config_gnerators/*`, `config_generator.py` and `router_net_topo.py`.
+- Removing and reorganizing examples in the `example` folder.
 
 
 
