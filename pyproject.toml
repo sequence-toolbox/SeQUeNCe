@@ -1,11 +1,12 @@
 [project]
 name = "sequence"
-version = "0.8.2"
+version = "0.8.3"
 authors = [
     { name = "Xiaoliang Wu, Joaquin Chung, Alexander Kolar, Alexander Kiefer, Eugene Wang, Tian Zhong, Rajkumar Kettimuthu, Martin Suchara, Robert Hayek, Ansh Singal, Caitao Zhan", email = "czhan@anl.gov" }
 ]
 maintainers = [
-    { name = "Caitao Zhan", email = "czhan@anl.gov" }
+    { name = "Caitao Zhan", email = "czhan@anl.gov" },
+    { name = "Robert Hayek", email = "rhayek@anl.gov" }
 ]
 description = "Simulator of QUantum Network Communication (SeQUeNCe) is an open-source tool that allows modeling of quantum networks including photonic network components, control protocols, and applications."
 readme = "README.md"
@@ -15,17 +16,35 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13"
 ]
-dynamic = ["dependencies"]
 keywords = ["quantum", "network", "discrete", "event", "simulator"]
+dependencies = [
+    "dash>=3.3.0",
+    "dash-bootstrap-components>=2.0.4",
+    "dash-core-components>=2.0.0",
+    "dash-cytoscape>=1.0.2",
+    "dash-html-components>=2.0.0",
+    "dash-table>=5.0.0",
+    "gmpy2>=2.2.2",
+    "ipywidgets>=8.1.8",
+    "jupyterlab>=4.5.0",
+    "matplotlib>=3.10.7",
+    "networkx>=3.6.1",
+    "numpy>=2.3.5",
+    "pandas>=2.3.3",
+    "plotly>=6.5.0",
+    "pytest>=9.0.2",
+    "qutip>=5.2.2",
+    "qutip-qip>=0.4.1",
+    "scipy>=1.16.3",
+    "tqdm>=4.67.1",
+]
 
-[tool.setuptools.dynamic]
-dependencies = { file = ["requirements.txt"] }
+[build-system]
+requires = ["uv_build>=0.9.17,<0.10.0"]
+build-backend = "uv_build"
 
-[tool.setuptools]
-packages = ['sequence', 'sequence.app', 'sequence.kernel', 'sequence.components', 'sequence.network_management',
-            'sequence.entanglement_management', 'sequence.qkd', 'sequence.resource_management', 'sequence.topology',
-            'sequence.utils', 'sequence.gui', 'sequence.qlan', 'sequence.topology.qlan',
-            'sequence.entanglement_management.generation', 'sequence.entanglement_management.purification']
+[tool.uv.build-backend]
+module-root = ""
 
 [tool.setuptools.package-data]
 sequence = ["gui/user_templates.json", "gui/default_params.json", "gui/starlight.json"]

@@ -14,22 +14,22 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.11', '3.12', '3.13']
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+    - name: Install uv and set py version
+      uses: astral-sh/setup-uv@v7
       with:
         python-version: ${{ matrix.python-version }}
+        enable-cache: true
 
-    - name: Install dependencies
-      run: |
-        pip install pytest
-        make setup
-        make install
+    - name: Install project
+      run: uv sync --locked --all-extras --dev
 
-    - name: Test with pytest
-      run: |
-        make test
+    - name: Run tests
+      run: uv run pytest tests
