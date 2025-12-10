@@ -75,15 +75,16 @@ jobs:
     strategy:
       matrix:
         include:
-          - target: pypi
-            environment: pypi
-            repository_url: https://pypi.org/p/sequence
-            package_name: sequence
           - target: testpypi
             environment: testpypi
             repository_url: https://test.pypi.org/p/ssequence
             package_name: ssequence
             pypi_url: https://test.pypi.org/legacy/
+          - target: pypi
+            environment: pypi
+            repository_url: https://pypi.org/p/sequence
+            package_name: sequence
+
 
     environment:
       name: ${{ matrix.environment }}
