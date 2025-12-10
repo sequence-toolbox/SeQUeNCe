@@ -22,6 +22,9 @@ jobs:
       matrix:
         target: [pypi, testpypi]
 
+    permissions:
+      attestations: write
+
     steps:
       - name: Checkout RnD branch
         uses: actions/checkout@v5
@@ -67,6 +70,12 @@ jobs:
           name: build-RnD-${{ matrix.target }}-${{ steps.version.outputs.dev_version }}
           path: dist/
           retention-days: 4
+
+      - name: Create Attestations
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: build-RnD-${{ matrix.target }}-${{ steps.version.outputs.dev_version }}
+          subject-digest: sha256:${{ steps.upload.outputs.artifact-digest }}
 
   publish-rnd:
     name: Publish RnD to TestPyPI and PyPI
