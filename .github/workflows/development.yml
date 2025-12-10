@@ -6,7 +6,6 @@ on:
   workflow_dispatch:
 
 env:
-  PYTHON_VERSION: '3.x'
   PROD_PYPI_NAME: 'sequence'
   TEST_PYPI_NAME: 'ssequence'
 
@@ -34,7 +33,6 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Generate development version
         id: version
