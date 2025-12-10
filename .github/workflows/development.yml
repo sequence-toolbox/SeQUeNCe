@@ -99,10 +99,10 @@ jobs:
         with:
           name: build-RnD-${{ matrix.target }}-${{ needs.build-rnd.outputs.dev_version }}
           path: dist/
-
       - name: Publish dist
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          attestations: true
           repository-url: ${{ matrix.pypi_url || '' }}
           skip-existing: true
           verbose: true
