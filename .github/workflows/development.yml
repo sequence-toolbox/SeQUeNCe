@@ -75,16 +75,15 @@ jobs:
     strategy:
       matrix:
         include:
+          - target: pypi
+            environment: pypi
+            repository_url: https://pypi.org/p/sequence
+            package_name: sequence
           - target: testpypi
             environment: testpypi
             repository_url: https://test.pypi.org/p/ssequence
             package_name: ssequence
             pypi_url: https://test.pypi.org/legacy/
-          - target: pypi
-            environment: pypi
-            repository_url: https://pypi.org/p/sequence
-            package_name: sequence
-
 
     environment:
       name: ${{ matrix.environment }}
@@ -94,19 +93,12 @@ jobs:
       id-token: write
       attestations: write
 
-
     steps:
       - name: Download the builds
         uses: actions/download-artifact@v4
         with:
           name: build-RnD-${{ matrix.target }}-${{ needs.build-rnd.outputs.dev_version }}
           path: dist/
-
-      - name: Create attest
-        uses: actions/attest-build-provenance@v3
-        with:
-          subject-path: 'dist/build-RnD-${{ matrix.target }}-${{ needs.build-rnd.outputs.dev_version }}'
-
 
       - name: Publish dist
         uses: pypa/gh-action-pypi-publish@release/v1
