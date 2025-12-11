@@ -12,7 +12,9 @@
 #
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath('../..'))
+from sequence import read_version_from_pyproject
 
 
 # -- Project information -----------------------------------------------------
@@ -21,8 +23,8 @@ project = 'SeQUeNCe'
 copyright = '2020-2025'
 author = 'Xiaoliang Wu, Joaquin Chung, Alexander Kolar, Eugene Wang, Tian Zhong, Rajkumar Kettimuthu, Martin Suchara'
 
-# The full version, including alpha/beta/rc tags
-release = '0.8.2'
+# The full version, including alpha/beta/rc tags. Keep single source of truth in pyproject.
+version = release = read_version_from_pyproject()
 
 
 # -- General configuration ---------------------------------------------------
