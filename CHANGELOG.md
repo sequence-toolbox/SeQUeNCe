@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.8.3] - 2025-12-11
+### Added
+- Add support for Python 3.14
+- A new function `read_version_from_pyproject()`. Don't need to update the version number 0.x.x at multiple locations anymore
+
+### Changed
+- Moves the build-backend from legacy python to uv. More speed, more verbose useful errors, no more specifying modules in pyproject, dependency locks
+
+### Fixed
+- A minor bug in `gui.py`
+
+
 ## [0.8.2] - 2025-11-21
 ### Added
 - A new state `PURIFIED` in `MemoryInfo` is introduced to enable the new purify strategy `once`, i.e. only purify one time. The previous existing stragety is renamed to `until_target`, i.e., keep purifing until reaching the target fidelity.
