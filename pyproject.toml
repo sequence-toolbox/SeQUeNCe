@@ -46,6 +46,7 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 module-root = ""
+module-name = "sequence"
 
 [tool.setuptools.package-data]
 sequence = ["gui/user_templates.json", "gui/default_params.json", "gui/starlight.json"]
