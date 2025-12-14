@@ -185,7 +185,7 @@ class Timeline:
 
             print(f'{process_bar}', end=CARRIAGE_RETURN)
             stdout.flush()
-            sleep(seconds=3)
+            sleep(3)
 
     @staticmethod
     def ns_to_human_time(nanoseconds: float) -> str:
