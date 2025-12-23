@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 from ..message import Message
 from ..protocol import StackProtocol
+from ..utils import log
 
 
 class StaticRoutingMessage(Message):
@@ -32,13 +33,13 @@ class StaticRoutingMessage(Message):
 
 
 class StaticRoutingProtocol(StackProtocol):
-    """Class to route reservation requests.
+    """Class to route reservation requests. Also forward packets. Thus, this class contains both control plane and data plane.
 
     The `StaticRoutingProtocol` class uses a static routing table to direct the flow of reservation requests.
     This is usually defined based on the shortest quantum channel length.
 
     Attributes:
-        own (Node): node that protocol instance is attached to.
+        owner (Node): node that protocol instance is attached to.
         name (str): label for protocol instance.
         forwarding_table (dict[str, str]): mapping of destination node names to name of node for next hop.
     """
@@ -47,7 +48,7 @@ class StaticRoutingProtocol(StackProtocol):
         """Constructor for routing protocol.
 
         Args:
-            own (Node): node protocol is attached to.
+            owner (Node): node protocol is attached to.
             name (str): name of protocol instance.
             forwarding_table (dict[str, str]): forwarding routing table in format {name of destination node: name of next node}.
         """
@@ -59,15 +60,26 @@ class StaticRoutingProtocol(StackProtocol):
         return self.forwarding_table
 
     def add_forwarding_rule(self, dst: str, next_node: str):
-        """Adds mapping {dst: next_node} to forwarding table."""
-
-        assert dst not in self.forwarding_table
-        self.forwarding_table[dst] = next_node
+        """Adds mapping {dst: next_node} to forwarding table.
+        
+        Args:
+            dst (str): name of destination node.
+            next_node (str): name of next hop node.
+        """
+        if dst not in self.forwarding_table:
+            self.forwarding_table[dst] = next_node
+            log.logger.info(f'Added forwarding rule at node {self.owner.name}: {dst} -> {next_node}')
 
     def update_forwarding_rule(self, dst: str, next_node: str):
-        """updates dst to map to next_node in forwarding table."""
-
-        self.forwarding_table[dst] = next_node
+        """updates dst to map to next_node in forwarding table.
+        
+        Args:
+            dst (str): name of destination node.
+            next_node (str): name of next hop node.
+        """
+        if dst in self.forwarding_table:
+            self.forwarding_table[dst] = next_node
+            log.logger.info(f'Updated forwarding rule at node {self.owner.name}: {dst} -> {next_node}')
 
     def push(self, dst: str, msg: "Message", next_hop: str = None):
         """Method to receive message from upper protocols.
@@ -86,8 +98,11 @@ class StaticRoutingProtocol(StackProtocol):
         assert dst != self.owner.name
         new_msg = StaticRoutingMessage(Enum, self.name, msg)
         if dst:                                     # if dst is not None, use the forwarding table
-            next_hop = self.forwarding_table[dst]
-            self._push(dst=next_hop, msg=new_msg)
+            next_hop = self.forwarding_table.get(dst, None)
+            if next_hop:
+                self._push(dst=next_hop, msg=new_msg)
+            else:
+                log.logger.error(f'No forwarding rule for dst {dst} at node {self.owner.name}')
         elif next_hop:                              # if next_hop is not None, use next_hop
             self._push(dst=next_hop, msg=new_msg)  
         else:
@@ -115,3 +130,4 @@ class StaticRoutingProtocol(StackProtocol):
 
     def init(self):
         pass
+
