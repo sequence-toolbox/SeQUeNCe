@@ -2,8 +2,8 @@ from sequence.topology.dqc_net_topo import DQCNetTopo
 from sequence.kernel.timeline import Timeline
 
 
-def test_sequential_simulation_quantum_node_topo_simple():
-    topo = DQCNetTopo("tests/topology/quantum_node_net_topo_simple.json")
+def test_sequential_simulation_dqc_node_net_topo_simple():
+    topo = DQCNetTopo("tests/topology/dqc_node_net_topo_simple.json")
 
     # timeline
     assert isinstance(topo.get_timeline(), Timeline)

@@ -5,11 +5,12 @@ These should not be used directly, but accessed by a QuantumManager instance or 
 """
 
 from functools import lru_cache
+import warnings
 from math import sqrt
 import random
 import math
 from numpy import array, kron, identity, zeros, trace, outer, eye, clip
-from scipy.linalg import sqrtm
+from scipy.linalg import LinAlgWarning, sqrtm
 from ..constants import EPSILON
 
 
@@ -256,7 +257,9 @@ def measure_state_with_cache_fock_density(state: tuple[tuple[complex]], povms: t
         if prob_list[i] <= 0:
             state_post_meas = None
         else:
-            measure_op = sqrtm(povms[i])
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=LinAlgWarning)
+                measure_op = sqrtm(povms[i])
             state_post_meas = (measure_op @ state @ measure_op) / prob_list[i]
 
         state_list.append(state_post_meas)
@@ -306,7 +309,9 @@ def measure_entangled_state_with_cache_fock_density(state: tuple[tuple[complex]]
         if prob_list[i] <= 0:
             state_post_meas = None
         else:
-            measure_op = sqrtm(povm_list[i])
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=LinAlgWarning)
+                measure_op = sqrtm(povm_list[i])
             state_post_meas = (measure_op @ state @ measure_op) / prob_list[i]
 
         state_list.append(state_post_meas)
@@ -372,7 +377,9 @@ def measure_multiple_with_cache_fock_density(state: tuple[tuple[complex]], indic
         if prob_list[i] <= 0:
             state_post_meas = None
         else:
-            measure_op = sqrtm(povm_list[i])
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=LinAlgWarning)
+                measure_op = sqrtm(povm_list[i])
             state_post_meas = (measure_op @ state @ measure_op) / prob_list[i]
 
         state_list.append(state_post_meas)
