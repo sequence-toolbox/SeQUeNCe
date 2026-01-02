@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from ..protocol import StackProtocol
 
 from ..message import Message
-from .routing import StaticRoutingProtocol
+from .routing import StaticRoutingProtocol, ForwardingProtocol, Protocol
 from .reservation import ResourceReservationProtocol, ResourceReservationMessage, RSVPMsgType
 from ..utils import log
 
@@ -44,6 +44,8 @@ class NetworkManager:
         name (str): name of the network manager instance.
         owner (QuantumRouter): node that protocol instance is attached to.
         protocol_stack (list[StackProtocol]): network manager protocol stack.
+        forwarding_table (dict[str, str]): mapping of destination node names to name of node for next hop.
+        routing_protocol (Protocol): routing protocol
     """
 
     def __init__(self, owner: "QuantumRouter", protocol_stack: "list[StackProtocol]"):
@@ -59,6 +61,8 @@ class NetworkManager:
         self.owner = owner
         self.protocol_stack = protocol_stack
         self.load_stack(protocol_stack)
+        self.forwarding_table = {}
+        self.routing_protocol = None
 
     def load_stack(self, stack: "list[StackProtocol]"):
         """Method to load a defined protocol stack.
@@ -166,6 +170,31 @@ class NetworkManager:
                 return protocol
         raise ValueError("No resource reservation protocol found in the network manager's protocol stack")
 
+    def get_forwarding_table(self) -> dict[str, str]:
+        """Method to get the forwarding table in the routing_protocol in the network manager's protocol stack.
+
+        Returns:
+            dict[str, str]: the forwarding table for this node, where the key is the destination node name
+                  and the value is the next hop
+        """
+        return self.forwarding_table
+
+    def set_routing_protocol(self, routing_protocol: Protocol) -> None:
+        """Method to set the routing protocol in the network manager.
+
+        Args:
+            routing_protocol (Protocol): the routing protocol to set
+        """
+        self.routing_protocol = routing_protocol
+
+    def get_routing_protocol(self) -> Protocol:
+        """Method to get the routing protocol in the network manager.
+
+        Returns:
+            Protocol: the routing protocol in the network manager
+        """
+        return self.routing_protocol
+
 
 def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str) -> "NetworkManager":
     """Function to create a new network manager.
@@ -182,10 +211,12 @@ def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str) -> "Networ
     """
     swapping_success_rate = 0.5
     manager = NetworkManager(owner, [])
-    routing = StaticRoutingProtocol(owner, owner.name + ".StaticRoutingProtocol", {})
+    routing = StaticRoutingProtocol(owner, owner.name + ".StaticRoutingProtocol")
+    manager.routing_protocol = routing
+    forwarding_protocol = ForwardingProtocol(owner, owner.name + ".ForwardingProtocol")
     rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP", memory_array_name)
     rsvp.set_swapping_success_rate(swapping_success_rate)
-    routing.upper_protocols.append(rsvp)
-    rsvp.lower_protocols.append(routing)
-    manager.load_stack([routing, rsvp])
+    forwarding_protocol.upper_protocols.append(rsvp)
+    rsvp.lower_protocols.append(forwarding_protocol)
+    manager.load_stack([forwarding_protocol, rsvp])
     return manager

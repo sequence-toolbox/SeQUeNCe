@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from ..topology.node import Node
 
 from ..message import Message
-from ..protocol import StackProtocol
+from ..protocol import StackProtocol, Protocol
 from ..utils import log
 
 
@@ -32,19 +32,19 @@ class StaticRoutingMessage(Message):
         return f"type={self.msg_type}, receiver={self.receiver}, payload={self.payload}"
 
 
-class StaticRoutingProtocol(StackProtocol):
-    """Class to route reservation requests. Also forward packets. Thus, this class contains both control plane and data plane.
+class StaticRoutingProtocol(Protocol):
+    """Class to route reservation requests. Also forward packets. 
+       Thus, this class contains both control plane and data plane.
 
-    The `StaticRoutingProtocol` class uses a static routing table to direct the flow of reservation requests.
+    The `StaticRoutingProtocol` class uses a static routing table (from the `NetworkManager`) to direct the flow of reservation requests.
     This is usually defined based on the shortest quantum channel length.
 
     Attributes:
         owner (Node): node that protocol instance is attached to.
         name (str): label for protocol instance.
-        forwarding_table (dict[str, str]): mapping of destination node names to name of node for next hop.
     """
     
-    def __init__(self, owner: "Node", name: str, forwarding_table: dict):
+    def __init__(self, owner: "Node", name: str):
         """Constructor for routing protocol.
 
         Args:
@@ -52,12 +52,12 @@ class StaticRoutingProtocol(StackProtocol):
             name (str): name of protocol instance.
             forwarding_table (dict[str, str]): forwarding routing table in format {name of destination node: name of next node}.
         """
-
         super().__init__(owner, name)
-        self.forwarding_table = forwarding_table
-
-    def get_forwarding_table(self) -> dict:
-        return self.forwarding_table
+    
+    @property
+    def forwarding_table(self) -> dict[str, str]:
+        """Returns the forwarding table."""
+        return self.owner.network_manager.get_forwarding_table()
 
     def add_forwarding_rule(self, dst: str, next_node: str):
         """Adds mapping {dst: next_node} to forwarding table.
@@ -66,8 +66,9 @@ class StaticRoutingProtocol(StackProtocol):
             dst (str): name of destination node.
             next_node (str): name of next hop node.
         """
-        if dst not in self.forwarding_table:
-            self.forwarding_table[dst] = next_node
+        forwarding_table = self.forwarding_table
+        if dst not in forwarding_table:
+            forwarding_table[dst] = next_node
             log.logger.info(f'Added forwarding rule at node {self.owner.name}: {dst} -> {next_node}')
 
     def update_forwarding_rule(self, dst: str, next_node: str):
@@ -77,9 +78,49 @@ class StaticRoutingProtocol(StackProtocol):
             dst (str): name of destination node.
             next_node (str): name of next hop node.
         """
-        if dst in self.forwarding_table:
-            self.forwarding_table[dst] = next_node
+        forwarding_table = self.forwarding_table
+        if dst in forwarding_table:
+            forwarding_table[dst] = next_node
             log.logger.info(f'Updated forwarding rule at node {self.owner.name}: {dst} -> {next_node}')
+
+    def received_message(self, src: str, msg: "Message"):
+        """Method to directly receive messages from node (should not be used)."""
+
+        raise Exception("StaticRouting protocol should not call this function")
+
+    def init(self):
+        pass
+
+
+class ForwardingProtocol(StackProtocol):
+    """Class to forward messages based on the forwarding table (from the `NetworkManager`) in the routing protocol.
+
+    Attributes:
+        owner (Node): node that protocol instance is attached to.
+        name (str): label for protocol instance.
+    """
+
+    def __init__(self, owner: "Node", name: str):
+        """Constructor for forwarding protocol.
+
+        Args:
+            owner (Node): node protocol is attached to.
+            name (str): name of protocol instance.
+        """
+        super().__init__(owner, name)
+
+    @property
+    def forwarding_table(self) -> dict[str, str]:
+        """Returns the forwarding table."""
+        return self.owner.network_manager.get_forwarding_table()
+
+    def received_message(self, src: str, msg: "Message"):
+        """Method to directly receive messages from node (should not be used)."""
+
+        raise Exception("Forwarding protocol should not call this function")
+
+    def init(self):
+        pass
 
     def push(self, dst: str, msg: "Message", next_hop: str = None):
         """Method to receive message from upper protocols.
@@ -94,11 +135,11 @@ class StaticRoutingProtocol(StackProtocol):
         Side Effects:
             Will invoke `push` method of lower protocol or network manager.
         """
-
         assert dst != self.owner.name
+        forwarding_table = self.forwarding_table
         new_msg = StaticRoutingMessage(Enum, self.name, msg)
         if dst:                                     # if dst is not None, use the forwarding table
-            next_hop = self.forwarding_table.get(dst, None)
+            next_hop = forwarding_table.get(dst, None)
             if next_hop:
                 self._push(dst=next_hop, msg=new_msg)
             else:
@@ -120,14 +161,4 @@ class StaticRoutingProtocol(StackProtocol):
         Side Effects:
             Will call `pop` method of higher protocol.
         """
-
         self._pop(src=src, msg=msg.payload)
-
-    def received_message(self, src: str, msg: "Message"):
-        """Method to directly receive messages from node (should not be used)."""
-
-        raise Exception("RSVP protocol should not call this function")
-
-    def init(self):
-        pass
-

@@ -50,8 +50,10 @@ def test_sequential_simulation_quantum_node_topo_simple():
 
     # forwarding table should route q1 <-> q2
     for qn in (q1, q2):
-        routing = qn.network_manager.protocol_stack[0]  # routing protocol at bottom of stack
+        routing = qn.network_manager.get_routing_protocol()  # routing protocol at bottom of stack
         assert len(routing.forwarding_table) >= 1
         # ensure it knows how to reach the other node
         other = "q2" if qn.name == "q1" else "q1"
         assert other in routing.forwarding_table
+
+
