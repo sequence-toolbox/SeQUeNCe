@@ -332,7 +332,7 @@ class QuantumRouter(Node):
         # setup managers
         self.resource_manager = None
         self.network_manager = None
-        self.init_managers(self.memo_arr_name)
+        self.init_managers(self.memo_arr_name, component_templates)
         self.map_to_middle_node = {}
         self.app = None
 
@@ -360,14 +360,15 @@ class QuantumRouter(Node):
                         protocol.received_message(src, msg)
                         break
 
-    def init_managers(self, memo_arr_name: str):
+    def init_managers(self, memo_arr_name: str, component_templates: dict = {}):
         """Initialize resource manager and network manager.
 
         Args:
             memo_arr_name (str): the name of the memory array.
+            component_templates (dict): parameters for the quantum router
         """
         resource_manager = ResourceManager(self, memo_arr_name)
-        network_manager = NewNetworkManager(self, memo_arr_name)
+        network_manager = NewNetworkManager(self, memo_arr_name, component_templates)
         self.set_resource_manager(resource_manager)
         self.set_network_manager(network_manager)
 

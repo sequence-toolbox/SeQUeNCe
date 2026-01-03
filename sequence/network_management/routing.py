@@ -92,6 +92,10 @@ class StaticRoutingProtocol(Protocol):
         pass
 
 
+class DistributedRoutingProtocol(Protocol):
+    pass
+
+
 class ForwardingProtocol(StackProtocol):
     """Class to forward messages based on the forwarding table (from the `NetworkManager`) in the routing protocol.
 
@@ -162,3 +166,4 @@ class ForwardingProtocol(StackProtocol):
             Will call `pop` method of higher protocol.
         """
         self._pop(src=src, msg=msg.payload)
+

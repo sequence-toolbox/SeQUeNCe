@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from ..protocol import StackProtocol
 
 from ..message import Message
-from .routing import StaticRoutingProtocol, ForwardingProtocol, Protocol
+from .routing import StaticRoutingProtocol, ForwardingProtocol, Protocol, DistributedRoutingProtocol
 from .reservation import ResourceReservationProtocol, ResourceReservationMessage, RSVPMsgType
 from ..utils import log
 
@@ -196,7 +196,7 @@ class NetworkManager:
         return self.routing_protocol
 
 
-def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str) -> "NetworkManager":
+def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_templates: dict = {}) -> "NetworkManager":
     """Function to create a new network manager.
 
     Will create a network manager with default protocol stack.
@@ -205,14 +205,23 @@ def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str) -> "Networ
     Args:
         owner (QuantumRouter): node to attach network manager to.
         memory_array_name (str): name of the memory array component on owner.
+        routing_protocol_cls (type[Protocol]): routing protocol class to use for control plane.
 
     Returns:
         NetworkManager: network manager object created.
     """
     swapping_success_rate = 0.5
     manager = NetworkManager(owner, [])
-    routing = StaticRoutingProtocol(owner, owner.name + ".StaticRoutingProtocol")
-    manager.routing_protocol = routing
+    routing = component_templates.get("routing", "static")
+    match routing:
+        case "static":
+            routing_protocol_cls = StaticRoutingProtocol
+        case "distributed":
+            routing_protocol_cls = DistributedRoutingProtocol
+        case _:
+            raise NotImplementedError(f"Routing protocol {routing} not implemented.")   
+    routing = routing_protocol_cls(owner, owner.name + f".{routing_protocol_cls.__name__}")
+    manager.set_routing_protocol(routing)
     forwarding_protocol = ForwardingProtocol(owner, owner.name + ".ForwardingProtocol")
     rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP", memory_array_name)
     rsvp.set_swapping_success_rate(swapping_success_rate)
