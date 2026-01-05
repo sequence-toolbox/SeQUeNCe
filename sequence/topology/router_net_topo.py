@@ -2,6 +2,7 @@ import json
 import numpy as np
 from networkx import Graph, dijkstra_path, exception
 
+from ..network_management.routing import StaticRoutingProtocol
 from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
 from ..kernel.quantum_manager import KET_STATE_FORMALISM, QuantumManager
@@ -165,7 +166,19 @@ class RouterNetTopo(Topo):
                 raise NotImplementedError("Unknown type of quantum connection")
 
     def _generate_forwarding_table(self, config: dict):
-        """For static routing."""
+        """Generate forwarding table for each quantum router based on Dijkstra's algorithm.
+           NOTE: For static routing only
+
+        Args:
+            config (dict): the configuration dictionary used to generate the topology
+        """
+        # if not static routing, then return directly
+        for q_router in self.nodes[self.QUANTUM_ROUTER]:
+            routing_protocol = q_router.network_manager.get_routing_protocol()
+            if isinstance(routing_protocol, StaticRoutingProtocol) is False:
+                return
+        
+        # routing protocol is static routing
         graph = Graph()
         for node in config[Topo.ALL_NODE]:
             if node[Topo.TYPE] == self.QUANTUM_ROUTER:

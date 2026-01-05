@@ -5,7 +5,6 @@
     }
   },
 
-  "is_parallel": false,
   "stop_time": 100,
 
   "nodes": [

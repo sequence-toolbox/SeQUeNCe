@@ -93,7 +93,17 @@ class StaticRoutingProtocol(Protocol):
 
 
 class DistributedRoutingProtocol(Protocol):
-    pass
+    """Class to implement distributed routing protocol (OSPF-like protocol).
+
+    Attributes: 
+        owner (Node): node that protocol instance is attached to.
+        name (str): label for protocol instance.
+    """
+    def __init__(self, owner: "Node", name: str):
+        super().__init__(owner, name)
+
+    def received_message(self, src: str, msg):
+        pass
 
 
 class ForwardingProtocol(StackProtocol):
