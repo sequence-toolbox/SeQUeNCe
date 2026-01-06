@@ -12,12 +12,12 @@ def test_distributed_routing_protocol():
     
     tl = topo.get_timeline()
 
-    log_filename = "tests/network_management/test_distributed_routing_protocol.log"
-    log.set_logger(__name__, tl, log_filename)
-    log.set_logger_level('DEBUG')
-    modules = ["routing"]
-    for module in modules:
-        log.track_module(module)
+    # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
+    # log.set_logger(__name__, tl, log_filename)
+    # log.set_logger_level('DEBUG')
+    # modules = ["routing"]
+    # for module in modules:
+    #     log.track_module(module)
 
     tl.init()
     tl.run()
