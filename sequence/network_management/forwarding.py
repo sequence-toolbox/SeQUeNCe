@@ -1,5 +1,7 @@
-'''
-Module for forwarding protocol and forwarding message.'''
+"""Forwarding protocol and forwarding message.
+
+This module defines the `ForwardingProtocol` and `ForwardingMessage` classes.
+"""
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:

@@ -1,4 +1,4 @@
-from sequence.network_management.routing import DistributedRoutingProtocol
+from sequence.network_management.routing_distributed import DistributedRoutingProtocol
 from sequence.topology import router_net_topo
 import sequence.utils.log as log
 

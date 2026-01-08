@@ -1,19 +1,18 @@
-"""Definition of Routing protocol.
+"""Definition of Static Routing protocol.
 
 This module defines the StaticRouting protocol, which uses a pre-generated static routing table to direct reservation hops.
 Routing tables may be created manually, or generated and installed automatically by the `Topology` class.
-Also included is the message type used by the routing protocol.
 """
 
 
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from ..topology.node import Node
 
 from ..message import Message
 from ..protocol import Protocol
 from ..utils import log
-
 
 
 class StaticRoutingProtocol(Protocol):
@@ -40,7 +39,11 @@ class StaticRoutingProtocol(Protocol):
     
     @property
     def forwarding_table(self) -> dict[str, str]:
-        """Returns the forwarding table."""
+        """Returns the forwarding table.
+        
+        Return:
+            dict[str, str]: forwarding table in format {name of destination node: name of next node}.
+        """
         return self.owner.network_manager.get_forwarding_table()
 
     def add_forwarding_rule(self, dst: str, next_node: str):
@@ -74,18 +77,3 @@ class StaticRoutingProtocol(Protocol):
 
     def init(self):
         pass
-
-
-class DistributedRoutingProtocol(Protocol):
-    """Class to implement distributed routing protocol (OSPF-like protocol).
-
-    Attributes: 
-        owner (Node): node that protocol instance is attached to.
-        name (str): label for protocol instance.
-    """
-    def __init__(self, owner: "Node", name: str):
-        super().__init__(owner, name)
-
-    def received_message(self, src: str, msg):
-        pass
-

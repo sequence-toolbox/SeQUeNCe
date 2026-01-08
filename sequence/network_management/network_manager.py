@@ -12,7 +12,9 @@ if TYPE_CHECKING:
     from ..protocol import StackProtocol
 
 from ..message import Message
-from .routing import StaticRoutingProtocol, Protocol, DistributedRoutingProtocol
+from ..protocol import Protocol
+from .routing_distributed import DistributedRoutingProtocol
+from .routing_static import StaticRoutingProtocol
 from .forwarding import ForwardingProtocol
 from .reservation import ResourceReservationProtocol, ResourceReservationMessage, RSVPMsgType
 from ..utils import log
