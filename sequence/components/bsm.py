@@ -678,8 +678,8 @@ class SingleHeraldedBSM(BSM):
                 log.logger.debug(f'{self.name}: photonic BSM failed')
             else:
                 p0, p1 = self.photons
-                # if both memory successfully emit the photon in this round (consider memory emission inefficiency)
                 if self.get_generator().random() > p0.loss and self.get_generator().random() > p1.loss:
+                    # if both photons successfully arrive (not lost in memory or optical fiber) and the BSM is successful
                     for idx, photon in enumerate(self.photons):
                         detector = self.detectors[idx]
                         detector.get(photon)

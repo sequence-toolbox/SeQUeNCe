@@ -223,7 +223,7 @@ def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_
             routing_protocol_cls = DistributedRoutingProtocol
         case _:
             raise NotImplementedError(f"Routing protocol {routing} not implemented.")   
-    routing = routing_protocol_cls(owner, owner.name + f".{routing_protocol_cls.__name__}")
+    routing = routing_protocol_cls(owner, f"{routing_protocol_cls.__name__}")
     manager.set_routing_protocol(routing)
     forwarding_protocol = ForwardingProtocol(owner, owner.name + ".ForwardingProtocol")
     rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP", memory_array_name)

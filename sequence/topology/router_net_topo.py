@@ -2,11 +2,13 @@ import json
 import numpy as np
 from networkx import Graph, dijkstra_path, exception
 
+from ..network_management.routing_distributed import DistributedRoutingProtocol
 from ..network_management.routing_static import StaticRoutingProtocol
 from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
 from ..kernel.quantum_manager import KET_STATE_FORMALISM, QuantumManager
 from .node import BSMNode, QuantumRouter
+from ..utils import log
 from ..constants import SPEED_OF_LIGHT
 
 
@@ -122,10 +124,10 @@ class RouterNetTopo(Topo):
                     cc_delay.append(delay)
             if len(cc_delay) == 0:
                 assert 0, q_connect
-            cc_delay = np.mean(cc_delay) // 2
+            cc_delay = int(np.mean(cc_delay) // 2)
 
             if channel_type == self.MEET_IN_THE_MID:
-                bsm_name = f"BSM.{node1}.{node2}.auto"  # the intermediate BSM node
+                bsm_name = f"BSM.{node1}.{node2}"  # the intermediate BSM node
                 bsm_seed = q_connect.get(Topo.SEED, 0)
                 bsm_template_name = q_connect.get(Topo.TEMPLATE, None)
                 bsm_info = {self.NAME: bsm_name,
@@ -135,7 +137,7 @@ class RouterNetTopo(Topo):
                 config[self.ALL_NODE].append(bsm_info)
 
                 for src in [node1, node2]:
-                    qc_name = f"QC.{src}.{bsm_name}"  # the quantum channel
+                    qc_name = f"QC-{src}-{bsm_name}"  # the quantum channel
                     qc_info = {self.NAME: qc_name,
                                self.SRC: src,
                                self.DST: bsm_name,
@@ -145,7 +147,7 @@ class RouterNetTopo(Topo):
                         config[self.ALL_Q_CHANNEL] = []
                     config[self.ALL_Q_CHANNEL].append(qc_info)
 
-                    cc_name = f"CC.{src}.{bsm_name}"  # the classical channel
+                    cc_name = f"CC-{src}-{bsm_name}"  # the classical channel
                     cc_info = {self.NAME: cc_name,
                                self.SRC: src,
                                self.DST: bsm_name,
@@ -155,7 +157,7 @@ class RouterNetTopo(Topo):
                         config[self.ALL_C_CHANNEL] = []
                     config[self.ALL_C_CHANNEL].append(cc_info)
 
-                    cc_name = f"CC.{bsm_name}.{src}"
+                    cc_name = f"CC-{bsm_name}-{src}"
                     cc_info = {self.NAME: cc_name,
                                self.SRC: bsm_name,
                                self.DST: src,
@@ -172,13 +174,7 @@ class RouterNetTopo(Topo):
         Args:
             config (dict): the configuration dictionary used to generate the topology
         """
-        # if not static routing, then return directly
-        for q_router in self.nodes[self.QUANTUM_ROUTER]:
-            routing_protocol = q_router.network_manager.get_routing_protocol()
-            if isinstance(routing_protocol, StaticRoutingProtocol) is False:
-                return
-        
-        # routing protocol is static routing
+        # get the link cost
         graph = Graph()
         for node in config[Topo.ALL_NODE]:
             if node[Topo.TYPE] == self.QUANTUM_ROUTER:
@@ -193,19 +189,38 @@ class RouterNetTopo(Topo):
                 costs[bsm] = [router] + costs[bsm]
                 costs[bsm][-1] += qc.distance
 
-        graph.add_weighted_edges_from(costs.values())
-        for src in self.nodes[self.QUANTUM_ROUTER]:
-            for dst_name in graph.nodes:
-                if src.name == dst_name:
-                    continue
-                try:
-                    if dst_name > src.name:
-                        path = dijkstra_path(graph, src.name, dst_name)
-                    else:
-                        path = dijkstra_path(graph, dst_name, src.name)[::-1]
-                    next_hop = path[1]
-                    # routing protocol locates at the bottom of the stack
-                    routing_protocol = src.network_manager.get_routing_protocol()
-                    routing_protocol.add_forwarding_rule(dst_name, next_hop)
-                except exception.NetworkXNoPath:
-                    pass
+        # check if all routers use static routing, if not, initialize distributed routing protocol
+        routing_protocol = None
+        for q_router in self.nodes[self.QUANTUM_ROUTER]:
+            routing_protocol = q_router.network_manager.get_routing_protocol()
+            break
+
+        if isinstance(routing_protocol, StaticRoutingProtocol):
+            # static routing, directly configure the forwarding tables
+            graph.add_weighted_edges_from(costs.values())
+            for src in self.nodes[self.QUANTUM_ROUTER]:
+                for dst_name in graph.nodes:
+                    if src.name == dst_name:
+                        continue
+                    try:
+                        if dst_name > src.name:
+                            path = dijkstra_path(graph, src.name, dst_name)
+                        else:
+                            path = dijkstra_path(graph, dst_name, src.name)[::-1]
+                        next_hop = path[1]
+                        # routing protocol locates at the bottom of the stack
+                        routing_protocol = src.network_manager.get_routing_protocol()
+                        routing_protocol.add_forwarding_rule(dst_name, next_hop)
+                    except exception.NetworkXNoPath:
+                        pass
+    
+        elif isinstance(routing_protocol, DistributedRoutingProtocol):
+            # distributed routing, initialize the link cost and setup the FSM
+            for q_router in self.nodes[self.QUANTUM_ROUTER]:
+                routing_protocol: DistributedRoutingProtocol = q_router.network_manager.get_routing_protocol()
+                for bsm, cost_info in costs.items():
+                    if q_router.name in cost_info:
+                        neighbor = cost_info[0] if cost_info[0] != q_router.name else cost_info[1]
+                        cost = cost_info[2]
+                        routing_protocol.link_cost[neighbor] = cost
+                routing_protocol.init()
