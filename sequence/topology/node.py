@@ -304,6 +304,7 @@ class QuantumRouter(Node):
         network_manager (NetworkManager): network management module.
         map_to_middle_node (dict[str, str]): mapping of router names to intermediate bsm node names.
         app (any): application in use on node.
+        down (bool): whether the node is down (not operational).
     """
 
     def __init__(self, name: str, tl: "Timeline", memo_size: int = 50, seed: int = None, component_templates: dict = {}, gate_fid: float = 1, meas_fid: float = 1):
@@ -335,6 +336,7 @@ class QuantumRouter(Node):
         self.init_managers(self.memo_arr_name, component_templates)
         self.map_to_middle_node = {}
         self.app = None
+        self.down = False
 
     def receive_message(self, src: str, msg: "Message") -> None:
         """Determine what to do when a message is received, based on the msg.receiver.
@@ -343,6 +345,9 @@ class QuantumRouter(Node):
             src (str): name of node that sent the message.
             msg (Message): the received message.
         """
+        if self.down:
+            log.logger.warning(f"{self.name} is DOWN. Dropping message {msg} from {src}")
+            return
 
         log.logger.info(f"{self.name} receive message {msg} from {src}")
         if msg.receiver == "network_manager":
@@ -359,6 +364,32 @@ class QuantumRouter(Node):
                     if protocol.name == msg.receiver:
                         protocol.received_message(src, msg)
                         break
+
+    def send_message(self, dst: str, msg: "Message", priority=inf) -> None:
+        """Method to send classical message.
+
+        Args:
+            dst (str): name of destination node for message.
+            msg (Message): message to transmit.
+            priority (int): priority for transmitted message (default inf).
+        """
+        if self.down:
+            log.logger.warning(f"{self.name} is DOWN. Dropping message {msg} to {dst}")
+            return
+        
+        log.logger.info(f"{self.name} send message {msg} to {dst}")
+        if priority == inf:
+            priority = self.timeline.schedule_counter
+        self.cchannels[dst].transmit(msg, self, priority)
+
+    def set_down(self, down: bool):
+        """Method to set the node status.
+
+        Args:
+            down (bool): whether the node is down (not operational).
+        """
+        log.logger.info(f"{self.name} is {"DOWN" if down else "UP"}")
+        self.down = down
 
     def init_managers(self, memo_arr_name: str, component_templates: dict = {}):
         """Initialize resource manager and network manager.

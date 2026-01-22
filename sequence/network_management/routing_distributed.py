@@ -101,6 +101,9 @@ class DistRoutingMessage(Message):
         super().__init__(msg_type, receiver)
         self.payload = payload
 
+    def __str__(self) -> str:
+        return f"DistRoutingMessage(payload={self.payload})"
+
 
 @dataclass
 class NeighborFSM:
@@ -181,7 +184,7 @@ class DistributedRoutingProtocol(Protocol):
         name (str): label for protocol instance.
     """
     HELLO_INTERVAL = 1 * SECOND  # interval between HELLOs
-    DEAD_INTERVAL  = 5 * SECOND  # time to declare neighbor dead
+    DEAD_INTERVAL  = 4 * SECOND  # time to declare neighbor dead
 
     def __init__(self, owner: "QuantumRouter", name: str):
         super().__init__(owner, name)
@@ -267,12 +270,30 @@ class DistributedRoutingProtocol(Protocol):
         """
         fsm = self.ensure_fsm(src)
         fsm.last_hello_received = self.owner.timeline.now()
+        # schedule an event after DEAD_INTERVAL to check for neighbor liveness
+        process = Process(self, "check_neighbor_liveness", [src, fsm.last_hello_received])
+        time = self.owner.timeline.now() + self.DEAD_INTERVAL
+        event = Event(time, process)
+        self.owner.timeline.schedule(event)
+        # update FSM state
         if fsm.state == "Down":
             self.set_state(src, "Init")
         two_way = self.owner.name in payload.seen_neighbors
         if two_way and fsm.state == "Init":
             self.set_state(src, "TwoWay")
             self.start_exstart(src)
+
+    def check_neighbor_liveness(self, neighbor: str, last_hello_time: int):
+        """Check if neighbor is still alive.
+
+        Args:
+            neighbor (str): name of neighbor.
+            last_hello_time (int): time of last hello received from neighbor.
+        """
+        fsm = self.ensure_fsm(neighbor)
+        if fsm.last_hello_received == last_hello_time:
+            # no hello received since last check, declare neighbor down
+            self.set_state(neighbor, "Down")
 
     def set_state(self, neighbor: str, new_state: str):
         """Set the state of the neighbor FSM.
