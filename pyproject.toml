@@ -32,11 +32,14 @@ dependencies = [
     "networkx>=3.6.1",
     "numpy>=2.3.5",
     "pandas>=2.3.3",
+    "pandas-stubs~=2.3.3",
     "plotly>=6.5.0",
     "pytest>=9.0.2",
     "qutip>=5.2.2",
     "qutip-qip>=0.4.1",
     "scipy>=1.16.3",
+    "scipy-stubs~=1.16.3",
+    "seaborn>=0.13.2",
     "tqdm>=4.67.1",
 ]
 
