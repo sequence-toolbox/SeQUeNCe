@@ -46,7 +46,7 @@ class MemoryArray(Entity):
 
     def __init__(self, name: str, timeline: "Timeline", num_memories=10,
                  fidelity=0.85, frequency=80e6, efficiency=1, coherence_time=-1, wavelength=500,
-                 decoherence_errors: list[float] = None, cutoff_ratio: int = 1, cutoff_flag: bool = True):
+                 decoherence_errors: list[float] = None, cutoff_ratio: float = 1, cutoff_flag: bool = True):
         """Constructor for the Memory Array class.
 
         Args:
@@ -227,7 +227,7 @@ class Memory(Entity):
                 "Decoherence errors refer to probabilities for each Pauli error to happen if an error happens, thus should be normalized."
         self.cutoff_flag = cutoff_flag
         self.cutoff_ratio = cutoff_ratio
-        assert 0 < self.cutoff_ratio, "Ratio of cutoff time and coherence time should be between 0."
+        assert 0 < self.cutoff_ratio, "Ratio of cutoff time and coherence time should be greater than 0."
         self.generation_time = -1
         self.last_update_time = -1
         self.is_in_application = False
@@ -362,7 +362,7 @@ class Memory(Entity):
         self.entangled_memory = {'node_id': None, 'memo_id': None}
 
         # schedule expiration
-        if self.coherence_time > 0 and self.cutoff_flag is True:
+        if self.coherence_time > 0 and self.cutoff_flag:
             self._schedule_expiration()
 
     def bds_decohere(self) -> None:
