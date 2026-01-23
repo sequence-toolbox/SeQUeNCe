@@ -203,7 +203,7 @@ class Memory(Entity):
             decoherence_errors (list[float]): assuming the memory (qubit) decoherence channel being Pauli channel,
                 probability distribution of X, Y, Z Pauli errors
                 (default value is None, meaning not using BDS or further density matrix representation)
-            cutoff_ratio (float): the ratio between cutoff time and memory coherence time (default 1, should be between 0 and 1).
+            cutoff_ratio (float): the ratio between cutoff time and memory coherence time (default 1, should be > 0).
             cutoff_flag (bool): Flag for the cutoff behavior
         """
 
@@ -227,7 +227,7 @@ class Memory(Entity):
                 "Decoherence errors refer to probabilities for each Pauli error to happen if an error happens, thus should be normalized."
         self.cutoff_flag = cutoff_flag
         self.cutoff_ratio = cutoff_ratio
-        assert 0 < self.cutoff_ratio <= 1, "Ratio of cutoff time and coherence time should be between 0 and 1"
+        assert 0 < self.cutoff_ratio, "Ratio of cutoff time and coherence time should be between 0."
         self.generation_time = -1
         self.last_update_time = -1
         self.is_in_application = False
