@@ -112,7 +112,8 @@ class NeighborFSM:
     STATES = ["Down", "Init", "TwoWay", "ExStart", "Exchange", "Loading", "Full"] # there are 7 states in total
     state: str = "Down"
     last_hello_received: int = -1  # time of last hello received
-    pending_requested: set[str] = field(default_factory=set)
+    pending_requested: set[str] = field(default_factory=set) # which LSAs are requested but not yet received
+    master: bool = False  # whether this node is master in DBD exchange
 
 
 class LinkStateDB:
@@ -225,7 +226,7 @@ class DistributedRoutingProtocol(Protocol):
             src (str): name of source node.
             msg (Message): message received.
         """
-        log.logger.debug(f"{self.owner.name}: Received {msg.msg_type} from {src}")
+        log.logger.debug(f"{self.owner.name}: Received {msg} from {src}")
         msg_type = msg.msg_type
 
         match msg_type:
@@ -310,41 +311,146 @@ class DistributedRoutingProtocol(Protocol):
         if fsm.state == "TwoWay":
             self.adj_cost[neighbor] = self.link_cost[neighbor]
             self.originate_and_flood()
-        else:
+        elif fsm.state == "Down":
             if neighbor in self.adj_cost:
                 del self.adj_cost[neighbor]
                 self.originate_and_flood()
 
     def start_exstart(self, neighbor: str):
         """Start ExStart state with neighbor.
+           A master node is elected and begin DBD exchange.
 
         Args:
             neighbor (str): name of neighbor.
         """
-        pass
+        fsm = self.ensure_fsm(neighbor)
+        fsm.pending_requested.clear()
+        fsm.master = self.owner.name > neighbor # let the node with bigger name be the master
+        self.set_state(neighbor, "ExStart")
+        if fsm.master:
+            self.send_dbd(neighbor)
+
+    def send_dbd(self, neighbor: str):
+        """Send DBD message to neighbor.
+
+        Args:
+            neighbor (str): name of neighbor.
+        """
+        summaries = []
+        for lsa in self.lsdb:
+            if lsa.header.age < MAX_AGE: # TODO: how to update age properly?
+                summaries.append(lsa.header)
+        dbd_payload = DBDPayload(sender=self.owner.name, summaries=summaries)
+        dbd_msg = DistRoutingMessage(DistRoutingMsgType.DBD, receiver="DistributedRoutingProtocol", payload=dbd_payload)
+        self.owner.send_message(neighbor, dbd_msg)
 
     def originate_and_flood(self):
         """Originate own LSA and flood to all neighbors with 2-way adjacency.
         """
-        pass
+        lsa = self.originate()
+        # install into own LSDB (always newer for self-originated LSA)
+        self.lsdb.install(lsa)
+        self.flood_to_all_neighbors(lsa)
+    
+    def originate(self) -> LSA:
+        """Originate and return its LSA, meanwhile increment its sequence number.
+
+        Return:
+            LSA: the originated LSA.
+        """
+        links = []
+        for neighbor, cost in sorted(self.adj_cost.items()):
+            links.append(Link(neighbor=neighbor, cost=cost))
+        header = LSAHeader(advertising_router=self.owner.name, seq_number=self.seq_number, age=0)
+        lsa = LSA(header=header, links=links)
+        self.seq_number += 1
+        return lsa
+
+    def flood_to_all_neighbors(self, lsa: LSA, exclude_neighbor: str | None = None):
+        """Flood LSA to all neighbors with 2-way adjacency.
+           An LSU message containing the LSA is sent to each neighbor, except the excluded neighbor if specified.
+
+        Args:
+            lsa (LSA): LSA to be flooded.
+            exclude_neighbor (str | None): neighbor to exclude from flooding.
+        """
+        log.logger.debug(f"{self.owner.name}: Flooding {lsa} to neighbors {list(self.adj_cost.keys())}, excluding {exclude_neighbor}")
+        for neighbor in self.adj_cost.keys():
+            if neighbor == exclude_neighbor:
+                continue
+            lsu_payload = LSUPayload(sender=self.owner.name, lsas=[lsa])
+            lsu_msg = DistRoutingMessage(DistRoutingMsgType.LSU, receiver="DistributedRoutingProtocol", payload=lsu_payload)
+            self.owner.send_message(neighbor, lsu_msg)
 
     def handle_dbd(self, src: str, payload: DBDPayload):
         """Handle DBD message from neighbor.
+           Request any missing or outdated LSAs.
 
         Args:
             src (str): name of source node.
             payload (DBDPayload): payload of DBD message.
         """
-        pass
+        fsm = self.ensure_fsm(src)
+        if fsm.state == "Down":
+            log.logger.warning(f"{self.owner.name}: Received DBD from {src} in Down state, ignoring.")
+            return
+        if fsm.state == "TwoWay":
+            # ensure master/slave roles are set and transition to ExStart
+            self.start_exstart(src)
+            fsm = self.ensure_fsm(src)  # re-fetch fsm after state change
+        if fsm.state == "ExStart":
+            if fsm.master is False:
+                # slave sees DBD from master, transition to Exchange
+                self.set_state(src, "Exchange")
+                self.send_dbd(src)
+            else:
+                # master sees DBD from slave, transition to Exchange
+                self.set_state(src, "Exchange")
+        
+        requested = []
+        for lsa_header in payload.summaries:
+            existing_lsa = self.lsdb.get(lsa_header.advertising_router)
+            if existing_lsa is None:
+                requested.append(lsa_header.advertising_router) # missing LSA: neighbor has LSA, but we don't have
+            else:
+                if lsa_header.seq_number > existing_lsa.header.seq_number:
+                    requested.append(lsa_header.advertising_router)
+                if lsa_header.seq_number == existing_lsa.header.seq_number and lsa_header.age < existing_lsa.header.age:
+                    requested.append(lsa_header.advertising_router)
+        if requested:
+            # ask for the requested LSAs
+            fsm.pending_requested = set(requested)
+            self.set_state(src, "Loading")
+            lsr_payload = LSRPayload(sender=self.owner.name, requested=requested)
+            lsr_msg = DistRoutingMessage(DistRoutingMsgType.LSR, receiver="DistributedRoutingProtocol", payload=lsr_payload)
+            self.owner.send_message(src, lsr_msg)
+        else:
+            # clear the pending requested LSAs advance the neighbor to Full state because DBs are in sync
+            if fsm.pending_requested:
+                fsm.pending_requested.clear()
+            if fsm.state != "Full":
+                self.set_state(src, "Full")
 
     def handle_lsr(self, src: str, payload: LSRPayload):
-        """Handle LSR message from neighbor.
+        """Handle LSR message from neighbor. Send back the requested LSAs.
 
         Args:
             src (str): name of source node.
             payload (LSRPayload): payload of LSR message.
         """
-        pass
+        fsm = self.ensure_fsm(src)
+        if fsm.state not in ["Exchange", "Loading", "Full"]:
+            log.logger.warning(f"{self.owner.name}: Received LSR from {src} in state {fsm.state}, ignoring.")
+            return
+        lsas_to_send = []
+        for adv in payload.requested:
+            lsa = self.lsdb.get(adv)
+            if lsa is not None:
+                lsas_to_send.append(lsa)
+        if lsas_to_send:
+            lsu_payload = LSUPayload(sender=self.owner.name, lsas=lsas_to_send)
+            lsu_msg = DistRoutingMessage(DistRoutingMsgType.LSU, receiver="DistributedRoutingProtocol", payload=lsu_payload)
+            self.owner.send_message(src, lsu_msg)
 
     def handle_lsu(self, src: str, payload: LSUPayload):
         """Handle LSU message from neighbor.
@@ -353,7 +459,33 @@ class DistributedRoutingProtocol(Protocol):
             src (str): name of source node.
             payload (LSUPayload): payload of LSU message.
         """
-        pass
+        fsm = self.ensure_fsm(src)
+        if fsm.state not in ["Exchange", "Loading", "Full"]:
+            log.logger.warning(f"{self.owner.name}: Received LSU from {src} in state {fsm.state}, ignoring.")
+            return
+        acks = []
+        for lsa in payload.lsas:            
+            updated = self.lsdb.install(lsa)
+            if updated is False:
+                 continue
+            if lsa.header.age < MAX_AGE:
+                # flood to other neighbors except the one it came from
+                self.flood_to_all_neighbors(lsa, exclude_neighbor=src)
+            else:
+                # still flood, then purge withdrawn LSA from own LSDB
+                self.flood_to_all_neighbors(lsa, exclude_neighbor=src)
+                self.lsdb.purge_withdrawn()
+            acks.append((lsa.header.advertising_router, lsa.header.seq_number))
+            if lsa.header.advertising_router in fsm.pending_requested:
+                fsm.pending_requested.remove(lsa.header.advertising_router)
+        # send LSAck back to sender
+        if acks:
+            lsack_payload = LSAckPayload(sender=self.owner.name, acks=acks)
+            lsack_msg = DistRoutingMessage(DistRoutingMsgType.LSAck, receiver="DistributedRoutingProtocol", payload=lsack_payload)
+            self.owner.send_message(src, lsack_msg)
+        # if no more pending requested LSAs, transition to Full state
+        if not fsm.pending_requested and fsm.state == "Loading":
+            self.set_state(src, "Full")
 
     def handle_lsack(self, src: str, payload: LSAckPayload):
         """Handle LSAck message from neighbor.
@@ -362,4 +494,4 @@ class DistributedRoutingProtocol(Protocol):
             src (str): name of source node.
             payload (LSAAckPayload): payload of LSAck message.
         """
-        pass
+        log.logger.info(f"{self.owner.name}: Received LSAck from {src}: {payload.acks}. Do nothing for now.")
