@@ -46,7 +46,7 @@ class MemoryArray(Entity):
 
     def __init__(self, name: str, timeline: "Timeline", num_memories=10,
                  fidelity=0.85, frequency=80e6, efficiency=1, coherence_time=-1, wavelength=500,
-                 decoherence_errors: list[float] = None, cutoff_ratio = 1):
+                 decoherence_errors: list[float] = None, cutoff_ratio: float = 1, cutoff_flag: bool = True):
         """Constructor for the Memory Array class.
 
         Args:
@@ -60,6 +60,7 @@ class MemoryArray(Entity):
             wavelength (int): wavelength (in nm) of photons emitted by memories (default 500).
             decoherence_errors (list[int]): pauli decoherence errors. Passed to memory object.
             cutoff_ratio (float): the ratio between cutoff time and memory coherence time (default 1, should be between 0 and 1).
+            cutoff_flag (bool): Flag to enable or disable expiry events
         """
 
         Entity.__init__(self, name, timeline)
@@ -77,7 +78,7 @@ class MemoryArray(Entity):
         for i in range(num_memories):
             memory_name = self.name + f"[{i}]"
             self.memory_name_to_index[memory_name] = i
-            memory = Memory(memory_name, timeline, fidelity, frequency, efficiency, coherence_time, wavelength, decoherence_errors, cutoff_ratio)
+            memory = Memory(memory_name, timeline, fidelity, frequency, efficiency, coherence_time, wavelength, decoherence_errors, cutoff_ratio, cutoff_flag)
             memory.attach(self)
             self.memories.append(memory)
             memory.set_memory_array(self)
@@ -187,7 +188,7 @@ class Memory(Entity):
     """
 
     def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
-                 efficiency: float, coherence_time: float, wavelength: int, decoherence_errors: list[float] = None, cutoff_ratio: float = 1):
+                 efficiency: float, coherence_time: float, wavelength: int, decoherence_errors: list[float] = None, cutoff_ratio: float = 1, cutoff_flag: bool = True):
         """Constructor for the Memory class.
 
         Args:
@@ -202,7 +203,8 @@ class Memory(Entity):
             decoherence_errors (list[float]): assuming the memory (qubit) decoherence channel being Pauli channel,
                 probability distribution of X, Y, Z Pauli errors
                 (default value is None, meaning not using BDS or further density matrix representation)
-            cutoff_ratio (float): the ratio between cutoff time and memory coherence time (default 1, should be between 0 and 1).
+            cutoff_ratio (float): the ratio between cutoff time and memory coherence time (default 1, should be > 0).
+            cutoff_flag (bool): Flag for the cutoff behavior
         """
 
         super().__init__(name, timeline)
@@ -223,8 +225,9 @@ class Memory(Entity):
         if self.decoherence_errors is not None:
                 assert len(self.decoherence_errors) == 3 and abs(sum(self.decoherence_errors) - 1) < EPSILON, \
                 "Decoherence errors refer to probabilities for each Pauli error to happen if an error happens, thus should be normalized."
+        self.cutoff_flag = cutoff_flag
         self.cutoff_ratio = cutoff_ratio
-        assert 0 < self.cutoff_ratio <= 1, "Ratio of cutoff time and coherence time should be between 0 and 1"
+        assert 0 < self.cutoff_ratio, "Ratio of cutoff time and coherence time should be greater than 0."
         self.generation_time = -1
         self.last_update_time = -1
         self.is_in_application = False
@@ -359,7 +362,7 @@ class Memory(Entity):
         self.entangled_memory = {'node_id': None, 'memo_id': None}
 
         # schedule expiration
-        if self.coherence_time > 0:
+        if self.coherence_time > 0 and self.cutoff_flag:
             self._schedule_expiration()
 
     def bds_decohere(self) -> None:
