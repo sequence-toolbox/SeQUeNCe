@@ -158,9 +158,9 @@ class NetworkManager:
                                      and the value is the next hop
         """
         log.logger.info(f"{self.owner.name} update forwarding table: {forwarding_table}")
-        static_routing_protocol = self.protocol_stack[0]   # [0] is the static routing protocol
+        routing_protocol = self.get_routing_protocol()
         for dst, next_hop in forwarding_table.items():
-            static_routing_protocol.update_forwarding_rule(dst, next_hop)
+            routing_protocol.update_forwarding_rule(dst, next_hop)
 
     def get_reservation_protocol(self) -> ResourceReservationProtocol:
         """Method to get the resource reservation protocol in the network manager's protocol stack.

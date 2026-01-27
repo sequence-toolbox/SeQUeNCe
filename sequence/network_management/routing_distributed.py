@@ -8,6 +8,8 @@ Also included is the message type used by the routing protocol.
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Union
 from dataclasses import dataclass, field
+from collections import defaultdict
+from heapq import heappop, heappush
 
 if TYPE_CHECKING:
     from sequence.topology.node import QuantumRouter
@@ -18,9 +20,10 @@ from ..kernel.process import Process
 from ..message import Message
 from ..protocol import Protocol
 from ..utils import log
-from ..constants import SECOND
+from ..constants import SECOND, EPSILON
 
-MAX_AGE = 1000  # maximum age of LSA in seconds
+MAX_AGE = 1000 * SECOND  # maximum age of LSA in seconds
+
 
 class DistRoutingMsgType(Enum):
     """Enum class for message types used in distributed routing protocol."""
@@ -34,15 +37,15 @@ class DistRoutingMsgType(Enum):
 @dataclass(frozen=True)
 class LSAHeader:
     """Link State Advertisement header."""
-    advertising_router: str
+    advertising_router: str # who originated the LSA, "this node"
     seq_number: int
-    age: int
+    orig_time: int  # simulation time when LSA was originated
 
 
 @dataclass(frozen=True)
 class Link:
     """Link information."""
-    neighbor: str
+    neighbor: str           # neighbor node
     cost: float
 
 
@@ -131,20 +134,22 @@ class LinkStateDB:
     def __iter__(self) -> iter:
         return iter(self.lsas.values())
 
-    def install(self, lsa: LSA) -> bool:
+    def install(self, lsa: LSA, now: int) -> bool:
         """Install LSA into database.
 
         Args:
             lsa (LSA): LSA to be installed.
+            now (int): current simulation time (picoseconds).
 
         Returns:
             bool: True if LSA is new or updated, False otherwise.
         """
         adv = lsa.header.advertising_router
         existing_lsa = self.lsas.get(adv, None)
+        lsa_age = now - lsa.header.orig_time
 
         # treat withdrawals specially: install (to enable flood) then remove
-        if lsa.header.age >= MAX_AGE:
+        if lsa_age >= MAX_AGE:
             if existing_lsa is not None:
                 self.lsas[lsa.header.advertising_router] = lsa
                 return True
@@ -159,19 +164,22 @@ class LinkStateDB:
                 self.lsas[adv] = lsa
                 return True
             elif lsa.header.seq_number == existing_lsa.header.seq_number:
-                if lsa.header.age < existing_lsa.header.age:
+                existing_age = now - existing_lsa.header.orig_time
+                if lsa_age < existing_age:
                     self.lsas[adv] = lsa
                     return True
+                else:
+                    return False
             else: # lsa.header.seq_number < existing_lsa.header.seq_number:
                 return False
     
-    def purge_withdrawn(self) -> list[str]:
+    def purge_withdrawn(self, now: int) -> list[str]:
         """Purge withdrawn LSAs from database.
 
         Returns:
             list[str]: list of advertising routers whose LSAs are purged.
         """
-        to_purge = [adv for adv, lsa in self.lsas.items() if lsa.header.age >= MAX_AGE]
+        to_purge = [adv for adv, lsa in self.lsas.items() if now - lsa.header.orig_time >= MAX_AGE]
         for adv in to_purge:
             del self.lsas[adv]
         return to_purge
@@ -338,7 +346,7 @@ class DistributedRoutingProtocol(Protocol):
         """
         summaries = []
         for lsa in self.lsdb:
-            if lsa.header.age < MAX_AGE: # TODO: how to update age properly?
+            if self._lsa_age(lsa) < MAX_AGE:
                 summaries.append(lsa.header)
         dbd_payload = DBDPayload(sender=self.owner.name, summaries=summaries)
         dbd_msg = DistRoutingMessage(DistRoutingMsgType.DBD, receiver="DistributedRoutingProtocol", payload=dbd_payload)
@@ -349,7 +357,10 @@ class DistributedRoutingProtocol(Protocol):
         """
         lsa = self.originate()
         # install into own LSDB (always newer for self-originated LSA)
-        self.lsdb.install(lsa)
+        updated = self.lsdb.install(lsa, self.owner.timeline.now())
+        if updated:
+            forwarding_table = self.run_spf()  # recompute routes
+            self.owner.network_manager.update_forwarding_table(forwarding_table)
         self.flood_to_all_neighbors(lsa)
     
     def originate(self) -> LSA:
@@ -361,10 +372,88 @@ class DistributedRoutingProtocol(Protocol):
         links = []
         for neighbor, cost in sorted(self.adj_cost.items()):
             links.append(Link(neighbor=neighbor, cost=cost))
-        header = LSAHeader(advertising_router=self.owner.name, seq_number=self.seq_number, age=0)
+        header = LSAHeader(advertising_router=self.owner.name, seq_number=self.seq_number, orig_time=self.owner.timeline.now())
         lsa = LSA(header=header, links=links)
         self.seq_number += 1
         return lsa
+
+    def run_spf(self) -> dict[str, str]:
+        """Run Shortest Path First (SPF) algorithm to compute routing table.
+
+        Return:
+            forwarding_table (dict[str, str]): mapping of destination to next hop.
+        """
+        log.logger.info(f"{self.owner.name}: Running SPF algorithm to compute routing table.")
+        # step 1: build adjacency graph from LSDB
+        g = defaultdict(list) # node -> list[(neighbor, cost)]
+        nodes = set()
+        for lsa in self.lsdb:
+            if self._lsa_age(lsa) >= MAX_AGE:
+                continue
+            u = lsa.header.advertising_router
+            nodes.add(u)
+            for link in lsa.links:
+                v = link.neighbor
+                c = link.cost
+                g[u].append((v, c))
+                nodes.add(v)
+        # step 2:Dijkstra's algorithm
+        dist = {n: float('inf') for n in nodes}
+        dist[self.owner.name] = 0
+        prev = {n: set() for n in nodes}   # node -> set of previous nodes in shortest paths
+        visited = set()
+        queue = [(0, self.owner.name)]        # (cost, node)
+        while queue:
+            d, u = heappop(queue)
+            if u not in visited:
+                visited.add(u)
+                for v, cost in g[u]:
+                    if v in visited:
+                        continue
+                    alt = d + cost
+                    if alt < dist[v]:                  # a shorter alternative path to v via u
+                        dist[v] = alt
+                        prev[v] = {u}
+                        heappush(queue, (alt, v))
+                    elif abs(alt - dist[v]) < EPSILON: # multiple shortest paths
+                        prev[v].add(u)
+        # step 3: build forwarding table
+        forwarding_table = {} # dst -> next hop
+        for dst in nodes:
+            if dst == self.owner.name or dist[dst] == float('inf'):
+                continue
+            candidates = set()
+            cur_nodes = [dst]
+            while cur_nodes and len(candidates) == 0: # backtrack until reaching neighbors, just need one candidate
+                next_cur_nodes = []
+                for cur in cur_nodes:
+                    for p in prev[cur]:
+                        if p == self.owner.name:
+                            candidates.add(cur)
+                        else:
+                            next_cur_nodes.append(p)
+                cur_nodes = next_cur_nodes
+            if candidates:
+                forwarding_table[dst] = min(candidates) # choose the lexicographically smallest next hop
+        log.logger.info(f"{self.owner.name}: Computed routing table: dist={dist}, forwarding_table={forwarding_table}")
+        return forwarding_table
+
+    def _lsa_age(self, lsa: LSA) -> int:
+        return self.owner.timeline.now() - lsa.header.orig_time
+
+    def _lsa_header_age(self, header: LSAHeader) -> int:
+        return self.owner.timeline.now() - header.orig_time
+
+    def update_forwarding_rule(self, dst: str, next_node: str):
+        """updates dst to map to next_node in forwarding table.
+           If dst not in forwarding table, add new rule.
+
+        Args:
+            dst (str): name of destination node.
+            next_node (str): name of next hop node.
+        """
+        forwarding_table = self.owner.network_manager.get_forwarding_table()
+        forwarding_table[dst] = next_node
 
     def flood_to_all_neighbors(self, lsa: LSA, exclude_neighbor: str | None = None):
         """Flood LSA to all neighbors with 2-way adjacency.
@@ -406,7 +495,7 @@ class DistributedRoutingProtocol(Protocol):
             else:
                 # master sees DBD from slave, transition to Exchange
                 self.set_state(src, "Exchange")
-        
+        # get the list of LSAs to request
         requested = []
         for lsa_header in payload.summaries:
             existing_lsa = self.lsdb.get(lsa_header.advertising_router)
@@ -415,7 +504,7 @@ class DistributedRoutingProtocol(Protocol):
             else:
                 if lsa_header.seq_number > existing_lsa.header.seq_number:
                     requested.append(lsa_header.advertising_router)
-                if lsa_header.seq_number == existing_lsa.header.seq_number and lsa_header.age < existing_lsa.header.age:
+                if lsa_header.seq_number == existing_lsa.header.seq_number and self._lsa_header_age(lsa_header) < self._lsa_age(existing_lsa):
                     requested.append(lsa_header.advertising_router)
         if requested:
             # ask for the requested LSAs
@@ -459,32 +548,39 @@ class DistributedRoutingProtocol(Protocol):
             src (str): name of source node.
             payload (LSUPayload): payload of LSU message.
         """
-        fsm = self.ensure_fsm(src)
-        if fsm.state not in ["Exchange", "Loading", "Full"]:
-            log.logger.warning(f"{self.owner.name}: Received LSU from {src} in state {fsm.state}, ignoring.")
+        fsm_src = self.ensure_fsm(src)
+        if fsm_src.state not in ["Exchange", "Loading", "Full"]:
+            log.logger.warning(f"{self.owner.name}: Received LSU from {src} in state {fsm_src.state}, ignoring.")
             return
         acks = []
+        lsdb_updated = False
         for lsa in payload.lsas:            
-            updated = self.lsdb.install(lsa)
-            if updated is False:
-                 continue
-            if lsa.header.age < MAX_AGE:
-                # flood to other neighbors except the one it came from
-                self.flood_to_all_neighbors(lsa, exclude_neighbor=src)
-            else:
-                # still flood, then purge withdrawn LSA from own LSDB
-                self.flood_to_all_neighbors(lsa, exclude_neighbor=src)
-                self.lsdb.purge_withdrawn()
-            acks.append((lsa.header.advertising_router, lsa.header.seq_number))
-            if lsa.header.advertising_router in fsm.pending_requested:
-                fsm.pending_requested.remove(lsa.header.advertising_router)
-        # send LSAck back to sender
-        if acks:
+            updated = self.lsdb.install(lsa, self.owner.timeline.now())
+            if updated is True:
+                lsdb_updated = True
+                acks.append((lsa.header.advertising_router, lsa.header.seq_number))
+                if self._lsa_age(lsa) < MAX_AGE:
+                    # flood to other neighbors except the one it came from
+                    self.flood_to_all_neighbors(lsa, exclude_neighbor=src)
+                else:
+                    # still flood, then purge withdrawn LSA from own LSDB
+                    self.flood_to_all_neighbors(lsa, exclude_neighbor=src)
+                    self.lsdb.purge_withdrawn(self.owner.timeline.now())
+                # remove from pending_requested of the lsa.header.advertising_router's (not necessarry src's) FSM
+                fsm_adv_router = self.ensure_fsm(lsa.header.advertising_router)
+                if fsm_adv_router.state == "Loading" and lsa.header.advertising_router in fsm_adv_router.pending_requested:
+                    fsm_adv_router.pending_requested.remove(lsa.header.advertising_router)
+                    if len(fsm_adv_router.pending_requested) == 0:
+                        self.set_state(lsa.header.advertising_router, "Full")
+        if lsdb_updated:    # recompute routes if LSDB is updated
+            forwarding_table = self.run_spf()
+            self.owner.network_manager.update_forwarding_table(forwarding_table)
+        if acks:            # send LSAck back to sender
             lsack_payload = LSAckPayload(sender=self.owner.name, acks=acks)
             lsack_msg = DistRoutingMessage(DistRoutingMsgType.LSAck, receiver="DistributedRoutingProtocol", payload=lsack_payload)
             self.owner.send_message(src, lsack_msg)
         # if no more pending requested LSAs, transition to Full state
-        if not fsm.pending_requested and fsm.state == "Loading":
+        if fsm_src.state == "Loading" and len(fsm_src.pending_requested) == 0:
             self.set_state(src, "Full")
 
     def handle_lsack(self, src: str, payload: LSAckPayload):
@@ -492,6 +588,6 @@ class DistributedRoutingProtocol(Protocol):
 
         Args:
             src (str): name of source node.
-            payload (LSAAckPayload): payload of LSAck message.
+            payload (LSAckPayload): payload of LSAck message.
         """
         log.logger.info(f"{self.owner.name}: Received LSAck from {src}: {payload.acks}. Do nothing for now.")
