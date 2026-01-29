@@ -369,7 +369,6 @@ def test_distributed_routing_protocol_6():
     assert routers[0].name not in forwarding_table_1
 
 
-
 # Two node (R0, R1) toplogy, LSA refresh is turned on
 # the MAX_AGE is 50 seconds, while the simulation time is 100 seconds,
 # check the FSM states, forwarding tables, and LSDB seq_number at both nodes.
