@@ -150,17 +150,24 @@ class NetworkManager:
 
         self.protocol_stack[-1].push(responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity)
 
-    def update_forwarding_table(self, forwarding_table: dict) -> None:
-        """Method to set the forwarding table in the routing_protocol in the network manager's protocol stack.
+    def set_forwarding_table(self, forwarding_table: dict) -> None:
+        """Method to set the forwarding table in the network manager
 
         Args:
             forwarding_table (dict): the forwarding table for this node, where the key is the destination node name
                                      and the value is the next hop
         """
-        log.logger.info(f"{self.owner.name} update forwarding table: {forwarding_table}")
-        routing_protocol = self.get_routing_protocol()
-        for dst, next_hop in forwarding_table.items():
-            routing_protocol.update_forwarding_rule(dst, next_hop)
+        log.logger.info(f"{self.owner.name} set forwarding table: {forwarding_table}")
+        self.forwarding_table = forwarding_table
+
+    def get_forwarding_table(self) -> dict[str, str]:
+        """Method to get the forwarding table in the network manager.
+
+        Returns:
+            dict[str, str]: the forwarding table for this node, where the key is the destination node name
+                            and the value is the next hop
+        """
+        return self.forwarding_table
 
     def get_reservation_protocol(self) -> ResourceReservationProtocol:
         """Method to get the resource reservation protocol in the network manager's protocol stack.
@@ -172,15 +179,6 @@ class NetworkManager:
             if isinstance(protocol, ResourceReservationProtocol):
                 return protocol
         raise ValueError("No resource reservation protocol found in the network manager's protocol stack")
-
-    def get_forwarding_table(self) -> dict[str, str]:
-        """Method to get the forwarding table in the routing_protocol in the network manager's protocol stack.
-
-        Returns:
-            dict[str, str]: the forwarding table for this node, where the key is the destination node name
-                  and the value is the next hop
-        """
-        return self.forwarding_table
 
     def set_routing_protocol(self, routing_protocol: Protocol) -> None:
         """Method to set the routing protocol in the network manager.
