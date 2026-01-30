@@ -388,7 +388,7 @@ class QuantumRouter(Node):
         Args:
             down (bool): whether the node is down (not operational).
         """
-        log.logger.info(f"{self.name} is {"DOWN" if down else "UP"}")
+        log.logger.info(f"{self.name} is {'DOWN' if down else 'UP'}")
         self.down = down
 
     def init_managers(self, memo_arr_name: str, component_templates: dict = {}):
