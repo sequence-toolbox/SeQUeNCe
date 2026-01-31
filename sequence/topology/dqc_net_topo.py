@@ -201,7 +201,7 @@ class DQCNetTopo(Topo):
         
         Args:
             total_wires (int): The total number of wires (qubits) in the system.
-        Return:
+        Returns:
             dict[int, str]: A mapping from wire indices to node names.
         """
         mapping: dict[int, str] = {}

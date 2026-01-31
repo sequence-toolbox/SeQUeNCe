@@ -127,7 +127,7 @@ class MemoryArray(Entity):
         
         Args:
             name (str): name of memory
-        Return:
+        Returns:
             (Memory): the memory object
         """
         index = self.memory_name_to_index.get(name, -1)
@@ -460,7 +460,7 @@ class Memory(Entity):
     def get_bds_fidelity(self) -> float:
         """Will get the fidelity from the BDS state
 
-        Return:
+        Returns:
             (float): the fidelity of the BDS state
         """
         state_obj = self.timeline.quantum_manager.get(self.qstate_key)

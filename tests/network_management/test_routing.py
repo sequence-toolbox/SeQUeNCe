@@ -6,7 +6,7 @@ import sequence.utils.log as log
 from sequence.constants import SECOND
 
 
-# Two node toplogy, check the FSM states and forwarding tables at both routers
+# Two node topology, check the FSM states and forwarding tables at both routers
 def test_distributed_routing_protocol_1():
     
     topo = router_net_topo.RouterNetTopo("tests/network_management/line_topo.json")
@@ -49,7 +49,7 @@ def test_distributed_routing_protocol_1():
     assert forwarding_table_1[routers[0].name] == routers[0].name
 
 
-# Four node (R0, R1, R2, R3) ring toplogy, 
+# Four node (R0, R1, R2, R3) ring topology, 
 # check the FSM states and forwarding tables at all four nodes.
 def test_distributed_routing_protocol_2():
     topo = router_net_topo.RouterNetTopo("tests/network_management/ring_topo.json")
@@ -136,7 +136,7 @@ def test_distributed_routing_protocol_2():
     assert forwarding_table_3[routers[2].name] == routers[2].name
 
 
-# Two node (R0, R1) toplogy
+# Two node (R0, R1) topology
 # R1 is down after 0.5 second, 
 # check the FSM states and forwarding tables at both nodes.
 def test_distributed_routing_protocol_3():
@@ -184,7 +184,7 @@ def test_distributed_routing_protocol_3():
     assert routers[0].name not in forwarding_table_1
 
 
-# Four node (R0, R1, R2, R3) ring toplogy
+# Four node (R0, R1, R2, R3) ring topology
 # R2 is down after 0.5 second,
 # check the FSM states & Forwarding table at all four nodes.
 def test_distributed_routing_protocol_4():
@@ -275,7 +275,7 @@ def test_distributed_routing_protocol_4():
     assert routers[2].name not in forwarding_table_3
 
 
-# Two node (R0, R1) toplogy, LSA refresh is turned off
+# Two node (R0, R1) topology, LSA refresh is turned off
 # Corner case: the MAX_AGE is very small (0.002 second),
 # check the FSM states and forwarding tables at both nodes.
 def test_distributed_routing_protocol_5():
@@ -322,7 +322,7 @@ def test_distributed_routing_protocol_5():
     assert routers[0].name not in forwarding_table_1
 
 
-# Two node (R0, R1) toplogy, LSA refresh is turned off
+# Two node (R0, R1) topology, LSA refresh is turned off
 # the MAX_AGE is 50 seconds, while the simulation time is 100 seconds,
 # check the FSM states and forwarding tables at both nodes.
 def test_distributed_routing_protocol_6():
@@ -369,7 +369,7 @@ def test_distributed_routing_protocol_6():
     assert routers[0].name not in forwarding_table_1
 
 
-# Two node (R0, R1) toplogy, LSA refresh is turned on
+# Two node (R0, R1) topology, LSA refresh is turned on
 # the MAX_AGE is 50 seconds, while the simulation time is 100 seconds,
 # check the FSM states, forwarding tables, and LSDB seq_number at both nodes.
 def test_distributed_routing_protocol_7():

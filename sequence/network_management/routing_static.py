@@ -16,11 +16,11 @@ from ..utils import log
 
 
 class StaticRoutingProtocol(Protocol):
-    """Class to route reservation requests. Also forward packets. 
-       Thus, this class contains both control plane and data plane.
+    """Class to update forwarding table manually.
 
-    The `StaticRoutingProtocol` class uses a static routing table (from the `NetworkManager`) to direct the flow of reservation requests.
-    This is usually defined based on the shortest quantum channel length.
+    The `StaticRoutingProtocol` class writes to the forwarding table (from the `NetworkManager`).
+    Static in this context means that the forwarding table is manually configured (by a network administrator), 
+    not automatically updated via a routing protocol (i.e. computer program).
 
     Attributes:
         owner (Node): node that protocol instance is attached to.
@@ -33,7 +33,6 @@ class StaticRoutingProtocol(Protocol):
         Args:
             owner (Node): node protocol is attached to.
             name (str): name of protocol instance.
-            forwarding_table (dict[str, str]): forwarding routing table in format {name of destination node: name of next node}.
         """
         super().__init__(owner, name)
     
@@ -41,7 +40,7 @@ class StaticRoutingProtocol(Protocol):
     def forwarding_table(self) -> dict[str, str]:
         """Returns the forwarding table.
         
-        Return:
+        Returns:
             dict[str, str]: forwarding table in format {name of destination node: name of next node}.
         """
         return self.owner.network_manager.get_forwarding_table()

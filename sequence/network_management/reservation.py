@@ -101,7 +101,7 @@ def eg_req_func(protocols: list["EntanglementProtocol"], args: Arguments) -> Ent
     Args:
         protocols: the waiting protocols (wait for request)
         args: arguments from the node who sent the request
-    Return:
+    Returns:
         the selected protocol
     """
     name = args["name"]
@@ -155,7 +155,7 @@ def ep_req_func1(protocols, args: Arguments) -> BBPSSWProtocol:
     Args:
         protocols (list): a list of waiting protocols
         args (dict): the arguments
-    Return:
+    Returns:
         the selected protocol
     """
     remote0 = args["remote0"]
@@ -268,7 +268,7 @@ def es_req_func(protocols: list["EntanglementProtocol"], args: Arguments) -> Ent
     Args:
         protocols (list): a list of waiting protocols
         args (dict): the arguments
-    Return:
+    Returns:
         the selected protocol
     """
     target_memo = args["target_memo"]
@@ -472,7 +472,7 @@ class ResourceReservationProtocol(StackProtocol):
 
         Args:
             path (list[str]): a list of router names that goes from initiator to responder
-        Return:
+        Returns:
             str: the name of the next hop
         '''
         cur_index = path.index(self.owner.name)

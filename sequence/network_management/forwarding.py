@@ -22,7 +22,7 @@ class ForwardingMessage(Message):
         payload (Message): message to be delivered to destination.
     """
 
-    def __init__(self, msg_type: Enum, receiver: str, payload: "Message"):
+    def __init__(self, msg_type: Enum, receiver: str, payload: Message):
         super().__init__(msg_type, receiver)
         self.payload = payload
 
@@ -52,7 +52,7 @@ class ForwardingProtocol(StackProtocol):
         """Returns the forwarding table."""
         return self.owner.network_manager.get_forwarding_table()
 
-    def received_message(self, src: str, msg: "Message"):
+    def received_message(self, src: str, msg: Message):
         """Method to directly receive messages from node (should not be used)."""
 
         raise Exception("Forwarding protocol should not call this function")
@@ -60,7 +60,7 @@ class ForwardingProtocol(StackProtocol):
     def init(self):
         pass
 
-    def push(self, dst: str, msg: "Message", next_hop: str = None):
+    def push(self, dst: str, msg: Message, next_hop: str = None):
         """Method to receive message from upper protocols.
 
         Routing packages the message and forwards it to the next node in the optimal path (determined by the forwarding table).
@@ -85,9 +85,9 @@ class ForwardingProtocol(StackProtocol):
         elif next_hop:                              # if next_hop is not None, use next_hop
             self._push(dst=next_hop, msg=new_msg)  
         else:
-            raise Exception(f'Both dst and next_hop are None!')
+            raise Exception('Both dst and next_hop are None!')
 
-    def pop(self, src: str, msg: "ForwardingMessage"):
+    def pop(self, src: str, msg: ForwardingMessage):
         """Message to receive reservation messages.
 
         Messages are forwarded to the upper protocol.
@@ -100,4 +100,3 @@ class ForwardingProtocol(StackProtocol):
             Will call `pop` method of higher protocol.
         """
         self._pop(src=src, msg=msg.payload)
-

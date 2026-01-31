@@ -1,7 +1,7 @@
 """Definition of Distributed Routing protocol.
 
-This module defines the DistributedRoutingProtocol, which is a OSPF-like routing protocol for quantum networks
-Also included is the message type used by the routing protocol.
+This module defines the DistributedRoutingProtocol, which is a OSPF-like routing protocol for quantum networks.
+Also included are the message types, packets, FSM, LSDB used by the routing protocol
 """
 
 
@@ -14,7 +14,6 @@ from heapq import heappop, heappush
 if TYPE_CHECKING:
     from sequence.topology.node import QuantumRouter
 
-from ..kernel.timeline import Timeline
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..message import Message
@@ -480,7 +479,7 @@ class DistributedRoutingProtocol(Protocol):
     def originate(self) -> LSA:
         """Originate and return its LSA, meanwhile increment its sequence number.
 
-        Return:
+        Returns:
             LSA: the originated LSA.
         """
         links = []
@@ -510,7 +509,7 @@ class DistributedRoutingProtocol(Protocol):
     def run_spf(self) -> dict[str, str]:
         """Run Shortest Path First (SPF) algorithm to compute routing table.
 
-        Return:
+        Returns:
             forwarding_table (dict[str, str]): mapping of destination to next hop.
         """
         log.logger.info(f"{self.owner.name}: Running SPF algorithm to compute routing table.")
@@ -527,7 +526,7 @@ class DistributedRoutingProtocol(Protocol):
                 c = link.cost
                 g[u].append((v, c))
                 nodes.add(v)
-        # step 2:Dijkstra's algorithm
+        # step 2: Dijkstra's algorithm
         dist = {n: float('inf') for n in nodes}
         dist[self.owner.name] = 0
         prev = {n: set() for n in nodes}   # node -> set of previous nodes in shortest paths
@@ -554,7 +553,7 @@ class DistributedRoutingProtocol(Protocol):
                 continue
             candidates = set()
             cur_nodes = [dst]
-            while cur_nodes and len(candidates) == 0: # backtrack until reaching neighbors, just need one candidate
+            while cur_nodes and len(candidates) == 0: # backtrack until reaching neighbors, need at least one candidate
                 next_cur_nodes = []
                 for cur in cur_nodes:
                     for p in prev[cur]:
@@ -584,7 +583,7 @@ class DistributedRoutingProtocol(Protocol):
             raise ValueError("item must be LSA or LSAHeader")
 
     def update_forwarding_rule(self, dst: str, next_node: str):
-        """updates dst to map to next_node in forwarding table.
+        """Updates dst to map to next_node in forwarding table.
            If dst not in forwarding table, add new rule.
 
         Args:
@@ -704,8 +703,8 @@ class DistributedRoutingProtocol(Protocol):
                 else:
                     # still flood, then purge withdrawn LSA from own LSDB
                     self.flood_to_all_neighbors(lsa, exclude_neighbor=src)
-                self.lsdb.purge_withdrawn(self.owner.timeline.now())
-                # remove from pending_requested of the lsa.header.advertising_router's (not necessarry src's) FSM
+                    self.lsdb.purge_withdrawn(self.owner.timeline.now())
+                # remove from pending_requested of the lsa.header.advertising_router's (not necessarily src's) FSM
                 fsm_adv_router = self.ensure_fsm(lsa.header.advertising_router)
                 if fsm_adv_router.state == "Loading" and lsa.header.advertising_router in fsm_adv_router.pending_requested:
                     fsm_adv_router.pending_requested.remove(lsa.header.advertising_router)

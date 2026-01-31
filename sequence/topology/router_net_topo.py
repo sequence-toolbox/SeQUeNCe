@@ -8,7 +8,6 @@ from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
 from ..kernel.quantum_manager import KET_STATE_FORMALISM, QuantumManager
 from .node import BSMNode, QuantumRouter
-from ..utils import log
 from ..constants import SPEED_OF_LIGHT
 
 
@@ -168,8 +167,8 @@ class RouterNetTopo(Topo):
                 raise NotImplementedError("Unknown type of quantum connection")
 
     def _generate_forwarding_table(self, config: dict):
-        """Generate forwarding table for each quantum router based on Dijkstra's algorithm.
-           NOTE: For static routing only
+        """If static routing is chosen, then generate forwarding table for each quantum router based on Dijkstra's algorithm.
+           If distributed routing is chosen, then initialize link cost for each quantum router and setup the FSM.
 
         Args:
             config (dict): the configuration dictionary used to generate the topology

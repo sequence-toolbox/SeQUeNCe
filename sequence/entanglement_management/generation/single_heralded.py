@@ -22,14 +22,29 @@ if TYPE_CHECKING:
 
 @EntanglementGenerationA.register(SINGLE_HERALDED)
 class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
-    def __init__(self, owner: Node, name: str, middle: str, other: str, memory: Memory, \
+    """
+    Class for single heralded entanglement generation protocol A.
+    This protocol is used on the two end nodes of the entanglement generation process.
+
+    Attributes:
+        owner (Node): node that protocol instance is attached to.
+        name (str): label for protocol instance.
+        middle (str): name of the middle BSM node.
+        other (str): name of the other end node.
+        memory (Memory): memory object used for entanglement generation.
+        raw_fidelity (float): the raw fidelity of generated entangled pair.
+        raw_epr_errors (list[float]): the raw EPR pair Pauli error rates in X, Y, Z order.
+        bsm_res (list[int]): the BSM measurement results from the middle BSM node.
+    """
+    def __init__(self, owner: Node, name: str, middle: str, other: str, memory: Memory,
                  raw_fidelity: float = None, raw_epr_errors: list[float] = None):
         super().__init__(owner, name, middle, other, memory)
 
         self.protocol_type = SINGLE_HERALDED
         active_formalism = QuantumManager.get_active_formalism()
-        assert active_formalism == BELL_DIAGONAL_STATE_FORMALISM, \
-            f"Single Heralded Entanglement generation protocol only supports Bell diagonal state formalism; got {active_formalism}"
+        assert_message = ("Single Heralded Entanglement generation protocol only" 
+                          f"supports Bell diagonal state formalism; got {active_formalism}")
+        assert active_formalism == BELL_DIAGONAL_STATE_FORMALISM, assert_message
 
         if raw_fidelity:
             self.raw_fidelity = raw_fidelity
@@ -152,7 +167,7 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
 
             # send negotiate_ack
             other_emit_time = emit_time + self.qc_delay - other_qc_delay
-            message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, self.remote_protocol_name, \
+            message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, self.remote_protocol_name,
                                                     self.protocol_type, emit_time=other_emit_time)
             self.owner.send_message(src, message)
 
@@ -245,6 +260,6 @@ class SingleHeraldedB(EntanglementGenerationB):
         resolution = bsm.resolution
 
         for node in self.others:
-            message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES, None, self.protocol_type, \
+            message = EntanglementGenerationMessage(GenerationMsgType.MEAS_RES, None, self.protocol_type,
                                                     detector=res, time=time, resolution=resolution)
             self.owner.send_message(node, message)
