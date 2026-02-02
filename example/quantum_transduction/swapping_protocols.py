@@ -20,9 +20,9 @@ class Swapping(Protocol):
 
     """Entanglement swapping in the middle."""
     
-    def __init__(self, own: Node, name: str, tl: Timeline, FockBS: FockBeamSplitter2):
-        super().__init__(own, name)
-        self.owner = own
+    def __init__(self, owner: Node, name: str, tl: Timeline, FockBS: FockBeamSplitter2):
+        super().__init__(owner, name)
+        self.owner = owner
         self.name = name
         self.tl = tl
         self.FockBS = FockBS
@@ -70,13 +70,13 @@ class Swapping(Protocol):
 
     def received_message(self, src: str, msg):
         pass 
-    
-   
+
+
 
 class Measure(Protocol):
-    def __init__(self, own: Node, name: str, tl: Timeline, FockBS: FockBeamSplitter2):
-        super().__init__(own, name)
-        self.owner = own
+    def __init__(self, owner: Node, name: str, tl: Timeline, FockBS: FockBeamSplitter2):
+        super().__init__(owner, name)
+        self.owner = owner
         self.name = name
         self.tl = tl
         self.FockBS = FockBS

@@ -25,6 +25,7 @@ from sequence.topology.router_net_topo import RouterNetTopo
 from sequence.constants import MILLISECOND
 
 
+# python config_generator_ring.py 4 10 1 0.0002 1 -o ring_topo.json -s 100
 
 # parse args
 parser = argparse.ArgumentParser()

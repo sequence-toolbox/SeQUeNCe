@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.5] - 2026-1-29
+### Added
+- Class `DistributedRoutingProtocol` is added, among many other supporting classes in `routing_distributed.py`. This module do truly distributed entanglement routing.
+- Class `NetworkManager` has two new attributes: `forwarding_table` and `routing_protocol`.
+- Add cutoff flag to memory to allow disable of expiration
+- Add a template in config json for network manager to select routing protocols (distributed vs. static)
+- 7 new unit tests to cover the newly added `routing_distributed` module
+
+### Changed
+- The previous `StaticRoutingProtocol` class is split into two classes: `StaticRoutingProtocol` and `ForwardingProtocol`. This can be viewed as the separation of control plane and the data plane for the entanglement routing module. The control plane does the routing, the data plane does the forwarding. The Routing Protocols write to the `forwarding_table`, while the Forwarding Protocol reads from the `forwarding_table`.
+- Minor refactors in `router_net_topo.py` and `network_manager.py`.
+- Memory.cutoff_ratio is allowed to be greater than 1.
+- Suppress linear algebra related warning (doing sqrtm on singular matrix)
+
+### Removed
+- `routing.py` module is removed, replaced by `routing_distributed.py`, `routing_static.py`, and `forwarding.py`.
+
 
 ## [0.8.4] - 2025-12-14
 ### Fixed

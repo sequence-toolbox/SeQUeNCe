@@ -551,8 +551,8 @@ class QuantumManagerDensity(QuantumManager):
                 key = keys[0]
                 num_states = len(all_keys)
                 state_index = all_keys.index(key)
-                state_0, state_1, prob_0 = \
-                    measure_entangled_state_with_cache_density(tuple(map(tuple, state)), state_index, num_states)
+                state_0, state_1, prob_0 = measure_entangled_state_with_cache_density(tuple(map(tuple, state)), 
+                                                                                      state_index, num_states)
                 if meas_samp < prob_0:
                     new_state = array(state_0, dtype=complex)
                     result = 0
@@ -795,15 +795,13 @@ class QuantumManagerDensityFock(QuantumManager):
                 key = keys[0]
                 num_states = len(all_keys)
                 state_index = all_keys.index(key)
-                states, probs = \
-                    measure_entangled_state_with_cache_fock_density(state_tuple, state_index, num_states, povm_tuple,
-                                                                    self.truncation)
+                states, probs = measure_entangled_state_with_cache_fock_density(state_tuple, state_index, num_states, 
+                                                                                povm_tuple, self.truncation)
 
         else:
             indices = tuple([all_keys.index(key) for key in keys])
-            states, probs = \
-                measure_multiple_with_cache_fock_density(state_tuple, indices, len(all_keys), povm_tuple,
-                                                         self.truncation)
+            states, probs = measure_multiple_with_cache_fock_density(state_tuple, indices, len(all_keys), 
+                                                                     povm_tuple, self.truncation)
 
         # calculate result based on measurement sample.
         prob_sum = cumsum(probs)

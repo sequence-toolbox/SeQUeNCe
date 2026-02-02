@@ -12,7 +12,10 @@ if TYPE_CHECKING:
     from ..protocol import StackProtocol
 
 from ..message import Message
-from .routing import StaticRoutingProtocol
+from ..protocol import Protocol
+from .routing_distributed import DistributedRoutingProtocol
+from .routing_static import StaticRoutingProtocol
+from .forwarding import ForwardingProtocol
 from .reservation import ResourceReservationProtocol, ResourceReservationMessage, RSVPMsgType
 from ..utils import log
 
@@ -44,6 +47,8 @@ class NetworkManager:
         name (str): name of the network manager instance.
         owner (QuantumRouter): node that protocol instance is attached to.
         protocol_stack (list[StackProtocol]): network manager protocol stack.
+        forwarding_table (dict[str, str]): mapping of destination node names to name of node for next hop.
+        routing_protocol (Protocol): routing protocol
     """
 
     def __init__(self, owner: "QuantumRouter", protocol_stack: "list[StackProtocol]"):
@@ -59,6 +64,8 @@ class NetworkManager:
         self.owner = owner
         self.protocol_stack = protocol_stack
         self.load_stack(protocol_stack)
+        self.forwarding_table = {}
+        self.routing_protocol = None
 
     def load_stack(self, stack: "list[StackProtocol]"):
         """Method to load a defined protocol stack.
@@ -143,17 +150,24 @@ class NetworkManager:
 
         self.protocol_stack[-1].push(responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity)
 
-    def update_forwarding_table(self, forwarding_table: dict) -> None:
-        """Method to set the forwarding table in the routing_protocol in the network manager's protocol stack.
+    def set_forwarding_table(self, forwarding_table: dict) -> None:
+        """Method to set the forwarding table in the network manager
 
         Args:
             forwarding_table (dict): the forwarding table for this node, where the key is the destination node name
                                      and the value is the next hop
         """
-        log.logger.info(f"{self.owner.name} update forwarding table: {forwarding_table}")
-        static_routing_protocol = self.protocol_stack[0]   # [0] is the static routing protocol
-        for dst, next_hop in forwarding_table.items():
-            static_routing_protocol.update_forwarding_rule(dst, next_hop)
+        log.logger.info(f"{self.owner.name} set forwarding table: {forwarding_table}")
+        self.forwarding_table = forwarding_table
+
+    def get_forwarding_table(self) -> dict[str, str]:
+        """Method to get the forwarding table in the network manager.
+
+        Returns:
+            dict[str, str]: the forwarding table for this node, where the key is the destination node name
+                            and the value is the next hop
+        """
+        return self.forwarding_table
 
     def get_reservation_protocol(self) -> ResourceReservationProtocol:
         """Method to get the resource reservation protocol in the network manager's protocol stack.
@@ -166,8 +180,24 @@ class NetworkManager:
                 return protocol
         raise ValueError("No resource reservation protocol found in the network manager's protocol stack")
 
+    def set_routing_protocol(self, routing_protocol: Protocol) -> None:
+        """Method to set the routing protocol in the network manager.
 
-def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str) -> "NetworkManager":
+        Args:
+            routing_protocol (Protocol): the routing protocol to set
+        """
+        self.routing_protocol = routing_protocol
+
+    def get_routing_protocol(self) -> Protocol:
+        """Method to get the routing protocol in the network manager.
+
+        Returns:
+            Protocol: the routing protocol in the network manager
+        """
+        return self.routing_protocol
+
+
+def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_templates: dict = {}) -> "NetworkManager":
     """Function to create a new network manager.
 
     Will create a network manager with default protocol stack.
@@ -176,16 +206,27 @@ def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str) -> "Networ
     Args:
         owner (QuantumRouter): node to attach network manager to.
         memory_array_name (str): name of the memory array component on owner.
+        routing_protocol_cls (type[Protocol]): routing protocol class to use for control plane.
 
     Returns:
         NetworkManager: network manager object created.
     """
     swapping_success_rate = 0.5
     manager = NetworkManager(owner, [])
-    routing = StaticRoutingProtocol(owner, owner.name + ".StaticRoutingProtocol", {})
+    routing = component_templates.get("routing", "static")
+    match routing:
+        case "static":
+            routing_protocol_cls = StaticRoutingProtocol
+        case "distributed":
+            routing_protocol_cls = DistributedRoutingProtocol
+        case _:
+            raise NotImplementedError(f"Routing protocol {routing} not implemented.")   
+    routing = routing_protocol_cls(owner, f"{routing_protocol_cls.__name__}")
+    manager.set_routing_protocol(routing)
+    forwarding_protocol = ForwardingProtocol(owner, owner.name + ".ForwardingProtocol")
     rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP", memory_array_name)
     rsvp.set_swapping_success_rate(swapping_success_rate)
-    routing.upper_protocols.append(rsvp)
-    rsvp.lower_protocols.append(routing)
-    manager.load_stack([routing, rsvp])
+    forwarding_protocol.upper_protocols.append(rsvp)
+    rsvp.lower_protocols.append(forwarding_protocol)
+    manager.load_stack([forwarding_protocol, rsvp])
     return manager
