@@ -29,9 +29,9 @@ class NetworkManagerMessage(Message):
         payload (Message): message to be passed through destination network manager.
     """
 
-    def __init__(self, msg_type: Enum, receiver: str, payload: "Message"):
+    def __init__(self, msg_type: type[Enum], receiver: str, payload: Message):
         super().__init__(msg_type, receiver)
-        self.payload = payload
+        self.payload: Message = payload
 
     def __str__(self) -> str:
         return f"type={self.msg_type}; receiver={self.receiver}; payload={self.payload}"
@@ -51,7 +51,7 @@ class NetworkManager:
         routing_protocol (Protocol): routing protocol
     """
 
-    def __init__(self, owner: "QuantumRouter", protocol_stack: "list[StackProtocol]"):
+    def __init__(self, owner: QuantumRouter, protocol_stack: list[StackProtocol]):
         """Constructor for network manager.
 
         Args:
@@ -60,14 +60,14 @@ class NetworkManager:
         """
 
         log.logger.info(f"Create network manager of Node {owner.name}")
-        self.name = "network_manager"
-        self.owner = owner
-        self.protocol_stack = protocol_stack
+        self.name: str = "network_manager"
+        self.owner: QuantumRouter = owner
+        self.protocol_stack: list[StackProtocol] = protocol_stack
         self.load_stack(protocol_stack)
-        self.forwarding_table = {}
-        self.routing_protocol = None
+        self.forwarding_table: dict = {}
+        self.routing_protocol: Protocol | None = None
 
-    def load_stack(self, stack: "list[StackProtocol]"):
+    def load_stack(self, stack: list[StackProtocol]):
         """Method to load a defined protocol stack.
 
         Args:
@@ -115,7 +115,7 @@ class NetworkManager:
     def received_message(self, src: str, msg: "NetworkManagerMessage"):
         """Method to receive transmitted network reservation method.
 
-        Will pop message to lowest protocol in protocol stack.
+        Will pop message to the lowest protocol in protocol stack.
 
         Args:
             src (str): name of source node for message.
@@ -197,20 +197,22 @@ class NetworkManager:
         return self.routing_protocol
 
 
-def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_templates: dict = {}) -> "NetworkManager":
+def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_templates: dict=None) -> "NetworkManager":
     """Function to create a new network manager.
 
     Will create a network manager with default protocol stack.
     This stack inclused a reservation and routing protocol.
 
     Args:
+        component_templates:
         owner (QuantumRouter): node to attach network manager to.
         memory_array_name (str): name of the memory array component on owner.
-        routing_protocol_cls (type[Protocol]): routing protocol class to use for control plane.
 
     Returns:
         NetworkManager: network manager object created.
     """
+    if component_templates is None:
+        component_templates = {}
     swapping_success_rate = 0.5
     manager = NetworkManager(owner, [])
     routing = component_templates.get("routing", "static")
