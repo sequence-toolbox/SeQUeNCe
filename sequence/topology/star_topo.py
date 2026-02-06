@@ -7,24 +7,12 @@ Subclasses: QlanStarTopo (I don't know if there will even be more in the future)
 """
 from abc import abstractmethod
 
-import numpy as np
-
 from .topology import Topology
 from ..constants import *
 
 
 class StarTopo(Topology):
-    """Abstract base for star topologies.
-
-    StarTopo provides shared logic for star-style networks:
-        boilerplate _build() sequence
-        _add_parameters() hook for subclasses
-        consolidated logic for handling qconnections (see _add_qconnections)
-    
-    NOTE: The creation of this intermediate class may be unnessesary.
-    Created purely based on success with MeshTopo, and apparently not that useful.
-
-    Subclasses MUST define:
+    """Subclasses MUST define:
         _add_nodes()
         _add_protocols()
 
@@ -65,20 +53,4 @@ class StarTopo(Topology):
             attenuation = q_connect[ATTENUATION]
             distance = q_connect[DISTANCE] // 2
             channel_type = q_connect[TYPE]
-            cc_delay = []
-            for cc in config.get(ALL_C_CHANNEL, []):
-                if cc[SRC] == node1 and cc[DST] == node2:
-                    delay = cc.get(DELAY, cc.get(DISTANCE, 1000) / SPEED_OF_LIGHT)
-                    cc_delay.append(delay)
-                elif cc[SRC] == node2 and cc[DST] == node1:
-                    delay = cc.get(DELAY, cc.get(DISTANCE, 1000) / SPEED_OF_LIGHT)
-                    cc_delay.append(delay)
-
-            for cc in config.get(ALL_C_CONNECT, []):
-                if (cc[CONNECT_NODE_1] == node1 and cc[CONNECT_NODE_2] == node2) \
-                        or (cc[CONNECT_NODE_1] == node2 and cc[CONNECT_NODE_2] == node1):
-                    delay = cc.get(DELAY, cc.get(DISTANCE, 1000) / SPEED_OF_LIGHT)
-                    cc_delay.append(delay)
-            if len(cc_delay) == 0:
-                assert 0, q_connect
-            cc_delay = np.mean(cc_delay) // 2
+            cc_delay = self._calc_cc_delay(config, node1, node2)

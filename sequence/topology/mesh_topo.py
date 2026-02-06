@@ -7,7 +7,6 @@ Current subclasses: RouterNetTopo, DQCNetTopo
 """
 from abc import abstractmethod
 
-import numpy as np
 from networkx import Graph, dijkstra_path, exception
 
 from .topology import Topology
@@ -19,15 +18,7 @@ from ..constants import *
 
 
 class MeshTopo(Topology):
-    """Abstract base for mesh topologies.
-
-    MeshTopo provides shared logic for mesh-style networks:
-        boilerplate _build() sequence
-        BSM + qconnection handling
-        timeline setup with quantum manager
-        forwarding table generation. 
-
-    Subclasses MUST define:
+    """Subclasses MUST define:
         _add_nodes()
         class attributes _BSM_NAME_TEMPLATE and _ROUTER_NODE_TYPE.
 
@@ -95,23 +86,7 @@ class MeshTopo(Topology):
             attenuation = q_connect[ATTENUATION]
             distance = q_connect[DISTANCE] // 2
             channel_type = q_connect[TYPE]
-            cc_delay = []                                   # generate classical channel delay
-            for cc in config.get(ALL_C_CHANNEL, []):   # classical channel
-                if cc[SRC] == node1 and cc[DST] == node2:
-                    delay = cc.get(DELAY, cc.get(DISTANCE, 1000) / SPEED_OF_LIGHT)
-                    cc_delay.append(delay)
-                elif cc[SRC] == node2 and cc[DST] == node1:
-                    delay = cc.get(DELAY, cc.get(DISTANCE, 1000) / SPEED_OF_LIGHT)
-                    cc_delay.append(delay)
-
-            for cc in config.get(ALL_C_CONNECT, []):  # classical connection
-                if (cc[CONNECT_NODE_1] == node1 and cc[CONNECT_NODE_2] == node2) \
-                        or (cc[CONNECT_NODE_1] == node2 and cc[CONNECT_NODE_2] == node1):
-                    delay = cc.get(DELAY, cc.get(DISTANCE, 1000) / SPEED_OF_LIGHT)
-                    cc_delay.append(delay)
-            if len(cc_delay) == 0:
-                assert 0, q_connect
-            cc_delay = np.mean(cc_delay) // 2
+            cc_delay = self._calc_cc_delay(config, node1, node2)
 
             if channel_type == MEET_IN_THE_MID:
                 bsm_name = self._BSM_NAME_TEMPLATE.format(node1, node2)
@@ -159,11 +134,7 @@ class MeshTopo(Topology):
         pass
 
     def _generate_forwarding_table(self, config: dict):
-        """Generate forwarding table for each router.
-        
-        Uses Dijkstra's algorithm for static routing and initializes
-        link costs + sets up FSM for distributed routing.
-        """
+        """Generate forwarding table for each router."""
         node_type = self._ROUTER_NODE_TYPE
 
         graph = Graph()
@@ -212,3 +183,8 @@ class MeshTopo(Topology):
                         cost = cost_info[2]
                         routing_protocol.link_cost[neighbor] = cost
                 routing_protocol.init()
+
+        elif routing_protocol is not None:
+            raise NotImplementedError(
+                f"Unsupported routing protocol: {type(routing_protocol).__name__}"
+            )

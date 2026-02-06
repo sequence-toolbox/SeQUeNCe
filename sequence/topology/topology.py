@@ -7,8 +7,8 @@ Topology instances automatically perform many useful network functions.
 import json
 from abc import ABC, abstractmethod
 from collections import defaultdict
-# from typing import TYPE_CHECKING
 
+import numpy as np
 import yaml
 
 # Direct import needed for _add_timeline() default implementation
@@ -96,6 +96,25 @@ class Topology(ABC):
     def _add_timeline(self, config: dict):
         stop_time = config.get(STOP_TIME, float('inf'))
         self.tl = Timeline(stop_time)
+
+    def _calc_cc_delay(self, config: dict, node1: str, node2: str) -> float:
+        """get the classical channel delay between two nodes from the config"""
+        cc_delay = []
+        for cc in config.get(ALL_C_CHANNEL, []):
+            if (cc[SRC] == node1 and cc[DST] == node2) \
+                    or (cc[SRC] == node2 and cc[DST] == node1):
+                delay = cc.get(DELAY, cc.get(DISTANCE, 1000) / SPEED_OF_LIGHT)
+                cc_delay.append(delay)
+
+        for cc in config.get(ALL_C_CONNECT, []):
+            if (cc[CONNECT_NODE_1] == node1 and cc[CONNECT_NODE_2] == node2) \
+                    or (cc[CONNECT_NODE_1] == node2 and cc[CONNECT_NODE_2] == node1):
+                delay = cc.get(DELAY, cc.get(DISTANCE, 1000) / SPEED_OF_LIGHT)
+                cc_delay.append(delay)
+
+        assert len(cc_delay) > 0, \
+            f"No classical channel/connection found between {node1} and {node2}"
+        return np.mean(cc_delay) // 2
 
     def _add_qchannels(self, config: dict) -> None:
         for qc in config.get(ALL_Q_CHANNEL, []):
