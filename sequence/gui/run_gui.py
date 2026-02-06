@@ -1,4 +1,5 @@
 import json
+import yaml
 import os
 import networkx as nx
 import pandas as pd
@@ -24,15 +25,20 @@ class RunGui:
             tdm=tdm_table
         ).get_app(name)
 
+    @staticmethod
+    def _load_config(filename: str) -> dict:
+        """Load configuration from JSON or YAML file."""
+        with open(filename) as fh:
+            if filename.endswith(('.yaml', '.yml')):
+                return yaml.safe_load(fh)
+            return json.load(fh)
+
     def load_graph(self, path_to_topology=None):
-        # JSON
         if path_to_topology is None:
             directory, _ = os.path.split(__file__)
-            with open(directory + RunGui.DEFAULT_CONFIG) as json_file:
-                network_in = json.load(json_file)
+            network_in = self._load_config(directory + RunGui.DEFAULT_CONFIG)
         else:
-            with open(path_to_topology) as json_file:
-                network_in = json.load(json_file)
+            network_in = self._load_config(path_to_topology)
 
         # Delay table initialization
         # TODO: rewrite for non-table format
