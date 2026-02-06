@@ -1,7 +1,7 @@
-"""Definition of the MeshTopo class.
+"""Definition of the MultihopTopo class.
 
-MeshTopo is a child class of Topology that provides a base for 
-implementing mesh-style topologies (via inheritance)
+MultihopTopo is a child class of Topology that provides a base for
+implementing multi-hop topologies with BSM nodes and forwarding tables.
 
 Current subclasses: RouterNetTopo, DQCNetTopo
 """
@@ -17,7 +17,7 @@ from ..network_management.routing_static import StaticRoutingProtocol
 from ..constants import *
 
 
-class MeshTopo(Topology):
+class MultihopTopo(Topology):
     """Subclasses MUST define:
         _add_nodes()
         class attributes _BSM_NAME_TEMPLATE and _ROUTER_NODE_TYPE.
