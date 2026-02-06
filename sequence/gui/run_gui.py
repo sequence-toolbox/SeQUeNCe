@@ -7,8 +7,7 @@ import numpy as np
 
 from .app import QuantumGUI
 from .graph_comp import GraphNode
-from ..topology.topology import Topology
-from ..topology.router_net_topo import RouterNetTopo
+from ..constants import *
 
 
 class RunGui:
@@ -67,23 +66,23 @@ class RunGui:
         graph = nx.DiGraph()
 
         for node in network_in['nodes']:
-            new_node = GraphNode(node[Topology.NAME], node[Topology.TYPE], 'default_router')
+            new_node = GraphNode(node[NAME], node[TYPE], 'default_router')
             graph.add_node(
-                node[Topology.NAME],
-                label=node[Topology.NAME],
-                node_type=node[Topology.TYPE],
+                node[NAME],
+                label=node[NAME],
+                node_type=node[TYPE],
                 data=new_node.__dict__
             )
 
-        for edge in network_in[Topology.ALL_Q_CONNECT]:
+        for edge in network_in[ALL_Q_CONNECT]:
             graph.add_edge(
-                edge[Topology.CONNECT_NODE_1],
-                edge[Topology.CONNECT_NODE_2],
+                edge[CONNECT_NODE_1],
+                edge[CONNECT_NODE_2],
                 data={
-                    'source': edge[Topology.CONNECT_NODE_1],
-                    'target': edge[Topology.CONNECT_NODE_2],
-                    'distance': edge[Topology.DISTANCE],
-                    'attenuation': edge[Topology.ATTENUATION],
+                    'source': edge[CONNECT_NODE_1],
+                    'target': edge[CONNECT_NODE_2],
+                    'distance': edge[DISTANCE],
+                    'attenuation': edge[ATTENUATION],
                     'link_type': 'Quantum'
                 }
             )

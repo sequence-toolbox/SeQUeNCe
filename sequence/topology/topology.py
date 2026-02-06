@@ -11,7 +11,6 @@ from collections import defaultdict
 import numpy as np
 import yaml
 
-# Direct import needed for _add_timeline() default implementation
 from ..kernel.timeline import Timeline
 
 from .node import *
@@ -85,11 +84,6 @@ class Topology(ABC):
         pass
 
     def _get_templates(self, config: dict) -> None:
-        """Extract templates from configuration.
-
-        Args:
-            config: configuration dictionary
-        """
         templates = config.get(ALL_TEMPLATES, {})
         self.templates = templates
 

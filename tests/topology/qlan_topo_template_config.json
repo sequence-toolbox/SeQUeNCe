@@ -1,0 +1,78 @@
+{
+    "is_parallel": false,
+    "stop_time": 1000000000000,
+    "local_memories": 1,
+    "client_number": 2,
+    "measurement_bases": "z",
+    "templates": {
+      "orch_template": {
+        "Memory": {
+          "fidelity": 0.9,
+          "frequency": 2000,
+          "efficiency": 1,
+          "coherence_time": -1,
+          "wavelength": 500
+        }
+      },
+      "client_template": {
+        "Memory": {
+          "fidelity": 0.9,
+          "frequency": 2000,
+          "efficiency": 1,
+          "coherence_time": -1,
+          "wavelength": 500
+        }
+      }
+    },
+    "nodes": [
+      {
+        "name": "Orchestrator",
+        "type": "QlanOrchestratorNode",
+        "seed": 3,
+        "memo_size": 1,
+        "template": "orch_template"
+      },
+      {
+        "name": "client1",
+        "type": "QlanClientNode",
+        "memo_size": 1,
+        "seed": 0,
+        "template": "client_template"
+      },
+      {
+        "name": "client2",
+        "type": "QlanClientNode",
+        "memo_size": 1,
+        "seed": 1,
+        "template": "client_template"
+      }
+    ],
+    "qconnections": [
+      {
+        "node1": "Orchestrator",
+        "node2": "client1",
+        "attenuation": 0.0002,
+        "distance": 500,
+        "type": "meet_in_the_middle"
+      },
+      {
+        "node1": "Orchestrator",
+        "node2": "client2",
+        "attenuation": 0.0002,
+        "distance": 500,
+        "type": "meet_in_the_middle"
+      }
+    ],
+    "cconnections": [
+      {
+        "node1": "Orchestrator",
+        "node2": "client1",
+        "delay": 500000000
+      },
+      {
+        "node1": "Orchestrator",
+        "node2": "client2",
+        "delay": 500000000
+      }
+    ]
+  }
