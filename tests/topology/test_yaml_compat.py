@@ -1,5 +1,3 @@
-"""Tests that all topology classes load YAML configs identically to JSON."""
-
 from sequence.topology.qkd_topo import QKDTopo
 from sequence.topology.router_net_topo import RouterNetTopo
 from sequence.topology.qlan_star_topo import QlanStarTopo
@@ -13,8 +11,6 @@ from sequence.constants import (
 JSON_DIR = "tests/topology"
 YAML_DIR = "tests/topology"
 
-
-# --- QKDTopo ---
 
 def test_qkd_yaml_matches_json():
     json_topo = QKDTopo(f"{JSON_DIR}/qkd_net_topo_sample_config.json")
@@ -42,8 +38,6 @@ def test_qkd_yaml_matches_json():
     for jcc, ycc in zip(json_ccs, yaml_ccs):
         assert ycc.delay == jcc.delay
 
-
-# --- RouterNetTopo ---
 
 def test_router_yaml_matches_json():
     json_topo = RouterNetTopo(f"{JSON_DIR}/router_net_topo_sample_config.json")
@@ -76,8 +70,6 @@ def test_router_yaml_matches_json():
         assert len(r.network_manager.protocol_stack[0].forwarding_table) > 0
 
 
-# --- QlanStarTopo ---
-
 def test_qlan_yaml_matches_json():
     json_topo = QlanStarTopo(f"{JSON_DIR}/qlan_topo_sample_config.json")
     yaml_topo = QlanStarTopo(f"{YAML_DIR}/qlan_topo_sample_config.yaml")
@@ -100,8 +92,6 @@ def test_qlan_yaml_matches_json():
     for jcc, ycc in zip(json_topo.get_cchannels(), yaml_topo.get_cchannels()):
         assert ycc.delay == jcc.delay
 
-
-# --- DQCNetTopo ---
 
 def test_dqc_yaml_matches_json():
     json_topo = DQCNetTopo(f"{JSON_DIR}/dqc_node_net_topo_simple.json")
