@@ -20,7 +20,9 @@ import argparse
 import json
 
 from sequence.utils.config_generator import add_default_args, generate_nodes, final_config, router_name_func
-from sequence.constants import *
+from sequence.topology.topology import Topology
+from sequence.topology.router_net_topo import RouterNetTopo
+from sequence.constants import MILLISECOND
 
 
 # parse args
@@ -42,44 +44,44 @@ seed = 0
 for i, node1 in enumerate(router_names):
     for node2 in router_names[i+1:]:
         bsm_name = "BSM_{}_{}".format(node1, node2)
-        bsm_node = {NAME: bsm_name,
-                    TYPE: BSM_NODE,
-                    SEED: seed}
+        bsm_node = {Topology.NAME: bsm_name,
+                    Topology.TYPE: RouterNetTopo.BSM_NODE,
+                    Topology.SEED: seed}
         bsm_nodes.append(bsm_node)
         # qchannels
-        qchannels.append({SRC: node1,
-                          DST: bsm_name,
-                          DISTANCE: args.qc_length * 500,
-                          ATTENUATION: args.qc_atten})
-        qchannels.append({SRC: node2,
-                          DST: bsm_name,
-                          DISTANCE: args.qc_length * 500,
-                          ATTENUATION: args.qc_atten})
+        qchannels.append({Topology.SRC: node1,
+                          Topology.DST: bsm_name,
+                          Topology.DISTANCE: args.qc_length * 500,
+                          Topology.ATTENUATION: args.qc_atten})
+        qchannels.append({Topology.SRC: node2,
+                          Topology.DST: bsm_name,
+                          Topology.DISTANCE: args.qc_length * 500,
+                          Topology.ATTENUATION: args.qc_atten})
         # cchannels
-        cchannels.append({SRC: node1,
-                          DST: bsm_name,
-                          DELAY: int(args.cc_delay * MILLISECOND)})
-        cchannels.append({SRC: node2,
-                          DST: bsm_name,
-                          DELAY: int(args.cc_delay * MILLISECOND)})
-        cchannels.append({SRC: bsm_name,
-                          DST: node1,
-                          DELAY: int(args.cc_delay * MILLISECOND)})
-        cchannels.append({SRC: bsm_name,
-                          DST: node2,
-                          DELAY: int(args.cc_delay * MILLISECOND)})
-        cchannels.append({SRC: node1,
-                          DST: node2,
-                          DELAY: int(args.cc_delay * MILLISECOND)})
-        cchannels.append({SRC: node2,
-                          DST: node1,
-                          DELAY: int(args.cc_delay * MILLISECOND)})
+        cchannels.append({Topology.SRC: node1,
+                          Topology.DST: bsm_name,
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+        cchannels.append({Topology.SRC: node2,
+                          Topology.DST: bsm_name,
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+        cchannels.append({Topology.SRC: bsm_name,
+                          Topology.DST: node1,
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+        cchannels.append({Topology.SRC: bsm_name,
+                          Topology.DST: node2,
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+        cchannels.append({Topology.SRC: node1,
+                          Topology.DST: node2,
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+        cchannels.append({Topology.SRC: node2,
+                          Topology.DST: node1,
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
         seed += 1
 
 nodes += bsm_nodes
-output_dict[ALL_NODE] = nodes
-output_dict[ALL_Q_CHANNEL] = qchannels
-output_dict[ALL_C_CHANNEL] = cchannels
+output_dict[Topology.ALL_NODE] = nodes
+output_dict[Topology.ALL_Q_CHANNEL] = qchannels
+output_dict[Topology.ALL_C_CHANNEL] = cchannels
 
 # write other config options to output dictionary
 final_config(output_dict, args)

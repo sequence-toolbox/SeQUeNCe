@@ -25,7 +25,8 @@ from .graph_comp import GraphNode
 from .layout import get_app_layout
 from .layout import TYPE_COLORS, TYPES
 from .css_styles import *
-from ..constants import *
+from ..topology.topology import Topology
+from ..topology.router_net_topo import RouterNetTopo
 
 
 EDGE_DICT_ORDER = OrderedDict(
@@ -295,13 +296,13 @@ class QuantumGUI:
             node_template = self.templates[node_type][node_template_name]
 
             node_dict = {
-                NAME: node[1]['label'],
-                TYPE: node_type,
-                SEED: None,
-                TEMPLATE: node_template_name
+                Topology.NAME: node[1]['label'],
+                Topology.TYPE: node_type,
+                Topology.SEED: None,
+                Topology.TEMPLATE: node_template_name
             }
-            if node_type == QUANTUM_ROUTER:
-                node_dict[MEMO_ARRAY_SIZE] = node_template['memo_size']
+            if node_type == RouterNetTopo.QUANTUM_ROUTER:
+                node_dict[RouterNetTopo.MEMO_ARRAY_SIZE] = node_template['memo_size']
 
             nodes_top.append(node_dict)
 
@@ -310,11 +311,11 @@ class QuantumGUI:
         for edge in edges:
             qconnections.append(
                 {
-                    CONNECT_NODE_1: edge[2]['data']['source'],
-                    CONNECT_NODE_2: edge[2]['data']['target'],
-                    ATTENUATION: float(edge[2]['data']['attenuation']),
-                    DISTANCE: int(edge[2]['data']['distance']),
-                    TYPE: MEET_IN_THE_MID
+                    Topology.CONNECT_NODE_1: edge[2]['data']['source'],
+                    Topology.CONNECT_NODE_2: edge[2]['data']['target'],
+                    Topology.ATTENUATION: float(edge[2]['data']['attenuation']),
+                    Topology.DISTANCE: int(edge[2]['data']['distance']),
+                    Topology.TYPE: RouterNetTopo.MEET_IN_THE_MID
                 }
             )
 
@@ -329,9 +330,9 @@ class QuantumGUI:
                 delay = table[i][j] / 2  # divide round trip time by 2
                 cchannels.append(
                     {
-                        SRC: src,
-                        DST: dst,
-                        DELAY: int(delay)
+                        Topology.SRC: src,
+                        Topology.DST: dst,
+                        Topology.DELAY: int(delay)
                     }
                 )
 
@@ -353,13 +354,13 @@ class QuantumGUI:
 
         # collect and finalize
         output = {
-            ALL_NODE: nodes_top,
-            ALL_Q_CONNECT: qconnections,
-            ALL_C_CHANNEL: cchannels,
-            ALL_TEMPLATES: templates,
+            Topology.ALL_NODE: nodes_top,
+            Topology.ALL_Q_CONNECT: qconnections,
+            Topology.ALL_C_CHANNEL: cchannels,
+            Topology.ALL_TEMPLATES: templates,
 
-            "is_parallel": False,
-            STOP_TIME: int(1e12)
+            RouterNetTopo.IS_PARALLEL: False,
+            Topology.STOP_TIME: int(1e12)
         }
 
         return output

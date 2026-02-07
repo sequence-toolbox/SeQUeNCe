@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from sequence.topology.dqc_net_topo import DQCNetTopo
 from sequence.app.teleport_app import TeleportApp
-from sequence.constants import *
+from sequence.constants import MILLISECOND
 from sequence.kernel.quantum_utils import verify_same_state_vector
 
 
@@ -32,10 +32,10 @@ def single_trial(psi, seeds: dict = None):
     # for module in modules:
     #     log.track_module(module)
 
-    nodes = topo.nodes[DQC_NODE]
+    nodes = topo.nodes[DQCNetTopo.DQC_NODE]
     alice = next(n for n in nodes if n.name=="alice")
     bob   = next(n for n in nodes if n.name=="bob")
-    bsm_nodes = topo.nodes.get(BSM_NODE, [])
+    bsm_nodes = topo.nodes.get(DQCNetTopo.BSM_NODE, [])
     bsm_ab = next((n for n in bsm_nodes if n.name == "BSM_alice_bob"), None)
 
     # Set random seeds for nodes
@@ -136,11 +136,11 @@ def dual_trial(psi_b: np.ndarray, psi_c: np.ndarray, seeds: dict = None):
     # for module in modules:
     #     log.track_module(module)
 
-    nodes   = topo.nodes[DQC_NODE]
+    nodes   = topo.nodes[DQCNetTopo.DQC_NODE]
     alice   = next(n for n in nodes if n.name == "alice")
     bob     = next(n for n in nodes if n.name == "bob")
     charlie = next(n for n in nodes if n.name == "charlie")
-    bsm_nodes = topo.nodes.get(BSM_NODE, [])
+    bsm_nodes = topo.nodes.get(DQCNetTopo.BSM_NODE, [])
     bsm_ab = next((n for n in bsm_nodes if n.name == "BSM_alice_bob"), None)
     bsm_ac = next((n for n in bsm_nodes if n.name == "BSM_alice_charlie"), None)
 

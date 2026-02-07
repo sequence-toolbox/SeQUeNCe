@@ -3,7 +3,7 @@ from sequence.kernel.process import Process
 from sequence.network_management.routing_distributed import DistributedRoutingProtocol
 from sequence.topology import router_net_topo
 import sequence.utils.log as log
-from sequence.constants import *
+from sequence.constants import SECOND
 
 
 # Two node topology, check the FSM states and forwarding tables at both routers
@@ -11,7 +11,7 @@ def test_distributed_routing_protocol_1():
     
     topo = router_net_topo.RouterNetTopo("tests/network_management/line_topo.json")
     all_nodes = topo.get_nodes()
-    routers = all_nodes[QUANTUM_ROUTER]
+    routers = all_nodes[router_net_topo.RouterNetTopo.QUANTUM_ROUTER]
     for router in routers:
         routing_protocol = router.network_manager.get_routing_protocol()
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
@@ -54,7 +54,7 @@ def test_distributed_routing_protocol_1():
 def test_distributed_routing_protocol_2():
     topo = router_net_topo.RouterNetTopo("tests/network_management/ring_topo.json")
     all_nodes = topo.get_nodes()
-    routers = all_nodes[QUANTUM_ROUTER]
+    routers = all_nodes[router_net_topo.RouterNetTopo.QUANTUM_ROUTER]
     for router in routers:
         routing_protocol = router.network_manager.get_routing_protocol()
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
@@ -142,7 +142,7 @@ def test_distributed_routing_protocol_2():
 def test_distributed_routing_protocol_3():
     topo = router_net_topo.RouterNetTopo("tests/network_management/line_topo.json")
     all_nodes = topo.get_nodes()
-    routers = all_nodes[QUANTUM_ROUTER]
+    routers = all_nodes[router_net_topo.RouterNetTopo.QUANTUM_ROUTER]
     for router in routers:
         routing_protocol = router.network_manager.get_routing_protocol()
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
@@ -190,7 +190,7 @@ def test_distributed_routing_protocol_3():
 def test_distributed_routing_protocol_4():
     topo = router_net_topo.RouterNetTopo("tests/network_management/ring_topo.json")
     all_nodes = topo.get_nodes()
-    routers = all_nodes[QUANTUM_ROUTER]
+    routers = all_nodes[router_net_topo.RouterNetTopo.QUANTUM_ROUTER]
     for router in routers:
         routing_protocol = router.network_manager.get_routing_protocol()
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
@@ -282,7 +282,7 @@ def test_distributed_routing_protocol_5():
 
     topo = router_net_topo.RouterNetTopo("tests/network_management/line_topo.json")
     all_nodes = topo.get_nodes()
-    routers = all_nodes[QUANTUM_ROUTER]
+    routers = all_nodes[router_net_topo.RouterNetTopo.QUANTUM_ROUTER]
     DistributedRoutingProtocol.MAX_AGE = int(0.002 * SECOND)
     for router in routers:
         routing_protocol = router.network_manager.get_routing_protocol()
@@ -329,7 +329,7 @@ def test_distributed_routing_protocol_6():
 
     topo = router_net_topo.RouterNetTopo("tests/network_management/line_topo.json")
     all_nodes = topo.get_nodes()
-    routers = all_nodes[QUANTUM_ROUTER]
+    routers = all_nodes[router_net_topo.RouterNetTopo.QUANTUM_ROUTER]
     DistributedRoutingProtocol.MAX_AGE = int(50 * SECOND)
     for router in routers:
         routing_protocol = router.network_manager.get_routing_protocol()
@@ -377,7 +377,7 @@ def test_distributed_routing_protocol_7():
     DistributedRoutingProtocol.MAX_AGE = int(50 * SECOND)
     topo = router_net_topo.RouterNetTopo("tests/network_management/line_topo.json")
     all_nodes = topo.get_nodes()
-    routers = all_nodes[QUANTUM_ROUTER]
+    routers = all_nodes[router_net_topo.RouterNetTopo.QUANTUM_ROUTER]
     for router in routers:
         routing_protocol = router.network_manager.get_routing_protocol()
         routing_protocol.refresh_enabled = True

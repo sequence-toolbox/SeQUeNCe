@@ -14,7 +14,6 @@ from collections import defaultdict
 from sequence.topology.router_net_topo import RouterNetTopo
 from sequence.topology.qkd_topo import QKDTopo
 from sequence.topology.dqc_net_topo import DQCNetTopo
-from sequence.constants import *
 
 
 parser = argparse.ArgumentParser()
@@ -34,13 +33,13 @@ with open(args.config_file, 'r') as fh:
 nodes = config["nodes"]
 node_type = nodes[0]["type"]
 
-if node_type == BSM_NODE or node_type == QUANTUM_ROUTER:
+if node_type == RouterNetTopo.BSM_NODE or node_type == RouterNetTopo.QUANTUM_ROUTER:
     topo = RouterNetTopo(args.config_file)
 
-elif node_type == QKD_NODE:
+elif node_type == QKDTopo.QKD_NODE:
     topo = QKDTopo(args.config_file)
 
-elif node_type == DQC_NODE:
+elif node_type == DQCNetTopo.DQC_NODE:
     topo = DQCNetTopo(args.config_file)
 
 else:
@@ -54,7 +53,7 @@ g.attr(layout='neato', overlap='false')
 node_types = list(topo.nodes.keys())
 
 for node_type in node_types:
-    if node_type == BSM_NODE:
+    if node_type == RouterNetTopo.BSM_NODE:
         if draw_middle:
             for node in topo.get_nodes_by_type(node_type):
                 g.node(node.name, label='BSM', shape='rectangle')

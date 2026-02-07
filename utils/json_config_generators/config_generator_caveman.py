@@ -22,7 +22,7 @@ import json
 import os
 
 from sequence.utils.config_generator import *
-from sequence.constants import *
+from sequence.topology.topology import Topology
 
 
 
@@ -46,12 +46,12 @@ nodes = generate_nodes(router_names, args.memo_size)
 
 cchannels, qchannels, bsm_nodes = generate_bsm_links(graph, args, bsm_name_func)
 nodes += bsm_nodes
-output_dict[ALL_NODE] = nodes
-output_dict[ALL_Q_CHANNEL] = qchannels
+output_dict[Topology.ALL_NODE] = nodes
+output_dict[Topology.ALL_Q_CHANNEL] = qchannels
 
 router_cchannels = generate_classical(router_names, args.cc_delay)
 cchannels += router_cchannels
-output_dict[ALL_C_CHANNEL] = cchannels
+output_dict[Topology.ALL_C_CHANNEL] = cchannels
 
 final_config(output_dict, args)
 

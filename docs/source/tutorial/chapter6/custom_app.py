@@ -1,7 +1,6 @@
 from sequence.kernel.process import Process
 from sequence.kernel.event import Event
 from sequence.topology.router_net_topo import RouterNetTopo
-from sequence.constants import *
 from sequence.resource_management.memory_manager import MemoryInfo
 from sequence.network_management.reservation import Reservation
 import sequence.utils.log as log
@@ -89,7 +88,7 @@ if __name__ == "__main__":
     end_node_name = "end2"
     node1 = node2 = None
 
-    for router in network_topo.get_nodes_by_type(QUANTUM_ROUTER):
+    for router in network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
         if router.name == start_node_name:
             node1 = router
         elif router.name == end_node_name:

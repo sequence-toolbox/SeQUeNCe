@@ -23,7 +23,9 @@ import random
 from networkx.generators.geometric import waxman_graph
 
 from sequence.utils.config_generator import add_default_args, generate_nodes, final_config, router_name_func
-from sequence.constants import *
+from sequence.topology.topology import Topology
+from sequence.topology.router_net_topo import RouterNetTopo
+from sequence.constants import MILLISECOND
 
 
 def create_random_waxman(area_length: int, number_nodes: int, edge_density: float) -> tuple[list, list]:
@@ -104,49 +106,49 @@ def main():
 
         # bsm node
         bsm_name = "BSM_{}_{}".format(node1_name, node2_name)
-        bsm_node = {NAME: bsm_name,
-                    TYPE: BSM_NODE,
-                    SEED: seed}
+        bsm_node = {Topology.NAME: bsm_name,
+                    Topology.TYPE: RouterNetTopo.BSM_NODE,
+                    Topology.SEED: seed}
         bsm_nodes.append(bsm_node)
 
         # qchannels
-        qchannels.append({SRC: node1_name,
-                          DST: bsm_name,
-                          DISTANCE: distance / 2,
-                          ATTENUATION: args.qc_atten})
-        qchannels.append({SRC: node2_name,
-                          DST: bsm_name,
-                          DISTANCE: distance / 2,
-                          ATTENUATION: args.qc_atten})
+        qchannels.append({Topology.SRC: node1_name,
+                          Topology.DST: bsm_name,
+                          Topology.DISTANCE: distance / 2,
+                          Topology.ATTENUATION: args.qc_atten})
+        qchannels.append({Topology.SRC: node2_name,
+                          Topology.DST: bsm_name,
+                          Topology.DISTANCE: distance / 2,
+                          Topology.ATTENUATION: args.qc_atten})
         # cchannels
-        cchannels.append({SRC: node1_name,
-                          DST: bsm_name,
-                          DELAY: int(args.cc_delay * MILLISECOND)})
-        cchannels.append({SRC: node2_name,
-                          DST: bsm_name,
-                          DELAY: int(args.cc_delay * MILLISECOND)})
-        cchannels.append({SRC: bsm_name,
-                          DST: node1_name,
-                          DELAY: int(args.cc_delay * MILLISECOND)})
-        cchannels.append({SRC: bsm_name,
-                          DST: node2_name,
-                          DELAY: int(args.cc_delay * MILLISECOND)})
+        cchannels.append({Topology.SRC: node1_name,
+                          Topology.DST: bsm_name,
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+        cchannels.append({Topology.SRC: node2_name,
+                          Topology.DST: bsm_name,
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+        cchannels.append({Topology.SRC: bsm_name,
+                          Topology.DST: node1_name,
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+        cchannels.append({Topology.SRC: bsm_name,
+                          Topology.DST: node2_name,
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
         seed += 1
 
     # 2. generate classical links between all node pairs
     for i, node1_name in enumerate(router_names):
         for node2_name in router_names[i+1:]:
-            cchannels.append({SRC: node1_name,
-                              DST: node2_name,
-                              DELAY: int(args.cc_delay * MILLISECOND)})
-            cchannels.append({SRC: node2_name,
-                              DST: node1_name,
-                              DELAY: int(args.cc_delay * MILLISECOND)})
+            cchannels.append({Topology.SRC: node1_name,
+                              Topology.DST: node2_name,
+                              Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+            cchannels.append({Topology.SRC: node2_name,
+                              Topology.DST: node1_name,
+                              Topology.DELAY: int(args.cc_delay * MILLISECOND)})
 
     nodes += bsm_nodes
-    output_dict[ALL_NODE] = nodes
-    output_dict[ALL_Q_CHANNEL] = qchannels
-    output_dict[ALL_C_CHANNEL] = cchannels
+    output_dict[Topology.ALL_NODE] = nodes
+    output_dict[Topology.ALL_Q_CHANNEL] = qchannels
+    output_dict[Topology.ALL_C_CHANNEL] = cchannels
 
     # write other config options to output dictionary
     final_config(output_dict, args)

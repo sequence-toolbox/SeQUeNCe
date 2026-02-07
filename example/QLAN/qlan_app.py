@@ -2,7 +2,6 @@ from sequence.kernel.process import Process
 from sequence.kernel.event import Event
 from sequence.topology.qlan_star_topo import QlanStarTopo
 from sequence.kernel.timeline import Timeline
-from sequence.constants import *
 import sequence.utils.log as log
 from sequence.topology.qlan.orchestrator import QlanOrchestratorNode
 from sequence.topology.qlan.client import QlanClientNode
@@ -122,9 +121,9 @@ if __name__ == "__main__":
     log.track_module('client')
     #log.track_module('timeline')
 
-    for node in network_topo.get_nodes_by_type(ORCHESTRATOR):
+    for node in network_topo.get_nodes_by_type(QlanStarTopo.ORCHESTRATOR):
         orchestrator = node
-    for node in network_topo.get_nodes_by_type(CLIENT):
+    for node in network_topo.get_nodes_by_type(QlanStarTopo.CLIENT):
         client_nodes.append(node)
 
     app = QlanApp(tl=tl, orchestrator=orchestrator, clients=client_nodes)

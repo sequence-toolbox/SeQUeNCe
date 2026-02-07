@@ -1,7 +1,6 @@
 from sequence.topology.qlan_star_topo import QlanStarTopo
 from sequence.topology.qlan.orchestrator import QlanOrchestratorNode
 from sequence.kernel.timeline import Timeline
-from sequence.constants import ORCHESTRATOR, CLIENT
 
 TOPOLOGY = "tests/topology/qlan_topo_sample_config.json"
 
@@ -19,10 +18,10 @@ def test_nodes_initialization():
     assert qlan_topo.meas_bases == 'z'
 
     assert len(qlan_topo.orchestrator_nodes)+len(qlan_topo.client_nodes) == 3
-    assert ORCHESTRATOR in all_nodes
-    assert CLIENT in all_nodes
+    assert QlanStarTopo.ORCHESTRATOR in all_nodes
+    assert QlanStarTopo.CLIENT in all_nodes
 
-    orch_nodes = qlan_topo.get_nodes_by_type(ORCHESTRATOR)
+    orch_nodes = qlan_topo.get_nodes_by_type(QlanStarTopo.ORCHESTRATOR)
     assert len(orch_nodes) == 1
 
     for node in orch_nodes:

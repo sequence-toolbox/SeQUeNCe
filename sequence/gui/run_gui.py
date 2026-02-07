@@ -1,5 +1,4 @@
 import json
-import yaml
 import os
 import networkx as nx
 import pandas as pd
@@ -7,7 +6,8 @@ import numpy as np
 
 from .app import QuantumGUI
 from .graph_comp import GraphNode
-from ..constants import *
+from ..topology.topology import Topology
+from ..topology.router_net_topo import RouterNetTopo
 
 
 class RunGui:
@@ -24,20 +24,15 @@ class RunGui:
             tdm=tdm_table
         ).get_app(name)
 
-    @staticmethod
-    def _load_config(filename: str) -> dict:
-        """Load configuration from JSON or YAML file."""
-        with open(filename) as fh:
-            if filename.endswith(('.yaml', '.yml')):
-                return yaml.safe_load(fh)
-            return json.load(fh)
-
     def load_graph(self, path_to_topology=None):
+        # JSON
         if path_to_topology is None:
             directory, _ = os.path.split(__file__)
-            network_in = self._load_config(directory + RunGui.DEFAULT_CONFIG)
+            with open(directory + RunGui.DEFAULT_CONFIG) as json_file:
+                network_in = json.load(json_file)
         else:
-            network_in = self._load_config(path_to_topology)
+            with open(path_to_topology) as json_file:
+                network_in = json.load(json_file)
 
         # Delay table initialization
         # TODO: rewrite for non-table format
@@ -66,23 +61,23 @@ class RunGui:
         graph = nx.DiGraph()
 
         for node in network_in['nodes']:
-            new_node = GraphNode(node[NAME], node[TYPE], 'default_router')
+            new_node = GraphNode(node[Topology.NAME], node[Topology.TYPE], 'default_router')
             graph.add_node(
-                node[NAME],
-                label=node[NAME],
-                node_type=node[TYPE],
+                node[Topology.NAME],
+                label=node[Topology.NAME],
+                node_type=node[Topology.TYPE],
                 data=new_node.__dict__
             )
 
-        for edge in network_in[ALL_Q_CONNECT]:
+        for edge in network_in[Topology.ALL_Q_CONNECT]:
             graph.add_edge(
-                edge[CONNECT_NODE_1],
-                edge[CONNECT_NODE_2],
+                edge[Topology.CONNECT_NODE_1],
+                edge[Topology.CONNECT_NODE_2],
                 data={
-                    'source': edge[CONNECT_NODE_1],
-                    'target': edge[CONNECT_NODE_2],
-                    'distance': edge[DISTANCE],
-                    'attenuation': edge[ATTENUATION],
+                    'source': edge[Topology.CONNECT_NODE_1],
+                    'target': edge[Topology.CONNECT_NODE_2],
+                    'distance': edge[Topology.DISTANCE],
+                    'attenuation': edge[Topology.ATTENUATION],
                     'link_type': 'Quantum'
                 }
             )

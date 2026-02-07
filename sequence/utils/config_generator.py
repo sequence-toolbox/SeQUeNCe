@@ -2,7 +2,11 @@
 Examples of using this module is in https://github.com/sequence-toolbox/SeQUeNCe/tree/master/utils/json_config_generators
 """
 
-from sequence.constants import *
+from sequence.topology.topology import Topology
+from sequence.topology.router_net_topo import RouterNetTopo
+from sequence.topology.dqc_net_topo import DQCNetTopo
+from sequence.constants import SECOND, MILLISECOND
+
 
 def add_default_args(parser):
     """Adds arguments to argument parser.
@@ -32,16 +36,16 @@ def generate_nodes(router_names: list, memo_size: int, template: str = None, gat
     """
     nodes = []
     for i, name in enumerate(router_names):
-        config = {NAME: name,
-                  TYPE: QUANTUM_ROUTER,
-                  SEED: i,
-                  MEMO_ARRAY_SIZE: memo_size}
+        config = {Topology.NAME: name,
+                  Topology.TYPE: RouterNetTopo.QUANTUM_ROUTER,
+                  Topology.SEED: i,
+                  RouterNetTopo.MEMO_ARRAY_SIZE: memo_size}
         if template:
-            config[TEMPLATE] = template
+            config[Topology.TEMPLATE] = template
         if gate_fidelity:
-            config[GATE_FIDELITY] = gate_fidelity
+            config[Topology.GATE_FIDELITY] = gate_fidelity
         if measurement_fidelity:
-            config[MEASUREMENT_FIDELITY] = measurement_fidelity
+            config[Topology.MEASUREMENT_FIDELITY] = measurement_fidelity
         nodes.append(config)
     return nodes
 
@@ -51,17 +55,17 @@ def generate_quantum_dqc_nodes(router_names: str, memo_size: int, data_memo_size
     """
     nodes = []
     for i, name in enumerate(router_names):
-        config = {NAME: name,
-                  TYPE: DQC_NODE,
-                  SEED: i,
-                  MEMO_ARRAY_SIZE: memo_size,
-                  DATA_MEMO_ARRAY_SIZE: data_memo_size}
+        config = {Topology.NAME: name,
+                  Topology.TYPE: DQCNetTopo.DQC_NODE,
+                  Topology.SEED: i,
+                  DQCNetTopo.MEMO_ARRAY_SIZE: memo_size,
+                  DQCNetTopo.DATA_MEMO_ARRAY_SIZE: data_memo_size}
         if template:
-            config[TEMPLATE] = template
+            config[Topology.TEMPLATE] = template
         if gate_fidelity:
-            config[GATE_FIDELITY] = gate_fidelity
+            config[Topology.GATE_FIDELITY] = gate_fidelity
         if measurement_fidelity:
-            config[MEASUREMENT_FIDELITY] = measurement_fidelity
+            config[Topology.MEASUREMENT_FIDELITY] = measurement_fidelity
         nodes.append(config)
     return nodes
 
@@ -74,25 +78,25 @@ def generate_bsm_links(graph, parsed_args, bsm_naming_func):
     for i, node_pair in enumerate(graph.edges):
         node1, node2 = node_pair
         bsm_name = bsm_naming_func(node1, node2)
-        bsm_node = {NAME: bsm_name,
-                    TYPE: BSM_NODE,
-                    SEED: i,}
+        bsm_node = {Topology.NAME: bsm_name,
+                    Topology.TYPE: RouterNetTopo.BSM_NODE,
+                    Topology.SEED: i,}
         bsm_nodes.append(bsm_node)
 
         for node in node_pair:
-            qchannels.append({SRC: node,
-                              DST: bsm_name,
-                              DISTANCE: parsed_args.qc_length * 500,
-                              ATTENUATION: parsed_args.qc_atten})
+            qchannels.append({Topology.SRC: node,
+                              Topology.DST: bsm_name,
+                              Topology.DISTANCE: parsed_args.qc_length * 500,
+                              Topology.ATTENUATION: parsed_args.qc_atten})
 
         for node in node_pair:
-            cchannels.append({SRC: bsm_name,
-                              DST: node,
-                              DELAY: parsed_args.cc_delay * 1e9})
+            cchannels.append({Topology.SRC: bsm_name,
+                              Topology.DST: node,
+                              Topology.DELAY: parsed_args.cc_delay * 1e9})
 
-            cchannels.append({SRC: node,
-                              DST: bsm_name,
-                              DELAY: parsed_args.cc_delay * 1e9})
+            cchannels.append({Topology.SRC: node,
+                              Topology.DST: bsm_name,
+                              Topology.DELAY: parsed_args.cc_delay * 1e9})
 
     return cchannels, qchannels, bsm_nodes
 
@@ -104,16 +108,16 @@ def generate_classical(router_names: list, cc_delay: int) -> list:
         for node2 in router_names:
             if node1 == node2:
                 continue
-            cchannels.append({SRC: node1,
-                              DST: node2,
-                              DELAY: int(cc_delay * MILLISECOND)})
+            cchannels.append({Topology.SRC: node1, 
+                              Topology.DST: node2, 
+                              Topology.DELAY: int(cc_delay * MILLISECOND)})
     return cchannels
 
 
 # add final touches to config dict: 1) stop_time, 2) formalism
 def final_config(output_dict, parsed_args):
-    output_dict[STOP_TIME] = int(parsed_args.stop * SECOND)
-    output_dict[FORMALISM] = parsed_args.formalism
+    output_dict[Topology.STOP_TIME] = int(parsed_args.stop * SECOND)
+    output_dict[Topology.FORMALISM] = parsed_args.formalism
 
 
 def router_name_func(i) -> str:

@@ -1,5 +1,4 @@
 from sequence.topology.router_net_topo import RouterNetTopo
-from sequence.constants import *
 
 
 def set_parameters(topology: RouterNetTopo):
@@ -8,7 +7,7 @@ def set_parameters(topology: RouterNetTopo):
     MEMO_EXPIRE = 0
     MEMO_EFFICIENCY = 1
     MEMO_FIDELITY = 0.9349367588934053
-    for node in topology.get_nodes_by_type(QUANTUM_ROUTER):
+    for node in topology.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
         memory_array = node.get_components_by_type("MemoryArray")[0]
         memory_array.update_memory_params("frequency", MEMO_FREQ)
         memory_array.update_memory_params("coherence_time", MEMO_EXPIRE)
@@ -19,7 +18,7 @@ def set_parameters(topology: RouterNetTopo):
     DETECTOR_EFFICIENCY = 0.9
     DETECTOR_COUNT_RATE = 5e7
     DETECTOR_RESOLUTION = 100
-    for node in topology.get_nodes_by_type(BSM_NODE):
+    for node in topology.get_nodes_by_type(RouterNetTopo.BSM_NODE):
         bsm = node.get_components_by_type("SingleAtomBSM")[0]
         bsm.update_detectors_params("efficiency", DETECTOR_EFFICIENCY)
         bsm.update_detectors_params("count_rate", DETECTOR_COUNT_RATE)
@@ -28,7 +27,7 @@ def set_parameters(topology: RouterNetTopo):
     # set entanglement swapping parameters
     SWAP_SUCC_PROB = 0.90
     SWAP_DEGRADATION = 0.99
-    for node in topology.get_nodes_by_type(QUANTUM_ROUTER):
+    for node in topology.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
         node.network_manager.protocol_stack[1].set_swapping_success_rate(SWAP_SUCC_PROB)
         node.network_manager.protocol_stack[1].set_swapping_degradation(SWAP_DEGRADATION)
         
@@ -53,7 +52,7 @@ if __name__ == "__main__":
     end_node_name = "end2"
     node1 = node2 = None
 
-    for router in network_topo.get_nodes_by_type(QUANTUM_ROUTER):
+    for router in network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
         if router.name == start_node_name:
             node1 = router
         elif router.name == end_node_name:

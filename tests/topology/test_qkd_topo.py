@@ -1,7 +1,7 @@
 from sequence.topology.qkd_topo import QKDTopo
 from sequence.topology.node import QKDNode
 from sequence.kernel.timeline import Timeline
-from sequence.constants import QKD_NODE
+
 
 def test_QKDTopology():
     topo = QKDTopo("tests/topology/qkd_net_topo_sample_config.json")
@@ -9,8 +9,8 @@ def test_QKDTopology():
     assert topo.get_timeline().stop_time == 1000000000000
 
     all_nodes = topo.get_nodes()
-    assert len(all_nodes) == 1 and QKD_NODE in all_nodes
-    qkd_nodes = topo.get_nodes_by_type(QKD_NODE)
+    assert len(all_nodes) == 1 and QKDTopo.QKD_NODE in all_nodes
+    qkd_nodes = topo.get_nodes_by_type(QKDTopo.QKD_NODE)
     assert len(qkd_nodes) == 2
 
     for node in qkd_nodes:

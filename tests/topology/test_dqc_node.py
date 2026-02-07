@@ -127,6 +127,8 @@ def test_DQCNode_send_qubit_like_Node():
     assert abs(len(qn2.log) / N - expect_rate_0) < 0.1
 
 
+# ---- Dispatch behavior specific to DQCNode.receive_message ----
+
 class Sink:
     def __init__(self):
         self.calls = []

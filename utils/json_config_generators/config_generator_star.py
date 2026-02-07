@@ -21,7 +21,9 @@ import json
 import os
 
 from sequence.utils.config_generator import add_default_args, generate_nodes, generate_classical, final_config, router_name_func
-from sequence.constants import *
+from sequence.topology.topology import Topology
+from sequence.topology.router_net_topo import RouterNetTopo
+from sequence.constants import MILLISECOND
 
 
 # parse args
@@ -41,50 +43,50 @@ router_names[-1] = center_name
 
 nodes = generate_nodes(router_names, args.memo_size)
 for node in nodes:
-    if node[NAME] == center_name:
-        node[MEMO_ARRAY_SIZE] = args.memo_size_center
+    if node[Topology.NAME] == center_name:
+        node[RouterNetTopo.MEMO_ARRAY_SIZE] = args.memo_size_center
         break
 
 # generate quantum links
 qchannels = []
 cchannels = []
 bsm_names = ["BSM_" + str(i) for i in range(args.star_size)]
-bsm_nodes = [{NAME: bsm_name,
-              TYPE: BSM_NODE,
-              SEED: i}
+bsm_nodes = [{Topology.NAME: bsm_name,
+              Topology.TYPE: RouterNetTopo.BSM_NODE,
+              Topology.SEED: i}
               for i, bsm_name in enumerate(bsm_names)]
 
 for node_name, bsm_name in zip(router_names, bsm_names):
     # qchannels
-    qchannels.append({SRC: node_name,
-                      DST: bsm_name,
-                      DISTANCE: args.qc_length * 500,
-                      ATTENUATION: args.qc_atten})
-    qchannels.append({SRC: center_name,
-                      DST: bsm_name,
-                      DISTANCE: args.qc_length * 500,
-                      ATTENUATION: args.qc_atten})
+    qchannels.append({Topology.SRC: node_name,
+                      Topology.DST: bsm_name,
+                      Topology.DISTANCE: args.qc_length * 500,
+                      Topology.ATTENUATION: args.qc_atten})
+    qchannels.append({Topology.SRC: center_name,
+                      Topology.DST: bsm_name,
+                      Topology.DISTANCE: args.qc_length * 500,
+                      Topology.ATTENUATION: args.qc_atten})
     # cchannels
-    cchannels.append({SRC: node_name,
-                      DST: bsm_name,
-                      DELAY: int(args.cc_delay * MILLISECOND)})
-    cchannels.append({SRC: center_name,
-                      DST: bsm_name,
-                      DELAY: int(args.cc_delay * MILLISECOND)})
-    cchannels.append({SRC: bsm_name,
-                      DST: node_name,
-                      DELAY: int(args.cc_delay * MILLISECOND)})
-    cchannels.append({SRC: bsm_name,
-                      DST: center_name,
-                      DELAY: int(args.cc_delay * MILLISECOND)})
+    cchannels.append({Topology.SRC: node_name,
+                      Topology.DST: bsm_name,
+                      Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+    cchannels.append({Topology.SRC: center_name,
+                      Topology.DST: bsm_name,
+                      Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+    cchannels.append({Topology.SRC: bsm_name,
+                      Topology.DST: node_name,
+                      Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+    cchannels.append({Topology.SRC: bsm_name,
+                      Topology.DST: center_name,
+                      Topology.DELAY: int(args.cc_delay * MILLISECOND)})
 
-output_dict[ALL_NODE] = nodes + bsm_nodes
-output_dict[ALL_Q_CHANNEL] = qchannels
+output_dict[Topology.ALL_NODE] = nodes + bsm_nodes
+output_dict[Topology.ALL_Q_CHANNEL] = qchannels
 
 # generate classical links
 router_cchannels = generate_classical(router_names, args.cc_delay)
 cchannels += router_cchannels
-output_dict[ALL_C_CHANNEL] = cchannels
+output_dict[Topology.ALL_C_CHANNEL] = cchannels
 
 # write other config options to output dictionary
 final_config(output_dict, args)

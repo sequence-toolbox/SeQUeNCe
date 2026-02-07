@@ -28,8 +28,9 @@ import json
 import os
 
 from sequence.utils.config_generator import add_default_args, generate_nodes, generate_classical, final_config, router_name_func
+from sequence.topology.topology import Topology
 from sequence.topology.router_net_topo import RouterNetTopo
-from sequence.constants import *
+from sequence.constants import MILLISECOND
 
 
 
@@ -42,35 +43,35 @@ def add_branches(node_names, nodes, index, bsm_names, bsm_nodes, qchannels, ccha
             node2 = node_names[i]
             bsm_name = "BSM_{}_{}".format(node1, node2)
             bsm_names.append(bsm_name)
-            bsm_node = {NAME: bsm_name,
-                        TYPE: BSM_NODE,
-                        SEED: i}
+            bsm_node = {Topology.NAME: bsm_name,
+                        Topology.TYPE: RouterNetTopo.BSM_NODE,
+                        Topology.SEED: i}
             if args.parallel:
                 bsm_node[RouterNetTopo.GROUP] = nodes[i][RouterNetTopo.GROUP]
             bsm_nodes.append(bsm_node)
 
             # qchannels
-            qchannels.append({SRC: node1,
-                              DST: bsm_name,
-                              DISTANCE: args.qc_length * 500,
-                              ATTENUATION: args.qc_atten})
-            qchannels.append({SRC: node2,
-                              DST: bsm_name,
-                              DISTANCE: args.qc_length * 500,
-                              ATTENUATION: args.qc_atten})
+            qchannels.append({Topology.SRC: node1,
+                              Topology.DST: bsm_name,
+                              Topology.DISTANCE: args.qc_length * 500,
+                              Topology.ATTENUATION: args.qc_atten})
+            qchannels.append({Topology.SRC: node2,
+                              Topology.DST: bsm_name,
+                              Topology.DISTANCE: args.qc_length * 500,
+                              Topology.ATTENUATION: args.qc_atten})
             # cchannels
-            cchannels.append({SRC: node1,
-                              DST: bsm_name,
-                              DELAY: int(args.cc_delay * MILLISECOND)})
-            cchannels.append({SRC: node2,
-                              DST: bsm_name,
-                              DELAY: int(args.cc_delay * MILLISECOND)})
-            cchannels.append({SRC: bsm_name,
-                              DST: node1,
-                              DELAY: int(args.cc_delay * MILLISECOND)})
-            cchannels.append({SRC: bsm_name,
-                              DST: node2,
-                              DELAY: int(args.cc_delay * MILLISECOND)})
+            cchannels.append({Topology.SRC: node1,
+                              Topology.DST: bsm_name,
+                              Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+            cchannels.append({Topology.SRC: node2,
+                              Topology.DST: bsm_name,
+                              Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+            cchannels.append({Topology.SRC: bsm_name,
+                              Topology.DST: node1,
+                              Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+            cchannels.append({Topology.SRC: bsm_name,
+                              Topology.DST: node2,
+                              Topology.DELAY: int(args.cc_delay * MILLISECOND)})
 
             bsm_names, bsm_nodes, qchannels, cchannels = \
                 add_branches(node_names, nodes, i, bsm_names, bsm_nodes,
@@ -94,13 +95,13 @@ nodes = generate_nodes(router_names, args.memo_size)
 bsm_names, bsm_nodes, qchannels, cchannels = \
         add_branches(router_names, nodes, 0, [], [], [], [])
 nodes += bsm_nodes
-output_dict[ALL_NODE] = nodes
-output_dict[ALL_Q_CHANNEL] = qchannels
+output_dict[Topology.ALL_NODE] = nodes
+output_dict[Topology.ALL_Q_CHANNEL] = qchannels
 
 # generate classical links
 router_cchannels = generate_classical(router_names, args.cc_delay)
 cchannels += router_cchannels
-output_dict[ALL_C_CHANNEL] = cchannels
+output_dict[Topology.ALL_C_CHANNEL] = cchannels
 
 # write other config options to output dictionary
 final_config(output_dict, args)

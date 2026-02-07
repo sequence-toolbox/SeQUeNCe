@@ -10,11 +10,12 @@ import numpy as np
 import random
 
 from sequence.utils.config_generator import add_default_args, generate_bsm_links, generate_classical, final_config, router_name_func, bsm_name_func
-from sequence.constants import *
+from sequence.topology.topology import Topology
+from sequence.topology.router_net_topo import RouterNetTopo
 
 
-RNG_SEED = 1
-random.seed(RNG_SEED)
+SEED = 1
+random.seed(SEED)
 
 
 def get_exp_dis_prob(x0, x1, alpha):
@@ -125,22 +126,22 @@ nx.relabel_nodes(graph, mapping, copy=False)
 output_dict = {}
 
 router_names = [router_name_func(i) for i in range(NET_SIZE)]
-nodes = [{NAME: name,
-          TYPE: QUANTUM_ROUTER,
-          SEED: i,
-          MEMO_ARRAY_SIZE: node_memo_size[name]}
+nodes = [{Topology.NAME: name,
+          Topology.TYPE: RouterNetTopo.QUANTUM_ROUTER,
+          Topology.SEED: i,
+          RouterNetTopo.MEMO_ARRAY_SIZE: node_memo_size[name]}
          for i, name in enumerate(router_names)]
 
 # add bsm links
 cchannels, qchannels, bsm_nodes = generate_bsm_links(graph, args, bsm_name_func)
 nodes += bsm_nodes
-output_dict[ALL_NODE] = nodes
-output_dict[ALL_Q_CHANNEL] = qchannels
+output_dict[Topology.ALL_NODE] = nodes
+output_dict[Topology.ALL_Q_CHANNEL] = qchannels
 
 # add router-to-router classical channels
 router_cchannels = generate_classical(router_names, args.cc_delay)
 cchannels += router_cchannels
-output_dict[ALL_C_CHANNEL] = cchannels
+output_dict[Topology.ALL_C_CHANNEL] = cchannels
 
 # write other config options
 final_config(output_dict, args)
