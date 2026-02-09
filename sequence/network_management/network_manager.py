@@ -3,9 +3,9 @@
 This module defines the NetworkManager class, an implementation of the SeQUeNCe network management module.
 Also included in this module is the message type used by the network manager and a function for generating network managers with default protocols.
 """
-
+from abc import ABC, abstractmethod
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, overload, TypeVar, Literal
 
 if TYPE_CHECKING:
     from ..protocol import StackProtocol
@@ -23,6 +23,7 @@ from .reservation import (
 from .routing_distributed import DistributedRoutingProtocol
 from .routing_static import StaticRoutingProtocol
 
+T = TypeVar('T', bound='NetworkManager')
 
 class NetworkManagerMessage(Message):
     """Message used by the network manager.
@@ -40,8 +41,66 @@ class NetworkManagerMessage(Message):
     def __str__(self) -> str:
         return f"type={self.msg_type}; receiver={self.receiver}; payload={self.payload}"
 
+class NetworkManager(ABC):
+    _registry: dict[str, type["NetworkManager"]] = {}
 
-class NetworkManager:
+    def __init__(self, owner: QuantumRouter, *args, **kwargs):
+        """Constructor for network manager.
+        Args:
+            owner (QuantumRouter): owner of network manager.
+        """
+        self.owner: QuantumRouter = owner
+
+    @classmethod
+    def register(cls, name: str, nm_cls: type["NetworkManager"]=None):
+        if nm_cls is not None:
+            cls._registry[name] = nm_cls
+            return None
+
+        def decorator(dec_nm_cls: type["NetworkManager"]):
+            cls._registry[name] = dec_nm_cls
+            return dec_nm_cls
+        return decorator
+
+    @overload
+    @classmethod
+    def create(cls, cls_name: Literal['default'], owner: QuantumRouter, protocol_stack: list[StackProtocol]) -> "DefaultNetworkManager": ...
+
+    @overload
+    @classmethod
+    def create(cls, cls_name: str, owner: QuantumRouter, *args, **kwargs) -> "NetworkManager": ...
+
+    @classmethod
+    def create(cls, cls_name: str, owner: QuantumRouter, *args, **kwargs) -> "NetworkManager":
+        if cls_name not in cls._registry:
+            raise ValueError(f'NetworkManager {cls_name} is not registered.')
+
+        nm_cls: type["NetworkManager"] = cls._registry[cls_name]
+        return nm_cls(owner, *args, **kwargs)
+
+    @abstractmethod
+    def received_message(self, src: str, msg: NetworkManagerMessage):
+        """Method to receive transmitted network reservation method.
+        Will pop a message to the lowest protocol in the protocol stack.
+        pass
+        """
+
+    @abstractmethod
+    def request(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float, entanglement_number: int = 1, identity: int = 0) -> None:
+        """Method to make an entanglement request. Will defer the request to the top protocol in the protocol stack.
+        Args:
+            responder (str): name of node to establish entanglement with.
+            start_time (int): simulation start time of entanglement.
+            end_time (int): simulation end time of entanglement.
+            memory_size (int): number of entangled memory pairs to create.
+            target_fidelity (float): desired fidelity of entanglement.
+            entanglement_number (int): the number of entanglement requested.
+            identity (int): the ID of the request.
+        """
+        pass
+
+@NetworkManager.register('default')
+class DefaultNetworkManager(NetworkManager):
     """Network manager implementation class.
 
     The network manager is responsible for the operations of a node within a broader quantum network.
@@ -87,7 +146,7 @@ class NetworkManager:
             self.protocol_stack[-1].upper_protocols.append(self)
 
     def push(self, **kwargs):
-        """Method to receive pushes from the lowest protocol in protocol stack.
+        """Method to receive pushes from the lowest protocol in the protocol stack.
 
         Will create the message to send to another node.
 
@@ -100,12 +159,12 @@ class NetworkManager:
         self.owner.send_message(kwargs["dst"], message)
 
     def pop(self, **kwargs):
-        """Method to receive pops from the highest protocol in protocol stack.
+        """Method to receive pops from the highest protocol in the protocol stack.
 
-        Will get reservation from message and attempt to meet it.
+        Will get reservation from a message and attempt to meet it.
 
         Keyword Args:
-            msg (any): message containing reservation.
+            msg (any): message containing a reservation.
         """
 
         msg = kwargs.get("msg")
@@ -213,7 +272,7 @@ class NetworkManager:
         return self.routing_protocol
 
 
-def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_templates: dict|None=None) -> "NetworkManager":
+def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_templates: dict|None=None):
     """Function to create a new network manager.
 
     Will create a network manager with the default protocol stack.
@@ -229,22 +288,33 @@ def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_
     """
     if component_templates is None:
         component_templates = {}
-    swapping_success_rate = 0.5
-    manager = NetworkManager(owner, [])
-    routing = component_templates.get("routing", "static")
-    match routing:
-        case "static":
-            routing_protocol_cls = StaticRoutingProtocol
-        case "distributed":
-            routing_protocol_cls = DistributedRoutingProtocol
-        case _:
-            raise NotImplementedError(f"Routing protocol {routing} not implemented.")   
-    routing = routing_protocol_cls(owner, f"{routing_protocol_cls.__name__}")
-    manager.set_routing_protocol(routing)
-    forwarding_protocol = ForwardingProtocol(owner, owner.name + ".ForwardingProtocol")
-    rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP", memory_array_name)
-    rsvp.set_swapping_success_rate(swapping_success_rate)
-    forwarding_protocol.upper_protocols.append(rsvp)
-    rsvp.lower_protocols.append(forwarding_protocol)
-    manager.load_stack([forwarding_protocol, rsvp])
-    return manager
+
+    nm_type: str = component_templates.get('network_manager_type', 'default')
+
+    if nm_type == 'default':
+        manager = NetworkManager.create('default', owner, [])
+
+        # Set up routing protocol
+        routing: str = component_templates.get("routing", "static")
+        match routing:
+            case "static":
+                routing_protocol_cls = StaticRoutingProtocol
+            case "distributed":
+                routing_protocol_cls = DistributedRoutingProtocol
+            case _:
+                raise NotImplementedError(f"Routing protocol {routing} not implemented.")
+        routing_cls = routing_protocol_cls(owner, f"{routing_protocol_cls.__name__}")
+        manager.set_routing_protocol(routing_cls)
+
+        # Set up Forwarding Protocol
+        forwarding_protocol = ForwardingProtocol(owner, owner.name + ".ForwardingProtocol")
+
+        # Set up RSVP Protocol
+        rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP", memory_array_name)
+        rsvp.set_swapping_success_rate(0.5)
+        forwarding_protocol.upper_protocols.append(rsvp)
+        rsvp.lower_protocols.append(forwarding_protocol)
+        manager.load_stack([forwarding_protocol, rsvp])
+        return manager
+
+    return NetworkManager.create(nm_type, owner)

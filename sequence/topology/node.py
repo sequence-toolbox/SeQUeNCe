@@ -399,6 +399,9 @@ class QuantumRouter(Node):
             component_templates (dict): parameters for the quantum router
         """
         resource_manager = ResourceManager(self, memo_arr_name)
+
+
+
         network_manager = NewNetworkManager(self, memo_arr_name, component_templates)
         self.set_resource_manager(resource_manager)
         self.set_network_manager(network_manager)

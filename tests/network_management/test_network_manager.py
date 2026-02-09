@@ -2,7 +2,9 @@ import math
 
 from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.kernel.timeline import Timeline
-from sequence.network_management.network_manager import *
+from sequence.network_management.network_manager import NetworkManager, NetworkManagerMessage, NewNetworkManager, DefaultNetworkManager
+from sequence.network_management.forwarding import ForwardingProtocol
+from sequence.message import Message
 from sequence.network_management.reservation import RSVPMsgType
 from sequence.protocol import StackProtocol
 from sequence.topology.node import QuantumRouter, BSMNode
@@ -12,7 +14,7 @@ class FakeNode(QuantumRouter):
     def __init__(self, name, timeline, memo_size=50):
         super().__init__(name, timeline, memo_size)
         memo_arr = self.get_components_by_type("MemoryArray")[0]
-        self.network_manager = NewNetworkManager(self, memo_arr.name)
+        self.network_manager:DefaultNetworkManager = NewNetworkManager(self, memo_arr.name)
         self.send_log = []
         self.receive_log = []
         self.send_out = True
@@ -57,7 +59,7 @@ def test_NetworkManager_received_message():
     tl = Timeline()
     node = FakeNode('fake', tl)
     protocol = FakeForwardingProtocol(node, "protocol")
-    manager = NetworkManager(node, [protocol])
+    manager = NetworkManager.create('default',node, [protocol])
     assert protocol.is_pop is False
     msg = NetworkManagerMessage("", "network_manager", "payload")
     manager.received_message("src", msg)
@@ -67,7 +69,7 @@ def test_NetworkManager_received_message():
 def test_NetworkManager_load_stack():
     tl = Timeline()
     node = FakeNode('fake', tl)
-    manager = NetworkManager(node, [])
+    manager = NetworkManager.create('default',node, [])
     assert len(manager.protocol_stack) == 0
     protocol = FakeProtocol(None, "protocol")
     manager.load_stack([protocol])
