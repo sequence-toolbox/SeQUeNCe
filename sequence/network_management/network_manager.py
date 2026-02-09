@@ -81,14 +81,15 @@ class NetworkManager:
         """
 
         self.protocol_stack = stack
+
         if len(self.protocol_stack) > 0:
             self.protocol_stack[0].lower_protocols.append(self)
             self.protocol_stack[-1].upper_protocols.append(self)
 
     def push(self, **kwargs):
-        """Method to receive pushes from lowest protocol in protocol stack.
+        """Method to receive pushes from the lowest protocol in protocol stack.
 
-        Will create message to send to another node.
+        Will create the message to send to another node.
 
         Keyword Args:
             msg (any): message to deliver.
@@ -118,13 +119,13 @@ class NetworkManager:
         elif reservation.responder == self.owner.name:
             self.owner.get_other_reservation(reservation)
 
-    def received_message(self, src: str, msg: "NetworkManagerMessage"):
+    def received_message(self, src: str, msg: NetworkManagerMessage):
         """Method to receive transmitted network reservation method.
 
         Will pop a message to the lowest protocol in the protocol stack.
 
         Args:
-            src (str): name of source node for message.
+            src (str): name of the source node for a message.
             msg (NetworkManagerMessage): message received.
 
         Side Effects:
@@ -208,10 +209,11 @@ class NetworkManager:
         Returns:
             Protocol: the routing protocol in the network manager
         """
+        assert self.routing_protocol is not None, "Routing protocol is not set in the network manager"
         return self.routing_protocol
 
 
-def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_templates: dict=None) -> "NetworkManager":
+def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_templates: dict|None=None) -> "NetworkManager":
     """Function to create a new network manager.
 
     Will create a network manager with the default protocol stack.

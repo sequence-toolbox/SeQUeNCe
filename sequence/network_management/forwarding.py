@@ -96,14 +96,14 @@ class ForwardingProtocol(StackProtocol):
         else:
             raise Exception("Both dst and next_hop are None!")
 
-    def pop(self, src: str, msg: ForwardingMessage):
+    def pop(self, src: str, msg: Message) -> None:
         """Message to receive reservation messages.
 
         Messages are forwarded to the upper protocol.
 
         Args:
             src (str): node sending the message.
-            msg (ForwardingMessage): message received.
+            msg (Message): message received.
 
         Side Effects:
             Will call `pop` method of higher protocol.
