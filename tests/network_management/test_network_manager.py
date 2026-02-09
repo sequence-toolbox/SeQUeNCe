@@ -46,11 +46,17 @@ class FakeProtocol(StackProtocol):
     def push(self, **kwargs):
         self.is_push = True
 
+class FakeForwardingProtocol(ForwardingProtocol):
+    def __init__(self, owner, name):
+        super().__init__(owner, name)
+        self.is_pop = False
+    def pop(self, src, msg):
+        self.is_pop = True
 
 def test_NetworkManager_received_message():
     tl = Timeline()
     node = FakeNode('fake', tl)
-    protocol = FakeProtocol(None, "protocol")
+    protocol = FakeForwardingProtocol(node, "protocol")
     manager = NetworkManager(node, [protocol])
     assert protocol.is_pop is False
     msg = NetworkManagerMessage("", "network_manager", "payload")

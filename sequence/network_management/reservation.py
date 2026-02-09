@@ -6,7 +6,8 @@ Also included is the definition of the message type used by the reservation prot
 """
 
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
+from abc import ABC, abstractmethod
 
 from ..resource_management.memory_manager import MemoryManager
 
@@ -24,8 +25,8 @@ from ..kernel.event import Event
 from ..kernel.process import Process
 from ..resource_management.resource_manager import MemoryInfo
 
-ENTANGLED = 'ENTANGLED'
-RAW = 'RAW'
+ENTANGLED: Final = 'ENTANGLED'
+RAW: Final = 'RAW'
 
 
 class RSVPMsgType(Enum):
@@ -382,7 +383,7 @@ class ResourceReservationProtocol(StackProtocol):
              entanglement_number: int = 1, identity: int = 0):
         """Method to receive reservation requests from higher level protocol.
 
-        Will evaluate request and determine if node can meet it.
+        Will evaluate the request and determine if the node can meet it.
         If it can, it will push the request down to a lower protocol.
         Otherwise, it will pop the request back up.
 
@@ -392,7 +393,7 @@ class ResourceReservationProtocol(StackProtocol):
             end_time (int): simulation time at which entanglement should cease.
             memory_size (int): number of memories to be entangled.
             target_fidelity (float): desired fidelity of entanglement.
-            entanglement_number (int): the number of entanglement the request ask for.
+            entanglement_number (int): the number of entanglement the request to ask for.
             identity (int): the ID of the request.
         Side Effects:
             May push/pop to lower/upper attached protocols (or network manager).
@@ -468,20 +469,20 @@ class ResourceReservationProtocol(StackProtocol):
             raise Exception("Unknown type of message", msg.msg_type)
 
     def next_hop_when_tracing_back(self, path: list[str]) -> str:
-        '''the next hop when going back from the responder to the initiator
+        """the next hop when going back from the responder to the initiator
 
         Args:
             path (list[str]): a list of router names that goes from initiator to responder
         Returns:
             str: the name of the next hop
-        '''
+        """
         cur_index = path.index(self.owner.name)
         assert cur_index >= 1, f'{cur_index} must be larger equal than 1'
         next_hop = path[cur_index - 1]
         return next_hop
 
     def schedule(self, reservation: "Reservation") -> bool:
-        """Method to attempt reservation request. If attempt succeeded, return True; otherwise, return False.
+        """Method to attempt a reservation request. If an attempt succeeded, return True; otherwise, return False.
 
         Args:
             reservation (Reservation): reservation to approve or reject.
@@ -492,7 +493,7 @@ class ResourceReservationProtocol(StackProtocol):
 
         if self.owner.name in [reservation.initiator, reservation.responder]:
             counter = reservation.memory_size
-        else:  # e.g., entanglement swapping nodes needs twice amount of memory
+        else:  # e.g., entanglement swapping nodes need twice the amount of memory
             counter = reservation.memory_size * 2
         timecards = []
         for timecard in self.timecards:
@@ -515,11 +516,11 @@ class ResourceReservationProtocol(StackProtocol):
         Rules are used to direct the flow of information/entanglement in the resource manager.
 
         Args:
-            path (list[str]): list of node names in entanglement path.
+            path (list[str]): list of node names in the entanglement path.
             reservation (Reservation): approved reservation.
 
         Returns:
-            list[Rule]: list of rules created by the method.
+            list[Rule]: list of the rules created by the method.
         """
 
         rules = []
@@ -816,7 +817,7 @@ class QCap:
     """Quantum Capacity. Class to collect local information for the reservation protocol
 
     Attributes:
-        node (str): name of current node.
+        node (str): name of current the node.
     """
 
     def __init__(self, node: str):

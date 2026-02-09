@@ -47,7 +47,7 @@ class StackProtocol(Protocol):
     Adds interfaces for push and pop functions.
 
     Attributes:
-        own (Node): node protocol is attached to.
+        owner (Node): node protocol is attached to.
         name (str): label for protocol instance.
         upper_protocols (list[StackProtocol]): Protocols to pop to.
         lower_protocols (list[StackProtocol]): Protocols to push to.
@@ -57,7 +57,7 @@ class StackProtocol(Protocol):
         """Constructor for stack protocol class.
 
         Args:
-            own (Node): node protocol is attached to.
+            owner (Node): node protocol is attached to.
             name (str): name of protocol instance.
         """
 
@@ -67,13 +67,13 @@ class StackProtocol(Protocol):
 
     @abstractmethod
     def push(self, *args, **kwargs):
-        """Method to receive information from protocols higher on stack (abstract)."""
+        """Method to receive information from protocols higher on the stack (abstract)."""
 
         pass
 
     @abstractmethod
     def pop(self, *args, **kwargs):
-        """Method to receive information from protocols lower on stack (abstract)."""
+        """Method to receive information from protocols lower on the stack (abstract)."""
 
         pass
 
