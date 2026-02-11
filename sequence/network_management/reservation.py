@@ -86,11 +86,10 @@ class ResourceReservationProtocol(StackProtocol):
         """
 
         super().__init__(owner, name)
+        self.memory_array_name = memory_array_name
         self.memo_arr = owner.components[memory_array_name]
         self.timecards = [MemoryTimeCard(i) for i in range(len(self.memo_arr))]
-        self.es_succ_prob = 1
-        self.es_degradation = 0.95
-        self.purification_mode = 'until_target'  # once or until_target.
+        self.purification_mode = 'until_target'  # once or until_target. QoS
         self.accepted_reservations = []
 
     def push(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float,
@@ -137,7 +136,7 @@ class ResourceReservationProtocol(StackProtocol):
         Args:
             src (str): source node of the message.
             msg (ResourceReservationMessage): message received.
-        
+
         Side Effects:
             May push/pop to lower/upper attached protocols (or network manager).
 
@@ -152,8 +151,8 @@ class ResourceReservationProtocol(StackProtocol):
             path = [qcap.node for qcap in msg.qcaps]
             if self.schedule(msg.reservation):  # schedule success
                 if self.owner.name == msg.reservation.responder:
-                    rules = self.create_rules(path, reservation=msg.reservation)
-                    self.load_rules(rules, msg.reservation)
+                    accepted_reservation = self.owner.resource_manager.generate_load_rules(path, msg.reservation, self.timecards, self.memory_array_name)
+                    self.accepted_reservations.append(accepted_reservation)
                     msg.reservation.set_path(path)
                     new_msg = ResourceReservationMessage(RSVPMsgType.APPROVE, self.name, msg.reservation, path=path)
                     self._pop(msg=msg)
@@ -172,8 +171,8 @@ class ResourceReservationProtocol(StackProtocol):
                 next_hop = self.next_hop_when_tracing_back(msg.path)
                 self._push(dst=None, msg=msg, next_hop=next_hop)
         elif msg.msg_type == RSVPMsgType.APPROVE:
-            rules = self.create_rules(msg.path, msg.reservation)
-            self.load_rules(rules, msg.reservation)
+            accepted_reservation = self.owner.resource_manager.generate_load_rules(msg.path, msg.reservation, self.timecards, self.memory_array_name)
+            self.accepted_reservations.append(accepted_reservation)
             if msg.reservation.initiator == self.owner.name:
                 self._pop(msg=msg)
             else:
@@ -224,135 +223,6 @@ class ResourceReservationProtocol(StackProtocol):
 
         return True
 
-    def create_rules(self, path: list[str], reservation: "Reservation") -> list["Rule"]:
-        """Method to create rules for a successful request.
-
-        Rules are used to direct the flow of information/entanglement in the resource manager.
-
-        Args:
-            path (list[str]): list of node names in entanglement path.
-            reservation (Reservation): approved reservation.
-
-        Returns:
-            list[Rule]: list of rules created by the method.
-        """
-
-        rules = []
-        memory_indices = []
-        for card in self.timecards:
-            if reservation in card.reservations:
-                memory_indices.append(card.memory_index)
-
-        index = path.index(self.owner.name)  # the location of this node along the path from initiator to responder
-
-        # 1. create rules for entanglement generation
-        if index > 0:
-            condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
-            action_args = {"mid": self.owner.map_to_middle_node[path[index - 1]],
-                           "path": path, "index": index}
-            rule = Rule(10, eg_rule_action1, eg_rule_condition, action_args, condition_args)
-            rules.append(rule)
-
-        if index < len(path) - 1:
-            if index == 0:
-                condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
-            else:
-                condition_args = {"memory_indices": memory_indices[reservation.memory_size:]}
-
-            action_args = {"mid": self.owner.map_to_middle_node[path[index + 1]],
-                           "path": path, "index": index, "name": self.owner.name, "reservation": reservation}
-            rule = Rule(10, eg_rule_action2, eg_rule_condition, action_args, condition_args)
-            rules.append(rule)
-
-        # 2. create rules for entanglement purification
-        if index > 0:
-            condition_args = {"memory_indices": memory_indices[:reservation.memory_size], "reservation": reservation,
-                              "purification_mode": self.purification_mode}
-            action_args = {}
-            rule = Rule(10, ep_rule_action1, ep_rule_condition1, action_args, condition_args)
-            rules.append(rule)
-
-        if index < len(path) - 1:
-            if index == 0:
-                condition_args = {"memory_indices": memory_indices, "fidelity": reservation.fidelity,
-                                  "purification_mode": self.purification_mode}
-            else:
-                condition_args = {"memory_indices": memory_indices[reservation.memory_size:],
-                                  "fidelity": reservation.fidelity,
-                                  "purification_mode": self.purification_mode}
-
-            action_args = {}
-            rule = Rule(10, ep_rule_action2, ep_rule_condition2, action_args, condition_args)
-            rules.append(rule)
-
-        # 3. create rules for entanglement swapping
-        if index == 0:
-            condition_args = {"memory_indices": memory_indices, "target_remote": path[-1],
-                              "fidelity": reservation.fidelity}
-            action_args = {}
-            rule = Rule(10, es_rule_actionB, es_rule_conditionB1, action_args, condition_args)
-            rules.append(rule)
-        elif index == len(path) - 1:
-            action_args = {}
-            condition_args = {"memory_indices": memory_indices, "target_remote": path[0],
-                              "fidelity": reservation.fidelity}
-            rule = Rule(10, es_rule_actionB, es_rule_conditionB1, action_args, condition_args)
-            rules.append(rule)
-        else:
-            _path = path[:]
-            while _path.index(self.owner.name) % 2 == 0:
-                new_path = []
-                for i, n in enumerate(_path):
-                    if i % 2 == 0 or i == len(_path) - 1:
-                        new_path.append(n)
-                _path = new_path
-            _index = _path.index(self.owner.name)
-            left, right = _path[_index - 1], _path[_index + 1]
-
-            condition_args = {"memory_indices": memory_indices, "left": left, "right": right,
-                              "fidelity": reservation.fidelity}
-            action_args = {"es_succ_prob": self.es_succ_prob, "es_degradation": self.es_degradation}
-            rule = Rule(10, es_rule_actionA, es_rule_conditionA, action_args, condition_args)
-            rules.append(rule)
-
-            action_args = {}
-            rule = Rule(10, es_rule_actionB, es_rule_conditionB2, action_args, condition_args)
-            rules.append(rule)
-
-        for rule in rules:
-            rule.set_reservation(reservation)
-
-        return rules
-
-    def load_rules(self, rules: list["Rule"], reservation: "Reservation") -> None:
-        """Method to add created rules to resource manager.
-
-        This method will schedule the resource manager to load all rules at the reservation start time.
-        The rules will be set to expire at the reservation end time.
-
-        Args:
-            rules (list[Rules]): rules to add.
-            reservation (Reservation): reservation that created the rules.
-        """
-
-        self.accepted_reservations.append(reservation)
-
-        for rule in rules:
-            process = Process(self.owner.resource_manager, "load", [rule])
-            event = Event(reservation.start_time, process, self.owner.timeline.schedule_counter)
-            self.owner.timeline.schedule(event)
-
-            process = Process(self.owner.resource_manager, "expire", [rule])
-            event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
-            self.owner.timeline.schedule(event)
-
-        for card in self.timecards:
-            if reservation in card.reservations:
-                process = Process(self.owner.resource_manager, "update",
-                                  [None, self.memo_arr[card.memory_index], "RAW"])
-                event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
-                self.owner.timeline.schedule(event)
-
     def received_message(self, src, msg):
         """Method to receive messages directly (should not be used; receive through network manager)."""
 
@@ -400,6 +270,8 @@ class Reservation:
             fidelity (float): desired fidelity of entanglement.
             entanglement_number (int): the number of entanglement the request ask for.
             identity (int): the ID of a request
+            path
+            purification_mode
         """
 
         self.initiator = initiator
@@ -411,6 +283,7 @@ class Reservation:
         self.entanglement_number = entanglement_number
         self.identity = identity
         self.path = []
+        self.purification_mode: str = 'until_target'
         assert self.start_time < self.end_time
         assert self.memory_size > 0
 
@@ -426,7 +299,7 @@ class Reservation:
     def set_path(self, path: list[str]):
         self.path = path
 
-    def __eq__(self, other: "Reservation") -> bool:
+    def __eq__(self, other: "Reservation"):
         return other.initiator == self.initiator and \
             other.responder == self.responder and \
             other.start_time == self.start_time and \

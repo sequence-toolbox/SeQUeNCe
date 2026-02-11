@@ -9,10 +9,17 @@ from __future__ import annotations
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Optional
 from collections.abc import Callable
+
+from .action_condition_set import es_rule_actionA, es_rule_conditionA, es_rule_actionB, es_rule_conditionB2, \
+    eg_rule_action1, eg_rule_condition, eg_rule_action2, ep_rule_action1, ep_rule_condition1, ep_rule_action2, \
+    es_rule_conditionB1
+from ..kernel.event import Event
+from ..kernel.process import Process
+
 if TYPE_CHECKING:
     from ..components.memory import Memory
     from ..topology.node import QuantumRouter
-    from .rule_manager import Rule, Arguments
+from .rule_manager import Rule, Arguments
 
 from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..message import Message
@@ -122,11 +129,132 @@ class ResourceManager:
         self.memory_manager.set_resource_manager(self)
         self.rule_manager = RuleManager()
         self.rule_manager.set_resource_manager(self)
-        # protocols that are requesting remote resource
-        self.pending_protocols = []
-        # protocols that are waiting request from remote resource
-        self.waiting_protocols = []
+        self.pending_protocols = [] # Protocols that are requesting remote resource
+        self.waiting_protocols = [] # Protocols that are waiting request from remote resource
         self.memory_to_protocol_map = {}
+
+
+    def generate_load_rules(self, path, reservation, timecards, memory_array_name):
+        rules = []
+        memory_indices = []
+        for card in timecards:
+            if reservation in card.reservations:
+                memory_indices.append(card.memory_index)
+
+        index: int = path.index(self.owner.name)
+
+        # Create Rules
+        # 1. create rules for entanglement generation
+        if index > 0:
+            condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
+            action_args = {"mid": self.owner.map_to_middle_node[path[index - 1]],
+                           "path": path, "index": index}
+            rule = Rule(10, eg_rule_action1, eg_rule_condition, action_args, condition_args)
+            rules.append(rule)
+
+        if index < len(path) - 1:
+            if index == 0:
+                condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
+            else:
+                condition_args = {"memory_indices": memory_indices[reservation.memory_size:]}
+
+            action_args = {"mid": self.owner.map_to_middle_node[path[index + 1]],
+                           "path": path, "index": index, "name": self.owner.name, "reservation": reservation}
+            rule = Rule(10, eg_rule_action2, eg_rule_condition, action_args, condition_args)
+            rules.append(rule)
+
+        # 2. create rules for entanglement purification
+        if index > 0:
+            condition_args = {"memory_indices": memory_indices[:reservation.memory_size], "reservation": reservation,
+                              "purification_mode": self.purification_mode}
+            action_args = {}
+            rule = Rule(10, ep_rule_action1, ep_rule_condition1, action_args, condition_args)
+            rules.append(rule)
+
+        if index < len(path) - 1:
+            if index == 0:
+                condition_args = {"memory_indices": memory_indices, "fidelity": reservation.fidelity,
+                                  "purification_mode": reservation.purification_mode}
+            else:
+                condition_args = {"memory_indices": memory_indices[reservation.memory_size:],
+                                  "fidelity": reservation.fidelity,
+                                  "purification_mode": reservation.purification_mode}
+
+            action_args = {}
+            rule = Rule(10, ep_rule_action2, ep_rule_condition2, action_args, condition_args)
+            rules.append(rule)
+
+        # 3. create rules for entanglement swapping
+        if index == 0:
+            condition_args = {"memory_indices": memory_indices, "target_remote": path[-1],
+                              "fidelity": reservation.fidelity}
+            action_args = {}
+            rule = Rule(10, es_rule_actionB, es_rule_conditionB1, action_args, condition_args)
+            rules.append(rule)
+        elif index == len(path) - 1:
+            action_args = {}
+            condition_args = {"memory_indices": memory_indices, "target_remote": path[0],
+                              "fidelity": reservation.fidelity}
+            rule = Rule(10, es_rule_actionB, es_rule_conditionB1, action_args, condition_args)
+            rules.append(rule)
+        else:
+            _path = path[:]
+            while _path.index(self.owner.name) % 2 == 0:
+                new_path = []
+                for i, n in enumerate(_path):
+                    if i % 2 == 0 or i == len(_path) - 1:
+                        new_path.append(n)
+                _path = new_path
+            _index = _path.index(self.owner.name)
+            left, right = _path[_index - 1], _path[_index + 1]
+
+            condition_args = {"memory_indices": memory_indices, "left": left, "right": right,
+                              "fidelity": reservation.fidelity}
+            action_args = {}
+            rule = Rule(10, es_rule_actionA, es_rule_conditionA, action_args, condition_args)
+            rules.append(rule)
+
+            action_args = {}
+            rule = Rule(10, es_rule_actionB, es_rule_conditionB2, action_args, condition_args)
+            rules.append(rule)
+
+        for rule in rules:
+            rule.set_reservation(reservation)
+
+        # Load the rules on the timeline
+        for rule in rules:
+            process = Process(self.owner.resource_manager, "load", [rule])
+            event = Event(reservation.start_time, process, self.owner.timeline.schedule_counter)
+            self.owner.timeline.schedule(event)
+
+            process = Process(self.owner.resource_manager, "expire", [rule])
+            event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
+            self.owner.timeline.schedule(event)
+
+        for card in timecards:
+            if reservation in card.reservations:
+                process = Process(self.owner.resource_manager, "update",
+                                  [None, self.owner.components[memory_array_name][card.memory_index], "RAW"])
+                event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
+                self.owner.timeline.schedule(event)
+
+        return reservation
+
+
+
+
+
+    def generate_and_load(self):
+        self.accepted_reservations.append(reservation)
+
+
+
+
+
+
+
+
+
 
     def load(self, rule: Rule) -> bool:
         """Method to load rules for entanglement management.

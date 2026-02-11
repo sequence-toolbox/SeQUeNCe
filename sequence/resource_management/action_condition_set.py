@@ -11,9 +11,9 @@ Request Signature: def request(protocols: list[EntanglementProtocol], args: Argu
 Actions, Conditions, and Request functions must follow the above signatures. If a function does not use a parameter, it
 should prefix the unused parameter with `_`. For example, _manager.
 """
-
-from typing import Any, Callable, cast
-
+from __future__ import annotations
+from typing import TYPE_CHECKING, Any, Callable, cast
+from .rule_manager import Rule
 from ..components.memory import Memory
 from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..entanglement_management.generation import EntanglementGenerationA
@@ -22,8 +22,10 @@ from ..entanglement_management.swapping import (
     EntanglementSwappingA,
     EntanglementSwappingB,
 )
-from ..topology.node import Node
-from .memory_manager import MemoryInfo, MemoryManager
+
+if TYPE_CHECKING:
+    from ..topology.node import Node
+    from .memory_manager import MemoryInfo, MemoryManager
 
 Arguments = dict[str, Any]
 RequestFunction = Callable[
@@ -36,8 +38,8 @@ ActionReturn = tuple[
     list[dict[str, Any] | None],
 ]
 
-TempNode = cast(Node, cast(object, None))
-TempMemory = cast(Memory, cast(object, None))
+TempNode = cast("Node", cast(object, None))
+TempMemory = cast("Memory", cast(object, None))
 
 
 # Entanglement Generation Action-Condition-Request
