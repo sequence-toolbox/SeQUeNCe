@@ -48,7 +48,6 @@ class ResourceManagerMessage(Message):
         ini_protocol_name (str): name of protocol that creates the original REQUEST message.
         ini_node_name (str): name of the node that creates the original REQUEST message.
         ini_memories_name (str): name of the memories.
-        string (str): for __str__() purpose.
         request_fun (func): a function using ResourceManager to search eligible protocols on remote node (if `msg_type` == REQUEST).
         is_approved (bool): acceptance/failure of condition function (if `msg_type` == RESPONSE).
         paired_protocol (str): protocol that is paired with ini_protocol (if `msg-type` == RESPONSE).
@@ -56,34 +55,43 @@ class ResourceManagerMessage(Message):
 
     def __init__(self, msg_type: ResourceManagerMsgType, **kwargs):
         super().__init__(msg_type, "resource_manager")
-        self.ini_protocol_name = kwargs["protocol"]
-        self.ini_node_name = kwargs["node"]
-        self.ini_memories_name = kwargs["memories"]
-        self.string = "type={}, ini_protocol_name={}, ini_node_name={}, ini_memories_name={}".format(
-                       msg_type.name, self.ini_protocol_name, self.ini_node_name, self.ini_memories_name)
+        self.ini_protocol_name: str = kwargs["protocol"]
+        self.ini_node_name: str = kwargs["node"]
+        self.ini_memories_name: str = kwargs["memories"]
 
-        if msg_type is ResourceManagerMsgType.REQUEST:
-            self.req_condition_func = kwargs["req_condition_func"]
-            self.req_args = kwargs["req_args"]
-            self.string += f", req_condition_func={self.req_condition_func}, req_args={self.req_args}"
-        elif msg_type is ResourceManagerMsgType.RESPONSE:
-            self.is_approved = kwargs["is_approved"]
-            self.paired_protocol = kwargs["paired_protocol"]
-            self.paired_node = kwargs["paired_node"]
-            self.paired_memories = kwargs["paired_memories"]
-            self.string += ", is_approved={}, paired_protocol={}, paired_node={}, paired_memories={}".format(
-                            self.is_approved, self.paired_protocol, self.paired_node, self.paired_memories)
-        elif msg_type is ResourceManagerMsgType.RELEASE_PROTOCOL:
-            self.protocol = kwargs["protocol"]
-            self.string += f", release_protocol={self.protocol}"
-        elif msg_type is ResourceManagerMsgType.RELEASE_MEMORY:
-            self.memory = kwargs["memory_id"]
-            self.string += f", release_memory={self.memory}"
-        else:
-            raise Exception(f"ResourceManagerMessage gets unknown type of message: {str(msg_type)}")
+        match self.msg_type:
+            case ResourceManagerMsgType.REQUEST:
+                self.req_condition_func = kwargs["req_condition_func"]
+                self.req_args = kwargs["req_args"]
+
+            case ResourceManagerMsgType.RESPONSE:
+                self.is_approved = kwargs["is_approved"]
+                self.paired_protocol = kwargs["paired_protocol"]
+                self.paired_node = kwargs["paired_node"]
+                self.paired_memories = kwargs["paired_memories"]
+
+            case ResourceManagerMsgType.RELEASE_PROTOCOL:
+                self.protocol = kwargs["protocol"]
+            case ResourceManagerMsgType.RELEASE_MEMORY:
+                self.memory = kwargs["memory_id"]
+            case _:
+                raise Exception(f"ResourceManagerMessage gets unknown type of message: {str(self.msg_type)}")
 
     def __str__(self) -> str:
-        return self.string
+        base = f'type={self.msg_type.name}, ini_protocol_name={self.ini_protocol_name}, ini_node_name={self.ini_node_name}, ini_memories_name={self.ini_memories_name}'
+
+        match self.msg_type:
+            case ResourceManagerMsgType.REQUEST:
+                base += f', req_condition_func={self.req_condition_func}, req_args={self.req_args}'
+            case ResourceManagerMsgType.RESPONSE:
+                base += f', is_approved={self.is_approved}, paired_protocol={self.paired_protocol}, paired_node={self.paired_node}, self.paired_memories={self.paired_memories}'
+            case ResourceManagerMsgType.RELEASE_PROTOCOL:
+                base += f', release_protocol={self.protocol}'
+            case ResourceManagerMsgType.RELEASE_MEMORY:
+                base += f', release_memory={self.memory}'
+            case _:
+                raise Exception(f'ResourceManagerMessage got an unknown type of message: {str(self.msg_type)}')
+        return base
 
 
 class ResourceManager:
