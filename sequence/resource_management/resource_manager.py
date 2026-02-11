@@ -244,9 +244,6 @@ class ResourceManager:
 
 
 
-    def generate_and_load(self):
-        self.accepted_reservations.append(reservation)
-
 
 
 
@@ -307,7 +304,7 @@ class ResourceManager:
             for memory in protocol.memories:
                 self.update(protocol, memory, MemoryInfo.RAW)
 
-    def update(self, protocol: EntanglementProtocol, memory: Memory, state: str) -> None:
+    def update(self, protocol: Optional[EntanglementProtocol], memory: Memory, state: str) -> None:
         """Method to update state of memory after completion of entanglement management protocol.
 
         Args:
@@ -324,7 +321,7 @@ class ResourceManager:
         if protocol:
             memory.detach(protocol)
             memory.attach(memory.memory_array)
-            if protocol in protocol.rule.protocols:
+            if protocol.rule and protocol in protocol.rule.protocols:
                 protocol.rule.protocols.remove(protocol)
 
         if protocol in self.owner.protocols:

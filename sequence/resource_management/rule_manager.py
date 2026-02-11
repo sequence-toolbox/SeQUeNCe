@@ -4,7 +4,7 @@ This module defines the rule manager, which is used by the resource manager to i
 This is achieved through rules (also defined in this module), which if met define a set of actions to take.
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 from collections.abc import Callable
 from ..utils import log
 if TYPE_CHECKING:
@@ -13,8 +13,9 @@ if TYPE_CHECKING:
     from .resource_manager import ResourceManager
     from ..network_management.reservation import Reservation
 
-ActionFunc = Callable[[list["MemoryInfo"], dict[str, Any]], 
-                      tuple["EntanglementProtocol", list["str"], list[Callable[["EntanglementProtocol"], bool]]]]
+ActionReturn = tuple["EntanglementProtocol", list[Optional[str]], list[Optional[Callable[[list["EntanglementProtocol"], dict[str, Any]], Optional["EntanglementProtocol"]]]], list[Optional[dict[str, Any]]]]
+
+ActionFunc = Callable[[list["MemoryInfo"], dict[str, Any]], ActionReturn]
 
 ConditionFunc = Callable[["MemoryInfo", "MemoryManager", dict[str, Any]], list["MemoryInfo"]]
 
