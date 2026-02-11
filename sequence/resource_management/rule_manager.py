@@ -3,7 +3,7 @@
 This module defines the rule manager, which is used by the resource manager to instantiate and control entanglement protocols.
 This is achieved through rules (also defined in this module), which if met define a set of actions to take.
 """
-
+from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Optional
 from collections.abc import Callable
 from ..utils import log
