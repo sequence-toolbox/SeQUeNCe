@@ -89,7 +89,8 @@ class RuleManager:
         return rule.protocols
         
 
-    def get_memory_manager(self):
+    def get_memory_manager(self) -> MemoryManager:
+        assert self.resource_manager is not None
         return self.resource_manager.get_memory_manager()
 
     def send_request(self, protocol, req_dst, req_condition_func, req_args):
@@ -134,7 +135,7 @@ class Rule:
         self.condition_args: Arguments = condition_args
         self.protocols: list[EntanglementProtocol] = []
         self.rule_manager = None
-        self.reservation = None
+        self.reservation: Optional["Reservation"] = None
 
     def __str__(self):
         action_name_list = str(self.action).split(' ')
@@ -187,4 +188,5 @@ class Rule:
         self.reservation = reservation
 
     def get_reservation(self) -> "Reservation":
+        assert self.reservation is not None, "Reservation not set."
         return self.reservation

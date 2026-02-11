@@ -13,7 +13,6 @@ should prefix the unused parameter with `_`. For example, _manager.
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Callable, cast
-from .rule_manager import Rule
 from ..components.memory import Memory
 from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..entanglement_management.generation import EntanglementGenerationA

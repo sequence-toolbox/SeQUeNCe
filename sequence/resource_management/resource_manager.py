@@ -240,19 +240,6 @@ class ResourceManager:
 
         return reservation
 
-
-
-
-
-
-
-
-
-
-
-
-
-
     def load(self, rule: Rule) -> bool:
         """Method to load rules for entanglement management.
 
@@ -345,7 +332,8 @@ class ResourceManager:
 
         self.owner.get_idle_memory(memo_info)  # no new rules apply to this memory, thus "idle"
 
-    def get_memory_manager(self):
+    def get_memory_manager(self) -> MemoryManager:
+        assert self.memory_manager is not None
         return self.memory_manager
 
     def send_request(self, protocol: EntanglementProtocol, req_dst: str | None,

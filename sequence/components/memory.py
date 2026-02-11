@@ -449,7 +449,7 @@ class Memory(Entity):
         for observer in self._observers:
             observer.memory_expire(self)
 
-    def detach(self, observer: 'EntanglementProtocol'):  # observer could be a MemoryArray
+    def detach(self, observer: "EntanglementProtocol | MemoryArray"):  # observer could be a MemoryArray
         if observer in self._observers:
             self._observers.remove(observer)
 
