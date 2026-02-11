@@ -6,6 +6,6 @@ The Resource Management module is responsible for managing the local resources (
 .. toctree::
     :maxdepth: 2
 
-    resource_manager
     memory_manager
+    resource_manager
     rule_manager

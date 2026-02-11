@@ -19,3 +19,5 @@ The components module provides models for quantum hardware.
     photon
     spdc_lens
     switch
+    transducer
+    transmon

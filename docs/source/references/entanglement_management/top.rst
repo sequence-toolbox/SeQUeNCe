@@ -10,3 +10,4 @@ The Entanglement Management module provides protocols for generating, purifying,
     generation
     purification
     swapping
+    teleportation

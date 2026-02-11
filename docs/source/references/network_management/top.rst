@@ -6,6 +6,8 @@ The Network Management module allows nodes to interact easily with a broader qua
 .. toctree::
     :maxdepth: 2
 
+    forwarding
     network_manager
     reservation
-    routing
+    routing_distributed
+    routing_static

@@ -9,3 +9,4 @@ Utilities for SeQUeNCe.
     config_generator
     encoding
     log
+    noise
