@@ -92,6 +92,9 @@ class MemoryArray(Entity):
     def __len__(self) -> int:
         return len(self.memories)
 
+    def __iter__(self):
+        return iter(self.memories)
+
     def init(self):
         """Implementation of Entity interface (see base class).
 

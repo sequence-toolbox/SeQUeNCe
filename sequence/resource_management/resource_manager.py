@@ -118,7 +118,7 @@ class ResourceManager:
 
         self.name = f"{owner.name}.resource_manager"
         self.owner = owner
-        self.memory_manager = MemoryManager(owner.components[memory_array_name])
+        self.memory_manager: MemoryManager = MemoryManager(owner.components[memory_array_name])
         self.memory_manager.set_resource_manager(self)
         self.rule_manager = RuleManager()
         self.rule_manager.set_resource_manager(self)
