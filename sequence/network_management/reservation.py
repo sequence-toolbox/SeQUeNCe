@@ -6,23 +6,16 @@ Also included is the definition of the message type used by the reservation prot
 """
 
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any
-
-from ..resource_management.memory_manager import MemoryManager
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
 
-from ..resource_management.rule_manager import Rule, Arguments
-from ..entanglement_management.entanglement_protocol import EntanglementProtocol
-from ..entanglement_management.generation import EntanglementGenerationA
-from ..entanglement_management.purification import BBPSSWProtocol
-from ..entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
+from ..resource_management.rule_manager import Rule
 from ..message import Message
 from ..protocol import StackProtocol
 from ..kernel.event import Event
 from ..kernel.process import Process
-from ..resource_management.resource_manager import MemoryInfo
 
 ENTANGLED = 'ENTANGLED'
 RAW = 'RAW'
@@ -64,16 +57,6 @@ class ResourceReservationMessage(Message):
 
     def __str__(self):
         return f"|type={self.msg_type}; reservation={self.reservation}|"
-
-
-
-# entanglement purification
-
-
-
-
-
-
 
 class ResourceReservationProtocol(StackProtocol):
     """ReservationProtocol for node resources.
