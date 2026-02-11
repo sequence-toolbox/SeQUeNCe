@@ -1,47 +1,48 @@
 """Definition of Distributed Routing protocol.
 
-This module defines the DistributedRoutingProtocol, which is a OSPF-like routing protocol for quantum networks.
+This module defines the DistributedRoutingProtocol, which is an OSPF-like routing protocol for quantum networks.
 Also included are the message types, packets, FSM, LSDB used by the routing protocol
 """
 
-
-from enum import Enum, auto
-from typing import TYPE_CHECKING, Union
-from dataclasses import dataclass, field
 from collections import defaultdict
+from dataclasses import dataclass, field
+from enum import Enum, auto
 from heapq import heappop, heappush
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from sequence.topology.node import QuantumRouter
 
+from ..constants import EPSILON, SECOND
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..message import Message
 from ..protocol import Protocol
 from ..utils import log
-from ..constants import SECOND, EPSILON
 
 MAX_AGE = 1000 * SECOND  # maximum age of LSA in seconds
 
 
 class DistRoutingMsgType(Enum):
     """Enum class for message types used in distributed routing protocol."""
-    HELLO = auto() # HELLO message
-    DBD = auto()   # DATA BASE DESCRIPTION
-    LSR = auto()   # LINK STATE REQUEST
-    LSU = auto()   # LINK STATE UPDATE
-    LSAck = auto() # LINK STATE ACKNOWLEDGEMENT
+
+    HELLO = auto()  # HELLO message
+    DBD = auto()  # DATA BASE DESCRIPTION
+    LSR = auto()  # LINK STATE REQUEST
+    LSU = auto()  # LINK STATE UPDATE
+    LSAck = auto()  # LINK STATE ACKNOWLEDGEMENT
 
 
 @dataclass(frozen=True)
 class LSAHeader:
     """Link State Advertisement header.
-    
+
     Attributes:
         advertising_router (str): who originated the LSA, "this node".
         seq_number (int): sequence number of the LSA.
         originated_time (int): time when LSA was originated.
     """
+
     advertising_router: str
     seq_number: int
     originated_time: int
@@ -50,23 +51,25 @@ class LSAHeader:
 @dataclass(frozen=True)
 class Link:
     """Link information.
-    
+
     Attributes:
         neighbor (str): neighbor node
         cost (float): cost to neighbor
     """
+
     neighbor: str
     cost: float
 
 
 @dataclass(frozen=True)
 class LSA:
-    """Link State Advertisement. LS: who my neighbors are
-    
+    """Link State Advertisement. LS: who my neighbors are?
+
     Attributes:
         header (LSAHeader): LSA header.
         links (list[Link]): list of links in this LSA.
     """
+
     header: LSAHeader
     links: list[Link]
 
@@ -74,11 +77,12 @@ class LSA:
 @dataclass(frozen=True)
 class HelloPayload:
     """HELLO payload.
-    
+
     Attributes:
         sender (str): name of sender node.
         seen_neighbors (set[str]): set of neighbors seen by sender.
     """
+
     sender: str
     seen_neighbors: set[str]
 
@@ -86,11 +90,12 @@ class HelloPayload:
 @dataclass(frozen=True)
 class DBDPayload:
     """Database Description payload.
-    
+
     Attributes:
         sender (str): name of sender node.
         summaries (list[LSAHeader]): list of LSA headers summarizing LSDB.
     """
+
     sender: str
     summaries: list[LSAHeader]
 
@@ -98,11 +103,12 @@ class DBDPayload:
 @dataclass(frozen=True)
 class LSRPayload:
     """Link State Request payload.
-    
+
     Attributes:
         sender (str): name of sender node.
         requested (list[str]): list of advertising routers whose LSAs are requested.
     """
+
     sender: str
     requested: list[str]
 
@@ -110,11 +116,12 @@ class LSRPayload:
 @dataclass(frozen=True)
 class LSUPayload:
     """Link State Update payload.
-    
+
     Attributes:
         sender (str): name of sender node.
         lsas (list[LSA]): list of LSAs being sent.
     """
+
     sender: str
     lsas: list[LSA]
 
@@ -122,16 +129,21 @@ class LSUPayload:
 @dataclass(frozen=True)
 class LSAckPayload:
     """Link State Acknowledgement payload.
-    
+
     Attributes:
         sender (str): name of sender node.
         acks (list[tuple[str, int]]): list of (advertising_router, seq_number) acknowledgements.
     """
+
     sender: str
-    acks: list[tuple[str, int]]  # list of (advertising_router, seq_number) that are updated
+    acks: list[
+        tuple[str, int]
+    ]  # list of (advertising_router, seq_number) that are updated
 
 
-DistRoutingPayload = Union[HelloPayload, DBDPayload, LSRPayload, LSUPayload, LSAckPayload]
+DistRoutingPayload = Union[
+    HelloPayload, DBDPayload, LSRPayload, LSUPayload, LSAckPayload
+]
 
 
 class DistRoutingMessage(Message):
@@ -142,7 +154,10 @@ class DistRoutingMessage(Message):
         receiver (str): name of destination protocol instance.
         payload (DistRoutingPayload): message to be passed through destination network manager.
     """
-    def __init__(self, msg_type: DistRoutingMsgType, receiver: str, payload: DistRoutingPayload):
+
+    def __init__(
+        self, msg_type: DistRoutingMsgType, receiver: str, payload: DistRoutingPayload
+    ):
         super().__init__(msg_type, receiver)
         self.payload = payload
 
@@ -152,7 +167,7 @@ class DistRoutingMessage(Message):
 
 @dataclass
 class NeighborFSM:
-    """Finite State Machine for each neighbors.
+    """Finite State Machine for each neighbor.
 
     Attributes:
         STATES (list[str]): Ordered OSPF neighbor states:
@@ -167,15 +182,24 @@ class NeighborFSM:
         last_hello_received (int): time of last hello received
         pending_requested (set[str]): which LSAs are requested but not yet received
         master (bool): whether this node is master in DBD exchange
-        scheduled_dbd_resend_event (Event): scheduled DBD retransmission event for the master, 
-                                            to be cancelled when receiving expected DBD from slave or when neighbor goes down
+        scheduled_dbd_resend_event (Event): scheduled DBD retransmission event for the master,
+                                            to be canceled when receiving expected DBD from the slave or when neighbor goes down
     """
-    STATES = ["Down", "Init", "TwoWay", "ExStart", "Exchange", "Loading", "Full"] # there are 7 states in total
+
+    STATES = [
+        "Down",
+        "Init",
+        "TwoWay",
+        "ExStart",
+        "Exchange",
+        "Loading",
+        "Full",
+    ]  # there are 7 states in total
     state: str = "Down"
     last_hello_received: int = -1
     pending_requested: set[str] = field(default_factory=set)
     master: bool = False
-    scheduled_dbd_resend_event: Event = None
+    scheduled_dbd_resend_event: Event | None = None
 
     def reset(self) -> None:
         """Fully reset the neighbor FSM to initial Down state."""
@@ -193,23 +217,25 @@ class NeighborFSM:
             node.timeline.remove_event(self.scheduled_dbd_resend_event)
             self.scheduled_dbd_resend_event = None
 
+
 class LinkStateDB:
     """Link State Database for distributed routing protocol.
 
     Attributes:
         lsas (dict[str, LSA]): mapping of advertising router to LSA.
     """
+
     def __init__(self):
         self.lsas: dict[str, LSA] = {}
-    
+
     def get(self, adv: str) -> LSA | None:
         return self.lsas.get(adv, None)
-    
-    def __iter__(self) -> iter:
+
+    def __iter__(self):
         return iter(self.lsas.values())
 
     def install(self, lsa: LSA, now: int) -> bool:
-        """Install LSA into database.
+        """Install LSA into the database.
 
         Args:
             lsa (LSA): LSA to be installed.
@@ -234,26 +260,34 @@ class LinkStateDB:
             return True
         else:
             # install if newer
-            if lsa.header.seq_number > existing_lsa.header.seq_number:    # larger seq number -> newer LSA
+            if (
+                lsa.header.seq_number > existing_lsa.header.seq_number
+            ):  # larger seq number -> newer LSA
                 self.lsas[adv] = lsa
                 return True
-            elif lsa.header.seq_number == existing_lsa.header.seq_number: # equal seq number -> compare age
+            elif (
+                lsa.header.seq_number == existing_lsa.header.seq_number
+            ):  # equal seq number -> compare age
                 existing_age = now - existing_lsa.header.originated_time
-                if lsa_age < existing_age:                                # smaller age -> newer LSA
+                if lsa_age < existing_age:  # smaller age -> newer LSA
                     self.lsas[adv] = lsa
                     return True
                 else:
                     return False
-            else: # lsa.header.seq_number < existing_lsa.header.seq_number:
+            else:  # lsa.header.seq_number < existing_lsa.header.seq_number:
                 return False
-    
+
     def purge_withdrawn(self, now: int) -> list[str]:
-        """Purge withdrawn LSAs from database.
+        """Purge withdrawn LSAs from the database.
 
         Returns:
             list[str]: list of advertising routers whose LSAs are purged.
         """
-        to_purge = [adv for adv, lsa in self.lsas.items() if now - lsa.header.originated_time >= DistributedRoutingProtocol.MAX_AGE]
+        to_purge = [
+            adv
+            for adv, lsa in self.lsas.items()
+            if now - lsa.header.originated_time >= DistributedRoutingProtocol.MAX_AGE
+        ]
         for adv in to_purge:
             del self.lsas[adv]
         return to_purge
@@ -262,7 +296,7 @@ class LinkStateDB:
 class DistributedRoutingProtocol(Protocol):
     """Class to implement distributed routing protocol (OSPF-like protocol).
 
-    Attributes: 
+    Attributes:
         owner (Node): node that protocol instance is attached to.
         name (str): label for protocol instance.
         lsdb (LinkStateDB): link state database.
@@ -273,10 +307,11 @@ class DistributedRoutingProtocol(Protocol):
         refresh_enabled (bool): whether refreshing own LSA is enabled.
         last_originated_time (int): time of last originated LSA.
     """
-    HELLO_INTERVAL = 1 * SECOND    # interval between HELLOs
-    DEAD_INTERVAL  = 4 * SECOND    # time to declare neighbor dead
-    DBD_TIMEOUT    = 0.5 * SECOND  # time to wait before retransmitting DBD
-    MAX_AGE        = 1000 * SECOND # maximum age of LSA
+
+    HELLO_INTERVAL = 1 * SECOND  # interval between HELLOs
+    DEAD_INTERVAL = 4 * SECOND  # time to declare neighbor dead
+    DBD_TIMEOUT = SECOND // 2  # time to wait before retransmitting DBD
+    MAX_AGE = 1000 * SECOND  # maximum age of LSA
 
     def __init__(self, owner: "QuantumRouter", name: str):
         super().__init__(owner, name)
@@ -291,9 +326,9 @@ class DistributedRoutingProtocol(Protocol):
 
     def init(self):
         """Initialize:
-           1) the FSM for each neighbor
-           2) the first hello event
-           3) the first LSA refresh event (enabled by default)
+        1) the FSM for each neighbor
+        2) the first hello event
+        3) the first LSA refresh event (enabled by default)
         """
         # init the FSM for each neighbor
         for neighbor_name in self.link_cost.keys():
@@ -308,23 +343,23 @@ class DistributedRoutingProtocol(Protocol):
             self.owner.timeline.schedule(event)
 
     def ensure_fsm(self, neighbor: str) -> NeighborFSM:
-        """Ensure FSM exists for neighbor.
+        """Ensure FSM exists for a neighbor.
 
         Args:
-            neighbor (str): name of neighbor.
+            neighbor (str): name of a neighbor.
 
         Returns:
-            NeighborFSM: FSM for neighbor.
+            NeighborFSM: FSM for a neighbor.
         """
         if neighbor not in self.fsm:
             self.fsm[neighbor] = NeighborFSM()
         return self.fsm[neighbor]
 
     def received_message(self, src: str, msg):
-        """Receive Distributed Routing message from another node.
-        
+        """Receive the distributed routing message from another node.
+
         Args:
-            src (str): name of source node.
+            src (str): name of the source node.
             msg (Message): message received.
         """
         log.logger.debug(f"{self.owner.name}: Received {msg} from {src}")
@@ -342,7 +377,9 @@ class DistributedRoutingProtocol(Protocol):
             case DistRoutingMsgType.LSAck:
                 self.handle_lsack(src, msg.payload)
             case _:
-                log.logger.error(f"{self.owner.name}: Unknown message type {msg_type} received from {src}")
+                log.logger.error(
+                    f"{self.owner.name}: Unknown message type {msg_type} received from {src}"
+                )
 
     def send_hello(self, delay: int):
         """Send HELLO message to all neighbors now,
@@ -354,10 +391,16 @@ class DistributedRoutingProtocol(Protocol):
         # send hello to all neighbors
         for neighbor in self.link_cost.keys():
             seen_neighbors = {n for n, fsm in self.fsm.items() if fsm.state != "Down"}
-            hello_payload = HelloPayload(sender=self.owner.name, seen_neighbors=seen_neighbors)
-            hello_msg = DistRoutingMessage(DistRoutingMsgType.HELLO, receiver="DistributedRoutingProtocol", payload=hello_payload)
+            hello_payload = HelloPayload(
+                sender=self.owner.name, seen_neighbors=seen_neighbors
+            )
+            hello_msg = DistRoutingMessage(
+                DistRoutingMsgType.HELLO,
+                receiver="DistributedRoutingProtocol",
+                payload=hello_payload,
+            )
             self.owner.send_message(neighbor, hello_msg)
-        
+
         process = Process(self, "send_hello", [self.HELLO_INTERVAL])
         time = self.owner.timeline.now() + delay
         event = Event(time, process, priority=self.owner.timeline.schedule_counter)
@@ -403,16 +446,18 @@ class DistributedRoutingProtocol(Protocol):
         self.lsdb.purge_withdrawn(now)
 
     def handle_hello(self, src: str, payload: HelloPayload):
-        """Handle HELLO message from neighbor.
+        """Handle HELLO message from a neighbor.
 
         Args:
-            src (str): name of source node.
+            src (str): name of the source node.
             payload (HelloPayload): payload of HELLO message.
         """
         fsm = self.ensure_fsm(src)
         fsm.last_hello_received = self.owner.timeline.now()
         # schedule an event after DEAD_INTERVAL to check for neighbor liveness
-        process = Process(self, "check_neighbor_liveness", [src, fsm.last_hello_received])
+        process = Process(
+            self, "check_neighbor_liveness", [src, fsm.last_hello_received]
+        )
         time = self.owner.timeline.now() + self.DEAD_INTERVAL
         event = Event(time, process, priority=self.owner.timeline.schedule_counter)
         self.owner.timeline.schedule(event)
@@ -444,9 +489,11 @@ class DistributedRoutingProtocol(Protocol):
             new_state (str): new state to set.
         """
         fsm = self.ensure_fsm(neighbor)
-        if fsm.state == new_state: # no change in state
+        if fsm.state == new_state:  # no change in state
             return
-        log.logger.info(f"{self.owner.name}: Neighbor {neighbor} state change: {fsm.state} -> {new_state}")
+        log.logger.info(
+            f"{self.owner.name}: Neighbor {neighbor} state change: {fsm.state} -> {new_state}"
+        )
         match new_state:
             case "TwoWay":  # adjacency established
                 fsm.state = new_state
@@ -469,11 +516,15 @@ class DistributedRoutingProtocol(Protocol):
         """
         fsm = self.ensure_fsm(neighbor)
         fsm.pending_requested.clear()
-        fsm.master = self.owner.name > neighbor # let the node with bigger name be the master
+        fsm.master = (
+            self.owner.name > neighbor
+        )  # let the node with bigger name be the master
         self.set_state(neighbor, "ExStart")
         if fsm.master:
             dbd_msg = self.send_dbd(neighbor)
-            self.schedule_dbd_resend(neighbor, dbd_msg) # retransmit the same dbd message
+            self.schedule_dbd_resend(
+                neighbor, dbd_msg
+            )  # retransmit the same dbd message
 
     def schedule_dbd_resend(self, neighbor: str, dbd_msg: DistRoutingMessage):
         """Schedule DBD retransmission (currently on for the master node, because the master initiates the exchange).
@@ -483,7 +534,7 @@ class DistributedRoutingProtocol(Protocol):
             dbd_msg (DistRoutingMessage): the DBD message to be retransmitted.
         """
         process = Process(self, "dbd_retransmit", [neighbor, dbd_msg])
-        time = self.owner.timeline.now() + self.DBD_TIMEOUT
+        time: int = self.owner.timeline.now() + self.DBD_TIMEOUT
         event = Event(time, process, priority=self.owner.timeline.schedule_counter)
         self.owner.timeline.schedule(event)
         fsm = self.ensure_fsm(neighbor)
@@ -499,7 +550,9 @@ class DistributedRoutingProtocol(Protocol):
         """
         fsm = self.ensure_fsm(neighbor)
         if fsm.state == "ExStart" and fsm.master:
-            log.logger.info(f"{self.owner.name}: Retransmitting DBD to {neighbor} due to timeout")
+            log.logger.info(
+                f"{self.owner.name}: Retransmitting DBD to {neighbor} due to timeout"
+            )
             self.owner.send_message(neighbor, dbd_msg)
             self.schedule_dbd_resend(neighbor, dbd_msg)
         else:
@@ -519,20 +572,23 @@ class DistributedRoutingProtocol(Protocol):
             if self.get_age(lsa) < self.MAX_AGE:
                 summaries.append(lsa.header)
         dbd_payload = DBDPayload(sender=self.owner.name, summaries=summaries)
-        dbd_msg = DistRoutingMessage(DistRoutingMsgType.DBD, receiver="DistributedRoutingProtocol", payload=dbd_payload)
+        dbd_msg = DistRoutingMessage(
+            DistRoutingMsgType.DBD,
+            receiver="DistributedRoutingProtocol",
+            payload=dbd_payload,
+        )
         self.owner.send_message(neighbor, dbd_msg)
         return dbd_msg
 
     def originate_and_flood(self):
-        """Originate own LSA and flood to all neighbors with 2-way adjacency.
-        """
+        """Originate own LSA and flood to all neighbors with 2-way adjacency."""
         lsa = self.originate()
         # install into own LSDB, always newer for self-originated LSA
         self.lsdb.install(lsa, self.owner.timeline.now())
         forwarding_table = self.run_spf()  # recompute routes
         self.owner.network_manager.set_forwarding_table(forwarding_table)
         self.flood_to_all_neighbors(lsa)
-    
+
     def originate(self) -> LSA:
         """Originate and return its LSA, meanwhile increment its sequence number.
 
@@ -543,7 +599,11 @@ class DistributedRoutingProtocol(Protocol):
         for neighbor, cost in sorted(self.adj_cost.items()):
             links.append(Link(neighbor=neighbor, cost=cost))
         now = self.owner.timeline.now()
-        header = LSAHeader(advertising_router=self.owner.name, seq_number=self.seq_number, originated_time=now)
+        header = LSAHeader(
+            advertising_router=self.owner.name,
+            seq_number=self.seq_number,
+            originated_time=now,
+        )
         lsa = LSA(header=header, links=links)
         self.seq_number += 1
         self.last_originated_time = now
@@ -555,10 +615,13 @@ class DistributedRoutingProtocol(Protocol):
         return lsa
 
     def originate_withdrawal(self) -> LSA:
-        """Originate a withdrawal LSA (MAX_AGE) for this router.
-        """
+        """Originate a withdrawal LSA (MAX_AGE) for this router."""
         now = self.owner.timeline.now()
-        header = LSAHeader(advertising_router=self.owner.name, seq_number=self.seq_number, originated_time=now - self.MAX_AGE)
+        header = LSAHeader(
+            advertising_router=self.owner.name,
+            seq_number=self.seq_number,
+            originated_time=now - self.MAX_AGE,
+        )
         lsa = LSA(header=header, links=[])
         self.seq_number += 1
         return lsa
@@ -569,9 +632,11 @@ class DistributedRoutingProtocol(Protocol):
         Returns:
             forwarding_table (dict[str, str]): mapping of destination to next hop.
         """
-        log.logger.info(f"{self.owner.name}: Running SPF algorithm to compute routing table.")
+        log.logger.info(
+            f"{self.owner.name}: Running SPF algorithm to compute routing table."
+        )
         # step 1: build adjacency graph from LSDB, it is a directed graph
-        g = defaultdict(list) # node -> list[(neighbor, cost)]
+        g = defaultdict(list)  # node -> list[(neighbor, cost)]
         nodes = set()
         for lsa in self.lsdb:
             if self.get_age(lsa) >= self.MAX_AGE:
@@ -584,11 +649,13 @@ class DistributedRoutingProtocol(Protocol):
                 g[u].append((v, c))
                 nodes.add(v)
         # step 2: Dijkstra's algorithm
-        dist = {n: float('inf') for n in nodes}
+        dist = {n: float("inf") for n in nodes}
         dist[self.owner.name] = 0
-        prev = {n: set() for n in nodes}   # node -> set of previous nodes in shortest paths
+        prev = {
+            n: set() for n in nodes
+        }  # node -> set of previous nodes in the shortest paths
         visited = set()
-        queue = [(0, self.owner.name)]        # (cost, node)
+        queue = [(0, self.owner.name)]  # (cost, node)
         while queue:
             d, u = heappop(queue)
             if u not in visited:
@@ -597,20 +664,22 @@ class DistributedRoutingProtocol(Protocol):
                     if v in visited:
                         continue
                     alt = d + cost
-                    if alt < dist[v]:                  # a shorter alternative path to v via u
+                    if alt < dist[v]:  # a shorter alternative path to v via u
                         dist[v] = alt
                         prev[v] = {u}
                         heappush(queue, (alt, v))
-                    elif abs(alt - dist[v]) < EPSILON: # multiple shortest paths
+                    elif abs(alt - dist[v]) < EPSILON:  # multiple shortest paths
                         prev[v].add(u)
         # step 3: build forwarding table
-        forwarding_table = {} # dst -> next hop
+        forwarding_table = {}  # dst -> next hop
         for dst in nodes:
-            if dst == self.owner.name or dist[dst] == float('inf'):
+            if dst == self.owner.name or dist[dst] == float("inf"):
                 continue
             candidates = set()
             cur_nodes = [dst]
-            while cur_nodes and len(candidates) == 0: # backtrack until reaching neighbors, need at least one candidate
+            while (
+                cur_nodes and len(candidates) == 0
+            ):  # backtrack until reaching neighbors, need at least one candidate
                 next_cur_nodes = []
                 for cur in cur_nodes:
                     for p in prev[cur]:
@@ -620,8 +689,12 @@ class DistributedRoutingProtocol(Protocol):
                             next_cur_nodes.append(p)
                 cur_nodes = next_cur_nodes
             if candidates:
-                forwarding_table[dst] = min(candidates) # choose the lexicographically smallest next hop
-        log.logger.info(f"{self.owner.name}: Computed routing table: dist={dist}, forwarding_table={forwarding_table}")
+                forwarding_table[dst] = min(
+                    candidates
+                )  # choose the lexicographically smallest next hop
+        log.logger.info(
+            f"{self.owner.name}: Computed routing table: dist={dist}, forwarding_table={forwarding_table}"
+        )
         return forwarding_table
 
     def get_age(self, item: LSA | LSAHeader) -> int:
@@ -658,36 +731,46 @@ class DistributedRoutingProtocol(Protocol):
             lsa (LSA): LSA to be flooded.
             exclude_neighbor (str | None): neighbor to exclude from flooding.
         """
-        log.logger.debug(f"{self.owner.name}: Flooding {lsa} to neighbors {list(self.adj_cost.keys())}, excluding {exclude_neighbor}")
+        log.logger.debug(
+            f"{self.owner.name}: Flooding {lsa} to neighbors {list(self.adj_cost.keys())}, excluding {exclude_neighbor}"
+        )
         for neighbor in self.adj_cost.keys():
             if neighbor == exclude_neighbor:
                 continue
             lsu_payload = LSUPayload(sender=self.owner.name, lsas=[lsa])
-            lsu_msg = DistRoutingMessage(DistRoutingMsgType.LSU, receiver="DistributedRoutingProtocol", payload=lsu_payload)
+            lsu_msg = DistRoutingMessage(
+                DistRoutingMsgType.LSU,
+                receiver="DistributedRoutingProtocol",
+                payload=lsu_payload,
+            )
             self.owner.send_message(neighbor, lsu_msg)
 
     def handle_dbd(self, src: str, payload: DBDPayload):
-        """Handle DBD message from neighbor.
+        """Handle DBD message from the neighbor.
            Request any missing or outdated LSAs.
 
         Args:
-            src (str): name of source node.
-            payload (DBDPayload): payload of DBD message.
+            src (str): name of a source node.
+            payload (DBDPayload): payload of a DBD message.
         """
         fsm = self.ensure_fsm(src)
         if fsm.state in {"Down", "Init", "TwoWay"}:
-            log.logger.warning(f"{self.owner.name}: Received DBD from {src} in {fsm.state} state, ignoring.")
+            log.logger.warning(
+                f"{self.owner.name}: Received DBD from {src} in {fsm.state} state, ignoring."
+            )
             return
-        if fsm.state in {"Loading", "Full"}: # restart ExStart to re-sync DBs
-            log.logger.warning(f"{self.owner.name}: Received DBD from {src} in {fsm.state} state, restarting ExStart.")
+        if fsm.state in {"Loading", "Full"}:  # restart ExStart to re-sync DBs
+            log.logger.warning(
+                f"{self.owner.name}: Received DBD from {src} in {fsm.state} state, restarting ExStart."
+            )
             self.start_exstart(src)
         if fsm.state == "ExStart":
-            if fsm.master is False:
+            if not fsm.master:
                 # slave sees DBD from master, transition to Exchange
                 self.set_state(src, "Exchange")
                 self.send_dbd(src)
             else:
-                # master sees DBD from slave, transition to Exchange, and clear the scheduled DBD resend event
+                # master sees DBD from the slave, transition to Exchange, and clear the scheduled DBD resend event
                 self.set_state(src, "Exchange")
                 fsm.clear_scheduled_dbd_resend_event()
         # Now in Exchange: get the list of LSAs to request from src by comparing the summaries in DBD with own LSDB
@@ -695,18 +778,31 @@ class DistributedRoutingProtocol(Protocol):
         for lsa_header in payload.summaries:
             existing_lsa = self.lsdb.get(lsa_header.advertising_router)
             if existing_lsa is None:
-                requested.append(lsa_header.advertising_router) # missing LSA: neighbor has LSA, but we don't have
+                requested.append(
+                    lsa_header.advertising_router
+                )  # missing LSA: neighbor has LSA, but we don't have
             else:
-                if lsa_header.seq_number > existing_lsa.header.seq_number: # larger seq number: neighbor has newer LSA
+                if (
+                    lsa_header.seq_number > existing_lsa.header.seq_number
+                ):  # larger seq number: neighbor has newer LSA
                     requested.append(lsa_header.advertising_router)
-                if lsa_header.seq_number == existing_lsa.header.seq_number and self.get_age(lsa_header) < self.get_age(existing_lsa):
-                    requested.append(lsa_header.advertising_router)        # equal seq number but smaller age: neighbor has newer LSA
+                if (
+                    lsa_header.seq_number == existing_lsa.header.seq_number
+                    and self.get_age(lsa_header) < self.get_age(existing_lsa)
+                ):
+                    requested.append(
+                        lsa_header.advertising_router
+                    )  # equal seq number but smaller age: neighbor has newer LSA
         if requested:
             # ask for the requested LSAs
             fsm.pending_requested = set(requested)
             self.set_state(src, "Loading")
             lsr_payload = LSRPayload(sender=self.owner.name, requested=requested)
-            lsr_msg = DistRoutingMessage(DistRoutingMsgType.LSR, receiver="DistributedRoutingProtocol", payload=lsr_payload)
+            lsr_msg = DistRoutingMessage(
+                DistRoutingMsgType.LSR,
+                receiver="DistributedRoutingProtocol",
+                payload=lsr_payload,
+            )
             self.owner.send_message(src, lsr_msg)
         else:
             # clear the pending requested LSAs advance the neighbor to Full state because DBs are in sync
@@ -716,15 +812,17 @@ class DistributedRoutingProtocol(Protocol):
                 self.set_state(src, "Full")
 
     def handle_lsr(self, src: str, payload: LSRPayload):
-        """Handle LSR message from neighbor. Send back the requested LSAs.
+        """Handle LSR message from a neighbor. Send back the requested LSAs.
 
         Args:
-            src (str): name of source node.
+            src (str): name of the source node.
             payload (LSRPayload): payload of LSR message.
         """
         fsm = self.ensure_fsm(src)
         if fsm.state not in {"Exchange", "Loading", "Full"}:
-            log.logger.warning(f"{self.owner.name}: Received LSR from {src} in state {fsm.state}, ignoring.")
+            log.logger.warning(
+                f"{self.owner.name}: Received LSR from {src} in state {fsm.state}, ignoring."
+            )
             return
         lsas_to_send = []
         for adv in payload.requested:
@@ -733,11 +831,15 @@ class DistributedRoutingProtocol(Protocol):
                 lsas_to_send.append(lsa)
         if lsas_to_send:
             lsu_payload = LSUPayload(sender=self.owner.name, lsas=lsas_to_send)
-            lsu_msg = DistRoutingMessage(DistRoutingMsgType.LSU, receiver="DistributedRoutingProtocol", payload=lsu_payload)
+            lsu_msg = DistRoutingMessage(
+                DistRoutingMsgType.LSU,
+                receiver="DistributedRoutingProtocol",
+                payload=lsu_payload,
+            )
             self.owner.send_message(src, lsu_msg)
 
     def handle_lsu(self, src: str, payload: LSUPayload):
-        """Handle LSU message from neighbor.
+        """Handle LSU message from a neighbor.
 
         Args:
             src (str): name of source node.
@@ -745,13 +847,15 @@ class DistributedRoutingProtocol(Protocol):
         """
         fsm_src = self.ensure_fsm(src)
         if fsm_src.state not in {"Exchange", "Loading", "Full"}:
-            log.logger.warning(f"{self.owner.name}: Received LSU from {src} in state {fsm_src.state}, ignoring.")
+            log.logger.warning(
+                f"{self.owner.name}: Received LSU from {src} in state {fsm_src.state}, ignoring."
+            )
             return
         acks = []
         lsdb_updated = False
-        for lsa in payload.lsas:            
+        for lsa in payload.lsas:
             updated = self.lsdb.install(lsa, self.owner.timeline.now())
-            if updated is True:
+            if updated:
                 lsdb_updated = True
                 acks.append((lsa.header.advertising_router, lsa.header.seq_number))
                 if self.get_age(lsa) < self.MAX_AGE:
@@ -765,22 +869,33 @@ class DistributedRoutingProtocol(Protocol):
                 for neighbor in self.fsm.keys():
                     fsm_neighbor = self.ensure_fsm(neighbor)
                     if lsa.header.advertising_router in fsm_neighbor.pending_requested:
-                        fsm_neighbor.pending_requested.remove(lsa.header.advertising_router)
-                        if fsm_neighbor.state == "Loading" and len(fsm_neighbor.pending_requested) == 0:
+                        fsm_neighbor.pending_requested.remove(
+                            lsa.header.advertising_router
+                        )
+                        if (
+                            fsm_neighbor.state == "Loading"
+                            and len(fsm_neighbor.pending_requested) == 0
+                        ):
                             self.set_state(neighbor, "Full")
-        if lsdb_updated:    # recompute routes if LSDB is updated
+        if lsdb_updated:  # recompute routes if LSDB is updated
             forwarding_table = self.run_spf()
             self.owner.network_manager.set_forwarding_table(forwarding_table)
         # send LSAck back to sender, even if no LSAs are updated (empty acks list)
         lsack_payload = LSAckPayload(sender=self.owner.name, acks=acks)
-        lsack_msg = DistRoutingMessage(DistRoutingMsgType.LSAck, receiver="DistributedRoutingProtocol", payload=lsack_payload)
+        lsack_msg = DistRoutingMessage(
+            DistRoutingMsgType.LSAck,
+            receiver="DistributedRoutingProtocol",
+            payload=lsack_payload,
+        )
         self.owner.send_message(src, lsack_msg)
 
     def handle_lsack(self, src: str, payload: LSAckPayload):
-        """Handle LSAck message from neighbor.
+        """Handle LSAck message from the neighbor.
 
         Args:
-            src (str): name of source node.
+            src (str): name of a source node.
             payload (LSAckPayload): payload of LSAck message.
         """
-        log.logger.info(f"{self.owner.name}: Received LSAck from {src}: {payload.acks}. Do nothing for now.")
+        log.logger.info(
+            f"{self.owner.name}: Received LSAck from {src}: {payload.acks}. Do nothing for now."
+        )
