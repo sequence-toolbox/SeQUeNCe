@@ -33,3 +33,6 @@ $ make html
 ```
 
 The root file `index.html`, found under the builds directory, can then be opened.
+
+NOTE: there might be discrepancy between the remote Read the Docs and the doc files (.rst) in the repository.
+To resolve the discrepancy, run `make apidoc` and commit the change.
