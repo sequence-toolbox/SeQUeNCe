@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.5] - 2026-1-29
 ### Added
+- File `action_condition_set.py` is added. This contains the action, condition, and request functions for entanglement generation, swapping, and purification.
 - Class `DistributedRoutingProtocol` is added, among many other supporting classes in `routing_distributed.py`. This module do truly distributed entanglement routing.
 - Class `NetworkManager` has two new attributes: `forwarding_table` and `routing_protocol`.
 - Add cutoff flag to memory to allow disable of expiration
@@ -14,12 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 7 new unit tests to cover the newly added `routing_distributed` module
 
 ### Changed
+- Minor refactors pertaining to typing errors in `memory.py`, `resource_manager.py`, `rule_manager.py`, `network_manager.py` and `reservation.py`
+- The `create_rules()` and `load_rules()` functions of the `ResourceReservationProtocol` were consolidated and moved to the `ResourceManager` `generate_load_rules()`
+- The `purification_mode` class attribute is now part of a `Reservation`, and is contained within the message.
+- Fixing typing issues with `ResourceManagment`, `NetworkManager`, `ResourceReservationProtocol`, and related functions throughout the codebase.
+- Update the LICENSE.md copyright year
 - The previous `StaticRoutingProtocol` class is split into two classes: `StaticRoutingProtocol` and `ForwardingProtocol`. This can be viewed as the separation of control plane and the data plane for the entanglement routing module. The control plane does the routing, the data plane does the forwarding. The Routing Protocols write to the `forwarding_table`, while the Forwarding Protocol reads from the `forwarding_table`.
 - Minor refactors in `router_net_topo.py` and `network_manager.py`.
 - Memory.cutoff_ratio is allowed to be greater than 1.
-- Suppress linear algebra related warning (doing sqrtm on singular matrix)
+- Suppress linear algebra-related warning (doing sqrtm on singular matrix)
 
 ### Removed
+- Temporarily disabled setting the `es_succ_prob` and `es_deg_rate` from the RSVP protocol.
 - `routing.py` module is removed, replaced by `routing_distributed.py`, `routing_static.py`, and `forwarding.py`.
 
 
