@@ -4,10 +4,10 @@ This module defines the Memory class to simulate single atom memories as well as
 Memories will attempt to send photons through the `send_qubit` interface of nodes.
 Photons should be routed to a BSM device for entanglement generation, or through optical hardware for purification and swapping.
 """
-
+from __future__ import annotations
 from copy import copy
 from math import inf
-from typing import Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING, Iterator
 from collections.abc import Callable
 from numpy import exp, array
 from scipy import stats
@@ -64,7 +64,7 @@ class MemoryArray(Entity):
         """
 
         Entity.__init__(self, name, timeline)
-        self.memories = []
+        self.memories: list[Memory] = []
         self.memory_name_to_index = {}
 
         if decoherence_errors is not None:
@@ -92,7 +92,7 @@ class MemoryArray(Entity):
     def __len__(self) -> int:
         return len(self.memories)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Memory]:
         return iter(self.memories)
 
     def init(self):
