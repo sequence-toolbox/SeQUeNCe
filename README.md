@@ -47,10 +47,8 @@ To do so, clone and install the simulator as follows:
 ```
 git clone https://github.com/sequence-toolbox/SeQUeNCe.git
 cd SeQUeNCe
-pip install --editable . --config-settings editable_mode=strict
+uv sync
 ```
-
-For Linux and Mac users, you could use `make install_editable` instead of `pip install --editable . --config-settings editable_mode=strict`
 
 
 ## Citation
@@ -120,5 +118,6 @@ If you have questions, please contact [Caitao Zhan](https://caitaozhan.github.io
 
 * C. Zhan et al., ["Design and Simulation of the Adaptive Continuous Entanglement Generation Protocol"](https://arxiv.org/abs/2502.01964), QCNC 2025. [GitHub Repository](https://github.com/caitaozhan/adaptive-continuous)
 
+* H. Miller et al., ["Simulation of a Heterogeneous Quantum Network"](https://arxiv.org/abs/2512.04211), ArXiv preprint, 2025
 
 Please do a Pull Request to add your paper here! 
