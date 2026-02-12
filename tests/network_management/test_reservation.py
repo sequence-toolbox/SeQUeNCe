@@ -1,3 +1,4 @@
+import pytest
 from numpy import random
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.components.memory import MemoryArray
@@ -235,8 +236,8 @@ def test_ResourceReservationProtocol_schedule():
                     counter += 1
             assert counter == 0
 
-
-"""def test_ResourceReservationProtocol_create_rules():
+@pytest.mark.skip(reason="Not implemented")
+def test_ResourceReservationProtocol_create_rules():
     tl = Timeline()
     routers = []
     mids = []
@@ -305,10 +306,10 @@ def test_ResourceReservationProtocol_schedule():
                 and info.remote_node == "r4" \
                 and info.fidelity >= 0.9:
             counter -= 1
-    assert counter == 0"""
+    assert counter == 0
 
-
-"""def test_ResourceReservationProtocol_set_es_params():
+@pytest.mark.skip(reason="Not implemented")
+def test_ResourceReservationProtocol_set_es_params():
     class TestNode(FakeNode):
         def __init__(self, name, tl):
             super().__init__(name, tl, memo_size=20)
@@ -374,4 +375,4 @@ def test_ResourceReservationProtocol_schedule():
     counter = 0
     for node in routers:
         counter += node.counter
-    assert counter > 0"""
+    assert counter > 0
