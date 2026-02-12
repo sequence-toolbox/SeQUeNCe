@@ -151,8 +151,8 @@ class ResourceReservationProtocol(StackProtocol):
             path = [qcap.node for qcap in msg.qcaps]
             if self.schedule(msg.reservation):  # schedule success
                 if self.owner.name == msg.reservation.responder:
-                    accepted_reservation = self.owner.resource_manager.generate_load_rules(path, msg.reservation, self.timecards, self.memory_array_name)
-                    self.accepted_reservations.append(accepted_reservation)
+                    self.owner.resource_manager.generate_load_rules(path, msg.reservation, self.timecards, self.memory_array_name)
+                    self.accepted_reservations.append(msg.reservation)
                     msg.reservation.set_path(path)
                     new_msg = ResourceReservationMessage(RSVPMsgType.APPROVE, self.name, msg.reservation, path=path)
                     self._pop(msg=msg)
@@ -171,8 +171,8 @@ class ResourceReservationProtocol(StackProtocol):
                 next_hop = self.next_hop_when_tracing_back(msg.path)
                 self._push(dst=None, msg=msg, next_hop=next_hop)
         elif msg.msg_type == RSVPMsgType.APPROVE:
-            accepted_reservation = self.owner.resource_manager.generate_load_rules(msg.path, msg.reservation, self.timecards, self.memory_array_name)
-            self.accepted_reservations.append(accepted_reservation)
+            self.owner.resource_manager.generate_load_rules(msg.path, msg.reservation, self.timecards, self.memory_array_name)
+            self.accepted_reservations.append(msg.reservation)
             if msg.reservation.initiator == self.owner.name:
                 self._pop(msg=msg)
             else:

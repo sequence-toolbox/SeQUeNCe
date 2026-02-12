@@ -249,8 +249,6 @@ class ResourceManager:
                 event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
                 self.owner.timeline.schedule(event)
 
-        return reservation
-
     def load(self, rule: Rule) -> bool:
         """Method to load rules for entanglement management.
 

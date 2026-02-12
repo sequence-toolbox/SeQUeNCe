@@ -244,16 +244,14 @@ def ep_rule_condition2(
 # Entanglement Swapping Action-Condition-Request
 def es_rule_actionA(memories_info: list[MemoryInfo], args: Arguments) -> ActionReturn:
     """Action function used by EntanglementSwappingA protocol on nodes"""
-    es_succ_prob = args["es_succ_prob"]
-    es_degradation = args["es_degradation"]
+    #es_succ_prob = args["es_succ_prob"]
+    #es_degradation = args["es_degradation"]
     memories = [info.memory for info in memories_info]
     protocol = EntanglementSwappingA(
         TempNode,
         f"ESA.{memories[0].name}.{memories[1].name}",
         memories[0],
-        memories[1],
-        success_prob=es_succ_prob,
-        degradation=es_degradation,
+        memories[1]
     )
     dsts = [info.remote_node for info in memories_info]
     req_funcs: list[RequestFunction | None] = [es_req_func, es_req_func]
