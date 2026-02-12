@@ -36,20 +36,46 @@ SeQUeNCe is an open source, discrete-event simulator for quantum networks. As de
 
 These modules can be edited by users to define additional functionality and test protocol schemes, or may be used as-is to test network parameters and topologies.
 
-## Installing
-SeQUeNCe requires [Python](https://www.python.org/downloads/) 3.11 or later. You can simply install SeQUeNCe using `pip`:
+## Installation
+### For Users
+SeQUeNCe requires [Python](https://www.python.org/downloads/) 3.11 or later. You can install SeQUeNCe using `pip`:
 ```
 pip install sequence
 ```
 
-If you wish to make your own edits to the codebase, SeQUeNCe should be installed in [development mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html) (a.k.a. editable install).
-To do so, clone and install the simulator as follows:
+### Development Environment Setup     
+If you wish to modify the source code, use an editable installation with [uv](https://docs.astral.sh/uv/):
+
+#### Install uv ([Astral Instructions](https://docs.astral.sh/uv/getting-started/installation/))
+```bash
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
+
+#### Clone the repository and create the virtual environment
+Here we clone the repository and let uv configure the development environment with the target python version.
+```bash
 git clone https://github.com/sequence-toolbox/SeQUeNCe.git
-cd SeQUeNCe
+cd sequence
 uv sync
 ```
 
+#### Activate the virtual environment
+Now that the virtual environment is created with all dependencies installed, you can activate it using the following command.
+
+```bash
+source .venv/bin/activate # macOS/Linux
+source .venv\Scripts\activate # Windows
+```
+
+#### Running the test suite
+SeQUeNCe includes a comprehensive test suite, this can be ran with the following command
+```
+uv run pytest tests
+```
 
 ## Citation
 Please cite us, thank you!
@@ -70,7 +96,7 @@ publisher = {IOP Publishing},
 <!-- * X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: Simulator of QUantum Network Communication." GitHub repository, https://github.com/sequence-toolbox/SeQUeNCe, 2021. -->
 
 ## Running the GUI
-Once SeQUeNCe has been installed as described above, simply run the `gui.py` script found in the root of the project directory
+Once SeQUeNCe has been installed as described above, run the `gui.py` script found in the root of the project directory
 ```
 python gui.py
 ```
@@ -81,9 +107,9 @@ Many examples of SeQUeNCe in action can be found in the [example](/example) fold
 ## Additional Tools
 
 ### Network Visualization
-The example directory contains an example json file `starlight.json` to specify a network topology, and the utils directory contains the script `draw_topo.py` to visualize json files. To use this script, the Graphviz library must be installed. Installation information can be found on the [Graphviz website](https://www.graphviz.org/download/).
+The example directory contains an example .json file `starlight.json` to specify a network topology, and the utils directory contains the script `draw_topo.py` to visualize json files. To use this script, the Graphviz library must be installed. Installation information can be found on the [Graphviz website](https://www.graphviz.org/download/).
 
-To view a network, simply run the script and specify the relative location of your json file:
+To view a network, run the script and specify the relative location of your .json file:
 ```
 python utils/draw_topo.py example/starlight.json
 ```
