@@ -10,9 +10,20 @@ from enum import Enum, auto
 from typing import TYPE_CHECKING, Optional
 from collections.abc import Callable
 
-from .action_condition_set import es_rule_actionA, es_rule_conditionA, es_rule_actionB, es_rule_conditionB2, \
-    eg_rule_action1, eg_rule_condition, eg_rule_action2, ep_rule_action1, ep_rule_condition1, ep_rule_action2, \
-    es_rule_conditionB1, ep_rule_condition2
+from .action_condition_set import (
+    es_rule_actionA,
+    es_rule_conditionA,
+    es_rule_actionB,
+    es_rule_conditionB2,
+    eg_rule_action1,
+    eg_rule_condition,
+    eg_rule_action2,
+    ep_rule_action1,
+    ep_rule_condition1,
+    ep_rule_action2,
+    es_rule_conditionB1,
+    ep_rule_condition2,
+)
 from ..kernel.event import Event
 from ..kernel.process import Process
 
@@ -91,7 +102,7 @@ class ResourceManagerMessage(Message):
             case ResourceManagerMsgType.REQUEST:
                 base += f', req_condition_func={self.req_condition_func}, req_args={self.req_args}'
             case ResourceManagerMsgType.RESPONSE:
-                base += f', is_approved={self.is_approved}, paired_protocol={self.paired_protocol}, paired_node={self.paired_node}, self.paired_memories={self.paired_memories}'
+                base += f', is_approved={self.is_approved}, paired_protocol={self.paired_protocol}, paired_node={self.paired_node}, paired_memories={self.paired_memories}'
             case ResourceManagerMsgType.RELEASE_PROTOCOL:
                 base += f', release_protocol={self.protocol}'
             case ResourceManagerMsgType.RELEASE_MEMORY:
