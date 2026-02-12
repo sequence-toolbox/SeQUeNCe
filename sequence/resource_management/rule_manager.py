@@ -188,5 +188,6 @@ class Rule:
         self.reservation = reservation
 
     def get_reservation(self) -> "Reservation":
-        assert self.reservation is not None, "Reservation not set."
+        if self.reservation is None:
+            raise RuntimeError("Reservation is not set.")
         return self.reservation
