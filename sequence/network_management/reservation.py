@@ -227,13 +227,13 @@ class ResourceReservationProtocol(StackProtocol):
 
         raise Exception(f"RSVP protocol {self.name} received a message (disallowed)")
 
-    def set_swapping_success_rate(self, prob: float) -> None:
-        assert 0 <= prob <= 1
-        self.es_succ_prob = prob
+    # def set_swapping_success_rate(self, prob: float) -> None:
+    #     assert 0 <= prob <= 1
+    #     self.es_succ_prob = prob
 
-    def set_swapping_degradation(self, degradation: float) -> None:
-        assert 0 <= degradation <= 1
-        self.es_degradation = degradation
+    # def set_swapping_degradation(self, degradation: float) -> None:
+    #     assert 0 <= degradation <= 1
+    #     self.es_degradation = degradation
 
     def set_purification_mode(self, mode: str) -> None:
         assert mode in ['once', 'until_target'], \
