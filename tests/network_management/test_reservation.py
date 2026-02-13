@@ -8,8 +8,16 @@ from numpy import random
 
 from sequence.components.memory import MemoryArray
 from sequence.kernel.timeline import Timeline
-from sequence.network_management.reservation import Reservation, RSVPMsgType, ResourceReservationMessage, ResourceReservationProtocol, MemoryTimeCard, QCap
+from sequence.network_management.reservation import (
+    MemoryTimeCard,
+    QCap,
+    Reservation,
+    ResourceReservationMessage,
+    ResourceReservationProtocol,
+    RSVPMsgType,
+)
 from sequence.topology.node import QuantumRouter
+from sequence.message import Message
 
 random.seed(42) # Set deterministic seed
 
@@ -155,7 +163,7 @@ class TestMemoryTimeCard:
     def test_add_integrated(self, std_timecard, std_reservation, start, end, expected_result):
         assert len(std_timecard.reservations) == 0
 
-        assert std_timecard.add(std_reservation) == True
+        assert std_timecard.add(std_reservation) is True
         assert len(std_timecard.reservations) == 1
 
         candidate = Reservation('a', 'b', start, end, 5, 0.9)
@@ -169,9 +177,9 @@ class TestMemoryTimeCard:
     def test_remove(self, std_timecard, std_reservation):
         std_timecard.reservations.insert(0, std_reservation)
         assert len(std_timecard.reservations) == 1
-        assert std_timecard.remove(std_reservation) == True # Remove to make it empty again
+        assert std_timecard.remove(std_reservation) is True # Remove to make it empty again
         assert len(std_timecard.reservations) == 0 # Ensure it's empty
-        assert std_timecard.remove(std_reservation) == False # Triggers if value error, though it is NOT raised.
+        assert std_timecard.remove(std_reservation) is False # Triggers if value error, though it is NOT raised.
 
     def test_schedule_fuzzed(self, std_timecard):
         for _ in range(500):
