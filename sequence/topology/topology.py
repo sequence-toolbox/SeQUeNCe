@@ -86,10 +86,17 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
     }
 
     def __init__(self, conf_file_name: str):
-        """Constructor for topology class.
+        """Build a network topology from a config file (.json or .yaml).
+
+        This runs the full build pipeline (Template Method pattern). Each step
+        is either shared or a no-op hook that children override as needed.
+        The order is fixed; children only control which steps do something.
 
         Args:
-            conf_file_name (str): the name of configuration file
+            conf_file_name (str): path to a .json or .yaml/.yml config file
+
+        TODO: (Bridge pattern) extract node creation + routing into a composed
+        implementor so RouterNetTopo/DQCNetTopo can share BSM infra.
         """
         self.bsm_to_router_map = {}
 
@@ -125,42 +132,38 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
         self._add_cconnections(config)
         self._generate_forwarding_table(config)
 
-    #NOTE: figure out some sort of enum matching for this so that right networks get the right treatment
-    #so far that just means that if it isn't QunatumRepeater or DQC it doesn't mean anything
+    # only RouterNetTopo/DQCNetTopo have routing tables
     def _generate_forwarding_table(self, config: dict):
         pass
 
-    #ofc all child classes must have ts
+    # every child must define its own node creation
     @abstractmethod
     def _add_nodes(self, config: dict):
         pass
 
-    #NOTE: most quantum networks should have qconnections but just in case, don't enforce
+    # not all networks have qconnections (QKD, Qlan don't)
     def _add_qconnections(self, config: dict) -> None:
-        """Pass because not all networks have to have qconnections"""
         pass
 
-    #NOTE:make this not enforced
+    # only QlanStarTopo needs extra params before node creation
     def _add_parameters(self, config: dict):
         pass
-    
+
+    # BSM mapping only applies to RouterNetTopo/DQCNetTopo
+    def _map_bsm_routers(self, config):
+        pass
+
+    # pairs BSM nodes with adjacent routers, needs _map_bsm_routers first
+    def _add_bsm_node_to_router(self):
+        pass
 
     def _get_templates(self, config: dict) -> None:
         templates = config.get(ALL_TEMPLATES, {})
         self.templates = templates
 
-
     def _add_timeline(self, config: dict):
         stop_time = config.get(STOP_TIME, float('inf'))
         self.tl = Timeline(stop_time)
-        #NOTE maybe add something for wtv turns 
-
-
-    def _map_bsm_routers(self, config):
-        pass
-
-    def _add_bsm_node_to_router(self):
-        pass
 
 
     def _add_qchannels(self, config: dict) -> None:
