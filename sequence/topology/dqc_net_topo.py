@@ -1,4 +1,3 @@
-import json
 import numpy as np
 from networkx import Graph, dijkstra_path, exception
 
@@ -9,11 +8,10 @@ from ..constants import SPEED_OF_LIGHT
 from .const_topo import (
     BSM_NODE, MEET_IN_THE_MID, MEMO_ARRAY_SIZE, CONTROLLER,
     DQC_NODE, DATA_MEMO_ARRAY_SIZE,
-    STOP_TIME, ALL_Q_CHANNEL, SRC, DST, ALL_NODE, SEED, TYPE, NAME,
+    ALL_Q_CHANNEL, SRC, DST, ALL_NODE, SEED, TYPE, NAME,
     TEMPLATE, ALL_Q_CONNECT, CONNECT_NODE_1, CONNECT_NODE_2,
     ATTENUATION, DISTANCE, ALL_C_CHANNEL, DELAY, ALL_C_CONNECT,
 )
-from typing import Dict, List, Type
 from .node import Node, DQCNode
 
 

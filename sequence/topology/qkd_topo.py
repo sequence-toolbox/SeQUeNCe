@@ -1,4 +1,3 @@
-import json
 
 from .topology import Topology as Topo
 from .node import QKDNode

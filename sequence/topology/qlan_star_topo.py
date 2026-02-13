@@ -1,8 +1,6 @@
-import json
 import numpy as np
 
 from .topology import Topology as Topo
-from ..kernel.timeline import Timeline
 from ..constants import SPEED_OF_LIGHT
 from .const_topo import (
     MEET_IN_THE_MID, ORCHESTRATOR, CLIENT, LOCAL_MEMORIES, CLIENT_NUMBER,
@@ -11,7 +9,7 @@ from .const_topo import (
     MEM_FIDELITY_CLIENT, MEM_FREQUENCY_CLIENT, MEM_EFFICIENCY_CLIENT,
     MEM_COHERENCE_CLIENT, MEM_WAVELENGTH_CLIENT,
     MEASUREMENT_BASES, MEM_SIZE,
-    STOP_TIME, ALL_NODE, SEED, TYPE, NAME, TEMPLATE,
+    ALL_NODE, SEED, TYPE, NAME, TEMPLATE,
     ALL_Q_CONNECT, CONNECT_NODE_1, CONNECT_NODE_2, ATTENUATION, DISTANCE,
     ALL_C_CHANNEL, SRC, DST, DELAY, ALL_C_CONNECT,
 )
