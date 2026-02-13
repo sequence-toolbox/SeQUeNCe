@@ -19,7 +19,6 @@ classifiers = [
 ]
 keywords = ["quantum", "network", "discrete", "event", "simulator"]
 dependencies = [
-    "coverage>=7.13.4",
     "dash>=3.3.0",
     "dash-bootstrap-components>=2.0.4",
     "dash-core-components>=2.0.0",
@@ -58,6 +57,13 @@ sequence = ["gui/user_templates.json", "gui/default_params.json", "gui/starlight
 [tool.pytest.ini_options]
 markers = [
     "unit: Marks tests as unit tests",
+]
+
+[dependency-groups]
+dev = [
+    "coverage>=7.13.4",
+    "ruff>=0.15.1",
+    "ty>=0.0.16",
 ]
 
 [project.urls]
