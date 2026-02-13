@@ -17,10 +17,10 @@ The Network Management module of sequence is responsible for coordinating the pr
 
 ![nm](figures/net_manager.png)
 
-1. When a request is received, the network manager with first push a message to the **reservation** protocol, which determines if the request can be met on the local node. If so, the protocol reserves hardware resources and passes the request to the **forwarding** protocol, which determines the next router in an optimal path between the requested nodes. 
+1. When a request is received, the Network Manager with first push a message to the **reservation** protocol, which determines if the request can be met on the local node. If so, the protocol reserves hardware resources and passes the request to the **forwarding** protocol, which determines the next router in an optimal path between the requested nodes. 
 The forwarding protocol reads the fowarding table writen by the **routing** protocol.
 2. Nodes in the path receive reservation requests and either reserve local resources or reject the request. If rejected on any node or accepted by all nodes, the request is sent back to the originating node by the reverse path. 
-3. If the request is accepted (requires all nodes in the path accept the request), appropriate rules are automatically created and installed in the resource manager as well.
+3. If the request is accepted (requires all nodes in the path accepting the request), the reservation protocol will pass the timecard and the reservation to the Resource Manager. As described in Chapter 4, the Resource Manager will generate and install the rules once receiving the timecard and the reservation.
 
 When constructing the network manager, the `NewNetworkManager` function of the `sequence.network_management.network_manager` module is used. This function will automatically create the default reservation and routing protocol stack and install it into the network manager.
 
@@ -39,7 +39,6 @@ def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_
     Returns:
         NetworkManager: network manager object created.
     """
-    swapping_success_rate = 0.5
     manager = NetworkManager(owner, [])
     routing = component_templates.get("routing", "static")
     match routing:
@@ -53,7 +52,6 @@ def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_
     manager.set_routing_protocol(routing)
     forwarding_protocol = ForwardingProtocol(owner, owner.name + ".ForwardingProtocol")
     rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP", memory_array_name)
-    rsvp.set_swapping_success_rate(swapping_success_rate)
     forwarding_protocol.upper_protocols.append(rsvp)
     rsvp.lower_protocols.append(forwarding_protocol)
     manager.load_stack([forwarding_protocol, rsvp])
@@ -78,7 +76,6 @@ The json file should be structured as a dictionary with the following keys:
 For this simulation, we use sequential simulation to simulate 2 seconds of the network.
 
 ```json
-"is_parallel": false,
 "stop_time": 2000000000000
 ```
 
