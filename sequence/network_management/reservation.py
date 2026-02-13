@@ -11,11 +11,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
 
-from ..resource_management.rule_manager import Rule
 from ..message import Message
 from ..protocol import StackProtocol
-from ..kernel.event import Event
-from ..kernel.process import Process
 
 ENTANGLED = 'ENTANGLED'
 RAW = 'RAW'
@@ -46,14 +43,16 @@ class ResourceReservationMessage(Message):
     def __init__(self, msg_type, receiver: str, reservation: "Reservation", **kwargs):
         super().__init__(msg_type, receiver)
         self.reservation = reservation
-        if self.msg_type is RSVPMsgType.REQUEST:
-            self.qcaps = []
-        elif self.msg_type is RSVPMsgType.REJECT:
-            self.path = kwargs["path"]
-        elif self.msg_type is RSVPMsgType.APPROVE:
-            self.path = kwargs["path"]
-        else:
-            raise Exception("Unknown type of message")
+        match self.msg_type:
+            case RSVPMsgType.REQUEST:
+                self.qcaps = []
+            case RSVPMsgType.REJECT:
+                self.path = kwargs['path']
+            case RSVPMsgType.APPROVE:
+                self.path = kwargs['path']
+            case _:
+                raise Exception("Unknown message type")
+
 
     def __str__(self):
         return f"|type={self.msg_type}; reservation={self.reservation}|"
@@ -288,10 +287,7 @@ class Reservation:
         assert self.memory_size > 0
 
     def __str__(self) -> str:
-        s = "|initiator={}; responder={}; start_time={:,}; end_time={:,}; memory_size={}; target_fidelity={}; entanglement_number={}; identity={}|".format(
-            self.initiator, self.responder, int(self.start_time), int(self.end_time), self.memory_size, self.fidelity,
-            self.entanglement_number, self.identity)
-        return s
+        return f'|initiator={self.initiator}; responder={self.responder}; start_time={self.start_time:,}; end_time={self.end_time:,}; memory_size={self.memory_size}; target_fidelity={self.fidelity}; entanglement_number={self.entanglement_number}; identity={self.identity}|'
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -395,8 +391,6 @@ class MemoryTimeCard:
             elif (max(self.reservations[mid].start_time, reservation.start_time) <=
                   min(self.reservations[mid].end_time, reservation.end_time)):
                 return -1
-            else:
-                raise Exception("Unexpected status")
         return start
 
 
