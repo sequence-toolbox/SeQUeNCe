@@ -53,7 +53,7 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
     A network may also be generated using an external json file.
 
     Attributes:
-        bsm router-to-map
+        bsm router-to-map (dict): mapping BSM nodes to router nodes.
         nodes (dict[str, list[Node]]): mapping of type of node to a list of same type node.
         qchannels (list[QuantumChannel]): list of quantum channel objects in network.
         cchannels (list[ClassicalChannel]): list of classical channel objects in network.
@@ -204,25 +204,6 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
                     cc_obj = ClassicalChannel(name, self.tl, distance, delay)
                     cc_obj.set_ends(src_obj, dst_str)
                     self.cchannels.append(cc_obj)
-
-    def _calc_cc_delay(self, config: dict, node1: str, node2: str) -> float:
-        """get the classical channel delay between two nodes from the config"""
-        cc_delay = []
-        for cc in config.get(ALL_C_CHANNEL, []):
-            if (cc[SRC] == node1 and cc[DST] == node2) \
-                    or (cc[SRC] == node2 and cc[DST] == node1):
-                delay = cc.get(DELAY, cc.get(DISTANCE, 1000) / SPEED_OF_LIGHT)
-                cc_delay.append(delay)
-
-        for cc in config.get(ALL_C_CONNECT, []):
-            if (cc[CONNECT_NODE_1] == node1 and cc[CONNECT_NODE_2] == node2) \
-                    or (cc[CONNECT_NODE_1] == node2 and cc[CONNECT_NODE_2] == node1):
-                delay = cc.get(DELAY, cc.get(DISTANCE, 1000) / SPEED_OF_LIGHT)
-                cc_delay.append(delay)
-
-        assert len(cc_delay) > 0, \
-            f"No classical channel/connection found between {node1} and {node2}"
-        return np.mean(cc_delay) // 2
 
     def get_timeline(self) -> "Timeline":
         assert self.tl is not None, "timeline is not set properly."

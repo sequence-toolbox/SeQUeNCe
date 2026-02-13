@@ -168,7 +168,6 @@ class QlanStarTopo(Topo):
             node2 = q_connect[CONNECT_NODE_2]
             attenuation = q_connect[ATTENUATION]
             distance = q_connect[DISTANCE] // 2
-            channel_type = q_connect[TYPE]
             cc_delay = []
             for cc in config.get(ALL_C_CHANNEL, []):
                 if cc[SRC] == node1 and cc[DST] == node2:
