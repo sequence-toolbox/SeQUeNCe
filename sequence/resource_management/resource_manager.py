@@ -1,4 +1,4 @@
-"""Definition of resource managemer.
+"""Definition of the Resource Manager.
 
 This module defines the resource manager, which composes the SeQUeNCe resource management module.
 The manager uses a memory manager and rule manager to track memories and control entanglement operations, respectively.
