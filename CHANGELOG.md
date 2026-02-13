@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 7 new unit tests to cover the newly added `routing_distributed` module
 
 ### Changed
+- Extend and refactor the tests in `test_reservation.py`
 - Minor refactors pertaining to typing errors in `memory.py`, `resource_manager.py`, `rule_manager.py`, `network_manager.py` and `reservation.py`
 - The `create_rules()` and `load_rules()` functions of the `ResourceReservationProtocol` were consolidated and moved to the `ResourceManager` `generate_load_rules()`
 - The `purification_mode` class attribute is now part of a `Reservation`, and is contained within the message.
