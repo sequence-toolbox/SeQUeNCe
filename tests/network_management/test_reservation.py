@@ -1,14 +1,14 @@
 """
 Unit and Integration Tests for reservation.py
 """
+from unittest.mock import Mock
 
 import pytest
 from numpy import random
+
 from sequence.components.memory import MemoryArray
 from sequence.kernel.timeline import Timeline
 from sequence.network_management.reservation import Reservation, RSVPMsgType, ResourceReservationMessage, ResourceReservationProtocol, MemoryTimeCard, QCap
-
-from sequence.network_management.reservation import MemoryTimeCard, Reservation
 from sequence.topology.node import QuantumRouter
 
 random.seed(42) # Set deterministic seed
@@ -24,6 +24,30 @@ def std_reservation():
 @pytest.fixture
 def std_timecard():
     return MemoryTimeCard(0)
+
+@pytest.fixture
+def mock_owner():
+    owner = Mock()
+    owner.name = 'node1'
+    owner.timeline = Mock()
+    owner.timeline.now.return_value = 0
+    owner.resource_manager = Mock()
+    owner.components = {}
+    owner.network_manager = Mock()
+    return owner
+
+@pytest.fixture
+def mock_memory_array():
+    memo_arr = Mock()
+    memo_arr.__len__ = Mock(return_value=50)
+    return memo_arr
+
+def resource_res_protocol(mock_owner, mock_memory_array):
+    mock_owner.components['memory_array'] = mock_memory_array
+    proto = ResourceReservationProtocol(mock_owner, 'node1.rsvp', 'memory_array')
+    proto._push = Mock()
+    proto._pop = Mock()
+    return proto
 
 
 class FakeNode(QuantumRouter):
@@ -219,6 +243,18 @@ class TestResourceReservationMessage:
 
 
 class TestResourceReservationProtocol:
+    def test_init(self, mock_owner, mock_memory_array):
+        mock_owner.components['mem_arr'] = mock_memory_array
+        proto = ResourceReservationProtocol(mock_owner, 'node.rsvp', 'mem_arr')
+        assert proto.owner == mock_owner
+        assert proto.name == 'node.rsvp'
+        assert proto.memory_array_name == 'mem_arr'
+        assert proto.memo_arr == mock_memory_array
+        assert proto.accepted_reservations == []
+
+        assert len(proto.timecards) == 50
+
+
     def test_ResourceReservationProtocol_push(self):
         tl = Timeline()
         n1 = FakeNode('n1', tl)
