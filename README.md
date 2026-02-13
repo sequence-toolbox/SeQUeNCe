@@ -7,7 +7,7 @@
 
 <h3><p align="center">Quantum Networking in SeQUeNCe: Customizable, Scalable, Easy Debugging</p></h3>
 
-test
+
 
 <div align="center">
 
