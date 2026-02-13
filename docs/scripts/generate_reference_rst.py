@@ -92,11 +92,7 @@ def get_title(module_name: str) -> str:
 
 def discover_modules(source_dir: Path, relative_source_dir: str) -> list[str]:
     if relative_source_dir == ".":
-        modules = [
-            path.stem
-            for path in source_dir.glob("*.py")
-            if path.stem in ROOT_MISC_MODULES
-        ]
+        modules = [path.stem for path in source_dir.glob("*.py") if path.stem in ROOT_MISC_MODULES]
         return sorted(modules, key=str.lower)
 
     target = source_dir / relative_source_dir
@@ -114,26 +110,12 @@ def discover_modules(source_dir: Path, relative_source_dir: str) -> list[str]:
 def write_module_rst(module_path: str, output_file: Path) -> None:
     module_name = module_path.split(".")[-1]
     title = get_title(module_name)
-    content = (
-        f"{title}\n"
-        f"{'=' * len(title)}\n\n"
-        f".. automodule:: {module_path}\n"
-        f"    :members:\n"
-    )
+    content = f"{title}\n{'=' * len(title)}\n\n.. automodule:: {module_path}\n    :members:\n"
     output_file.write_text(content, encoding="utf-8")
 
 
 def write_top_rst(spec: SectionSpec, top_file: Path, entries: list[str]) -> None:
-    lines = [
-        spec.title,
-        "=" * len(spec.title),
-        "",
-        spec.description,
-        "",
-        ".. toctree::",
-        "    :maxdepth: 2",
-        "",
-    ]
+    lines = [spec.title, "=" * len(spec.title), "", spec.description, "", ".. toctree::", "    :maxdepth: 2", ""]
     lines.extend(f"    {entry}" for entry in entries)
     lines.append("")
     top_file.write_text("\n".join(lines), encoding="utf-8")
@@ -145,7 +127,7 @@ def prune_stale_files(output_dir: Path, expected_files: set[str]) -> None:
             rst.unlink()
 
 
-def main() -> None:
+def main():
     repo_root = Path(__file__).resolve().parents[2]
     sequence_root = repo_root / "sequence"
     refs_root = repo_root / "docs" / "source" / "references"
