@@ -17,8 +17,8 @@ The Network Management module of sequence is responsible for coordinating the pr
 
 ![nm](figures/net_manager.png)
 
-1. When a request is received, the Network Manager with first push a message to the **reservation** protocol, which determines if the request can be met on the local node. If so, the protocol reserves hardware resources and passes the request to the **forwarding** protocol, which determines the next router in an optimal path between the requested nodes. 
-The forwarding protocol reads the fowarding table writen by the **routing** protocol.
+1. When a request is received, the Network Manager first push a message to the **reservation** protocol, which determines if the request can be met on the local node. If so, the protocol reserves hardware resources and passes the request to the **forwarding** protocol, which determines the next router in an optimal path between the requested nodes. 
+The forwarding protocol reads the forwarding table written by the **routing** protocol.
 2. Nodes in the path receive reservation requests and either reserve local resources or reject the request. If rejected on any node or accepted by all nodes, the request is sent back to the originating node by the reverse path. 
 3. If the request is accepted (requires all nodes in the path accepting the request), the reservation protocol will pass the timecard and the reservation to the Resource Manager. As described in Chapter 4, the Resource Manager will generate and install the rules once receiving the timecard and the reservation.
 
@@ -29,7 +29,7 @@ def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_
     """Function to create a new network manager.
 
     Will create a network manager with default protocol stack.
-    This stack inclused a reservation and routing protocol.
+    This stack includes a reservation and routing protocol.
 
     Args:
         owner (QuantumRouter): node to attach network manager to.

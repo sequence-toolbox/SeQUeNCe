@@ -201,12 +201,12 @@ def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_
     """Function to create a new network manager.
 
     Will create a network manager with default protocol stack.
-    This stack inclused a reservation and routing protocol.
+    This stack includes a reservation and routing protocol.
 
     Args:
         owner (QuantumRouter): node to attach network manager to.
         memory_array_name (str): name of the memory array component on owner.
-        routing_protocol_cls (type[Protocol]): routing protocol class to use for control plane.
+        component_templates (dict): dictionary of component templates
 
     Returns:
         NetworkManager: network manager object created.

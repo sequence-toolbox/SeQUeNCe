@@ -276,7 +276,7 @@ def test_distributed_routing_protocol_4():
 
 
 # Four node (R0, R1, R2, R3) ring topology
-# R2 is down at t=3 second, turn turn back on at t=8 second,
+# R2 is down at t=3 second, turn back on at t=8 second,
 # check the FSM states & Forwarding table at all four nodes.
 def test_distributed_routing_protocol_5():
     topo = router_net_topo.RouterNetTopo("tests/network_management/ring_topo.json")

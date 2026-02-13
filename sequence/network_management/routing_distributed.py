@@ -139,7 +139,7 @@ class LSAckPayload:
     acks: list[tuple[str, int]]  # list of (advertising_router, seq_number) that are updated
 
 
-DistRoutingPayload = Union[HelloPayload, DBDPayload, LSRPayload, LSUPayload, LSAckPayload]
+DistRoutingPayload = HelloPayload | DBDPayload | LSRPayload | LSUPayload | LSAckPayload
 
 
 class DistRoutingMessage(Message):
@@ -287,10 +287,10 @@ class DistributedRoutingProtocol(Protocol):
         last_originated_time (int): time of last originated LSA.
     """
 
-    HELLO_INTERVAL = 1 * SECOND  # interval between HELLOs
-    DEAD_INTERVAL = 4 * SECOND   # time to declare neighbor dead
-    DBD_TIMEOUT = SECOND // 2    # time to wait before retransmitting DBD
-    MAX_AGE = 1000 * SECOND      # maximum age of LSA
+    HELLO_INTERVAL: int = 1 * SECOND  # interval between HELLOs
+    DEAD_INTERVAL: int = 4 * SECOND   # time to declare neighbor dead
+    DBD_TIMEOUT: int = SECOND // 2    # time to wait before retransmitting DBD
+    MAX_AGE: int = 1000 * SECOND      # maximum age of LSA
 
     def __init__(self, owner: "QuantumRouter", name: str):
         super().__init__(owner, name)
