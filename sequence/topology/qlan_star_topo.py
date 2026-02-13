@@ -75,26 +75,6 @@ class QlanStarTopo(Topo):
         super().__init__(conf_file_name)
 
 
-    def _load(self, filename: str):
-        with open(filename) as fh:
-            config = json.load(fh)
-
-        self._get_templates(config)
-        self._add_parameters(config)
-
-        # quantum connections are only supported by sequential simulation so far
-        self._add_qconnections(config)
-
-        self._add_timeline(config)
-        self._add_nodes(config)
-        self._add_qchannels(config)
-        self._add_cchannels(config)
-        self._add_cconnections(config)
-        self._add_protocols()
-
-    def _add_timeline(self, config: dict):
-        stop_time = config.get(STOP_TIME, float('inf'))
-        self.tl = Timeline(stop_time)
     
     def _add_parameters(self, config: dict):
 

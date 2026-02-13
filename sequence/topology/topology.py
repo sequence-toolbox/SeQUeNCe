@@ -4,13 +4,12 @@ This module provides a definition of the Topology class, which can be used to
 manage a network's structure.
 Topology instances automatically perform many useful network functions.
 """
+
+import json
 import warnings
 from abc import ABC, ABCMeta, abstractmethod
 from collections import defaultdict
-from typing import TYPE_CHECKING, Optional
-
-if TYPE_CHECKING:
-    from ..kernel.timeline import Timeline
+from ..kernel.timeline import Timeline
 
 from .node import *
 from .const_topo import (
@@ -54,6 +53,7 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
     A network may also be generated using an external json file.
 
     Attributes:
+        bsm router-to-map
         nodes (dict[str, list[Node]]): mapping of type of node to a list of same type node.
         qchannels (list[QuantumChannel]): list of quantum channel objects in network.
         cchannels (list[ClassicalChannel]): list of classical channel objects in network.
@@ -91,25 +91,67 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
         Args:
             conf_file_name (str): the name of configuration file
         """
+        self.bsm_to_router_map = {}
+
         self.nodes: dict[str, list[Node]] = defaultdict(list)
         self.qchannels: list[QuantumChannel] = []
         self.cchannels: list[ClassicalChannel] = []
         self.templates: dict[str, dict] = {}
         self.tl: Timeline | None = None
-        self._load(conf_file_name)
 
-    @abstractmethod
-    def _load(self, filename: str):
-        """Method for parsing configuration file and generate network
+        with open(conf_file_name) as fh:
+            config = json.load(fh)
 
-        Args:
-            filename (str): the name of configuration file
-        """
+        self._get_templates(config)
+        self._add_parameters(config)
+        # quantum connections are only supported by sequential simulation so far
+        self._add_qconnections(config)
+        self._add_timeline(config)
+        self._map_bsm_routers(config)
+        self._add_nodes(config)
+        self._add_bsm_node_to_router()
+        self._add_qchannels(config)
+        self._add_cchannels(config)
+        self._add_cconnections(config)
+        self._generate_forwarding_table(config)
+
+    #NOTE: figure out some sort of enum matching for this so that right networks get the right treatment
+    #so far that just means that if it isn't QunatumRepeater or DQC it doesn't mean anything
+    def _generate_forwarding_table(self, config: dict):
         pass
+
+    #ofc all child classes must have ts
+    @abstractmethod
+    def _add_nodes(self, config: dict):
+        pass
+
+    #NOTE: most quantum networks should have qconnections but just in case, don't enforce
+    def _add_qconnections(self, config: dict) -> None:
+        """Pass because not all networks have to have qconnections"""
+        pass
+
+    #NOTE:make this not enforced
+    def _add_parameters(self, config: dict):
+        pass
+    
 
     def _get_templates(self, config: dict) -> None:
         templates = config.get(ALL_TEMPLATES, {})
         self.templates = templates
+
+
+    def _add_timeline(self, config: dict):
+        stop_time = config.get(STOP_TIME, float('inf'))
+        self.tl = Timeline(stop_time)
+        #NOTE maybe add something for wtv turns 
+
+
+    def _map_bsm_routers(self, config):
+        pass
+
+    def _add_bsm_node_to_router(self):
+        pass
+
 
     def _add_qchannels(self, config: dict) -> None:
         for qc in config.get(ALL_Q_CHANNEL, []):
@@ -135,6 +177,7 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
                 cc_obj.set_ends(src_node, dst_str)
                 self.cchannels.append(cc_obj)
 
+
     def _add_cconnections(self, config: dict) -> None:
         for c_connect in config.get(ALL_C_CONNECT, []):
             node1 = c_connect[CONNECT_NODE_1]
@@ -148,6 +191,25 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
                     cc_obj = ClassicalChannel(name, self.tl, distance, delay)
                     cc_obj.set_ends(src_obj, dst_str)
                     self.cchannels.append(cc_obj)
+
+    def _calc_cc_delay(self, config: dict, node1: str, node2: str) -> float:
+        """get the classical channel delay between two nodes from the config"""
+        cc_delay = []
+        for cc in config.get(ALL_C_CHANNEL, []):
+            if (cc[SRC] == node1 and cc[DST] == node2) \
+                    or (cc[SRC] == node2 and cc[DST] == node1):
+                delay = cc.get(DELAY, cc.get(DISTANCE, 1000) / SPEED_OF_LIGHT)
+                cc_delay.append(delay)
+
+        for cc in config.get(ALL_C_CONNECT, []):
+            if (cc[CONNECT_NODE_1] == node1 and cc[CONNECT_NODE_2] == node2) \
+                    or (cc[CONNECT_NODE_1] == node2 and cc[CONNECT_NODE_2] == node1):
+                delay = cc.get(DELAY, cc.get(DISTANCE, 1000) / SPEED_OF_LIGHT)
+                cc_delay.append(delay)
+
+        assert len(cc_delay) > 0, \
+            f"No classical channel/connection found between {node1} and {node2}"
+        return np.mean(cc_delay) // 2
 
     def get_timeline(self) -> "Timeline":
         assert self.tl is not None, "timeline is not set properly."
@@ -164,3 +226,4 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
 
     def get_nodes(self) -> dict[str, list["Node"]]:
         return self.nodes
+

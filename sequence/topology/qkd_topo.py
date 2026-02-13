@@ -24,16 +24,6 @@ class QKDTopo(Topo):
         "QKD_NODE": QKD_NODE,
     }
 
-    def _load(self, filename):
-        topo_config = json.load(open(filename))
-
-        self._get_templates(topo_config)
-        self._add_timeline(topo_config)
-        self._add_nodes(topo_config)
-        self._add_qchannels(topo_config)
-        self._add_cchannels(topo_config)
-        self._add_cconnections(topo_config)
-
     def _add_timeline(self, config):
         stop_time = config.get(STOP_TIME, float('inf'))
         self.tl = Timeline(stop_time)
