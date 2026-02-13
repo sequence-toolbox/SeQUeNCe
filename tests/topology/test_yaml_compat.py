@@ -1,15 +1,21 @@
+import pytest
+
 from sequence.topology.qkd_topo import QKDTopo
 from sequence.topology.router_net_topo import RouterNetTopo
 from sequence.topology.qlan_star_topo import QlanStarTopo
 from sequence.topology.dqc_net_topo import DQCNetTopo
-from sequence.kernel.timeline import Timeline
-from sequence.constants import (
+from sequence.topology.const_topo import (
     QKD_NODE, QUANTUM_ROUTER, BSM_NODE,
     ORCHESTRATOR, CLIENT, DQC_NODE,
 )
 
 JSON_DIR = "tests/topology"
 YAML_DIR = "tests/topology"
+
+
+def test_unsupported_file_format_raises():
+    with pytest.raises(ValueError, match="Unsupported config file format"):
+        QKDTopo("tests/topology/some_config.txt")
 
 
 def test_qkd_yaml_matches_json():

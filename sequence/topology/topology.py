@@ -99,8 +99,18 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
         self.templates: dict[str, dict] = {}
         self.tl: Timeline | None = None
 
+        if not conf_file_name.endswith(('.json', '.yaml', '.yml')):
+            raise ValueError(
+                f"Unsupported config file format: {conf_file_name}. "
+                "Use .json or .yaml/.yml"
+            )
+
         with open(conf_file_name) as fh:
-            config = json.load(fh)
+            if conf_file_name.endswith(('.yaml', '.yml')):
+                import yaml
+                config = yaml.safe_load(fh)
+            else:
+                config = json.load(fh)
 
         self._get_templates(config)
         self._add_parameters(config)
