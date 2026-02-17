@@ -8,7 +8,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from heapq import heappop, heappush
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Iterator
 
 if TYPE_CHECKING:
     from sequence.topology.node import QuantumRouter
@@ -19,8 +19,6 @@ from ..kernel.process import Process
 from ..message import Message
 from ..protocol import Protocol
 from ..utils import log
-
-MAX_AGE = 1000 * SECOND  # maximum age of LSA in seconds
 
 
 class DistRoutingMsgType(Enum):
@@ -217,7 +215,7 @@ class LinkStateDB:
     def get(self, adv: str) -> LSA | None:
         return self.lsas.get(adv, None)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[LSA]:
         return iter(self.lsas.values())
 
     def install(self, lsa: LSA, now: int) -> bool:

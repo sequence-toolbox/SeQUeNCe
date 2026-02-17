@@ -5,9 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.8.5] - 2026-2-11
+## [0.8.5] - 2026-2-16
 ### Added
-- Class `DistributedRoutingProtocol` is added, among many other supporting classes in `routing_distributed.py`. This module do truly distributed entanglement routing.
+- Class `DistributedRoutingProtocol` is added, among many other supporting classes in `routing_distributed.py`. This module performs truly distributed entanglement routing.
 - Class `NetworkManager` has two new attributes: `forwarding_table` and `routing_protocol`.
 - Add cutoff flag to memory to allow disable of expiration
 - Add a template in config json for network manager to select routing protocols (distributed vs. static)

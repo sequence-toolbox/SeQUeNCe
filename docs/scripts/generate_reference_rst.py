@@ -110,7 +110,16 @@ def discover_modules(source_dir: Path, relative_source_dir: str) -> list[str]:
 def write_module_rst(module_path: str, output_file: Path) -> None:
     module_name = module_path.split(".")[-1]
     title = get_title(module_name)
-    content = f"{title}\n{'=' * len(title)}\n\n.. automodule:: {module_path}\n    :members:\n"
+    extra_options = ""
+    if module_path == "sequence.constants":
+        extra_options = "    :undoc-members:\n"
+
+    content = (
+        f"{title}\n{'=' * len(title)}\n\n"
+        f".. automodule:: {module_path}\n"
+        f"    :members:\n"
+        f"{extra_options}"
+    )
     output_file.write_text(content, encoding="utf-8")
 
 
