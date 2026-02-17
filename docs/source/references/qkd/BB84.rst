@@ -1,5 +1,0 @@
-BB84
-====
-
-.. automodule:: sequence.qkd.BB84
-    :members:

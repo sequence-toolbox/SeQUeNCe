@@ -141,7 +141,6 @@
     }
   ],
 
-  "stop_time": 10000000000000,
-  "is_parallel": false
+  "stop_time": 10000000000000
 }
 
