@@ -5,14 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.8.5] - 2026-1-29
+## [0.8.5] - 2026-2-16
 ### Added
 - File `action_condition_set.py` is added. This contains the action, condition, and request functions for entanglement generation, swapping, and purification.
 - Class `DistributedRoutingProtocol` is added, among many other supporting classes in `routing_distributed.py`. This module do truly distributed entanglement routing.
+- Class `DistributedRoutingProtocol` is added, among many other supporting classes in `routing_distributed.py`. This module performs truly distributed entanglement routing.
 - Class `NetworkManager` has two new attributes: `forwarding_table` and `routing_protocol`.
 - Add cutoff flag to memory to allow disable of expiration
 - Add a template in config json for network manager to select routing protocols (distributed vs. static)
 - 7 new unit tests to cover the newly added `routing_distributed` module
+- Added `generate_reference_rst.py` to generate the .rst files for the Read the Doc.
 
 ### Changed
 - Extend and refactor the tests in `test_reservation.py`
@@ -25,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minor refactors in `router_net_topo.py` and `network_manager.py`.
 - Memory.cutoff_ratio is allowed to be greater than 1.
 - Suppress linear algebra-related warning (doing sqrtm on singular matrix)
+- Suppress linear algebra related warning (doing sqrtm on singular matrix)
+- Tutorial Chapter 5 on Network Manager. A new figure for network manager is introduced.
+- Read the Docs is updated. The remote Read the Docs can now pre build the .rst files
 
 ### Removed
 - Temporarily disabled setting the `es_succ_prob` and `es_deg_rate` from the RSVP protocol.
