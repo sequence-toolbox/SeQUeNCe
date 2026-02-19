@@ -358,8 +358,6 @@ class QuantumGUI:
             Topology.ALL_Q_CONNECT: qconnections,
             Topology.ALL_C_CHANNEL: cchannels,
             Topology.ALL_TEMPLATES: templates,
-
-            RouterNetTopo.IS_PARALLEL: False,
             Topology.STOP_TIME: int(1e12)
         }
 

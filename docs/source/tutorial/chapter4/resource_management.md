@@ -12,11 +12,15 @@ We will also be creating a custom node class to meet the requirements of this ex
 
 ### Background
 
-The Resource Management module in SeQUeNCe is responsible for managing the usage of quantum memory and flow of information from hardware elements on a node. This is achieved with an internal **memory manager** and **rule manager**, as shown below:
+The Resource Management module in SeQUeNCe is responsible for managing the usage of quantum memory and flow of information from hardware elements on a node. This is achieved with an internal **Memory Manager**, **Rule Manager**, and an **Action & Condition Set** as shown below:
 
 ![rm](figures/resource_management.png)
 
-The memory manager is used to track the current state of all quantum memories (including entanglement, fidelity, etc.) while the rule manager uses a set of “rules” (containing a priority, condition to be met, and action to take) to direct local protocols.
+The Memory Manager is used to track the current state of all quantum memories (including entanglement, fidelity, etc.) while the Rule Manager manages a set of “rules” (containing a priority, condition to be met, and action to take) to direct local protocols.
+
+The Rule Manager needs the following to generates the rules:
+1. Timecard and Reservation from the Network Manager
+2. Action set and Condition Set stored inside the Resource Management module.
 
 ### Step 1: Create custom node type
 
@@ -87,8 +91,8 @@ def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager", args)
 
 Rule conditions take 3 arguments:
 
-- `memory_info`, containing the information stored in the memory manager,
-- `manager`, which is a reference to the memory manager, and
+- `memory_info`, containing the information stored in the Memory Manager,
+- `manager`, which is a reference to the Memory Manager, and
 - `args`, which is a dictionary to store values of other arguments, like `index_upper` and `index_lower`
 
 In our case, we will use any memories in the `RAW` (unentangled) state. Other possible memory states are `OCCUPIED` (for
@@ -97,7 +101,7 @@ memory). If our desired condition is met, we will return the `memory_info` as a 
 nothing.
 
 The arguments for `args` for flow 1 are shown in the bottom comment.
-We will create a variable to store these when we load the rule into the rule manager.
+We will create a variable to store these when we load the rule into the Rule Manager.
 
 ### Step 3: Create Rule Actions for Flow 1
 

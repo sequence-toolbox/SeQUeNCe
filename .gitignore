@@ -148,3 +148,6 @@ tmp/
 utils/json_config_generators/*.json
 
 .virtual_documents/
+
+# docstring files
+*.rst
