@@ -10,6 +10,14 @@ Request Signature: def request(protocols: list[EntanglementProtocol], args: Argu
 
 Actions, Conditions, and Request functions must follow the above signatures. If a function does not use a parameter, it
 should prefix the unused parameter with `_`. For example, _manager.
+
+Example:
+
+
+
+
+
+
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Callable, cast
@@ -104,11 +112,11 @@ def eg_req_func(protocols: list[EntanglementProtocol], args: Arguments) -> Entan
     name = args["name"]
     reservation = args["reservation"]
     for protocol in protocols:
-        is_the_correct_EntanglementGenerationA = (isinstance(protocol, EntanglementGenerationA) 
-                                                  and protocol.remote_node_name == name 
-                                                  and protocol.rule is not None 
-                                                  and protocol.rule.get_reservation() == reservation)
-        if is_the_correct_EntanglementGenerationA:
+        # Select correct EntanglementGenerationA protocol.
+        if (isinstance(protocol, EntanglementGenerationA)
+                and protocol.remote_node_name == name
+                and protocol.rule is not None
+                and protocol.rule.get_reservation() == reservation):
             return protocol
     return None
 
@@ -151,63 +159,63 @@ def ep_rule_action2(memories_info: list[MemoryInfo], _args: Arguments) -> Action
     return protocol, [None], [None], [None]
 
 
-def ep_rule_condition1(memory_info: MemoryInfo, memory_manager: MemoryManager, args: Arguments) -> list[MemoryInfo]:
-    """Condition function used by BBPSSW protocol on nodes except the initiator
-    
+def ep_rule_condition1(kept_memory: MemoryInfo, memory_manager: MemoryManager, args: Arguments) -> list[MemoryInfo]:
+    """
+    Condition function used by BBPSSW protocol on nodes except the initiator (everything in the path after the initiator)
     Args:
-        memory_info: the memory info to be checked
+        kept_memory: the memory info to be checked
         memory_manager: the memory manager to get other memory info
-        args: the arguments defined in the rule, should contain "memory_indices", "fidelity", and "purification_mode"
+        args: the arguments defined in a rule should contain "memory_indices", "fidelity", and "purification_mode"
 
     Returns:
-        list[MemoryInfo]: a list of two memory info (memory_info, memory_info2) that satisfy the condition
+        list[MemoryInfo]: a list of two the memory info (memory_info, memory_info2) that satisfy the condition
     """
     memory_indices = args["memory_indices"]
     reservation = args["reservation"]
     purification_mode = args["purification_mode"]
 
     if purification_mode == "until_target":
-        memory_info_satisfied = (memory_info.index in memory_indices 
-                                 and memory_info.state in ["ENTANGLED", "PURIFIED"] 
-                                 and memory_info.fidelity < reservation.fidelity)
-        if memory_info_satisfied:          # the first memory is the kept memory during purification
-            for memory_info2 in memory_manager:
-                memory_info2_satisfied = (memory_info2 != memory_info 
-                                          and memory_info2.index in memory_indices 
-                                          and memory_info2.state in ["ENTANGLED", "PURIFIED"] 
-                                          and memory_info2.remote_node == memory_info.remote_node 
-                                          and memory_info2.fidelity == memory_info.fidelity)
-                if memory_info2_satisfied: # the second memory is the measured memory during purification
-                    assert memory_info.remote_memo != memory_info2.remote_memo
-                    return [memory_info, memory_info2]
-                
+        # the first memory is the kept memory during purification
+        if (kept_memory.index in memory_indices
+                                 and kept_memory.state in ["ENTANGLED", "PURIFIED"]
+                                 and kept_memory.fidelity < reservation.fidelity):
+            for measured_memory in memory_manager:
+                # Purification requires kept and measured memory,
+                if (measured_memory != kept_memory
+                      and measured_memory.index in memory_indices
+                      and measured_memory.state in ["ENTANGLED", "PURIFIED"]
+                      and measured_memory.remote_node == kept_memory.remote_node
+                      and measured_memory.fidelity == kept_memory.fidelity):
+                    assert kept_memory.remote_memo != measured_memory.remote_memo
+                    return [kept_memory, measured_memory]
+
     elif purification_mode == "once":
-        memory_info_satisfied = (memory_info.index in memory_indices 
-                                 and memory_info.state == "ENTANGLED" 
-                                 and memory_info.fidelity < reservation.fidelity)
-        if memory_info_satisfied:          # the first memory is the kept memory during purification
-            for memory_info2 in memory_manager:
-                memory_info2_satisfied = (memory_info2 != memory_info 
-                                          and memory_info2.index in memory_indices 
-                                          and memory_info2.state == "ENTANGLED" 
-                                          and memory_info2.remote_node == memory_info.remote_node 
-                                          and memory_info2.fidelity == memory_info.fidelity)
-                if memory_info2_satisfied: # the second memory is the measured memory during purification
-                    assert memory_info.remote_memo != memory_info2.remote_memo
-                    return [memory_info, memory_info2]
-    
+        # the first memory is the kept memory during purification
+        if (kept_memory.index in memory_indices
+             and kept_memory.state == "ENTANGLED"
+             and kept_memory.fidelity < reservation.fidelity):
+            for measured_memory in memory_manager:
+                # the second memory is the measured memory during purification
+                if (measured_memory != kept_memory
+                      and measured_memory.index in memory_indices
+                      and measured_memory.state == "ENTANGLED"
+                      and measured_memory.remote_node == kept_memory.remote_node
+                      and measured_memory.fidelity == kept_memory.fidelity):
+                    assert kept_memory.remote_memo != measured_memory.remote_memo
+                    return [kept_memory, measured_memory]
+
     return []
 
 
 def ep_rule_condition2(memory_info: MemoryInfo, _manager: MemoryManager, args: Arguments) -> list[MemoryInfo]:
     """Condition function used by BBPSSW protocol on nodes except the responder
-    
+
     Args:
         memory_info: the memory info to be checked
         manager: the memory manager to get other memory info (not used in this condition function)
-        args: the arguments defined in the rule, should contain "memory_indices", "fidelity", and "purification_mode"
-    
-    Returns:        
+        args: the arguments defined in the rule should contain "memory_indices", "fidelity", and "purification_mode"
+
+    Returns:
         list[MemoryInfo]: the list of memory info that satisfy the condition
     """
     memory_indices = args["memory_indices"]
@@ -215,17 +223,15 @@ def ep_rule_condition2(memory_info: MemoryInfo, _manager: MemoryManager, args: A
     purification_mode = args["purification_mode"]
 
     if purification_mode == "until_target":
-        memory_info_satisfied = (memory_info.index in memory_indices 
-                                 and memory_info.state in ["ENTANGLED", "PURIFIED"] 
-                                 and memory_info.fidelity < fidelity)
-        if memory_info_satisfied:
+        if  (memory_info.index in memory_indices
+                 and memory_info.state in ["ENTANGLED", "PURIFIED"]
+                 and memory_info.fidelity < fidelity):
             return [memory_info]
 
     elif purification_mode == "once":
-        memory_info_satisfied = (memory_info.index in memory_indices 
-                                 and memory_info.state == "ENTANGLED" 
-                                 and memory_info.fidelity < fidelity)
-        if memory_info_satisfied:
+        if (memory_info.index in memory_indices
+             and memory_info.state == "ENTANGLED"
+             and memory_info.fidelity < fidelity):
             return [memory_info]
 
     return []
@@ -326,29 +332,31 @@ def es_rule_conditionA(memory_info: MemoryInfo, memory_manager: MemoryManager, a
     fidelity = args["fidelity"]
 
     # case 1: memory_info is the "right hand side" memory
-    memory_info_satisfied = (memory_info.state in ["ENTANGLED", "PURIFIED"] 
-                             and memory_info.index in memory_indices 
-                             and memory_info.remote_node == left 
-                             and memory_info.fidelity >= fidelity)
-    if memory_info_satisfied:          # the first memory is the "right hand side" memory during swapping
+    # the first memory is the "right hand side" memory during swapping
+    if (memory_info.state in ["ENTANGLED", "PURIFIED"]
+         and memory_info.index in memory_indices
+         and memory_info.remote_node == left
+         and memory_info.fidelity >= fidelity):
         for memory_info2 in memory_manager:
-            memory_info2_satisfied = (memory_info2.state in ["ENTANGLED", "PURIFIED"] 
-                                      and memory_info2.index in memory_indices 
-                                      and memory_info2.remote_node == right 
-                                      and memory_info2.fidelity >= fidelity)
-            if memory_info2_satisfied: # the second memory is the "left hand side" memory during swapping
+            # the second memory is the "left hand side" memory during swapping
+            if (memory_info2.state in ["ENTANGLED", "PURIFIED"]
+                  and memory_info2.index in memory_indices
+                  and memory_info2.remote_node == right
+                  and memory_info2.fidelity >= fidelity):
                 return [memory_info, memory_info2]
     
     # case 2: memory_info is the "left hand side" memory
-    memory_info_satisfied = (memory_info.state in ["ENTANGLED", "PURIFIED"] and memory_info.index in memory_indices 
-                             and memory_info.remote_node == right and memory_info.fidelity >= fidelity)
-    if memory_info_satisfied:          # the first memory is the "left hand side" memory during swapping
+    # the first memory is the "left hand side" memory during swapping
+    if (memory_info.state in ["ENTANGLED", "PURIFIED"]
+            and memory_info.index in memory_indices
+            and memory_info.remote_node == right
+            and memory_info.fidelity >= fidelity):
         for memory_info2 in memory_manager:
-            memory_info2_satisfied = (memory_info2.state in ["ENTANGLED", "PURIFIED"] 
-                                      and memory_info2.index in memory_indices 
-                                      and memory_info2.remote_node == left 
-                                      and memory_info2.fidelity >= fidelity)
-            if memory_info2_satisfied: # the second memory is the "right hand side" memory during swapping
+            # the second memory is the "right hand side" memory during swapping
+            if (memory_info2.state in ["ENTANGLED", "PURIFIED"]
+                  and memory_info2.index in memory_indices
+                  and memory_info2.remote_node == left
+                  and memory_info2.fidelity >= fidelity):
                 return [memory_info, memory_info2]
     
     return []
@@ -368,11 +376,10 @@ def es_rule_conditionB1(memory_info: MemoryInfo, _manager: MemoryManager, args: 
     memory_indices = args["memory_indices"]
     target_remote = args["target_remote"]  # A - B - C. For A: B is the remote node, C is the target remote
     fidelity = args["fidelity"]
-    memory_info_satisfied = (memory_info.state in ["ENTANGLED", "PURIFIED"] 
-                             and memory_info.index in memory_indices 
-                             and memory_info.remote_node != target_remote 
-                             and memory_info.fidelity >= fidelity)
-    if memory_info_satisfied:
+    if (memory_info.state in ["ENTANGLED", "PURIFIED"]
+                             and memory_info.index in memory_indices
+                             and memory_info.remote_node != target_remote
+                             and memory_info.fidelity >= fidelity):
         return [memory_info]
     else:
         return []
@@ -393,11 +400,10 @@ def es_rule_conditionB2(memory_info: MemoryInfo, _manager: MemoryManager, args: 
     left = args["left"]
     right = args["right"]
     fidelity = args["fidelity"]
-    memory_info_satisfied = (memory_info.state in ["ENTANGLED", "PURIFIED"] 
-                             and memory_info.index in memory_indices 
-                             and memory_info.remote_node not in [left, right] 
-                             and memory_info.fidelity >= fidelity)
-    if memory_info_satisfied:
+    if (memory_info.state in ["ENTANGLED", "PURIFIED"]
+                             and memory_info.index in memory_indices
+                             and memory_info.remote_node not in [left, right]
+                             and memory_info.fidelity >= fidelity):
         return [memory_info]
     else:
         return []
