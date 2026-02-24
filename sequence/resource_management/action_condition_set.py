@@ -65,7 +65,7 @@ TempNode = cast("Node", cast(object, None))
 TempMemory = cast("Memory", cast(object, None))
 
 
-# Entanglement Generation Action-Condition-Request
+# Entanglement Generation Action-Condition-Match
 def eg_rule_action_await(memories_info: list[MemoryInfo], args: Arguments) -> ActionReturn:
     """Action function used to create an entanglement generation protocol instance and await a Resource Manager request.
 
@@ -155,7 +155,7 @@ def eg_match_func(protocols: list[EntanglementProtocol], args: Arguments) -> Ent
     return None
 
 
-# Entanglement Purification Action-Condition-Request
+# Entanglement Purification Action-Condition-Match
 def ep_rule_action_request(memories_info: list[MemoryInfo], _args: Arguments) -> ActionReturn:
     """Action function used to create an entanglement purification protocol instance and send a Resource Manager request.
 
@@ -219,30 +219,30 @@ def ep_rule_condition_request(kept_memory: MemoryInfo, memory_manager: MemoryMan
     if purification_mode == "until_target":
         # the first memory is the kept memory during purification
         if (kept_memory.index in memory_indices
-                                 and kept_memory.state in ["ENTANGLED", "PURIFIED"]
-                                 and kept_memory.fidelity < reservation.fidelity):
+                and kept_memory.state in ["ENTANGLED", "PURIFIED"]
+                and kept_memory.fidelity < reservation.fidelity):
             for measured_memory in memory_manager:
                 # Purification requires kept and measured memory,
                 if (measured_memory != kept_memory
-                      and measured_memory.index in memory_indices
-                      and measured_memory.state in ["ENTANGLED", "PURIFIED"]
-                      and measured_memory.remote_node == kept_memory.remote_node
-                      and measured_memory.fidelity == kept_memory.fidelity):
+                        and measured_memory.index in memory_indices
+                        and measured_memory.state in ["ENTANGLED", "PURIFIED"]
+                        and measured_memory.remote_node == kept_memory.remote_node
+                        and measured_memory.fidelity == kept_memory.fidelity):
                     assert kept_memory.remote_memo != measured_memory.remote_memo
                     return [kept_memory, measured_memory]
 
     elif purification_mode == "once":
         # the first memory is the kept memory during purification
         if (kept_memory.index in memory_indices
-             and kept_memory.state == "ENTANGLED"
-             and kept_memory.fidelity < reservation.fidelity):
+                and kept_memory.state == "ENTANGLED"
+                and kept_memory.fidelity < reservation.fidelity):
             for measured_memory in memory_manager:
                 # the second memory is the measured memory during purification
                 if (measured_memory != kept_memory
-                      and measured_memory.index in memory_indices
-                      and measured_memory.state == "ENTANGLED"
-                      and measured_memory.remote_node == kept_memory.remote_node
-                      and measured_memory.fidelity == kept_memory.fidelity):
+                        and measured_memory.index in memory_indices
+                        and measured_memory.state == "ENTANGLED"
+                        and measured_memory.remote_node == kept_memory.remote_node
+                        and measured_memory.fidelity == kept_memory.fidelity):
                     assert kept_memory.remote_memo != measured_memory.remote_memo
                     return [kept_memory, measured_memory]
 
@@ -266,8 +266,8 @@ def ep_rule_condition_await(memory_info: MemoryInfo, _manager: MemoryManager, ar
 
     if purification_mode == "until_target":
         if  (memory_info.index in memory_indices
-                 and memory_info.state in ["ENTANGLED", "PURIFIED"]
-                 and memory_info.fidelity < fidelity):
+                and memory_info.state in ["ENTANGLED", "PURIFIED"]
+                and memory_info.fidelity < fidelity):
             return [memory_info]
 
     elif purification_mode == "once":
@@ -322,9 +322,11 @@ def ep_match_func(protocols: list[EntanglementProtocol], args: Arguments) -> BBP
     return _protocols[0]
 
 
-# Entanglement Swapping Action-Condition-Request
+# Entanglement Swapping Action-Condition-Match
 def es_rule_action_A(memories_info: list[MemoryInfo], _args: Arguments) -> ActionReturn:
     """Action function used to create an EntanglementSwappingA protocol instance on all interior nodes.
+       
+    Interior nodes of a path are the nodes that are neither the initiator nor the responder.
 
     Since EntanglementSwappingA is always at the center of a swapping attempt, it cannot be located on the initiator
         or responder node.
@@ -394,9 +396,9 @@ def es_rule_condition_A(memory_info: MemoryInfo, memory_manager: MemoryManager, 
         for memory_info_2 in memory_manager:
             # the second memory is the "right hand side" memory during swapping
             if (memory_info_2.state in ["ENTANGLED", "PURIFIED"]
-                  and memory_info_2.index in memory_indices
-                  and memory_info_2.remote_node == remote_right_node
-                  and memory_info_2.fidelity >= fidelity):
+                    and memory_info_2.index in memory_indices
+                    and memory_info_2.remote_node == remote_right_node
+                    and memory_info_2.fidelity >= fidelity):
                 return [memory_info, memory_info_2]
     
     # case 2: memory_info is the "right hand side" memory
@@ -408,9 +410,9 @@ def es_rule_condition_A(memory_info: MemoryInfo, memory_manager: MemoryManager, 
         for memory_info_2 in memory_manager:
             # the second memory is the "left hand side" memory during swapping
             if (memory_info_2.state in ["ENTANGLED", "PURIFIED"]
-                  and memory_info_2.index in memory_indices
-                  and memory_info_2.remote_node == remote_left_node
-                  and memory_info_2.fidelity >= fidelity):
+                    and memory_info_2.index in memory_indices
+                    and memory_info_2.remote_node == remote_left_node
+                    and memory_info_2.fidelity >= fidelity):
                 return [memory_info, memory_info_2]
     
     return []
@@ -432,16 +434,16 @@ def es_rule_condition_B_end(memory_info: MemoryInfo, _manager: MemoryManager, ar
     target_remote = args["target_remote"]  # A - B - C. For A: B is the remote node, C is the target remote
     fidelity = args["fidelity"]
     if (memory_info.state in ["ENTANGLED", "PURIFIED"]
-                             and memory_info.index in memory_indices
-                             and memory_info.remote_node != target_remote
-                             and memory_info.fidelity >= fidelity):
+            and memory_info.index in memory_indices
+            and memory_info.remote_node != target_remote
+            and memory_info.fidelity >= fidelity):
         return [memory_info]
     else:
         return []
 
 
 def es_rule_condition_B(memory_info: MemoryInfo, _manager: MemoryManager, args: Arguments) -> list[MemoryInfo]:
-    """Condition function used by the EntanglementSwappingB protocol on intermediate nodes of a path.
+    """Condition function used by the EntanglementSwappingB protocol on interior nodes of a path.
     
     Args:
         memory_info: the memory info to be checked
@@ -457,9 +459,9 @@ def es_rule_condition_B(memory_info: MemoryInfo, _manager: MemoryManager, args: 
     right = args["right"]
     fidelity = args["fidelity"]
     if (memory_info.state in ["ENTANGLED", "PURIFIED"]
-                             and memory_info.index in memory_indices
-                             and memory_info.remote_node not in [left, right]
-                             and memory_info.fidelity >= fidelity):
+            and memory_info.index in memory_indices
+            and memory_info.remote_node not in [left, right]
+            and memory_info.fidelity >= fidelity):
         return [memory_info]
     else:
         return []
