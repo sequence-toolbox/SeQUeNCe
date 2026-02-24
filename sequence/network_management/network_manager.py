@@ -225,7 +225,7 @@ def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_
     manager.set_routing_protocol(routing)
     forwarding_protocol = ForwardingProtocol(owner, owner.name + ".ForwardingProtocol")
     rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP", memory_array_name)
-    rsvp.set_swapping_success_rate(swapping_success_rate)
+    # rsvp.set_swapping_success_rate(swapping_success_rate)
     forwarding_protocol.upper_protocols.append(rsvp)
     rsvp.lower_protocols.append(forwarding_protocol)
     manager.load_stack([forwarding_protocol, rsvp])

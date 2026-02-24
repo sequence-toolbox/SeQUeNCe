@@ -54,6 +54,18 @@ module-name = "sequence"
 [tool.setuptools.package-data]
 sequence = ["gui/user_templates.json", "gui/default_params.json", "gui/starlight.json"]
 
+[tool.pytest.ini_options]
+markers = [
+    "unit: Marks tests as unit tests",
+]
+
+[dependency-groups]
+dev = [
+    "coverage>=7.13.4",
+    "ruff>=0.15.1",
+    "ty>=0.0.16",
+]
+
 [project.urls]
 Homepage = "https://github.com/sequence-toolbox/SeQUeNCe"
 Documentation = "https://sequence-rtd-tutorial.readthedocs.io/"

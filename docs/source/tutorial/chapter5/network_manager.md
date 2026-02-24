@@ -273,11 +273,11 @@ def set_parameters(topology: RouterNetTopo):
         bsm.update_detectors_params("count_rate", DETECTOR_COUNT_RATE)
         bsm.update_detectors_params("time_resolution", DETECTOR_RESOLUTION)
     # set entanglement swapping parameters
-    SWAP_SUCC_PROB = 0.90
-    SWAP_DEGRADATION = 0.99
-    for node in topology.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
-        node.network_manager.protocol_stack[1].set_swapping_success_rate(SWAP_SUCC_PROB)
-        node.network_manager.protocol_stack[1].set_swapping_degradation(SWAP_DEGRADATION)
+    # SWAP_SUCC_PROB = 0.90
+    # SWAP_DEGRADATION = 0.99
+    # for node in topology.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
+    #     node.network_manager.protocol_stack[1].set_swapping_success_rate(SWAP_SUCC_PROB)
+    #     node.network_manager.protocol_stack[1].set_swapping_degradation(SWAP_DEGRADATION)
         
     # set quantum channel parameters
     ATTENUATION = 1e-5

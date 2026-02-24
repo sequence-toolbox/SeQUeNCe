@@ -3,8 +3,8 @@
 This module defines the rule manager, which is used by the resource manager to instantiate and control entanglement protocols.
 This is achieved through rules (also defined in this module), which if met define a set of actions to take.
 """
-
-from typing import TYPE_CHECKING, Any
+from __future__ import annotations
+from typing import TYPE_CHECKING, Any, Optional
 from collections.abc import Callable
 from ..utils import log
 if TYPE_CHECKING:
@@ -13,8 +13,9 @@ if TYPE_CHECKING:
     from .resource_manager import ResourceManager
     from ..network_management.reservation import Reservation
 
-ActionFunc = Callable[[list["MemoryInfo"], dict[str, Any]], 
-                      tuple["EntanglementProtocol", list["str"], list[Callable[["EntanglementProtocol"], bool]]]]
+ActionReturn = tuple["EntanglementProtocol", list[Optional[str]], list[Optional[Callable[[list["EntanglementProtocol"], dict[str, Any]], Optional["EntanglementProtocol"]]]], list[Optional[dict[str, Any]]]]
+
+ActionFunc = Callable[[list["MemoryInfo"], dict[str, Any]], ActionReturn]
 
 ConditionFunc = Callable[["MemoryInfo", "MemoryManager", dict[str, Any]], list["MemoryInfo"]]
 
@@ -88,7 +89,8 @@ class RuleManager:
         return rule.protocols
         
 
-    def get_memory_manager(self):
+    def get_memory_manager(self) -> MemoryManager:
+        assert self.resource_manager is not None
         return self.resource_manager.get_memory_manager()
 
     def send_request(self, protocol, req_dst, req_condition_func, req_args):
@@ -133,7 +135,7 @@ class Rule:
         self.condition_args: Arguments = condition_args
         self.protocols: list[EntanglementProtocol] = []
         self.rule_manager = None
-        self.reservation = None
+        self.reservation: Optional["Reservation"] = None
 
     def __str__(self):
         action_name_list = str(self.action).split(' ')
@@ -186,4 +188,6 @@ class Rule:
         self.reservation = reservation
 
     def get_reservation(self) -> "Reservation":
+        if self.reservation is None:
+            raise RuntimeError("Reservation is not set.")
         return self.reservation
