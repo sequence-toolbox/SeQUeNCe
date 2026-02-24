@@ -11,18 +11,18 @@ from typing import TYPE_CHECKING, Optional
 from collections.abc import Callable
 
 from .action_condition_set import (
-    es_rule_actionA,
-    es_rule_conditionA,
-    es_rule_actionB,
-    es_rule_conditionB2,
-    eg_rule_action1,
+    es_rule_action_A,
+    es_rule_condition_A,
+    es_rule_action_B,
+    es_rule_condition_B,
+    eg_rule_action_await,
     eg_rule_condition,
-    eg_rule_action2,
-    ep_rule_action1,
-    ep_rule_condition1,
-    ep_rule_action2,
-    es_rule_conditionB1,
-    ep_rule_condition2,
+    eg_rule_action_request,
+    ep_rule_action_request,
+    ep_rule_condition_request,
+    ep_rule_action_await,
+    es_rule_condition_B_end,
+    ep_rule_condition_await,
 )
 from ..kernel.event import Event
 from ..kernel.process import Process
@@ -160,7 +160,7 @@ class ResourceManager:
             condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
             action_args = {"mid": self.owner.map_to_middle_node[path[index - 1]],
                            "path": path, "index": index}
-            rule = Rule(10, eg_rule_action1, eg_rule_condition, action_args, condition_args)
+            rule = Rule(10, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
 
         if index < len(path) - 1:
@@ -171,7 +171,7 @@ class ResourceManager:
 
             action_args = {"mid": self.owner.map_to_middle_node[path[index + 1]],
                            "path": path, "index": index, "name": self.owner.name, "reservation": reservation}
-            rule = Rule(10, eg_rule_action2, eg_rule_condition, action_args, condition_args)
+            rule = Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
 
         # 2. create rules for entanglement purification
@@ -179,7 +179,7 @@ class ResourceManager:
             condition_args = {"memory_indices": memory_indices[:reservation.memory_size], "reservation": reservation,
                               "purification_mode": reservation.purification_mode}
             action_args = {}
-            rule = Rule(10, ep_rule_action1, ep_rule_condition1, action_args, condition_args)
+            rule = Rule(10, ep_rule_action_request, ep_rule_condition_request, action_args, condition_args)
             rules.append(rule)
 
         if index < len(path) - 1:
@@ -192,7 +192,7 @@ class ResourceManager:
                                   "purification_mode": reservation.purification_mode}
 
             action_args = {}
-            rule = Rule(10, ep_rule_action2, ep_rule_condition2, action_args, condition_args)
+            rule = Rule(10, ep_rule_action_await, ep_rule_condition_await, action_args, condition_args)
             rules.append(rule)
 
         # 3. create rules for entanglement swapping
@@ -200,14 +200,16 @@ class ResourceManager:
             condition_args = {"memory_indices": memory_indices, "target_remote": path[-1],
                               "fidelity": reservation.fidelity}
             action_args = {}
-            rule = Rule(10, es_rule_actionB, es_rule_conditionB1, action_args, condition_args)
+            rule = Rule(10, es_rule_action_B, es_rule_condition_B_end, action_args, condition_args)
             rules.append(rule)
+
         elif index == len(path) - 1:
             action_args = {}
             condition_args = {"memory_indices": memory_indices, "target_remote": path[0],
                               "fidelity": reservation.fidelity}
-            rule = Rule(10, es_rule_actionB, es_rule_conditionB1, action_args, condition_args)
+            rule = Rule(10, es_rule_action_B, es_rule_condition_B_end, action_args, condition_args)
             rules.append(rule)
+
         else:
             _path = path[:]
             while _path.index(self.owner.name) % 2 == 0:
@@ -222,11 +224,11 @@ class ResourceManager:
             condition_args = {"memory_indices": memory_indices, "left": left, "right": right,
                               "fidelity": reservation.fidelity}
             action_args = {}
-            rule = Rule(10, es_rule_actionA, es_rule_conditionA, action_args, condition_args)
+            rule = Rule(10, es_rule_action_A, es_rule_condition_A, action_args, condition_args)
             rules.append(rule)
 
             action_args = {}
-            rule = Rule(10, es_rule_actionB, es_rule_conditionB2, action_args, condition_args)
+            rule = Rule(10, es_rule_action_B, es_rule_condition_B, action_args, condition_args)
             rules.append(rule)
 
         for rule in rules:
