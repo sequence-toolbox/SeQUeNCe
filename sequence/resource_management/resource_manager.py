@@ -159,8 +159,8 @@ class ResourceManager:
         if index > 0:
             condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
             action_args = {"mid": self.owner.map_to_middle_node[path[index - 1]],
-                           "path": path, "index": index}
-            rule = Rule(10, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
+                           "path": path, "index": index, "name": self.owner.name, "reservation": reservation}
+            rule = Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
 
         if index < len(path) - 1:
@@ -171,7 +171,7 @@ class ResourceManager:
 
             action_args = {"mid": self.owner.map_to_middle_node[path[index + 1]],
                            "path": path, "index": index, "name": self.owner.name, "reservation": reservation}
-            rule = Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
+            rule = Rule(10, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
 
         # 2. create rules for entanglement purification
