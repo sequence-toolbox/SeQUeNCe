@@ -417,6 +417,7 @@ class QuantumRouter(Node):
         Inherit parent function.
         """
         super().init()
+        self.network_manager.routing_protocol.init()
 
     def add_bsm_node(self, bsm_name: str, router_name: str):
         """Method to record connected BSM nodes

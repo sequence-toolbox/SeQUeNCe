@@ -222,4 +222,3 @@ class RouterNetTopo(Topo):
                         neighbor = cost_info[0] if cost_info[0] != q_router.name else cost_info[1]
                         cost = cost_info[2]
                         routing_protocol.link_cost[neighbor] = cost
-                routing_protocol.init()

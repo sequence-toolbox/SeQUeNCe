@@ -26,10 +26,12 @@ class Protocol(ABC):
         Args:
             owner (Node): node protocol is attached to.
             name (str): name of protocol instance.
+            protocol_type (str): type of protocol instance (e.g. 'single_heralded').
         """
 
         self.owner = owner
         self.name = name
+        self.protocol_type = None
 
     @abstractmethod
     def received_message(self, src: str, msg: "Message"):
