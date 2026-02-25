@@ -121,8 +121,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         return list(cls._registry.keys())
 
     def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
-        assert self.remote_protocol_name == '', \
-            "Remote protocol name has been set before, cannot set again."
+        assert self.remote_protocol_name == '', "Remote protocol name has been set before, cannot set again."
 
         self.remote_protocol_name = protocol
         self.remote_memo_id = memories[0]
@@ -169,8 +168,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         return self.remote_protocol_name != ''
 
     def memory_expire(self, memory: "Memory") -> None:
-        assert memory == self.memory, \
-            "Memory to expire does not match the protocol's memory"
+        assert memory == self.memory, "Memory to expire does not match the protocol's memory"
         self.update_resource_manager(memory, MemoryInfo.RAW)
         for event in self.scheduled_events:
             if event.time >= self.owner.timeline.now():
