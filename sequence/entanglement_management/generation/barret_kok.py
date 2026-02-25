@@ -180,8 +180,7 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
 
             # schedule emit
             emit_time = self.owner.schedule_qubit(self.middle, msg.emit_time)
-            assert emit_time == msg.emit_time, \
-                f"Invalid eg emit times {emit_time} {msg.emit_time} {self.owner.timeline.now()}"
+            assert emit_time == msg.emit_time, f"Invalid eg emit times {emit_time} {msg.emit_time} {self.owner.timeline.now()}"
 
             process = Process(self, "emit_event", [])
             event = Event(msg.emit_time, process)

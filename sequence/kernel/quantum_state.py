@@ -152,20 +152,15 @@ class DensityState(State):
             assert len(state) == len(row), "density matrix must be square"
 
         num_subsystems = log(len(state)) / log(dim)
-        assert dim ** int(round(num_subsystems)) == len(state), \
-            "Length of amplitudes should be d ** n, " \
-            "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
-            "Actual amplitude length: {}, dim: {}, num subsystems: {}".format(
-                len(state), dim, num_subsystems
-            )
+        assert dim ** int(round(num_subsystems)) == len(state), (
+            "Length of amplitudes should be d ** n, "
+            "where d is subsystem Hilbert space dimension and n is the number of subsystems. "
+            f"Actual amplitude length: {len(state)}, dim: {dim}, num subsystems: {num_subsystems}")
         num_subsystems = int(round(num_subsystems))
-        assert num_subsystems == len(keys), \
-            "Length of amplitudes should be d ** n, " \
-            "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
-            "Amplitude length: {}, expected subsystems: {}, num keys: {}".format(
-                len(state), num_subsystems, len(keys)
-            )
-
+        assert num_subsystems == len(keys), (
+            "Length of amplitudes should be d ** n, "
+            "where d is subsystem Hilbert space dimension and n is the number of subsystems. "
+            f"Amplitude length: {len(state)}, expected subsystems: {num_subsystems}, num keys: {len(keys)}")
         self.state = state
         self.keys = keys
 
@@ -239,17 +234,13 @@ class FreeQuantumState(State):
         assert abs(sum([abs(a) ** 2 for a in state]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
 
         num_qubits = log2(len(state))
-        assert 2 ** int(round(num_qubits)) == len(state), \
-            "Length of amplitudes should be 2 ** n, where n is the number of qubits. " \
-            "Actual amplitude length: {}, num qubits: {}".format(
-                len(state), num_qubits
-            )
+        assert 2 ** int(round(num_qubits)) == len(state), (
+            "Length of amplitudes should be 2 ** n, where n is the number of qubits. "
+            f"Actual amplitude length: {len(state)}, num qubits: {num_qubits}")
         num_qubits = int(round(num_qubits))
-        assert num_qubits == len(self.entangled_states), \
-            "Length of amplitudes should be 2 ** n, where n is the number of qubits. " \
-            "Num qubits in state: {}, num qubits in object: {}".format(
-                num_qubits, len(self.entangled_states)
-            )
+        assert num_qubits == len(self.entangled_states), (
+            "Length of amplitudes should be 2 ** n, where n is the number of qubits. "
+            f"Num qubits in state: {num_qubits}, num qubits in object: {len(self.entangled_states)}")
 
         for qs in self.entangled_states:
             qs.state = state
@@ -400,10 +391,10 @@ class BellDiagonalState(State):
         super().__init__()
 
         # check formatting
-        assert all([elem <= 1.001 and elem >= 0 for elem in diag_elems]), \
-            "Illegal value with elem > 1 or elem < 0 in density matrix diagonal elements"
-        assert abs(sum([elem for elem in diag_elems]) - 1) < 1e-5, \
-            "Density matrix diagonal elements do not sum to 1"
+        assert all([elem <= 1.001 and elem >= 0 for elem in diag_elems]), (
+            "Illegal value with elem > 1 or elem < 0 in density matrix diagonal elements")
+        assert abs(sum([elem for elem in diag_elems]) - 1) < 1e-5, (
+            "Density matrix diagonal elements do not sum to 1")
         assert len(keys) == 2, "BellDiagonalState density matrix are only supported for 2-qubit entangled states."
 
         # note: density matrix diagonal elements are guaranteed to be real from Hermiticity
