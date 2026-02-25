@@ -292,6 +292,7 @@ class DistributedRoutingProtocol(Protocol):
 
     def __init__(self, owner: "QuantumRouter", name: str):
         super().__init__(owner, name)
+        self.protocol_type = 'routing_distributed'
         self.owner.protocols.append(self)
         self.lsdb = LinkStateDB()
         self.fsm: dict[str, NeighborFSM] = {}
@@ -303,9 +304,9 @@ class DistributedRoutingProtocol(Protocol):
 
     def init(self):
         """Initialize:
-        1) the FSM for each neighbor
-        2) the first hello event
-        3) the first LSA refresh event (enabled by default)
+            1) the FSM for each neighbor
+            2) the first hello event
+            3) the first LSA refresh event (enabled by default)
         """
         # init the FSM for each neighbor
         for neighbor_name in self.link_cost.keys():
