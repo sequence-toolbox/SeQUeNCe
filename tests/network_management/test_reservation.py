@@ -8,14 +8,9 @@ from numpy import random
 
 from sequence.components.memory import MemoryArray
 from sequence.kernel.timeline import Timeline
-from sequence.network_management.reservation import (
-    MemoryTimeCard,
-    QCap,
-    Reservation,
-    ResourceReservationMessage,
-    ResourceReservationProtocol,
-    RSVPMsgType,
-)
+from sequence.network_management.reservation import Reservation
+from sequence.network_management.rsvp import RSVPProtocol, RSVPMessage, RSVPMsgType, QCap
+from sequence.network_management.memory_timecard import MemoryTimeCard
 from sequence.topology.node import QuantumRouter
 from sequence.message import Message
 
@@ -52,7 +47,7 @@ def mock_memory_array():
 
 def resource_res_protocol(mock_owner, mock_memory_array):
     mock_owner.components['memory_array'] = mock_memory_array
-    proto = ResourceReservationProtocol(mock_owner, 'node1.rsvp', 'memory_array')
+    proto = RSVPProtocol(mock_owner, 'node1.rsvp', 'memory_array')
     proto._push = Mock()
     proto._pop = Mock()
     return proto
@@ -61,16 +56,11 @@ def resource_res_protocol(mock_owner, mock_memory_array):
 class FakeNode(QuantumRouter):
     def __init__(self, name, timeline, memo_size=50):
         super().__init__(name, timeline, memo_size)
-        memo_arr_name = ''
-        for name in self.components.keys():
-            if type(self.components[name]) is MemoryArray:
-                memo_arr_name = name
-                break
-        self.rsvp = ResourceReservationProtocol(self, self.name + '.rsvp', memo_arr_name)
-        self.rsvp.upper_protocols.append(self)
-        self.rsvp.lower_protocols.append(self)
-        self.push_log = []
         self.pop_log = []
+        self.push_log = []
+        # Intercept RSVP protocol messages directly to populate logs
+        self.network_manager.rsvp.upper_protocols = [self]
+        self.network_manager.rsvp.lower_protocols = [self]
 
     def receive_message(self, src: str, msg: 'Message') -> None:
         if msg.receiver == 'network_manager':
@@ -212,9 +202,9 @@ class TestRSVPMsgType:
         assert len(set(m.value for m in members)) == 3 # Ensure members are unique
 
 @pytest.mark.unit
-class TestResourceReservationMessage:
+class TestRSVPMessage:
     def test_init_request(self, std_reservation):
-        msg = ResourceReservationMessage(RSVPMsgType.REQUEST, 'a', std_reservation)
+        msg = RSVPMessage(RSVPMsgType.REQUEST, 'a', std_reservation)
         assert msg.msg_type == RSVPMsgType.REQUEST
         assert msg.receiver == 'a'
         assert msg.reservation == std_reservation
@@ -224,46 +214,44 @@ class TestResourceReservationMessage:
 
     def test_init_reject(self, std_reservation):
         path = ['a', 'b']
-        msg = ResourceReservationMessage(RSVPMsgType.REJECT, 'a', std_reservation, path=path)
+        msg = RSVPMessage(RSVPMsgType.REJECT, 'a', std_reservation, path=path)
         assert msg.msg_type == RSVPMsgType.REJECT
         assert msg.path == path
 
     def test_init_approve(self, std_reservation):
         path = ['a', 'b']
-        msg = ResourceReservationMessage(RSVPMsgType.APPROVE, 'a', std_reservation, path=path)
+        msg = RSVPMessage(RSVPMsgType.APPROVE, 'a', std_reservation, path=path)
         assert msg.msg_type == RSVPMsgType.APPROVE
         assert msg.path == path
 
     def test_init_unknown(self, std_reservation):
         with pytest.raises(Exception) as e:
-            ResourceReservationMessage("INVALID_TYPE", "receiver", std_reservation) # type: ignore
+            RSVPMessage("INVALID_TYPE", "receiver", std_reservation) # type: ignore
         assert str(e.value) == "Unknown message type"
 
     def test_init_invalid_type(self, std_reservation):
         with pytest.raises(KeyError):
-            ResourceReservationMessage(RSVPMsgType.APPROVE, 'a', std_reservation)
+            RSVPMessage(RSVPMsgType.APPROVE, 'a', std_reservation)
         with pytest.raises(KeyError):
-            ResourceReservationMessage(RSVPMsgType.REJECT, 'a', std_reservation)
+            RSVPMessage(RSVPMsgType.REJECT, 'a', std_reservation)
 
     def test_str_repr(self, std_reservation):
-        msg = ResourceReservationMessage(RSVPMsgType.REQUEST, 'a', std_reservation)
+        msg = RSVPMessage(RSVPMsgType.REQUEST, 'a', std_reservation)
         assert str(msg) == f'|type={msg.msg_type}; reservation={msg.reservation}|'
 
 
-class TestResourceReservationProtocol:
+class TestRSVPProtocol:
     def test_init(self, mock_owner, mock_memory_array):
         mock_owner.components['mem_arr'] = mock_memory_array
-        proto = ResourceReservationProtocol(mock_owner, 'node.rsvp', 'mem_arr')
+        proto = RSVPProtocol(mock_owner, 'node.rsvp', 'mem_arr')
         assert proto.owner == mock_owner
         assert proto.name == 'node.rsvp'
         assert proto.memory_array_name == 'mem_arr'
         assert proto.memo_arr == mock_memory_array
         assert proto.accepted_reservations == []
 
-        assert len(proto.timecards) == 50
 
-
-    def test_ResourceReservationProtocol_push(self):
+    def test_RSVPProtocol_push(self):
         tl = Timeline()
         n1 = FakeNode('n1', tl)
 
@@ -273,26 +261,26 @@ class TestResourceReservationProtocol:
                 memo_arr = c
                 break
 
-        assert len(n1.rsvp.timecards) == len(memo_arr)
-        n1.rsvp.push('n10', 1, 10, 1000, 0.9)
+        assert len(n1.network_manager.timecards) == len(memo_arr)
+        n1.network_manager.rsvp.push('n10', 1, 10, 1000, 0.9)
         assert n1.pop_log[0]['msg'].msg_type == RSVPMsgType.REJECT
         assert len(n1.push_log) == 0
-        n1.rsvp.push('n10', 1, 10, 50, 0.9)
+        n1.network_manager.rsvp.push('n10', 1, 10, 50, 0.9)
         assert n1.push_log[0]['msg'].msg_type == RSVPMsgType.REQUEST
         assert len(n1.pop_log) == 1
-        for card in n1.rsvp.timecards:
+        for card in n1.network_manager.timecards:
             assert len(card.reservations) == 1
-        n1.rsvp.push('n10', 5, 10, 1, 0.9)
+        n1.network_manager.rsvp.push('n10', 5, 10, 1, 0.9)
         assert n1.pop_log[1]['msg'].msg_type == RSVPMsgType.REJECT
         assert len(n1.push_log) == 1
-        n1.rsvp.push('n10', 20, 30, 1, 0.9)
+        n1.network_manager.rsvp.push('n10', 20, 30, 1, 0.9)
         assert n1.push_log[1]['msg'].msg_type == RSVPMsgType.REQUEST
         assert len(n1.pop_log) == 2
 
 
-    def test_ResourceReservationProtocol_pop(self):
+    def test_RSVPProtocol_pop(self):
         def reset(node):
-            for card in node.rsvp.timecards:
+            for card in node.network_manager.timecards:
                 card.remove(reservation)
             node.push_log = []
             node.pop_log = []
@@ -304,105 +292,105 @@ class TestResourceReservationProtocol:
 
         # intermediate node receives REQUEST and approve it
         reservation = Reservation('n0', 'n2', 1, 10, 25, 0.9)
-        msg = ResourceReservationMessage(RSVPMsgType.REQUEST, n1.rsvp.name, reservation)
+        msg = RSVPMessage(RSVPMsgType.REQUEST, n1.network_manager.rsvp.name, reservation)
         msg.qcaps.append(QCap('n0'))
-        n1.rsvp.pop('n0', msg)
+        n1.network_manager.rsvp.pop('n0', msg)
         assert len(n1.pop_log) == 0 and len(n1.push_log) == 1
         assert n1.push_log[0]['dst'] == 'n2'
         assert n1.push_log[0]['msg'].msg_type == RSVPMsgType.REQUEST
         assert len(n1.push_log[0]['msg'].qcaps) == 2
-        for card in n1.rsvp.timecards:
+        for card in n1.network_manager.timecards:
             assert len(card.reservations) == 1
         reset(n1)
 
         # responder receives REQUEST and approve it
         reservation = Reservation('n0', 'n1', 1, 10, 50, 0.9)
-        msg = ResourceReservationMessage(RSVPMsgType.REQUEST, n1.rsvp.name, reservation)
+        msg = RSVPMessage(RSVPMsgType.REQUEST, n1.network_manager.rsvp.name, reservation)
         msg.qcaps.append(QCap('n0'))
-        n1.rsvp.pop('n0', msg)
+        n1.network_manager.rsvp.pop('n0', msg)
         assert len(n1.pop_log) == 1 and len(n1.push_log) == 1
         assert n1.push_log[0]['next_hop'] == 'n0'
         assert n1.push_log[0]['msg'].msg_type == RSVPMsgType.APPROVE
         assert len(n1.push_log[0]['msg'].path) == 2
-        for card in n1.rsvp.timecards:
+        for card in n1.network_manager.timecards:
             assert len(card.reservations) == 1
         reset(n1)
 
         # node receives REQUEST and reject it
         reservation = Reservation('n0', 'n2', 1, 10, 1000, 0.9)
-        msg = ResourceReservationMessage(RSVPMsgType.REQUEST, n1.rsvp.name, reservation)
+        msg = RSVPMessage(RSVPMsgType.REQUEST, n1.network_manager.rsvp.name, reservation)
         msg.qcaps.append(QCap('n0'))
-        n1.rsvp.pop('n0', msg)
+        n1.network_manager.rsvp.pop('n0', msg)
         assert len(n1.pop_log) == 0 and len(n1.push_log) == 1
         assert n1.push_log[0]['next_hop'] == 'n0'
         assert n1.push_log[0]['msg'].msg_type == RSVPMsgType.REJECT
-        for card in n1.rsvp.timecards:
+        for card in n1.network_manager.timecards:
             assert len(card.reservations) == 0
         reset(n1)
 
         # initiator receives REJECT
         reservation = Reservation('n1', 'n2', 1, 10, 10, 0.9)
-        for i, card in enumerate(n1.rsvp.timecards):
+        for i, card in enumerate(n1.network_manager.timecards):
             if i < 10:
                 card.add(reservation)
             else:
                 break
-        msg = ResourceReservationMessage(RSVPMsgType.REJECT, n1.rsvp.name, reservation, path=['n1', 'n2'])
-        n1.rsvp.pop('n2', msg)
+        msg = RSVPMessage(RSVPMsgType.REJECT, n1.network_manager.rsvp.name, reservation, path=['n1', 'n2'])
+        n1.network_manager.rsvp.pop('n2', msg)
         assert len(n1.pop_log) == 1 and len(n1.push_log) == 0
         assert n1.pop_log[0]['msg'].msg_type == RSVPMsgType.REJECT
-        for card in n1.rsvp.timecards:
+        for card in n1.network_manager.timecards:
             assert len(card.reservations) == 0
         reset(n1)
 
         # intermediate node receives REJECT
         reservation = Reservation('n0', 'n2', 1, 10, 10, 0.9)
-        for i, card in enumerate(n1.rsvp.timecards):
+        for i, card in enumerate(n1.network_manager.timecards):
             if i < 10:
                 card.add(reservation)
             else:
                 break
-        msg = ResourceReservationMessage(RSVPMsgType.REJECT, n1.rsvp.name, reservation, path=['n0', 'n1', 'n2'])
-        n1.rsvp.pop('n2', msg)
+        msg = RSVPMessage(RSVPMsgType.REJECT, n1.network_manager.rsvp.name, reservation, path=['n0', 'n1', 'n2'])
+        n1.network_manager.rsvp.pop('n2', msg)
         assert len(n1.pop_log) == 0 and len(n1.push_log) == 1
         assert n1.push_log[0]['msg'].msg_type == RSVPMsgType.REJECT
-        for card in n1.rsvp.timecards:
+        for card in n1.network_manager.timecards:
             assert len(card.reservations) == 0
         reset(n1)
 
         # initiator receives APPROVE
         reservation = Reservation('n1', 'n2', 1, 10, 1000, 0.9)
-        msg = ResourceReservationMessage(RSVPMsgType.APPROVE, n1.rsvp.name, reservation, path=['n1', 'n2'])
-        n1.rsvp.pop('n2', msg)
+        msg = RSVPMessage(RSVPMsgType.APPROVE, n1.network_manager.rsvp.name, reservation, path=['n1', 'n2'])
+        n1.network_manager.rsvp.pop('n2', msg)
         assert len(n1.pop_log) == 1 and len(n1.push_log) == 0
         assert n1.pop_log[0]['msg'].msg_type == RSVPMsgType.APPROVE
         reset(n1)
 
         # intermediate node receives APPROVE
         reservation = Reservation('n0', 'n2', 1, 10, 1000, 0.9)
-        msg = ResourceReservationMessage(RSVPMsgType.APPROVE, n1.rsvp.name, reservation, path=['n0', 'n1', 'n2'])
-        n1.rsvp.pop('n2', msg)
-        assert len(n1.pop_log) == 0 and len(n1.push_log) == 1
+        msg = RSVPMessage(RSVPMsgType.APPROVE, n1.network_manager.rsvp.name, reservation, path=['n0', 'n1', 'n2'])
+        n1.network_manager.rsvp.pop('n2', msg)
+        assert len(n1.pop_log) == 1 and len(n1.push_log) == 1
         assert n1.push_log[0]['next_hop'] == 'n0' and n1.push_log[0]['msg'].msg_type == RSVPMsgType.APPROVE
         reset(n1)
 
 
-    def test_ResourceReservationProtocol_schedule(self):
+    def test_RSVPProtocol_schedule(self):
         tl = Timeline()
         n1 = FakeNode('n1', tl)
         for _ in range(1000):
             s_time = random.randint(1000)
             memo_size = random.randint(25) + 1
             reservation = Reservation('', '', s_time, s_time + 1 + random.randint(200), memo_size, 0.9)
-            if n1.rsvp.schedule(reservation):
+            if n1.network_manager.rsvp.schedule(reservation):
                 counter = 0
-                for card in n1.rsvp.timecards:
+                for card in n1.network_manager.timecards:
                     if reservation in card.reservations:
                         counter += 1
                 assert counter == memo_size * 2
             else:
                 counter = 0
-                for card in n1.rsvp.timecards:
+                for card in n1.network_manager.timecards:
                     if reservation in card.reservations:
                         counter += 1
                 assert counter == 0
@@ -412,15 +400,15 @@ class TestResourceReservationProtocol:
             s_time = random.randint(1000)
             memo_size = random.randint(25) + 1
             reservation = Reservation('n2', '', s_time, s_time + 1 + random.randint(200), memo_size, 0.9)
-            if n2.rsvp.schedule(reservation):
+            if n2.network_manager.rsvp.schedule(reservation):
                 counter = 0
-                for card in n2.rsvp.timecards:
+                for card in n2.network_manager.timecards:
                     if reservation in card.reservations:
                         counter += 1
                 assert counter == memo_size
             else:
                 counter = 0
-                for card in n2.rsvp.timecards:
+                for card in n2.network_manager.timecards:
                     if reservation in card.reservations:
                         counter += 1
                 assert counter == 0

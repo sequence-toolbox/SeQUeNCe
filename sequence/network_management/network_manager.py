@@ -117,6 +117,13 @@ class DistributedNetworkManager(NetworkManager):
         protocols: list = self.create_stack()
         self.load_stack(protocols)
 
+    @property
+    def rsvp(self):
+        return self.protocol_stack[-1]
+
+    def forward(self):
+        return self.protocol_stack[0]
+
     def get_forwarding_table(self) -> dict[str, str]:
         return self.forwarding_table
 
