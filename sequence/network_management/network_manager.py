@@ -6,7 +6,7 @@ Also included in this module is the message type used by the network manager and
 from __future__ import annotations
 from sequence.utils.log import logger
 from abc import abstractmethod, ABC
-from enum import Enum, auto
+from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from ..components.memory import MemoryArray

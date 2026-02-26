@@ -1,9 +1,11 @@
+from .reservation import Reservation
+
 class MemoryTimeCard:
     """Class for tracking reservations on a specific memory.
        Each quantum memory in a memory array is associated with a memory time card
 
     Attributes:
-        memory_index (int): index of memory being tracked (in memory array).
+        memory_index (int): index of memory being tracked (in the memory array).
         reservations (list[Reservation]): list of reservations for the memory.
     """
 
@@ -17,10 +19,10 @@ class MemoryTimeCard:
         self.memory_index = memory_index
         self.reservations = []
 
-    def add(self, reservation: "Reservation") -> bool:
+    def add(self, reservation: Reservation) -> bool:
         """Method to add reservation.
 
-        Will use `schedule_reservation` method to determine index to insert reservation.
+        Will use the schedule_reservation() to determine the index to insert reservation.
 
         Args:
             reservation (Reservation): reservation to add.
@@ -36,14 +38,14 @@ class MemoryTimeCard:
         else:
             return False
 
-    def remove(self, reservation: "Reservation") -> bool:
+    def remove(self, reservation: Reservation) -> bool:
         """Method to remove a reservation.
 
         Args:
             reservation (Reservation): reservation to remove.
 
         Returns:
-            bool: if reservation was already on the memory (return True) or not (return False).
+            bool: if a reservation was already on the memory (return True) or not (return False).
         """
 
         try:
@@ -53,17 +55,17 @@ class MemoryTimeCard:
         except ValueError:
             return False
 
-    def schedule_reservation(self, reservation: "Reservation") -> int:
+    def schedule_reservation(self, reservation: Reservation) -> int:
         """Method to add reservation to a memory.
 
-        Will return index at which reservation can be inserted into memory reservation list.
-        If no space found for reservation, will raise an exception.
+        Will return the index at which reservation can be inserted into memory reservation list.
+        If no space is found for reservation, will raise an exception.
 
         Args:
             reservation (Reservation): reservation to schedule.
 
         Returns:
-            int: index to insert reservation in reservation list.
+            int: index to insert a reservation in the reservation list.
 
         Raises:
             Exception: no valid index to insert reservation.
