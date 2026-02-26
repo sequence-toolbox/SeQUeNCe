@@ -88,7 +88,7 @@ class NetworkManager(ABC):
         pass
 
     @abstractmethod
-    def request(self, responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity):
+    def request(self, responder, start_time, end_time, memory_size, target_fidelity, entanglement_number=1, identity=0):
         """Handle Requests from the Application."""
         pass
 
@@ -164,7 +164,6 @@ class DistributedNetworkManager(NetworkManager):
 
     def pop(self, **kwargs):
         inbound_msg = kwargs['msg']
-        log.logger.info(f'{self.owner.name} DNM.pop: msg_type={inbound_msg.msg_type}, reservation={inbound_msg.reservation}')
         reservation = inbound_msg.reservation
         if inbound_msg.msg_type == RSVPMsgType.APPROVE:
             self.generate_rules(reservation)
@@ -181,5 +180,5 @@ class DistributedNetworkManager(NetworkManager):
         log.logger.info(f'{self.owner.name} network manager received message from {src}: {msg}')
         self.protocol_stack[0].pop(src=src, msg=msg.payload)
 
-    def request(self, responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity):
+    def request(self, responder, start_time, end_time, memory_size, target_fidelity, entanglement_number=1, identity=0):
         self.protocol_stack[-1].push(responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity)
