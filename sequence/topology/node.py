@@ -32,7 +32,7 @@ from ..qkd.BB84 import BB84
 from ..qkd.cascade import Cascade
 from ..entanglement_management.generation import EntanglementGenerationB
 from ..resource_management.resource_manager import ResourceManager
-from ..network_management.network_manager import NewNetworkManager, NetworkManager
+from ..network_management.network_manager import NetworkManager
 from ..utils.encoding import *
 from ..utils import log
 
@@ -332,7 +332,7 @@ class QuantumRouter(Node):
 
         # setup managers
         self.resource_manager: ResourceManager = ResourceManager(self, self.memo_arr_name)
-        self.network_manager: NetworkManager = NetworkManager.create(self, self.memo_arr_name)
+        self.network_manager: NetworkManager = NetworkManager.create(self, self.memo_arr_name, component_templates=component_templates)
 
         self.map_to_middle_node = {}
         self.app = None

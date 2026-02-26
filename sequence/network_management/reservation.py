@@ -87,7 +87,7 @@ class ResourceReservationProtocol(StackProtocol):
         super().__init__(owner, name)
         self.memory_array_name = memory_array_name
         self.memo_arr = owner.components[memory_array_name]
-        self.timecards = [MemoryTimeCard(i) for i in range(len(self.memo_arr))]
+        self.timecards = None
         self.purification_mode = 'until_target'  # once or until_target. QoS
         self.accepted_reservations = []
 
@@ -148,13 +148,13 @@ class ResourceReservationProtocol(StackProtocol):
             qcap = QCap(self.owner.name)
             msg.qcaps.append(qcap)
             path = [qcap.node for qcap in msg.qcaps]
+
             if self.schedule(msg.reservation):  # schedule success
                 if self.owner.name == msg.reservation.responder:
-                    self.owner.resource_manager.generate_load_rules(path, msg.reservation, self.timecards, self.memory_array_name)
                     self.accepted_reservations.append(msg.reservation)
                     msg.reservation.set_path(path)
                     new_msg = ResourceReservationMessage(RSVPMsgType.APPROVE, self.name, msg.reservation, path=path)
-                    self._pop(msg=msg)
+                    self._pop(msg=new_msg)
                     self._push(dst=None, msg=new_msg, next_hop=src)
                 else:
                     self._push(dst=msg.reservation.responder, msg=msg)
@@ -170,24 +170,23 @@ class ResourceReservationProtocol(StackProtocol):
                 next_hop = self.next_hop_when_tracing_back(msg.path)
                 self._push(dst=None, msg=msg, next_hop=next_hop)
         elif msg.msg_type == RSVPMsgType.APPROVE:
-            self.owner.resource_manager.generate_load_rules(msg.path, msg.reservation, self.timecards, self.memory_array_name)
+            #self.owner.resource_manager.generate_load_rules(msg.path, msg.reservation, self.timecards, self.memory_array_name)
             self.accepted_reservations.append(msg.reservation)
-            if msg.reservation.initiator == self.owner.name:
-                self._pop(msg=msg)
-            else:
+            self._pop(msg=msg)
+            if msg.reservation.initiator != self.owner.name:
                 next_hop = self.next_hop_when_tracing_back(msg.path)
                 self._push(dst=None, msg=msg, next_hop=next_hop)
         else:
             raise Exception("Unknown type of message", msg.msg_type)
 
     def next_hop_when_tracing_back(self, path: list[str]) -> str:
-        '''the next hop when going back from the responder to the initiator
+        """the next hop when going back from the responder to the initiator
 
         Args:
             path (list[str]): a list of router names that goes from initiator to responder
         Returns:
             str: the name of the next hop
-        '''
+        """
         cur_index = path.index(self.owner.name)
         assert cur_index >= 1, f'{cur_index} must be larger equal than 1'
         next_hop = path[cur_index - 1]
