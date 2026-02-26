@@ -20,7 +20,9 @@ from ..protocol import Protocol
 from .routing_distributed import DistributedRoutingProtocol
 from .routing_static import StaticRoutingProtocol
 from .forwarding import ForwardingProtocol
-from .reservation import ResourceReservationProtocol, ResourceReservationMessage, RSVPMsgType, MemoryTimeCard
+from .reservation import Reservation
+from .rsvp import RSVPProtocol, RSVPMsgType
+from .memory_timecard import MemoryTimeCard
 from ..utils import log
 
 class NetworkManagerMessage(Message):
@@ -96,6 +98,10 @@ class NetworkManager(ABC):
     def get_timecards(self):
         return self.timecards
 
+    def generate_rules(self, reservation: Reservation):
+        self.owner.resource_manager.generate_load_rules(reservation.path, reservation, self.timecards,
+                                                        self.memory_array_name)
+
 @NetworkManager.register('distributed')
 class DistributedNetworkManager(NetworkManager):
     def __init__(self, owner: "QuantumRouter", memory_array_name: str, component_templates=None):
@@ -133,7 +139,7 @@ class DistributedNetworkManager(NetworkManager):
 
     def create_stack(self):
         """Helper function to stand up the protocols"""
-        rsvp = ResourceReservationProtocol(self.owner, f'{self.owner.name}.RSVP', self.memory_array_name)
+        rsvp = RSVPProtocol(self.owner, f'{self.owner.name}.RSVP', self.memory_array_name)
         forwarding_protocol = ForwardingProtocol(self.owner, f'{self.owner.name}.ForwardingProtocol')
         rsvp.timecards = self.timecards
         forwarding_protocol.upper_protocols.append(rsvp)
@@ -161,7 +167,7 @@ class DistributedNetworkManager(NetworkManager):
         log.logger.info(f'{self.owner.name} DNM.pop: msg_type={inbound_msg.msg_type}, reservation={inbound_msg.reservation}')
         reservation = inbound_msg.reservation
         if inbound_msg.msg_type == RSVPMsgType.APPROVE:
-            self.owner.resource_manager.generate_load_rules(reservation.path, reservation, self.timecards, self.memory_array_name)
+            self.generate_rules(reservation)
             if reservation.initiator == self.owner.name:
                 self.owner.get_reservation_result(reservation, True) # Deliver the result to the Node
             elif reservation.responder == self.owner.name:
