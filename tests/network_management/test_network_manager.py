@@ -87,7 +87,7 @@ class TestNetworkManager:
     def test_network_manager_timecards(self, test_node):
         tc = test_node.network_manager.get_timecards()
         assert len(tc) == 50
-        assert all(isinstance(tc, MemoryTimeCard) for tc in tc)
+        assert all(isinstance(card, MemoryTimeCard) for card in tc)
 
     @pytest.mark.unit
     def test_network_manager_generate_rule(self, test_node, mock_reservation):
