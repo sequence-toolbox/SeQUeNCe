@@ -1,29 +1,35 @@
 """Definition of the Network Manager.
 
-This module defines the NetworkManager class, an implementation of the SeQUeNCe network management module.
-Also included in this module is the message type used by the network manager and a function for generating network managers with default protocols.
+This module defines the NetworkManager ABC and the default NetworkManager, DistributedNetworkManager.
 """
 from __future__ import annotations
-from sequence.utils.log import logger
-from abc import abstractmethod, ABC
-from enum import Enum
+
+from abc import ABC, abstractmethod
+from enum import Enum, auto
 from typing import TYPE_CHECKING, Any
+
+from sequence.utils.log import logger
 
 from ..components.memory import MemoryArray
 
 if TYPE_CHECKING:
-    from ..topology.node import QuantumRouter
     from ..protocol import StackProtocol
+    from ..topology.node import QuantumRouter
 
 from ..message import Message
 from ..protocol import Protocol
+from ..utils import log
+from .forwarding import ForwardingProtocol
+from .memory_timecard import MemoryTimeCard
+from .reservation import Reservation
 from .routing_distributed import DistributedRoutingProtocol
 from .routing_static import StaticRoutingProtocol
-from .forwarding import ForwardingProtocol
-from .reservation import Reservation
-from .rsvp import RSVPProtocol, RSVPMsgType
-from .memory_timecard import MemoryTimeCard
-from ..utils import log
+from .rsvp import RSVPMessage, RSVPMsgType, RSVPProtocol
+
+
+class NetworkManagerMsgType(Enum):
+    OUTBOUND = auto()
+    INBOUND = auto()
 
 class NetworkManagerMessage(Message):
     """Message used by the network manager.
@@ -121,6 +127,7 @@ class DistributedNetworkManager(NetworkManager):
     def rsvp(self):
         return self.protocol_stack[-1]
 
+    @property
     def forward(self):
         return self.protocol_stack[0]
 
@@ -162,30 +169,29 @@ class DistributedNetworkManager(NetworkManager):
 
         self.protocol_stack = stack
         if len(self.protocol_stack) > 0:
-            self.protocol_stack[0].lower_protocols.append(self)
-            self.protocol_stack[-1].upper_protocols.append(self)
+            self.forward.lower_protocols.append(self)
+            self.rsvp.upper_protocols.append(self)
 
-    def push(self, **kwargs):
-        outbound_msg = NetworkManagerMessage(Enum, 'network_manager', kwargs['msg'])
-        self.owner.send_message(kwargs['dst'], outbound_msg)
+    def push(self, dst: str, msg: Message):
+        outbound_msg = NetworkManagerMessage(NetworkManagerMsgType.OUTBOUND, 'network_manager', msg)
+        super().push(dst, outbound_msg)
 
-    def pop(self, **kwargs):
-        inbound_msg = kwargs['msg']
-        reservation = inbound_msg.reservation
-        if inbound_msg.msg_type == RSVPMsgType.APPROVE:
+    def pop(self, msg: RSVPMessage):
+        reservation: Reservation = msg.reservation
+        if msg.msg_type == RSVPMsgType.APPROVE:
             self.generate_rules(reservation)
             if reservation.initiator == self.owner.name:
                 self.owner.get_reservation_result(reservation, True) # Deliver the result to the Node
             elif reservation.responder == self.owner.name:
                 self.owner.get_other_reservation(reservation)
-        elif inbound_msg.msg_type == RSVPMsgType.REJECT:
+        elif msg.msg_type == RSVPMsgType.REJECT:
             if reservation.initiator == self.owner.name:
                 self.owner.get_reservation_result(reservation, False)
 
 
     def received_message(self, src: str, msg: NetworkManagerMessage):
         log.logger.info(f'{self.owner.name} network manager received message from {src}: {msg}')
-        self.protocol_stack[0].pop(src=src, msg=msg.payload)
+        self.forward.pop(src=src, msg=msg.payload)
 
     def request(self, responder, start_time, end_time, memory_size, target_fidelity, entanglement_number=1, identity=0):
-        self.protocol_stack[-1].push(responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity)
+        self.rsvp.push(responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity)
