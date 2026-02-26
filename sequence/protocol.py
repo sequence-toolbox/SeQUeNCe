@@ -18,6 +18,7 @@ class Protocol(ABC):
     Attributes:
         own (Node): node protocol is attached to.
         name (str): label for protocol instance.
+        protocol_type (str): type of protocol instance (e.g. 'single_heralded').
     """
 
     def __init__(self, owner: "Node", name: str):
@@ -26,7 +27,6 @@ class Protocol(ABC):
         Args:
             owner (Node): node protocol is attached to.
             name (str): name of protocol instance.
-            protocol_type (str): type of protocol instance (e.g. 'single_heralded').
         """
 
         self.owner = owner
