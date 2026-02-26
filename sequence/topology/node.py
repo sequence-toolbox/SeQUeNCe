@@ -4,6 +4,7 @@ This module provides definitions for various types of quantum network nodes.
 All node types inherit from the base Node type, which inherits from Entity.
 Node types can be used to collect all the necessary hardware and software for a network usage scenario.
 """
+from fontTools.misc.macRes import Resource
 
 from math import inf
 from typing import TYPE_CHECKING, Any, Optional
@@ -307,7 +308,7 @@ class QuantumRouter(Node):
         down (bool): whether the node is down (not operational).
     """
 
-    def __init__(self, name: str, tl: "Timeline", memo_size: int = 50, seed: int = None, component_templates: dict = {}, gate_fid: float = 1, meas_fid: float = 1):
+    def __init__(self, name: str, tl: "Timeline", memo_size: int = 50, seed: int | None = None, component_templates: dict = {}, gate_fid: float = 1, meas_fid: float = 1):
         """Constructor for quantum router class.
 
         Args:
@@ -315,7 +316,7 @@ class QuantumRouter(Node):
             tl (Timeline): timeline for simulation.
             memo_size (int): number of memories to add in the array (default 50).
             seed (int): the random seed for the random number generator
-            compoment_templates (dict): parameters for the quantum router
+            component_templates (dict): parameters for the quantum router
             gate_fid (float): fidelity of multi-qubit gates (usually CNOT) that can be performed on the node;
                 Default value is 1, meaning ideal gate.
             meas_fid (float): fidelity of single-qubit measurements (usually Z measurement) that can be performed on the node;
@@ -323,17 +324,16 @@ class QuantumRouter(Node):
         """
 
         super().__init__(name, tl, seed, gate_fid, meas_fid)
-        # create memory array object with optional args
-        self.memo_arr_name = f"{name}.MemoryArray"
+        self.memo_arr_name = f"{name}.MemoryArray" # create the memory array object with optional args
         memo_arr_args = component_templates.get("MemoryArray", {})
         memory_array = MemoryArray(self.memo_arr_name, tl, num_memories=memo_size, **memo_arr_args)
         self.add_component(memory_array)
         memory_array.add_receiver(self)
 
         # setup managers
-        self.resource_manager = None
-        self.network_manager = None
-        self.init_managers(self.memo_arr_name, component_templates)
+        self.resource_manager: ResourceManager = ResourceManager(self, self.memo_arr_name)
+        self.network_manager: NetworkManager = NetworkManager.create(self, self.memo_arr_name)
+
         self.map_to_middle_node = {}
         self.app = None
         self.down = False
@@ -366,12 +366,12 @@ class QuantumRouter(Node):
                         break
 
     def send_message(self, dst: str, msg: "Message", priority=inf) -> None:
-        """Method to send classical message.
+        """Method to send a classical message.
 
         Args:
-            dst (str): name of destination node for message.
+            dst (str): name of the destination node to get the message.
             msg (Message): message to transmit.
-            priority (int): priority for transmitted message (default inf).
+            priority (int): priority for the transmitted message (default inf).
         """
         if self.down:
             log.logger.info(f"{self.name} is DOWN. Dropping message {msg} to {dst}")
@@ -390,26 +390,6 @@ class QuantumRouter(Node):
         """
         log.logger.info(f"{self.name} is {'DOWN' if down else 'UP'}")
         self.down = down
-
-    def init_managers(self, memo_arr_name: str, component_templates: dict = {}):
-        """Initialize resource manager and network manager.
-
-        Args:
-            memo_arr_name (str): the name of the memory array.
-            component_templates (dict): parameters for the quantum router
-        """
-        resource_manager = ResourceManager(self, memo_arr_name)
-        network_manager = NewNetworkManager(self, memo_arr_name, component_templates)
-        self.set_resource_manager(resource_manager)
-        self.set_network_manager(network_manager)
-
-    def set_resource_manager(self, resource_manager: ResourceManager):
-        """Assigns the resource manager."""
-        self.resource_manager = resource_manager
-
-    def set_network_manager(self, network_manager: NetworkManager):
-        """Assigns the network manager."""
-        self.network_manager = network_manager
 
     def init(self):
         """Method to initialize quantum router node.

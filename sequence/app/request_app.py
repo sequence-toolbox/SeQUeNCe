@@ -147,8 +147,7 @@ class RequestApp:
         if reservation.initiator == self.node.name:
             self.path = reservation.path
 
-        reservation_protocol = self.node.network_manager.protocol_stack[1]
-        for card in reservation_protocol.timecards:
+        for card in self.node.network_manager.get_timecards():
             if reservation in card.reservations:
                 process = Process(self, "add_memo_reservation_map", [card.memory_index, reservation])
                 event = Event(reservation.start_time, process)
