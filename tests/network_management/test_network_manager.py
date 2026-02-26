@@ -124,6 +124,7 @@ class TestDistributedNetworkManager:
         test_node.get_reservation_result.assert_called_once_with(mock_reservation, True)
         test_node.get_other_reservation.assert_not_called()
 
+    @pytest.mark.unit
     def test_pop_approve_responder(self, test_node, mock_reservation):
         mock_reservation.responder = test_node.name
         inbound_msg = Mock()
@@ -146,6 +147,7 @@ class TestDistributedNetworkManager:
 
         test_node.get_reservation_result.assert_called_once_with(mock_reservation, False)
 
+    @pytest.mark.unit
     def test_pop_approve_intermediate(self, test_node, mock_reservation):
         inbound_msg = Mock()
         inbound_msg.msg_type = RSVPMsgType.APPROVE
