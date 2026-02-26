@@ -346,10 +346,10 @@ class QuantumRouter(Node):
             msg (Message): the received message.
         """
         if self.down:
-            log.logger.warning(f"{self.name} is DOWN. Dropping message {msg} from {src}")
+            log.logger.info(f"{self.name} is DOWN. Dropping message {msg} from {src}")
             return
 
-        log.logger.info(f"{self.name} receive message {msg} from {src}")
+        log.logger.info(f"{self.name}: receive message {msg} from {src}")
         if msg.receiver == "network_manager":
             self.network_manager.received_message(src, msg)
         elif msg.receiver == "resource_manager":
@@ -374,10 +374,10 @@ class QuantumRouter(Node):
             priority (int): priority for transmitted message (default inf).
         """
         if self.down:
-            log.logger.warning(f"{self.name} is DOWN. Dropping message {msg} to {dst}")
+            log.logger.info(f"{self.name} is DOWN. Dropping message {msg} to {dst}")
             return
         
-        log.logger.info(f"{self.name} send message {msg} to {dst}")
+        log.logger.info(f"{self.name}: send message {msg} to {dst}")
         if priority == inf:
             priority = self.timeline.schedule_counter
         self.cchannels[dst].transmit(msg, self, priority)

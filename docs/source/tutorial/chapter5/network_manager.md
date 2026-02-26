@@ -17,18 +17,44 @@ The Network Management module of sequence is responsible for coordinating the pr
 
 ![nm](figures/net_manager.png)
 
-When a request is received, the network manager with first push a message to the **reservation** protocol, which determines if the request can be met on the local node. If so, the protocol reserves hardware resources and passes the request to the **routing** protocol, which determines the next router in an optimal path between the requested nodes (this optimal path is determined when building the topology by finding the shortest quantum connection path between nodes). Nodes in the path receive reservation requests and either reserve local resources or reject the request. If rejected on any node or accepted by all nodes, the request is sent back to the originating node by the reverse path. If accepted, appropriate rules are automatically generated and installed in the resource manager as well.
+1. When a request is received, the Network Manager first push a message to the **reservation** protocol, which determines if the request can be met on the local node. If so, the protocol reserves hardware resources and passes the request to the **forwarding** protocol, which determines the next router in an optimal path between the requested nodes. 
+The forwarding protocol reads the forwarding table written by the **routing** protocol.
+2. Nodes in the path receive reservation requests and either reserve local resources or reject the request. If rejected on any node or accepted by all nodes, the request is sent back to the originating node by the reverse path. 
+3. If the request is accepted (requires all nodes in the path accepting the request), the reservation protocol will pass the timecard and the reservation to the Resource Manager. As described in Chapter 4, the Resource Manager will generate and install the rules once receiving the timecard and the reservation.
 
 When constructing the network manager, the `NewNetworkManager` function of the `sequence.network_management.network_manager` module is used. This function will automatically create the default reservation and routing protocol stack and install it into the network manager.
 
 ```python
-def NewNetworkManager(owner: "QuantumRouter") -> "NetworkManager":
+def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_templates: dict = {}) -> "NetworkManager":
+    """Function to create a new network manager.
+
+    Will create a network manager with default protocol stack.
+    This stack includes a reservation and routing protocol.
+
+    Args:
+        owner (QuantumRouter): node to attach network manager to.
+        memory_array_name (str): name of the memory array component on owner.
+        routing_protocol_cls (type[Protocol]): routing protocol class to use for control plane.
+
+    Returns:
+        NetworkManager: network manager object created.
+    """
     manager = NetworkManager(owner, [])
-    routing = StaticRoutingProtocol(owner, owner.name + ".StaticRoutingProtocol", {})
-    rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP")
-    routing.upper_protocols.append(rsvp)
-    rsvp.lower_protocols.append(routing)
-    manager.load_stack([routing, rsvp])
+    routing = component_templates.get("routing", "static")
+    match routing:
+        case "static":
+            routing_protocol_cls = StaticRoutingProtocol
+        case "distributed":
+            routing_protocol_cls = DistributedRoutingProtocol
+        case _:
+            raise NotImplementedError(f"Routing protocol {routing} not implemented.")   
+    routing = routing_protocol_cls(owner, f"{routing_protocol_cls.__name__}")
+    manager.set_routing_protocol(routing)
+    forwarding_protocol = ForwardingProtocol(owner, owner.name + ".ForwardingProtocol")
+    rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP", memory_array_name)
+    forwarding_protocol.upper_protocols.append(rsvp)
+    rsvp.lower_protocols.append(forwarding_protocol)
+    manager.load_stack([forwarding_protocol, rsvp])
     return manager
 ```
 
@@ -37,7 +63,7 @@ def NewNetworkManager(owner: "QuantumRouter") -> "NetworkManager":
 For this example, we will be using a json file to specify the nodes and connectivity of the network.
 The json file should be structured as a dictionary with the following keys:
 
-- `is_parallel`, denoting if it's a parallel or sequential simulation
+
 - `stop_time`, the stop time of simulation
 - `nodes`, giving a list of node specifications
 - At least one of the following:
@@ -50,7 +76,6 @@ The json file should be structured as a dictionary with the following keys:
 For this simulation, we use sequential simulation to simulate 2 seconds of the network.
 
 ```json
-"is_parallel": false,
 "stop_time": 2000000000000
 ```
 
@@ -248,11 +273,11 @@ def set_parameters(topology: RouterNetTopo):
         bsm.update_detectors_params("count_rate", DETECTOR_COUNT_RATE)
         bsm.update_detectors_params("time_resolution", DETECTOR_RESOLUTION)
     # set entanglement swapping parameters
-    SWAP_SUCC_PROB = 0.90
-    SWAP_DEGRADATION = 0.99
-    for node in topology.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
-        node.network_manager.protocol_stack[1].set_swapping_success_rate(SWAP_SUCC_PROB)
-        node.network_manager.protocol_stack[1].set_swapping_degradation(SWAP_DEGRADATION)
+    # SWAP_SUCC_PROB = 0.90
+    # SWAP_DEGRADATION = 0.99
+    # for node in topology.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
+    #     node.network_manager.protocol_stack[1].set_swapping_success_rate(SWAP_SUCC_PROB)
+    #     node.network_manager.protocol_stack[1].set_swapping_degradation(SWAP_DEGRADATION)
         
     # set quantum channel parameters
     ATTENUATION = 1e-5

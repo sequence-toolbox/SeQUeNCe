@@ -1,5 +1,4 @@
 {
-    "is_parallel": false,
     "stop_time": 5000000000000,
     "local_memories": 5,
     "client_number": 6,

@@ -201,12 +201,12 @@ def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_
     """Function to create a new network manager.
 
     Will create a network manager with default protocol stack.
-    This stack inclused a reservation and routing protocol.
+    This stack includes a reservation and routing protocol.
 
     Args:
         owner (QuantumRouter): node to attach network manager to.
         memory_array_name (str): name of the memory array component on owner.
-        routing_protocol_cls (type[Protocol]): routing protocol class to use for control plane.
+        component_templates (dict): dictionary of component templates
 
     Returns:
         NetworkManager: network manager object created.
@@ -225,7 +225,7 @@ def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_
     manager.set_routing_protocol(routing)
     forwarding_protocol = ForwardingProtocol(owner, owner.name + ".ForwardingProtocol")
     rsvp = ResourceReservationProtocol(owner, owner.name + ".RSVP", memory_array_name)
-    rsvp.set_swapping_success_rate(swapping_success_rate)
+    # rsvp.set_swapping_success_rate(swapping_success_rate)
     forwarding_protocol.upper_protocols.append(rsvp)
     rsvp.lower_protocols.append(forwarding_protocol)
     manager.load_stack([forwarding_protocol, rsvp])

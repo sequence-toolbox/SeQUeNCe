@@ -55,11 +55,11 @@ if __name__ == "__main__":
         qc.frequency = QC_FREQ
 
     # set entanglement swapping parameters
-    SWAP_SUCC_PROB = 0.64
-    SWAP_DEGRADATION = 0.99
-    for node in routers:
-        node.network_manager.protocol_stack[1].set_swapping_success_rate(SWAP_SUCC_PROB)
-        node.network_manager.protocol_stack[1].set_swapping_degradation(SWAP_DEGRADATION)
+    # SWAP_SUCC_PROB = 0.64
+    # SWAP_DEGRADATION = 0.99
+    # for node in routers:
+    #     node.network_manager.protocol_stack[1].set_swapping_success_rate(SWAP_SUCC_PROB)
+    #     node.network_manager.protocol_stack[1].set_swapping_degradation(SWAP_DEGRADATION)
 
     apps = []
     router_names = [node.name for node in routers]

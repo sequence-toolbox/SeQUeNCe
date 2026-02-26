@@ -20,7 +20,7 @@ from sequence import read_version_from_pyproject
 # -- Project information -----------------------------------------------------
 
 project = 'SeQUeNCe'
-copyright = '2020-2025'
+copyright = '2020-2026'
 author = 'Xiaoliang Wu, Joaquin Chung, Alexander Kolar, Eugene Wang, Tian Zhong, Rajkumar Kettimuthu, Martin Suchara'
 
 # The full version, including alpha/beta/rc tags. Keep single source of truth in pyproject.

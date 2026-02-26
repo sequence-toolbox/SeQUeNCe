@@ -127,7 +127,6 @@
       "type": "meet_in_the_middle"
     }
   ],
-  "is_parallel": false,
   "stop_time": 1000000000000000,
   "cconnections": [
     {
