@@ -1,15 +1,17 @@
 import math
 from unittest.mock import Mock
 
+from sequence.network_management.forwarding import ForwardingProtocol
 from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.kernel.timeline import Timeline
-from sequence.network_management.network_manager import *
-from sequence.network_management.rsvp import RSVPMsgType
+from sequence.network_management.network_manager import NetworkManager, DistributedNetworkManager, NetworkManagerMessage
+from sequence.message import Message
+from sequence.network_management.rsvp import RSVPProtocol, RSVPMsgType
+from sequence.network_management.reservation import Reservation
+from sequence.network_management.memory_timecard import MemoryTimeCard
 from sequence.protocol import StackProtocol
 from sequence.topology.node import QuantumRouter, BSMNode
 import pytest
-from sequence.network_management.reservation import Reservation
-
 
 class DistributedQuantumRouter(QuantumRouter):
     def __init__(self, name, timeline, memo_size=50):

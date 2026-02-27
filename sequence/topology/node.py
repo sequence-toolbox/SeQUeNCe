@@ -4,8 +4,6 @@ This module provides definitions for various types of quantum network nodes.
 All node types inherit from the base Node type, which inherits from Entity.
 Node types can be used to collect all the necessary hardware and software for a network usage scenario.
 """
-from fontTools.misc.macRes import Resource
-
 from math import inf
 from typing import TYPE_CHECKING, Any, Optional
 
