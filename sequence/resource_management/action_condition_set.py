@@ -93,6 +93,7 @@ def eg_rule_action_request(memories_info: list[MemoryInfo], args: Arguments) -> 
     return protocol, [other], [eg_match_func], [req_args]
 
 
+
 # Entanglement Generation Action-Condition-Match
 def eg_rule_action_await(memories_info: list[MemoryInfo], args: Arguments) -> ActionReturn:
     """Action function used to create an entanglement generation protocol instance and await a Resource Manager request.
@@ -117,6 +118,7 @@ def eg_rule_action_await(memories_info: list[MemoryInfo], args: Arguments) -> Ac
     protocol = EntanglementGenerationA.create(owner=TempNode, name=f"EGA.{memory.name}",
                                               middle=mid, other=other, memory=memory)
     return protocol, [None], [None], [None]
+
 
 
 def eg_rule_condition(memory_info: MemoryInfo, _manager: MemoryManager, args: Arguments) -> list[MemoryInfo]:

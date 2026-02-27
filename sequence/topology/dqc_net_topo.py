@@ -2,9 +2,9 @@
 
 from .topology import Topology
 from .network_impls import BsmNetworkImpl
-from .node import DQCNode
+
 from .const_topo import (
-    BSM_NODE, CONTROLLER, DATA_MEMO_ARRAY_SIZE,
+    ALL_NODE, BSM_NODE, CONTROLLER, DATA_MEMO_ARRAY_SIZE,
     DQC_NODE, MEET_IN_THE_MID, MEMO_ARRAY_SIZE,
 )
 
@@ -22,8 +22,6 @@ class DQCNetTopo(Topology):
         cchannels (list[ClassicalChannel]): classical channels in the network.
         tl (Timeline): simulation timeline.
     """
-
-    NODE_TYPES = {DQC_NODE: DQCNode}
 
     _deprecated_attrs = {
         "BSM_NODE":            BSM_NODE,
@@ -48,7 +46,7 @@ class DQCNetTopo(Topology):
         """
         mapping: dict[int, str] = {}
         next_wire = 0
-        for nd in self._raw_cfg["nodes"]:
+        for nd in self._raw_cfg[ALL_NODE]:
             name   = nd["name"]
             n_data = nd.get("n_data", 1)
             for _ in range(n_data):
@@ -67,6 +65,9 @@ class DQCNetTopo(Topology):
         Args:
             total_wires (int): total number of wires (qubits) in the circuit.
             ancilla_inds (list[int]): ancilla qubit indices (reserved for future use).
+
+        Returns:
+            dict[str, dict[int, int]]: node_name → {wire_index: slot_index_in_memory_array}.
         """
         qubit_to_node = self.infer_qubit_to_node(total_wires)
         data_owners: dict[str, dict[int, int]] = {name: {} for name in self.nodes.keys()}

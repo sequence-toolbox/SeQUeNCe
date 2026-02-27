@@ -1,52 +1,5 @@
-"""Topology configuration key constants and node type enumerations."""
+"""Topology configuration key constants."""
 
-from enum import Enum
-
-
-class NodeType(Enum):
-    """All known node types in the simulation.
-
-    String values match the TYPE strings used in config files and NODE_TYPES dicts.
-    Add new node types here — the _unclassified check below fires at import time if
-    you forget to classify the new member as MIDPOINT or ENDPOINT.
-    """
-    QUANTUM_ROUTER = "QuantumRouter"
-    DQC_NODE       = "DQCNode"
-    BSM_NODE       = "BSMNode"
-    QKD_NODE       = "QKDNode"
-    ORCHESTRATOR   = "QlanOrchestratorNode"
-    CLIENT         = "QlanClientNode"
-    # Future:
-    # YB_NODE      = "YbNode"
-    # ER_NODE      = "ErNode"
-    # HET_BSM_NODE = "HetBSMNode"
-
-
-# Midpoint nodes — sit between two endpoints, never appear in routing tables.
-# Add new BSM variants here when heterogeneous hardware is introduced.
-MIDPOINT_NODE_TYPES = frozenset({
-    NodeType.BSM_NODE,
-})
-
-# Endpoint nodes — participate in routing and computation.
-ENDPOINT_NODE_TYPES = frozenset({
-    NodeType.QUANTUM_ROUTER,
-    NodeType.DQC_NODE,
-    NodeType.QKD_NODE,
-    NodeType.ORCHESTRATOR,
-    NodeType.CLIENT,
-})
-
-# Every NodeType member must belong to exactly one classification set.
-# This fires at import time — adding a new NodeType without classifying it
-# is a hard error, not a silent wrong simulation.
-_unclassified = frozenset(NodeType) - MIDPOINT_NODE_TYPES - ENDPOINT_NODE_TYPES
-if _unclassified:
-    raise TypeError(
-        f"NodeType members are not classified as MIDPOINT or ENDPOINT: "
-        f"{[t.value for t in _unclassified]}. "
-        f"Add them to MIDPOINT_NODE_TYPES or ENDPOINT_NODE_TYPES in const_topo.py."
-    )
 
 # Topology base config keys
 ALL_C_CONNECT = "cconnections"
@@ -100,7 +53,6 @@ MEM_EFFICIENCY_CLIENT = "memo_efficiency_client"
 MEM_COHERENCE_CLIENT = "memo_coherence_client"
 MEM_WAVELENGTH_CLIENT = "memo_wavelength_client"
 MEASUREMENT_BASES = "measurement_bases"
-MEM_SIZE = "memo_size"
 
 # DQCNetTopo config keys
 DQC_NODE = "DQCNode"
