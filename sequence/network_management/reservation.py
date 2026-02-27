@@ -4,6 +4,8 @@ This module provides a definition for the reservation protocol used by the netwo
 This includes the Reservation, MemoryTimeCard, and QCap classes, which are used by the network manager to track reservations.
 Also included is the definition of the message type used by the reservation protocol.
 """
+from __future__ import annotations
+
 
 class Reservation:
     """Tracking of reservation parameters for the network manager.
@@ -56,10 +58,9 @@ class Reservation:
     def __repr__(self) -> str:
         return self.__str__()
 
-    def set_path(self, path: list[str]):
-        self.path = path
-
-    def __eq__(self, other: "Reservation"):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Reservation):
+            return False
         return other.initiator == self.initiator and \
             other.responder == self.responder and \
             other.start_time == self.start_time and \
@@ -72,5 +73,7 @@ class Reservation:
 
     def __hash__(self):
         return hash((self.initiator, self.responder, self.start_time, self.end_time, self.memory_size, self.fidelity))
-
-
+    
+    def set_path(self, path: list[str]):
+        self.path = path
+        

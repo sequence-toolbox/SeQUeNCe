@@ -66,13 +66,13 @@ class StackProtocol(Protocol):
         self.lower_protocols = []
 
     @abstractmethod
-    def push(self, **kwargs):
+    def push(self, *args, **kwargs):
         """Method to receive information from protocols higher on stack (abstract)."""
 
         pass
 
     @abstractmethod
-    def pop(self, **kwargs):
+    def pop(self, *args, **kwargs):
         """Method to receive information from protocols lower on stack (abstract)."""
 
         pass

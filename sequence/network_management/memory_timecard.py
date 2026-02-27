@@ -1,5 +1,6 @@
 from .reservation import Reservation
 
+
 class MemoryTimeCard:
     """Class for tracking reservations on a specific memory.
        Each quantum memory in a memory array is associated with a memory time card

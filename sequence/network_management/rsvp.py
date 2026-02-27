@@ -1,3 +1,4 @@
+from sequence.network_management.memory_timecard import MemoryTimeCard
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 
@@ -32,7 +33,7 @@ class RSVPMessage(Message):
         receiver (str): name of destination protocol instance.
         reservation (Reservation): reservation object relayed between nodes.
         qcaps (list[QCaps]): cumulative quantum capacity object list (if `msg_type == REQUEST`)
-        path (list[str]): cumulative node list for entanglement path (if `msg_type == APPROVE` or `msg_type == REJECT`)
+        path (list[str]): cumulative node list for an entanglement path (if `msg_type == APPROVE` or `msg_type == REJECT`)
     """
 
     def __init__(self, msg_type, receiver: str, reservation: "Reservation", **kwargs):
@@ -82,7 +83,7 @@ class RSVPProtocol(StackProtocol):
         super().__init__(owner, name)
         self.memory_array_name = memory_array_name
         self.memo_arr = owner.components[memory_array_name]
-        self.timecards = None
+        self.timecards: list[MemoryTimeCard] = []
         self.purification_mode = 'until_target'  # once or until_target. QoS
         self.accepted_reservations = []
 
@@ -90,7 +91,7 @@ class RSVPProtocol(StackProtocol):
              entanglement_number: int = 1, identity: int = 0):
         """Method to receive reservation requests from higher level protocol.
 
-        Will evaluate request and determine if node can meet it.
+        Will evaluate the request and determine if the node can meet it.
         If it can, it will push the request down to a lower protocol.
         Otherwise, it will pop the request back up.
 
@@ -100,7 +101,7 @@ class RSVPProtocol(StackProtocol):
             end_time (int): simulation time at which entanglement should cease.
             memory_size (int): number of memories to be entangled.
             target_fidelity (float): desired fidelity of entanglement.
-            entanglement_number (int): the number of entanglement the request ask for.
+            entanglement_number (int): the amount of entanglement the request asked for.
             identity (int): the ID of the request.
         Side Effects:
             May push/pop to lower/upper attached protocols (or network manager).
@@ -121,7 +122,7 @@ class RSVPProtocol(StackProtocol):
         """Method to receive messages from lower protocols.
         Messages may be of 3 types, causing different network manager behavior:
 
-        1. REQUEST: requests are evaluated, and forwarded along the path if accepted.
+        1. REQUEST: requests are evaluated and forwarded along the path if accepted.
             Otherwise, a REJECT message is sent back.
         2. REJECT: any reserved resources are released and the message forwarded back towards the initializer.
         3. APPROVE: rules are created to achieve the approved request.
@@ -135,7 +136,7 @@ class RSVPProtocol(StackProtocol):
             May push/pop to lower/upper attached protocols (or network manager).
 
         Assumption:
-            the path initiator -> responder is same as the reverse path
+            the path initiator -> responder is the same as the reverse path
         """
 
         if msg.msg_type == RSVPMsgType.REQUEST:
@@ -188,7 +189,7 @@ class RSVPProtocol(StackProtocol):
         return next_hop
 
     def schedule(self, reservation: "Reservation") -> bool:
-        """Method to attempt reservation request. If attempt succeeded, return True; otherwise, return False.
+        """Method to attempt a reservation request. If an attempt succeeded, return True; otherwise, return False.
 
         Args:
             reservation (Reservation): reservation to approve or reject.
@@ -199,7 +200,7 @@ class RSVPProtocol(StackProtocol):
 
         if self.owner.name in [reservation.initiator, reservation.responder]:
             counter = reservation.memory_size
-        else:  # e.g., entanglement swapping nodes needs twice amount of memory
+        else:  # e.g., entanglement swapping nodes need twice the amount of memory
             counter = reservation.memory_size * 2
         timecards = []
         for timecard in self.timecards:
@@ -238,7 +239,7 @@ class QCap:
     """Quantum Capacity. Class to collect local information for the reservation protocol
 
     Attributes:
-        node (str): name of current node.
+        node (str): name of the current node.
     """
 
     def __init__(self, node: str):
