@@ -14,7 +14,6 @@ from ..message import Message
 from ..utils import log
 
 class ForwardingMessageType(Enum):
-    INBOUND = auto()
     OUTBOUND = auto()
 
 

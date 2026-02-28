@@ -227,7 +227,7 @@ class DistributedNetworkManager(NetworkManager):
         super().push(dst, outbound_msg)
 
     def pop(self, msg: RSVPMessage):
-        """Pop a message. This is an INBOUND message coming from its internal RSVP protocol.
+        """Pop a message. This is a message coming from its internal RSVP protocol.
         
         Args:
             msg (RSVPMessage): message received from another node.
