@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.8.5] - 2026-2-16
+## [0.8.5] - 2026-2-27
 ### Added
 - `NetworkManager` ABC with a factory pattern for selection and future implementation of new network managers.
 - File `action_condition_set.py` is added. This contains the action, condition, and request functions for entanglement generation, swapping, and purification.
@@ -31,9 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minor refactors in `router_net_topo.py` and `network_manager.py`.
 - Memory.cutoff_ratio is allowed to be greater than 1.
 - Suppress linear algebra-related warning (doing `sqrtm` on singular matrix)
-- Suppress linear algebra related warning (doing `sqrtm` on singular matrix)
 - Tutorial Chapter 5 on Network Manager. A new figure for network manager is introduced.
 - Read the Docs is updated. The remote Read the Docs can now pre-build the .rst files
+- Attribute `protocol_type` is moved from `EntanglementProtocol` to `protocol`
 
 ### Removed
 - Temporarily disabled setting the `es_succ_prob` and `es_deg_rate` from the RSVP protocol.
