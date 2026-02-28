@@ -32,8 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Memory.cutoff_ratio is allowed to be greater than 1.
 - Suppress linear algebra-related warning (doing `sqrtm` on singular matrix)
 - Tutorial Chapter 5 on Network Manager. A new figure for network manager is introduced.
-- Read the Docs is updated. The remote Read the Docs can now pre-build the .rst files
-- Attribute `protocol_type` is moved from `EntanglementProtocol` to `protocol`
+- Read the Docs is updated. The remote Read the Docs can now pre-build the .rst files.
+- Attribute `protocol_type` is moved from class `EntanglementProtocol` to class `Protocol`.
 
 ### Removed
 - Temporarily disabled setting the `es_succ_prob` and `es_deg_rate` from the RSVP protocol.
