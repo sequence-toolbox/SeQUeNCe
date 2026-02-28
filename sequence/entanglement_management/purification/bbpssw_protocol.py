@@ -189,14 +189,12 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         # Validation before starting the protocol
         kept_entangled_memo = self.kept_memo.entangled_memory['node_id']
         meas_entangled_memo = self.meas_memo.entangled_memory['node_id']
-        assert self.is_ready(), \
-            "Protocol is not ready to start. Remote node not set, please use set_others() function to set it."
-        assert kept_entangled_memo == meas_entangled_memo, \
-            f'Mismatch of entangled memories {kept_entangled_memo} and {meas_entangled_memo} on node {self.owner.name}.'
-        assert self.kept_memo.fidelity > 0.5, \
-            f'Fidelity of kept memory is too low: {self.kept_memo.fidelity}.'
-        assert self.meas_memo.fidelity > 0.5, \
-            f'Fidelity of measurement memory is too low: {self.meas_memo.fidelity}.'
+        assert self.is_ready(), (
+            "Protocol is not ready to start. Remote node not set, please use set_others() function to set it.")
+        assert kept_entangled_memo == meas_entangled_memo, (
+            f'Mismatch of entangled memories {kept_entangled_memo} and {meas_entangled_memo} on node {self.owner.name}.')
+        assert self.kept_memo.fidelity > 0.5, f'Fidelity of kept memory is too low: {self.kept_memo.fidelity}.'
+        assert self.meas_memo.fidelity > 0.5, f'Fidelity of measurement memory is too low: {self.meas_memo.fidelity}.'
 
     @abstractmethod
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:
@@ -221,8 +219,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         Side Effects:
             Will call `update_resource_manager` method.
         """
-        assert memory in self.memories, \
-            f'Memory {memory.name} is not part of this protocol instance.'
+        assert memory in self.memories, f'Memory {memory.name} is not part of this protocol instance.'
 
         if self.meas_memo is None:
             self.update_resource_manager(memory, 'RAW')

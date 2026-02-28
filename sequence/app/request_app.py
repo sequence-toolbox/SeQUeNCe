@@ -84,6 +84,17 @@ class RequestApp:
             self.schedule_reservation(reservation)
             log.logger.info(f"Successful reservation of resources for request app on node {self.node.name}")
 
+    def get_other_reservation(self, reservation: Reservation) -> None:
+        """Method to add the approved reservation that is requested by other nodes. The responder will call this method
+
+        Args:
+            reservation (Reservation): reservation that uses the node of an application as the responder
+
+        Side Effects:
+            Will add calls to `add_memo_reservation_map` and `remove_memo_reservation_map` methods.
+        """
+        self.schedule_reservation(reservation)
+
     def add_memo_reservation_map(self, index: int, reservation: Reservation) -> None:
         """Maps memory index to the corresponding reservation.
 
@@ -132,23 +143,18 @@ class RequestApp:
     def get_throughput(self) -> float:
         return self.memory_counter / (self.end_t - self.start_t) * 1e12
 
-    def get_other_reservation(self, reservation: Reservation) -> None:
-        """Method to add the approved reservation that is requested by other nodes. The responder will call this method
-
-        Args:
-            reservation (Reservation): reservation that uses the node of application as the responder
-
-        Side Effects:
-            Will add calls to `add_memo_reservation_map` and `remove_memo_reservation_map` methods.
-        """
-        self.schedule_reservation(reservation)
 
     def schedule_reservation(self, reservation: Reservation) -> None:
+        """Calling the `add_memo_reservation_map` and `remove_memo_reservation_map` methods at the 
+           reservation's start_time and end_time for all timecards (memory) involved in the reservation.
+
+        Args:
+            reservation (Reservation): reservation to schedule
+        """
         if reservation.initiator == self.node.name:
             self.path = reservation.path
 
-        reservation_protocol = self.node.network_manager.protocol_stack[1]
-        for card in reservation_protocol.timecards:
+        for card in self.node.network_manager.get_timecards():
             if reservation in card.reservations:
                 process = Process(self, "add_memo_reservation_map", [card.memory_index, reservation])
                 event = Event(reservation.start_time, process)

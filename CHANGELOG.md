@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.5] - 2026-2-27
+### Added
+- `NetworkManager` ABC with a factory pattern for selection and future implementation of new network managers.
+- File `action_condition_set.py` is added. This contains the action, condition, and request functions for entanglement generation, swapping, and purification.
+- Class `DistributedRoutingProtocol` is added, among many other supporting classes in `routing_distributed.py`. This module does distributed entanglement routing.
+- Class `NetworkManager` has two new attributes: `forwarding_table` and `routing_protocol`.
+- Add a cutoff flag to memory to allow disable the expiration of memories.
+- Add a template in config json for network manager to select routing protocols (distributed vs. static)
+- Add seven new unit tests to cover the newly added `routing_distributed` module
+- Added `generate_reference_rst.py` to generate the .rst files for the Read the Doc.
+
+### Changed
+- `RSVPProtocol` is now decoupled from the `DistributedNetworkManager`.
+- Moved `MemoryTimecard` to `memory_timecard.py` and are instantiated by the `NetworkManager`
+- Moved `ResourceReservationProtocol` to `RSVPProtocol` in `rsvp.py`
+- NetworkManager is now `DistributedNetworkManager`
+- Extend and refactor the tests in `test_reservation.py`
+- Minor refactors pertaining to typing errors in `memory.py`, `resource_manager.py`, `rule_manager.py`, `network_manager.py` and `reservation.py`
+- The `create_rules()` and `load_rules()` functions of the `ResourceReservationProtocol` were consolidated and moved to the `ResourceManager` `generate_load_rules()`
+- The `purification_mode` class attribute is now part of a `Reservation`, and is contained within the message.
+- Fixing typing issues with `ResourceManagment`, `NetworkManager`, `ResourceReservationProtocol`, and related functions throughout the codebase.
+- Update the LICENSE.md copyright year
+- The previous `StaticRoutingProtocol` class is split into two classes: `StaticRoutingProtocol` and `ForwardingProtocol`. This can be viewed as the separation of control-plane and the data plane for the entanglement routing module. The control plane does the routing, the data plane does the forwarding. The Routing Protocols write to the `forwarding_table`, while the Forwarding Protocol reads from the `forwarding_table`.
+- Minor refactors in `router_net_topo.py` and `network_manager.py`.
+- Memory.cutoff_ratio is allowed to be greater than 1.
+- Suppress linear algebra-related warning (doing `sqrtm` on singular matrix)
+- Tutorial Chapter 5 on Network Manager. A new figure for network manager is introduced.
+- Read the Docs is updated. The remote Read the Docs can now pre-build the .rst files.
+- Attribute `protocol_type` is moved from class `EntanglementProtocol` to class `Protocol`.
+
+### Removed
+- Temporarily disabled setting the `es_succ_prob` and `es_deg_rate` from the RSVP protocol.
+- `routing.py` module is removed, replaced by `routing_distributed.py`, `routing_static.py`, and `forwarding.py`.
+
 
 ## [0.8.4] - 2025-12-14
 ### Fixed

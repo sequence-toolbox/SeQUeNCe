@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from math import sqrt
-from typing import TYPE_CHECKING, List, Dict, Type, Any
+from typing import TYPE_CHECKING, Any
 
 from .generation_message import EntanglementGenerationMessage, GenerationMsgType
 from ...resource_management.memory_manager import MemoryInfo
@@ -30,7 +30,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
        This class provides a framework for implementing entanglement generation protocols
     
     Class Attributes:
-        _registry (dict[str, Type['EntanglementGenerationA']]): A registry mapping protocol names to their corresponding classes.
+        _registry (dict[str, type['EntanglementGenerationA']]): A registry mapping protocol names to their corresponding classes.
         _global_type (str): The globally set protocol type used when creating new instances. Defaults to BARRET_KOK, other options: SINGLE_HERALDED
 
     Instance Attributes:
@@ -39,14 +39,14 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         remote_node_name (str): The name of the remote node involved in the protocol.
         remote_protocol_name (str): The name of the remote protocol instance paired to this protocol.
         memory (Memory): The memory managed by this protocol.
-        memories (List[Memory]): A list containing the single memory managed by this protocol.
+        memories (list[Memory]): A list containing the single memory managed by this protocol.
         remote_memo_id (str): The identifier (name) of the remote memory used in the protocol.
         qc_delay (int): The quantum channel delay to the middle node (in ps).
         expected_time (int): expected time for middle BSM node to receive the photon (in ps).
         fidelity (float): The fidelity of the entangled state produced by the protocol.
         ent_round (int): The current round of entanglement generation (total two rounds in Barrett-Kok).
-        bsm_res (List[int]): The result of the Bell State Measurement (BSM), initialized to [-1, -1].
-        scheduled_events (List[Event]): A list of scheduled events for the protocol.
+        bsm_res (list[int]): The result of the Bell State Measurement (BSM), initialized to [-1, -1].
+        scheduled_events (list[Event]): A list of scheduled events for the protocol.
         primary (bool): Indicates if this node is the primary node in the protocol (based on lexicographical order of node names).
         _qstate_key (int): The key of the quantum states associated with the memory used in the protocol.
     """
@@ -121,8 +121,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         return list(cls._registry.keys())
 
     def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
-        assert self.remote_protocol_name == '', \
-            "Remote protocol name has been set before, cannot set again."
+        assert self.remote_protocol_name == '', "Remote protocol name has been set before, cannot set again."
 
         self.remote_protocol_name = protocol
         self.remote_memo_id = memories[0]
@@ -169,8 +168,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         return self.remote_protocol_name != ''
 
     def memory_expire(self, memory: "Memory") -> None:
-        assert memory == self.memory, \
-            "Memory to expire does not match the protocol's memory"
+        assert memory == self.memory, "Memory to expire does not match the protocol's memory"
         self.update_resource_manager(memory, MemoryInfo.RAW)
         for event in self.scheduled_events:
             if event.time >= self.owner.timeline.now():

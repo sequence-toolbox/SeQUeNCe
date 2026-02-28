@@ -14,7 +14,7 @@ def add_default_args(parser):
     Args:
         parser (argparse.ArgumentParser)
 
-    Return:
+    Returns:
         argparse.ArgumentParser
     """
     parser.add_argument('memo_size', type=int, help='number of communication memories per node')

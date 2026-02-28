@@ -18,6 +18,7 @@ class Protocol(ABC):
     Attributes:
         own (Node): node protocol is attached to.
         name (str): label for protocol instance.
+        protocol_type (str): type of protocol instance (e.g. 'single_heralded').
     """
 
     def __init__(self, owner: "Node", name: str):
@@ -30,6 +31,7 @@ class Protocol(ABC):
 
         self.owner = owner
         self.name = name
+        self.protocol_type = None
 
     @abstractmethod
     def received_message(self, src: str, msg: "Message"):
@@ -66,13 +68,13 @@ class StackProtocol(Protocol):
         self.lower_protocols = []
 
     @abstractmethod
-    def push(self, **kwargs):
+    def push(self, *args, **kwargs):
         """Method to receive information from protocols higher on stack (abstract)."""
 
         pass
 
     @abstractmethod
-    def pop(self, **kwargs):
+    def pop(self, *args, **kwargs):
         """Method to receive information from protocols lower on stack (abstract)."""
 
         pass

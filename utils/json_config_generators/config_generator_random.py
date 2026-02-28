@@ -31,7 +31,7 @@ from sequence.constants import MILLISECOND
 def create_random_waxman(area_length: int, number_nodes: int, edge_density: float) -> tuple[list, list]:
     """create a random network using waxman.
 
-    Return:
+    Returns:
         a list of vertex in (x, y), where x, y are real number geographic coordinates
         a list of edges in (u, v), where u, v are integer vertex index
     """

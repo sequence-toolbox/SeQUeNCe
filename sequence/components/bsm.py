@@ -166,9 +166,9 @@ class BSM(Entity):
             photon (Photon): photon to measure.
         """
 
-        assert photon.encoding_type["name"] == self.encoding, \
-            "BSM expecting photon with encoding '{}' received photon with encoding '{}'".format(
-                self.encoding, photon.encoding_type["name"])
+        assert photon.encoding_type["name"] == self.encoding, (
+            f"BSM expecting photon with encoding '{self.encoding}' "
+            f"received photon with encoding '{photon.encoding_type['name']}'")
 
         # check if photon arrived later than current photon
         if self.photon_arrival_time < self.timeline.now():
@@ -678,8 +678,8 @@ class SingleHeraldedBSM(BSM):
                 log.logger.debug(f'{self.name}: photonic BSM failed')
             else:
                 p0, p1 = self.photons
-                # if both memory successfully emit the photon in this round (consider memory emission inefficiency)
                 if self.get_generator().random() > p0.loss and self.get_generator().random() > p1.loss:
+                    # if both photons successfully arrive (not lost in memory or optical fiber) and the BSM is successful
                     for idx, photon in enumerate(self.photons):
                         detector = self.detectors[idx]
                         detector.get(photon)

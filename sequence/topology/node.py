@@ -4,7 +4,6 @@ This module provides definitions for various types of quantum network nodes.
 All node types inherit from the base Node type, which inherits from Entity.
 Node types can be used to collect all the necessary hardware and software for a network usage scenario.
 """
-
 from math import inf
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -31,7 +30,7 @@ from ..qkd.BB84 import BB84
 from ..qkd.cascade import Cascade
 from ..entanglement_management.generation import EntanglementGenerationB
 from ..resource_management.resource_manager import ResourceManager
-from ..network_management.network_manager import NewNetworkManager, NetworkManager
+from ..network_management.network_manager import NetworkManager
 from ..utils.encoding import *
 from ..utils import log
 
@@ -304,9 +303,10 @@ class QuantumRouter(Node):
         network_manager (NetworkManager): network management module.
         map_to_middle_node (dict[str, str]): mapping of router names to intermediate bsm node names.
         app (any): application in use on node.
+        down (bool): whether the node is down (not operational).
     """
 
-    def __init__(self, name: str, tl: "Timeline", memo_size: int = 50, seed: int = None, component_templates: dict = {}, gate_fid: float = 1, meas_fid: float = 1):
+    def __init__(self, name: str, tl: "Timeline", memo_size: int = 50, seed: int | None = None, component_templates: dict = {}, gate_fid: float = 1, meas_fid: float = 1):
         """Constructor for quantum router class.
 
         Args:
@@ -314,7 +314,7 @@ class QuantumRouter(Node):
             tl (Timeline): timeline for simulation.
             memo_size (int): number of memories to add in the array (default 50).
             seed (int): the random seed for the random number generator
-            compoment_templates (dict): parameters for the quantum router
+            component_templates (dict): parameters for the quantum router
             gate_fid (float): fidelity of multi-qubit gates (usually CNOT) that can be performed on the node;
                 Default value is 1, meaning ideal gate.
             meas_fid (float): fidelity of single-qubit measurements (usually Z measurement) that can be performed on the node;
@@ -322,19 +322,19 @@ class QuantumRouter(Node):
         """
 
         super().__init__(name, tl, seed, gate_fid, meas_fid)
-        # create memory array object with optional args
-        self.memo_arr_name = f"{name}.MemoryArray"
+        self.memo_arr_name = f"{name}.MemoryArray" # create the memory array object with optional args
         memo_arr_args = component_templates.get("MemoryArray", {})
         memory_array = MemoryArray(self.memo_arr_name, tl, num_memories=memo_size, **memo_arr_args)
         self.add_component(memory_array)
         memory_array.add_receiver(self)
 
         # setup managers
-        self.resource_manager = None
-        self.network_manager = None
-        self.init_managers(self.memo_arr_name)
+        self.resource_manager: ResourceManager = ResourceManager(self, self.memo_arr_name)
+        self.network_manager: NetworkManager = NetworkManager.create(self, self.memo_arr_name, component_templates=component_templates)
+
         self.map_to_middle_node = {}
         self.app = None
+        self.down = False
 
     def receive_message(self, src: str, msg: "Message") -> None:
         """Determine what to do when a message is received, based on the msg.receiver.
@@ -343,8 +343,11 @@ class QuantumRouter(Node):
             src (str): name of node that sent the message.
             msg (Message): the received message.
         """
+        if self.down:
+            log.logger.info(f"{self.name} is DOWN. Dropping message {msg} from {src}")
+            return
 
-        log.logger.info(f"{self.name} receive message {msg} from {src}")
+        log.logger.info(f"{self.name}: receive message {msg} from {src}")
         if msg.receiver == "network_manager":
             self.network_manager.received_message(src, msg)
         elif msg.receiver == "resource_manager":
@@ -360,31 +363,37 @@ class QuantumRouter(Node):
                         protocol.received_message(src, msg)
                         break
 
-    def init_managers(self, memo_arr_name: str):
-        """Initialize resource manager and network manager.
+    def send_message(self, dst: str, msg: "Message", priority=inf) -> None:
+        """Method to send a classical message.
 
         Args:
-            memo_arr_name (str): the name of the memory array.
+            dst (str): name of the destination node to get the message.
+            msg (Message): message to transmit.
+            priority (int): priority for the transmitted message (default inf).
         """
-        resource_manager = ResourceManager(self, memo_arr_name)
-        network_manager = NewNetworkManager(self, memo_arr_name)
-        self.set_resource_manager(resource_manager)
-        self.set_network_manager(network_manager)
+        if self.down:
+            log.logger.info(f"{self.name} is DOWN. Dropping message {msg} to {dst}")
+            return
+        
+        log.logger.info(f"{self.name}: send message {msg} to {dst}")
+        if priority == inf:
+            priority = self.timeline.schedule_counter
+        self.cchannels[dst].transmit(msg, self, priority)
 
-    def set_resource_manager(self, resource_manager: ResourceManager):
-        """Assigns the resource manager."""
-        self.resource_manager = resource_manager
+    def set_down(self, down: bool):
+        """Method to set the node status.
 
-    def set_network_manager(self, network_manager: NetworkManager):
-        """Assigns the network manager."""
-        self.network_manager = network_manager
+        Args:
+            down (bool): whether the node is down (not operational).
+        """
+        log.logger.info(f"{self.name} is {'DOWN' if down else 'UP'}")
+        self.down = down
 
     def init(self):
         """Method to initialize quantum router node.
-
-        Inherit parent function.
         """
-        super().init()
+        if self.network_manager.routing_protocol is not None:
+            self.network_manager.routing_protocol.init()
 
     def add_bsm_node(self, bsm_name: str, router_name: str):
         """Method to record connected BSM nodes

@@ -61,8 +61,8 @@ class Interferometer(Entity):
             May call get method of one attached receiver from the receivers attribute.
         """
 
-        assert photon.encoding_type["name"] == "time_bin", \
-            "Invalid photon encoding {} received by interferometer".format(photon.encoding_type["name"])
+        assert photon.encoding_type["name"] == "time_bin", (
+            "Invalid photon encoding {} received by interferometer".format(photon.encoding_type["name"]))
         if photon.use_qm:
             raise NotImplementedError("Interferometer usage not configured for quantum manager.")
 
