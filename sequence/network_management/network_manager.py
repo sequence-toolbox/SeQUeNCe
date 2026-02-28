@@ -29,7 +29,6 @@ from .rsvp import RSVPMessage, RSVPMsgType, RSVPProtocol
 
 class NetworkManagerMsgType(Enum):
     OUTBOUND = auto()
-    INBOUND = auto()
 
 class NetworkManagerMessage(Message):
     """Message used by the network manager.
