@@ -166,9 +166,9 @@ class BSM(Entity):
             photon (Photon): photon to measure.
         """
 
-        assert photon.encoding_type["name"] == self.encoding, \
-            "BSM expecting photon with encoding '{}' received photon with encoding '{}'".format(
-                self.encoding, photon.encoding_type["name"])
+        assert photon.encoding_type["name"] == self.encoding, (
+            f"BSM expecting photon with encoding '{self.encoding}' "
+            f"received photon with encoding '{photon.encoding_type['name']}'")
 
         # check if photon arrived later than current photon
         if self.photon_arrival_time < self.timeline.now():

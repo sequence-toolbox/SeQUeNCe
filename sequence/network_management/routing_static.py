@@ -35,6 +35,7 @@ class StaticRoutingProtocol(Protocol):
             name (str): name of protocol instance.
         """
         super().__init__(owner, name)
+        self.protocol_type = 'routing_static'
     
     @property
     def forwarding_table(self) -> dict[str, str]:

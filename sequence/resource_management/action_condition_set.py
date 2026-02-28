@@ -65,34 +65,6 @@ TempNode = cast("Node", cast(object, None))
 TempMemory = cast("Memory", cast(object, None))
 
 
-def eg_rule_action_request(memories_info: list[MemoryInfo], args: Arguments) -> ActionReturn:
-    """Action function used to create an entanglement generation protocol instance and send a Resource Manager request.
-
-    Rules with this action are created on all nodes other than the responder, i.e., where args['index'] < len(args['path']) - 1.
-    The responder always awaits a request using `eg_rule_action_await`.
-
-    Args:
-        memories_info: the list of memory info that satisfy the condition function
-        args: the arguments defined in the rule.
-            Should contain "mid" (the name of the corresponding BSM node), "path",
-            and "index" (the index of the current node in the path).
-
-    Returns:
-        ActionReturn: the protocol to be executed, the destination of the request, the request function,
-            and the arguments for request function
-    """
-    memories: list[Memory] = [info.memory for info in memories_info]
-    memory: Memory = memories[0]
-    mid = args["mid"]
-    path = args["path"]
-    index = args["index"]
-    other = path[index - 1]
-    protocol = EntanglementGenerationA.create(owner=TempNode, name=f"EGA.{memory.name}",
-                                              middle=mid, other=other, memory=memory)
-    req_args = {"name": args["name"], "reservation": args["reservation"]}
-    return protocol, [other], [eg_match_func], [req_args]
-
-
 # Entanglement Generation Action-Condition-Match
 def eg_rule_action_await(memories_info: list[MemoryInfo], args: Arguments) -> ActionReturn:
     """Action function used to create an entanglement generation protocol instance and await a Resource Manager request.
@@ -113,10 +85,35 @@ def eg_rule_action_await(memories_info: list[MemoryInfo], args: Arguments) -> Ac
     mid = args["mid"]
     path = args["path"]
     index = args["index"]
-    other = path[index + 1]
     protocol = EntanglementGenerationA.create(owner=TempNode, name=f"EGA.{memory.name}",
-                                              middle=mid, other=other, memory=memory)
+                                              middle=mid, other=path[index - 1], memory=memory)
     return protocol, [None], [None], [None]
+
+
+def eg_rule_action_request(memories_info: list[MemoryInfo], args: Arguments) -> ActionReturn:
+    """Action function used to create an entanglement generation protocol instance and send a Resource Manager request.
+
+    Rules with this action are created on all nodes other than the responder, i.e., where args['index'] < len(args['path']) - 1.
+    The responder always awaits a request using `eg_rule_action_await`.
+    
+    Args:
+        memories_info: the list of memory info that satisfy the condition function
+        args: the arguments defined in the rule.
+            Should contain "mid" (the name of the corresponding BSM node), "path",
+            and "index" (the index of the current node in the path).
+
+    Returns:
+        ActionReturn: the protocol to be executed, the destination of the request, the request function,
+            and the arguments for request function
+    """
+    mid = args["mid"]
+    path = args["path"]
+    index = args["index"]
+    memories = [info.memory for info in memories_info]
+    memory = memories[0]
+    protocol = EntanglementGenerationA.create(TempNode, "EGA." + memory.name, mid, path[index + 1], memory)
+    req_args = {"name": args["name"], "reservation": args["reservation"]}
+    return protocol, [path[index + 1]], [eg_match_func], [req_args]
 
 
 def eg_rule_condition(memory_info: MemoryInfo, _manager: MemoryManager, args: Arguments) -> list[MemoryInfo]:

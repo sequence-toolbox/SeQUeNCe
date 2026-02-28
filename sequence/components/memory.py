@@ -68,8 +68,8 @@ class MemoryArray(Entity):
         self.memory_name_to_index = {}
 
         if decoherence_errors is not None:
-            assert QuantumManager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, \
-                "Decoherence errors can only be set when formalism is Bell Diagonal"
+            assert QuantumManager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, (
+                "Decoherence errors can only be set when formalism is Bell Diagonal")
 
         # Set the default pauli errors if BDS formalism
         if QuantumManager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM and decoherence_errors is None:
@@ -226,8 +226,8 @@ class Memory(Entity):
 
         self.decoherence_errors = decoherence_errors
         if self.decoherence_errors is not None:
-                assert len(self.decoherence_errors) == 3 and abs(sum(self.decoherence_errors) - 1) < EPSILON, \
-                "Decoherence errors refer to probabilities for each Pauli error to happen if an error happens, thus should be normalized."
+            error_msg = "Decoherence errors refer to probabilities for each Pauli error to happen if an error happens, thus should be normalized."
+            assert len(self.decoherence_errors) == 3 and abs(sum(self.decoherence_errors) - 1) < EPSILON, error_msg
         self.cutoff_flag = cutoff_flag
         self.cutoff_ratio = cutoff_ratio
         assert 0 < self.cutoff_ratio, "Ratio of cutoff time and coherence time should be greater than 0."
@@ -386,13 +386,13 @@ class Memory(Entity):
             time = (self.timeline.now() - self.last_update_time) * 1e-12  # duration of memory idling (in s)
             if time > 0 and self.last_update_time > 0:  # time > 0 means time has progressed, self.last_update_time > 0 means the memory has not been reset
 
-                x_rate, y_rate, z_rate = self.decoherence_rate * self.decoherence_errors[0], \
-                                        self.decoherence_rate * self.decoherence_errors[1], \
-                                        self.decoherence_rate * self.decoherence_errors[2]
-                p_I, p_X, p_Y, p_Z = _p_id(x_rate, y_rate, z_rate, time), \
-                                    _p_xerr(x_rate, y_rate, z_rate, time), \
-                                    _p_yerr(x_rate, y_rate, z_rate, time), \
-                                    _p_zerr(x_rate, y_rate, z_rate, time)
+                x_rate = self.decoherence_rate * self.decoherence_errors[0]
+                y_rate = self.decoherence_rate * self.decoherence_errors[1]
+                z_rate = self.decoherence_rate * self.decoherence_errors[2]
+                p_I = _p_id(x_rate, y_rate, z_rate, time)
+                p_X = _p_xerr(x_rate, y_rate, z_rate, time)
+                p_Y = _p_yerr(x_rate, y_rate, z_rate, time)
+                p_Z = _p_zerr(x_rate, y_rate, z_rate, time)
 
                 state_now = self.timeline.quantum_manager.states[self.qstate_key].state  # current diagonal elements
                 transform_mtx = array([[p_I, p_Z, p_X, p_Y],

@@ -518,8 +518,8 @@ class QSDetectorFockInterference(QSDetector):
         arrival_time = self.timeline.now()
         self.arrival_times[input_port].append(arrival_time)
         # record in temporary photon list
-        assert not self.temporary_photon_info[input_port], \
-            "At most 1 Photon instance should arrive at an input port at a time."
+        assert not self.temporary_photon_info[input_port], (
+            "At most 1 Photon instance should arrive at an input port at a time.")
         self.temporary_photon_info[input_port]["photon"] = photon
         self.temporary_photon_info[input_port]["time"] = arrival_time
 

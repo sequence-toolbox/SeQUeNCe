@@ -7,7 +7,7 @@ from _thread import start_new_thread
 from datetime import timedelta
 from sys import stdout
 from time import sleep, time_ns
-from typing import TYPE_CHECKING, Optional, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from numpy import random
 

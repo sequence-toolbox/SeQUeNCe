@@ -95,8 +95,7 @@ class BBPSSW_BDS(BBPSSWProtocol):
         # Also determine BDS density matrix elements of kept entangled pair conditioned on successful purification,
         # immediately after start of purification
         p_success, new_bds = self.purification_res()
-        assert 1. >= p_success >= 0.5, \
-            'Entanglement purification success probability should be higher than 1/2.'
+        assert 1. >= p_success >= 0.5, 'Entanglement purification success probability should be higher than 1/2.'
         p_1 = (1 + np.sqrt(2 * p_success - 1)) / 2
         if self.owner.get_generator().random() <= p_1:
             self.meas_res = 1
@@ -156,8 +155,8 @@ class BBPSSW_BDS(BBPSSWProtocol):
             Tuple[float, np.array]: success probability and BDS density matrix elements of kept entangled pair.
         """
 
-        assert self.owner.timeline.quantum_manager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, \
-            "Input states should be Bell diagonal states."
+        assert self.owner.timeline.quantum_manager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, (
+            "Input states should be Bell diagonal states.")
 
         kept_input_state = self.owner.timeline.quantum_manager.get(self.kept_memo.qstate_key)
         meas_input_state = self.owner.timeline.quantum_manager.get(self.meas_memo.qstate_key)
