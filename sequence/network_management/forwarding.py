@@ -2,15 +2,19 @@
 
 This module defines the `ForwardingProtocol` and `ForwardingMessage` classes.
 """
-
+from __future__ import annotations
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from ..topology.node import Node
 
-from enum import Enum
+if TYPE_CHECKING:
+    from ..topology.node import QuantumRouter
+
+from enum import Enum, auto
 from ..protocol import StackProtocol
 from ..message import Message
 from ..utils import log
+
+class ForwardingMessageType(Enum):
+    OUTBOUND = auto()
 
 
 class ForwardingMessage(Message):
@@ -38,7 +42,7 @@ class ForwardingProtocol(StackProtocol):
         name (str): label for protocol instance.
     """
 
-    def __init__(self, owner: "Node", name: str):
+    def __init__(self, owner: QuantumRouter, name: str):
         """Constructor for forwarding protocol.
 
         Args:
@@ -46,22 +50,23 @@ class ForwardingProtocol(StackProtocol):
             name (str): name of protocol instance.
         """
         super().__init__(owner, name)
+        self.owner: QuantumRouter = owner
 
     @property
     def forwarding_table(self) -> dict[str, str]:
         """Returns the forwarding table."""
-        return self.owner.network_manager.get_forwarding_table()
+        return self.owner.network_manager.get_forwarding_table()  # ty:ignore[unresolved-attribute]
 
     def received_message(self, src: str, msg: Message):
-        """Method to directly receive messages from node (should not be used)."""
+        """Method to directly receive messages from a node (should not be used)."""
 
         raise Exception("Forwarding protocol should not call this function")
 
     def init(self):
         pass
 
-    def push(self, dst: str, msg: Message, next_hop: str = None):
-        """Method to receive message from upper protocols.
+    def push(self, dst: str, msg: Message, next_hop: str | None = None):
+        """Method to receive a message from upper protocols.
 
         Routing packages the message and forwards it to the next node in the optimal path (determined by the forwarding table).
 
@@ -75,9 +80,9 @@ class ForwardingProtocol(StackProtocol):
         """
         assert dst != self.owner.name
         forwarding_table = self.forwarding_table
-        new_msg = ForwardingMessage(Enum, self.name, msg)
+        new_msg = ForwardingMessage(ForwardingMessageType.OUTBOUND, self.name, msg)
         if dst:                                     # if dst is not None, use the forwarding table
-            next_hop = forwarding_table.get(dst, None)
+            next_hop: str | None = forwarding_table.get(dst, None)
             if next_hop:
                 self._push(dst=next_hop, msg=new_msg)
             else:
