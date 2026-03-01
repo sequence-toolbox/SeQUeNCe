@@ -38,6 +38,7 @@ from ..utils import log
 from .rule_manager import RuleManager
 from .memory_manager import MemoryManager, MemoryInfo
 from ..network_management.reservation import Reservation
+from ..network_management.memory_timecard import MemoryTimeCard
 
 
 RequestConditionFunc = Callable[[list["EntanglementProtocol"]], "EntanglementProtocol"]
@@ -144,8 +145,15 @@ class ResourceManager:
         self.waiting_protocols = [] # Protocols that are waiting request from remote resource
         self.memory_to_protocol_map = {}
 
+    def generate_load_rules(self, path: list[str], reservation: Reservation, timecards: list[MemoryTimeCard], memory_array_name: str):
+        """Generate and load rules for a given reservation.
 
-    def generate_load_rules(self, path, reservation, timecards, memory_array_name):
+        Args:
+            path (list[str]): path from the reservation's initiator to responder.
+            reservation (Reservation): the request's reservation
+            timecards (list[MemoryTimeCard]): timecards involved in the reservation at this node.
+            memory_array_name (str): name of memory array component to use for rule conditions and actions at this node.
+        """
         rules = []
         memory_indices = []
         for card in timecards:
@@ -159,8 +167,8 @@ class ResourceManager:
         if index > 0:
             condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
             action_args = {"mid": self.owner.map_to_middle_node[path[index - 1]],
-                           "path": path, "index": index, "name": self.owner.name, "reservation": reservation}
-            rule = Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
+                           "path": path, "index": index}
+            rule = Rule(10, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
 
         if index < len(path) - 1:
@@ -171,7 +179,7 @@ class ResourceManager:
 
             action_args = {"mid": self.owner.map_to_middle_node[path[index + 1]],
                            "path": path, "index": index, "name": self.owner.name, "reservation": reservation}
-            rule = Rule(10, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
+            rule = Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
 
         # 2. create rules for entanglement purification
