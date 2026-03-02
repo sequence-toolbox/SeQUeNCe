@@ -22,6 +22,7 @@ from .const_topo import (
     NAME, SEED, SRC, DST, TEMPLATE, TYPE,
     ORCHESTRATOR, CLIENT,
     QUANTUM_ROUTER, DQC_NODE,
+    ROLE_BSM_ENDPOINT, ROLE_BSM_MIDPOINT, ROLE_ROUTABLE_ENDPOINT,
     LOCAL_MEMORIES, CLIENT_NUMBER, MEASUREMENT_BASES,
     MEM_FIDELITY_ORCH, MEM_FREQUENCY_ORCH, MEM_EFFICIENCY_ORCH,
     MEM_COHERENCE_ORCH, MEM_WAVELENGTH_ORCH,
@@ -39,28 +40,28 @@ class NetworkImpl(ABC):
     (BSM-based nets, QLAN, etc.). Topology delegates its variable pipeline steps
     here via composition rather than inheritance.
 
-    All methods are no-op defaults except _create_node which every impl must define.
+    All methods are no-op defaults except _build_node which every impl must define.
     Concrete implementations live in network_impls.py.
     """
 
-    def _configure_parameters(self, config: dict, templates: dict) -> None: pass
+    def _configure_family(self, config: dict, templates: dict) -> None: pass
 
-    def _add_protocols(self) -> None: pass
+    def _attach_protocols(self) -> None: pass
 
-    def _map_bsm_routers(self, config: dict, bsm_to_router_map: dict) -> None: pass
+    def _prepare_build_state(self, config: dict, bsm_to_router_map: dict) -> None: pass
 
-    def _add_bsm_node_to_router(self, bsm_to_router_map: dict, tl) -> None: pass
+    def _wire_post_nodes(self, bsm_to_router_map: dict, tl) -> None: pass
 
-    def _handle_qconnection(self, q_connect: dict, cc_delay: float, config: dict) -> None: pass
+    def _expand_qconnection(self, q_connect: dict, cc_delay: float, config: dict) -> None: pass
 
     def _generate_forwarding_table(self, config: dict, nodes: dict, qchannels: list) -> None: pass
 
-    def _ordered_node_dicts(self, node_list: list) -> list:
+    def _order_nodes(self, node_list: list) -> list:
         return node_list
 
     @abstractmethod
-    def _create_node(self, node: dict, node_type: str, template: dict,
-                     tl, nodes: dict, bsm_to_router_map: dict) -> None:
+    def _build_node(self, node: dict, node_type: str, template: dict,
+                    tl, nodes: dict, bsm_to_router_map: dict) -> None:
         """Construct node, call set_seed, append to nodes[node_type].
 
         Args:
@@ -80,10 +81,10 @@ class NoOpNetworkImpl(NetworkImpl):
     Used when the topology does not need BSM/QLAN infrastructure.
     """
 
-    def _create_node(self, node, node_type, template,
-                     tl, nodes, bsm_to_router_map) -> None:
+    def _build_node(self, node, node_type, template,
+                    tl, nodes, bsm_to_router_map) -> None:
         raise NotImplementedError(
-            "NoOpNetworkImpl does not create nodes. "
+            "NoOpNetworkImpl does not build nodes. "
             "The topology must override _add_nodes itself."
         )
 
@@ -96,16 +97,33 @@ class BsmNetworkImpl(NetworkImpl):
     endpoint-to-midpoint wiring, and forwarding table generation.
     """
 
+    @staticmethod
+    def _require_role(node_obj: Node, role: str, node_type: str) -> None:
+        roles = getattr(node_obj, "topology_roles", frozenset())
+        if role not in roles:
+            raise TypeError(
+                f"Node type '{node_type}' does not support required topology role '{role}'"
+            )
 
-    def _map_bsm_routers(self, config: dict, bsm_to_router_map: dict) -> None:
+    @staticmethod
+    def _type_has_role(node_type: str, role: str) -> bool:
+        node_cls = Node._registry.get(node_type)
+        if node_cls is None:
+            return False
+        return role in getattr(node_cls, "topology_roles", frozenset())
+
+    def _prepare_build_state(self, config: dict, bsm_to_router_map: dict) -> None:
+        node_types = {node[NAME]: node[TYPE] for node in config[ALL_NODE]}
         for qc in config[ALL_Q_CHANNEL]:
             src, dst = qc[SRC], qc[DST]
+            if not self._type_has_role(node_types.get(dst, ""), ROLE_BSM_MIDPOINT):
+                continue
             if dst in bsm_to_router_map:
                 bsm_to_router_map[dst].append(src)
             else:
                 bsm_to_router_map[dst] = [src]
 
-    def _add_bsm_node_to_router(self, bsm_to_router_map: dict, tl) -> None:
+    def _wire_post_nodes(self, bsm_to_router_map: dict, tl) -> None:
         for bsm in bsm_to_router_map:
             r0_str, r1_str = bsm_to_router_map[bsm]
             r0 = tl.get_entity_by_name(r0_str)
@@ -115,7 +133,7 @@ class BsmNetworkImpl(NetworkImpl):
             if r1 is not None:
                 r1.add_bsm_node(bsm, r0_str)
 
-    def _handle_qconnection(self, q_connect: dict, cc_delay: float, config: dict) -> None:
+    def _expand_qconnection(self, q_connect: dict, cc_delay: float, config: dict) -> None:
         node1        = q_connect[CONNECT_NODE_1]
         node2        = q_connect[CONNECT_NODE_2]
         attenuation  = q_connect[ATTENUATION]
@@ -153,7 +171,7 @@ class BsmNetworkImpl(NetworkImpl):
     def _generate_forwarding_table(self, config: dict, nodes: dict, qchannels: list) -> None:
         graph = Graph()
         for node in config[ALL_NODE]:
-            if node[TYPE] != BSM_NODE:
+            if not self._type_has_role(node[TYPE], ROLE_BSM_MIDPOINT):
                 graph.add_node(node[NAME])
 
         costs = {}
@@ -167,14 +185,14 @@ class BsmNetworkImpl(NetworkImpl):
         # Routing protocols live on endpoint nodes only - midpoint nodes have no network manager.
         routing_protocol = None
         for node_type, node_list in nodes.items():
-            if node_type != BSM_NODE:
+            if not self._type_has_role(node_type, ROLE_BSM_MIDPOINT):
                 routing_protocol = node_list[0].network_manager.get_routing_protocol()
                 break
 
         if isinstance(routing_protocol, StaticRoutingProtocol):
             graph.add_weighted_edges_from(costs.values())
             for node_type, node_list in nodes.items():
-                if node_type == BSM_NODE:
+                if self._type_has_role(node_type, ROLE_BSM_MIDPOINT):
                     continue
                 for src in node_list:
                     for dst_name in graph.nodes:
@@ -195,7 +213,7 @@ class BsmNetworkImpl(NetworkImpl):
         elif isinstance(routing_protocol, DistributedRoutingProtocol):
             # distributed routing, initialize the link cost and setup the FSM
             for node_type, node_list in nodes.items():
-                if node_type == BSM_NODE:
+                if self._type_has_role(node_type, ROLE_BSM_MIDPOINT):
                     continue
                 for q_router in node_list:
                     routing_protocol: DistributedRoutingProtocol = q_router.network_manager.get_routing_protocol()
@@ -205,10 +223,15 @@ class BsmNetworkImpl(NetworkImpl):
                             cost = cost_info[2]
                             routing_protocol.link_cost[neighbor] = cost
     
-    def _create_node(self, node: dict, node_type: str, template: dict,
-                      tl, nodes: dict, bsm_to_router_map: dict) -> None:
+    def _build_node(self, node: dict, node_type: str, template: dict,
+                    tl, nodes: dict, bsm_to_router_map: dict) -> None:
         others = bsm_to_router_map.get(node[NAME], [])
         node_obj = Node.create(node_type, node[NAME], tl, node, template, others=others)
+        if ROLE_BSM_MIDPOINT in getattr(node_obj, "topology_roles", frozenset()):
+            self._require_role(node_obj, ROLE_BSM_MIDPOINT, node_type)
+        else:
+            self._require_role(node_obj, ROLE_BSM_ENDPOINT, node_type)
+            self._require_role(node_obj, ROLE_ROUTABLE_ENDPOINT, node_type)
         node_obj.set_seed(node[SEED])
         nodes[node_type].append(node_obj)
 
@@ -220,13 +243,13 @@ class QlanNetworkImpl(NetworkImpl):
     node ordering (clients before orchestrator), and node construction.
     """
 
-    def _configure_parameters(self, config: dict, templates: dict) -> None:
+    def _configure_family(self, config: dict, templates: dict) -> None:
         """Detect config format, normalize memory params, and init per-node accumulators.
 
         Supports two formats (legacy flat keys and new template-based) independently
         for orchestrator and client nodes. Writes normalized params into
         self.orch_component_templates / self.client_component_templates as
-        {"MemoryArray": {...}} dicts so _create_node can pass them straight through
+        {"MemoryArray": {...}} dicts so _build_node can pass them straight through
         to node constructors via component_templates.
         """
         # Structural params
@@ -258,16 +281,16 @@ class QlanNetworkImpl(NetworkImpl):
                 "wavelength":     config.get(MEM_WAVELENGTH_CLIENT, 500),
             }}
 
-        # Accumulator lists - populated by _create_node
+        # Accumulator lists - populated by _build_node
         self._remote_memories      = []
         self.orchestrator_nodes    = []
         self.client_nodes          = []
         self.remote_memories_array = []
 
-    def _ordered_node_dicts(self, node_list: list) -> list:
+    def _order_nodes(self, node_list: list) -> list:
         """Sort clients before orchestrators so single-pass construction works.
 
-        By the time _create_node hits an orchestrator, all client Memory objects
+        By the time _build_node hits an orchestrator, all client Memory objects
         already exist in self._remote_memories.
         """
         clients       = [n for n in node_list if n[TYPE] == CLIENT]
@@ -275,15 +298,15 @@ class QlanNetworkImpl(NetworkImpl):
         others        = [n for n in node_list if n[TYPE] not in (CLIENT, ORCHESTRATOR)]
         return others + clients + orchestrators
 
-    def _add_protocols(self) -> None:
+    def _attach_protocols(self) -> None:
         """Wire measurement and correction protocols on all QLAN nodes."""
         for orch in self.orchestrator_nodes:
             orch.resource_manager.create_protocol()
         for client in self.client_nodes:
             client.resource_manager.create_protocol()
 
-    def _create_node(self, node: dict, node_type: str, template: dict,
-                     tl, nodes: dict, bsm_to_router_map: dict) -> None:
+    def _build_node(self, node: dict, node_type: str, template: dict,
+                    tl, nodes: dict, bsm_to_router_map: dict) -> None:
         """Construct QLAN nodes."""
         if node_type == CLIENT:
             node_obj = Node.create(node_type, node[NAME], tl, node, template,
@@ -308,4 +331,3 @@ class QlanNetworkImpl(NetworkImpl):
             node_obj.set_seed(node[SEED])
 
         nodes[node_type].append(node_obj)
-

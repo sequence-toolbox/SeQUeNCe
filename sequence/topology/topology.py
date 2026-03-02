@@ -171,31 +171,31 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
         self._impl = networkimpl
 
         self._get_templates(config)
-        self._configure_parameters(config)
+        self._configure_family(config)
         self._add_qconnections(config)
         self._add_timeline(config)
-        self._impl._map_bsm_routers(config, self.bsm_to_router_map)
+        self._impl._prepare_build_state(config, self.bsm_to_router_map)
         self._add_nodes(config)
-        self._impl._add_bsm_node_to_router(self.bsm_to_router_map, self.tl)
+        self._impl._wire_post_nodes(self.bsm_to_router_map, self.tl)
         self._add_qchannels(config)
         self._add_cchannels(config)
         self._add_cconnections(config)
         self._impl._generate_forwarding_table(config, self.nodes, self.qchannels)
-        self._add_protocols()
+        self._attach_protocols()
 
     def _add_nodes(self, config: dict):
-        ordered_configs = self._impl._ordered_node_dicts(config[ALL_NODE])
+        ordered_configs = self._impl._order_nodes(config[ALL_NODE])
         for node_config in ordered_configs:
             node_type = node_config[TYPE]
             template  = self.templates.get(node_config.get(TEMPLATE), {})
-            self._impl._create_node(node_config, node_type, template,
-                                    self.tl, self.nodes, self.bsm_to_router_map)
+            self._impl._build_node(node_config, node_type, template,
+                                   self.tl, self.nodes, self.bsm_to_router_map)
 
-    def _configure_parameters(self, config: dict):
-        self._impl._configure_parameters(config, self.templates)
+    def _configure_family(self, config: dict):
+        self._impl._configure_family(config, self.templates)
 
-    def _add_protocols(self):
-        self._impl._add_protocols()
+    def _attach_protocols(self):
+        self._impl._attach_protocols()
 
     def _get_templates(self, config: dict) -> None:
         self.templates = config.get(ALL_TEMPLATES, {})
@@ -236,7 +236,7 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
             node1    = q_connect[CONNECT_NODE_1]
             node2    = q_connect[CONNECT_NODE_2]
             cc_delay = int(self._calc_cc_delay(config, node1, node2))
-            self._impl._handle_qconnection(q_connect, cc_delay, config)
+            self._impl._expand_qconnection(q_connect, cc_delay, config)
 
     def _add_qchannels(self, config: dict) -> None:
         for qc in config.get(ALL_Q_CHANNEL, []):

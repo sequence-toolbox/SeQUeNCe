@@ -34,6 +34,12 @@ from ..resource_management.resource_manager import ResourceManager
 from ..network_management.network_manager import NetworkManager
 from ..utils.encoding import *
 from ..utils import log
+from .const_topo import (
+    ROLE_BSM_ENDPOINT,
+    ROLE_BSM_MIDPOINT,
+    ROLE_DQC_ENDPOINT,
+    ROLE_ROUTABLE_ENDPOINT,
+)
 
 
 class Node(Entity):
@@ -58,6 +64,7 @@ class Node(Entity):
     """
 
     _registry: dict[str, type['Node']] = {}
+    topology_roles: frozenset[str] = frozenset()
 
     @classmethod
     def register(cls, name: str, node_class: type['Node'] = None):
@@ -267,6 +274,8 @@ class BSMNode(Node):
         eg (EntanglementGenerationB): entanglement generation protocol instance.
     """
 
+    topology_roles = frozenset({ROLE_BSM_MIDPOINT})
+
     def __init__(self, name: str, timeline: "Timeline", other_nodes: list[str],
                  seed=None, component_templates=None) -> None:
         """Constructor for BSM node.
@@ -349,6 +358,8 @@ class QuantumRouter(Node):
         app (any): application in use on node.
         down (bool): whether the node is down (not operational).
     """
+
+    topology_roles = frozenset({ROLE_BSM_ENDPOINT, ROLE_ROUTABLE_ENDPOINT})
 
     def __init__(self, name: str, tl: "Timeline", memo_size: int = 50, seed: int | None = None, component_templates: dict = {}, gate_fid: float = 1, meas_fid: float = 1):
         """Constructor for quantum router class.
@@ -891,6 +902,12 @@ class DQCNode(QuantumRouter):
         teledata_app (TeledataApp): The teledata application instance.
         telegate_app (TelegateApp): The telegate application instance.
     """
+    topology_roles = frozenset({
+        ROLE_BSM_ENDPOINT,
+        ROLE_ROUTABLE_ENDPOINT,
+        ROLE_DQC_ENDPOINT,
+    })
+
     def __init__(self, name: str, timeline: "Timeline", memo_size: int = 1, seed: int = None, component_templates: dict = {}, 
                  gate_fid: float = 1, meas_fid: float = 1, data_memo_size: int = 1):
         super().__init__(name, timeline, memo_size, seed, component_templates, gate_fid, meas_fid)
