@@ -1,7 +1,7 @@
 """Topology configuration key constants."""
 
 
-# Topology base config keys
+# Topology base build_config keys
 ALL_C_CONNECT = "cconnections"
 ALL_C_CHANNEL = "cchannels"
 ALL_NODE = "nodes"
@@ -25,7 +25,7 @@ GATE_FIDELITY = "gate_fidelity"
 MEASUREMENT_FIDELITY = "measurement_fidelity"
 FORMALISM = "formalism"
 
-# RouterNetTopo config keys
+# RouterNetTopo build_config keys
 BSM_NODE = "BSMNode"
 MEET_IN_THE_MID = "meet_in_the_middle"
 MEMO_ARRAY_SIZE = "memo_size"
@@ -34,10 +34,10 @@ PROC_NUM = "process_num"
 QUANTUM_ROUTER = "QuantumRouter"
 CONTROLLER = "Controller"
 
-# QKDTopo config keys
+# QKDTopo build_config keys
 QKD_NODE = "QKDNode"
 
-# QlanStarTopo config keys
+# QlanStarTopo build_config keys
 ORCHESTRATOR = "QlanOrchestratorNode"
 CLIENT = "QlanClientNode"
 LOCAL_MEMORIES = "local_memories"
@@ -54,7 +54,7 @@ MEM_COHERENCE_CLIENT = "memo_coherence_client"
 MEM_WAVELENGTH_CLIENT = "memo_wavelength_client"
 MEASUREMENT_BASES = "measurement_bases"
 
-# DQCNetTopo config keys
+# DQCNetTopo build_config keys
 DQC_NODE = "DQCNode"
 DATA_MEMO_ARRAY_SIZE = "data_memo_size"
 

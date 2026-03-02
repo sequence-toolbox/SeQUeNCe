@@ -1,7 +1,7 @@
 """RouterNetTopo — quantum router entanglement distribution network topology."""
 
 from .topology import Topology
-from .network_impls import BsmNetworkImpl
+from .topology_families import BsmTopologyFamily
 
 from .const_topo import (
     BSM_NODE, CONTROLLER, MEET_IN_THE_MID, MEMO_ARRAY_SIZE,
@@ -33,6 +33,4 @@ class RouterNetTopo(Topology):
     }
 
     def __init__(self, config: "str | dict", **kwargs):
-        super().__init__(config, BsmNetworkImpl(), **kwargs)
-
-
+        super().__init__(config, BsmTopologyFamily(), **kwargs)

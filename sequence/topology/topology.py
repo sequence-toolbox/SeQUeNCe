@@ -16,7 +16,7 @@ from collections import defaultdict
 from ..kernel.timeline import Timeline
 from ..kernel.quantum_manager import KET_STATE_FORMALISM, QuantumManager
 
-from .network_impls import NetworkImpl
+from .topology_families import TopologyFamily
 from .node import Node
 from .const_topo import (
     ALL_C_CONNECT, ALL_C_CHANNEL, ALL_NODE, ALL_Q_CONNECT, ALL_Q_CHANNEL,
@@ -92,33 +92,34 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
         "FORMALISM": FORMALISM,
     }
     
-    def __init__(self, config: "str | dict", networkimpl: NetworkImpl, **kwargs):
+    def __init__(self, config: "str | dict", family: TopologyFamily, **kwargs):
         """Build a network topology from a config file or a config dict.
 
-        If kwargs are provided they are merged into the config (lists extended,
-        dicts updated, scalars overridden).
+        If kwargs are provided they are merged into an internal build config
+        (lists extended, dicts updated, scalars overridden).
 
         Args:
             config (str | dict): path to a .json or .yaml/.yml file, or a config dict.
-            networkimpl (NetworkImpl): composed implementor for this topology family.
-            **kwargs: additional config overrides (e.g. nodes, templates, stop_time).
+            family (TopologyFamily): composed behavior object for this topology family.
+            **kwargs: additional config values to merge into the build config
+                (e.g. nodes, templates, stop_time).
         """
         if isinstance(config, str):
             source_config = self._load_config(config)
-        elif not isinstance(config, dict):
+        elif isinstance(config, dict):
+            source_config = config
+        else:
             raise TypeError(
                 f"config must be a file path (str) or a config dict, got {type(config).__name__}"
             )
-        else:
-            source_config = config
         config = copy.deepcopy(source_config)
         if kwargs:
             self._merge_overrides(config, kwargs)
         if ALL_NODE not in config or not config[ALL_NODE]:
             raise ValueError("Config must contain a non-empty 'nodes' list.")
-        self._setup(config, networkimpl)
-        self._source_cfg = copy.deepcopy(source_config)
-        self._raw_cfg = config
+        self._setup(config, family)
+        self._input_cfg = copy.deepcopy(source_config)
+        self._build_cfg = config
 
     @staticmethod
     def _load_config(path: str) -> dict:
@@ -135,8 +136,8 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
             return json.load(fh)
 
     @staticmethod
-    def _merge_overrides(config: dict, overrides: dict) -> None:
-        """Merge keyword overrides into a config dict in place.
+    def _merge_overrides(build_config: dict, extra_config: dict) -> None:
+        """Merge extra config values into a build config dict in place.
 
         Lists are extended, dicts are updated, everything else is overridden.
         """
@@ -145,60 +146,84 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
             'cconnections': ALL_C_CONNECT, 'qchannels': ALL_Q_CHANNEL,
             'cchannels': ALL_C_CHANNEL,
         }
-        _DICT_KEYS = {'templates': ALL_TEMPLATES}
-
         for friendly, const in _LIST_KEYS.items():
-            val = overrides.pop(friendly, None)
+            val = extra_config.pop(friendly, None)
             if val:
-                config.setdefault(const, []).extend(val)
-        for friendly, const in _DICT_KEYS.items():
-            val = overrides.pop(friendly, None)
-            if val:
-                config.setdefault(const, {}).update(val)
-        stop_time = overrides.pop('stop_time', None)
+                if const not in build_config:
+                    build_config[const] = []
+                build_config[const].extend(val)
+        templates = extra_config.pop(ALL_TEMPLATES, None)
+        if templates:
+            if ALL_TEMPLATES not in build_config:
+                build_config[ALL_TEMPLATES] = {}
+            build_config[ALL_TEMPLATES].update(templates)
+        stop_time = extra_config.pop('stop_time', None)
         if stop_time is not None:
-            config[STOP_TIME] = stop_time
-        config.update(overrides)
+            build_config[STOP_TIME] = stop_time
+        build_config.update(extra_config)
 
-    def _setup(self, config: dict, networkimpl: NetworkImpl) -> None:
-        """Execute the full build pipeline on a config dict."""
+    @staticmethod
+    def _validate_qconnection_dependencies(config: dict) -> None:
+        """Validate that each qconnection has a matching classical path entry."""
+        for q_connect in config.get(ALL_Q_CONNECT, []):
+            node1 = q_connect[CONNECT_NODE_1]
+            node2 = q_connect[CONNECT_NODE_2]
+            has_classical_path = False
+
+            for cc in config.get(ALL_C_CHANNEL, []):
+                if ((cc[SRC] == node1 and cc[DST] == node2)
+                        or (cc[SRC] == node2 and cc[DST] == node1)):
+                    has_classical_path = True
+                    break
+
+            if not has_classical_path:
+                for cc in config.get(ALL_C_CONNECT, []):
+                    if ((cc[CONNECT_NODE_1] == node1 and cc[CONNECT_NODE_2] == node2)
+                            or (cc[CONNECT_NODE_1] == node2 and cc[CONNECT_NODE_2] == node1)):
+                        has_classical_path = True
+                        break
+
+            if not has_classical_path:
+                raise ValueError(
+                    f"qconnection between {node1} and {node2} requires a matching "
+                    "classical channel or cconnection"
+                )
+
+    def _setup(self, config: dict, family: TopologyFamily) -> None:
+        """Execute the full build pipeline on a build config dict."""
         self.bsm_to_router_map = {}
         self.nodes: dict[str, list[Node]] = defaultdict(list)
         self.qchannels: list[QuantumChannel] = []
         self.cchannels: list[ClassicalChannel] = []
         self.templates: dict[str, dict] = {}
         self.tl: Timeline | None = None
-        self._impl = networkimpl
+        self._family = family
 
-        self._get_templates(config)
-        self._configure_family(config)
+        # Prepare templates, family state, and generated qconnection artifacts.
+        self.templates = config.get(ALL_TEMPLATES, {})
+        self._family._configure_family(config, self.templates)
         self._add_qconnections(config)
+
+        # Create the timeline, instantiate nodes, and wire family-specific node state.
         self._add_timeline(config)
-        self._impl._prepare_build_state(config, self.bsm_to_router_map)
+        self._family._prepare_build_state(config, self.bsm_to_router_map)
         self._add_nodes(config)
-        self._impl._wire_post_nodes(self.bsm_to_router_map, self.tl)
+        self._family._wire_post_nodes(self.bsm_to_router_map, self.tl)
+
+        # Create channels, derive routing state, and attach any family protocols.
         self._add_qchannels(config)
         self._add_cchannels(config)
         self._add_cconnections(config)
-        self._impl._generate_forwarding_table(config, self.nodes, self.qchannels)
-        self._attach_protocols()
+        self._family._generate_forwarding_table(config, self.nodes, self.qchannels)
+        self._family._attach_protocols()
 
     def _add_nodes(self, config: dict):
-        ordered_configs = self._impl._order_nodes(config[ALL_NODE])
+        ordered_configs = self._family._order_nodes(config[ALL_NODE])
         for node_config in ordered_configs:
             node_type = node_config[TYPE]
             template  = self.templates.get(node_config.get(TEMPLATE), {})
-            self._impl._build_node(node_config, node_type, template,
-                                   self.tl, self.nodes, self.bsm_to_router_map)
-
-    def _configure_family(self, config: dict):
-        self._impl._configure_family(config, self.templates)
-
-    def _attach_protocols(self):
-        self._impl._attach_protocols()
-
-    def _get_templates(self, config: dict) -> None:
-        self.templates = config.get(ALL_TEMPLATES, {})
+            self._family._build_node(node_config, node_type, template,
+                                     self.tl, self.nodes, self.bsm_to_router_map)
 
     def _add_timeline(self, config: dict):
         stop_time = config.get(STOP_TIME, float('inf'))
@@ -206,6 +231,44 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
         truncation = config.get(TRUNC, 1)
         QuantumManager.set_global_manager_formalism(formalism)
         self.tl = Timeline(stop_time=stop_time, truncation=truncation)
+
+    def _add_qchannels(self, config: dict) -> None:
+        for qc in config.get(ALL_Q_CHANNEL, []):
+            src_str, dst_str = qc[SRC], qc[DST]
+            src_node = self.tl.get_entity_by_name(src_str)
+            if src_node is not None:
+                name = qc.get(NAME, f"qc-{src_str}-{dst_str}")
+                qc_obj = QuantumChannel(name, self.tl, qc[ATTENUATION], qc[DISTANCE])
+                qc_obj.set_ends(src_node, dst_str)
+                self.qchannels.append(qc_obj)
+
+    def _add_qconnections(self, config: dict) -> None:
+        self._validate_qconnection_dependencies(config)
+        for q_connect in config.get(ALL_Q_CONNECT, []):
+            node1    = q_connect[CONNECT_NODE_1]
+            node2    = q_connect[CONNECT_NODE_2]
+            cc_delay = int(self._calc_cc_delay(config, node1, node2))
+            self._family._expand_qconnection(q_connect, cc_delay, config)
+
+    def _add_cchannels(self, config: dict) -> None:
+        for cc in config.get(ALL_C_CHANNEL, []):
+            self._make_classical_channel(
+                cc[SRC],
+                cc[DST],
+                cc.get(DISTANCE, -1),
+                cc.get(DELAY, -1),
+                name=cc.get(NAME),
+            )
+
+    def _add_cconnections(self, config: dict) -> None:
+        for c in config.get(ALL_C_CONNECT, []):
+            distance = c.get(DISTANCE, -1)
+            delay    = c.get(DELAY, -1)
+            for src_str, dst_str in zip(
+                [c[CONNECT_NODE_1], c[CONNECT_NODE_2]],
+                [c[CONNECT_NODE_2], c[CONNECT_NODE_1]],
+            ):
+                self._make_classical_channel(src_str, dst_str, distance, delay)
 
     def _calc_cc_delay(self, config: dict, node1: str, node2: str) -> float:
         """Return the one-way classical channel delay between node1 and node2.
@@ -229,51 +292,18 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
         assert len(cc_delay) > 0, (
             f"No classical channel/connection found between {node1} and {node2}"
         )
-        return np.mean(cc_delay) // 2
-
-    def _add_qconnections(self, config: dict) -> None:
-        for q_connect in config.get(ALL_Q_CONNECT, []):
-            node1    = q_connect[CONNECT_NODE_1]
-            node2    = q_connect[CONNECT_NODE_2]
-            cc_delay = int(self._calc_cc_delay(config, node1, node2))
-            self._impl._expand_qconnection(q_connect, cc_delay, config)
-
-    def _add_qchannels(self, config: dict) -> None:
-        for qc in config.get(ALL_Q_CHANNEL, []):
-            src_str, dst_str = qc[SRC], qc[DST]
-            src_node = self.tl.get_entity_by_name(src_str)
-            if src_node is not None:
-                name = qc.get(NAME, f"qc-{src_str}-{dst_str}")
-                qc_obj = QuantumChannel(name, self.tl, qc[ATTENUATION], qc[DISTANCE])
-                qc_obj.set_ends(src_node, dst_str)
-                self.qchannels.append(qc_obj)
-
-    def _add_cchannels(self, config: dict) -> None:
-        for cc in config.get(ALL_C_CHANNEL, []):
-            self._make_classical_channel(
-                cc[SRC], cc[DST],
-                cc.get(DISTANCE, -1), cc.get(DELAY, -1),
-                name=cc.get(NAME),
-            )
-
-    def _add_cconnections(self, config: dict) -> None:
-        for c in config.get(ALL_C_CONNECT, []):
-            distance = c.get(DISTANCE, -1)
-            delay    = c.get(DELAY, -1)
-            for src_str, dst_str in zip(
-                [c[CONNECT_NODE_1], c[CONNECT_NODE_2]],
-                [c[CONNECT_NODE_2], c[CONNECT_NODE_1]],
-            ):
-                self._make_classical_channel(src_str, dst_str, distance, delay)
+        return float(np.mean(cc_delay) // 2)
 
     def _make_classical_channel(self, src_str: str, dst_str: str,
-                                 distance: float, delay: float,
+                                 distance: float, delay: int,
                                  name: str = None) -> None:
         src_obj = self.tl.get_entity_by_name(src_str)
         if src_obj is not None:
             cc_obj = ClassicalChannel(
                 name or f"cc-{src_str}-{dst_str}",
-                self.tl, distance, delay,
+                self.tl,
+                distance,
+                delay,
             )
             cc_obj.set_ends(src_obj, dst_str)
             self.cchannels.append(cc_obj)

@@ -1,12 +1,19 @@
 """DQCNetTopo — distributed quantum computing network topology."""
 
 from .topology import Topology
-from .network_impls import BsmNetworkImpl
+from .topology_families import BsmTopologyFamily
 
 from .const_topo import (
     ALL_NODE, BSM_NODE, CONTROLLER, DATA_MEMO_ARRAY_SIZE,
-    DQC_NODE, MEET_IN_THE_MID, MEMO_ARRAY_SIZE,
+    DQC_NODE, MEET_IN_THE_MID, MEMO_ARRAY_SIZE, ROLE_DQC_ENDPOINT,
 )
+
+
+class DqcBsmFamily(BsmTopologyFamily):
+    """BSM implementor for distributed quantum computing networks."""
+
+    def _is_routing_endpoint_type(self, node_type: str) -> bool:
+        return self._type_has_role(node_type, ROLE_DQC_ENDPOINT)
 
 
 class DQCNetTopo(Topology):
@@ -33,7 +40,7 @@ class DQCNetTopo(Topology):
     }
 
     def __init__(self, config: "str | dict", **kwargs):
-        super().__init__(config, BsmNetworkImpl(), **kwargs)
+        super().__init__(config, DqcBsmFamily(), **kwargs)
 
     def infer_qubit_to_node(self, total_wires: int) -> dict[int, str]:
         """Auto-infer the {wire_index: node_name} map by assigning every node's
@@ -46,7 +53,7 @@ class DQCNetTopo(Topology):
         """
         mapping: dict[int, str] = {}
         next_wire = 0
-        for nd in self._source_cfg[ALL_NODE]:
+        for nd in self._input_cfg[ALL_NODE]:
             name   = nd["name"]
             n_data = nd.get("n_data", 1)
             for _ in range(n_data):
@@ -70,7 +77,9 @@ class DQCNetTopo(Topology):
             dict[str, dict[int, int]]: node_name → {wire_index: slot_index_in_memory_array}.
         """
         qubit_to_node = self.infer_qubit_to_node(total_wires)
-        data_owners: dict[str, dict[int, int]] = {name: {} for name in self.nodes.keys()}
+        data_owners: dict[str, dict[int, int]] = {
+            node_name: {} for node_name in dict.fromkeys(qubit_to_node.values())
+        }
         for q, owner in qubit_to_node.items():
             slot = len(data_owners[owner])
             data_owners[owner][q] = slot

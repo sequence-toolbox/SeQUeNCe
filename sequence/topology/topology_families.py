@@ -1,47 +1,44 @@
-"""Concrete NetworkImpl subclasses.
+"""Concrete TopologyFamily subclasses.
 
-All topology implementors live here. To add a new topology family,
-add a new NetworkImpl subclass and register it in the relevant topology file.
+All base topology-family behaviors live here. To add a new topology family,
+either define a new TopologyFamily subclass for entirely new behavior, or
+subclass BsmTopologyFamily or QlanTopologyFamily to build on their shared behavior.
+Register the chosen family in the relevant topology file.
 """
-from abc import ABC, abstractmethod
-
-from .qlan.orchestrator import QlanOrchestratorNode
-from .qlan.client import QlanClientNode
+from abc import ABC
 
 from networkx import Graph, dijkstra_path, exception
 
 from ..network_management.routing_distributed import DistributedRoutingProtocol
 from ..network_management.routing_static import StaticRoutingProtocol
 
-from .node import Node, BSMNode, QuantumRouter
+# Import QLAN node modules for their @Node.register side effects.
+from .qlan.orchestrator import QlanOrchestratorNode  # noqa: F401
+from .qlan.client import QlanClientNode  # noqa: F401
+from .node import Node
 from .const_topo import (
     ALL_NODE, ALL_Q_CHANNEL, ALL_C_CHANNEL,
     ATTENUATION, BSM_NODE, CONNECT_NODE_1, CONNECT_NODE_2,
     DELAY, DISTANCE, MEET_IN_THE_MID,
-    MEMO_ARRAY_SIZE, DATA_MEMO_ARRAY_SIZE,
     NAME, SEED, SRC, DST, TEMPLATE, TYPE,
     ORCHESTRATOR, CLIENT,
-    QUANTUM_ROUTER, DQC_NODE,
-    ROLE_BSM_ENDPOINT, ROLE_BSM_MIDPOINT, ROLE_ROUTABLE_ENDPOINT,
+    ROLE_BSM_ENDPOINT, ROLE_BSM_MIDPOINT, ROLE_DQC_ENDPOINT, ROLE_ROUTABLE_ENDPOINT,
     LOCAL_MEMORIES, CLIENT_NUMBER, MEASUREMENT_BASES,
     MEM_FIDELITY_ORCH, MEM_FREQUENCY_ORCH, MEM_EFFICIENCY_ORCH,
     MEM_COHERENCE_ORCH, MEM_WAVELENGTH_ORCH,
     MEM_FIDELITY_CLIENT, MEM_FREQUENCY_CLIENT, MEM_EFFICIENCY_CLIENT,
     MEM_COHERENCE_CLIENT, MEM_WAVELENGTH_CLIENT,
 )
-
-# NOTE: consider grouping node-type and midpoint-type constants into sets/enums here
-#       so impls that switch on node_type have an obvious checklist to maintain.
-
-class NetworkImpl(ABC):
-    """Abstract base for topology implementors.
+class TopologyFamily(ABC):
+    """Abstract base for topology-family behavior.
 
     Each concrete subclass owns the infrastructure for one family of topologies
     (BSM-based nets, QLAN, etc.). Topology delegates its variable pipeline steps
     here via composition rather than inheritance.
 
-    All methods are no-op defaults except _build_node which every impl must define.
-    Concrete implementations live in network_impls.py.
+    Most methods are no-op defaults. Topologies that use the shared _add_nodes
+    pipeline must supply a family with a real _build_node implementation.
+    Concrete implementations live in topology_families.py.
     """
 
     def _configure_family(self, config: dict, templates: dict) -> None: pass
@@ -59,47 +56,37 @@ class NetworkImpl(ABC):
     def _order_nodes(self, node_list: list) -> list:
         return node_list
 
-    @abstractmethod
     def _build_node(self, node: dict, node_type: str, template: dict,
                     tl, nodes: dict, bsm_to_router_map: dict) -> None:
         """Construct node, call set_seed, append to nodes[node_type].
 
+        Family subclassers using the shared _add_nodes pipeline must
+        implement this method.
+
         Args:
-            node (dict): one entry from config[ALL_NODE].
+            node (dict): one entry from build_config[ALL_NODE].
             node_type (str): the TYPE string for this node.
             template (dict): resolved template dict for this node (may be empty).
             tl (Timeline): simulation timeline.
             nodes (dict): topology's nodes defaultdict - append here.
-            bsm_to_router_map (dict): BSM-to-router name mapping (used by BsmNetworkImpl).
+            bsm_to_router_map (dict): BSM-to-router name mapping (used by BsmTopologyFamily).
         """
-        pass
-
-
-class NoOpNetworkImpl(NetworkImpl):
-    """Minimal impl for topologies that manage their own node creation.
-
-    Used when the topology does not need BSM/QLAN infrastructure.
-    """
-
-    def _build_node(self, node, node_type, template,
-                    tl, nodes, bsm_to_router_map) -> None:
         raise NotImplementedError(
-            "NoOpNetworkImpl does not build nodes. "
-            "The topology must override _add_nodes itself."
+            "TopologyFamily does not build nodes by default. "
+            "The topology must override _add_nodes or provide a family with _build_node."
         )
 
-
-class BsmNetworkImpl(NetworkImpl):
+class BsmTopologyFamily(TopologyFamily):
     """Implementor for networks with midpoint infrastructure and routing.
 
     Used by RouterNetTopo and DQCNetTopo. Owns midpoint node auto-creation
-    (currently BSMNode, extensible to QFC+BSM and other hardware),
+    (currently BSMNode, extensible to other midpoint hardware),
     endpoint-to-midpoint wiring, and forwarding table generation.
     """
 
     @staticmethod
     def _require_role(node_obj: Node, role: str, node_type: str) -> None:
-        roles = getattr(node_obj, "topology_roles", frozenset())
+        roles = getattr(node_obj, "topology_roles", set())
         if role not in roles:
             raise TypeError(
                 f"Node type '{node_type}' does not support required topology role '{role}'"
@@ -110,11 +97,81 @@ class BsmNetworkImpl(NetworkImpl):
         node_cls = Node._registry.get(node_type)
         if node_cls is None:
             return False
-        return role in getattr(node_cls, "topology_roles", frozenset())
+        return role in getattr(node_cls, "topology_roles", set())
+
+    def _midpoint_type_for_qconnection(self, q_connect: dict) -> str:
+        return BSM_NODE
+
+    # NOTE: upstream only differed on router-vs-DQC midpoint naming; both were auto-generated.
+    # We currently treat `.auto` as the unified naming policy unless compatibility says otherwise.
+    def _midpoint_name_for_qconnection(self, node1: str, node2: str, q_connect: dict) -> str:
+        return f"BSM.{node1}.{node2}.auto"
+
+    # NOTE: keep qconnection expansion policy small unless a real second expansion
+    # shape lands. The current midpoint/channel artifact hooks cover known extension
+    # needs; avoid splitting _expand_qconnection further without a concrete use case.
+
+    def _is_routing_endpoint_type(self, node_type: str) -> bool:
+        return self._type_has_role(node_type, ROLE_ROUTABLE_ENDPOINT)
+
+    def _midpoint_node_config(self, node1: str, node2: str, q_connect: dict) -> dict:
+        return {
+            NAME: self._midpoint_name_for_qconnection(node1, node2, q_connect),
+            TYPE: self._midpoint_type_for_qconnection(q_connect),
+            SEED: q_connect.get(SEED, 0),
+            TEMPLATE: q_connect.get(TEMPLATE, None),
+        }
+
+    def _qchannel_configs_for_qconnection(
+        self,
+        node1: str,
+        node2: str,
+        midpoint_name: str,
+        q_connect: dict,
+    ) -> list[dict]:
+        attenuation = q_connect[ATTENUATION]
+        distance = q_connect[DISTANCE] // 2
+        return [
+            {
+                NAME: f"QC.{src}.{midpoint_name}",
+                SRC: src,
+                DST: midpoint_name,
+                DISTANCE: distance,
+                ATTENUATION: attenuation,
+            }
+            for src in (node1, node2)
+        ]
+
+    def _cchannel_configs_for_qconnection(
+        self,
+        node1: str,
+        node2: str,
+        midpoint_name: str,
+        cc_delay: float,
+        q_connect: dict,
+    ) -> list[dict]:
+        distance = q_connect[DISTANCE] // 2
+        cchannels = []
+        for src in (node1, node2):
+            cchannels.append({
+                NAME: f"CC.{src}.{midpoint_name}",
+                SRC: src,
+                DST: midpoint_name,
+                DISTANCE: distance,
+                DELAY: cc_delay,
+            })
+            cchannels.append({
+                NAME: f"CC.{midpoint_name}.{src}",
+                SRC: midpoint_name,
+                DST: src,
+                DISTANCE: distance,
+                DELAY: cc_delay,
+            })
+        return cchannels
 
     def _prepare_build_state(self, config: dict, bsm_to_router_map: dict) -> None:
         node_types = {node[NAME]: node[TYPE] for node in config[ALL_NODE]}
-        for qc in config[ALL_Q_CHANNEL]:
+        for qc in config.get(ALL_Q_CHANNEL, []):
             src, dst = qc[SRC], qc[DST]
             if not self._type_has_role(node_types.get(dst, ""), ROLE_BSM_MIDPOINT):
                 continue
@@ -125,6 +182,8 @@ class BsmNetworkImpl(NetworkImpl):
 
     def _wire_post_nodes(self, bsm_to_router_map: dict, tl) -> None:
         for bsm in bsm_to_router_map:
+            if len(bsm_to_router_map[bsm]) != 2:
+                raise ValueError(f"BSM midpoint {bsm} must connect to exactly 2 endpoints")
             r0_str, r1_str = bsm_to_router_map[bsm]
             r0 = tl.get_entity_by_name(r0_str)
             r1 = tl.get_entity_by_name(r1_str)
@@ -136,42 +195,33 @@ class BsmNetworkImpl(NetworkImpl):
     def _expand_qconnection(self, q_connect: dict, cc_delay: float, config: dict) -> None:
         node1        = q_connect[CONNECT_NODE_1]
         node2        = q_connect[CONNECT_NODE_2]
-        attenuation  = q_connect[ATTENUATION]
-        distance     = q_connect[DISTANCE] // 2
         channel_type = q_connect[TYPE]
 
         if channel_type == MEET_IN_THE_MID:
-            # Auto-generate a midpoint BSM node and its quantum/classical channels.
-            # The .auto suffix distinguishes these from manually specified BSM nodes in the config.
-            bsm_name = f"BSM.{node1}.{node2}.auto"
-            config[ALL_NODE].append({
-                NAME:     bsm_name,
-                TYPE:     BSM_NODE,
-                SEED:     q_connect.get(SEED, 0),
-                TEMPLATE: q_connect.get(TEMPLATE, None),
-            })
-            for src in [node1, node2]:
-                config.setdefault(ALL_Q_CHANNEL, []).append({
-                    NAME: f"QC.{src}.{bsm_name}", SRC: src,
-                    DST: bsm_name, DISTANCE: distance, ATTENUATION: attenuation,
-                })
-                config.setdefault(ALL_C_CHANNEL, []).append({
-                    NAME: f"CC.{src}.{bsm_name}", SRC: src,
-                    DST: bsm_name, DISTANCE: distance, DELAY: cc_delay,
-                })
-                config[ALL_C_CHANNEL].append({
-                    NAME: f"CC.{bsm_name}.{src}", SRC: bsm_name,
-                    DST: src, DISTANCE: distance, DELAY: cc_delay,
-                })
+            midpoint = self._midpoint_node_config(node1, node2, q_connect)
+            midpoint_name = midpoint[NAME]
+            config[ALL_NODE].append(midpoint)
+            qchannels = self._qchannel_configs_for_qconnection(node1, node2, midpoint_name, q_connect)
+            if qchannels:
+                if ALL_Q_CHANNEL not in config:
+                    config[ALL_Q_CHANNEL] = []
+                config[ALL_Q_CHANNEL].extend(qchannels)
+            cchannels = self._cchannel_configs_for_qconnection(
+                node1, node2, midpoint_name, cc_delay, q_connect
+            )
+            if cchannels:
+                if ALL_C_CHANNEL not in config:
+                    config[ALL_C_CHANNEL] = []
+                config[ALL_C_CHANNEL].extend(cchannels)
         else:
             raise NotImplementedError(f"Unknown quantum connection type '{channel_type}'")
 
     # nodes.items() is filtered for endpoints multiple times in this function.
-    # could extract endpoint_nodes once at the top - check with whoever last touched this before changing.
+    # Could extract endpoint nodes once at the top if this method grows further.
     def _generate_forwarding_table(self, config: dict, nodes: dict, qchannels: list) -> None:
         graph = Graph()
         for node in config[ALL_NODE]:
-            if not self._type_has_role(node[TYPE], ROLE_BSM_MIDPOINT):
+            if self._is_routing_endpoint_type(node[TYPE]):
                 graph.add_node(node[NAME])
 
         costs = {}
@@ -185,14 +235,14 @@ class BsmNetworkImpl(NetworkImpl):
         # Routing protocols live on endpoint nodes only - midpoint nodes have no network manager.
         routing_protocol = None
         for node_type, node_list in nodes.items():
-            if not self._type_has_role(node_type, ROLE_BSM_MIDPOINT):
+            if self._is_routing_endpoint_type(node_type):
                 routing_protocol = node_list[0].network_manager.get_routing_protocol()
                 break
 
         if isinstance(routing_protocol, StaticRoutingProtocol):
             graph.add_weighted_edges_from(costs.values())
             for node_type, node_list in nodes.items():
-                if self._type_has_role(node_type, ROLE_BSM_MIDPOINT):
+                if not self._is_routing_endpoint_type(node_type):
                     continue
                 for src in node_list:
                     for dst_name in graph.nodes:
@@ -213,7 +263,7 @@ class BsmNetworkImpl(NetworkImpl):
         elif isinstance(routing_protocol, DistributedRoutingProtocol):
             # distributed routing, initialize the link cost and setup the FSM
             for node_type, node_list in nodes.items():
-                if self._type_has_role(node_type, ROLE_BSM_MIDPOINT):
+                if not self._is_routing_endpoint_type(node_type):
                     continue
                 for q_router in node_list:
                     routing_protocol: DistributedRoutingProtocol = q_router.network_manager.get_routing_protocol()
@@ -227,16 +277,13 @@ class BsmNetworkImpl(NetworkImpl):
                     tl, nodes: dict, bsm_to_router_map: dict) -> None:
         others = bsm_to_router_map.get(node[NAME], [])
         node_obj = Node.create(node_type, node[NAME], tl, node, template, others=others)
-        if ROLE_BSM_MIDPOINT in getattr(node_obj, "topology_roles", frozenset()):
-            self._require_role(node_obj, ROLE_BSM_MIDPOINT, node_type)
-        else:
+        if ROLE_BSM_MIDPOINT not in getattr(node_obj, "topology_roles", set()):
             self._require_role(node_obj, ROLE_BSM_ENDPOINT, node_type)
             self._require_role(node_obj, ROLE_ROUTABLE_ENDPOINT, node_type)
         node_obj.set_seed(node[SEED])
         nodes[node_type].append(node_obj)
 
-
-class QlanNetworkImpl(NetworkImpl):
+class QlanTopologyFamily(TopologyFamily):
     """Implementor for QLAN star topologies.
 
     Owns QLAN-specific parameter reading (dual flat/template format),
@@ -244,7 +291,7 @@ class QlanNetworkImpl(NetworkImpl):
     """
 
     def _configure_family(self, config: dict, templates: dict) -> None:
-        """Detect config format, normalize memory params, and init per-node accumulators.
+        """Detect build_config format, normalize memory params, and init per-node accumulators.
 
         Supports two formats (legacy flat keys and new template-based) independently
         for orchestrator and client nodes. Writes normalized params into
@@ -305,17 +352,24 @@ class QlanNetworkImpl(NetworkImpl):
         for client in self.client_nodes:
             client.resource_manager.create_protocol()
 
+    def _register_client_node(self, node_obj: Node) -> None:
+        """Track client state needed for orchestrator construction and public API."""
+        memo = node_obj.get_components_by_type("MemoryArray")[0][0]
+        self._remote_memories.append(memo)
+        self.remote_memories_array.append(memo)
+        self.client_nodes.append(node_obj)
+
+    def _register_orchestrator_node(self, node_obj: Node) -> None:
+        """Track orchestrator nodes exposed on the topology API."""
+        self.orchestrator_nodes.append(node_obj)
+
     def _build_node(self, node: dict, node_type: str, template: dict,
                     tl, nodes: dict, bsm_to_router_map: dict) -> None:
         """Construct QLAN nodes."""
         if node_type == CLIENT:
             node_obj = Node.create(node_type, node[NAME], tl, node, template,
                                    component_templates=self.client_component_templates)
-            node_obj.set_seed(node[SEED])
-            memo = node_obj.get_components_by_type("MemoryArray")[0][0]
-            self._remote_memories.append(memo)
-            self.remote_memories_array.append(memo)
-            self.client_nodes.append(node_obj)
+            self._register_client_node(node_obj)
 
         elif node_type == ORCHESTRATOR:
             node_obj = Node.create(node_type, node[NAME], tl, node, template,
@@ -323,11 +377,10 @@ class QlanNetworkImpl(NetworkImpl):
                                    n_local_memories=self.n_local_memories,
                                    remote_memories=self._remote_memories)
             node_obj.update_bases(self.meas_bases)
-            node_obj.set_seed(node[SEED])
-            self.orchestrator_nodes.append(node_obj)
+            self._register_orchestrator_node(node_obj)
 
         else:
             node_obj = Node.create(node_type, node[NAME], tl, node, template)
-            node_obj.set_seed(node[SEED])
 
+        node_obj.set_seed(node[SEED])
         nodes[node_type].append(node_obj)

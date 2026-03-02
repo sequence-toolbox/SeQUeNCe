@@ -64,19 +64,27 @@ class Node(Entity):
     """
 
     _registry: dict[str, type['Node']] = {}
-    topology_roles: frozenset[str] = frozenset()
+    topology_roles: set[str] = set() #Question: what is a set() and what are its properties? Why did we use this specifically?
 
     @classmethod
     def register(cls, name: str, node_class: type['Node'] = None):
-        if node_class is not None:
-            cls._registry[name] = node_class
-            return None
-
-        def decorator(node_cls: type['Node']) -> type['Node']:
+        def _register(node_cls: type['Node']) -> type['Node']:
+            existing = cls._registry.get(name)
+            if existing is not None and existing is not node_cls: # Duplicate registration check.
+                raise ValueError(
+                    f"Node type '{name}' is already registered to {existing.__name__}"
+                )
             cls._registry[name] = node_cls
             return node_cls
 
-        return decorator
+        def decorator(node_cls: type['Node']) -> type['Node']:
+            return _register(node_cls)
+
+        if node_class is not None:
+            _register(node_class)
+            return None
+        else:
+            return decorator
 
     @classmethod
     def create(cls, node_type: str, name: str, tl, config: dict, template: dict, **kwargs) -> 'Node':
@@ -194,7 +202,7 @@ class Node(Entity):
                 if protocol.name == msg.receiver and protocol.received_message(src, msg):
                     return
         else:
-            matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
+            matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type] #Question: What's this else case? it was just sent to everyone like "Network Bind?"
             for p in matching:
                 p.received_message(src, msg)
 
@@ -234,8 +242,9 @@ class Node(Entity):
         candidates = []
         for comp in self.components.values():
             candidates.append(comp)
-            if isinstance(comp, MemoryArray):
+            if isinstance(comp, MemoryArray): #The MemoryArray might contain the type we're looking for
                 candidates.extend(comp.memories)
+
         if isinstance(component_type, str):
             return [comp for comp in candidates if comp.__class__.__name__ == component_type]
         if isinstance(component_type, type):
@@ -274,7 +283,7 @@ class BSMNode(Node):
         eg (EntanglementGenerationB): entanglement generation protocol instance.
     """
 
-    topology_roles = frozenset({ROLE_BSM_MIDPOINT})
+    topology_roles = {ROLE_BSM_MIDPOINT}
 
     def __init__(self, name: str, timeline: "Timeline", other_nodes: list[str],
                  seed=None, component_templates=None) -> None:
@@ -309,6 +318,10 @@ class BSMNode(Node):
         self.eg = EntanglementGenerationB.create(self, f'{name}_eg', other_nodes)
         bsm.attach(self.eg)
 
+    @classmethod
+    def from_config(cls, name: str, tl, config: dict, template: dict, **kwargs) -> 'BSMNode':
+        return cls(name, tl, kwargs['others'], component_templates=template)
+
     def receive_message(self, src: str, msg: "Message") -> None:
         # signal to protocol that we've received a message
         for protocol in self.protocols:
@@ -317,8 +330,7 @@ class BSMNode(Node):
                     return
 
         # if we reach here, we didn't successfully receive the message in any protocol
-        print(src, msg)
-        raise Exception("Unknown protocol")
+        raise Exception(f"Unknown protocol for message {msg} from {src}")
 
     def eg_add_others(self, other):
         """Method to add other protocols to entanglement generation protocol.
@@ -331,11 +343,6 @@ class BSMNode(Node):
         """
 
         self.protocols[0].others.append(other.name)
-
-    @classmethod
-    def from_config(cls, name: str, tl, config: dict, template: dict, **kwargs) -> 'BSMNode':
-        return cls(name, tl, kwargs['others'], component_templates=template)
-
 
 @Node.register("QuantumRouter")
 class QuantumRouter(Node):
@@ -359,7 +366,7 @@ class QuantumRouter(Node):
         down (bool): whether the node is down (not operational).
     """
 
-    topology_roles = frozenset({ROLE_BSM_ENDPOINT, ROLE_ROUTABLE_ENDPOINT})
+    topology_roles = {ROLE_BSM_ENDPOINT, ROLE_ROUTABLE_ENDPOINT}
 
     def __init__(self, name: str, tl: "Timeline", memo_size: int = 50, seed: int | None = None, component_templates: dict = {}, gate_fid: float = 1, meas_fid: float = 1):
         """Constructor for quantum router class.
@@ -390,6 +397,11 @@ class QuantumRouter(Node):
         self.map_to_middle_node = {}
         self.app = None
         self.down = False
+
+    @classmethod
+    def from_config(cls, name: str, tl, config: dict, template: dict, **kwargs) -> 'QuantumRouter':
+        memo_size = config.get("memo_size", 0)
+        return cls(name, tl, memo_size, component_templates=template)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         """Determine what to do when a message is received, based on the msg.receiver.
@@ -532,10 +544,6 @@ class QuantumRouter(Node):
         if self.app:
             self.app.get_other_reservation(reservation)
 
-    @classmethod
-    def from_config(cls, name: str, tl, config: dict, template: dict, **kwargs) -> 'QuantumRouter':
-        memo_size = config.get("memo_size", 0)
-        return cls(name, tl, memo_size, component_templates=template)
 
 
 class QKDNode(Node):
@@ -615,6 +623,9 @@ class QKDNode(Node):
             self.protocols.append(self.protocol_stack[1])
             self.protocol_stack[0].upper_protocols.append(self.protocol_stack[1])
             self.protocol_stack[1].lower_protocols.append(self.protocol_stack[0])
+
+    # NOTE: there is intentionally no from_config from this class. The classes Topology was unimplemented, so from_config
+    # is to be implemented by whoever needs an actual topology out of this.
 
     def init(self) -> None:
         super().init()
@@ -779,7 +790,6 @@ class QKDNode(Node):
                 return
 
         # if we reach here, we didn't successfully receive the message in any protocol
-        print(self.protocols)
         raise Exception(f"Message received for unknown protocol '{msg.protocol_type}' on node {self.name}")
 
     def get(self, photon: "Photon", **kwargs):
@@ -902,11 +912,11 @@ class DQCNode(QuantumRouter):
         teledata_app (TeledataApp): The teledata application instance.
         telegate_app (TelegateApp): The telegate application instance.
     """
-    topology_roles = frozenset({
+    topology_roles = {
         ROLE_BSM_ENDPOINT,
         ROLE_ROUTABLE_ENDPOINT,
         ROLE_DQC_ENDPOINT,
-    })
+    }
 
     def __init__(self, name: str, timeline: "Timeline", memo_size: int = 1, seed: int = None, component_templates: dict = {}, 
                  gate_fid: float = 1, meas_fid: float = 1, data_memo_size: int = 1):

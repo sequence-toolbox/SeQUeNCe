@@ -87,7 +87,7 @@ class QlanClientNode(Node):
         local_memory_names = [mem.name for mem in mem_array]
 
         if len(self.local_memories) > 1:
-            raise ValueError("The minimum number of memories allowed is 1.")
+            raise ValueError("The maximum number of memories allowed is 1.")
 
         self.resource_manager = QlanClientStateManager(owner=self, tl=tl, memory_names=local_memory_names, remote_memories=self.remote_memories)
 

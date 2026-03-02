@@ -5,7 +5,7 @@ Public API:
     DQCNetTopo     — distributed quantum computing networks
     QlanStarTopo   — QLAN star topology (orchestrator + clients)
     QKDTopo        — quantum key distribution networks
-    Topology       — base class (usable directly with a NetworkImpl)
+    Topology       — base class (usable directly with a TopologyFamily)
     Node           — base node class with type registry
 """
 
@@ -13,7 +13,7 @@ __all__ = [
     'topology',
     'node',
     'const_topo',
-    'network_impls',
+    'topology_families',
     'router_net_topo',
     'dqc_net_topo',
     'qlan_star_topo',

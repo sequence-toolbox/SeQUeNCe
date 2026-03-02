@@ -1,7 +1,7 @@
 """QlanStarTopo — QLAN star topology with one orchestrator and multiple clients."""
 
 from .topology import Topology
-from .network_impls import QlanNetworkImpl
+from .topology_families import QlanTopologyFamily
 
 from .const_topo import (
     CLIENT, CLIENT_NUMBER, LOCAL_MEMORIES, MEASUREMENT_BASES, MEET_IN_THE_MID,
@@ -51,14 +51,13 @@ class QlanStarTopo(Topology):
     }
 
     def __init__(self, config: "str | dict", **kwargs):
-        impl = QlanNetworkImpl()
-        super().__init__(config, impl, **kwargs)
-        # Expose impl state as topology attributes for public API
-        self.orchestrator_nodes    = impl.orchestrator_nodes
-        self.client_nodes          = impl.client_nodes
-        self.remote_memories_array = impl.remote_memories_array
-        self.n_local_memories      = impl.n_local_memories
-        self.n_clients             = impl.n_clients
-        self.meas_bases            = impl.meas_bases
+        family = QlanTopologyFamily()
+        super().__init__(config, family, **kwargs)
+        # Expose family state as topology attributes for public API
+        self.orchestrator_nodes    = family.orchestrator_nodes
+        self.client_nodes          = family.client_nodes
+        self.remote_memories_array = family.remote_memories_array
+        self.n_local_memories      = family.n_local_memories
+        self.n_clients             = family.n_clients
+        self.meas_bases            = family.meas_bases
         # Hardware memo params (fidelity, frequency, etc.) cannot be read off the topo directly.
-

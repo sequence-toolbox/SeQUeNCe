@@ -134,8 +134,6 @@ class QlanOrchestratorNode(Node):
         self.adjacent_nodes = {}
         target_keys = list(range(len(remote_memories), len(remote_memories) + len(self.local_memory_names)))
         target_array = tl.quantum_manager.states[0].keys
-        print("Target keys: ",target_keys)
-        print("Target array: ",target_array)
         for key in target_keys:
             for i in range(len(target_array)):
                 if target_array[i] == key:
@@ -143,7 +141,6 @@ class QlanOrchestratorNode(Node):
                         self.adjacent_nodes[key] = [target_array[i-1], target_array[i+1]]
                     elif i == len(target_array) - 1:
                         self.adjacent_nodes[key] = [target_array[i-1]]
-        print(self.adjacent_nodes)
 
     @classmethod
     def from_config(cls, name: str, tl, config: dict, template: dict, **kwargs) -> 'QlanOrchestratorNode':
