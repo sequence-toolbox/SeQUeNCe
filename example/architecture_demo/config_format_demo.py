@@ -94,7 +94,7 @@ CLEAN_QLAN_CONFIG = {
 }
 
 
-# note: CreateTopo: templates are literally just Python dicts so we have consistent 
+# note: templates are literally just Python dicts so we have consistent
 # syntax between configs and actual programs which is cool
 
 # FIRST MOTIVATION: allows configs for qlan and bsm nets to be dealt with using 
@@ -192,10 +192,10 @@ STAR_NETWORK_WITH_TEMPLATES = {
 }
 
 # Usage:
-#   topo = RouterNetTopo("star_network.json")  # or CreateTopo(**STAR_NETWORK_WITH_TEMPLATES)
+#   topo = RouterNetTopo("star_network.json")  # or RouterNetTopo(STAR_NETWORK_WITH_TEMPLATES)
 #   tl   = topo.get_timeline()
 #   tl.init()
 #   tl.run()
 #
 # notice that you can even give the programmer a usable dictionary that looks exactly (almost, some square brackets there)
-# that they can plug into CreateTopo and reference back to whenever they want
+# that they can plug into RouterNetTopo() and reference back to whenever they want

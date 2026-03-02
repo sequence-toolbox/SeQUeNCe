@@ -32,8 +32,8 @@ class DQCNetTopo(Topology):
         "DATA_MEMO_ARRAY_SIZE": DATA_MEMO_ARRAY_SIZE,
     }
 
-    def __init__(self, conf_file_name: str):
-        super().__init__(conf_file_name, BsmNetworkImpl())
+    def __init__(self, config: "str | dict", **kwargs):
+        super().__init__(config, BsmNetworkImpl(), **kwargs)
 
     def infer_qubit_to_node(self, total_wires: int) -> dict[int, str]:
         """Auto-infer the {wire_index: node_name} map by assigning every node's

@@ -23,8 +23,8 @@ class QKDTopo(Topo):
         "QKD_NODE": QKD_NODE,
     }
 
-    def __init__(self, conf_file_name: str):
-        super().__init__(conf_file_name, NoOpNetworkImpl())
+    def __init__(self, config: "str | dict", **kwargs):
+        super().__init__(config, NoOpNetworkImpl(), **kwargs)
 
     def _add_timeline(self, config):
         stop_time = config.get(STOP_TIME, float('inf'))

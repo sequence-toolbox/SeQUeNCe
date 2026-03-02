@@ -50,9 +50,9 @@ class QlanStarTopo(Topology):
         "MEM_SIZE":             MEMO_ARRAY_SIZE,  # MEM_SIZE was a duplicate of MEMO_ARRAY_SIZE, consolidated here
     }
 
-    def __init__(self, conf_file_name: str):
+    def __init__(self, config: "str | dict", **kwargs):
         impl = QlanNetworkImpl()
-        super().__init__(conf_file_name, impl)
+        super().__init__(config, impl, **kwargs)
         # Expose impl state as topology attributes for public API
         self.orchestrator_nodes    = impl.orchestrator_nodes
         self.client_nodes          = impl.client_nodes

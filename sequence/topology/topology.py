@@ -91,34 +91,72 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
         "FORMALISM": FORMALISM,
     }
     
-    def __init__(self, conf_file_name: str, networkimpl: NetworkImpl):
-        """Build a network topology from a config file (.json or .yaml).
+    def __init__(self, config: "str | dict", networkimpl: NetworkImpl, **kwargs):
+        """Build a network topology from a config file or a config dict.
+
+        If kwargs are provided they are merged into the config (lists extended,
+        dicts updated, scalars overridden).
 
         Args:
-            conf_file_name (str): path to a .json or .yaml/.yml config file
-            networkimpl (NetworkImpl): composed implementor for this topology family
+            config (str | dict): path to a .json or .yaml/.yml file, or a config dict.
+            networkimpl (NetworkImpl): composed implementor for this topology family.
+            **kwargs: additional config overrides (e.g. nodes, templates, stop_time).
         """
-        if not conf_file_name.endswith(('.json', '.yaml', '.yml')):
-            raise ValueError(
-                f"Unsupported config file format: {conf_file_name}. "
-                "Use .json or .yaml/.yml"
+        if isinstance(config, str):
+            config = self._load_config(config)
+        elif not isinstance(config, dict):
+            raise TypeError(
+                f"config must be a file path (str) or a config dict, got {type(config).__name__}"
             )
-        with open(conf_file_name) as fh:
-            if conf_file_name.endswith(('.yaml', '.yml')):
-                import yaml
-                config = yaml.safe_load(fh)
-            else:
-                config = json.load(fh)
-
+        if kwargs:
+            self._merge_overrides(config, kwargs)
+        if ALL_NODE not in config or not config[ALL_NODE]:
+            raise ValueError("Config must contain a non-empty 'nodes' list.")
         self._setup(config, networkimpl)
         self._raw_cfg = config
 
-    def _setup(self, config: dict, networkimpl: NetworkImpl) -> None:
-        """Execute the full build pipeline on a config dict.
+    @staticmethod
+    def _load_config(path: str) -> dict:
+        """Load a JSON or YAML config file and return the parsed dict."""
+        if not path.endswith(('.json', '.yaml', '.yml')):
+            raise ValueError(
+                f"Unsupported config file format: {path}. "
+                "Use .json or .yaml/.yml"
+            )
+        with open(path) as fh:
+            if path.endswith(('.yaml', '.yml')):
+                import yaml
+                return yaml.safe_load(fh)
+            return json.load(fh)
 
-        Separated from __init__ so CreateTopo can supply a programmatically
-        built config dict instead of a file.
+    @staticmethod
+    def _merge_overrides(config: dict, overrides: dict) -> None:
+        """Merge keyword overrides into a config dict in place.
+
+        Lists are extended, dicts are updated, everything else is overridden.
         """
+        _LIST_KEYS = {
+            'nodes': ALL_NODE, 'qconnections': ALL_Q_CONNECT,
+            'cconnections': ALL_C_CONNECT, 'qchannels': ALL_Q_CHANNEL,
+            'cchannels': ALL_C_CHANNEL,
+        }
+        _DICT_KEYS = {'templates': ALL_TEMPLATES}
+
+        for friendly, const in _LIST_KEYS.items():
+            val = overrides.pop(friendly, None)
+            if val:
+                config.setdefault(const, []).extend(val)
+        for friendly, const in _DICT_KEYS.items():
+            val = overrides.pop(friendly, None)
+            if val:
+                config.setdefault(const, {}).update(val)
+        stop_time = overrides.pop('stop_time', None)
+        if stop_time is not None:
+            config[STOP_TIME] = stop_time
+        config.update(overrides)
+
+    def _setup(self, config: dict, networkimpl: NetworkImpl) -> None:
+        """Execute the full build pipeline on a config dict."""
         self.bsm_to_router_map = {}
         self.nodes: dict[str, list[Node]] = defaultdict(list)
         self.qchannels: list[QuantumChannel] = []

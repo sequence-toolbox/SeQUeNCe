@@ -8,8 +8,7 @@ of the order nodes appear in the config.
 
 import pytest
 
-from sequence.topology.create_topo import CreateTopo
-from sequence.topology.network_impls import QlanNetworkImpl
+from sequence.topology.qlan_star_topo import QlanStarTopo
 from sequence.topology.const_topo import ORCHESTRATOR, CLIENT
 
 
@@ -27,10 +26,8 @@ _C2   = {"name": "c2",   "type": "QlanClientNode",       "seed": 2}
 
 
 def _make(nodes, local_memories=1, measurement_bases="z", client_number=2):
-    return CreateTopo(
-        impl=QlanNetworkImpl(),
-        nodes=nodes,
-        stop_time=1e12,
+    return QlanStarTopo(
+        {"nodes": nodes, "stop_time": 1e12},
         local_memories=local_memories,
         client_number=client_number,
         measurement_bases=measurement_bases,

@@ -1,6 +1,6 @@
 from ..node import Node
 from ...kernel.timeline import Timeline
-from ...components.memory import Memory
+from ...components.memory import Memory, MemoryArray
 from ...message import Message
 from ...app.request_app import RequestApp
 from ...qlan.measurement import QlanMeasurementProtocol
@@ -49,8 +49,8 @@ class QlanOrchestratorStateManager:
         """
         Sets the memories of the manager equal to the owner's memories and sets the owner's protocol to QlanMeasurementProtocol.
         """
-        memory_objects = [self.owner.components[memory_name] for memory_name in self.memory_names]
-        
+        memory_objects = list(self.owner.local_memories)
+
         # Trying adaptive measurement protocol
         self.owner.protocols = [
             QlanMeasurementProtocol(owner=self.owner, name='Measurement Protocol', tl=self.tl, local_memories=memory_objects, remote_memories = self.owner.remote_memory_names, bases = self.bases),
@@ -89,6 +89,7 @@ class QlanOrchestratorStateManager:
         self.owner.find_adjacent_nodes(tl, remote_memories)
 
 
+@Node.register("QlanOrchestratorNode")
 class QlanOrchestratorNode(Node):
     """
     This class represents a network node that shares a GHZ state.
@@ -107,41 +108,21 @@ class QlanOrchestratorNode(Node):
         bases (str): The set of bases.
     """
     
-    def __init__(self, name: str, tl: Timeline, num_local_memories: int, remote_memories: list[Memory], memo_fidelity = 0.9, memo_frequency: int = 2000, memo_efficiency: float = 1, memo_coherence_time: float = -1, memo_wavelength: float = 500):
-        """
-        Initializes a new instance of the OrchestratorNode class.
-
-        Args:
-            name (str): The name of the node.
-            tl (Timeline): The timeline object.
-            local_memories (list[Memory]): The list of local memories to add as components.
-            remote_memories (list[Memory]): The list of remote memories to add as components.
-        """
+    def __init__(self, name: str, tl: Timeline, num_local_memories: int, remote_memories: list[Memory], component_templates: dict = {}):
         super().__init__(name, tl)
 
-        self.memory_fidelity = memo_fidelity
-        self.memory_frequency = memo_frequency
-        self.memory_efficiency = memo_efficiency
-        self.memory_coherence_time = memo_coherence_time
-        self.memory_wavelength = memo_wavelength
         self.remote_memories = remote_memories
         self.remote_memory_names = [memory.name for memory in remote_memories]
-        self.local_memory_names = [f'{name}.memo_o_{i}' for i in range(1, num_local_memories+1)]
-        
-        self.local_memories = [Memory(name=memory_name, 
-                                timeline=tl, 
-                                fidelity=self.memory_fidelity, 
-                                frequency=self.memory_frequency,
-                                efficiency=self.memory_efficiency,
-                                coherence_time=self.memory_coherence_time,
-                                wavelength=self.memory_wavelength) for
-                                memory_name in self.local_memory_names]
+        memo_arr_args = component_templates.get("MemoryArray", {})
+        mem_array = MemoryArray(f'{name}.memo_o', tl,
+                                num_memories=num_local_memories,
+                                **memo_arr_args)
+        self.add_component(mem_array)
+        self.local_memories = mem_array
+        self.local_memory_names = [mem.name for mem in mem_array]
 
         if len(self.local_memories) != len(remote_memories)-1:
             raise ValueError(f"The number of local memories {len(self.local_memories)} is invalid. It should be equal to the number of remote memories {len(remote_memories)} minus 1.")
-        
-        for memory in self.local_memories:
-            self.add_component(memory)
 
         # Set the bases (default is all 'z' measurements)
         self.bases = 'z' * len(self.local_memories)
@@ -163,6 +144,11 @@ class QlanOrchestratorNode(Node):
                     elif i == len(target_array) - 1:
                         self.adjacent_nodes[key] = [target_array[i-1]]
         print(self.adjacent_nodes)
+
+    @classmethod
+    def from_config(cls, name: str, tl, config: dict, template: dict, **kwargs) -> 'QlanOrchestratorNode':
+        return cls(name, tl, kwargs['n_local_memories'], kwargs['remote_memories'],
+                   component_templates=kwargs.get('component_templates') or template)
 
     def update_bases(self, bases: str):
         """
@@ -187,6 +173,9 @@ class QlanOrchestratorNode(Node):
         """Method to add an application to the node."""
 
         self.app = app
+
+    def memory_expire(self, memory: "Memory") -> None:
+        self.resource_manager.update([memory], ['RAW'])
 
     def reset_linear_state(self, tl: "Timeline"):
 

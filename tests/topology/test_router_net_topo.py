@@ -1,4 +1,5 @@
 from sequence.topology.router_net_topo import RouterNetTopo
+from sequence.topology.const_topo import QUANTUM_ROUTER, BSM_NODE
 from sequence.kernel.timeline import Timeline
 
 
@@ -68,3 +69,35 @@ def test_sequential_simulation():
 
     for r in topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
         assert len(r.network_manager.protocol_stack[0].forwarding_table) > 0
+
+
+def test_dict_config():
+    topo = RouterNetTopo(
+        {
+            "nodes": [
+                {"name": "r1", "type": "QuantumRouter", "seed": 0, "memo_size": 10},
+                {"name": "r2", "type": "QuantumRouter", "seed": 1, "memo_size": 10},
+            ],
+            "qconnections": [{"node1": "r1", "node2": "r2", "attenuation": 0.0002,
+                              "distance": 2000, "type": "meet_in_the_middle"}],
+            "cconnections": [{"node1": "r1", "node2": "r2", "delay": 1_000_000_000}],
+            "stop_time": 1e12,
+        }
+    )
+    nodes = topo.get_nodes()
+    assert QUANTUM_ROUTER in nodes and BSM_NODE in nodes
+    assert len(nodes[QUANTUM_ROUTER]) == 2
+    assert len(nodes[BSM_NODE]) == 1
+    assert topo.get_nodes()[BSM_NODE][0].name == "BSM.r1.r2.auto"
+    assert len(topo.get_qchannels()) == 2
+    assert len(topo.get_cchannels()) == 6
+    assert topo.get_timeline().stop_time == 1e12
+
+
+def test_kwargs_extend_config_file():
+    topo = RouterNetTopo(
+        "tests/topology/router_net_topo_sample_config.json",
+        nodes=[{"name": "extra", "type": "QuantumRouter", "seed": 99, "memo_size": 5}],
+    )
+    routers = topo.get_nodes_by_type(QUANTUM_ROUTER)
+    assert any(r.name == "extra" for r in routers)

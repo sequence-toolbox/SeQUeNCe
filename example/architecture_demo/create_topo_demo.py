@@ -1,4 +1,4 @@
-"""Demo - CreateTopo: building a network without a config file.
+"""Demo — building a network without a config file.
 
 Same 4-router network as tests/topology/router_net_topo_sample_config.json,
 but constructed entirely in Python. No JSON file on disk.
@@ -7,18 +7,16 @@ Run with:
     python -m example.architecture_demo.create_topo_demo
 """
 
-from sequence.topology.create_topo import CreateTopo
-from sequence.topology.network_impls import BsmNetworkImpl
-from sequence.topology.node import QuantumRouter
+from sequence.topology.router_net_topo import RouterNetTopo
 from sequence.topology.const_topo import QUANTUM_ROUTER, BSM_NODE
 
 
 def build_network():
-    return CreateTopo(
-        impl       = BsmNetworkImpl(),
-        node_types = {QUANTUM_ROUTER: QuantumRouter},
-
-        nodes = [
+    return RouterNetTopo(
+        {
+            "stop_time": 1e12,
+        },
+        nodes=[
             {"name": "e1", "type": "QuantumRouter", "seed": 0, "memo_size": 20,
              "template": "perfect_memo"},
             {"name": "e2", "type": "QuantumRouter", "seed": 1, "memo_size": 20},
@@ -54,7 +52,6 @@ def build_network():
             {"node1": "e3", "node2": "e4", "distance": 5000, "delay": 1_000_000_000},
         ],
 
-        stop_time = 1e12,
     )
 
 

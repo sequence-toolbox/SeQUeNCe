@@ -32,7 +32,7 @@ class RouterNetTopo(Topology):
         "CONTROLLER":     CONTROLLER,
     }
 
-    def __init__(self, conf_file_name: str):
-        super().__init__(conf_file_name, BsmNetworkImpl())
+    def __init__(self, config: "str | dict", **kwargs):
+        super().__init__(config, BsmNetworkImpl(), **kwargs)
 
 

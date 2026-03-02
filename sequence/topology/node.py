@@ -8,6 +8,7 @@ from math import inf
 from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
+from qutip_qip.operations import qasmu_gate
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -51,7 +52,35 @@ class Node(Entity):
         first_component_name (str): name of component that first receives incoming qubits.
         gate_fid (float): fidelity of multi-qubit gates (usually CNOT) that can be performed on the node.
         meas_fid (float): fidelity of single-qubit measurements (usually Z measurement) that can be performed on the node.
+
+    Class Attributes:
+        _registry (dict[str, type['Node']]): maps node type name strings to their corresponding classes.
     """
+
+    _registry: dict[str, type['Node']] = {}
+
+    @classmethod
+    def register(cls, name: str, node_class: type['Node'] = None):
+        if node_class is not None:
+            cls._registry[name] = node_class
+            return None
+
+        def decorator(node_cls: type['Node']) -> type['Node']:
+            cls._registry[name] = node_cls
+            return node_cls
+
+        return decorator
+
+    @classmethod
+    def create(cls, node_type: str, name: str, tl, config: dict, template: dict, **kwargs) -> 'Node':
+        if node_type not in cls._registry:
+            available = ', '.join(sorted(cls._registry)) or '(none)'
+            raise ValueError(
+                f"Unknown node type '{node_type}'. "
+                f"Available types: {available}. "
+                "Register custom types with @Node.register('TypeName')."
+            )
+        return cls._registry[node_type].from_config(name, tl, config, template, **kwargs)
 
     def __init__(self, name: str, timeline: "Timeline", seed=None, gate_fid: float = 1, meas_fid: float = 1):
         """Constructor for node.
@@ -186,15 +215,24 @@ class Node(Entity):
 
     def get_components_by_type(self, component_type: str | type) -> list:
         """Method to return all components of a specific type.
+
+        MemoryArray components are automatically expanded so that individual
+        Memory objects inside them are also searchable by type.
+
         Args:
             component_type (str/type): The type of components to filter for.
         Returns:
             list: A list of components matching the requested type.
         """
+        candidates = []
+        for comp in self.components.values():
+            candidates.append(comp)
+            if isinstance(comp, MemoryArray):
+                candidates.extend(comp.memories)
         if isinstance(component_type, str):
-            return [comp for comp in self.components.values() if comp.__class__.__name__ == component_type]
+            return [comp for comp in candidates if comp.__class__.__name__ == component_type]
         if isinstance(component_type, type):
-            return [comp for comp in self.components.values() if isinstance(comp, component_type)]
+            return [comp for comp in candidates if isinstance(comp, component_type)]
         return []
 
     def get_component_by_name(self, name: str) -> Optional["Entity"]:
@@ -216,6 +254,7 @@ class Node(Entity):
             cc.change_timeline(timeline)
 
 
+@Node.register("BSMNode")
 class BSMNode(Node):
     """Bell state measurement node.
 
@@ -284,7 +323,12 @@ class BSMNode(Node):
 
         self.protocols[0].others.append(other.name)
 
+    @classmethod
+    def from_config(cls, name: str, tl, config: dict, template: dict, **kwargs) -> 'BSMNode':
+        return cls(name, tl, kwargs['others'], component_templates=template)
 
+
+@Node.register("QuantumRouter")
 class QuantumRouter(Node):
     """Node for entanglement distribution networks.
 
@@ -476,6 +520,11 @@ class QuantumRouter(Node):
         """
         if self.app:
             self.app.get_other_reservation(reservation)
+
+    @classmethod
+    def from_config(cls, name: str, tl, config: dict, template: dict, **kwargs) -> 'QuantumRouter':
+        memo_size = config.get("memo_size", 0)
+        return cls(name, tl, memo_size, component_templates=template)
 
 
 class QKDNode(Node):
@@ -818,6 +867,7 @@ class ClassicalNode(ClassicalEntity):
             cc.change_timeline(timeline)
 
 
+@Node.register("DQCNode")
 class DQCNode(QuantumRouter):
     """Code for DQCNode class -- node that supports Distributed Quantum Computing
 
@@ -852,6 +902,12 @@ class DQCNode(QuantumRouter):
         self.teleport_app: TeleportApp = None
         self.teledata_app = None
         self.telegate_app = None
+
+    @classmethod
+    def from_config(cls, name: str, tl, config: dict, template: dict, **kwargs) -> 'DQCNode':
+        memo_size = config.get("memo_size", 0)
+        data_memo_size = config.get("data_memo_size", 0)
+        return cls(name, tl, memo_size=memo_size, data_memo_size=data_memo_size, component_templates=template)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         """Determine what to do when a message is received, based on the msg.receiver.

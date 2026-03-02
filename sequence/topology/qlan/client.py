@@ -1,6 +1,6 @@
 from ..node import Node
 from ...kernel.timeline import Timeline
-from ...components.memory import Memory
+from ...components.memory import Memory, MemoryArray
 from ...message import Message
 from ...qlan.correction import QlanCorrectionProtocol
 
@@ -47,10 +47,11 @@ class QlanClientStateManager:
         """
         Sets the protocol to the QlanCorrectionProtocol (from the owner) and sets the memories of the manager equal to the owner's memories.
         """
-        memory_objects = [self.owner.components[memory_name] for memory_name in self.memory_names]
+        memory_objects = list(self.owner.local_memories)
         self.owner.protocols = [QlanCorrectionProtocol(owner=self.owner, name='Correction Protocol', tl=self.tl, local_memories=memory_objects)]
 
 
+@Node.register("QlanClientNode")
 class QlanClientNode(Node):
     """
     This class represents the QLAN client node.
@@ -69,40 +70,33 @@ class QlanClientNode(Node):
         adjacent_nodes (dict): A dictionary of adjacent nodes.
         local_memories (list[Memory]): The list of local memories to add as components.
     """
-    def __init__(self, name: str, tl: Timeline, num_local_memories: int = 1, memo_fidelity = 0.9, memo_frequency: int = 2000, memo_efficiency: float = 1, memo_coherence_time: float = -1, memo_wavelength: float = 500):
+    def __init__(self, name: str, tl: Timeline, num_local_memories: int = 1, component_templates: dict = {}):
         super().__init__(name, tl)
-        
-        # Number of local memories must be set to 1 in most of the cases
+
         self.num_local_memories = num_local_memories
-
-        self.memory_fidelity = memo_fidelity
-        self.memory_frequency = memo_frequency
-        self.memory_efficiency = memo_efficiency
-        self.memory_coherence_time = memo_coherence_time
-        self.memory_wavelength = memo_wavelength
-
-        self.remote_memories = []   
-        self.adjacent_nodes = {}    
-        
-        local_memory_names= [f'{name}.memo_c_{i}' for i in range(1, self.num_local_memories+1)]
-
+        self.remote_memories = []
+        self.adjacent_nodes = {}
         self.remote_memory_names = []
-        
-        local_memories = [Memory(name=memory_name, 
-                                timeline=tl, 
-                                fidelity=self.memory_fidelity, 
-                                frequency=self.memory_frequency, 
-                                efficiency=self.memory_efficiency, 
-                                coherence_time=self.memory_coherence_time, 
-                                wavelength=self.memory_wavelength) for memory_name in local_memory_names]
 
-        if len(local_memories) > 1:
+        memo_arr_args = component_templates.get("MemoryArray", {})
+        mem_array = MemoryArray(f'{name}.memo_c', tl,
+                                num_memories=self.num_local_memories,
+                                **memo_arr_args)
+        self.add_component(mem_array)
+        self.local_memories = mem_array
+        local_memory_names = [mem.name for mem in mem_array]
+
+        if len(self.local_memories) > 1:
             raise ValueError("The minimum number of memories allowed is 1.")
-        
-        for memory in local_memories:
-            self.add_component(memory)
 
         self.resource_manager = QlanClientStateManager(owner=self, tl=tl, memory_names=local_memory_names, remote_memories=self.remote_memories)
+
+    @classmethod
+    def from_config(cls, name: str, tl, config: dict, template: dict, **kwargs) -> 'QlanClientNode':
+        return cls(name, tl, 1, component_templates=kwargs.get('component_templates') or template)
+
+    def memory_expire(self, memory: "Memory") -> None:
+        self.resource_manager.update([memory], ['RAW'])
 
     def update_orchestrator(self, remote_memories: list[Memory]):
         """

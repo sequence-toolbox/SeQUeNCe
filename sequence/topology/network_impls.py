@@ -5,8 +5,6 @@ add a new NetworkImpl subclass and register it in the relevant topology file.
 """
 from abc import ABC, abstractmethod
 
-from sequence.topology.node import QuantumRouter, DQCNode
-
 from .qlan.orchestrator import QlanOrchestratorNode
 from .qlan.client import QlanClientNode
 
@@ -15,7 +13,7 @@ from networkx import Graph, dijkstra_path, exception
 from ..network_management.routing_distributed import DistributedRoutingProtocol
 from ..network_management.routing_static import StaticRoutingProtocol
 
-from .node import BSMNode
+from .node import Node, BSMNode, QuantumRouter
 from .const_topo import (
     ALL_NODE, ALL_Q_CHANNEL, ALL_C_CHANNEL,
     ATTENUATION, BSM_NODE, CONNECT_NODE_1, CONNECT_NODE_2,
@@ -209,23 +207,8 @@ class BsmNetworkImpl(NetworkImpl):
     
     def _create_node(self, node: dict, node_type: str, template: dict,
                       tl, nodes: dict, bsm_to_router_map: dict) -> None:
-        # To support a custom node type, subclass BsmNetworkImpl and override this method.
-        if node_type == BSM_NODE:
-            others   = bsm_to_router_map[node[NAME]]
-            node_obj = BSMNode(node[NAME], tl, others, component_templates=template)
-        elif node_type == QUANTUM_ROUTER:
-            memo_size = node.get(MEMO_ARRAY_SIZE, 0)
-            node_obj = QuantumRouter(node[NAME], tl, memo_size, component_templates=template)
-        elif node_type == DQC_NODE:
-            data_size = node.get(DATA_MEMO_ARRAY_SIZE, 0)
-            comm_size = node.get(MEMO_ARRAY_SIZE, 0)
-            node_obj = DQCNode(node[NAME], tl, memo_size=comm_size, data_memo_size=data_size, component_templates=template)
-        else:
-            raise ValueError(
-                f"Unknown node type '{node_type}'. "
-                "To add a custom node type, subclass BsmNetworkImpl and override _create_node."
-            )
-
+        others = bsm_to_router_map.get(node[NAME], [])
+        node_obj = Node.create(node_type, node[NAME], tl, node, template, others=others)
         node_obj.set_seed(node[SEED])
         nodes[node_type].append(node_obj)
 
@@ -242,7 +225,9 @@ class QlanNetworkImpl(NetworkImpl):
 
         Supports two formats (legacy flat keys and new template-based) independently
         for orchestrator and client nodes. Writes normalized params into
-        self.orch_memo_arr / self.client_memo_arr so _create_node is format-agnostic.
+        self.orch_component_templates / self.client_component_templates as
+        {"MemoryArray": {...}} dicts so _create_node can pass them straight through
+        to node constructors via component_templates.
         """
         # Structural params
         self.n_local_memories = config.get(LOCAL_MEMORIES, 1)
@@ -252,49 +237,26 @@ class QlanNetworkImpl(NetworkImpl):
         # LEGACY: flat top-level memory params.
         # Older configs specified fidelity, frequency, etc. as top-level keys.
         # New configs use per-node templates instead. These branches are backwards compat only.
+        self.orch_component_templates   = None
+        self.client_component_templates = None
+
         if MEM_FIDELITY_ORCH in config:
-            self.memo_fidelity_orch   = config.get(MEM_FIDELITY_ORCH,   0.9)
-            self.memo_freq_orch       = config.get(MEM_FREQUENCY_ORCH,  2000)
-            self.memo_efficiency_orch = config.get(MEM_EFFICIENCY_ORCH, 1)
-            self.memo_coherence_orch  = config.get(MEM_COHERENCE_ORCH,  -1)
-            self.memo_wavelength_orch = config.get(MEM_WAVELENGTH_ORCH, 500)
-        else:
-            orch_mem = self._qlan_memarray(config, ORCHESTRATOR, templates)
-            self.memo_fidelity_orch   = orch_mem.get("fidelity",       0.9)
-            self.memo_freq_orch       = orch_mem.get("frequency",      2000)
-            self.memo_efficiency_orch = orch_mem.get("efficiency",     1)
-            self.memo_coherence_orch  = orch_mem.get("coherence_time", -1)
-            self.memo_wavelength_orch = orch_mem.get("wavelength",     500)
+            self.orch_component_templates = {"MemoryArray": {
+                "fidelity":       config.get(MEM_FIDELITY_ORCH,   0.9),
+                "frequency":      config.get(MEM_FREQUENCY_ORCH,  2000),
+                "efficiency":     config.get(MEM_EFFICIENCY_ORCH, 1),
+                "coherence_time": config.get(MEM_COHERENCE_ORCH,  -1),
+                "wavelength":     config.get(MEM_WAVELENGTH_ORCH, 500),
+            }}
 
         if MEM_FIDELITY_CLIENT in config:
-            self.memo_fidelity_client   = config.get(MEM_FIDELITY_CLIENT,   0.9)
-            self.memo_freq_client       = config.get(MEM_FREQUENCY_CLIENT,  2000)
-            self.memo_efficiency_client = config.get(MEM_EFFICIENCY_CLIENT, 1)
-            self.memo_coherence_client  = config.get(MEM_COHERENCE_CLIENT,  -1)
-            self.memo_wavelength_client = config.get(MEM_WAVELENGTH_CLIENT, 500)
-        else:
-            client_mem = self._qlan_memarray(config, CLIENT, templates)
-            self.memo_fidelity_client   = client_mem.get("fidelity",       0.9)
-            self.memo_freq_client       = client_mem.get("frequency",      2000)
-            self.memo_efficiency_client = client_mem.get("efficiency",     1)
-            self.memo_coherence_client  = client_mem.get("coherence_time", -1)
-            self.memo_wavelength_client = client_mem.get("wavelength",     500)
-
-        # Normalize both formats into a consistent dict for _create_node
-        self.orch_memo_arr = {
-            "fidelity":       self.memo_fidelity_orch,
-            "frequency":      self.memo_freq_orch,
-            "efficiency":     self.memo_efficiency_orch,
-            "coherence_time": self.memo_coherence_orch,
-            "wavelength":     self.memo_wavelength_orch,
-        }
-        self.client_memo_arr = {
-            "fidelity":       self.memo_fidelity_client,
-            "frequency":      self.memo_freq_client,
-            "efficiency":     self.memo_efficiency_client,
-            "coherence_time": self.memo_coherence_client,
-            "wavelength":     self.memo_wavelength_client,
-        }
+            self.client_component_templates = {"MemoryArray": {
+                "fidelity":       config.get(MEM_FIDELITY_CLIENT,   0.9),
+                "frequency":      config.get(MEM_FREQUENCY_CLIENT,  2000),
+                "efficiency":     config.get(MEM_EFFICIENCY_CLIENT, 1),
+                "coherence_time": config.get(MEM_COHERENCE_CLIENT,  -1),
+                "wavelength":     config.get(MEM_WAVELENGTH_CLIENT, 500),
+            }}
 
         # Accumulator lists - populated by _create_node
         self._remote_memories      = []
@@ -324,47 +286,26 @@ class QlanNetworkImpl(NetworkImpl):
                      tl, nodes: dict, bsm_to_router_map: dict) -> None:
         """Construct QLAN nodes."""
         if node_type == CLIENT:
-            memo_arr = self.client_memo_arr
-            node_obj = QlanClientNode(node[NAME],
-                tl, 1,
-                memo_arr["fidelity"],
-                memo_arr["frequency"],
-                memo_arr["efficiency"],
-                memo_arr["coherence_time"],
-                memo_arr["wavelength"],
-            )
+            node_obj = Node.create(node_type, node[NAME], tl, node, template,
+                                   component_templates=self.client_component_templates)
             node_obj.set_seed(node[SEED])
-            memo = node_obj.get_components_by_type("Memory")[0]
+            memo = node_obj.get_components_by_type("MemoryArray")[0][0]
             self._remote_memories.append(memo)
             self.remote_memories_array.append(memo)
             self.client_nodes.append(node_obj)
-            nodes[node_type].append(node_obj)
 
         elif node_type == ORCHESTRATOR:
-            memo_arr = self.orch_memo_arr
-            node_obj = QlanOrchestratorNode(
-                node[NAME], tl,
-                self.n_local_memories,
-                self._remote_memories,
-                memo_arr["fidelity"],
-                memo_arr["frequency"],
-                memo_arr["efficiency"],
-                memo_arr["coherence_time"],
-                memo_arr["wavelength"],
-            )
+            node_obj = Node.create(node_type, node[NAME], tl, node, template,
+                                   component_templates=self.orch_component_templates,
+                                   n_local_memories=self.n_local_memories,
+                                   remote_memories=self._remote_memories)
             node_obj.update_bases(self.meas_bases)
             node_obj.set_seed(node[SEED])
             self.orchestrator_nodes.append(node_obj)
-            nodes[node_type].append(node_obj)
 
         else:
-            raise ValueError(f"Unknown QLAN node type '{node_type}'")
+            node_obj = Node.create(node_type, node[NAME], tl, node, template)
+            node_obj.set_seed(node[SEED])
 
-    def _qlan_memarray(self, config: dict, node_type: str, templates: dict) -> dict:
-        """Return the MemoryArray template dict for the first node of node_type."""
-        for node in config.get(ALL_NODE, []):
-            if node[TYPE] == node_type:
-                tmpl_name = node.get(TEMPLATE)
-                if tmpl_name and tmpl_name in templates:
-                    return templates[tmpl_name].get("MemoryArray", {})
-        return {}
+        nodes[node_type].append(node_obj)
+

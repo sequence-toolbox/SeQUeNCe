@@ -1,0 +1,33 @@
+{
+    "stop_time": 10e12,
+    "nodes": [
+        {
+            "name": "r1",
+            "type": "LoggingRouter",
+            "seed": 0,
+            "memo_size": 10
+        },
+        {
+            "name": "r2",
+            "type": "LoggingRouter",
+            "seed": 1,
+            "memo_size": 10
+        }
+    ],
+    "qconnections": [
+        {
+            "node1": "r1",
+            "node2": "r2",
+            "attenuation": 0.0002,
+            "distance": 2000,
+            "type": "meet_in_the_middle"
+        }
+    ],
+    "cconnections": [
+        {
+            "node1": "r1",
+            "node2": "r2",
+            "delay": 1000000000
+        }
+    ]
+}
