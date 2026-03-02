@@ -5,6 +5,7 @@ manage a network's structure.
 Topology instances automatically perform many useful network functions.
 """
 
+import copy
 import json
 import warnings
 import numpy as np
@@ -103,16 +104,20 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
             **kwargs: additional config overrides (e.g. nodes, templates, stop_time).
         """
         if isinstance(config, str):
-            config = self._load_config(config)
+            source_config = self._load_config(config)
         elif not isinstance(config, dict):
             raise TypeError(
                 f"config must be a file path (str) or a config dict, got {type(config).__name__}"
             )
+        else:
+            source_config = config
+        config = copy.deepcopy(source_config)
         if kwargs:
             self._merge_overrides(config, kwargs)
         if ALL_NODE not in config or not config[ALL_NODE]:
             raise ValueError("Config must contain a non-empty 'nodes' list.")
         self._setup(config, networkimpl)
+        self._source_cfg = copy.deepcopy(source_config)
         self._raw_cfg = config
 
     @staticmethod
