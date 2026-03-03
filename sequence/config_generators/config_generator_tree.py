@@ -78,36 +78,36 @@ def add_branches(node_names, nodes, index, bsm_names, bsm_nodes, qchannels, ccha
                              qchannels, cchannels)
     return bsm_names, bsm_nodes, qchannels, cchannels
 
+def main():
+    # parse args
+    parser = argparse.ArgumentParser()
+    parser.add_argument('tree_size', type=int, help='number of nodes in the tree')
+    parser.add_argument('branches', type=int, help='number of branches per node')
+    parser = add_default_args(parser)
+    args = parser.parse_args()
 
-# parse args
-parser = argparse.ArgumentParser()
-parser.add_argument('tree_size', type=int, help='number of nodes in the tree')
-parser.add_argument('branches', type=int, help='number of branches per node')
-parser = add_default_args(parser)
-args = parser.parse_args()
+    output_dict = {}
 
-output_dict = {}
+    router_names = [router_name_func(i) for i in range(args.tree_size)]
+    nodes = generate_nodes(router_names, args.memo_size)
 
-router_names = [router_name_func(i) for i in range(args.tree_size)]
-nodes = generate_nodes(router_names, args.memo_size)
+    # generate quantum links and bsm connections
+    bsm_names, bsm_nodes, qchannels, cchannels = \
+            add_branches(router_names, nodes, 0, [], [], [], [])
+    nodes += bsm_nodes
+    output_dict[Topology.ALL_NODE] = nodes
+    output_dict[Topology.ALL_Q_CHANNEL] = qchannels
 
-# generate quantum links and bsm connections
-bsm_names, bsm_nodes, qchannels, cchannels = \
-        add_branches(router_names, nodes, 0, [], [], [], [])
-nodes += bsm_nodes
-output_dict[Topology.ALL_NODE] = nodes
-output_dict[Topology.ALL_Q_CHANNEL] = qchannels
+    # generate classical links
+    router_cchannels = generate_classical(router_names, args.cc_delay)
+    cchannels += router_cchannels
+    output_dict[Topology.ALL_C_CHANNEL] = cchannels
 
-# generate classical links
-router_cchannels = generate_classical(router_names, args.cc_delay)
-cchannels += router_cchannels
-output_dict[Topology.ALL_C_CHANNEL] = cchannels
+    # write other config options to output dictionary
+    final_config(output_dict, args)
 
-# write other config options to output dictionary
-final_config(output_dict, args)
-
-# write final json
-path = os.path.join(args.directory, args.output)
-output_file = open(path, 'w')
-json.dump(output_dict, output_file, indent=4)
+    # write final json
+    path = os.path.join(args.directory, args.output)
+    output_file = open(path, 'w')
+    json.dump(output_dict, output_file, indent=4)
 

@@ -24,38 +24,37 @@ import os
 from sequence.utils.config_generator import *
 from sequence.topology.topology import Topology
 
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('l', type=int, help="l (int) - Number of cliques")
+    parser.add_argument('k', type=int, help="k (int) - Size of cliques")
+    add_default_args(parser)
+    args = parser.parse_args()
 
+    graph = nx.connected_caveman_graph(args.l, args.k)
+    mapping = {}
+    NODE_NUM = args.l * args.k
+    for i in range(NODE_NUM):
+        mapping[i] = router_name_func(i)
+    nx.relabel_nodes(graph, mapping, copy=False)
 
-parser = argparse.ArgumentParser()
-parser.add_argument('l', type=int, help="l (int) - Number of cliques")
-parser.add_argument('k', type=int, help="k (int) - Size of cliques")
-add_default_args(parser)
-args = parser.parse_args()
+    output_dict = {}
 
-graph = nx.connected_caveman_graph(args.l, args.k)
-mapping = {}
-NODE_NUM = args.l * args.k
-for i in range(NODE_NUM):
-    mapping[i] = router_name_func(i)
-nx.relabel_nodes(graph, mapping, copy=False)
+    router_names = [router_name_func(i) for i in range(NODE_NUM)]
+    nodes = generate_nodes(router_names, args.memo_size)
 
-output_dict = {}
+    cchannels, qchannels, bsm_nodes = generate_bsm_links(graph, args, bsm_name_func)
+    nodes += bsm_nodes
+    output_dict[Topology.ALL_NODE] = nodes
+    output_dict[Topology.ALL_Q_CHANNEL] = qchannels
 
-router_names = [router_name_func(i) for i in range(NODE_NUM)]
-nodes = generate_nodes(router_names, args.memo_size)
+    router_cchannels = generate_classical(router_names, args.cc_delay)
+    cchannels += router_cchannels
+    output_dict[Topology.ALL_C_CHANNEL] = cchannels
 
-cchannels, qchannels, bsm_nodes = generate_bsm_links(graph, args, bsm_name_func)
-nodes += bsm_nodes
-output_dict[Topology.ALL_NODE] = nodes
-output_dict[Topology.ALL_Q_CHANNEL] = qchannels
+    final_config(output_dict, args)
 
-router_cchannels = generate_classical(router_names, args.cc_delay)
-cchannels += router_cchannels
-output_dict[Topology.ALL_C_CHANNEL] = cchannels
-
-final_config(output_dict, args)
-
-# write final json
-path = os.path.join(args.directory, args.output)
-output_file = open(path, 'w')
-json.dump(output_dict, output_file, indent=4)
+    # write final json
+    path = os.path.join(args.directory, args.output)
+    output_file = open(path, 'w')
+    json.dump(output_dict, output_file, indent=4)

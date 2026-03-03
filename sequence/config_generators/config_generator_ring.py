@@ -24,68 +24,68 @@ from sequence.topology.topology import Topology
 from sequence.topology.router_net_topo import RouterNetTopo
 from sequence.constants import MILLISECOND
 
+def main():
+    # python config_generator_ring.py 4 10 1 0.0002 1 -o ring_topo.json -s 100
 
-# python config_generator_ring.py 4 10 1 0.0002 1 -o ring_topo.json -s 100
+    # parse args
+    parser = argparse.ArgumentParser()
+    parser.add_argument('ring_size', type=int, help='number of network nodes')
+    parser = add_default_args(parser)
+    args = parser.parse_args()
 
-# parse args
-parser = argparse.ArgumentParser()
-parser.add_argument('ring_size', type=int, help='number of network nodes')
-parser = add_default_args(parser)
-args = parser.parse_args()
+    output_dict = {}
 
-output_dict = {}
+    # get node names, processes
+    router_names = [router_name_func(i) for i in range(args.ring_size)]
+    nodes = generate_nodes(router_names, args.memo_size)
 
-# get node names, processes
-router_names = [router_name_func(i) for i in range(args.ring_size)]
-nodes = generate_nodes(router_names, args.memo_size)
-
-# generate bsm nodes, quantum links (quantum channels + classical channels)
-qchannels = []
-cchannels = []
-bsm_names = ["BSM_{}_{}".format(i % args.ring_size, (i+1) % args.ring_size)
-             for i in range(args.ring_size)]
-bsm_nodes = [{Topology.NAME: bsm_name, Topology.TYPE: RouterNetTopo.BSM_NODE, Topology.SEED: i}
-             for i, bsm_name in enumerate(bsm_names)]
+    # generate bsm nodes, quantum links (quantum channels + classical channels)
+    qchannels = []
+    cchannels = []
+    bsm_names = ["BSM_{}_{}".format(i % args.ring_size, (i+1) % args.ring_size)
+                 for i in range(args.ring_size)]
+    bsm_nodes = [{Topology.NAME: bsm_name, Topology.TYPE: RouterNetTopo.BSM_NODE, Topology.SEED: i}
+                 for i, bsm_name in enumerate(bsm_names)]
 
 
-for i, bsm_name in enumerate(bsm_names):
-    # qchannels
-    qchannels.append({Topology.SRC: router_names[i % args.ring_size],
-                      Topology.DST: bsm_name,
-                      Topology.DISTANCE: args.qc_length * 500,
-                      Topology.ATTENUATION: args.qc_atten})
-    qchannels.append({Topology.SRC: router_names[(i + 1) % args.ring_size],
-                      Topology.DST: bsm_name,
-                      Topology.DISTANCE: args.qc_length * 500,
-                      Topology.ATTENUATION: args.qc_atten})
-    # cchannels
-    cchannels.append({Topology.SRC: router_names[i % args.ring_size],
-                      Topology.DST: bsm_name,
-                      Topology.DELAY: int(args.cc_delay * MILLISECOND)})
-    cchannels.append({Topology.SRC: router_names[(i + 1) % args.ring_size],
-                      Topology.DST: bsm_name,
-                      Topology.DELAY: int(args.cc_delay * MILLISECOND)})
-    cchannels.append({Topology.SRC: bsm_name,
-                      Topology.DST: router_names[i % args.ring_size],
-                      Topology.DELAY: int(args.cc_delay * MILLISECOND)})
-    cchannels.append({Topology.SRC: bsm_name,
-                      Topology.DST: router_names[(i + 1) % args.ring_size],
-                      Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+    for i, bsm_name in enumerate(bsm_names):
+        # qchannels
+        qchannels.append({Topology.SRC: router_names[i % args.ring_size],
+                          Topology.DST: bsm_name,
+                          Topology.DISTANCE: args.qc_length * 500,
+                          Topology.ATTENUATION: args.qc_atten})
+        qchannels.append({Topology.SRC: router_names[(i + 1) % args.ring_size],
+                          Topology.DST: bsm_name,
+                          Topology.DISTANCE: args.qc_length * 500,
+                          Topology.ATTENUATION: args.qc_atten})
+        # cchannels
+        cchannels.append({Topology.SRC: router_names[i % args.ring_size],
+                          Topology.DST: bsm_name,
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+        cchannels.append({Topology.SRC: router_names[(i + 1) % args.ring_size],
+                          Topology.DST: bsm_name,
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+        cchannels.append({Topology.SRC: bsm_name,
+                          Topology.DST: router_names[i % args.ring_size],
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
+        cchannels.append({Topology.SRC: bsm_name,
+                          Topology.DST: router_names[(i + 1) % args.ring_size],
+                          Topology.DELAY: int(args.cc_delay * MILLISECOND)})
 
-nodes += bsm_nodes
-output_dict[Topology.ALL_NODE] = nodes
-output_dict[Topology.ALL_Q_CHANNEL] = qchannels
+    nodes += bsm_nodes
+    output_dict[Topology.ALL_NODE] = nodes
+    output_dict[Topology.ALL_Q_CHANNEL] = qchannels
 
-# generate classical links (classical channels)
-router_cchannels = generate_classical(router_names, args.cc_delay)
-cchannels += router_cchannels
-output_dict[Topology.ALL_C_CHANNEL] = cchannels
+    # generate classical links (classical channels)
+    router_cchannels = generate_classical(router_names, args.cc_delay)
+    cchannels += router_cchannels
+    output_dict[Topology.ALL_C_CHANNEL] = cchannels
 
-# write other config options to output dictionary
-final_config(output_dict, args)
+    # write other config options to output dictionary
+    final_config(output_dict, args)
 
-# write final json
-path = os.path.join(args.directory, args.output)
-output_file = open(path, 'w')
-json.dump(output_dict, output_file, indent=4)
+    # write final json
+    path = os.path.join(args.directory, args.output)
+    output_file = open(path, 'w')
+    json.dump(output_dict, output_file, indent=4)
 

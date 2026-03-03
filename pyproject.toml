@@ -44,7 +44,14 @@ dependencies = [
 ]
 
 [project.scripts]
-generate-line = "sequence.config_generators.config_generator_line:main"
+generate-internet-autonomous = "sequence.config_generators.config_generator_as_memo_num:main"
+generate-caveman = "sequence.config_generators.config_generator_caveman:main"
+generate-linear = "sequence.config_generators.config_generator_line:main"
+generate-mesh = "sequence.config_generators.config_generator_mesh:main"
+generate-random = "sequence.config_generators.config_generator_random:main"
+generate-ring = "sequence.config_generators.config_generator_ring:main"
+generate-star = "sequence.config_generators.config_generator_star:main"
+generate-tree = "sequence.config_generators.config_generator_tree:main"
 
 [build-system]
 requires = ["uv_build>=0.9.17,<0.10.0"]
