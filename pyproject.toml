@@ -43,6 +43,9 @@ dependencies = [
     "tqdm>=4.67.1",
 ]
 
+[project.scripts]
+generate-line = "sequence.config_generators.config_generator_line:main"
+
 [build-system]
 requires = ["uv_build>=0.9.17,<0.10.0"]
 build-backend = "uv_build"
