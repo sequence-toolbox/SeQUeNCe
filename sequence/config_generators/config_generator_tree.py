@@ -34,7 +34,7 @@ from ..constants import MILLISECOND
 
 
 
-def add_branches(node_names, nodes, index, bsm_names, bsm_nodes, qchannels, cchannels):
+def add_branches(args, node_names, nodes, index, bsm_names, bsm_nodes, qchannels, cchannels):
     node1 = node_names[index]
     branch_indices = [args.branches*index+i for i in range(1, args.branches+1)]
 
@@ -74,7 +74,7 @@ def add_branches(node_names, nodes, index, bsm_names, bsm_nodes, qchannels, ccha
                               Topology.DELAY: int(args.cc_delay * MILLISECOND)})
 
             bsm_names, bsm_nodes, qchannels, cchannels = \
-                add_branches(node_names, nodes, i, bsm_names, bsm_nodes,
+                add_branches(args, node_names, nodes, i, bsm_names, bsm_nodes,
                              qchannels, cchannels)
     return bsm_names, bsm_nodes, qchannels, cchannels
 
@@ -93,7 +93,7 @@ def main():
 
     # generate quantum links and bsm connections
     bsm_names, bsm_nodes, qchannels, cchannels = \
-            add_branches(router_names, nodes, 0, [], [], [], [])
+            add_branches(args, router_names, nodes, 0, [], [], [], [])
     nodes += bsm_nodes
     output_dict[Topology.ALL_NODE] = nodes
     output_dict[Topology.ALL_Q_CHANNEL] = qchannels
