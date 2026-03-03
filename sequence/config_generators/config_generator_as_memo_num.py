@@ -10,7 +10,7 @@ import json
 import numpy as np
 import random
 
-from ..utils.config_generator import add_default_args, generate_bsm_links, generate_classical, final_config, router_name_func, bsm_name_func
+from .config_generator import add_default_args, generate_bsm_links, generate_classical, final_config, router_name_func, bsm_name_func
 from ..topology.topology import Topology
 from ..topology.router_net_topo import RouterNetTopo
 
@@ -94,7 +94,7 @@ def main():
         if unused_nodes:
             n2 = unused_nodes.pop()
         else:
-            samples = random.choice(list(range(NET_SIZE)), 2)
+            samples = np.random.choice(list(range(NET_SIZE)), 2)
             if samples[0] != n1:
                 n2 = samples[0]
             else:
