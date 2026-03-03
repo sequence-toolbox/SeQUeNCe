@@ -4,3 +4,5 @@
 - `qlan` folder contains code for paper "Simulation of Entanglement-Enabled Connectivity in QLANs using SeQUeNCe", IEEE ICC 2025
 - `quantum_transduction` folder contains code for paper "Simulation of Quantum Transduction Strategies for Quantum Networks", IEEE QCE 2025
 - `starlight` folder contains code for the original SeQUeNCe paper "SeQUeNCe: a customizable discrete-event simulator of quantum networks", Quantum Science and Technology, 2021
+- `topology_extensions` folder contains focused examples for extending the refactored topology layer with custom nodes, midpoint logic, and network-manager behavior
+

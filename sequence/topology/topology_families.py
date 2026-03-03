@@ -122,13 +122,8 @@ class BsmTopologyFamily(TopologyFamily):
             TEMPLATE: q_connect.get(TEMPLATE, None),
         }
 
-    def _qchannel_configs_for_qconnection(
-        self,
-        node1: str,
-        node2: str,
-        midpoint_name: str,
-        q_connect: dict,
-    ) -> list[dict]:
+    def _qchannel_configs_for_qconnection(self, node1: str, node2: str,
+                                           midpoint_name: str, q_connect: dict) -> list[dict]:
         attenuation = q_connect[ATTENUATION]
         distance = q_connect[DISTANCE] // 2
         return [
@@ -142,14 +137,9 @@ class BsmTopologyFamily(TopologyFamily):
             for src in (node1, node2)
         ]
 
-    def _cchannel_configs_for_qconnection(
-        self,
-        node1: str,
-        node2: str,
-        midpoint_name: str,
-        cc_delay: float,
-        q_connect: dict,
-    ) -> list[dict]:
+    def _cchannel_configs_for_qconnection(self, node1: str, node2: str,
+                                           midpoint_name: str, cc_delay: float,
+                                           q_connect: dict) -> list[dict]:
         distance = q_connect[DISTANCE] // 2
         cchannels = []
         for src in (node1, node2):

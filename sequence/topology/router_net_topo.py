@@ -32,5 +32,7 @@ class RouterNetTopo(Topology):
         "CONTROLLER":     CONTROLLER,
     }
 
+    # Add topo-specific member functions here, e.g. querying, inference, aggregation
+
     def __init__(self, config: "str | dict", **kwargs):
         super().__init__(config, BsmTopologyFamily(), **kwargs)
