@@ -29,7 +29,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('net_size', type=int, help="net_size (int) - Number of routers")
     parser.add_argument('seed', type=int, help="seed (int) - Indicator of random number generation state.")
-    parser.add_argument('alpha', type=int, help="Alph for exponential distribution of flows")
+    parser.add_argument('alpha', type=int, help="Alpha for exponential distribution of flows")
     parser = add_default_args(parser)
     args = parser.parse_args()
 
@@ -174,3 +174,6 @@ def main():
                 assert table[path[-1]] == path[i + 1]
             else:
                 table[path[-1]] = path[i + 1]
+
+if __name__ == "__main__":
+    main()

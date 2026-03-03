@@ -58,3 +58,6 @@ def main():
     path = os.path.join(args.directory, args.output)
     output_file = open(path, 'w')
     json.dump(output_dict, output_file, indent=4)
+
+if __name__ == "__main__":
+    main()
