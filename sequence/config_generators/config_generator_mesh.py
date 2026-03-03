@@ -19,10 +19,10 @@ import os
 import argparse
 import json
 
-from sequence.utils.config_generator import add_default_args, generate_nodes, final_config, router_name_func
-from sequence.topology.topology import Topology
-from sequence.topology.router_net_topo import RouterNetTopo
-from sequence.constants import MILLISECOND
+from ..utils.config_generator import add_default_args, generate_nodes, final_config, router_name_func
+from ..topology.topology import Topology
+from ..topology.router_net_topo import RouterNetTopo
+from ..constants import MILLISECOND
 
 def main():
     # parse args

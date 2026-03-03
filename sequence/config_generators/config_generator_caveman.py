@@ -21,8 +21,8 @@ import argparse
 import json
 import os
 
-from sequence.utils.config_generator import *
-from sequence.topology.topology import Topology
+from ..utils.config_generator import add_default_args, router_name_func, generate_nodes, generate_classical, generate_bsm_links, bsm_name_func, final_config
+from ..topology.topology import Topology
 
 def main():
     parser = argparse.ArgumentParser()

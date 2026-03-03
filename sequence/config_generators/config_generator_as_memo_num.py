@@ -1,4 +1,5 @@
-"""This module generates JSON config files for Internet Autonomous System Network
+"""
+This module generates JSON config files for Internet Autonomous System Network
 """
 
 from collections import defaultdict
@@ -28,7 +29,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('net_size', type=int, help="net_size (int) - Number of routers")
     parser.add_argument('seed', type=int, help="seed (int) - Indicator of random number generation state.")
-    parser.add_argument('alpha', type=int, help="alpha for exponential distribution of flows")
+    parser.add_argument('alpha', type=int, help="Alph for exponential distribution of flows")
     parser = add_default_args(parser)
     args = parser.parse_args()
 
@@ -173,15 +174,3 @@ def main():
                 assert table[path[-1]] == path[i + 1]
             else:
                 table[path[-1]] = path[i + 1]
-
-    # visualization
-    # r_f = lambda: random.randint(0,255)
-    # colors = ['#%02X%02X%02X' % (r_f(),r_f(),r_f()) for _ in range(NET_SIZE)]
-    # r_group = node_procs
-    # color_map = [None] * NET_SIZE
-    #
-    # for n in r_group:
-    #     index = int(n.replace("router_", ""))
-    #     color_map[index] = colors[r_group[n]]
-    # nx.draw(graph, node_color=color_map)
-    # plt.show()

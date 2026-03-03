@@ -22,10 +22,10 @@ import numpy as np
 import random
 from networkx.generators.geometric import waxman_graph
 
-from sequence.utils.config_generator import add_default_args, generate_nodes, final_config, router_name_func
-from sequence.topology.topology import Topology
-from sequence.topology.router_net_topo import RouterNetTopo
-from sequence.constants import MILLISECOND
+from ..utils.config_generator import add_default_args, generate_nodes, final_config, router_name_func
+from ..topology.topology import Topology
+from ..topology.router_net_topo import RouterNetTopo
+from ..constants import MILLISECOND
 
 
 def create_random_waxman(area_length: int, number_nodes: int, edge_density: float) -> tuple[list, list]:
