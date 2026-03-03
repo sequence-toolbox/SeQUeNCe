@@ -51,7 +51,6 @@ class QlanClientStateManager:
         self.owner.protocols = [QlanCorrectionProtocol(owner=self.owner, name='Correction Protocol', tl=self.tl, local_memories=memory_objects)]
 
 
-@Node.register("QlanClientNode")
 class QlanClientNode(Node):
     """
     This class represents the QLAN client node.
@@ -87,13 +86,10 @@ class QlanClientNode(Node):
         local_memory_names = [mem.name for mem in mem_array]
 
         if len(self.local_memories) > 1:
+            # Note: this used to say "minimum", but the check is > 1, so "maximum" is correct.
             raise ValueError("The maximum number of memories allowed is 1.")
 
         self.resource_manager = QlanClientStateManager(owner=self, tl=tl, memory_names=local_memory_names, remote_memories=self.remote_memories)
-
-    @classmethod
-    def from_config(cls, name: str, tl, config: dict, template: dict, **kwargs) -> 'QlanClientNode':
-        return cls(name, tl, 1, component_templates=kwargs.get('component_templates') or template)
 
     def memory_expire(self, memory: "Memory") -> None:
         self.resource_manager.update([memory], ['RAW'])

@@ -57,9 +57,3 @@ MEASUREMENT_BASES = "measurement_bases"
 # DQCNetTopo build_config keys
 DQC_NODE = "DQCNode"
 DATA_MEMO_ARRAY_SIZE = "data_memo_size"
-
-# Topology role names
-ROLE_BSM_MIDPOINT = "bsm_midpoint"
-ROLE_BSM_ENDPOINT = "bsm_endpoint"
-ROLE_ROUTABLE_ENDPOINT = "routable_endpoint"
-ROLE_DQC_ENDPOINT = "dqc_endpoint"

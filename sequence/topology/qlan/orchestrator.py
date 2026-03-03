@@ -89,7 +89,6 @@ class QlanOrchestratorStateManager:
         self.owner.find_adjacent_nodes(tl, remote_memories)
 
 
-@Node.register("QlanOrchestratorNode")
 class QlanOrchestratorNode(Node):
     """
     This class represents a network node that shares a GHZ state.
@@ -141,11 +140,6 @@ class QlanOrchestratorNode(Node):
                         self.adjacent_nodes[key] = [target_array[i-1], target_array[i+1]]
                     elif i == len(target_array) - 1:
                         self.adjacent_nodes[key] = [target_array[i-1]]
-
-    @classmethod
-    def from_config(cls, name: str, tl, config: dict, template: dict, **kwargs) -> 'QlanOrchestratorNode':
-        return cls(name, tl, kwargs['n_local_memories'], kwargs['remote_memories'],
-                   component_templates=kwargs.get('component_templates') or template)
 
     def update_bases(self, bases: str):
         """

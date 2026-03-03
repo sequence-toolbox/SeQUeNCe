@@ -5,7 +5,7 @@ from .topology_families import BsmTopologyFamily
 
 from .const_topo import (
     ALL_NODE, BSM_NODE, CONTROLLER, DATA_MEMO_ARRAY_SIZE,
-    DQC_NODE, MEET_IN_THE_MID, MEMO_ARRAY_SIZE, ROLE_DQC_ENDPOINT,
+    DQC_NODE, MEET_IN_THE_MID, MEMO_ARRAY_SIZE,
 )
 
 
@@ -13,7 +13,7 @@ class DqcBsmFamily(BsmTopologyFamily):
     """BSM implementor for distributed quantum computing networks."""
 
     def _is_routing_endpoint_type(self, node_type: str) -> bool:
-        return self._type_has_role(node_type, ROLE_DQC_ENDPOINT)
+        return node_type == DQC_NODE
 
 
 class DQCNetTopo(Topology):

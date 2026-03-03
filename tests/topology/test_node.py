@@ -3,7 +3,6 @@ from sequence.kernel.timeline import Timeline
 import pytest
 
 from sequence.topology.node import Node, ClassicalNode, QuantumRouter, BSMNode, DQCNode
-from sequence.topology.const_topo import ROLE_BSM_ENDPOINT
 
 
 def test_Node_assign_cchannel():
@@ -146,59 +145,3 @@ def test_ClassicalNode_send_message():
         assert actual == expect
 
 
-def test_builtins_registered():
-    assert "BSMNode" in Node._registry
-    assert "QuantumRouter" in Node._registry
-    assert "DQCNode" in Node._registry
-
-
-def test_unknown_type_raises():
-    with pytest.raises(ValueError, match="Unknown node type"):
-        Node.create("NoSuchNode", "n", Timeline(stop_time=1e12), {}, {})
-
-
-def test_decorator_registration():
-    @Node.register("TestNode")
-    class TestNode(QuantumRouter):
-        pass
-
-    assert "TestNode" in Node._registry
-
-
-def test_registration_rejects_duplicate_type_names():
-    @Node.register("DuplicateNameRouter")
-    class DuplicateNameRouter(QuantumRouter):
-        pass
-
-    with pytest.raises(ValueError, match="already registered"):
-        @Node.register("DuplicateNameRouter")
-        class AnotherDuplicateNameRouter(QuantumRouter):
-            pass
-
-
-def test_quantum_router_from_config():
-    node = Node.create("QuantumRouter", "r1", Timeline(stop_time=1e12), {"memo_size": 7}, {})
-    assert isinstance(node, QuantumRouter)
-    assert len(node.components[node.memo_arr_name]) == 7
-
-
-def test_bsm_node_from_config():
-    node = Node.create("BSMNode", "bsm1", Timeline(stop_time=1e12), {}, {}, others=["r1", "r2"])
-    assert isinstance(node, BSMNode)
-
-
-def test_dqc_node_from_config():
-    node = Node.create("DQCNode", "d1", Timeline(stop_time=1e12), {"memo_size": 3, "data_memo_size": 2}, {})
-    assert isinstance(node, DQCNode)
-    assert len(node.components[node.data_memo_arr_name]) == 2
-
-
-def test_subclass_inherits_endpoint_role():
-    @Node.register("InheritedRoleRouter")
-    class InheritedRoleRouter(QuantumRouter):
-        @classmethod
-        def from_config(cls, name, tl, config, template, **kwargs):
-            memo_size = config.get("memo_size", 0)
-            return cls(name, tl, memo_size=memo_size, component_templates=template)
-
-    assert ROLE_BSM_ENDPOINT in InheritedRoleRouter.topology_roles
