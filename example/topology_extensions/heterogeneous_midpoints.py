@@ -1,4 +1,4 @@
-""" Truly Naive demo (Apparently I'll be working with Dr. Dibos this summer though)
+""" Truly Naive demo (Apparently I'll be working on Erbium anyway this summer)
 - special demo of qconnection expansion driven by endpoint properties.
 
 This example shows the intended user-space extension path:
