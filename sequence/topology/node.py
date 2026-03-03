@@ -191,10 +191,20 @@ class Node(Entity):
         Returns:
             list: A list of components matching the requested type.
         """
+        # The topology refactor unified QLAN nodes to use MemoryArray (like
+        # QuantumRouter) instead of individual Memory components.  Without this
+        # expansion, get_components_by_type("Memory") would silently return
+        # nothing on any node that stores its memories inside a MemoryArray.
+        candidates = []
+        for comp in self.components.values():
+            candidates.append(comp)
+            if isinstance(comp, MemoryArray):
+                candidates.extend(comp.memories)
+
         if isinstance(component_type, str):
-            return [comp for comp in self.components.values() if comp.__class__.__name__ == component_type]
+            return [comp for comp in candidates if comp.__class__.__name__ == component_type]
         if isinstance(component_type, type):
-            return [comp for comp in self.components.values() if isinstance(comp, component_type)]
+            return [comp for comp in candidates if isinstance(comp, component_type)]
         return []
 
     def get_component_by_name(self, name: str) -> Optional["Entity"]:
