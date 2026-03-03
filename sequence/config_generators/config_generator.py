@@ -2,10 +2,10 @@
 Examples of using this module is in https://github.com/sequence-toolbox/SeQUeNCe/tree/master/utils/json_config_generators
 """
 
-from sequence.topology.topology import Topology
-from sequence.topology.router_net_topo import RouterNetTopo
-from sequence.topology.dqc_net_topo import DQCNetTopo
-from sequence.constants import SECOND, MILLISECOND
+from ..topology.topology import Topology
+from ..topology.router_net_topo import RouterNetTopo
+from ..topology.dqc_net_topo import DQCNetTopo
+from ..constants import SECOND, MILLISECOND
 
 
 def add_default_args(parser):

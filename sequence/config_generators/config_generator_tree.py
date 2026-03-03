@@ -27,7 +27,7 @@ import argparse
 import json
 import os
 
-from ..utils.config_generator import add_default_args, generate_nodes, generate_classical, final_config, router_name_func
+from .config_generator import add_default_args, generate_nodes, generate_classical, final_config, router_name_func
 from ..topology.topology import Topology
 from ..topology.router_net_topo import RouterNetTopo
 from ..constants import MILLISECOND
