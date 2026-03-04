@@ -1,12 +1,14 @@
+"""Base class for BBPSSW entanglement purification protocol.
+"""
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from enum import Enum, auto
-from typing import TYPE_CHECKING, List, Dict, Type, Optional
+from typing import TYPE_CHECKING
 from collections.abc import Callable
 
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 from sequence.utils.log import logger
-from ...constants import KET_STATE_FORMALISM
+from ...constants import KET_VECTOR_FORMALISM
 from ...message import Message
 
 if TYPE_CHECKING:
@@ -41,7 +43,7 @@ class BBPSSWMessage(Message):
 
 class BBPSSWProtocol(EntanglementProtocol, ABC):
     _registry: dict[str, type['BBPSSWProtocol']] = {}
-    _global_formalism: str = KET_STATE_FORMALISM
+    _global_formalism: str = KET_VECTOR_FORMALISM
 
     def __init__(self, owner: Node, name: str, kept_memo: Memory, meas_memo: Memory, **kwargs):
         """Constructor for purification protocol.
@@ -53,14 +55,13 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
             meas_memo (Memory): Memory to measure and discard.
         """
         assert kept_memo != meas_memo
-        super().__init__(owner, name)
+        super().__init__(owner, name, 'bbpssw')
         self.memories: list[Memory] = [kept_memo, meas_memo]
         self.kept_memo: Memory = kept_memo
         self.meas_memo: Memory = meas_memo
         self.remote_node_name: str = ''
         self.remote_protocol_name: str = ''
         self.remote_memories: list[str] = []
-        self.protocol_type = 'bbpssw'
         self.meas_res = None
         if self.meas_memo is None:
             self.memories.pop()
@@ -158,7 +159,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
     @classmethod
     def clear_global_formalism(cls) -> None:
         """Resets the global formalism to default"""
-        cls._global_formalism = KET_STATE_FORMALISM
+        cls._global_formalism = KET_VECTOR_FORMALISM
 
     def is_ready(self) -> bool:
         """Check if the protocol is ready to start."""

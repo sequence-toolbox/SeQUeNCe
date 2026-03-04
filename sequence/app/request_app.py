@@ -146,7 +146,9 @@ class RequestApp:
 
     def schedule_reservation(self, reservation: Reservation) -> None:
         """Calling the `add_memo_reservation_map` and `remove_memo_reservation_map` methods at the 
-           reservation's start_time and end_time for all timecards (memory) involved in the reservation.
+           reservation's start_time and end_time for all timecards (memory) involved in the reservation. 
+           
+           Called by the initiator and the responder when reservation is approved.
 
         Args:
             reservation (Reservation): reservation to schedule
