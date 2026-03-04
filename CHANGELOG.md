@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0]
+### Added
+- Created the `swapping` module that has the following classes. The subclasses use the registry decorator (factory pattern).
+    - Base class: `EntanglementSwappingA` & `EntanglementSwappingB`
+    - Subclass for ket vector and density matrix: `EntanglementSwappingA_Circuit` & `EntanglementSwappingB_Circuit`
+    - Subclass for Bell diagonal state: `EntanglementSwappingA_BDS` & `EntanglementSwappingB_BDS`
+
+### Removed
+- The old `swapping.py` is removed.
+
+
 ## [0.8.5] - 2026-2-27
 ### Added
 - `NetworkManager` ABC with a factory pattern for selection and future implementation of new network managers.

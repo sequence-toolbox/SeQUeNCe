@@ -1,5 +1,17 @@
 """The base class for entanglement swapping protocol.
+
+This module defines code for entanglement swapping.
+Success rate is pre-determined based on network parameters.
+The entanglement swapping protocol is an asymmetric protocol:
+
+* The EntanglementSwappingA instance initiates the protocol and performs the swapping operation.
+* The EntanglementSwappingB instance waits for the swapping result from EntanglementSwappingA.
+
+The swapping results decide the following operations of EntanglementSwappingB.
+Also defined in this module is the message type used by these protocols.
+
 """
+
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -62,7 +74,7 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
     _registry: dict[str, type['EntanglementSwappingA']] = {}
     _global_formalism: str = KET_VECTOR_FORMALISM
 
-    def __init__(self, owner: "Node", name: str, left_memo: "Memory", right_memo: "Memory", success_prob: float = 1):
+    def __init__(self, owner: Node, name: str, left_memo: Memory, right_memo: Memory, success_prob: float = 1):
         """Constructor for Entanglement Swapping A protocol.
 
         Args:
@@ -138,7 +150,7 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
         return decorator
 
     @classmethod
-    def create(cls, owner: "Node", name: str, left_memo: "Memory", right_memo: "Memory", 
+    def create(cls, owner: Node, name: str, left_memo: Memory, right_memo: Memory, 
                success_prob: float = 1, **kwargs) -> 'EntanglementSwappingA':
         """Factory method to create an Entanglement Swapping A protocol instance of the global formalism.
 
@@ -215,7 +227,7 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
         """
         raise Exception("EntanglementSwappingA protocol '{}' should not receive messages.".format(self.name))
 
-    def memory_expire(self, memory: "Memory") -> None:
+    def memory_expire(self, memory: Memory) -> None:
         """Method to receive memory expiration events.
 
         Releases held memories on current node.
@@ -259,7 +271,7 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
     _registry: dict[str, type['EntanglementSwappingB']] = {}
     _global_formalism: str = KET_VECTOR_FORMALISM
 
-    def __init__(self, owner: "Node", name: str, hold_memo: "Memory"):
+    def __init__(self, owner: Node, name: str, hold_memo: Memory):
         """Constructor for entanglement swapping B protocol.
 
         Args:
@@ -326,7 +338,7 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
         return decorator
 
     @classmethod
-    def create(cls, owner: "Node", name: str, hold_memo: "Memory", **kwargs) -> 'EntanglementSwappingB':
+    def create(cls, owner: Node, name: str, hold_memo: Memory, **kwargs) -> 'EntanglementSwappingB':
         """Factory method to create an Entanglement Swapping B protocol instance of the global formalism.
         """
         protocol_name = EntanglementSwappingB.get_formalism()

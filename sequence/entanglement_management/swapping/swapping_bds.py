@@ -1,3 +1,5 @@
+"""The entanglement swapping protocol for Bell Diagonal State (BDS) formalism.
+"""
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
@@ -39,7 +41,7 @@ class EntanglementSwappingA_BDS(EntanglementSwappingA):
         is_twirled (bool): whether the input and output states are twirled into Werner form (default True).
     """
 
-    def __init__(self, owner: "Node", name: str, left_memo: "Memory", right_memo: "Memory", success_prob=1, is_twirled=True):
+    def __init__(self, owner: Node, name: str, left_memo: Memory, right_memo: Memory, success_prob=1, is_twirled=True):
         """Constructor for entanglement swapping A protocol.
 
         Args:

@@ -1,16 +1,5 @@
-"""Code for entanglement swapping.
-
-This module defines code for entanglement swapping.
-Success is pre-determined based on network parameters.
-The entanglement swapping protocol is an asymmetric protocol:
-
-* The EntanglementSwappingA instance initiates the protocol and performs the swapping operation.
-* The EntanglementSwappingB instance waits for the swapping result from EntanglementSwappingA.
-
-The swapping results decides the following operations of EntanglementSwappingB.
-Also defined in this module is the message type used by these protocols.
+"""The entanglement swapping protocol for circuit-based (ket vector, density matrix) formalism.
 """
-
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
@@ -174,7 +163,7 @@ class EntanglementSwappingB_Circuit(EntanglementSwappingB):
     x_z_cir.x(0)
     x_z_cir.z(0)
 
-    def __init__(self, owner: "Node", name: str, hold_memo: "Memory"):
+    def __init__(self, owner: Node, name: str, hold_memo: Memory):
         """Constructor for entanglement swapping B protocol.
 
         Args:
