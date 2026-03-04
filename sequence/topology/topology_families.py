@@ -14,7 +14,7 @@ from ..network_management.routing_static import StaticRoutingProtocol
 
 from .qlan.orchestrator import QlanOrchestratorNode
 from .qlan.client import QlanClientNode
-from .node import BSMNode, QuantumRouter, DQCNode
+from .node import Node, BSMNode, QuantumRouter, DQCNode
 from .const_topo import (
     ALL_NODE, ALL_Q_CHANNEL, ALL_C_CHANNEL,
     ATTENUATION, BSM_NODE, QUANTUM_ROUTER, DQC_NODE,
