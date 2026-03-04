@@ -1,0 +1,19 @@
+{
+    "stop_time": 10000000000000,
+    "nodes": [
+        {"name": "r1",  "type": "YbRouterNode", "seed": 0, "memo_size": 10},
+        {"name": "r2",  "type": "ErRouterNode", "seed": 1, "memo_size": 10},
+        {"name": "r3",  "type": "ErRouterNode", "seed": 2, "memo_size": 10},
+        {"name": "r4",  "type": "YbRouterNode", "seed": 3, "memo_size": 10}
+    ],
+    "qconnections": [
+        {"node1": "r1", "node2": "r2", "attenuation": 0, "distance": 1000, "type": "meet_in_the_middle", "seed": 10, "qfc_efficiency": 0.9},
+        {"node1": "r2", "node2": "r3", "attenuation": 0, "distance": 1000, "type": "meet_in_the_middle", "seed": 11, "qfc_efficiency": 0.9},
+        {"node1": "r3", "node2": "r4", "attenuation": 0, "distance": 1000, "type": "meet_in_the_middle", "seed": 12, "qfc_efficiency": 0.9}
+    ],
+    "cconnections": [
+        {"node1": "r1",  "node2": "r2",  "delay": 1000000000},
+        {"node1": "r2",  "node2": "r3",  "delay": 1000000000},
+        {"node1": "r3",  "node2": "r4",  "delay": 1000000000}
+    ]
+}

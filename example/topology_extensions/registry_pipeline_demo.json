@@ -1,0 +1,33 @@
+{
+    "stop_time": 10e12,
+    "nodes": [
+        {
+            "name": "r1",
+            "type": "InstrumentedRouter",
+            "seed": 0,
+            "memo_size": 5
+        },
+        {
+            "name": "r2",
+            "type": "InstrumentedRouter",
+            "seed": 1,
+            "memo_size": 5
+        }
+    ],
+    "qconnections": [
+        {
+            "node1": "r1",
+            "node2": "r2",
+            "attenuation": 0,
+            "distance": 1000,
+            "type": "meet_in_the_middle"
+        }
+    ],
+    "cconnections": [
+        {
+            "node1": "r1",
+            "node2": "r2",
+            "delay": 1000000000
+        }
+    ]
+}
