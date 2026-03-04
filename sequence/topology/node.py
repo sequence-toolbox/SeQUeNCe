@@ -63,7 +63,7 @@ class Node(Entity):
     """
 
     _registry: dict[str, type['Node']] = {}
-    topology_roles: set[str] = set() #Question: what is a set() and what are its properties? Why did we use this specifically?
+    topology_roles: set[str] = set()
 
     @classmethod
     def register(cls, name: str, node_class: type['Node'] = None):
@@ -201,7 +201,7 @@ class Node(Entity):
                 if protocol.name == msg.receiver and protocol.received_message(src, msg):
                     return
         else:
-            matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type] #Question: What's this else case? it was just sent to everyone like "Network Bind?"
+            matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
             for p in matching:
                 p.received_message(src, msg)
 
