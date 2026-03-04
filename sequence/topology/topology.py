@@ -208,7 +208,7 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
         # Prepare templates, family state, and generated qconnection artifacts.
         self.templates = config.get(ALL_TEMPLATES, {})
         self.family.configure_family(config, self.templates)
-        self.add_qconnections(config)
+        self._add_qconnections(config)
 
         # Create the timeline, instantiate nodes, and wire family-specific node state.
         self.add_timeline(config)
@@ -248,7 +248,7 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
                 qc_obj.set_ends(src_node, dst_str)
                 self.qchannels.append(qc_obj)
 
-    def add_qconnections(self, config: dict) -> None:
+    def _add_qconnections(self, config: dict) -> None:
         self._validate_qconnection_dependencies(config)
         for q_connect in config.get(ALL_Q_CONNECT, []):
             node1    = q_connect[CONNECT_NODE_1]
