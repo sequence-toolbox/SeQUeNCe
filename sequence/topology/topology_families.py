@@ -12,16 +12,17 @@ from networkx import Graph, dijkstra_path, exception
 from ..network_management.routing_distributed import DistributedRoutingProtocol
 from ..network_management.routing_static import StaticRoutingProtocol
 
-from .qlan.orchestrator import QlanOrchestratorNode
-from .qlan.client import QlanClientNode
-from .node import BSMNode, QuantumRouter, DQCNode
+# Import QLAN node modules for their @Node.register side effects.
+from .qlan.orchestrator import QlanOrchestratorNode  # noqa: F401
+from .qlan.client import QlanClientNode  # noqa: F401
+from .node import Node
 from .const_topo import (
     ALL_NODE, ALL_Q_CHANNEL, ALL_C_CHANNEL,
-    ATTENUATION, BSM_NODE, QUANTUM_ROUTER, DQC_NODE,
-    CONNECT_NODE_1, CONNECT_NODE_2,
+    ATTENUATION, BSM_NODE, CONNECT_NODE_1, CONNECT_NODE_2,
     DELAY, DISTANCE, MEET_IN_THE_MID,
     NAME, SEED, SRC, DST, TEMPLATE, TYPE,
     ORCHESTRATOR, CLIENT,
+    ROLE_BSM_ENDPOINT, ROLE_BSM_MIDPOINT, ROLE_DQC_ENDPOINT, ROLE_ROUTABLE_ENDPOINT,
     LOCAL_MEMORIES, CLIENT_NUMBER, MEASUREMENT_BASES,
     MEM_FIDELITY_ORCH, MEM_FREQUENCY_ORCH, MEM_EFFICIENCY_ORCH,
     MEM_COHERENCE_ORCH, MEM_WAVELENGTH_ORCH,
@@ -83,6 +84,21 @@ class BsmTopologyFamily(TopologyFamily):
     endpoint-to-midpoint wiring, and forwarding table generation.
     """
 
+    @staticmethod
+    def _require_role(node_obj: Node, role: str, node_type: str) -> None:
+        roles = getattr(node_obj, "topology_roles", set())
+        if role not in roles:
+            raise TypeError(
+                f"Node type '{node_type}' does not support required topology role '{role}'"
+            )
+
+    @staticmethod
+    def _type_has_role(node_type: str, role: str) -> bool:
+        node_cls = Node._registry.get(node_type)
+        if node_cls is None:
+            return False
+        return role in getattr(node_cls, "topology_roles", set())
+
     def _midpoint_type_for_qconnection(self, q_connect: dict) -> str:
         return BSM_NODE
 
@@ -96,7 +112,7 @@ class BsmTopologyFamily(TopologyFamily):
     # needs; avoid splitting _expand_qconnection further without a concrete use case.
 
     def _is_routing_endpoint_type(self, node_type: str) -> bool:
-        return node_type in (QUANTUM_ROUTER, DQC_NODE)
+        return self._type_has_role(node_type, ROLE_ROUTABLE_ENDPOINT)
 
     def _midpoint_node_config(self, node1: str, node2: str, q_connect: dict) -> dict:
         return {
@@ -147,7 +163,7 @@ class BsmTopologyFamily(TopologyFamily):
         node_types = {node[NAME]: node[TYPE] for node in config[ALL_NODE]}
         for qc in config.get(ALL_Q_CHANNEL, []):
             src, dst = qc[SRC], qc[DST]
-            if node_types.get(dst, "") != BSM_NODE:
+            if not self._type_has_role(node_types.get(dst, ""), ROLE_BSM_MIDPOINT):
                 continue
             if dst in bsm_to_router_map:
                 bsm_to_router_map[dst].append(src)
@@ -249,20 +265,11 @@ class BsmTopologyFamily(TopologyFamily):
     
     def _build_node(self, node: dict, node_type: str, template: dict,
                     tl, nodes: dict, bsm_to_router_map: dict) -> None:
-        # NOTE: if/elif dispatch on centralized type constants from const_topo.py.
-        # A follow-up PR (issue #241) will replace this with registry-based construction.
-        if node_type == BSM_NODE:
-            others = bsm_to_router_map.get(node[NAME], [])
-            node_obj = BSMNode(node[NAME], tl, others, component_templates=template)
-        elif node_type == QUANTUM_ROUTER:
-            memo_size = node.get("memo_size", 0)
-            node_obj = QuantumRouter(node[NAME], tl, memo_size, component_templates=template)
-        elif node_type == DQC_NODE:
-            memo_size = node.get("memo_size", 0)
-            data_memo_size = node.get("data_memo_size", 0)
-            node_obj = DQCNode(node[NAME], tl, memo_size=memo_size, data_memo_size=data_memo_size, component_templates=template)
-        else:
-            raise ValueError(f"Unknown node type '{node_type}'")
+        others = bsm_to_router_map.get(node[NAME], [])
+        node_obj = Node.create(node_type, node[NAME], tl, node, template, others=others)
+        if ROLE_BSM_MIDPOINT not in getattr(node_obj, "topology_roles", set()):
+            self._require_role(node_obj, ROLE_BSM_ENDPOINT, node_type)
+            self._require_role(node_obj, ROLE_ROUTABLE_ENDPOINT, node_type)
         node_obj.set_seed(node[SEED])
         nodes[node_type].append(node_obj)
 
@@ -349,22 +356,21 @@ class QlanTopologyFamily(TopologyFamily):
     def _build_node(self, node: dict, node_type: str, template: dict,
                     tl, nodes: dict, bsm_to_router_map: dict) -> None:
         """Construct QLAN nodes."""
-        # NOTE: if/elif dispatch on centralized type constants from const_topo.py.
-        # A follow-up PR (issue #241) will replace this with registry-based construction.
         if node_type == CLIENT:
-            node_obj = QlanClientNode(node[NAME], tl, 1,
-                                      component_templates=self.client_component_templates or template)
+            node_obj = Node.create(node_type, node[NAME], tl, node, template,
+                                   component_templates=self.client_component_templates)
             self._register_client_node(node_obj)
 
         elif node_type == ORCHESTRATOR:
-            node_obj = QlanOrchestratorNode(node[NAME], tl, self.n_local_memories,
-                                            self._remote_memories,
-                                            component_templates=self.orch_component_templates or template)
+            node_obj = Node.create(node_type, node[NAME], tl, node, template,
+                                   component_templates=self.orch_component_templates,
+                                   n_local_memories=self.n_local_memories,
+                                   remote_memories=self._remote_memories)
             node_obj.update_bases(self.meas_bases)
             self._register_orchestrator_node(node_obj)
 
         else:
-            raise ValueError(f"Unknown QLAN node type '{node_type}'")
+            node_obj = Node.create(node_type, node[NAME], tl, node, template)
 
         node_obj.set_seed(node[SEED])
         nodes[node_type].append(node_obj)

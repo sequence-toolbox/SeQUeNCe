@@ -1,3 +1,14 @@
+"""Topology package — network construction and configuration.
+
+Public API:
+    RouterNetTopo  — BSM-based router networks (entanglement distribution)
+    DQCNetTopo     — distributed quantum computing networks
+    QlanStarTopo   — QLAN star topology (orchestrator + clients)
+    QKDTopo        — quantum key distribution networks
+    Topology       — base class (usable directly with a TopologyFamily)
+    Node           — base node class with type registry
+"""
+
 __all__ = [
     'topology',
     'node',

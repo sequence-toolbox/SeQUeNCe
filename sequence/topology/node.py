@@ -33,6 +33,12 @@ from ..resource_management.resource_manager import ResourceManager
 from ..network_management.network_manager import NetworkManager
 from ..utils.encoding import *
 from ..utils import log
+from .const_topo import (
+    ROLE_BSM_ENDPOINT,
+    ROLE_BSM_MIDPOINT,
+    ROLE_DQC_ENDPOINT,
+    ROLE_ROUTABLE_ENDPOINT,
+)
 
 
 class Node(Entity):
@@ -51,7 +57,44 @@ class Node(Entity):
         first_component_name (str): name of component that first receives incoming qubits.
         gate_fid (float): fidelity of multi-qubit gates (usually CNOT) that can be performed on the node.
         meas_fid (float): fidelity of single-qubit measurements (usually Z measurement) that can be performed on the node.
+
+    Class Attributes:
+        _registry (dict[str, type['Node']]): maps node type name strings to their corresponding classes.
     """
+
+    _registry: dict[str, type['Node']] = {}
+    topology_roles: set[str] = set() #Question: what is a set() and what are its properties? Why did we use this specifically?
+
+    @classmethod
+    def register(cls, name: str, node_class: type['Node'] = None):
+        def _register(node_cls: type['Node']) -> type['Node']:
+            existing = cls._registry.get(name)
+            if existing is not None and existing is not node_cls: # Duplicate registration check.
+                raise ValueError(
+                    f"Node type '{name}' is already registered to {existing.__name__}"
+                )
+            cls._registry[name] = node_cls
+            return node_cls
+
+        def decorator(node_cls: type['Node']) -> type['Node']:
+            return _register(node_cls)
+
+        if node_class is not None:
+            _register(node_class)
+            return None
+        else:
+            return decorator
+
+    @classmethod
+    def create(cls, node_type: str, name: str, tl, config: dict, template: dict, **kwargs) -> 'Node':
+        if node_type not in cls._registry:
+            available = ', '.join(sorted(cls._registry)) or '(none)'
+            raise ValueError(
+                f"Unknown node type '{node_type}'. "
+                f"Available types: {available}. "
+                "Register custom types with @Node.register('TypeName')."
+            )
+        return cls._registry[node_type].from_config(name, tl, config, template, **kwargs)
 
     def __init__(self, name: str, timeline: "Timeline", seed=None, gate_fid: float = 1, meas_fid: float = 1):
         """Constructor for node.
@@ -158,7 +201,7 @@ class Node(Entity):
                 if protocol.name == msg.receiver and protocol.received_message(src, msg):
                     return
         else:
-            matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
+            matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type] #Question: What's this else case? it was just sent to everyone like "Network Bind?"
             for p in matching:
                 p.received_message(src, msg)
 
@@ -186,19 +229,19 @@ class Node(Entity):
 
     def get_components_by_type(self, component_type: str | type) -> list:
         """Method to return all components of a specific type.
+
+        MemoryArray components are automatically expanded so that individual
+        Memory objects inside them are also searchable by type.
+
         Args:
             component_type (str/type): The type of components to filter for.
         Returns:
             list: A list of components matching the requested type.
         """
-        # The topology refactor unified QLAN nodes to use MemoryArray (like
-        # QuantumRouter) instead of individual Memory components.  Without this
-        # expansion, get_components_by_type("Memory") would silently return
-        # nothing on any node that stores its memories inside a MemoryArray.
         candidates = []
         for comp in self.components.values():
             candidates.append(comp)
-            if isinstance(comp, MemoryArray):
+            if isinstance(comp, MemoryArray): #The MemoryArray might contain the type we're looking for
                 candidates.extend(comp.memories)
 
         if isinstance(component_type, str):
@@ -226,6 +269,7 @@ class Node(Entity):
             cc.change_timeline(timeline)
 
 
+@Node.register("BSMNode")
 class BSMNode(Node):
     """Bell state measurement node.
 
@@ -237,6 +281,8 @@ class BSMNode(Node):
         timeline (Timeline): timeline for simulation.
         eg (EntanglementGenerationB): entanglement generation protocol instance.
     """
+
+    topology_roles = {ROLE_BSM_MIDPOINT}
 
     def __init__(self, name: str, timeline: "Timeline", other_nodes: list[str],
                  seed=None, component_templates=None) -> None:
@@ -271,6 +317,10 @@ class BSMNode(Node):
         self.eg = EntanglementGenerationB.create(self, f'{name}_eg', other_nodes)
         bsm.attach(self.eg)
 
+    @classmethod
+    def from_config(cls, name: str, tl, config: dict, template: dict, **kwargs) -> 'BSMNode':
+        return cls(name, tl, kwargs['others'], component_templates=template)
+
     def receive_message(self, src: str, msg: "Message") -> None:
         # signal to protocol that we've received a message
         for protocol in self.protocols:
@@ -279,8 +329,7 @@ class BSMNode(Node):
                     return
 
         # if we reach here, we didn't successfully receive the message in any protocol
-        print(src, msg)
-        raise Exception("Unknown protocol")
+        raise Exception(f"Unknown protocol for message {msg} from {src}")
 
     def eg_add_others(self, other):
         """Method to add other protocols to entanglement generation protocol.
@@ -294,7 +343,7 @@ class BSMNode(Node):
 
         self.protocols[0].others.append(other.name)
 
-
+@Node.register("QuantumRouter")
 class QuantumRouter(Node):
     """Node for entanglement distribution networks.
 
@@ -315,6 +364,8 @@ class QuantumRouter(Node):
         app (any): application in use on node.
         down (bool): whether the node is down (not operational).
     """
+
+    topology_roles = {ROLE_BSM_ENDPOINT, ROLE_ROUTABLE_ENDPOINT}
 
     def __init__(self, name: str, tl: "Timeline", memo_size: int = 50, seed: int | None = None, component_templates: dict = {}, gate_fid: float = 1, meas_fid: float = 1):
         """Constructor for quantum router class.
@@ -345,6 +396,11 @@ class QuantumRouter(Node):
         self.map_to_middle_node = {}
         self.app = None
         self.down = False
+
+    @classmethod
+    def from_config(cls, name: str, tl, config: dict, template: dict, **kwargs) -> 'QuantumRouter':
+        memo_size = config.get("memo_size", 0)
+        return cls(name, tl, memo_size, component_templates=template)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         """Determine what to do when a message is received, based on the msg.receiver.
@@ -488,6 +544,7 @@ class QuantumRouter(Node):
             self.app.get_other_reservation(reservation)
 
 
+
 class QKDNode(Node):
     """Node for quantum key distribution.
 
@@ -565,6 +622,9 @@ class QKDNode(Node):
             self.protocols.append(self.protocol_stack[1])
             self.protocol_stack[0].upper_protocols.append(self.protocol_stack[1])
             self.protocol_stack[1].lower_protocols.append(self.protocol_stack[0])
+
+    # NOTE: there is intentionally no from_config from this class. The classes Topology was unimplemented, so from_config
+    # is to be implemented by whoever needs an actual topology out of this.
 
     def init(self) -> None:
         super().init()
@@ -828,6 +888,7 @@ class ClassicalNode(ClassicalEntity):
             cc.change_timeline(timeline)
 
 
+@Node.register("DQCNode")
 class DQCNode(QuantumRouter):
     """Code for DQCNode class -- node that supports Distributed Quantum Computing
 
@@ -851,6 +912,12 @@ class DQCNode(QuantumRouter):
         teledata_app (TeledataApp): The teledata application instance.
         telegate_app (TelegateApp): The telegate application instance.
     """
+    topology_roles = {
+        ROLE_BSM_ENDPOINT,
+        ROLE_ROUTABLE_ENDPOINT,
+        ROLE_DQC_ENDPOINT,
+    }
+
     def __init__(self, name: str, timeline: "Timeline", memo_size: int = 1, seed: int = None, component_templates: dict = {}, 
                  gate_fid: float = 1, meas_fid: float = 1, data_memo_size: int = 1):
         super().__init__(name, timeline, memo_size, seed, component_templates, gate_fid, meas_fid)
@@ -862,6 +929,12 @@ class DQCNode(QuantumRouter):
         self.teleport_app: TeleportApp = None
         self.teledata_app = None
         self.telegate_app = None
+
+    @classmethod
+    def from_config(cls, name: str, tl, config: dict, template: dict, **kwargs) -> 'DQCNode':
+        memo_size = config.get("memo_size", 0)
+        data_memo_size = config.get("data_memo_size", 0)
+        return cls(name, tl, memo_size=memo_size, data_memo_size=data_memo_size, component_templates=template)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         """Determine what to do when a message is received, based on the msg.receiver.

@@ -28,7 +28,7 @@ FORMALISM = "formalism"
 # RouterNetTopo build_config keys
 BSM_NODE = "BSMNode"
 MEET_IN_THE_MID = "meet_in_the_middle"
-MEMO_ARRAY_SIZE = "memo_size"
+MEMO_ARRAY_SIZE = "memo_size"     # NOTE meant for communication memories
 PORT = "port"
 PROC_NUM = "process_num"
 QUANTUM_ROUTER = "QuantumRouter"
@@ -56,4 +56,10 @@ MEASUREMENT_BASES = "measurement_bases"
 
 # DQCNetTopo build_config keys
 DQC_NODE = "DQCNode"
-DATA_MEMO_ARRAY_SIZE = "data_memo_size"
+DATA_MEMO_ARRAY_SIZE = "data_memo_size"   # data memories
+
+# Topology role names
+ROLE_BSM_MIDPOINT = "bsm_midpoint"
+ROLE_BSM_ENDPOINT = "bsm_endpoint"
+ROLE_ROUTABLE_ENDPOINT = "routable_endpoint"
+ROLE_DQC_ENDPOINT = "dqc_endpoint"
