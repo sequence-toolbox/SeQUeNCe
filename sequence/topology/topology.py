@@ -147,11 +147,11 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
             'cchannels': ALL_C_CHANNEL,
         }
         for key, val in LIST_KEYS.items():
-            val = extra_config.pop(key, None)
-            if val:
+            entries = extra_config.pop(key, None)
+            if entries:
                 if val not in build_config:
                     build_config[val] = []
-                build_config[val].extend(val)
+                build_config[val].extend(entries)
         templates = extra_config.pop(ALL_TEMPLATES, None)
         if templates:
             if ALL_TEMPLATES not in build_config:
