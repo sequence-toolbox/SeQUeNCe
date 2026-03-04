@@ -141,5 +141,3 @@ def test_ClassicalNode_send_message():
     expect_node2_log = [(CC_DELAY + i, "node1", str(i)) for i in range(MSG_NUM)]
     for actual, expect in zip(node2.log, expect_node2_log):
         assert actual == expect
-
-test_Node_send_message()

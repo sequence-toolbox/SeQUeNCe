@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from ..entanglement_protocol import EntanglementProtocol
 from ...constants import KET_VECTOR_FORMALISM
 from ...message import Message
+from ...resource_management.memory_manager import MemoryInfo
 from ...utils import log
 
 if TYPE_CHECKING:
@@ -239,9 +240,9 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
 
         for memo in self.memories:
             if memo == memory:
-                self.update_resource_manager(memo, "RAW")
+                self.update_resource_manager(memo, MemoryInfo.RAW)
             else:
-                self.update_resource_manager(memo, "ENTANGLED")
+                self.update_resource_manager(memo, MemoryInfo.ENTANGLED)
 
     def release_remote_protocol(self, remote_node: str):
         self.owner.resource_manager.release_remote_protocol(remote_node, self)
@@ -362,10 +363,10 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
             Will update memory in attached resource manager.
         """
 
-        self.update_resource_manager(self.memory, "RAW")
+        self.update_resource_manager(self.memory, MemoryInfo.RAW)
 
     def release(self) -> None:
-        self.update_resource_manager(self.memory, "ENTANGLED")
+        self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
 
     @abstractmethod
     def received_message(self, src: str, msg: EntanglementSwappingMessage) -> None:

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from .swapping_base import EntanglementSwappingA, EntanglementSwappingB, SwappingMsgType, EntanglementSwappingMessage
 from ...utils import log
 from ...kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
+from ...resource_management.memory_manager import MemoryInfo
 
 if TYPE_CHECKING:
     from ...components.memory import Memory
@@ -110,8 +111,8 @@ class EntanglementSwappingA_BDS(EntanglementSwappingA):
         self.owner.send_message(self.left_node, msg_l)
         self.owner.send_message(self.right_node, msg_r)
 
-        self.update_resource_manager(self.left_memo, "RAW")
-        self.update_resource_manager(self.right_memo, "RAW")
+        self.update_resource_manager(self.left_memo, MemoryInfo.RAW)
+        self.update_resource_manager(self.right_memo, MemoryInfo.RAW)
 
     def swapping_res(self) -> list[float]:
         """Method to calculate the resulting entangled state conditioned on successful swapping, for BDS formalism.
@@ -202,7 +203,7 @@ class EntanglementSwappingB_BDS(EntanglementSwappingB):
         assert src == self.remote_node_name
 
         if msg.fidelity > 0 and self.owner.timeline.now() < msg.expire_time:
-            # if using BDS formalism, updated BDS has been determined analytically taking into account local correction, 
+            # if using BDS formalism, updated BDS has been determined analytically taking into account local correction
             self.memory.entangled_memory["node_id"] = msg.remote_node
             self.memory.entangled_memory["memo_id"] = msg.remote_memo
             remote_memory: Memory = self.owner.timeline.get_entity_by_name(msg.remote_memo)
@@ -210,6 +211,6 @@ class EntanglementSwappingB_BDS(EntanglementSwappingB):
             remote_memory.bds_decohere()
             self.memory.fidelity = self.memory.get_bds_fidelity()
             self.memory.update_expire_time(msg.expire_time)
-            self.update_resource_manager(self.memory, "ENTANGLED")
+            self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
         else:
-            self.update_resource_manager(self.memory, "RAW")
+            self.update_resource_manager(self.memory, MemoryInfo.RAW)
