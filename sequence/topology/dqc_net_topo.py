@@ -12,7 +12,7 @@ from .const_topo import (
 class DqcBsmFamily(BsmTopologyFamily):
     """BSM implementor for distributed quantum computing networks."""
 
-    def _is_routing_endpoint_type(self, node_type: str) -> bool:
+    def is_routing_endpoint_type(self, node_type: str) -> bool:
         return node_type == DQC_NODE
 
 

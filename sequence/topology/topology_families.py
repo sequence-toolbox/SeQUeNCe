@@ -36,27 +36,27 @@ class TopologyFamily(ABC):
     here via composition rather than inheritance.
 
     Most methods are no-op defaults. Topologies that use the shared add_nodes
-    pipeline must supply a family with a real _build_node implementation.
+    pipeline must supply a family with a real build_node implementation.
     Concrete implementations live in topology_families.py.
     """
 
-    def _configure_family(self, config: dict, templates: dict) -> None: pass
+    def configure_family(self, config: dict, templates: dict) -> None: pass
 
-    def _attach_protocols(self) -> None: pass
+    def attach_protocols(self) -> None: pass
 
-    def _prepare_build_state(self, config: dict, bsm_to_router_map: dict) -> None: pass
+    def prepare_build_state(self, config: dict, bsm_to_router_map: dict) -> None: pass
 
-    def _wire_post_nodes(self, bsm_to_router_map: dict, tl) -> None: pass
+    def wire_post_nodes(self, bsm_to_router_map: dict, tl) -> None: pass
 
-    def _expand_qconnection(self, q_connect: dict, cc_delay: float, config: dict) -> None: pass
+    def expand_qconnection(self, q_connect: dict, cc_delay: float, config: dict) -> None: pass
 
-    def _generate_forwarding_table(self, config: dict, nodes: dict, qchannels: list) -> None: pass
+    def generate_forwarding_table(self, config: dict, nodes: dict, qchannels: list) -> None: pass
 
-    def _order_nodes(self, node_list: list) -> list:
+    def order_nodes(self, node_list: list) -> list:
         return node_list
 
-    def _build_node(self, node: dict, node_type: str, template: dict,
-                    tl, nodes: dict, bsm_to_router_map: dict) -> None:
+    def build_node(self, node: dict, node_type: str, template: dict,
+                   tl, nodes: dict, bsm_to_router_map: dict) -> None:
         """Construct node, call set_seed, append to nodes[node_type].
 
         Family subclassers using the shared add_nodes pipeline must
@@ -72,7 +72,7 @@ class TopologyFamily(ABC):
         """
         raise NotImplementedError(
             "TopologyFamily does not build nodes by default. "
-            "The topology must override add_nodes or provide a family with _build_node."
+            "The topology must override add_nodes or provide a family with build_node."
         )
 
 class BsmTopologyFamily(TopologyFamily):
@@ -83,31 +83,31 @@ class BsmTopologyFamily(TopologyFamily):
     endpoint-to-midpoint wiring, and forwarding table generation.
     """
 
-    def _midpoint_type_for_qconnection(self, q_connect: dict) -> str:
+    def midpoint_type_for_qconnection(self, q_connect: dict) -> str:
         return BSM_NODE
 
     # NOTE: upstream only differed on router-vs-DQC midpoint naming; both were auto-generated.
     # We currently treat `.auto` as the unified naming policy unless compatibility says otherwise.
-    def _midpoint_name_for_qconnection(self, node1: str, node2: str, q_connect: dict) -> str:
+    def midpoint_name_for_qconnection(self, node1: str, node2: str, q_connect: dict) -> str:
         return f"BSM.{node1}.{node2}.auto"
 
     # NOTE: keep qconnection expansion policy small unless a real second expansion
     # shape lands. The current midpoint/channel artifact hooks cover known extension
-    # needs; avoid splitting _expand_qconnection further without a concrete use case.
+    # needs; avoid splitting expand_qconnection further without a concrete use case.
 
-    def _is_routing_endpoint_type(self, node_type: str) -> bool:
+    def is_routing_endpoint_type(self, node_type: str) -> bool:
         return node_type in (QUANTUM_ROUTER, DQC_NODE)
 
-    def _midpoint_node_config(self, node1: str, node2: str, q_connect: dict) -> dict:
+    def midpoint_node_config(self, node1: str, node2: str, q_connect: dict) -> dict:
         return {
-            NAME: self._midpoint_name_for_qconnection(node1, node2, q_connect),
-            TYPE: self._midpoint_type_for_qconnection(q_connect),
+            NAME: self.midpoint_name_for_qconnection(node1, node2, q_connect),
+            TYPE: self.midpoint_type_for_qconnection(q_connect),
             SEED: q_connect.get(SEED, 0),
             TEMPLATE: q_connect.get(TEMPLATE, None),
         }
 
-    def _qchannel_configs_for_qconnection(self, node1: str, node2: str,
-                                           midpoint_name: str, q_connect: dict) -> list[dict]:
+    def qchannel_configs_for_qconnection(self, node1: str, node2: str,
+                                         midpoint_name: str, q_connect: dict) -> list[dict]:
         attenuation = q_connect[ATTENUATION]
         distance = q_connect[DISTANCE] // 2
         return [
@@ -121,9 +121,9 @@ class BsmTopologyFamily(TopologyFamily):
             for src in (node1, node2)
         ]
 
-    def _cchannel_configs_for_qconnection(self, node1: str, node2: str,
-                                           midpoint_name: str, cc_delay: float,
-                                           q_connect: dict) -> list[dict]:
+    def cchannel_configs_for_qconnection(self, node1: str, node2: str,
+                                         midpoint_name: str, cc_delay: float,
+                                         q_connect: dict) -> list[dict]:
         distance = q_connect[DISTANCE] // 2
         cchannels = []
         for src in (node1, node2):
@@ -143,7 +143,7 @@ class BsmTopologyFamily(TopologyFamily):
             })
         return cchannels
 
-    def _prepare_build_state(self, config: dict, bsm_to_router_map: dict) -> None:
+    def prepare_build_state(self, config: dict, bsm_to_router_map: dict) -> None:
         node_types = {node[NAME]: node[TYPE] for node in config[ALL_NODE]}
         for qc in config.get(ALL_Q_CHANNEL, []):
             src, dst = qc[SRC], qc[DST]
@@ -154,7 +154,7 @@ class BsmTopologyFamily(TopologyFamily):
             else:
                 bsm_to_router_map[dst] = [src]
 
-    def _wire_post_nodes(self, bsm_to_router_map: dict, tl) -> None:
+    def wire_post_nodes(self, bsm_to_router_map: dict, tl) -> None:
         for bsm in bsm_to_router_map:
             if len(bsm_to_router_map[bsm]) != 2:
                 raise ValueError(f"BSM midpoint {bsm} must connect to exactly 2 endpoints")
@@ -166,21 +166,21 @@ class BsmTopologyFamily(TopologyFamily):
             if r1 is not None:
                 r1.add_bsm_node(bsm, r0_str)
 
-    def _expand_qconnection(self, q_connect: dict, cc_delay: float, config: dict) -> None:
+    def expand_qconnection(self, q_connect: dict, cc_delay: float, config: dict) -> None:
         node1        = q_connect[CONNECT_NODE_1]
         node2        = q_connect[CONNECT_NODE_2]
         channel_type = q_connect[TYPE]
 
         if channel_type == MEET_IN_THE_MID:
-            midpoint = self._midpoint_node_config(node1, node2, q_connect)
+            midpoint = self.midpoint_node_config(node1, node2, q_connect)
             midpoint_name = midpoint[NAME]
             config[ALL_NODE].append(midpoint)
-            qchannels = self._qchannel_configs_for_qconnection(node1, node2, midpoint_name, q_connect)
+            qchannels = self.qchannel_configs_for_qconnection(node1, node2, midpoint_name, q_connect)
             if qchannels:
                 if ALL_Q_CHANNEL not in config:
                     config[ALL_Q_CHANNEL] = []
                 config[ALL_Q_CHANNEL].extend(qchannels)
-            cchannels = self._cchannel_configs_for_qconnection(
+            cchannels = self.cchannel_configs_for_qconnection(
                 node1, node2, midpoint_name, cc_delay, q_connect
             )
             if cchannels:
@@ -192,10 +192,10 @@ class BsmTopologyFamily(TopologyFamily):
 
     # nodes.items() is filtered for endpoints multiple times in this function.
     # Could extract endpoint nodes once at the top if this method grows further.
-    def _generate_forwarding_table(self, config: dict, nodes: dict, qchannels: list) -> None:
+    def generate_forwarding_table(self, config: dict, nodes: dict, qchannels: list) -> None:
         graph = Graph()
         for node in config[ALL_NODE]:
-            if self._is_routing_endpoint_type(node[TYPE]):
+            if self.is_routing_endpoint_type(node[TYPE]):
                 graph.add_node(node[NAME])
 
         costs = {}
@@ -209,14 +209,14 @@ class BsmTopologyFamily(TopologyFamily):
         # Routing protocols live on endpoint nodes only - midpoint nodes have no network manager.
         routing_protocol = None
         for node_type, node_list in nodes.items():
-            if self._is_routing_endpoint_type(node_type):
+            if self.is_routing_endpoint_type(node_type):
                 routing_protocol = node_list[0].network_manager.get_routing_protocol()
                 break
 
         if isinstance(routing_protocol, StaticRoutingProtocol):
             graph.add_weighted_edges_from(costs.values())
             for node_type, node_list in nodes.items():
-                if not self._is_routing_endpoint_type(node_type):
+                if not self.is_routing_endpoint_type(node_type):
                     continue
                 for src in node_list:
                     for dst_name in graph.nodes:
@@ -237,7 +237,7 @@ class BsmTopologyFamily(TopologyFamily):
         elif isinstance(routing_protocol, DistributedRoutingProtocol):
             # distributed routing, initialize the link cost and setup the FSM
             for node_type, node_list in nodes.items():
-                if not self._is_routing_endpoint_type(node_type):
+                if not self.is_routing_endpoint_type(node_type):
                     continue
                 for q_router in node_list:
                     routing_protocol: DistributedRoutingProtocol = q_router.network_manager.get_routing_protocol()
@@ -247,8 +247,8 @@ class BsmTopologyFamily(TopologyFamily):
                             cost = cost_info[2]
                             routing_protocol.link_cost[neighbor] = cost
     
-    def _build_node(self, node: dict, node_type: str, template: dict,
-                    tl, nodes: dict, bsm_to_router_map: dict) -> None:
+    def build_node(self, node: dict, node_type: str, template: dict,
+                   tl, nodes: dict, bsm_to_router_map: dict) -> None:
         # NOTE: if/elif dispatch on centralized type constants from const_topo.py.
         # A follow-up PR (issue #241) will replace this with registry-based construction.
         if node_type == BSM_NODE:
@@ -273,13 +273,13 @@ class QlanTopologyFamily(TopologyFamily):
     node ordering (clients before orchestrator), and node construction.
     """
 
-    def _configure_family(self, config: dict, templates: dict) -> None:
+    def configure_family(self, config: dict, templates: dict) -> None:
         """Detect build_config format, normalize memory params, and init per-node accumulators.
 
         Supports two formats (legacy flat keys and new template-based) independently
         for orchestrator and client nodes. Writes normalized params into
         self.orch_component_templates / self.client_component_templates as
-        {"MemoryArray": {...}} dicts so _build_node can pass them straight through
+        {"MemoryArray": {...}} dicts so build_node can pass them straight through
         to node constructors via component_templates.
         """
         # Structural params
@@ -311,24 +311,24 @@ class QlanTopologyFamily(TopologyFamily):
                 "wavelength":     config.get(MEM_WAVELENGTH_CLIENT, 500),
             }}
 
-        # Accumulator lists - populated by _build_node
-        self._remote_memories      = []
+        # Accumulator lists - populated by build_node
+        self.remote_memories      = []
         self.orchestrator_nodes    = []
         self.client_nodes          = []
         self.remote_memories_array = []
 
-    def _order_nodes(self, node_list: list) -> list:
+    def order_nodes(self, node_list: list) -> list:
         """Sort clients before orchestrators so single-pass construction works.
 
-        By the time _build_node hits an orchestrator, all client Memory objects
-        already exist in self._remote_memories.
+        By the time build_node hits an orchestrator, all client Memory objects
+        already exist in self.remote_memories.
         """
         clients       = [n for n in node_list if n[TYPE] == CLIENT]
         orchestrators = [n for n in node_list if n[TYPE] == ORCHESTRATOR]
         others        = [n for n in node_list if n[TYPE] not in (CLIENT, ORCHESTRATOR)]
         return others + clients + orchestrators
 
-    def _attach_protocols(self) -> None:
+    def attach_protocols(self) -> None:
         """Wire measurement and correction protocols on all QLAN nodes."""
         for orch in self.orchestrator_nodes:
             orch.resource_manager.create_protocol()
@@ -338,7 +338,7 @@ class QlanTopologyFamily(TopologyFamily):
     def _register_client_node(self, node_obj: Node) -> None:
         """Track client state needed for orchestrator construction and public API."""
         memo = node_obj.get_components_by_type("MemoryArray")[0][0]
-        self._remote_memories.append(memo)
+        self.remote_memories.append(memo)
         self.remote_memories_array.append(memo)
         self.client_nodes.append(node_obj)
 
@@ -346,8 +346,8 @@ class QlanTopologyFamily(TopologyFamily):
         """Track orchestrator nodes exposed on the topology API."""
         self.orchestrator_nodes.append(node_obj)
 
-    def _build_node(self, node: dict, node_type: str, template: dict,
-                    tl, nodes: dict, bsm_to_router_map: dict) -> None:
+    def build_node(self, node: dict, node_type: str, template: dict,
+                   tl, nodes: dict, bsm_to_router_map: dict) -> None:
         """Construct QLAN nodes."""
         # NOTE: if/elif dispatch on centralized type constants from const_topo.py.
         # A follow-up PR (issue #241) will replace this with registry-based construction.
@@ -358,7 +358,7 @@ class QlanTopologyFamily(TopologyFamily):
 
         elif node_type == ORCHESTRATOR:
             node_obj = QlanOrchestratorNode(node[NAME], tl, self.n_local_memories,
-                                            self._remote_memories,
+                                            self.remote_memories,
                                             component_templates=self.orch_component_templates or template)
             node_obj.update_bases(self.meas_bases)
             self._register_orchestrator_node(node_obj)

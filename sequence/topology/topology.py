@@ -105,7 +105,7 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
             **kwargs: additional config values to merge into the build config
                 (e.g. nodes, templates, stop_time).
         """
-        if isinstance(config, str):
+        if isinstance(config, str):  # Note: Could widen this to PathLike later if needed.
             source_config = self.load_config(config)
         elif isinstance(config, dict):
             source_config = config
@@ -125,15 +125,23 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
     @staticmethod
     def load_config(path: str) -> dict:
         """Load a JSON or YAML config file and return the parsed dict."""
-        if not path.endswith(('.json', '.yaml', '.yml')):
+        try:
+            if path.endswith(('.yaml', '.yml')):
+                with open(path) as fh:
+                    return yaml.safe_load(fh)
+            if path.endswith('.json'):
+                with open(path) as fh:
+                    return json.load(fh)
             raise ValueError(
                 f"Unsupported config file format: {path}. "
                 "Use .json or .yaml/.yml"
             )
-        with open(path) as fh:
-            if path.endswith(('.yaml', '.yml')):
-                return yaml.safe_load(fh)
-            return json.load(fh)
+        except OSError as exc:
+            raise ValueError(f"Failed to read config file '{path}': {exc}") from exc
+        except yaml.YAMLError as exc:
+            raise ValueError(f"Failed to parse YAML config file '{path}': {exc}") from exc
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Failed to parse JSON config file '{path}': {exc}") from exc
 
     @staticmethod
     def merge_overrides(build_config: dict, extra_config: dict) -> None:
@@ -201,29 +209,29 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
 
         # Prepare templates, family state, and generated qconnection artifacts.
         self.templates = config.get(ALL_TEMPLATES, {})
-        self.family._configure_family(config, self.templates)
+        self.family.configure_family(config, self.templates)
         self.add_qconnections(config)
 
         # Create the timeline, instantiate nodes, and wire family-specific node state.
         self.add_timeline(config)
-        self.family._prepare_build_state(config, self.bsm_to_router_map)
+        self.family.prepare_build_state(config, self.bsm_to_router_map)
         self.add_nodes(config)
-        self.family._wire_post_nodes(self.bsm_to_router_map, self.tl)
+        self.family.wire_post_nodes(self.bsm_to_router_map, self.tl)
 
         # Create channels, derive routing state, and attach any family protocols.
         self._add_qchannels(config)
         self._add_cchannels(config)
         self._add_cconnections(config)
-        self.family._generate_forwarding_table(config, self.nodes, self.qchannels)
-        self.family._attach_protocols()
+        self.family.generate_forwarding_table(config, self.nodes, self.qchannels)
+        self.family.attach_protocols()
 
     def add_nodes(self, config: dict):
-        ordered_configs = self.family._order_nodes(config[ALL_NODE])
+        ordered_configs = self.family.order_nodes(config[ALL_NODE])
         for node_config in ordered_configs:
             node_type = node_config[TYPE]
             template  = self.templates.get(node_config.get(TEMPLATE), {})
-            self.family._build_node(node_config, node_type, template,
-                                    self.tl, self.nodes, self.bsm_to_router_map)
+            self.family.build_node(node_config, node_type, template,
+                                   self.tl, self.nodes, self.bsm_to_router_map)
 
     def add_timeline(self, config: dict):
         stop_time = config.get(STOP_TIME, float('inf'))
@@ -248,7 +256,7 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
             node1    = q_connect[CONNECT_NODE_1]
             node2    = q_connect[CONNECT_NODE_2]
             cc_delay = int(self._calc_cc_delay(config, node1, node2))
-            self.family._expand_qconnection(q_connect, cc_delay, config)
+            self.family.expand_qconnection(q_connect, cc_delay, config)
 
     def _add_cchannels(self, config: dict) -> None:
         for cc in config.get(ALL_C_CHANNEL, []):
