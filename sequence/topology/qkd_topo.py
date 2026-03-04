@@ -26,11 +26,11 @@ class QKDTopo(Topo):
     def __init__(self, config: "str | dict", **kwargs):
         super().__init__(config, TopologyFamily(), **kwargs)
 
-    def _add_timeline(self, config):
+    def add_timeline(self, config):
         stop_time = config.get(STOP_TIME, float('inf'))
         self.tl = Timeline(stop_time)
 
-    def _add_nodes(self, config):
+    def add_nodes(self, config):
         for node in config[ALL_NODE]:
             # TODO: add encoding configuration for QKD nodes
             seed = node[SEED]

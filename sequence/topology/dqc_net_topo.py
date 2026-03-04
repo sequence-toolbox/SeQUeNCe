@@ -53,7 +53,7 @@ class DQCNetTopo(Topology):
         """
         mapping: dict[int, str] = {}
         next_wire = 0
-        for nd in self._input_cfg[ALL_NODE]:
+        for nd in self.input_cfg[ALL_NODE]:
             name   = nd["name"]
             n_data = nd.get("n_data", 1)
             for _ in range(n_data):

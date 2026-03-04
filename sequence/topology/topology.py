@@ -7,6 +7,7 @@ Topology instances automatically perform many useful network functions.
 
 import copy
 import json
+import yaml
 import warnings
 import numpy as np
 
@@ -105,7 +106,7 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
                 (e.g. nodes, templates, stop_time).
         """
         if isinstance(config, str):
-            source_config = self._load_config(config)
+            source_config = self.load_config(config)
         elif isinstance(config, dict):
             source_config = config
         else:
@@ -114,15 +115,15 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
             )
         config = copy.deepcopy(source_config)
         if kwargs:
-            self._merge_overrides(config, kwargs)
+            self.merge_overrides(config, kwargs)
         if ALL_NODE not in config or not config[ALL_NODE]:
             raise ValueError("Config must contain a non-empty 'nodes' list.")
-        self._setup(config, family)
-        self._input_cfg = copy.deepcopy(source_config)
-        self._build_cfg = config
+        self.setup(config, family)
+        self.input_cfg = copy.deepcopy(source_config)
+        self.build_cfg = config
 
     @staticmethod
-    def _load_config(path: str) -> dict:
+    def load_config(path: str) -> dict:
         """Load a JSON or YAML config file and return the parsed dict."""
         if not path.endswith(('.json', '.yaml', '.yml')):
             raise ValueError(
@@ -131,27 +132,26 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
             )
         with open(path) as fh:
             if path.endswith(('.yaml', '.yml')):
-                import yaml
                 return yaml.safe_load(fh)
             return json.load(fh)
 
     @staticmethod
-    def _merge_overrides(build_config: dict, extra_config: dict) -> None:
+    def merge_overrides(build_config: dict, extra_config: dict) -> None:
         """Merge extra config values into a build config dict in place.
 
         Lists are extended, dicts are updated, everything else is overridden.
         """
-        _LIST_KEYS = {
+        LIST_KEYS = {
             'nodes': ALL_NODE, 'qconnections': ALL_Q_CONNECT,
             'cconnections': ALL_C_CONNECT, 'qchannels': ALL_Q_CHANNEL,
             'cchannels': ALL_C_CHANNEL,
         }
-        for friendly, const in _LIST_KEYS.items():
-            val = extra_config.pop(friendly, None)
+        for key, val in LIST_KEYS.items():
+            val = extra_config.pop(key, None)
             if val:
-                if const not in build_config:
-                    build_config[const] = []
-                build_config[const].extend(val)
+                if val not in build_config:
+                    build_config[val] = []
+                build_config[val].extend(val)
         templates = extra_config.pop(ALL_TEMPLATES, None)
         if templates:
             if ALL_TEMPLATES not in build_config:
@@ -189,7 +189,7 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
                     "classical channel or cconnection"
                 )
 
-    def _setup(self, config: dict, family: TopologyFamily) -> None:
+    def setup(self, config: dict, family: TopologyFamily) -> None:
         """Execute the full build pipeline on a build config dict."""
         self.bsm_to_router_map = {}
         self.nodes: dict[str, list[Node]] = defaultdict(list)
@@ -197,35 +197,35 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
         self.cchannels: list[ClassicalChannel] = []
         self.templates: dict[str, dict] = {}
         self.tl: Timeline | None = None
-        self._family = family
+        self.family = family
 
         # Prepare templates, family state, and generated qconnection artifacts.
         self.templates = config.get(ALL_TEMPLATES, {})
-        self._family._configure_family(config, self.templates)
-        self._add_qconnections(config)
+        self.family._configure_family(config, self.templates)
+        self.add_qconnections(config)
 
         # Create the timeline, instantiate nodes, and wire family-specific node state.
-        self._add_timeline(config)
-        self._family._prepare_build_state(config, self.bsm_to_router_map)
-        self._add_nodes(config)
-        self._family._wire_post_nodes(self.bsm_to_router_map, self.tl)
+        self.add_timeline(config)
+        self.family._prepare_build_state(config, self.bsm_to_router_map)
+        self.add_nodes(config)
+        self.family._wire_post_nodes(self.bsm_to_router_map, self.tl)
 
         # Create channels, derive routing state, and attach any family protocols.
         self._add_qchannels(config)
         self._add_cchannels(config)
         self._add_cconnections(config)
-        self._family._generate_forwarding_table(config, self.nodes, self.qchannels)
-        self._family._attach_protocols()
+        self.family._generate_forwarding_table(config, self.nodes, self.qchannels)
+        self.family._attach_protocols()
 
-    def _add_nodes(self, config: dict):
-        ordered_configs = self._family._order_nodes(config[ALL_NODE])
+    def add_nodes(self, config: dict):
+        ordered_configs = self.family._order_nodes(config[ALL_NODE])
         for node_config in ordered_configs:
             node_type = node_config[TYPE]
             template  = self.templates.get(node_config.get(TEMPLATE), {})
-            self._family._build_node(node_config, node_type, template,
-                                     self.tl, self.nodes, self.bsm_to_router_map)
+            self.family._build_node(node_config, node_type, template,
+                                    self.tl, self.nodes, self.bsm_to_router_map)
 
-    def _add_timeline(self, config: dict):
+    def add_timeline(self, config: dict):
         stop_time = config.get(STOP_TIME, float('inf'))
         formalism = config.get(FORMALISM, KET_STATE_FORMALISM)
         truncation = config.get(TRUNC, 1)
@@ -242,13 +242,13 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
                 qc_obj.set_ends(src_node, dst_str)
                 self.qchannels.append(qc_obj)
 
-    def _add_qconnections(self, config: dict) -> None:
+    def add_qconnections(self, config: dict) -> None:
         self._validate_qconnection_dependencies(config)
         for q_connect in config.get(ALL_Q_CONNECT, []):
             node1    = q_connect[CONNECT_NODE_1]
             node2    = q_connect[CONNECT_NODE_2]
             cc_delay = int(self._calc_cc_delay(config, node1, node2))
-            self._family._expand_qconnection(q_connect, cc_delay, config)
+            self.family._expand_qconnection(q_connect, cc_delay, config)
 
     def _add_cchannels(self, config: dict) -> None:
         for cc in config.get(ALL_C_CHANNEL, []):
@@ -310,7 +310,7 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
 
     def get_timeline(self) -> "Timeline":
         if self.tl is None:
-            raise RuntimeError("Timeline is not set — topology may not be fully initialised.")
+            raise RuntimeError("Timeline is not set — topology may not be fully initialized.")
         return self.tl
 
     def get_nodes_by_type(self, type: str) -> list[Node]:

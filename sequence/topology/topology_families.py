@@ -35,7 +35,7 @@ class TopologyFamily(ABC):
     (BSM-based nets, QLAN, etc.). Topology delegates its variable pipeline steps
     here via composition rather than inheritance.
 
-    Most methods are no-op defaults. Topologies that use the shared _add_nodes
+    Most methods are no-op defaults. Topologies that use the shared add_nodes
     pipeline must supply a family with a real _build_node implementation.
     Concrete implementations live in topology_families.py.
     """
@@ -59,7 +59,7 @@ class TopologyFamily(ABC):
                     tl, nodes: dict, bsm_to_router_map: dict) -> None:
         """Construct node, call set_seed, append to nodes[node_type].
 
-        Family subclassers using the shared _add_nodes pipeline must
+        Family subclassers using the shared add_nodes pipeline must
         implement this method.
 
         Args:
@@ -72,7 +72,7 @@ class TopologyFamily(ABC):
         """
         raise NotImplementedError(
             "TopologyFamily does not build nodes by default. "
-            "The topology must override _add_nodes or provide a family with _build_node."
+            "The topology must override add_nodes or provide a family with _build_node."
         )
 
 class BsmTopologyFamily(TopologyFamily):
