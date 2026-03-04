@@ -106,21 +106,19 @@ class Topology(ABC, metaclass=_DeprecatedAttrMeta):
                 (e.g. nodes, templates, stop_time).
         """
         if isinstance(config, str):  # Note: Could widen this to PathLike later if needed.
-            source_config = self.load_config(config)
+            self.config = self.load_config(config)
         elif isinstance(config, dict):
-            source_config = config
+            # If we use the same dict config 2+ times (unlikely) we shouldn't mutate it before reuse.
+            self.config = copy.deepcopy(config)
         else:
             raise TypeError(
                 f"config must be a file path (str) or a config dict, got {type(config).__name__}"
             )
-        config = copy.deepcopy(source_config)
         if kwargs:
-            self.merge_overrides(config, kwargs)
-        if ALL_NODE not in config or not config[ALL_NODE]:
+            self.merge_overrides(self.config, kwargs)
+        if ALL_NODE not in self.config or not self.config[ALL_NODE]:
             raise ValueError("Config must contain a non-empty 'nodes' list.")
-        self.setup(config, family)
-        self.input_cfg = copy.deepcopy(source_config)
-        self.build_cfg = config
+        self.setup(self.config, family)
 
     @staticmethod
     def load_config(path: str) -> dict:

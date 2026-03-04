@@ -5,7 +5,7 @@ from .topology_families import BsmTopologyFamily
 
 from .const_topo import (
     ALL_NODE, BSM_NODE, CONTROLLER, DATA_MEMO_ARRAY_SIZE,
-    DQC_NODE, MEET_IN_THE_MID, MEMO_ARRAY_SIZE,
+    DQC_NODE, MEET_IN_THE_MID, MEMO_ARRAY_SIZE, TYPE,
 )
 
 
@@ -53,7 +53,9 @@ class DQCNetTopo(Topology):
         """
         mapping: dict[int, str] = {}
         next_wire = 0
-        for nd in self.input_cfg[ALL_NODE]:
+        for nd in self.config[ALL_NODE]:
+            if nd[TYPE] != DQC_NODE:
+                continue
             name   = nd["name"]
             n_data = nd.get("n_data", 1)
             for _ in range(n_data):

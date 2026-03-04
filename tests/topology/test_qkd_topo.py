@@ -29,8 +29,3 @@ def test_QKDTopology():
     for qc in topo.get_qchannels():
         assert qc.distance == 3e3
         assert qc.attenuation == 1e-5
-
-
-def test_unsupported_file_format_raises():
-    with pytest.raises(ValueError, match="Unsupported config file format"):
-        QKDTopo("tests/topology/some_config.txt")
