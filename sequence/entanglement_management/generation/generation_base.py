@@ -54,8 +54,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
     _global_type: str = BARRET_KOK
 
     def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs):
-        super().__init__(owner, name)
-        self.protocol_type = BARRET_KOK
+        super().__init__(owner, name, BARRET_KOK)
         self.middle: str = middle
         self.remote_node_name: str = other
         self.remote_protocol_name: str = ''

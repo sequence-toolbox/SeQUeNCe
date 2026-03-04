@@ -6,7 +6,7 @@ from ..network_management.routing_distributed import DistributedRoutingProtocol
 from ..network_management.routing_static import StaticRoutingProtocol
 from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
-from ..kernel.quantum_manager import KET_STATE_FORMALISM, QuantumManager
+from ..kernel.quantum_manager import KET_VECTOR_FORMALISM, QuantumManager
 from .node import BSMNode, QuantumRouter
 from ..constants import SPEED_OF_LIGHT
 
@@ -56,7 +56,7 @@ class RouterNetTopo(Topo):
 
     def _add_timeline(self, config: dict):
         stop_time = config.get(Topo.STOP_TIME, 10 ** 23)
-        formalism = config.get(Topo.FORMALISM, KET_STATE_FORMALISM)
+        formalism = config.get(Topo.FORMALISM, KET_VECTOR_FORMALISM)
         truncation = config.get(Topo.TRUNC, 1)
         QuantumManager.set_global_manager_formalism(formalism)
         self.tl = Timeline(stop_time=stop_time, truncation=truncation)

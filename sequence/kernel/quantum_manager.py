@@ -25,7 +25,7 @@ from scipy.special import binom
 
 from .quantum_state import KetState, DensityState, BellDiagonalState
 from .quantum_utils import *
-from ..constants import KET_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM, FOCK_DENSITY_MATRIX_FORMALISM, BELL_DIAGONAL_STATE_FORMALISM
+from ..constants import KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM, FOCK_DENSITY_MATRIX_FORMALISM, BELL_DIAGONAL_STATE_FORMALISM
 
 
 class QuantumManager(ABC):
@@ -46,7 +46,7 @@ class QuantumManager(ABC):
     """
     _registry: dict = {}
     _global_formalism_lock = Lock()
-    _global_formalism: str = KET_STATE_FORMALISM
+    _global_formalism: str = KET_VECTOR_FORMALISM
 
     def __init__(self, truncation: int = 1):
         self.states: dict[int, "State"] = {}
@@ -74,7 +74,7 @@ class QuantumManager(ABC):
     @classmethod
     def clear_active_formalism(cls):
         with cls._global_formalism_lock:
-            cls._global_formalism = KET_STATE_FORMALISM
+            cls._global_formalism = KET_VECTOR_FORMALISM
 
     @classmethod
     def register(cls, name: str, manager_class=None):
@@ -233,7 +233,7 @@ class QuantumManager(ABC):
         self.states = states
 
 
-@QuantumManager.register(KET_STATE_FORMALISM)
+@QuantumManager.register(KET_VECTOR_FORMALISM)
 class QuantumManagerKet(QuantumManager):
     """Class to track and manage quantum states with the ket vector formalism."""
 
