@@ -2508,7 +2508,7 @@ wheels = [
 
 [[package]]
 name = "sequence"
-version = "0.8.6"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "dash" },
