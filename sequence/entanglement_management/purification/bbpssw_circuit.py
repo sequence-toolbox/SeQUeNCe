@@ -15,10 +15,10 @@ if TYPE_CHECKING:
     from ...topology.node import Node
 
 from ...utils import log
-from ...constants import KET_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM
+from ...constants import KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM
 from .bbpssw_protocol import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType
 
-@BBPSSWProtocol.register(KET_STATE_FORMALISM)
+@BBPSSWProtocol.register(KET_VECTOR_FORMALISM)
 @BBPSSWProtocol.register(DENSITY_MATRIX_FORMALISM)
 class BBPSSWCircuit(BBPSSWProtocol):
     """Purification protocol instance.

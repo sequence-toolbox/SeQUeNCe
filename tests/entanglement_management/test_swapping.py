@@ -81,11 +81,11 @@ def create_scenario(state1, state2, seed_index):
     a1, a2, a3 = nodes
     memo1, memo2, memo3, memo4 = memories
 
-    es1 = EntanglementSwappingB(a1, "a1.ESb0", memo1)
+    es1 = EntanglementSwappingB.create(a1, "a1.ESb0", memo1)
     a1.protocols.append(es1)
-    es2 = EntanglementSwappingA(a2, "a2.ESa0", memo2, memo3)
+    es2 = EntanglementSwappingA.create(a2, "a2.ESa0", memo2, memo3)
     a2.protocols.append(es2)
-    es3 = EntanglementSwappingB(a3, "a3.ESb1", memo4)
+    es3 = EntanglementSwappingB.create(a3, "a3.ESb1", memo4)
     a3.protocols.append(es3)
 
     es1.set_others(es2.name, a2.name, [memo2.name, memo3.name])
@@ -527,11 +527,11 @@ def test_EntanglementSwapping():
         a1, a2, a3 = nodes
         memo1, memo2, memo3, memo4 = memories
 
-        es1 = EntanglementSwappingB(a1, "a1.ESb%d" % i, memo1)
+        es1 = EntanglementSwappingB.create(a1, "a1.ESb%d" % i, memo1)
         a1.protocols.append(es1)
-        es2 = EntanglementSwappingA(a2, "a2.ESa%d" % i, memo2, memo3, success_prob=0.2)
+        es2 = EntanglementSwappingA.create(a2, "a2.ESa%d" % i, memo2, memo3, success_prob=0.2)
         a2.protocols.append(es2)
-        es3 = EntanglementSwappingB(a3, "a3.ESb%d" % i, memo4)
+        es3 = EntanglementSwappingB.create(a3, "a3.ESb%d" % i, memo4)
         a3.protocols.append(es3)
 
         es1.set_others(es2.name, a2.name, [memo2.name, memo3.name])

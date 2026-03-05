@@ -8,12 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-3-02
 ### Added
 - Created project scripts for each config generator.
-
+- Created the `swapping` module that has the following classes. The subclasses use the registry decorator (factory pattern).
+    - Base class: `EntanglementSwappingA` & `EntanglementSwappingB`
+    - Subclass for ket vector and density matrix: `EntanglementSwappingA_Circuit` & `EntanglementSwappingB_Circuit`
+    - Subclass for Bell diagonal state: `EntanglementSwappingA_BDS` & `EntanglementSwappingB_BDS`
+    
 ### Changed
 - Migrated `utils/json_config_generators/` to `sequence/config_generators/`.
 
 ### Removed
-
+- The old `swapping.py` is removed.
 
 
 ## [0.8.5] - 2026-2-27
