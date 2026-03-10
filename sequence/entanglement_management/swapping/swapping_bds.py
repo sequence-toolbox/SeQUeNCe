@@ -73,7 +73,7 @@ class EntanglementSwappingA_BDS(EntanglementSwappingA):
         assert self.right_memo.entangled_memory["node_id"] == self.right_node
 
         if self.owner.get_generator().random() < self.success_probability():
-            log.logger.debug(f'swapping successed!')
+            log.logger.info(f'swapping successed!')
             self.is_success = True
             expire_time = min(self.left_memo.get_expire_time(), self.right_memo.get_expire_time())
             # first invoke single-memory decoherence channels on each involved quantum memory (in total 4)
@@ -106,7 +106,7 @@ class EntanglementSwappingA_BDS(EntanglementSwappingA):
                                                 expire_time=expire_time,
                                                 meas_res=[])
         else:
-            log.logger.debug(f'swapping failed!')
+            log.logger.info(f'swapping failed!')
             msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, self.left_protocol_name, fidelity=0)
             msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, self.right_protocol_name, fidelity=0)
 
@@ -154,7 +154,7 @@ class EntanglementSwappingA_BDS(EntanglementSwappingA):
         else:
             bds_elems = [new_elem_1, new_elem_2, new_elem_3, new_elem_4]
         
-        log.logger.debug(f'before swapping, f = {left_state.state[0]:.6f}, {right_state.state[0]:.6f}; after swapping, f = {bds_elems[0]:.6f}')
+        log.logger.info(f'before swapping, f = {left_state.state[0]:.6f}, {right_state.state[0]:.6f}; after swapping, f = {bds_elems[0]:.6f}')
 
         return bds_elems
 

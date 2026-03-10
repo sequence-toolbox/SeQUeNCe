@@ -6,7 +6,6 @@ from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
 from .node import BSMNode
 from ..constants import SPEED_OF_LIGHT
-from typing import Dict, List, Type
 from .node import Node, DQCNode
 
 

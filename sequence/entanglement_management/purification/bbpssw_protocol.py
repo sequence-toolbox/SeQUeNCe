@@ -171,7 +171,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         args:
             protocol (str): Other protocol name.
             node (str): Other node name.
-            memories (List[str]): The list of memory names used on other node.
+            memories (list[str]): The list of memory names used on other node.
         """
         self.remote_node_name = node
         self.remote_protocol_name = protocol

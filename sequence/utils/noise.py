@@ -1,6 +1,5 @@
 import numpy as np
 from sequence.components.circuit import Circuit
-from typing import List
 
 class Noise:
     """
