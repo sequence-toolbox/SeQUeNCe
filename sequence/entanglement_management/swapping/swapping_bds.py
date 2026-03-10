@@ -73,7 +73,7 @@ class EntanglementSwappingA_BDS(EntanglementSwappingA):
         assert self.right_memo.entangled_memory["node_id"] == self.right_node
 
         if self.owner.get_generator().random() < self.success_probability():
-            log.logger.info(f'swapping successed!')
+            log.logger.info(f'swapping succeeded!')
             self.is_success = True
             expire_time = min(self.left_memo.get_expire_time(), self.right_memo.get_expire_time())
             # first invoke single-memory decoherence channels on each involved quantum memory (in total 4)

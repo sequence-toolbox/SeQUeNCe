@@ -389,7 +389,7 @@ class ResourceManager:
     def received_message(self, src: str, msg: ResourceManagerMessage) -> None:
         """Method to receive resource manager messages.
 
-        Messages come in 4 types, as detailed in the `ResourceManagerMessage` class.
+        Messages come in 5 types, as detailed in the `ResourceManagerMessage` class.
 
         Args:
             src (str): name of the node that sent the message.
@@ -420,7 +420,7 @@ class ResourceManager:
 
             case ResourceManagerMsgType.RESPONSE:
                 protocol_name = msg.ini_protocol_name
-                protocol: EntanglementProtocol = None
+                protocol: EntanglementProtocol | None = None
                 for p in self.pending_protocols:
                     if p.name == protocol_name:
                         protocol = p
@@ -500,6 +500,25 @@ class ResourceManager:
 
         msg = ResourceManagerMessage(ResourceManagerMsgType.RELEASE_MEMORY, protocol="", 
                                      node="", memories=[], memory_id=memory_id)
+        self.owner.send_message(dst, msg)
+
+    def expire_remote_rules(self, dst: str, reservation: Reservation) -> None:
+        """Expire rules (associated with the reservation) on distant nodes.
+
+        This is used when the request is finished before end_time. 
+        The rules associated with the request's reservation should be expired when the request is finished.
+        Otherwise the quantum network keeps generating entanglement till the end_time, which is not desired.
+
+        Typically, the initiator will call this method to expire the rules on the intermediate nodes.
+        Meanwhile, the initiator and responder will directly call self.expire_rules_by_reservation() 
+                   to expire the rules on their own node, since they are aware of the reservation is finished.
+
+        Args:
+            dst (str): name of destination node.
+            reservation (Reservation): the rules created by this reservation will expire
+        """
+        msg = ResourceManagerMessage(ResourceManagerMsgType.EARLY_EXPIRE, reservation=reservation, 
+                                     protocol="", node="", memories=[])
         self.owner.send_message(dst, msg)
 
     def __str__(self) -> str:
