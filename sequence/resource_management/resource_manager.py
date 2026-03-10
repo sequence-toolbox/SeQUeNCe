@@ -51,22 +51,24 @@ class ResourceManagerMsgType(Enum):
     RESPONSE = auto()
     RELEASE_PROTOCOL = auto()
     RELEASE_MEMORY = auto()
+    EARLY_EXPIRE = auto()
 
 
 class ResourceManagerMessage(Message):
     """Message for resource manager communication.
 
-    There are four types of ResourceManagerMessage:
+    There are five types of ResourceManagerMessage:
 
     * REQUEST: request eligible protocols from remote resource manager to pair entanglement protocols.
     * RESPONSE: approve or reject received request.
     * RELEASE_PROTOCOL: release the protocol on the remote node
     * RELEASE_MEMORY: release the memory on the remote node
+    * EARLY_EXPIRE: expire rules before the reservation's end_time, which is used when the reservation is finished before end_time.
 
     Attributes:
         ini_protocol_name (str): name of protocol that creates the original REQUEST message.
         ini_node_name (str): name of the node that creates the original REQUEST message.
-        ini_memories_name (str): name of the memories.
+        ini_memories_name (list[str]): a list of names of the memories.
         request_fun (func): a function using ResourceManager to search eligible protocols on remote node (if `msg_type` == REQUEST).
         is_approved (bool): acceptance/failure of condition function (if `msg_type` == RESPONSE).
         paired_protocol (str): protocol that is paired with ini_protocol (if `msg-type` == RESPONSE).
@@ -76,23 +78,23 @@ class ResourceManagerMessage(Message):
         super().__init__(msg_type, "resource_manager")
         self.ini_protocol_name: str = kwargs["protocol"]
         self.ini_node_name: str = kwargs["node"]
-        self.ini_memories_name: str = kwargs["memories"]
+        self.ini_memories_name: list[str] = kwargs["memories"]
 
         match self.msg_type:
             case ResourceManagerMsgType.REQUEST:
                 self.req_condition_func = kwargs["req_condition_func"]
                 self.req_args = kwargs["req_args"]
-
             case ResourceManagerMsgType.RESPONSE:
                 self.is_approved = kwargs["is_approved"]
                 self.paired_protocol = kwargs["paired_protocol"]
                 self.paired_node = kwargs["paired_node"]
                 self.paired_memories = kwargs["paired_memories"]
-
             case ResourceManagerMsgType.RELEASE_PROTOCOL:
                 self.protocol = kwargs["protocol"]
             case ResourceManagerMsgType.RELEASE_MEMORY:
                 self.memory = kwargs["memory_id"]
+            case ResourceManagerMsgType.EARLY_EXPIRE:
+                self.reservation = kwargs["reservation"]
             case _:
                 raise Exception(f"ResourceManagerMessage gets unknown type of message: {str(self.msg_type)}")
 
@@ -108,6 +110,8 @@ class ResourceManagerMessage(Message):
                 base += f', release_protocol={self.protocol}'
             case ResourceManagerMsgType.RELEASE_MEMORY:
                 base += f', release_memory={self.memory}'
+            case ResourceManagerMsgType.EARLY_EXPIRE:
+                base += f', reservation={self.reservation}'
             case _:
                 raise Exception(f'ResourceManagerMessage got an unknown type of message: {str(self.msg_type)}')
         return base
@@ -393,70 +397,73 @@ class ResourceManager:
         """
 
         log.logger.debug(f"{self.owner.name} resource manager receive message from {src}: {msg}")
-        if msg.msg_type is ResourceManagerMsgType.REQUEST:
-            # select the wait-for-request protocol to respond to the message
-            protocol = msg.req_condition_func(self.waiting_protocols, msg.req_args)
-            if protocol is not None:
-                protocol.set_others(msg.ini_protocol_name, msg.ini_node_name, msg.ini_memories_name)
-                memo_names = [memo.name for memo in protocol.memories]
-                new_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=msg.ini_protocol_name,
-                            node=msg.ini_node_name, memories=msg.ini_memories_name, is_approved=True,
-                            paired_protocol=protocol.name, paired_node=self.owner.name, paired_memories=memo_names)
-                self.owner.send_message(src, new_msg)
-                self.waiting_protocols.remove(protocol)
-                self.owner.protocols.append(protocol)
-                protocol.start()
-            else:
-                # none of the self.waiting_protocol satisfy the req_condition_func --> is_approved=False
-                new_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=msg.ini_protocol_name,
-                                                 node=msg.ini_node_name, memories=msg.ini_memories_name, is_approved=False,
-                                                 paired_protocol=None, paired_node=None, paired_memories=None)
-                self.owner.send_message(src, new_msg)
-
-        elif msg.msg_type is ResourceManagerMsgType.RESPONSE:
-            protocol_name = msg.ini_protocol_name
-
-            protocol: EntanglementProtocol | None = None
-            for p in self.pending_protocols:
-                if p.name == protocol_name:
-                    protocol = p
-                    break
-            else:  # no matched pending protocols
-                if msg.is_approved:
-                    self.release_remote_protocol(src, msg.paired_protocol)
-                return
-
-            if msg.is_approved:
-                protocol.set_others(msg.paired_protocol, msg.paired_node, msg.paired_memories)  # pairing (cost one round-trip-time)
-                if protocol.is_ready():
-                    self.pending_protocols.remove(protocol)
+        match msg.msg_type:
+            case ResourceManagerMsgType.REQUEST:
+                # select the wait-for-request protocol to respond to the message
+                protocol = msg.req_condition_func(self.waiting_protocols, msg.req_args)
+                if protocol is not None:
+                    protocol.set_others(msg.ini_protocol_name, msg.ini_node_name, msg.ini_memories_name)
+                    memo_names = [memo.name for memo in protocol.memories]
+                    new_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=msg.ini_protocol_name,
+                                node=msg.ini_node_name, memories=msg.ini_memories_name, is_approved=True,
+                                paired_protocol=protocol.name, paired_node=self.owner.name, paired_memories=memo_names)
+                    self.owner.send_message(src, new_msg)
+                    self.waiting_protocols.remove(protocol)
                     self.owner.protocols.append(protocol)
-                    protocol.owner = self.owner
                     protocol.start()
-            else:
-                protocol.rule.protocols.remove(protocol)
-                for memory in protocol.memories:
-                    memory.detach(protocol)
-                    memory.attach(memory.memory_array)
-                    info = self.memory_manager.get_info_by_memory(memory)
-                    if info.remote_node is None:
-                        self.update(None, memory, MemoryInfo.RAW)
-                    else:
-                        self.update(None, memory, MemoryInfo.ENTANGLED)
-                self.pending_protocols.remove(protocol)
+                else:
+                    # none of the self.waiting_protocol satisfy the req_condition_func --> is_approved=False
+                    new_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=msg.ini_protocol_name,
+                                                    node=msg.ini_node_name, memories=msg.ini_memories_name, is_approved=False,
+                                                    paired_protocol=None, paired_node=None, paired_memories=None)
+                    self.owner.send_message(src, new_msg)
 
-        elif msg.msg_type is ResourceManagerMsgType.RELEASE_PROTOCOL:
-            for p in self.owner.protocols:
-                if p.name == msg.protocol:
-                    p.release()
+            case ResourceManagerMsgType.RESPONSE:
+                protocol_name = msg.ini_protocol_name
+                protocol: EntanglementProtocol = None
+                for p in self.pending_protocols:
+                    if p.name == protocol_name:
+                        protocol = p
+                        break
+                else:  # no matched pending protocols
+                    if msg.is_approved:
+                        self.release_remote_protocol(src, msg.paired_protocol)
+                    return
 
-        elif msg.msg_type is ResourceManagerMsgType.RELEASE_MEMORY:
-            target_id = msg.memory
-            for protocol in self.owner.protocols:
-                for memory in protocol.memories:
-                    if memory.name == target_id:
-                        protocol.release()
-                        return
+                if msg.is_approved:
+                    protocol.set_others(msg.paired_protocol, msg.paired_node, msg.paired_memories)  # pairing (cost one round-trip-time)
+                    if protocol.is_ready():
+                        self.pending_protocols.remove(protocol)
+                        self.owner.protocols.append(protocol)
+                        protocol.owner = self.owner
+                        protocol.start()
+                else:
+                    protocol.rule.protocols.remove(protocol)
+                    for memory in protocol.memories:
+                        memory.detach(protocol)
+                        memory.attach(memory.memory_array)
+                        info = self.memory_manager.get_info_by_memory(memory)
+                        if info.remote_node is None:
+                            self.update(None, memory, MemoryInfo.RAW)
+                        else:
+                            self.update(None, memory, MemoryInfo.ENTANGLED)
+                    self.pending_protocols.remove(protocol)
+
+            case ResourceManagerMsgType.RELEASE_PROTOCOL:
+                for p in self.owner.protocols:
+                    if p.name == msg.protocol:
+                        p.release()
+
+            case ResourceManagerMsgType.RELEASE_MEMORY:
+                target_id = msg.memory
+                for protocol in self.owner.protocols:
+                    for memory in protocol.memories:
+                        if memory.name == target_id:
+                            protocol.release()
+                            return
+            
+            case ResourceManagerMsgType.EARLY_EXPIRE:
+                self.expire_rules_by_reservation(msg.reservation)
 
     def memory_expire(self, memory: Memory):
         """Method to receive memory expiration events."""

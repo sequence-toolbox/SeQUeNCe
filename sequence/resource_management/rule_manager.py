@@ -87,7 +87,6 @@ class RuleManager:
         else:
             log.logger.info(f'{self.resource_manager.owner} rule not exist: {rule}')
         return rule.protocols
-        
 
     def get_memory_manager(self) -> MemoryManager:
         assert self.resource_manager is not None
