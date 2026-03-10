@@ -11,7 +11,6 @@ These include 2 classes used by a quantum manager, and one used for individual p
 import math
 from abc import ABC
 
-from numpy import pi, cos, sin, arange, log, log2, array, outer, trace, kron
 import numpy as np
 from numpy.random import Generator
 
@@ -102,7 +101,7 @@ class KetState(State):
         assert all([abs(a) <= 1 + EPSILON for a in amplitudes]), "Illegal value with abs > 1 in ket vector"
         assert math.isclose(sum([abs(a) ** 2 for a in amplitudes]), 1), "Squared amplitudes do not sum to 1"
 
-        num_subsystems = log(len(amplitudes)) / log(dim)
+        num_subsystems = np.log(len(amplitudes)) / np.log(dim)
         assert dim ** int(round(num_subsystems)) == len(amplitudes),\
             "Length of amplitudes should be d ** n, " \
             "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
@@ -152,7 +151,7 @@ class DensityState(State):
         for row in state:
             assert len(state) == len(row), "density matrix must be square"
 
-        num_subsystems = log(len(state)) / log(dim)
+        num_subsystems = np.log(len(state)) / np.log(dim)
         assert dim ** int(round(num_subsystems)) == len(state), (
             "Length of amplitudes should be d ** n, "
             "where d is subsystem Hilbert space dimension and n is the number of subsystems. "
@@ -215,8 +214,8 @@ class FreeQuantumState(State):
         """
 
         # TODO: rewrite for entangled states
-        angle = rng.random() * 2 * pi
-        self.state = (complex(cos(angle)), complex(sin(angle)))
+        angle = rng.random() * 2 * np.pi
+        self.state = (complex(np.cos(angle)), complex(np.sin(angle)))
 
     # only for use with entangled state
     def set_state(self, state: tuple[complex]):
@@ -234,7 +233,7 @@ class FreeQuantumState(State):
         assert all([abs(a) <= 1.01 for a in state]), "Illegal value with abs > 1 in quantum state"
         assert abs(sum([abs(a) ** 2 for a in state]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
 
-        num_qubits = log2(len(state))
+        num_qubits = np.log2(len(state))
         assert 2 ** int(round(num_qubits)) == len(state), (
             "Length of amplitudes should be 2 ** n, where n is the number of qubits. "
             f"Actual amplitude length: {len(state)}, num qubits: {num_qubits}")
@@ -359,7 +358,7 @@ class FreeQuantumState(State):
 
         new_states, probabilities = measure_multiple_with_cache(state, basis, length_diff)
 
-        possible_results = arange(0, basis_dimension, 1)
+        possible_results = np.arange(0, basis_dimension, 1)
         # result gives index of the basis vector that will be projected to
         res = rng.choice(possible_results, p=probabilities)
         # project to new state, then reassign quantum state and entangled photons
