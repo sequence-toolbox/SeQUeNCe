@@ -2,7 +2,7 @@
 
 **NOTE**: The standard way to generate entanglement is using the `app` module, which is discussed in chapter 6. The purpose of this chapter is explaining what is happening under the hood at the network management module. 
 
---
+---
 
 In this tutorial, we will showcase the (default and distributed) Network Management module of SeQUeNCe and show its operation on a typical network. The goal of this tutorial is to
 - Gain familiarity with the `network_management` module

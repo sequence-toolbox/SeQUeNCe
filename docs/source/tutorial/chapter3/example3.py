@@ -24,7 +24,8 @@ class SimpleManager:
         if type(self.owner) is SwapNodeA:
             left_memo = self.owner.components[self.memo_names[0]]
             right_memo = self.owner.components[self.memo_names[1]]
-            self.owner.protocols = [EntanglementSwappingA.create(self.owner, 'ESA', left_memo, right_memo, 1, 0.99)]
+            self.owner.protocols = [EntanglementSwappingA.create(self.owner, 'ESA', left_memo, right_memo, 
+                                                                 success_prob = 1, degradation=0.99)]
         else:
             memo = self.owner.components[self.memo_names[0]]
             self.owner.protocols = [EntanglementSwappingB.create(self.owner, '%s.ESB' % self.owner.name, memo)]

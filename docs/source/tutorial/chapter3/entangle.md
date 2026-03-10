@@ -1,6 +1,6 @@
 # Chapter 3: Entanglement Management
 
-**NOTE**: The standard way to generate entanglement is using the `app` module, which is discussed in chapter 6. The purpose of this chapter is explaining what is happening under the hood at the entangement management module. 
+**NOTE**: The standard way to generate entanglement is using the `app` module, which is discussed in chapter 6. The purpose of this chapter is explaining what is happening under the hood at the entanglement management module. 
 
 ---
 
@@ -519,7 +519,8 @@ class SimpleManager:
         if type(self.owner) is SwapNodeA:
             left_memo = self.owner.components[self.memo_names[0]]
             right_memo = self.owner.components[self.memo_names[1]]
-            self.owner.protocols = [EntanglementSwappingA.create(self.owner, 'ESA', left_memo, right_memo, 1, 0.99)]
+            self.owner.protocols = [EntanglementSwappingA.create(self.owner, 'ESA', left_memo, right_memo, 
+                                                                 success_prob = 1, degradation=0.99)]
         else:
             memo = self.owner.components[self.memo_names[0]]
             self.owner.protocols = [EntanglementSwappingB.create(self.owner, '%s.ESB' % self.owner.name, memo)]

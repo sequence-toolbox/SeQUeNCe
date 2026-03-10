@@ -235,10 +235,10 @@ tl.init()
 action_args = {"mid_name": "m12", "other_name": "r2", "node_name": "r1",
                "index_upper": 9, "index_lower": 0}
 condition_args = {"index_lower": 0, "index_upper": 9}
-rule1 = Rule(10, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
+rule1 = Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
 r1.resource_manager.load(rule1)
 action_args2 = {"mid_name": "m12", "other_name": "r1"}
-rule2 = Rule(10, eg_rule_action_request, eg_rule_condition, action_args2, condition_args)
+rule2 = Rule(10, eg_rule_action_await, eg_rule_condition, action_args2, condition_args)
 r2.resource_manager.load(rule2)
 
 tl.run()
@@ -285,7 +285,7 @@ def add_eg_rules(index: int, path: List[RouterNode], middles: List[BSMNode]):
         condition_args = {"index_lower": mem_range[0],
                           "index_upper": mem_range[0] + 9}
 
-        rule = Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
+        rule = Rule(10, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
         node.resource_manager.load(rule)
 
     if index < (len(path) - 1):
@@ -302,14 +302,8 @@ def add_eg_rules(index: int, path: List[RouterNode], middles: List[BSMNode]):
                        "index_upper": node_mems[index + 1][1] - 1,
                        "index_lower": node_mems[index + 1][0]}
 
-        memories = [info.memory for info in memories_info]
-        memory = memories[0]
-        protocol = EntanglementGenerationA.create(None, "EGA." + memory.name, middle_names[index], 
-                                                  node_names[index + 1], memory)
-        return [protocol, [node_names[index + 1]], [req_func]]
-
-    rule = Rule(10, eg_rule_action, eg_rule_condition)
-    node.resource_manager.load(rule)
+        rule = Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
+        node.resource_manager.load(rule)
 ```
 
 ### Step 7: Flow 2 Entanglement Purification
