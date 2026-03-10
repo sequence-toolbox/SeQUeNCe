@@ -1,9 +1,14 @@
 # Chapter 5: Network Manager
 
-In this tutorial, we will showcase the Network Management module of SeQUeNCe and show its operation on a typical network. The goal of this tutorial is to
+**NOTE**: The standard way to generate entanglement is using the `app` module, which is discussed in chapter 6. The purpose of this chapter is explaining what is happening under the hood at the network management module. 
+
+--
+
+In this tutorial, we will showcase the (default and distributed) Network Management module of SeQUeNCe and show its operation on a typical network. The goal of this tutorial is to
 - Gain familiarity with the `network_management` module
 - Gain familiarity with the `topology.topology` module
 - Using external files to build networks
+
 
 To achieve this, we will be using an example json file to build our network and will use the network manager on `QuantumRouter` nodes to request entanglement pairs. The json file will create the network topology shown below:
 
