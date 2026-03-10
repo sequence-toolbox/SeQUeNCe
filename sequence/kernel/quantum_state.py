@@ -5,15 +5,17 @@ These include 2 classes used by a quantum manager, and one used for individual p
 
 1. The `KetState` class represents the ket vector formalism and is used by a quantum manager.
 2. The `DensityState` class represents the density matrix formalism and is also used by a quantum manager.
-3. The `FreeQuantumState` class uses the ket vector formalism, and is used by individual photons (not the quantum manager).
+3. The `FreeQuantumState` class uses the ket vector formalism and is used by individual photons (not the quantum manager).
 """
 
 import math
 from abc import ABC
-from numpy import pi, cos, sin, arange, log, log2
+
+from numpy import pi, cos, sin, arange, log, log2, array, outer, trace, kron
+import numpy as np
 from numpy.random import Generator
 
-from .quantum_utils import *
+from .quantum_utils import measure_state_with_cache, measure_entangled_state_with_cache, measure_multiple_with_cache
 from ..constants import EPSILON
 
 
@@ -42,9 +44,8 @@ class State(ABC):
         # potential key word arguments for derived classes, e.g. truncation = d-1 for qudit
 
         super().__init__()
-
         self.state = None
-        self.keys = []
+        self.keys: list = []
 
     def deserialize(self, json_data) -> None:
         self.keys = json_data["keys"]
@@ -55,8 +56,8 @@ class State(ABC):
             self.state.append(complex_val)
 
     def serialize(self) -> dict:
-        res = {"keys": self.keys}
-        state = []
+        res: dict[str, list] = {"keys": self.keys}
+        state: list = []
         for cplx_n in self.state:
             if type(cplx_n) is float:
                 state.append(cplx_n)
@@ -112,7 +113,7 @@ class KetState(State):
             "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
             "Amplitude length: {}, expected subsystems: {}, num keys: {}".format(len(amplitudes), num_subsystems, len(keys))
 
-        self.state = array(amplitudes, dtype=complex)
+        self.state = np.array(amplitudes, dtype=complex)
         self.keys = keys
 
 
@@ -142,12 +143,12 @@ class DensityState(State):
         self.truncation = truncation
         dim = self.truncation + 1  # dimension of element Hilbert space
 
-        state = array(state, dtype=complex)
+        state = np.array(state, dtype=complex)
         if state.ndim == 1:
-            state = outer(state, state.conj())
+            state = np.outer(state, state.conj())
 
         # check formatting
-        assert abs(trace(array(state)) - 1) < 0.01, "density matrix trace must be 1"
+        assert abs(np.trace(np.array(state)) - 1) < 0.01, "density matrix trace must be 1"
         for row in state:
             assert len(state) == len(row), "density matrix must be square"
 
@@ -197,7 +198,7 @@ class FreeQuantumState(State):
         """
 
         entangled_states = self.entangled_states + another_state.entangled_states
-        new_state = kron(self.state, another_state.state)
+        new_state = np.kron(self.state, another_state.state)
         new_state = tuple(new_state)
 
         for quantum_state in entangled_states:
@@ -398,5 +399,5 @@ class BellDiagonalState(State):
         assert len(keys) == 2, "BellDiagonalState density matrix are only supported for 2-qubit entangled states."
 
         # note: density matrix diagonal elements are guaranteed to be real from Hermiticity
-        self.state = array(diag_elems, dtype=float)
+        self.state: list[float] = np.array(diag_elems, dtype=float)
         self.keys = keys
