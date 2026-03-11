@@ -1,6 +1,6 @@
 # Chapter 4: Resource Management
 
-**NOTE**: The standard way to generate entanglement is using the `app` module, which is discussed in chapter 6. The purpose of this chapter is explaining what is happening under the hood at the resource management module. 
+**NOTE**: The standard way to generate entanglement is to use the `app` module, which is discussed in chapter 6. The purpose of this chapter is to explain what is happening under the hood in the resource management module. 
 
 See `sequence.resource_management.action_condition_set` for detailed docstrings.
 

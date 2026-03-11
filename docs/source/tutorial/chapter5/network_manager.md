@@ -1,6 +1,6 @@
 # Chapter 5: Network Manager
 
-**NOTE**: The standard way to generate entanglement is using the `app` module, which is discussed in chapter 6. The purpose of this chapter is explaining what is happening under the hood at the network management module. 
+**NOTE**: The standard way to generate entanglement is to use the `app` module, which is discussed in chapter 6. The purpose of this chapter is to explain what is happening under the hood in the network management module. 
 
 ---
 
