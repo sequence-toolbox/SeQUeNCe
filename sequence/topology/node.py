@@ -390,10 +390,11 @@ class QuantumRouter(Node):
         self.down = down
 
     def init(self):
-        """Method to initialize quantum router node.
         """
-        if self.network_manager.routing_protocol is not None:
-            self.network_manager.routing_protocol.init()
+        Method to initialize the managers.
+        """
+        self.resource_manager.init()
+        self.network_manager.init()
 
     def add_bsm_node(self, bsm_name: str, router_name: str):
         """Method to record connected BSM nodes
