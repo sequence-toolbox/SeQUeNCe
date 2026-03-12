@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0] - 2026-3-02
 ### Added
+- Add empty init() to Protocol to satisfy class hierarchy.
 - Created project scripts for each config generator.
 - Created the `swapping` module that has the following classes. The subclasses use the registry decorator (factory pattern).
     - Base class: `EntanglementSwappingA` & `EntanglementSwappingB`
@@ -14,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Subclass for Bell diagonal state: `EntanglementSwappingA_BDS` & `EntanglementSwappingB_BDS`
     
 ### Changed
+- Moved routing_protocol init() to network manager.
+- Trigger empty inits for resource and network manager to enable future bootstrapping.
 - Migrated `utils/json_config_generators/` to `sequence/config_generators/`.
 
 ### Removed
