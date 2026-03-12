@@ -24,10 +24,11 @@ class SimpleManager:
         if type(self.owner) is SwapNodeA:
             left_memo = self.owner.components[self.memo_names[0]]
             right_memo = self.owner.components[self.memo_names[1]]
-            self.owner.protocols = [EntanglementSwappingA(self.owner, 'ESA', left_memo, right_memo, 1, 0.99)]
+            self.owner.protocols = [EntanglementSwappingA.create(self.owner, 'ESA', left_memo, right_memo, 
+                                                                 success_prob=1, degradation=0.99)]
         else:
             memo = self.owner.components[self.memo_names[0]]
-            self.owner.protocols = [EntanglementSwappingB(self.owner, '%s.ESB' % self.owner.name, memo)]
+            self.owner.protocols = [EntanglementSwappingB.create(self.owner, '%s.ESB' % self.owner.name, memo)]
 
 
 class SwapNodeA(Node):
@@ -59,7 +60,7 @@ class SwapNodeB(Node):
         self.protocols[0].received_message(src, msg)
 
     def create_protocol(self):
-        self.protocols = [EntanglementSwappingB(self, '%s.ESB'%self.name, self.memo)]
+        self.protocols = [EntanglementSwappingB.create(self, '%s.ESB'%self.name, self.memo)]
 
 
 def entangle_memory(tl: Timeline, memo1: Memory, memo2: Memory, fidelity: float):
