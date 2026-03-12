@@ -105,6 +105,10 @@ class NetworkManager(ABC):
         else:
             cls._global_type = network_manager_type
 
+    @classmethod
+    def get_global_type(cls):
+        return cls._global_type
+
     @abstractmethod
     def received_message(self, src: str, msg: NetworkManagerMessage):
         """Handle Message received into the NetworkManager."""
@@ -113,6 +117,9 @@ class NetworkManager(ABC):
     @abstractmethod
     def request(self, responder, start_time, end_time, memory_size, target_fidelity, entanglement_number=1, identity=0):
         """Handle Requests from the Application."""
+        pass
+
+    def init(self):
         pass
 
     def push(self, dst: str, msg: NetworkManagerMessage):
@@ -156,6 +163,9 @@ class DistributedNetworkManager(NetworkManager):
     @property
     def forward(self):
         return self.protocol_stack[0]
+
+    def init(self):
+        self.routing_protocol.init()
 
     def get_forwarding_table(self) -> dict[str, str]:
         """Returns the forwarding table.

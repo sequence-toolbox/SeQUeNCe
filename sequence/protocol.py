@@ -40,6 +40,9 @@ class Protocol(ABC):
 
         pass
 
+    def init(self):
+        pass
+
     def __str__(self) -> str:
         return self.name
 

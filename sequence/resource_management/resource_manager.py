@@ -145,6 +145,9 @@ class ResourceManager:
         self.waiting_protocols = [] # Protocols that are waiting request from remote resource
         self.memory_to_protocol_map = {}
 
+    def init(self):
+        pass
+
     def generate_load_rules(self, path: list[str], reservation: Reservation, timecards: list[MemoryTimeCard], memory_array_name: str):
         """Generate and load rules for a given reservation.
 
