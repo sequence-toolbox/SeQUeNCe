@@ -1,7 +1,7 @@
 {
     "templates": {
         "network_manager": {
-            "routing": "distributed",
+            "routing": "routing_distributed",
             "MemoryArray": {
                 "fidelity": 1.0
             }

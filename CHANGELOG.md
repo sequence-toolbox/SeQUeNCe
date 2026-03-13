@@ -7,9 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0] - 2026-3-02
 ### Added
+- Added the `routing` module: a new parent class `RoutingProtocol` for the subclasses `StaticRoutingProtocol` and `DistributedRoutingProtocol`. The register decorator is used to make it easy to plug in new routing protocols in the future.
 - Add empty init() to Protocol to satisfy class hierarchy.
 - Created project scripts for each config generator.
-- Created the `swapping` module that has the following classes. The subclasses use the registry decorator (factory pattern).
+- Added the `swapping` module that has the following classes. The subclasses use the registry decorator (factory pattern).
     - Base class: `EntanglementSwappingA` & `EntanglementSwappingB`
     - Subclass for ket vector and density matrix: `EntanglementSwappingA_Circuit` & `EntanglementSwappingB_Circuit`
     - Subclass for Bell diagonal state: `EntanglementSwappingA_BDS` & `EntanglementSwappingB_BDS`
@@ -27,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `NetworkManager` ABC with a factory pattern for selection and future implementation of new network managers.
 - File `action_condition_set.py` is added. This contains the action, condition, and request functions for entanglement generation, swapping, and purification.
-- Class `DistributedRoutingProtocol` is added, among many other supporting classes in `routing_distributed.py`. This module does distributed entanglement routing.
+- Class `DistributedRoutingProtocol` is added, among many other supporting classes in `routing_distributed`. This module does distributed entanglement routing.
 - Class `NetworkManager` has two new attributes: `forwarding_table` and `routing_protocol`.
 - Add a cutoff flag to memory to allow disable the expiration of memories.
 - Add a template in config json for network manager to select routing protocols (distributed vs. static)
