@@ -76,12 +76,11 @@ class RoutingProtocol(Protocol, ABC):
 
     @classmethod
     def create(cls, owner: QuantumRouter, name: str) -> RoutingProtocol:
-        """Factory method to create a routing protocol instance.
+        """Factory method to create a routing protocol instance using the global routing type.
 
         Args:
             owner (QuantumRouter): node protocol is attached to.
             name (str): name of protocol instance.
-            protocol_type (str): type of the routing protocol. If None, use global type.
 
         Returns:
             RoutingProtocol: instance of the routing protocol.
