@@ -82,7 +82,9 @@ class RequestApp:
         self.reservation_result = result
         if result:
             self.schedule_reservation(reservation)
-            log.logger.info(f"Successful reservation of resources for request app on node {self.node.name}")
+            log.logger.info(f"{self.node.name}, reservation successful: {reservation}")
+        else:
+            log.logger.info(f"{self.node.name}, reservation failed: {reservation}")
 
     def get_other_reservation(self, reservation: Reservation) -> None:
         """Method to add the approved reservation that is requested by other nodes. The responder will call this method

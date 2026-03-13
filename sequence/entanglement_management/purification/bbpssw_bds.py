@@ -6,7 +6,6 @@ Also defined is the message type used by the BBPSSW code.
 """
 from __future__ import annotations
 
-from typing import List, Tuple
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -36,7 +35,7 @@ class BBPSSW_BDS(BBPSSWProtocol):
         meas_res (int): measurement result from circuit.
         remote_node_name (str): name of other node.
         remote_protocol_name (str): name of other protocol.
-        remote_memories (List[str]): name of remote memories.
+        remote_memories (list[str]): name of remote memories.
         is_twirled (bool): whether we twirl the input and output BDS. True: BBPSSW, False: DEJMPS. (default True)
     """
 

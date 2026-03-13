@@ -265,7 +265,7 @@ def ep_rule_condition_await(memory_info: MemoryInfo, _manager: MemoryManager, ar
     purification_mode = args["purification_mode"]
 
     if purification_mode == "until_target":
-        if  (memory_info.index in memory_indices
+        if (memory_info.index in memory_indices
                 and memory_info.state in ["ENTANGLED", "PURIFIED"]
                 and memory_info.fidelity < fidelity):
             return [memory_info]
@@ -419,8 +419,11 @@ def es_rule_condition_A(memory_info: MemoryInfo, memory_manager: MemoryManager, 
 
 
 def es_rule_condition_B_end(memory_info: MemoryInfo, _manager: MemoryManager, args: Arguments) -> list[MemoryInfo]:
-    """Condition function used by the EntanglementSwappingB protocol on either the responder or initiator nodes.
+    """Condition function used by the EntanglementSwappingB protocol on either the responder or initiator nodes, aka end nodes.
     
+    Example: A - B --- Z 
+    For end node A, the remote node is B, and the target node is Z (also an end node).
+
     Args:
         memory_info: the memory info to be checked
         _manager: the memory manager to get other memory info (not used in this condition function)
@@ -431,7 +434,7 @@ def es_rule_condition_B_end(memory_info: MemoryInfo, _manager: MemoryManager, ar
         list[MemoryInfo]: the list of memory info that satisfy the condition
     """
     memory_indices = args["memory_indices"]
-    target_remote = args["target_remote"]  # A - B - C. For A: B is the remote node, C is the target remote
+    target_remote = args["target_remote"]
     fidelity = args["fidelity"]
     if (memory_info.state in ["ENTANGLED", "PURIFIED"]
             and memory_info.index in memory_indices

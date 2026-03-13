@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Dict, Any
+from typing import TYPE_CHECKING, Any
 
 from .generation_base import EntanglementGenerationA, EntanglementGenerationB, QuantumCircuitMixin
 from .generation_message import EntanglementGenerationMessage, GenerationMsgType, valid_trigger_time
@@ -16,8 +16,6 @@ from ...utils import log
 if TYPE_CHECKING:
     from ...components.memory import Memory
     from ...topology.node import Node, BSMNode
-
-
 
 
 @EntanglementGenerationA.register(SINGLE_HERALDED)

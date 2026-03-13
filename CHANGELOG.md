@@ -13,8 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Base class: `EntanglementSwappingA` & `EntanglementSwappingB`
     - Subclass for ket vector and density matrix: `EntanglementSwappingA_Circuit` & `EntanglementSwappingB_Circuit`
     - Subclass for Bell diagonal state: `EntanglementSwappingA_BDS` & `EntanglementSwappingB_BDS`
-    
+- Update the tutorial to catch up on the recent updates. Add notes saying refer to chapter 6 Application module for standard usage
+- Introducing `EARLY_EXPIRE` message type. A request has a `start_time` and `end_time`. When a request is finished before the `end_time`, then the reservation (and the associated rules) should expire early. If not, the quantum network will keep generating entanglement pairs because the rules still exist.
+
 ### Changed
+- Docstring, comment, logging, and various cosmetic updates.
 - Moved routing_protocol init() to network manager.
 - Trigger empty inits for resource and network manager to enable future bootstrapping.
 - Migrated `utils/json_config_generators/` to `sequence/config_generators/`.
