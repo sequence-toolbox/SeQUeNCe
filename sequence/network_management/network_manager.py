@@ -3,19 +3,16 @@
 This module defines the NetworkManager ABC and the default NetworkManager, DistributedNetworkManager.
 """
 from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any
 
-from sequence.utils.log import logger
-
-from ..components.memory import MemoryArray
 
 if TYPE_CHECKING:
     from ..protocol import StackProtocol
     from ..topology.node import QuantumRouter
 
+from ..components.memory import MemoryArray
 from ..message import Message
 from ..utils import log
 from .forwarding import ForwardingProtocol
@@ -63,7 +60,7 @@ class NetworkManager(ABC):
 
     def __init__(self, owner: QuantumRouter, memory_array_name: str, **kwargs):
         if kwargs:
-            logger.warning(f'Network Manager ABC received kwargs: {list(kwargs.keys())}, ignoring.')
+            log.logger.warning(f'Network Manager ABC received kwargs: {list(kwargs.keys())}, ignoring.')
         self.name: str = 'network_manager'
         self.owner = owner
         self.memory_array_name = memory_array_name
@@ -134,6 +131,7 @@ class NetworkManager(ABC):
         """
         self.owner.resource_manager.generate_load_rules(reservation.path, reservation, self.timecards, self.memory_array_name)
 
+
 @NetworkManager.register('distributed')
 class DistributedNetworkManager(NetworkManager):
     """The default Network Manager implementation.
@@ -143,7 +141,7 @@ class DistributedNetworkManager(NetworkManager):
         forwarding_table (dict[str, str]): mapping of destination node to next hop for forwarding.
         routing_protocol (Protocol): protocol used for updating forwarding table.
     """
-    def __init__(self, owner: "QuantumRouter", memory_array_name: str, component_templates=None):
+    def __init__(self, owner: QuantumRouter, memory_array_name: str, component_templates=None):
         super().__init__(owner, memory_array_name)
         if component_templates is None:
             component_templates = {}

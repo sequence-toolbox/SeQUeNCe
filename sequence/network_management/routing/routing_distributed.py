@@ -3,7 +3,7 @@
 This module defines the DistributedRoutingProtocol, which is an OSPF-like routing protocol for quantum networks.
 Also included are the message types, packets, FSM, LSDB used by the routing protocol
 """
-
+from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -291,7 +291,7 @@ class DistributedRoutingProtocol(RoutingProtocol):
     DBD_TIMEOUT: int = SECOND // 2    # time to wait before retransmitting DBD
     MAX_AGE: int = 1000 * SECOND      # maximum age of LSA
 
-    def __init__(self, owner: "QuantumRouter", name: str):
+    def __init__(self, owner: QuantumRouter, name: str):
         super().__init__(owner, name, protocol_type=ROUTING_DISTRIBUTED)
         self.owner.protocols.append(self)
         self.lsdb = LinkStateDB()
