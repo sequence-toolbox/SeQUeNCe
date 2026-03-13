@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `NetworkManager` ABC with a factory pattern for selection and future implementation of new network managers.
 - File `action_condition_set.py` is added. This contains the action, condition, and request functions for entanglement generation, swapping, and purification.
-- Class `DistributedRoutingProtocol` is added, among many other supporting classes in `routing_distributed.py`. This module does distributed entanglement routing.
+- Class `DistributedRoutingProtocol` is added, among many other supporting classes in `routing_distributed`. This module does distributed entanglement routing.
 - Class `NetworkManager` has two new attributes: `forwarding_table` and `routing_protocol`.
 - Add a cutoff flag to memory to allow disable the expiration of memories.
 - Add a template in config json for network manager to select routing protocols (distributed vs. static)

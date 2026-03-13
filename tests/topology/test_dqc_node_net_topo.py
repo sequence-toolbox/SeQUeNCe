@@ -57,3 +57,4 @@ def test_sequential_simulation_dqc_node_net_topo_simple():
         assert other in routing.forwarding_table
 
 
+test_sequential_simulation_dqc_node_net_topo_simple()

@@ -17,13 +17,11 @@ if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
 
 from ..message import Message
-from ..protocol import Protocol
 from ..utils import log
 from .forwarding import ForwardingProtocol
 from .memory_timecard import MemoryTimeCard
 from .reservation import Reservation
-from .routing_distributed import DistributedRoutingProtocol
-from .routing_static import StaticRoutingProtocol
+from .routing import RoutingProtocol, ROUTING_STATIC
 from .rsvp import RSVPMessage, RSVPMsgType, RSVPProtocol
 
 
@@ -151,7 +149,9 @@ class DistributedNetworkManager(NetworkManager):
             component_templates = {}
         self.protocol_stack = []
         self.forwarding_table = {}
-        self.routing_protocol = self._create_routing_protocol(component_templates.get('routing', 'static'))
+        routing_type = component_templates.get('routing', ROUTING_STATIC)
+        RoutingProtocol.set_global_type(routing_type)
+        self.routing_protocol = RoutingProtocol.create(owner, name=routing_type)
         # Create and load the stack to protocol_stack
         protocols: list = self.create_stack()
         self.load_stack(protocols)
@@ -186,21 +186,6 @@ class DistributedNetworkManager(NetworkManager):
 
     def get_routing_protocol(self):
         return self.routing_protocol
-
-    def _create_routing_protocol(self, routing_type) -> Protocol:
-        """Helper function to create routing protocol based on routing type.
-
-        Args:
-            routing_type (str): type of routing protocol to create, i.e., 'static' or 'distributed'.
-        """
-        match routing_type:
-            case 'static':
-                routing_protocol_cls = StaticRoutingProtocol
-            case 'distributed':
-                routing_protocol_cls = DistributedRoutingProtocol
-            case _:
-                raise NotImplementedError(f'Routing protocol {routing_type} is not implemented.')
-        return routing_protocol_cls(self.owner, f'{routing_protocol_cls.__name__}')
 
     def create_stack(self) -> list[StackProtocol]:
         """Helper function to stand up the protocols

@@ -112,7 +112,7 @@ class GUI_Sim:
         for node in self.topology.get_nodes_by_type("QuantumRouter"):
             table = self.topology.generate_forwarding_table(node.name)
             for dst, next_node in table.items():
-                node.network_manager.protocol_stack[0].add_forwarding_rule(
+                node.network_manager.protocol_stack[0].update_forwarding_rule(
                     dst,
                     next_node)
 
