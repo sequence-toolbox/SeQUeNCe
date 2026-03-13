@@ -27,7 +27,7 @@ directory = args.directory
 filename = args.filename
 draw_middle = args.draw_middle
 
-# determine type of network
+# Determine type of network
 with open(args.config_file, 'r') as fh:
     config = load(fh)
 nodes = config["nodes"]

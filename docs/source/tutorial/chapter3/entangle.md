@@ -1,5 +1,9 @@
 # Chapter 3: Entanglement Management
 
+**NOTE**: The standard way to generate entanglement is to use the `app` module, which is discussed in chapter 6. The purpose of this chapter is to explain what is happening under the hood in the entanglement management module. 
+
+---
+
 In previous chapters, we introduced the usage of hardware models. 
 In this chapter, we will use protocols in the entanglement management module to control these hardware devices and change the entanglement state of quantum memories.
 We will also use a simple manager protocol to control the entanglement generation protocols.
@@ -515,10 +519,11 @@ class SimpleManager:
         if type(self.owner) is SwapNodeA:
             left_memo = self.owner.components[self.memo_names[0]]
             right_memo = self.owner.components[self.memo_names[1]]
-            self.owner.protocols = [EntanglementSwappingA(self.owner, 'ESA', left_memo, right_memo, 1, 0.99)]
+            self.owner.protocols = [EntanglementSwappingA.create(self.owner, 'ESA', left_memo, right_memo, 
+                                                                 success_prob=1, degradation=0.99)]
         else:
             memo = self.owner.components[self.memo_names[0]]
-            self.owner.protocols = [EntanglementSwappingB(self.owner, '%s.ESB' % self.owner.name, memo)]
+            self.owner.protocols = [EntanglementSwappingB.create(self.owner, '%s.ESB' % self.owner.name, memo)]
 ```
 
 ### Step 2: Create Network

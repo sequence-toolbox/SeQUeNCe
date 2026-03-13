@@ -663,7 +663,7 @@ wheels = [
 
 [[package]]
 name = "flask"
-version = "3.1.2"
+version = "3.1.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "blinker" },
@@ -673,9 +673,9 @@ dependencies = [
     { name = "markupsafe" },
     { name = "werkzeug" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/dc/6d/cfe3c0fcc5e477df242b98bfe186a4c34357b4847e87ecaef04507332dab/flask-3.1.2.tar.gz", hash = "sha256:bf656c15c80190ed628ad08cdfd3aaa35beb087855e2f494910aa3774cc4fd87", size = 720160, upload-time = "2025-08-19T21:03:21.205Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/26/00/35d85dcce6c57fdc871f3867d465d780f302a175ea360f62533f12b27e2b/flask-3.1.3.tar.gz", hash = "sha256:0ef0e52b8a9cd932855379197dd8f94047b359ca0a78695144304cb45f87c9eb", size = 759004, upload-time = "2026-02-19T05:00:57.678Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ec/f9/7f9263c5695f4bd0023734af91bedb2ff8209e8de6ead162f35d8dc762fd/flask-3.1.2-py3-none-any.whl", hash = "sha256:ca1d8112ec8a6158cc29ea4858963350011b5c846a414cdb7a954aa9e967d03c", size = 103308, upload-time = "2025-08-19T21:03:19.499Z" },
+    { url = "https://files.pythonhosted.org/packages/7f/9c/34f6962f9b9e9c71f6e5ed806e0d0ff03c9d1b0b2340088a0cf4bce09b18/flask-3.1.3-py3-none-any.whl", hash = "sha256:f4bcbefc124291925f1a26446da31a5178f9483862233b23c0c96a20701f670c", size = 103424, upload-time = "2026-02-19T05:00:56.027Z" },
 ]
 
 [[package]]
@@ -782,6 +782,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/54/ef/8a826c8a18360965b94e1ebb4985c674bb55541e06ea73d895e1875f7078/gmpy2-2.2.2-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:4cf9ee5bb0f0980c7e572b7f51b40e8ca215e956b534d795ac0e7861cfdeaee0", size = 1671152, upload-time = "2025-11-27T04:15:57.488Z" },
     { url = "https://files.pythonhosted.org/packages/63/8a/df2ff280be6a4be0593bb0b36be51a6ca5c5901352562c29a2b51a48c4cd/gmpy2-2.2.2-cp314-cp314-win_amd64.whl", hash = "sha256:61a53a4485f438b1d6d97149c14114b08e56bb4b6e9acb049dbf1a538ce05c91", size = 1256014, upload-time = "2025-11-27T04:15:58.88Z" },
     { url = "https://files.pythonhosted.org/packages/65/b7/8c5007180dce911b509587339f0b44b4f8dc1e1904440c02a652abab6a23/gmpy2-2.2.2-cp314-cp314-win_arm64.whl", hash = "sha256:0ef9501b8d6168d5bd4e951adaa2cf1902cf94aa93fe6e4d7e85a59288fcd6ef", size = 870558, upload-time = "2025-11-27T04:16:00.514Z" },
+]
+
+[[package]]
+name = "graphviz"
+version = "0.21"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/b3/3ac91e9be6b761a4b30d66ff165e54439dcd48b83f4e20d644867215f6ca/graphviz-0.21.tar.gz", hash = "sha256:20743e7183be82aaaa8ad6c93f8893c923bd6658a04c32ee115edb3c8a835f78", size = 200434, upload-time = "2025-06-15T09:35:05.824Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/91/4c/e0ce1ef95d4000ebc1c11801f9b944fa5910ecc15b5e351865763d8657f8/graphviz-0.21-py3-none-any.whl", hash = "sha256:54f33de9f4f911d7e84e4191749cac8cc5653f815b06738c54db9a15ab8b1e42", size = 47300, upload-time = "2025-06-15T09:35:04.433Z" },
 ]
 
 [[package]]
@@ -2508,7 +2517,7 @@ wheels = [
 
 [[package]]
 name = "sequence"
-version = "0.8.6"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "dash" },
@@ -2518,6 +2527,7 @@ dependencies = [
     { name = "dash-html-components" },
     { name = "dash-table" },
     { name = "gmpy2" },
+    { name = "graphviz" },
     { name = "ipywidgets" },
     { name = "jupyterlab" },
     { name = "matplotlib" },
@@ -2551,6 +2561,7 @@ requires-dist = [
     { name = "dash-html-components", specifier = ">=2.0.0" },
     { name = "dash-table", specifier = ">=5.0.0" },
     { name = "gmpy2", specifier = ">=2.2.2" },
+    { name = "graphviz", specifier = ">=0.21" },
     { name = "ipywidgets", specifier = ">=8.1.8" },
     { name = "jupyterlab", specifier = ">=4.5.0" },
     { name = "matplotlib", specifier = ">=3.10.7" },
@@ -2789,14 +2800,14 @@ wheels = [
 
 [[package]]
 name = "werkzeug"
-version = "3.1.4"
+version = "3.1.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markupsafe" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/45/ea/b0f8eeb287f8df9066e56e831c7824ac6bab645dd6c7a8f4b2d767944f9b/werkzeug-3.1.4.tar.gz", hash = "sha256:cd3cd98b1b92dc3b7b3995038826c68097dcb16f9baa63abe35f20eafeb9fe5e", size = 864687, upload-time = "2025-11-29T02:15:22.841Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/61/f1/ee81806690a87dab5f5653c1f146c92bc066d7f4cebc603ef88eb9e13957/werkzeug-3.1.6.tar.gz", hash = "sha256:210c6bede5a420a913956b4791a7f4d6843a43b6fcee4dfa08a65e93007d0d25", size = 864736, upload-time = "2026-02-19T15:17:18.884Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2f/f9/9e082990c2585c744734f85bec79b5dae5df9c974ffee58fe421652c8e91/werkzeug-3.1.4-py3-none-any.whl", hash = "sha256:2ad50fb9ed09cc3af22c54698351027ace879a0b60a3b5edf5730b2f7d876905", size = 224960, upload-time = "2025-11-29T02:15:21.13Z" },
+    { url = "https://files.pythonhosted.org/packages/4d/ec/d58832f89ede95652fd01f4f24236af7d32b70cab2196dfcc2d2fd13c5c2/werkzeug-3.1.6-py3-none-any.whl", hash = "sha256:7ddf3357bb9564e407607f988f683d72038551200c704012bb9a4c523d42f131", size = 225166, upload-time = "2026-02-19T15:17:17.475Z" },
 ]
 
 [[package]]
