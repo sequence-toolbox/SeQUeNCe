@@ -53,7 +53,7 @@ class Reservation:
         assert self.memory_size > 0
 
     def __str__(self) -> str:
-        return (f'|identity={self.identity}, initiator={self.initiator}; responder={self.responder}; path={self.path}; '
+        return (f'|identity={self.identity}; initiator={self.initiator}; responder={self.responder}; path={self.path}; '
                 f'start_time={self.start_time:,}; end_time={self.end_time:,}; target_fidelity={self.fidelity}; '
                 f'entanglement_number={self.entanglement_number}; memory_size={self.memory_size}|')
 
