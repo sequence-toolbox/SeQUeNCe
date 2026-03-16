@@ -24,7 +24,6 @@ class RoutingProtocol(Protocol, ABC):
     """Abstract base class for routing protocols.
     """
     _registry: dict[str, type[RoutingProtocol]] = {}
-    _global_type: str = ROUTING_STATIC
 
     def __init__(self, owner: QuantumRouter, name: str, protocol_type: str):
         """Constructor for routing protocol.
@@ -36,26 +35,6 @@ class RoutingProtocol(Protocol, ABC):
         """
         super().__init__(owner, name, protocol_type)
 
-    @classmethod
-    def set_global_type(cls, protocol_type: str):
-        """Set the global routing protocol type.
-
-        Args:
-            protocol_type (str): type of the routing protocol.
-        """
-        if protocol_type not in cls._registry:
-            raise ValueError(f"Routing protocol type {protocol_type} not registered.")
-        cls._global_type = protocol_type
-
-    @classmethod
-    def get_global_type(cls) -> str:
-        """Get the global routing protocol type.
-
-        Returns:
-            str: global routing protocol type.
-        """
-        return cls._global_type
-    
     @classmethod
     def register(cls, protocol_type: str, protocol_class: type[RoutingProtocol] = None):
         """Register a routing protocol class.
@@ -75,7 +54,7 @@ class RoutingProtocol(Protocol, ABC):
         return decorator
 
     @classmethod
-    def create(cls, owner: QuantumRouter, name: str) -> RoutingProtocol:
+    def create(cls, owner: QuantumRouter, name: str, protocol_type) -> RoutingProtocol:
         """Factory method to create a routing protocol instance using the global routing type.
 
         Args:
@@ -85,7 +64,6 @@ class RoutingProtocol(Protocol, ABC):
         Returns:
             RoutingProtocol: instance of the routing protocol.
         """
-        protocol_type = cls._global_type
         try:
             protocol_class = cls._registry[protocol_type]
             return protocol_class(owner, name)

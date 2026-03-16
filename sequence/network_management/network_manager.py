@@ -148,8 +148,7 @@ class DistributedNetworkManager(NetworkManager):
         self.protocol_stack = []
         self.forwarding_table = {}
         routing_type = component_templates.get('routing', ROUTING_STATIC)
-        RoutingProtocol.set_global_type(routing_type)
-        self.routing_protocol = RoutingProtocol.create(owner, name=routing_type)
+        self.routing_protocol = RoutingProtocol.create(owner, name=routing_type, protocol_type=routing_type)
         # Create and load the stack to protocol_stack
         protocols: list = self.create_stack()
         self.load_stack(protocols)
