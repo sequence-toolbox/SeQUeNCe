@@ -55,5 +55,3 @@ def test_sequential_simulation_dqc_node_net_topo_simple():
         # ensure it knows how to reach the other node
         other = "q2" if qn.name == "q1" else "q1"
         assert other in routing.forwarding_table
-
-

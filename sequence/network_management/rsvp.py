@@ -1,12 +1,13 @@
-from sequence.network_management.memory_timecard import MemoryTimeCard
+from __future__ import annotations
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 
-from .reservation import Reservation
 
 if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
 
+from .memory_timecard import MemoryTimeCard
+from .reservation import Reservation
 from ..message import Message
 from ..protocol import StackProtocol
 
@@ -71,7 +72,7 @@ class RSVPProtocol(StackProtocol):
         accepted_reservations (list[Reservation]): list of all approved reservation requests.
     """
 
-    def __init__(self, owner: "QuantumRouter", name: str, memory_array_name: str):
+    def __init__(self, owner: QuantumRouter, name: str, memory_array_name: str):
         """Constructor for the reservation protocol class.
 
         Args:

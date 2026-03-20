@@ -2,8 +2,7 @@ import json
 import numpy as np
 from networkx import Graph, dijkstra_path, exception
 
-from ..network_management.routing_distributed import DistributedRoutingProtocol
-from ..network_management.routing_static import StaticRoutingProtocol
+from ..network_management.routing import DistributedRoutingProtocol, StaticRoutingProtocol
 from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
 from ..kernel.quantum_manager import KET_VECTOR_FORMALISM, QuantumManager
@@ -209,7 +208,7 @@ class RouterNetTopo(Topo):
                         next_hop = path[1]
                         # routing protocol locates at the bottom of the stack
                         routing_protocol = src.network_manager.get_routing_protocol()
-                        routing_protocol.add_forwarding_rule(dst_name, next_hop)
+                        routing_protocol.update_forwarding_rule(dst_name, next_hop)
                     except exception.NetworkXNoPath:
                         pass
     

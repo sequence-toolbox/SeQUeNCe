@@ -3,27 +3,22 @@
 This module defines the NetworkManager ABC and the default NetworkManager, DistributedNetworkManager.
 """
 from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any
 
-from sequence.utils.log import logger
-
-from ..components.memory import MemoryArray
 
 if TYPE_CHECKING:
     from ..protocol import StackProtocol
     from ..topology.node import QuantumRouter
 
+from ..components.memory import MemoryArray
 from ..message import Message
-from ..protocol import Protocol
 from ..utils import log
 from .forwarding import ForwardingProtocol
 from .memory_timecard import MemoryTimeCard
 from .reservation import Reservation
-from .routing_distributed import DistributedRoutingProtocol
-from .routing_static import StaticRoutingProtocol
+from .routing import RoutingProtocol, ROUTING_STATIC
 from .rsvp import RSVPMessage, RSVPMsgType, RSVPProtocol
 
 
@@ -65,7 +60,7 @@ class NetworkManager(ABC):
 
     def __init__(self, owner: QuantumRouter, memory_array_name: str, **kwargs):
         if kwargs:
-            logger.warning(f'Network Manager ABC received kwargs: {list(kwargs.keys())}, ignoring.')
+            log.logger.warning(f'Network Manager ABC received kwargs: {list(kwargs.keys())}, ignoring.')
         self.name: str = 'network_manager'
         self.owner = owner
         self.memory_array_name = memory_array_name
@@ -136,6 +131,7 @@ class NetworkManager(ABC):
         """
         self.owner.resource_manager.generate_load_rules(reservation.path, reservation, self.timecards, self.memory_array_name)
 
+
 @NetworkManager.register('distributed')
 class DistributedNetworkManager(NetworkManager):
     """The default Network Manager implementation.
@@ -145,13 +141,14 @@ class DistributedNetworkManager(NetworkManager):
         forwarding_table (dict[str, str]): mapping of destination node to next hop for forwarding.
         routing_protocol (Protocol): protocol used for updating forwarding table.
     """
-    def __init__(self, owner: "QuantumRouter", memory_array_name: str, component_templates=None):
+    def __init__(self, owner: QuantumRouter, memory_array_name: str, component_templates=None):
         super().__init__(owner, memory_array_name)
         if component_templates is None:
             component_templates = {}
         self.protocol_stack = []
         self.forwarding_table = {}
-        self.routing_protocol = self._create_routing_protocol(component_templates.get('routing', 'static'))
+        routing_type = component_templates.get('routing', ROUTING_STATIC)
+        self.routing_protocol = RoutingProtocol.create(owner, name=routing_type, protocol_type=routing_type)
         # Create and load the stack to protocol_stack
         protocols: list = self.create_stack()
         self.load_stack(protocols)
@@ -186,21 +183,6 @@ class DistributedNetworkManager(NetworkManager):
 
     def get_routing_protocol(self):
         return self.routing_protocol
-
-    def _create_routing_protocol(self, routing_type) -> Protocol:
-        """Helper function to create routing protocol based on routing type.
-
-        Args:
-            routing_type (str): type of routing protocol to create, i.e., 'static' or 'distributed'.
-        """
-        match routing_type:
-            case 'static':
-                routing_protocol_cls = StaticRoutingProtocol
-            case 'distributed':
-                routing_protocol_cls = DistributedRoutingProtocol
-            case _:
-                raise NotImplementedError(f'Routing protocol {routing_type} is not implemented.')
-        return routing_protocol_cls(self.owner, f'{routing_protocol_cls.__name__}')
 
     def create_stack(self) -> list[StackProtocol]:
         """Helper function to stand up the protocols

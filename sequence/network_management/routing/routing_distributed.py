@@ -3,7 +3,7 @@
 This module defines the DistributedRoutingProtocol, which is an OSPF-like routing protocol for quantum networks.
 Also included are the message types, packets, FSM, LSDB used by the routing protocol
 """
-
+from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -13,12 +13,12 @@ from typing import TYPE_CHECKING, Iterator
 if TYPE_CHECKING:
     from sequence.topology.node import QuantumRouter
 
-from ..constants import EPSILON, SECOND
-from ..kernel.event import Event
-from ..kernel.process import Process
-from ..message import Message
-from ..protocol import Protocol
-from ..utils import log
+from .routing_base import RoutingProtocol, ROUTING_DISTRIBUTED
+from ...constants import EPSILON, SECOND
+from ...kernel.event import Event
+from ...kernel.process import Process
+from ...message import Message
+from ...utils import log
 
 
 class DistRoutingMsgType(Enum):
@@ -270,7 +270,8 @@ class LinkStateDB:
         return to_purge
 
 
-class DistributedRoutingProtocol(Protocol):
+@RoutingProtocol.register(ROUTING_DISTRIBUTED)
+class DistributedRoutingProtocol(RoutingProtocol):
     """Class to implement distributed routing protocol (OSPF-like protocol).
 
     Attributes:
@@ -290,9 +291,8 @@ class DistributedRoutingProtocol(Protocol):
     DBD_TIMEOUT: int = SECOND // 2    # time to wait before retransmitting DBD
     MAX_AGE: int = 1000 * SECOND      # maximum age of LSA
 
-    def __init__(self, owner: "QuantumRouter", name: str):
-        super().__init__(owner, name)
-        self.protocol_type = 'routing_distributed'
+    def __init__(self, owner: QuantumRouter, name: str):
+        super().__init__(owner, name, protocol_type=ROUTING_DISTRIBUTED)
         self.owner.protocols.append(self)
         self.lsdb = LinkStateDB()
         self.fsm: dict[str, NeighborFSM] = {}
@@ -367,7 +367,7 @@ class DistributedRoutingProtocol(Protocol):
         for neighbor in self.link_cost.keys():  # send hello to all neighbors
             seen_neighbors = {n for n, fsm in self.fsm.items() if fsm.state != "Down"}
             hello_payload = HelloPayload(sender=self.owner.name, seen_neighbors=seen_neighbors)
-            hello_msg = DistRoutingMessage(DistRoutingMsgType.HELLO, "DistributedRoutingProtocol", hello_payload)
+            hello_msg = DistRoutingMessage(DistRoutingMsgType.HELLO, ROUTING_DISTRIBUTED, hello_payload)
             self.owner.send_message(neighbor, hello_msg)
 
         process = Process(self, "send_hello", [self.HELLO_INTERVAL])
@@ -410,7 +410,7 @@ class DistributedRoutingProtocol(Protocol):
         updated = self.lsdb.install(withdrawal, now)
         if updated:
             forwarding_table = self.run_spf()
-            self.owner.network_manager.set_forwarding_table(forwarding_table)
+            self.set_forwarding_table(forwarding_table)
         self.flood_to_all_neighbors(withdrawal)
         self.lsdb.purge_withdrawn(now)
 
@@ -531,7 +531,7 @@ class DistributedRoutingProtocol(Protocol):
             if self.get_age(lsa) < self.MAX_AGE:
                 summaries.append(lsa.header)
         dbd_payload = DBDPayload(sender=self.owner.name, summaries=summaries)
-        dbd_msg = DistRoutingMessage(DistRoutingMsgType.DBD, "DistributedRoutingProtocol", dbd_payload)
+        dbd_msg = DistRoutingMessage(DistRoutingMsgType.DBD, ROUTING_DISTRIBUTED, dbd_payload)
         self.owner.send_message(neighbor, dbd_msg)
         return dbd_msg
 
@@ -541,7 +541,7 @@ class DistributedRoutingProtocol(Protocol):
         # install into own LSDB, always newer for self-originated LSA
         self.lsdb.install(lsa, self.owner.timeline.now())
         forwarding_table = self.run_spf()  # recompute routes
-        self.owner.network_manager.set_forwarding_table(forwarding_table)
+        self.set_forwarding_table(forwarding_table)
         self.flood_to_all_neighbors(lsa)
 
     def originate(self) -> LSA:
@@ -653,17 +653,6 @@ class DistributedRoutingProtocol(Protocol):
         else:
             raise ValueError("item must be LSA or LSAHeader")
 
-    def update_forwarding_rule(self, dst: str, next_node: str):
-        """Updates dst to map to next_node in forwarding table.
-           If dst not in forwarding table, add new rule.
-
-        Args:
-            dst (str): name of destination node.
-            next_node (str): name of next hop node.
-        """
-        forwarding_table = self.owner.network_manager.get_forwarding_table()
-        forwarding_table[dst] = next_node
-
     def flood_to_all_neighbors(self, lsa: LSA, exclude_neighbor: str | None = None):
         """Flood LSA to all neighbors with 2-way adjacency.
            An LSU message containing the LSA is sent to each neighbor, except the excluded neighbor if specified.
@@ -677,7 +666,7 @@ class DistributedRoutingProtocol(Protocol):
             if neighbor == exclude_neighbor:
                 continue
             lsu_payload = LSUPayload(sender=self.owner.name, lsas=[lsa])
-            lsu_msg = DistRoutingMessage(DistRoutingMsgType.LSU, "DistributedRoutingProtocol", lsu_payload)
+            lsu_msg = DistRoutingMessage(DistRoutingMsgType.LSU, ROUTING_DISTRIBUTED, lsu_payload)
             self.owner.send_message(neighbor, lsu_msg)
 
     def handle_dbd(self, src: str, payload: DBDPayload):
@@ -721,7 +710,7 @@ class DistributedRoutingProtocol(Protocol):
             fsm.pending_requested = set(requested)
             self.set_state(src, "Loading")
             lsr_payload = LSRPayload(sender=self.owner.name, requested=requested)
-            lsr_msg = DistRoutingMessage(DistRoutingMsgType.LSR, "DistributedRoutingProtocol", lsr_payload)
+            lsr_msg = DistRoutingMessage(DistRoutingMsgType.LSR, ROUTING_DISTRIBUTED, lsr_payload)
             self.owner.send_message(src, lsr_msg)
         else:
             # clear the pending requested LSAs advance the neighbor to Full state because DBs are in sync
@@ -748,7 +737,7 @@ class DistributedRoutingProtocol(Protocol):
                 lsas_to_send.append(lsa)
         if lsas_to_send:
             lsu_payload = LSUPayload(sender=self.owner.name, lsas=lsas_to_send)
-            lsu_msg = DistRoutingMessage(DistRoutingMsgType.LSU, "DistributedRoutingProtocol", lsu_payload)
+            lsu_msg = DistRoutingMessage(DistRoutingMsgType.LSU, ROUTING_DISTRIBUTED, lsu_payload)
             self.owner.send_message(src, lsu_msg)
 
     def handle_lsu(self, src: str, payload: LSUPayload):
@@ -785,10 +774,10 @@ class DistributedRoutingProtocol(Protocol):
                             self.set_state(neighbor, "Full")
         if lsdb_updated:  # recompute routes if LSDB is updated
             forwarding_table = self.run_spf()
-            self.owner.network_manager.set_forwarding_table(forwarding_table)
+            self.set_forwarding_table(forwarding_table)
         # send LSAck back to sender, even if no LSAs are updated (empty acks list)
         lsack_payload = LSAckPayload(sender=self.owner.name, acks=acks)
-        lsack_msg = DistRoutingMessage(DistRoutingMsgType.LSAck, "DistributedRoutingProtocol", lsack_payload)
+        lsack_msg = DistRoutingMessage(DistRoutingMsgType.LSAck, ROUTING_DISTRIBUTED, lsack_payload)
         self.owner.send_message(src, lsack_msg)
 
     def handle_lsack(self, src: str, payload: LSAckPayload):
