@@ -4,8 +4,10 @@ This module provides definitions for various types of quantum network nodes.
 All node types inherit from the base Node type, which inherits from Entity.
 Node types can be used to collect all the necessary hardware and software for a network usage scenario.
 """
+from __future__ import annotations
+
 from math import inf
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -197,14 +199,14 @@ class Node(Entity):
             return [comp for comp in self.components.values() if isinstance(comp, component_type)]
         return []
 
-    def get_component_by_name(self, name: str) -> Optional["Entity"]:
+    def get_component_by_name(self, name: str) -> Entity | None:
         """Method to return the component with the given name.
 
         Args:
             name (str): The name of the component to retrieve.
 
         Returns:
-            Optional[Entity]: The component with the given name, or None if not found.
+            Entity | None: The component with the given name, or None if not found.
         """
         return self.timeline.get_entity_by_name(name)
 

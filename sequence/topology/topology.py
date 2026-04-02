@@ -6,7 +6,7 @@ Topology instances automatically perform many useful network functions.
 """
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline

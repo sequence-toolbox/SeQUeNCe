@@ -7,7 +7,7 @@ This module also defines the message type used by the resource manager.
 
 from __future__ import annotations
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from collections.abc import Callable
 
 from .action_condition_set import (
@@ -317,7 +317,7 @@ class ResourceManager:
             for memory in protocol.memories:
                 self.update(protocol, memory, MemoryInfo.RAW)
 
-    def update(self, protocol: Optional[EntanglementProtocol], memory: Memory, state: str) -> None:
+    def update(self, protocol: EntanglementProtocol | None, memory: Memory, state: str) -> None:
         """Method to update state of memory after completion of entanglement management protocol.
 
         Args:

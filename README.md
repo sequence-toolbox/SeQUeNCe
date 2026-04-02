@@ -38,7 +38,7 @@ These modules can be edited by users to define additional functionality and test
 
 ## Installation
 ### For Users
-SeQUeNCe requires [Python](https://www.python.org/downloads/) 3.11 or later. You can install SeQUeNCe using `pip`:
+SeQUeNCe requires [Python](https://www.python.org/downloads/) 3.12 or later. You can install SeQUeNCe using `pip`:
 ```
 pip install sequence
 ```
