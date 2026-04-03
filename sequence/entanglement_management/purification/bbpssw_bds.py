@@ -151,7 +151,7 @@ class BBPSSW_BDS(BBPSSWProtocol):
         The four BDS density matrix elements of kept entangled pair conditioned on successful purification.
 
         Returns:
-            Tuple[float, np.array]: success probability and BDS density matrix elements of kept entangled pair.
+            tuple[float, np.array]: success probability and BDS density matrix elements of kept entangled pair.
         """
 
         assert self.owner.timeline.quantum_manager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, (

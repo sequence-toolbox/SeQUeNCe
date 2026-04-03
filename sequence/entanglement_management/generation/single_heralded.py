@@ -248,7 +248,7 @@ class SingleHeraldedB(EntanglementGenerationB):
 
         Args:
             bsm (SingleAtomBSM or SingleHeraldedBSM): bsm object calling method.
-            info (Dict[str, any]): information passed from bsm.
+            info (dict[str, any]): information passed from bsm.
         """
         assert bsm.encoding == SINGLE_HERALDED, "SingleHeraldedB should only be used with SingleHeraldedBSM."
         assert info['info_type'] == 'BSM_res'

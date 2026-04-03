@@ -96,7 +96,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
 
         Args:
             name (str): Name of the protocol to register.
-            protocol_class (Type[BBPSSWProtocol], optional): The protocol class to register
+            protocol_class (type[BBPSSWProtocol], optional): The protocol class to register
 
         Returns:
             If used as a decorator, returns the decorator function.
