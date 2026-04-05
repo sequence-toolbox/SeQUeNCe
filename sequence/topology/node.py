@@ -346,7 +346,7 @@ class QuantumRouter(Node):
             msg (Message): the received message.
         """
         if self.down:
-            log.logger.info(f"{self.name} is DOWN. Dropping message {msg} from {src}")
+            log.logger.debug(f"{self.name} is DOWN. Dropping message {msg} from {src}")
             return
 
         log.logger.info(f"{self.name}: receive message {msg} from {src}")
@@ -374,7 +374,7 @@ class QuantumRouter(Node):
             priority (int): priority for the transmitted message (default inf).
         """
         if self.down:
-            log.logger.info(f"{self.name} is DOWN. Dropping message {msg} to {dst}")
+            log.logger.debug(f"{self.name} is DOWN. Dropping message {msg} to {dst}")
             return
         
         log.logger.info(f"{self.name}: send message {msg} to {dst}")
