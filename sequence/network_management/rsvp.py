@@ -50,9 +50,9 @@ class RSVPMessage(Message):
             case _:
                 raise Exception("Unknown message type")
 
-
     def __str__(self):
         return f"|type={self.msg_type}; reservation={self.reservation}|"
+
 
 class RSVPProtocol(StackProtocol):
     """ReservationProtocol for node resources.
@@ -167,7 +167,6 @@ class RSVPProtocol(StackProtocol):
                 next_hop = self.next_hop_when_tracing_back(msg.path)
                 self._push(dst=None, msg=msg, next_hop=next_hop)
         elif msg.msg_type == RSVPMsgType.APPROVE:
-            #self.owner.resource_manager.generate_load_rules(msg.path, msg.reservation, self.timecards, self.memory_array_name)
             self.accepted_reservations.append(msg.reservation)
             self._pop(msg=msg)
             if msg.reservation.initiator != self.owner.name:

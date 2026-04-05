@@ -166,6 +166,7 @@ class ResourceManager:
         for card in timecards:
             if reservation in card.reservations:
                 memory_indices.append(card.memory_index)
+        log.logger.debug(f'Memory indices for reservation {reservation.identity} on node {self.owner.name}: {memory_indices}')
 
         index: int = path.index(self.owner.name)
 

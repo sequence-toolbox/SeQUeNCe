@@ -4,22 +4,20 @@ This module defines the rule manager, which is used by the resource manager to i
 This is achieved through rules (also defined in this module), which if met define a set of actions to take.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from collections.abc import Callable
+
+from .action_condition_set import Arguments, ActionReturn
 from ..utils import log
+
 if TYPE_CHECKING:
     from ..entanglement_management.entanglement_protocol import EntanglementProtocol
     from .memory_manager import MemoryInfo, MemoryManager
     from .resource_manager import ResourceManager
     from ..network_management.reservation import Reservation
 
-ActionReturn = tuple["EntanglementProtocol", list[str | None], list[Callable[[list["EntanglementProtocol"], dict[str, Any]], "EntanglementProtocol" | None] | None], list[dict[str, Any] | None]]
-
-ActionFunc = Callable[[list["MemoryInfo"], dict[str, Any]], ActionReturn]
-
-ConditionFunc = Callable[["MemoryInfo", "MemoryManager", dict[str, Any]], list["MemoryInfo"]]
-
-Arguments = dict[str, Any]
+ActionFunc = Callable[[list["MemoryInfo"], Arguments], ActionReturn]
+ConditionFunc = Callable[["MemoryInfo", "MemoryManager", Arguments], list["MemoryInfo"]]
 
 
 class RuleManager:
