@@ -135,7 +135,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
             Will send message through attached node.
         """
 
-        log.logger.info(f"{self.name} protocol start with partner {self.remote_protocol_name}")
+        log.logger.info(f"{self.owner.name} {self.name} protocol start with partner {self.remote_protocol_name}")
 
         if self not in self.owner.protocols:
             return
