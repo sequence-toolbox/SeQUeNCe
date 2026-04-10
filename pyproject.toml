@@ -45,7 +45,7 @@ dependencies = [
 ]
 
 [project.scripts]
-generate-topology = "sequence.utils.config_generator:app"
+generate-topology = "sequence.utils.config_generator_cli:app"
 generate-internet-autonomous = "utils.config_generators.config_generator_as_memo_num:main"
 generate-caveman = "sequence.utils.config_generator_caveman:main"
 generate-linear = "sequence.utils.config_generator_line:main"
