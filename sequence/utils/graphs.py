@@ -126,6 +126,12 @@ def build_tree(branching_factor: int, nodes: int) -> nx.Graph:
         G.nodes[node]["node_type"] = "processing"
     return G
 
+def build_autonomous_system(nodes: int, seed=None) -> nx.Graph:
+    G: nx.Graph = nx.random_internet_as_graph(nodes, seed=seed)
+    for node in G.nodes:
+        G.nodes[node]["node_type"] = "processing"
+    return G
+
 def build_bcube(k: int, n: int) -> nx.Graph:
     """
     C. Guo et al., “BCube: a high performance, server-centric network architecture for modular data centers,”
