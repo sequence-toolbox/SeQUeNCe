@@ -136,6 +136,6 @@ def generate_config(g: nx.Graph, qc_length: float, qc_attn: float, cc_delay: flo
     output_dir.mkdir(exist_ok=True)
 
     with open(output_dir / output_file, 'w') as f:
-        json.dump(output_dict, f)
+        json.dump(output_dict, f, indent=2)
 
     return graph_to_name
