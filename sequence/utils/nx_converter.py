@@ -38,7 +38,7 @@ def bsm_name_func(i, j) -> str:
     """
     return f'BSM_{i}_{j}'
 
-def generate_classical(router_names: list, cc_delay: int) -> list:
+def generate_classical(router_names: list, cc_delay: float) -> list:
     """
     Creates all-to-all links between routers in the topology.
     Args:
@@ -85,10 +85,11 @@ def generate_nodes(router_names: list, memo_size: int, template: str = '', gate_
     return nodes
 
 
-def generate_config(g: nx.Graph, qc_length: float, qc_attn: float, cc_delay: int, output_file: str,
+def generate_config(g: nx.Graph, qc_length: float, qc_attn: float, cc_delay: float, output_file: str,
                     output_directory: str, stop_time: float, formalism: str, node_template: dict,
                     meas_fid: float=1, gate_fid: float=1):
     """Create a sequence config file from an arbitrary graph for MIM entanglement generation"""
+
     output_dict:dict = {Topology.ALL_TEMPLATES: node_template}
 
     cc_delay_ps = cc_delay * 1e9
