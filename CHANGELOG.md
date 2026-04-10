@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - The old `swapping.py` is removed.
+- Removed support for Python 3.11
 
 
 ## [0.8.5] - 2026-2-27
@@ -40,8 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `RSVPProtocol` is now decoupled from the `DistributedNetworkManager`.
+- Moved `ResourceReservationProtocol` to `RSVPProtocol` in `rsvp.py`. 
 - Moved `MemoryTimecard` to `memory_timecard.py` and are instantiated by the `NetworkManager`
-- Moved `ResourceReservationProtocol` to `RSVPProtocol` in `rsvp.py`
+  - `RSVPProtocol` does not instantiate `MemoryTimecard` anymore. The `timecards` attribute in `RSVPProtocol` becomes a reference to the `MemoryTimecard` in `NetworkManager`
 - NetworkManager is now `DistributedNetworkManager`
 - Extend and refactor the tests in `test_reservation.py`
 - Minor refactors pertaining to typing errors in `memory.py`, `resource_manager.py`, `rule_manager.py`, `network_manager.py` and `reservation.py`

@@ -138,7 +138,7 @@ class Node(Entity):
             msg (Message): message to transmit.
             priority (int): priority for transmitted message (default inf).
         """
-        log.logger.info(f"{self.name} send message {msg} to {dst}")
+        log.logger.debug(f"{self.name} send message {msg} to {dst}")
 
         if priority == inf:
             priority = self.timeline.schedule_counter
@@ -153,7 +153,7 @@ class Node(Entity):
             src (str): name of node sending the message.
             msg (Message): message transmitted from node.
         """
-        log.logger.info(f"{self.name} receive message {msg} from {src}")
+        log.logger.debug(f"{self.name} receive message {msg} from {src}")
         # signal to protocol that we've received a message
         if msg.receiver is not None:
             for protocol in self.protocols:
@@ -346,7 +346,7 @@ class QuantumRouter(Node):
             msg (Message): the received message.
         """
         if self.down:
-            log.logger.info(f"{self.name} is DOWN. Dropping message {msg} from {src}")
+            log.logger.debug(f"{self.name} is DOWN. Dropping message {msg} from {src}")
             return
 
         log.logger.info(f"{self.name}: receive message {msg} from {src}")
@@ -374,7 +374,7 @@ class QuantumRouter(Node):
             priority (int): priority for the transmitted message (default inf).
         """
         if self.down:
-            log.logger.info(f"{self.name} is DOWN. Dropping message {msg} to {dst}")
+            log.logger.debug(f"{self.name} is DOWN. Dropping message {msg} to {dst}")
             return
         
         log.logger.info(f"{self.name}: send message {msg} to {dst}")
