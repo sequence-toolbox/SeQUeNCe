@@ -12,7 +12,7 @@ from sequence.constants import MILLISECOND, SECOND
 from ..topology.router_net_topo import RouterNetTopo as Topology
 
 default_template = {
-  "perfect_router": {
+  "router_template": {
     "MemoryArray": {
       "frequency": 200000000.0,
       "coherence_time": 2,
@@ -20,7 +20,7 @@ default_template = {
       "fidelity": 0.9
     }
   },
-  "perfect_bsm": {
+  "bsm_template": {
     "encoding_type": "single_heralded",
     "SingleHeraldedBSM": {
       "detectors": [
@@ -114,16 +114,18 @@ def generate_config(g: nx.Graph, qc_length: float, qc_attn: float, cc_delay: flo
                     output_directory: str='tmp', stop_time: float|None=None, formalism: str|None=None, node_template: dict|None=None,
                     meas_fid: float=1, gate_fid: float=1):
     """Create a sequence config file from an arbitrary graph for MIM entanglement generation"""
-    if node_template:
-        output_dict: dict = {Topology.ALL_TEMPLATES: node_template}
-    else:
-        output_dict: dict = {Topology.ALL_TEMPLATES: default_template}
+    # Configure and validate the template
+    templates: dict = node_template or default_template
+    if 'router_template' not in templates or 'bsm_template' not in templates:
+        raise ValueError("Template must contain 'router_template' and 'bsm_template' keys.")
+    output_dict: dict = {Topology.ALL_TEMPLATES: templates}
+
     cc_delay_ps = cc_delay * 1e9
     to_bsm_dist: float = qc_length * 1000 / 2  # Convert to meters, get middle
 
 
     router_names = [router_name_func(i) for i in range(len(g.nodes))]
-    nodes: list[dict] = generate_nodes(router_names, 1, 'perfect_router',
+    nodes: list[dict] = generate_nodes(router_names, 1, 'router_template',
                                        measurement_fidelity=meas_fid, gate_fidelity=gate_fid)
     graph_to_name = {graph_node: router_names[i] for i, graph_node in enumerate(g.nodes)}
     for sequence_node, graph_node in zip(nodes, g.nodes):
@@ -136,7 +138,7 @@ def generate_config(g: nx.Graph, qc_length: float, qc_attn: float, cc_delay: flo
         left_name = graph_to_name[left]
         right_name = graph_to_name[right]
         bsm_name = bsm_name_func(left_name, right_name)
-        bsm_nodes.append({Topology.NAME: bsm_name, Topology.TYPE: Topology.BSM_NODE, Topology.SEED: i, Topology.TEMPLATE: 'perfect_bsm'})
+        bsm_nodes.append({Topology.NAME: bsm_name, Topology.TYPE: Topology.BSM_NODE, Topology.SEED: i, Topology.TEMPLATE: 'bsm_template'})
 
         # Quantum Links (Node -> BSM <- Node)
         qlinks.append({Topology.SRC: left_name, Topology.DST: bsm_name, Topology.DISTANCE: to_bsm_dist, Topology.ATTENUATION: qc_attn})
