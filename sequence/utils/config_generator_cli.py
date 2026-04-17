@@ -21,37 +21,6 @@ GateFidelity = Annotated[float, typer.Option(help='Fidelity of the CNOT Gate')]
 MeasurementFidelity = Annotated[float, typer.Option(help='Fidelity of the Measurement')]
 Seed = Annotated[int|None, typer.Option(help='RNG seed for random graph generation')]
 
-default_template = {
-  "perfect_router": {
-    "MemoryArray": {
-      "frequency": 200000000.0,
-      "coherence_time": 2,
-      "efficiency": 1,
-      "fidelity": 0.9
-    }
-  },
-  "perfect_bsm": {
-    "encoding_type": "single_heralded",
-    "SingleHeraldedBSM": {
-      "detectors": [
-        {
-          "efficiency": 1,
-          "dark_count": 0,
-          "time_resolution": 6,
-          "count_rate": 100000000000.0
-        },
-        {
-          "efficiency": 1,
-          "dark_count": 0,
-          "time_resolution": 6,
-          "count_rate": 100000000000.0
-        }
-      ]
-    }
-  }
-}
-
-
 def get_template(template_path: str) -> dict:
     with open(template_path, 'r') as f:
         data = json.load(f)
@@ -72,7 +41,7 @@ def caveman(
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1
 ) -> None:
-    template = get_template(template_path) if template_path else default_template
+    template = get_template(template_path) if template_path else None
     g = build_caveman(cliques, size)
     generate_config(
         g,
@@ -103,7 +72,7 @@ def grid(
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
-    template = get_template(template_path) if template_path else default_template
+    template = get_template(template_path) if template_path else None
     g = build_grid(size_x, size_y)
     generate_config(
         g,
@@ -133,7 +102,7 @@ def star(
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
-    template = get_template(template_path) if template_path else default_template
+    template = get_template(template_path) if template_path else None
     g = build_star(outer_nodes)
     generate_config(
         g,
@@ -164,7 +133,7 @@ def linear(
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
-    template = get_template(template_path) if template_path else default_template
+    template = get_template(template_path) if template_path else None
     g = build_linear(nodes)
     generate_config(
         g,
@@ -196,7 +165,7 @@ def mesh(
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
-    template = get_template(template_path) if template_path else default_template
+    template = get_template(template_path) if template_path else None
     g = build_mesh(size_x, size_y)
     generate_config(
         g,
@@ -227,7 +196,7 @@ def ring(
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
-    template = get_template(template_path) if template_path else default_template
+    template = get_template(template_path) if template_path else None
     g = build_ring(nodes)
     generate_config(
         g,
@@ -259,7 +228,7 @@ def waxman(
     gate_fidelity: GateFidelity = 1,
     seed: Seed = None,
 ) -> None:
-    template = get_template(template_path) if template_path else default_template
+    template = get_template(template_path) if template_path else None
     g = build_waxman(nodes, seed=seed)
     generate_config(
         g,
@@ -293,7 +262,7 @@ def tree(
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
-    template = get_template(template_path) if template_path else default_template
+    template = get_template(template_path) if template_path else None
     g = build_tree(branching_factor, nodes)
     generate_config(
         g,
@@ -325,7 +294,7 @@ def autonomous_system(
     gate_fidelity: GateFidelity = 1,
     seed: Seed = None,
 ) -> None:
-    template = get_template(template_path) if template_path else default_template
+    template = get_template(template_path) if template_path else None
     g = build_autonomous_system(nodes, seed=seed)
     generate_config(
         g,
@@ -357,7 +326,7 @@ def bcube(
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
-    template = get_template(template_path) if template_path else default_template
+    template = get_template(template_path) if template_path else None
     g = build_bcube(k, n)
     generate_config(
         g,
@@ -389,7 +358,7 @@ def k_n(
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
-    template = get_template(template_path) if template_path else default_template
+    template = get_template(template_path) if template_path else None
     g = build_k_n(k, n)
     generate_config(
         g,
