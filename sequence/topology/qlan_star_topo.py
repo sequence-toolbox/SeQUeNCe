@@ -55,17 +55,15 @@ class QlanStarTopo(Topo):
     MEASUREMENT_BASES = "measurement_bases"
     MEM_SIZE = "memo_size"
 
-    def __init__(self, conf_file_name: str):
+    def __init__(self, config_source: str | dict):
         self.orchestrator_nodes = []
         self.client_nodes = []
         self.remote_memories_array = []
-        super().__init__(conf_file_name)
+        super().__init__(config_source)
 
 
-    def _load(self, filename: str):
-        with open(filename) as fh:
-            config = json.load(fh)
-
+    def _load(self, config_source: str | dict):
+        config = super()._load(config_source)
         self._get_templates(config)
         self._add_parameters(config)
 
