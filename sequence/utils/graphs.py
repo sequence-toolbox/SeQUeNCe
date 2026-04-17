@@ -44,7 +44,7 @@ def build_star(outer_nodes: int) -> nx.Graph:
     Returns: Networkx Graph
     """
     G: nx.Graph = nx.star_graph(outer_nodes)
-    G.nodes[0]["node_type"] = "switching"
+    G.nodes[0]["node_type"] = "switch"
     for i in range(1, outer_nodes + 1):
         G.nodes[i]["node_type"] = "processing"
     return G
@@ -74,7 +74,7 @@ def build_mesh(size_x, size_y) -> nx.Graph:
     G = build_grid(size_x, size_y)
 
     for (x, y) in G.nodes:
-        for dx, dy in [(1,1), (1,-1), (-1, 1), (-1, 1)]: # Diagonals from any node with max Deg = 4
+        for dx, dy in [(1,1), (1,-1), (-1, 1), (-1, -1)]: # Diagonals from any node with max Deg = 4
             if (x+dx, y+dy) in G.nodes:
                 v = (x+dx, y+dy)
                 G.add_edge((x, y), v)
@@ -144,6 +144,7 @@ def build_bcube(k: int, n: int) -> nx.Graph:
     """
     G = nx.Graph()
     assert k >= 1
+    assert n >= 1
 
     # Create the servers addressed by {0,...,n-1}^k+1
     servers: list[tuple] = list(product(range(n), repeat=k + 1))
@@ -165,7 +166,7 @@ def build_bcube(k: int, n: int) -> nx.Graph:
 def build_k_n(k: int, n: int) -> nx.Graph:
     """
     Create a Fat Tree; k-ary n-tree nx graph parameterized by k and n.
-    Contains N=k^n processing nodes and n*k^(n-1)*k switches
+    Contains N=k^n processing nodes and n*k^(n-1) switches
 
     F. Petrini and M. Vanneschi, “k-ary n-trees: high performance networks for massively parallel architectures,”
     in Proceedings 11th International Parallel Processing Symposium, Apr. 1997, pp. 87–93. doi: 10.1109/IPPS.1997.580853.

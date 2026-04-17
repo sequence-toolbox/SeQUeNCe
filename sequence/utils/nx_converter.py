@@ -11,10 +11,35 @@ from sequence.constants import MILLISECOND, SECOND
 
 from ..topology.router_net_topo import RouterNetTopo as Topology
 
-
-def final_config(output_dict, parsed_args):
-    output_dict[Topology.STOP_TIME] = int(parsed_args.stop * SECOND)
-    output_dict[Topology.FORMALISM] = parsed_args.formalism
+default_template = {
+  "perfect_router": {
+    "MemoryArray": {
+      "frequency": 200000000.0,
+      "coherence_time": 2,
+      "efficiency": 1,
+      "fidelity": 0.9
+    }
+  },
+  "perfect_bsm": {
+    "encoding_type": "single_heralded",
+    "SingleHeraldedBSM": {
+      "detectors": [
+        {
+          "efficiency": 1,
+          "dark_count": 0,
+          "time_resolution": 6,
+          "count_rate": 100000000000.0
+        },
+        {
+          "efficiency": 1,
+          "dark_count": 0,
+          "time_resolution": 6,
+          "count_rate": 100000000000.0
+        }
+      ]
+    }
+  }
+}
 
 def router_name_func(i) -> str:
     """
@@ -85,13 +110,14 @@ def generate_nodes(router_names: list, memo_size: int, template: str = '', gate_
     return nodes
 
 
-def generate_config(g: nx.Graph, qc_length: float, qc_attn: float, cc_delay: float, output_file: str,
-                    output_directory: str, stop_time: float, formalism: str, node_template: dict,
+def generate_config(g: nx.Graph, qc_length: float, qc_attn: float, cc_delay: float, output_file: str='output.json',
+                    output_directory: str='tmp', stop_time: float|None=None, formalism: str|None=None, node_template: dict|None=None,
                     meas_fid: float=1, gate_fid: float=1):
     """Create a sequence config file from an arbitrary graph for MIM entanglement generation"""
-
-    output_dict:dict = {Topology.ALL_TEMPLATES: node_template}
-
+    if node_template:
+        output_dict: dict = {Topology.ALL_TEMPLATES: node_template}
+    else:
+        output_dict: dict = {Topology.ALL_TEMPLATES: default_template}
     cc_delay_ps = cc_delay * 1e9
     to_bsm_dist: float = qc_length * 1000 / 2  # Convert to meters, get middle
 
@@ -129,13 +155,15 @@ def generate_config(g: nx.Graph, qc_length: float, qc_attn: float, cc_delay: flo
     router_clinks = generate_classical(router_names, cc_delay)
     clinks += router_clinks
     output_dict[Topology.ALL_C_CHANNEL] = clinks
-    output_dict[Topology.STOP_TIME] = int(stop_time * SECOND) if stop_time != float('inf') else int(1e18)
-    output_dict[Topology.FORMALISM] = formalism
+    if stop_time:
+        output_dict[Topology.STOP_TIME] = int(stop_time * SECOND)
+    if formalism:
+        output_dict[Topology.FORMALISM] = formalism
 
     output_dir = Path(output_directory)
-    output_dir.mkdir(exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     with open(output_dir / output_file, 'w') as f:
         json.dump(output_dict, f, indent=2)
 
-    return graph_to_name
+    return output_dict, graph_to_name
