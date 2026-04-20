@@ -1,3 +1,32 @@
+"""
+Command-line tool for generating network configurations using various graph topologies.
+
+This module provides multiple commands to generate different types of graphs based on user inputs.
+The generated configurations can then be used in simulation frameworks with specific parameters,
+including quantum channel distance, link attenuation, classical channel delay, and measurement fidelity.
+
+Classes:
+    app: The main Typer application for CLI commands.
+
+Commands:
+    caveman: Generate a caveman graph topology.
+    grid: Generate a grid graph topology.
+    star: Generate a star graph topology.
+    linear: Generate a linear graph topology.
+    mesh: Generate a mesh graph topology.
+    ring: Generate a ring graph topology.
+    waxman: Generate a Waxman graph topology.
+    tree: Generate a Full r-ary tree graph topology.
+    autonomous-system: Generate an autonomous-system topology of size n
+    bcube: Generate the BCube topology.
+    k-n: Generate k-ary n-tree graph topology.
+
+Example:
+    generate-topology <topology> <parameters>; Generate <topology> with parameters <parameters>
+    generate-topology --help; Display possible topologies.
+    generate-topology <topology> --help; Display parameters for a topology type.
+
+"""
 import json
 
 import typer
