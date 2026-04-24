@@ -22,7 +22,8 @@ def build_caveman(cliques: int, size: int, length: float=10.0, attenuation: floa
     G: nx.Graph = nx.connected_caveman_graph(cliques, size)
     for node in G.nodes:
         G.nodes[node]['node_type'] = 'processing'
-    nx.set_edge_attributes(G, {'length': length, 'attenuation': attenuation})
+    nx.set_edge_attributes(G, length, name='length')
+    nx.set_edge_attributes(G, attenuation, name='attenuation')
     return G
 
 def build_grid(size_x: int, size_y: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:
@@ -39,7 +40,8 @@ def build_grid(size_x: int, size_y: int, length: float=10.0, attenuation: float=
     G: nx.Graph = nx.grid_2d_graph(size_x, size_y)
     for node in G.nodes:
         G.nodes[node]["node_type"] = "processing"
-    nx.set_edge_attributes(G, {'length': length, 'attenuation': attenuation})
+    nx.set_edge_attributes(G, length, name='length')
+    nx.set_edge_attributes(G, attenuation, name='attenuation')
     return G
 
 def build_star(outer_nodes: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:
@@ -56,7 +58,8 @@ def build_star(outer_nodes: int, length: float=10.0, attenuation: float=0.0002) 
     G.nodes[0]["node_type"] = "switch"
     for i in range(1, outer_nodes + 1):
         G.nodes[i]["node_type"] = "processing"
-    nx.set_edge_attributes(G, {'length': length, 'attenuation': attenuation})
+    nx.set_edge_attributes(G, length, name='length')
+    nx.set_edge_attributes(G, attenuation, name='attenuation')
     return G
 
 def build_linear(nodes: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:
@@ -72,7 +75,8 @@ def build_linear(nodes: int, length: float=10.0, attenuation: float=0.0002) -> n
     G = nx.path_graph(nodes)
     for node in G.nodes:
         G.nodes[node]["node_type"] = "processing"
-    nx.set_edge_attributes(G, {'length': length, 'attenuation': attenuation})
+    nx.set_edge_attributes(G, length, name='length')
+    nx.set_edge_attributes(G, attenuation, name='attenuation')
     return G
 
 def build_mesh(size_x: int, size_y: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:
@@ -110,7 +114,8 @@ def build_ring(nodes: int, length: float=10.0, attenuation: float=0.0002) -> nx.
     G: nx.Graph = nx.cycle_graph(nodes)
     for node in G.nodes:
         G.nodes[node]["node_type"] = "processing"
-    nx.set_edge_attributes(G, {'length': length, 'attenuation': attenuation})
+    nx.set_edge_attributes(G, length, name='length')
+    nx.set_edge_attributes(G, attenuation, name='attenuation')
     return G
 
 def build_waxman(nodes, area_size: float=10.0, attenuation: float=0.0002, alpha=0.1, beta=0.4, L=None, seed=None) -> nx.Graph:
@@ -150,7 +155,8 @@ def build_tree(branching_factor: int, nodes: int, length: float=10.0, attenuatio
     G: nx.Graph = nx.full_rary_tree(branching_factor, nodes)
     for node in G.nodes:
         G.nodes[node]["node_type"] = "processing"
-    nx.set_edge_attributes(G, {'length': length, 'attenuation': attenuation})
+    nx.set_edge_attributes(G, length, name='length')
+    nx.set_edge_attributes(G, attenuation, name='attenuation')
     return G
 
 def build_autonomous_system(nodes: int, length: float=10.0, attenuation: float=0.0002, seed=None) -> nx.Graph:
@@ -167,7 +173,8 @@ def build_autonomous_system(nodes: int, length: float=10.0, attenuation: float=0
     G: nx.Graph = nx.random_internet_as_graph(nodes, seed=seed)
     for node in G.nodes:
         G.nodes[node]["node_type"] = "processing"
-    nx.set_edge_attributes(G, {'length': length, 'attenuation': attenuation})
+    nx.set_edge_attributes(G, length, name='length')
+    nx.set_edge_attributes(G, attenuation, name='attenuation')
     return G
 
 def build_bcube(k: int, n: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:

@@ -110,7 +110,7 @@ def generate_nodes(router_names: list, memo_size: int, template: str = '', gate_
     return nodes
 
 
-def generate_config(g: nx.Graph, qc_length: float, qc_attn: float, cc_delay: float, output_file: str='output.json',
+def generate_config(g: nx.Graph, cc_delay: float, memory_size: int=1, output_file: str='output.json',
                     output_directory: str='tmp', stop_time: float|None=None, formalism: str|None=None, node_template: dict|None=None,
                     meas_fid: float=1, gate_fid: float=1):
     """Create a sequence config file from an arbitrary graph for MIM entanglement generation"""
@@ -121,11 +121,9 @@ def generate_config(g: nx.Graph, qc_length: float, qc_attn: float, cc_delay: flo
     output_dict: dict = {Topology.ALL_TEMPLATES: templates}
 
     cc_delay_ps = cc_delay * 1e9
-    to_bsm_dist: float = qc_length * 1000 / 2  # Convert to meters, get middle
-
 
     router_names = [router_name_func(i) for i in range(len(g.nodes))]
-    nodes: list[dict] = generate_nodes(router_names, 1, 'router_template',
+    nodes: list[dict] = generate_nodes(router_names, memory_size, 'router_template',
                                        measurement_fidelity=meas_fid, gate_fidelity=gate_fid)
     graph_to_name = {graph_node: router_names[i] for i, graph_node in enumerate(g.nodes)}
     for sequence_node, graph_node in zip(nodes, g.nodes):
@@ -134,7 +132,11 @@ def generate_config(g: nx.Graph, qc_length: float, qc_attn: float, cc_delay: flo
     bsm_nodes = []
     qlinks = []
     clinks = []
-    for i, (left, right) in enumerate(g.edges()):
+    for i, (left, right, data) in enumerate(g.edges(data=True)):
+        qc_length: float = data.get('length', 10.0)
+        qc_attn: float = data.get('attenuation', 0.0002)
+        to_bsm_dist: float = qc_length * 1000 / 2  # Convert to meters, get middle
+
         left_name = graph_to_name[left]
         right_name = graph_to_name[right]
         bsm_name = bsm_name_func(left_name, right_name)
