@@ -29,7 +29,6 @@ Example:
     generate-topology <topology> --help; Display parameters for a topology type.
     generate-topology custom <gml_path.gml>; Create a custom topology from a GML file.
 """
-
 import json
 import yaml
 from typing import Annotated
@@ -62,7 +61,7 @@ OutputFile = Annotated[str, typer.Option(help="Name of the output file")]
 OutputDirectory = Annotated[str, typer.Option(help="Name of the output directory")]
 StopTime = Annotated[float, typer.Option(help="Stop time of the simulation (s)")]
 Formalism = Annotated[str, typer.Option(help="Formalism of the QuantumManager")]
-Template = Annotated[str, typer.Option(help="Path of the template JSON file")]
+Template = Annotated[str, typer.Option(help="Path of the template JSON or YAML file")]
 GateFidelity = Annotated[float, typer.Option(help="Fidelity of the CNOT Gate")]
 MeasurementFidelity = Annotated[float, typer.Option(help="Fidelity of the Measurement")]
 Seed = Annotated[int | None, typer.Option(help="RNG seed for random graph generation")]
@@ -71,7 +70,12 @@ GMLPath = Annotated[str, typer.Argument(help="Path of the .gml file.")]
 
 def get_template(template_path: str) -> dict:
     with open(template_path, "r") as f:
-        data = json.load(f)
+        if template_path.lower().endswith((".yaml", ".yml")):
+            data = yaml.safe_load(f)
+        elif template_path.lower().endswith(".json"):
+            data = json.load(f)
+        else:
+            raise ValueError("Incompatible file type for template. Required: JSON or YAML")
     return data
 
 

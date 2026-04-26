@@ -35,6 +35,7 @@ dependencies = [
     "pandas-stubs~=2.3.3",
     "plotly>=6.5.0",
     "pytest>=9.0.2",
+    "pyyaml>=6.0.3",
     "qutip>=5.2.2",
     "qutip-qip>=0.4.1",
     "scipy>=1.16.3",
