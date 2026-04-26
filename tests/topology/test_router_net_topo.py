@@ -16,7 +16,7 @@ def graph(request):
 
 @pytest.fixture
 def config_and_map(graph):
-    config, graph_map = nx_converter.generate_config(graph, 2000, 0.0002, 1)
+    config, graph_map = nx_converter.generate_config(graph, cc_delay=1, memory_size=1)
     return config, graph_map, graph
 
 @pytest.fixture
@@ -52,20 +52,20 @@ class TestGenerateConfig:
         assert len(set(graph_map.values())) == graph.number_of_nodes()
 
     def test_stop_time(self):
-        config, *_ = nx_converter.generate_config(graphs.build_linear(2), 2000, 0.0002, 1, stop_time=100)
+        config, *_ = nx_converter.generate_config(graphs.build_linear(2), cc_delay=1, stop_time=100)
         assert config['stop_time'] == int(100 * SECOND)
     
     def test_absent_stop(self):
-        config, *_ = nx_converter.generate_config(graphs.build_linear(2), 2000, 0.0002, 1)
+        config, *_ = nx_converter.generate_config(graphs.build_linear(2), cc_delay=1)
         assert 'stop_time' not in config
 
     def test_default_template(self):
-        config, *_ = nx_converter.generate_config(graphs.build_linear(2), 2000, 0.0002, 1)
+        config, *_ = nx_converter.generate_config(graphs.build_linear(2), cc_delay=1)
         assert 'router_template' in config['templates']
         assert 'bsm_template' in config['templates']
     
     def test_template_references(self):
-        config, *_ = nx_converter.generate_config(graphs.build_linear(2), 2000, 0.0002, 1)
+        config, *_ = nx_converter.generate_config(graphs.build_linear(2), cc_delay=1)
         assert all(n['template'] == ('router_template' if n['type'] == 'QuantumRouter' else 'bsm_template') for n in config['nodes'])
 
 
