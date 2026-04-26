@@ -100,11 +100,11 @@ def generate_nodes(router_names: list, memo_size: int, template: str = '', gate_
                   Topology.TYPE: Topology.QUANTUM_ROUTER,
                   Topology.SEED: i,
                   Topology.MEMO_ARRAY_SIZE: memo_size}
-        if template:
+        if template is not None:
             config[Topology.TEMPLATE] = template
-        if gate_fidelity:
+        if gate_fidelity is not None:
             config[Topology.GATE_FIDELITY] = gate_fidelity
-        if measurement_fidelity:
+        if measurement_fidelity is not None:
             config[Topology.MEASUREMENT_FIDELITY] = measurement_fidelity
         nodes.append(config)
     return nodes
