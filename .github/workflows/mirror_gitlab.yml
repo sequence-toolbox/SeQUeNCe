@@ -20,4 +20,4 @@ jobs:
           GITLAB_REPO: ${{ secrets.GITLAB_URL }}
         run: |
           git remote add gitlab "https://oauth2:${GITLAB_TOKEN}@${GITLAB_REPO}"
-          git push --mirror gitlab
+          git push --force --prune --tags gitlab "refs/remotes/origin/*:refs/heads/*"
