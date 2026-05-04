@@ -30,15 +30,13 @@ class DQCNetTopo(Topo):
     DQC_NODE = "DQCNode"
     DATA_MEMO_ARRAY_SIZE = "data_memo_size"   # data memories
 
-    def __init__(self, conf_file_name: str):
+    def __init__(self, config_source: str | dict):
         self.bsm_to_router_map = {}
         self.encoding_type = None
-        super().__init__(conf_file_name)
+        super().__init__(config_source)
 
-    def _load(self, filename: str):
-        with open(filename) as fh:
-            config = json.load(fh)
-
+    def _load(self, config_source: str | dict):
+        config = super()._load(config_source)
         self._get_templates(config)
         # quantum connections are only supported by sequential simulation so far
         self._add_qconnections(config)
