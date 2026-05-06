@@ -120,7 +120,10 @@ def generate_config(g: nx.Graph, cc_delay: float, memory_size: int=1, output_fil
         raise ValueError("Template must contain 'router_template' and 'bsm_template' keys.")
     output_dict: dict = {Topology.ALL_TEMPLATES: templates}
 
-    cc_delay_ps = cc_delay * 1e9
+    if cc_delay > 0:
+        cc_delay_ps = int(cc_delay * MILLISECOND)
+    else:
+        cc_delay_ps = -1
 
     router_names = [router_name_func(i) for i in range(len(g.nodes))]
     nodes: list[dict] = generate_nodes(router_names, memory_size, 'router_template',
