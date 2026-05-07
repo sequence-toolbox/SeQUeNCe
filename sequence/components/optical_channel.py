@@ -267,7 +267,7 @@ class ClassicalChannel(OpticalChannel):
         delay (int): delay (in ps) of propagation in the channel (default determined by light speed and distance)
     """
 
-    def __init__(self, name: str, timeline: "Timeline", distance: float, delay: int = 0, transmission_delay: int = 1 * MICROSECOND):
+    def __init__(self, name: str, timeline: "Timeline", distance: float, delay: int = 0):
         """Constructor for Classical Channel class.
 
         Args:
@@ -278,7 +278,6 @@ class ClassicalChannel(OpticalChannel):
         """
 
         super().__init__(name, timeline, 0, distance, 0, SPEED_OF_LIGHT)
-        self.transmission_delay = transmission_delay
         if delay <= 0:
             self.delay = round(distance / self.light_speed)
         else:
@@ -299,17 +298,15 @@ class ClassicalChannel(OpticalChannel):
         self.receiver = receiver
         sender.assign_cchannel(self, receiver)
 
-    def transmit(self, message: "Message", source: "Node", priority: int, 
-                 node_processing_delay: int = 0, queueing_delay: int = 0, transmission_delay: int = 0) -> None:
+    def transmit(self, message: "Message", source: "Node", priority: int, non_propagation_delay: int = 10 * MICROSECOND) -> None:
         """Method to transmit classical messages.
 
         Args:
             message (Message): message to be transmitted.
             source (Node): node sending the message.
             priority (int): priority of transmitted message (to resolve message reception conflicts).
-            node_processing_delay (int): processing delay (ps) at the sender node before message is put on the channel (default 0).
-            queueing_delay (int): queueing delay (ps) at the sender node before message is put on the channel (default 0).
-            transmission_delay (int): transmission delay (ps) for the full message to enter the channel, also called serialization delay (default 0).
+            non_propagation_delay (int): non-propagation delay (ps) at the sender node before message is sent out on the channel.
+                                         Include but not limited to processing delay, queueing delay, transmission delay, etc.
 
         Side Effects:
             Receiver node may receive the message (via the `receive_message` method).
@@ -318,8 +315,7 @@ class ClassicalChannel(OpticalChannel):
         log.logger.info(f"{self.sender.name} send message {message} to {self.receiver} by Channel {self.name}")
         assert source == self.sender
 
-        total_delay = node_processing_delay + queueing_delay + transmission_delay + self.delay
-        future_time = round(self.timeline.now() + total_delay)
+        future_time = round(self.timeline.now() + self.delay + non_propagation_delay)
         process = Process(self.receiver, "receive_message", [source.name, message])
         event = Event(future_time, process, priority)
         self.timeline.schedule(event)
