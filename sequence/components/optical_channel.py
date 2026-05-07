@@ -298,15 +298,15 @@ class ClassicalChannel(OpticalChannel):
         self.receiver = receiver
         sender.assign_cchannel(self, receiver)
 
-    def transmit(self, message: "Message", source: "Node", priority: int, non_propagation_delay: int = 0) -> None:
+    def transmit(self, message: "Message", source: "Node", priority: int, sender_delay: int = 0) -> None:
         """Method to transmit classical messages.
 
         Args:
             message (Message): message to be transmitted.
             source (Node): node sending the message.
             priority (int): priority of transmitted message (to resolve message reception conflicts).
-            non_propagation_delay (int): non-propagation delay (ps) at the sender node before message is sent out on the channel.
-                                         Include but not limited to processing delay, queueing delay, transmission delay, etc.
+            sender_delay (int): sender-side delay (ps) before message is sent out on the channel (Default 0).
+                                Include but not limited to processing delay, queueing delay, transmission delay, etc.
 
         Side Effects:
             Receiver node may receive the message (via the `receive_message` method).
@@ -315,7 +315,7 @@ class ClassicalChannel(OpticalChannel):
         log.logger.info(f"{self.sender.name} send message {message} to {self.receiver} by Channel {self.name}")
         assert source == self.sender
 
-        future_time = round(self.timeline.now() + self.delay + non_propagation_delay)
+        future_time = round(self.timeline.now() + sender_delay + self.delay)
         process = Process(self.receiver, "receive_message", [source.name, message])
         event = Event(future_time, process, priority)
         self.timeline.schedule(event)
