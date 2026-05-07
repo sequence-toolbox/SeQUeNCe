@@ -264,22 +264,23 @@ class ClassicalChannel(OpticalChannel):
         sender (Node): node at sending end of optical channel.
         receiver (str): name of the node at receiving end of optical channel.
         distance (float): length of the fiber (in m).
-        delay (float): delay (in ps) of message transmission (default distance / light_speed).
+        delay (int): delay (in ps) of propagation in the channel (default determined by light speed and distance)
     """
 
-    def __init__(self, name: str, timeline: "Timeline", distance: float, delay: int = -1):
+    def __init__(self, name: str, timeline: "Timeline", distance: float, delay: int = 0, transmission_delay: int = 1 * MICROSECOND):
         """Constructor for Classical Channel class.
 
         Args:
             name (str): name of the classical channel instance.
             timeline (Timeline): simulation timeline.
             distance (float): length of the fiber (in m).
-            delay (float): delay (in ps) of message transmission (default distance / light_speed).
+            delay (int): delay (in ps) of message propagation in the channel (default determined by light speed and distance)
         """
 
         super().__init__(name, timeline, 0, distance, 0, SPEED_OF_LIGHT)
-        if delay == -1:
-            self.delay = round(distance / self.light_speed + 10 * MICROSECOND)
+        self.transmission_delay = transmission_delay
+        if delay <= 0:
+            self.delay = round(distance / self.light_speed)
         else:
             self.delay = round(delay)
 
@@ -298,22 +299,27 @@ class ClassicalChannel(OpticalChannel):
         self.receiver = receiver
         sender.assign_cchannel(self, receiver)
 
-    def transmit(self, message: "Message", source: "Node", priority: int) -> None:
+    def transmit(self, message: "Message", source: "Node", priority: int, 
+                 node_processing_delay: int = 0, queueing_delay: int = 0, transmission_delay: int = 0) -> None:
         """Method to transmit classical messages.
 
         Args:
             message (Message): message to be transmitted.
             source (Node): node sending the message.
             priority (int): priority of transmitted message (to resolve message reception conflicts).
+            node_processing_delay (int): processing delay (ps) at the sender node before message is put on the channel (default 0).
+            queueing_delay (int): queueing delay (ps) at the sender node before message is put on the channel (default 0).
+            transmission_delay (int): transmission delay (ps) for the full message to enter the channel, also called serialization delay (default 0).
 
         Side Effects:
-            Receiver node may receive the qubit (via the `receive_qubit` method).
+            Receiver node may receive the message (via the `receive_message` method).
         """
 
         log.logger.info(f"{self.sender.name} send message {message} to {self.receiver} by Channel {self.name}")
         assert source == self.sender
 
-        future_time = round(self.timeline.now() + int(self.delay))
+        total_delay = node_processing_delay + queueing_delay + transmission_delay + self.delay
+        future_time = round(self.timeline.now() + total_delay)
         process = Process(self.receiver, "receive_message", [source.name, message])
         event = Event(future_time, process, priority)
         self.timeline.schedule(event)

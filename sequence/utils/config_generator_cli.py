@@ -435,3 +435,7 @@ def custom(
         meas_fid=measurement_fidelity,
         gate_fid=gate_fidelity,
     )
+
+
+if __name__ == "__main__":
+    app()

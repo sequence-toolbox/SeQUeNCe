@@ -130,19 +130,22 @@ class Node(Entity):
 
         self.qchannels[another] = qchannel
 
-    def send_message(self, dst: str, msg: "Message", priority=inf) -> None:
+    def send_message(self, dst: str, msg: "Message", priority=inf, processing_delay: int = 0, queueing_delay: int = 0, transmission_delay: int = 0) -> None:
         """Method to send classical message.
 
         Args:
             dst (str): name of destination node for message.
             msg (Message): message to transmit.
             priority (int): priority for transmitted message (default inf).
+            processing_delay (int): processing delay (ps) at the sender node before message is put on the channel (default 0).
+            queueing_delay (int): queueing delay (ps) at the sender node before message is put on the channel (default 0).
+            transmission_delay (int): transmission delay (ps) for the full message to enter the channel, also called serialization delay (default 0).
         """
         log.logger.debug(f"{self.name} send message {msg} to {dst}")
 
         if priority == inf:
             priority = self.timeline.schedule_counter
-        self.cchannels[dst].transmit(msg, self, priority)
+        self.cchannels[dst].transmit(msg, self, priority, processing_delay, queueing_delay, transmission_delay)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         """Method to receive message from classical channel.
@@ -365,13 +368,16 @@ class QuantumRouter(Node):
                         protocol.received_message(src, msg)
                         break
 
-    def send_message(self, dst: str, msg: "Message", priority=inf) -> None:
+    def send_message(self, dst: str, msg: "Message", priority=inf, processing_delay: int = 0, queueing_delay: int = 0, transmission_delay: int = 0) -> None:
         """Method to send a classical message.
 
         Args:
             dst (str): name of the destination node to get the message.
             msg (Message): message to transmit.
             priority (int): priority for the transmitted message (default inf).
+            processing_delay (int): processing delay (ps) at the sender node before message is put on the channel (default 0).
+            queueing_delay (int): queueing delay (ps) at the sender node before message is put on the channel (default 0).
+            transmission_delay (int): transmission delay (ps) for the full message to enter the channel, also called serialization delay (default 0).
         """
         if self.down:
             log.logger.debug(f"{self.name} is DOWN. Dropping message {msg} to {dst}")
@@ -380,7 +386,7 @@ class QuantumRouter(Node):
         log.logger.info(f"{self.name}: send message {msg} to {dst}")
         if priority == inf:
             priority = self.timeline.schedule_counter
-        self.cchannels[dst].transmit(msg, self, priority)
+        self.cchannels[dst].transmit(msg, self, priority, processing_delay, queueing_delay, transmission_delay)
 
     def set_down(self, down: bool):
         """Method to set the node status.
@@ -779,19 +785,22 @@ class ClassicalNode(ClassicalEntity):
 
         self.cchannels[another] = cchannel
 
-    def send_message(self, dst: str, msg: "Message", priority=inf) -> None:
+    def send_message(self, dst: str, msg: "Message", priority=inf, processing_delay: int = 0, queueing_delay: int = 0, transmission_delay: int = 0) -> None:
         """Method to send classical message.
 
         Args:
             dst (str): name of destination node for message.
             msg (Message): message to transmit.
             priority (int): priority for transmitted message (default inf).
+            processing_delay (int): processing delay (ps) at the sender node before message is put on the channel (default 0).
+            queueing_delay (int): queueing delay (ps) at the sender node before message is put on the channel (default 0).
+            transmission_delay (int): transmission delay (ps) for the full message to enter the channel, also called serialization delay (default 0).
         """
         log.logger.info(f"{self.name} send message {msg} to {dst}")
 
         if priority == inf:
             priority = self.timeline.schedule_counter
-        self.cchannels[dst].transmit(msg, self, priority)
+        self.cchannels[dst].transmit(msg, self, priority, processing_delay, queueing_delay, transmission_delay)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         """Method to receive message from classical channel.
