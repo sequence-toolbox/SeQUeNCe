@@ -298,7 +298,7 @@ class ClassicalChannel(OpticalChannel):
         self.receiver = receiver
         sender.assign_cchannel(self, receiver)
 
-    def transmit(self, message: "Message", source: "Node", priority: int, non_propagation_delay: int = 10 * MICROSECOND) -> None:
+    def transmit(self, message: "Message", source: "Node", priority: int, non_propagation_delay: int = 0) -> None:
         """Method to transmit classical messages.
 
         Args:

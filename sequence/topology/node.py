@@ -131,14 +131,14 @@ class Node(Entity):
 
         self.qchannels[another] = qchannel
 
-    def send_message(self, dst: str, msg: "Message", priority=inf, non_propagation_delay: int = 10 * MICROSECOND) -> None:
+    def send_message(self, dst: str, msg: "Message", priority=inf, non_propagation_delay: int = 0) -> None:
         """Method to send classical message.
 
         Args:
             dst (str): name of destination node for message.
             msg (Message): message to transmit.
             priority (int): priority for transmitted message (default inf).
-            non_propagation_delay (int): non-propagation delay (ps) at the sender node before message is sent out on the channel (default 10 * MICROSECOND).
+            non_propagation_delay (int): non-propagation delay (ps) at the sender node before message is sent out on the channel (default 0).
                                          Include but not limited to processing delay, queueing delay, transmission delay, etc.
         """
         log.logger.debug(f"{self.name} send message {msg} to {dst}")
@@ -368,14 +368,14 @@ class QuantumRouter(Node):
                         protocol.received_message(src, msg)
                         break
 
-    def send_message(self, dst: str, msg: "Message", priority=inf, non_propagation_delay: int = 10 * MICROSECOND) -> None:
+    def send_message(self, dst: str, msg: "Message", priority=inf, non_propagation_delay: int = 0) -> None:
         """Method to send a classical message.
 
         Args:
             dst (str): name of the destination node to get the message.
             msg (Message): message to transmit.
             priority (int): priority for the transmitted message (default inf).
-            non_propagation_delay (int): non-propagation delay (ps) at the sender node before message is sent out on the channel (default 10 * MICROSECOND).
+            non_propagation_delay (int): non-propagation delay (ps) at the sender node before message is sent out on the channel (default 0).
                                          Include but not limited to processing delay, queueing delay, transmission delay, etc.
         """
         if self.down:
@@ -784,7 +784,7 @@ class ClassicalNode(ClassicalEntity):
 
         self.cchannels[another] = cchannel
 
-    def send_message(self, dst: str, msg: "Message", priority=inf, non_propagation_delay: int = 10 * MICROSECOND) -> None:
+    def send_message(self, dst: str, msg: "Message", priority=inf, non_propagation_delay: int = 0) -> None:
         """Method to send classical message.
 
         Args:
