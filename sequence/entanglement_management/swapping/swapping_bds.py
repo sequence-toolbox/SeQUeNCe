@@ -154,7 +154,7 @@ class EntanglementSwappingA_BDS(EntanglementSwappingA):
         else:
             bds_elems = [new_elem_1, new_elem_2, new_elem_3, new_elem_4]
         
-        log.logger.info(f'{self.owner.name} before swapping, f = {left_state.state[0]:.6f}, {right_state.state[0]:.6f}; after swapping, f = {bds_elems[0]:.6f}')
+        log.logger.debug(f'{self.owner.name} before swapping, f = {left_state.state[0]:.6f}, {right_state.state[0]:.6f}; after swapping, f = {bds_elems[0]:.6f}')
 
         return bds_elems
 

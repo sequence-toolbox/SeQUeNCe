@@ -145,7 +145,6 @@ class RequestApp:
     def get_throughput(self) -> float:
         return self.memory_counter / (self.end_t - self.start_t) * 1e12
 
-
     def schedule_reservation(self, reservation: Reservation) -> None:
         """Calling the `add_memo_reservation_map` and `remove_memo_reservation_map` methods at the 
            reservation's start_time and end_time for all timecards (memory) involved in the reservation. 

@@ -260,12 +260,13 @@ class ResourceManager:
             event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
             self.owner.timeline.schedule(event)
 
-        for card in timecards:
-            if reservation in card.reservations:
-                process = Process(self.owner.resource_manager, "update",
-                                  [None, self.owner.components[memory_array_name][card.memory_index], "RAW"])
-                event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
-                self.owner.timeline.schedule(event)
+        # NOTE: the following is covered by the "expire" process above. Thus, not needed.
+        # for card in timecards:
+        #     if reservation in card.reservations:
+        #         process = Process(self.owner.resource_manager, "update",
+        #                           [None, self.owner.components[memory_array_name][card.memory_index], "RAW"])
+        #         event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
+        #         self.owner.timeline.schedule(event)
 
     def load(self, rule: Rule) -> bool:
         """Method to load rules for entanglement management.
@@ -468,6 +469,7 @@ class ResourceManager:
             
             case ResourceManagerMsgType.EARLY_EXPIRE:
                 self.expire_rules_by_reservation(msg.reservation)
+                self.owner.network_manager.remove_reservation_from_timecards(msg.reservation)
 
     def memory_expire(self, memory: Memory):
         """Method to receive memory expiration events."""
