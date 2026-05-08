@@ -6,11 +6,11 @@ and GUI components
 import time
 import os
 import pandas as pd
-from ..topology.node import *
+from ..topology.node import QKDNode, QuantumRouter, Node
 from ..kernel.timeline import Timeline
 from ..topology.topology import Topology
 from ..app.random_request import RandomRequestApp
-from ..utils.log import *
+from ..utils.log import set_logger, set_logger_level
 
 DIRECTORY, _ = os.path.split(__file__)
 

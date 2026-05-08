@@ -10,8 +10,10 @@ import networkx as nx
 from dash import dcc
 from dash import html
 import dash_bootstrap_components as dbc
-from .menus import *
-from .css_styles import *
+
+from .css_styles import SIDEBAR_SELECT_STYLE, GRAPH_DIV_STYLE, REFRESH, PROJECT, LEGEND_STYLE, PAGE, SIDEBAR_STYLE
+from .menus import selection_menu, add_edge, add_node_form, delete_menu, make_new_template, getTopoTable, CCD_menu, \
+    TDM_menu, simulation_menu, getLogo, get_network, navbar
 
 
 def make_item(menu, label, num, icon):

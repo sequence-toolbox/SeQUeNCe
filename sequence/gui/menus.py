@@ -11,7 +11,7 @@ from dash import html
 import dash_bootstrap_components as dbc
 import dash_cytoscape as cyto
 from dash import dash_table
-from .css_styles import *
+from .css_styles import MENU_STYLE
 
 
 """

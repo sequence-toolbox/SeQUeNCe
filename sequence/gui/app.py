@@ -1,10 +1,10 @@
 """
 A Class which contains all the logic and data for the GUI.
 """
+import os
 
 import dash
 import threading
-import os
 import json
 import time
 import datetime
@@ -19,12 +19,13 @@ from collections import OrderedDict
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 
+from .css_styles import MENU_STYLE, MENU_STYLE_H, GRAPH_DIV_STYLE, GRAPH_DIV_STYLE_H, PROJECT, PROJECT_H, REFRESH, REFRESH_H
+from .menus import router_template, TYPE_COLORS, makeLegend, getSelectedNodeMenu, quantum_edge, getSelectedEdgeMenu, \
+    classic_edge, qkd_template, quantum_memory_template, bsm_template, detector_template, tab_ids, makeDropdownOptions
 from .simulator_bindings import GUI_Sim
-from .menus import *
 from .graph_comp import GraphNode
 from .layout import get_app_layout
-from .layout import TYPE_COLORS, TYPES
-from .css_styles import *
+from .layout import TYPES
 from ..topology.topology import Topology
 from ..topology.router_net_topo import RouterNetTopo
 
