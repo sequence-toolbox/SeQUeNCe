@@ -144,8 +144,6 @@ def generate_config(g: nx.Graph, cc_delay: float, memory_size: int=1, output_fil
     nodes: list[dict] = generate_nodes(router_names, memory_size, 'router_template',
                                        measurement_fidelity=meas_fid, gate_fidelity=gate_fid)
     graph_to_name = {graph_node: router_names[i] for i, graph_node in enumerate(g.nodes)}
-    for sequence_node, graph_node in zip(nodes, g.nodes):
-        sequence_node[Topology.MEMO_ARRAY_SIZE] = g.degree(graph_node)
 
     bsm_nodes = []
     qlinks = []
