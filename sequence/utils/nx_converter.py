@@ -110,7 +110,7 @@ def generate_nodes(router_names: list, memo_size: int, template: str = '', gate_
     return nodes
 
 
-def generate_config(g: nx.Graph, cc_delay: float, memory_size: int=1, output_file: str='output.json',
+def generate_config(g: nx.Graph, cc_delay: float, memory_size: int=5, output_file: str='output.json',
                     output_directory: str='tmp', stop_time: float|None=None, formalism: str|None=None, node_template: dict|None=None,
                     meas_fid: float=1, gate_fid: float=1) -> tuple[dict, dict]:
     """Create a sequence config file from an arbitrary graph assuming meet-in-the-middle (MIM) entanglement generation
@@ -118,7 +118,7 @@ def generate_config(g: nx.Graph, cc_delay: float, memory_size: int=1, output_fil
     Args:
         g: NetworkX graph object representing the network topology. Edges can have 'length' and 'attenuation' attributes for quantum channels.
         cc_delay: Classical communication delay in milliseconds for all classical links
-        memory_size: Number of memories per QuantumRouter (default: 1)
+        memory_size: Number of memories per QuantumRouter (default: 5)
         output_file: Name of the output JSON file (default: 'output.json')
         output_directory: Directory to save the output file (default: 'tmp')
         stop_time: Optional stop time for the simulation in seconds (default: None)
