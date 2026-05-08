@@ -56,9 +56,6 @@ build-backend = "uv_build"
 module-root = ""
 module-name = "sequence"
 
-[tool.setuptools.package-data]
-sequence = ["gui/user_templates.json", "gui/default_params.json", "gui/starlight.json"]
-
 [tool.pytest.ini_options]
 markers = [
     "unit: Marks tests as unit tests",
