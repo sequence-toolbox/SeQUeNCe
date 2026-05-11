@@ -2335,14 +2335,12 @@ dependencies = [
     { name = "networkx" },
     { name = "numpy" },
     { name = "pandas" },
-    { name = "pandas-stubs" },
     { name = "plotly" },
     { name = "pytest" },
     { name = "pyyaml" },
     { name = "qutip" },
     { name = "qutip-qip" },
     { name = "scipy" },
-    { name = "scipy-stubs" },
     { name = "seaborn" },
     { name = "tqdm" },
     { name = "typer" },
@@ -2351,7 +2349,9 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "coverage" },
+    { name = "pandas-stubs" },
     { name = "ruff" },
+    { name = "scipy-stubs" },
     { name = "ty" },
 ]
 
@@ -2371,14 +2371,12 @@ requires-dist = [
     { name = "networkx", specifier = ">=3.6.1" },
     { name = "numpy", specifier = ">=2.3.5" },
     { name = "pandas", specifier = ">=2.3.3" },
-    { name = "pandas-stubs", specifier = "~=2.3.3" },
     { name = "plotly", specifier = ">=6.5.0" },
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "qutip", specifier = ">=5.2.2" },
     { name = "qutip-qip", specifier = ">=0.4.1" },
     { name = "scipy", specifier = ">=1.16.3" },
-    { name = "scipy-stubs", specifier = "~=1.16.3" },
     { name = "seaborn", specifier = ">=0.13.2" },
     { name = "tqdm", specifier = ">=4.67.1" },
     { name = "typer", specifier = ">=0.24.1" },
@@ -2387,7 +2385,9 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "coverage", specifier = ">=7.13.4" },
+    { name = "pandas-stubs", specifier = "~=2.3.3" },
     { name = "ruff", specifier = ">=0.15.1" },
+    { name = "scipy-stubs", specifier = "~=1.16.3" },
     { name = "ty", specifier = ">=0.0.16" },
 ]
 
