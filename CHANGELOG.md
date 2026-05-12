@@ -26,11 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved routing_protocol init() to network manager.
 - Trigger empty inits for resource and network manager to enable future bootstrapping.
 - Migrated `utils/json_config_generators/` to `sequence/config_generators/`.
+- Add a `sender_delay` argument to the `Node.send_message()` to account for processing delay, queueing delay, transmission delay, etc.
 
 ### Removed
 - Old configuration generators 
-- The old `swapping.py` is removed.
+- The old `swapping.py` is removed
 - Removed support for Python 3.11
+- Removed `qlan` submodule
 
 
 ## [0.8.5] - 2026-2-27
