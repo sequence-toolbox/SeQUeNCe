@@ -30,8 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Old configuration generators 
-- The old `swapping.py` is removed.
+- The old `swapping.py` is removed
 - Removed support for Python 3.11
+- Removed `qlan` submodule
 
 
 ## [0.8.5] - 2026-2-27
