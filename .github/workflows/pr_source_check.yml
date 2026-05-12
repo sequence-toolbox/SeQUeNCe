@@ -3,6 +3,7 @@ on:
   pull_request:
     branches: [master]
 
+permissions: {}
 jobs:
   check-source-branch:
     name: Verify source branch
