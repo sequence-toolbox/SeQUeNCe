@@ -106,8 +106,8 @@ class Topology(ABC):
             src_node = self.tl.get_entity_by_name(src_str)
             if src_node is not None:
                 name = cc.get(self.NAME, f"cc-{src_str}-{dst_str}")
-                distance = cc.get(self.DISTANCE, -1)
-                delay = cc.get(self.DELAY, -1)
+                distance = cc.get(self.DISTANCE, 1000)
+                delay = cc.get(self.DELAY, 0)
                 cc_obj = ClassicalChannel(name, self.tl, distance, delay)
                 cc_obj.set_ends(src_node, dst_str)
                 self.cchannels.append(cc_obj)
@@ -116,8 +116,8 @@ class Topology(ABC):
         for c_connect in config.get(self.ALL_C_CONNECT, []):
             node1 = c_connect[self.CONNECT_NODE_1]
             node2 = c_connect[self.CONNECT_NODE_2]
-            distance = c_connect.get(self.DISTANCE, -1)
-            delay = c_connect.get(self.DELAY, -1)
+            distance = c_connect.get(self.DISTANCE, 1000)
+            delay = c_connect.get(self.DELAY, 0)
             for src_str, dst_str in zip([node1, node2], [node2, node1]):
                 name = f"cc-{src_str}-{dst_str}"
                 src_obj = self.tl.get_entity_by_name(src_str)

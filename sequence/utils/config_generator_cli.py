@@ -53,13 +53,11 @@ from .nx_converter import generate_config
 
 app = typer.Typer()
 
-CCDelay = Annotated[
-    float, typer.Option(help="Constant delay of the classical channel (ms)")
-]
+CCDelay = Annotated[float, typer.Option(help="Constant delay of the classical channel (ms)")]
 MemorySize = Annotated[int, typer.Option(help="Number of quantum memories per node")]
 OutputFile = Annotated[str, typer.Option(help="Name of the output file")]
 OutputDirectory = Annotated[str, typer.Option(help="Name of the output directory")]
-StopTime = Annotated[float, typer.Option(help="Stop time of the simulation (s)")]
+StopTime = Annotated[float | None, typer.Option(help="Stop time of the simulation (s)")]
 Formalism = Annotated[str, typer.Option(help="Formalism of the QuantumManager")]
 Template = Annotated[str, typer.Option(help="Path of the template JSON or YAML file")]
 GateFidelity = Annotated[float, typer.Option(help="Fidelity of the CNOT Gate")]
@@ -87,7 +85,7 @@ def caveman(
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
     directory: OutputDirectory = "tmp",
-    stop_time: StopTime = float("inf"),
+    stop_time: StopTime = None,
     formalism: Formalism = "bell_diagonal",
     template_path: Template = "",
     measurement_fidelity: MeasurementFidelity = 1,
@@ -117,7 +115,7 @@ def grid(
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
     directory: OutputDirectory = "tmp",
-    stop_time: StopTime = float("inf"),
+    stop_time: StopTime = None,
     formalism: Formalism = "bell_diagonal",
     template_path: Template = "",
     measurement_fidelity: MeasurementFidelity = 1,
@@ -148,7 +146,7 @@ def star(
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
     directory: OutputDirectory = "tmp",
-    stop_time: StopTime = float("inf"),
+    stop_time: StopTime = None,
     formalism: Formalism = "bell_diagonal",
     template_path: Template = "",
     measurement_fidelity: MeasurementFidelity = 1,
@@ -177,7 +175,7 @@ def linear(
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
     directory: OutputDirectory = "tmp",
-    stop_time: StopTime = float("inf"),
+    stop_time: StopTime = None,
     formalism: Formalism = "bell_diagonal",
     template_path: Template = "",
     measurement_fidelity: MeasurementFidelity = 1,
@@ -207,7 +205,7 @@ def mesh(
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
     directory: OutputDirectory = "tmp",
-    stop_time: StopTime = float("inf"),
+    stop_time: StopTime = None,
     formalism: Formalism = "bell_diagonal",
     template_path: Template = "",
     measurement_fidelity: MeasurementFidelity = 1,
@@ -236,7 +234,7 @@ def ring(
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
     directory: OutputDirectory = "tmp",
-    stop_time: StopTime = float("inf"),
+    stop_time: StopTime = None,
     formalism: Formalism = "bell_diagonal",
     template_path: Template = "",
     measurement_fidelity: MeasurementFidelity = 1,
@@ -265,7 +263,7 @@ def waxman(
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
     directory: OutputDirectory = "tmp",
-    stop_time: StopTime = float("inf"),
+    stop_time: StopTime = None,
     formalism: Formalism = "bell_diagonal",
     template_path: Template = "",
     measurement_fidelity: MeasurementFidelity = 1,
@@ -298,7 +296,7 @@ def tree(
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
     directory: OutputDirectory = "tmp",
-    stop_time: StopTime = float("inf"),
+    stop_time: StopTime = None,
     formalism: Formalism = "bell_diagonal",
     template_path: Template = "",
     measurement_fidelity: MeasurementFidelity = 1,
@@ -327,7 +325,7 @@ def autonomous_system(
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
     directory: OutputDirectory = "tmp",
-    stop_time: StopTime = float("inf"),
+    stop_time: StopTime = None,
     formalism: Formalism = "bell_diagonal",
     template_path: Template = "",
     measurement_fidelity: MeasurementFidelity = 1,
@@ -358,7 +356,7 @@ def bcube(
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
     directory: OutputDirectory = "tmp",
-    stop_time: StopTime = float("inf"),
+    stop_time: StopTime = None,
     formalism: Formalism = "bell_diagonal",
     template_path: Template = "",
     measurement_fidelity: MeasurementFidelity = 1,
@@ -388,7 +386,7 @@ def k_n(
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
     directory: OutputDirectory = "tmp",
-    stop_time: StopTime = float("inf"),
+    stop_time: StopTime = None,
     formalism: Formalism = "bell_diagonal",
     template_path: Template = "",
     measurement_fidelity: MeasurementFidelity = 1,
@@ -417,7 +415,7 @@ def custom(
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
     directory: OutputDirectory = "tmp",
-    stop_time: StopTime = float("inf"),
+    stop_time: StopTime = None,
     formalism: Formalism = "bell_diagonal",
     template_path: Template = "",
     measurement_fidelity: MeasurementFidelity = 1,
@@ -437,3 +435,7 @@ def custom(
         meas_fid=measurement_fidelity,
         gate_fid=gate_fidelity,
     )
+
+
+if __name__ == "__main__":
+    app()

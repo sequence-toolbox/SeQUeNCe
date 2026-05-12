@@ -68,7 +68,7 @@ def generate_classical(router_names: list, cc_delay: float) -> list:
     Creates all-to-all links between routers in the topology.
     Args:
         router_names: List of routers
-        cc_delay: Delay between the routers
+        cc_delay: Delay between the routers (ms)
 
     Returns: A list of the classical connections
     """
@@ -110,24 +110,40 @@ def generate_nodes(router_names: list, memo_size: int, template: str = '', gate_
     return nodes
 
 
-def generate_config(g: nx.Graph, cc_delay: float, memory_size: int=1, output_file: str='output.json',
+def generate_config(g: nx.Graph, cc_delay: float, memory_size: int=5, output_file: str='output.json',
                     output_directory: str='tmp', stop_time: float|None=None, formalism: str|None=None, node_template: dict|None=None,
-                    meas_fid: float=1, gate_fid: float=1):
-    """Create a sequence config file from an arbitrary graph for MIM entanglement generation"""
+                    meas_fid: float=1, gate_fid: float=1) -> tuple[dict, dict]:
+    """Create a sequence config file from an arbitrary graph assuming meet-in-the-middle (MIM) entanglement generation
+    
+    Args:
+        g: NetworkX graph object representing the network topology. Edges can have 'length' and 'attenuation' attributes for quantum channels.
+        cc_delay: Classical communication delay in milliseconds for all classical links
+        memory_size: Number of memories per QuantumRouter (default: 5)
+        output_file: Name of the output JSON file (default: 'output.json')
+        output_directory: Directory to save the output file (default: 'tmp')
+        stop_time: Optional stop time for the simulation in seconds (default: None)
+        formalism: Optional formalism for the simulation (default: None)
+        node_template: Optional template for nodes (default: None)
+        meas_fid: Measurement fidelity (default: 1)
+        gate_fid: Gate fidelity (default: 1)
+    
+    Returns:
+        A tuple containing two dictionaries: the first dictionary is the output configuration, 
+                                             the second dictionary is the mapping from graph nodes to names.
+    """
     # Configure and validate the template
     templates: dict = node_template or default_template
     if 'router_template' not in templates or 'bsm_template' not in templates:
         raise ValueError("Template must contain 'router_template' and 'bsm_template' keys.")
     output_dict: dict = {Topology.ALL_TEMPLATES: templates}
 
-    cc_delay_ps = cc_delay * 1e9
+    if cc_delay < 0:
+        cc_delay = 0
 
     router_names = [router_name_func(i) for i in range(len(g.nodes))]
     nodes: list[dict] = generate_nodes(router_names, memory_size, 'router_template',
                                        measurement_fidelity=meas_fid, gate_fidelity=gate_fid)
     graph_to_name = {graph_node: router_names[i] for i, graph_node in enumerate(g.nodes)}
-    for sequence_node, graph_node in zip(nodes, g.nodes):
-        sequence_node[Topology.MEMO_ARRAY_SIZE] = g.degree(graph_node)
 
     bsm_nodes = []
     qlinks = []
@@ -147,10 +163,10 @@ def generate_config(g: nx.Graph, cc_delay: float, memory_size: int=1, output_fil
         qlinks.append({Topology.SRC: right_name, Topology.DST: bsm_name, Topology.DISTANCE: to_bsm_dist, Topology.ATTENUATION: qc_attn})
 
         # Classical Links (Node <-> BSM <-> Node)
-        clinks.append({Topology.SRC: left_name, Topology.DST: bsm_name, Topology.DISTANCE: to_bsm_dist, Topology.DELAY: cc_delay_ps})
-        clinks.append({Topology.SRC: bsm_name, Topology.DST: left_name, Topology.DISTANCE: to_bsm_dist, Topology.DELAY: cc_delay_ps})
-        clinks.append({Topology.SRC: right_name, Topology.DST: bsm_name, Topology.DISTANCE: to_bsm_dist, Topology.DELAY: cc_delay_ps})
-        clinks.append({Topology.SRC: bsm_name, Topology.DST: right_name, Topology.DISTANCE: to_bsm_dist, Topology.DELAY: cc_delay_ps})
+        clinks.append({Topology.SRC: left_name, Topology.DST: bsm_name, Topology.DISTANCE: to_bsm_dist, Topology.DELAY: int(cc_delay * MILLISECOND)})
+        clinks.append({Topology.SRC: bsm_name, Topology.DST: left_name, Topology.DISTANCE: to_bsm_dist, Topology.DELAY: int(cc_delay * MILLISECOND)})
+        clinks.append({Topology.SRC: right_name, Topology.DST: bsm_name, Topology.DISTANCE: to_bsm_dist, Topology.DELAY: int(cc_delay * MILLISECOND)})
+        clinks.append({Topology.SRC: bsm_name, Topology.DST: right_name, Topology.DISTANCE: to_bsm_dist, Topology.DELAY: int(cc_delay * MILLISECOND)})
 
 
     output_dict[Topology.ALL_NODE] = nodes + bsm_nodes
