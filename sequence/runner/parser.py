@@ -1,5 +1,5 @@
 """
-Takes a sequence .yaml file as input and validates it against the schema.
+Parse and validate a simulation configuration file.
 """
 import os
 from importlib.util import find_spec
@@ -8,6 +8,7 @@ from typing import Any, Literal
 
 import typer
 import yaml
+import json
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ..constants import (KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM, FOCK_DENSITY_MATRIX_FORMALISM,
@@ -129,8 +130,14 @@ class Simulation(BaseModel):
 
 
 def load_config(path: str | Path) -> Simulation:
+    path = Path(path)
+    suffix = path.suffix.lower()
+    loaders = {'.yml': yaml.safe_load, '.yaml': yaml.safe_load, '.json': json.load}
+    loader = loaders.get(suffix)
+    if loaders is None:
+        raise ValueError(f'Unsupported config extension: {suffix}')
     with open(path, 'r') as f:
-        raw = yaml.safe_load(f)
+        raw = loader(f)
     if raw is None:
         raise ValueError(f'Config file is empty: {path}')
 
