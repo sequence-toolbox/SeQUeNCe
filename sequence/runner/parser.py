@@ -1,10 +1,14 @@
 """
-Takes a sequence yaml file as input and validates it against the schema
+Takes a sequence .yaml file as input and validates it against the schema.
 """
 from typing import Any, Literal
-
+import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 import os
+from pathlib import Path
+import typer
+
+app = typer.Typer()
 
 
 class Module(BaseModel):
@@ -85,3 +89,21 @@ class Simulation(BaseModel):
     imports: list[str] = []
     configuration: Configuration
     experiment: Experiment
+
+
+def load_config(path: str | Path) -> Simulation:
+    with open(path, 'r') as f:
+        raw = yaml.safe_load(f)
+    if raw is None:
+        raise ValueError(f'Config file is empty: {path}')
+
+    return Simulation(**raw)
+
+@app.command()
+def validate(path: str):
+    schema = load_config(path)
+    typer.echo(schema)
+
+
+if __name__ == '__main__':
+    app()
