@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0] - 2026-3-02
 ### Added
+- Create schema for the simulation runner using Pydantic. Include CLI and api versions
 - Add a module to convert an arbitrary graph object to sequence configurations for QuantumRouter with MIM BSM
 - Add FatTree topology and BCube topology 
 - Added the `routing` module: a new parent class `RoutingProtocol` for the subclasses `StaticRoutingProtocol` and `DistributedRoutingProtocol`. The register decorator is used to make it easy to plug in new routing protocols in the future.
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Introducing `EARLY_EXPIRE` message type. A request has a `start_time` and `end_time`. When a request is finished before the `end_time`, then the reservation (and the associated rules) should expire early. If not, the quantum network will keep generating entanglement pairs because the rules still exist.
 
 ### Changed
+- Added all built-ins to `constants.py`
 - Using typer for CLI, creates a unified interface for topology generation. Allow for custom graph objects in CLI.
 - Moved all old topologies to NetworkX graph objects
 - Docstring, comment, logging, and various cosmetic updates.
