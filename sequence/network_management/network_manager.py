@@ -18,7 +18,8 @@ from ..utils import log
 from .forwarding import ForwardingProtocol
 from .memory_timecard import MemoryTimeCard
 from .reservation import Reservation
-from .routing import RoutingProtocol, ROUTING_STATIC
+from .routing import RoutingProtocol
+from ..constants import ROUTING_STATIC, NM_DISTRIBUTED
 from .rsvp import RSVPMessage, RSVPMsgType, RSVPProtocol
 
 
@@ -56,7 +57,7 @@ class NetworkManager(ABC):
                                           each timecard is associated with a memory in the memory array.
     """
     _registry: dict[str, type['NetworkManager']] = {}
-    _global_type: str = 'distributed'
+    _global_type: str = NM_DISTRIBUTED
 
     def __init__(self, owner: QuantumRouter, memory_array_name: str, **kwargs):
         if kwargs:
@@ -132,7 +133,7 @@ class NetworkManager(ABC):
         self.owner.resource_manager.generate_load_rules(reservation.path, reservation, self.timecards, self.memory_array_name)
 
 
-@NetworkManager.register('distributed')
+@NetworkManager.register(NM_DISTRIBUTED)
 class DistributedNetworkManager(NetworkManager):
     """The default Network Manager implementation.
 

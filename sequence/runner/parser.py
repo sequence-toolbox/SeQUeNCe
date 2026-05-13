@@ -1,12 +1,18 @@
 """
 Takes a sequence .yaml file as input and validates it against the schema.
 """
+import os
+from importlib.util import find_spec
+from pathlib import Path
 from typing import Any, Literal
+
+import typer
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-import os
-from pathlib import Path
-import typer
+
+from ..constants import (KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM, FOCK_DENSITY_MATRIX_FORMALISM,
+                         BELL_DIAGONAL_STATE_FORMALISM, BARRET_KOK, SINGLE_HERALDED, BBPSSW, NM_DISTRIBUTED,
+                         ROUTING_STATIC, ROUTING_DISTRIBUTED, REQUEST_APP, TELEPORT_APP)
 
 app = typer.Typer()
 
@@ -36,7 +42,6 @@ class Configuration(BaseModel):
     generation_protocol: Module
     purification_protocol: Module
     network_manager: Module
-    resource_manager: Module
     routing_protocol: Module
     application: Module
     stop_time: float = Field(gt=0)
@@ -90,6 +95,38 @@ class Simulation(BaseModel):
     configuration: Configuration
     experiment: Experiment
 
+    @model_validator(mode='after')
+    def check_imports_exist(self):
+        for name in self.imports:
+            if find_spec(name) is None:
+                raise ValueError(
+                    f"Import '{name}' is not findable on sys.path"
+                )
+        return self
+
+    @model_validator(mode='after')
+    def check_module_names(self):
+        user_imports = set(self.imports)
+        slots = [
+            ('formalism', self.configuration.formalism.name, {KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM,
+                                                              FOCK_DENSITY_MATRIX_FORMALISM,
+                                                              BELL_DIAGONAL_STATE_FORMALISM}),
+            ('generation_protocol', self.configuration.generation_protocol.name, {BARRET_KOK, SINGLE_HERALDED}),
+            ('purification_protocol', self.configuration.purification_protocol.name, {BBPSSW}),
+            ('network_manager', self.configuration.network_manager.name, {NM_DISTRIBUTED}),
+            ('routing_protocol', self.configuration.routing_protocol.name, {ROUTING_STATIC, ROUTING_DISTRIBUTED}),
+            ('application', self.configuration.application.name, {REQUEST_APP, TELEPORT_APP}),
+        ]
+
+        for field, name, builtins in slots:
+            if name not in builtins and name not in user_imports:
+                raise ValueError(
+                    f'{field} references {name} that is not a SeQUeNCe builtin and is not in config imports')
+        for module in self.configuration.custom_modules:
+            if module.name not in user_imports:
+                raise ValueError(f'Custom module entry is not in config imports: {module.name}')
+        return self
+
 
 def load_config(path: str | Path) -> Simulation:
     with open(path, 'r') as f:
@@ -99,10 +136,11 @@ def load_config(path: str | Path) -> Simulation:
 
     return Simulation(**raw)
 
+
 @app.command()
 def validate(path: str):
     schema = load_config(path)
-    typer.echo(schema)
+    typer.echo(schema.model_dump_json(indent=2))
 
 
 if __name__ == '__main__':
