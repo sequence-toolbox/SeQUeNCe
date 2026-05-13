@@ -20,8 +20,8 @@ app = typer.Typer()
 
 class Module(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    name: str
-    kwargs: dict[str, Any] = {}
+    name: str = Field(description="Registered module name or user-supplied import name")
+    kwargs: dict[str, Any] = Field(default_factory=dict, description="Module-specific configuration")
 
 
 class Logging(BaseModel):
@@ -130,6 +130,14 @@ class Simulation(BaseModel):
 
 
 def load_config(path: str | Path) -> Simulation:
+    """
+    Takes the config file (.yml, .yaml, .json) as input and returns a validated Simulation() object.
+    Args:
+        path: str or pathlib.Path object of the configuration file.
+
+    Returns: Validated Simulation object
+
+    """
     path = Path(path)
     suffix = path.suffix.lower()
     loaders = {'.yml': yaml.safe_load, '.yaml': yaml.safe_load, '.json': json.load}
@@ -146,6 +154,7 @@ def load_config(path: str | Path) -> Simulation:
 
 @app.command()
 def validate(path: str):
+    """Validate a SeQUeNCe experiment config file."""
     schema = load_config(path)
     typer.echo(schema.model_dump_json(indent=2))
 
