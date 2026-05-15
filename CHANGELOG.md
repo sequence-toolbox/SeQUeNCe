@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0] - 2026-3-02
 ### Added
-- Create schema for the simulation runner using Pydantic. Include CLI and api versions
+- Create schema for the simulation runner using Pydantic. Include CLI and API versions.
 - Add a module to convert an arbitrary graph object to sequence configurations for QuantumRouter with MIM BSM
 - Add FatTree topology and BCube topology 
 - Added the `routing` module: a new parent class `RoutingProtocol` for the subclasses `StaticRoutingProtocol` and `DistributedRoutingProtocol`. The register decorator is used to make it easy to plug in new routing protocols in the future.
