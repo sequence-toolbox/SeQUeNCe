@@ -67,6 +67,6 @@ NM_DISTRIBUTED: Final = 'distributed'
 ROUTING_STATIC: Final = 'routing_static'
 ROUTING_DISTRIBUTED: Final = 'routing_distributed'
 
-#: Build-in Applications
+#: Built-in Applications
 REQUEST_APP: Final = 'request_app'
 TELEPORT_APP: Final = 'teleport_app'

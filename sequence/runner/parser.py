@@ -9,7 +9,7 @@ from typing import Any, Literal
 import typer
 import yaml
 import json
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator, PositiveInt, PositiveFloat
 
 from ..constants import (KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM, FOCK_DENSITY_MATRIX_FORMALISM,
                          BELL_DIAGONAL_STATE_FORMALISM, BARRET_KOK, SINGLE_HERALDED, BBPSSW, NM_DISTRIBUTED,
@@ -52,7 +52,7 @@ class Configuration(BaseModel):
 
 class Repetitions(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    reps: int
+    reps: PositiveInt
     seed: Literal['random'] | list[int] = 'random'
 
     @model_validator(mode='after')
@@ -65,18 +65,23 @@ class Repetitions(BaseModel):
 class StochasticPattern(BaseModel):
     model_config = ConfigDict(extra='forbid')
     type: Literal['stochastic']
-    maximum_duration: int
-    pairs: int
+    maximum_duration: PositiveInt
+    pairs: PositiveInt
     distribution: Literal['poisson', 'bernoulli']
-    rate: float
+    rate: PositiveFloat # Poisson rate (lambda), Bernoulli prob (p)
 
+    @model_validator(mode='after')
+    def check_rate(self):
+        if self.distribution == 'bernoulli' and self.rate > 1:
+            raise ValueError('Bernoulli rate must be in (0,1]')
+        return self
 
 class ManualPattern(BaseModel):
     model_config = ConfigDict(extra='forbid')
     type: Literal['manual']
-    maximum_duration: int
-    pairs: int
-    connections: list[tuple[str, str, float]]
+    maximum_duration: PositiveInt
+    pairs: PositiveInt
+    connections: list[tuple[str, str, PositiveFloat]] # src, dst, rate
 
 
 TrafficPattern = StochasticPattern | ManualPattern
@@ -84,7 +89,7 @@ TrafficPattern = StochasticPattern | ManualPattern
 
 class Experiment(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    cores: int = Field(default_factory=lambda: os.cpu_count() or 1)
+    cores: PositiveInt = Field(default_factory=lambda: os.cpu_count() or 1)
     repetitions: Repetitions
     topologies: list[str]
     traffic_pattern: TrafficPattern | None = Field(default=None, discriminator='type')
@@ -142,7 +147,7 @@ def load_config(path: str | Path) -> Simulation:
     suffix = path.suffix.lower()
     loaders = {'.yml': yaml.safe_load, '.yaml': yaml.safe_load, '.json': json.load}
     loader = loaders.get(suffix)
-    if loaders is None:
+    if loader is None:
         raise ValueError(f'Unsupported config extension: {suffix}')
     with open(path, 'r') as f:
         raw = loader(f)
