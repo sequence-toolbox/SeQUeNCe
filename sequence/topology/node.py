@@ -5,6 +5,7 @@ All node types inherit from the base Node type, which inherits from Entity.
 Node types can be used to collect all the necessary hardware and software for a network usage scenario.
 """
 from __future__ import annotations
+from sequence.constants import BARRET_KOK, KET_VECTOR_FORMALISM
 
 from math import inf
 from typing import TYPE_CHECKING, Any
@@ -72,6 +73,12 @@ class Node(Entity):
         self.generator = np.random.default_rng(seed)
         self.components = {}
         self.first_component_name = None
+        
+        self.eg_protocol_a: str = BARRET_KOK
+        self.eg_protocol_b: str = BARRET_KOK
+        self.es_formalism_a: str = KET_VECTOR_FORMALISM
+        self.es_formalism_b: str = KET_VECTOR_FORMALISM
+        self.ep_formalism: str = KET_VECTOR_FORMALISM
 
         # note that we are assuming homogeneous gates and measurements,
         # i.e. every gate on one specific node has identical fidelity, and so is measurement.

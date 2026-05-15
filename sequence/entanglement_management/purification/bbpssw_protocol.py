@@ -43,7 +43,6 @@ class BBPSSWMessage(Message):
 
 class BBPSSWProtocol(EntanglementProtocol, ABC):
     _registry: dict[str, type['BBPSSWProtocol']] = {}
-    _global_formalism: str = KET_VECTOR_FORMALISM
 
     def __init__(self, owner: Node, name: str, kept_memo: Memory, meas_memo: Memory, **kwargs):
         """Constructor for purification protocol.
@@ -65,27 +64,6 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         self.meas_res = None
         if self.meas_memo is None:
             self.memories.pop()
-
-    @classmethod
-    def get_formalism(cls) -> str:
-        """Get the global formalism used by BBPSSW protocols.
-
-        Returns:
-            The global formalism used by BBPSSW protocols.
-        """
-        return cls._global_formalism
-
-    @classmethod
-    def set_formalism(cls, formalism: str) -> None:
-        """Set the global formalism used by BBPSSW protocols.
-
-        Valid Built-formalisms:
-            1. Bell Diagonal -> bds
-            2. Circuit -> circuit (DEFAULT)
-        """
-        if formalism not in cls._registry:
-            raise ValueError(f"Formalism '{formalism}' is not registered.")
-        cls._global_formalism = formalism
 
     @classmethod
     def register(cls, name: str, protocol_class: type['BBPSSWProtocol'] | None = None) -> Callable[[type['BBPSSWProtocol']], type['BBPSSWProtocol']] | None:
@@ -144,7 +122,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         Returns:
             An instance of the requested BBPSSW protocol class.
         """
-        protocol_name: str = BBPSSWProtocol.get_formalism()
+        protocol_name: str = owner.ep_formalism
         try:
             protocol_class = cls._registry[protocol_name]
             return protocol_class(owner, name, kept_memo, meas_memo, **kwargs)
@@ -165,7 +143,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         """Check if the protocol is ready to start."""
         return self.remote_node_name != ''
 
-    def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
+    def set_others(self, remote_protocol: str, remote_node: str, memories: list[str]) -> None:
         """Method to set other entanglement protocol instance
 
         args:
@@ -173,8 +151,8 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
             node (str): Other node name.
             memories (list[str]): The list of memory names used on other node.
         """
-        self.remote_node_name = node
-        self.remote_protocol_name = protocol
+        self.remote_node_name = remote_node
+        self.remote_protocol_name = remote_protocol
         self.remote_memories = memories
 
     @abstractmethod

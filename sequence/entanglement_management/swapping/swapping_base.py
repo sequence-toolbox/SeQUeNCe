@@ -72,7 +72,6 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
         The default formalism is KET_VECTOR_FORMALISM.
     """
     _registry: dict[str, type['EntanglementSwappingA']] = {}
-    _global_formalism: str = KET_VECTOR_FORMALISM
 
     def __init__(self, owner: Node, name: str, left_memo: Memory, right_memo: Memory, success_prob: float = 1):
         """Constructor for Entanglement Swapping A protocol.
@@ -98,26 +97,6 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
         self.is_success = False
         self.left_protocol_name = None
         self.right_protocol_name = None
-
-    @classmethod
-    def set_formalism(cls, formalism: str) -> None:
-        """Set the global formalism for all Entanglement Swapping A protocol instances.
-
-        Args:
-            formalism (str): global formalism for all Entanglement Swapping A protocol instances.
-        """
-        if formalism not in cls._registry:
-            raise ValueError(f"Protocol type {formalism} not found in registry.")
-        cls._global_formalism = formalism
-
-    @classmethod
-    def get_formalism(cls) -> str:
-        """Get the global formalism for all Entanglement Swapping A protocol instances.
-
-        Returns:
-            The global formalism for all Entanglement Swapping A protocol instances.
-        """
-        return cls._global_formalism
 
     @classmethod
     def register(cls, name: str, protocol_class: type['EntanglementSwappingA'] = None
@@ -164,7 +143,7 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
         Returns:
             An instance of the Entanglement Swapping A protocol of the global formalism.
         """
-        protocol_name = EntanglementSwappingA.get_formalism()
+        protocol_name = owner.es_formalism_a
         try:
             protocol_class = cls._registry[protocol_name]
             return protocol_class(owner, name, left_memo, right_memo, success_prob, **kwargs)
@@ -193,20 +172,22 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
         """
         return (self.left_protocol_name is not None) and (self.right_protocol_name is not None)
     
-    def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
+    def set_others(self, remote_protocol: str, remote_node: str, memories: list[str]) -> None:
         """Method to set other entanglement protocol instance.
 
         Args:
+            remote_node:
+            remote_protocol:
             protocol (str): other protocol name.
             node (str): other node name.
             memories (list[str]): the list of memories name used on other node.
         """
-        if node == self.left_memo.entangled_memory["node_id"]:
-            self.left_protocol_name = protocol
-        elif node == self.right_memo.entangled_memory["node_id"]:
-            self.right_protocol_name = protocol
+        if remote_node == self.left_memo.entangled_memory["node_id"]:
+            self.left_protocol_name = remote_protocol
+        elif remote_node == self.right_memo.entangled_memory["node_id"]:
+            self.right_protocol_name = remote_protocol
         else:
-            raise Exception("Cannot pair protocol %s with %s" % (self.name, protocol))
+            raise Exception("Cannot pair protocol %s with %s" % (self.name, remote_protocol))
 
     def success_probability(self) -> float:
         """A simple model for BSM success probability.
@@ -269,7 +250,6 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
         The default formalism is KET_VECTOR_FORMALISM.
     """
     _registry: dict[str, type['EntanglementSwappingB']] = {}
-    _global_formalism: str = KET_VECTOR_FORMALISM
 
     def __init__(self, owner: Node, name: str, hold_memo: Memory):
         """Constructor for entanglement swapping B protocol.
@@ -284,30 +264,6 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
         self.memory = hold_memo
         self.remote_protocol_name = None
         self.remote_node_name = None
-
-    @classmethod
-    def set_formalism(cls, formalism: str) -> None:
-        """Set the global formalism for all Entanglement Swapping B protocol instances.
-        
-        Valid Built-formalisms:
-            1. Bell Diagonal -> bds
-            2. Circuit -> circuit (DEFAULT)
-
-        Args:
-            formalism (str): global formalism for all Entanglement Swapping B protocol instances.
-        """
-        if formalism not in cls._registry:
-            raise ValueError(f"Protocol type {formalism} not found in registry.")
-        cls._global_formalism = formalism
-
-    @classmethod
-    def get_formalism(cls) -> str:
-        """Get the global formalism for all Entanglement Swapping B protocol instances.
-
-        Returns:
-            The global formalism for all Entanglement Swapping B protocol instances.
-        """
-        return cls._global_formalism
 
     @classmethod
     def register(cls, name: str, protocol_class: type['EntanglementSwappingB'] = None
@@ -341,7 +297,7 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
     def create(cls, owner: Node, name: str, hold_memo: Memory, **kwargs) -> 'EntanglementSwappingB':
         """Factory method to create an Entanglement Swapping B protocol instance of the global formalism.
         """
-        protocol_name = EntanglementSwappingB.get_formalism()
+        protocol_name = owner.es_formalism_b
         try:
             protocol_class = cls._registry[protocol_name]
             return protocol_class(owner, name, hold_memo, **kwargs)
@@ -351,7 +307,7 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
     def is_ready(self) -> bool:
         return self.remote_protocol_name is not None
 
-    def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
+    def set_others(self, remote_protocol: str, remote_node: str, memories: list[str]) -> None:
         """Method to set other entanglement protocol instance.
 
         Args:
@@ -359,8 +315,8 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
             node (str): other node name.
             memories (list[str]): the list of memory names used on other node.
         """
-        self.remote_node_name = node
-        self.remote_protocol_name = protocol
+        self.remote_node_name = remote_node
+        self.remote_protocol_name = remote_protocol
 
     def start(self) -> None:
         log.logger.info(f"{self.owner.name} end protocol start with partner {self.remote_node_name}")

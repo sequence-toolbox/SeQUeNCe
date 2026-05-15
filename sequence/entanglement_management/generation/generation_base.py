@@ -51,7 +51,6 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         _qstate_key (int): The key of the quantum states associated with the memory used in the protocol.
     """
     _registry: dict[str, type['EntanglementGenerationA']] = {}
-    _global_type: str = BARRET_KOK
 
     def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs):
         super().__init__(owner, name, BARRET_KOK)
@@ -80,16 +79,6 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         self._qstate_key: int = self.memory.qstate_key
 
     @classmethod
-    def set_global_type(cls, protocol_type: str) -> None:
-        if protocol_type not in cls._registry:
-            raise ValueError(f"Protocol type '{protocol_type}' is not registered.")
-        cls._global_type = protocol_type
-
-    @classmethod
-    def get_global_type(cls) -> str:
-        return cls._global_type
-
-    @classmethod
     def register(cls, name: str, protocol_class: type['EntanglementGenerationA'] = None):
         if protocol_class is not None:
             cls._registry[name] = protocol_class
@@ -103,7 +92,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
 
     @classmethod
     def create(cls, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs) -> 'EntanglementGenerationA':
-        protocol_name = cls.get_global_type()
+        protocol_name = owner.eg_protocol_a
         try:
             protocol_class = cls._registry[protocol_name]
             return protocol_class(owner, name, middle, other, memory, **kwargs)
@@ -119,10 +108,10 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         """List all registered EntanglementGenerationA protocols."""
         return list(cls._registry.keys())
 
-    def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
+    def set_others(self, remote_protocol: str, remote_node: str, memories: list[str]) -> None:
         assert self.remote_protocol_name == '', "Remote protocol name has been set before, cannot set again."
 
-        self.remote_protocol_name = protocol
+        self.remote_protocol_name = remote_protocol
         self.remote_memo_id = memories[0]
         self.primary = self.owner.name > self.remote_node_name
 
@@ -235,7 +224,7 @@ class EntanglementGenerationB(EntanglementProtocol, ABC):
         """Must be implemented in a subclass"""
         raise NotImplementedError
 
-    def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
+    def set_others(self, remote_protocol: str, remote_node: str, memories: list[str]) -> None:
         pass
 
     def start(self) -> None:
