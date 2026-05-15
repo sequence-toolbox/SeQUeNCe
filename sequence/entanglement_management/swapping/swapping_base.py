@@ -100,7 +100,7 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
 
     @classmethod
     def register(cls, name: str, protocol_class: type['EntanglementSwappingA'] = None
-                 ) -> Callable[[type['EntanglementSwappingA']], type['EntanglementSwappingA']] | None:
+                 ) -> Callable[[type['EntanglementSwappingA']], type['EntanglementSwappingA']]:
         """Register a specific type of Entanglement Swapping A protocol.
 
         This method should be used as a decorator to register different types of Entanglement Swapping A protocols.
@@ -149,20 +149,6 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
             return protocol_class(owner, name, left_memo, right_memo, success_prob, **kwargs)
         except KeyError:
             raise ValueError(f"Protocol class '{protocol_name}' is not registered.")
-
-    @classmethod
-    def list_protocols(cls) -> list[str]:
-        """List all registered Entanglement Swapping A protocols.
-
-        Returns:
-            A list of names of all registered Entanglement Swapping A protocols.
-        """
-        return list(cls._registry.keys())
-
-    @classmethod
-    def clear_global_formalism(cls) -> None:
-        """Resets the global formalism to default"""
-        cls._global_formalism = KET_VECTOR_FORMALISM
 
     def is_ready(self) -> bool:
         """Check if the protocol is ready.
@@ -267,7 +253,7 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
 
     @classmethod
     def register(cls, name: str, protocol_class: type['EntanglementSwappingB'] = None
-                 ) -> Callable[[type['EntanglementSwappingB']], type['EntanglementSwappingB']] | None:
+                 ) -> Callable[[type['EntanglementSwappingB']], type['EntanglementSwappingB']]:
         """Register a specific type of Entanglement Swapping B protocol.
 
         This method should be used as a decorator to register different types of Entanglement Swapping B protocols.
