@@ -7,7 +7,7 @@ from collections import Counter
 from importlib.util import find_spec
 from pathlib import Path
 from typing import Annotated, Any, Literal
-
+from ..utils.graphs import TOPOLOGY_BUILDERS
 import typer
 import yaml
 from pydantic import (
@@ -152,7 +152,7 @@ class Simulation(BaseModel):
             except (ImportError, ValueError):
                 spec = None
             if spec is None:
-                raise ValueError(f"Import '{name}' is not findable on sys.path")
+                raise ValueError(f'Import '{name}' is not findable on sys.path')
         return self
 
     @model_validator(mode='after')
@@ -169,15 +169,22 @@ class Simulation(BaseModel):
             ('application', self.configuration.application.name, {REQUEST_APP, TELEPORT_APP}),
         ]
 
+        all_builtins: set[str] = BUILTIN_NAMES | TOPOLOGY_BUILDERS.keys()
+        shadowed: set[str] = user_imports & all_builtins
+        if shadowed:
+            raise ValueError(f'Imports shadow built-in modules: {sorted(shadowed)}')
+        
         for field, name, builtins in slots:
             if name not in builtins and name not in user_imports:
                 raise ValueError(
                     f'{field} references {name} that is not a SeQUeNCe builtin and is not in config imports.')
         for module in self.configuration.custom_modules:
-            if module.name in BUILTIN_NAMES:
-                raise ValueError(f'Custom module {module.name!r} shadows a SeQUeNCe built-in.')
             if module.name not in user_imports:
-                raise ValueError(f'Custom module entry is not in config imports: {module.name}.')
+                raise ValueError(f'Custom module entry is not in config imports: {module.name!r}.')
+        for topology in self.experiment.topologies:
+            if topology not in user_imports and topology not in TOPOLOGY_BUILDERS:
+                raise ValueError(f'Custom topology entry not in config imports and is not a SeQUeNCe built-in: {topology!r}')
+
         return self
 
 
@@ -209,7 +216,6 @@ def check(path: str):
     """Check a SeQUeNCe experiment config file."""
     schema = load_config(path)
     typer.echo(schema.model_dump_json(indent=2))
-
 
 if __name__ == '__main__':
     app()
