@@ -3,8 +3,24 @@ import pytest
 
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
-from sequence.constants import SQRT_HALF, PHI_PLUS, PHI_MINUS, PSI_PLUS, PSI_MINUS
-from sequence.entanglement_management.purification import BBPSSWCircuit, BBPSSWMessage, BBPSSWMsgType, BBPSSWProtocol
+from sequence.constants import (
+    BELL_DIAGONAL_STATE_FORMALISM,
+    DENSITY_MATRIX_FORMALISM,
+    KET_STATE_FORMALISM,
+    PHI_MINUS,
+    PHI_PLUS,
+    PSI_MINUS,
+    PSI_PLUS,
+    SQRT_HALF,
+)
+from sequence.entanglement_management.purification import (
+    BBPSSW_BDS,
+    BBPSSWCircuit,
+    BBPSSWMessage,
+    BBPSSWMsgType,
+    BBPSSWProtocol,
+)
+from sequence.kernel.quantum_manager import QuantumManager
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 
@@ -59,6 +75,46 @@ def test_BBPSSWMessage():
     assert msg.meas_res == 0
     with pytest.raises(Exception):
         BBPSSWMessage("unknown type")
+
+
+def test_BBPSSW_registered_formalisms_and_factory_selection():
+    old_protocol_formalism = BBPSSWProtocol.get_formalism()
+    old_manager_formalism = QuantumManager.get_active_formalism()
+
+    try:
+        registered_formalisms = set(BBPSSWProtocol.list_protocols())
+
+        assert {
+            KET_STATE_FORMALISM,
+            DENSITY_MATRIX_FORMALISM,
+            BELL_DIAGONAL_STATE_FORMALISM,
+        }.issubset(registered_formalisms)
+
+        for formalism in [KET_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM]:
+            QuantumManager.set_global_manager_formalism(formalism)
+            BBPSSWProtocol.set_formalism(formalism)
+            tl = Timeline()
+            node = FakeNode("a1", tl)
+            kept = Memory("kept", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
+            measured = Memory("measured", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
+
+            protocol = BBPSSWProtocol.create(node, "a1.ep1", kept, measured)
+
+            assert isinstance(protocol, BBPSSWCircuit)
+
+        QuantumManager.set_global_manager_formalism(BELL_DIAGONAL_STATE_FORMALISM)
+        BBPSSWProtocol.set_formalism(BELL_DIAGONAL_STATE_FORMALISM)
+        tl = Timeline()
+        node = FakeNode("a1", tl)
+        kept = Memory("kept", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
+        measured = Memory("measured", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
+
+        protocol = BBPSSWProtocol.create(node, "a1.ep1", kept, measured)
+
+        assert isinstance(protocol, BBPSSW_BDS)
+    finally:
+        BBPSSWProtocol.set_formalism(old_protocol_formalism)
+        QuantumManager.set_global_manager_formalism(old_manager_formalism)
 
 
 def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline, Memory, Memory, Memory, Memory, BBPSSWProtocol, BBPSSWProtocol]:

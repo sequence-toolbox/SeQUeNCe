@@ -1,11 +1,22 @@
 import numpy as np
+import pytest
 
-from sequence.constants import BARRET_KOK
+from sequence.constants import BARRET_KOK, BELL_DIAGONAL_STATE_FORMALISM, KET_STATE_FORMALISM, SINGLE_HERALDED
 from sequence.components.bsm import *
 from sequence.components.memory import MemoryArray
 from sequence.components.optical_channel import *
 from sequence.kernel.timeline import Timeline
-from sequence.entanglement_management.generation import EntanglementGenerationA, EntanglementGenerationB, EntanglementGenerationMessage, GenerationMsgType
+from sequence.kernel.quantum_manager import QuantumManager
+from sequence.entanglement_management.generation import (
+    BarretKokA,
+    BarretKokB,
+    EntanglementGenerationA,
+    EntanglementGenerationB,
+    EntanglementGenerationMessage,
+    GenerationMsgType,
+    SingleHeraldedA,
+    SingleHeraldedB,
+)
 
 from sequence.topology.node import Node
 
@@ -51,6 +62,72 @@ def test_generation_message():
     assert msg.receiver == "alice"
     assert msg.msg_type == GenerationMsgType.NEGOTIATE
     assert msg.qc_delay == 1
+
+
+def test_generation_protocol_registry_and_factory_selection():
+    old_formalism = QuantumManager.get_active_formalism()
+
+    try:
+        protocols_a = set(EntanglementGenerationA.list_protocols())
+        protocols_b = set(EntanglementGenerationB.list_protocols())
+
+        assert {BARRET_KOK, SINGLE_HERALDED}.issubset(protocols_a)
+        assert {BARRET_KOK, SINGLE_HERALDED}.issubset(protocols_b)
+
+        QuantumManager.set_global_manager_formalism(KET_STATE_FORMALISM)
+        EntanglementGenerationA.set_global_type(BARRET_KOK)
+        EntanglementGenerationB.set_global_type(BARRET_KOK)
+        tl = Timeline()
+        router = Node("e0", tl)
+        router.memory_array = MemoryArray("e0.memory_array", tl, num_memories=1)
+        bsm_node = FakeBSMNode("m0", tl)
+
+        protocol_a = EntanglementGenerationA.create(
+            router, "eg_e0", middle="m0", other="e1", memory=router.memory_array[0]
+        )
+        protocol_b = EntanglementGenerationB.create(bsm_node, "eg_m0", others=["e0", "e1"])
+
+        assert isinstance(protocol_a, BarretKokA)
+        assert isinstance(protocol_b, BarretKokB)
+
+        QuantumManager.set_global_manager_formalism(BELL_DIAGONAL_STATE_FORMALISM)
+        EntanglementGenerationA.set_global_type(SINGLE_HERALDED)
+        EntanglementGenerationB.set_global_type(SINGLE_HERALDED)
+        tl = Timeline()
+        router = Node("e0", tl)
+        router.memory_array = MemoryArray("e0.memory_array", tl, num_memories=1)
+        bsm_node = FakeBSMNode("m0", tl)
+
+        protocol_a = EntanglementGenerationA.create(
+            router, "eg_e0", middle="m0", other="e1", memory=router.memory_array[0]
+        )
+        protocol_b = EntanglementGenerationB.create(bsm_node, "eg_m0", others=["e0", "e1"])
+
+        assert isinstance(protocol_a, SingleHeraldedA)
+        assert isinstance(protocol_b, SingleHeraldedB)
+    finally:
+        EntanglementGenerationA.set_global_type(BARRET_KOK)
+        EntanglementGenerationB.set_global_type(BARRET_KOK)
+        QuantumManager.set_global_manager_formalism(old_formalism)
+
+
+def test_single_heralded_generation_requires_bell_diagonal_formalism():
+    old_formalism = QuantumManager.get_active_formalism()
+
+    try:
+        QuantumManager.set_global_manager_formalism(KET_STATE_FORMALISM)
+        EntanglementGenerationA.set_global_type(SINGLE_HERALDED)
+        tl = Timeline()
+        router = Node("e0", tl)
+        router.memory_array = MemoryArray("e0.memory_array", tl, num_memories=1)
+
+        with pytest.raises(AssertionError, match="supports Bell diagonal state formalism"):
+            EntanglementGenerationA.create(
+                router, "eg_e0", middle="m0", other="e1", memory=router.memory_array[0]
+            )
+    finally:
+        EntanglementGenerationA.set_global_type(BARRET_KOK)
+        QuantumManager.set_global_manager_formalism(old_formalism)
 
 
 def test_generation_receive_message():
