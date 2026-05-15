@@ -4,31 +4,35 @@ Parse and validate a simulation configuration file.
 import os
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, Annotated
 
 import typer
 import yaml
 import json
-from pydantic import BaseModel, ConfigDict, Field, model_validator, PositiveInt, PositiveFloat
+from pydantic import BaseModel, ConfigDict, Field, model_validator, PositiveInt, PositiveFloat, NonNegativeInt
 
 from ..constants import (KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM, FOCK_DENSITY_MATRIX_FORMALISM,
-                         BELL_DIAGONAL_STATE_FORMALISM, BARRET_KOK, SINGLE_HERALDED, BBPSSW, NM_DISTRIBUTED,
+                         BELL_DIAGONAL_STATE_FORMALISM, BARRETT_KOK, SINGLE_HERALDED, BBPSSW, NM_DISTRIBUTED,
                          ROUTING_STATIC, ROUTING_DISTRIBUTED, REQUEST_APP, TELEPORT_APP)
+
+BUILTIN_NAMES: set[str] = {KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM, FOCK_DENSITY_MATRIX_FORMALISM,
+                         BELL_DIAGONAL_STATE_FORMALISM, BARRETT_KOK, SINGLE_HERALDED, BBPSSW, NM_DISTRIBUTED,
+                         ROUTING_STATIC, ROUTING_DISTRIBUTED, REQUEST_APP, TELEPORT_APP}
 
 app = typer.Typer()
 
 
 class Module(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    name: str = Field(description="Registered module name or user-supplied import name")
-    kwargs: dict[str, Any] = Field(default_factory=dict, description="Module-specific configuration")
+    name: str = Field(description='Registered module name or user-supplied import name')
+    kwargs: dict[str, Any] = Field(default_factory=dict, description='Module-specific configuration')
 
 
 class Logging(BaseModel):
     model_config = ConfigDict(extra='forbid')
     enabled: bool
     level: Literal['INFO', 'DEBUG', 'WARNING', 'ERROR', 'CRITICAL'] = 'INFO'
-    modules: list[str] = []
+    modules: list[str] = Field(default_factory=list, description='Modules to be logged')
 
     @model_validator(mode='after')
     def check_modules_when_enabled(self):
@@ -47,13 +51,13 @@ class Configuration(BaseModel):
     application: Module
     stop_time: float = Field(gt=0)
     logging: Logging | None = Field(default=None)
-    custom_modules: list[Module] = []
+    custom_modules: list[Module] = Field(default_factory=list, description='Custom modules to be used. Must appear in imports.')
 
 
 class Repetitions(BaseModel):
     model_config = ConfigDict(extra='forbid')
     reps: PositiveInt
-    seed: Literal['random'] | list[int] = 'random'
+    seed: Literal['random'] | list[NonNegativeInt] = 'random'
 
     @model_validator(mode='after')
     def check_seed_length(self):
@@ -84,30 +88,28 @@ class ManualPattern(BaseModel):
     connections: list[tuple[str, str, PositiveFloat]] # src, dst, rate
 
 
-TrafficPattern = StochasticPattern | ManualPattern
-
-
 class Experiment(BaseModel):
     model_config = ConfigDict(extra='forbid')
     cores: PositiveInt = Field(default_factory=lambda: os.cpu_count() or 1)
     repetitions: Repetitions
     topologies: list[str]
-    traffic_pattern: TrafficPattern | None = Field(default=None, discriminator='type')
-
+    traffic_pattern: Annotated[StochasticPattern | ManualPattern, Field(discriminator="type")]
 
 class Simulation(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    imports: list[str] = []
+    imports: list[str] = Field(default_factory=list)
     configuration: Configuration
     experiment: Experiment
 
     @model_validator(mode='after')
     def check_imports_exist(self):
         for name in self.imports:
-            if find_spec(name) is None:
-                raise ValueError(
-                    f"Import '{name}' is not findable on sys.path"
-                )
+            try:
+                spec = find_spec(name)
+            except (ImportError, ValueError):
+                spec = None
+            if spec is None:
+                raise ValueError(f"Import '{name}' is not findable on sys.path")
         return self
 
     @model_validator(mode='after')
@@ -117,7 +119,7 @@ class Simulation(BaseModel):
             ('formalism', self.configuration.formalism.name, {KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM,
                                                               FOCK_DENSITY_MATRIX_FORMALISM,
                                                               BELL_DIAGONAL_STATE_FORMALISM}),
-            ('generation_protocol', self.configuration.generation_protocol.name, {BARRET_KOK, SINGLE_HERALDED}),
+            ('generation_protocol', self.configuration.generation_protocol.name, {BARRETT_KOK, SINGLE_HERALDED}),
             ('purification_protocol', self.configuration.purification_protocol.name, {BBPSSW}),
             ('network_manager', self.configuration.network_manager.name, {NM_DISTRIBUTED}),
             ('routing_protocol', self.configuration.routing_protocol.name, {ROUTING_STATIC, ROUTING_DISTRIBUTED}),
@@ -127,10 +129,12 @@ class Simulation(BaseModel):
         for field, name, builtins in slots:
             if name not in builtins and name not in user_imports:
                 raise ValueError(
-                    f'{field} references {name} that is not a SeQUeNCe builtin and is not in config imports')
+                    f'{field} references {name} that is not a SeQUeNCe builtin and is not in config imports.')
         for module in self.configuration.custom_modules:
+            if module.name in BUILTIN_NAMES:
+                raise ValueError(f'Custom module {module.name!r} shadows a SeQUeNCe built-in.')
             if module.name not in user_imports:
-                raise ValueError(f'Custom module entry is not in config imports: {module.name}')
+                raise ValueError(f'Custom module entry is not in config imports: {module.name}.')
         return self
 
 
