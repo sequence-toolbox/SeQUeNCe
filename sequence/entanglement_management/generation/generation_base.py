@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 from .generation_message import EntanglementGenerationMessage, GenerationMsgType
 from ...resource_management.memory_manager import MemoryInfo
-from ...constants import BARRET_KOK
+from ...constants import BARRETT_KOK
 
 if TYPE_CHECKING:
     from ...components.memory import Memory
@@ -51,10 +51,10 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         _qstate_key (int): The key of the quantum states associated with the memory used in the protocol.
     """
     _registry: dict[str, type['EntanglementGenerationA']] = {}
-    _global_type: str = BARRET_KOK
+    _global_type: str = BARRETT_KOK
 
     def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs):
-        super().__init__(owner, name, BARRET_KOK)
+        super().__init__(owner, name, BARRETT_KOK)
         self.middle: str = middle
         self.remote_node_name: str = other
         self.remote_protocol_name: str = ''
@@ -112,7 +112,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
 
     @classmethod
     def clear_global(cls):
-        cls._global_type = BARRET_KOK
+        cls._global_type = BARRETT_KOK
 
     @classmethod
     def list_protocols(cls) -> list[str]:
@@ -187,11 +187,11 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
 
 class EntanglementGenerationB(EntanglementProtocol, ABC):
     _registry: dict[str, type['EntanglementGenerationB']] = {}
-    _global_type: str = BARRET_KOK
+    _global_type: str = BARRETT_KOK
 
     def __init__(self, owner: "BSMNode", name: str, others: list[str], **kwargs) -> None:
         super().__init__(owner, name)
-        self.protocol_type = BARRET_KOK
+        self.protocol_type = BARRETT_KOK
         assert len(others) == 2
         self.others = others
 

@@ -53,7 +53,7 @@ FOCK_DENSITY_MATRIX_FORMALISM: Final = "fock_density"
 BELL_DIAGONAL_STATE_FORMALISM: Final = "bell_diagonal"
 
 #: Built-in Barrett-Kok generation protocol identifier.
-BARRET_KOK: Final = 'barret_kok'
+BARRETT_KOK: Final = 'barret_kok'
 #: Built-in single-heralded generation protocol identifier.
 SINGLE_HERALDED: Final = 'single_heralded'
 
