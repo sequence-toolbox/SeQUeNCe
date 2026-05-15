@@ -1,6 +1,7 @@
 """
 Parse and validate a simulation configuration file.
 """
+from jedi.inference.base_value import Value
 import os
 from importlib.util import find_spec
 from pathlib import Path
