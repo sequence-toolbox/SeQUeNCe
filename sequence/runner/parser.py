@@ -92,7 +92,7 @@ class Experiment(BaseModel):
     model_config = ConfigDict(extra='forbid')
     cores: PositiveInt = Field(default_factory=lambda: os.cpu_count() or 1)
     repetitions: Repetitions
-    topologies: list[str]
+    topologies: list[str] = Field(min_length=1)
     traffic_pattern: Annotated[StochasticPattern | ManualPattern, Field(discriminator="type")]
 
 class Simulation(BaseModel):
@@ -162,8 +162,8 @@ def load_config(path: str | Path) -> Simulation:
 
 
 @app.command()
-def validate(path: str):
-    """Validate a SeQUeNCe experiment config file."""
+def check(path: str):
+    """Check a SeQUeNCe experiment config file."""
     schema = load_config(path)
     typer.echo(schema.model_dump_json(indent=2))
 
