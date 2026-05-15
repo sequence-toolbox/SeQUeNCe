@@ -152,7 +152,7 @@ class Simulation(BaseModel):
             except (ImportError, ValueError):
                 spec = None
             if spec is None:
-                raise ValueError(f'Import '{name}' is not findable on sys.path')
+                raise ValueError(f'Import {name!r} is not findable on sys.path')
         return self
 
     @model_validator(mode='after')
