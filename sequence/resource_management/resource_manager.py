@@ -10,20 +10,6 @@ from enum import Enum, auto
 from typing import TYPE_CHECKING, Optional
 from collections.abc import Callable
 
-from .action_condition_set import (
-    eg_rule_action_await,
-    eg_rule_action_request,
-    eg_rule_condition,
-    ep_rule_action_await,
-    ep_rule_action_request,
-    ep_rule_condition_await,
-    ep_rule_condition_request,
-    es_rule_action_A,
-    es_rule_action_B,
-    es_rule_condition_A,
-    es_rule_condition_B,
-    es_rule_condition_B_end,
-)
 from ..kernel.event import Event
 from ..kernel.process import Process
 
@@ -31,6 +17,7 @@ if TYPE_CHECKING:
     from ..components.memory import Memory
     from ..topology.node import QuantumRouter
 from .rule_manager import Rule, Arguments
+from .rule_generation import DefaultReservationRuleGenerator
 
 from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..message import Message
@@ -141,9 +128,20 @@ class ResourceManager:
         self.memory_manager.set_resource_manager(self)
         self.rule_manager = RuleManager()
         self.rule_manager.set_resource_manager(self)
+        self.rule_generator = DefaultReservationRuleGenerator()
         self.pending_protocols = [] # Protocols that are requesting remote resource
         self.waiting_protocols = [] # Protocols that are waiting request from remote resource
         self.memory_to_protocol_map = {}
+
+    def set_rule_generator(self, rule_generator: DefaultReservationRuleGenerator) -> None:
+        """Set the generator used to create reservation rules.
+
+        Args:
+            rule_generator (DefaultReservationRuleGenerator): generator used to create
+                reservation-based entanglement management rules.
+        """
+
+        self.rule_generator = rule_generator
 
     def generate_load_rules(self, path: list[str], reservation: Reservation, timecards: list[MemoryTimeCard], memory_array_name: str):
         """Generate and load rules for a given reservation.
@@ -154,7 +152,6 @@ class ResourceManager:
             timecards (list[MemoryTimeCard]): timecards involved in the reservation at this node.
             memory_array_name (str): name of memory array component to use for rule conditions and actions at this node.
         """
-        rules = []
         memory_indices = []
         for card in timecards:
             if reservation in card.reservations:
@@ -162,82 +159,13 @@ class ResourceManager:
 
         index: int = path.index(self.owner.name)
 
-        # Create Rules
-        # 1. create rules for entanglement generation
-        if index > 0:
-            condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
-            action_args = {"mid": self.owner.map_to_middle_node[path[index - 1]],
-                           "path": path, "index": index}
-            rule = Rule(10, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
-            rules.append(rule)
-
-        if index < len(path) - 1:
-            if index == 0:
-                condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
-            else:
-                condition_args = {"memory_indices": memory_indices[reservation.memory_size:]}
-
-            action_args = {"mid": self.owner.map_to_middle_node[path[index + 1]],
-                           "path": path, "index": index, "name": self.owner.name, "reservation": reservation}
-            rule = Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
-            rules.append(rule)
-
-        # 2. create rules for entanglement purification
-        if index > 0:
-            condition_args = {"memory_indices": memory_indices[:reservation.memory_size], "reservation": reservation,
-                              "purification_mode": reservation.purification_mode}
-            action_args = {}
-            rule = Rule(10, ep_rule_action_request, ep_rule_condition_request, action_args, condition_args)
-            rules.append(rule)
-
-        if index < len(path) - 1:
-            if index == 0:
-                condition_args = {"memory_indices": memory_indices, "fidelity": reservation.fidelity,
-                                  "purification_mode": reservation.purification_mode}
-            else:
-                condition_args = {"memory_indices": memory_indices[reservation.memory_size:],
-                                  "fidelity": reservation.fidelity,
-                                  "purification_mode": reservation.purification_mode}
-
-            action_args = {}
-            rule = Rule(10, ep_rule_action_await, ep_rule_condition_await, action_args, condition_args)
-            rules.append(rule)
-
-        # 3. create rules for entanglement swapping
-        if index == 0:
-            condition_args = {"memory_indices": memory_indices, "target_remote": path[-1],
-                              "fidelity": reservation.fidelity}
-            action_args = {}
-            rule = Rule(10, es_rule_action_B, es_rule_condition_B_end, action_args, condition_args)
-            rules.append(rule)
-
-        elif index == len(path) - 1:
-            action_args = {}
-            condition_args = {"memory_indices": memory_indices, "target_remote": path[0],
-                              "fidelity": reservation.fidelity}
-            rule = Rule(10, es_rule_action_B, es_rule_condition_B_end, action_args, condition_args)
-            rules.append(rule)
-
-        else:
-            _path = path[:]
-            while _path.index(self.owner.name) % 2 == 0:
-                new_path = []
-                for i, n in enumerate(_path):
-                    if i % 2 == 0 or i == len(_path) - 1:
-                        new_path.append(n)
-                _path = new_path
-            _index = _path.index(self.owner.name)
-            left, right = _path[_index - 1], _path[_index + 1]
-
-            condition_args = {"memory_indices": memory_indices, "left": left, "right": right,
-                              "fidelity": reservation.fidelity}
-            action_args = {}
-            rule = Rule(10, es_rule_action_A, es_rule_condition_A, action_args, condition_args)
-            rules.append(rule)
-
-            action_args = {}
-            rule = Rule(10, es_rule_action_B, es_rule_condition_B, action_args, condition_args)
-            rules.append(rule)
+        rules = self.rule_generator.create_rules(
+            self.owner,
+            path,
+            reservation,
+            memory_indices,
+            index,
+        )
 
         for rule in rules:
             rule.set_reservation(reservation)
