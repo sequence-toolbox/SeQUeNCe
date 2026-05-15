@@ -7,7 +7,7 @@ from collections import Counter
 from importlib.util import find_spec
 from pathlib import Path
 from typing import Annotated, Any, Literal
-from ..utils.graphs import TOPOLOGY_BUILDERS
+
 import typer
 import yaml
 from pydantic import (
@@ -35,6 +35,7 @@ from ..constants import (
     SINGLE_HERALDED,
     TELEPORT_APP,
 )
+from ..utils.graphs import TOPOLOGY_BUILDERS
 
 BUILTIN_NAMES: set[str] = {KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM, FOCK_DENSITY_MATRIX_FORMALISM,
                          BELL_DIAGONAL_STATE_FORMALISM, BARRETT_KOK, SINGLE_HERALDED, BBPSSW, NM_DISTRIBUTED,
