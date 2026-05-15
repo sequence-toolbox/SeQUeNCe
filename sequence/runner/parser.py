@@ -1,19 +1,40 @@
 """
 Parse and validate a simulation configuration file.
 """
+import json
 import os
+from collections import Counter
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Any, Literal, Annotated
+from typing import Annotated, Any, Literal
 
 import typer
 import yaml
-import json
-from pydantic import BaseModel, ConfigDict, Field, model_validator, PositiveInt, PositiveFloat, NonNegativeInt
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    NonNegativeInt,
+    PositiveFloat,
+    PositiveInt,
+    field_validator,
+    model_validator,
+)
 
-from ..constants import (KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM, FOCK_DENSITY_MATRIX_FORMALISM,
-                         BELL_DIAGONAL_STATE_FORMALISM, BARRETT_KOK, SINGLE_HERALDED, BBPSSW, NM_DISTRIBUTED,
-                         ROUTING_STATIC, ROUTING_DISTRIBUTED, REQUEST_APP, TELEPORT_APP)
+from ..constants import (
+    BARRETT_KOK,
+    BBPSSW,
+    BELL_DIAGONAL_STATE_FORMALISM,
+    DENSITY_MATRIX_FORMALISM,
+    FOCK_DENSITY_MATRIX_FORMALISM,
+    KET_VECTOR_FORMALISM,
+    NM_DISTRIBUTED,
+    REQUEST_APP,
+    ROUTING_DISTRIBUTED,
+    ROUTING_STATIC,
+    SINGLE_HERALDED,
+    TELEPORT_APP,
+)
 
 BUILTIN_NAMES: set[str] = {KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM, FOCK_DENSITY_MATRIX_FORMALISM,
                          BELL_DIAGONAL_STATE_FORMALISM, BARRETT_KOK, SINGLE_HERALDED, BBPSSW, NM_DISTRIBUTED,
@@ -21,6 +42,10 @@ BUILTIN_NAMES: set[str] = {KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM, FOCK_
 
 app = typer.Typer()
 
+def check_unique(items: list, label: str) -> None:
+    duplicates = [item for item, count in Counter(items).items() if count > 1]
+    if duplicates:
+        raise ValueError(f'Found duplicate {label}: {duplicates}')
 
 class Module(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -52,6 +77,12 @@ class Configuration(BaseModel):
     stop_time: float = Field(gt=0)
     logging: Logging | None = Field(default=None)
     custom_modules: list[Module] = Field(default_factory=list, description='Custom modules to be used. Must appear in imports.')
+
+    @field_validator('custom_modules', mode='after')
+    @classmethod
+    def is_custom_modules_unique(cls, v: list[Module]) -> list[Module]:
+        check_unique([m.name for m in v], 'custom_modules names')
+        return v
 
 
 class Repetitions(BaseModel):
@@ -95,11 +126,23 @@ class Experiment(BaseModel):
     topologies: list[str] = Field(min_length=1)
     traffic_pattern: Annotated[StochasticPattern | ManualPattern, Field(discriminator="type")]
 
+    @field_validator('topologies', mode='after')
+    @classmethod
+    def is_topologies_unique(cls, v: list[str]) -> list[str]:
+        check_unique(v, 'topologies')
+        return v
+
 class Simulation(BaseModel):
     model_config = ConfigDict(extra='forbid')
     imports: list[str] = Field(default_factory=list)
     configuration: Configuration
     experiment: Experiment
+
+    @field_validator('imports', mode='after')
+    @classmethod
+    def is_imports_unique(cls, v: list[str]) -> list[str]:
+        check_unique(v, 'imports')
+        return v
 
     @model_validator(mode='after')
     def check_imports_exist(self):
@@ -153,7 +196,7 @@ def load_config(path: str | Path) -> Simulation:
     loader = loaders.get(suffix)
     if loader is None:
         raise ValueError(f'Unsupported config extension: {suffix}')
-    with open(path, 'r') as f:
+    with open(path, 'r', encoding='utf-8') as f:
         raw = loader(f)
     if raw is None:
         raise ValueError(f'Config file is empty: {path}')
