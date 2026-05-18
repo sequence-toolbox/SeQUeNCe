@@ -10,7 +10,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ...topology.node import QuantumRouter
 
-from .routing_base import RoutingProtocol, ROUTING_STATIC
+from .routing_base import RoutingProtocol
+from ...constants import ROUTING_STATIC
 from ...message import Message
 
 

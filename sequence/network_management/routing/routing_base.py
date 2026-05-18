@@ -14,12 +14,6 @@ from ...message import Message
 from ...protocol import Protocol
 from ...utils import log
 
-
-# type labels for routing protocols:
-ROUTING_STATIC      = 'routing_static'
-ROUTING_DISTRIBUTED = 'routing_distributed'
-
-
 class RoutingProtocol(Protocol, ABC):
     """Abstract base class for routing protocols.
     """

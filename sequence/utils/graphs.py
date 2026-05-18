@@ -7,6 +7,7 @@ entanglement distribution. Switch nodes are assumed to never be end points.
 from itertools import product
 from math import dist
 import networkx as nx
+from collections.abc import Callable
 
 def build_caveman(cliques: int, size: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:
     """
@@ -254,3 +255,15 @@ def build_k_n(k: int, n: int, length: float=10.0, attenuation: float=0.0002) -> 
     assert G.number_of_edges() == n * k**n
 
     return G
+
+TOPOLOGY_BUILDERS: dict[str, Callable[..., nx.Graph]] = {'caveman': build_caveman, 'grid': build_grid,
+                                                         'star': build_star, 'linear': build_linear, 'mesh': build_mesh,
+                                                         'ring': build_ring, 'waxman': build_waxman, 'tree': build_tree,
+                                                         'auto_system': build_autonomous_system, 'bcube': build_bcube,
+                                                         'kn_tree': build_k_n}
+
+
+def register_topology(name: str, builder: Callable[..., nx.Graph]) -> None:
+    if name in TOPOLOGY_BUILDERS:
+        raise ValueError(f'Topology {name!r} is already registered')
+    TOPOLOGY_BUILDERS[name] = builder

@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from ...components.bsm import SingleAtomBSM
 
 from ...resource_management.memory_manager import MemoryInfo
-from ...constants import BARRET_KOK
+from ...constants import BARRETT_KOK
 from .generation_base import EntanglementGenerationA, EntanglementGenerationB, QuantumCircuitMixin
 
 from ...kernel.event import Event
@@ -16,7 +16,7 @@ from ...kernel.process import Process
 from ...utils import log
 
 
-@EntanglementGenerationA.register(BARRET_KOK)
+@EntanglementGenerationA.register(BARRETT_KOK)
 class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
     """Entanglement generation protocol for quantum router.
 
@@ -47,7 +47,7 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
             raise ValueError(f"Unexpected keyword arguments: {kwargs}")
 
         super().__init__(owner, name, middle, other, memory)
-        self.protocol_type = BARRET_KOK
+        self.protocol_type = BARRETT_KOK
         self.bsm_res = [-1, -1]
         self.fidelity: float = memory.raw_fidelity
 
@@ -228,7 +228,7 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
         self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
 
 
-@EntanglementGenerationB.register(BARRET_KOK)
+@EntanglementGenerationB.register(BARRETT_KOK)
 class BarretKokB(EntanglementGenerationB):
     """Entanglement generation protocol for BSM node.
 
@@ -250,7 +250,7 @@ class BarretKokB(EntanglementGenerationB):
             others (list[str]): name of protocol instance on end nodes.
         """
         super().__init__(owner, name, others)
-        self.protocol_type = BARRET_KOK
+        self.protocol_type = BARRETT_KOK
 
     def bsm_update(self, bsm: "SingleAtomBSM", info: dict[str, Any]):
         assert info['info_type'] == "BSM_res"

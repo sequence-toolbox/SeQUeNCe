@@ -53,6 +53,20 @@ FOCK_DENSITY_MATRIX_FORMALISM: Final = "fock_density"
 BELL_DIAGONAL_STATE_FORMALISM: Final = "bell_diagonal"
 
 #: Built-in Barrett-Kok generation protocol identifier.
-BARRET_KOK: Final = 'barret_kok'
+BARRETT_KOK: Final = 'barrett_kok'
 #: Built-in single-heralded generation protocol identifier.
 SINGLE_HERALDED: Final = 'single_heralded'
+
+#: Built-in Purification
+BBPSSW: Final = 'bbpssw'
+
+#: Built-in Network Manager
+NM_DISTRIBUTED: Final = 'distributed'
+
+#: Built-in Routing
+ROUTING_STATIC: Final = 'routing_static'
+ROUTING_DISTRIBUTED: Final = 'routing_distributed'
+
+#: Built-in Applications
+REQUEST_APP: Final = 'request_app'
+TELEPORT_APP: Final = 'teleport_app'

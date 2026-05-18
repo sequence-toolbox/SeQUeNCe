@@ -34,6 +34,7 @@ dependencies = [
     "numpy>=2.3.5",
     "pandas>=2.3.3",
     "plotly>=6.5.0",
+    "pydantic>=2.13.4",
     "pytest>=9.0.2",
     "pyyaml>=6.0.3",
     "qutip>=5.2.2",
@@ -46,6 +47,7 @@ dependencies = [
 
 [project.scripts]
 generate-topology = "sequence.utils.config_generator_cli:app"
+check-config = "sequence.runner.parser:app"
 
 [build-system]
 requires = ["uv_build>=0.11.11,<0.12"]

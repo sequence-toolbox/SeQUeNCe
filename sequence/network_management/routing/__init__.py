@@ -1,4 +1,5 @@
-from .routing_base import RoutingProtocol, ROUTING_STATIC, ROUTING_DISTRIBUTED
+from .routing_base import RoutingProtocol
+from ...constants import ROUTING_STATIC, ROUTING_DISTRIBUTED
 from .routing_distributed import DistributedRoutingProtocol
 from .routing_static import StaticRoutingProtocol
 

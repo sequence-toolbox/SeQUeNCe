@@ -1,6 +1,6 @@
 import numpy as np
 
-from sequence.constants import BARRET_KOK
+from sequence.constants import BARRETT_KOK
 from sequence.components.bsm import *
 from sequence.components.memory import MemoryArray
 from sequence.components.optical_channel import *
@@ -46,7 +46,7 @@ class FakeBSMNode(Node):
 
 
 def test_generation_message():
-    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE, "alice", protocol_type=BARRET_KOK, qc_delay=1)
+    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE, "alice", protocol_type=BARRETT_KOK, qc_delay=1)
 
     assert msg.receiver == "alice"
     assert msg.msg_type == GenerationMsgType.NEGOTIATE
@@ -67,7 +67,7 @@ def test_generation_receive_message():
     eg.qc_delay = 1
 
     # negotiate message
-    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG", protocol_type=BARRET_KOK, emit_time=0)
+    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG", protocol_type=BARRETT_KOK, emit_time=0)
     eg.received_message("e2", msg)
     assert eg.expected_time == 1
     assert len(tl.events.data) == 2  # two excites, flip state, end time

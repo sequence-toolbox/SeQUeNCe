@@ -13,8 +13,8 @@ from typing import TYPE_CHECKING, Iterator
 if TYPE_CHECKING:
     from sequence.topology.node import QuantumRouter
 
-from .routing_base import RoutingProtocol, ROUTING_DISTRIBUTED
-from ...constants import EPSILON, SECOND
+from .routing_base import RoutingProtocol
+from ...constants import EPSILON, SECOND, ROUTING_DISTRIBUTED
 from ...kernel.event import Event
 from ...kernel.process import Process
 from ...message import Message
