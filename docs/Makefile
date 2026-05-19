@@ -15,7 +15,7 @@ help:
 	@echo "  apidoc    regenerate reference .rst files from source modules"
 
 apidoc:
-	@python "$(APIDOC_SCRIPT)"
+	@python3 "$(APIDOC_SCRIPT)"
 
 .PHONY: help apidoc Makefile
 
