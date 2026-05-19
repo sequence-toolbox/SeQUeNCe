@@ -308,6 +308,8 @@ class QuantumRouter(Node):
         map_to_middle_node (dict[str, str]): mapping of router names to intermediate bsm node names.
         app (any): application in use on node.
         down (bool): whether the node is down (not operational).
+        swapping_success_prob (float): the success probability of entanglement swapping performed by this node (Default 1).
+        swapping_degradation (float | None): the degradation of entanglement swapping performed by this node (Default None).
     """
 
     def __init__(self, name: str, tl: "Timeline", memo_size: int = 50, seed: int | None = None, component_templates: dict = {}, gate_fid: float = 1, meas_fid: float = 1):
@@ -320,9 +322,9 @@ class QuantumRouter(Node):
             seed (int): the random seed for the random number generator
             component_templates (dict): parameters for the quantum router
             gate_fid (float): fidelity of multi-qubit gates (usually CNOT) that can be performed on the node;
-                Default value is 1, meaning ideal gate.
+                              Default value is 1, meaning ideal gate.
             meas_fid (float): fidelity of single-qubit measurements (usually Z measurement) that can be performed on the node;
-                Default value is 1, meaning ideal measurement.
+                              Default value is 1, meaning ideal measurement.
         """
 
         super().__init__(name, tl, seed, gate_fid, meas_fid)
@@ -340,7 +342,7 @@ class QuantumRouter(Node):
         self.app = None
         self.down = False
         swapping_args = component_templates.get("EntanglementSwapping", {})
-        self.swapping_success_prob = swapping_args.get("swapping_success_prob", None)
+        self.swapping_success_prob = swapping_args.get("swapping_success_prob", 1)
         self.swapping_degradation = swapping_args.get("swapping_degradation", None)
 
 
