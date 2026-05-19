@@ -210,7 +210,7 @@ class Node(Entity):
         Returns:
             Entity | None: The component with the given name, or None if not found.
         """
-        return self.timeline.get_entity_by_name(name)
+        return self.components.get(name, None)
 
     def change_timeline(self, timeline: "Timeline"):
         self.timeline = timeline
@@ -339,6 +339,10 @@ class QuantumRouter(Node):
         self.map_to_middle_node = {}
         self.app = None
         self.down = False
+        swapping_args = component_templates.get("EntanglementSwapping", {})
+        self.swapping_success_prob = swapping_args.get("swapping_success_prob", None)
+        self.swapping_degradation = swapping_args.get("swapping_degradation", None)
+
 
     def receive_message(self, src: str, msg: "Message") -> None:
         """Determine what to do when a message is received, based on the msg.receiver.

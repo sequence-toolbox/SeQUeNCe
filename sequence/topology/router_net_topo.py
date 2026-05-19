@@ -33,11 +33,23 @@ class RouterNetTopo(Topo):
     CONTROLLER = "Controller"
 
     def __init__(self, config_source: str | dict):
+        """
+        Constructor for RouterNetTopo class.
+
+        Args:
+            config_source (str | dict): the name of configuration file or the config dictionary
+        """
         self.bsm_to_router_map = {}
         self.encoding_type = None
         super().__init__(config_source)
 
     def _load(self, config_source: str | dict):
+        """
+        Method for parsing configuration file and generate network
+
+        Args:
+            config_source (str | dict): the name of configuration file or the config dictionary
+        """
         config = super()._load(config_source)
         self._get_templates(config)
         # quantum connections are only supported by sequential simulation so far
@@ -58,7 +70,7 @@ class RouterNetTopo(Topo):
         QuantumManager.set_global_manager_formalism(formalism)
         self.tl = Timeline(stop_time=stop_time, truncation=truncation)
 
-    def _map_bsm_routers(self, config):
+    def _map_bsm_routers(self, config: dict):
         for qc in config[Topo.ALL_Q_CHANNEL]:
             src, dst = qc[Topo.SRC], qc[Topo.DST]
             if dst in self.bsm_to_router_map:
