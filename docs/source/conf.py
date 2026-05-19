@@ -36,7 +36,8 @@ extensions = [
         'sphinx.ext.autodoc',
         'sphinx.ext.coverage',
         'sphinx.ext.napoleon',
-        'recommonmark'
+        'recommonmark',
+        "sphinx_rtd_dark_mode"
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -59,3 +60,4 @@ source_suffix = {
 # a list of builtin themes.
 #
 html_theme = 'sphinx_rtd_theme'
+default_dark_mode = False

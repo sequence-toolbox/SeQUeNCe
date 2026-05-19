@@ -1,3 +1,4 @@
 recommonmark
+sphinx-rtd-dark-mode
 sphinx-rtd-theme
 sequence
