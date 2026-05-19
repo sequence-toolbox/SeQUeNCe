@@ -94,6 +94,3 @@ def test_router_net_topo_config():
             assert memory.efficiency == 0.6
             assert memory.coherence_time == 2
             assert memory.decoherence_errors == pytest.approx([1/3, 1/3, 1/3], abs=EPSILON)
-
-
-test_router_net_topo_config()
