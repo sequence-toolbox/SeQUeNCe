@@ -86,7 +86,7 @@ def test_router_net_topo_config():
         routing_protocol = node.network_manager.get_routing_protocol()
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
         assert node.swapping_success_prob == 0.99
-        assert node.swapping_degradation == 0.99
+        assert node.swapping_degradation is None
         memory_array = node.get_component_by_name(node.memo_arr_name)
         assert len(memory_array) == 5
         for memory in memory_array.memories:
