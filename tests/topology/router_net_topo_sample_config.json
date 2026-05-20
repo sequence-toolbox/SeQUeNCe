@@ -13,8 +13,7 @@
         ]
       },
       "EntanglementSwapping": {
-        "swapping_success_prob": 0.99,
-        "swapping_degradation": 0.99
+        "swapping_success_prob": 0.99
       }
     },
     "bsm_template": {
