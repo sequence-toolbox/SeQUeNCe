@@ -1,0 +1,108 @@
+/* Dark mode colors - class-based toggle */
+html.dark-mode body,
+html.dark-mode .wy-nav-side,
+html.dark-mode .wy-nav-content,
+html.dark-mode .rst-content,
+html.dark-mode .wy-side-scroll,
+html.dark-mode .wy-sidebar-contents,
+html.dark-mode .wy-side-nav-search,
+html.dark-mode .footer,
+html.dark-mode .wy-breadcrumbs,
+html.dark-mode .wy-table-responsive table,
+html.dark-mode .highlight,
+html.dark-mode .highlight pre,
+html.dark-mode .sd-content-wide {
+  background-color: #0b1120 !important;
+  color: #c9d1d9 !important;
+}
+
+html.dark-mode .wy-side-nav-search input,
+html.dark-mode .wy-side-nav-search input:focus,
+html.dark-mode .wy-side-nav-search input:hover,
+html.dark-mode .rst-content blockquote,
+html.dark-mode .rst-content thead,
+html.dark-mode .wy-menu-vertical a:hover,
+html.dark-mode .wy-menu-vertical a.current {
+  background-color: #111827 !important;
+  color: #c9d1d9 !important;
+}
+
+html.dark-mode .wy-side-nav-search input {
+  border-color: #394254 !important;
+}
+
+html.dark-mode a,
+html.dark-mode .wy-menu-vertical a,
+html.dark-mode .rst-content a {
+  color: #58a6ff !important;
+}
+
+html.dark-mode .rst-content code,
+html.dark-mode .rst-content tt,
+html.dark-mode .rst-content pre,
+html.dark-mode .highlight code,
+html.dark-mode .highlight pre {
+  background-color: #010409 !important;
+  color: #c9d1d9 !important;
+}
+
+html.dark-mode .rst-content table,
+html.dark-mode .wy-table-responsive table {
+  border-color: #30363d !important;
+}
+
+html.dark-mode .wy-menu-vertical a,
+html.dark-mode .wy-menu-vertical a:hover,
+html.dark-mode .wy-menu-vertical a.current,
+html.dark-mode .wy-nav-side,
+html.dark-mode .wy-nav-content,
+html.dark-mode .rst-content,
+html.dark-mode .footer {
+  border-color: #21262d !important;
+}
+
+html.dark-mode .rst-content blockquote {
+  border-left-color: #58a6ff !important;
+  color: #c9d1d9 !important;
+}
+
+html.dark-mode .wy-breadcrumbs,
+html.dark-mode .wy-side-nav-search,
+html.dark-mode .wy-footer {
+  background-color: #0b1120 !important;
+}
+
+html.dark-mode .navbar,
+html.dark-mode .rst-content .section,
+html.dark-mode .wy-nav-side,
+html.dark-mode .wy-side-nav-search {
+  background-color: #0b1120 !important;
+}
+
+/* Dark mode toggle button */
+.dark-mode-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  color: #333;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.dark-mode-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+html.dark-mode .dark-mode-toggle {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
