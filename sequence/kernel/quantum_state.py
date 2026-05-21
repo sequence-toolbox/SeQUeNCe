@@ -361,11 +361,12 @@ class FreeQuantumState(State):
         possible_results = arange(0, basis_dimension, 1)
         # result gives index of the basis vector that will be projected to
         res = rng.choice(possible_results, p=probabilities)
-        # project to new state, then reassign quantum state and entangled photons
-        new_state = new_states[res]
-        for state in entangled_list:
-            state.quantum_state = new_state
-            state.entangled_photons = entangled_list
+        # project to new state, then reassign quantum state and entangled list
+        new_state = tuple(new_states[res])
+        for qs in entangled_list:
+            if qs is not None:
+                qs.state = new_state
+                qs.entangled_states = entangled_list
 
         return res
 
