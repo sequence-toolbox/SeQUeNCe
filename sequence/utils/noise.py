@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 from sequence.components.circuit import Circuit
 from typing import List
@@ -144,8 +145,9 @@ class Noise:
         positions = [keys.index(q) for q in qubits]
 
         # build list of non-identity Pauli operators lifted to full space
+        # one Pauli index per target qubit (4^k combinations, identity excluded)
         pauli_ops: list[np.ndarray] = []
-        idx_tuples = [(i, j) for i in range(4) for j in range(4)]
+        idx_tuples = itertools.product(range(4), repeat=k)
         for idx_tuple in idx_tuples:
             if all(i == 0 for i in idx_tuple):
                 continue  # skip identity
