@@ -371,7 +371,7 @@ class QSDetectorFockDirect(QSDetector):
         series_elem_list = [((-1) ** i) * fractional_matrix_power(create1, i + 1).dot(
             fractional_matrix_power(destroy1, i + 1)) / factorial(i + 1) for i in range(truncation)]
         povm1_1 = sum(series_elem_list)
-        povm1_0 = eye(truncation + 1) - povm0_1
+        povm1_0 = eye(truncation + 1) - povm1_1
 
         self.povms = [povm0_0, povm0_1, povm1_0, povm1_1]
 
