@@ -3,10 +3,28 @@
     const DARK_MODE_KEY = 'sphinx-dark-mode';
     const html = document.documentElement;
 
+    // Safe storage helpers — wrap localStorage access in try/catch
+    function safeGetItem(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function safeSetItem(key, value) {
+        try {
+            localStorage.setItem(key, value);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
     // Determine initial dark mode state
     function getDarkModePreference() {
-        // Check localStorage first
-        const saved = localStorage.getItem(DARK_MODE_KEY);
+        // Check storage first (safe wrapper)
+        const saved = safeGetItem(DARK_MODE_KEY);
         if (saved !== null) {
             return saved === 'true';
         }
@@ -21,7 +39,7 @@
         } else {
             html.classList.remove('dark-mode');
         }
-        localStorage.setItem(DARK_MODE_KEY, isDark);
+        safeSetItem(DARK_MODE_KEY, isDark);
     }
 
     // Initialize dark mode on page load
@@ -36,7 +54,7 @@
         button.id = 'dark-mode-toggle';
         button.className = 'dark-mode-toggle';
         button.setAttribute('aria-label', 'Toggle dark mode');
-        button.setAttribute('title', 'Toggle dark mode (d)');
+        button.setAttribute('title', 'Toggle dark mode');
         button.innerHTML = html.classList.contains('dark-mode') ? '☀️' : '🌙';
         
         button.addEventListener('click', function(e) {
@@ -61,23 +79,10 @@
         document.body.appendChild(button);
     }
 
-    // Keyboard shortcut: 'd' key
-    document.addEventListener('keydown', function(e) {
-        if ((e.key === 'd' || e.key === 'D') && e.ctrlKey) {
-            e.preventDefault();
-            const isDarkMode = html.classList.contains('dark-mode');
-            applyDarkMode(!isDarkMode);
-            const button = document.getElementById('dark-mode-toggle');
-            if (button) {
-                button.innerHTML = !isDarkMode ? '☀️' : '🌙';
-            }
-        }
-    });
-
     // Listen for system preference changes
     if (window.matchMedia) {
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-            if (localStorage.getItem(DARK_MODE_KEY) === null) {
+            if (safeGetItem(DARK_MODE_KEY) === null) {
                 applyDarkMode(e.matches);
             }
         });

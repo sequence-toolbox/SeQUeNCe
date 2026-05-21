@@ -106,3 +106,21 @@ html.dark-mode .dark-mode-toggle {
   color: #e0e0e0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
+
+/* Improve visibility of images with transparent backgrounds in dark mode */
+html.dark-mode .wy-side-nav-logo img,
+html.dark-mode .logo img,
+html.dark-mode .rst-content img,
+html.dark-mode .wy-logo img {
+  /* subtle light surface behind transparent images */
+  background-color: rgba(255,255,255,0.03) !important;
+  padding: 4px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4) !important;
+}
+
+/* Allow site maintainers to provide a dark-variant image using data-dark attribute
+   Example: <img src="logo.png" data-dark="logo-dark.png">. If present, swap in dark variant via JS.
+   (JS-based swap handled by dark_mode_toggle.js if implemented later.) */
+
