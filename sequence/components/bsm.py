@@ -88,7 +88,7 @@ def _eq_psi_plus(state: "State", formalism: str):
     if formalism == KET_STATE_FORMALISM:
         return array_equal(state.state, BSM._psi_plus)
     elif formalism == DENSITY_MATRIX_FORMALISM:
-        d_state = outer(BSM._phi_plus, BSM._psi_plus)
+        d_state = outer(BSM._psi_plus, BSM._psi_plus)
         return array_equal(state.state, d_state)
     else:
         raise NotImplementedError("formalism of quantum state {} is not "
