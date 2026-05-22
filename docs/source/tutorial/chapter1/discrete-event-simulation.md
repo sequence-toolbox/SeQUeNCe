@@ -65,7 +65,7 @@ tl.show_progress = False # turn of progress bar, we will address this in later t
 store = Store(tl) # create store
 
 # open store at 7:00
-open_proc = Process(store, 'open', []) # Process(object, function name: string, arguments of function: List[])
+open_proc = Process(store, 'open', []) # Process(object, function name: string, arguments of function: list[])
 open_event = Event(7, open_proc) # Event(occurring time: int, process: Process)
 tl.schedule(open_event) # Timeline.schedule(Event)
 ```

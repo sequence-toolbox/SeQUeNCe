@@ -1,6 +1,6 @@
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
-from sequence.network_management.routing_distributed import DistributedRoutingProtocol
+from sequence.network_management.routing import DistributedRoutingProtocol
 from sequence.topology import router_net_topo
 import sequence.utils.log as log
 from sequence.constants import SECOND
@@ -21,7 +21,7 @@ def test_distributed_routing_protocol_1():
     # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
     # log.set_logger(__name__, tl, log_filename)
     # log.set_logger_level('DEBUG')
-    # modules = ["routing_distributed"]
+    # modules = ["distributed"]
     # for module in modules:
     #     log.track_module(module)
 
@@ -64,7 +64,7 @@ def test_distributed_routing_protocol_2():
     # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
     # log.set_logger(__name__, tl, log_filename)
     # log.set_logger_level('INFO')
-    # modules = ["routing_distributed"]
+    # modules = ["distributed"]
     # for module in modules:
     #     log.track_module(module)
 
@@ -152,7 +152,7 @@ def test_distributed_routing_protocol_3():
     # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
     # log.set_logger(__name__, tl, log_filename)
     # log.set_logger_level('DEBUG')
-    # modules = ["routing_distributed", "node"]
+    # modules = ["distributed", "node"]
     # for module in modules:
     #     log.track_module(module)
 
@@ -200,7 +200,7 @@ def test_distributed_routing_protocol_4():
     # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
     # log.set_logger(__name__, tl, log_filename)
     # log.set_logger_level('INFO')
-    # modules = ["routing_distributed"]
+    # modules = ["distributed"]
     # for module in modules:
     #     log.track_module(module)
 
@@ -291,7 +291,7 @@ def test_distributed_routing_protocol_5():
     # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
     # log.set_logger(__name__, tl, log_filename)
     # log.set_logger_level('INFO')
-    # modules = ["routing_distributed", "node"]
+    # modules = ["distributed", "node"]
     # for module in modules:
     #     log.track_module(module)
 
@@ -389,7 +389,7 @@ def test_distributed_routing_protocol_6():
     # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
     # log.set_logger(__name__, tl, log_filename)
     # log.set_logger_level('DEBUG')
-    # modules = ["routing_distributed"]
+    # modules = ["distributed"]
     # for module in modules:
     #     log.track_module(module)
 
@@ -436,7 +436,7 @@ def test_distributed_routing_protocol_7():
     # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
     # log.set_logger(__name__, tl, log_filename)
     # log.set_logger_level('DEBUG')
-    # modules = ["routing_distributed"]
+    # modules = ["distributed"]
     # for module in modules:
     #     log.track_module(module)
 
@@ -483,7 +483,7 @@ def test_distributed_routing_protocol_8():
     # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
     # log.set_logger(__name__, tl, log_filename)
     # log.set_logger_level('DEBUG')
-    # modules = ["routing_distributed"]
+    # modules = ["distributed"]
     # for module in modules:
     #     log.track_module(module)
 

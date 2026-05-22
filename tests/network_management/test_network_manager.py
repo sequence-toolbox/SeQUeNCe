@@ -212,12 +212,12 @@ class TestDistributedNetworkManager:
         qc = QuantumChannel("qc_n3_m2", tl, 0, 10)
         qc.set_ends(n3, m2.name)
 
-        n1.network_manager.routing_protocol.add_forwarding_rule("n2", "n2")
-        n1.network_manager.routing_protocol.add_forwarding_rule("n3", "n2")
-        n2.network_manager.routing_protocol.add_forwarding_rule("n1", "n1")
-        n2.network_manager.routing_protocol.add_forwarding_rule("n3", "n3")
-        n3.network_manager.routing_protocol.add_forwarding_rule("n1", "n2")
-        n3.network_manager.routing_protocol.add_forwarding_rule("n2", "n2")
+        n1.network_manager.routing_protocol.update_forwarding_rule("n2", "n2")
+        n1.network_manager.routing_protocol.update_forwarding_rule("n3", "n2")
+        n2.network_manager.routing_protocol.update_forwarding_rule("n1", "n1")
+        n2.network_manager.routing_protocol.update_forwarding_rule("n3", "n3")
+        n3.network_manager.routing_protocol.update_forwarding_rule("n1", "n2")
+        n3.network_manager.routing_protocol.update_forwarding_rule("n2", "n2")
 
         tl.init()
 
