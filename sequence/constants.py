@@ -44,7 +44,7 @@ MILLISECOND: Final = 10**9
 SECOND:      Final = 10**12
 
 #: Built-in ket-vector formalism identifier.
-KET_STATE_FORMALISM: Final = "ket_vector"
+KET_VECTOR_FORMALISM: Final = "ket_vector"
 #: Built-in density-matrix formalism identifier.
 DENSITY_MATRIX_FORMALISM: Final = "density_matrix"
 #: Built-in Fock density-matrix formalism identifier.

@@ -1,0 +1,23 @@
+name: PR Source Check
+on:
+  pull_request:
+    branches: [master]
+
+permissions: {}
+jobs:
+  check-source-branch:
+    name: Verify source branch
+    runs-on: ubuntu-latest
+    if: github.repository == 'sequence-toolbox/SeQUeNCe'
+    steps:
+      - name: Check source branch
+        run: |
+          SOURCE="${{ github.head_ref }}"
+          echo "Source branch: ${SOURCE}"
+          if [ "${SOURCE}" = "RnD" ]; then
+            echo "Source branch '${SOURCE}' is allowed to merge into master."
+          else
+            echo "ERROR: PRs to master must come from 'RnD'."
+            echo "Source branch '${SOURCE}' is not permitted."
+            exit 1
+          fi

@@ -99,7 +99,7 @@ class TestReservation:
 
     @pytest.mark.unit
     def test_string_repr(self, std_reservation):
-        assert str(std_reservation) == '|initiator=a; responder=b; start_time=10; end_time=20; memory_size=5; target_fidelity=0.9; entanglement_number=1; identity=0|'
+        assert str(std_reservation) == '|identity=0; initiator=a; responder=b; path=[]; start_time=10; end_time=20; target_fidelity=0.9; entanglement_number=1; memory_size=5|'
         assert repr(std_reservation) == str(std_reservation)
 
     @pytest.mark.unit
