@@ -177,10 +177,8 @@ def ep_req_func(protocols, args):
     _protocols[1].rule.protocols.remove(_protocols[1])
     _protocols[1].kept_memo.detach(_protocols[1])
     _protocols[0].meas_memo = _protocols[1].kept_memo
-    _protocols[0].memories = [_protocols[0].kept_memo,
-                              _protocols[0].meas_memo]
-    _protocols[0].name = _protocols[0].name + "." + _protocols[
-        0].meas_memo.name
+    _protocols[0].memories = [_protocols[0].kept_memo,_protocols[0].meas_memo]
+    _protocols[0].name = _protocols[0].name + "." + _protocols[0].meas_memo.name
     _protocols[0].meas_memo.attach(_protocols[0])
 
     return _protocols[0]
@@ -288,11 +286,9 @@ def es_rule_actionA(memories_info: list["MemoryInfo"], args):
 
     memories = [info.memory for info in memories_info]
 
-    protocol = EntanglementSwappingA(None, "ESA.%s.%s" % (
-        memories[0].name, memories[1].name),
-                                     memories[0], memories[1],
-                                     success_prob=succ_prob,
-                                     degradation=degradation)
+    protocol_name = "ESA.%s.%s" % (memories[0].name, memories[1].name)
+    protocol = EntanglementSwappingA.create(None, protocol_name, memories[0], memories[1],
+                                            success_prob=succ_prob, degradation=degradation)
     dsts = [info.remote_node for info in memories_info]
     req_funcs = [es_req_func, es_req_func]
     req_args = [{"target_memo": memories_info[0].remote_memo},
@@ -318,7 +314,7 @@ def es_rule_conditionB(memory_info: "MemoryInfo", manager: "MemoryManager", args
 def es_rule_actionB(memories_info: list["MemoryInfo"], args):
     memories = [info.memory for info in memories_info]
     memory = memories[0]
-    protocol = EntanglementSwappingB(None, "ESB." + memory.name, memory)
+    protocol = EntanglementSwappingB.create(None, "ESB." + memory.name, memory)
     return [protocol, [None], [None], [None]]
 
 

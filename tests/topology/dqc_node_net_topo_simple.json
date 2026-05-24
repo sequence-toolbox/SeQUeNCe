@@ -1,7 +1,7 @@
 {
   "templates": {
     "network_manager": {
-      "routing": "static"
+      "routing": "routing_static"
     }
   },
 

@@ -471,7 +471,7 @@ class Memory(Entity):
         """
         state_obj = self.timeline.quantum_manager.get(self.qstate_key)
         state = state_obj.state
-        return state[0]
+        return float(state[0])
 
 
 class AbsorptiveMemory(Entity):

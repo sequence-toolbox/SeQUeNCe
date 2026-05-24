@@ -1,6 +1,5 @@
 import numpy as np
 from sequence.components.circuit import Circuit
-from typing import List
 
 class Noise:
     """
@@ -80,11 +79,11 @@ class Noise:
             - p = 0: state remains unchanged,
             - p = 1: selected qubits become maximally mixed.
 
-        qubits : List[int]
+        qubits : list[int]
             One or two qubit indices to apply noise to.
             These must appear in the `keys` list.
 
-        keys : List[int]
+        keys : list[int]
             A permutation of [0, 1, ..., n-1] defining the tensor product order of qubits in `rho`.
 
             Each key corresponds to a qubit managed by QuantumManagerDensity. For example,

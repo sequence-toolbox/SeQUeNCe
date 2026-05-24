@@ -4,14 +4,16 @@ This module provides a definition of the Topology class, which can be used to
 manage a network's structure.
 Topology instances automatically perform many useful network functions.
 """
+import copy
+import json
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
 
-from .node import *
+from .node import Node
 from ..components.optical_channel import QuantumChannel, ClassicalChannel
 
 
@@ -53,27 +55,34 @@ class Topology(ABC):
     FORMALISM = "formalism"  # "ket_vector", "density_matrix", "bell_diagonal", etc
 
     
-    def __init__(self, conf_file_name: str):
+    def __init__(self, config_source: str | dict):
         """Constructor for topology class.
 
         Args:
-            conf_file_name (str): the name of configuration file
+            config_source (str): the name of configuration file
         """
         self.nodes: dict[str, list[Node]] = defaultdict(list)
         self.qchannels: list[QuantumChannel] = []
         self.cchannels: list[ClassicalChannel] = []
         self.templates: dict[str, dict] = {}
         self.tl: Timeline | None = None
-        self._load(conf_file_name)
+        self._load(config_source)
 
     @abstractmethod
-    def _load(self, filename: str):
+    def _load(self, config_source: str | dict) -> dict:
         """Method for parsing configuration file and generate network
 
         Args:
-            filename (str): the name of configuration file
+            config (str|dict): Config object
         """
-        pass
+        if isinstance(config_source, str):
+            with open(config_source) as f:
+                config = json.load(f)
+        elif isinstance(config_source, dict):
+            config = copy.deepcopy(config_source)
+        else:
+            raise TypeError(f'Expected a file path (str) or a config object (dict), got {type(config_source)}')
+        return config
 
     def _get_templates(self, config: dict) -> None:
         templates = config.get(Topology.ALL_TEMPLATES, {})
@@ -97,8 +106,8 @@ class Topology(ABC):
             src_node = self.tl.get_entity_by_name(src_str)
             if src_node is not None:
                 name = cc.get(self.NAME, f"cc-{src_str}-{dst_str}")
-                distance = cc.get(self.DISTANCE, -1)
-                delay = cc.get(self.DELAY, -1)
+                distance = cc.get(self.DISTANCE, 1000)
+                delay = cc.get(self.DELAY, 0)
                 cc_obj = ClassicalChannel(name, self.tl, distance, delay)
                 cc_obj.set_ends(src_node, dst_str)
                 self.cchannels.append(cc_obj)
@@ -107,8 +116,8 @@ class Topology(ABC):
         for c_connect in config.get(self.ALL_C_CONNECT, []):
             node1 = c_connect[self.CONNECT_NODE_1]
             node2 = c_connect[self.CONNECT_NODE_2]
-            distance = c_connect.get(self.DISTANCE, -1)
-            delay = c_connect.get(self.DELAY, -1)
+            distance = c_connect.get(self.DISTANCE, 1000)
+            delay = c_connect.get(self.DELAY, 0)
             for src_str, dst_str in zip([node1, node2], [node2, node1]):
                 name = f"cc-{src_str}-{dst_str}"
                 src_obj = self.tl.get_entity_by_name(src_str)
