@@ -51,6 +51,7 @@ def test_ClassicalChannel_transmit():
     for msg, res in zip(n2.msgs, results):
         assert msg == res
 
+test_ClassicalChannel_transmit()
 
 def test_QuantumChannel_init():
     tl = Timeline()
