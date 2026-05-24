@@ -6,7 +6,7 @@ from sequence.components.optical_channel import ClassicalChannel
 from sequence.constants import (
     BELL_DIAGONAL_STATE_FORMALISM,
     DENSITY_MATRIX_FORMALISM,
-    KET_STATE_FORMALISM,
+    KET_VECTOR_FORMALISM,
     PHI_MINUS,
     PHI_PLUS,
     PSI_MINUS,
@@ -85,12 +85,12 @@ def test_BBPSSW_registered_formalisms_and_factory_selection():
         registered_formalisms = set(BBPSSWProtocol.list_protocols())
 
         assert {
-            KET_STATE_FORMALISM,
+            KET_VECTOR_FORMALISM,
             DENSITY_MATRIX_FORMALISM,
             BELL_DIAGONAL_STATE_FORMALISM,
         }.issubset(registered_formalisms)
 
-        for formalism in [KET_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM]:
+        for formalism in [KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM]:
             QuantumManager.set_global_manager_formalism(formalism)
             BBPSSWProtocol.set_formalism(formalism)
             tl = Timeline()

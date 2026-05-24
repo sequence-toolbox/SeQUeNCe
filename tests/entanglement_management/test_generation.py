@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from sequence.constants import BARRET_KOK, BELL_DIAGONAL_STATE_FORMALISM, KET_STATE_FORMALISM, SINGLE_HERALDED
+from sequence.constants import BARRET_KOK, BELL_DIAGONAL_STATE_FORMALISM, KET_VECTOR_FORMALISM, SINGLE_HERALDED
 from sequence.components.bsm import *
 from sequence.components.memory import MemoryArray
 from sequence.components.optical_channel import *
@@ -74,7 +74,7 @@ def test_generation_protocol_registry_and_factory_selection():
         assert {BARRET_KOK, SINGLE_HERALDED}.issubset(protocols_a)
         assert {BARRET_KOK, SINGLE_HERALDED}.issubset(protocols_b)
 
-        QuantumManager.set_global_manager_formalism(KET_STATE_FORMALISM)
+        QuantumManager.set_global_manager_formalism(KET_VECTOR_FORMALISM)
         EntanglementGenerationA.set_global_type(BARRET_KOK)
         EntanglementGenerationB.set_global_type(BARRET_KOK)
         tl = Timeline()
@@ -115,7 +115,7 @@ def test_single_heralded_generation_requires_bell_diagonal_formalism():
     old_formalism = QuantumManager.get_active_formalism()
 
     try:
-        QuantumManager.set_global_manager_formalism(KET_STATE_FORMALISM)
+        QuantumManager.set_global_manager_formalism(KET_VECTOR_FORMALISM)
         EntanglementGenerationA.set_global_type(SINGLE_HERALDED)
         tl = Timeline()
         router = Node("e0", tl)
