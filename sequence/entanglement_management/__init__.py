@@ -1,4 +1,4 @@
-__all__ = ['entanglement_protocol', 'generation', 'swapping', 'purification']
+__all__ = ['entanglement_protocol', 'generation', 'swapping', 'purification', 'teleportation']
 
 def __dir__():
     return sorted(__all__)

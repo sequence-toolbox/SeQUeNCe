@@ -21,7 +21,7 @@ from .photon import Photon
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
-from ..constants import KET_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM
+from ..constants import KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM
 from ..utils.encoding import *
 from ..utils import log
 
@@ -54,7 +54,7 @@ def _set_state_with_fidelity(keys: list[int], desired_state: list[complex], fide
                        BSM._psi_plus, BSM._psi_minus]
     assert desired_state in possible_states
 
-    if qm.get_active_formalism() == KET_STATE_FORMALISM:
+    if qm.get_active_formalism() == KET_VECTOR_FORMALISM:
         probabilities = [(1 - fidelity) / 3] * 4
         probabilities[possible_states.index(desired_state)] = fidelity
         state_ind = rng.choice(4, p=probabilities)
@@ -73,7 +73,7 @@ def _set_state_with_fidelity(keys: list[int], desired_state: list[complex], fide
 
 
 def _set_pure_state(keys: list[int], ket_state: list[complex], qm: "QuantumManager"):
-    if qm.get_active_formalism() == KET_STATE_FORMALISM:
+    if qm.get_active_formalism() == KET_VECTOR_FORMALISM:
         qm.set(keys, ket_state)
     elif qm.get_active_formalism() == DENSITY_MATRIX_FORMALISM:
         state = outer(ket_state, ket_state)
@@ -85,7 +85,7 @@ def _set_pure_state(keys: list[int], ket_state: list[complex], qm: "QuantumManag
 
 
 def _eq_psi_plus(state: "State", formalism: str):
-    if formalism == KET_STATE_FORMALISM:
+    if formalism == KET_VECTOR_FORMALISM:
         return array_equal(state.state, BSM._psi_plus)
     elif formalism == DENSITY_MATRIX_FORMALISM:
         d_state = outer(BSM._phi_plus, BSM._psi_plus)

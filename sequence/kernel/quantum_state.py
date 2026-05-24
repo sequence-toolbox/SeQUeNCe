@@ -5,15 +5,16 @@ These include 2 classes used by a quantum manager, and one used for individual p
 
 1. The `KetState` class represents the ket vector formalism and is used by a quantum manager.
 2. The `DensityState` class represents the density matrix formalism and is also used by a quantum manager.
-3. The `FreeQuantumState` class uses the ket vector formalism, and is used by individual photons (not the quantum manager).
+3. The `FreeQuantumState` class uses the ket vector formalism and is used by individual photons (not the quantum manager).
 """
 
 import math
 from abc import ABC
-from numpy import pi, cos, sin, arange, log, log2
+
+import numpy as np
 from numpy.random import Generator
 
-from .quantum_utils import *
+from .quantum_utils import measure_state_with_cache, measure_entangled_state_with_cache, measure_multiple_with_cache
 from ..constants import EPSILON
 
 
@@ -42,9 +43,8 @@ class State(ABC):
         # potential key word arguments for derived classes, e.g. truncation = d-1 for qudit
 
         super().__init__()
-
         self.state = None
-        self.keys = []
+        self.keys: list = []
 
     def deserialize(self, json_data) -> None:
         self.keys = json_data["keys"]
@@ -55,8 +55,8 @@ class State(ABC):
             self.state.append(complex_val)
 
     def serialize(self) -> dict:
-        res = {"keys": self.keys}
-        state = []
+        res: dict[str, list] = {"keys": self.keys}
+        state: list = []
         for cplx_n in self.state:
             if type(cplx_n) is float:
                 state.append(cplx_n)
@@ -101,7 +101,7 @@ class KetState(State):
         assert all([abs(a) <= 1 + EPSILON for a in amplitudes]), "Illegal value with abs > 1 in ket vector"
         assert math.isclose(sum([abs(a) ** 2 for a in amplitudes]), 1), "Squared amplitudes do not sum to 1"
 
-        num_subsystems = log(len(amplitudes)) / log(dim)
+        num_subsystems = np.log(len(amplitudes)) / np.log(dim)
         assert dim ** int(round(num_subsystems)) == len(amplitudes),\
             "Length of amplitudes should be d ** n, " \
             "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
@@ -112,7 +112,7 @@ class KetState(State):
             "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
             "Amplitude length: {}, expected subsystems: {}, num keys: {}".format(len(amplitudes), num_subsystems, len(keys))
 
-        self.state = array(amplitudes, dtype=complex)
+        self.state = np.array(amplitudes, dtype=complex)
         self.keys = keys
 
 
@@ -142,16 +142,16 @@ class DensityState(State):
         self.truncation = truncation
         dim = self.truncation + 1  # dimension of element Hilbert space
 
-        state = array(state, dtype=complex)
+        state = np.array(state, dtype=complex)
         if state.ndim == 1:
-            state = outer(state, state.conj())
+            state = np.outer(state, state.conj())
 
         # check formatting
-        assert abs(trace(array(state)) - 1) < 0.01, "density matrix trace must be 1"
+        assert abs(np.trace(np.array(state)) - 1) < 0.01, "density matrix trace must be 1"
         for row in state:
             assert len(state) == len(row), "density matrix must be square"
 
-        num_subsystems = log(len(state)) / log(dim)
+        num_subsystems = np.log(len(state)) / np.log(dim)
         assert dim ** int(round(num_subsystems)) == len(state), (
             "Length of amplitudes should be d ** n, "
             "where d is subsystem Hilbert space dimension and n is the number of subsystems. "
@@ -197,7 +197,7 @@ class FreeQuantumState(State):
         """
 
         entangled_states = self.entangled_states + another_state.entangled_states
-        new_state = kron(self.state, another_state.state)
+        new_state = np.kron(self.state, another_state.state)
         new_state = tuple(new_state)
 
         for quantum_state in entangled_states:
@@ -214,8 +214,8 @@ class FreeQuantumState(State):
         """
 
         # TODO: rewrite for entangled states
-        angle = rng.random() * 2 * pi
-        self.state = (complex(cos(angle)), complex(sin(angle)))
+        angle = rng.random() * 2 * np.pi
+        self.state = (complex(np.cos(angle)), complex(np.sin(angle)))
 
     # only for use with entangled state
     def set_state(self, state: tuple[complex]):
@@ -233,7 +233,7 @@ class FreeQuantumState(State):
         assert all([abs(a) <= 1.01 for a in state]), "Illegal value with abs > 1 in quantum state"
         assert abs(sum([abs(a) ** 2 for a in state]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
 
-        num_qubits = log2(len(state))
+        num_qubits = np.log2(len(state))
         assert 2 ** int(round(num_qubits)) == len(state), (
             "Length of amplitudes should be 2 ** n, where n is the number of qubits. "
             f"Actual amplitude length: {len(state)}, num qubits: {num_qubits}")
@@ -358,7 +358,7 @@ class FreeQuantumState(State):
 
         new_states, probabilities = measure_multiple_with_cache(state, basis, length_diff)
 
-        possible_results = arange(0, basis_dimension, 1)
+        possible_results = np.arange(0, basis_dimension, 1)
         # result gives index of the basis vector that will be projected to
         res = rng.choice(possible_results, p=probabilities)
         # project to new state, then reassign quantum state and entangled photons
@@ -398,5 +398,5 @@ class BellDiagonalState(State):
         assert len(keys) == 2, "BellDiagonalState density matrix are only supported for 2-qubit entangled states."
 
         # note: density matrix diagonal elements are guaranteed to be real from Hermiticity
-        self.state = array(diag_elems, dtype=float)
+        self.state: list[float] = np.array(diag_elems, dtype=float)
         self.keys = keys

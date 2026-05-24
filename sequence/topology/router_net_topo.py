@@ -2,11 +2,10 @@ import json
 import numpy as np
 from networkx import Graph, dijkstra_path, exception
 
-from ..network_management.routing_distributed import DistributedRoutingProtocol
-from ..network_management.routing_static import StaticRoutingProtocol
+from ..network_management.routing import DistributedRoutingProtocol, StaticRoutingProtocol
 from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
-from ..kernel.quantum_manager import KET_STATE_FORMALISM, QuantumManager
+from ..kernel.quantum_manager import KET_VECTOR_FORMALISM, QuantumManager
 from .node import BSMNode, QuantumRouter
 from ..constants import SPEED_OF_LIGHT
 
@@ -33,15 +32,13 @@ class RouterNetTopo(Topo):
     QUANTUM_ROUTER = "QuantumRouter"
     CONTROLLER = "Controller"
 
-    def __init__(self, conf_file_name: str):
+    def __init__(self, config_source: str | dict):
         self.bsm_to_router_map = {}
         self.encoding_type = None
-        super().__init__(conf_file_name)
+        super().__init__(config_source)
 
-    def _load(self, filename: str):
-        with open(filename) as fh:
-            config = json.load(fh)
-
+    def _load(self, config_source: str | dict):
+        config = super()._load(config_source)
         self._get_templates(config)
         # quantum connections are only supported by sequential simulation so far
         self._add_qconnections(config)
@@ -56,7 +53,7 @@ class RouterNetTopo(Topo):
 
     def _add_timeline(self, config: dict):
         stop_time = config.get(Topo.STOP_TIME, 10 ** 23)
-        formalism = config.get(Topo.FORMALISM, KET_STATE_FORMALISM)
+        formalism = config.get(Topo.FORMALISM, KET_VECTOR_FORMALISM)
         truncation = config.get(Topo.TRUNC, 1)
         QuantumManager.set_global_manager_formalism(formalism)
         self.tl = Timeline(stop_time=stop_time, truncation=truncation)
@@ -209,7 +206,7 @@ class RouterNetTopo(Topo):
                         next_hop = path[1]
                         # routing protocol locates at the bottom of the stack
                         routing_protocol = src.network_manager.get_routing_protocol()
-                        routing_protocol.add_forwarding_rule(dst_name, next_hop)
+                        routing_protocol.update_forwarding_rule(dst_name, next_hop)
                     except exception.NetworkXNoPath:
                         pass
     

@@ -1,9 +1,9 @@
+from __future__ import annotations
 from sequence.kernel.process import Process
 from sequence.kernel.event import Event
 from sequence.topology.router_net_topo import RouterNetTopo
 from sequence.resource_management.memory_manager import MemoryInfo
 from sequence.network_management.reservation import Reservation
-import sequence.utils.log as log
 
 
 from typing import TYPE_CHECKING
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class PeriodicApp:
-    def __init__(self, node: "QuantumRouter", other: str, memory_size=25, target_fidelity=0.9):
+    def __init__(self, node: QuantumRouter, other: str, memory_size=25, target_fidelity=0.9):
         self.node = node
         self.node.set_app(self)
         self.other = other
