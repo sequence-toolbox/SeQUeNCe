@@ -106,7 +106,7 @@ class EntanglementSwappingA_BDS(EntanglementSwappingA):
                                                 expire_time=expire_time,
                                                 meas_res=[])
         else:
-            log.logger.info(f'swapping failed!')
+            log.logger.info(f'{self.owner.name} Swapping failed!')
             msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, self.left_protocol_name, fidelity=0)
             msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, self.right_protocol_name, fidelity=0)
 

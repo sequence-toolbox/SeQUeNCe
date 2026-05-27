@@ -347,6 +347,7 @@ class Memory(Entity):
         self.entangled_memory = {'node_id': None, 'memo_id': None}
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
+            log.logger.info(f'Memory {self.name} expiration event ({self.expiration_event.time}) removed.')
             self.expiration_event = None
 
     def update_state(self, state: list[complex]) -> None:
