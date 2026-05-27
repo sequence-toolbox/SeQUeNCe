@@ -59,7 +59,7 @@ class Topology(ABC):
         """Constructor for topology class.
 
         Args:
-            config_source (str): the name of configuration file
+            config_source (str | dict): the name of configuration file or the config dictionary
         """
         self.nodes: dict[str, list[Node]] = defaultdict(list)
         self.qchannels: list[QuantumChannel] = []
@@ -73,7 +73,7 @@ class Topology(ABC):
         """Method for parsing configuration file and generate network
 
         Args:
-            config (str|dict): Config object
+            config_source (str | dict): Config object
         """
         if isinstance(config_source, str):
             with open(config_source) as f:
