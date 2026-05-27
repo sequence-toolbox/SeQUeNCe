@@ -5,11 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-3-02
+### Added
+- Add a module to convert an arbitrary graph object to sequence configurations for QuantumRouter with MIM BSM
+- Add FatTree topology and BCube topology 
+- Added the `routing` module: a new parent class `RoutingProtocol` for the subclasses `StaticRoutingProtocol` and `DistributedRoutingProtocol`. The register decorator is used to make it easy to plug in new routing protocols in the future.
+- Add empty init() to Protocol to satisfy class hierarchy.
+- Created project scripts for each config generator.
+- Added the `swapping` module that has the following classes. The subclasses use the registry decorator (factory pattern).
+    - Base class: `EntanglementSwappingA` & `EntanglementSwappingB`
+    - Subclass for ket vector and density matrix: `EntanglementSwappingA_Circuit` & `EntanglementSwappingB_Circuit`
+    - Subclass for Bell diagonal state: `EntanglementSwappingA_BDS` & `EntanglementSwappingB_BDS`
+- Update the tutorial to catch up on the recent updates. Add notes saying refer to chapter 6 Application module for standard usage
+- Introducing `EARLY_EXPIRE` message type. A request has a `start_time` and `end_time`. When a request is finished before the `end_time`, then the reservation (and the associated rules) should expire early. If not, the quantum network will keep generating entanglement pairs because the rules still exist.
+
+### Changed
+- Using typer for CLI, creates a unified interface for topology generation. Allow for custom graph objects in CLI.
+- Moved all old topologies to NetworkX graph objects
+- Docstring, comment, logging, and various cosmetic updates.
+- Moved routing_protocol init() to network manager.
+- Trigger empty inits for resource and network manager to enable future bootstrapping.
+- Migrated `utils/json_config_generators/` to `sequence/config_generators/`.
+- Add a `sender_delay` argument to the `Node.send_message()` to account for processing delay, queueing delay, transmission delay, etc.
+
+### Removed
+- Old configuration generators 
+- The old `swapping.py` is removed
+- Removed support for Python 3.11
+- Removed `qlan` submodule
+
+
 ## [0.8.5] - 2026-2-27
 ### Added
 - `NetworkManager` ABC with a factory pattern for selection and future implementation of new network managers.
 - File `action_condition_set.py` is added. This contains the action, condition, and request functions for entanglement generation, swapping, and purification.
-- Class `DistributedRoutingProtocol` is added, among many other supporting classes in `routing_distributed.py`. This module does distributed entanglement routing.
+- Class `DistributedRoutingProtocol` is added, among many other supporting classes in `routing_distributed`. This module does distributed entanglement routing.
 - Class `NetworkManager` has two new attributes: `forwarding_table` and `routing_protocol`.
 - Add a cutoff flag to memory to allow disable the expiration of memories.
 - Add a template in config json for network manager to select routing protocols (distributed vs. static)
@@ -18,8 +48,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `RSVPProtocol` is now decoupled from the `DistributedNetworkManager`.
+- Moved `ResourceReservationProtocol` to `RSVPProtocol` in `rsvp.py`. 
 - Moved `MemoryTimecard` to `memory_timecard.py` and are instantiated by the `NetworkManager`
-- Moved `ResourceReservationProtocol` to `RSVPProtocol` in `rsvp.py`
+  - `RSVPProtocol` does not instantiate `MemoryTimecard` anymore. The `timecards` attribute in `RSVPProtocol` becomes a reference to the `MemoryTimecard` in `NetworkManager`
 - NetworkManager is now `DistributedNetworkManager`
 - Extend and refactor the tests in `test_reservation.py`
 - Minor refactors pertaining to typing errors in `memory.py`, `resource_manager.py`, `rule_manager.py`, `network_manager.py` and `reservation.py`

@@ -1,12 +1,13 @@
-from sequence.network_management.memory_timecard import MemoryTimeCard
+from __future__ import annotations
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 
-from .reservation import Reservation
 
 if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
 
+from .memory_timecard import MemoryTimeCard
+from .reservation import Reservation
 from ..message import Message
 from ..protocol import StackProtocol
 
@@ -49,9 +50,9 @@ class RSVPMessage(Message):
             case _:
                 raise Exception("Unknown message type")
 
-
     def __str__(self):
         return f"|type={self.msg_type}; reservation={self.reservation}|"
+
 
 class RSVPProtocol(StackProtocol):
     """ReservationProtocol for node resources.
@@ -71,7 +72,7 @@ class RSVPProtocol(StackProtocol):
         accepted_reservations (list[Reservation]): list of all approved reservation requests.
     """
 
-    def __init__(self, owner: "QuantumRouter", name: str, memory_array_name: str):
+    def __init__(self, owner: QuantumRouter, name: str, memory_array_name: str):
         """Constructor for the reservation protocol class.
 
         Args:
@@ -166,7 +167,6 @@ class RSVPProtocol(StackProtocol):
                 next_hop = self.next_hop_when_tracing_back(msg.path)
                 self._push(dst=None, msg=msg, next_hop=next_hop)
         elif msg.msg_type == RSVPMsgType.APPROVE:
-            #self.owner.resource_manager.generate_load_rules(msg.path, msg.reservation, self.timecards, self.memory_array_name)
             self.accepted_reservations.append(msg.reservation)
             self._pop(msg=msg)
             if msg.reservation.initiator != self.owner.name:
@@ -222,18 +222,11 @@ class RSVPProtocol(StackProtocol):
 
         raise Exception(f"RSVP protocol {self.name} received a message (disallowed)")
 
-    # def set_swapping_success_rate(self, prob: float) -> None:
-    #     assert 0 <= prob <= 1
-    #     self.es_succ_prob = prob
-
-    # def set_swapping_degradation(self, degradation: float) -> None:
-    #     assert 0 <= degradation <= 1
-    #     self.es_degradation = degradation
-
     def set_purification_mode(self, mode: str) -> None:
         assert mode in ['once', 'until_target'], \
             f'Purification mode {mode} not supported, should be either "once" or "until_target"'
         self.purification_mode = mode
+
 
 class QCap:
     """Quantum Capacity. Class to collect local information for the reservation protocol

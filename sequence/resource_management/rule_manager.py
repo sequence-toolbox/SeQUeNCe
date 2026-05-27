@@ -4,22 +4,20 @@ This module defines the rule manager, which is used by the resource manager to i
 This is achieved through rules (also defined in this module), which if met define a set of actions to take.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING
 from collections.abc import Callable
+
+from .action_condition_set import Arguments, ActionReturn
 from ..utils import log
+
 if TYPE_CHECKING:
     from ..entanglement_management.entanglement_protocol import EntanglementProtocol
     from .memory_manager import MemoryInfo, MemoryManager
     from .resource_manager import ResourceManager
     from ..network_management.reservation import Reservation
 
-ActionReturn = tuple["EntanglementProtocol", list[Optional[str]], list[Optional[Callable[[list["EntanglementProtocol"], dict[str, Any]], Optional["EntanglementProtocol"]]]], list[Optional[dict[str, Any]]]]
-
-ActionFunc = Callable[[list["MemoryInfo"], dict[str, Any]], ActionReturn]
-
-ConditionFunc = Callable[["MemoryInfo", "MemoryManager", dict[str, Any]], list["MemoryInfo"]]
-
-Arguments = dict[str, Any]
+ActionFunc = Callable[[list["MemoryInfo"], Arguments], ActionReturn]
+ConditionFunc = Callable[["MemoryInfo", "MemoryManager", Arguments], list["MemoryInfo"]]
 
 
 class RuleManager:
@@ -87,7 +85,6 @@ class RuleManager:
         else:
             log.logger.info(f'{self.resource_manager.owner} rule not exist: {rule}')
         return rule.protocols
-        
 
     def get_memory_manager(self) -> MemoryManager:
         assert self.resource_manager is not None
@@ -135,7 +132,7 @@ class Rule:
         self.condition_args: Arguments = condition_args
         self.protocols: list[EntanglementProtocol] = []
         self.rule_manager = None
-        self.reservation: Optional["Reservation"] = None
+        self.reservation: "Reservation" | None = None
 
     def __str__(self):
         action_name_list = str(self.action).split(' ')
