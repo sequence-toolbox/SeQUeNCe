@@ -236,6 +236,30 @@ def test_QSDetectorFockDirect():
     QuantumManager.clear_active_formalism()
 
 
+def test_QSDetectorFockDirect_povm_completeness():
+    """Each detector's POVM pair must sum to the identity, even when the two
+    detectors have different efficiencies."""
+    src_list = ["a", "b"]
+
+    QuantumManager.set_global_manager_formalism(FOCK_DENSITY_MATRIX_FORMALISM)
+    tl = Timeline()
+
+    qsd = QSDetectorFockDirect("qsd", tl, src_list)
+    # distinct efficiencies expose any cross-detector POVM mix-up
+    qsd.update_detector_params(0, "efficiency", 0.9)
+    qsd.update_detector_params(1, "efficiency", 0.5)
+    tl.init()
+
+    povm0_0, povm0_1, povm1_0, povm1_1 = qsd.povms
+    dim = povm0_0.shape[0]
+    identity = np.eye(dim)
+
+    assert np.allclose(povm0_0 + povm0_1, identity), "Detector 0 POVM incomplete"
+    assert np.allclose(povm1_0 + povm1_1, identity), "Detector 1 POVM incomplete"
+
+    QuantumManager.clear_active_formalism()
+
+
 def test_QSDetectorFockInterference():
     class RandomControl:
         def __init__(self, seed):

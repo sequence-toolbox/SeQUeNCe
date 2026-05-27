@@ -323,7 +323,7 @@ def ep_match_func(protocols: list[EntanglementProtocol], args: Arguments) -> BBP
 
 
 # Entanglement Swapping Action-Condition-Match
-def es_rule_action_A(memories_info: list[MemoryInfo], _args: Arguments) -> ActionReturn:
+def es_rule_action_A(memories_info: list[MemoryInfo], args: Arguments) -> ActionReturn:
     """Action function used to create an EntanglementSwappingA protocol instance on all interior nodes.
        
     Interior nodes of a path are the nodes that are neither the initiator nor the responder.
@@ -334,17 +334,21 @@ def es_rule_action_A(memories_info: list[MemoryInfo], _args: Arguments) -> Actio
     
     Args:
         memories_info: a list of memory info
-        _args: the arguments defined in the rule (not used in this action function)
+        args: the arguments defined in the rule
     
     Returns:
         ActionReturn: the protocol to be executed, the destination of the request, the request function,
             and the arguments for request function
     """
-    # TODO: add es_succ_prob and es_degradation into arguments
-    # es_succ_prob = args["es_succ_prob"]
-    # es_degradation = args["es_degradation"]
+    success_prob = args.get("swapping_success_prob", 1)
+    degradation = args.get("swapping_degradation", None)
+    kwargs = {}
+    if degradation is not None:
+        kwargs["degradation"] = degradation
+
     memories = [info.memory for info in memories_info]
-    protocol = EntanglementSwappingA.create(TempNode, f"ESA.{memories[0].name}.{memories[1].name}", memories[0], memories[1])
+    protocol = EntanglementSwappingA.create(TempNode, f"ESA.{memories[0].name}.{memories[1].name}",
+                                            memories[0], memories[1], success_prob, **kwargs)
     dsts = [info.remote_node for info in memories_info]
     req_funcs: list[RequestFunction | None] = [es_match_func, es_match_func]
     req_args = [{"target_memo": memories_info[0].remote_memo}, {"target_memo": memories_info[1].remote_memo}]
