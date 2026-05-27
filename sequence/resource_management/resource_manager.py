@@ -239,7 +239,8 @@ class ResourceManager:
 
             condition_args = {"memory_indices": memory_indices, "left": left, "right": right,
                               "fidelity": reservation.fidelity}
-            action_args = {}
+            action_args = {"swapping_success_prob": self.owner.swapping_success_prob, 
+                           "swapping_degradation": self.owner.swapping_degradation}
             rule = Rule(10, es_rule_action_A, es_rule_condition_A, action_args, condition_args)
             rules.append(rule)
 
