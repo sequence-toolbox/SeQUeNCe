@@ -557,6 +557,3 @@ def test_qmanager_measure_fock():
             raise Exception()
 
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
-
-
-test_qmanager_measure_fock()
