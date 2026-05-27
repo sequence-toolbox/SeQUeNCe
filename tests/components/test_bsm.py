@@ -8,6 +8,9 @@ from sequence.kernel.timeline import Timeline
 from sequence.kernel.process import Process
 from sequence.kernel.event import Event
 from sequence.utils.encoding import *
+from sequence.components.bsm import _eq_psi_plus
+from sequence.kernel.quantum_state import DensityState
+from sequence.constants import DENSITY_MATRIX_FORMALISM
 
 
 class Parent:
@@ -26,13 +29,9 @@ class Parent:
 def test_eq_psi_plus_density_matrix():
     """_eq_psi_plus must recognize the density matrix of |Psi+> (and reject |Psi->)
     under the density matrix formalism."""
-    from numpy import outer
-    from sequence.components.bsm import _eq_psi_plus
-    from sequence.kernel.quantum_state import DensityState
-    from sequence.constants import DENSITY_MATRIX_FORMALISM
 
-    psi_plus_dm = DensityState(outer(BSM._psi_plus, BSM._psi_plus), [0, 1])
-    psi_minus_dm = DensityState(outer(BSM._psi_minus, BSM._psi_minus), [0, 1])
+    psi_plus_dm = DensityState(np.outer(BSM._psi_plus, BSM._psi_plus), [0, 1])
+    psi_minus_dm = DensityState(np.outer(BSM._psi_minus, BSM._psi_minus), [0, 1])
 
     assert _eq_psi_plus(psi_plus_dm, DENSITY_MATRIX_FORMALISM) is True
     assert _eq_psi_plus(psi_minus_dm, DENSITY_MATRIX_FORMALISM) is False
