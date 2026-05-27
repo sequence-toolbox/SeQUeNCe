@@ -1,6 +1,7 @@
-from sequence.constants import SECOND
+from sequence.constants import SECOND, EPSILON
 from sequence.topology.router_net_topo import RouterNetTopo
 from sequence.utils import nx_converter, graphs
+from sequence.network_management.routing.routing_distributed import DistributedRoutingProtocol
 import pytest
 
 GRAPHS = {
@@ -76,3 +77,20 @@ class TestRouterNetTopo:
         nodes = topo.get_nodes()
         assert len(nodes[RouterNetTopo.QUANTUM_ROUTER]) == graph.number_of_nodes()
         assert len(nodes[RouterNetTopo.BSM_NODE]) == graph.number_of_edges()
+
+
+def test_router_net_topo_config():
+    config_file = 'tests/topology/router_net_topo_sample_config.json'
+    topo = RouterNetTopo(config_file)
+    for node in topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
+        routing_protocol = node.network_manager.get_routing_protocol()
+        assert isinstance(routing_protocol, DistributedRoutingProtocol)
+        assert node.swapping_success_prob == 0.99
+        assert node.swapping_degradation is None
+        memory_array = node.get_component_by_name(node.memo_arr_name)
+        assert len(memory_array) == 5
+        for memory in memory_array.memories:
+            assert memory.raw_fidelity == 0.95
+            assert memory.efficiency == 0.6
+            assert memory.coherence_time == 2
+            assert memory.decoherence_errors == pytest.approx([1/3, 1/3, 1/3], abs=EPSILON)
