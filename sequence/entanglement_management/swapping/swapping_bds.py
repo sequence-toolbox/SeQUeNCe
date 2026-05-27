@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from .swapping_base import EntanglementSwappingA, EntanglementSwappingB, SwappingMsgType, EntanglementSwappingMessage
 from ...utils import log
-from ...kernel.quantum_manager import BELL_DIAGONAL_STATE_FORMALISM
+from ...constants import BELL_DIAGONAL_STATE_FORMALISM
 from ...resource_management.memory_manager import MemoryInfo
 
 if TYPE_CHECKING:
