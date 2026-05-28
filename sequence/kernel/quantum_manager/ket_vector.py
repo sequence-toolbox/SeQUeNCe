@@ -1,14 +1,17 @@
 """
 This module implements the quantum manager for ket vector states.
 """
-from ..quantum_state import KetState
-from ..quantum_utils import *
-from ...constants import KET_VECTOR_FORMALISM
-from .base import QuantumManager
 
+from .base import QuantumManager
+from ..quantum_state import KetState
+from ..quantum_utils import measure_entangled_state_with_cache_ket, measure_multiple_with_cache_ket, measure_state_with_cache_ket
+from ...constants import KET_VECTOR_FORMALISM
+
+from numpy import array
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ...components.circuit import Circuit
+
 
 @QuantumManager.register(KET_VECTOR_FORMALISM)
 class QuantumManagerKet(QuantumManager):

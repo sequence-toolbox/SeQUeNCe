@@ -12,16 +12,15 @@ from abc import ABC, abstractmethod
 from numpy.typing import NDArray
 from threading import Lock
 from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from ...components.circuit import Circuit
-    from ..quantum_state import State
-
 from qutip_qip.circuit import QubitCircuit
 from qutip_qip.operations import gate_sequence_product, Gate
 
 from ..quantum_utils import identity, kron
 from ...constants import KET_VECTOR_FORMALISM
+
+if TYPE_CHECKING:
+    from ...components.circuit import Circuit
+    from ..quantum_state import State
 
 
 class QuantumManager(ABC):

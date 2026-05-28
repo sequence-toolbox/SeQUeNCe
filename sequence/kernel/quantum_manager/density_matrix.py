@@ -1,11 +1,13 @@
 """
 This module implements the quantum manager for density matrix states.
 """
-from ..quantum_state import DensityState
-from ..quantum_utils import *
-from ...constants import DENSITY_MATRIX_FORMALISM
-from .base import QuantumManager
 
+from .base import QuantumManager
+from ..quantum_state import DensityState
+from ..quantum_utils import measure_entangled_state_with_cache_density, measure_multiple_with_cache_density, measure_state_with_cache_density
+from ...constants import DENSITY_MATRIX_FORMALISM
+
+from numpy import array
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ...components.circuit import Circuit
@@ -150,8 +152,7 @@ class QuantumManagerDensity(QuantumManager):
                 key = keys[0]
                 num_states = len(all_keys)
                 state_index = all_keys.index(key)
-                state_0, state_1, prob_0 = measure_entangled_state_with_cache_density(tuple(map(tuple, state)), 
-                                                                                      state_index, num_states)
+                state_0, state_1, prob_0 = measure_entangled_state_with_cache_density(tuple(map(tuple, state)), state_index, num_states)
                 if meas_samp < prob_0:
                     new_state = array(state_0, dtype=complex)
                     result = 0
