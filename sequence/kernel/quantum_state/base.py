@@ -1,4 +1,4 @@
-"""Base class for quantum state formalisms."""
+"""Base class for all quantum state formalisms."""
 
 from abc import ABC
 

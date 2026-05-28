@@ -1,4 +1,4 @@
-"""Unmanaged ket vector quantum state formalism used by photons."""
+"""The free quantum state formalism is used by photons and not managed by a dedicated quantum manager."""
 
 import numpy as np
 from numpy.random import Generator
