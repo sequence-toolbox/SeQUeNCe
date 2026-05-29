@@ -6,22 +6,18 @@ import numpy as np
 from typing import Any
 
 from .base import QuantumManager
-from ..quantum_state import TableauState
-from ...constants import TABLEAU_FORMALISM
+from ..quantum_state import StabilizerState
+from ...constants import STABILIZER_FORMALISM
 from ...components.circuit import Circuit
 from ...utils import log
 
 
-@QuantumManager.register(TABLEAU_FORMALISM)
-class QuantumManagerTableau(QuantumManager):
-    """Quantum manager scaffold for tableau-state simulation.
+@QuantumManager.register(STABILIZER_FORMALISM)
+class QuantumManagerStabilizer(QuantumManager):
+    """Quantum manager for stabilizer-state simulation.
 
     This class follows SeQUeNCe's `QuantumManager` contract so the formalism
     can be swapped with minimal architectural changes.
-
-    Notes:
-        Current implementation supports state creation and assignment. Circuit
-        execution is intentionally left as a staged TODO.
     """
 
     ONE_QUBIT_GATE_TIME_PS = 20_000
@@ -30,7 +26,7 @@ class QuantumManagerTableau(QuantumManager):
     RESET_TIME_PS = 1_200_000
 
     def __init__(self, truncation: int = 1, seed: int | None = None, **kwargs):
-        """Initialize a tableau manager instance.
+        """Initialize a stabilizer manager instance.
 
         Args:
             truncation (int): Hilbert-space truncation placeholder, retained to
@@ -93,14 +89,14 @@ class QuantumManagerTableau(QuantumManager):
         self.measurement_count = 0
         self.measurement_error_count = 0
 
-    def new(self, state: TableauState | Tableau | TableauSimulator | stim.Circuit | None = None) -> int:
-        """Create and register a new tableau-backed state key.
+    def new(self, state: StabilizerState | Tableau | TableauSimulator | stim.Circuit | None = None) -> int:
+        """Create and register a new stabilizer-state key.
 
         Args:
-            state (Optional[Union[TableauState, Tableau, TableauSimulator, Circuit]]):
+            state (Optional[Union[StabilizerState, Tableau, TableauSimulator, Circuit]]):
                 Optional initializer:
                 - None: default seeded single-qubit simulator state.
-                - TableauState: copied and rebound to the new key.
+                - StabilizerState: copied and rebound to the new key.
                 - TableauSimulator: copied and rebound to the new key.
                 - Tableau / Circuit: converted to simulator state.
                 - Also accepts additional formats (e.g., gate-name strings,
@@ -119,39 +115,39 @@ class QuantumManagerTableau(QuantumManager):
             simulator = TableauSimulator(seed=seed)
             simulator.set_num_qubits(1)
             self._apply_initialization_fidelity(simulator, [0])
-            self.states[key] = TableauState(state=simulator, keys=[key], seed=seed)
+            self.states[key] = StabilizerState(state=simulator, keys=[key], seed=seed)
         else:
-            self.states[key] = self._initialize_tableau_state(state, [key])
+            self.states[key] = self._initialize_stabilizer_state(state, [key])
         self.last_idle_time_ps_by_key[key] = 0
         return key
 
     def set(self, keys: list[int], amplitudes: Any) -> None:
-        """Assign a shared tableau state object to one or more keys.
+        """Assign a shared stabilizer state object to one or more keys.
 
         Args:
             keys (list[int]): State keys that should reference the same state.
             amplitudes (Any): State payload to assign.
-                - `TableauState`: copied before assignment.
-                - Any other object: wrapped in a new `TableauState`.
+                - `StabilizerState`: copied before assignment.
+                - Any other object: wrapped in a new `StabilizerState`.
 
         Returns:
             None.
 
         Examples:
             `qm.set([k0], tableau_obj)`
-            `qm.set([k0, k1], tableau_state)`
+            `qm.set([k0, k1], stabilizer_state)`
 
         Notes:
             As in other SeQUeNCe managers, all provided keys are bound to the
             same underlying state object to represent entanglement/grouping.
         """
         super().set(keys, amplitudes)
-        state = self._initialize_tableau_state(amplitudes, list(keys))
+        state = self._initialize_stabilizer_state(amplitudes, list(keys))
         for key in keys:
             self.states[key] = state
 
     def run_circuit(self, circuit: stim.Circuit | Circuit, keys: list[int], meas_samp=None, inject_gate_error: bool = False) -> dict[int, int]:
-        """Execute a Stim or SeQUeNCe circuit on tableau-backed states.
+        """Execute a Stim or SeQUeNCe circuit on stabilizer states.
 
         Args:
             circuit: Stim circuit or SeQUeNCe circuit to execute.
@@ -172,7 +168,7 @@ class QuantumManagerTableau(QuantumManager):
         for instruction in circuit:
             name = instruction.name
             if name not in supported_names:
-                raise ValueError(f"Unsupported stim instruction for tableau manager: {name}")
+                raise ValueError(f"Unsupported stim instruction for stabilizer manager: {name}")
 
             targets = [int(target.value) for target in instruction.targets_copy()]
             if any(target < 0 or target >= len(keys) for target in targets):
@@ -182,7 +178,7 @@ class QuantumManagerTableau(QuantumManager):
                 saw_measurement = True
                 measured_qubits.extend(targets)
             elif saw_measurement:
-                raise ValueError("Tableau manager only supports terminal measurements.")
+                raise ValueError("Stabilizer manager only supports terminal measurements.")
             instruction_payloads.append((name, targets))
 
         # Prepare validated inputs, merged/shared topology, and key index mapping.
@@ -222,7 +218,7 @@ class QuantumManagerTableau(QuantumManager):
 
         # No measurements: commit a fresh shared state object for all keys.
         if len(measured_qubits) == 0:
-            committed_state = TableauState(state=simulator, keys=list(state_obj.keys))
+            committed_state = StabilizerState(state=simulator, keys=list(state_obj.keys))
             for key in state_obj.keys:
                 self.states[key] = committed_state
             return {}
@@ -266,14 +262,14 @@ class QuantumManagerTableau(QuantumManager):
                 collapsed.set_num_qubits(1)
                 if physical_bit == 1:
                     collapsed.x(0)
-                self.states[measured_key] = TableauState(state=collapsed, keys=[measured_key])
+                self.states[measured_key] = StabilizerState(state=collapsed, keys=[measured_key])
 
         # Physically drop measured qubits so simulator indices stay compact for remaining keys.
-        simulator, remaining_keys = self._drop_keys_from_tableau_simulator(simulator, state_obj.keys, measured_keys)
+        simulator, remaining_keys = self._drop_keys_from_stabilizer_simulator(simulator, state_obj.keys, measured_keys)
 
         # Keep unmeasured keys grouped on the shared post-measurement simulator state.
         if remaining_keys:
-            remaining_state = TableauState(state=simulator, keys=remaining_keys)
+            remaining_state = StabilizerState(state=simulator, keys=remaining_keys)
             for key in remaining_keys:
                 self.states[key] = remaining_state
 
@@ -399,7 +395,7 @@ class QuantumManagerTableau(QuantumManager):
         simulator = TableauSimulator(seed=seed)
         simulator.set_num_qubits(1)
         self._apply_initialization_fidelity(simulator, [0])
-        self.states[key] = TableauState(state=simulator, keys=[key], seed=seed)
+        self.states[key] = StabilizerState(state=simulator, keys=[key], seed=seed)
 
     def set_to_one(self, key: int) -> None:
         """Reset a single qubit to the |1⟩ computational basis state.
@@ -415,7 +411,7 @@ class QuantumManagerTableau(QuantumManager):
         sim.set_num_qubits(1)
         sim.x(0)
         self._apply_initialization_fidelity(sim, [0])
-        self.states[key] = TableauState(state=sim, keys=[key], seed=seed)
+        self.states[key] = StabilizerState(state=sim, keys=[key], seed=seed)
         self.last_idle_time_ps_by_key[key] = 0
 
     def remove(self, key: int) -> None:
@@ -602,31 +598,31 @@ class QuantumManagerTableau(QuantumManager):
             else:
                 raise ValueError(f"Unsupported sampled Pauli '{pauli}'.")
 
-    def _initialize_tableau_state(self, initializer: TableauState | Tableau | TableauSimulator | np.ndarray | list | tuple, keys: list[int]) -> TableauState:
-        """Create a tableau state from a supported initializer.
+    def _initialize_stabilizer_state(self, initializer: StabilizerState | Tableau | TableauSimulator | np.ndarray | list | tuple, keys: list[int]) -> StabilizerState:
+        """Create a stabilizer state from a supported initializer.
 
         Args:
-            initializer: Tableau-compatible initializer.
+            initializer: Stabilizer-compatible initializer.
             keys (list[int]): Keys that should bind to the resulting state.
 
         Returns:
-            TableauState: State bound to `keys`.
+            StabilizerState: State bound to `keys`.
         """
-        if isinstance(initializer, TableauState):
+        if isinstance(initializer, StabilizerState):
             state = initializer.copy()
             state.keys = list(keys)
             return state
 
         if isinstance(initializer, TableauSimulator):
             simulator = initializer.copy() if hasattr(initializer, "copy") else initializer
-            return TableauState(state=simulator, keys=list(keys))
+            return StabilizerState(state=simulator, keys=list(keys))
 
         if isinstance(initializer, Tableau):
             tableau = initializer
         elif isinstance(initializer, (np.ndarray, list, tuple)):
             tableau = Tableau.from_state_vector(np.asarray(initializer), endian="little")
         else:
-            raise TypeError("Unsupported tableau initializer.")
+            raise TypeError("Unsupported stabilizer initializer.")
 
         if len(tableau) != len(keys):
             raise ValueError(f"Initializer tableau has {len(tableau)} qubits but {len(keys)} keys were supplied.")
@@ -634,7 +630,7 @@ class QuantumManagerTableau(QuantumManager):
         # Load the initializer tableau into a fresh simulator bound to these keys.
         simulator = TableauSimulator(seed=self._next_seed())
         simulator.set_inverse_tableau(tableau.inverse())
-        return TableauState(state=simulator, keys=list(keys))
+        return StabilizerState(state=simulator, keys=list(keys))
 
     def _apply_gate_error(self, simulator: TableauSimulator, gate_name: str, targets: list[int], circuit_keys: list[int]) -> None:
         """Apply sampled gate-error noise after ideal gate application.
@@ -716,9 +712,9 @@ class QuantumManagerTableau(QuantumManager):
 
         for gate_name, indices, arg in circuit.gates:
             if arg is not None:
-                raise ValueError(f"Unsupported gate arg for tableau manager: {gate_name}")
+                raise ValueError(f"Unsupported gate arg for stabilizer manager: {gate_name}")
             if gate_name not in gate_map:
-                raise ValueError(f"Unsupported gate '{gate_name}' for tableau manager.")
+                raise ValueError(f"Unsupported gate '{gate_name}' for stabilizer manager.")
             converted.append(gate_map[gate_name], list(indices))
 
         for qubit in circuit.measured_qubits:
@@ -728,8 +724,8 @@ class QuantumManagerTableau(QuantumManager):
 
         return converted
 
-    def _prepare_circuit(self, num_qubits: int, measured_qubits: list[int], keys: list[int], meas_samp=None) -> tuple[float | None, TableauState | None, dict[int, int]]:
-        """Validate run input and prepare shared tableau context.
+    def _prepare_circuit(self, num_qubits: int, measured_qubits: list[int], keys: list[int], meas_samp=None) -> tuple[float | None, StabilizerState | None, dict[int, int]]:
+        """Validate run input and prepare shared stabilizer context.
 
         Args:
             num_qubits (int): Circuit width.
@@ -738,8 +734,8 @@ class QuantumManagerTableau(QuantumManager):
             meas_samp: Optional measurement sample from caller.
 
         Returns:
-            tuple[float | None, TableauState | None, dict[int, int]]:
-                Normalized measurement sample, shared tableau state object, and
+            tuple[float | None, StabilizerState | None, dict[int, int]]:
+                Normalized measurement sample, shared stabilizer state object, and
                 key-to-local index mapping.
         """
         if measured_qubits and meas_samp is None:
@@ -761,13 +757,13 @@ class QuantumManagerTableau(QuantumManager):
         if len(set(measured_qubits)) != len(measured_qubits):
             raise ValueError(f"Duplicate measured qubit indices are not allowed: {measured_qubits}")
 
-        # Collect each distinct shared tableau block touched by the requested keys.
-        unique_states: list[TableauState] = []
+        # Collect each distinct shared stabilizer block touched by the requested keys.
+        unique_states: list[StabilizerState] = []
         seen_state_ids: set[int] = set()
         for key in keys:
             qstate = self.states[key]
-            if not isinstance(qstate, TableauState):
-                raise ValueError(f"Expected TableauState for key {key}, got {type(qstate)}")
+            if not isinstance(qstate, StabilizerState):
+                raise ValueError(f"Expected StabilizerState for key {key}, got {type(qstate)}")
             if qstate.state.num_qubits != len(qstate.keys):
                 raise RuntimeError(f"Tableau/key mismatch for state keys: {qstate.keys}")
             if id(qstate) not in seen_state_ids:
@@ -787,7 +783,7 @@ class QuantumManagerTableau(QuantumManager):
 
             if len(set(merged_keys)) != len(merged_keys):
                 raise ValueError(f"Merged state contains duplicate keys: {merged_keys}")
-            state_obj = self._initialize_tableau_state(merged_tableau, merged_keys)
+            state_obj = self._initialize_stabilizer_state(merged_tableau, merged_keys)
             for key in merged_keys:
                 self.states[key] = state_obj
 
@@ -795,7 +791,7 @@ class QuantumManagerTableau(QuantumManager):
         key_to_local = {key: i for i, key in enumerate(state_obj.keys)}
         return meas_samp, state_obj, key_to_local
 
-    def _drop_keys_from_tableau_simulator(self, simulator: TableauSimulator, state_keys: list[int], drop_keys: list[int]) -> tuple[TableauSimulator, list[int]]:
+    def _drop_keys_from_stabilizer_simulator(self, simulator: TableauSimulator, state_keys: list[int], drop_keys: list[int]) -> tuple[TableauSimulator, list[int]]:
         """Drop arbitrary keys by swapping them to tail and truncating qubits.
 
         Args:

@@ -1,21 +1,26 @@
-"""Tableau-backed quantum state formalism.
+"""Stabilizer-state quantum formalism.
 
-Use case: efficient for stabilizer states and Clifford operations. 
-Suitable for simulating second generation quantum repeaters that requires encoding and error correction.
+Use case: efficient simulation of stabilizer states and Clifford operations.
+Suitable for simulating second-generation quantum repeaters that require
+encoding and error correction.
 """
 from stim import TableauSimulator, Tableau
 
 from .base import State
 
 
-class TableauState(State):
-    """Tableau-backed quantum state used by a quantum manager."""
+class StabilizerState(State):
+    """Stim-backed stabilizer quantum state used by a quantum manager.
+
+    The state is stored internally by a ``stim.TableauSimulator``. Tableau
+    accessors are provided for inspection and interoperability with Stim.
+    """
 
     def __init__(self, state: TableauSimulator, keys: list[int], seed: int = None):
-        """Create a tableau state.
+        """Create a stabilizer state.
 
         Args:
-            state TableauSimulaton: Simulator payload.
+            state TableauSimulator: Simulator payload.
                 If `None`, a default simulator in |0...0> is created.
             keys (list[int]): Keys associated with this state.
         """
@@ -30,34 +35,34 @@ class TableauState(State):
             raise TypeError(f"state must be stim.TableauSimulator or None, got {type(state)}")
 
     @classmethod
-    def zero_state(cls, key: int, seed: int = None) -> "TableauState":
-        """Create a single-qubit tableau state initialized to |0>.
+    def zero_state(cls, key: int, seed: int = None) -> "StabilizerState":
+        """Create a single-qubit stabilizer state initialized to |0>.
 
         Args:
             key: Quantum-manager key for the qubit.
             seed: Seed used by stim.TableauSimulator.
 
         Returns:
-            TableauState: New state bound to `[key]`.
+            StabilizerState: New state bound to `[key]`.
         """
         simulator = TableauSimulator(seed=seed)
         simulator.set_num_qubits(1)
         return cls(state=simulator, keys=[key], seed=seed)
 
-    def copy(self) -> "TableauState":
-        """Create a copy of this tableau state.
+    def copy(self) -> "StabilizerState":
+        """Create a copy of this stabilizer state.
 
         Args:
             None.
 
         Returns:
-            TableauState: Copied state with copied keys and simulator.
+            StabilizerState: Copied state with copied keys and simulator.
         """
         if self.state is None:
             simulator = TableauSimulator(seed=self.seed)
         else:
             simulator = self.state.copy(seed=self.seed)
-        return TableauState(state=simulator, keys=self.keys.copy(), seed=self.seed)
+        return StabilizerState(state=simulator, keys=self.keys.copy(), seed=self.seed)
         
     def set_seed(self, seed: int):
         """Set the random seed for this state, affecting future simulator operations."""
@@ -75,13 +80,13 @@ class TableauState(State):
         This is mainly for advanced/internal use.
         """
         if self.state is None:
-            raise ValueError("TableauState is uninitialized (state is None).")
+            raise ValueError("StabilizerState is uninitialized (state is None).")
         return self.state.current_inverse_tableau()
 
     def current_tableau(self) -> Tableau:
         """Return the forward tableau for user-facing state inspection."""
         if self.state is None:
-            raise ValueError("TableauState is uninitialized (state is None).")
+            raise ValueError("StabilizerState is uninitialized (state is None).")
         inverse_tableau = self.state.current_inverse_tableau()
         return inverse_tableau.inverse()
 
@@ -90,7 +95,7 @@ class TableauState(State):
         return "\n".join(["Keys:", str(self.keys), "Tableau:", str(self.current_tableau()),])
 
     def serialize(self) -> dict:
-        raise NotImplementedError("TableauState does not support base complex serialization.")
+        raise NotImplementedError("StabilizerState does not support base complex serialization.")
 
     def deserialize(self) -> None:
-        raise NotImplementedError("TableauState cannot be deserialized from base complex format.")
+        raise NotImplementedError("StabilizerState cannot be deserialized from base complex format.")
