@@ -17,29 +17,5 @@ class State(ABC):
         self.state = None
         self.keys: list = []
 
-    def deserialize(self, json_data) -> None:
-        self.keys = json_data["keys"]
-        self.state = []
-        for i in range(0, len(json_data["state"]), 2):
-            complex_val = complex(json_data["state"][i],
-                                  json_data["state"][i + 1])
-            self.state.append(complex_val)
-
-    def serialize(self) -> dict:
-        res: dict[str, list] = {"keys": self.keys}
-        state: list = []
-        for cplx_n in self.state:
-            if type(cplx_n) is float:
-                state.append(cplx_n)
-                state.append(0)
-            elif isinstance(cplx_n, complex):
-                state.append(cplx_n.real)
-                state.append(cplx_n.imag)
-            else:
-                raise ValueError("Unknown type of state")
-
-        res["state"] = state
-        return res
-
     def __str__(self):
         return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])
