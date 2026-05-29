@@ -79,8 +79,7 @@ def _set_pure_state(keys: list[int], ket_state: list[complex], qm: "QuantumManag
         state = outer(ket_state, ket_state)
         qm.set(keys, state)
     else:
-        raise NotImplementedError("formalism of quantum state {} is not "
-                                  "implemented in the set_pure_quantum_state "
+        raise NotImplementedError("formalism of quantum state {} is not implemented in the set_pure_quantum_state "
                                   "function of bsm.py".format(qm.get_active_formalism()))
 
 
@@ -88,11 +87,10 @@ def _eq_psi_plus(state: "State", formalism: str):
     if formalism == KET_VECTOR_FORMALISM:
         return array_equal(state.state, BSM._psi_plus)
     elif formalism == DENSITY_MATRIX_FORMALISM:
-        d_state = outer(BSM._phi_plus, BSM._psi_plus)
+        d_state = outer(BSM._psi_plus, BSM._psi_plus)
         return array_equal(state.state, d_state)
     else:
-        raise NotImplementedError("formalism of quantum state {} is not "
-                                  "implemented in the eq_phi_plus "
+        raise NotImplementedError("formalism of quantum state {} is not implemented in the eq_phi_plus "
                                   "function of bsm.py".format(formalism))
 
 
