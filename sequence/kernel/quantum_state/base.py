@@ -17,7 +17,12 @@ class State(ABC):
         self.state = None
         self.keys: list = []
 
-    def deserialize(self, json_data) -> None:
+    def deserialize(self, json_data: dict) -> None:
+        """Given a dictionary containing serialized state information, set the attributes of this state.
+
+        Args:
+            json_data (dict): dictionary containing serialized state information.
+        """
         self.keys = json_data["keys"]
         self.state = []
         for i in range(0, len(json_data["state"]), 2):
@@ -26,6 +31,11 @@ class State(ABC):
             self.state.append(complex_val)
 
     def serialize(self) -> dict:
+        """Serialize the state into a dictionary format.
+
+        Returns:
+            dict: A dictionary containing the serialized state information.
+        """
         res: dict[str, list] = {"keys": self.keys}
         state: list = []
         for cplx_n in self.state:

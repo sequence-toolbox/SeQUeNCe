@@ -10,6 +10,7 @@ from .bell_diagonal import BellDiagonalState
 from .density_matrix import DensityState
 from .free import FreeQuantumState
 from .ket_vector import KetState
+from .tableau import TableauState
 
 __all__ = [
     "State",
@@ -17,6 +18,7 @@ __all__ = [
     "DensityState",
     "FreeQuantumState",
     "KetState",
+    "TableauState",
 ]
 
 
