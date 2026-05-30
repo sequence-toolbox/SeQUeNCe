@@ -1,7 +1,7 @@
 from math import sqrt
 from numpy.random import default_rng
 import pytest
-from stim import Tableau
+from stim import Tableau, PauliString
 
 from sequence.kernel.quantum_state import KetState, FreeQuantumState, StabilizerState
 from sequence.utils.encoding import polarization
@@ -56,6 +56,8 @@ def test_build_stabilizer_zero_state():
     assert qs.state.peek_z(0) == 1
     assert isinstance(qs.current_tableau(), Tableau)
     assert isinstance(qs.current_inverse_tableau(), Tableau)
+    zero_state_stabilizer = PauliString("+Z")
+    assert qs.canonical_stabilizers()[0] == zero_state_stabilizer
 
 
 def test_stabilizer_copy():

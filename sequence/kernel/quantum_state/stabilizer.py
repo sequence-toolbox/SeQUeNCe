@@ -93,6 +93,12 @@ class StabilizerState(State):
         inverse_tableau = self.state.current_inverse_tableau()
         return inverse_tableau.inverse()
 
+    def canonical_stabilizers(self):
+        """Return the simulator's canonical stabilizer generators."""
+        if self.state is None:
+            raise ValueError("StabilizerState is uninitialized (state is None).")
+        return self.state.canonical_stabilizers()
+
     def __str__(self) -> str:
         """String form defaults to a readable forward-tableau view."""
         return "\n".join(["Keys:", str(self.keys), "Tableau:", str(self.current_tableau()),])
