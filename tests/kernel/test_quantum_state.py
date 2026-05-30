@@ -1,8 +1,9 @@
 from math import sqrt
 from numpy.random import default_rng
 import pytest
+from stim import Tableau
 
-from sequence.kernel.quantum_state import KetState, FreeQuantumState
+from sequence.kernel.quantum_state import KetState, FreeQuantumState, StabilizerState
 from sequence.utils.encoding import polarization
 
 
@@ -42,6 +43,33 @@ def test_build_ket():
     amps = [complex(1), complex(0), complex(0), complex(0)]
     with pytest.raises(AssertionError):
         _ = KetState(amps, keys)
+
+
+def test_build_stabilizer_zero_state():
+    key = 3
+    seed = 0
+    qs = StabilizerState.zero_state(key=key, seed=seed)
+
+    assert qs.keys == [key]
+    assert qs.get_seed() == seed
+    assert qs.state.num_qubits == 1
+    assert qs.state.peek_z(0) == 1
+    assert isinstance(qs.current_tableau(), Tableau)
+    assert isinstance(qs.current_inverse_tableau(), Tableau)
+
+
+def test_stabilizer_copy():
+    key = 2
+    seed = 1
+    qs = StabilizerState.zero_state(key=key, seed=seed)
+    copied = qs.copy()
+    copied.keys.append(1)
+    copied.state.x(0)
+
+    assert qs.keys == [key]
+    assert copied.keys == [key, 1]
+    assert qs.state.peek_z(0) == 1
+    assert copied.state.peek_z(0) == -1
 
 
 def test_measure():
@@ -127,4 +155,3 @@ def test_measure_entangled():
 def test_polarization_noise():
     qs = FreeQuantumState()
     pass
-

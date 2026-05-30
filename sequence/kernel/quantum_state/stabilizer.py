@@ -1,8 +1,11 @@
 """Stabilizer-state quantum formalism.
 
-Use case: efficient simulation of stabilizer states and Clifford operations.
-Suitable for simulating second-generation quantum repeaters that require
-encoding and error correction.
+This module utilizes stim.TableauSimulator as the dynamic stabilizer-state simulator.
+
+Space complexity: O(n^2) for n qubits. More precisely, the space complexity is 4n(n+1), which consists of
+                  2n(n+1) for the stabilizer generators and 2n(n+1) for the destabilizer generators.
+
+Use case: Suitable for simulating protocols that require quantum encoding and error correction.
 """
 from stim import TableauSimulator, Tableau
 
@@ -25,7 +28,7 @@ class StabilizerState(State):
             keys (list[int]): Keys associated with this state.
         """
         super().__init__()
-        self.keys = list(keys)
+        self.keys = keys
         self.seed = seed
         if state is None:
             self.state = TableauSimulator(seed=seed)
@@ -39,8 +42,8 @@ class StabilizerState(State):
         """Create a single-qubit stabilizer state initialized to |0>.
 
         Args:
-            key: Quantum-manager key for the qubit.
-            seed: Seed used by stim.TableauSimulator.
+            key (int): Quantum-manager key for the qubit.
+            seed (int, optional): Seed used by stim.TableauSimulator.
 
         Returns:
             StabilizerState: New state bound to `[key]`.
@@ -93,9 +96,3 @@ class StabilizerState(State):
     def __str__(self) -> str:
         """String form defaults to a readable forward-tableau view."""
         return "\n".join(["Keys:", str(self.keys), "Tableau:", str(self.current_tableau()),])
-
-    def serialize(self) -> dict:
-        raise NotImplementedError("StabilizerState does not support base complex serialization.")
-
-    def deserialize(self) -> None:
-        raise NotImplementedError("StabilizerState cannot be deserialized from base complex format.")
