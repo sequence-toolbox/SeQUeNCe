@@ -53,6 +53,7 @@ class EntanglementSwappingMessage(Message):
             self.remote_memo = kwargs.get("remote_memo")
             self.expire_time = kwargs.get("expire_time")
             self.meas_res = kwargs.get("meas_res")
+            self.swap_time = kwargs.get("swap_time")
         else:
             raise Exception("Entanglement swapping protocol create unkown type of message: %s" % str(msg_type))
 
@@ -121,6 +122,17 @@ class EntanglementSwappingA(EntanglementProtocol):
         self.left_protocol_name = None
         self.right_protocol_name = None
 
+    @staticmethod
+    def _refresh_memory_fidelity(memory: "Memory") -> float:
+        """Refresh memory fidelity from its current Bell-diagonal state if available."""
+
+        try:
+            memory.bds_decohere()
+            memory.fidelity = float(memory.timeline.quantum_manager.get(memory.qstate_key).state[0])
+        except Exception:
+            memory.fidelity = float(memory.fidelity)
+        return memory.fidelity
+
     def is_ready(self) -> bool:
         """Return True if left_protocol and right_protocol are both set.
         """
@@ -155,13 +167,16 @@ class EntanglementSwappingA(EntanglementProtocol):
 
         log.logger.info(f"{self.owner.name} middle protocol start with ends {self.left_node}, {self.right_node}")
 
-        assert self.left_memo.fidelity > 0 and self.right_memo.fidelity > 0
+        left_fidelity = self._refresh_memory_fidelity(self.left_memo)
+        right_fidelity = self._refresh_memory_fidelity(self.right_memo)
+
+        assert left_fidelity > 0 and right_fidelity > 0
         assert self.left_memo.entangled_memory["node_id"] == self.left_node
         assert self.right_memo.entangled_memory["node_id"] == self.right_node
 
         if self.owner.get_generator().random() < self.success_probability():
             # swapping succeeded
-            fidelity = self.updated_fidelity(self.left_memo.fidelity, self.right_memo.fidelity)
+            fidelity = self.updated_fidelity(left_fidelity, right_fidelity)
             self.is_success = True
 
             expire_time = min(self.left_memo.get_expire_time(), self.right_memo.get_expire_time())
@@ -173,16 +188,20 @@ class EntanglementSwappingA(EntanglementProtocol):
             
             log.logger.info(f"{self.name} swapping succeeded, meas_res={meas_res[0]},{meas_res[1]}")
             
+            swap_time = self.owner.timeline.now()
+
             msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,
                                                 self.left_protocol_name, fidelity=fidelity,
                                                 remote_node=self.right_memo.entangled_memory["node_id"],
                                                 remote_memo=self.right_memo.entangled_memory["memo_id"],
-                                                expire_time=expire_time, meas_res=[])  # empty meas_res
+                                                expire_time=expire_time, meas_res=[],
+                                                swap_time=swap_time)  # empty meas_res
             msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, 
                                                 self.right_protocol_name, fidelity=fidelity,
                                                 remote_node=self.left_memo.entangled_memory["node_id"],
                                                 remote_memo=self.left_memo.entangled_memory["memo_id"],
-                                                expire_time=expire_time, meas_res=meas_res)
+                                                expire_time=expire_time, meas_res=meas_res,
+                                                swap_time=swap_time)
         else:
             # swapping failed
             log.logger.info(f"{self.name} swapping failed")
@@ -342,6 +361,23 @@ class EntanglementSwappingB(EntanglementProtocol):
             self.memory.fidelity = msg.fidelity
             self.memory.entangled_memory["node_id"] = msg.remote_node
             self.memory.entangled_memory["memo_id"] = msg.remote_memo
+            swap_time = msg.swap_time if msg.swap_time is not None else self.owner.timeline.now()
+
+            # Apply only post-swap decoherence: state is initialized at swap-time
+            # from msg.fidelity, then aged until this receive-time.
+            remote_memory = self.owner.timeline.get_entity_by_name(msg.remote_memo)
+            if remote_memory is not None and self.memory.decoherence_errors is not None:
+                remaining = max(0.0, 1 - msg.fidelity)
+                swapped_state = [msg.fidelity, remaining / 3, remaining / 3, remaining / 3]
+                self.owner.timeline.quantum_manager.set([self.memory.qstate_key, remote_memory.qstate_key], swapped_state)
+                self.memory.last_update_time = int(swap_time)
+                remote_memory.last_update_time = int(swap_time)
+                self.memory.bds_decohere()
+                refreshed = float(self.owner.timeline.quantum_manager.get(self.memory.qstate_key).state[0])
+                self.memory.fidelity = refreshed
+                remote_memory.fidelity = refreshed
+                remote_memory.last_update_time = self.memory.last_update_time
+
             self.memory.update_expire_time(msg.expire_time)
             self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
         else:
