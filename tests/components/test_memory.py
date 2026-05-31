@@ -4,8 +4,11 @@ import math
 from sequence.components.memory import *
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
+from sequence.kernel.quantum_manager import QuantumManager
 from sequence.kernel.timeline import Timeline
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
+from sequence.constants import BELL_DIAGONAL_STATE_FORMALISM
+from sequence.utils.memory_observation import compute_memory_stress
 
 SEED = 0
 
@@ -199,6 +202,93 @@ def test_Memory__schedule_expiration():
         if event.is_invalid():
             counter += 1
     assert counter == 1
+
+
+def test_compute_memory_stress_fresh_memory_is_low():
+    tl = Timeline()
+    mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
+
+    observation = compute_memory_stress(mem, now=0)
+
+    assert observation.age_component == 0.0
+    assert observation.cutoff_component == 0.0
+    assert observation.score == 0.0
+    assert observation.has_bell_diagonal_state is False
+
+
+def test_compute_memory_stress_aged_memory_is_higher():
+    tl = Timeline()
+    mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
+    mem.generation_time = 0
+
+    early = compute_memory_stress(mem, now=int(0.1e12))
+    late = compute_memory_stress(mem, now=int(0.8e12))
+
+    assert late.age_component > early.age_component
+    assert late.cutoff_component > early.cutoff_component
+    assert late.score > early.score
+
+
+def test_compute_memory_stress_infinite_coherence_is_bounded():
+    tl = Timeline()
+    mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
+    mem.generation_time = 0
+
+    observation = compute_memory_stress(mem, now=int(10e12))
+
+    assert observation.age_component == 0.0
+    assert observation.cutoff_component == 0.0
+    assert 0.0 <= observation.score <= 1.0
+
+
+def test_compute_memory_stress_bds_state_is_supported():
+    QuantumManager.set_global_manager_formalism(BELL_DIAGONAL_STATE_FORMALISM)
+    try:
+        tl = Timeline()
+        mem_a = Memory(
+            "mem_a",
+            tl,
+            fidelity=1,
+            frequency=0,
+            efficiency=1,
+            coherence_time=1,
+            wavelength=500,
+            decoherence_errors=[1 / 3, 1 / 3, 1 / 3],
+        )
+        mem_b = Memory(
+            "mem_b",
+            tl,
+            fidelity=1,
+            frequency=0,
+            efficiency=1,
+            coherence_time=1,
+            wavelength=500,
+            decoherence_errors=[1 / 3, 1 / 3, 1 / 3],
+        )
+        tl.quantum_manager.set([mem_a.qstate_key, mem_b.qstate_key], [0.7, 0.1, 0.1, 0.1])
+        mem_a.generation_time = 0
+        mem_a.last_update_time = 0
+
+        observation = compute_memory_stress(mem_a, now=int(0.5e12))
+
+        assert observation.has_bell_diagonal_state is True
+        assert observation.bds_dispersion_component > 0.0
+        assert 0.0 <= observation.score <= 1.0
+    finally:
+        QuantumManager.clear_active_formalism()
+
+
+def test_compute_memory_stress_values_are_clamped():
+    tl = Timeline()
+    mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500, cutoff_ratio=0.5)
+    mem.generation_time = 0
+
+    observation = compute_memory_stress(mem, now=int(5e12))
+
+    assert 0.0 <= observation.age_component <= 1.0
+    assert 0.0 <= observation.cutoff_component <= 1.0
+    assert 0.0 <= observation.bds_dispersion_component <= 1.0
+    assert 0.0 <= observation.score <= 1.0
 
 
 def test_Absorptive_prepare():
