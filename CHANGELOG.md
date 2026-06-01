@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update the tutorial to catch up on the recent updates. Add notes saying refer to chapter 6 Application module for standard usage
 - Introducing `EARLY_EXPIRE` message type. A request has a `start_time` and `end_time`. When a request is finished before the `end_time`, then the reservation (and the associated rules) should expire early. If not, the quantum network will keep generating entanglement pairs because the rules still exist.
 
+
 ### Changed
 - Using typer for CLI, creates a unified interface for topology generation. Allow for custom graph objects in CLI.
 - Moved all old topologies to NetworkX graph objects
@@ -27,12 +28,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Trigger empty inits for resource and network manager to enable future bootstrapping.
 - Migrated `utils/json_config_generators/` to `sequence/config_generators/`.
 - Add a `sender_delay` argument to the `Node.send_message()` to account for processing delay, queueing delay, transmission delay, etc.
+- Break down the `quantum_manager.py` into a module consisting of multiple files where each file has a quantum manager class
+- Break down the `quantum_state.py` into a module consisting of multiple files where each file has a quantum state class
 
 ### Removed
 - Old configuration generators 
 - The old `swapping.py` is removed
+- The old `quantum_manager.py` is removed
+- The old `quantum_state.py` is removed
 - Removed support for Python 3.11
 - Removed `qlan` submodule
+
+### Bug fix
+- Some minor bugs in quantum states
 
 
 ## [0.8.5] - 2026-2-27

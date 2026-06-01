@@ -5,9 +5,9 @@ from networkx import Graph, dijkstra_path, exception
 from ..network_management.routing import DistributedRoutingProtocol, StaticRoutingProtocol
 from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
-from ..kernel.quantum_manager import KET_VECTOR_FORMALISM, QuantumManager
+from ..constants import KET_VECTOR_FORMALISM, SPEED_OF_LIGHT
+from ..kernel.quantum_manager import QuantumManager
 from .node import BSMNode, QuantumRouter
-from ..constants import SPEED_OF_LIGHT
 
 
 class RouterNetTopo(Topo):
