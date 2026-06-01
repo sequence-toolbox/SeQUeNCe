@@ -4,7 +4,8 @@ import numpy as np
 from sequence.components.detector import *
 from sequence.components.photon import Photon
 from sequence.kernel.timeline import Timeline
-from sequence.kernel.quantum_manager import FOCK_DENSITY_MATRIX_FORMALISM, QuantumManager
+from sequence.constants import FOCK_DENSITY_MATRIX_FORMALISM
+from sequence.kernel.quantum_manager import QuantumManager
 from sequence.utils.encoding import polarization, time_bin, absorptive, fock
 
 SEED = 0

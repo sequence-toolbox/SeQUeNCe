@@ -1,8 +1,10 @@
 import numpy as np
 from scipy.linalg import fractional_matrix_power
 import math
+from math import sqrt
+from numpy import array, eye
 
-from sequence.kernel.quantum_manager import *
+from sequence.kernel.quantum_manager import QuantumManagerDensity, QuantumManagerDensityFock, QuantumManagerKet
 from sequence.components.circuit import Circuit
 
 

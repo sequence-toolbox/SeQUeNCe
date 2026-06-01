@@ -1,27 +1,16 @@
-"""Definition of the quantum state classes.
-
-This module defines the classes used to track quantum states in SeQUeNCe.
-These include 2 classes used by a quantum manager, and one used for individual photons:
-
-1. The `KetState` class represents the ket vector formalism and is used by a quantum manager.
-2. The `DensityState` class represents the density matrix formalism and is also used by a quantum manager.
-3. The `FreeQuantumState` class uses the ket vector formalism and is used by individual photons (not the quantum manager).
-"""
-
-import math
-from abc import ABC
+"""The free quantum state formalism is used by photons and not managed by a dedicated quantum manager."""
 
 import numpy as np
 from numpy.random import Generator
 
-from .quantum_utils import measure_state_with_cache, measure_entangled_state_with_cache, measure_multiple_with_cache
-from ..constants import EPSILON
+from .base import State
+from ..quantum_utils import measure_state_with_cache, measure_entangled_state_with_cache, measure_multiple_with_cache
 
 
 def swap_bits(num, pos1, pos2):
     """Swaps bits in num at positions 1 and 2.
 
-    Used by quantum_state.measure_multiple method.
+    Used by FreeQuantumState.measure_multiple method.
     """
 
     bit1 = (num >> pos1) & 1
@@ -29,140 +18,6 @@ def swap_bits(num, pos1, pos2):
     x = bit1 ^ bit2
     x = (x << pos1) | (x << pos2)
     return num ^ x
-
-
-class State(ABC):
-    """Base class for storing quantum states (abstract).
-
-    Attributes:
-        state (any): internal representation of the state, may vary by state type.
-        keys (list[int]): list of keys pointing to the state, for use with a quantum manager.
-    """
-
-    def __init__(self, **kwargs):
-        # potential key word arguments for derived classes, e.g. truncation = d-1 for qudit
-
-        super().__init__()
-        self.state = None
-        self.keys: list = []
-
-    def deserialize(self, json_data) -> None:
-        self.keys = json_data["keys"]
-        self.state = []
-        for i in range(0, len(json_data["state"]), 2):
-            complex_val = complex(json_data["state"][i],
-                                  json_data["state"][i + 1])
-            self.state.append(complex_val)
-
-    def serialize(self) -> dict:
-        res: dict[str, list] = {"keys": self.keys}
-        state: list = []
-        for cplx_n in self.state:
-            if type(cplx_n) is float:
-                state.append(cplx_n)
-                state.append(0)
-            elif isinstance(cplx_n, complex):
-                state.append(cplx_n.real)
-                state.append(cplx_n.imag)
-            else:
-                raise ValueError("Unknown type of state")
-
-        res["state"] = state
-        return res
-
-    def __str__(self):
-        return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])
-
-
-class KetState(State):
-    """Class to represent an individual quantum state as a ket vector.
-
-    Attributes:
-        state (np.array): state vector. Should be of length d ** len(keys), where d is dimension of elementary
-            Hilbert space. Default is 2 for qubits.
-        keys (list[int]): list of keys (subsystems) associated with this state.
-        truncation (int): maximally allowed number of excited states for elementary subsystems.
-                Default is 1 for qubit. dim = truncation + 1
-    """
-
-    def __init__(self, amplitudes: list[complex], keys: list[int], truncation: int = 1):
-        """Constructor for ket state class.
-
-        Args:
-            amplitudes
-            truncation (int): maximally allowed number of excited states for elementary subsystems.
-                Default is 1 for qubit. dim = truncation + 1
-        """
-        super().__init__()
-        self.truncation = truncation
-        dim = self.truncation + 1  # dimension of element Hilbert space
-
-        # check formatting
-        assert all([abs(a) <= 1 + EPSILON for a in amplitudes]), "Illegal value with abs > 1 in ket vector"
-        assert math.isclose(sum([abs(a) ** 2 for a in amplitudes]), 1), "Squared amplitudes do not sum to 1"
-
-        num_subsystems = np.log(len(amplitudes)) / np.log(dim)
-        assert dim ** int(round(num_subsystems)) == len(amplitudes),\
-            "Length of amplitudes should be d ** n, " \
-            "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
-            "Actual amplitude length: {}, dim: {}, num subsystems: {}".format(len(amplitudes), dim, num_subsystems)
-        num_subsystems = int(round(num_subsystems))
-        assert num_subsystems == len(keys),\
-            "Length of amplitudes should be d ** n, " \
-            "where d is subsystem Hilbert space dimension and n is the number of subsystems. " \
-            "Amplitude length: {}, expected subsystems: {}, num keys: {}".format(len(amplitudes), num_subsystems, len(keys))
-
-        self.state = np.array(amplitudes, dtype=complex)
-        self.keys = keys
-
-
-class DensityState(State):
-    """Class to represent an individual quantum state as a density matrix.
-
-    Attributes:
-        state (np.array): density matrix values. NxN matrix with N = d ** len(keys), where d is dimension of elementary
-            Hilbert space. Default is d = 2 for qubits.
-        keys (list[int]): list of keys (subsystems) associated with this state.
-        truncation (int): maximally allowed number of excited states for elementary subsystems.
-            Default is 1 for qubit. dim = truncation + 1
-    """
-
-    def __init__(self, state: list[list[complex]], keys: list[int], truncation: int = 1):
-        """Constructor for density state class.
-
-        Args:
-            state (list[list[complex]]): density matrix elements given as a list.
-                If the list is one-dimensional, will be converted to matrix with outer product operation.
-            keys (list[int]): list of keys to this state in quantum manager.
-            truncation (int): maximally allowed number of excited states for elementary subsystems.
-                Default is 1 for qubit. dim = truncation + 1
-        """
-
-        super().__init__()
-        self.truncation = truncation
-        dim = self.truncation + 1  # dimension of element Hilbert space
-
-        state = np.array(state, dtype=complex)
-        if state.ndim == 1:
-            state = np.outer(state, state.conj())
-
-        # check formatting
-        assert abs(np.trace(np.array(state)) - 1) < 0.01, "density matrix trace must be 1"
-        for row in state:
-            assert len(state) == len(row), "density matrix must be square"
-
-        num_subsystems = np.log(len(state)) / np.log(dim)
-        assert dim ** int(round(num_subsystems)) == len(state), (
-            "Length of amplitudes should be d ** n, "
-            "where d is subsystem Hilbert space dimension and n is the number of subsystems. "
-            f"Actual amplitude length: {len(state)}, dim: {dim}, num subsystems: {num_subsystems}")
-        num_subsystems = int(round(num_subsystems))
-        assert num_subsystems == len(keys), (
-            "Length of amplitudes should be d ** n, "
-            "where d is subsystem Hilbert space dimension and n is the number of subsystems. "
-            f"Amplitude length: {len(state)}, expected subsystems: {num_subsystems}, num keys: {len(keys)}")
-        self.state = state
-        self.keys = keys
 
 
 class FreeQuantumState(State):
@@ -368,35 +223,3 @@ class FreeQuantumState(State):
             state.entangled_photons = entangled_list
 
         return res
-
-
-class BellDiagonalState(State):
-    """Class to represent a 2-qubit EPR pair as Bell diagonal state.
-
-    Has 4 diagonal elements of density matrix in Bell basis.
-
-    Attributes:
-        state (np.array): diagonal elements of 2-qubit density matrix in Bell bases. Should be of length 4.
-        keys (list[int]): list of keys (subsystems) associated with this state. Should be length 2.
-    """
-
-    def __init__(self, diag_elems: list[float], keys: list[int]):
-        """Constructor for Bell diagonal state class.
-
-        Args:
-            diag_elems (list[float]): 4 diagonal elements of 2-qubit density matrix in Bell bases. 
-                Default order: Phi+, Phi-, Psi+, Psi- (i.e. I, Z, X, Y errors).
-            keys (list[int]): list of keys to this state in quantum manager. Should be length 2.
-        """
-        super().__init__()
-
-        # check formatting
-        assert all([elem <= 1.001 and elem >= 0 for elem in diag_elems]), (
-            "Illegal value with elem > 1 or elem < 0 in density matrix diagonal elements")
-        assert abs(sum([elem for elem in diag_elems]) - 1) < 1e-5, (
-            "Density matrix diagonal elements do not sum to 1")
-        assert len(keys) == 2, "BellDiagonalState density matrix are only supported for 2-qubit entangled states."
-
-        # note: density matrix diagonal elements are guaranteed to be real from Hermiticity
-        self.state: list[float] = np.array(diag_elems, dtype=float)
-        self.keys = keys

@@ -25,7 +25,7 @@ import numpy as np
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
-from sequence.kernel.quantum_manager import FOCK_DENSITY_MATRIX_FORMALISM
+from sequence.constants import FOCK_DENSITY_MATRIX_FORMALISM
 from sequence.components.detector import QSDetectorFockDirect, QSDetectorFockInterference
 from sequence.components.light_source import SPDCSource
 from sequence.components.memory import AbsorptiveMemory
