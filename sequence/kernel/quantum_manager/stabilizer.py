@@ -1,3 +1,11 @@
+"""
+This module implements the stabilizer-state quantum manager.
+
+This manager is developed during the project ``Realistic Simulation of Quantum Repeater with Encoding and Classical Error Correction``,
+see arXiv https://arxiv.org/abs/2605.06928.
+
+"""
+
 from collections.abc import Iterable
 from typing import Any
 
@@ -758,7 +766,7 @@ class QuantumManagerStabilizer(QuantumManager):
             merged_tableau = None
             for qstate in unique_states:
                 merged_keys.extend(qstate.keys)
-                block_tableau = qstate.current_tableau()
+                block_tableau = qstate.current_forward_tableau()
                 merged_tableau = block_tableau if merged_tableau is None else merged_tableau + block_tableau
 
             if len(set(merged_keys)) != len(merged_keys):

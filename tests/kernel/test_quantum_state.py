@@ -54,7 +54,7 @@ def test_build_stabilizer_zero_state():
     assert qs.get_seed() == seed
     assert qs.state.num_qubits == 1
     assert qs.state.peek_z(0) == 1
-    assert isinstance(qs.current_tableau(), Tableau)
+    assert isinstance(qs.current_forward_tableau(), Tableau)
     assert isinstance(qs.current_inverse_tableau(), Tableau)
     zero_state_stabilizer = PauliString("+Z")
     assert qs.canonical_stabilizers()[0] == zero_state_stabilizer

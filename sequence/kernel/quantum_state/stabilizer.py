@@ -7,8 +7,8 @@ Space complexity: O(n^2) for n qubits. More precisely, the space complexity is 4
 
 Use case: Suitable for simulating protocols that require quantum encoding and error correction.
 """
-from stim import TableauSimulator, Tableau
 
+from stim import TableauSimulator, Tableau, PauliString
 from .base import State
 
 
@@ -55,9 +55,6 @@ class StabilizerState(State):
     def copy(self) -> "StabilizerState":
         """Create a copy of this stabilizer state.
 
-        Args:
-            None.
-
         Returns:
             StabilizerState: Copied state with copied keys and simulator.
         """
@@ -68,37 +65,61 @@ class StabilizerState(State):
         return StabilizerState(state=simulator, keys=self.keys.copy(), seed=self.seed)
         
     def set_seed(self, seed: int):
-        """Set the random seed for this state, affecting future simulator operations."""
+        """Set the random seed for this state, affecting future simulator operations.
+        
+        Args:
+            seed (int): new random seed to set.
+        """
         self.seed = seed
         if self.state is not None:
             self.state = self.state.copy(seed=seed)
 
     def get_seed(self) -> int:
-        """Get the current random seed for this state."""
+        """Get the current random seed for this state.
+        
+        Returns:
+            int: Current random seed.
+        """
         return self.seed
 
     def current_inverse_tableau(self) -> Tableau:
         """Return current inverse tableau from simulator state.
 
-        This is mainly for advanced/internal use.
+        Returns:
+            Tableau: current inverse tableau.
         """
         if self.state is None:
             raise ValueError("StabilizerState is uninitialized (state is None).")
         return self.state.current_inverse_tableau()
 
-    def current_tableau(self) -> Tableau:
-        """Return the forward tableau for user-facing state inspection."""
+    def current_forward_tableau(self) -> Tableau:
+        """Return the forward tableau for user-facing state inspection, which describes the Clifford transformation
+
+        Returns:
+            Tableau: current forward tableau.
+        """
         if self.state is None:
             raise ValueError("StabilizerState is uninitialized (state is None).")
         inverse_tableau = self.state.current_inverse_tableau()
         return inverse_tableau.inverse()
 
-    def canonical_stabilizers(self):
-        """Return the simulator's canonical stabilizer generators."""
+    def canonical_stabilizers(self) -> list[PauliString]:
+        """Return the simulator's canonical stabilizer generators, which describes the quantum state in a normalized stabilizer-generator form.
+        
+        Distinction against forward tableau: many different Clifford circuits can produce the same stabilizer state. 
+            Their forward tableaus may differ, but their canonical stabilizers can be the same because the final state is the same.
+
+        Returns:
+            list[PauliString]: canonical stabilizer generators.
+        """
         if self.state is None:
             raise ValueError("StabilizerState is uninitialized (state is None).")
         return self.state.canonical_stabilizers()
 
     def __str__(self) -> str:
-        """String form defaults to a readable forward-tableau view."""
-        return "\n".join(["Keys:", str(self.keys), "Tableau:", str(self.current_tableau()),])
+        """The string representation of a stabilizer state includes its keys and canonical stabilizers.
+        
+        Returns:
+            str: string representation of the state.
+        """
+        return "\n".join(["Keys:", str(self.keys), "Canonical stabilizers:", str(self.canonical_stabilizers())])
