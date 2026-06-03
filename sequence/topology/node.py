@@ -4,8 +4,10 @@ This module provides definitions for various types of quantum network nodes.
 All node types inherit from the base Node type, which inherits from Entity.
 Node types can be used to collect all the necessary hardware and software for a network usage scenario.
 """
+from __future__ import annotations
+
 from math import inf
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -128,19 +130,21 @@ class Node(Entity):
 
         self.qchannels[another] = qchannel
 
-    def send_message(self, dst: str, msg: "Message", priority=inf) -> None:
+    def send_message(self, dst: str, msg: "Message", priority=inf, sender_delay: int = 0) -> None:
         """Method to send classical message.
 
         Args:
             dst (str): name of destination node for message.
             msg (Message): message to transmit.
             priority (int): priority for transmitted message (default inf).
+            sender_delay (int): sender-side delay (ps) before message is sent out on the channel (default 0).
+                                Include but not limited to processing delay, queueing delay, transmission delay, etc.
         """
-        log.logger.info(f"{self.name} send message {msg} to {dst}")
+        log.logger.debug(f"{self.name} send message {msg} to {dst}")
 
         if priority == inf:
             priority = self.timeline.schedule_counter
-        self.cchannels[dst].transmit(msg, self, priority)
+        self.cchannels[dst].transmit(msg, self, priority, sender_delay)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         """Method to receive message from classical channel.
@@ -151,7 +155,7 @@ class Node(Entity):
             src (str): name of node sending the message.
             msg (Message): message transmitted from node.
         """
-        log.logger.info(f"{self.name} receive message {msg} from {src}")
+        log.logger.debug(f"{self.name} receive message {msg} from {src}")
         # signal to protocol that we've received a message
         if msg.receiver is not None:
             for protocol in self.protocols:
@@ -197,16 +201,16 @@ class Node(Entity):
             return [comp for comp in self.components.values() if isinstance(comp, component_type)]
         return []
 
-    def get_component_by_name(self, name: str) -> Optional["Entity"]:
+    def get_component_by_name(self, name: str) -> Entity | None:
         """Method to return the component with the given name.
 
         Args:
             name (str): The name of the component to retrieve.
 
         Returns:
-            Optional[Entity]: The component with the given name, or None if not found.
+            Entity | None: The component with the given name, or None if not found.
         """
-        return self.timeline.get_entity_by_name(name)
+        return self.components.get(name, None)
 
     def change_timeline(self, timeline: "Timeline"):
         self.timeline = timeline
@@ -304,6 +308,8 @@ class QuantumRouter(Node):
         map_to_middle_node (dict[str, str]): mapping of router names to intermediate bsm node names.
         app (any): application in use on node.
         down (bool): whether the node is down (not operational).
+        swapping_success_prob (float): the success probability of entanglement swapping performed by this node (Default 1).
+        swapping_degradation (float | None): the degradation of entanglement swapping performed by this node (Default None).
     """
 
     def __init__(self, name: str, tl: "Timeline", memo_size: int = 50, seed: int | None = None, component_templates: dict = {}, gate_fid: float = 1, meas_fid: float = 1):
@@ -316,9 +322,9 @@ class QuantumRouter(Node):
             seed (int): the random seed for the random number generator
             component_templates (dict): parameters for the quantum router
             gate_fid (float): fidelity of multi-qubit gates (usually CNOT) that can be performed on the node;
-                Default value is 1, meaning ideal gate.
+                              Default value is 1, meaning ideal gate.
             meas_fid (float): fidelity of single-qubit measurements (usually Z measurement) that can be performed on the node;
-                Default value is 1, meaning ideal measurement.
+                              Default value is 1, meaning ideal measurement.
         """
 
         super().__init__(name, tl, seed, gate_fid, meas_fid)
@@ -335,6 +341,10 @@ class QuantumRouter(Node):
         self.map_to_middle_node = {}
         self.app = None
         self.down = False
+        swapping_args = component_templates.get("EntanglementSwapping", {})
+        self.swapping_success_prob = swapping_args.get("swapping_success_prob", 1)
+        self.swapping_degradation = swapping_args.get("swapping_degradation", None)
+
 
     def receive_message(self, src: str, msg: "Message") -> None:
         """Determine what to do when a message is received, based on the msg.receiver.
@@ -344,7 +354,7 @@ class QuantumRouter(Node):
             msg (Message): the received message.
         """
         if self.down:
-            log.logger.info(f"{self.name} is DOWN. Dropping message {msg} from {src}")
+            log.logger.debug(f"{self.name} is DOWN. Dropping message {msg} from {src}")
             return
 
         log.logger.info(f"{self.name}: receive message {msg} from {src}")
@@ -363,22 +373,24 @@ class QuantumRouter(Node):
                         protocol.received_message(src, msg)
                         break
 
-    def send_message(self, dst: str, msg: "Message", priority=inf) -> None:
+    def send_message(self, dst: str, msg: "Message", priority=inf, sender_delay: int = 0) -> None:
         """Method to send a classical message.
 
         Args:
             dst (str): name of the destination node to get the message.
             msg (Message): message to transmit.
             priority (int): priority for the transmitted message (default inf).
+            sender_delay (int): sender-side delay (ps) before message is sent out on the channel (default 0).
+                                Include but not limited to processing delay, queueing delay, transmission delay, etc.
         """
         if self.down:
-            log.logger.info(f"{self.name} is DOWN. Dropping message {msg} to {dst}")
+            log.logger.debug(f"{self.name} is DOWN. Dropping message {msg} to {dst}")
             return
         
         log.logger.info(f"{self.name}: send message {msg} to {dst}")
         if priority == inf:
             priority = self.timeline.schedule_counter
-        self.cchannels[dst].transmit(msg, self, priority)
+        self.cchannels[dst].transmit(msg, self, priority, sender_delay)
 
     def set_down(self, down: bool):
         """Method to set the node status.
@@ -390,10 +402,11 @@ class QuantumRouter(Node):
         self.down = down
 
     def init(self):
-        """Method to initialize quantum router node.
         """
-        if self.network_manager.routing_protocol is not None:
-            self.network_manager.routing_protocol.init()
+        Method to initialize the managers.
+        """
+        self.resource_manager.init()
+        self.network_manager.init()
 
     def add_bsm_node(self, bsm_name: str, router_name: str):
         """Method to record connected BSM nodes
@@ -776,19 +789,21 @@ class ClassicalNode(ClassicalEntity):
 
         self.cchannels[another] = cchannel
 
-    def send_message(self, dst: str, msg: "Message", priority=inf) -> None:
+    def send_message(self, dst: str, msg: "Message", priority=inf, sender_delay: int = 0) -> None:
         """Method to send classical message.
 
         Args:
             dst (str): name of destination node for message.
             msg (Message): message to transmit.
             priority (int): priority for transmitted message (default inf).
+            sender_delay (int): sender-side delay (ps) before message is sent out on the channel (default 0).
+                                Include but not limited to processing delay, queueing delay, transmission delay, etc.
         """
         log.logger.info(f"{self.name} send message {msg} to {dst}")
 
         if priority == inf:
             priority = self.timeline.schedule_counter
-        self.cchannels[dst].transmit(msg, self, priority)
+        self.cchannels[dst].transmit(msg, self, priority, sender_delay)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         """Method to receive message from classical channel.

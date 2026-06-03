@@ -4,7 +4,6 @@ This module introduces the QuantumCircuit class. The qutip library is used to ca
 """
 
 from math import e, pi, sqrt
-from typing import Optional
 
 import numpy as np
 from qutip_qip.circuit import QubitCircuit

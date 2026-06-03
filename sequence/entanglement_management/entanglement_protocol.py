@@ -18,12 +18,13 @@ class EntanglementProtocol(Protocol):
     Attributes:
         owner (Node): Node object to attach to
         name (str): Name of the protocol instance
+        protocol_type (str): Type of the protocol instance
         rule (Rule): Rule which created this protocol instance (from the rule manager).
         memories (list[Memory]): Any memories being operated on
     """
 
-    def __init__(self, owner: "Node", name: str):
-        super().__init__(owner, name)
+    def __init__(self, owner: "Node", name: str, protocol_type: str = ""):
+        super().__init__(owner, name, protocol_type)
         self.rule = None
         self.memories = []
 

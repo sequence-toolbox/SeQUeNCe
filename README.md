@@ -38,7 +38,7 @@ These modules can be edited by users to define additional functionality and test
 
 ## Installation
 ### For Users
-SeQUeNCe requires [Python](https://www.python.org/downloads/) 3.11 or later. You can install SeQUeNCe using `pip`:
+SeQUeNCe requires [Python](https://www.python.org/downloads/) 3.12 or later. You can install SeQUeNCe using `pip`:
 ```
 pip install sequence
 ```
@@ -118,32 +118,24 @@ This script also supports a flag `-m` to visualize BSM nodes created by default 
 ## Contact
 If you have questions, please contact [Caitao Zhan](https://caitaozhan.github.io/) at [czhan@anl.gov](mailto:czhan@anl.gov).
 
+Here is the updated table with the Code column populated:
+
 ## Papers that Used and/or Extended SeQUeNCe
-
-* X. Wu et al., ["Simulations of Photonic Quantum Networks for Performance Analysis and Experiment Design"](https://ieeexplore.ieee.org/document/8950718), IEEE/ACM Workshop on Photonics-Optics Technology Oriented Networking, Information and Computing Systems (PHOTONICS), 2019
-
-* X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. ["SeQUeNCe: A Customizable Discrete-Event Simulator of Quantum Networks"](https://iopscience.iop.org/article/10.1088/2058-9565/ac22f6), Quantum Science and Technology, 2021
-
-* V. Semenenko et al., ["Entanglement generation in a quantum network with finite quantum memory lifetime"](https://pubs.aip.org/avs/aqs/article/4/1/012002/2835237/Entanglement-generation-in-a-quantum-network-with), AVS Quantum Science, 2022
-
-* A. Zang et al., ["Simulation of Entanglement Generation between Absorptive Quantum Memories"](https://ieeexplore.ieee.org/abstract/document/9951205), IEEE QCE 2022
-
-* M.G. Davis et al., ["Towards Distributed Quantum Computing by Qubit and Gate Graph Partitioning Techniques"](https://ieeexplore.ieee.org/abstract/document/10313645), IEEE QCE 2023
-
-* R. Zhou et al., ["A Simulator of Atom-Atom Entanglement with Atomic Ensembles and Quantum Optics"](https://ieeexplore.ieee.org/abstract/document/10313610), IEEE QCE 2023
-
-* X. Wu et al., ["Parallel Simulation of Quantum Networks with Distributed Quantum State Management"](https://dl.acm.org/doi/abs/10.1145/3634701), ACM Transactions on Modeling and Computer Simulation, 2024
-
-* C. Howe, M. Aziz, and A. Anwar, ["Towards Scalable Quantum Repeater Networks"](https://arxiv.org/abs/2409.08416), arXiv preprint, 2024
-
-* A. Zang et al., ["Quantum Advantage in Distributed Sensing with Noisy Quantum Networks"](https://arxiv.org/abs/2409.17089), arXiv preprint, 2024
-
-* L. d'Avossa et al., ["Simulation of Quantum Transduction Strategies for Quantum Networks"](https://arxiv.org/abs/2411.11377), arXiv preprint, 2024
-
-* F. Mazza et al., ["Simulation of Entanglement-Enabled Connectivity in QLANs using SeQUeNCe"](https://arxiv.org/abs/2411.11031), IEEE ICC 2025
-
-* C. Zhan et al., ["Design and Simulation of the Adaptive Continuous Entanglement Generation Protocol"](https://arxiv.org/abs/2502.01964), QCNC 2025. [GitHub Repository](https://github.com/caitaozhan/adaptive-continuous)
-
-* H. Miller et al., ["Simulation of a Heterogeneous Quantum Network"](https://arxiv.org/abs/2512.04211), arXiv preprint, 2025
-
+| Year | Authors                        | Title                                                                                                                                   | Venue                              | Code                                                            |
+|------|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|------------------------------------|-----------------------------------------------------------------|
+| 2026 | S. Pantage et al.              | [Realistic Simulation of Quantum Repeater with Encoding and Classical Error Correction](https://arxiv.org/abs/2605.06928)               | arXiv preprint                     |                                                                 |
+| 2026 | A. Pirker et al.               | [Centralizing Task-based Approach to Quantum Network Control](https://arxiv.org/abs/2605.03336)                                         | arXiv preprint                     | [GitHub](https://github.com/sequence-toolbox/central_scheduler) |
+| 2026 | H. Miller et al.               | [Simulation of a Heterogeneous Quantum Network](https://doi.org/10.1109/QCNC69040.2026.00085)                                           | IEEE QCNC                          |                                                                 |
+| 2026 | A. Zang et al.                 | [Quantum Advantage in Distributed Sensing with Noisy Quantum Networks](https://doi.org/10.1103/7n9w-9xd4)                               | Physical Review Research           |                                                                 |
+| 2025 | C. Zhan et al.                 | [Design and Simulation of the Adaptive Continuous Entanglement Generation Protocol](https://doi.org/10.1109/QCNC64685.2025.00028)       | IEEE QCNC                          | [GitHub](https://github.com/caitaozhan/adaptive-continuous)     |
+| 2025 | F. Mazza et al.                | [Simulation of Entanglement-Enabled Connectivity in QLANs using SeQUeNCe](https://doi.org/10.1109/ICC52391.2025.11434940)               | IEEE ICC                           |                                                                 |
+| 2025 | L. d'Avossa et al.             | [Simulation of Quantum Transduction Strategies for Quantum Networks](https://doi.org/10.1109/QCE65121.2025.00142)                       | IEEE QCE                           |                                                                 |
+| 2024 | C. Howe, M. Aziz, and A. Anwar | [Towards Scalable Quantum Repeater Networks](https://arxiv.org/abs/2409.08416)                                                          | arXiv preprint                     |                                                                 |
+| 2024 | X. Wu et al.                   | [Parallel Simulation of Quantum Networks with Distributed Quantum State Management](https://dl.acm.org/doi/abs/10.1145/3634701)         | ACM TOMACS                         |                                                                 |
+| 2023 | R. Zhou et al.                 | [A Simulator of Atom-Atom Entanglement with Atomic Ensembles and Quantum Optics](https://doi.org/10.1109/QCE57702.2023.00143)           | IEEE QCE                           |                                                                 |
+| 2023 | M.G. Davis et al.              | [Towards Distributed Quantum Computing by Qubit and Gate Graph Partitioning Techniques](https://doi.org/10.1109/QCE57702.2023.00026)    | IEEE QCE                           |                                                                 |
+| 2022 | A. Zang et al.                 | [Simulation of Entanglement Generation between Absorptive Quantum Memories](https://doi.org/10.1109/QCE53715.2022.00084)                | IEEE QCE                           |                                                                 |
+| 2022 | V. Semenenko et al.            | [Entanglement generation in a quantum network with finite quantum memory lifetime](https://doi.org/10.1116/5.0082239)                   | AVS Quantum Science                |                                                                 |
+| 2021 | X. Wu et al.                   | [SeQUeNCe: A Customizable Discrete-Event Simulator of Quantum Networks](https://iopscience.iop.org/article/10.1088/2058-9565/ac22f6)    | IOP Quantum Science and Technology |                                                                 |
+| 2019 | X. Wu et al.                   | [Simulations of Photonic Quantum Networks for Performance Analysis and Experiment Design](https://ieeexplore.ieee.org/document/8950718) | IEEE/ACM PHOTONICS                 |                                                                 |
 Please do a Pull Request to add your paper here! 

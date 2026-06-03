@@ -1,6 +1,6 @@
+import itertools
 import numpy as np
 from sequence.components.circuit import Circuit
-from typing import List
 
 class Noise:
     """
@@ -80,11 +80,11 @@ class Noise:
             - p = 0: state remains unchanged,
             - p = 1: selected qubits become maximally mixed.
 
-        qubits : List[int]
+        qubits : list[int]
             One or two qubit indices to apply noise to.
             These must appear in the `keys` list.
 
-        keys : List[int]
+        keys : list[int]
             A permutation of [0, 1, ..., n-1] defining the tensor product order of qubits in `rho`.
 
             Each key corresponds to a qubit managed by QuantumManagerDensity. For example,
@@ -144,8 +144,9 @@ class Noise:
         positions = [keys.index(q) for q in qubits]
 
         # build list of non-identity Pauli operators lifted to full space
+        # one Pauli index per target qubit (4^k combinations, identity excluded)
         pauli_ops: list[np.ndarray] = []
-        idx_tuples = [(i, j) for i in range(4) for j in range(4)]
+        idx_tuples = itertools.product(range(4), repeat=k)
         for idx_tuple in idx_tuples:
             if all(i == 0 for i in idx_tuple):
                 continue  # skip identity

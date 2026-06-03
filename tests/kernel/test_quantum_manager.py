@@ -1,8 +1,10 @@
 import numpy as np
 from scipy.linalg import fractional_matrix_power
 import math
+from math import sqrt
+from numpy import array, eye
 
-from sequence.kernel.quantum_manager import *
+from sequence.kernel.quantum_manager import QuantumManagerDensity, QuantumManagerDensityFock, QuantumManagerKet
 from sequence.components.circuit import Circuit
 
 
@@ -557,6 +559,3 @@ def test_qmanager_measure_fock():
             raise Exception()
 
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
-
-
-test_qmanager_measure_fock()

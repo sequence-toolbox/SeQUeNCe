@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from enum import auto, Enum
-from typing import Optional
 
 from ...message import Message
 

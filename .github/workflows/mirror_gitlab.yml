@@ -1,0 +1,33 @@
+name: Mirror to GitLab
+on:
+  push:
+    branches: [ '**' ]
+    tags: [ '**' ]
+  delete:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mirror-to-gitlab
+  cancel-in-progress: true
+
+jobs:
+  mirror:
+    if: github.repository == 'sequence-toolbox/SeQUeNCe'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Push to GitLab
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_KEY }}
+          GITLAB_REPO: ${{ secrets.GITLAB_URL }}
+        run: |
+          git remote add gitlab "https://oauth2:${GITLAB_TOKEN}@${GITLAB_REPO}"
+          git update-ref -d refs/remotes/origin/HEAD || true
+          git push --force --prune gitlab "refs/remotes/origin/*:refs/heads/*" "refs/tags/*:refs/tags/*"
