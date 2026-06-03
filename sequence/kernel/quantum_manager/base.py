@@ -4,7 +4,8 @@ The states may currently be defined in two possible ways:
     - KetState
     - DensityMatrix
     - FockDensityMatrix
-    - Bell Diagonal
+    - Bell Diagonal State
+    - Stabilizer State
 
 The manager defines an API for interacting with quantum states.
 """

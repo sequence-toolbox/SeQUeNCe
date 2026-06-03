@@ -1,9 +1,9 @@
-
+from collections.abc import Iterable
+from typing import Any
 
 import stim
-from stim import TableauSimulator, Tableau
 import numpy as np
-from typing import Any
+from stim import TableauSimulator, Tableau
 
 from .base import QuantumManager
 from ..quantum_state import StabilizerState
@@ -18,6 +18,26 @@ class QuantumManagerStabilizer(QuantumManager):
 
     This class follows SeQUeNCe's `QuantumManager` contract so the formalism
     can be swapped with minimal architectural changes.
+
+    Attributes:
+        base_seed (int | None): Base seed for deterministic child-seed generation.
+        branch_rng: NumPy random generator used to sample Pauli error branches.
+        one_qubit_gate_fid (float): Single-qubit gate fidelity.
+        two_qubit_gate_fid (float): Two-qubit gate fidelity.
+        measurement_fid (float): Measurement reporting fidelity.
+        initialization_fid (float): Initialization fidelity for newly prepared qubits.
+        track_error_statistics (bool): Whether gate and measurement counters are accumulated.
+        gate_error_channel (str): Gate-noise channel mode, either ``depolarize`` or Pauli-weighted.
+        idle_error_channel (str): Idle-noise channel mode, either ``depolarize`` or Pauli-weighted.
+        pauli_1q_weights (tuple[float, ...]): Normalized X/Y/Z weights for one-qubit Pauli errors.
+        pauli_2q_weights (tuple[float, ...]): Normalized Stim-order weights for two-qubit Pauli errors.
+        last_idle_time_ps_by_key (dict[int, int]): Last idle-time watermark for each state key.
+        gate_1q_count (int): Number of sampled one-qubit gates.
+        gate_2q_count (int): Number of sampled two-qubit gates.
+        gate_1q_error_count (int): Number of inserted one-qubit gate errors.
+        gate_2q_error_count (int): Number of inserted two-qubit gate errors.
+        measurement_count (int): Number of sampled measurements.
+        measurement_error_count (int): Number of inserted measurement reporting errors.
     """
 
     ONE_QUBIT_GATE_TIME_PS = 20_000
@@ -29,58 +49,34 @@ class QuantumManagerStabilizer(QuantumManager):
         """Initialize a stabilizer manager instance.
 
         Args:
-            truncation (int): Hilbert-space truncation placeholder, retained to
-                match the parent API and other formalisms.
-            seed (int | None): Base seed used for deterministic child-seed
-                generation. If `None`, seeding is disabled.
-            gate_fid (float): Single-qubit gate fidelity in [0, 1].
+            truncation (int): Hilbert-space truncation placeholder, retained to match the parent API and other formalisms.
+            seed (int | None): Base seed used for deterministic child-seed generation. If `None`, seeding is disabled.
+            one_qubit_gate_fid (float): Single-qubit gate fidelity in [0, 1].
             two_qubit_gate_fid (float): Two-qubit gate fidelity in [0, 1].
             measurement_fid (float): Measurement fidelity in [0, 1].
-            track_error_statistics (bool): Whether to accumulate per-run gate
-                and measurement counters.
+            track_error_statistics (bool): Whether to accumulate per-run gate and measurement counters.
             **kwargs: Extra keyword arguments accepted for compatibility.
 
-        Returns:
-            None.
-
         Notes:
-            The manager uses a counter-based seed derivation strategy for
-            reproducible, human-traceable per-state seeds.
+            The manager uses a counter-based seed derivation strategy for reproducible, human-traceable per-state seeds.
         """
         super().__init__(truncation=truncation)
-        # Base seed controls deterministic per-state/per-operation seed derivation.
-        self.base_seed = seed
-    
+        self.base_seed = seed          # Base seed controls deterministic per-state/per-operation seed derivation.
         self._seed_counter = 0         # Monotonic counter used with `base_seed` to produce unique child seeds.
         self.branch_rng = np.random.default_rng(seed)
-        # Default fidelities are noiseless (1.0) unless explicitly overridden.
-        self.gate_fid = float(kwargs.get("gate_fid", kwargs.get("single_qubit_gate_fid", 1.0)))
+        self.one_qubit_gate_fid = float(kwargs.get("one_qubit_gate_fid", 1.0))
         self.two_qubit_gate_fid = float(kwargs.get("two_qubit_gate_fid", 1.0))
         self.measurement_fid = float(kwargs.get("measurement_fid", 1.0))
         self.initialization_fid = float(kwargs.get("initialization_fidelity", 1.0))
         self.track_error_statistics = bool(kwargs.get("track_error_statistics", False))
         self.gate_error_channel = str(kwargs.get("gate_error_channel", "pauli")).lower()  # Gate-noise mode: "depolarize" (uniform) or "pauli" (weighted).
         self.idle_error_channel = str(kwargs.get("idle_error_channel", "pauli")).lower()  # Idle-noise mode: "depolarize" (uniform) or "pauli" (T1/T2-derived asymmetric channel).
-        self.pauli_1q_weights = tuple(float(w) for w in kwargs.get("pauli_1q_weights", (1.0, 1.0, 1.0)))  # Relative PAULI_CHANNEL_1 weights in X, Y, Z order.
+        self.pauli_1q_weights = self._normalize_pauli_weights(kwargs.get("pauli_1q_weights", (1.0, 1.0, 1.0)), 3, "pauli_1q_weights")
         raw_pauli_2q_weights = kwargs.get("pauli_2q_weights")
         if raw_pauli_2q_weights is None:
-            self.pauli_2q_weights = self._derive_default_pauli_2q_weights(self.pauli_1q_weights)  # Default 2q bias inherits the 1q Pauli bias using an 80/20 single-vs-correlated split.
+            self.pauli_2q_weights = self._derive_default_pauli_2q_weights(self.pauli_1q_weights)
         else:
-            self.pauli_2q_weights = tuple(float(w) for w in raw_pauli_2q_weights)
-        if len(self.pauli_1q_weights) != 3:
-            raise ValueError("pauli_1q_weights must have 3 entries for X, Y, Z.")
-        if len(self.pauli_2q_weights) != 15:
-            raise ValueError("pauli_2q_weights must have 15 entries in Stim PAULI_CHANNEL_2 order.")
-        pauli_1q_total = float(sum(self.pauli_1q_weights))
-        if pauli_1q_total <= 0.0:
-            self.pauli_1q_weight_fractions = (1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0)
-        else:
-            self.pauli_1q_weight_fractions = tuple(float(weight) / pauli_1q_total for weight in self.pauli_1q_weights)
-        pauli_2q_total = float(sum(self.pauli_2q_weights))
-        if pauli_2q_total <= 0.0:
-            self.pauli_2q_weight_fractions = tuple(1.0 / 15.0 for _ in range(15))
-        else:
-            self.pauli_2q_weight_fractions = tuple(float(weight) / pauli_2q_total for weight in self.pauli_2q_weights)
+            self.pauli_2q_weights = self._normalize_pauli_weights(raw_pauli_2q_weights, 15, "pauli_2q_weights")
         self.last_idle_time_ps_by_key: dict[int, int] = {}  # Last active simulation time per key.
         self.gate_1q_count = 0
         self.gate_2q_count = 0
@@ -130,9 +126,6 @@ class QuantumManagerStabilizer(QuantumManager):
                 - `StabilizerState`: copied before assignment.
                 - Any other object: wrapped in a new `StabilizerState`.
 
-        Returns:
-            None.
-
         Examples:
             `qm.set([k0], tableau_obj)`
             `qm.set([k0, k1], stabilizer_state)`
@@ -158,6 +151,7 @@ class QuantumManagerStabilizer(QuantumManager):
         Returns:
             dict[int, int]: Measurement outcomes keyed by measured state keys.
         """
+        # 1. Preparation
         circuit = self._to_stim_circuit(circuit)
 
         measured_qubits: list[int] = []
@@ -186,9 +180,8 @@ class QuantumManagerStabilizer(QuantumManager):
         if state_obj is None:
             return {}
 
-        base_simulator = state_obj.state
-        simulator = base_simulator.copy() if hasattr(base_simulator, "copy") else base_simulator
-
+        # 2. Execution (with optional noise injection)
+        simulator = state_obj.state.copy()
         # Fast path: when gate-noise injection is disabled, batch all non-measurement
         # gates into one Stim circuit and execute it in a single simulator call.
         if not inject_gate_error:
@@ -216,64 +209,63 @@ class QuantumManagerStabilizer(QuantumManager):
                     simulator.do(local_circuit)
                     self._apply_gate_error(simulator, name, local_targets, circuit_keys)
 
-        # No measurements: commit a fresh shared state object for all keys.
-        if len(measured_qubits) == 0:
+        # 3. Measurement handling and quantum manager state updates
+        if len(measured_qubits) == 0:  # No measurement: commit a fresh shared state object for all keys.
             committed_state = StabilizerState(state=simulator, keys=list(state_obj.keys))
             for key in state_obj.keys:
                 self.states[key] = committed_state
             return {}
+        else:                          # Measurement: update states according to measurement outcomes and return results.
+            rng = None # Readout-fidelity noise uses the same toggle as gate-noise injection.
+            if inject_gate_error and self.measurement_fid < 1.0:
+                rng_seed = int(float(meas_samp) * (2 ** 31 - 1))
+                rng = np.random.default_rng(rng_seed)
 
-        # Readout-fidelity noise uses the same toggle as gate-noise injection.
-        rng = None
-        if inject_gate_error and self.measurement_fid < 1.0:
-            rng_seed = int(float(meas_samp) * (2 ** 31 - 1))
-            rng = np.random.default_rng(rng_seed)
+            # Measure each requested key, report (possibly flipped) bit, and split measured states.
+            results: dict[int, int] = {}
+            measured_keys: list[int] = []
+            for name, targets in instruction_payloads:
+                if name not in {"M", "MX", "MY"}:
+                    continue
 
-        # Measure each requested key, report (possibly flipped) bit, and split measured states.
-        results: dict[int, int] = {}
-        measured_keys: list[int] = []
-        for name, targets in instruction_payloads:
-            if name not in {"M", "MX", "MY"}:
-                continue
-
-            for target in targets:
-                measured_key = keys[target]
-                local_target = key_to_local[measured_key]
-                if self.track_error_statistics:
-                    self.measurement_count += 1
-
-                if name == "MX":
-                    simulator.h(local_target)
-                elif name == "MY":
-                    simulator.s_dag(local_target)
-                    simulator.h(local_target)
-
-                physical_bit = int(simulator.measure(local_target))
-
-                reported_bit = physical_bit
-                if inject_gate_error and self.measurement_fid < 1.0 and rng is not None and rng.random() > self.measurement_fid:
-                    reported_bit ^= 1
+                for target in targets:
+                    measured_key = keys[target]
+                    local_target = key_to_local[measured_key]
                     if self.track_error_statistics:
-                        self.measurement_error_count += 1
-                results[measured_key] = reported_bit
-                measured_keys.append(measured_key)
+                        self.measurement_count += 1
 
-                collapsed = TableauSimulator(seed=self._next_seed())
-                collapsed.set_num_qubits(1)
-                if physical_bit == 1:
-                    collapsed.x(0)
-                self.states[measured_key] = StabilizerState(state=collapsed, keys=[measured_key])
+                    if name == "MX":
+                        simulator.h(local_target)
+                    elif name == "MY":
+                        simulator.s_dag(local_target)
+                        simulator.h(local_target)
 
-        # Physically drop measured qubits so simulator indices stay compact for remaining keys.
-        simulator, remaining_keys = self._drop_keys_from_stabilizer_simulator(simulator, state_obj.keys, measured_keys)
+                    physical_bit = int(simulator.measure(local_target))
 
-        # Keep unmeasured keys grouped on the shared post-measurement simulator state.
-        if remaining_keys:
-            remaining_state = StabilizerState(state=simulator, keys=remaining_keys)
-            for key in remaining_keys:
-                self.states[key] = remaining_state
+                    reported_bit = physical_bit
+                    if inject_gate_error and self.measurement_fid < 1.0 and rng is not None and rng.random() > self.measurement_fid:
+                        reported_bit ^= 1
+                        if self.track_error_statistics:
+                            self.measurement_error_count += 1
+                    results[measured_key] = reported_bit
+                    measured_keys.append(measured_key)
 
-        return results
+                    collapsed = TableauSimulator(seed=self._next_seed())
+                    collapsed.set_num_qubits(1)
+                    if physical_bit == 1:
+                        collapsed.x(0)
+                    self.states[measured_key] = StabilizerState(state=collapsed, keys=[measured_key])
+
+            # Physically drop measured qubits so simulator indices stay compact for remaining keys.
+            simulator, remaining_keys = self._drop_keys_from_stabilizer_simulator(simulator, state_obj.keys, measured_keys)
+
+            # Keep unmeasured keys grouped on the shared post-measurement simulator state.
+            if remaining_keys:
+                remaining_state = StabilizerState(state=simulator, keys=remaining_keys)
+                for key in remaining_keys:
+                    self.states[key] = remaining_state
+
+            return results
 
     def _iter_elementary_gate_targets(self, gate_name: str, targets: list[int]) -> list[list[int]]:
         """Split one Stim instruction target list into elementary gate targets.
@@ -344,9 +336,6 @@ class QuantumManagerStabilizer(QuantumManager):
             now_ps: Current simulation time in picoseconds.
             t1_sec: Shared T1 time constant in seconds.
             t2_sec: Shared T2 time constant in seconds.
-
-        Returns:
-            None.
         """
         if t1_sec >= 1e9 and t2_sec >= 1e9:
             for key in keys:
@@ -382,9 +371,6 @@ class QuantumManagerStabilizer(QuantumManager):
 
         Args:
             key (int | list[int]): State key or keys of the qubits to reset.
-
-        Returns:
-            None.
         """
         if isinstance(key, list):
             for single_key in key:
@@ -402,9 +388,6 @@ class QuantumManagerStabilizer(QuantumManager):
 
         Args:
             key (int): State key of the qubit to reset.
-
-        Returns:
-            None.
         """
         seed = self._next_seed()
         sim = TableauSimulator(seed=seed)
@@ -415,18 +398,16 @@ class QuantumManagerStabilizer(QuantumManager):
         self.last_idle_time_ps_by_key[key] = 0
 
     def remove(self, key: int) -> None:
-        """Remove a key and refresh the debug key layout map."""
+        """Remove a key and refresh the debug key layout map.
+        
+        Args:
+            key (int): State key to remove.
+        """
         super().remove(key)
         self.last_idle_time_ps_by_key.pop(key, None)
 
     def reset_error_statistics(self) -> None:
         """Clear accumulated error counters for one logical-pair run.
-
-        Args:
-            None.
-
-        Returns:
-            None.
         """
         self.gate_1q_count = 0
         self.gate_2q_count = 0
@@ -438,23 +419,22 @@ class QuantumManagerStabilizer(QuantumManager):
     def get_error_statistics(self) -> dict[str, int | float]:
         """Return per-run gate accounting statistics.
 
-        Args:
-            None.
-
         Returns:
             dict[str, int | float]: One- and two-qubit gate counts, sampled gate-error counts, and measurement counts.
         """
-        return {
-            "gate_1q_count": self.gate_1q_count,
-            "gate_2q_count": self.gate_2q_count,
-            "gate_1q_error_count": self.gate_1q_error_count,
-            "gate_2q_error_count": self.gate_2q_error_count,
-            "measurement_count": self.measurement_count,
-            "measurement_error_count": self.measurement_error_count,
-        }
+        return {"gate_1q_count": self.gate_1q_count,
+                "gate_2q_count": self.gate_2q_count,
+                "measurement_count": self.measurement_count,
+                "gate_1q_error_count": self.gate_1q_error_count,
+                "gate_2q_error_count": self.gate_2q_error_count,
+                "measurement_error_count": self.measurement_error_count}
 
     def _next_seed(self) -> int | None:
-        """Return next seed value or None if unseeded."""
+        """Return next seed value or None if unseeded.
+
+        Returns:
+            int | None: Next seed value for deterministic operations, or `None` if seeding is disabled.
+        """
         # `None` means deterministic seeding is disabled for this manager.
         if self.base_seed is None:
             return None
@@ -469,9 +449,6 @@ class QuantumManagerStabilizer(QuantumManager):
         Args:
             simulator: Active simulator to mutate.
             targets: Simulator-local qubit indices that were just initialized.
-
-        Returns:
-            None.
         """
         p_error = max(0.0, min(1.0, 1.5 * (1.0 - self.initialization_fid)))
         if p_error <= 0.0:
@@ -482,7 +459,24 @@ class QuantumManagerStabilizer(QuantumManager):
             noise_circuit.append("DEPOLARIZE1", [target], p_error)
         simulator.do(noise_circuit)
 
-    def _derive_default_pauli_2q_weights(self, pauli_1q_weights: tuple[float, float, float], single_only_fraction: float = 0.8) -> tuple[float, ...]:
+    def _normalize_pauli_weights(self, weights: Iterable[float], expected_length: int, name: str) -> tuple[float, ...]:
+        """Return normalized Pauli weights, falling back to uniform weights when total weight is zero.
+        
+        Args:
+            weights: Iterable of relative Pauli weights.
+            expected_length: Expected number of weights (3 for 1q, 15 for 2q).
+            name: Name of the weight set for error messages.
+        """
+        normalized_weights = tuple(float(weight) for weight in weights)
+        if len(normalized_weights) != expected_length:
+            raise ValueError(f"{name} must have {expected_length} entries.")
+
+        total = float(sum(normalized_weights))
+        if total <= 0.0:
+            return tuple(1.0 / expected_length for _ in range(expected_length))
+        return tuple(weight / total for weight in normalized_weights)
+
+    def _derive_default_pauli_2q_weights(self, pauli_1q_weights: tuple[float, ...], single_only_fraction: float = 0.8) -> tuple[float, ...]:
         """Derive default 2q Pauli weights from the configured 1q Pauli bias.
 
         Args:
@@ -543,8 +537,7 @@ class QuantumManagerStabilizer(QuantumManager):
             branch_probs = [identity_prob, probs[0], probs[1], probs[2]]
         elif channel_name == "PAULI_CHANNEL_2":
             branch_labels = [
-                "II",
-                "IX", "IY", "IZ",
+                "II", "IX", "IY", "IZ",
                 "XI", "XX", "XY", "XZ",
                 "YI", "YX", "YY", "YZ",
                 "ZI", "ZX", "ZY", "ZZ",
@@ -565,11 +558,8 @@ class QuantumManagerStabilizer(QuantumManager):
             sampled_index = int(self.branch_rng.choice(len(branch_labels), p=normalized_probs))
             sampled_branch = branch_labels[sampled_index]
 
-        log.logger.info(
-            f"pauli_channel_sample source={source} channel={channel_name} "
-            f"targets={targets} branch={sampled_branch} "
-            f"inserted_error={int(sampled_branch != identity_label)}"
-        )
+        log.logger.info(f"pauli_channel_sample source={source} channel={channel_name} targets={targets} "
+                        f"branch={sampled_branch} inserted_error={int(sampled_branch != identity_label)}")
         return sampled_branch
 
     def _apply_sampled_pauli_branch(self, simulator: TableauSimulator, targets: list[int], sampled_branch: str) -> None:
@@ -598,7 +588,7 @@ class QuantumManagerStabilizer(QuantumManager):
             else:
                 raise ValueError(f"Unsupported sampled Pauli '{pauli}'.")
 
-    def _initialize_stabilizer_state(self, initializer: StabilizerState | Tableau | TableauSimulator | np.ndarray | list | tuple, keys: list[int]) -> StabilizerState:
+    def _initialize_stabilizer_state(self, initializer: StabilizerState | Tableau | TableauSimulator | list, keys: list[int]) -> StabilizerState:
         """Create a stabilizer state from a supported initializer.
 
         Args:
@@ -619,8 +609,10 @@ class QuantumManagerStabilizer(QuantumManager):
 
         if isinstance(initializer, Tableau):
             tableau = initializer
-        elif isinstance(initializer, (np.ndarray, list, tuple)):
+
+        elif isinstance(initializer, list):
             tableau = Tableau.from_state_vector(np.asarray(initializer), endian="little")
+
         else:
             raise TypeError("Unsupported stabilizer initializer.")
 
@@ -640,47 +632,40 @@ class QuantumManagerStabilizer(QuantumManager):
             gate_name (str): Name of gate that was just applied.
             targets (list[int]): Simulator-local target indices for the gate.
             circuit_keys (list[int]): Quantum-manager keys targeted by the gate.
-
-        Returns:
-            None.
         """
         name = gate_name.upper()
 
         if name in {"H", "X", "Y", "Z", "S", "S_DAG"}:
             if self.track_error_statistics:
                 self.gate_1q_count += 1
-            p_error = max(0.0, min(1.0, 1.5 * (1.0 - self.gate_fid)))
-            if p_error <= 0.0:
-                return
-            if self.gate_error_channel == "depolarize":
-                probs = [p_error / 3.0, p_error / 3.0, p_error / 3.0]
-            elif self.gate_error_channel in {"pauli", "paulierror", "pauli_channel"}:
-                probs = [p_error * weight for weight in self.pauli_1q_weight_fractions]
-            else:
-                raise ValueError("gate_error_channel must be 'depolarize' or 'pauli'.")
-            sampled_branch = self._sample_pauli_channel_branch("PAULI_CHANNEL_1", probs, targets, f"gate:{name}")
-            if self.track_error_statistics and sampled_branch != "I":
-                self.gate_1q_error_count += 1
-            self._apply_sampled_pauli_branch(simulator, targets, sampled_branch)
-            return
+            p_error = max(0.0, min(1.0, 1.5 * (1.0 - self.one_qubit_gate_fid)))
+            if p_error > 0:
+                if self.gate_error_channel == "depolarize":
+                    probs = [p_error / 3.0, p_error / 3.0, p_error / 3.0]
+                elif self.gate_error_channel == "pauli":
+                    probs = [p_error * weight for weight in self.pauli_1q_weights]
+                else:
+                    raise ValueError("gate_error_channel must be 'depolarize' or 'pauli'.")
+                sampled_branch = self._sample_pauli_channel_branch("PAULI_CHANNEL_1", probs, targets, f"gate:{name}")
+                if self.track_error_statistics and sampled_branch != "I":
+                    self.gate_1q_error_count += 1
+                self._apply_sampled_pauli_branch(simulator, targets, sampled_branch)
 
         if name in {"CX", "CZ", "SWAP"}:
             if self.track_error_statistics:
                 self.gate_2q_count += 1
             p_error = min(1.0, 1.25 * (1.0 - self.two_qubit_gate_fid))
-            if p_error <= 0.0:
-                return
-            if self.gate_error_channel == "depolarize":
-                probs = [p_error / 15.0] * 15
-            elif self.gate_error_channel in {"pauli", "paulierror", "pauli_channel"}:
-                probs = [p_error * weight for weight in self.pauli_2q_weight_fractions]
-            else:
-                raise ValueError("gate_error_channel must be 'depolarize' or 'pauli'.")
-            sampled_branch = self._sample_pauli_channel_branch("PAULI_CHANNEL_2", probs, targets, f"gate:{name}")
-            if self.track_error_statistics and sampled_branch != "II":
-                self.gate_2q_error_count += 1
-            self._apply_sampled_pauli_branch(simulator, targets, sampled_branch)
-            return
+            if p_error > 0:
+                if self.gate_error_channel == "depolarize":
+                    probs = [p_error / 15.0] * 15
+                elif self.gate_error_channel == "pauli":
+                    probs = [p_error * weight for weight in self.pauli_2q_weights]
+                else:
+                    raise ValueError("gate_error_channel must be 'depolarize' or 'pauli'.")
+                sampled_branch = self._sample_pauli_channel_branch("PAULI_CHANNEL_2", probs, targets, f"gate:{name}")
+                if self.track_error_statistics and sampled_branch != "II":
+                    self.gate_2q_error_count += 1
+                self._apply_sampled_pauli_branch(simulator, targets, sampled_branch)
 
     def _to_stim_circuit(self, circuit: stim.Circuit | Circuit) -> stim.Circuit:
         """Normalize supported circuit input into a Stim circuit.
@@ -740,7 +725,6 @@ class QuantumManagerStabilizer(QuantumManager):
         """
         if measured_qubits and meas_samp is None:
             meas_samp = 0.5
-
         if len(keys) != num_qubits:
             raise ValueError(f"circuit width ({num_qubits}) must equal len(keys) ({len(keys)}).")
         if not keys:

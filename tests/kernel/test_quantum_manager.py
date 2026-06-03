@@ -3,8 +3,11 @@ from scipy.linalg import fractional_matrix_power
 import math
 from math import sqrt
 from numpy import array, eye
+import pytest
+import stim
 
-from sequence.kernel.quantum_manager import QuantumManagerDensity, QuantumManagerDensityFock, QuantumManagerKet
+from sequence.kernel.quantum_state import StabilizerState
+from sequence.kernel.quantum_manager import QuantumManagerDensity, QuantumManagerDensityFock, QuantumManagerKet, QuantumManagerStabilizer
 from sequence.components.circuit import Circuit
 
 
@@ -203,7 +206,7 @@ def test_qmanager_circuit_density():
     assert np.array_equal(density1.state, density2.state)
 
 
-def test_qmanager__measure():
+def test_qmanager_measure():
     NUM_TESTS = 1000
 
     qm = QuantumManagerKet()
@@ -270,7 +273,7 @@ def test_qmanager__measure():
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
 
 
-def test_qmanager__measure_density():
+def test_qmanager_measure_density():
     NUM_TESTS = 1000
 
     qm = QuantumManagerDensity()
@@ -559,3 +562,134 @@ def test_qmanager_measure_fock():
             raise Exception()
 
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
+
+
+### stabilizer ###
+
+def _stabilizers_as_strings(qm: QuantumManagerStabilizer, key: int) -> list[str]:
+    return [str(stabilizer) for stabilizer in qm.get(key).canonical_stabilizers()]
+
+
+def _expected_stabilizers(circuit: str, num_qubits: int) -> list[str]:
+    simulator = stim.TableauSimulator()
+    simulator.set_num_qubits(num_qubits)
+    simulator.do(stim.Circuit(circuit))
+    return [str(stabilizer) for stabilizer in simulator.canonical_stabilizers()]
+
+
+def test_new_creates_seeded_zero_state_and_remove_clears_idle_tracking():
+    qm = QuantumManagerStabilizer(seed=10)
+
+    key = qm.new()
+
+    state = qm.get(key)
+    assert isinstance(state, StabilizerState)
+    assert state.keys == [key]
+    assert state.get_seed() == 10
+    assert state.state.num_qubits == 1
+    assert state.state.peek_z(0) == 1
+    assert qm.last_idle_time_ps_by_key[key] == 0
+
+    qm.remove(key)
+
+    assert key not in qm.states
+    assert key not in qm.last_idle_time_ps_by_key
+
+
+def test_set_accepts_state_vector_and_shares_state_across_keys():
+    qm = QuantumManagerStabilizer()
+    key0 = qm.new()
+    key1 = qm.new()
+
+    qm.set([key0, key1], [1, 0, 0, 0])
+
+    state = qm.get(key0)
+    assert state is qm.get(key1)
+    assert state.keys == [key0, key1]
+    assert state.state.num_qubits == 2
+    assert state.state.peek_z(0) == 1
+    assert state.state.peek_z(1) == 1
+
+
+def test_set_rejects_initializer_with_wrong_qubit_count():
+    qm = QuantumManagerStabilizer()
+    key0 = qm.new()
+    key1 = qm.new()
+    one_qubit_tableau = stim.Tableau.from_named_gate("H")
+
+    with pytest.raises(ValueError, match="1 qubits but 2 keys"):
+        qm.set([key0, key1], one_qubit_tableau)
+
+
+def test_run_stim_circuit_entangles_independent_states_into_shared_state():
+    qm = QuantumManagerStabilizer()
+    key0 = qm.new()
+    key1 = qm.new()
+    circuit = stim.Circuit("H 0\nCX 0 1")
+
+    result = qm.run_circuit(circuit, [key0, key1])
+
+    assert result == {}
+    assert qm.get(key0) is qm.get(key1)
+    assert qm.get(key0).keys == [key0, key1]
+    assert _stabilizers_as_strings(qm, key0) == _expected_stabilizers("H 0\nCX 0 1", 2)
+
+
+def test_terminal_measurement_splits_measured_qubit_from_remaining_state():
+    qm = QuantumManagerStabilizer(seed=100)
+    key0 = qm.new()
+    key1 = qm.new()
+    qm.run_circuit(stim.Circuit("H 0\nCX 0 1"), [key0, key1])                  # phi = (|00> + |11>) / sqrt(2)
+
+    result = qm.run_circuit(stim.Circuit("M 0"), [key0, key1], meas_samp=0.25) # qubit 0 measured
+
+    measured_bit = result[key0]
+    expected_z = 1 if measured_bit == 0 else -1  # collapsed to one qubit with Z=+1 or Z=-1 depending on measurement outcome
+    assert set(result) == {key0}
+    assert qm.get(key0) is not qm.get(key1)
+    assert qm.get(key0).keys == [key0]
+    assert qm.get(key1).keys == [key1]
+    assert qm.get(key0).state.num_qubits == 1
+    assert qm.get(key1).state.num_qubits == 1
+    assert qm.get(key0).state.peek_z(0) == expected_z # two qubits have the same Z stabilizer value after measurement
+    assert qm.get(key1).state.peek_z(0) == expected_z
+
+
+def test_duration_and_reset_duration_helpers():
+    qm = QuantumManagerStabilizer()
+    circuit = stim.Circuit("H 0\nCX 0 1\nM 0 1")
+
+    duration =  qm.ONE_QUBIT_GATE_TIME_PS + qm.TWO_QUBIT_GATE_TIME_PS + 2 * qm.MEASUREMENT_TIME_PS
+    assert qm.get_circuit_duration(circuit) == duration
+
+    assert qm.get_reset_duration(3) == 3 * qm.RESET_TIME_PS
+
+    with pytest.raises(RuntimeError, match="num_qubits must be >= 0"):
+        qm.get_reset_duration(-1)
+
+    with pytest.raises(RuntimeError, match="Unsupported gate"):
+        qm.get_circuit_duration(stim.Circuit("R 0"))
+
+
+def test_gate_and_measurement_statistics_when_noise_injection_is_enabled():
+    one_qubit_gate_fid = 0
+    two_qubit_gate_fid = 1
+    measurement_fid = 0
+    qm = QuantumManagerStabilizer(seed=50, track_error_statistics=True, 
+                                  one_qubit_gate_fid=one_qubit_gate_fid, 
+                                  two_qubit_gate_fid=two_qubit_gate_fid, 
+                                  measurement_fid=measurement_fid)
+    key0 = qm.new()
+    key1 = qm.new()
+    circuit = stim.Circuit("H 0\nCX 0 1\nM 0")
+
+    qm.run_circuit(circuit, [key0, key1], meas_samp=0.5, inject_gate_error=True)
+
+    error_statistics = {"gate_1q_count": 1, 
+                        "gate_2q_count": 1, 
+                        "measurement_count": 1, 
+                        "gate_1q_error_count": 1, 
+                        "gate_2q_error_count": 0, 
+                        "measurement_error_count": 1}
+
+    assert qm.get_error_statistics() == error_statistics
