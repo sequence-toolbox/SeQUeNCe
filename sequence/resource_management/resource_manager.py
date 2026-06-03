@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Optional
 from collections.abc import Callable
 
 from .reservation_rule_registry import (
-    DefaultReservationRuleGenerator,
+    ReservationRuleGenerator,
     ReservationRuleRegistry,
 )
 from ..kernel.event import Event
@@ -134,7 +134,7 @@ class ResourceManager:
         self.pending_protocols = [] # Protocols that are requesting remote resource
         self.waiting_protocols = [] # Protocols that are waiting request from remote resource
         self.memory_to_protocol_map = {}
-        self.rule_generator = DefaultReservationRuleGenerator()
+        self.rule_generator = ReservationRuleGenerator()
 
     def get_reservation_rule_registry(self) -> ReservationRuleRegistry:
         """Return the registry used to build reservation rules."""

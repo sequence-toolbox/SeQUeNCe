@@ -6,10 +6,21 @@ from sequence.resource_management.reservation_rule_registry import (
     EP_AWAIT,
     EPRequestRule,
     EP_REQUEST,
-    DefaultReservationRuleGenerator,
+    ReservationRuleGenerator,
     ReservationRuleRegistry,
 )
 from sequence.resource_management.rule_manager import Rule
+
+
+class Owner:
+    name = "node1"
+    map_to_middle_node = {"node2": "middle"}
+
+
+class Reservation:
+    memory_size = 1
+    fidelity = 0.9
+    purification_mode = "BBPSSW"
 
 
 def test_registry_can_disable_individual_rule_constructor():
@@ -27,9 +38,8 @@ def test_registry_can_disable_individual_rule_constructor():
 def test_registry_can_replace_individual_rule_constructor():
     registry = ReservationRuleRegistry(DEFAULT_RESERVATION_RULE_CONSTRUCTORS)
 
-    class CustomEPRequestRule(Rule):
-        def __init__(self, *_args, **_kwargs) -> None:
-            super().__init__(10, lambda *_: [], lambda *_: [], {}, {})
+    class CustomEPRequestRule(EPRequestRule):
+        pass
 
     registry.register(EP_REQUEST, CustomEPRequestRule)
 
@@ -37,18 +47,30 @@ def test_registry_can_replace_individual_rule_constructor():
     assert registry.get(EG_REQUEST) is EGRequestRule
 
 
-def test_default_generator_uses_registry_to_disable_rule():
-    registry = ReservationRuleRegistry(DEFAULT_RESERVATION_RULE_CONSTRUCTORS)
-    generator = DefaultReservationRuleGenerator(registry)
+def test_generator_uses_registered_replacement_rule():
+    generator = ReservationRuleGenerator()
 
-    class Owner:
-        name = "node1"
-        map_to_middle_node = {"node2": "middle"}
+    class CustomEGRequestRule(EGRequestRule):
+        pass
 
-    class Reservation:
-        memory_size = 1
-        fidelity = 0.9
-        purification_mode = "BBPSSW"
+    generator.registry.register(EG_REQUEST, CustomEGRequestRule)
+
+    rules = generator.create_rules(
+        Owner(),
+        ["node1", "node2"],
+        Reservation(),
+        [0],
+        0,
+    )
+
+    assert all(isinstance(rule, Rule) for rule in rules)
+    assert any(isinstance(rule, CustomEGRequestRule) for rule in rules)
+    assert not any(type(rule) is EGRequestRule for rule in rules)
+
+
+def test_generator_uses_registry_to_disable_rule():
+    generator = ReservationRuleGenerator()
+    registry = generator.registry
 
     rules = generator.create_rules(
         Owner(),
