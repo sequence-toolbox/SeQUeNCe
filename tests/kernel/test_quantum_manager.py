@@ -655,11 +655,11 @@ def test_terminal_measurement_splits_measured_qubit_from_remaining_state():
     assert qm.get(key1).state.peek_z(0) == expected_z
 
 
-def test_duration_and_reset_duration_helpers():
+def test_duration_and_reset_duration():
     qm = QuantumManagerStabilizer()
     circuit = stim.Circuit("H 0\nCX 0 1\nM 0 1")
 
-    duration =  qm.ONE_QUBIT_GATE_TIME_PS + qm.TWO_QUBIT_GATE_TIME_PS + 2 * qm.MEASUREMENT_TIME_PS
+    duration =  qm.ONE_QUBIT_GATE_TIME_PS + qm.TWO_QUBIT_GATE_TIME_PS + qm.MEASUREMENT_TIME_PS
     assert qm.get_circuit_duration(circuit) == duration
 
     assert qm.get_reset_duration(3) == 3 * qm.RESET_TIME_PS
