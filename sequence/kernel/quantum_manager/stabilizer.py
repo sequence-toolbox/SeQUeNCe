@@ -8,7 +8,6 @@ see arXiv https://arxiv.org/abs/2605.06928.
 
 from collections.abc import Iterable
 from typing import Any
-
 import stim
 import numpy as np
 from stim import TableauSimulator, Tableau
@@ -16,7 +15,6 @@ from stim import TableauSimulator, Tableau
 from .base import QuantumManager
 from ..quantum_state import StabilizerState
 from ...constants import STABILIZER_FORMALISM
-from ...components.circuit import Circuit
 from ...utils import log
 
 
@@ -90,18 +88,16 @@ class QuantumManagerStabilizer(QuantumManager):
         self.measurement_count = 0
         self.measurement_error_count = 0
 
-    def new(self, state: StabilizerState | Tableau | TableauSimulator | stim.Circuit | None = None) -> int:
+    def new(self, state: StabilizerState | Tableau | TableauSimulator | list | None = None) -> int:
         """Create and register a new stabilizer-state key.
 
         Args:
-            state (Optional[Union[StabilizerState, Tableau, TableauSimulator, Circuit]]):
+            state (Optional[Union[StabilizerState, Tableau, TableauSimulator, list]]):
                 Optional initializer:
                 - None: default seeded single-qubit simulator state.
                 - StabilizerState: copied and rebound to the new key.
                 - TableauSimulator: copied and rebound to the new key.
-                - Tableau / Circuit: converted to simulator state.
-                - Also accepts additional formats (e.g., gate-name strings,
-                  stabilizer lists, numpy vectors/matrices, and mapping specs).
+                - Tableau / state vector list: converted to simulator state.
 
         Returns:
             int: Newly allocated state key.
@@ -144,11 +140,11 @@ class QuantumManagerStabilizer(QuantumManager):
         for key in keys:
             self.states[key] = state
 
-    def run_circuit(self, circuit: stim.Circuit | Circuit, keys: list[int], meas_samp=None, inject_gate_error: bool = False) -> dict[int, int]:
-        """Execute a Stim or SeQUeNCe circuit on stabilizer states.
+    def run_circuit(self, circuit: stim.Circuit, keys: list[int], meas_samp=None, inject_gate_error: bool = False) -> dict[int, int]:
+        """Execute a Stim circuit on stabilizer states.
 
         Args:
-            circuit: Stim circuit or SeQUeNCe circuit to execute.
+            circuit: Stim circuit to execute.
             keys (list[int]): Ordered keys mapped to circuit qubit indices.
             meas_samp: Measurement sample value used by run preparation.
             inject_gate_error: If `True`, execute ideal gates and then apply injected gate-noise channels.
@@ -157,7 +153,8 @@ class QuantumManagerStabilizer(QuantumManager):
             dict[int, int]: Measurement outcomes keyed by measured state keys.
         """
         # 1. Preparation
-        circuit = self._to_stim_circuit(circuit)
+        if not isinstance(circuit, stim.Circuit):
+            raise TypeError(f"circuit must be stim.Circuit, got {type(circuit)}")
 
         measured_qubits: list[int] = []
         saw_measurement = False
@@ -290,16 +287,17 @@ class QuantumManagerStabilizer(QuantumManager):
             return [targets[index:index + 2] for index in range(0, len(targets), 2)]
         raise ValueError(f"Unsupported gate for elementary target split: {gate_name}")
 
-    def get_circuit_duration(self, circuit: stim.Circuit | Circuit) -> int:
+    def get_circuit_duration(self, circuit: stim.Circuit) -> int:
         """Return the estimated execution time of a circuit in picoseconds.
 
         Args:
-            circuit: Stim circuit or SeQUeNCe circuit to estimate.
+            circuit: Stim circuit to estimate.
 
         Returns:
             int: Estimated circuit duration in picoseconds.
         """
-        circuit = self._to_stim_circuit(circuit)
+        if not isinstance(circuit, stim.Circuit):
+            raise TypeError(f"circuit must be stim.Circuit, got {type(circuit)}")
         duration_ps = 0
 
         for instruction in circuit:
@@ -670,48 +668,6 @@ class QuantumManagerStabilizer(QuantumManager):
                 if self.track_error_statistics and sampled_branch != "II":
                     self.gate_2q_error_count += 1
                 self._apply_sampled_pauli_branch(simulator, targets, sampled_branch)
-
-    def _to_stim_circuit(self, circuit: stim.Circuit | Circuit) -> stim.Circuit:
-        """Normalize supported circuit input into a Stim circuit.
-
-        Args:
-            circuit: Stim circuit or SeQUeNCe circuit.
-
-        Returns:
-            stim.Circuit: Equivalent Stim circuit.
-        """
-        if isinstance(circuit, stim.Circuit):
-            return circuit
-
-        if not isinstance(circuit, Circuit):
-            raise TypeError(f"circuit must be stim.Circuit or SeQUeNCe Circuit, got {type(circuit)}")
-
-        converted = stim.Circuit()
-        gate_map = {
-            "h": "H",
-            "x": "X",
-            "y": "Y",
-            "z": "Z",
-            "s": "S",
-            "sdg": "S_DAG",
-            "cx": "CX",
-            "cz": "CZ",
-            "swap": "SWAP",
-        }
-
-        for gate_name, indices, arg in circuit.gates:
-            if arg is not None:
-                raise ValueError(f"Unsupported gate arg for stabilizer manager: {gate_name}")
-            if gate_name not in gate_map:
-                raise ValueError(f"Unsupported gate '{gate_name}' for stabilizer manager.")
-            converted.append(gate_map[gate_name], list(indices))
-
-        for qubit in circuit.measured_qubits:
-            converted.append("M", [qubit])
-        for qubit in circuit.measured_x_qubits:
-            converted.append("MX", [qubit])
-
-        return converted
 
     def _prepare_circuit(self, num_qubits: int, measured_qubits: list[int], keys: list[int], meas_samp=None) -> tuple[float | None, StabilizerState | None, dict[int, int]]:
         """Validate run input and prepare shared stabilizer context.
