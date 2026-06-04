@@ -19,13 +19,13 @@ class StabilizerState(State):
     accessors are provided for inspection and interoperability with Stim.
     """
 
-    def __init__(self, state: TableauSimulator, keys: list[int], seed: int = None):
+    def __init__(self, state: TableauSimulator | None, keys: list[int], seed: int | None = None):
         """Create a stabilizer state.
 
         Args:
-            state TableauSimulator: Simulator payload.
-                If `None`, a default simulator in |0...0> is created.
+            state (TableauSimulator | None): Simulator payload. If `None`, a default simulator in |0...0> is created.
             keys (list[int]): Keys associated with this state.
+            seed (int | None): Seed used by stim.TableauSimulator.
         """
         super().__init__()
         self.keys = keys

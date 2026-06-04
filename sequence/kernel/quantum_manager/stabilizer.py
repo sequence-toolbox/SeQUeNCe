@@ -1,13 +1,9 @@
 """
-This module implements the stabilizer-state quantum manager.
-
-This quantum manager is developed during the project ``Realistic Simulation of Quantum Repeater with Encoding and Classical Error Correction``,
-see arXiv https://arxiv.org/abs/2605.06928 and GitHub repo https://github.com/SagarPatange/Quantum-Repeater-Encoding
-
+This module implements the stabilizer-state quantum manager, developed during the project ``Realistic Simulation of Quantum Repeater with Encoding and Classical Error Correction``.
+See arXiv https://arxiv.org/abs/2605.06928 and GitHub repo https://github.com/SagarPatange/Quantum-Repeater-Encoding
 """
 
 from collections.abc import Iterable
-from typing import Any
 import stim
 import numpy as np
 from stim import TableauSimulator, Tableau
@@ -335,6 +331,9 @@ class QuantumManagerStabilizer(QuantumManager):
         """
         if len(keys) == 0:
             return
+
+        if not (0 < t2_sec <= 2 * t1_sec):
+            raise ValueError(f"Invalid T1/T2 values for idling decoherence: T1={t1_sec}, T2={t2_sec}. Must satisfy 0 < T2 <= 2*T1.")
 
         _, state_obj, key_to_local = self._prepare_circuit(len(keys), [], keys, 0.5)
 

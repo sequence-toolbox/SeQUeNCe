@@ -15,7 +15,8 @@
 ![pyversions](https://img.shields.io/pypi/pyversions/sequence)
 [![Documentation](https://img.shields.io/readthedocs/sequence-rtd-tutorial)](https://sequence-rtd-tutorial.readthedocs.io/)
 [![QuTiP](https://img.shields.io/badge/integration-QuTiP-blue)](https://qutip.org/)
-[![Stim](https://img.shields.io/badge/integration-Stim-blue)](https://github.com/quantumlib/Stim)[![Paper](https://img.shields.io/badge/10.1088%2F2058-9565%2Fac22f6?label=DOI)](https://iopscience.iop.org/article/10.1088/2058-9565/ac22f6)
+[![Stim](https://img.shields.io/badge/integration-Stim-blue)](https://github.com/quantumlib/Stim)
+[![Paper](https://img.shields.io/badge/10.1088%2F2058-9565%2Fac22f6?label=DOI)](https://iopscience.iop.org/article/10.1088/2058-9565/ac22f6)
 [![Download-month](https://img.shields.io/pypi/dm/sequence)](https://pypistats.org/packages/sequence)
 
 </div>
