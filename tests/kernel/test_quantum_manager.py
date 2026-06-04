@@ -9,6 +9,7 @@ import stim
 from sequence.kernel.quantum_state import StabilizerState
 from sequence.kernel.quantum_manager import QuantumManagerDensity, QuantumManagerDensityFock, QuantumManagerKet, QuantumManagerStabilizer
 from sequence.components.circuit import Circuit
+from sequence.constants import SECOND
 
 
 class DumbCircuit():
@@ -671,7 +672,7 @@ def test_duration_and_reset_duration():
         qm.get_circuit_duration(stim.Circuit("R 0"))
 
 
-def test_gate_and_measurement_statistics_when_noise_injection_is_enabled():
+def test_gate_and_measurement_statistics_with_noise_injection():
     one_qubit_gate_fid = 0
     two_qubit_gate_fid = 1
     measurement_fid = 0
@@ -693,3 +694,60 @@ def test_gate_and_measurement_statistics_when_noise_injection_is_enabled():
                         "measurement_error_count": 1}
 
     assert qm.get_error_statistics() == error_statistics
+
+
+def test_apply_idling_decoherence():
+    class FakeSimulator:
+        def __init__(self):
+            self.applied_circuits = []
+
+        def do(self, circuit):
+            self.applied_circuits.append(circuit)
+
+    class FakeState:
+        def __init__(self, keys):
+            self.keys = keys
+            self.state = FakeSimulator()
+
+    class FakeQuantumManagerStabilizer(QuantumManagerStabilizer):
+        def __init__(self, fake_state, expected_keys):
+            super().__init__(idle_error_channel="pauli")
+            self.fake_state = fake_state
+            self.expected_keys = expected_keys
+
+        def _prepare_circuit(self, num_qubits, measured_qubits, keys, meas_samp=None):
+            key0_local = 0
+            key1_local = 1
+            assert num_qubits == 2
+            assert measured_qubits == []
+            assert keys == self.expected_keys
+            assert meas_samp == 0.5
+            return meas_samp, self.fake_state, {self.expected_keys[0]: key0_local, self.expected_keys[1]: key1_local}
+
+    key0 = 2
+    key1 = 5
+    key0_local = 0
+    key1_local = 1
+    now_ps = 2_000_000_000_000
+    fake_state = FakeState([key0, key1])
+    qm = FakeQuantumManagerStabilizer(fake_state, [key0, key1])
+    qm.last_idle_time_ps_by_key[key0] = 0
+    qm.last_idle_time_ps_by_key[key1] = 1 * SECOND
+    key0_idle_sec = (now_ps - qm.last_idle_time_ps_by_key[key0]) / SECOND
+    key1_idle_sec = (now_ps - qm.last_idle_time_ps_by_key[key1]) / SECOND
+
+    qm.apply_idling_decoherence([key0, key1], now_ps, t1_sec=2.0, t2_sec=4.0)
+
+    assert qm.last_idle_time_ps_by_key[key0] == now_ps
+    assert qm.last_idle_time_ps_by_key[key1] == now_ps
+    assert len(fake_state.state.applied_circuits) == 2
+
+    for circuit, local_target, idle_sec in zip(fake_state.state.applied_circuits, [key0_local, key1_local], [key0_idle_sec, key1_idle_sec]):
+        instruction = list(circuit)[0]
+        expected_px = (1.0 - np.exp(-idle_sec / 2.0)) / 4.0
+        expected_py = expected_px
+        expected_pz = (1.0 + np.exp(-idle_sec / 2.0) - 2.0 * np.exp(-idle_sec / 4.0)) / 4.0
+
+        assert instruction.name == "PAULI_CHANNEL_1"
+        assert [int(target.value) for target in instruction.targets_copy()] == [local_target]
+        assert instruction.gate_args_copy() == pytest.approx([expected_px, expected_py, expected_pz])

@@ -1,8 +1,8 @@
 """
 This module implements the stabilizer-state quantum manager.
 
-This manager is developed during the project ``Realistic Simulation of Quantum Repeater with Encoding and Classical Error Correction``,
-see arXiv https://arxiv.org/abs/2605.06928.
+This quantum manager is developed during the project ``Realistic Simulation of Quantum Repeater with Encoding and Classical Error Correction``,
+see arXiv https://arxiv.org/abs/2605.06928 and GitHub repo https://github.com/SagarPatange/Quantum-Repeater-Encoding
 
 """
 
@@ -14,7 +14,7 @@ from stim import TableauSimulator, Tableau
 
 from .base import QuantumManager
 from ..quantum_state import StabilizerState
-from ...constants import STABILIZER_FORMALISM
+from ...constants import STABILIZER_FORMALISM, SECOND
 from ...utils import log
 
 
@@ -332,6 +332,7 @@ class QuantumManagerStabilizer(QuantumManager):
 
     def apply_idling_decoherence(self, keys: list[int], now_ps: int, t1_sec: float, t2_sec: float) -> None:
         """Apply time-based idling decoherence to the provided keys.
+           The PAULI_CHANNEL_1 applies the standard T1/T2 to Pauli approximation and requires 0 < T2 <= 2*T1
 
         Args:
             keys: Quantum-manager keys to decohere.
@@ -339,31 +340,28 @@ class QuantumManagerStabilizer(QuantumManager):
             t1_sec: Shared T1 time constant in seconds.
             t2_sec: Shared T2 time constant in seconds.
         """
-        if t1_sec >= 1e9 and t2_sec >= 1e9:
-            for key in keys:
-                self.last_idle_time_ps_by_key[key] = now_ps
+        if len(keys) == 0:
             return
 
         _, state_obj, key_to_local = self._prepare_circuit(len(keys), [], keys, 0.5)
+        
         for key in keys:
             last_ps = self.last_idle_time_ps_by_key.get(key, now_ps)
-            idle_sec = (now_ps - last_ps) * 1e-12
-            # Skip keys with no positive idle interval since the last watermark update.
-            if idle_sec <= 0.0:
-                continue
-
-            px = py = (1.0 - np.exp(-idle_sec / t1_sec)) / 4.0
-            pz = (1.0 + np.exp(-idle_sec / t1_sec) - 2.0 * np.exp(-idle_sec / t2_sec)) / 4.0
-            local = key_to_local[key]
-            noise_circuit = stim.Circuit()
-            if self.idle_error_channel == "depolarize":
-                p_idle = float(px + py + pz)
-                noise_circuit.append("PAULI_CHANNEL_1", [local], [p_idle / 3.0, p_idle / 3.0, p_idle / 3.0])
-            elif self.idle_error_channel == "pauli":
-                noise_circuit.append("PAULI_CHANNEL_1", [local], [float(px), float(py), float(pz)])
-            else:
-                raise ValueError("idle_error_channel must be 'depolarize' or 'pauli'.")
-            state_obj.state.do(noise_circuit)
+            idle_sec = (now_ps - last_ps) / SECOND
+            if idle_sec > 0:  # Only proceed if there is a positive idle interval
+                px = (1.0 - np.exp(-idle_sec / t1_sec)) / 4.0
+                py = px
+                pz = (1.0 + np.exp(-idle_sec / t1_sec) - 2.0 * np.exp(-idle_sec / t2_sec)) / 4.0
+                local = key_to_local[key]
+                noise_circuit = stim.Circuit()
+                if self.idle_error_channel == "depolarize":
+                    p_idle = float(px + py + pz)
+                    noise_circuit.append("PAULI_CHANNEL_1", [local], [p_idle / 3.0, p_idle / 3.0, p_idle / 3.0])
+                elif self.idle_error_channel == "pauli":
+                    noise_circuit.append("PAULI_CHANNEL_1", [local], [float(px), float(py), float(pz)])
+                else:
+                    raise ValueError("idle_error_channel must be 'depolarize' or 'pauli'.")
+                state_obj.state.do(noise_circuit)
 
         for key in state_obj.keys:
             self.last_idle_time_ps_by_key[key] = now_ps
@@ -681,7 +679,7 @@ class QuantumManagerStabilizer(QuantumManager):
         Returns:
             tuple[float | None, StabilizerState | None, dict[int, int]]:
                 Normalized measurement sample, shared stabilizer state object, and
-                key-to-local index mapping.
+                key-to-local index mapping (local refers to indices within the shared TableauSimulator, always 0...num_qubits-1).
         """
         if measured_qubits and meas_samp is None:
             meas_samp = 0.5
