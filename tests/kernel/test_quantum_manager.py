@@ -676,7 +676,7 @@ def test_gate_and_measurement_statistics_with_noise_injection():
     one_qubit_gate_fid = 0
     two_qubit_gate_fid = 1
     measurement_fid = 0
-    qm = QuantumManagerStabilizer(seed=50, track_error_statistics=True, 
+    qm = QuantumManagerStabilizer(seed=50,
                                   one_qubit_gate_fid=one_qubit_gate_fid, 
                                   two_qubit_gate_fid=two_qubit_gate_fid, 
                                   measurement_fid=measurement_fid)
