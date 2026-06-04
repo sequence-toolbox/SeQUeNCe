@@ -344,7 +344,7 @@ class QuantumManagerStabilizer(QuantumManager):
             return
 
         _, state_obj, key_to_local = self._prepare_circuit(len(keys), [], keys, 0.5)
-        
+
         for key in keys:
             last_ps = self.last_idle_time_ps_by_key.get(key, now_ps)
             idle_sec = (now_ps - last_ps) / SECOND
@@ -382,6 +382,7 @@ class QuantumManagerStabilizer(QuantumManager):
         simulator.set_num_qubits(1)
         self._apply_initialization_fidelity(simulator, [0])
         self.states[key] = StabilizerState(state=simulator, keys=[key], seed=seed)
+        self.last_idle_time_ps_by_key[key] = 0
 
     def set_to_one(self, key: int) -> None:
         """Reset a single qubit to the |1⟩ computational basis state.
