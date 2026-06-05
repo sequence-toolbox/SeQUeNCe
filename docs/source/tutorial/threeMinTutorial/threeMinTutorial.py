@@ -44,6 +44,6 @@ if __name__ == "__main__":
     tl.run()
     if alice_app.memory_counter > 0:
         print("Entanglement established between Alice and Bob")
-        print("Alice received", alice_app.memory_counter, "entangled memory pair(s)")
+        print("Alice received", alice_app.memory_counter, "entangled memory pair(s) per second")
     else:
         print("No entanglement was established between Alice and Bob")
