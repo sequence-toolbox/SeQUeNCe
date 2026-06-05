@@ -172,9 +172,15 @@ class Node(Entity):
         return self.qchannels[dst].schedule_transmit(min_time)
 
     def send_qubit(self, dst: str, qubit) -> None:
-        """Interface for quantum channel `transmit` method."""
+        """Interface for quantum channel `transmit` method.
 
-        self.qchannels[dst].transmit(qubit, self)
+        If no quantum channel is available to transmit qubit, a ValueError gets raised.
+        """
+
+        if dst not in self.qchannels:
+            raise ValueError(f"No available quantum channel to send qubit from sending node \"{self.name}\" to receiving node \"{dst}\"")
+        else:
+            self.qchannels[dst].transmit(qubit, self)
 
     def receive_qubit(self, src: str, qubit) -> None:
         """Method to receive qubits from quantum channel.
