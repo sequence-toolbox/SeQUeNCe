@@ -67,6 +67,7 @@ dev = [
     "ty>=0.0.16",
     "pandas-stubs~=2.3.3",
     "scipy-stubs~=1.16.3",
+    "pre-commit>=4.6.0",
 ]
 
 [project.urls]

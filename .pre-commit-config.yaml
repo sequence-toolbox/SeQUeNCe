@@ -1,0 +1,22 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-staged-check
+        name: ruff check staged Python files
+        entry: python .github/scripts/run_staged_ruff.py check
+        language: system
+        pass_filenames: false
+        types_or: [python, pyi]
+      - id: ruff-staged-format
+        name: ruff format staged Python files
+        entry: python .github/scripts/run_staged_ruff.py format
+        language: system
+        pass_filenames: false
+        types_or: [python, pyi]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-toml
+      - id: check-yaml

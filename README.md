@@ -77,6 +77,17 @@ SeQUeNCe includes a comprehensive test suite, this can be ran with the following
 uv run pytest tests
 ```
 
+#### Pre-commit hooks
+To run lightweight checks before each commit, install the pre-commit hooks:
+```bash
+uv run pre-commit install
+```
+
+The hooks run Ruff against staged Python files and perform basic file checks. They can also be run manually:
+```bash
+uv run pre-commit run --all-files
+```
+
 ## Citation
 Please cite us, thank you!
 ```
