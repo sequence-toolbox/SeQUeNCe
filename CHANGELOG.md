@@ -39,8 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed support for Python 3.11
 - Removed `qlan` submodule
 
-### Bug fix
+### Fixed
 - Some minor bugs in quantum states
+- Fixed a bug in `Node.send_qubit()` where if there are no quantum channels available for the qubit to travel, a `KeyError` crash would occur.
 
 
 ## [0.8.5] - 2026-2-27
