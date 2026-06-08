@@ -28,14 +28,12 @@ if __name__ == "__main__":
     alice_app = RequestApp(alice)
     bob_app = RequestApp(bob)
     
+    tl.init()
     start_t = 1 * SECOND
     end_t = 2.5 * SECOND
     memo_size = 1
     fidelity = 0.8
-    alice_app.start(responder = bob_name, start_t = start_t, end_t = end_t, 
-                    memo_size = memo_size, fidelity = fidelity)
-    
-    tl.init()
+    alice_app.start(responder=bob_name, start_t=start_t, end_t=end_t, memo_size=memo_size, fidelity=fidelity)
     tl.run()
 
     print(f"Entangled pair count between Alice and Bob: {alice_app.memory_counter}")
