@@ -41,6 +41,8 @@ The shell prompt should now show the name of the virtual environment.
 
 Using `Anaconda/conda` to create a virtual environment is also recommended.
 
+`uv` is also supported, see [README](https://github.com/sequence-toolbox/SeQUeNCe#development-environment-setup) for detailed instructions.
+
 ### Install SeQUeNCe
 
 You can simply install SeQUeNCe using `pip`:
