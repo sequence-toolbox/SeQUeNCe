@@ -11,14 +11,15 @@ The simulator requires at least version **3.12** of Python. This can be found at
 ### Dependencies
 
 The simulator requires the following Python libraries:
-* `qutip`,for quantum circuit management
+* `qutip`, for quantum circuit management
+* `stim`, for stabilizer state management
 * `networkx`, for network topology related operations
 * `numpy`, for mathematical computing tasks
 * `scipy`, for linear algebra computing tasks
 * `pandas`, for data processing
 * `matplotlib`, for generating graphics
 
-These will be installed automatically with the simulator if they are not already present. 
+For the complete and updated requirements, see the `pyproject.toml`. These will be installed automatically with the simulator if they are not already present. 
 
 ## Installation
 
@@ -38,7 +39,7 @@ $ source path-to-venv/bin/activate
 
 The shell prompt should now show the name of the virtual environment.
 
-Using Anaconda/conda to create a virtual environment is also recommended.
+Using `Anaconda/conda` to create a virtual environment is also recommended.
 
 ### Install SeQUeNCe
 

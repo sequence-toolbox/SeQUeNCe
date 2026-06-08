@@ -9,12 +9,12 @@ Before building the simulation, we first need a network configuration file that 
 The following command generates a simple two-node linear topology and saves it as a JSON file:
 
 ```bash
-generate-topology linear 2 --memory-size 1 --output two_node_topology.json --directory docs/source/tutorial/threeMinTutorial
+generate-topology linear 2 --memory-size 1 --output two_node.json --directory docs/source/tutorial/sequence3min
 ```
 
-This command creates a topology with two quantum routers connected through a Bell-state measurement node. The generated file, `two_node_topology.json`, can then be loaded directly by SeQUeNCe when running the tutorial simulation.
+This command creates a topology with two quantum routers connected through a Bell-state measurement node. The generated file, `two_node.json`, can then be loaded directly by SeQUeNCe when running the tutorial simulation.
 
-If you are working in a different directory, change the value passed to `--directory` so that the JSON file is saved in the same location as your tutorial files. Alternatively, if you downloaded SeQUeNCe with the tutorial files included, you may use the provided `two_node_topology.json` file directly instead of regenerating it.
+If you are working in a different directory, change the value passed to `--directory` so that the JSON file is saved in the same location as your tutorial files. Alternatively, if you downloaded SeQUeNCe with the tutorial files included, you may use the provided `two_node.json` file directly instead of regenerating it.
 
 ### Step 2: Import the Required Modules
 
@@ -38,76 +38,63 @@ EntanglementGenerationB.set_global_type(SINGLE_HERALDED)
 Next, we load the generated JSON file into a `RouterNetTopo`. This constructs the timeline, quantum routers, BSM node, and communication channels defined in the topology file.
 
 ```python
-network_config = "docs/source/tutorial/threeMinTutorial/two_node_topology.json"
+network_config = "docs/source/tutorial/threeMinTutorial/two_node.json"
 
 network_topo = RouterNetTopo(network_config)
 tl = network_topo.get_timeline()
-tl.stop_time = 3e12
-tl.show_progress = False
 ```
 
-The stop time is given in picoseconds. In this example, `3e12` runs the simulation for 3 seconds of simulated time.
-
-### Step 4: Select Alice and Bob
+### Step 4: Select Alice and Bob, and attach the applications
 
 The topology generator names the two routers `router_0` and `router_1`. In this tutorial, we will refer to these nodes as Alice and Bob.
 
 ```python
-alice_node_name = "router_0"
-bob_node_name = "router_1"
-alice = bob = None
-
+alice_name = "router_0"
+bob_name = "router_1"
+alice = None
+bob = None
 for router in network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
-    if router.name == alice_node_name:
+    if router.name == alice_name:
         alice = router
-    elif router.name == bob_node_name:
+    elif router.name == bob_name:
         bob = router
+alice_app = RequestApp(alice)
+bob_app = RequestApp(bob)
 ```
 
 This loop searches the topology for the two quantum routers and stores references to them. These node objects are then used to attach applications and make the entanglement request.
 
-### Step 5: Attach the Applications
 
-Each quantum router needs an application object. The application on Alice will make the request, while the application on Bob allows Bob's node to receive the corresponding reservation and memory updates.
-
-```python
-memory_size = 1
-target_fidelity = 0.6
-
-alice_app = RequestApp(alice)
-bob_app = RequestApp(bob)
-
-print("Alice is using node:", alice.name)
-print("Bob is using node:", bob.name)
-```
-
-The `memory_size` value specifies the number of memory pairs requested. The `target_fidelity` value specifies the minimum desired fidelity for the generated entanglement.
-
-### Step 6: Run the Simulation
+### Step 5: Run the Simulation
 
 Finally, we initialize the timeline, start Alice's request, and run the simulation.
 
 ```python
+start_t = 1 * SECOND
+end_t = 2.5 * SECOND
+memo_size = 1
+fidelity = 0.8
+alice_app.start(responder = bob_name, start_t = start_t, end_t = end_t, 
+                memo_size = memo_size, fidelity = fidelity)
+
 tl.init()
-alice_app.start(bob_node_name, int(1e12), int(2e12), memory_size, target_fidelity)
 tl.run()
 ```
 
-The request asks Alice to establish entanglement with Bob between 1 second and 2 seconds of simulated time. After the timeline finishes running, we can check whether Alice received any entangled memories.
+The request asks Alice to establish entanglement with Bob between 1 second and 2.5 seconds of simulated time. After the timeline finishes running, we can check the number of entangled pairs between Alice and Bob and the throughput.
 
 ```python
-if alice_app.memory_counter > 0:
-    print("Entanglement established between Alice and Bob")
-    print("Alice received", alice_app.memory_counter, "entangled memory pair(s)")
-else:
-    print("No entanglement was established between Alice and Bob")
+print(f"Entangled pair count between Alice and Bob: {alice_app.memory_counter}")
+print(f"The throughput is {alice_app.get_throughput()} pairs per second")
 ```
 
-If the simulation succeeds, the output should show that Alice and Bob were found, followed by a message confirming that entanglement was established. The exact number of entangled memory pairs may vary between runs.
+You will see the following:
 
 ```text
-Alice is using node: router_0
-Bob is using node: router_1
-Entanglement established between Alice and Bob
-Alice received 66 entangled memory pair(s)
+Entangled pair count between Alice and Bob: 105
+The throughput is 70.0 pairs per second
 ```
+
+---
+
+The full code can be found at [three_minute.py](three_minute.py)
