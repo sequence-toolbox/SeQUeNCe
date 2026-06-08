@@ -1,4 +1,4 @@
-# Three Minute Tutorial 
+# SeQUeNCe in 3 Minutes
 
 In this introductory three minute tutorial, we will briefly cover the neccesary basics of SeQUeNCe. We will request a one entanglment pair between two quantum routers, Alice and Bob. The goal of this tutorial is to gain a general understanding of SeQUeNCe's topology generator to create a two-node network, attach a single application to the routers, and submit an entangment request through the network manager. 
 
