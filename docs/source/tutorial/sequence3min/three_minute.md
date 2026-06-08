@@ -23,7 +23,7 @@ We begin by importing the request application, the router-network topology class
 ```python
 from sequence.app.request_app import RequestApp
 from sequence.topology.router_net_topo import RouterNetTopo
-from sequence.constants import SINGLE_HERALDED
+from sequence.constants import SINGLE_HERALDED, SECOND
 from sequence.entanglement_management.generation import EntanglementGenerationA, EntanglementGenerationB
 ```
 
