@@ -7,12 +7,18 @@ Welcome to the SeQUeNCe documentation page
 
 ==========================================
 
+.. toctree::
+    :maxdepth: 1
+    :caption: About:
+
+    about/introduction/about
+    about/requirements/prerequisite
 
 .. toctree::
     :maxdepth: 1
     :caption: Tutorials:
 
-    tutorial/chapter0/prerequisite
+    tutorial/sequence3min/threeMinute
     tutorial/chapter1/discrete-event-simulation
     tutorial/chapter2/hardware
     tutorial/chapter3/entangle
