@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Subclass for Bell diagonal state: `EntanglementSwappingA_BDS` & `EntanglementSwappingB_BDS`
 - Update the tutorial to catch up on the recent updates. Add notes saying refer to chapter 6 Application module for standard usage
 - Introducing `EARLY_EXPIRE` message type. A request has a `start_time` and `end_time`. When a request is finished before the `end_time`, then the reservation (and the associated rules) should expire early. If not, the quantum network will keep generating entanglement pairs because the rules still exist.
+- Added three minute tutorial (tutorial file, md, json file). Also reorganized nav bar to have about section, tutorial section, and moduale refrence
 
 
 ### Changed
@@ -31,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add a `sender_delay` argument to the `Node.send_message()` to account for processing delay, queueing delay, transmission delay, etc.
 - Break down the `quantum_manager.py` into a module consisting of multiple files where each file has a quantum manager class
 - Break down the `quantum_state.py` into a module consisting of multiple files where each file has a quantum state class
+- Changed documentation from python 3.11 to 3.12
 
 ### Removed
 - Old configuration generators 
@@ -40,8 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed support for Python 3.11
 - Removed `qlan` submodule
 
-### Bug fix
+### Fixed
 - Some minor bugs in quantum states
+- Fixed a bug in `Node.send_qubit()` where if there are no quantum channels available for the qubit to travel, a `KeyError` crash would occur.
 
 
 ## [0.8.5] - 2026-2-27
