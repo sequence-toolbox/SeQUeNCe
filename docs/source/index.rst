@@ -18,7 +18,7 @@ Welcome to the SeQUeNCe documentation page
     :maxdepth: 1
     :caption: Tutorials:
 
-    tutorial/sequence3min/threeMinute
+    tutorial/sequence3min/three_minute
     tutorial/chapter1/discrete-event-simulation
     tutorial/chapter2/hardware
     tutorial/chapter3/entangle
