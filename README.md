@@ -44,9 +44,27 @@ pip install sequence
 ```
 
 ### Development Environment Setup     
-If you wish to modify the source code, use an editable installation with [uv](https://docs.astral.sh/uv/):
+If you wish to modify the source code, use an editable installation with either pip or [uv](https://docs.astral.sh/uv/):
 
-#### Install uv ([Astral Instructions](https://docs.astral.sh/uv/getting-started/installation/))
+Editable installations let Python use your local source tree directly, so changes you make to the SeQUeNCe code are available **without reinstalling the package after each edit**. The `pip` option is a lightweight way to install the local package into an environment you already manage, while `uv` can create and synchronize a reproducible virtual environment from the project's dependency files.
+
+#### (1) Using pip
+```
+git clone https://github.com/sequence-toolbox/SeQUeNCe.git
+cd sequence
+make install_editable
+```
+
+In the Makefile, `install_editable` will run the following:
+```
+pip install --editable . --config-settings editable_mode=strict
+```
+The `--config-settings editable_mode=strict` setting makes the editable install behaves more like a real packaged install.
+
+#### (2) Using uv 
+
+##### Install uv ([Astral Instructions](https://docs.astral.sh/uv/getting-started/installation/))
+
 ```bash
 # macOS/Linux
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -55,7 +73,8 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
-#### Clone the repository and create the virtual environment
+##### Clone the repository and create the virtual environment
+
 Here we clone the repository and let uv configure the development environment with the target python version.
 ```bash
 git clone https://github.com/sequence-toolbox/SeQUeNCe.git
@@ -63,7 +82,8 @@ cd sequence
 uv sync
 ```
 
-#### Activate the virtual environment
+##### Activate the virtual environment
+
 Now that the virtual environment is created with all dependencies installed, you can activate it using the following command.
 
 ```bash
@@ -71,7 +91,8 @@ source .venv/bin/activate # macOS/Linux
 source .venv\Scripts\activate # Windows
 ```
 
-#### Running the test suite
+##### Running the test suite
+
 SeQUeNCe includes a comprehensive test suite, this can be ran with the following command
 ```
 uv run pytest tests
@@ -121,21 +142,24 @@ If you have questions, please contact [Caitao Zhan](https://caitaozhan.github.io
 Here is the updated table with the Code column populated:
 
 ## Papers that Used and/or Extended SeQUeNCe
-| Year | Authors                        | Title                                                                                                                                   | Venue                              | Code                                                            |
-|------|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|------------------------------------|-----------------------------------------------------------------|
-| 2026 | S. Pantage et al.              | [Realistic Simulation of Quantum Repeater with Encoding and Classical Error Correction](https://arxiv.org/abs/2605.06928)               | arXiv preprint                     |                                                                 |
-| 2026 | A. Pirker et al.               | [Centralizing Task-based Approach to Quantum Network Control](https://arxiv.org/abs/2605.03336)                                         | arXiv preprint                     | [GitHub](https://github.com/sequence-toolbox/central_scheduler) |
-| 2026 | H. Miller et al.               | [Simulation of a Heterogeneous Quantum Network](https://doi.org/10.1109/QCNC69040.2026.00085)                                           | IEEE QCNC                          |                                                                 |
-| 2026 | A. Zang et al.                 | [Quantum Advantage in Distributed Sensing with Noisy Quantum Networks](https://doi.org/10.1103/7n9w-9xd4)                               | Physical Review Research           |                                                                 |
-| 2025 | C. Zhan et al.                 | [Design and Simulation of the Adaptive Continuous Entanglement Generation Protocol](https://doi.org/10.1109/QCNC64685.2025.00028)       | IEEE QCNC                          | [GitHub](https://github.com/caitaozhan/adaptive-continuous)     |
-| 2025 | F. Mazza et al.                | [Simulation of Entanglement-Enabled Connectivity in QLANs using SeQUeNCe](https://doi.org/10.1109/ICC52391.2025.11434940)               | IEEE ICC                           |                                                                 |
-| 2025 | L. d'Avossa et al.             | [Simulation of Quantum Transduction Strategies for Quantum Networks](https://doi.org/10.1109/QCE65121.2025.00142)                       | IEEE QCE                           |                                                                 |
-| 2024 | C. Howe, M. Aziz, and A. Anwar | [Towards Scalable Quantum Repeater Networks](https://arxiv.org/abs/2409.08416)                                                          | arXiv preprint                     |                                                                 |
-| 2024 | X. Wu et al.                   | [Parallel Simulation of Quantum Networks with Distributed Quantum State Management](https://dl.acm.org/doi/abs/10.1145/3634701)         | ACM TOMACS                         |                                                                 |
-| 2023 | R. Zhou et al.                 | [A Simulator of Atom-Atom Entanglement with Atomic Ensembles and Quantum Optics](https://doi.org/10.1109/QCE57702.2023.00143)           | IEEE QCE                           |                                                                 |
-| 2023 | M.G. Davis et al.              | [Towards Distributed Quantum Computing by Qubit and Gate Graph Partitioning Techniques](https://doi.org/10.1109/QCE57702.2023.00026)    | IEEE QCE                           |                                                                 |
-| 2022 | A. Zang et al.                 | [Simulation of Entanglement Generation between Absorptive Quantum Memories](https://doi.org/10.1109/QCE53715.2022.00084)                | IEEE QCE                           |                                                                 |
-| 2022 | V. Semenenko et al.            | [Entanglement generation in a quantum network with finite quantum memory lifetime](https://doi.org/10.1116/5.0082239)                   | AVS Quantum Science                |                                                                 |
-| 2021 | X. Wu et al.                   | [SeQUeNCe: A Customizable Discrete-Event Simulator of Quantum Networks](https://iopscience.iop.org/article/10.1088/2058-9565/ac22f6)    | IOP Quantum Science and Technology |                                                                 |
-| 2019 | X. Wu et al.                   | [Simulations of Photonic Quantum Networks for Performance Analysis and Experiment Design](https://ieeexplore.ieee.org/document/8950718) | IEEE/ACM PHOTONICS                 |                                                                 |
+| Year | Authors | Title | Venue | Code |
+|------|---------|-------|-------|------|
+| 2026 | S. Pantage et al. | [Realistic Simulation of Quantum Repeater with Encoding and Classical Error Correction](https://arxiv.org/abs/2605.06928) | arXiv preprint | [GitHub](https://github.com/SagarPatange/Quantum-Repeater-Encoding) |
+| 2026 | A. Pirker et al. | [Centralizing Task-based Approach to Quantum Network Control](https://arxiv.org/abs/2605.03336) | arXiv preprint | [GitHub](https://github.com/sequence-toolbox/central_scheduler) |
+| 2026 | A. Amlou et al. | [Physics-Informed Discrete-Event Simulation of Polarization-Encoded Quantum Networks](https://arxiv.org/abs/2604.07289) | arXiv preprint | |
+| 2026 | H. Miller et al. | [Simulation of a Heterogeneous Quantum Network](https://doi.org/10.1109/QCNC69040.2026.00085) | IEEE QCNC | [GitHub](https://github.com/haydenmllr1317/heterogenous) |
+| 2026 | A. Zang et al. | [Quantum Advantage in Distributed Sensing with Noisy Quantum Networks](https://doi.org/10.1103/7n9w-9xd4) | Physical Review Research | |
+| 2025 | C. Zhan et al. | [Design and Simulation of the Adaptive Continuous Entanglement Generation Protocol](https://doi.org/10.1109/QCNC64685.2025.00028) | IEEE QCNC | [GitHub](https://github.com/caitaozhan/adaptive-continuous) |
+| 2025 | F. Mazza et al. | [Simulation of Entanglement-Enabled Connectivity in QLANs using SeQUeNCe](https://doi.org/10.1109/ICC52391.2025.11434940) | IEEE ICC | |
+| 2025 | L. d'Avossa et al. | [Simulation of Quantum Transduction Strategies for Quantum Networks](https://doi.org/10.1109/QCE65121.2025.00142) | IEEE QCE | |
+| 2025 | V. S. Mai et al. | [Towards Optimal Orders for Entanglement Swapping in Path Graphs: A Greedy Approach](https://arxiv.org/abs/2504.14040) | IEEE QCE | |
+| 2024 | C. Howe et al. | [Towards Scalable Quantum Repeater Networks](https://arxiv.org/abs/2409.08416) | arXiv preprint | |
+| 2024 | X. Wu et al. | [Parallel Simulation of Quantum Networks with Distributed Quantum State Management](https://dl.acm.org/doi/abs/10.1145/3634701) | ACM TOMACS | |
+| 2023 | R. Zhou et al. | [A Simulator of Atom-Atom Entanglement with Atomic Ensembles and Quantum Optics](https://doi.org/10.1109/QCE57702.2023.00143) | IEEE QCE | |
+| 2023 | M.G. Davis et al. | [Towards Distributed Quantum Computing by Qubit and Gate Graph Partitioning Techniques](https://doi.org/10.1109/QCE57702.2023.00026) | IEEE QCE | |
+| 2022 | A. Zang et al. | [Simulation of Entanglement Generation between Absorptive Quantum Memories](https://doi.org/10.1109/QCE53715.2022.00084) | IEEE QCE | |
+| 2022 | V. Semenenko et al. | [Entanglement generation in a quantum network with finite quantum memory lifetime](https://doi.org/10.1116/5.0082239) | AVS Quantum Science | |
+| 2021 | X. Wu et al. | [SeQUeNCe: A Customizable Discrete-Event Simulator of Quantum Networks](https://iopscience.iop.org/article/10.1088/2058-9565/ac22f6) | IOP Quantum Science and Technology | |
+| 2019 | X. Wu et al. | [Simulations of Photonic Quantum Networks for Performance Analysis and Experiment Design](https://ieeexplore.ieee.org/document/8950718) | IEEE/ACM PHOTONICS | |
+
 Please do a Pull Request to add your paper here! 
