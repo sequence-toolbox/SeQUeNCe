@@ -2,7 +2,7 @@
 This module implements the quantum manager for ket vector states.
 """
 
-from .base import QuantumManager
+from .base import QuantumManager, QuantumManagerDenseQubit
 from ..quantum_state import KetState
 from ..quantum_utils import measure_entangled_state_with_cache_ket, measure_multiple_with_cache_ket, measure_state_with_cache_ket
 from ...constants import KET_VECTOR_FORMALISM
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 @QuantumManager.register(KET_VECTOR_FORMALISM)
-class QuantumManagerKet(QuantumManager):
+class QuantumManagerKet(QuantumManagerDenseQubit):
     """Class to track and manage quantum states with the ket vector formalism."""
 
     def __init__(self, **kwargs):
@@ -46,7 +46,7 @@ class QuantumManagerKet(QuantumManager):
             If measurement, dict[int, int]: dictionary mapping qstate keys to measurement results.
             If non-measurement, dict: empty dictionary.
         """
-        super().run_circuit(circuit, keys, meas_samp)
+        self._validate_circuit_run(circuit, keys, meas_samp)
         new_state, all_keys, circ_mat = self._prepare_circuit(circuit, keys)
 
         new_state = circ_mat @ new_state

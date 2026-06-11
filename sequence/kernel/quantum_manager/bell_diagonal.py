@@ -60,6 +60,3 @@ class QuantumManagerBellDiagonal(QuantumManager):
 
     def set_to_noiseless(self, keys: list[int]):
         self.set(keys, [float(1), float(0), float(0), float(0)])
-
-    def run_circuit(self, *args, **kwargs):
-        pass

@@ -14,10 +14,6 @@ from ..quantum_utils import (density_partial_trace, measure_entangled_state_with
                              measure_multiple_with_cache_fock_density, measure_state_with_cache_fock_density)
 from ...constants import FOCK_DENSITY_MATRIX_FORMALISM
 
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from ...components.circuit import Circuit
-
 
 @QuantumManager.register(FOCK_DENSITY_MATRIX_FORMALISM)
 class QuantumManagerDensityFock(QuantumManager):
@@ -45,12 +41,6 @@ class QuantumManagerDensityFock(QuantumManager):
             self.states[key] = DensityState(state, [key], truncation=self.truncation)
 
         return key
-
-    def run_circuit(self, circuit: "Circuit", keys: list[int], meas_samp=None) -> dict[int, int]:
-        """Currently the Fock states do not support quantum circuits.
-        This method is only to implement abstract method of parent class and SHOULD NOT be called after instantiation.
-        """
-        raise Exception("run_circuit method of class QuantumManagerDensityFock called")
 
     def _generate_swap_operator(self, num_systems: int, i: int, j: int):
         """Helper function to generate swapping unitary.

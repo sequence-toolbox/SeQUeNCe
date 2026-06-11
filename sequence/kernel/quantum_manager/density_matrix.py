@@ -2,7 +2,7 @@
 This module implements the quantum manager for density matrix states.
 """
 
-from .base import QuantumManager
+from .base import QuantumManager, QuantumManagerDenseQubit
 from ..quantum_state import DensityState
 from ..quantum_utils import measure_entangled_state_with_cache_density, measure_multiple_with_cache_density, measure_state_with_cache_density
 from ...constants import DENSITY_MATRIX_FORMALISM
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 @QuantumManager.register(DENSITY_MATRIX_FORMALISM)
-class QuantumManagerDensity(QuantumManager):
+class QuantumManagerDensity(QuantumManagerDenseQubit):
     """Class to track and manage states with the density matrix formalism."""
 
     def __init__(self, **kwargs):
@@ -46,8 +46,8 @@ class QuantumManagerDensity(QuantumManager):
             If measurement, dict[int, int]: dictionary mapping qstate keys to measurement results.
             If non-measurement, dict: empty dictionary.
         """
-        super().run_circuit(circuit, keys, meas_samp)
-        new_state, all_keys, circ_mat = super()._prepare_circuit(circuit, keys)
+        self._validate_circuit_run(circuit, keys, meas_samp)
+        new_state, all_keys, circ_mat = self._prepare_circuit(circuit, keys)
 
         new_state = circ_mat @ new_state @ circ_mat.conj().T
 

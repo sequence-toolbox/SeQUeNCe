@@ -1,6 +1,6 @@
 """This module defines the quantum manager class, to track quantum states.
 
-The states may currently be defined in two possible ways:
+The following quantum state types are currently supported:
     - KetState
     - DensityMatrix
     - FockDensityMatrix
@@ -9,6 +9,8 @@ The states may currently be defined in two possible ways:
 
 The manager defines an API for interacting with quantum states.
 """
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from numpy.typing import NDArray
 from threading import Lock
@@ -45,7 +47,7 @@ class QuantumManager(ABC):
     _global_formalism: str = KET_VECTOR_FORMALISM
 
     def __init__(self, truncation: int = 1):
-        self.states: dict[int, "State"] = {}
+        self.states: dict[int, State] = {}
         self._least_available: int = 0
         self.truncation = truncation
         self.dim = self.truncation + 1
@@ -91,7 +93,7 @@ class QuantumManager(ABC):
         return decorator
 
     @classmethod
-    def create(cls, *args, **kwargs) -> 'QuantumManager':
+    def create(cls, *args, **kwargs) -> QuantumManager:
         """Create a new instance of the quantum manager.
         """
         active_formalism = cls.get_active_formalism()
@@ -112,7 +114,7 @@ class QuantumManager(ABC):
         """
         pass
 
-    def get(self, key: int) -> "State":
+    def get(self, key: int) -> State:
         """Method to get quantum state stored at an index.
 
         Args:
@@ -124,8 +126,46 @@ class QuantumManager(ABC):
         return self.states[key]
 
     @abstractmethod
-    def run_circuit(self, circuit: "Circuit", keys: list[int], meas_samp=None):
-        """Method to run a circuit on a given set of quantum states.
+    def set(self, keys: list[int], amplitudes: Any) -> None:
+        """Method to set quantum state at a given key(s).
+
+        Args:
+            keys (list[int]): key(s) of state(s) to change.
+            amplitudes (any): Amplitudes to set state to, type determined by type of subclass.
+        """
+
+        pass
+
+    def remove(self, key: int) -> None:
+        """Method to remove state stored at key.
+        
+        Args:
+            key (int): The key of the state to remove.
+        """
+        del self.states[key]
+
+    def set_states(self, states: dict):
+        """Set multiple quantum states.
+
+        Args:
+            states (dict): A dictionary mapping keys to their corresponding quantum states.
+        """
+        self.states = states
+
+
+class QuantumManagerDenseQubit(QuantumManager):
+    """Shared circuit helpers for dense qubit managers.
+
+    "Dense" means the full state is stored directly as a numerical vector or matrix. 
+    "Qubit" means each subsystem is a two-level quantum system. 
+    This class is the parent for ket-vector and density-matrix managers.
+    Stabilizer and Bell-diagonal managers are not dense, and the Fock-density manager is
+    not restricted to qubit subsystems.
+    """
+
+    @abstractmethod
+    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None):
+        """Run a circuit on dense qubit states.
 
         Args:
             circuit (Circuit): quantum circuit to apply.
@@ -135,13 +175,18 @@ class QuantumManager(ABC):
         Returns:
             dict[int, int]: dictionary mapping qstate keys to measurement results.
         """
+        pass
 
-        assert len(keys) == circuit.size, "mismatch between circuit size and supplied qubits"
-        if len(circuit.measured_qubits) > 0:
-            assert meas_samp, "must specify random sample when measuring qubits"
+    @staticmethod
+    def _validate_circuit_run(circuit: Circuit, keys: list[int], meas_samp=None) -> None:
+        """Validate common dense-qubit circuit inputs."""
+        if len(keys) != circuit.size:
+            raise ValueError("mismatch between circuit size and supplied qubits")
+        if circuit.measured_qubits and meas_samp is None:
+            raise ValueError("must specify random sample when measuring qubits")
 
-    def _prepare_circuit(self, circuit: "Circuit", keys: list[int]) -> tuple[NDArray, list[int], NDArray]:
-        """Prepare the circuit for execution by constructing the necessary state and transformation matrices.
+    def _prepare_circuit(self, circuit: Circuit, keys: list[int]) -> tuple[NDArray, list[int], NDArray]:
+        """Prepare state and circuit matrices for dense-qubit execution.
         
         Args:
             circuit (Circuit): quantum circuit to apply.
@@ -200,30 +245,3 @@ class QuantumManager(ABC):
                 all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
         swap_mat = gate_sequence_product(swap_circuit.propagators()).full()
         return all_keys, swap_mat
-
-    @abstractmethod
-    def set(self, keys: list[int], amplitudes: Any) -> None:
-        """Method to set quantum state at a given key(s).
-
-        Args:
-            keys (list[int]): key(s) of state(s) to change.
-            amplitudes (any): Amplitudes to set state to, type determined by type of subclass.
-        """
-
-        pass
-
-    def remove(self, key: int) -> None:
-        """Method to remove state stored at key.
-        
-        Args:
-            key (int): The key of the state to remove.
-        """
-        del self.states[key]
-
-    def set_states(self, states: dict):
-        """Set multiple quantum states.
-
-        Args:
-            states (dict): A dictionary mapping keys to their corresponding quantum states.
-        """
-        self.states = states
