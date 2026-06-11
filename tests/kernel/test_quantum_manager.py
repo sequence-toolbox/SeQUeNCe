@@ -642,7 +642,7 @@ def test_terminal_measurement_splits_measured_qubit_from_remaining_state():
     key1 = qm.new()
     qm.run_circuit(stim.Circuit("H 0\nCX 0 1"), [key0, key1])                  # phi = (|00> + |11>) / sqrt(2)
 
-    result = qm.run_circuit(stim.Circuit("M 0"), [key0, key1], meas_samp=0.25) # qubit 0 measured
+    result = qm.run_circuit(stim.Circuit("M 0"), [key0, key1]) # qubit 0 measured
 
     measured_bit = result[key0]
     expected_z = 1 if measured_bit == 0 else -1  # collapsed to one qubit with Z=+1 or Z=-1 depending on measurement outcome
@@ -684,7 +684,7 @@ def test_gate_and_measurement_statistics_with_noise_injection():
     key1 = qm.new()
     circuit = stim.Circuit("H 0\nCX 0 1\nM 0")
 
-    qm.run_circuit(circuit, [key0, key1], meas_samp=0.5, inject_gate_error=True)
+    qm.run_circuit(circuit, [key0, key1], inject_gate_error=True)
 
     error_statistics = {"gate_1q_count": 1, 
                         "gate_2q_count": 1, 
@@ -715,14 +715,13 @@ def test_apply_idling_decoherence():
             self.fake_state = fake_state
             self.expected_keys = expected_keys
 
-        def _prepare_circuit(self, num_qubits, measured_qubits, keys, meas_samp=None):
+        def _prepare_circuit(self, num_qubits, measured_qubits, keys):
             key0_local = 0
             key1_local = 1
             assert num_qubits == 2
             assert measured_qubits == []
             assert keys == self.expected_keys
-            assert meas_samp == 0.5
-            return meas_samp, self.fake_state, {self.expected_keys[0]: key0_local, self.expected_keys[1]: key1_local}
+            return self.fake_state, {self.expected_keys[0]: key0_local, self.expected_keys[1]: key1_local}
 
     key0 = 2
     key1 = 5

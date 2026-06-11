@@ -19,7 +19,7 @@ class QuantumManagerStabilizer(QuantumManager):
 
     Attributes:
         base_seed (int | None): Base seed for deterministic child-seed generation.
-        branch_rng: NumPy random generator used to sample Pauli error branches.
+        noise_rng: NumPy random generator used to sample stochastic noise events.
         one_qubit_gate_fid (float): Single-qubit gate fidelity.
         two_qubit_gate_fid (float): Two-qubit gate fidelity.
         measurement_fid (float): Measurement reporting fidelity.
@@ -63,7 +63,7 @@ class QuantumManagerStabilizer(QuantumManager):
         super().__init__()
         self.base_seed: int | None = seed   # Base seed controls deterministic per-state/per-operation seed derivation.
         self._seed_counter: int = 0         # Monotonic counter used with `base_seed` to produce unique child seeds.
-        self.branch_rng: np.random.Generator = np.random.default_rng(seed)
+        self.noise_rng: np.random.Generator = np.random.default_rng(seed)
         self.one_qubit_gate_fid: float = self._validate(kwargs.get("one_qubit_gate_fid", 1.0))
         self.two_qubit_gate_fid: float = self._validate(kwargs.get("two_qubit_gate_fid", 1.0))
         self.measurement_fid: float = self._validate(kwargs.get("measurement_fid", 1.0))
@@ -159,13 +159,12 @@ class QuantumManagerStabilizer(QuantumManager):
         for key in keys:
             self.states[key] = state
 
-    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None, inject_gate_error: bool = False) -> dict[int, int]:
+    def run_circuit(self, circuit: Circuit, keys: list[int], inject_gate_error: bool = False) -> dict[int, int]:
         """Execute a Stim circuit on stabilizer states.
 
         Args:
             circuit: Stim circuit to execute.
             keys (list[int]): Ordered keys mapped to circuit qubit indices.
-            meas_samp: Measurement sample value used by run preparation.
             inject_gate_error: If `True`, execute ideal gates and then apply injected gate-noise channels.
 
         Returns:
@@ -197,7 +196,7 @@ class QuantumManagerStabilizer(QuantumManager):
             instruction_payloads.append((name, targets))
 
         # Prepare validated inputs, merged/shared topology, and key index mapping.
-        meas_samp, state_obj, key_to_local = self._prepare_circuit(len(keys), measured_qubits, keys, meas_samp)
+        state_obj, key_to_local = self._prepare_circuit(len(keys), measured_qubits, keys)
         if state_obj is None:
             return {}
 
@@ -237,11 +236,6 @@ class QuantumManagerStabilizer(QuantumManager):
                 self.states[key] = committed_state
             return {}
         else:                          # Measurement: update states according to measurement outcomes and return results.
-            rng = None # Readout-fidelity noise uses the same toggle as gate-noise injection.
-            if inject_gate_error and self.measurement_fid < 1.0:
-                rng_seed = int(float(meas_samp) * (2 ** 31 - 1))
-                rng = np.random.default_rng(rng_seed)
-
             # Measure each requested key, report (possibly flipped) bit, and split measured states.
             results: dict[int, int] = {}
             measured_keys: list[int] = []
@@ -263,7 +257,7 @@ class QuantumManagerStabilizer(QuantumManager):
                     physical_bit = int(simulator.measure(local_target))
 
                     reported_bit = physical_bit
-                    if inject_gate_error and self.measurement_fid < 1.0 and rng is not None and rng.random() > self.measurement_fid:
+                    if inject_gate_error and self.measurement_fid < 1.0 and self.noise_rng.random() > self.measurement_fid:
                         reported_bit ^= 1
                         self.measurement_error_count += 1
                     results[measured_key] = reported_bit
@@ -363,7 +357,7 @@ class QuantumManagerStabilizer(QuantumManager):
         if not (0 < t2_sec <= 2 * t1_sec):
             raise ValueError(f"Invalid T1/T2 values for idling decoherence: T1={t1_sec}, T2={t2_sec}. Must satisfy 0 < T2 <= 2*T1.")
 
-        _, state_obj, key_to_local = self._prepare_circuit(len(keys), [], keys, 0.5)
+        state_obj, key_to_local = self._prepare_circuit(len(keys), [], keys)
 
         for key in keys:
             last_ps = self.last_idle_time_ps_by_key.get(key, now_ps)
@@ -576,7 +570,7 @@ class QuantumManagerStabilizer(QuantumManager):
             sampled_branch = identity_label
         else:
             normalized_probs = [prob / total for prob in branch_probs]
-            sampled_index = int(self.branch_rng.choice(len(branch_labels), p=normalized_probs))
+            sampled_index = int(self.noise_rng.choice(len(branch_labels), p=normalized_probs))
             sampled_branch = branch_labels[sampled_index]
 
         log.logger.info(f"pauli_channel_sample source={source} channel={channel_name} targets={targets} "
@@ -683,26 +677,23 @@ class QuantumManagerStabilizer(QuantumManager):
                     self.gate_2q_error_count += 1
                 self._apply_sampled_pauli_branch(simulator, targets, sampled_branch)
 
-    def _prepare_circuit(self, num_qubits: int, measured_qubits: list[int], keys: list[int], meas_samp=None) -> tuple[float | None, StabilizerState | None, dict[int, int]]:
+    def _prepare_circuit(self, num_qubits: int, measured_qubits: list[int], keys: list[int]) -> tuple[StabilizerState | None, dict[int, int]]:
         """Validate run input and prepare shared stabilizer context.
 
         Args:
             num_qubits (int): Circuit width.
             measured_qubits (list[int]): Measured qubit indices in circuit order.
             keys (list[int]): Ordered keys mapped to circuit qubit indices.
-            meas_samp: Optional measurement sample from caller.
 
         Returns:
-            tuple[float | None, StabilizerState | None, dict[int, int]]:
-                Normalized measurement sample, shared stabilizer state object, and
-                key-to-local index mapping (local refers to indices within the shared TableauSimulator, always 0...num_qubits-1).
+            tuple[StabilizerState | None, dict[int, int]]:
+                Shared stabilizer state object and key-to-local index mapping
+                (local refers to indices within the shared TableauSimulator, always 0...num_qubits-1).
         """
-        if measured_qubits and meas_samp is None:
-            meas_samp = 0.5
         if len(keys) != num_qubits:
             raise ValueError(f"circuit width ({num_qubits}) must equal len(keys) ({len(keys)}).")
         if not keys:
-            return meas_samp, None, {}
+            return None, {}
         if len(set(keys)) != len(keys):
             raise ValueError(f"Duplicate keys are not allowed in run_circuit: {keys}")
 
@@ -747,7 +738,7 @@ class QuantumManagerStabilizer(QuantumManager):
 
         # Map manager keys to local qubit indices in the shared tableau block.
         key_to_local = {key: i for i, key in enumerate(state_obj.keys)}
-        return meas_samp, state_obj, key_to_local
+        return state_obj, key_to_local
 
     @staticmethod
     def _drop_keys_from_stabilizer_simulator(simulator: TableauSimulator, state_keys: list[int], drop_keys: list[int]) -> tuple[TableauSimulator, list[int]]:
