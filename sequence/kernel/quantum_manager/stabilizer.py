@@ -1,9 +1,18 @@
 """
-This module implements the stabilizer-state quantum manager, developed during the project ``Realistic Simulation of Quantum Repeater with Encoding and Classical Error Correction``.
+This module implements the stabilizer-state quantum manager, developed during the project
+Realistic Simulation of Quantum Repeater with Encoding and Classical Error Correction.
 See arXiv https://arxiv.org/abs/2605.06928 and GitHub repo https://github.com/SagarPatange/Quantum-Repeater-Encoding
+
+The manager stores each quantum state as a stim.TableauSimulator wrapped by StabilizerState. It is intended
+for Clifford-circuit workloads where tableau simulation is more compact than dense state-vector or density-matrix
+simulation.
+
+Manager keys follow the same shared-state convention as other SeQUeNCe quantum managers: keys that are entangled
+reference the same StabilizerState object. When independent stabilizer blocks are used in the same circuit, they
+are merged into one tableau block before executing the circuit. Optional noise injection models imperfect gate operation,
+idle decoherence, initialization and measurement reporting by sampling Pauli or depolarizing error channels.
 """
 
-from collections.abc import Iterable
 import numpy as np
 from stim import TableauSimulator, Tableau, Circuit
 
@@ -46,7 +55,7 @@ class QuantumManagerStabilizer(QuantumManager):
         """Initialize a stabilizer manager instance.
 
         Args:
-            seed (int | None): Base seed used for deterministic child-seed generation. If `None`, seeding is disabled.
+            seed (int | None): Base seed used for deterministic child-seed generation. If None, seeding is disabled.
             **kwargs: Extra keyword arguments for configuration:
                 - one_qubit_gate_fid (float): Single-qubit gate fidelity (default: 1.0).
                 - two_qubit_gate_fid (float): Two-qubit gate fidelity (default: 1.0).
@@ -55,14 +64,14 @@ class QuantumManagerStabilizer(QuantumManager):
                 - gate_error_channel (str): Gate-noise channel mode, either "depolarize" (uniform) or "pauli" (Pauli-weighted) (default: "pauli").
                 - idle_error_channel (str): Idle-noise channel mode, either "depolarize" (uniform) or "pauli" (Pauli-weighted, T1/T2-derived) (default: "pauli").
                 - pauli_1q_weights (tuple[float, ...]): Normalized X/Y/Z weights for one-qubit Pauli errors (default: (1.0, 1.0, 1.0)).
-                - pauli_2q_weights (tuple[float, ...] | None): Normalized Stim-order weights for two-qubit Pauli errors. If `None`, defaults are derived from `pauli_1q_weights` bias.
+                - pauli_2q_weights (tuple[float, ...] | None): Normalized Stim-order weights for two-qubit Pauli errors. If None, defaults are derived from pauli_1q_weights bias.
 
         Notes:
             The manager uses a counter-based seed derivation strategy for reproducible, human-traceable per-state seeds.
         """
         super().__init__()
         self.base_seed: int | None = seed   # Base seed controls deterministic per-state/per-operation seed derivation.
-        self._seed_counter: int = 0         # Monotonic counter used with `base_seed` to produce unique child seeds.
+        self._seed_counter: int = 0         # Monotonic counter used with base_seed to produce unique child seeds.
         self.noise_rng: np.random.Generator = np.random.default_rng(seed)
         self.one_qubit_gate_fid: float = self._validate(kwargs.get("one_qubit_gate_fid", 1.0))
         self.two_qubit_gate_fid: float = self._validate(kwargs.get("two_qubit_gate_fid", 1.0))
@@ -98,7 +107,7 @@ class QuantumManagerStabilizer(QuantumManager):
         """Initialize the two-qubit Pauli weights.
 
         Args:
-            raw_pauli_2q_weights: Optional raw PAULI_CHANNEL_2 weights. If `None`, defaults are derived from the 1q Pauli bias.
+            raw_pauli_2q_weights: Optional raw PAULI_CHANNEL_2 weights. If None, defaults are derived from the 1q Pauli bias.
         
         Returns:
             tuple[float, ...]: Normalized PAULI_CHANNEL_2 weights in Stim order.
@@ -124,7 +133,7 @@ class QuantumManagerStabilizer(QuantumManager):
             int: Newly allocated state key.
 
         Raises:
-            TypeError: If `state` is not a supported initializer type.
+            TypeError: If state is not a supported initializer type.
         """
         key = self._least_available
         self._least_available += 1
@@ -139,25 +148,17 @@ class QuantumManagerStabilizer(QuantumManager):
         self.last_idle_time_ps_by_key[key] = 0
         return key
 
-    def set(self, keys: list[int], amplitudes: StabilizerState | Tableau | TableauSimulator | list) -> None:
+    def set(self, keys: list[int], state: StabilizerState | Tableau | TableauSimulator | list):
         """Assign a shared stabilizer state object to one or more keys.
 
         Args:
             keys (list[int]): State keys that should reference the same state.
-            amplitudes (StabilizerState | Tableau | TableauSimulator | list): State payload to assign.
-
-        Examples:
-            `qm.set([k0], tableau_obj)`
-            `qm.set([k0, k1], stabilizer_state)`
-
-        Notes:
-            As in other SeQUeNCe managers, all provided keys are bound to the
-            same underlying state object to represent entanglement/grouping.
+            state (StabilizerState | Tableau | TableauSimulator | list): State payload to assign.
         """
-        super().set(keys, amplitudes)
-        state = self._initialize_stabilizer_state(amplitudes, list(keys))
+        super().set(keys, state)
+        state_obj = self._initialize_stabilizer_state(state, list(keys))
         for key in keys:
-            self.states[key] = state
+            self.states[key] = state_obj
 
     def run_circuit(self, circuit: Circuit, keys: list[int], inject_gate_error: bool = False) -> dict[int, int]:
         """Execute a Stim circuit on stabilizer states.
@@ -165,7 +166,7 @@ class QuantumManagerStabilizer(QuantumManager):
         Args:
             circuit: Stim circuit to execute.
             keys (list[int]): Ordered keys mapped to circuit qubit indices.
-            inject_gate_error: If `True`, execute ideal gates and then apply injected gate-noise channels.
+            inject_gate_error: If True, execute ideal gates and then apply injected gate-noise channels.
 
         Returns:
             dict[int, int]: Measurement outcomes keyed by measured state keys.
@@ -341,7 +342,7 @@ class QuantumManagerStabilizer(QuantumManager):
             raise RuntimeError(f"num_qubits must be >= 0, got {num_qubits}")
         return int(num_qubits * self.RESET_TIME_PS)
 
-    def apply_idling_decoherence(self, keys: list[int], now_ps: int, t1_sec: float, t2_sec: float) -> None:
+    def apply_idling_decoherence(self, keys: list[int], now_ps: int, t1_sec: float, t2_sec: float):
         """Apply time-based idling decoherence to the provided keys.
            The PAULI_CHANNEL_1 applies the standard T1/T2 to Pauli approximation and requires 0 < T2 <= 2*T1
 
@@ -355,7 +356,7 @@ class QuantumManagerStabilizer(QuantumManager):
             return
 
         if not (0 < t2_sec <= 2 * t1_sec):
-            raise ValueError(f"Invalid T1/T2 values for idling decoherence: T1={t1_sec}, T2={t2_sec}. Must satisfy 0 < T2 <= 2*T1.")
+            raise ValueError(f"Invalid T1/T2 values: T1={t1_sec}, T2={t2_sec}. Must satisfy 0 < T2 <= 2*T1.")
 
         state_obj, key_to_local = self._prepare_circuit(len(keys), [], keys)
 
@@ -380,7 +381,7 @@ class QuantumManagerStabilizer(QuantumManager):
         for key in state_obj.keys:
             self.last_idle_time_ps_by_key[key] = now_ps
     
-    def set_to_zero(self, key: int | list[int]) -> None:
+    def set_to_zero(self, key: int | list[int]):
         """Reset one or more qubits to the |0⟩ computational basis state.
 
         Args:
@@ -398,7 +399,7 @@ class QuantumManagerStabilizer(QuantumManager):
         self.states[key] = StabilizerState(state=simulator, keys=[key], seed=seed)
         self.last_idle_time_ps_by_key[key] = 0
 
-    def set_to_one(self, key: int) -> None:
+    def set_to_one(self, key: int):
         """Reset a single qubit to the |1⟩ computational basis state.
 
         Args:
@@ -412,7 +413,7 @@ class QuantumManagerStabilizer(QuantumManager):
         self.states[key] = StabilizerState(state=sim, keys=[key], seed=seed)
         self.last_idle_time_ps_by_key[key] = 0
 
-    def remove(self, key: int) -> None:
+    def remove(self, key: int):
         """Remove a key and refresh the debug key layout map.
         
         Args:
@@ -421,7 +422,7 @@ class QuantumManagerStabilizer(QuantumManager):
         super().remove(key)
         self.last_idle_time_ps_by_key.pop(key, None)
 
-    def reset_error_statistics(self) -> None:
+    def reset_error_statistics(self):
         """Clear gate and error counters
         """
         self.gate_1q_count = 0
@@ -448,9 +449,9 @@ class QuantumManagerStabilizer(QuantumManager):
         """Return next seed value or None if unseeded.
 
         Returns:
-            int | None: Next seed value for deterministic operations, or `None` if seeding is disabled.
+            int | None: Next seed value for deterministic operations, or None if seeding is disabled.
         """
-        # `None` means deterministic seeding is disabled for this manager.
+        # None means deterministic seeding is disabled for this manager.
         if self.base_seed is None:
             return None
         # Derive a reproducible child seed and advance the counter.
@@ -458,28 +459,26 @@ class QuantumManagerStabilizer(QuantumManager):
         self._seed_counter += 1
         return seed
 
-    def _apply_initialization_fidelity(self, simulator: TableauSimulator, targets: list[int]) -> None:
+    def _apply_initialization_fidelity(self, simulator: TableauSimulator, targets: list[int]):
         """Apply initialization depolarizing noise to freshly prepared qubits.
 
         Args:
             simulator: Active simulator to mutate.
             targets: Simulator-local qubit indices that were just initialized.
         """
-        p_error = max(0.0, min(1.0, 1.5 * (1.0 - self.initialization_fid)))
-        if p_error <= 0.0:
-            return
-
-        noise_circuit = Circuit()
-        for target in targets:
-            noise_circuit.append("DEPOLARIZE1", [target], p_error)
-        simulator.do(noise_circuit)
+        p_error = min(1.0, 1.5 * (1.0 - self.initialization_fid))
+        if p_error > 0:
+            noise_circuit = Circuit()
+            for target in targets:
+                noise_circuit.append("DEPOLARIZE1", [target], p_error)
+            simulator.do(noise_circuit)
 
     @staticmethod
-    def _normalize_pauli_weights(weights: Iterable[float], expected_length: int, name: str) -> tuple[float, ...]:
+    def _normalize_pauli_weights(weights: tuple[float, ...], expected_length: int, name: str) -> tuple[float, ...]:
         """Return normalized Pauli weights, falling back to uniform weights when total weight is zero.
         
         Args:
-            weights: Iterable of relative Pauli weights.
+            weights: Tuple of relative Pauli weights.
             expected_length: Expected number of weights (3 for 1q, 15 for 2q).
             name: Name of the weight set for error messages.
         """
@@ -535,13 +534,13 @@ class QuantumManagerStabilizer(QuantumManager):
         """Sample one realized Pauli-channel branch and log it.
 
         Args:
-            channel_name: Either ``PAULI_CHANNEL_1`` or ``PAULI_CHANNEL_2``.
+            channel_name: Either PAULI_CHANNEL_1 or PAULI_CHANNEL_2.
             probs: Non-identity branch probabilities in Stim order.
             targets: Simulator-local target indices.
-            source: Short source tag such as ``idle`` or ``gate:CX``.
+            source: Short source tag such as idle or gate:CX.
 
         Returns:
-            str: Sampled Pauli label, e.g. ``I``, ``Z``, ``IX``, or ``ZZ``.
+            str: Sampled Pauli label, e.g. I, Z, IX, or ZZ.
         """
         if channel_name == "PAULI_CHANNEL_1":
             branch_labels = ["I", "X", "Y", "Z"]
@@ -584,7 +583,7 @@ class QuantumManagerStabilizer(QuantumManager):
         Args:
             simulator: Active simulator to mutate.
             targets: Simulator-local target indices.
-            sampled_branch: Sampled Pauli label such as ``I``, ``Z``, ``IX``, or ``ZZ``.
+            sampled_branch: Sampled Pauli label such as I, Z, IX, or ZZ.
         """
         if len(sampled_branch) != len(targets):
             raise ValueError("sampled_branch length must match target count.")
@@ -609,7 +608,7 @@ class QuantumManagerStabilizer(QuantumManager):
             keys (list[int]): Keys that should bind to the resulting state.
 
         Returns:
-            StabilizerState: State bound to `keys`.
+            StabilizerState: State bound to keys.
         """
         if isinstance(initializer, StabilizerState):
             state = initializer.copy()
@@ -644,12 +643,19 @@ class QuantumManagerStabilizer(QuantumManager):
             simulator (TableauSimulator): Active simulator to mutate.
             gate_name (str): Name of gate that was just applied.
             targets (list[int]): Simulator-local target indices for the gate.
+
+        Notes:
+            one_qubit_gate_fid and two_qubit_gate_fid are average gate fidelities. For a Pauli error channel with
+            total non-identity error probability p_error on a d-dimensional system, the average fidelity is
+            1 - d * p_error / (d + 1). Solving for p_error gives (d + 1) / d * (1 - fidelity). Therefore,
+            one-qubit gates use d = 2 and the factor 3 / 2 = 1.5; two-qubit gates use d = 4 and the factor
+            5 / 4 = 1.25. The final probability is capped at 1.
         """
         name = gate_name.upper()
 
         if name in {"H", "X", "Y", "Z", "S", "S_DAG"}:
             self.gate_1q_count += 1
-            p_error = max(0.0, min(1.0, 1.5 * (1.0 - self.one_qubit_gate_fid)))
+            p_error = min(1.0, 1.5 * (1.0 - self.one_qubit_gate_fid))
             if p_error > 0:
                 if self.gate_error_channel == "depolarize":
                     probs = [p_error / 3.0, p_error / 3.0, p_error / 3.0]

@@ -126,12 +126,12 @@ class QuantumManager(ABC):
         return self.states[key]
 
     @abstractmethod
-    def set(self, keys: list[int], amplitudes: Any) -> None:
+    def set(self, keys: list[int], state: Any) -> None:
         """Method to set quantum state at a given key(s).
 
         Args:
             keys (list[int]): key(s) of state(s) to change.
-            amplitudes (any): Amplitudes to set state to, type determined by type of subclass.
+            state (Any): State payload to assign, type determined by type of subclass.
         """
 
         pass
