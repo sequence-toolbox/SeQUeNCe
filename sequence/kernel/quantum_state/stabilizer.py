@@ -17,6 +17,11 @@ class StabilizerState(State):
 
     The state is stored internally by a ``stim.TableauSimulator``. Tableau
     accessors are provided for inspection and interoperability with Stim.
+
+    Attributes:
+        state (TableauSimulator): the internal stabilizer state simulator.
+        keys (list[int]): list of keys (subsystems) associated with this state.
+        seed (int | None): random seed used by the simulator
     """
 
     def __init__(self, state: TableauSimulator | None, keys: list[int], seed: int | None = None):
@@ -38,12 +43,12 @@ class StabilizerState(State):
             raise TypeError(f"state must be stim.TableauSimulator or None, got {type(state)}")
 
     @classmethod
-    def zero_state(cls, key: int, seed: int = None) -> "StabilizerState":
+    def zero_state(cls, key: int, seed: int | None = None) -> "StabilizerState":
         """Create a single-qubit stabilizer state initialized to |0>.
 
         Args:
             key (int): Quantum-manager key for the qubit.
-            seed (int, optional): Seed used by stim.TableauSimulator.
+            seed (int | None): Seed used by stim.TableauSimulator.
 
         Returns:
             StabilizerState: New state bound to `[key]`.
@@ -58,10 +63,8 @@ class StabilizerState(State):
         Returns:
             StabilizerState: Copied state with copied keys and simulator.
         """
-        if self.state is None:
-            simulator = TableauSimulator(seed=self.seed)
-        else:
-            simulator = self.state.copy(seed=self.seed)
+        assert isinstance(self.state, TableauSimulator), "state must be a stim.TableauSimulator to copy"
+        simulator = self.state.copy(seed=self.seed)
         return StabilizerState(state=simulator, keys=self.keys.copy(), seed=self.seed)
         
     def set_seed(self, seed: int):
@@ -72,13 +75,13 @@ class StabilizerState(State):
         """
         self.seed = seed
         if self.state is not None:
-            self.state = self.state.copy(seed=seed)
+            self.state = self.state.copy(seed=self.seed)
 
-    def get_seed(self) -> int:
+    def get_seed(self) -> int | None:
         """Get the current random seed for this state.
         
         Returns:
-            int: Current random seed.
+            int | None: Current random seed.
         """
         return self.seed
 
@@ -88,8 +91,6 @@ class StabilizerState(State):
         Returns:
             Tableau: current inverse tableau.
         """
-        if self.state is None:
-            raise ValueError("StabilizerState is uninitialized (state is None).")
         return self.state.current_inverse_tableau()
 
     def current_forward_tableau(self) -> Tableau:
@@ -98,8 +99,6 @@ class StabilizerState(State):
         Returns:
             Tableau: current forward tableau.
         """
-        if self.state is None:
-            raise ValueError("StabilizerState is uninitialized (state is None).")
         inverse_tableau = self.state.current_inverse_tableau()
         return inverse_tableau.inverse()
 
@@ -112,8 +111,6 @@ class StabilizerState(State):
         Returns:
             list[PauliString]: canonical stabilizer generators.
         """
-        if self.state is None:
-            raise ValueError("StabilizerState is uninitialized (state is None).")
         return self.state.canonical_stabilizers()
 
     def __str__(self) -> str:
@@ -123,3 +120,15 @@ class StabilizerState(State):
             str: string representation of the state.
         """
         return "\n".join(["Keys:", str(self.keys), "Canonical stabilizers:", str(self.canonical_stabilizers())])
+
+    def __repr__(self) -> str:
+        """The repr representation of a stabilizer state includes its keys, 
+        canonical stabilizers, inverse tableau, and forward tableau.
+        
+        Returns:
+            str: repr representation of the state.
+        """
+        canonical_stabilizer = str(self)
+        inverse_tableau = self.current_inverse_tableau()
+        forward_tableau = self.current_forward_tableau()
+        return f"{canonical_stabilizer}\nInverse tableau:\n{inverse_tableau}\nForward tableau:\n{forward_tableau}"
