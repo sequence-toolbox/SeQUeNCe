@@ -9,11 +9,12 @@ from ..quantum_utils import measure_entangled_state_with_cache_density, measure_
 from ...constants import DENSITY_MATRIX_FORMALISM
 
 from numpy import array
+from numpy.typing import NDArray
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ...components.circuit import Circuit
 
-DensityMatrixInput = list[list[complex]] | tuple[tuple[complex, ...], ...]
+DensityMatrixInput = list[list[complex]] | tuple[tuple[complex, ...], ...] | list[complex] | tuple[complex, ...] | NDArray
 
 
 @QuantumManager.register(DENSITY_MATRIX_FORMALISM)
@@ -27,12 +28,11 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
         """Method to create a new density matrix state.
         
         Args:
-            state (DensityMatrixInput): 2D density matrix state.
+            state (DensityMatrixInput): 2D density matrix or 1D pure-state vector (will be converted to 2D density matrix).
 
         Returns:
             int: key of the new state.
         """
-        self._validate_density_matrix_input(state)
         key = self._least_available
         self._least_available += 1
         self.states[key] = DensityState(state, [key])
@@ -69,26 +69,15 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
     def set(self, keys: list[int], state: DensityMatrixInput) -> None:
         """Method to set the quantum state at the given keys.
 
-        The state argument should be a 2D list or tuple, where each internal sequence is a row.
+        The state argument may be a 1D pure-state vector or a 2D density matrix.
 
         Args:
             keys (list[int]): list of quantum manager keys to modify.
             state: quantum state to set input keys to.
         """
-        self._validate_density_matrix_input(state)
         new_state = DensityState(state, keys)
         for key in keys:
             self.states[key] = new_state
-
-    @staticmethod
-    def _validate_density_matrix_input(state: DensityMatrixInput):
-        """Validate that density manager inputs are 2D lists or tuples.
-        
-        Args:
-            state (DensityMatrixInput): input state to validate.
-        """
-        if not isinstance(state, (list, tuple)) or not all(isinstance(row, (list, tuple)) for row in state):
-            raise TypeError("density matrix state must be a 2D list or tuple")
 
     def set_to_zero(self, key: int):
         """Set the qubit at the given key to the |0><0| state.
