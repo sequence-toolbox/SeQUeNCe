@@ -4,17 +4,14 @@ This module implements the quantum manager for density matrix states.
 from __future__ import annotations
 
 from .base import QuantumManager, QuantumManagerDenseQubit
-from ..quantum_state import DensityState
+from ..quantum_state import DensityState, OneDimensionInput, TwoDimensionInput
 from ..quantum_utils import measure_entangled_state_with_cache_density, measure_multiple_with_cache_density, measure_state_with_cache_density
 from ...constants import DENSITY_MATRIX_FORMALISM
 
 from numpy import array
-from numpy.typing import NDArray
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ...components.circuit import Circuit
-
-DensityMatrixInput = list[list[complex]] | tuple[tuple[complex, ...], ...] | list[complex] | tuple[complex, ...] | NDArray
 
 
 @QuantumManager.register(DENSITY_MATRIX_FORMALISM)
@@ -24,11 +21,11 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
     def __init__(self):
         super().__init__()
 
-    def new(self, state: DensityMatrixInput = ((complex(1), complex(0)), (complex(0), complex(0)))) -> int:
+    def new( self, state: OneDimensionInput | TwoDimensionInput = ((complex(1), complex(0)), (complex(0), complex(0)))) -> int:
         """Method to create a new density matrix state.
         
         Args:
-            state (DensityMatrixInput): 2D density matrix or 1D pure-state vector (will be converted to 2D density matrix).
+            state (OneDimensionInput | TwoDimensionInput): 2D density matrix or 1D pure-state array.
 
         Returns:
             int: key of the new state.
@@ -66,7 +63,7 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
             keys = [all_keys[i] for i in circuit.measured_qubits]
             return self._measure(new_state, keys, all_keys, meas_samp)
 
-    def set(self, keys: list[int], state: DensityMatrixInput) -> None:
+    def set(self, keys: list[int], state: OneDimensionInput | TwoDimensionInput) -> None:
         """Method to set the quantum state at the given keys.
 
         The state argument may be a 1D pure-state vector or a 2D density matrix.

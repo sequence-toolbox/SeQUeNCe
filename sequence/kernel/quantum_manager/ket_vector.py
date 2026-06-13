@@ -4,17 +4,14 @@ This module implements the quantum manager for ket vector states.
 from __future__ import annotations
 
 from .base import QuantumManager, QuantumManagerDenseQubit
-from ..quantum_state import KetState
+from ..quantum_state import KetState, OneDimensionInput
 from ..quantum_utils import measure_entangled_state_with_cache_ket, measure_multiple_with_cache_ket, measure_state_with_cache_ket
 from ...constants import KET_VECTOR_FORMALISM
 
-from numpy.typing import NDArray
 from numpy import array
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ...components.circuit import Circuit
-
-KetStateInput = list[complex] | tuple[complex, ...] | NDArray
 
 
 @QuantumManager.register(KET_VECTOR_FORMALISM)
@@ -24,11 +21,11 @@ class QuantumManagerKet(QuantumManagerDenseQubit):
     def __init__(self):
         super().__init__()
 
-    def new(self, state: KetStateInput = (complex(1), complex(0))) -> int:
+    def new(self, state: OneDimensionInput = (complex(1), complex(0))) -> int:
         """Method to create a new ket state.
 
         Args:
-            state (KetStateInput): 1D state-vector amplitudes.
+            state (OneDimensionInput): 1D state-vector amplitudes.
 
         Returns:
             int: the key of the new state.
@@ -66,12 +63,12 @@ class QuantumManagerKet(QuantumManagerDenseQubit):
             keys = [all_keys[i] for i in circuit.measured_qubits]
             return self._measure(new_state, keys, all_keys, meas_samp)
 
-    def set(self, keys: list[int], amplitudes: KetStateInput) -> None:
+    def set(self, keys: list[int], amplitudes: OneDimensionInput) -> None:
         """Set the quantum state for the given keys.
 
         Args:
             keys (list[int]): list of keys of the quantum state.
-            amplitudes (list[complex]): amplitudes to set the state to.
+            amplitudes (OneDimensionInput): amplitudes to set the state to.
         """
         new_state = KetState(amplitudes, keys)
         for key in keys:

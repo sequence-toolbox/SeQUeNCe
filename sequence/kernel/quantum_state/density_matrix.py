@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from .base import State
+from .base import OneDimensionInput, State, TwoDimensionInput
 
 
 class DensityState(State):
@@ -16,7 +16,7 @@ class DensityState(State):
             Default is 1 for qubit. dim = truncation + 1
     """
 
-    def __init__(self, state: list[complex] | list[list[complex]], keys: list[int], truncation: int = 1):
+    def __init__(self, state: OneDimensionInput | TwoDimensionInput, keys: list[int], truncation: int = 1):
         """Constructor for density state class.
 
         Args:

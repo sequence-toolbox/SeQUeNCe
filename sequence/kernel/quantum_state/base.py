@@ -2,6 +2,9 @@
 
 from abc import ABC
 
+OneDimensionInput = list[complex] | tuple[complex, ...]
+TwoDimensionInput = list[list[complex]] | tuple[tuple[complex, ...], ...]
+
 
 class State(ABC):
     """Base class for storing quantum states (abstract).

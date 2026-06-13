@@ -4,7 +4,7 @@ import math
 
 import numpy as np
 
-from .base import State
+from .base import OneDimensionInput, State
 from ...constants import EPSILON
 
 
@@ -19,7 +19,7 @@ class KetState(State):
                 Default is 1 for qubit. dim = truncation + 1
     """
 
-    def __init__(self, amplitudes: list[complex], keys: list[int], truncation: int = 1):
+    def __init__(self, amplitudes: OneDimensionInput, keys: list[int], truncation: int = 1):
         """Constructor for ket state class.
 
         Args:
