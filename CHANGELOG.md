@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added support for the Stabilizer formalism by introducing `StabilizerState` and `QuantumManagerStabilizer`
     - A new class `QuantumManagerDenseQubit` is added. It is the child class of `QuantumManager` and parent class of `QuantumManagerKet` and `QuantumManagerDensity`
+    - Attributes `truncation` and `dim` are moved from the parent class `QuantumManager` to the child class `QuantumManagerDensityFock`; the `Timeline.__init__()` signature update: argument `truncation` is replaced with `manager_kwargs`
 - Add a module to convert an arbitrary graph object to sequence configurations for QuantumRouter with MIM BSM
 - Add FatTree topology and BCube topology 
 - Added the `routing` module: a new parent class `RoutingProtocol` for the subclasses `StaticRoutingProtocol` and `DistributedRoutingProtocol`. The register decorator is used to make it easy to plug in new routing protocols in the future.
