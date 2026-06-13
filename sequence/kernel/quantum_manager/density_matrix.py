@@ -17,14 +17,14 @@ if TYPE_CHECKING:
 class QuantumManagerDensity(QuantumManagerDenseQubit):
     """Class to track and manage states with the density matrix formalism."""
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         super().__init__()
 
-    def new(self, state=([complex(1), complex(0)], [complex(0), complex(0)])) -> int:
+    def new(self, state=((complex(1), complex(0)), (complex(0), complex(0)))) -> int:
         """Method to create a new density matrix state.
         
         Args:
-            state (list[list[complex]]): density matrix state.
+            state (tuple[tuple[complex, ...], ...]): density matrix state.
 
         Returns:
             int: key of the new state.
@@ -73,7 +73,6 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
             keys (list[int]): list of quantum manager keys to modify.
             state: quantum state to set input keys to.
         """
-        super().set(keys, state)
         new_state = DensityState(state, keys)
         for key in keys:
             self.states[key] = new_state

@@ -1,6 +1,7 @@
 """
 This module implements the quantum manager for ket vector states.
 """
+from __future__ import annotations
 
 from .base import QuantumManager, QuantumManagerDenseQubit
 from ..quantum_state import KetState
@@ -17,10 +18,10 @@ if TYPE_CHECKING:
 class QuantumManagerKet(QuantumManagerDenseQubit):
     """Class to track and manage quantum states with the ket vector formalism."""
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         super().__init__()
 
-    def new(self, state=[complex(1), complex(0)]) -> int:
+    def new(self, state: list[complex]=[complex(1), complex(0)]) -> int:
         """Method to create a new ket state.
 
         Args:
@@ -34,7 +35,7 @@ class QuantumManagerKet(QuantumManagerDenseQubit):
         self.states[key] = KetState(state, [key])
         return key
 
-    def run_circuit(self, circuit: "Circuit", keys: list[int], meas_samp=None) -> dict[int, int]:
+    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> dict[int, int]:
         """Method to run a circuit on a given list of keys.
         
         Args:
@@ -69,7 +70,6 @@ class QuantumManagerKet(QuantumManagerDenseQubit):
             keys (list[int]): list of keys of the quantum state.
             amplitudes (list[complex]): amplitudes to set the state to.
         """
-        super().set(keys, amplitudes)
         new_state = KetState(amplitudes, keys)
         for key in keys:
             self.states[key] = new_state

@@ -17,11 +17,17 @@ from ...constants import FOCK_DENSITY_MATRIX_FORMALISM
 
 @QuantumManager.register(FOCK_DENSITY_MATRIX_FORMALISM)
 class QuantumManagerDensityFock(QuantumManager):
-    """Class to track and manage Fock states with the density matrix formalism."""
+    """Class to track and manage Fock states with the density matrix formalism.
+    
+    Attributes:
+        truncation (int): maximally allowed number of excited states for elementary subsystems. Default is 1 for qubit.
+        dim (int): subsystem Hilbert space dimension. dim = truncation + 1
+    """
 
-    def __init__(self, truncation: int = 1, **kwargs):
-        # default truncation is 1 for 2-d Fock space.
-        super().__init__(truncation=truncation)
+    def __init__(self, truncation: int = 1):
+        super().__init__()
+        self.truncation = truncation
+        self.dim = self.truncation + 1
 
     def new(self, state=None) -> int:
         """Method to create a new state with key
@@ -144,14 +150,16 @@ class QuantumManagerDensityFock(QuantumManager):
             keys (list[int]): list of quantum manager keys to modify.
             state: quantum state to set input keys to.
         """
-
-        super().set(keys, state)
         new_state = DensityState(state, keys, truncation=self.truncation)
         for key in keys:
             self.states[key] = new_state
 
     def set_to_zero(self, key: int):
-        """set the state to ground (zero) state."""
+        """set the state to ground (zero) state.
+        
+        Args:
+            key (int): key of the state to set to ground state.
+        """
         gnd = [1] + [0] * self.truncation
         self.set([key], gnd)
 

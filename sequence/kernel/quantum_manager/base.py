@@ -39,18 +39,14 @@ class QuantumManager(ABC):
     Attributes:
         states (dict[int, State]): mapping of state keys to quantum state objects.
         _least_available (int): tracking the total number of quantum states in the quantum network
-        truncation (int): maximally allowed number of excited states for elementary subsystems. Default is 1 for qubit.
-        dim (int): subsystem Hilbert space dimension. dim = truncation + 1
     """
     _registry: dict = {}
     _global_formalism_lock = Lock()
     _global_formalism: str = KET_VECTOR_FORMALISM
 
-    def __init__(self, truncation: int = 1):
+    def __init__(self):
         self.states: dict[int, State] = {}
         self._least_available: int = 0
-        self.truncation = truncation
-        self.dim = self.truncation + 1
 
     @classmethod
     def set_global_manager_formalism(cls, formalism: str):

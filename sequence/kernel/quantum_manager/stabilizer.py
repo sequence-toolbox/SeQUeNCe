@@ -155,7 +155,6 @@ class QuantumManagerStabilizer(QuantumManager):
             keys (list[int]): State keys that should reference the same state.
             state (StabilizerState | Tableau | TableauSimulator | list): State payload to assign.
         """
-        super().set(keys, state)
         state_obj = self._initialize_stabilizer_state(state, list(keys))
         for key in keys:
             self.states[key] = state_obj
