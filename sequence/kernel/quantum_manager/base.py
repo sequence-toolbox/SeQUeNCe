@@ -1,14 +1,17 @@
-"""This module defines the quantum manager class, to track quantum states.
+"""Base classes for quantum state managers.
 
-The following quantum state types are currently supported:
-    - KetState
-    - DensityMatrix
-    - FockDensityMatrix
-    - Bell Diagonal State
-    - Stabilizer State
+This module defines the root QuantumManager API used to create, store, retrieve, and update quantum states by manager
+key. It also defines QuantumManagerDenseQubit, an intermediate base class for ket-vector and density-matrix managers
+that share dense qubit circuit-preparation helpers.
 
-The manager defines an API for interacting with quantum states.
+Supported manager formalisms include:
+    - Ket vector
+    - Density matrix
+    - Fock density matrix
+    - Bell diagonal state
+    - Stabilizer state
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -99,11 +102,11 @@ class QuantumManager(ABC):
         return cls._registry[active_formalism](*args, **kwargs)
 
     @abstractmethod
-    def new(self, state) -> int:
+    def new(self, state: Any = None) -> int:
         """Method to create a new quantum state.
 
         Args:
-            state: complex amplitudes of new state. Type depends on type of subclass.
+            state (Any): State payload for the new state. Type depends on subclass.
 
         Returns:
             int: key for new state generated.
@@ -154,9 +157,15 @@ class QuantumManagerDenseQubit(QuantumManager):
 
     "Dense" means the full state is stored directly as a numerical vector or matrix. 
     "Qubit" means each subsystem is a two-level quantum system. 
-    This class is the parent for ket-vector and density-matrix managers.
-    Stabilizer and Bell-diagonal managers are not dense, and the Fock-density manager is
-    not restricted to qubit subsystems.
+
+    This class is the parent for ket-vector and density-matrix managers:
+    - Ket vector: qubit + dense vector.
+    - Density matrix: qubit + dense matrix.
+
+    Other managers are excluded for different reasons:
+    - Stabilizer: qubit + tableau, not dense vector/matrix.
+    - Bell diagonal: qubit-pair state with compact Bell-basis probabilities, not dense vector/matrix.
+    - Fock density: dense matrix, but not restricted to qubit subsystems.
     """
 
     @abstractmethod

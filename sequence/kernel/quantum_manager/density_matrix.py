@@ -1,6 +1,7 @@
 """
 This module implements the quantum manager for density matrix states.
 """
+from __future__ import annotations
 
 from .base import QuantumManager, QuantumManagerDenseQubit
 from ..quantum_state import DensityState
@@ -12,6 +13,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ...components.circuit import Circuit
 
+DensityMatrixInput = list[list[complex]] | tuple[tuple[complex, ...], ...]
+
 
 @QuantumManager.register(DENSITY_MATRIX_FORMALISM)
 class QuantumManagerDensity(QuantumManagerDenseQubit):
@@ -20,21 +23,22 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
     def __init__(self):
         super().__init__()
 
-    def new(self, state=((complex(1), complex(0)), (complex(0), complex(0)))) -> int:
+    def new(self, state: DensityMatrixInput = ((complex(1), complex(0)), (complex(0), complex(0)))) -> int:
         """Method to create a new density matrix state.
         
         Args:
-            state (tuple[tuple[complex, ...], ...]): density matrix state.
+            state (DensityMatrixInput): 2D density matrix state.
 
         Returns:
             int: key of the new state.
         """
+        self._validate_density_matrix_input(state)
         key = self._least_available
         self._least_available += 1
         self.states[key] = DensityState(state, [key])
         return key
 
-    def run_circuit(self, circuit: "Circuit", keys: list[int], meas_samp=None) -> dict[int, int]:
+    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> dict[int, int]:
         """Method to run a circuit on a given list of keys.
         
         Args:
@@ -62,20 +66,29 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
             keys = [all_keys[i] for i in circuit.measured_qubits]
             return self._measure(new_state, keys, all_keys, meas_samp)
 
-    def set(self, keys: list[int], state: list[list[complex]]) -> None:
+    def set(self, keys: list[int], state: DensityMatrixInput) -> None:
         """Method to set the quantum state at the given keys.
 
-        The `state` argument should be passed as list[list[complex]], where each internal list is a row.
-        However, the `state` may also be given as a one-dimensional pure state.
-        If the list is one-dimensional, will be converted to matrix with the outer product operation.
+        The state argument should be a 2D list or tuple, where each internal sequence is a row.
 
         Args:
             keys (list[int]): list of quantum manager keys to modify.
             state: quantum state to set input keys to.
         """
+        self._validate_density_matrix_input(state)
         new_state = DensityState(state, keys)
         for key in keys:
             self.states[key] = new_state
+
+    @staticmethod
+    def _validate_density_matrix_input(state: DensityMatrixInput):
+        """Validate that density manager inputs are 2D lists or tuples.
+        
+        Args:
+            state (DensityMatrixInput): input state to validate.
+        """
+        if not isinstance(state, (list, tuple)) or not all(isinstance(row, (list, tuple)) for row in state):
+            raise TypeError("density matrix state must be a 2D list or tuple")
 
     def set_to_zero(self, key: int):
         """Set the qubit at the given key to the |0><0| state.
@@ -119,7 +132,7 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
             _, swap_matrix = self._swap_qubits(state.keys, target_all_keys)
             reordered_state = swap_matrix @ state.state @ swap_matrix.conj().T
             state.state = reordered_state
-            self.set(target_all_keys, reordered_state)
+            self.set(target_all_keys, reordered_state.tolist())
 
     def _measure(self, state: list[list[complex]], keys: list[int], all_keys: list[int], meas_samp: float) -> dict[int, int]:
         """Method to measure qubits at given keys.

@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ...components.circuit import Circuit
 
+KetStateInput = list[complex] | tuple[complex, ...]
+
 
 @QuantumManager.register(KET_VECTOR_FORMALISM)
 class QuantumManagerKet(QuantumManagerDenseQubit):
@@ -21,15 +23,16 @@ class QuantumManagerKet(QuantumManagerDenseQubit):
     def __init__(self):
         super().__init__()
 
-    def new(self, state: list[complex]=[complex(1), complex(0)]) -> int:
+    def new(self, state: KetStateInput = (complex(1), complex(0))) -> int:
         """Method to create a new ket state.
 
         Args:
-            state (list[complex]): amplitudes of new state.
+            state (KetStateInput): 1D state-vector amplitudes.
 
         Returns:
             int: the key of the new state.
         """
+        self._validate_ket_state_input(state)
         key = self._least_available
         self._least_available += 1
         self.states[key] = KetState(state, [key])
@@ -63,16 +66,23 @@ class QuantumManagerKet(QuantumManagerDenseQubit):
             keys = [all_keys[i] for i in circuit.measured_qubits]
             return self._measure(new_state, keys, all_keys, meas_samp)
 
-    def set(self, keys: list[int], amplitudes: list[complex]) -> None:
+    def set(self, keys: list[int], amplitudes: KetStateInput) -> None:
         """Set the quantum state for the given keys.
 
         Args:
             keys (list[int]): list of keys of the quantum state.
             amplitudes (list[complex]): amplitudes to set the state to.
         """
+        self._validate_ket_state_input(amplitudes)
         new_state = KetState(amplitudes, keys)
         for key in keys:
             self.states[key] = new_state
+
+    @staticmethod
+    def _validate_ket_state_input(state: KetStateInput):
+        """Validate that ket manager inputs are 1D lists or tuples."""
+        if not isinstance(state, (list, tuple)) or any(isinstance(amplitude, (list, tuple)) for amplitude in state):
+            raise TypeError("ket state must be a 1D list or tuple")
 
     def get_ascending_keys(self, key: int) -> KetState:
         """Method to get quantum state stored at an index.
@@ -100,7 +110,7 @@ class QuantumManagerKet(QuantumManagerDenseQubit):
             _, swap_matrix = self._swap_qubits(state.keys, target_all_keys)
             reordered_state = swap_matrix @ state.state
             state.state = reordered_state
-            self.set(target_all_keys, reordered_state)
+            self.set(target_all_keys, reordered_state.tolist())
 
     def set_to_zero(self, key: int) -> None:
         """Set the qubit at the given key to the |0> state.
