@@ -3,6 +3,7 @@ from .ket_vector import QuantumManagerKet
 from .density_matrix import QuantumManagerDensity
 from .fock_density_matrix import QuantumManagerDensityFock
 from .bell_diagonal import QuantumManagerBellDiagonal
+from .stabilizer import QuantumManagerStabilizer
 
 __all__ = [
     'QuantumManager',
@@ -10,6 +11,7 @@ __all__ = [
     'QuantumManagerDensity',
     'QuantumManagerDensityFock',
     'QuantumManagerBellDiagonal',
+    'QuantumManagerStabilizer'
 ]
 
 

@@ -18,7 +18,7 @@ class QuantumManagerBellDiagonal(QuantumManager):
     * All manipulation results can be tracked analytically, without explicit quantum gates / channels / measurements.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         super().__init__()
 
     def new(self, state=None) -> int:
@@ -46,10 +46,14 @@ class QuantumManagerBellDiagonal(QuantumManager):
         return super().get(key)
 
     def set(self, keys: list[int], diag_elems: list[float]) -> None:
-        super().set(keys, diag_elems)
-        # assert len(keys) == 2, "Bell diagonal states must have 2 keys."
+        """Method to set the state of given keys to a Bell diagonal state with given diagonal elements.
+        If the keys list is not of length 2, the keys will be removed from the quantum manager
+        
+        Args:
+            keys (list[int]): list of quantum manager keys to modify.
+            diag_elems (list[float]): list of 4 diagonal elements of Bell diagonal state, in I, Z, X, Y order.
+        """
         if len(keys) != 2:
-            # raise Warning("bell diagonal quantum manager received invalid set request")  # optional
             for key in keys:
                 if key in self.states:
                     self.states.pop(key)
@@ -60,6 +64,3 @@ class QuantumManagerBellDiagonal(QuantumManager):
 
     def set_to_noiseless(self, keys: list[int]):
         self.set(keys, [float(1), float(0), float(0), float(0)])
-
-    def run_circuit(self, *args, **kwargs):
-        pass

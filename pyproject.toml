@@ -42,6 +42,7 @@ dependencies = [
     "seaborn>=0.13.2",
     "tqdm>=4.67.1",
     "typer>=0.24.1",
+    "stim>=1.15"
 ]
 
 [project.scripts]

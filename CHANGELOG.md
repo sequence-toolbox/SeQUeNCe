@@ -5,8 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2026-3-02
+## [1.0.0] - 2026-6-12
 ### Added
+- Added support for the Stabilizer formalism by introducing `StabilizerState` and `QuantumManagerStabilizer`
+    - A new class `QuantumManagerDenseQubit` is added. It is the child class of `QuantumManager` and parent class of `QuantumManagerKet` and `QuantumManagerDensity`
+    - Attributes `truncation` and `dim` are moved from the parent class `QuantumManager` to the child class `QuantumManagerDensityFock`; the `Timeline.__init__()` signature update: argument `truncation` is replaced with `manager_kwargs`
 - Add a module to convert an arbitrary graph object to sequence configurations for QuantumRouter with MIM BSM
 - Add FatTree topology and BCube topology 
 - Added the `routing` module: a new parent class `RoutingProtocol` for the subclasses `StaticRoutingProtocol` and `DistributedRoutingProtocol`. The register decorator is used to make it easy to plug in new routing protocols in the future.
@@ -20,18 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Introducing `EARLY_EXPIRE` message type. A request has a `start_time` and `end_time`. When a request is finished before the `end_time`, then the reservation (and the associated rules) should expire early. If not, the quantum network will keep generating entanglement pairs because the rules still exist.
 - Added three minute tutorial (tutorial file, md, json file). Also reorganized nav bar to have about section, tutorial section, and moduale refrence
 
-
 ### Changed
 - Using typer for CLI, creates a unified interface for topology generation. Allow for custom graph objects in CLI.
 - Moved all old topologies to NetworkX graph objects
-- Docstring, comment, logging, and various cosmetic updates.
+- Docstring, documentation, comment, logging, and various cosmetic updates.
 - Moved routing_protocol init() to network manager.
 - Trigger empty inits for resource and network manager to enable future bootstrapping.
 - Migrated `utils/json_config_generators/` to `sequence/config_generators/`.
 - Add a `sender_delay` argument to the `Node.send_message()` to account for processing delay, queueing delay, transmission delay, etc.
 - Break down the `quantum_manager.py` into a module consisting of multiple files where each file has a quantum manager class
 - Break down the `quantum_state.py` into a module consisting of multiple files where each file has a quantum state class
-- Changed documentation from python 3.11 to 3.12
 
 ### Removed
 - Old configuration generators 

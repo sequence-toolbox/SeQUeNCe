@@ -25,13 +25,17 @@ class BellDiagonalState(State):
         """
         super().__init__()
 
-        # check formatting
-        assert all([elem <= 1.001 and elem >= 0 for elem in diag_elems]), (
-            "Illegal value with elem > 1 or elem < 0 in density matrix diagonal elements")
-        assert abs(sum([elem for elem in diag_elems]) - 1) < 1e-5, (
-            "Density matrix diagonal elements do not sum to 1")
-        assert len(keys) == 2, "BellDiagonalState density matrix are only supported for 2-qubit entangled states."
+        diag_elems = np.array(diag_elems, dtype=float)
+
+        if len(diag_elems) != 4:
+            raise ValueError("Bell diagonal state must have 4 diagonal elements.")
+        if not np.all((0 <= diag_elems) & (diag_elems <= 1)):
+            raise ValueError("Bell diagonal elements must be probabilities between 0 and 1.")
+        if not np.isclose(np.sum(diag_elems), 1):
+            raise ValueError("Bell diagonal elements must sum to 1.")
+        if len(keys) != 2:
+            raise ValueError("BellDiagonalState is only supported for 2-qubit entangled states.")
 
         # note: density matrix diagonal elements are guaranteed to be real from Hermiticity
-        self.state: list[float] = np.array(diag_elems, dtype=float)
+        self.state: np.ndarray = diag_elems
         self.keys = keys

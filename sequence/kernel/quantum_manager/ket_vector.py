@@ -1,9 +1,10 @@
 """
 This module implements the quantum manager for ket vector states.
 """
+from __future__ import annotations
 
-from .base import QuantumManager
-from ..quantum_state import KetState
+from .base import QuantumManager, QuantumManagerDenseQubit
+from ..quantum_state import KetState, OneDimensionInput
 from ..quantum_utils import measure_entangled_state_with_cache_ket, measure_multiple_with_cache_ket, measure_state_with_cache_ket
 from ...constants import KET_VECTOR_FORMALISM
 
@@ -14,17 +15,17 @@ if TYPE_CHECKING:
 
 
 @QuantumManager.register(KET_VECTOR_FORMALISM)
-class QuantumManagerKet(QuantumManager):
+class QuantumManagerKet(QuantumManagerDenseQubit):
     """Class to track and manage quantum states with the ket vector formalism."""
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         super().__init__()
 
-    def new(self, state=[complex(1), complex(0)]) -> int:
+    def new(self, state: OneDimensionInput = (complex(1), complex(0))) -> int:
         """Method to create a new ket state.
 
         Args:
-            state (list[complex]): amplitudes of new state.
+            state (OneDimensionInput): 1D state-vector amplitudes.
 
         Returns:
             int: the key of the new state.
@@ -34,7 +35,7 @@ class QuantumManagerKet(QuantumManager):
         self.states[key] = KetState(state, [key])
         return key
 
-    def run_circuit(self, circuit: "Circuit", keys: list[int], meas_samp=None) -> dict[int, int]:
+    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> dict[int, int]:
         """Method to run a circuit on a given list of keys.
         
         Args:
@@ -46,7 +47,7 @@ class QuantumManagerKet(QuantumManager):
             If measurement, dict[int, int]: dictionary mapping qstate keys to measurement results.
             If non-measurement, dict: empty dictionary.
         """
-        super().run_circuit(circuit, keys, meas_samp)
+        self._validate_circuit_run(circuit, keys, meas_samp)
         new_state, all_keys, circ_mat = self._prepare_circuit(circuit, keys)
 
         new_state = circ_mat @ new_state
@@ -62,14 +63,13 @@ class QuantumManagerKet(QuantumManager):
             keys = [all_keys[i] for i in circuit.measured_qubits]
             return self._measure(new_state, keys, all_keys, meas_samp)
 
-    def set(self, keys: list[int], amplitudes: list[complex]) -> None:
+    def set(self, keys: list[int], amplitudes: OneDimensionInput) -> None:
         """Set the quantum state for the given keys.
 
         Args:
             keys (list[int]): list of keys of the quantum state.
-            amplitudes (list[complex]): amplitudes to set the state to.
+            amplitudes (OneDimensionInput): amplitudes to set the state to.
         """
-        super().set(keys, amplitudes)
         new_state = KetState(amplitudes, keys)
         for key in keys:
             self.states[key] = new_state
@@ -100,7 +100,7 @@ class QuantumManagerKet(QuantumManager):
             _, swap_matrix = self._swap_qubits(state.keys, target_all_keys)
             reordered_state = swap_matrix @ state.state
             state.state = reordered_state
-            self.set(target_all_keys, reordered_state)
+            self.set(target_all_keys, reordered_state.tolist())
 
     def set_to_zero(self, key: int) -> None:
         """Set the qubit at the given key to the |0> state.
