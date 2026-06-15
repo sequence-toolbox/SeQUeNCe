@@ -218,8 +218,8 @@ class FreeQuantumState(State):
         res = rng.choice(possible_results, p=probabilities)
         # project to new state, then reassign quantum state and entangled photons
         new_state = new_states[res]
-        for state in entangled_list:
-            state.quantum_state = new_state
-            state.entangled_photons = entangled_list
+        for quantum_state in entangled_list:
+            quantum_state.state = new_state
+            quantum_state.entangled_states = entangled_list
 
         return res
