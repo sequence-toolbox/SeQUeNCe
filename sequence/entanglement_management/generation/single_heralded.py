@@ -120,8 +120,6 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
             log.logger.info(f'{self} is not valid, emit_event() failed.')
             return
 
-        metrics.record(metrics.EG_ATTEMPT, self.owner.name, round=self.ent_round)
-
         if self.ent_round == 1:
             self.memory.update_state(QuantumCircuitMixin._plus_state)
         self.memory.excite(self.middle, protocol='sh')
@@ -227,6 +225,10 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
 
         else:
             raise Exception(f"Invalid message {msg_type} received by EG on node {self.owner.name}")
+
+    def _entanglement_fail(self):
+        metrics.record(metrics.EG_FAILURE, self.owner.name, initial_fidelity=self.raw_fidelity)
+        super()._entanglement_fail()
 
     def _entanglement_succeed(self):
         log.logger.info(f'{self.owner.name} successful entanglement of memory {self.memory}')
