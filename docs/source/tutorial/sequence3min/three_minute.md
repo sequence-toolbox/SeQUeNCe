@@ -38,48 +38,34 @@ EntanglementGenerationB.set_global_type(SINGLE_HERALDED)
 Next, we load the generated JSON file into a `RouterNetTopo`. This constructs the timeline, quantum routers, BSM node, and communication channels defined in the topology file.
 
 ```python
-network_config = "docs/source/tutorial/threeMinTutorial/two_node.json"
-
-network_topo = RouterNetTopo(network_config)
+network_topo = RouterNetTopo(config_source="docs/source/tutorial/sequence3min/two_node.json")
 tl = network_topo.get_timeline()
 ```
 
-### Step 4: Select Alice and Bob, and attach the applications
+### Step 4: Attach the application modle to the nodes
 
-The topology generator names the two routers `router_0` and `router_1`. In this tutorial, we will refer to these nodes as Alice and Bob.
+Loop over the node objects, and then attach application to the nodes and make the entanglement request.
 
 ```python
-alice_name = "router_0"
-bob_name = "router_1"
-alice = None
-bob = None
+name_to_app = {}
 for router in network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
-    if router.name == alice_name:
-        alice = router
-    elif router.name == bob_name:
-        bob = router
-alice_app = RequestApp(alice)
-bob_app = RequestApp(bob)
+    name_to_app[router.name] = RequestApp(router)
 ```
-
-This loop searches the topology for the two quantum routers and stores references to them. These node objects are then used to attach applications and make the entanglement request.
-
 
 ### Step 5: Run the Simulation
 
-Finally, we initialize the timeline, start Alice's request, and run the simulation.
+Finally, we initialize the timeline, start Alice's request to Bob, and run the simulation.
 
 ```python
 tl.init()
-start_t = 1 * SECOND
-end_t = 2.5 * SECOND
-memo_size = 1
-fidelity = 0.8
-alice_app.start(responder=bob_name, start_t=start_t, end_t=end_t, memo_size=memo_size, fidelity=fidelity)
+alice = "router_0"
+bob = "router_1"
+name_to_app[alice].start(responder=bob, start_t=1 * SECOND, end_t=2.5 * SECOND, memo_size=1, fidelity=0.8)
 tl.run()
 ```
 
-The request asks Alice to establish entanglement with Bob between 1 second and 2.5 seconds of simulated time. After the timeline finishes running, we can check the number of entangled pairs between Alice and Bob and the throughput.
+The request asks Alice to establish entanglement with Bob between `1` second and `2.5` seconds of simulation time. Uses `1` quantum memory at Alice and Bob and requires the end-to-end fidelity above `0.8`. 
+After the timeline finishes running, we can check the number of entangled pairs between Alice and Bob and the throughput.
 
 ```python
 print(f"Entangled pair count between Alice and Bob: {alice_app.memory_counter}")
