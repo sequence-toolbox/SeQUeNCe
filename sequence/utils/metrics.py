@@ -16,10 +16,12 @@ class EventType(Enum):
 
     EG_FAILURE = auto()
     EG_SUCCESS = auto()
+    THROUGHPUT = auto()
 
 
 EG_FAILURE = EventType.EG_FAILURE
 EG_SUCCESS = EventType.EG_SUCCESS
+THROUGHPUT = EventType.THROUGHPUT
 
 
 class TimeProvider(Protocol):
@@ -153,3 +155,16 @@ def record(event_type: EventType, owner_name: str, **kwargs: Any) -> None:
             **kwargs,
         }
     )
+
+
+def _get_throughput(owner_name: str) -> float:
+    throughput_records = [
+        record
+        for record in storage.get_by_owner(owner_name)
+        if record["event_type"] is THROUGHPUT
+    ]
+    if not throughput_records:
+        return float("nan")
+    return throughput_records[-1]["throughput"]
+
+
