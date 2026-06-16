@@ -8,6 +8,7 @@ def reset_metrics():
     metrics._enabled = False
     metrics._enabled_events.clear()
     metrics.storage.clear()
+    metrics.reset_counters()
     metrics.register_time_provider(metrics._system_time_provider)
 
 
@@ -20,7 +21,7 @@ def test_record_before_enable_is_noop():
 def test_enable_filters_event_types():
     metrics.enable([metrics.EG_SUCCESS])
 
-    metrics.record(metrics.EG_ATTEMPT, "e0", round=1)
+    metrics.record(metrics.EG_FAILURE, "e0", initial_fidelity=0.9)
     metrics.record(metrics.EG_SUCCESS, "e0", fidelity=0.9)
 
     records = metrics.storage.get_all()
@@ -31,25 +32,81 @@ def test_enable_filters_event_types():
 
 
 def test_record_stores_arbitrary_kwargs():
-    metrics.enable([metrics.EG_ATTEMPT])
+    metrics.enable([metrics.EG_FAILURE])
 
-    metrics.record(metrics.EG_ATTEMPT, "e1", round=2, custom_metric=42)
+    metrics.record(metrics.EG_FAILURE, "e1", initial_fidelity=0.8, custom_metric=42)
 
     record = metrics.storage.get_all()[0]
-    assert record["round"] == 2
+    assert record["initial_fidelity"] == 0.8
     assert record["custom_metric"] == 42
 
 
-def test_configure_uses_in_memory_storage():
-    metrics.enable([metrics.EG_SUCCESS])
-    metrics.record(metrics.EG_SUCCESS, "e0", fidelity=0.8)
-    assert len(metrics.storage.get_all()) == 1
+def test_configure_replaces_storage():
+    metrics.enable([metrics.EG_FAILURE, metrics.EG_SUCCESS])
+    metrics.record(metrics.EG_FAILURE, "e0")
+    metrics.record(metrics.EG_SUCCESS, "e0")
+    assert len(metrics.storage.get_all()) == 2
 
     metrics.configure(storage_type="in_memory")
+
     assert metrics.storage.get_all() == []
 
 
-# In case a timeline is never created (rare but could happen?)
+def test_reset_counters_clears_per_node_counts():
+    metrics.enable([metrics.EG_FAILURE, metrics.EG_SUCCESS])
+    metrics.record(metrics.EG_FAILURE, "e0")
+    metrics.record(metrics.EG_SUCCESS, "e0")
+
+    metrics.reset_counters()
+
+    assert metrics.get_failures("e0") == 0
+    assert metrics.get_successes("e0") == 0
+    assert metrics.get_success_rate("e0") == 0.0
+
+
+def test_per_node_counters_are_independent():
+    metrics.enable([metrics.EG_FAILURE, metrics.EG_SUCCESS])
+
+    metrics.record(metrics.EG_FAILURE, "e0")
+    metrics.record(metrics.EG_FAILURE, "e0")
+    metrics.record(metrics.EG_SUCCESS, "e0")
+    metrics.record(metrics.EG_FAILURE, "e1")
+
+    assert metrics.get_failures("e0") == 2
+    assert metrics.get_successes("e0") == 1
+    assert metrics.get_success_rate("e0") == pytest.approx(1 / 3)
+    assert metrics.get_failures("e1") == 1
+    assert metrics.get_successes("e1") == 0
+    assert metrics.get_success_rate("e1") == 0.0
+
+
+def test_completion_events_record_running_success_rate():
+    metrics.enable([metrics.EG_FAILURE, metrics.EG_SUCCESS])
+
+    metrics.record(metrics.EG_FAILURE, "e0")
+    metrics.record(metrics.EG_SUCCESS, "e0")
+    metrics.record(metrics.EG_FAILURE, "e0")
+
+    failure_records = metrics.storage.get_by_event(metrics.EG_FAILURE)
+    success_records = metrics.storage.get_by_event(metrics.EG_SUCCESS)
+
+    assert failure_records[0]["success_rate"] == 0.0
+    assert success_records[0]["success_rate"] == 0.5
+    assert failure_records[1]["success_rate"] == pytest.approx(1 / 3)
+
+
+def test_storage_query_helpers():
+    metrics.enable([metrics.EG_FAILURE, metrics.EG_SUCCESS])
+
+    metrics.record(metrics.EG_FAILURE, "e0", initial_fidelity=0.9)
+    metrics.record(metrics.EG_SUCCESS, "e0", fidelity=0.9)
+    metrics.record(metrics.EG_FAILURE, "e1", initial_fidelity=0.9)
+
+    assert len(metrics.storage.get_by_event(metrics.EG_FAILURE)) == 2
+    assert len(metrics.storage.get_by_owner("e0")) == 2
+    assert len(metrics.storage.get_by_owner("e1")) == 1
+
+
 def test_default_time_provider_uses_system_time(monkeypatch):
     monkeypatch.setattr(metrics._system_time_provider, "now", lambda: 42)
     metrics.register_time_provider(metrics._system_time_provider)
@@ -71,15 +128,3 @@ def test_register_time_provider_uses_registered_source():
     metrics.record(metrics.EG_SUCCESS, "e0", fidelity=0.9)
 
     assert metrics.storage.get_all()[0]["sim_time"] == 12345
-
-
-def test_storage_query_helpers():
-    metrics.enable([metrics.EG_ATTEMPT, metrics.EG_SUCCESS])
-
-    metrics.record(metrics.EG_ATTEMPT, "e0", round=1)
-    metrics.record(metrics.EG_SUCCESS, "e0", fidelity=0.9)
-    metrics.record(metrics.EG_ATTEMPT, "e1", round=1)
-
-    assert len(metrics.storage.get_by_event(metrics.EG_ATTEMPT)) == 2
-    assert len(metrics.storage.get_by_owner("e0")) == 2
-    assert len(metrics.storage.get_by_owner("e1")) == 1
