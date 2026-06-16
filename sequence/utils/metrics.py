@@ -7,6 +7,7 @@ Metrics are disabled by default; call ``enable()`` to opt in to recording.
 from __future__ import annotations
 
 from enum import Enum, auto
+from statistics import mean, stdev
 from time import time_ns
 from typing import Any, Protocol
 
@@ -168,3 +169,32 @@ def _get_throughput(owner_name: str) -> float:
     return throughput_records[-1]["throughput"]
 
 
+def collect_trial_metrics(owner_name: str) -> dict[str, Any]:
+    """Collect per-trial metrics for a node from the metrics module."""
+    return {
+        "eg_failures": get_failures(owner_name),
+        "eg_success": get_successes(owner_name),
+        "eg_success_rate": get_success_rate(owner_name),
+        "app_throughput": _get_throughput(owner_name),
+        "event_records": storage.get_by_owner(owner_name),
+    }
+
+
+def aggregate_trial_metrics(trials: list[dict[str, Any]]) -> dict[str, float]:
+    """Aggregate scalar trial metrics across multiple trials."""
+    if not trials:
+        raise ValueError("Cannot aggregate an empty list of trials")
+
+    aggregated: dict[str, float] = {}
+    scalar_metrics = [
+        key
+        for key, value in trials[0].items()
+        if not isinstance(value, (list, dict))
+    ]
+
+    for metric in scalar_metrics:
+        values = [trial[metric] for trial in trials]
+        aggregated[f"avg_{metric}"] = mean(values)
+        aggregated[f"std_{metric}"] = stdev(values) if len(values) > 1 else 0.0
+
+    return aggregated
