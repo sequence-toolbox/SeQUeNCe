@@ -1,6 +1,6 @@
 # SeQUeNCe in 3 Minutes
 
-In this introductory three minute tutorial, we will briefly cover the neccesary basics of SeQUeNCe. We will request a one entanglment pair between two quantum routers, Alice and Bob. The goal of this tutorial is to gain a general understanding of SeQUeNCe's topology generator to create a two-node network, attach a single application to the routers, and submit an entangment request through the network manager. 
+In this introductory three-minute tutorial, we will briefly cover the necessary basics of SeQUeNCe. We will request one entanglement pair between two quantum routers, Alice and Bob. The goal of this tutorial is to gain a general understanding of SeQUeNCe's topology generator to create a two-node network, attach a single application to the routers, and submit an entanglement request through the network manager.
 
 ### Step 1: Generate the Two-Node Topology
 
@@ -42,9 +42,9 @@ network_topo = RouterNetTopo(config_source="docs/source/tutorial/sequence3min/tw
 tl = network_topo.get_timeline()
 ```
 
-### Step 4: Attach the application modle to the nodes
+### Step 4: Attach the Application Module to the Nodes
 
-Loop over the node objects, and then attach application to the nodes and make the entanglement request.
+Loop over the node objects, and then attach the application to the nodes and make the entanglement request.
 
 ```python
 name_to_app = {}
@@ -64,12 +64,12 @@ name_to_app[alice].start(responder=bob, start_t=1 * SECOND, end_t=2.5 * SECOND, 
 tl.run()
 ```
 
-The request asks Alice to establish entanglement with Bob between `1` second and `2.5` seconds of simulation time. Uses `1` quantum memory at Alice and Bob and requires the end-to-end fidelity above `0.8`. 
+The request asks Alice to establish entanglement with Bob between `1` second and `2.5` seconds of simulation time. It uses `1` quantum memory at Alice and Bob and requires the end-to-end fidelity to be above `0.8`.
 After the timeline finishes running, we can check the number of entangled pairs between Alice and Bob and the throughput.
 
 ```python
-print(f"Entangled pair count between Alice and Bob: {alice_app.memory_counter}")
-print(f"The throughput is {alice_app.get_throughput()} pairs per second")
+print(f"Entangled pair count between Alice and Bob: {name_to_app[alice].memory_counter}")
+print(f"The throughput is {name_to_app[alice].get_throughput()} pairs per second")
 ```
 
 You will see the following:
