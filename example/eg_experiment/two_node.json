@@ -1,0 +1,67 @@
+{
+  "nodes": [
+    {
+      "name": "left",
+      "type": "QuantumRouter",
+      "seed": 0,
+      "memo_size": 2,
+      "template": "perfect_router"
+    },
+    {
+      "name": "right",
+      "type": "QuantumRouter",
+      "seed": 1,
+      "memo_size": 2,
+      "template": "perfect_router"
+    }
+  ],
+  "qconnections": [
+    {
+      "node1": "left",
+      "node2": "right",
+      "attenuation": 0.0002,
+      "distance": 40000,
+      "type": "meet_in_the_middle",
+      "template": "perfect_bsm"
+    }
+  ],
+  "cconnections": [
+    {
+      "node1": "left",
+      "node2": "right",
+      "delay": 200000000.0
+    }
+  ],
+  "templates": {
+    "perfect_router": {
+      "MemoryArray": {
+        "frequency": 200000000.0,
+        "coherence_time": -1,
+        "efficiency": 1,
+        "fidelity": 0.95,
+        "cutoff_flag": false
+      }
+    },
+    "perfect_bsm": {
+      "encoding_type": "single_heralded",
+      "SingleHeraldedBSM": {
+        "detectors": [
+          {
+            "efficiency": 1,
+            "dark_count": 0,
+            "time_resolution": 6,
+            "count_rate": 100000000000.0
+          },
+          {
+            "efficiency": 1,
+            "dark_count": 0,
+            "time_resolution": 6,
+            "count_rate": 100000000000.0
+          }
+        ]
+      }
+    }
+  },
+  "is_parallel": false,
+  "formalism": "bell_diagonal"
+}
