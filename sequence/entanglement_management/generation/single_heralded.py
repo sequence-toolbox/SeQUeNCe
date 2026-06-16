@@ -11,7 +11,7 @@ from ...kernel.event import Event
 from ...kernel.process import Process
 from ...kernel.quantum_manager import QuantumManager
 from ...resource_management.memory_manager import MemoryInfo
-from ...utils import log
+from ...utils import log, metrics
 
 if TYPE_CHECKING:
     from ...components.memory import Memory
@@ -119,6 +119,8 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
         if not self.is_ready():
             log.logger.info(f'{self} is not valid, emit_event() failed.')
             return
+
+        metrics.record(metrics.EG_ATTEMPT, self.owner.name, round=self.ent_round)
 
         if self.ent_round == 1:
             self.memory.update_state(QuantumCircuitMixin._plus_state)
@@ -228,6 +230,7 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
 
     def _entanglement_succeed(self):
         log.logger.info(f'{self.owner.name} successful entanglement of memory {self.memory}')
+        metrics.record(metrics.EG_SUCCESS, self.owner.name, fidelity=self.raw_fidelity)
         self.memory.entangled_memory['node_id'] = self.remote_node_name
         self.memory.entangled_memory['memo_id'] = self.remote_memo_id
         self.memory.fidelity = self.raw_fidelity
