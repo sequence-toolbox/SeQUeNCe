@@ -40,32 +40,6 @@ def modify_config(config_file: Path, fidelity: float) -> None:
         json.dump(config, file, indent=2)
 
 
-def collect_trial_metrics(app_start: RequestApp) -> dict:
-    """Collect per-trial metrics from the metrics module for the app node."""
-    node = app_start.node.name
-    return {
-        "eg_failures": metrics.get_failures(node),
-        "eg_success": metrics.get_successes(node),
-        "eg_success_rate": metrics.get_success_rate(node),
-        "app_throughput": app_start.get_throughput(),
-        "event_records": metrics.storage.get_by_owner(node),
-    }
-
-
-def aggregate_trial_metrics(trial_metrics: list[dict]) -> dict:
-    """Aggregate scalar metrics across trials (mirrors eg_symmetric_experiment.py)."""
-    scalar_metrics = [key for key in trial_metrics[0] if key != "event_records"]
-
-    aggregated = {}
-    for metric in scalar_metrics:
-        values = [trial[metric] for trial in trial_metrics]
-        aggregated[f"avg_{metric}"] = np.mean(values)
-        if len(values) > 0:
-            aggregated[f"std_{metric}"] = np.std(values)
-
-    return aggregated
-
-
 def run_trial(
     config_file: Path,
     prep_time: int,
@@ -82,7 +56,7 @@ def run_trial(
     EntanglementGenerationB.set_global_type(SINGLE_HERALDED)
 
     metrics.configure(storage_type="in_memory")
-    metrics.enable([metrics.EG_FAILURE, metrics.EG_SUCCESS])
+    metrics.enable([metrics.EG_FAILURE, metrics.EG_SUCCESS, metrics.THROUGHPUT])
 
     net_topo = RouterNetTopo(str(config_file))
     qm.set_global_manager_formalism(BELL_DIAGONAL_STATE_FORMALISM)
@@ -123,7 +97,7 @@ def run_trial(
     )
     tl.run()
 
-    return collect_trial_metrics(app_start)
+    return metrics.collect_trial_metrics(app_start.node.name)
 
 
 def plot_success_rate_vs_fidelity(results: list[dict], output_path: Path) -> None:
@@ -196,7 +170,7 @@ def main() -> None:
             for trial in range(num_trials)
         ]
 
-        aggregated_metrics = aggregate_trial_metrics(trial_metrics)
+        aggregated_metrics = metrics.aggregate_trial_metrics(trial_metrics)
 
         if fidelity == time_series_fidelity:
             time_series_records = trial_metrics[0]["event_records"]
