@@ -143,7 +143,10 @@ class RequestApp:
                 self.node.resource_manager.update(None, info.memory, "RAW")
 
     def get_throughput(self) -> float:
-        return self.memory_counter / (self.end_t - self.start_t) * 1e12
+        duration = self.end_t - self.start_t
+        if duration <= 0:
+            return float("nan")
+        return self.memory_counter / duration * 1e12
 
 
     def schedule_reservation(self, reservation: Reservation) -> None:
