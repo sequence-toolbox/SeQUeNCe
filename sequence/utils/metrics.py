@@ -6,6 +6,7 @@ Metrics are disabled by default; call ``enable()`` to opt in to recording.
 
 from __future__ import annotations
 
+import math
 from enum import Enum, auto
 from statistics import mean, stdev
 from time import time_ns
@@ -187,14 +188,23 @@ def aggregate_trial_metrics(trials: list[dict[str, Any]]) -> dict[str, float]:
 
     aggregated: dict[str, float] = {}
     scalar_metrics = [
-        key
-        for key, value in trials[0].items()
-        if not isinstance(value, (list, dict))
+        key for key, value in trials[0].items() if not isinstance(value, (list, dict))
     ]
 
     for metric in scalar_metrics:
         values = [trial[metric] for trial in trials]
-        aggregated[f"avg_{metric}"] = mean(values)
-        aggregated[f"std_{metric}"] = stdev(values) if len(values) > 1 else 0.0
+        finite_values = [
+            value
+            for value in values
+            if isinstance(value, (int, float)) and math.isfinite(value)
+        ]
+        if finite_values:
+            aggregated[f"avg_{metric}"] = mean(finite_values)
+            aggregated[f"std_{metric}"] = (
+                stdev(finite_values) if len(finite_values) > 1 else 0.0
+            )
+        else:
+            aggregated[f"avg_{metric}"] = float("nan")
+            aggregated[f"std_{metric}"] = float("nan")
 
     return aggregated
