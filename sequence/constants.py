@@ -44,13 +44,15 @@ MILLISECOND: Final = 10**9
 SECOND:      Final = 10**12
 
 #: Built-in ket-vector formalism identifier.
-KET_STATE_FORMALISM: Final = "ket_vector"
+KET_VECTOR_FORMALISM: Final = "ket_vector"
 #: Built-in density-matrix formalism identifier.
 DENSITY_MATRIX_FORMALISM: Final = "density_matrix"
 #: Built-in Fock density-matrix formalism identifier.
 FOCK_DENSITY_MATRIX_FORMALISM: Final = "fock_density"
 #: Built-in Bell-diagonal-state formalism identifier.
 BELL_DIAGONAL_STATE_FORMALISM: Final = "bell_diagonal"
+#: Built-in stabilizer-state formalism identifier.
+STABILIZER_FORMALISM: Final = "stabilizer"
 
 #: Built-in Barrett-Kok generation protocol identifier.
 BARRET_KOK: Final = 'barret_kok'

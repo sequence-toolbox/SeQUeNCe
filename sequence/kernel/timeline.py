@@ -53,13 +53,13 @@ class Timeline:
         show_progress (bool): show/hide the progress bar of simulation.
         quantum_manager (QuantumManager): quantum state manager.
     """
-    def __init__(self, stop_time: int = 10 ** 23, formalism: str = None, truncation: int = 1):
+    def __init__(self, stop_time: int = 10 ** 23, formalism: str = None, manager_kwargs: dict = None):
         """Constructor for timeline.
 
         Args:
             stop_time (int): stop time (in ps) of simulation (default 10 ** 23, approximately 3000 years).
             formalism (str): formalism of quantum state representation.
-            truncation (int): truncation of Hilbert space (currently only for Fock representation).
+            manager_kwargs (dict): keyword arguments forwarded to the selected quantum manager.
         """
         self.events: EventList = EventList()
         self.entities: dict[str, "Entity"] = {}
@@ -73,7 +73,9 @@ class Timeline:
         if formalism:
             QuantumManager.set_global_manager_formalism(formalism)
 
-        self.quantum_manager: QuantumManager = QuantumManager.create(truncation=truncation)
+        if manager_kwargs is None:
+            manager_kwargs = {}
+        self.quantum_manager: QuantumManager = QuantumManager.create(**manager_kwargs)
 
     def now(self) -> int:
         """Returns current simulation time."""

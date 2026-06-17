@@ -1,0 +1,4 @@
+# Introduction
+Welcome to SeQUeNCe! SeQUeNCe, the Simulator of QUantum Network Communication, is an open source, discrete-event simulator for quantum networks. It is designed to support detailed and customizable simulations of quantum network prototypes across both current and future hardware technologies and protocols.The simulator is organized around five main modules: Hardware, Entanglement Management, Resource Management, Network Management, and Application. These modules allow users to model quantum network components, test protocol schemes, evaluate network parameters, and study full-stack quantum network behavior. SeQUeNCe was developed to help compare alternative quantum network technologies, support experiment planning and validation, and aid the design of new quantum networking protocols.
+
+For more information, please see our [paper](http://arxiv.org/abs/2009.12000) (note that this paper is published in 2021 and some content might outdated).
