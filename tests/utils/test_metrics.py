@@ -216,6 +216,20 @@ def test_aggregate_trial_metrics_empty_list_raises():
         metrics.aggregate_trial_metrics([])
 
 
+def test_aggregate_trial_metrics_ignores_non_finite_values():
+    trials = [
+        {"eg_success_rate": 0.5, "app_throughput": float("nan")},
+        {"eg_success_rate": 0.6, "app_throughput": 2.0},
+        {"eg_success_rate": 0.4, "app_throughput": 4.0},
+    ]
+
+    aggregated = metrics.aggregate_trial_metrics(trials)
+
+    assert aggregated["avg_eg_success_rate"] == pytest.approx(0.5)
+    assert aggregated["avg_app_throughput"] == 3.0
+    assert aggregated["std_app_throughput"] == pytest.approx(1.4142135623730951)
+
+
 def test_request_app_record_throughput_metric():
     tl = Timeline()
     node = QuantumRouter("router_0", tl)
@@ -229,3 +243,27 @@ def test_request_app_record_throughput_metric():
 
     trial = metrics.collect_trial_metrics("router_0")
     assert trial["app_throughput"] == pytest.approx(10.0)
+
+
+def test_request_app_schedules_throughput_on_responder_only():
+    from sequence.network_management.reservation import Reservation
+
+    tl = Timeline(stop_time=int(3e12))
+    responder = QuantumRouter("right", tl)
+    initiator = QuantumRouter("left", tl)
+    responder_app = RequestApp(responder)
+    RequestApp(initiator)
+
+    reservation = Reservation(
+        "left", "right", int(1e12), int(2e12), 2, 0.9,
+    )
+    metrics.enable([metrics.THROUGHPUT])
+    responder_app.memory_counter = 4
+    responder_app.schedule_reservation(reservation)
+
+    tl.init()
+    tl.run()
+
+    trial = metrics.collect_trial_metrics("right")
+    assert trial["app_throughput"] == pytest.approx(4.0)
+    assert math.isnan(metrics.collect_trial_metrics("left")["app_throughput"])
