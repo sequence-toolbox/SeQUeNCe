@@ -58,7 +58,7 @@ class EntanglementSwappingMessage(Message):
             self.expire_time = kwargs.get("expire_time")
             self.meas_res = kwargs.get("meas_res")
         else:
-            raise Exception("Entanglement swapping protocol create unkown type of message: %s" % str(msg_type))
+            raise Exception(f"Entanglement swapping protocol create unkown type of message: {msg_type}")
 
     def __str__(self):
         if self.msg_type == SwappingMsgType.SWAP_RES:
