@@ -97,7 +97,7 @@ def run_trial(
     )
     tl.run()
 
-    return metrics.collect_trial_metrics(app_start.node.name)
+    return metrics.collect_trial_metrics(other_node_name)
 
 
 def plot_success_rate_vs_fidelity(results: list[dict], output_path: Path) -> None:
