@@ -71,15 +71,19 @@ storage = InMemoryStorage()
 _system_time_provider = SystemTimeProvider()
 time_provider: TimeProvider = _system_time_provider
 
-# Counter dicts that contain the failure and success counters for each node
-_failures: dict[str, int] = {}
-_successes: dict[str, int] = {}
-
 
 def register_time_provider(provider: TimeProvider) -> None:
     """Register the active time source for recorded events."""
     global time_provider
     time_provider = provider
+
+
+# TODO: Hopefully the counters and the 4 functions associated with them
+# can be generalized for purification and swapping as well
+
+# Counter dicts that contain the failure and success counters for each node
+_failures: dict[str, int] = {}
+_successes: dict[str, int] = {}
 
 
 def reset_counters() -> None:
@@ -170,6 +174,7 @@ def _get_throughput(owner_name: str) -> float:
     return throughput_records[-1]["throughput"]
 
 
+# Not super generalized but works in the MVP
 def collect_trial_metrics(owner_name: str) -> dict[str, Any]:
     """Collect per-trial metrics for a node from the metrics module."""
     return {
