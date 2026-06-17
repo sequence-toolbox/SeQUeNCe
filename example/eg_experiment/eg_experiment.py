@@ -62,7 +62,7 @@ def run_trial(
     qm.set_global_manager_formalism(BELL_DIAGONAL_STATE_FORMALISM)
 
     tl = net_topo.get_timeline()
-    tl.stop_time = prep_time + collect_time
+    tl.stop_time = prep_time + collect_time + 1
 
     routers = net_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER)
     bsm_nodes = net_topo.get_nodes_by_type(RouterNetTopo.BSM_NODE)
