@@ -53,6 +53,8 @@ from .nx_converter import generate_config
 
 app = typer.Typer()
 
+QCLength = Annotated[float, typer.Option(help='Length of the quantum channel (km)')]
+QCAttenuation = Annotated[float, typer.Option(help='Attenuation of the quantum channel (dB/m)')]
 CCDelay = Annotated[float, typer.Option(help="Constant delay of the classical channel (ms)")]
 MemorySize = Annotated[int, typer.Option(help="Number of quantum memories per node")]
 OutputFile = Annotated[str, typer.Option(help="Name of the output file")]
@@ -81,6 +83,8 @@ def get_template(template_path: str) -> dict:
 def caveman(
     cliques: Annotated[int, typer.Argument(help="Number of cliques")],
     size: Annotated[int, typer.Argument(help="Size of cliques")],
+    length: QCLength = 10,
+    attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
@@ -92,7 +96,7 @@ def caveman(
     gate_fidelity: GateFidelity = 1,
 ) -> None:
     template = get_template(template_path) if template_path else None
-    g = build_caveman(cliques, size)
+    g = build_caveman(cliques, size, length=length, attenuation=attenuation)
     generate_config(
         g,
         cc_delay=cc_delay,
@@ -111,6 +115,8 @@ def caveman(
 def grid(
     size_x: Annotated[int, typer.Argument(help="Number of nodes on the x-axis")],
     size_y: Annotated[int, typer.Argument(help="Number of nodes on the y-axis")],
+    length: QCLength = 10,
+    attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
@@ -122,7 +128,7 @@ def grid(
     gate_fidelity: GateFidelity = 1,
 ) -> None:
     template = get_template(template_path) if template_path else None
-    g = build_grid(size_x, size_y)
+    g = build_grid(size_x, size_y, length=length, attenuation=attenuation)
     generate_config(
         g,
         cc_delay=cc_delay,
@@ -142,6 +148,8 @@ def star(
     outer_nodes: Annotated[
         int, typer.Argument(help="Number of nodes connected to the center")
     ],
+    length: QCLength = 10,
+    attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
@@ -153,7 +161,7 @@ def star(
     gate_fidelity: GateFidelity = 1,
 ) -> None:
     template = get_template(template_path) if template_path else None
-    g = build_star(outer_nodes)
+    g = build_star(outer_nodes, length=length, attenuation=attenuation)
     generate_config(
         g,
         cc_delay=cc_delay,
@@ -171,6 +179,8 @@ def star(
 @app.command()
 def linear(
     nodes: Annotated[int, typer.Argument(help="Number of nodes in the chain")],
+    length: QCLength = 10,
+    attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
@@ -182,7 +192,7 @@ def linear(
     gate_fidelity: GateFidelity = 1,
 ) -> None:
     template = get_template(template_path) if template_path else None
-    g = build_linear(nodes)
+    g = build_linear(nodes, length=length, attenuation=attenuation)
     generate_config(
         g,
         cc_delay=cc_delay,
@@ -201,6 +211,8 @@ def linear(
 def mesh(
     size_x: Annotated[int, typer.Argument(help="Number of nodes on the x-axis")],
     size_y: Annotated[int, typer.Argument(help="Number of nodes on the y-axis")],
+    length: QCLength = 10,
+    attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
@@ -212,7 +224,7 @@ def mesh(
     gate_fidelity: GateFidelity = 1,
 ) -> None:
     template = get_template(template_path) if template_path else None
-    g = build_mesh(size_x, size_y)
+    g = build_mesh(size_x, size_y, length=length, attenuation=attenuation)
     generate_config(
         g,
         cc_delay=cc_delay,
@@ -230,6 +242,8 @@ def mesh(
 @app.command()
 def ring(
     nodes: Annotated[int, typer.Argument(help="Number of nodes in the ring")],
+    length: QCLength = 10,
+    attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
@@ -241,7 +255,7 @@ def ring(
     gate_fidelity: GateFidelity = 1,
 ) -> None:
     template = get_template(template_path) if template_path else None
-    g = build_ring(nodes)
+    g = build_ring(nodes, length=length, attenuation=attenuation)
     generate_config(
         g,
         cc_delay=cc_delay,
@@ -259,6 +273,7 @@ def ring(
 @app.command()
 def waxman(
     nodes: Annotated[int, typer.Argument(help="Number of nodes in the Waxman graph")],
+    attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
@@ -271,7 +286,7 @@ def waxman(
     seed: Seed = None,
 ) -> None:
     template = get_template(template_path) if template_path else None
-    g = build_waxman(nodes, seed=seed)
+    g = build_waxman(nodes, seed=seed, attenuation=attenuation)
     generate_config(
         g,
         cc_delay=cc_delay,
@@ -292,6 +307,8 @@ def tree(
         int, typer.Argument(help="Branching factor of the tree")
     ],
     nodes: Annotated[int, typer.Argument(help="Number of nodes in the tree")],
+    length: QCLength = 10,
+    attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
@@ -303,7 +320,7 @@ def tree(
     gate_fidelity: GateFidelity = 1,
 ) -> None:
     template = get_template(template_path) if template_path else None
-    g = build_tree(branching_factor, nodes)
+    g = build_tree(branching_factor, nodes, length=length, attenuation=attenuation)
     generate_config(
         g,
         cc_delay=cc_delay,
@@ -321,6 +338,8 @@ def tree(
 @app.command()
 def autonomous_system(
     nodes: Annotated[int, typer.Argument(help="Number of nodes in the AS graph")],
+    length: QCLength = 10,
+    attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
@@ -333,7 +352,7 @@ def autonomous_system(
     seed: Seed = None,
 ) -> None:
     template = get_template(template_path) if template_path else None
-    g = build_autonomous_system(nodes, seed=seed)
+    g = build_autonomous_system(nodes, seed=seed, length=length, attenuation=attenuation)
     generate_config(
         g,
         cc_delay=cc_delay,
@@ -352,6 +371,8 @@ def autonomous_system(
 def bcube(
     k: Annotated[int, typer.Argument(help="Number of BCube levels (k >= 1)")],
     n: Annotated[int, typer.Argument(help="Number of ports per switch")],
+    length: QCLength = 10,
+    attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
@@ -363,7 +384,7 @@ def bcube(
     gate_fidelity: GateFidelity = 1,
 ) -> None:
     template = get_template(template_path) if template_path else None
-    g = build_bcube(k, n)
+    g = build_bcube(k, n, length=length, attenuation=attenuation)
     generate_config(
         g,
         cc_delay=cc_delay,
@@ -382,6 +403,8 @@ def bcube(
 def k_n(
     k: Annotated[int, typer.Argument(help="Number of ports per switch")],
     n: Annotated[int, typer.Argument(help="Number of levels in the fat tree")],
+    length: QCLength = 10,
+    attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
     output: OutputFile = "output.json",
@@ -393,7 +416,7 @@ def k_n(
     gate_fidelity: GateFidelity = 1,
 ) -> None:
     template = get_template(template_path) if template_path else None
-    g = build_k_n(k, n)
+    g = build_k_n(k, n, length=length, attenuation=attenuation)
     generate_config(
         g,
         cc_delay=cc_delay,
