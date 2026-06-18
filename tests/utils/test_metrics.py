@@ -272,3 +272,125 @@ def test_request_app_schedules_throughput_on_responder_only():
     trial = metrics.collect_trial_metrics("right")
     assert trial["app_throughput"] == pytest.approx(4.0)
     assert math.isnan(metrics.collect_trial_metrics("left")["app_throughput"])
+
+
+def test_ep_counters_and_success_rate():
+    metrics.enable([metrics.EP_FAILURE, metrics.EP_SUCCESS])
+
+    metrics.record(metrics.EP_FAILURE, "left")
+    metrics.record(metrics.EP_SUCCESS, "left", fidelity=0.75)
+    metrics.record(metrics.EP_FAILURE, "left")
+
+    assert metrics.get_ep_failures("left") == 2
+    assert metrics.get_ep_successes("left") == 1
+    assert metrics.get_ep_success_rate("left") == pytest.approx(1 / 3)
+
+    success_records = metrics.storage.get_by_event(metrics.EP_SUCCESS)
+    assert success_records[0]["ep_success_rate"] == pytest.approx(0.5)
+
+
+def test_purified_delivery_does_not_affect_ep_counters():
+    metrics.enable([metrics.EP_FAILURE, metrics.EP_SUCCESS, metrics.PURIFIED_DELIVERY])
+
+    metrics.record(metrics.EP_SUCCESS, "left", fidelity=0.8)
+    metrics.record(metrics.PURIFIED_DELIVERY, "right", fidelity=0.8, pair_number=1)
+
+    assert metrics.get_ep_successes("left") == 1
+    assert metrics.get_ep_failures("right") == 0
+
+
+def test_collect_trial_metrics_ep_fields_and_delivery_time():
+    class StubTimeProvider:
+        def __init__(self) -> None:
+            self._time = int(1e12)
+
+        def now(self) -> int:
+            current = self._time
+            self._time += int(1e11)
+            return current
+
+    provider = StubTimeProvider()
+    metrics.register_time_provider(provider)
+    metrics.enable([metrics.EP_SUCCESS, metrics.PURIFIED_DELIVERY])
+
+    metrics.record(metrics.EP_SUCCESS, "left", fidelity=0.7)
+    metrics.record(metrics.EP_SUCCESS, "left", fidelity=0.75)
+
+    for pair_number in range(1, 4):
+        metrics.record(
+            metrics.PURIFIED_DELIVERY,
+            "right",
+            fidelity=0.7 + pair_number * 0.01,
+            pair_number=pair_number,
+        )
+
+    trial = metrics.collect_trial_metrics(
+        "left",
+        delivery_owner="right",
+        target_pairs=3,
+        reservation_start_time=int(1e12),
+    )
+
+    assert trial["ep_success"] == 2
+    assert trial["purified_fidelities"] == [0.7, 0.75]
+    assert trial["app_ep_time"] == pytest.approx(0.4)
+
+
+def test_collect_trial_metrics_app_ep_time_nan_when_target_not_reached():
+    metrics.enable([metrics.PURIFIED_DELIVERY])
+    metrics.record(metrics.PURIFIED_DELIVERY, "right", fidelity=0.9, pair_number=1)
+
+    trial = metrics.collect_trial_metrics(
+        "left",
+        delivery_owner="right",
+        target_pairs=500,
+        reservation_start_time=int(1e12),
+    )
+
+    assert math.isnan(trial["app_ep_time"])
+
+
+def test_collect_trial_metrics_delivery_owner_defaults_to_owner():
+    metrics.enable([metrics.PURIFIED_DELIVERY])
+    metrics.record(metrics.PURIFIED_DELIVERY, "right", fidelity=0.9, pair_number=1)
+
+    trial = metrics.collect_trial_metrics(
+        "right",
+        target_pairs=1,
+        reservation_start_time=0,
+    )
+
+    assert not math.isnan(trial["app_ep_time"])
+
+
+def test_aggregate_trial_metrics_flattens_purified_fidelities():
+    trials = [
+        {
+            "ep_success_rate": 0.6,
+            "purified_fidelities": [0.7, 0.75],
+            "app_ep_time": 10.0,
+        },
+        {
+            "ep_success_rate": 0.7,
+            "purified_fidelities": [0.8],
+            "app_ep_time": 9.0,
+        },
+    ]
+
+    aggregated = metrics.aggregate_trial_metrics(trials)
+
+    assert aggregated["avg_purified_fidelities"] == pytest.approx(0.75)
+    assert aggregated["std_purified_fidelities"] == pytest.approx(0.05)
+    assert aggregated["avg_app_ep_time"] == 9.5
+
+
+def test_aggregate_trial_metrics_handles_nan_app_ep_time():
+    trials = [
+        {"app_ep_time": float("nan"), "purified_fidelities": [0.7]},
+        {"app_ep_time": 12.0, "purified_fidelities": [0.8]},
+    ]
+
+    aggregated = metrics.aggregate_trial_metrics(trials)
+
+    assert aggregated["avg_app_ep_time"] == 12.0
+    assert aggregated["std_app_ep_time"] == 0.0
