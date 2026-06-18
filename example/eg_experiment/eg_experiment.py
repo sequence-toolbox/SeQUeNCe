@@ -7,6 +7,7 @@ produces plots of success rate versus initial fidelity and success rate over tim
 from __future__ import annotations
 
 import json
+import multiprocessing as mp
 import os
 import time
 from pathlib import Path
@@ -155,20 +156,37 @@ def main() -> None:
         print(f"Running {num_trials} trial(s) for initial fidelity={fidelity}")
         modify_config(CONFIG_FILE, float(fidelity))
 
-        trial_metrics = [
-            run_trial(
-                CONFIG_FILE,
-                prep_time,
-                collect_time,
-                qc_freq,
-                app_node_name,
-                other_node_name,
-                num_memories,
-                float(fidelity),
-                trial,
-            )
-            for trial in range(num_trials)
-        ]
+        if num_trials == 1:
+            trial_metrics = [
+                run_trial(
+                    CONFIG_FILE,
+                    prep_time,
+                    collect_time,
+                    qc_freq,
+                    app_node_name,
+                    other_node_name,
+                    num_memories,
+                    float(fidelity),
+                    0,
+                )
+            ]
+        else:
+            params = [
+                (
+                    CONFIG_FILE,
+                    prep_time,
+                    collect_time,
+                    qc_freq,
+                    app_node_name,
+                    other_node_name,
+                    num_memories,
+                    float(fidelity),
+                    trial,
+                )
+                for trial in range(num_trials)
+            ]
+            with mp.Pool(processes=mp.cpu_count()) as pool:
+                trial_metrics = pool.starmap(run_trial, params)
 
         aggregated_metrics = metrics.aggregate_trial_metrics(trial_metrics)
 
