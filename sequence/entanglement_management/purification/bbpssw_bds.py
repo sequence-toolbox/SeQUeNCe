@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from ...topology.node import Node
 
 from ...constants import BELL_DIAGONAL_STATE_FORMALISM
-from ...utils import log
+from ...utils import log, metrics
 from .bbpssw_protocol import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType
 
 @BBPSSWProtocol.register(BELL_DIAGONAL_STATE_FORMALISM)
@@ -137,9 +137,15 @@ class BBPSSW_BDS(BBPSSWProtocol):
                 remote_kept_memory.bds_decohere()
                 self.kept_memo.bds_decohere()
                 self.kept_memo.fidelity = self.kept_memo.get_bds_fidelity()
+                metrics.record(
+                    metrics.EP_SUCCESS,
+                    self.owner.name,
+                    fidelity=self.kept_memo.fidelity,
+                )
                 self.update_resource_manager(self.kept_memo, state="PURIFIED")
             else:
                 log.logger.info(f'Purification failed because measure results: {self.meas_res}, {msg.meas_res}')
+                metrics.record(metrics.EP_FAILURE, self.owner.name)
                 self.update_resource_manager(self.kept_memo, state="RAW")
 
         else:
