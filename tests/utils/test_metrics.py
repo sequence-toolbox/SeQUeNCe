@@ -58,15 +58,20 @@ def test_configure_replaces_storage():
 
 
 def test_reset_counters_clears_per_node_counts():
-    metrics.enable([metrics.EG_FAILURE, metrics.EG_SUCCESS])
+    metrics.enable([metrics.EG_FAILURE, metrics.EG_SUCCESS, metrics.EP_FAILURE, metrics.EP_SUCCESS])
     metrics.record(metrics.EG_FAILURE, "e0")
     metrics.record(metrics.EG_SUCCESS, "e0")
+    metrics.record(metrics.EP_FAILURE, "e0")
+    metrics.record(metrics.EP_SUCCESS, "e0")
 
     metrics.reset_counters()
 
-    assert metrics.get_failures("e0") == 0
-    assert metrics.get_successes("e0") == 0
-    assert metrics.get_success_rate("e0") == 0.0
+    assert metrics.get_eg_failures("e0") == 0
+    assert metrics.get_eg_successes("e0") == 0
+    assert metrics.get_eg_success_rate("e0") == 0.0
+    assert metrics.get_ep_failures("e0") == 0
+    assert metrics.get_ep_successes("e0") == 0
+    assert metrics.get_ep_success_rate("e0") == 0.0
 
 
 def test_per_node_counters_are_independent():
@@ -77,12 +82,12 @@ def test_per_node_counters_are_independent():
     metrics.record(metrics.EG_SUCCESS, "e0")
     metrics.record(metrics.EG_FAILURE, "e1")
 
-    assert metrics.get_failures("e0") == 2
-    assert metrics.get_successes("e0") == 1
-    assert metrics.get_success_rate("e0") == pytest.approx(1 / 3)
-    assert metrics.get_failures("e1") == 1
-    assert metrics.get_successes("e1") == 0
-    assert metrics.get_success_rate("e1") == 0.0
+    assert metrics.get_eg_failures("e0") == 2
+    assert metrics.get_eg_successes("e0") == 1
+    assert metrics.get_eg_success_rate("e0") == pytest.approx(1 / 3)
+    assert metrics.get_eg_failures("e1") == 1
+    assert metrics.get_eg_successes("e1") == 0
+    assert metrics.get_eg_success_rate("e1") == 0.0
 
 
 def test_completion_events_record_running_success_rate():
@@ -142,9 +147,9 @@ def test_throughput_does_not_affect_eg_counters():
     metrics.record(metrics.EG_SUCCESS, "e0")
     metrics.record(metrics.THROUGHPUT, "e0", throughput=42.0)
 
-    assert metrics.get_failures("e0") == 1
-    assert metrics.get_successes("e0") == 1
-    assert metrics.get_success_rate("e0") == 0.5
+    assert metrics.get_eg_failures("e0") == 1
+    assert metrics.get_eg_successes("e0") == 1
+    assert metrics.get_eg_success_rate("e0") == 0.5
 
 
 def test_collect_trial_metrics_returns_node_snapshot():
