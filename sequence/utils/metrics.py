@@ -19,11 +19,15 @@ class EventType(Enum):
     EG_FAILURE = auto()
     EG_SUCCESS = auto()
     THROUGHPUT = auto()
+    EP_FAILURE = auto()
+    EP_SUCCESS = auto()
 
 
 EG_FAILURE = EventType.EG_FAILURE
 EG_SUCCESS = EventType.EG_SUCCESS
 THROUGHPUT = EventType.THROUGHPUT
+EP_FAILURE = EventType.EP_FAILURE
+EP_SUCCESS = EventType.EP_SUCCESS
 
 
 class TimeProvider(Protocol):
@@ -71,6 +75,11 @@ storage = InMemoryStorage()
 _system_time_provider = SystemTimeProvider()
 time_provider: TimeProvider = _system_time_provider
 
+_eg_failures: dict[str, int] = {}
+_eg_successes: dict[str, int] = {}
+_ep_failures: dict[str, int] = {}
+_ep_successes: dict[str, int] = {}
+
 
 def register_time_provider(provider: TimeProvider) -> None:
     """Register the active time source for recorded events."""
@@ -78,31 +87,42 @@ def register_time_provider(provider: TimeProvider) -> None:
     time_provider = provider
 
 
-# TODO: Hopefully the counters and the 4 functions associated with them
-# can be generalized for purification and swapping as well
-
-# Counter dicts that contain the failure and success counters for each node
-_failures: dict[str, int] = {}
-_successes: dict[str, int] = {}
-
-
 def reset_counters() -> None:
     """Reset per-node attempt and success counters."""
-    _failures.clear()
-    _successes.clear()
+    _eg_failures.clear()
+    _eg_successes.clear()
+    _ep_failures.clear()
+    _ep_successes.clear()
 
 
-def get_failures(owner_name: str) -> int:
-    return _failures.get(owner_name, 0)
+def get_eg_failures(owner_name: str) -> int:
+    return _eg_failures.get(owner_name, 0)
 
 
-def get_successes(owner_name: str) -> int:
-    return _successes.get(owner_name, 0)
+def get_eg_successes(owner_name: str) -> int:
+    return _eg_successes.get(owner_name, 0)
 
 
-def get_success_rate(owner_name: str) -> float:
-    failures = get_failures(owner_name)
-    successes = get_successes(owner_name)
+def get_eg_success_rate(owner_name: str) -> float:
+    failures = get_eg_failures(owner_name)
+    successes = get_eg_successes(owner_name)
+    attempts = failures + successes
+    if attempts == 0:
+        return 0.0
+    return successes / attempts
+
+
+def get_ep_failures(owner_name: str) -> int:
+    return _ep_failures.get(owner_name, 0)
+
+
+def get_ep_successes(owner_name: str) -> int:
+    return _ep_successes.get(owner_name, 0)
+
+
+def get_ep_success_rate(owner_name: str) -> float:
+    failures = get_ep_failures(owner_name)
+    successes = get_ep_successes(owner_name)
     attempts = failures + successes
     if attempts == 0:
         return 0.0
@@ -136,22 +156,28 @@ def record(event_type: EventType, owner_name: str, **kwargs: Any) -> None:
 
     Will increment counter if counter is available for metric.
     Metrics with counters:
-        - EG_SUCCESS
-        - EG_FAILURE
+        - EG_SUCCESS, EG_FAILURE
+        - EP_SUCCESS, EP_FAILURE
 
     Will automatically record success rate for:
-        - EG_SUCCESS
-        - EG_FAILURE
+        - EG_SUCCESS, EG_FAILURE (as ``success_rate``)
+        - EP_SUCCESS, EP_FAILURE (as ``ep_success_rate``)
     """
     if not _enabled or event_type not in _enabled_events:
         return
 
     if event_type is EG_FAILURE:
-        _failures[owner_name] = _failures.get(owner_name, 0) + 1
-        kwargs["success_rate"] = get_success_rate(owner_name)
+        _eg_failures[owner_name] = _eg_failures.get(owner_name, 0) + 1
+        kwargs["success_rate"] = get_eg_success_rate(owner_name)
     elif event_type is EG_SUCCESS:
-        _successes[owner_name] = _successes.get(owner_name, 0) + 1
-        kwargs["success_rate"] = get_success_rate(owner_name)
+        _eg_successes[owner_name] = _eg_successes.get(owner_name, 0) + 1
+        kwargs["success_rate"] = get_eg_success_rate(owner_name)
+    elif event_type is EP_FAILURE:
+        _ep_failures[owner_name] = _ep_failures.get(owner_name, 0) + 1
+        kwargs["ep_success_rate"] = get_ep_success_rate(owner_name)
+    elif event_type is EP_SUCCESS:
+        _ep_successes[owner_name] = _ep_successes.get(owner_name, 0) + 1
+        kwargs["ep_success_rate"] = get_ep_success_rate(owner_name)
 
     storage.append(
         {
@@ -178,9 +204,12 @@ def _get_throughput(owner_name: str) -> float:
 def collect_trial_metrics(owner_name: str) -> dict[str, Any]:
     """Collect per-trial metrics for a node from the metrics module."""
     return {
-        "eg_failures": get_failures(owner_name),
-        "eg_success": get_successes(owner_name),
-        "eg_success_rate": get_success_rate(owner_name),
+        "eg_failures": get_eg_failures(owner_name),
+        "eg_success": get_eg_successes(owner_name),
+        "eg_success_rate": get_eg_success_rate(owner_name),
+        "ep_failures": get_ep_failures(owner_name),
+        "ep_success": get_ep_successes(owner_name),
+        "ep_success_rate": get_ep_success_rate(owner_name),
         "app_throughput": _get_throughput(owner_name),
         "event_records": storage.get_by_owner(owner_name),
     }
