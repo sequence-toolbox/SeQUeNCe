@@ -6,7 +6,9 @@ Metrics are disabled by default; call ``enable()`` to opt in to recording.
 
 from __future__ import annotations
 
+import json
 import math
+import time
 from enum import Enum, auto
 from statistics import mean, stdev
 from time import time_ns
@@ -21,6 +23,7 @@ class EventType(Enum):
     THROUGHPUT = auto()
     EP_FAILURE = auto()
     EP_SUCCESS = auto()
+    PURIFIED_DELIVERY = auto()
 
 
 EG_FAILURE = EventType.EG_FAILURE
@@ -28,6 +31,7 @@ EG_SUCCESS = EventType.EG_SUCCESS
 THROUGHPUT = EventType.THROUGHPUT
 EP_FAILURE = EventType.EP_FAILURE
 EP_SUCCESS = EventType.EP_SUCCESS
+PURIFIED_DELIVERY = EventType.PURIFIED_DELIVERY
 
 
 class TimeProvider(Protocol):
@@ -200,23 +204,65 @@ def _get_throughput(owner_name: str) -> float:
     return throughput_records[-1]["throughput"]
 
 
-# Not super generalized but works in the MVP
-def collect_trial_metrics(owner_name: str) -> dict[str, Any]:
+def _get_purified_fidelities(owner_name: str) -> list[float]:
+    return [
+        record["fidelity"]
+        for record in storage.get_by_owner(owner_name)
+        if record["event_type"] is EP_SUCCESS and "fidelity" in record
+    ]
+
+
+def _get_app_ep_time(
+    delivery_owner: str,
+    target_pairs: int,
+    reservation_start_time: int | None,
+) -> float:
+    delivery_records = [
+        record
+        for record in storage.get_by_owner(delivery_owner)
+        if record["event_type"] is PURIFIED_DELIVERY
+    ]
+    delivery_records.sort(key=lambda record: record["sim_time"])
+    if len(delivery_records) < target_pairs:
+        return float("nan")
+    if reservation_start_time is None:
+        return float("nan")
+    target_time = delivery_records[target_pairs - 1]["sim_time"]
+    return (target_time - reservation_start_time) * 1e-12
+
+
+def collect_trial_metrics(
+    owner_name: str,
+    *,
+    delivery_owner: str | None = None,
+    target_pairs: int = 500,
+    reservation_start_time: int | None = None,
+) -> dict[str, Any]:
     """Collect per-trial metrics for a node from the metrics module."""
-    return {
+    delivery_owner = delivery_owner or owner_name
+    result = {
         "eg_failures": get_eg_failures(owner_name),
         "eg_success": get_eg_successes(owner_name),
         "eg_success_rate": get_eg_success_rate(owner_name),
         "ep_failures": get_ep_failures(owner_name),
         "ep_success": get_ep_successes(owner_name),
         "ep_success_rate": get_ep_success_rate(owner_name),
+        "purified_fidelities": _get_purified_fidelities(owner_name),
         "app_throughput": _get_throughput(owner_name),
+        "app_ep_time": _get_app_ep_time(
+            delivery_owner, target_pairs, reservation_start_time
+        ),
         "event_records": storage.get_by_owner(owner_name),
     }
+    return result
 
 
-def aggregate_trial_metrics(trials: list[dict[str, Any]]) -> dict[str, float]:
-    """Aggregate scalar trial metrics across multiple trials."""
+def aggregate_trial_metrics(
+    trials: list[dict[str, Any]],
+    *,
+    list_metric_cap: int | None = 500,
+) -> dict[str, float]:
+    """Aggregate trial metrics across multiple trials."""
     if not trials:
         raise ValueError("Cannot aggregate an empty list of trials")
 
@@ -224,6 +270,7 @@ def aggregate_trial_metrics(trials: list[dict[str, Any]]) -> dict[str, float]:
     scalar_metrics = [
         key for key, value in trials[0].items() if not isinstance(value, (list, dict))
     ]
+    list_metrics = [key for key, value in trials[0].items() if isinstance(value, list)]
 
     for metric in scalar_metrics:
         values = [trial[metric] for trial in trials]
@@ -236,6 +283,24 @@ def aggregate_trial_metrics(trials: list[dict[str, Any]]) -> dict[str, float]:
             aggregated[f"avg_{metric}"] = mean(finite_values)
             aggregated[f"std_{metric}"] = (
                 stdev(finite_values) if len(finite_values) > 1 else 0.0
+            )
+        else:
+            aggregated[f"avg_{metric}"] = float("nan")
+            aggregated[f"std_{metric}"] = float("nan")
+
+    for metric in list_metrics:
+        if metric == "event_records":
+            continue
+        all_values: list[float] = []
+        for trial in trials:
+            trial_values = trial[metric]
+            if list_metric_cap is not None:
+                trial_values = trial_values[:list_metric_cap]
+            all_values.extend(trial_values)
+        if all_values:
+            aggregated[f"avg_{metric}"] = mean(all_values)
+            aggregated[f"std_{metric}"] = (
+                stdev(all_values) if len(all_values) > 1 else 0.0
             )
         else:
             aggregated[f"avg_{metric}"] = float("nan")
