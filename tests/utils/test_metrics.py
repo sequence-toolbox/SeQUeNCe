@@ -394,3 +394,43 @@ def test_aggregate_trial_metrics_handles_nan_app_ep_time():
 
     assert aggregated["avg_app_ep_time"] == 12.0
     assert aggregated["std_app_ep_time"] == 0.0
+
+
+def test_register_event_type_is_idempotent():
+    type_a = metrics.register_event_type("CUSTOM_EVENT")
+    type_b = metrics.register_event_type("CUSTOM_EVENT")
+    assert type_a is type_b
+
+
+def test_register_metric_adds_to_collect_trial_metrics():
+    swap_failure = metrics.register_event_type("SWAP_FAILURE")
+    swap_success = metrics.register_event_type("SWAP_SUCCESS")
+    swap_metric = CounterPairMetric(
+        prefix="swap",
+        failure_event=swap_failure,
+        success_event=swap_success,
+        rate_field="swap_success_rate",
+    )
+    metrics.register_metric(swap_metric)
+
+    metrics.enable([swap_failure, swap_success])
+    metrics.record(swap_failure, "n0")
+    metrics.record(swap_success, "n0")
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["swap_failures"] == 1
+    assert trial["swap_success"] == 1
+    assert trial["swap_success_rate"] == 0.5
+
+    metrics.unregister_metric(swap_metric)
+
+
+def test_register_metric_rejects_duplicate_output_keys():
+    duplicate = CounterPairMetric(
+        prefix="eg",
+        failure_event=metrics.register_event_type("DUP_FAIL"),
+        success_event=metrics.register_event_type("DUP_SUCCESS"),
+        rate_field="dup_success_rate",
+    )
+    with pytest.raises(ValueError, match="already registered"):
+        metrics.register_metric(duplicate)
