@@ -6,18 +6,18 @@ from sequence.app.request_app import RequestApp
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import QuantumRouter
 from sequence.utils import metrics
+from sequence.utils.metrics import CounterPairMetric
 
 
 @pytest.fixture(autouse=True)
-def reset_metrics():
+def reset_metrics_state():
     metrics._enabled = False
     metrics._enabled_events.clear()
     metrics.storage.clear()
-    metrics.reset_counters()
+    metrics.reset_metrics()
     metrics.register_time_provider(metrics._system_time_provider)
 
 
-# Tests that record doesn't do anything if the user has not enabled metrics
 def test_record_before_enable_is_noop():
     metrics.record(metrics.EG_SUCCESS, "e0", fidelity=0.9)
     assert metrics.storage.get_all() == []
@@ -57,21 +57,23 @@ def test_configure_replaces_storage():
     assert metrics.storage.get_all() == []
 
 
-def test_reset_counters_clears_per_node_counts():
+def test_reset_metrics_clears_per_node_counts():
     metrics.enable([metrics.EG_FAILURE, metrics.EG_SUCCESS, metrics.EP_FAILURE, metrics.EP_SUCCESS])
     metrics.record(metrics.EG_FAILURE, "e0")
     metrics.record(metrics.EG_SUCCESS, "e0")
     metrics.record(metrics.EP_FAILURE, "e0")
     metrics.record(metrics.EP_SUCCESS, "e0")
 
-    metrics.reset_counters()
+    metrics.reset_metrics()
 
-    assert metrics.get_eg_failures("e0") == 0
-    assert metrics.get_eg_successes("e0") == 0
-    assert metrics.get_eg_success_rate("e0") == 0.0
-    assert metrics.get_ep_failures("e0") == 0
-    assert metrics.get_ep_successes("e0") == 0
-    assert metrics.get_ep_success_rate("e0") == 0.0
+    eg = metrics.get_counter_pair("eg")
+    ep = metrics.get_counter_pair("ep")
+    assert eg.failures("e0") == 0
+    assert eg.successes("e0") == 0
+    assert eg.success_rate("e0") == 0.0
+    assert ep.failures("e0") == 0
+    assert ep.successes("e0") == 0
+    assert ep.success_rate("e0") == 0.0
 
 
 def test_per_node_counters_are_independent():
@@ -82,12 +84,13 @@ def test_per_node_counters_are_independent():
     metrics.record(metrics.EG_SUCCESS, "e0")
     metrics.record(metrics.EG_FAILURE, "e1")
 
-    assert metrics.get_eg_failures("e0") == 2
-    assert metrics.get_eg_successes("e0") == 1
-    assert metrics.get_eg_success_rate("e0") == pytest.approx(1 / 3)
-    assert metrics.get_eg_failures("e1") == 1
-    assert metrics.get_eg_successes("e1") == 0
-    assert metrics.get_eg_success_rate("e1") == 0.0
+    eg = metrics.get_counter_pair("eg")
+    assert eg.failures("e0") == 2
+    assert eg.successes("e0") == 1
+    assert eg.success_rate("e0") == pytest.approx(1 / 3)
+    assert eg.failures("e1") == 1
+    assert eg.successes("e1") == 0
+    assert eg.success_rate("e1") == 0.0
 
 
 def test_completion_events_record_running_success_rate():
@@ -147,9 +150,10 @@ def test_throughput_does_not_affect_eg_counters():
     metrics.record(metrics.EG_SUCCESS, "e0")
     metrics.record(metrics.THROUGHPUT, "e0", throughput=42.0)
 
-    assert metrics.get_eg_failures("e0") == 1
-    assert metrics.get_eg_successes("e0") == 1
-    assert metrics.get_eg_success_rate("e0") == 0.5
+    eg = metrics.get_counter_pair("eg")
+    assert eg.failures("e0") == 1
+    assert eg.successes("e0") == 1
+    assert eg.success_rate("e0") == 0.5
 
 
 def test_collect_trial_metrics_returns_node_snapshot():
@@ -281,9 +285,10 @@ def test_ep_counters_and_success_rate():
     metrics.record(metrics.EP_SUCCESS, "left", fidelity=0.75)
     metrics.record(metrics.EP_FAILURE, "left")
 
-    assert metrics.get_ep_failures("left") == 2
-    assert metrics.get_ep_successes("left") == 1
-    assert metrics.get_ep_success_rate("left") == pytest.approx(1 / 3)
+    ep = metrics.get_counter_pair("ep")
+    assert ep.failures("left") == 2
+    assert ep.successes("left") == 1
+    assert ep.success_rate("left") == pytest.approx(1 / 3)
 
     success_records = metrics.storage.get_by_event(metrics.EP_SUCCESS)
     assert success_records[0]["ep_success_rate"] == pytest.approx(0.5)
@@ -295,8 +300,9 @@ def test_purified_delivery_does_not_affect_ep_counters():
     metrics.record(metrics.EP_SUCCESS, "left", fidelity=0.8)
     metrics.record(metrics.PURIFIED_DELIVERY, "right", fidelity=0.8, pair_number=1)
 
-    assert metrics.get_ep_successes("left") == 1
-    assert metrics.get_ep_failures("right") == 0
+    ep = metrics.get_counter_pair("ep")
+    assert ep.successes("left") == 1
+    assert ep.failures("right") == 0
 
 
 def test_collect_trial_metrics_ep_fields_and_delivery_time():
