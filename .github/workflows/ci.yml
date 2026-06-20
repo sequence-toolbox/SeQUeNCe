@@ -32,4 +32,12 @@ jobs:
       run: uv sync --locked --all-extras --dev
 
     - name: Run tests
-      run: uv run pytest tests
+      run: uv run pytest --cov=. --cov-report=xml
+
+    - name: Upload coverage report
+      if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+      uses: actions/upload-code-coverage@v1
+      with:
+        file: coverage.xml
+        language: Python
+        label: code-coverage/pytest
