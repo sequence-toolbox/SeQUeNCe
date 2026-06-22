@@ -2,7 +2,6 @@ import math
 
 import pytest
 
-from sequence.app.request_app import RequestApp
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import QuantumRouter
 from sequence.utils import metrics
