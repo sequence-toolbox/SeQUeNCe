@@ -167,24 +167,6 @@ class EventFieldListMetric(Metric):
 
 
 @dataclass
-class EventRecordsMetric(Metric):
-    """Collects raw event records for an owner."""
-
-    key: str = "event_records"
-
-    @property
-    def event_types(self) -> frozenset[EventType]:
-        return frozenset()
-
-    @property
-    def output_keys(self) -> frozenset[str]:
-        return frozenset({self.key})
-
-    def collect(self, ctx: CollectContext) -> dict[str, Any]:
-        return {self.key: ctx.storage.get_by_owner(ctx.owner_name)}
-
-
-@dataclass
 class AppEpTimeMetric(Metric):
     """Time to deliver N purified pairs relative to reservation start."""
 

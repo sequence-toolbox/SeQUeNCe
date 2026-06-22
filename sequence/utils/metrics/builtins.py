@@ -7,7 +7,6 @@ from .metric_types import (
     AppEpTimeMetric,
     CounterPairMetric,
     EventFieldListMetric,
-    EventRecordsMetric,
     LastValueMetric,
 )
 from .registry import register_metric
@@ -45,7 +44,6 @@ APP_EP_TIME_METRIC = AppEpTimeMetric(
     key="app_ep_time",
     delivery_event=PURIFIED_DELIVERY,
 )
-EVENT_RECORDS_METRIC = EventRecordsMetric()
 
 _BUILTIN_METRICS = (
     EG_METRIC,
@@ -53,7 +51,6 @@ _BUILTIN_METRICS = (
     THROUGHPUT_METRIC,
     PURIFIED_FIDELITIES_METRIC,
     APP_EP_TIME_METRIC,
-    EVENT_RECORDS_METRIC,
 )
 
 

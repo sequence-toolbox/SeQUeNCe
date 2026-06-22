@@ -11,13 +11,17 @@ from statistics import mean, stdev
 from typing import Any
 
 from . import builtins
-from .event_types import EventType, get_event_type, list_event_types, register_event_type
+from .event_types import (
+    EventType,
+    get_event_type,
+    list_event_types,
+    register_event_type,
+)
 from .metric_types import (
     AppEpTimeMetric,
     CollectContext,
     CounterPairMetric,
     EventFieldListMetric,
-    EventRecordsMetric,
     LastValueMetric,
     Metric,
 )
@@ -146,8 +150,6 @@ def aggregate_trial_metrics(
             aggregated[f"std_{metric}"] = float("nan")
 
     for metric in list_metrics_keys:
-        if metric == "event_records":
-            continue
         all_values: list[float] = []
         for trial in trials:
             trial_values = trial[metric]
@@ -178,7 +180,6 @@ __all__ = [
     "EP_SUCCESS",
     "EventFieldListMetric",
     "EventType",
-    "EventRecordsMetric",
     "InMemoryStorage",
     "LastValueMetric",
     "Metric",

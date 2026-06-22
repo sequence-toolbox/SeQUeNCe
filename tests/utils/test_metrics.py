@@ -58,7 +58,9 @@ def test_configure_replaces_storage():
 
 
 def test_reset_metrics_clears_per_node_counts():
-    metrics.enable([metrics.EG_FAILURE, metrics.EG_SUCCESS, metrics.EP_FAILURE, metrics.EP_SUCCESS])
+    metrics.enable(
+        [metrics.EG_FAILURE, metrics.EG_SUCCESS, metrics.EP_FAILURE, metrics.EP_SUCCESS]
+    )
     metrics.record(metrics.EG_FAILURE, "e0")
     metrics.record(metrics.EG_SUCCESS, "e0")
     metrics.record(metrics.EP_FAILURE, "e0")
@@ -169,7 +171,6 @@ def test_collect_trial_metrics_returns_node_snapshot():
     assert trial["eg_success"] == 1
     assert trial["eg_success_rate"] == 0.5
     assert trial["app_throughput"] == 12.5
-    assert len(trial["event_records"]) == 3
 
 
 def test_collect_trial_metrics_without_throughput_is_nan():
@@ -183,8 +184,18 @@ def test_collect_trial_metrics_without_throughput_is_nan():
 
 def test_aggregate_trial_metrics_computes_avg_and_std():
     trials = [
-        {"eg_failures": 10, "eg_success": 5, "eg_success_rate": 0.5, "app_throughput": 1.0},
-        {"eg_failures": 12, "eg_success": 6, "eg_success_rate": 0.5, "app_throughput": 2.0},
+        {
+            "eg_failures": 10,
+            "eg_success": 5,
+            "eg_success_rate": 0.5,
+            "app_throughput": 1.0,
+        },
+        {
+            "eg_failures": 12,
+            "eg_success": 6,
+            "eg_success_rate": 0.5,
+            "app_throughput": 2.0,
+        },
     ]
 
     aggregated = metrics.aggregate_trial_metrics(trials)
@@ -196,28 +207,19 @@ def test_aggregate_trial_metrics_computes_avg_and_std():
 
 
 def test_aggregate_trial_metrics_single_trial_has_zero_std():
-    trials = [{"eg_failures": 3, "eg_success": 1, "eg_success_rate": 0.25, "app_throughput": 4.0}]
-
-    aggregated = metrics.aggregate_trial_metrics(trials)
-
-    assert aggregated["avg_eg_failures"] == 3
-    assert aggregated["std_eg_failures"] == 0.0
-
-
-def test_aggregate_trial_metrics_skips_event_records():
     trials = [
         {
-            "eg_failures": 1,
+            "eg_failures": 3,
             "eg_success": 1,
-            "eg_success_rate": 0.5,
-            "app_throughput": 1.0,
-            "event_records": [{"event_type": metrics.EG_SUCCESS}],
+            "eg_success_rate": 0.25,
+            "app_throughput": 4.0,
         }
     ]
 
     aggregated = metrics.aggregate_trial_metrics(trials)
 
-    assert "avg_event_records" not in aggregated
+    assert aggregated["avg_eg_failures"] == 3
+    assert aggregated["std_eg_failures"] == 0.0
 
 
 def test_aggregate_trial_metrics_empty_list_raises():
@@ -264,7 +266,12 @@ def test_request_app_schedules_throughput_on_responder_only():
     RequestApp(initiator)
 
     reservation = Reservation(
-        "left", "right", int(1e12), int(2e12), 2, 0.9,
+        "left",
+        "right",
+        int(1e12),
+        int(2e12),
+        2,
+        0.9,
     )
     metrics.enable([metrics.THROUGHPUT])
     responder_app.memory_counter = 4
