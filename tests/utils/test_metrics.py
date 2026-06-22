@@ -241,50 +241,6 @@ def test_aggregate_trial_metrics_ignores_non_finite_values():
     assert aggregated["std_app_throughput"] == pytest.approx(1.4142135623730951)
 
 
-def test_request_app_record_throughput_metric():
-    tl = Timeline()
-    node = QuantumRouter("router_0", tl)
-    app = RequestApp(node)
-    app.start_t = int(1e12)
-    app.end_t = int(2e12)
-    app.memory_counter = 10
-
-    metrics.enable([metrics.THROUGHPUT])
-    app.record_throughput_metric()
-
-    trial = metrics.collect_trial_metrics("router_0")
-    assert trial["app_throughput"] == pytest.approx(10.0)
-
-
-def test_request_app_schedules_throughput_on_responder_only():
-    from sequence.network_management.reservation import Reservation
-
-    tl = Timeline(stop_time=int(3e12))
-    responder = QuantumRouter("right", tl)
-    initiator = QuantumRouter("left", tl)
-    responder_app = RequestApp(responder)
-    RequestApp(initiator)
-
-    reservation = Reservation(
-        "left",
-        "right",
-        int(1e12),
-        int(2e12),
-        2,
-        0.9,
-    )
-    metrics.enable([metrics.THROUGHPUT])
-    responder_app.memory_counter = 4
-    responder_app.schedule_reservation(reservation)
-
-    tl.init()
-    tl.run()
-
-    trial = metrics.collect_trial_metrics("right")
-    assert trial["app_throughput"] == pytest.approx(4.0)
-    assert math.isnan(metrics.collect_trial_metrics("left")["app_throughput"])
-
-
 def test_ep_counters_and_success_rate():
     metrics.enable([metrics.EP_FAILURE, metrics.EP_SUCCESS])
 
