@@ -2,8 +2,6 @@ import math
 
 import pytest
 
-from sequence.kernel.timeline import Timeline
-from sequence.topology.node import QuantumRouter
 from sequence.utils import metrics
 from sequence.utils.metrics import CounterPairMetric
 
