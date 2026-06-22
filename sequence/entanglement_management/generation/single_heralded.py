@@ -226,10 +226,6 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
         else:
             raise Exception(f"Invalid message {msg_type} received by EG on node {self.owner.name}")
 
-    def _entanglement_fail(self):
-        metrics.record(metrics.EG_FAILURE, self.owner.name, initial_fidelity=self.raw_fidelity)
-        super()._entanglement_fail()
-
     def _entanglement_succeed(self):
         log.logger.info(f'{self.owner.name} successful entanglement of memory {self.memory}')
         metrics.record(metrics.EG_SUCCESS, self.owner.name, fidelity=self.raw_fidelity)

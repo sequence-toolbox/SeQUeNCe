@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 from ..entanglement_protocol import EntanglementProtocol
 from ...components.circuit import Circuit
-from ...utils import log
+from ...utils import log, metrics
 
 
 class QuantumCircuitMixin:
@@ -180,6 +180,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
     def _entanglement_fail(self):
         for event in self.scheduled_events:
             self.owner.timeline.remove_event(event)
+        metrics.record(metrics.EG_FAILURE, self.owner.name, initial_fidelity=self.fidelity)
         log.logger.info(f'{self.owner.name} failed entanglement of memory {self.memory}')
 
         self.update_resource_manager(self.memory, MemoryInfo.RAW)
