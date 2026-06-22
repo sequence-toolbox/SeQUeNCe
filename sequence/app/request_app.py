@@ -167,22 +167,6 @@ class RequestApp:
                 event = Event(reservation.end_time, process)
                 self.node.timeline.schedule(event)
 
-        if self.node.name == reservation.responder:
-            self.start_t = reservation.start_time
-            self.end_t = reservation.end_time
-            process = Process(self, "record_throughput_metric", [])
-            event = Event(reservation.end_time, process)
-            self.node.timeline.schedule(event)
-
-    def record_throughput_metric(self) -> None:
-        from ..utils import metrics
-
-        metrics.record(
-            metrics.THROUGHPUT,
-            self.node.name,
-            throughput=self.get_throughput(),
-        )
-
     def set_name(self, name: str):
         self.name = name
 
