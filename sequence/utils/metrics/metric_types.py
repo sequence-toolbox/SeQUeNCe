@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, override
 
 from .event_types import EventType
 from .storage import InMemoryStorage
@@ -183,6 +183,11 @@ class DeliveryTimeMetric(Metric):
     def output_keys(self) -> frozenset[str]:
         return frozenset({self.key})
 
+    # TODO: Implement delivery time metric using better methods to collect data
+    # CollectContext was previously used - however this implementation is not
+    # very good and needs to be reworked
+    # We need to get reservation_start_time and target_pairs from somewhere else
+    @override
     def collect(self, ctx: CollectContext) -> dict[str, Any]:
         delivery_owner = ctx.delivery_owner or ctx.owner_name
         delivery_records = [
