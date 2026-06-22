@@ -13,7 +13,7 @@ from .generation_base import EntanglementGenerationA, EntanglementGenerationB, Q
 
 from ...kernel.event import Event
 from ...kernel.process import Process
-from ...utils import log
+from ...utils import log, metrics
 
 
 @EntanglementGenerationA.register(BARRET_KOK)
@@ -225,6 +225,7 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
         self.memory.entangled_memory['node_id'] = self.remote_node_name
         self.memory.entangled_memory['memo_id'] = self.remote_memo_id
         self.memory.fidelity = self.memory.raw_fidelity
+        metrics.record(metrics.EG_SUCCESS, self.owner.name, fidelity=self.fidelity)
         self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
 
 
