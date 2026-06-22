@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from .event_types import register_event_type
 from .metric_types import (
-    AppEpTimeMetric,
+    DeliveryTimeMetric,
     CounterPairMetric,
     EventFieldListMetric,
     LastValueMetric,
@@ -40,8 +40,8 @@ PURIFIED_FIDELITIES_METRIC = EventFieldListMetric(
     event=EP_SUCCESS,
     field="fidelity",
 )
-APP_EP_TIME_METRIC = AppEpTimeMetric(
-    key="app_ep_time",
+DELIVERY_TIME_METRIC = DeliveryTimeMetric(
+    key="delivery_time",
     delivery_event=PURIFIED_DELIVERY,
 )
 
@@ -50,7 +50,7 @@ _BUILTIN_METRICS = (
     EP_METRIC,
     THROUGHPUT_METRIC,
     PURIFIED_FIDELITIES_METRIC,
-    APP_EP_TIME_METRIC,
+    DELIVERY_TIME_METRIC,
 )
 
 

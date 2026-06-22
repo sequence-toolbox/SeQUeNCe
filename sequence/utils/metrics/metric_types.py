@@ -167,10 +167,10 @@ class EventFieldListMetric(Metric):
 
 
 @dataclass
-class AppEpTimeMetric(Metric):
+class DeliveryTimeMetric(Metric):
     """Time to deliver N purified pairs relative to reservation start."""
 
-    key: str = "app_ep_time"
+    key: str = "delivery_time"
     delivery_event: EventType | None = None
 
     @property

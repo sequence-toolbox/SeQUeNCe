@@ -18,7 +18,7 @@ from .event_types import (
     register_event_type,
 )
 from .metric_types import (
-    AppEpTimeMetric,
+    DeliveryTimeMetric,
     CollectContext,
     CounterPairMetric,
     EventFieldListMetric,
