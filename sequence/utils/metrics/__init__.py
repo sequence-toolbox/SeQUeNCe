@@ -2,6 +2,11 @@
 
 This module provides a global registry for recording simulation events.
 Metrics are disabled by default; call ``enable()`` to opt in to recording.
+
+When enabled, ``record()`` enqueues events for a background worker thread.
+Simulation time is captured on the calling thread before enqueueing.
+Call ``flush()`` before reading storage directly; ``collect_trial_metrics()``
+flushes automatically.
 """
 
 from __future__ import annotations
@@ -25,12 +30,13 @@ from .metric_types import (
     LastValueMetric,
     Metric,
 )
+from .background_recorder import BackgroundRecorder
 from .registry import (
     clear_registry,
     get_counter_pair,
     list_metrics,
     register_metric,
-    reset_metrics,
+    reset_metrics as _reset_registry_metrics,
     unregister_metric,
 )
 from .storage import InMemoryStorage, SystemTimeProvider, TimeProvider
@@ -48,6 +54,8 @@ _enabled_events: set[EventType] = set()
 storage = InMemoryStorage()
 _system_time_provider = SystemTimeProvider()
 time_provider: TimeProvider = _system_time_provider
+_recorder = BackgroundRecorder()
+_recorder.configure_handlers(storage, list_metrics)
 
 
 def register_time_provider(provider: TimeProvider) -> None:
@@ -70,9 +78,22 @@ def configure(storage_type: str = "in_memory") -> None:
         - "in_memory": The default, uses ``InMemoryStorage``.
     """
     global storage
+    _recorder.flush()
+    _recorder.shutdown()
     if storage_type == "in_memory":
         storage = InMemoryStorage()
-        reset_metrics()
+        _recorder.configure_handlers(storage, list_metrics)
+        _reset_registry_metrics()
+
+
+def flush() -> None:
+    """Block until all queued metric records have been processed."""
+    _recorder.flush()
+
+
+def reset_metrics() -> None:
+    """Reset per-trial state for all registered metrics."""
+    _recorder.reset(_reset_registry_metrics)
 
 
 def record(event_type: EventType, owner_name: str, **kwargs: Any) -> None:
@@ -80,18 +101,11 @@ def record(event_type: EventType, owner_name: str, **kwargs: Any) -> None:
     if not _enabled or event_type not in _enabled_events:
         return
 
-    record_kwargs = dict(kwargs)
-    for metric in list_metrics():
-        if event_type in metric.event_types:
-            metric.on_record(event_type, owner_name, record_kwargs)
-
-    storage.append(
-        {
-            "event_type": event_type,
-            "owner_name": owner_name,
-            "sim_time": time_provider.now(),
-            **record_kwargs,
-        }
+    _recorder.submit_record(
+        event_type=event_type,
+        owner_name=owner_name,
+        record_kwargs=dict(kwargs),
+        sim_time=time_provider.now(),
     )
 
 
@@ -103,6 +117,7 @@ def collect_trial_metrics(
     reservation_start_time: int | None = None,
 ) -> dict[str, Any]:
     """Collect per-trial metrics for a node from the metrics module."""
+    flush()
     ctx = CollectContext(
         owner_name=owner_name,
         storage=storage,
