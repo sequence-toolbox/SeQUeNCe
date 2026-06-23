@@ -8,11 +8,15 @@ from sequence.utils.metrics import CounterPairMetric
 
 @pytest.fixture(autouse=True)
 def reset_metrics_state():
+    metrics._recorder.shutdown()
     metrics._enabled = False
     metrics._enabled_events.clear()
     metrics.storage.clear()
+    metrics._recorder.configure_handlers(metrics.storage, metrics.list_metrics)
     metrics.reset_metrics()
     metrics.register_time_provider(metrics._system_time_provider)
+    yield
+    metrics._recorder.shutdown()
 
 
 def test_record_before_enable_is_noop():
@@ -25,6 +29,7 @@ def test_enable_filters_event_types():
 
     metrics.record(metrics.EG_FAILURE, "e0", initial_fidelity=0.9)
     metrics.record(metrics.EG_SUCCESS, "e0", fidelity=0.9)
+    metrics.flush()
 
     records = metrics.storage.get_all()
     assert len(records) == 1
@@ -37,6 +42,7 @@ def test_record_stores_arbitrary_kwargs():
     metrics.enable([metrics.EG_FAILURE])
 
     metrics.record(metrics.EG_FAILURE, "e1", initial_fidelity=0.8, custom_metric=42)
+    metrics.flush()
 
     record = metrics.storage.get_all()[0]
     assert record["initial_fidelity"] == 0.8
@@ -47,6 +53,7 @@ def test_configure_replaces_storage():
     metrics.enable([metrics.EG_FAILURE, metrics.EG_SUCCESS])
     metrics.record(metrics.EG_FAILURE, "e0")
     metrics.record(metrics.EG_SUCCESS, "e0")
+    metrics.flush()
     assert len(metrics.storage.get_all()) == 2
 
     metrics.configure(storage_type="in_memory")
@@ -82,6 +89,7 @@ def test_per_node_counters_are_independent():
     metrics.record(metrics.EG_FAILURE, "e0")
     metrics.record(metrics.EG_SUCCESS, "e0")
     metrics.record(metrics.EG_FAILURE, "e1")
+    metrics.flush()
 
     eg = metrics.get_counter_pair("eg")
     assert eg.failures("e0") == 2
@@ -98,6 +106,7 @@ def test_completion_events_record_running_success_rate():
     metrics.record(metrics.EG_FAILURE, "e0")
     metrics.record(metrics.EG_SUCCESS, "e0")
     metrics.record(metrics.EG_FAILURE, "e0")
+    metrics.flush()
 
     failure_records = metrics.storage.get_by_event(metrics.EG_FAILURE)
     success_records = metrics.storage.get_by_event(metrics.EG_SUCCESS)
@@ -113,6 +122,7 @@ def test_storage_query_helpers():
     metrics.record(metrics.EG_FAILURE, "e0", initial_fidelity=0.9)
     metrics.record(metrics.EG_SUCCESS, "e0", fidelity=0.9)
     metrics.record(metrics.EG_FAILURE, "e1", initial_fidelity=0.9)
+    metrics.flush()
 
     assert len(metrics.storage.get_by_event(metrics.EG_FAILURE)) == 2
     assert len(metrics.storage.get_by_owner("e0")) == 2
@@ -125,6 +135,7 @@ def test_default_time_provider_uses_system_time(monkeypatch):
     metrics.enable([metrics.EG_SUCCESS])
 
     metrics.record(metrics.EG_SUCCESS, "e0", fidelity=0.9)
+    metrics.flush()
 
     assert metrics.storage.get_all()[0]["sim_time"] == 42
 
@@ -138,6 +149,7 @@ def test_register_time_provider_uses_registered_source():
     metrics.enable([metrics.EG_SUCCESS])
 
     metrics.record(metrics.EG_SUCCESS, "e0", fidelity=0.9)
+    metrics.flush()
 
     assert metrics.storage.get_all()[0]["sim_time"] == 12345
 
@@ -148,6 +160,7 @@ def test_throughput_does_not_affect_eg_counters():
     metrics.record(metrics.EG_FAILURE, "e0")
     metrics.record(metrics.EG_SUCCESS, "e0")
     metrics.record(metrics.THROUGHPUT, "e0", throughput=42.0)
+    metrics.flush()
 
     eg = metrics.get_counter_pair("eg")
     assert eg.failures("e0") == 1
@@ -244,6 +257,7 @@ def test_ep_counters_and_success_rate():
     metrics.record(metrics.EP_FAILURE, "left")
     metrics.record(metrics.EP_SUCCESS, "left", fidelity=0.75)
     metrics.record(metrics.EP_FAILURE, "left")
+    metrics.flush()
 
     ep = metrics.get_counter_pair("ep")
     assert ep.failures("left") == 2
@@ -259,6 +273,7 @@ def test_purified_delivery_does_not_affect_ep_counters():
 
     metrics.record(metrics.EP_SUCCESS, "left", fidelity=0.8)
     metrics.record(metrics.PURIFIED_DELIVERY, "right", fidelity=0.8, pair_number=1)
+    metrics.flush()
 
     ep = metrics.get_counter_pair("ep")
     assert ep.successes("left") == 1
@@ -400,3 +415,58 @@ def test_register_metric_rejects_duplicate_output_keys():
     )
     with pytest.raises(ValueError, match="already registered"):
         metrics.register_metric(duplicate)
+
+
+def test_sim_time_captured_on_calling_thread():
+    class AdvancingTimeProvider:
+        def __init__(self) -> None:
+            self._time = 100
+
+        def now(self) -> int:
+            current = self._time
+            self._time += 1000
+            return current
+
+    provider = AdvancingTimeProvider()
+    metrics.register_time_provider(provider)
+    metrics.enable([metrics.EG_SUCCESS])
+
+    metrics.record(metrics.EG_SUCCESS, "e0", fidelity=0.9)
+    metrics.flush()
+
+    assert metrics.storage.get_all()[0]["sim_time"] == 100
+
+
+def test_collect_trial_metrics_flushes_pending_records():
+    metrics.enable([metrics.EG_FAILURE, metrics.EG_SUCCESS])
+
+    metrics.record(metrics.EG_FAILURE, "e0")
+    metrics.record(metrics.EG_SUCCESS, "e0")
+
+    trial = metrics.collect_trial_metrics("e0")
+
+    assert trial["eg_failures"] == 1
+    assert trial["eg_success"] == 1
+    assert trial["eg_success_rate"] == 0.5
+
+
+def test_reset_metrics_clears_after_async_records():
+    metrics.enable([metrics.EG_FAILURE, metrics.EG_SUCCESS])
+
+    metrics.record(metrics.EG_FAILURE, "e0")
+    metrics.record(metrics.EG_SUCCESS, "e0")
+    metrics.reset_metrics()
+
+    eg = metrics.get_counter_pair("eg")
+    assert eg.failures("e0") == 0
+    assert eg.successes("e0") == 0
+
+
+def test_flush_waits_for_background_processing():
+    metrics.enable([metrics.EG_SUCCESS])
+
+    metrics.record(metrics.EG_SUCCESS, "e0", fidelity=0.9)
+    assert metrics.storage.get_all() == []
+
+    metrics.flush()
+    assert len(metrics.storage.get_all()) == 1
