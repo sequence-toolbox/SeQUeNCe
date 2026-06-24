@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from ...components.memory import Memory
     from ...topology.node import Node
 
-from ...utils import log
+from ...utils import log, metrics
 from ...constants import KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM
 from .bbpssw_protocol import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType
 
@@ -117,8 +117,14 @@ class BBPSSWCircuit(BBPSSWProtocol):
         self.update_resource_manager(self.meas_memo, "RAW")
         if self.meas_res == msg.meas_res:
             self.kept_memo.fidelity = self.improved_fidelity(self.kept_memo.fidelity)
+            metrics.record(
+                metrics.EP_SUCCESS,
+                self.owner.name,
+                fidelity=self.kept_memo.fidelity,
+            )
             self.update_resource_manager(self.kept_memo, state="PURIFIED")
         else:
+            metrics.record(metrics.EP_FAILURE, self.owner.name)
             self.update_resource_manager(self.kept_memo, state="RAW")
 
     @staticmethod
