@@ -254,6 +254,33 @@ def test_ep_counters_and_success_rate():
     assert success_records[0]["ep_success_rate"] == pytest.approx(0.5)
 
 
+def test_es_counters_and_success_rate():
+    metrics.enable([metrics.ES_FAILURE, metrics.ES_SUCCESS])
+
+    metrics.record(metrics.ES_FAILURE, "middle")
+    metrics.record(metrics.ES_SUCCESS, "middle", fidelity=0.75)
+    metrics.record(metrics.ES_FAILURE, "middle")
+
+    es = metrics.get_counter_pair("es")
+    assert es.failures("middle") == 2
+    assert es.successes("middle") == 1
+    assert es.success_rate("middle") == pytest.approx(1 / 3)
+
+    success_records = metrics.storage.get_by_event(metrics.ES_SUCCESS)
+    assert success_records[0]["es_success_rate"] == pytest.approx(0.5)
+
+
+def test_collect_trial_metrics_swapped_fidelities():
+    metrics.enable([metrics.ES_SUCCESS])
+
+    metrics.record(metrics.ES_SUCCESS, "middle", fidelity=0.7)
+    metrics.record(metrics.ES_SUCCESS, "middle", fidelity=0.75)
+
+    trial = metrics.collect_trial_metrics("middle")
+    assert trial["es_success"] == 2
+    assert trial["swapped_fidelities"] == [0.7, 0.75]
+
+
 def test_purified_delivery_does_not_affect_ep_counters():
     metrics.enable([metrics.EP_FAILURE, metrics.EP_SUCCESS, metrics.PURIFIED_DELIVERY])
 
