@@ -17,6 +17,8 @@ THROUGHPUT = register_event_type("THROUGHPUT")
 EP_FAILURE = register_event_type("EP_FAILURE")
 EP_SUCCESS = register_event_type("EP_SUCCESS")
 PURIFIED_DELIVERY = register_event_type("PURIFIED_DELIVERY")
+ES_FAILURE = register_event_type("ES_FAILURE")
+ES_SUCCESS = register_event_type("ES_SUCCESS")
 
 EG_METRIC = CounterPairMetric(
     prefix="eg",
@@ -44,6 +46,17 @@ DELIVERY_TIME_METRIC = DeliveryTimeMetric(
     key="delivery_time",
     delivery_event=PURIFIED_DELIVERY,
 )
+ES_METRIC = CounterPairMetric(
+    prefix="es",
+    failure_event=ES_FAILURE,
+    success_event=ES_SUCCESS,
+    rate_field="es_success_rate",
+)
+SWAPPED_FIDELITIES_METRIC = EventFieldListMetric(
+    key="swapped_fidelities",
+    event=ES_SUCCESS,
+    field="fidelity",
+)
 
 _BUILTIN_METRICS = (
     EG_METRIC,
@@ -51,6 +64,8 @@ _BUILTIN_METRICS = (
     THROUGHPUT_METRIC,
     PURIFIED_FIDELITIES_METRIC,
     DELIVERY_TIME_METRIC,
+    ES_METRIC,
+    SWAPPED_FIDELITIES_METRIC,
 )
 
 

@@ -42,6 +42,8 @@ THROUGHPUT = builtins.THROUGHPUT
 EP_FAILURE = builtins.EP_FAILURE
 EP_SUCCESS = builtins.EP_SUCCESS
 PURIFIED_DELIVERY = builtins.PURIFIED_DELIVERY
+ES_FAILURE = builtins.ES_FAILURE
+ES_SUCCESS = builtins.ES_SUCCESS
 
 _enabled = False
 _enabled_events: set[EventType] = set()
