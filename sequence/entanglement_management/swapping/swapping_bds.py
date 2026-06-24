@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .swapping_base import EntanglementSwappingA, EntanglementSwappingB, SwappingMsgType, EntanglementSwappingMessage
-from ...utils import log
+from ...utils import log, metrics
 from ...constants import BELL_DIAGONAL_STATE_FORMALISM
 from ...resource_management.memory_manager import MemoryInfo
 
@@ -88,6 +88,7 @@ class EntanglementSwappingA_BDS(EntanglementSwappingA):
             # get BDS conditioned on success, fidelity is the first diagonal element
             new_bds = self.swapping_res()
             fidelity = new_bds[0]
+            metrics.record(metrics.ES_SUCCESS, self.owner.name, fidelity=fidelity)
             keys = [left_remote_memory.qstate_key, right_remote_memory.qstate_key]
             self.owner.timeline.quantum_manager.set(keys, new_bds)
 
@@ -107,6 +108,7 @@ class EntanglementSwappingA_BDS(EntanglementSwappingA):
                                                 meas_res=[])
         else:
             log.logger.info(f'swapping failed!')
+            metrics.record(metrics.ES_FAILURE, self.owner.name)
             msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, self.left_protocol_name, fidelity=0)
             msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, self.right_protocol_name, fidelity=0)
 

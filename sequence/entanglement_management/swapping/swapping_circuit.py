@@ -13,7 +13,7 @@ from .swapping_base import EntanglementSwappingA, EntanglementSwappingB, Swappin
 from ...components.circuit import Circuit
 from ...constants import KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM
 from ...resource_management.memory_manager import MemoryInfo
-from ...utils import log
+from ...utils import log, metrics
 
 
 @EntanglementSwappingA.register(KET_VECTOR_FORMALISM)
@@ -84,6 +84,7 @@ class EntanglementSwappingA_Circuit(EntanglementSwappingA):
         if self.owner.get_generator().random() < self.success_probability():
             # swapping succeeded
             fidelity = self.updated_fidelity(self.left_memo.fidelity, self.right_memo.fidelity)
+            metrics.record(metrics.ES_SUCCESS, self.owner.name, fidelity=fidelity)
             self.is_success = True
 
             expire_time = min(self.left_memo.get_expire_time(), self.right_memo.get_expire_time())
@@ -108,6 +109,7 @@ class EntanglementSwappingA_Circuit(EntanglementSwappingA):
         else:
             # swapping failed
             log.logger.info(f"{self.name} swapping failed")
+            metrics.record(metrics.ES_FAILURE, self.owner.name)
             msg_l = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES,self.left_protocol_name, fidelity=0)
             msg_r = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, self.right_protocol_name, fidelity=0)
 
