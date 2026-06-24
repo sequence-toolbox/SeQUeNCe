@@ -2,48 +2,73 @@
 
 from __future__ import annotations
 
-import queue
-import threading
+import multiprocessing as mp
 from collections.abc import Callable
-from dataclasses import dataclass
 from typing import Any
 
-from .event_types import EventType
+from .event_types import EventType, get_event_type
 from .metric_types import Metric
+from .registry import reset_metrics as reset_registry_metrics
 from .storage import InMemoryStorage
 
 
-@dataclass(frozen=True)
-class _RecordTask:
-    event_type: EventType
-    owner_name: str
-    record_kwargs: dict[str, Any]
-    sim_time: int
+def _metrics_worker_main(command_queue: mp.Queue, response_queue: mp.Queue) -> None:
+    """Run metrics recording in a separate Python interpreter process."""
+    from .event_types import register_event_type
+    from .registry import list_metrics, reset_metrics
+    from .storage import InMemoryStorage as WorkerStorage
 
+    storage = WorkerStorage()
 
-@dataclass(frozen=True)
-class _FlushCommand:
-    done: threading.Event
+    def process_record(
+        event_type_name: str,
+        owner_name: str,
+        record_kwargs: dict[str, Any],
+        sim_time: int,
+    ) -> None:
+        event_type = register_event_type(event_type_name)
+        kwargs = dict(record_kwargs)
+        for metric in list_metrics():
+            if event_type in metric.event_types:
+                metric.on_record(event_type, owner_name, kwargs)
+        storage.append(
+            {
+                "event_type": event_type_name,
+                "owner_name": owner_name,
+                "sim_time": sim_time,
+                **kwargs,
+            }
+        )
 
+    def make_snapshot() -> dict[str, Any]:
+        return {
+            "records": [dict(record) for record in storage.get_all()],
+        }
 
-@dataclass(frozen=True)
-class _ResetCommand:
-    done: threading.Event
-    reset_fn: Callable[[], None]
-
-
-@dataclass(frozen=True)
-class _ShutdownCommand:
-    pass
+    while True:
+        command = command_queue.get()
+        op = command[0]
+        if op == "shutdown":
+            return
+        if op == "record":
+            _, event_type_name, owner_name, kwargs, sim_time = command
+            process_record(event_type_name, owner_name, kwargs, sim_time)
+        elif op == "flush":
+            response_queue.put(make_snapshot())
+        elif op == "reset":
+            storage.clear()
+            reset_metrics()
+            response_queue.put(make_snapshot())
 
 
 class BackgroundRecorder:
-    """Process metrics records on a dedicated background thread."""
+    """Process metrics records on a dedicated background process."""
 
     def __init__(self) -> None:
-        self._queue: queue.Queue[Any] = queue.Queue()
-        self._thread: threading.Thread | None = None
-        self._lock = threading.Lock()
+        self._ctx = mp.get_context("spawn")
+        self._command_queue: mp.Queue[Any] | None = None
+        self._response_queue: mp.Queue[Any] | None = None
+        self._process: mp.Process | None = None
         self._storage = InMemoryStorage()
         self._list_metrics: Callable[[], list[Metric]] = lambda: []
 
@@ -52,7 +77,7 @@ class BackgroundRecorder:
         storage: InMemoryStorage,
         list_metrics_fn: Callable[[], list[Metric]],
     ) -> None:
-        """Bind storage and metric lookup used by the worker."""
+        """Bind main-process storage synced from the worker."""
         self._storage = storage
         self._list_metrics = list_metrics_fn
 
@@ -65,82 +90,89 @@ class BackgroundRecorder:
     ) -> None:
         """Enqueue a record for background processing."""
         self._ensure_started()
-        self._queue.put(
-            _RecordTask(
-                event_type=event_type,
-                owner_name=owner_name,
-                record_kwargs=record_kwargs,
-                sim_time=sim_time,
+        assert self._command_queue is not None
+        self._command_queue.put(
+            (
+                "record",
+                event_type.name,
+                owner_name,
+                record_kwargs,
+                sim_time,
             )
         )
 
     def flush(self) -> None:
-        """Block until all queued records have been processed."""
-        if self._thread is None or not self._thread.is_alive():
+        """Block until all queued records have been processed and synced."""
+        if self._process is None or not self._process.is_alive():
             return
-        done = threading.Event()
-        self._queue.put(_FlushCommand(done))
-        done.wait()
+        assert self._command_queue is not None
+        self._command_queue.put(("flush",))
+        assert self._response_queue is not None
+        self._sync_from_snapshot(self._response_queue.get())
 
     def reset(self, reset_fn: Callable[[], None]) -> None:
-        """Enqueue a metric reset after pending records are processed."""
-        if self._thread is None or not self._thread.is_alive():
+        """Reset worker and main-process metric state after pending records."""
+        if self._process is None or not self._process.is_alive():
             reset_fn()
             return
-        done = threading.Event()
-        self._queue.put(_ResetCommand(done, reset_fn))
-        done.wait()
+        assert self._command_queue is not None
+        self._command_queue.put(("reset",))
+        assert self._response_queue is not None
+        self._sync_from_snapshot(self._response_queue.get())
 
     def shutdown(self) -> None:
-        """Stop the background worker and wait for it to exit."""
-        with self._lock:
-            thread = self._thread
-            if thread is None or not thread.is_alive():
-                self._thread = None
-                return
-            self._queue.put(_ShutdownCommand())
-        thread.join()
-        with self._lock:
-            self._thread = None
+        """Stop the background worker process and wait for it to exit."""
+        process = self._process
+        command_queue = self._command_queue
+        if process is None or not process.is_alive():
+            self._process = None
+            self._command_queue = None
+            self._response_queue = None
+            return
+        assert command_queue is not None
+        command_queue.put(("shutdown",))
+        process.join(timeout=5.0)
+        if process.is_alive():
+            process.terminate()
+            process.join(timeout=1.0)
+        self._process = None
+        self._command_queue = None
+        self._response_queue = None
 
     def _ensure_started(self) -> None:
-        with self._lock:
-            if self._thread is not None and self._thread.is_alive():
-                return
-            self._thread = threading.Thread(
-                target=self._worker_loop,
-                name="metrics-recorder",
-                daemon=True,
-            )
-            self._thread.start()
-
-    def _worker_loop(self) -> None:
-        while True:
-            task = self._queue.get()
-            try:
-                if isinstance(task, _ShutdownCommand):
-                    return
-                if isinstance(task, _FlushCommand):
-                    task.done.set()
-                elif isinstance(task, _ResetCommand):
-                    task.reset_fn()
-                    task.done.set()
-                elif isinstance(task, _RecordTask):
-                    self._process_record(task)
-            finally:
-                self._queue.task_done()
-
-    def _process_record(self, task: _RecordTask) -> None:
-        record_kwargs = dict(task.record_kwargs)
-        for metric in self._list_metrics():
-            if task.event_type in metric.event_types:
-                metric.on_record(task.event_type, task.owner_name, record_kwargs)
-
-        self._storage.append(
-            {
-                "event_type": task.event_type,
-                "owner_name": task.owner_name,
-                "sim_time": task.sim_time,
-                **record_kwargs,
-            }
+        if self._process is not None and self._process.is_alive():
+            return
+        self._command_queue = self._ctx.Queue()
+        self._response_queue = self._ctx.Queue()
+        self._process = self._ctx.Process(
+            target=_metrics_worker_main,
+            args=(self._command_queue, self._response_queue),
+            name="metrics-recorder",
+            daemon=True,
         )
+        self._process.start()
+
+    def _sync_from_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self._storage.clear()
+        reset_registry_metrics()
+        for raw in snapshot.get("records", []):
+            event_type = get_event_type(raw["event_type"])
+            owner_name = raw["owner_name"]
+            sim_time = raw["sim_time"]
+            record_kwargs = {
+                key: value
+                for key, value in raw.items()
+                if key not in ("event_type", "owner_name", "sim_time")
+            }
+            kwargs = dict(record_kwargs)
+            for metric in self._list_metrics():
+                if event_type in metric.event_types:
+                    metric.on_record(event_type, owner_name, kwargs)
+            self._storage.append(
+                {
+                    "event_type": event_type,
+                    "owner_name": owner_name,
+                    "sim_time": sim_time,
+                    **kwargs,
+                }
+            )

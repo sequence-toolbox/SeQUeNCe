@@ -3,8 +3,8 @@
 This module provides a global registry for recording simulation events.
 Metrics are disabled by default; call ``enable()`` to opt in to recording.
 
-When enabled, ``record()`` enqueues events for a background worker thread.
-Simulation time is captured on the calling thread before enqueueing.
+When enabled, ``record()`` enqueues events for a background worker process.
+Simulation time is captured on the simulation thread before enqueueing.
 Call ``flush()`` before reading storage directly; ``collect_trial_metrics()``
 flushes automatically.
 """
