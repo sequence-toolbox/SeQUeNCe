@@ -8,6 +8,7 @@ from .metric_types import (
     CounterPairMetric,
     EventFieldListMetric,
     LastValueMetric,
+    ReservationDeliveryMetric,
 )
 from .registry import register_metric
 
@@ -19,6 +20,9 @@ EP_SUCCESS = register_event_type("EP_SUCCESS")
 PURIFIED_DELIVERY = register_event_type("PURIFIED_DELIVERY")
 ES_FAILURE = register_event_type("ES_FAILURE")
 ES_SUCCESS = register_event_type("ES_SUCCESS")
+RESERVATION_APPROVED = register_event_type("RESERVATION_APPROVED")
+RESERVATION_REJECTED = register_event_type("RESERVATION_REJECTED")
+RESERVATION_COMPLETE = register_event_type("RESERVATION_COMPLETE")
 
 EG_METRIC = CounterPairMetric(
     prefix="eg",
@@ -57,6 +61,9 @@ SWAPPED_FIDELITIES_METRIC = EventFieldListMetric(
     event=ES_SUCCESS,
     field="fidelity",
 )
+RESERVATION_DELIVERY_METRIC = ReservationDeliveryMetric(
+    delivery_event=PURIFIED_DELIVERY,
+)
 
 _BUILTIN_METRICS = (
     EG_METRIC,
@@ -66,6 +73,7 @@ _BUILTIN_METRICS = (
     DELIVERY_TIME_METRIC,
     ES_METRIC,
     SWAPPED_FIDELITIES_METRIC,
+    RESERVATION_DELIVERY_METRIC,
 )
 
 

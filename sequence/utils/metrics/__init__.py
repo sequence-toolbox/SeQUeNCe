@@ -24,10 +24,12 @@ from .metric_types import (
     EventFieldListMetric,
     LastValueMetric,
     Metric,
+    ReservationDeliveryMetric,
 )
 from .registry import (
     clear_registry,
     get_counter_pair,
+    get_reservation_delivery_metric,
     list_metrics,
     register_metric,
     reset_metrics,
@@ -44,6 +46,9 @@ EP_SUCCESS = builtins.EP_SUCCESS
 PURIFIED_DELIVERY = builtins.PURIFIED_DELIVERY
 ES_FAILURE = builtins.ES_FAILURE
 ES_SUCCESS = builtins.ES_SUCCESS
+RESERVATION_APPROVED = builtins.RESERVATION_APPROVED
+RESERVATION_REJECTED = builtins.RESERVATION_REJECTED
+RESERVATION_COMPLETE = builtins.RESERVATION_COMPLETE
 
 _enabled = False
 _enabled_events: set[EventType] = set()
