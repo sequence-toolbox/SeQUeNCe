@@ -433,6 +433,47 @@ def test_register_metric_rejects_duplicate_output_keys():
         metrics.register_metric(duplicate)
 
 
+def test_reservation_approved_records_metadata():
+    metrics.enable([metrics.RESERVATION_APPROVED])
+    metrics.record(
+        metrics.RESERVATION_APPROVED,
+        "n1",
+        identity=1,
+        initiator="n1",
+        responder="n2",
+        start_time=10,
+        end_time=20,
+        memory_size=5,
+        entanglement_number=3,
+        target_fidelity=0.9,
+        path=["n1", "m1", "n2"],
+    )
+    record = metrics.storage.get_all()[0]
+    assert record["identity"] == 1
+    assert record["path"] == ["n1", "m1", "n2"]
+    assert record["entanglement_number"] == 3
+
+
+def test_reservation_rejected_records_metadata():
+    metrics.enable([metrics.RESERVATION_REJECTED])
+    metrics.record(
+        metrics.RESERVATION_REJECTED,
+        "n1",
+        identity=2,
+        initiator="n1",
+        responder="n2",
+        start_time=10,
+        end_time=20,
+        memory_size=5,
+        entanglement_number=1,
+        target_fidelity=0.9,
+        path=[],
+    )
+    record = metrics.storage.get_all()[0]
+    assert record["event_type"] is metrics.RESERVATION_REJECTED
+    assert record["path"] == []
+
+
 def test_collect_reservation_data_produces_expected_row():
     metrics.enable([metrics.PURIFIED_DELIVERY])
     start_time = int(1e12)
