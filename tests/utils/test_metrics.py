@@ -474,6 +474,31 @@ def test_reservation_rejected_records_metadata():
     assert record["path"] == []
 
 
+def test_purified_delivery_assigns_pair_index():
+    metrics.enable([metrics.PURIFIED_DELIVERY])
+    kwargs = {
+        "identity": 7,
+        "initiator": "n1",
+        "responder": "n2",
+        "start_time": 0,
+        "end_time": int(1e12),
+        "memory_size": 5,
+        "entanglement_number": 2,
+        "target_fidelity": 0.9,
+        "path": ["n1", "n2"],
+        "fidelity": 0.91,
+    }
+    metrics.record(metrics.PURIFIED_DELIVERY, "n1", **kwargs)
+    metrics.record(metrics.PURIFIED_DELIVERY, "n1", **{**kwargs, "fidelity": 0.92})
+    metrics.record(metrics.PURIFIED_DELIVERY, "n2", **{**kwargs, "fidelity": 0.93})
+
+    n1_records = metrics.storage.get_by_owner("n1")
+    n2_records = metrics.storage.get_by_owner("n2")
+    assert n1_records[0]["pair_index"] == 1
+    assert n1_records[1]["pair_index"] == 2
+    assert n2_records[0]["pair_index"] == 1
+
+
 def test_collect_reservation_data_produces_expected_row():
     metrics.enable([metrics.PURIFIED_DELIVERY])
     start_time = int(1e12)
