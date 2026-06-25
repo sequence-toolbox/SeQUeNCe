@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from .metric_types import CounterPairMetric, Metric
+from .metric_types import CounterPairMetric, Metric, ReservationDeliveryMetric
 
 _metrics: list[Metric] = []
 _counter_pairs: dict[str, CounterPairMetric] = {}
+_reservation_delivery_metric: ReservationDeliveryMetric | None = None
 
 
 def register_metric(metric: Metric) -> None:
@@ -20,6 +21,9 @@ def register_metric(metric: Metric) -> None:
     _metrics.append(metric)
     if isinstance(metric, CounterPairMetric):
         _counter_pairs[metric.prefix] = metric
+    if isinstance(metric, ReservationDeliveryMetric):
+        global _reservation_delivery_metric
+        _reservation_delivery_metric = metric
 
 
 def unregister_metric(metric: Metric) -> None:
@@ -28,6 +32,10 @@ def unregister_metric(metric: Metric) -> None:
         _metrics.remove(metric)
     if isinstance(metric, CounterPairMetric):
         _counter_pairs.pop(metric.prefix, None)
+    if isinstance(metric, ReservationDeliveryMetric):
+        global _reservation_delivery_metric
+        if _reservation_delivery_metric is metric:
+            _reservation_delivery_metric = None
 
 
 def list_metrics() -> list[Metric]:
@@ -43,6 +51,13 @@ def get_counter_pair(prefix: str) -> CounterPairMetric:
         raise KeyError(f"No CounterPairMetric registered with prefix '{prefix}'.") from exc
 
 
+def get_reservation_delivery_metric() -> ReservationDeliveryMetric:
+    """Return the registered reservation delivery metric."""
+    if _reservation_delivery_metric is None:
+        raise KeyError("No ReservationDeliveryMetric registered.")
+    return _reservation_delivery_metric
+
+
 def reset_metrics() -> None:
     """Reset per-trial state for all registered metrics."""
     for metric in _metrics:
@@ -51,5 +66,7 @@ def reset_metrics() -> None:
 
 def clear_registry() -> None:
     """Remove all metrics from the registry (for tests)."""
+    global _reservation_delivery_metric
     _metrics.clear()
     _counter_pairs.clear()
+    _reservation_delivery_metric = None
