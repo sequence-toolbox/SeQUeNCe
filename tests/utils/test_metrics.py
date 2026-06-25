@@ -315,6 +315,7 @@ def test_collect_trial_metrics_ep_fields_and_delivery_time():
             "right",
             fidelity=0.7 + pair_number * 0.01,
             pair_number=pair_number,
+            start_time=int(1e12),
         )
 
     trial = metrics.collect_trial_metrics(
@@ -343,7 +344,13 @@ def test_collect_trial_metrics_delivery_time_nan_when_target_not_reached():
 
 def test_collect_trial_metrics_delivery_owner_defaults_to_owner():
     metrics.enable([metrics.PURIFIED_DELIVERY])
-    metrics.record(metrics.PURIFIED_DELIVERY, "right", fidelity=0.9, pair_number=1)
+    metrics.record(
+        metrics.PURIFIED_DELIVERY,
+        "right",
+        fidelity=0.9,
+        pair_number=1,
+        start_time=0,
+    )
 
     trial = metrics.collect_trial_metrics(
         "right",
