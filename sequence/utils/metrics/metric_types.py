@@ -18,7 +18,6 @@ class CollectContext:
     storage: InMemoryStorage
     delivery_owner: str | None = None
     target_pairs: int = 500
-    reservation_start_time: int | None = None
 
 
 class Metric(ABC):
@@ -183,10 +182,6 @@ class DeliveryTimeMetric(Metric):
     def output_keys(self) -> frozenset[str]:
         return frozenset({self.key})
 
-    # TODO: Implement delivery time metric using better methods to collect data
-    # CollectContext was previously used - however this implementation is not
-    # very good and needs to be reworked
-    # We need to get reservation_start_time and target_pairs from somewhere else
     @override
     def collect(self, ctx: CollectContext) -> dict[str, Any]:
         delivery_owner = ctx.delivery_owner or ctx.owner_name
@@ -199,9 +194,11 @@ class DeliveryTimeMetric(Metric):
         delivery_records.sort(key=lambda record: record["sim_time"])
         if len(delivery_records) < ctx.target_pairs:
             return {self.key: float("nan")}
-        if ctx.reservation_start_time is None:
-            return {self.key: float("nan")}
-        target_time = delivery_records[ctx.target_pairs - 1]["sim_time"]
+        start_time: float = float("nan")
+        target_time: float = float("nan")
+        if delivery_records:
+            start_time = delivery_records[0].get("start_time")
+            target_time = delivery_records[ctx.target_pairs - 1]["sim_time"]
         return {
-            self.key: (target_time - ctx.reservation_start_time) * 1e-12,
+            self.key: (target_time - start_time) * 1e-12,
         }

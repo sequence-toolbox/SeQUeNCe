@@ -102,7 +102,6 @@ def collect_trial_metrics(
     *,
     delivery_owner: str | None = None,
     target_pairs: int = 500,
-    reservation_start_time: int | None = None,
 ) -> dict[str, Any]:
     """Collect per-trial metrics for a node from the metrics module."""
     ctx = CollectContext(
@@ -110,7 +109,6 @@ def collect_trial_metrics(
         storage=storage,
         delivery_owner=delivery_owner or owner_name,
         target_pairs=target_pairs,
-        reservation_start_time=reservation_start_time,
     )
     result: dict[str, Any] = {}
     for metric in list_metrics():

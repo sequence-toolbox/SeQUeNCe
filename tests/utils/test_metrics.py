@@ -321,7 +321,6 @@ def test_collect_trial_metrics_ep_fields_and_delivery_time():
         "left",
         delivery_owner="right",
         target_pairs=3,
-        reservation_start_time=int(1e12),
     )
 
     assert trial["ep_success"] == 2
@@ -337,7 +336,6 @@ def test_collect_trial_metrics_delivery_time_nan_when_target_not_reached():
         "left",
         delivery_owner="right",
         target_pairs=500,
-        reservation_start_time=int(1e12),
     )
 
     assert math.isnan(trial["delivery_time"])
@@ -350,7 +348,6 @@ def test_collect_trial_metrics_delivery_owner_defaults_to_owner():
     trial = metrics.collect_trial_metrics(
         "right",
         target_pairs=1,
-        reservation_start_time=0,
     )
 
     assert not math.isnan(trial["delivery_time"])
