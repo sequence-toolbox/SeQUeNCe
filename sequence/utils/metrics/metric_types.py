@@ -19,6 +19,7 @@ class CollectContext:
     delivery_owner: str | None = None
     target_pairs: int = 500
     reservation_start_time: int | None = None
+    throughput: float | None = None
 
 
 class Metric(ABC):
@@ -108,23 +109,20 @@ class CounterMetric(Metric):
 class RateMetric(Metric):
     """Collects a rate value supplied at trial collection time (e.g. throughput)."""
 
-    key: str
-    event: EventType
-    field: str
+    key: str = "app_throughput"
 
     @property
     def event_types(self) -> frozenset[EventType]:
-        return frozenset({self.event})
+        return frozenset()
 
     @property
     def output_keys(self) -> frozenset[str]:
         return frozenset({self.key})
 
     def collect(self, ctx: CollectContext) -> dict[str, Any]:
-        records = [record for record in ctx.storage.get_by_owner(ctx.owner_name) if record["event_type"] is self.event]
-        if not records:
+        if ctx.throughput is None:
             return {self.key: float("nan")}
-        return {self.key: records[-1][self.field]}
+        return {self.key: ctx.throughput}
 
 
 @dataclass
