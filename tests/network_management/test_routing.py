@@ -2,7 +2,6 @@ from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.network_management.routing import DistributedRoutingProtocol
 from sequence.topology import router_net_topo
-import sequence.utils.log as log
 from sequence.constants import SECOND
 
 
@@ -17,13 +16,6 @@ def test_distributed_routing_protocol_1():
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
 
     tl = topo.get_timeline()
-
-    # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
-    # log.set_logger(__name__, tl, log_filename)
-    # log.set_logger_level('DEBUG')
-    # modules = ["distributed"]
-    # for module in modules:
-    #     log.track_module(module)
 
     tl.init()
     tl.run()
@@ -60,14 +52,6 @@ def test_distributed_routing_protocol_2():
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
 
     tl = topo.get_timeline()
-
-    # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
-    # log.set_logger(__name__, tl, log_filename)
-    # log.set_logger_level('INFO')
-    # modules = ["distributed"]
-    # for module in modules:
-    #     log.track_module(module)
-
     tl.init()
     tl.run()
 
@@ -149,13 +133,6 @@ def test_distributed_routing_protocol_3():
 
     tl = topo.get_timeline()
 
-    # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
-    # log.set_logger(__name__, tl, log_filename)
-    # log.set_logger_level('DEBUG')
-    # modules = ["distributed", "node"]
-    # for module in modules:
-    #     log.track_module(module)
-
     tl.init()
     process = Process(routers[1], "set_down", [True])
     event = Event(0.5 * SECOND, process)
@@ -196,13 +173,6 @@ def test_distributed_routing_protocol_4():
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
 
     tl = topo.get_timeline()
-
-    # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
-    # log.set_logger(__name__, tl, log_filename)
-    # log.set_logger_level('INFO')
-    # modules = ["distributed"]
-    # for module in modules:
-    #     log.track_module(module)
 
     tl.init()
     process = Process(routers[2], "set_down", [True])
@@ -288,12 +258,6 @@ def test_distributed_routing_protocol_5():
 
     tl = topo.get_timeline()
 
-    # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
-    # log.set_logger(__name__, tl, log_filename)
-    # log.set_logger_level('INFO')
-    # modules = ["distributed", "node"]
-    # for module in modules:
-    #     log.track_module(module)
 
     tl.init()
     process = Process(routers[2], "set_down", [True])
@@ -385,14 +349,6 @@ def test_distributed_routing_protocol_6():
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
 
     tl = topo.get_timeline()
-
-    # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
-    # log.set_logger(__name__, tl, log_filename)
-    # log.set_logger_level('DEBUG')
-    # modules = ["distributed"]
-    # for module in modules:
-    #     log.track_module(module)
-
     tl.init()
     tl.run()
 
@@ -433,13 +389,6 @@ def test_distributed_routing_protocol_7():
 
     tl = topo.get_timeline()
 
-    # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
-    # log.set_logger(__name__, tl, log_filename)
-    # log.set_logger_level('DEBUG')
-    # modules = ["distributed"]
-    # for module in modules:
-    #     log.track_module(module)
-
     tl.init()
     tl.run()
 
@@ -479,13 +428,6 @@ def test_distributed_routing_protocol_8():
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
 
     tl = topo.get_timeline()
-
-    # log_filename = "tests/network_management/test_distributed_routing_protocol.log"
-    # log.set_logger(__name__, tl, log_filename)
-    # log.set_logger_level('DEBUG')
-    # modules = ["distributed"]
-    # for module in modules:
-    #     log.track_module(module)
 
     tl.init()
     tl.run()
