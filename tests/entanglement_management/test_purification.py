@@ -26,9 +26,9 @@ from sequence.topology.node import Node
 
 np.random.seed(0)
 
-PURIFIED = 'PURIFIED'
-ENTANGLED = 'ENTANGLED'
-RAW = 'RAW'
+PURIFIED = "PURIFIED"
+ENTANGLED = "ENTANGLED"
+RAW = "RAW"
 
 HALF_MICRON = 500
 ONE_MILLISECOND = 1e9
@@ -42,7 +42,7 @@ BELL_STATES = [PHI_PLUS, PHI_MINUS, PSI_PLUS, PSI_MINUS]
 
 
 def success_probability(F: float) -> float:
-    return F ** 2 + 2 * F * (1 - F) / 3 + 5 * ((1 - F) / 3) ** 2
+    return F**2 + 2 * F * (1 - F) / 3 + 5 * ((1 - F) / 3) ** 2
 
 
 class FakeResourceManager:
@@ -95,8 +95,24 @@ def test_BBPSSW_registered_formalisms_and_factory_selection():
             BBPSSWProtocol.set_formalism(formalism)
             tl = Timeline()
             node = FakeNode("a1", tl)
-            kept = Memory("kept", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
-            measured = Memory("measured", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
+            kept = Memory(
+                "kept",
+                tl,
+                fidelity=1,
+                frequency=0,
+                efficiency=1,
+                coherence_time=1,
+                wavelength=HALF_MICRON,
+            )
+            measured = Memory(
+                "measured",
+                tl,
+                fidelity=1,
+                frequency=0,
+                efficiency=1,
+                coherence_time=1,
+                wavelength=HALF_MICRON,
+            )
 
             protocol = BBPSSWProtocol.create(node, "a1.ep1", kept, measured)
 
@@ -106,8 +122,24 @@ def test_BBPSSW_registered_formalisms_and_factory_selection():
         BBPSSWProtocol.set_formalism(BELL_DIAGONAL_STATE_FORMALISM)
         tl = Timeline()
         node = FakeNode("a1", tl)
-        kept = Memory("kept", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
-        measured = Memory("measured", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
+        kept = Memory(
+            "kept",
+            tl,
+            fidelity=1,
+            frequency=0,
+            efficiency=1,
+            coherence_time=1,
+            wavelength=HALF_MICRON,
+        )
+        measured = Memory(
+            "measured",
+            tl,
+            fidelity=1,
+            frequency=0,
+            efficiency=1,
+            coherence_time=1,
+            wavelength=HALF_MICRON,
+        )
 
         protocol = BBPSSWProtocol.create(node, "a1.ep1", kept, measured)
 
@@ -123,7 +155,7 @@ def test_BBPSSW_BDS_improves_fidelity_for_equal_noisy_pairs():
     input_fidelity = 0.7
     expected_success_probability = success_probability(input_fidelity)
     expected_fidelity = (
-        input_fidelity ** 2 + ((1 - input_fidelity) / 3) ** 2
+        input_fidelity**2 + ((1 - input_fidelity) / 3) ** 2
     ) / expected_success_probability
 
     try:
@@ -133,25 +165,57 @@ def test_BBPSSW_BDS_improves_fidelity_for_equal_noisy_pairs():
         tl = Timeline()
         a1 = FakeNode("a1", tl)
         a2 = FakeNode("a2", tl)
-        kept1 = Memory("kept1", tl, fidelity=input_fidelity, frequency=0, efficiency=1,
-                       coherence_time=1, wavelength=HALF_MICRON)
-        kept2 = Memory("kept2", tl, fidelity=input_fidelity, frequency=0, efficiency=1,
-                       coherence_time=1, wavelength=HALF_MICRON)
-        meas1 = Memory("meas1", tl, fidelity=input_fidelity, frequency=0, efficiency=1,
-                       coherence_time=1, wavelength=HALF_MICRON)
-        meas2 = Memory("meas2", tl, fidelity=input_fidelity, frequency=0, efficiency=1,
-                       coherence_time=1, wavelength=HALF_MICRON)
+        kept1 = Memory(
+            "kept1",
+            tl,
+            fidelity=input_fidelity,
+            frequency=0,
+            efficiency=1,
+            coherence_time=1,
+            wavelength=HALF_MICRON,
+        )
+        kept2 = Memory(
+            "kept2",
+            tl,
+            fidelity=input_fidelity,
+            frequency=0,
+            efficiency=1,
+            coherence_time=1,
+            wavelength=HALF_MICRON,
+        )
+        meas1 = Memory(
+            "meas1",
+            tl,
+            fidelity=input_fidelity,
+            frequency=0,
+            efficiency=1,
+            coherence_time=1,
+            wavelength=HALF_MICRON,
+        )
+        meas2 = Memory(
+            "meas2",
+            tl,
+            fidelity=input_fidelity,
+            frequency=0,
+            efficiency=1,
+            coherence_time=1,
+            wavelength=HALF_MICRON,
+        )
 
         tl.init()
-        noisy_bds = np.array([
-            input_fidelity,
-            (1 - input_fidelity) / 3,
-            (1 - input_fidelity) / 3,
-            (1 - input_fidelity) / 3,
-        ])
+        noisy_bds = np.array(
+            [
+                input_fidelity,
+                (1 - input_fidelity) / 3,
+                (1 - input_fidelity) / 3,
+                (1 - input_fidelity) / 3,
+            ]
+        )
         tl.quantum_manager.set([kept1.qstate_key, kept2.qstate_key], noisy_bds)
         tl.quantum_manager.set([meas1.qstate_key, meas2.qstate_key], noisy_bds)
-        kept1.fidelity = kept2.fidelity = meas1.fidelity = meas2.fidelity = input_fidelity
+        kept1.fidelity = kept2.fidelity = meas1.fidelity = meas2.fidelity = (
+            input_fidelity
+        )
         kept1.entangled_memory = {"node_id": "a2", "memo_id": "kept2"}
         kept2.entangled_memory = {"node_id": "a1", "memo_id": "kept1"}
         meas1.entangled_memory = {"node_id": "a2", "memo_id": "meas2"}
@@ -172,9 +236,10 @@ def test_BBPSSW_BDS_improves_fidelity_for_equal_noisy_pairs():
         QuantumManager.set_global_manager_formalism(old_manager_formalism)
 
 
-def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline, Memory, Memory, Memory, Memory, BBPSSWProtocol, BBPSSWProtocol]:
-    """create the whole quantum network (timeline, nodes, channels, memory, protocols)
-    """
+def create_scenario(
+    state1, state2, seed_index, fidelity=1.0
+) -> tuple[Timeline, Memory, Memory, Memory, Memory, BBPSSWProtocol, BBPSSWProtocol]:
+    """create the whole quantum network (timeline, nodes, channels, memory, protocols)"""
     tl = Timeline()
     tl.show_progress = False
     a1 = FakeNode("a1", tl)
@@ -188,20 +253,52 @@ def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline,
     cc0.set_ends(a1, a2.name)
     cc1.set_ends(a2, a1.name)
 
-    kept1 = Memory('kept1', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)  # memory kept
-    kept2 = Memory('kept2', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
-    meas1 = Memory('meas1', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)  # memory measured
-    meas2 = Memory('meas2', tl, fidelity=fidelity, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
+    kept1 = Memory(
+        "kept1",
+        tl,
+        fidelity=fidelity,
+        frequency=0,
+        efficiency=1,
+        coherence_time=1,
+        wavelength=HALF_MICRON,
+    )  # memory kept
+    kept2 = Memory(
+        "kept2",
+        tl,
+        fidelity=fidelity,
+        frequency=0,
+        efficiency=1,
+        coherence_time=1,
+        wavelength=HALF_MICRON,
+    )
+    meas1 = Memory(
+        "meas1",
+        tl,
+        fidelity=fidelity,
+        frequency=0,
+        efficiency=1,
+        coherence_time=1,
+        wavelength=HALF_MICRON,
+    )  # memory measured
+    meas2 = Memory(
+        "meas2",
+        tl,
+        fidelity=fidelity,
+        frequency=0,
+        efficiency=1,
+        coherence_time=1,
+        wavelength=HALF_MICRON,
+    )
 
     tl.init()
 
     tl.quantum_manager.set([kept1.qstate_key, kept2.qstate_key], state1)
     tl.quantum_manager.set([meas1.qstate_key, meas2.qstate_key], state2)
 
-    kept1.entangled_memory = {'node_id': 'a2', 'memo_id': 'kept2'}
-    kept2.entangled_memory = {'node_id': 'a1', 'memo_id': 'kept1'}
-    meas1.entangled_memory = {'node_id': 'a2', 'memo_id': 'meas2'}
-    meas2.entangled_memory = {'node_id': 'a1', 'memo_id': 'meas1'}
+    kept1.entangled_memory = {"node_id": "a2", "memo_id": "kept2"}
+    kept2.entangled_memory = {"node_id": "a1", "memo_id": "kept1"}
+    meas1.entangled_memory = {"node_id": "a2", "memo_id": "meas2"}
+    meas2.entangled_memory = {"node_id": "a1", "memo_id": "meas1"}
     kept1.fidelity = kept2.fidelity = meas1.fidelity = meas2.fidelity = fidelity
 
     ep1 = BBPSSWProtocol.create(a1, "a1.ep1", kept1, meas1)
@@ -216,21 +313,27 @@ def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline,
 
     tl.run()
 
-    assert meas1.entangled_memory == meas2.entangled_memory == {'node_id': None, 'memo_id': None}
+    assert (
+        meas1.entangled_memory
+        == meas2.entangled_memory
+        == {"node_id": None, "memo_id": None}
+    )
 
     return tl, kept1, kept2, meas1, meas2, ep1, ep2
 
 
 def complex_array_equal(arr1, arr2, precision=5):
     for c1, c2 in zip(arr1, arr2):
-        if abs(c1 - c2) >= 2 ** -precision:
+        if abs(c1 - c2) >= 2**-precision:
             return False
     return True
 
 
 def correct_order(state, keys):
     if keys[0] > keys[1]:
-        return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ state
+        return (
+            np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ state
+        )
 
 
 def test_BBPSSW_phi_plus_phi_plus():
@@ -247,9 +350,11 @@ def test_BBPSSW_phi_plus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PHI_PLUS, PHI_PLUS, i)
-        assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
-        assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            PHI_PLUS, PHI_PLUS, i
+        )
+        assert kept1.entangled_memory == {"node_id": "a2", "memo_id": "kept2"}
+        assert kept2.entangled_memory == {"node_id": "a1", "memo_id": "kept1"}
         assert ep1.meas_res == ep2.meas_res
         if ep1.meas_res == 0:
             counter += 1
@@ -279,9 +384,11 @@ def test_BBPSSW_phi_plus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PHI_PLUS, PHI_MINUS, i)
-        assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
-        assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            PHI_PLUS, PHI_MINUS, i
+        )
+        assert kept1.entangled_memory == {"node_id": "a2", "memo_id": "kept2"}
+        assert kept2.entangled_memory == {"node_id": "a1", "memo_id": "kept1"}
         assert ep1.meas_res == ep2.meas_res
         ket1 = tl.quantum_manager.get(kept1.qstate_key)
         ket2 = tl.quantum_manager.get(kept2.qstate_key)
@@ -311,9 +418,11 @@ def test_BBPSSW_phi_minus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PHI_MINUS, PHI_PLUS, i)
-        assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
-        assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            PHI_MINUS, PHI_PLUS, i
+        )
+        assert kept1.entangled_memory == {"node_id": "a2", "memo_id": "kept2"}
+        assert kept2.entangled_memory == {"node_id": "a1", "memo_id": "kept1"}
         assert ep1.meas_res == ep2.meas_res
 
         ket1 = tl.quantum_manager.get(kept1.qstate_key)
@@ -345,9 +454,11 @@ def test_BBPSSW_phi_minus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PHI_MINUS, PHI_MINUS, i)
-        assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
-        assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            PHI_MINUS, PHI_MINUS, i
+        )
+        assert kept1.entangled_memory == {"node_id": "a2", "memo_id": "kept2"}
+        assert kept2.entangled_memory == {"node_id": "a1", "memo_id": "kept1"}
         assert ep1.meas_res == ep2.meas_res
 
         ket1 = tl.quantum_manager.get(kept1.qstate_key)
@@ -379,8 +490,14 @@ def test_BBPSSW_phi_plus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PHI_PLUS, PSI_PLUS, i)
-        assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            PHI_PLUS, PSI_PLUS, i
+        )
+        assert (
+            kept1.entangled_memory
+            == kept2.entangled_memory
+            == {"node_id": None, "memo_id": None}
+        )
         assert ep1.meas_res != ep2.meas_res
 
         ket1 = tl.quantum_manager.get(kept1.qstate_key)
@@ -408,8 +525,14 @@ def test_BBPSSW_phi_plus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PHI_PLUS, PSI_MINUS, i)
-        assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            PHI_PLUS, PSI_MINUS, i
+        )
+        assert (
+            kept1.entangled_memory
+            == kept2.entangled_memory
+            == {"node_id": None, "memo_id": None}
+        )
         assert ep1.meas_res != ep2.meas_res
 
         ket1 = tl.quantum_manager.get(kept1.qstate_key)
@@ -436,8 +559,14 @@ def test_BBPSSW_phi_minus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PHI_MINUS, PSI_PLUS, i)
-        assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            PHI_MINUS, PSI_PLUS, i
+        )
+        assert (
+            kept1.entangled_memory
+            == kept2.entangled_memory
+            == {"node_id": None, "memo_id": None}
+        )
         assert ep1.meas_res != ep2.meas_res
 
         ket1 = tl.quantum_manager.get(kept1.qstate_key)
@@ -464,8 +593,14 @@ def test_BBPSSW_phi_minus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PHI_MINUS, PSI_MINUS, i)
-        assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            PHI_MINUS, PSI_MINUS, i
+        )
+        assert (
+            kept1.entangled_memory
+            == kept2.entangled_memory
+            == {"node_id": None, "memo_id": None}
+        )
         assert ep1.meas_res != ep2.meas_res
 
         ket1 = tl.quantum_manager.get(kept1.qstate_key)
@@ -493,8 +628,14 @@ def test_BBPSSW_psi_plus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PSI_PLUS, PHI_PLUS, i)
-        assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            PSI_PLUS, PHI_PLUS, i
+        )
+        assert (
+            kept1.entangled_memory
+            == kept2.entangled_memory
+            == {"node_id": None, "memo_id": None}
+        )
         assert ep1.meas_res != ep2.meas_res
 
         ket1 = tl.quantum_manager.get(kept1.qstate_key)
@@ -522,8 +663,14 @@ def test_BBPSSW_psi_plus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PSI_PLUS, PHI_MINUS, i)
-        assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            PSI_PLUS, PHI_MINUS, i
+        )
+        assert (
+            kept1.entangled_memory
+            == kept2.entangled_memory
+            == {"node_id": None, "memo_id": None}
+        )
         assert ep1.meas_res != ep2.meas_res
 
         ket1 = tl.quantum_manager.get(kept1.qstate_key)
@@ -550,8 +697,14 @@ def test_BBPSSW_psi_minus_phi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PSI_MINUS, PHI_PLUS, i)
-        assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            PSI_MINUS, PHI_PLUS, i
+        )
+        assert (
+            kept1.entangled_memory
+            == kept2.entangled_memory
+            == {"node_id": None, "memo_id": None}
+        )
         assert ep1.meas_res != ep2.meas_res
 
         ket1 = tl.quantum_manager.get(kept1.qstate_key)
@@ -579,8 +732,14 @@ def test_BBPSSW_psi_minus_phi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PSI_MINUS, PHI_MINUS, i)
-        assert kept1.entangled_memory == kept2.entangled_memory == {'node_id': None, 'memo_id': None}
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            PSI_MINUS, PHI_MINUS, i
+        )
+        assert (
+            kept1.entangled_memory
+            == kept2.entangled_memory
+            == {"node_id": None, "memo_id": None}
+        )
         assert ep1.meas_res != ep2.meas_res
 
         ket1 = tl.quantum_manager.get(kept1.qstate_key)
@@ -608,9 +767,11 @@ def test_BBPSSW_psi_plus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PSI_PLUS, PSI_PLUS, i)
-        assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
-        assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            PSI_PLUS, PSI_PLUS, i
+        )
+        assert kept1.entangled_memory == {"node_id": "a2", "memo_id": "kept2"}
+        assert kept2.entangled_memory == {"node_id": "a1", "memo_id": "kept1"}
         assert ep1.meas_res == ep2.meas_res
 
         ket1 = tl.quantum_manager.get(kept1.qstate_key)
@@ -642,9 +803,11 @@ def test_BBPSSW_psi_plus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PSI_PLUS, PSI_MINUS, i)
-        assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
-        assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            PSI_PLUS, PSI_MINUS, i
+        )
+        assert kept1.entangled_memory == {"node_id": "a2", "memo_id": "kept2"}
+        assert kept2.entangled_memory == {"node_id": "a1", "memo_id": "kept1"}
         assert ep1.meas_res == ep2.meas_res
 
         ket1 = tl.quantum_manager.get(kept1.qstate_key)
@@ -677,9 +840,11 @@ def test_BBPSSW_psi_minus_psi_plus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PSI_MINUS, PSI_PLUS, i)
-        assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
-        assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            PSI_MINUS, PSI_PLUS, i
+        )
+        assert kept1.entangled_memory == {"node_id": "a2", "memo_id": "kept2"}
+        assert kept2.entangled_memory == {"node_id": "a1", "memo_id": "kept1"}
         assert ep1.meas_res == ep2.meas_res
 
         ket1 = tl.quantum_manager.get(kept1.qstate_key)
@@ -712,9 +877,11 @@ def test_BBPSSW_psi_minus_psi_minus():
     """
     counter = 0
     for i in range(100):
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(PSI_MINUS, PSI_MINUS, i)
-        assert kept1.entangled_memory == {'node_id': 'a2', 'memo_id': 'kept2'}
-        assert kept2.entangled_memory == {'node_id': 'a1', 'memo_id': 'kept1'}
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            PSI_MINUS, PSI_MINUS, i
+        )
+        assert kept1.entangled_memory == {"node_id": "a2", "memo_id": "kept2"}
+        assert kept2.entangled_memory == {"node_id": "a1", "memo_id": "kept1"}
         assert ep1.meas_res == ep2.meas_res
 
         ket1 = tl.quantum_manager.get(kept1.qstate_key)
@@ -736,7 +903,9 @@ def get_random_state_by_fidelity(fidelity):
         return [f, (1 - f) / 3, (1 - f) / 3, (1 - f) / 3]
 
     choice = np.random.choice
-    index1, index2 = [choice(range(4), 1, p=prob_distribution(fidelity))[0] for _ in range(2)]
+    index1, index2 = [
+        choice(range(4), 1, p=prob_distribution(fidelity))[0] for _ in range(2)
+    ]
     return BELL_STATES[index1], BELL_STATES[index2]
 
 
@@ -744,7 +913,9 @@ def test_BBPSSW_fidelity():
     for i in range(1000):
         fidelity = np.random.uniform(0.5, 1)
         state1, state2 = get_random_state_by_fidelity(fidelity)
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(state1, state2, i, fidelity)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            state1, state2, i, fidelity
+        )
         a1, a2 = [tl.get_entity_by_name(name) for name in ["a1", "a2"]]
         assert (meas1, RAW) in a1.resource_manager.log
         assert (meas2, RAW) in a2.resource_manager.log
@@ -752,13 +923,19 @@ def test_BBPSSW_fidelity():
 
         if ep1.meas_res == ep2.meas_res:
             assert kept1.fidelity == BBPSSWCircuit.improved_fidelity(fidelity)
-            assert kept1.entangled_memory["node_id"] == "a2" and \
-                   kept2.entangled_memory["node_id"] == "a1"
+            assert (
+                kept1.entangled_memory["node_id"] == "a2"
+                and kept2.entangled_memory["node_id"] == "a1"
+            )
             assert a1.resource_manager.log[-1] == (kept1, PURIFIED)
             assert a2.resource_manager.log[-1] == (kept2, PURIFIED)
         else:
             assert kept1.fidelity == 0
-            assert kept1.entangled_memory["node_id"] == kept2.entangled_memory["node_id"] == None
+            assert (
+                kept1.entangled_memory["node_id"]
+                == kept2.entangled_memory["node_id"]
+                == None
+            )
             assert a1.resource_manager.log[-1] == (kept1, RAW)
             assert a2.resource_manager.log[-1] == (kept2, RAW)
 
@@ -769,7 +946,9 @@ def test_BBPSSW_success_rate():
 
     for i in range(1000):
         state1, state2 = get_random_state_by_fidelity(fidelity)
-        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(state1, state2, i, fidelity)
+        tl, kept1, kept2, meas1, meas2, ep1, ep2 = create_scenario(
+            state1, state2, i, fidelity
+        )
         if ep1.meas_res == ep2.meas_res:
             counter1 += 1
         else:

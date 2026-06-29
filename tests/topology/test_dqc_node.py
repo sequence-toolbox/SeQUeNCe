@@ -8,7 +8,7 @@ from sequence.kernel.timeline import Timeline
 from sequence.components.memory import MemoryArray
 from sequence.components.photon import Photon
 
-from sequence.topology.node import DQCNode 
+from sequence.topology.node import DQCNode
 
 
 def test_DQCNode_init_sets_data_memory():
@@ -88,6 +88,7 @@ def test_DQCNode_send_message_like_Node():
 
 def test_DQCNode_send_qubit_like_Node():
     import numpy as np
+
     np.random.seed(0)
 
     class FakeQNode(DQCNode):
@@ -128,6 +129,7 @@ def test_DQCNode_send_qubit_like_Node():
 
 
 # ---- Dispatch behavior specific to DQCNode.receive_message ----
+
 
 class Sink:
     def __init__(self):
@@ -232,4 +234,3 @@ def test_DQCNode_receive_message_dispatch_by_protocol_type_when_receiver_None():
 
     assert len(pA.calls) == 1 and pA.calls[0][0] == "peer"
     assert len(pB.calls) == 0
-

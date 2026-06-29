@@ -96,24 +96,28 @@ class ResourceManagerMessage(Message):
             case ResourceManagerMsgType.EARLY_EXPIRE:
                 self.reservation = kwargs["reservation"]
             case _:
-                raise Exception(f"ResourceManagerMessage gets unknown type of message: {str(self.msg_type)}")
+                raise Exception(
+                    f"ResourceManagerMessage gets unknown type of message: {str(self.msg_type)}"
+                )
 
     def __str__(self) -> str:
-        base = f'type={self.msg_type.name}, ini_protocol_name={self.ini_protocol_name}, ini_node_name={self.ini_node_name}, ini_memories_name={self.ini_memories_name}'
+        base = f"type={self.msg_type.name}, ini_protocol_name={self.ini_protocol_name}, ini_node_name={self.ini_node_name}, ini_memories_name={self.ini_memories_name}"
 
         match self.msg_type:
             case ResourceManagerMsgType.REQUEST:
-                base += f', req_condition_func={self.req_condition_func}, req_args={self.req_args}'
+                base += f", req_condition_func={self.req_condition_func}, req_args={self.req_args}"
             case ResourceManagerMsgType.RESPONSE:
-                base += f', is_approved={self.is_approved}, paired_protocol={self.paired_protocol}, paired_node={self.paired_node}, paired_memories={self.paired_memories}'
+                base += f", is_approved={self.is_approved}, paired_protocol={self.paired_protocol}, paired_node={self.paired_node}, paired_memories={self.paired_memories}"
             case ResourceManagerMsgType.RELEASE_PROTOCOL:
-                base += f', release_protocol={self.protocol}'
+                base += f", release_protocol={self.protocol}"
             case ResourceManagerMsgType.RELEASE_MEMORY:
-                base += f', release_memory={self.memory}'
+                base += f", release_memory={self.memory}"
             case ResourceManagerMsgType.EARLY_EXPIRE:
-                base += f', reservation={self.reservation}'
+                base += f", reservation={self.reservation}"
             case _:
-                raise Exception(f'ResourceManagerMessage got an unknown type of message: {str(self.msg_type)}')
+                raise Exception(
+                    f"ResourceManagerMessage got an unknown type of message: {str(self.msg_type)}"
+                )
         return base
 
 
@@ -134,25 +138,33 @@ class ResourceManager:
 
     def __init__(self, owner: QuantumRouter, memory_array_name: str):
         """Constructor for resource manager.
-        
+
         Args:
             owner (QuantumRouter): node to attach to.
         """
 
         self.name = f"{owner.name}.resource_manager"
         self.owner = owner
-        self.memory_manager: MemoryManager = MemoryManager(owner.components[memory_array_name])
+        self.memory_manager: MemoryManager = MemoryManager(
+            owner.components[memory_array_name]
+        )
         self.memory_manager.set_resource_manager(self)
         self.rule_manager = RuleManager()
         self.rule_manager.set_resource_manager(self)
-        self.pending_protocols = [] # Protocols that are requesting remote resource
-        self.waiting_protocols = [] # Protocols that are waiting request from remote resource
+        self.pending_protocols = []  # Protocols that are requesting remote resource
+        self.waiting_protocols = []  # Protocols that are waiting request from remote resource
         self.memory_to_protocol_map = {}
 
     def init(self):
         pass
 
-    def generate_load_rules(self, path: list[str], reservation: Reservation, timecards: list[MemoryTimeCard], memory_array_name: str):
+    def generate_load_rules(
+        self,
+        path: list[str],
+        reservation: Reservation,
+        timecards: list[MemoryTimeCard],
+        memory_array_name: str,
+    ):
         """Generate and load rules for a given reservation.
 
         Args:
@@ -166,64 +178,126 @@ class ResourceManager:
         for card in timecards:
             if reservation in card.reservations:
                 memory_indices.append(card.memory_index)
-        log.logger.debug(f'Memory indices for reservation {reservation.identity} on node {self.owner.name}: {memory_indices}')
+        log.logger.debug(
+            f"Memory indices for reservation {reservation.identity} on node {self.owner.name}: {memory_indices}"
+        )
 
         index: int = path.index(self.owner.name)
 
         # Create Rules
         # 1. create rules for entanglement generation
         if index > 0:
-            condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
-            action_args = {"mid": self.owner.map_to_middle_node[path[index - 1]],
-                           "path": path, "index": index}
-            rule = Rule(10, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
+            condition_args = {
+                "memory_indices": memory_indices[: reservation.memory_size]
+            }
+            action_args = {
+                "mid": self.owner.map_to_middle_node[path[index - 1]],
+                "path": path,
+                "index": index,
+            }
+            rule = Rule(
+                10, eg_rule_action_await, eg_rule_condition, action_args, condition_args
+            )
             rules.append(rule)
 
         if index < len(path) - 1:
             if index == 0:
-                condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
+                condition_args = {
+                    "memory_indices": memory_indices[: reservation.memory_size]
+                }
             else:
-                condition_args = {"memory_indices": memory_indices[reservation.memory_size:]}
+                condition_args = {
+                    "memory_indices": memory_indices[reservation.memory_size :]
+                }
 
-            action_args = {"mid": self.owner.map_to_middle_node[path[index + 1]],
-                           "path": path, "index": index, "name": self.owner.name, "reservation": reservation}
-            rule = Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
+            action_args = {
+                "mid": self.owner.map_to_middle_node[path[index + 1]],
+                "path": path,
+                "index": index,
+                "name": self.owner.name,
+                "reservation": reservation,
+            }
+            rule = Rule(
+                10,
+                eg_rule_action_request,
+                eg_rule_condition,
+                action_args,
+                condition_args,
+            )
             rules.append(rule)
 
         # 2. create rules for entanglement purification
         if index > 0:
-            condition_args = {"memory_indices": memory_indices[:reservation.memory_size], "reservation": reservation,
-                              "purification_mode": reservation.purification_mode}
+            condition_args = {
+                "memory_indices": memory_indices[: reservation.memory_size],
+                "reservation": reservation,
+                "purification_mode": reservation.purification_mode,
+            }
             action_args = {}
-            rule = Rule(10, ep_rule_action_request, ep_rule_condition_request, action_args, condition_args)
+            rule = Rule(
+                10,
+                ep_rule_action_request,
+                ep_rule_condition_request,
+                action_args,
+                condition_args,
+            )
             rules.append(rule)
 
         if index < len(path) - 1:
             if index == 0:
-                condition_args = {"memory_indices": memory_indices, "fidelity": reservation.fidelity,
-                                  "purification_mode": reservation.purification_mode}
+                condition_args = {
+                    "memory_indices": memory_indices,
+                    "fidelity": reservation.fidelity,
+                    "purification_mode": reservation.purification_mode,
+                }
             else:
-                condition_args = {"memory_indices": memory_indices[reservation.memory_size:],
-                                  "fidelity": reservation.fidelity,
-                                  "purification_mode": reservation.purification_mode}
+                condition_args = {
+                    "memory_indices": memory_indices[reservation.memory_size :],
+                    "fidelity": reservation.fidelity,
+                    "purification_mode": reservation.purification_mode,
+                }
 
             action_args = {}
-            rule = Rule(10, ep_rule_action_await, ep_rule_condition_await, action_args, condition_args)
+            rule = Rule(
+                10,
+                ep_rule_action_await,
+                ep_rule_condition_await,
+                action_args,
+                condition_args,
+            )
             rules.append(rule)
 
         # 3. create rules for entanglement swapping
         if index == 0:
-            condition_args = {"memory_indices": memory_indices, "target_remote": path[-1],
-                              "fidelity": reservation.fidelity}
+            condition_args = {
+                "memory_indices": memory_indices,
+                "target_remote": path[-1],
+                "fidelity": reservation.fidelity,
+            }
             action_args = {}
-            rule = Rule(10, es_rule_action_B, es_rule_condition_B_end, action_args, condition_args)
+            rule = Rule(
+                10,
+                es_rule_action_B,
+                es_rule_condition_B_end,
+                action_args,
+                condition_args,
+            )
             rules.append(rule)
 
         elif index == len(path) - 1:
             action_args = {}
-            condition_args = {"memory_indices": memory_indices, "target_remote": path[0],
-                              "fidelity": reservation.fidelity}
-            rule = Rule(10, es_rule_action_B, es_rule_condition_B_end, action_args, condition_args)
+            condition_args = {
+                "memory_indices": memory_indices,
+                "target_remote": path[0],
+                "fidelity": reservation.fidelity,
+            }
+            rule = Rule(
+                10,
+                es_rule_action_B,
+                es_rule_condition_B_end,
+                action_args,
+                condition_args,
+            )
             rules.append(rule)
 
         else:
@@ -237,15 +311,25 @@ class ResourceManager:
             _index = _path.index(self.owner.name)
             left, right = _path[_index - 1], _path[_index + 1]
 
-            condition_args = {"memory_indices": memory_indices, "left": left, "right": right,
-                              "fidelity": reservation.fidelity}
-            action_args = {"swapping_success_prob": self.owner.swapping_success_prob, 
-                           "swapping_degradation": self.owner.swapping_degradation}
-            rule = Rule(10, es_rule_action_A, es_rule_condition_A, action_args, condition_args)
+            condition_args = {
+                "memory_indices": memory_indices,
+                "left": left,
+                "right": right,
+                "fidelity": reservation.fidelity,
+            }
+            action_args = {
+                "swapping_success_prob": self.owner.swapping_success_prob,
+                "swapping_degradation": self.owner.swapping_degradation,
+            }
+            rule = Rule(
+                10, es_rule_action_A, es_rule_condition_A, action_args, condition_args
+            )
             rules.append(rule)
 
             action_args = {}
-            rule = Rule(10, es_rule_action_B, es_rule_condition_B, action_args, condition_args)
+            rule = Rule(
+                10, es_rule_action_B, es_rule_condition_B, action_args, condition_args
+            )
             rules.append(rule)
 
         for rule in rules:
@@ -254,18 +338,31 @@ class ResourceManager:
         # Load the rules on the timeline
         for rule in rules:
             process = Process(self.owner.resource_manager, "load", [rule])
-            event = Event(reservation.start_time, process, self.owner.timeline.schedule_counter)
+            event = Event(
+                reservation.start_time, process, self.owner.timeline.schedule_counter
+            )
             self.owner.timeline.schedule(event)
 
             process = Process(self.owner.resource_manager, "expire", [rule])
-            event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
+            event = Event(
+                reservation.end_time, process, self.owner.timeline.schedule_counter
+            )
             self.owner.timeline.schedule(event)
 
         for card in timecards:
             if reservation in card.reservations:
-                process = Process(self.owner.resource_manager, "update",
-                                  [None, self.owner.components[memory_array_name][card.memory_index], "RAW"])
-                event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
+                process = Process(
+                    self.owner.resource_manager,
+                    "update",
+                    [
+                        None,
+                        self.owner.components[memory_array_name][card.memory_index],
+                        "RAW",
+                    ],
+                )
+                event = Event(
+                    reservation.end_time, process, self.owner.timeline.schedule_counter
+                )
                 self.owner.timeline.schedule(event)
 
     def load(self, rule: Rule) -> bool:
@@ -281,11 +378,15 @@ class ResourceManager:
             bool: if rule was loaded successfully.
         """
 
-        log.logger.info(f'{self.owner.name} load rule={rule}')
+        log.logger.info(f"{self.owner.name} load rule={rule}")
         self.rule_manager.load(rule)
 
-        for memory_info in self.memory_manager:  # iterate through each memory, and check if the rule is valid on each memory
-            memories_info = rule.is_valid(memory_info)  # is valid means condition is satisfied
+        for memory_info in (
+            self.memory_manager
+        ):  # iterate through each memory, and check if the rule is valid on each memory
+            memories_info = rule.is_valid(
+                memory_info
+            )  # is valid means condition is satisfied
             if len(memories_info) > 0:
                 rule.do(memories_info)
                 for info in memories_info:
@@ -303,7 +404,7 @@ class ResourceManager:
             rule (Rule): rule to remove.
         """
 
-        log.logger.info(f'{self.owner.name} expire rule {rule}')
+        log.logger.info(f"{self.owner.name} expire rule {rule}")
         created_protocols = self.rule_manager.expire(rule)
         while created_protocols:
             protocol = created_protocols.pop()
@@ -319,7 +420,9 @@ class ResourceManager:
             for memory in protocol.memories:
                 self.update(protocol, memory, MemoryInfo.RAW)
 
-    def update(self, protocol: EntanglementProtocol | None, memory: Memory, state: str) -> None:
+    def update(
+        self, protocol: EntanglementProtocol | None, memory: Memory, state: str
+    ) -> None:
         """Method to update state of memory after completion of entanglement management protocol.
 
         Args:
@@ -358,14 +461,21 @@ class ResourceManager:
                     info.to_occupied()
                 return
 
-        self.owner.get_idle_memory(memo_info)  # no new rules apply to this memory, thus "idle"
+        self.owner.get_idle_memory(
+            memo_info
+        )  # no new rules apply to this memory, thus "idle"
 
     def get_memory_manager(self) -> MemoryManager:
         assert self.memory_manager is not None
         return self.memory_manager
 
-    def send_request(self, protocol: EntanglementProtocol, req_dst: str | None,
-                     req_condition_func: RequestConditionFunc, req_args: Arguments):
+    def send_request(
+        self,
+        protocol: EntanglementProtocol,
+        req_dst: str | None,
+        req_condition_func: RequestConditionFunc,
+        req_args: Arguments,
+    ):
         """Method to send protocol request to another node.
 
         Send the request to pair the local 'protocol' with the protocol on the remote node 'req_dst'.
@@ -386,10 +496,18 @@ class ResourceManager:
         if protocol not in self.pending_protocols:
             self.pending_protocols.append(protocol)
         memo_names = [memo.name for memo in protocol.memories]
-        msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST, protocol=protocol.name, node=self.owner.name,
-                                     memories=memo_names, req_condition_func=req_condition_func, req_args=req_args)
+        msg = ResourceManagerMessage(
+            ResourceManagerMsgType.REQUEST,
+            protocol=protocol.name,
+            node=self.owner.name,
+            memories=memo_names,
+            req_condition_func=req_condition_func,
+            req_args=req_args,
+        )
         self.owner.send_message(req_dst, msg)
-        log.logger.debug(f"{self.owner.name} send {msg.msg_type.name} message to {req_dst}")
+        log.logger.debug(
+            f"{self.owner.name} send {msg.msg_type.name} message to {req_dst}"
+        )
 
     def received_message(self, src: str, msg: ResourceManagerMessage) -> None:
         """Method to receive resource manager messages.
@@ -401,26 +519,44 @@ class ResourceManager:
             msg (ResourceManagerMessage): message received.
         """
 
-        log.logger.debug(f"{self.owner.name} resource manager receive message from {src}: {msg}")
+        log.logger.debug(
+            f"{self.owner.name} resource manager receive message from {src}: {msg}"
+        )
         match msg.msg_type:
             case ResourceManagerMsgType.REQUEST:
                 # select the wait-for-request protocol to respond to the message
                 protocol = msg.req_condition_func(self.waiting_protocols, msg.req_args)
                 if protocol is not None:
-                    protocol.set_others(msg.ini_protocol_name, msg.ini_node_name, msg.ini_memories_name)
+                    protocol.set_others(
+                        msg.ini_protocol_name, msg.ini_node_name, msg.ini_memories_name
+                    )
                     memo_names = [memo.name for memo in protocol.memories]
-                    new_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=msg.ini_protocol_name,
-                                node=msg.ini_node_name, memories=msg.ini_memories_name, is_approved=True,
-                                paired_protocol=protocol.name, paired_node=self.owner.name, paired_memories=memo_names)
+                    new_msg = ResourceManagerMessage(
+                        ResourceManagerMsgType.RESPONSE,
+                        protocol=msg.ini_protocol_name,
+                        node=msg.ini_node_name,
+                        memories=msg.ini_memories_name,
+                        is_approved=True,
+                        paired_protocol=protocol.name,
+                        paired_node=self.owner.name,
+                        paired_memories=memo_names,
+                    )
                     self.owner.send_message(src, new_msg)
                     self.waiting_protocols.remove(protocol)
                     self.owner.protocols.append(protocol)
                     protocol.start()
                 else:
                     # none of the self.waiting_protocol satisfy the req_condition_func --> is_approved=False
-                    new_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE, protocol=msg.ini_protocol_name,
-                                                    node=msg.ini_node_name, memories=msg.ini_memories_name, is_approved=False,
-                                                    paired_protocol=None, paired_node=None, paired_memories=None)
+                    new_msg = ResourceManagerMessage(
+                        ResourceManagerMsgType.RESPONSE,
+                        protocol=msg.ini_protocol_name,
+                        node=msg.ini_node_name,
+                        memories=msg.ini_memories_name,
+                        is_approved=False,
+                        paired_protocol=None,
+                        paired_node=None,
+                        paired_memories=None,
+                    )
                     self.owner.send_message(src, new_msg)
 
             case ResourceManagerMsgType.RESPONSE:
@@ -436,7 +572,9 @@ class ResourceManager:
                     return
 
                 if msg.is_approved:
-                    protocol.set_others(msg.paired_protocol, msg.paired_node, msg.paired_memories)  # pairing (cost one round-trip-time)
+                    protocol.set_others(
+                        msg.paired_protocol, msg.paired_node, msg.paired_memories
+                    )  # pairing (cost one round-trip-time)
                     if protocol.is_ready():
                         self.pending_protocols.remove(protocol)
                         self.owner.protocols.append(protocol)
@@ -466,7 +604,7 @@ class ResourceManager:
                         if memory.name == target_id:
                             protocol.release()
                             return
-            
+
             case ResourceManagerMsgType.EARLY_EXPIRE:
                 self.expire_rules_by_reservation(msg.reservation)
 
@@ -487,7 +625,12 @@ class ResourceManager:
             protocol (str): name of protocol to release on node.
         """
 
-        msg = ResourceManagerMessage(ResourceManagerMsgType.RELEASE_PROTOCOL, protocol=protocol, node='', memories=[])
+        msg = ResourceManagerMessage(
+            ResourceManagerMsgType.RELEASE_PROTOCOL,
+            protocol=protocol,
+            node="",
+            memories=[],
+        )
         self.owner.send_message(dst, msg)
 
     def release_remote_memory(self, dst: str, memory_id: str) -> None:
@@ -503,42 +646,52 @@ class ResourceManager:
             memory_id (str): name of memory to release.
         """
 
-        msg = ResourceManagerMessage(ResourceManagerMsgType.RELEASE_MEMORY, protocol="", 
-                                     node="", memories=[], memory_id=memory_id)
+        msg = ResourceManagerMessage(
+            ResourceManagerMsgType.RELEASE_MEMORY,
+            protocol="",
+            node="",
+            memories=[],
+            memory_id=memory_id,
+        )
         self.owner.send_message(dst, msg)
 
     def expire_remote_rules(self, dst: str, reservation: Reservation) -> None:
         """Expire rules (associated with the reservation) on distant nodes.
 
-        This is used when the request is finished before end_time. 
+        This is used when the request is finished before end_time.
         The rules associated with the request's reservation should be expired when the request is finished.
         Otherwise the quantum network keeps generating entanglement till the end_time, which is not desired.
 
         Typically, the initiator will call this method to expire the rules on the intermediate nodes.
-        Meanwhile, the initiator and responder will directly call self.expire_rules_by_reservation() 
+        Meanwhile, the initiator and responder will directly call self.expire_rules_by_reservation()
                    to expire the rules on their own node, since they are aware of the reservation is finished.
 
         Args:
             dst (str): name of destination node.
             reservation (Reservation): the rules created by this reservation will expire
         """
-        msg = ResourceManagerMessage(ResourceManagerMsgType.EARLY_EXPIRE, reservation=reservation, 
-                                     protocol="", node="", memories=[])
+        msg = ResourceManagerMessage(
+            ResourceManagerMsgType.EARLY_EXPIRE,
+            reservation=reservation,
+            protocol="",
+            node="",
+            memories=[],
+        )
         self.owner.send_message(dst, msg)
 
     def __str__(self) -> str:
         return self.name
 
     def expire_rules_by_reservation(self, reservation: Reservation) -> None:
-        '''expire rules created by the reservation
-        
+        """expire rules created by the reservation
+
         Args:
             reservation: the rules created by this reservation will expire
-        '''
+        """
         rule_to_expire = []
         for rule in self.rule_manager.rules:
             if rule.reservation == reservation:
                 rule_to_expire.append(rule)
-        
+
         for rule in rule_to_expire:
             self.expire(rule)

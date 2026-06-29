@@ -23,14 +23,14 @@ def set_parameters(topology: RouterNetTopo):
         bsm.update_detectors_params("efficiency", DETECTOR_EFFICIENCY)
         bsm.update_detectors_params("count_rate", DETECTOR_COUNT_RATE)
         bsm.update_detectors_params("time_resolution", DETECTOR_RESOLUTION)
-        
+
     # set entanglement swapping parameters
     # SWAP_SUCC_PROB = 0.90
     # SWAP_DEGRADATION = 0.99
     # for node in topology.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
     #     node.network_manager.protocol_stack[1].set_swapping_success_rate(SWAP_SUCC_PROB)
     #     node.network_manager.protocol_stack[1].set_swapping_degradation(SWAP_DEGRADATION)
-        
+
     # set quantum channel parameters
     ATTENUATION = 1e-5
     QC_FREQ = 1e11
@@ -59,7 +59,13 @@ if __name__ == "__main__":
             node2 = router
 
     nm = node1.network_manager
-    nm.request(end_node_name, start_time=1e12, end_time=10e12, memory_size=25, target_fidelity=0.9)
+    nm.request(
+        end_node_name,
+        start_time=1e12,
+        end_time=10e12,
+        memory_size=25,
+        target_fidelity=0.9,
+    )
 
     tl.init()
     tl.run()
@@ -67,7 +73,11 @@ if __name__ == "__main__":
     print(start_node_name, "memories")
     print("Index:\tEntangled Node:\tFidelity:\tEntanglement Time:")
     for info in node1.resource_manager.memory_manager:
-        print("{:6}\t{:15}\t{:9}\t{}".format(str(info.index),
-                                             str(info.remote_node),
-                                             str(info.fidelity),
-                                             str(info.entangle_time * 1e-12)))
+        print(
+            "{:6}\t{:15}\t{:9}\t{}".format(
+                str(info.index),
+                str(info.remote_node),
+                str(info.fidelity),
+                str(info.entangle_time * 1e-12),
+            )
+        )

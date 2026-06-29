@@ -32,42 +32,59 @@ class Transmon(Entity):
         photon1 (Photon): optical photon
     """
 
-    def __init__(self, owner: Node, name: str, timeline: Timeline, wavelengths: list[int], photon_counter: int, photons_quantum_state: list[tuple], efficiency: float = 1):
+    def __init__(
+        self,
+        owner: Node,
+        name: str,
+        timeline: Timeline,
+        wavelengths: list[int],
+        photon_counter: int,
+        photons_quantum_state: list[tuple],
+        efficiency: float = 1,
+    ):
         Entity.__init__(self, name, timeline)
         self.name = name
         self.owner = owner
         self.timeline = timeline
         assert len(wavelengths) == 2
         self.wavelengths = wavelengths
-        self.photon_counter = photon_counter 
-        self.photons_quantum_state = photons_quantum_state 
+        self.photon_counter = photon_counter
+        self.photons_quantum_state = photons_quantum_state
         self.efficiency = efficiency
         self.input_quantum_state = None
-              
+
     def init(self):
         pass
 
     def add_outputs(self, outputs: list):
-        """Add outputs, i.e., receivers, of the transmon
-        """
+        """Add outputs, i.e., receivers, of the transmon"""
         for i in outputs:
             self.add_receiver(i)
 
     def generation(self):
         """Set tranmson quantum state and return a photon with some specifications"""
-        input_quantum_state = np.kron(self.photons_quantum_state[0], self.photons_quantum_state[1])
+        input_quantum_state = np.kron(
+            self.photons_quantum_state[0], self.photons_quantum_state[1]
+        )
         self.input_quantum_state = input_quantum_state
 
-        return Photon(name="photon", timeline=self.timeline, wavelength=self.wavelengths[0], quantum_state=self.photons_quantum_state[0])
-        
+        return Photon(
+            name="photon",
+            timeline=self.timeline,
+            wavelength=self.wavelengths[0],
+            quantum_state=self.photons_quantum_state[0],
+        )
+
     def get(self, photon: Photon) -> None:
         """Receive photon from the transducer
-        
+
         In the Direct Conversion, called when the receiver node's transducer successfully down convert the photon to microwave
         In the Entanglement Swapping, called when the transducer at the end nodes fail to up convert the microwave into photon
         """
         self.photon_counter += 1
-        print(f"Photon received by the Transmon at Rx: {photon}, Name: {photon.name}, Wavelength: {photon.wavelength}")
+        print(
+            f"Photon received by the Transmon at Rx: {photon}, Name: {photon.name}, Wavelength: {photon.wavelength}"
+        )
         print(f"Photon counter of TRANSMON {self.photon_counter}")
 
     def receive_photon(self, photon: Photon) -> None:
@@ -85,7 +102,14 @@ class EmittingProtocol(Protocol):
         transducer (Transducer): the transducer component
     """
 
-    def __init__(self, owner: "Node", name: str, tl: Timeline, transmon: Transmon, transducer: Transducer):
+    def __init__(
+        self,
+        owner: "Node",
+        name: str,
+        tl: Timeline,
+        transmon: Transmon,
+        transducer: Transducer,
+    ):
         super().__init__(owner, name)
         self.owner = owner
         self.name = name
@@ -96,8 +120,12 @@ class EmittingProtocol(Protocol):
     def start(self):
         print(f"EmittingProtocol started for {self.owner.name} at time {self.tl.now()}")
         photon = self.transmon.generation()
-        print(f"Photon created: {photon}, Name: {photon.name}, Wavelength: {photon.wavelength}")
-        print(f"Transmon at Tx quantum state: {self.transmon.input_quantum_state} of {self.owner.name}")
+        print(
+            f"Photon created: {photon}, Name: {photon.name}, Wavelength: {photon.wavelength}"
+        )
+        print(
+            f"Transmon at Tx quantum state: {self.transmon.input_quantum_state} of {self.owner.name}"
+        )
 
         if self.transmon.photons_quantum_state[0] == KET1:
             if random.random() < self.transmon.efficiency:
@@ -106,7 +134,9 @@ class EmittingProtocol(Protocol):
             else:
                 print("Photon emission failed due to transmon efficiency")
         else:
-            print("The transmon is in the state 00, or 01, it doesn't emit microwave photons")
-        
+            print(
+                "The transmon is in the state 00, or 01, it doesn't emit microwave photons"
+            )
+
     def received_message(self, src: str, msg):
         pass

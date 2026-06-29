@@ -210,22 +210,29 @@ def test_BeamSplitter_get():
 
 
 def test_FockBeamSplitter2():
-    """ Quantum transduction via entanglemenet swapping (node2).
-        A fock beamsplitter is attached to two detectors
+    """Quantum transduction via entanglemenet swapping (node2).
+    A fock beamsplitter is attached to two detectors
     """
     tl = Timeline()
-    node1 = Node('Node1', tl)
-    node2 = Node('Node2', tl)  # swapping node
-    node3 = Node('Node3', tl)
+    node1 = Node("Node1", tl)
+    node2 = Node("Node2", tl)  # swapping node
+    node3 = Node("Node3", tl)
     src_list = [node1, node3]
 
-    detector1 = FockDetector(node2.name + '.detector1', tl, efficiency=0.5)
-    detector2 = FockDetector(node2.name + '.detector2', tl, efficiency=0.5)
+    detector1 = FockDetector(node2.name + ".detector1", tl, efficiency=0.5)
+    detector2 = FockDetector(node2.name + ".detector2", tl, efficiency=0.5)
 
-    fockbeamsplitter2 = FockBeamSplitter2('fock_beamsplitter2', node2, tl, efficiency=0.9, photon_counter=0, src_list=src_list)
+    fockbeamsplitter2 = FockBeamSplitter2(
+        "fock_beamsplitter2",
+        node2,
+        tl,
+        efficiency=0.9,
+        photon_counter=0,
+        src_list=src_list,
+    )
     fockbeamsplitter2.add_outputs([detector1, detector2])
 
-    photon = Photon('photon', tl)
+    photon = Photon("photon", tl)
 
     # receives 10 photons from node1 and 10 photons from node3
     photon_number = 10

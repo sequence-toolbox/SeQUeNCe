@@ -3,6 +3,7 @@
 This module defines the RandomRequestApp, which will create random entanglement requests repeatedly.
 Useful for testing network properties and throughputs.
 """
+
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
@@ -49,9 +50,18 @@ class RandomRequestApp(RequestApp):
         max_fidelity (float): the maximum required fidelity of entanglement.
     """
 
-    def __init__(self, node: QuantumRouter, others: list[str], seed: int,
-                 min_dur: int, max_dur: int, min_size: int, max_size: int,
-                 min_fidelity: float, max_fidelity: float):
+    def __init__(
+        self,
+        node: QuantumRouter,
+        others: list[str],
+        seed: int,
+        min_dur: int,
+        max_dur: int,
+        min_size: int,
+        max_size: int,
+        min_fidelity: float,
+        max_fidelity: float,
+    ):
         """Constructor for the random application class.
 
         Args:
@@ -91,7 +101,7 @@ class RandomRequestApp(RequestApp):
         """Method to start the application.
 
         This method will:
-        
+
         1. Choose a random destination node from the `others` list.
         2. Choose a start time between 1-2 seconds in the future.
         3. Choose a random duration between min_dur and max_dur to set end_time
@@ -105,7 +115,9 @@ class RandomRequestApp(RequestApp):
         self._update_last_rsvp_metrics()
 
         responder = self.rg.choice(self.others)
-        start_time = self.node.timeline.now() + self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
+        start_time = (
+            self.node.timeline.now() + self.rg.integers(10, 20) * 1e11
+        )  # now + 1 sec - 2 sec
         end_time = start_time + self.rg.integers(self.min_dur, self.max_dur)
         memory_size = self.rg.integers(self.min_size, self.max_size)
         fidelity = self.rg.uniform(self.min_fidelity, self.max_fidelity)
@@ -121,7 +133,9 @@ class RandomRequestApp(RequestApp):
         Side Effects:
             Will create request for network manager on node.
         """
-        start_time = self.node.timeline.now() + self.rg.integers(10, 20) * 1e11  # now + 1 sec - 2 sec
+        start_time = (
+            self.node.timeline.now() + self.rg.integers(10, 20) * 1e11
+        )  # now + 1 sec - 2 sec
         end_time = start_time + self.rg.integers(self.min_dur, self.max_dur)
         memory_size = self.rg.integers(self.min_size, self.max_size)
         super().start(responder, start_time, end_time, memory_size, fidelity)
@@ -149,7 +163,15 @@ class RandomRequestApp(RequestApp):
         super().get_reservation_result(reservation, result)
         if result:
             process = Process(self, "start", [])
-            self.reserves.append([self.responder, self.start_t, self.end_t, self.memo_size, self.fidelity])
+            self.reserves.append(
+                [
+                    self.responder,
+                    self.start_t,
+                    self.end_t,
+                    self.memo_size,
+                    self.fidelity,
+                ]
+            )
             self.paths.append(self.path)
             event = Event(self.end_t + 1, process)
             self.node.timeline.schedule(event)

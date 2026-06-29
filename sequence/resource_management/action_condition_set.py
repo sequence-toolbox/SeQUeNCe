@@ -43,6 +43,7 @@ Actions, Conditions, and Match Functions must follow the above signatures. If a 
 should prefix the unused parameter with `_`. For example, `_manager` should be used for a Condition function if the
 memory manager is not required.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, cast
@@ -51,27 +52,39 @@ from ..components.memory import Memory
 from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..entanglement_management.generation import EntanglementGenerationA
 from ..entanglement_management.purification import BBPSSWProtocol
-from ..entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
+from ..entanglement_management.swapping import (
+    EntanglementSwappingA,
+    EntanglementSwappingB,
+)
 
 if TYPE_CHECKING:
     from ..topology.node import Node
     from .memory_manager import MemoryInfo, MemoryManager
 
 Arguments = dict[str, Any]
-RequestFunction = Callable[[list[EntanglementProtocol], Arguments], EntanglementProtocol | None]
-ActionReturn = tuple[EntanglementProtocol, list[str | None], list[RequestFunction | None], list[dict[str, Any] | None]]
+RequestFunction = Callable[
+    [list[EntanglementProtocol], Arguments], EntanglementProtocol | None
+]
+ActionReturn = tuple[
+    EntanglementProtocol,
+    list[str | None],
+    list[RequestFunction | None],
+    list[dict[str, Any] | None],
+]
 
 TempNode = cast("Node", cast(object, None))
 TempMemory = cast("Memory", cast(object, None))
 
 
 # Entanglement Generation Action-Condition-Match
-def eg_rule_action_await(memories_info: list[MemoryInfo], args: Arguments) -> ActionReturn:
+def eg_rule_action_await(
+    memories_info: list[MemoryInfo], args: Arguments
+) -> ActionReturn:
     """Action function used to create an entanglement generation protocol instance and await a Resource Manager request.
 
     Rules with this action are created on all nodes other than the initiator, i.e., where args['index'] > 0.
     The initiator node always creates a request using `eg_rule_action_request`.
-    
+
     Args:
         memories_info: the list of memory info that satisfy the condition function
         args: the arguments defined in the rule; should contain "mid", "path", and "index"
@@ -85,17 +98,24 @@ def eg_rule_action_await(memories_info: list[MemoryInfo], args: Arguments) -> Ac
     mid = args["mid"]
     path = args["path"]
     index = args["index"]
-    protocol = EntanglementGenerationA.create(owner=TempNode, name=f"EGA.{memory.name}",
-                                              middle=mid, other=path[index - 1], memory=memory)
+    protocol = EntanglementGenerationA.create(
+        owner=TempNode,
+        name=f"EGA.{memory.name}",
+        middle=mid,
+        other=path[index - 1],
+        memory=memory,
+    )
     return protocol, [None], [None], [None]
 
 
-def eg_rule_action_request(memories_info: list[MemoryInfo], args: Arguments) -> ActionReturn:
+def eg_rule_action_request(
+    memories_info: list[MemoryInfo], args: Arguments
+) -> ActionReturn:
     """Action function used to create an entanglement generation protocol instance and send a Resource Manager request.
 
     Rules with this action are created on all nodes other than the responder, i.e., where args['index'] < len(args['path']) - 1.
     The responder always awaits a request using `eg_rule_action_await`.
-    
+
     Args:
         memories_info: the list of memory info that satisfy the condition function
         args: the arguments defined in the rule.
@@ -111,14 +131,18 @@ def eg_rule_action_request(memories_info: list[MemoryInfo], args: Arguments) -> 
     index = args["index"]
     memories = [info.memory for info in memories_info]
     memory = memories[0]
-    protocol = EntanglementGenerationA.create(TempNode, "EGA." + memory.name, mid, path[index + 1], memory)
+    protocol = EntanglementGenerationA.create(
+        TempNode, "EGA." + memory.name, mid, path[index + 1], memory
+    )
     req_args = {"name": args["name"], "reservation": args["reservation"]}
     return protocol, [path[index + 1]], [eg_match_func], [req_args]
 
 
-def eg_rule_condition(memory_info: MemoryInfo, _manager: MemoryManager, args: Arguments) -> list[MemoryInfo]:
+def eg_rule_condition(
+    memory_info: MemoryInfo, _manager: MemoryManager, args: Arguments
+) -> list[MemoryInfo]:
     """Condition function used by entanglement generation protocol on nodes.
-    
+
     Args:
         memory_info: the memory info to be checked
         _manager: the memory manager (not used in this condition function)
@@ -133,7 +157,9 @@ def eg_rule_condition(memory_info: MemoryInfo, _manager: MemoryManager, args: Ar
         return []
 
 
-def eg_match_func(protocols: list[EntanglementProtocol], args: Arguments) -> EntanglementGenerationA | None:
+def eg_match_func(
+    protocols: list[EntanglementProtocol], args: Arguments
+) -> EntanglementGenerationA | None:
     """Function used by `eg_rule_action_request` function for selecting generation protocols on the remote node.
 
     Args:
@@ -147,21 +173,25 @@ def eg_match_func(protocols: list[EntanglementProtocol], args: Arguments) -> Ent
     reservation = args["reservation"]
     for protocol in protocols:
         # Select correct EntanglementGenerationA protocol.
-        if (isinstance(protocol, EntanglementGenerationA)
-                and protocol.remote_node_name == name
-                and protocol.rule is not None
-                and protocol.rule.get_reservation() == reservation):
+        if (
+            isinstance(protocol, EntanglementGenerationA)
+            and protocol.remote_node_name == name
+            and protocol.rule is not None
+            and protocol.rule.get_reservation() == reservation
+        ):
             return protocol
     return None
 
 
 # Entanglement Purification Action-Condition-Match
-def ep_rule_action_request(memories_info: list[MemoryInfo], _args: Arguments) -> ActionReturn:
+def ep_rule_action_request(
+    memories_info: list[MemoryInfo], _args: Arguments
+) -> ActionReturn:
     """Action function used to create an entanglement purification protocol instance and send a Resource Manager request.
 
     Rules with this action are created on all nodes other than the initiator, i.e., where args['index'] > 0.
     The initiator node always creates a request using `ep_rule_action_await`.
-    
+
     Args:
         memories_info: the list of memory info that satisfy the condition function
         _args: the arguments defined in the rule (not used in this action function)
@@ -175,16 +205,23 @@ def ep_rule_action_request(memories_info: list[MemoryInfo], _args: Arguments) ->
     protocol = BBPSSWProtocol.create(TempNode, name, memories[0], memories[1])
     dsts = [memories_info[0].remote_node]
     req_funcs: list[RequestFunction | None] = [ep_match_func]
-    req_args = [{"remote_kept": memories_info[0].remote_memo, "remote_meas": memories_info[1].remote_memo}]
+    req_args = [
+        {
+            "remote_kept": memories_info[0].remote_memo,
+            "remote_meas": memories_info[1].remote_memo,
+        }
+    ]
     return protocol, dsts, req_funcs, req_args
 
 
-def ep_rule_action_await(memories_info: list[MemoryInfo], _args: Arguments) -> ActionReturn:
+def ep_rule_action_await(
+    memories_info: list[MemoryInfo], _args: Arguments
+) -> ActionReturn:
     """Action function used to create an entanglement purification protocol instance and await a Resource Manager request.
 
     Rules with this action are created on all nodes other than the responder, i.e., where args['index'] < len(args['path']) - 1.
     The responder node always creates a request using `ep_rule_action_request`.
-    
+
     Args:
         memories_info: the list of memory info that satisfy the condition function
         _args: the arguments defined in the rule (not used in this action function)
@@ -199,7 +236,9 @@ def ep_rule_action_await(memories_info: list[MemoryInfo], _args: Arguments) -> A
     return protocol, [None], [None], [None]
 
 
-def ep_rule_condition_request(kept_memory: MemoryInfo, memory_manager: MemoryManager, args: Arguments) -> list[MemoryInfo]:
+def ep_rule_condition_request(
+    kept_memory: MemoryInfo, memory_manager: MemoryManager, args: Arguments
+) -> list[MemoryInfo]:
     """Condition function used by BBPSSW protocol on nodes except the initiator (see `ep_rule_action_request`).
 
     Args:
@@ -218,38 +257,48 @@ def ep_rule_condition_request(kept_memory: MemoryInfo, memory_manager: MemoryMan
 
     if purification_mode == "until_target":
         # the first memory is the kept memory during purification
-        if (kept_memory.index in memory_indices
-                and kept_memory.state in ["ENTANGLED", "PURIFIED"]
-                and kept_memory.fidelity < reservation.fidelity):
+        if (
+            kept_memory.index in memory_indices
+            and kept_memory.state in ["ENTANGLED", "PURIFIED"]
+            and kept_memory.fidelity < reservation.fidelity
+        ):
             for measured_memory in memory_manager:
                 # Purification requires kept and measured memory,
-                if (measured_memory != kept_memory
-                        and measured_memory.index in memory_indices
-                        and measured_memory.state in ["ENTANGLED", "PURIFIED"]
-                        and measured_memory.remote_node == kept_memory.remote_node
-                        and measured_memory.fidelity == kept_memory.fidelity):
+                if (
+                    measured_memory != kept_memory
+                    and measured_memory.index in memory_indices
+                    and measured_memory.state in ["ENTANGLED", "PURIFIED"]
+                    and measured_memory.remote_node == kept_memory.remote_node
+                    and measured_memory.fidelity == kept_memory.fidelity
+                ):
                     assert kept_memory.remote_memo != measured_memory.remote_memo
                     return [kept_memory, measured_memory]
 
     elif purification_mode == "once":
         # the first memory is the kept memory during purification
-        if (kept_memory.index in memory_indices
-                and kept_memory.state == "ENTANGLED"
-                and kept_memory.fidelity < reservation.fidelity):
+        if (
+            kept_memory.index in memory_indices
+            and kept_memory.state == "ENTANGLED"
+            and kept_memory.fidelity < reservation.fidelity
+        ):
             for measured_memory in memory_manager:
                 # the second memory is the measured memory during purification
-                if (measured_memory != kept_memory
-                        and measured_memory.index in memory_indices
-                        and measured_memory.state == "ENTANGLED"
-                        and measured_memory.remote_node == kept_memory.remote_node
-                        and measured_memory.fidelity == kept_memory.fidelity):
+                if (
+                    measured_memory != kept_memory
+                    and measured_memory.index in memory_indices
+                    and measured_memory.state == "ENTANGLED"
+                    and measured_memory.remote_node == kept_memory.remote_node
+                    and measured_memory.fidelity == kept_memory.fidelity
+                ):
                     assert kept_memory.remote_memo != measured_memory.remote_memo
                     return [kept_memory, measured_memory]
 
     return []
 
 
-def ep_rule_condition_await(memory_info: MemoryInfo, _manager: MemoryManager, args: Arguments) -> list[MemoryInfo]:
+def ep_rule_condition_await(
+    memory_info: MemoryInfo, _manager: MemoryManager, args: Arguments
+) -> list[MemoryInfo]:
     """Condition function used by BBPSSW protocol on nodes except the responder (see `ep_rule_action_await`).
 
     Args:
@@ -265,21 +314,27 @@ def ep_rule_condition_await(memory_info: MemoryInfo, _manager: MemoryManager, ar
     purification_mode = args["purification_mode"]
 
     if purification_mode == "until_target":
-        if (memory_info.index in memory_indices
-                and memory_info.state in ["ENTANGLED", "PURIFIED"]
-                and memory_info.fidelity < fidelity):
+        if (
+            memory_info.index in memory_indices
+            and memory_info.state in ["ENTANGLED", "PURIFIED"]
+            and memory_info.fidelity < fidelity
+        ):
             return [memory_info]
 
     elif purification_mode == "once":
-        if (memory_info.index in memory_indices
-                and memory_info.state == "ENTANGLED"
-                and memory_info.fidelity < fidelity):
+        if (
+            memory_info.index in memory_indices
+            and memory_info.state == "ENTANGLED"
+            and memory_info.fidelity < fidelity
+        ):
             return [memory_info]
 
     return []
 
 
-def ep_match_func(protocols: list[EntanglementProtocol], args: Arguments) -> BBPSSWProtocol | None:
+def ep_match_func(
+    protocols: list[EntanglementProtocol], args: Arguments
+) -> BBPSSWProtocol | None:
     """Function used by `ep_rule_action_request` for selecting purification protocols on the remote node.
 
     Note that only one memory will be assigned to each protocol instance within the `ep_rule_action_await` function;
@@ -325,17 +380,17 @@ def ep_match_func(protocols: list[EntanglementProtocol], args: Arguments) -> BBP
 # Entanglement Swapping Action-Condition-Match
 def es_rule_action_A(memories_info: list[MemoryInfo], args: Arguments) -> ActionReturn:
     """Action function used to create an EntanglementSwappingA protocol instance on all interior nodes.
-       
+
     Interior nodes of a path are the nodes that are neither the initiator nor the responder.
 
     Since EntanglementSwappingA is always at the center of a swapping attempt, it cannot be located on the initiator
         or responder node.
     `es_rule_action_A` additionally initiates the resource manager request for entanglement swapping.
-    
+
     Args:
         memories_info: a list of memory info
         args: the arguments defined in the rule
-    
+
     Returns:
         ActionReturn: the protocol to be executed, the destination of the request, the request function,
             and the arguments for request function
@@ -347,11 +402,20 @@ def es_rule_action_A(memories_info: list[MemoryInfo], args: Arguments) -> Action
         kwargs["degradation"] = degradation
 
     memories = [info.memory for info in memories_info]
-    protocol = EntanglementSwappingA.create(TempNode, f"ESA.{memories[0].name}.{memories[1].name}",
-                                            memories[0], memories[1], success_prob, **kwargs)
+    protocol = EntanglementSwappingA.create(
+        TempNode,
+        f"ESA.{memories[0].name}.{memories[1].name}",
+        memories[0],
+        memories[1],
+        success_prob,
+        **kwargs,
+    )
     dsts = [info.remote_node for info in memories_info]
     req_funcs: list[RequestFunction | None] = [es_match_func, es_match_func]
-    req_args = [{"target_memo": memories_info[0].remote_memo}, {"target_memo": memories_info[1].remote_memo}]
+    req_args = [
+        {"target_memo": memories_info[0].remote_memo},
+        {"target_memo": memories_info[1].remote_memo},
+    ]
     return protocol, dsts, req_funcs, req_args
 
 
@@ -359,11 +423,11 @@ def es_rule_action_B(memories_info: list[MemoryInfo], _args: Arguments) -> Actio
     """Action function used to create an EntanglementSwappingB protocol instance on all nodes.
 
     `es_rule_action_B` always awaits the resource manager request for entanglement swapping.
-    
+
     Args:
         memories_info: a list of memory info
         _args: the arguments defined in the rule (not used in this action function)
-    
+
     Returns:
         ActionReturn: the protocol to be executed, None, None, None
             (this protocol does not send a Resource Manager request, but will wait for the request from the other node)
@@ -374,15 +438,17 @@ def es_rule_action_B(memories_info: list[MemoryInfo], _args: Arguments) -> Actio
     return protocol, [None], [None], [None]
 
 
-def es_rule_condition_A(memory_info: MemoryInfo, memory_manager: MemoryManager, args: Arguments) -> list[MemoryInfo]:
+def es_rule_condition_A(
+    memory_info: MemoryInfo, memory_manager: MemoryManager, args: Arguments
+) -> list[MemoryInfo]:
     """Condition function used for the EntanglementSwappingA protocol on all interior nodes (see `es_rule_action_A`).
-    
+
     Args:
         memory_info: the memory info to be checked
         memory_manager: the memory manager to get other memory info
         args: the arguments defined in the rule.
             Should contain "memory_indices", "left", "right", and "fidelity"
-    
+
     Returns:
         list[MemoryInfo]: a list of two memory info (memory_info, memory_info_2) that satisfy the condition
     """
@@ -393,39 +459,49 @@ def es_rule_condition_A(memory_info: MemoryInfo, memory_manager: MemoryManager, 
 
     # case 1: memory_info is the "left hand side" memory
     # the first memory is the "left hand side" memory during swapping
-    if (memory_info.state in ["ENTANGLED", "PURIFIED"]
-            and memory_info.index in memory_indices
-            and memory_info.remote_node == remote_left_node
-            and memory_info.fidelity >= fidelity):
+    if (
+        memory_info.state in ["ENTANGLED", "PURIFIED"]
+        and memory_info.index in memory_indices
+        and memory_info.remote_node == remote_left_node
+        and memory_info.fidelity >= fidelity
+    ):
         for memory_info_2 in memory_manager:
             # the second memory is the "right hand side" memory during swapping
-            if (memory_info_2.state in ["ENTANGLED", "PURIFIED"]
-                    and memory_info_2.index in memory_indices
-                    and memory_info_2.remote_node == remote_right_node
-                    and memory_info_2.fidelity >= fidelity):
+            if (
+                memory_info_2.state in ["ENTANGLED", "PURIFIED"]
+                and memory_info_2.index in memory_indices
+                and memory_info_2.remote_node == remote_right_node
+                and memory_info_2.fidelity >= fidelity
+            ):
                 return [memory_info, memory_info_2]
-    
+
     # case 2: memory_info is the "right hand side" memory
     # the first memory is the "right hand side" memory during swapping
-    if (memory_info.state in ["ENTANGLED", "PURIFIED"]
-            and memory_info.index in memory_indices
-            and memory_info.remote_node == remote_right_node
-            and memory_info.fidelity >= fidelity):
+    if (
+        memory_info.state in ["ENTANGLED", "PURIFIED"]
+        and memory_info.index in memory_indices
+        and memory_info.remote_node == remote_right_node
+        and memory_info.fidelity >= fidelity
+    ):
         for memory_info_2 in memory_manager:
             # the second memory is the "left hand side" memory during swapping
-            if (memory_info_2.state in ["ENTANGLED", "PURIFIED"]
-                    and memory_info_2.index in memory_indices
-                    and memory_info_2.remote_node == remote_left_node
-                    and memory_info_2.fidelity >= fidelity):
+            if (
+                memory_info_2.state in ["ENTANGLED", "PURIFIED"]
+                and memory_info_2.index in memory_indices
+                and memory_info_2.remote_node == remote_left_node
+                and memory_info_2.fidelity >= fidelity
+            ):
                 return [memory_info, memory_info_2]
-    
+
     return []
 
 
-def es_rule_condition_B_end(memory_info: MemoryInfo, _manager: MemoryManager, args: Arguments) -> list[MemoryInfo]:
+def es_rule_condition_B_end(
+    memory_info: MemoryInfo, _manager: MemoryManager, args: Arguments
+) -> list[MemoryInfo]:
     """Condition function used by the EntanglementSwappingB protocol on either the responder or initiator nodes, aka end nodes.
-    
-    Example: A - B --- Z 
+
+    Example: A - B --- Z
     For end node A, the remote node is B, and the target node is Z (also an end node).
 
     Args:
@@ -440,24 +516,28 @@ def es_rule_condition_B_end(memory_info: MemoryInfo, _manager: MemoryManager, ar
     memory_indices = args["memory_indices"]
     target_remote = args["target_remote"]
     fidelity = args["fidelity"]
-    if (memory_info.state in ["ENTANGLED", "PURIFIED"]
-            and memory_info.index in memory_indices
-            and memory_info.remote_node != target_remote
-            and memory_info.fidelity >= fidelity):
+    if (
+        memory_info.state in ["ENTANGLED", "PURIFIED"]
+        and memory_info.index in memory_indices
+        and memory_info.remote_node != target_remote
+        and memory_info.fidelity >= fidelity
+    ):
         return [memory_info]
     else:
         return []
 
 
-def es_rule_condition_B(memory_info: MemoryInfo, _manager: MemoryManager, args: Arguments) -> list[MemoryInfo]:
+def es_rule_condition_B(
+    memory_info: MemoryInfo, _manager: MemoryManager, args: Arguments
+) -> list[MemoryInfo]:
     """Condition function used by the EntanglementSwappingB protocol on interior nodes of a path.
-    
+
     Args:
         memory_info: the memory info to be checked
         _manager: the memory manager to get other memory info (not used in this condition function)
         args: the arguments defined in the rule.
             Should contain "memory_indices", "left", "right", and "fidelity".
-    
+
     Returns:
         list[MemoryInfo]: the list of memory info that satisfy the condition
     """
@@ -465,16 +545,20 @@ def es_rule_condition_B(memory_info: MemoryInfo, _manager: MemoryManager, args: 
     left = args["left"]
     right = args["right"]
     fidelity = args["fidelity"]
-    if (memory_info.state in ["ENTANGLED", "PURIFIED"]
-            and memory_info.index in memory_indices
-            and memory_info.remote_node not in [left, right]
-            and memory_info.fidelity >= fidelity):
+    if (
+        memory_info.state in ["ENTANGLED", "PURIFIED"]
+        and memory_info.index in memory_indices
+        and memory_info.remote_node not in [left, right]
+        and memory_info.fidelity >= fidelity
+    ):
         return [memory_info]
     else:
         return []
 
 
-def es_match_func(protocols: list[EntanglementProtocol], args: Arguments) -> EntanglementSwappingB | None:
+def es_match_func(
+    protocols: list[EntanglementProtocol], args: Arguments
+) -> EntanglementSwappingB | None:
     """Function used by `es_rule_action_A` for selecting swapping protocols on the remote node.
 
     Args:
@@ -487,6 +571,9 @@ def es_match_func(protocols: list[EntanglementProtocol], args: Arguments) -> Ent
     """
     target_memo = args["target_memo"]
     for protocol in protocols:
-        if isinstance(protocol, EntanglementSwappingB) and protocol.memory.name == target_memo:
+        if (
+            isinstance(protocol, EntanglementSwappingB)
+            and protocol.memory.name == target_memo
+        ):
             return protocol
     return None

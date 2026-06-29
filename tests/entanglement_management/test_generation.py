@@ -1,7 +1,12 @@
 import numpy as np
 import pytest
 
-from sequence.constants import BARRET_KOK, BELL_DIAGONAL_STATE_FORMALISM, KET_VECTOR_FORMALISM, SINGLE_HERALDED
+from sequence.constants import (
+    BARRET_KOK,
+    BELL_DIAGONAL_STATE_FORMALISM,
+    KET_VECTOR_FORMALISM,
+    SINGLE_HERALDED,
+)
 from sequence.components.bsm import *
 from sequence.components.memory import MemoryArray
 from sequence.components.optical_channel import *
@@ -57,7 +62,9 @@ class FakeBSMNode(Node):
 
 
 def test_generation_message():
-    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE, "alice", protocol_type=BARRET_KOK, qc_delay=1)
+    msg = EntanglementGenerationMessage(
+        GenerationMsgType.NEGOTIATE, "alice", protocol_type=BARRET_KOK, qc_delay=1
+    )
 
     assert msg.receiver == "alice"
     assert msg.msg_type == GenerationMsgType.NEGOTIATE
@@ -85,7 +92,9 @@ def test_generation_protocol_registry_and_factory_selection():
         protocol_a = EntanglementGenerationA.create(
             router, "eg_e0", middle="m0", other="e1", memory=router.memory_array[0]
         )
-        protocol_b = EntanglementGenerationB.create(bsm_node, "eg_m0", others=["e0", "e1"])
+        protocol_b = EntanglementGenerationB.create(
+            bsm_node, "eg_m0", others=["e0", "e1"]
+        )
 
         assert isinstance(protocol_a, BarretKokA)
         assert isinstance(protocol_b, BarretKokB)
@@ -101,7 +110,9 @@ def test_generation_protocol_registry_and_factory_selection():
         protocol_a = EntanglementGenerationA.create(
             router, "eg_e0", middle="m0", other="e1", memory=router.memory_array[0]
         )
-        protocol_b = EntanglementGenerationB.create(bsm_node, "eg_m0", others=["e0", "e1"])
+        protocol_b = EntanglementGenerationB.create(
+            bsm_node, "eg_m0", others=["e0", "e1"]
+        )
 
         assert isinstance(protocol_a, SingleHeraldedA)
         assert isinstance(protocol_b, SingleHeraldedB)
@@ -121,7 +132,9 @@ def test_single_heralded_generation_requires_bell_diagonal_formalism():
         router = Node("e0", tl)
         router.memory_array = MemoryArray("e0.memory_array", tl, num_memories=1)
 
-        with pytest.raises(AssertionError, match="supports Bell diagonal state formalism"):
+        with pytest.raises(
+            AssertionError, match="supports Bell diagonal state formalism"
+        ):
             EntanglementGenerationA.create(
                 router, "eg_e0", middle="m0", other="e1", memory=router.memory_array[0]
             )
@@ -140,23 +153,27 @@ def test_generation_receive_message():
     node.memory_array = MemoryArray("memory", tl)
     node.assign_cchannel(ClassicalChannel("cc", tl, 0, delay=1), "m1")
 
-    eg = EntanglementGenerationA.create(node, "EG", middle="m1", other="e2", memory=node.memory_array[0])
+    eg = EntanglementGenerationA.create(
+        node, "EG", middle="m1", other="e2", memory=node.memory_array[0]
+    )
     eg.qc_delay = 1
 
     # negotiate message
-    msg = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, "EG", protocol_type=BARRET_KOK, emit_time=0)
+    msg = EntanglementGenerationMessage(
+        GenerationMsgType.NEGOTIATE_ACK, "EG", protocol_type=BARRET_KOK, emit_time=0
+    )
     eg.received_message("e2", msg)
     assert eg.expected_time == 1
     assert len(tl.events.data) == 2  # two excites, flip state, end time
 
 
 def test_generation_pop():
-    class DumbBSM():
+    class DumbBSM:
         def __init__(self):
             self.resolution = 1
             self.encoding = "single_atom"
 
-    class DumbNode():
+    class DumbNode:
         def __init__(self):
             self.name = "none"
             self.protocols = []
@@ -171,11 +188,15 @@ def test_generation_pop():
     middle = EntanglementGenerationB.create(m0, "middle", others=["e0", "e1"])
 
     # BSM result
-    middle.bsm_update(m0.bsm, {'info_type': "BSM_res", 'res': 0, 'time': 100})
+    middle.bsm_update(m0.bsm, {"info_type": "BSM_res", "res": 0, "time": 100})
     assert len(m0.messages) == 2
     assert m0.messages[0][0] == "e0"
     assert m0.messages[1][0] == "e1"
-    assert m0.messages[0][1].msg_type == m0.messages[1][1].msg_type == GenerationMsgType.MEAS_RES
+    assert (
+        m0.messages[0][1].msg_type
+        == m0.messages[1][1].msg_type
+        == GenerationMsgType.MEAS_RES
+    )
 
 
 def test_generation_expire():
@@ -199,8 +220,9 @@ def test_generation_expire():
     for src in [e0, e1, m0]:
         for dst in [e0, e1, m0]:
             if src.name != dst.name:
-                cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl,
-                                      1e3, delay=4e11)
+                cc = ClassicalChannel(
+                    "cc_%s_%s" % (src.name, dst.name), tl, 1e3, delay=4e11
+                )
                 cc.set_ends(src, dst.name)
 
     e0.memory_array = MemoryArray("e0mem", tl, coherence_time=1)
@@ -211,8 +233,12 @@ def test_generation_expire():
 
     tl.init()
 
-    protocol0 = EntanglementGenerationA.create(e0, "e0prot", middle="m0", other="e1", memory=e0.memory_array[0])
-    protocol1 = EntanglementGenerationA.create(e1, "e1prot", middle="m0", other="e0", memory=e1.memory_array[0])
+    protocol0 = EntanglementGenerationA.create(
+        e0, "e0prot", middle="m0", other="e1", memory=e0.memory_array[0]
+    )
+    protocol1 = EntanglementGenerationA.create(
+        e1, "e1prot", middle="m0", other="e0", memory=e1.memory_array[0]
+    )
     e0.protocols.append(protocol0)
     e1.protocols.append(protocol1)
     protocol0.set_others(protocol1.name, e1.name, [e1.memory_array[0].name])
@@ -250,7 +276,9 @@ def test_generation_run():
     for src in [e0, e1, m0]:
         for dst in [e0, e1, m0]:
             if src.name != dst.name:
-                cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl, 1e3, delay=1e9)
+                cc = ClassicalChannel(
+                    "cc_%s_%s" % (src.name, dst.name), tl, 1e3, delay=1e9
+                )
                 cc.set_ends(src, dst.name)
 
     # add hardware
@@ -273,10 +301,14 @@ def test_generation_run():
 
     for i in range(NUM_TESTS):
         name0, name1 = [f"eg_e{j}[{i}]" for j in range(2)]
-        protocol0 = EntanglementGenerationA.create(e0, name0, middle="m0", other="e1", memory=e0.memory_array[i])
+        protocol0 = EntanglementGenerationA.create(
+            e0, name0, middle="m0", other="e1", memory=e0.memory_array[i]
+        )
         e0.protocols.append(protocol0)
         protocols_e0.append(protocol0)
-        protocol1 = EntanglementGenerationA.create(e1, name1, middle="m0", other="e0", memory=e1.memory_array[i])
+        protocol1 = EntanglementGenerationA.create(
+            e1, name1, middle="m0", other="e0", memory=e1.memory_array[i]
+        )
         e1.protocols.append(protocol1)
         protocols_e1.append(protocol1)
         protocol0.set_others(protocol1.name, e1.name, [e1.memory_array[i].name])
@@ -306,7 +338,7 @@ def test_generation_run():
 
     ratio = empty_count / NUM_TESTS
     assert abs(ratio - 0.5) < 0.1
-    
+
 
 def test_generation_fidelity_ket():
     NUM_TESTS = 100
@@ -330,14 +362,19 @@ def test_generation_fidelity_ket():
     for n1 in [e0, e1, m0]:
         for n2 in [e0, e1, m0]:
             if n1 != n2:
-                cc = ClassicalChannel("cc_%s%s" % (n1.name, n2.name), tl, 1e3,
-                                      delay=1e9)
+                cc = ClassicalChannel(
+                    "cc_%s%s" % (n1.name, n2.name), tl, 1e3, delay=1e9
+                )
                 cc.set_ends(n1, n2.name)
 
     # add hardware
-    e0.memory_array = MemoryArray("e0.memory_array", tl, fidelity=FIDELITY, num_memories=NUM_TESTS)
+    e0.memory_array = MemoryArray(
+        "e0.memory_array", tl, fidelity=FIDELITY, num_memories=NUM_TESTS
+    )
     e0.memory_array.owner = e0
-    e1.memory_array = MemoryArray("e1.memory_array", tl, fidelity=FIDELITY, num_memories=NUM_TESTS)
+    e1.memory_array = MemoryArray(
+        "e1.memory_array", tl, fidelity=FIDELITY, num_memories=NUM_TESTS
+    )
     e1.memory_array.owner = e1
     detectors = [{"efficiency": 1, "count_rate": 1e11}] * 2
     m0.bsm = make_bsm("m0.bsm", tl, encoding_type="single_atom", detectors=detectors)
@@ -355,10 +392,14 @@ def test_generation_fidelity_ket():
     for i in range(NUM_TESTS):
         name0 = "eg_e0[{}]".format(i)
         name1 = "eg_e1[{}]".format(i)
-        protocol0 = EntanglementGenerationA.create(e0, name0, middle="m0", other="e1", memory=e0.memory_array[i])
+        protocol0 = EntanglementGenerationA.create(
+            e0, name0, middle="m0", other="e1", memory=e0.memory_array[i]
+        )
         e0.protocols.append(protocol0)
         protocols_e0.append(protocol0)
-        protocol1 = EntanglementGenerationA.create(e1, name1, middle="m0", other="e0", memory=e1.memory_array[i])
+        protocol1 = EntanglementGenerationA.create(
+            e1, name1, middle="m0", other="e0", memory=e1.memory_array[i]
+        )
         e1.protocols.append(protocol1)
         protocols_e1.append(protocol1)
         protocol0.set_others(protocol1.name, e1.name, [e1.memory_array[i].name])
@@ -374,8 +415,9 @@ def test_generation_fidelity_ket():
     tl.init()
     tl.run()
 
-    desired = np.array([complex(np.sqrt(1 / 2)), complex(0),
-                        complex(0), complex(np.sqrt(1 / 2))])
+    desired = np.array(
+        [complex(np.sqrt(1 / 2)), complex(0), complex(0), complex(np.sqrt(1 / 2))]
+    )
     correct = 0
     total = 0
     for mem in e0.memory_array:
@@ -388,4 +430,3 @@ def test_generation_fidelity_ket():
     assert total > 0, "More trials needed; insufficient successes"
     ratio = correct / total
     assert abs(ratio - FIDELITY) < 0.1
-

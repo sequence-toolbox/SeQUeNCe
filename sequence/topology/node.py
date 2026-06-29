@@ -4,6 +4,7 @@ This module provides definitions for various types of quantum network nodes.
 All node types inherit from the base Node type, which inherits from Entity.
 Node types can be used to collect all the necessary hardware and software for a network usage scenario.
 """
+
 from __future__ import annotations
 
 from math import inf
@@ -39,7 +40,7 @@ from ..utils import log
 
 class Node(Entity):
     """Base node type that has both classical and quantum capabilties.
-    
+
     Provides default interfaces for network.
 
     Attributes:
@@ -55,7 +56,14 @@ class Node(Entity):
         meas_fid (float): fidelity of single-qubit measurements (usually Z measurement) that can be performed on the node.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", seed=None, gate_fid: float = 1, meas_fid: float = 1):
+    def __init__(
+        self,
+        name: str,
+        timeline: "Timeline",
+        seed=None,
+        gate_fid: float = 1,
+        meas_fid: float = 1,
+    ):
         """Constructor for node.
 
         name (str): name of node instance.
@@ -77,7 +85,9 @@ class Node(Entity):
         # i.e. every gate on one specific node has identical fidelity, and so is measurement.
         self.gate_fid = gate_fid
         self.meas_fid = meas_fid
-        assert 0 <= gate_fid <= 1 and 0 <= meas_fid <= 1, "Gate fidelity and measurement fidelity must be between 0 and 1."
+        assert 0 <= gate_fid <= 1 and 0 <= meas_fid <= 1, (
+            "Gate fidelity and measurement fidelity must be between 0 and 1."
+        )
 
     def init(self) -> None:
         pass
@@ -130,7 +140,9 @@ class Node(Entity):
 
         self.qchannels[another] = qchannel
 
-    def send_message(self, dst: str, msg: "Message", priority=inf, sender_delay: int = 0) -> None:
+    def send_message(
+        self, dst: str, msg: "Message", priority=inf, sender_delay: int = 0
+    ) -> None:
         """Method to send classical message.
 
         Args:
@@ -159,10 +171,14 @@ class Node(Entity):
         # signal to protocol that we've received a message
         if msg.receiver is not None:
             for protocol in self.protocols:
-                if protocol.name == msg.receiver and protocol.received_message(src, msg):
+                if protocol.name == msg.receiver and protocol.received_message(
+                    src, msg
+                ):
                     return
         else:
-            matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
+            matching = [
+                p for p in self.protocols if p.protocol_type == msg.protocol_type
+            ]
             for p in matching:
                 p.received_message(src, msg)
 
@@ -178,7 +194,9 @@ class Node(Entity):
         """
 
         if dst not in self.qchannels:
-            raise ValueError(f"No available quantum channel to send qubit from sending node {self.name!r} to receiving node {dst!r}")
+            raise ValueError(
+                f"No available quantum channel to send qubit from sending node {self.name!r} to receiving node {dst!r}"
+            )
         self.qchannels[dst].transmit(qubit, self)
 
     def receive_qubit(self, src: str, qubit) -> None:
@@ -201,9 +219,17 @@ class Node(Entity):
             list: A list of components matching the requested type.
         """
         if isinstance(component_type, str):
-            return [comp for comp in self.components.values() if comp.__class__.__name__ == component_type]
+            return [
+                comp
+                for comp in self.components.values()
+                if comp.__class__.__name__ == component_type
+            ]
         if isinstance(component_type, type):
-            return [comp for comp in self.components.values() if isinstance(comp, component_type)]
+            return [
+                comp
+                for comp in self.components.values()
+                if isinstance(comp, component_type)
+            ]
         return []
 
     def get_component_by_name(self, name: str) -> Entity | None:
@@ -237,8 +263,14 @@ class BSMNode(Node):
         eg (EntanglementGenerationB): entanglement generation protocol instance.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", other_nodes: list[str],
-                 seed=None, component_templates=None) -> None:
+    def __init__(
+        self,
+        name: str,
+        timeline: "Timeline",
+        other_nodes: list[str],
+        seed=None,
+        component_templates=None,
+    ) -> None:
         """Constructor for BSM node.
 
         Args:
@@ -251,29 +283,32 @@ class BSMNode(Node):
         if not component_templates:
             component_templates = {}
 
-        self.encoding_type = component_templates.get('encoding_type', 'single_atom')
+        self.encoding_type = component_templates.get("encoding_type", "single_atom")
 
         # create BSM object with optional args
         bsm_name = name + ".BSM"
-        if self.encoding_type == 'single_atom':
+        if self.encoding_type == "single_atom":
             bsm_args = component_templates.get("SingleAtomBSM", {})
             bsm = SingleAtomBSM(bsm_name, timeline, **bsm_args)
-        elif self.encoding_type == 'single_heralded':
+        elif self.encoding_type == "single_heralded":
             bsm_args = component_templates.get("SingleHeraldedBSM", {})
             bsm = SingleHeraldedBSM(bsm_name, timeline, **bsm_args)
         else:
-            raise ValueError(f'Encoding type {self.encoding_type} not supported')
+            raise ValueError(f"Encoding type {self.encoding_type} not supported")
 
         self.add_component(bsm)
         self.set_first_component(bsm_name)
 
-        self.eg = EntanglementGenerationB.create(self, f'{name}_eg', other_nodes)
+        self.eg = EntanglementGenerationB.create(self, f"{name}_eg", other_nodes)
         bsm.attach(self.eg)
 
     def receive_message(self, src: str, msg: "Message") -> None:
         # signal to protocol that we've received a message
         for protocol in self.protocols:
-            if protocol.protocol_type == msg.protocol_type or type(protocol) == msg.protocol_type:
+            if (
+                protocol.protocol_type == msg.protocol_type
+                or type(protocol) == msg.protocol_type
+            ):
                 if protocol.received_message(src, msg):
                     return
 
@@ -317,7 +352,16 @@ class QuantumRouter(Node):
         swapping_degradation (float | None): the degradation of entanglement swapping performed by this node (Default None).
     """
 
-    def __init__(self, name: str, tl: "Timeline", memo_size: int = 50, seed: int | None = None, component_templates: dict = {}, gate_fid: float = 1, meas_fid: float = 1):
+    def __init__(
+        self,
+        name: str,
+        tl: "Timeline",
+        memo_size: int = 50,
+        seed: int | None = None,
+        component_templates: dict = {},
+        gate_fid: float = 1,
+        meas_fid: float = 1,
+    ):
         """Constructor for quantum router class.
 
         Args:
@@ -333,15 +377,23 @@ class QuantumRouter(Node):
         """
 
         super().__init__(name, tl, seed, gate_fid, meas_fid)
-        self.memo_arr_name = f"{name}.MemoryArray" # create the memory array object with optional args
+        self.memo_arr_name = (
+            f"{name}.MemoryArray"  # create the memory array object with optional args
+        )
         memo_arr_args = component_templates.get("MemoryArray", {})
-        memory_array = MemoryArray(self.memo_arr_name, tl, num_memories=memo_size, **memo_arr_args)
+        memory_array = MemoryArray(
+            self.memo_arr_name, tl, num_memories=memo_size, **memo_arr_args
+        )
         self.add_component(memory_array)
         memory_array.add_receiver(self)
 
         # setup managers
-        self.resource_manager: ResourceManager = ResourceManager(self, self.memo_arr_name)
-        self.network_manager: NetworkManager = NetworkManager.create(self, self.memo_arr_name, component_templates=component_templates)
+        self.resource_manager: ResourceManager = ResourceManager(
+            self, self.memo_arr_name
+        )
+        self.network_manager: NetworkManager = NetworkManager.create(
+            self, self.memo_arr_name, component_templates=component_templates
+        )
 
         self.map_to_middle_node = {}
         self.app = None
@@ -349,7 +401,6 @@ class QuantumRouter(Node):
         swapping_args = component_templates.get("EntanglementSwapping", {})
         self.swapping_success_prob = swapping_args.get("swapping_success_prob", 1)
         self.swapping_degradation = swapping_args.get("swapping_degradation", None)
-
 
     def receive_message(self, src: str, msg: "Message") -> None:
         """Determine what to do when a message is received, based on the msg.receiver.
@@ -368,9 +419,15 @@ class QuantumRouter(Node):
         elif msg.receiver == "resource_manager":
             self.resource_manager.received_message(src, msg)
         else:
-            if msg.receiver is None:  # the msg sent by EntanglementGenerationB doesn't have a receiver (EGA & EGB not paired)
-                matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
-                for p in matching:    # the valid_trigger_time() function resolves multiple matching issue
+            if (
+                msg.receiver is None
+            ):  # the msg sent by EntanglementGenerationB doesn't have a receiver (EGA & EGB not paired)
+                matching = [
+                    p for p in self.protocols if p.protocol_type == msg.protocol_type
+                ]
+                for p in (
+                    matching
+                ):  # the valid_trigger_time() function resolves multiple matching issue
                     p.received_message(src, msg)
             else:
                 for protocol in self.protocols:
@@ -378,7 +435,9 @@ class QuantumRouter(Node):
                         protocol.received_message(src, msg)
                         break
 
-    def send_message(self, dst: str, msg: "Message", priority=inf, sender_delay: int = 0) -> None:
+    def send_message(
+        self, dst: str, msg: "Message", priority=inf, sender_delay: int = 0
+    ) -> None:
         """Method to send a classical message.
 
         Args:
@@ -391,7 +450,7 @@ class QuantumRouter(Node):
         if self.down:
             log.logger.debug(f"{self.name} is DOWN. Dropping message {msg} to {dst}")
             return
-        
+
         log.logger.info(f"{self.name}: send message {msg} to {dst}")
         if priority == inf:
             priority = self.timeline.schedule_counter
@@ -430,7 +489,9 @@ class QuantumRouter(Node):
         """
         dst = kwargs.get("dst", None)
         if dst is None:
-            raise ValueError("Destination should be supplied for 'get' method on QuantumRouter")
+            raise ValueError(
+                "Destination should be supplied for 'get' method on QuantumRouter"
+            )
         self.send_qubit(dst, photon)
 
     def memory_expire(self, memory: "Memory") -> None:
@@ -450,8 +511,16 @@ class QuantumRouter(Node):
         """
         self.app = app
 
-    def reserve_net_resource(self, responder: str, start_time: int, end_time: int, memory_size: int,
-                             target_fidelity: float, entanglement_number: int = 1, identity: int = 0) -> None:
+    def reserve_net_resource(
+        self,
+        responder: str,
+        start_time: int,
+        end_time: int,
+        memory_size: int,
+        target_fidelity: float,
+        entanglement_number: int = 1,
+        identity: int = 0,
+    ) -> None:
         """Method to request a reservation.
 
         Can be used by local applications.
@@ -465,7 +534,15 @@ class QuantumRouter(Node):
             entanglement_number (int): the number of entanglement that the request ask for (default 1).
             identity (int): the ID of the request (default 0).
         """
-        self.network_manager.request(responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity)
+        self.network_manager.request(
+            responder,
+            start_time,
+            end_time,
+            memory_size,
+            target_fidelity,
+            entanglement_number,
+            identity,
+        )
 
     def get_idle_memory(self, info: "MemoryInfo") -> None:
         """Method for application to receive available memories.
@@ -488,7 +565,7 @@ class QuantumRouter(Node):
 
     def get_other_reservation(self, reservation: "Reservation"):
         """Method for application to add the approved reservation that is requested by other nodes
-        
+
         Args:
             reservation (Reservation): the reservation created by the other node (this node is the responder)
         """
@@ -523,8 +600,15 @@ class QKDNode(Node):
         protocol_stack (list[StackProtocol]): protocols for QKD process.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", encoding=polarization, stack_size=5,
-                 seed=None, component_templates=None):
+    def __init__(
+        self,
+        name: str,
+        timeline: "Timeline",
+        encoding=polarization,
+        stack_size=5,
+        seed=None,
+        component_templates=None,
+    ):
         """Constructor for the qkd node class.
 
         Args:
@@ -550,13 +634,19 @@ class QKDNode(Node):
 
         qsd_name = name + ".qsdetector"
         if "QSDetector" in component_templates:
-            raise NotImplementedError("Configurable parameters for QSDetector in constructor not yet supported.")
+            raise NotImplementedError(
+                "Configurable parameters for QSDetector in constructor not yet supported."
+            )
         if encoding["name"] == "polarization":
             qsdetector = QSDetectorPolarization(qsd_name, timeline)
         elif encoding["name"] == "time_bin":
             qsdetector = QSDetectorTimeBin(qsd_name, timeline)
         else:
-            raise Exception("invalid encoding {} given for QKD node {}".format(encoding["name"], name))
+            raise Exception(
+                "invalid encoding {} given for QKD node {}".format(
+                    encoding["name"], name
+                )
+            )
         self.add_component(qsdetector)
         self.set_first_component(qsd_name)
 
@@ -609,13 +699,17 @@ class QKDNode(Node):
                 component.__setattr__(arg_name, value)
                 return
 
-    def update_detector_params(self, detector_id: int, arg_name: str, value: Any) -> None:
+    def update_detector_params(
+        self, detector_id: int, arg_name: str, value: Any
+    ) -> None:
         for component in self.components.values():
             if type(component) is QSDetector:
                 component.update_detector_params(detector_id, arg_name, value)
                 return
 
-    def get_bits(self, light_time: int, start_time: int, frequency: float, detector_name: str):
+    def get_bits(
+        self, light_time: int, start_time: int, frequency: float, detector_name: str
+    ):
         """Method for QKD protocols to get received qubits from the node.
 
         Uses the detection times from attached detectors to calculate which bits were received.
@@ -657,23 +751,35 @@ class QKDNode(Node):
         elif encoding == "time_bin":
             detection_times = qsdetector.get_photon_times()
             bin_separation = self.encoding["bin_separation"]
-        
+
             # single detector (for early, late basis) times
             for time in detection_times[0]:
                 index = int(round((time - start_time) * frequency * 1e-12))
                 if 0 <= index < len(bits):
-                    if abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                    if (
+                        abs(((index * 1e12 / frequency) + start_time) - time)
+                        < bin_separation / 2
+                    ):
                         bits[index] = 0
-                    elif abs(((index * 1e12 / frequency) + start_time) - (time - bin_separation)) < bin_separation / 2:
+                    elif (
+                        abs(
+                            ((index * 1e12 / frequency) + start_time)
+                            - (time - bin_separation)
+                        )
+                        < bin_separation / 2
+                    ):
                         bits[index] = 1
-        
+
             # interferometer detector 0 times
             for time in detection_times[1]:
                 time -= bin_separation
                 index = int(round((time - start_time) * frequency * 1e-12))
                 # check if index is in range and is in correct time bin
-                if 0 <= index < len(bits) and \
-                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                if (
+                    0 <= index < len(bits)
+                    and abs(((index * 1e12 / frequency) + start_time) - time)
+                    < bin_separation / 2
+                ):
                     if bits[index] == -1:
                         bits[index] = 0
                     else:
@@ -684,19 +790,30 @@ class QKDNode(Node):
                 time -= bin_separation
                 index = int(round((time - start_time) * frequency * 1e-12))
                 # check if index is in range and is in correct time bin
-                if 0 <= index < len(bits) and \
-                        abs(((index * 1e12 / frequency) + start_time) - time) < bin_separation / 2:
+                if (
+                    0 <= index < len(bits)
+                    and abs(((index * 1e12 / frequency) + start_time) - time)
+                    < bin_separation / 2
+                ):
                     if bits[index] == -1:
                         bits[index] = 1
                     else:
                         bits[index] = -1
 
         else:
-            raise Exception(f"QKD node {self.name} has illegal encoding type {encoding}")
+            raise Exception(
+                f"QKD node {self.name} has illegal encoding type {encoding}"
+            )
 
         return bits
 
-    def set_bases(self, basis_list: list[int], start_time: int, frequency: float, component_name: str):
+    def set_bases(
+        self,
+        basis_list: list[int],
+        start_time: int,
+        frequency: float,
+        component_name: str,
+    ):
         """Method to set basis list for measurement component.
 
         Args:
@@ -732,13 +849,18 @@ class QKDNode(Node):
     def receive_message(self, src: str, msg: "Message") -> None:
         # signal to protocol that we've received a message
         for protocol in self.protocols:
-            if getattr(protocol, "protocol_type", None) or type(protocol) == msg.protocol_type:
+            if (
+                getattr(protocol, "protocol_type", None)
+                or type(protocol) == msg.protocol_type
+            ):
                 protocol.received_message(src, msg)
                 return
 
         # if we reach here, we didn't successfully receive the message in any protocol
         print(self.protocols)
-        raise Exception(f"Message received for unknown protocol '{msg.protocol_type}' on node {self.name}")
+        raise Exception(
+            f"Message received for unknown protocol '{msg.protocol_type}' on node {self.name}"
+        )
 
     def get(self, photon: "Photon", **kwargs):
         self.send_qubit(self.destination, photon)
@@ -746,7 +868,7 @@ class QKDNode(Node):
 
 class ClassicalNode(ClassicalEntity):
     """Base node type that has only classical capabilties.
-    
+
     Provides default interfaces for network.
 
     Attributes:
@@ -794,7 +916,9 @@ class ClassicalNode(ClassicalEntity):
 
         self.cchannels[another] = cchannel
 
-    def send_message(self, dst: str, msg: "Message", priority=inf, sender_delay: int = 0) -> None:
+    def send_message(
+        self, dst: str, msg: "Message", priority=inf, sender_delay: int = 0
+    ) -> None:
         """Method to send classical message.
 
         Args:
@@ -823,10 +947,14 @@ class ClassicalNode(ClassicalEntity):
         # signal to protocol that we've received a message
         if msg.receiver is not None:
             for protocol in self.protocols:
-                if protocol.name == msg.receiver and protocol.received_message(src, msg):
+                if protocol.name == msg.receiver and protocol.received_message(
+                    src, msg
+                ):
                     return
         else:
-            matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
+            matching = [
+                p for p in self.protocols if p.protocol_type == msg.protocol_type
+            ]
             for p in matching:
                 p.received_message(src, msg)
 
@@ -861,13 +989,27 @@ class DQCNode(QuantumRouter):
         teledata_app (TeledataApp): The teledata application instance.
         telegate_app (TelegateApp): The telegate application instance.
     """
-    def __init__(self, name: str, timeline: "Timeline", memo_size: int = 1, seed: int = None, component_templates: dict = {}, 
-                 gate_fid: float = 1, meas_fid: float = 1, data_memo_size: int = 1):
-        super().__init__(name, timeline, memo_size, seed, component_templates, gate_fid, meas_fid)
+
+    def __init__(
+        self,
+        name: str,
+        timeline: "Timeline",
+        memo_size: int = 1,
+        seed: int = None,
+        component_templates: dict = {},
+        gate_fid: float = 1,
+        meas_fid: float = 1,
+        data_memo_size: int = 1,
+    ):
+        super().__init__(
+            name, timeline, memo_size, seed, component_templates, gate_fid, meas_fid
+        )
         # your data qubits
         self.data_memo_arr_name = f"{name}.DataMemoryArray"
         data_memo_arr_args = component_templates.get("DataMemoryArray", {})
-        data_memory_array = MemoryArray(self.data_memo_arr_name, timeline, data_memo_size, **data_memo_arr_args)
+        data_memory_array = MemoryArray(
+            self.data_memo_arr_name, timeline, data_memo_size, **data_memo_arr_args
+        )
         self.add_component(data_memory_array)
         self.teleport_app: TeleportApp = None
         self.teledata_app = None
@@ -893,9 +1035,15 @@ class DQCNode(QuantumRouter):
         elif msg.receiver == "telegate_app":
             self.telegate_app.received_message(src, msg)
         else:
-            if msg.receiver is None:  # the msg sent by EntanglementGenerationB doesn't have a receiver (EGA & EGB not paired)
-                matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
-                for p in matching:    # the valid_trigger_time() function resolves multiple matching issue
+            if (
+                msg.receiver is None
+            ):  # the msg sent by EntanglementGenerationB doesn't have a receiver (EGA & EGB not paired)
+                matching = [
+                    p for p in self.protocols if p.protocol_type == msg.protocol_type
+                ]
+                for p in (
+                    matching
+                ):  # the valid_trigger_time() function resolves multiple matching issue
                     p.received_message(src, msg)
             else:
                 for protocol in self.protocols:

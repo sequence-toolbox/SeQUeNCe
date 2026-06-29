@@ -24,7 +24,7 @@ def test_sequential_simulation_dqc_node_net_topo_simple():
     # check QC params and capture the auto BSM name
     qc_list = topo.get_qchannels()
     for qc in qc_list:
-        assert qc.distance == 500    # 1000 // 2
+        assert qc.distance == 500  # 1000 // 2
         assert qc.attenuation == 0.0002
     bsm_name = qc_list[0].receiver
     assert bsm_name.startswith("BSM.")
@@ -50,7 +50,9 @@ def test_sequential_simulation_dqc_node_net_topo_simple():
 
     # forwarding table should route q1 <-> q2
     for qn in (q1, q2):
-        routing = qn.network_manager.get_routing_protocol()  # routing protocol at bottom of stack
+        routing = (
+            qn.network_manager.get_routing_protocol()
+        )  # routing protocol at bottom of stack
         assert len(routing.forwarding_table) >= 1
         # ensure it knows how to reach the other node
         other = "q2" if qn.name == "q1" else "q1"

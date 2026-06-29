@@ -5,7 +5,7 @@ from sequence.kernel.process import Process
 
 
 def test_event():
-    
+
     class FakeOwner:
         def action(self):
             pass

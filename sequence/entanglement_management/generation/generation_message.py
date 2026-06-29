@@ -37,9 +37,23 @@ class EntanglementGenerationMessage(Message):
         resolution (int): time resolution of BSM detectors (if `msg_type == MEAS_RES`).
     """
 
-    __slots__ = ['protocol_type', 'qc_delay', 'frequency', 'emit_time', 'detector', 'time', 'resolution']
+    __slots__ = [
+        "protocol_type",
+        "qc_delay",
+        "frequency",
+        "emit_time",
+        "detector",
+        "time",
+        "resolution",
+    ]
 
-    def __init__(self, msg_type: GenerationMsgType, receiver: str | None, protocol_type: str, **kwargs):
+    def __init__(
+        self,
+        msg_type: GenerationMsgType,
+        receiver: str | None,
+        protocol_type: str,
+        **kwargs,
+    ):
         super().__init__(msg_type, receiver)
 
         self.protocol_type = protocol_type
@@ -52,24 +66,28 @@ class EntanglementGenerationMessage(Message):
         self.resolution: int | None = None
 
         fields = {
-            GenerationMsgType.NEGOTIATE: ['qc_delay', 'frequency'],
-            GenerationMsgType.NEGOTIATE_ACK: ['emit_time'],
-            GenerationMsgType.MEAS_RES: ['detector', 'time', 'resolution']
+            GenerationMsgType.NEGOTIATE: ["qc_delay", "frequency"],
+            GenerationMsgType.NEGOTIATE_ACK: ["emit_time"],
+            GenerationMsgType.MEAS_RES: ["detector", "time", "resolution"],
         }
 
         if msg_type in fields:
             for field in fields[msg_type]:
                 setattr(self, field, kwargs.get(field))
         else:
-            raise ValueError(f'EntanglementGeneration generated invalid message type {msg_type}')
+            raise ValueError(
+                f"EntanglementGeneration generated invalid message type {msg_type}"
+            )
 
     def __repr__(self):
         match self.msg_type:
             case GenerationMsgType.NEGOTIATE:
-                return f'type: {self.msg_type}, qc_delay: {self.qc_delay}, frequency: {self.frequency}'
+                return f"type: {self.msg_type}, qc_delay: {self.qc_delay}, frequency: {self.frequency}"
             case GenerationMsgType.NEGOTIATE_ACK:
-                return f'type: {self.msg_type}, emit_time: {self.emit_time}'
+                return f"type: {self.msg_type}, emit_time: {self.emit_time}"
             case GenerationMsgType.MEAS_RES:
-                return f'type: {self.msg_type}, detector: {self.detector}, time: {self.time}, resolution: {self.resolution}'
+                return f"type: {self.msg_type}, detector: {self.detector}, time: {self.time}, resolution: {self.resolution}"
             case _:
-                raise Exception(f'EntanglementGeneration generated invalid message type {self.msg_type}')
+                raise Exception(
+                    f"EntanglementGeneration generated invalid message type {self.msg_type}"
+                )

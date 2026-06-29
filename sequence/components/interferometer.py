@@ -46,7 +46,9 @@ class Interferometer(Entity):
     def init(self) -> None:
         """See base class."""
 
-        assert len(self._receivers) == 2, "Interferometer should only be attached to 2 outputs."
+        assert len(self._receivers) == 2, (
+            "Interferometer should only be attached to 2 outputs."
+        )
 
     def get(self, photon: "Photon", **kwargs) -> None:
         """Method to receive a photon for measurement.
@@ -62,9 +64,14 @@ class Interferometer(Entity):
         """
 
         assert photon.encoding_type["name"] == "time_bin", (
-            "Invalid photon encoding {} received by interferometer".format(photon.encoding_type["name"]))
+            "Invalid photon encoding {} received by interferometer".format(
+                photon.encoding_type["name"]
+            )
+        )
         if photon.use_qm:
-            raise NotImplementedError("Interferometer usage not configured for quantum manager.")
+            raise NotImplementedError(
+                "Interferometer usage not configured for quantum manager."
+            )
 
         detector_num = self.get_generator().choice([0, 1])
         quantum_state = photon.quantum_state
@@ -85,7 +92,10 @@ class Interferometer(Entity):
         if self.get_generator().random() < self.phase_error:
             quantum_state.state = list(multiply([1, -1], quantum_state))
 
-        if quantum_state.state == (complex(sqrt(1/2)), complex(sqrt(1/2))):  # Early + Late
+        if quantum_state.state == (
+            complex(sqrt(1 / 2)),
+            complex(sqrt(1 / 2)),
+        ):  # Early + Late
             if random_num <= 0.25:
                 time = 0
             elif random_num <= 0.5:
@@ -94,7 +104,10 @@ class Interferometer(Entity):
                 time = self.path_difference
             else:
                 return
-        if quantum_state.state == (complex(sqrt(1/2)), complex(-sqrt(1/2))):  # Early - Late
+        if quantum_state.state == (
+            complex(sqrt(1 / 2)),
+            complex(-sqrt(1 / 2)),
+        ):  # Early - Late
             if random_num <= 0.25:
                 time = 0
             elif random_num <= 0.5:

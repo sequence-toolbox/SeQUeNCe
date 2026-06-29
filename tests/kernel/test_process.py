@@ -2,7 +2,7 @@ from sequence.kernel.process import Process
 
 
 def test_run():
-    class Dummy():
+    class Dummy:
         def __init__(self):
             self.counter = 0
 

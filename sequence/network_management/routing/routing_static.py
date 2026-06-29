@@ -19,10 +19,10 @@ class StaticRoutingProtocol(RoutingProtocol):
     """Class to update forwarding table manually.
 
     The `StaticRoutingProtocol` class writes to the forwarding table (from the `NetworkManager`).
-    Static in this context means that the forwarding table is manually configured (by a network administrator), 
+    Static in this context means that the forwarding table is manually configured (by a network administrator),
     not automatically updated via a routing protocol (i.e. computer program).
     """
-    
+
     def __init__(self, owner: QuantumRouter, name: str):
         """Constructor for routing protocol.
 

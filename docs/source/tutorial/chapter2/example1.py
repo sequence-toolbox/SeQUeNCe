@@ -28,7 +28,11 @@ class Sender:
         self.memory = owner.components[memory_name]
 
     def start(self, period):
-        process1 = Process(self.memory, "update_state", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]])
+        process1 = Process(
+            self.memory,
+            "update_state",
+            [[complex(math.sqrt(1 / 2)), complex(math.sqrt(1 / 2))]],
+        )
         process2 = Process(self.memory, "excite", ["node2"])
         for i in range(NUM_TRIALS):
             event1 = Event(i * period, process1)
@@ -41,14 +45,22 @@ class SenderNode(Node):
     def __init__(self, name, timeline):
         super().__init__(name, timeline)
         memory_name = name + ".memory"
-        memory = Memory(memory_name, timeline, fidelity=1, frequency=0, efficiency=1, coherence_time=0, wavelength=500)
+        memory = Memory(
+            memory_name,
+            timeline,
+            fidelity=1,
+            frequency=0,
+            efficiency=1,
+            coherence_time=0,
+            wavelength=500,
+        )
         self.add_component(memory)
         memory.add_receiver(self)
 
         self.sender = Sender(self, memory_name)
 
     def get(self, photon, **kwargs):
-        self.send_qubit(kwargs['dst'], photon)
+        self.send_qubit(kwargs["dst"], photon)
 
 
 class ReceiverNode(Node):
@@ -69,14 +81,13 @@ class ReceiverNode(Node):
 
 
 if __name__ == "__main__":
-
     runtime = 1e12
     tl = Timeline(runtime)
 
-    log_filename = 'chapter2_example1_log'
+    log_filename = "chapter2_example1_log"
     log.set_logger(__name__, tl, log_filename)
-    log.set_logger_level('DEBUG')
-    modules = ['timeline']
+    log.set_logger_level("DEBUG")
+    modules = ["timeline"]
     for module in modules:
         log.track_module(module)
 
@@ -90,7 +101,7 @@ if __name__ == "__main__":
 
     # schedule events
     period = int(1e12 / FREQUENCY)
-    print(f'period = {period:,} ps')
+    print(f"period = {period:,} ps")
     node1.sender.start(period)
 
     tl.run()

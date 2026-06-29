@@ -30,31 +30,15 @@ from ..topology.router_net_topo import RouterNetTopo
 
 
 EDGE_DICT_ORDER = OrderedDict(
-    {
-        'source': '',
-        'target': '',
-        'distance': '',
-        'attenuation': '',
-        'link_type': ''
-    }
+    {"source": "", "target": "", "distance": "", "attenuation": "", "link_type": ""}
 )
 
-NODE_TABLE_COLUMNS = [
-    'name',
-    'type',
-    'template'
-]
+NODE_TABLE_COLUMNS = ["name", "type", "template"]
 
-EDGE_TABLE_COLUMNS = [
-    'source',
-    'target',
-    'distance',
-    'attenuation',
-    'link_type'
-]
+EDGE_TABLE_COLUMNS = ["source", "target", "distance", "attenuation", "link_type"]
 
 DIRECTORY, _ = os.path.split(__file__)
-TEMPLATES = '/default_templates.json'
+TEMPLATES = "/default_templates.json"
 
 
 class QuantumGUI:
@@ -116,13 +100,8 @@ class QuantumGUI:
                 for x in TYPES:
                     user_defaults[x] = {}
                 self.templates = user_defaults
-                with open(DIRECTORY + TEMPLATES, 'w') as outfile:
-                    json.dump(
-                        user_defaults,
-                        outfile,
-                        sort_keys=True,
-                        indent=4
-                    )
+                with open(DIRECTORY + TEMPLATES, "w") as outfile:
+                    json.dump(user_defaults, outfile, sort_keys=True, indent=4)
 
         # TODO: re-add simulation
         # self.simulation = GUI_Sim(0, 0, 'NOTSET', 'init', self)
@@ -139,8 +118,8 @@ class QuantumGUI:
         self._data = self.color_image_graph(graph_in)
         edges = self.get_graph_table_edges(self._data)
         nodes = self.get_graph_table_nodes(self._data)
-        self._edge_table = edges[0].to_dict('records')
-        self._node_table = nodes[0].to_dict('records')
+        self._edge_table = edges[0].to_dict("records")
+        self._node_table = nodes[0].to_dict("records")
         self._edge_columns = edges[1]
         self._node_columns = nodes[1]
 
@@ -151,13 +130,8 @@ class QuantumGUI:
     @templates.setter
     def templates(self, templates_in):
         self._templates = templates_in
-        with open(DIRECTORY+'/'+'user_templates.json', 'w') as outfile:
-            json.dump(
-                templates_in,
-                outfile,
-                sort_keys=True,
-                indent=4
-            )
+        with open(DIRECTORY + "/" + "user_templates.json", "w") as outfile:
+            json.dump(templates_in, outfile, sort_keys=True, indent=4)
         outfile.close()
 
     @property
@@ -189,12 +163,12 @@ class QuantumGUI:
         column_data = []
         for column in columns:
             to_add = {}
-            to_add['id'] = column
-            to_add['type'] = 'text'
+            to_add["id"] = column
+            to_add["type"] = "text"
             if case_norm:
-                to_add['name'] = column.capitalize()
+                to_add["name"] = column.capitalize()
             else:
-                to_add['name'] = column
+                to_add["name"] = column
             column_data.append(to_add)
 
         return column_data
@@ -216,7 +190,7 @@ class QuantumGUI:
         if len(nodes) != 0:
             values = []
             for node in nodes:
-                values.append(list(node[1]['data'].values()))
+                values.append(list(node[1]["data"].values()))
 
             values = np.transpose(np.array(values)).tolist()
             to_build = []
@@ -242,7 +216,7 @@ class QuantumGUI:
         if len(edges) != 0:
             values = []
             for edge in edges:
-                values.append(list(edge[2]['data'].values()))
+                values.append(list(edge[2]["data"].values()))
 
             values = np.transpose(np.array(values)).tolist()
             to_build = []
@@ -268,14 +242,14 @@ class QuantumGUI:
         node_colors = {}
         edge_colors = {}
         for node in nodes:
-            node_colors[node[0]] = TYPE_COLORS[node[1]['node_type']]
+            node_colors[node[0]] = TYPE_COLORS[node[1]["node_type"]]
             # node_images[node[0]] = getNodeImage(node[1]['node_type'])
         for edge in edges:
-            color = TYPE_COLORS[edge[2]['data']['link_type']]
+            color = TYPE_COLORS[edge[2]["data"]["link_type"]]
             edge_colors[(edge[0], edge[1])] = color
 
-        nx.set_node_attributes(colored_graph, node_colors, 'color')
-        nx.set_edge_attributes(colored_graph, edge_colors, 'color')
+        nx.set_node_attributes(colored_graph, node_colors, "color")
+        nx.set_edge_attributes(colored_graph, edge_colors, "color")
         # nx.set_node_attributes(colored_graph, node_images, 'image')
         return colored_graph
 
@@ -291,18 +265,18 @@ class QuantumGUI:
         # add node dict
         nodes_top = []
         for node in nodes:
-            node_type = node[1]['node_type']
-            node_template_name = node[1]['data']['template']
+            node_type = node[1]["node_type"]
+            node_template_name = node[1]["data"]["template"]
             node_template = self.templates[node_type][node_template_name]
 
             node_dict = {
-                Topology.NAME: node[1]['label'],
+                Topology.NAME: node[1]["label"],
                 Topology.TYPE: node_type,
                 Topology.SEED: None,
-                Topology.TEMPLATE: node_template_name
+                Topology.TEMPLATE: node_template_name,
             }
             if node_type == RouterNetTopo.QUANTUM_ROUTER:
-                node_dict[RouterNetTopo.MEMO_ARRAY_SIZE] = node_template['memo_size']
+                node_dict[RouterNetTopo.MEMO_ARRAY_SIZE] = node_template["memo_size"]
 
             nodes_top.append(node_dict)
 
@@ -311,11 +285,11 @@ class QuantumGUI:
         for edge in edges:
             qconnections.append(
                 {
-                    Topology.CONNECT_NODE_1: edge[2]['data']['source'],
-                    Topology.CONNECT_NODE_2: edge[2]['data']['target'],
-                    Topology.ATTENUATION: float(edge[2]['data']['attenuation']),
-                    Topology.DISTANCE: int(edge[2]['data']['distance']),
-                    Topology.TYPE: RouterNetTopo.MEET_IN_THE_MID
+                    Topology.CONNECT_NODE_1: edge[2]["data"]["source"],
+                    Topology.CONNECT_NODE_2: edge[2]["data"]["target"],
+                    Topology.ATTENUATION: float(edge[2]["data"]["attenuation"]),
+                    Topology.DISTANCE: int(edge[2]["data"]["distance"]),
+                    Topology.TYPE: RouterNetTopo.MEET_IN_THE_MID,
                 }
             )
 
@@ -329,25 +303,21 @@ class QuantumGUI:
                     continue
                 delay = table[i][j] / 2  # divide round trip time by 2
                 cchannels.append(
-                    {
-                        Topology.SRC: src,
-                        Topology.DST: dst,
-                        Topology.DELAY: int(delay)
-                    }
+                    {Topology.SRC: src, Topology.DST: dst, Topology.DELAY: int(delay)}
                 )
 
         # add templates dict
         templates = {}
-        for temp_name, temp_vals in self.templates['QuantumRouter'].items():
+        for temp_name, temp_vals in self.templates["QuantumRouter"].items():
             templates[temp_name] = {
-                'MemoryArray': self.templates['Memory'][temp_vals['mem_type']]
+                "MemoryArray": self.templates["Memory"][temp_vals["mem_type"]]
             }
-        for temp_name, temp_vals in self.templates['BSMNode'].items():
+        for temp_name, temp_vals in self.templates["BSMNode"].items():
             templates[temp_name] = {
-                'SingleAtomBSM': {
-                    'detectors': [
-                        self.templates['Detector'][temp_vals['detector_1']],
-                        self.templates['Detector'][temp_vals['detector_2']]
+                "SingleAtomBSM": {
+                    "detectors": [
+                        self.templates["Detector"][temp_vals["detector_1"]],
+                        self.templates["Detector"][temp_vals["detector_2"]],
                     ]
                 }
             }
@@ -358,7 +328,7 @@ class QuantumGUI:
             Topology.ALL_Q_CONNECT: qconnections,
             Topology.ALL_C_CHANNEL: cchannels,
             Topology.ALL_TEMPLATES: templates,
-            Topology.STOP_TIME: int(1e12)
+            Topology.STOP_TIME: int(1e12),
         }
 
         return output
@@ -381,30 +351,29 @@ class QuantumGUI:
 
         # Check to see if node with that name already exists
         # If it does, error
-        if add_node_name == '':
-            return [dash.no_update, 'Please enter a valid name']
+        if add_node_name == "":
+            return [dash.no_update, "Please enter a valid name"]
         for data in nodes:
             if data == add_node_name:
-                return [dash.no_update, 'Node already exists']
+                return [dash.no_update, "Node already exists"]
 
         new_node = GraphNode(add_node_name, add_node_type, add_node_template)
         new_graph.add_node(
             add_node_name,
             label=add_node_name,
             node_type=add_node_type,
-            data=new_node.__dict__
+            data=new_node.__dict__,
         )
         self.data = new_graph
 
         new_delay: pd.DataFrame = self.cc_delays.copy()
         new_column = {add_node_name: [0] * new_delay.shape[0]}
         new_delay = new_delay.assign(**new_column)
-        new_row = pd.DataFrame([[0] * new_delay.shape[1]],
-                               columns=new_delay.columns)
+        new_row = pd.DataFrame([[0] * new_delay.shape[1]], columns=new_delay.columns)
         new_delay = pd.concat([new_delay, new_row], ignore_index=True)
         self.cc_delays = new_delay
 
-        return [nx.readwrite.cytoscape_data(self.data)['elements'], '']
+        return [nx.readwrite.cytoscape_data(self.data)["elements"], ""]
 
     def _callback_add_edge(self, node_from, node_to, attributes):
         """Function which adds a new edge between two existing nodes with the given source, destination, and attributes.
@@ -424,49 +393,49 @@ class QuantumGUI:
             raise PreventUpdate
 
         # Check if given edge is classical (not yet supported)
-        if attributes['link_type'] == 'Classical':
-            return [dash.no_update, 'Classical connections are currently specified in the "Latency" tab']
+        if attributes["link_type"] == "Classical":
+            return [
+                dash.no_update,
+                'Classical connections are currently specified in the "Latency" tab',
+            ]
 
         # Check if given edges are already in the network, if yes give error
         if self.data.has_edge(node_from, node_to):
-            return [dash.no_update, 'Edge already exists']
+            return [dash.no_update, "Edge already exists"]
 
         new_graph = self.data.copy()
         new_graph.add_edge(node_from, node_to, data=attributes)
         self.data = new_graph
 
-        return [nx.readwrite.cytoscape_data(self.data)['elements'], '']
+        return [nx.readwrite.cytoscape_data(self.data)["elements"], ""]
 
     def _callback_get_output(self):
         nodes = list(self.data.nodes())
         legend_vals = list(self.data.nodes.data())
-        legend_vals = [x[1]['node_type'] for x in legend_vals]
+        legend_vals = [x[1]["node_type"] for x in legend_vals]
         legend = makeLegend(set(legend_vals))
 
         # reassign CC delay table
         delay_data = self.cc_delays.copy()
         delay_columns = self.convert_columns(
-            list(self.cc_delays.columns),
-            case_norm=False
+            list(self.cc_delays.columns), case_norm=False
         )
         delay_rows = []
         for x in delay_columns:
-            delay_rows.append(x['id'])
-        delay_data.insert(loc=0, column='To', value=delay_rows)
-        delay_columns.insert(0, {
-            'id': 'To',
-            'type': 'text',
-            'name': 'To'
-        })
-        new_delay_data = delay_data.to_dict('records')
+            delay_rows.append(x["id"])
+        delay_data.insert(loc=0, column="To", value=delay_rows)
+        delay_columns.insert(0, {"id": "To", "type": "text", "name": "To"})
+        new_delay_data = delay_data.to_dict("records")
 
         return nodes, legend, new_delay_data, delay_columns
 
     def edit_node(self, data_in):
         new_graph = self.data.copy()
-        nx.set_node_attributes(new_graph, )
+        nx.set_node_attributes(
+            new_graph,
+        )
         self.data = new_graph
-        return [nx.readwrite.cytoscape_data(self.data)['elements'], '']
+        return [nx.readwrite.cytoscape_data(self.data)["elements"], ""]
 
     # Takes the 'children' value from a callback and returns it as a
     # python dictionary that follows the format of a node in the graph
@@ -490,15 +459,17 @@ class QuantumGUI:
         output = EDGE_DICT_ORDER.copy()
 
         for x in children:
-            more_children = x['props']['children']
+            more_children = x["props"]["children"]
             for y in more_children:
-                if y['props']['children']['type'] == 'Input':
-                    out = y['props']['children']['props']['value']
-                    output['_'.join(y['props']['children']['props']['id'].split('_')[:-1])] = out
+                if y["props"]["children"]["type"] == "Input":
+                    out = y["props"]["children"]["props"]["value"]
+                    output[
+                        "_".join(y["props"]["children"]["props"]["id"].split("_")[:-1])
+                    ] = out
 
-        output['source'] = from_node
-        output['target'] = to_node
-        output['link_type'] = type_in
+        output["source"] = from_node
+        output["target"] = to_node
+        output["link_type"] = type_in
         return output
 
     def parse_node(self, children):
@@ -515,28 +486,28 @@ class QuantumGUI:
         if children is not None:
             for x in children:
                 try:
-                    if(x['props']['className'] == 'compound'):
+                    if x["props"]["className"] == "compound":
                         parsed_val = 1
-                        key = ''
-                        child = ''
-                        for y in x['props']['children']:
+                        key = ""
+                        child = ""
+                        for y in x["props"]["children"]:
                             try:
-                                child = y['props']['children']
-                                key = child['props']['className']
+                                child = y["props"]["children"]
+                                key = child["props"]["className"]
                             except Exception:
                                 continue
-                            parsed_val *= float(child['props']['value'])
+                            parsed_val *= float(child["props"]["value"])
                         values[key] = parsed_val
                 except Exception:
                     continue
-                if(x['type'] == 'Input' or x['type'] == 'Dropdown'):
-                    values[x['props']['className']] = x['props']['value']
+                if x["type"] == "Input" or x["type"] == "Dropdown":
+                    values[x["props"]["className"]] = x["props"]["value"]
 
             # print(values)
             output = values
             return output
 
-        return 'No Input'
+        return "No Input"
 
     def parse_edit(self, children):
         """Function which parses input from the edit menu.
@@ -547,23 +518,23 @@ class QuantumGUI:
         """
 
         output = {}
-        data = children['props']['children']
+        data = children["props"]["children"]
         for x in data:
-            values = x['props']['children'][1]['props']['children']['props']
-            output[values['className']] = values['value']
+            values = x["props"]["children"][1]["props"]["children"]["props"]
+            output[values["className"]] = values["value"]
         return output
 
     def clean_directory(self):
         """Function which clears the program root directory of temporary files."""
 
-        if os.path.exists(DIRECTORY+'/sequence_data.zip'):
-            os.remove(DIRECTORY+'/sequence_data.zip')
-        if os.path.exists(DIRECTORY+'/templates.json'):
-            os.remove(DIRECTORY+'/templates.json')
-        if os.path.exists(DIRECTORY+'/simulation.json'):
-            os.remove(DIRECTORY+'/simulation.json')
-        if os.path.exists(DIRECTORY+'/topology.json'):
-            os.remove(DIRECTORY+'/topology.json')
+        if os.path.exists(DIRECTORY + "/sequence_data.zip"):
+            os.remove(DIRECTORY + "/sequence_data.zip")
+        if os.path.exists(DIRECTORY + "/templates.json"):
+            os.remove(DIRECTORY + "/templates.json")
+        if os.path.exists(DIRECTORY + "/simulation.json"):
+            os.remove(DIRECTORY + "/simulation.json")
+        if os.path.exists(DIRECTORY + "/topology.json"):
+            os.remove(DIRECTORY + "/topology.json")
         return
 
     def save_all(self, path):
@@ -574,9 +545,9 @@ class QuantumGUI:
                 file path to where output should be saved
         """
 
-        new_path = path + '/data'
-        if not os.path.exists(DIRECTORY+'/data'):
-            os.mkdir(DIRECTORY+'/data')
+        new_path = path + "/data"
+        if not os.path.exists(DIRECTORY + "/data"):
+            os.mkdir(DIRECTORY + "/data")
 
         # self.save_templates(new_path)
         self.save_simulation(new_path)
@@ -591,15 +562,10 @@ class QuantumGUI:
                 file path to where output should be saved
         """
 
-        with open(path+'/topology.json', 'w') as outfile:
-            json.dump(
-                self.graph_to_topology(),
-                outfile,
-                sort_keys=True,
-                indent=4
-            )
+        with open(path + "/topology.json", "w") as outfile:
+            json.dump(self.graph_to_topology(), outfile, sort_keys=True, indent=4)
         outfile.close()
-        return path + '/topology.json'
+        return path + "/topology.json"
 
     def save_simulation(self, path):
         """Function which saves the simulation parameters of the GUI.
@@ -609,15 +575,10 @@ class QuantumGUI:
                 file path to where output should be saved
         """
 
-        with open(path+'/simulation.json', 'w') as outfile:
-            json.dump(
-                self.sim_params,
-                outfile,
-                sort_keys=True,
-                indent=4
-            )
+        with open(path + "/simulation.json", "w") as outfile:
+            json.dump(self.sim_params, outfile, sort_keys=True, indent=4)
         outfile.close()
-        return path + '/simulation.json'
+        return path + "/simulation.json"
 
     def save_templates(self, path):
         """Function which saves the templates of the GUI.
@@ -627,15 +588,10 @@ class QuantumGUI:
                 file path to where output should be saved
         """
 
-        with open(path+'/templates.json', 'w') as outfile:
-            json.dump(
-                self.templates,
-                outfile,
-                sort_keys=True,
-                indent=4
-            )
+        with open(path + "/templates.json", "w") as outfile:
+            json.dump(self.templates, outfile, sort_keys=True, indent=4)
         outfile.close()
-        return path+'/templates.json'
+        return path + "/templates.json"
 
     def get_app(self, name):
         """Function which builds an instance of the GUI as a Dash app.
@@ -650,73 +606,60 @@ class QuantumGUI:
         # create the app
         CSS = [
             dbc.themes.BOOTSTRAP,
-            'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css'  # nopep8
+            "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css",  # nopep8
         ]
-        external_scripts = [
-
-        ]
+        external_scripts = []
         app = dash.Dash(
             __name__,
             external_stylesheets=CSS,
             external_scripts=external_scripts,
-            title='SeQUeNCe',
-            suppress_callback_exceptions=True
+            title="SeQUeNCe",
+            suppress_callback_exceptions=True,
         )
 
         # define layout
         table_data, table_columns = self.get_graph_table_nodes(self.data)
-        table_data = table_data.to_dict('records')
+        table_data = table_data.to_dict("records")
         table_graph = (table_data, table_columns)
 
         table_data = self.cc_delays.copy()
         table_columns = self.convert_columns(
-            list(self.cc_delays.columns),
-            case_norm=False
+            list(self.cc_delays.columns), case_norm=False
         )
         table_delays = (table_data, table_columns)
 
         table_data = self.qc_tdm.copy()
-        table_columns = self.convert_columns(
-            list(self.qc_tdm.columns),
-            case_norm=False
-        )
+        table_columns = self.convert_columns(list(self.qc_tdm.columns), case_norm=False)
         table_tdm = (table_data, table_columns)
 
         app.layout = get_app_layout(
-            self.data,
-            table_graph,
-            table_delays,
-            table_tdm,
-            name
+            self.data, table_graph, table_delays, table_tdm, name
         )
 
         @app.callback(
-            
-            Output('graph', 'elements'),
-            Output('make_node_error', 'children'),
-            Output('make_edge_error', 'children'),
-            Output('all_nodes', 'data'),
-            Output('legend', 'children'),
-            Output('delay_table', 'data'),
-            Output('delay_table', 'columns'),
-
-            Input('add_node', 'n_clicks'),
-            Input('add_edge', 'n_clicks'),
-            Input('new_network', 'n_clicks'),
-            Input('refresh', 'n_clicks'),
-            Input('submit_edit', 'n_clicks'),
-            Input('delete_button', 'n_clicks'),
-            Input('delay_table', 'data'),
-
-            State('node_to_add_name', 'value'),
-            State('type_menu', 'value'),
-            State('add_template_menu', 'value'),
-            State('edge_properties', 'children'),
-            State('from_node', 'value'),
-            State('to_node', 'value'),
-            State('edge_type_menu', 'value'),
-            State('selected_element', 'children'),
-            State('last_clicked', 'data')
+            Output("graph", "elements"),
+            Output("make_node_error", "children"),
+            Output("make_edge_error", "children"),
+            Output("all_nodes", "data"),
+            Output("legend", "children"),
+            Output("delay_table", "data"),
+            Output("delay_table", "columns"),
+            Input("add_node", "n_clicks"),
+            Input("add_edge", "n_clicks"),
+            Input("new_network", "n_clicks"),
+            Input("refresh", "n_clicks"),
+            Input("submit_edit", "n_clicks"),
+            Input("delete_button", "n_clicks"),
+            Input("delay_table", "data"),
+            State("node_to_add_name", "value"),
+            State("type_menu", "value"),
+            State("add_template_menu", "value"),
+            State("edge_properties", "children"),
+            State("from_node", "value"),
+            State("to_node", "value"),
+            State("edge_type_menu", "value"),
+            State("selected_element", "children"),
+            State("last_clicked", "data"),
         )
         def edit_graph(
             node_state,
@@ -734,35 +677,39 @@ class QuantumGUI:
             to_node,
             edge_type,
             selected,
-            last_clicked
+            last_clicked,
         ):
             ctx = dash.callback_context
             if not ctx.triggered:
                 # print("No trigger")
 
-                nodes, legend, new_delay_data, delay_columns = \
+                nodes, legend, new_delay_data, delay_columns = (
                     self._callback_get_output()
+                )
 
                 return [
-                    nx.readwrite.cytoscape_data(self.data)['elements'],
-                    '',
-                    '',
+                    nx.readwrite.cytoscape_data(self.data)["elements"],
+                    "",
+                    "",
                     nodes,
                     legend,
                     new_delay_data,
-                    delay_columns
+                    delay_columns,
                 ]
 
             else:
-                input_id = ctx.triggered[0]['prop_id'].split('.')[0]
+                input_id = ctx.triggered[0]["prop_id"].split(".")[0]
                 # print(input_id)
-                if input_id == 'add_node':
-                    info = self._callback_add_node(node_name, node_to_add_type, node_to_add_template)
+                if input_id == "add_node":
+                    info = self._callback_add_node(
+                        node_name, node_to_add_type, node_to_add_template
+                    )
                     graph_data = info[0]
                     err_msg = info[1]
 
-                    nodes, legend, new_delay_data, delay_columns = \
+                    nodes, legend, new_delay_data, delay_columns = (
                         self._callback_get_output()
+                    )
 
                     return [
                         graph_data,
@@ -771,26 +718,22 @@ class QuantumGUI:
                         nodes,
                         legend,
                         new_delay_data,
-                        delay_columns
+                        delay_columns,
                     ]
 
-                elif input_id == 'add_edge':
+                elif input_id == "add_edge":
                     info = self._callback_add_edge(
                         from_node,
                         to_node,
-                        self.parse_edge(
-                            from_node,
-                            to_node,
-                            edge_type,
-                            properties
-                        )
+                        self.parse_edge(from_node, to_node, edge_type, properties),
                     )
 
                     graph_data = info[0]
                     err_msg = info[1]
 
-                    nodes, legend, new_delay_data, delay_columns = \
+                    nodes, legend, new_delay_data, delay_columns = (
                         self._callback_get_output()
+                    )
 
                     return [
                         graph_data,
@@ -799,55 +742,58 @@ class QuantumGUI:
                         nodes,
                         legend,
                         new_delay_data,
-                        delay_columns
+                        delay_columns,
                     ]
 
-                elif input_id == 'new_network':
+                elif input_id == "new_network":
                     self.data = nx.empty_graph(create_using=nx.DiGraph())
                     self.cc_delays = pd.DataFrame()
 
-                    nodes, legend, new_delay_data, delay_columns = \
+                    nodes, legend, new_delay_data, delay_columns = (
                         self._callback_get_output()
+                    )
 
                     return [
-                        nx.readwrite.cytoscape_data(self.data)['elements'],
-                        '',
-                        '',
+                        nx.readwrite.cytoscape_data(self.data)["elements"],
+                        "",
+                        "",
                         nodes,
                         legend,
                         new_delay_data,
-                        delay_columns
+                        delay_columns,
                     ]
 
-                elif input_id == 'refresh':
-                    nodes, legend, new_delay_data, delay_columns = \
+                elif input_id == "refresh":
+                    nodes, legend, new_delay_data, delay_columns = (
                         self._callback_get_output()
+                    )
 
                     return [
-                        nx.readwrite.cytoscape_data(self.data)['elements'],
+                        nx.readwrite.cytoscape_data(self.data)["elements"],
                         dash.no_update,
                         dash.no_update,
                         nodes,
                         legend,
                         new_delay_data,
-                        delay_columns
+                        delay_columns,
                     ]
 
-                elif input_id == 'submit_edit':
+                elif input_id == "submit_edit":
                     # print(selected)
                     edited = self.parse_edit(selected)
 
                     # for an edge
-                    if 'source' in edited:
-                        src = last_clicked['source']
-                        trgt = last_clicked['target']
+                    if "source" in edited:
+                        src = last_clicked["source"]
+                        trgt = last_clicked["target"]
                         new_data = {k: edited[k] for k in EDGE_DICT_ORDER}
-                        self.data.edges[src, trgt]['data'] = new_data
-                        gd = nx.readwrite.cytoscape_data(self.data)['elements']
-                        err_msg = ''
+                        self.data.edges[src, trgt]["data"] = new_data
+                        gd = nx.readwrite.cytoscape_data(self.data)["elements"]
+                        err_msg = ""
 
-                        nodes, legend, new_delay_data, delay_columns = \
+                        nodes, legend, new_delay_data, delay_columns = (
                             self._callback_get_output()
+                        )
 
                         return [
                             gd,
@@ -856,23 +802,23 @@ class QuantumGUI:
                             nodes,
                             legend,
                             new_delay_data,
-                            delay_columns
+                            delay_columns,
                         ]
 
                     # for a node
                     else:
-                        old_name = last_clicked['name']
-                        self.data.nodes[old_name]['data'] = edited
-                        self.data.nodes[old_name]['node_type'] = edited['type']
+                        old_name = last_clicked["name"]
+                        self.data.nodes[old_name]["data"] = edited
+                        self.data.nodes[old_name]["node_type"] = edited["type"]
                         self.data = nx.relabel_nodes(
-                            self.data,
-                            {old_name: edited['name']}
+                            self.data, {old_name: edited["name"]}
                         )
-                        gd = nx.readwrite.cytoscape_data(self.data)['elements']
-                        err_msg = ''
+                        gd = nx.readwrite.cytoscape_data(self.data)["elements"]
+                        err_msg = ""
 
-                        nodes, legend, new_delay_data, delay_columns = \
+                        nodes, legend, new_delay_data, delay_columns = (
                             self._callback_get_output()
+                        )
 
                         return [
                             gd,
@@ -881,14 +827,14 @@ class QuantumGUI:
                             nodes,
                             legend,
                             new_delay_data,
-                            delay_columns
+                            delay_columns,
                         ]
 
-                elif input_id == 'delete_button':
+                elif input_id == "delete_button":
                     to_delete = self.parse_edit(selected)
 
-                    if 'name' in to_delete:
-                        to_delete = to_delete['name']
+                    if "name" in to_delete:
+                        to_delete = to_delete["name"]
                         new_graph = self.data.copy()
                         new_graph.remove_node(to_delete)
                         self.data = new_graph
@@ -906,280 +852,264 @@ class QuantumGUI:
 
                     else:
                         new_graph = self.data.copy()
-                        source = to_delete['source']
-                        target = to_delete['target']
+                        source = to_delete["source"]
+                        target = to_delete["target"]
                         new_graph.remove_edge(source, target)
                         self.data = new_graph
 
-                    nodes, legend, new_delay_data, delay_columns = \
+                    nodes, legend, new_delay_data, delay_columns = (
                         self._callback_get_output()
+                    )
 
                     return [
-                        nx.readwrite.cytoscape_data(self.data)['elements'],
-                        '',
-                        '',
+                        nx.readwrite.cytoscape_data(self.data)["elements"],
+                        "",
+                        "",
                         nodes,
                         legend,
                         new_delay_data,
-                        delay_columns
+                        delay_columns,
                     ]
 
-                elif input_id == 'delay_table':
+                elif input_id == "delay_table":
                     df = pd.DataFrame(update_delay)
-                    df.drop('To', axis=1, inplace=True)
+                    df.drop("To", axis=1, inplace=True)
                     self.cc_delays = df.astype(int)
 
-                    nodes, legend, new_delay_data, delay_columns = \
+                    nodes, legend, new_delay_data, delay_columns = (
                         self._callback_get_output()
+                    )
 
                     return [
-                        nx.readwrite.cytoscape_data(self.data)['elements'],
-                        '',
-                        '',
+                        nx.readwrite.cytoscape_data(self.data)["elements"],
+                        "",
+                        "",
                         nodes,
                         legend,
                         new_delay_data,
-                        delay_columns
+                        delay_columns,
                     ]
 
         @app.callback(
-            Output('graph_table', 'data'),
-            Output('graph_table', 'columns'),
-            Input('toggle_nodes', 'n_clicks'),
-            Input('toggle_edges', 'n_clicks')
+            Output("graph_table", "data"),
+            Output("graph_table", "columns"),
+            Input("toggle_nodes", "n_clicks"),
+            Input("toggle_edges", "n_clicks"),
         )
         def show_nodes(toggleN, toggleE):
             ctx = dash.callback_context
             if not ctx.triggered:
                 return [self.edge_table, self.edge_columns]
             else:
-                input_id = ctx.triggered[0]['prop_id'].split('.')[0]
+                input_id = ctx.triggered[0]["prop_id"].split(".")[0]
                 # print(input_id)
-                if input_id == 'toggle_nodes':
+                if input_id == "toggle_nodes":
                     return [self.node_table, self.node_columns]
-                elif input_id == 'toggle_edges':
+                elif input_id == "toggle_edges":
                     return [self.edge_table, self.edge_columns]
 
         # EDIT #
         @app.callback(
-            Output('selected_element', 'children'),
-            Output('graph', 'tapNodeData'),
-            Output('graph', 'tapEdgeData'),
-            Output('last_clicked', 'data'),
-            Input('graph', 'tapNodeData'),
-            Input('graph', 'tapEdgeData'),
+            Output("selected_element", "children"),
+            Output("graph", "tapNodeData"),
+            Output("graph", "tapEdgeData"),
+            Output("last_clicked", "data"),
+            Input("graph", "tapNodeData"),
+            Input("graph", "tapEdgeData"),
         )
         def update_selection(tapped_node, tapped_edge):
             ctx = dash.callback_context
-            input_id = ctx.triggered[0]['prop_id'].split('.')[1]
+            input_id = ctx.triggered[0]["prop_id"].split(".")[1]
 
             if tapped_node is None and tapped_edge is None:
                 raise PreventUpdate
-            elif input_id == 'tapNodeData':
+            elif input_id == "tapNodeData":
                 out = getSelectedNodeMenu(
-                    tapped_node['data'],
-                    self.templates[tapped_node['data']['type']]
+                    tapped_node["data"], self.templates[tapped_node["data"]["type"]]
                 )
-                val = tapped_node['data'].copy()
+                val = tapped_node["data"].copy()
                 return [out, None, None, val]
-            elif input_id == 'tapEdgeData':
+            elif input_id == "tapEdgeData":
                 out = getSelectedEdgeMenu(
-                    tapped_edge['data'],
-                    self.data.nodes,
-                    ['Quantum', 'Classical']
+                    tapped_edge["data"], self.data.nodes, ["Quantum", "Classical"]
                 )
-                val = tapped_edge['data'].copy()
+                val = tapped_edge["data"].copy()
                 return [out, None, None, val]
             else:
-                out = html.Pre('Select a graph element to view')
+                out = html.Pre("Select a graph element to view")
                 return [out, dash.no_update, dash.no_update, dash.no_update]
 
         @app.callback(
-            Output('edge_properties', 'children'),
-            Input('edge_type_menu', 'value'),
+            Output("edge_properties", "children"),
+            Input("edge_type_menu", "value"),
         )
         def make_edge_properties_menu(edgeType):
-            if edgeType == 'Quantum':
+            if edgeType == "Quantum":
                 return quantum_edge
-            elif edgeType == 'Classical':
+            elif edgeType == "Classical":
                 return classic_edge
             else:
                 return dash.no_update
 
         @app.callback(
-            Output('template_properties', 'children'),
-            Output('save_state', 'children'),
-            Output('comp_temp', 'data'),
-            Output('detec_opts', 'data'),
-
-            Input('template_type_menu', 'value'),
-            Input('save_template', 'n_clicks'),
-
-            State('template_properties', 'children'),
-            State('template_type_menu', 'value'),
-            State('template_name', 'value')
+            Output("template_properties", "children"),
+            Output("save_state", "children"),
+            Output("comp_temp", "data"),
+            Output("detec_opts", "data"),
+            Input("template_type_menu", "value"),
+            Input("save_template", "n_clicks"),
+            State("template_properties", "children"),
+            State("template_type_menu", "value"),
+            State("template_name", "value"),
         )
         def template_menu(edgeType, save_click, temp, temp_type, temp_name):
             ctx = dash.callback_context
-            input_id = ctx.triggered[0]['prop_id'].split('.')[0]
-            if input_id == 'template_type_menu':
-                if edgeType == 'QuantumRouter':
-                    opts = list(self.templates['Memory'].keys())
-                    return [router_template, '', opts, '']
-                elif edgeType == 'QKDNode':
-                    return [qkd_template, '', '', '']
-                elif edgeType == 'Memory':
-                    return [quantum_memory_template, '', '', '']
-                elif edgeType == 'Detector':
-                    return [detector_template, '', '', '']
-                elif edgeType == 'BSMNode':
-                    opts = list(self.templates['Detector'].keys())
-                    return [bsm_template, '', '', opts]
-            elif input_id == 'save_template':
+            input_id = ctx.triggered[0]["prop_id"].split(".")[0]
+            if input_id == "template_type_menu":
+                if edgeType == "QuantumRouter":
+                    opts = list(self.templates["Memory"].keys())
+                    return [router_template, "", opts, ""]
+                elif edgeType == "QKDNode":
+                    return [qkd_template, "", "", ""]
+                elif edgeType == "Memory":
+                    return [quantum_memory_template, "", "", ""]
+                elif edgeType == "Detector":
+                    return [detector_template, "", "", ""]
+                elif edgeType == "BSMNode":
+                    opts = list(self.templates["Detector"].keys())
+                    return [bsm_template, "", "", opts]
+            elif input_id == "save_template":
                 if temp is None or temp_name is None:
-                    return [dash.no_update, '', '', '']
+                    return [dash.no_update, "", "", ""]
                 else:
                     new_templates = self.templates.copy()
                     parsed = {temp_name: self.parse_node(temp)}
                     new_templates[temp_type].update(parsed)
                     self.templates = new_templates
-                    return [dash.no_update, 'Template Saved', dash.no_update, '']
+                    return [dash.no_update, "Template Saved", dash.no_update, ""]
             else:
-                opts = list(self.templates['Memory'].keys())
-                return [router_template, '', opts, '']
+                opts = list(self.templates["Memory"].keys())
+                return [router_template, "", opts, ""]
 
         @app.callback(
-            Output('running', 'disabled'),
-            Output('runtime', 'children'),
-            Output('simtime', 'children'),
-            Output('results_out', 'children'),
-
-            Input('run_sim', 'n_clicks'),
-            Input('running', 'n_intervals'),
-
-            State('runtime', 'children'),
-            State('time_units_sim', 'value'),
-            State('sim_time_in', 'value'),
-            State('logging_verbosity', 'value'),
-            State('sim_name', 'value')
+            Output("running", "disabled"),
+            Output("runtime", "children"),
+            Output("simtime", "children"),
+            Output("results_out", "children"),
+            Input("run_sim", "n_clicks"),
+            Input("running", "n_intervals"),
+            State("runtime", "children"),
+            State("time_units_sim", "value"),
+            State("sim_time_in", "value"),
+            State("logging_verbosity", "value"),
+            State("sim_name", "value"),
         )
         def run_sim(clicks, n, runtime, units, time_to_run, logging, sim_name):
             ctx = dash.callback_context
-            input_id = ctx.triggered[0]['prop_id'].split('.')[0]
+            input_id = ctx.triggered[0]["prop_id"].split(".")[0]
 
-            if input_id == 'run_sim':
+            if input_id == "run_sim":
                 if time_to_run is None or units is None or sim_name is None:
-                    return [dash.no_update, '', '', '']
+                    return [dash.no_update, "", "", ""]
                 else:
                     if not self.simulation.timeline.is_running:
                         self.simulation = GUI_Sim(
-                            int(time_to_run),
-                            int(units),
-                            logging,
-                            sim_name,
-                            self
+                            int(time_to_run), int(units), logging, sim_name, self
                         )
                         self.simulation.init_logging()
                         self.simulation.random_request_simulation()
                         func = self.simulation.timeline.run
-                        toRun = threading.Thread(
-                            target=func,
-                            name="run_simulation"
-                        )
+                        toRun = threading.Thread(target=func, name="run_simulation")
                         toRun.start()
-                        print('start')
-                        return [False, '00:00:00', '', '']
+                        print("start")
+                        return [False, "00:00:00", "", ""]
                     else:
                         self.simulation.timeline.stop()
-                        print('stop')
-                        return [True, '', '', '']
-            elif input_id == 'running':
+                        print("stop")
+                        return [True, "", "", ""]
+            elif input_id == "running":
                 if self.simulation.timeline.is_running:
-                    h, m, s = runtime.split(':')
+                    h, m, s = runtime.split(":")
                     current_time = int(
                         datetime.timedelta(
-                            hours=int(h),
-                            minutes=int(m),
-                            seconds=int(s)
+                            hours=int(h), minutes=int(m), seconds=int(s)
                         ).total_seconds()
                     )
                     current_time += 1
                     str_time = time.gmtime(current_time)
-                    new_runtime = time.strftime('%H:%M:%S', str_time)
+                    new_runtime = time.strftime("%H:%M:%S", str_time)
                     new_simtime = self.simulation.getSimTime()
 
-                    return [dash.no_update, new_runtime, new_simtime, '']
+                    return [dash.no_update, new_runtime, new_simtime, ""]
                 else:
                     self.simulation.write_to_file()
-                    sim_results = self.simulation.sim_name + '_results.txt'
+                    sim_results = self.simulation.sim_name + "_results.txt"
 
-                    with open(DIRECTORY + '/'+sim_results) as outfile:
+                    with open(DIRECTORY + "/" + sim_results) as outfile:
                         sim_results = outfile.read()
                     outfile.close()
                     return [True, dash.no_update, dash.no_update, sim_results]
             else:
-                return [True, '', '', '']
+                return [True, "", "", ""]
 
         @app.callback(
             Output("download", "data"),
-            Input('export_all', 'n_clicks'),
-            Input('export_topo', 'n_clicks'),
-            Input('export_templ', 'n_clicks'),
-            Input('export_sim', 'n_clicks'),
+            Input("export_all", "n_clicks"),
+            Input("export_topo", "n_clicks"),
+            Input("export_templ", "n_clicks"),
+            Input("export_sim", "n_clicks"),
             prevent_initial_call=True,
         )
         def export_data(all, top, temp, sim):
             ctx = dash.callback_context
-            input_id = ctx.triggered[0]['prop_id'].split('.')[0]
+            input_id = ctx.triggered[0]["prop_id"].split(".")[0]
             self.clean_directory()
 
-            if input_id == 'export_all':
+            if input_id == "export_all":
                 path = self.save_all(DIRECTORY)
 
                 shutil.make_archive(
-                    base_name=DIRECTORY+'/sequence_data',
-                    format='zip',
+                    base_name=DIRECTORY + "/sequence_data",
+                    format="zip",
                     root_dir=path,
                 )
                 shutil.rmtree(path)
-                return dcc.send_file(DIRECTORY + '/sequence_data.zip')
-            elif input_id == 'export_topo':
+                return dcc.send_file(DIRECTORY + "/sequence_data.zip")
+            elif input_id == "export_topo":
                 return dcc.send_file(self.save_topology(DIRECTORY))
-            elif input_id == 'export_templ':
+            elif input_id == "export_templ":
                 return dcc.send_file(self.save_templates(DIRECTORY))
-            elif input_id == 'export_sim':
+            elif input_id == "export_sim":
                 return dcc.send_file(self.save_simulation(DIRECTORY))
 
         @app.callback(
             [Output(f"tab-{i}", "style") for i in range(len(tab_ids))],
-            Output('side_click', 'data'),
-            Output('page-content', 'style'),
-            Output('project_name', 'style'),
-            Output('refresh', 'style'),
-            
+            Output("side_click", "data"),
+            Output("page-content", "style"),
+            Output("project_name", "style"),
+            Output("refresh", "style"),
             Input("btn_sidebar", "n_clicks"),
-
-            State('side_click', 'data')
+            State("side_click", "data"),
         )
         def toggle_sidebar(n, nclick):
             ctx = dash.callback_context
-            input_id = ctx.triggered[0]['prop_id'].split('.')[0]
-            if input_id == 'btn_sidebar':
+            input_id = ctx.triggered[0]["prop_id"].split(".")[0]
+            if input_id == "btn_sidebar":
                 if nclick == "SHOW":
                     styles = [MENU_STYLE for i in range(len(tab_ids))]
-                    styles.append('HIDDEN')
+                    styles.append("HIDDEN")
                     styles.append(GRAPH_DIV_STYLE)
                     styles.append(PROJECT)
                     styles.append(REFRESH)
                 else:
                     styles = [MENU_STYLE_H for i in range(len(tab_ids))]
-                    styles.append('SHOW')
+                    styles.append("SHOW")
                     styles.append(GRAPH_DIV_STYLE_H)
                     styles.append(PROJECT_H)
                     styles.append(REFRESH_H)
             else:
                 styles = [MENU_STYLE for i in range(len(tab_ids))]
-                styles.append('HIDDEN')
+                styles.append("HIDDEN")
                 styles.append(GRAPH_DIV_STYLE)
                 styles.append(PROJECT)
                 styles.append(REFRESH)
@@ -1189,7 +1119,7 @@ class QuantumGUI:
         @app.callback(
             Output("from_node", "options"),
             Output("to_node", "options"),
-            Input('all_nodes', 'data'),
+            Input("all_nodes", "data"),
         )
         def updateNodeMenus(nodes):
             options = makeDropdownOptions(nodes)
@@ -1197,7 +1127,7 @@ class QuantumGUI:
 
         @app.callback(
             Output("selected_template", "options"),
-            Input('selected_node_type', 'value'),
+            Input("selected_node_type", "value"),
         )
         def updateNodeTypeMenu(type_in):
             templates = list(self.templates[type_in].keys())
@@ -1206,7 +1136,7 @@ class QuantumGUI:
         @app.callback(
             Output("add_template_menu", "options"),
             Output("add_template_menu", "value"),
-            Input('type_menu', 'value'),
+            Input("type_menu", "value"),
         )
         def updateNodeTempMenu(type_in):
             templates = list(self.templates[type_in].keys())
@@ -1215,7 +1145,7 @@ class QuantumGUI:
         @app.callback(
             Output("mem_type", "options"),
             Output("mem_type", "value"),
-            Input('comp_temp', 'data'),
+            Input("comp_temp", "data"),
             prevent_initial_call=True,
         )
         def updateTypeMenu(data):
@@ -1223,7 +1153,7 @@ class QuantumGUI:
 
         @app.callback(
             Output("detec_type_1", "options"),
-            Input('detec_opts', 'data'),
+            Input("detec_opts", "data"),
             prevent_initial_call=True,
         )
         def updateTypeMenu(data):
@@ -1231,7 +1161,7 @@ class QuantumGUI:
 
         @app.callback(
             Output("detec_type_2", "options"),
-            Input('detec_opts', 'data'),
+            Input("detec_opts", "data"),
             prevent_initial_call=True,
         )
         def updateTypeMenu(data):

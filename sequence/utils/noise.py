@@ -2,6 +2,7 @@ import itertools
 import numpy as np
 from sequence.components.circuit import Circuit
 
+
 class Noise:
     """
     Provides static methods to simulate common quantum noise processes on circuits and density matrices.
@@ -12,15 +13,17 @@ class Noise:
     - Measurement bit-flip errors
     - Noisy two-qubit gate application in circuits
 
-    These methods support both circuit-level (via SeQUeNCe `Circuit` objects) and 
-    density-matrix-level simulations, enabling realistic modeling of quantum errors 
+    These methods support both circuit-level (via SeQUeNCe `Circuit` objects) and
+    density-matrix-level simulations, enabling realistic modeling of quantum errors
     for testing protocols like quantum error correction or entanglement generation.
 
     All methods are stateless and can be used independently within simulation pipelines.
     """
 
     @staticmethod
-    def apply_measurement_noise(circuit: "Circuit", meas_error_rate: float, qubit_index: int = 0): 
+    def apply_measurement_noise(
+        circuit: "Circuit", meas_error_rate: float, qubit_index: int = 0
+    ):
         """
         Applies classical measurement noise by flipping the qubit with probability η.
 
@@ -52,9 +55,10 @@ class Noise:
         if np.random.random() < meas_error_rate:
             circuit.x(qubit_index)
 
-
     @staticmethod
-    def apply_depolarizing_noise(rho: np.ndarray, p: float, qubits: list[int], keys: list[int]) -> np.ndarray:
+    def apply_depolarizing_noise(
+        rho: np.ndarray, p: float, qubits: list[int], keys: list[int]
+    ) -> np.ndarray:
         """
         Apply depolarizing noise to selected qubits in an n-qubit density matrix.
 
@@ -121,7 +125,7 @@ class Noise:
 
         # determine number of qubits and validate rho shape
         n = len(keys)
-        dim = 2 ** n
+        dim = 2**n
         if rho.shape != (dim, dim):
             raise ValueError(f"rho must have shape ({dim}, {dim}).")
 

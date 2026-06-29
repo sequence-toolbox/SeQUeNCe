@@ -89,12 +89,20 @@ def test_MemoryArray_expire():
 
 def test_Memory_update_state():
     new_state = [complex(0), complex(1)]
-    
+
     tl = Timeline()
-    mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
+    mem = Memory(
+        "mem",
+        tl,
+        fidelity=1,
+        frequency=0,
+        efficiency=1,
+        coherence_time=-1,
+        wavelength=500,
+    )
 
     mem.update_state(new_state)
-    
+
     assert len(tl.quantum_manager.states) == 1
     assert np.all(tl.quantum_manager.get(mem.qstate_key).state == np.array(new_state))
 
@@ -105,7 +113,15 @@ def test_Memory_excite():
     tl = Timeline()
     rec = DumbReceiver()
     own = Owner()
-    mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
+    mem = Memory(
+        "mem",
+        tl,
+        fidelity=1,
+        frequency=0,
+        efficiency=1,
+        coherence_time=-1,
+        wavelength=500,
+    )
     mem.add_receiver(rec)
     mem.owner = own
 
@@ -156,11 +172,19 @@ def test_Memory_expire():
             self.memory_expire(memory)
 
     tl = Timeline()
-    mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
+    mem = Memory(
+        "mem",
+        tl,
+        fidelity=1,
+        frequency=0,
+        efficiency=1,
+        coherence_time=-1,
+        wavelength=500,
+    )
     parent = DumbParent(mem)
     protocol = FakeProtocol("upper_protocol")
     mem.attach(protocol)
-    mem.update_state([math.sqrt(1/2), math.sqrt(1/2)])
+    mem.update_state([math.sqrt(1 / 2), math.sqrt(1 / 2)])
     entangled_memory = {"node_id": "node", "memo_id": 0}
     mem.entangled_memory = entangled_memory
 
@@ -168,14 +192,16 @@ def test_Memory_expire():
     mem.detach(parent)
     assert len(parent.pop_log) == 0 and protocol.is_expire is False
     mem.expire()
-    assert np.all(tl.quantum_manager.get(mem.qstate_key).state == np.array([1, 0]))  # check if collapsed to |0> state
+    assert np.all(
+        tl.quantum_manager.get(mem.qstate_key).state == np.array([1, 0])
+    )  # check if collapsed to |0> state
     assert mem.entangled_memory == {"node_id": None, "memo_id": None}
     assert len(parent.pop_log) == 0 and protocol.is_expire is True
 
     # expire when the resource manager controls memory
     mem.attach(parent)
     mem.detach(protocol)
-    mem.update_state([math.sqrt(1/2), math.sqrt(1/2)])
+    mem.update_state([math.sqrt(1 / 2), math.sqrt(1 / 2)])
     entangled_memory = {"node_id": "node", "memo_id": 0}
     mem.entangled_memory = entangled_memory
     mem.expire()
@@ -184,7 +210,15 @@ def test_Memory_expire():
 
 def test_Memory__schedule_expiration():
     tl = Timeline()
-    mem = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
+    mem = Memory(
+        "mem",
+        tl,
+        fidelity=1,
+        frequency=0,
+        efficiency=1,
+        coherence_time=1,
+        wavelength=500,
+    )
     parent = DumbParent(mem)
 
     process = Process(mem, "expire", [])
@@ -204,7 +238,9 @@ def test_Memory__schedule_expiration():
 def test_Absorptive_prepare():
     PREPARE_TIME = 100
     tl = Timeline()
-    mem = AbsorptiveMemory("mem", tl, 80e6, 1, perfect_efficiency, 100, 1550, PREPARE_TIME)
+    mem = AbsorptiveMemory(
+        "mem", tl, 80e6, 1, perfect_efficiency, 100, 1550, PREPARE_TIME
+    )
     # mem = AbsorptiveMemory("mem", tl, 80e6, 1, perfect_efficiency, 100, 0, 500, 0, PREPARE_TIME)
 
     tl.init()
@@ -224,7 +260,9 @@ def test_Absorptive_get_all_bins():
     PERIOD = 1
     MODE_NUM = 100
     tl = Timeline()
-    mem = AbsorptiveMemory("mem", tl, 1e12/PERIOD, 1, perfect_efficiency, MODE_NUM, 500)
+    mem = AbsorptiveMemory(
+        "mem", tl, 1e12 / PERIOD, 1, perfect_efficiency, MODE_NUM, 500
+    )
     mem.is_prepared = True
     tl.init()
 
@@ -251,7 +289,7 @@ def test_Absorptive_get_all_bins():
 def test_Absorpive_get_skip_bins():
     PERIOD = 1
     tl = Timeline()
-    mem = AbsorptiveMemory("mem", tl, 1e12/PERIOD, 1, perfect_efficiency, 100, 500)
+    mem = AbsorptiveMemory("mem", tl, 1e12 / PERIOD, 1, perfect_efficiency, 100, 500)
     mem.is_prepared = True
     tl.init()
 
@@ -273,7 +311,9 @@ def test_Absorptive_retrieve():
     PERIOD = 1
     MODE_NUM = 100
     tl = Timeline()
-    mem = AbsorptiveMemory("mem", tl, 1e12/PERIOD, 1, perfect_efficiency, MODE_NUM, 500)
+    mem = AbsorptiveMemory(
+        "mem", tl, 1e12 / PERIOD, 1, perfect_efficiency, MODE_NUM, 500
+    )
     parent = DumbParent(mem)
     mem.is_prepared = True
     tl.init()
@@ -346,39 +386,59 @@ def test_MemoryWithRandomCoherenceTime__schedule_expiration():
     coherence_period_avg = 1
     coherence_period_stdev = 0.15
     tl = Timeline()
-    mem = MemoryWithRandomCoherenceTime("mem", tl, fidelity=1, frequency=0, efficiency=1, 
-                 coherence_time=coherence_period_avg, coherence_time_stdev=coherence_period_stdev, 
-                 wavelength=500)
+    mem = MemoryWithRandomCoherenceTime(
+        "mem",
+        tl,
+        fidelity=1,
+        frequency=0,
+        efficiency=1,
+        coherence_time=coherence_period_avg,
+        coherence_time_stdev=coherence_period_stdev,
+        wavelength=500,
+    )
     parent = DumbParent(mem)
-    
+
     times_of_expiration_calculated = [0]
     np.random.seed(2)
     for i in range(NUM_TRIALS):
-        times_of_expiration_calculated.append(times_of_expiration_calculated[-1]
-                                              + int(mem.coherence_time_distribution()*1e12))
+        times_of_expiration_calculated.append(
+            times_of_expiration_calculated[-1]
+            + int(mem.coherence_time_distribution() * 1e12)
+        )
     times_of_expiration_calculated.pop(0)
 
     np.random.seed(2)
-    process = Process(mem, "update_state", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]])
+    process = Process(
+        mem, "update_state", [[complex(math.sqrt(1 / 2)), complex(math.sqrt(1 / 2))]]
+    )
     for i in range(NUM_TRIALS):
         event = Event(tl.now(), process)
-        tl.schedule(event)        
+        tl.schedule(event)
         tl.init()
         tl.run()
         assert times_of_expiration_calculated[i] == tl.now()
-        
+
     period_sum = times_of_expiration_calculated[0]
     period_squared_sum = times_of_expiration_calculated[0] ** 2
     for i in range(1, len(times_of_expiration_calculated)):
-        period = times_of_expiration_calculated[i] - times_of_expiration_calculated[i-1]
+        period = (
+            times_of_expiration_calculated[i] - times_of_expiration_calculated[i - 1]
+        )
         period_sum += period
-        period_squared_sum += period*period
-    
+        period_squared_sum += period * period
+
     avg_simulated = period_sum / NUM_TRIALS * 1e-12
-    stdev_simulated = np.sqrt((period_squared_sum - period_sum * period_sum * 1.0/NUM_TRIALS) / NUM_TRIALS) * 1e-12
+    stdev_simulated = (
+        np.sqrt(
+            (period_squared_sum - period_sum * period_sum * 1.0 / NUM_TRIALS)
+            / NUM_TRIALS
+        )
+        * 1e-12
+    )
 
-    #check that values in series are different
+    # check that values in series are different
     assert stdev_simulated > 0.0
-    #probability of error below is less then 0.3%
-    assert abs(avg_simulated - coherence_period_avg) < 3 * coherence_period_stdev / np.sqrt(NUM_TRIALS)
-
+    # probability of error below is less then 0.3%
+    assert abs(
+        avg_simulated - coherence_period_avg
+    ) < 3 * coherence_period_stdev / np.sqrt(NUM_TRIALS)

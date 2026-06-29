@@ -13,15 +13,15 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath("../.."))
 from sequence import read_version_from_pyproject
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'SeQUeNCe'
-copyright = '2020-2026'
-author = 'Xiaoliang Wu, Joaquin Chung, Alexander Kolar, Eugene Wang, Tian Zhong, Rajkumar Kettimuthu, Martin Suchara'
+project = "SeQUeNCe"
+copyright = "2020-2026"
+author = "Xiaoliang Wu, Joaquin Chung, Alexander Kolar, Eugene Wang, Tian Zhong, Rajkumar Kettimuthu, Martin Suchara"
 
 # The full version, including alpha/beta/rc tags. Keep single source of truth in pyproject.
 version = release = read_version_from_pyproject()
@@ -33,24 +33,21 @@ version = release = read_version_from_pyproject()
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-        'sphinx.ext.autodoc',
-        'sphinx.ext.coverage',
-        'sphinx.ext.napoleon',
-        'recommonmark'
+    "sphinx.ext.autodoc",
+    "sphinx.ext.coverage",
+    "sphinx.ext.napoleon",
+    "recommonmark",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['Thumbs.db', '.DS_Store']
+exclude_patterns = ["Thumbs.db", ".DS_Store"]
 
-source_suffix = {
-        '.rst': 'restructuredtext',
-        '.md': 'markdown'
-}
+source_suffix = {".rst": "restructuredtext", ".md": "markdown"}
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -58,4 +55,4 @@ source_suffix = {
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"

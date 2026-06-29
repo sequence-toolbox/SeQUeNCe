@@ -18,6 +18,7 @@ class QKDTopo(Topo):
         cchannels (list[ClassicalChannel]): list of classical channel objects in network.
         tl (Timeline): the timeline used for simulation
     """
+
     QKD_NODE = "QKDNode"
 
     def _load(self, filename):
@@ -31,7 +32,7 @@ class QKDTopo(Topo):
         self._add_cconnections(topo_config)
 
     def _add_timeline(self, config):
-        stop_time = config.get(Topo.STOP_TIME, float('inf'))
+        stop_time = config.get(Topo.STOP_TIME, float("inf"))
         self.tl = Timeline(stop_time)
 
     def _add_nodes(self, config):
@@ -44,8 +45,7 @@ class QKDTopo(Topo):
             template = self.templates.get(template_name, {})
 
             if node_type == self.QKD_NODE:
-                node = QKDNode(name, self.tl,
-                               seed=seed, component_templates=template)
+                node = QKDNode(name, self.tl, seed=seed, component_templates=template)
             else:
                 raise NotImplementedError("Unknown type of node")
 

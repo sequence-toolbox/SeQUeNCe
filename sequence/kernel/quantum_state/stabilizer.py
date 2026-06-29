@@ -24,7 +24,9 @@ class StabilizerState(State):
         seed (int | None): random seed used by the simulator
     """
 
-    def __init__(self, state: TableauSimulator | None, keys: list[int], seed: int | None = None):
+    def __init__(
+        self, state: TableauSimulator | None, keys: list[int], seed: int | None = None
+    ):
         """Create a stabilizer state.
 
         Args:
@@ -40,7 +42,9 @@ class StabilizerState(State):
         elif isinstance(state, TableauSimulator):
             self.state = state
         else:
-            raise TypeError(f"state must be stim.TableauSimulator or None, got {type(state)}")
+            raise TypeError(
+                f"state must be stim.TableauSimulator or None, got {type(state)}"
+            )
 
     @classmethod
     def zero_state(cls, key: int, seed: int | None = None) -> "StabilizerState":
@@ -63,13 +67,15 @@ class StabilizerState(State):
         Returns:
             StabilizerState: Copied state with copied keys and simulator.
         """
-        assert isinstance(self.state, TableauSimulator), "state must be a stim.TableauSimulator to copy"
+        assert isinstance(self.state, TableauSimulator), (
+            "state must be a stim.TableauSimulator to copy"
+        )
         simulator = self.state.copy(seed=self.seed)
         return StabilizerState(state=simulator, keys=self.keys.copy(), seed=self.seed)
-        
+
     def set_seed(self, seed: int):
         """Set the random seed for this state, affecting future simulator operations.
-        
+
         Args:
             seed (int): new random seed to set.
         """
@@ -79,7 +85,7 @@ class StabilizerState(State):
 
     def get_seed(self) -> int | None:
         """Get the current random seed for this state.
-        
+
         Returns:
             int | None: Current random seed.
         """
@@ -104,8 +110,8 @@ class StabilizerState(State):
 
     def canonical_stabilizers(self) -> list[PauliString]:
         """Return the simulator's canonical stabilizer generators, which describes the quantum state in a normalized stabilizer-generator form.
-        
-        Distinction against forward tableau: many different Clifford circuits can produce the same stabilizer state. 
+
+        Distinction against forward tableau: many different Clifford circuits can produce the same stabilizer state.
             Their forward tableaus may differ, but their canonical stabilizers can be the same because the final state is the same.
 
         Returns:
@@ -115,16 +121,23 @@ class StabilizerState(State):
 
     def __str__(self) -> str:
         """The string representation of a stabilizer state includes its keys and canonical stabilizers.
-        
+
         Returns:
             str: string representation of the state.
         """
-        return "\n".join(["Keys:", str(self.keys), "Canonical stabilizers:", str(self.canonical_stabilizers())])
+        return "\n".join(
+            [
+                "Keys:",
+                str(self.keys),
+                "Canonical stabilizers:",
+                str(self.canonical_stabilizers()),
+            ]
+        )
 
     def __repr__(self) -> str:
-        """The repr representation of a stabilizer state includes its keys, 
+        """The repr representation of a stabilizer state includes its keys,
         canonical stabilizers, inverse tableau, and forward tableau.
-        
+
         Returns:
             str: repr representation of the state.
         """

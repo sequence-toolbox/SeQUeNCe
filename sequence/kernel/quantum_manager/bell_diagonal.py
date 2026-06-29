@@ -48,7 +48,7 @@ class QuantumManagerBellDiagonal(QuantumManager):
     def set(self, keys: list[int], diag_elems: list[float]) -> None:
         """Method to set the state of given keys to a Bell diagonal state with given diagonal elements.
         If the keys list is not of length 2, the keys will be removed from the quantum manager
-        
+
         Args:
             keys (list[int]): list of quantum manager keys to modify.
             diag_elems (list[float]): list of 4 diagonal elements of Bell diagonal state, in I, Z, X, Y order.

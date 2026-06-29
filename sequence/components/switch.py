@@ -45,7 +45,9 @@ class Switch(Entity):
 
         pass
 
-    def set_basis_list(self, basis_list: "list[int]", start_time: int, frequency: float) -> None:
+    def set_basis_list(
+        self, basis_list: "list[int]", start_time: int, frequency: float
+    ) -> None:
         self.basis_list = basis_list
         self.start_time = start_time
         self.frequency = frequency
@@ -70,7 +72,9 @@ class Switch(Entity):
 
         # check if receiver is detector; schedule in late/early time bin
         if self.basis_list[index] == 0:
-            if Photon.measure(photon.encoding_type["bases"][0], photon, self.get_generator()):
+            if Photon.measure(
+                photon.encoding_type["bases"][0], photon, self.get_generator()
+            ):
                 time = self.timeline.now() + photon.encoding_type["bin_separation"]
                 process = Process(receiver, "get", [photon])
                 event = Event(time, process)

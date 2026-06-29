@@ -11,8 +11,8 @@ from .reservation import Reservation
 from ..message import Message
 from ..protocol import StackProtocol
 
-ENTANGLED = 'ENTANGLED'
-RAW = 'RAW'
+ENTANGLED = "ENTANGLED"
+RAW = "RAW"
 
 
 class RSVPMsgType(Enum):
@@ -44,9 +44,9 @@ class RSVPMessage(Message):
             case RSVPMsgType.REQUEST:
                 self.qcaps = []
             case RSVPMsgType.REJECT:
-                self.path = kwargs['path']
+                self.path = kwargs["path"]
             case RSVPMsgType.APPROVE:
-                self.path = kwargs['path']
+                self.path = kwargs["path"]
             case _:
                 raise Exception("Unknown message type")
 
@@ -85,11 +85,19 @@ class RSVPProtocol(StackProtocol):
         self.memory_array_name = memory_array_name
         self.memo_arr = owner.components[memory_array_name]
         self.timecards: list[MemoryTimeCard] = []
-        self.purification_mode = 'until_target'  # once or until_target. QoS
+        self.purification_mode = "until_target"  # once or until_target. QoS
         self.accepted_reservations = []
 
-    def push(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float,
-             entanglement_number: int = 1, identity: int = 0):
+    def push(
+        self,
+        responder: str,
+        start_time: int,
+        end_time: int,
+        memory_size: int,
+        target_fidelity: float,
+        entanglement_number: int = 1,
+        identity: int = 0,
+    ):
         """Method to receive reservation requests from higher level protocol.
 
         Will evaluate the request and determine if the node can meet it.
@@ -108,8 +116,16 @@ class RSVPProtocol(StackProtocol):
             May push/pop to lower/upper attached protocols (or network manager).
         """
 
-        reservation = Reservation(self.owner.name, responder, start_time, end_time, memory_size, target_fidelity,
-                                  entanglement_number, identity)
+        reservation = Reservation(
+            self.owner.name,
+            responder,
+            start_time,
+            end_time,
+            memory_size,
+            target_fidelity,
+            entanglement_number,
+            identity,
+        )
         if self.schedule(reservation):
             msg = RSVPMessage(RSVPMsgType.REQUEST, self.name, reservation)
             qcap = QCap(self.owner.name)
@@ -150,13 +166,17 @@ class RSVPProtocol(StackProtocol):
                 if self.owner.name == msg.reservation.responder:
                     self.accepted_reservations.append(msg.reservation)
                     msg.reservation.set_path(path)
-                    new_msg = RSVPMessage(RSVPMsgType.APPROVE, self.name, msg.reservation, path=path)
+                    new_msg = RSVPMessage(
+                        RSVPMsgType.APPROVE, self.name, msg.reservation, path=path
+                    )
                     self._pop(msg=new_msg)
                     self._push(dst=None, msg=new_msg, next_hop=src)
                 else:
                     self._push(dst=msg.reservation.responder, msg=msg)
             else:  # schedule failed
-                new_msg = RSVPMessage(RSVPMsgType.REJECT, self.name, msg.reservation, path=path)
+                new_msg = RSVPMessage(
+                    RSVPMsgType.REJECT, self.name, msg.reservation, path=path
+                )
                 self._push(dst=None, msg=new_msg, next_hop=src)
         elif msg.msg_type == RSVPMsgType.REJECT:
             for card in self.timecards:
@@ -184,7 +204,7 @@ class RSVPProtocol(StackProtocol):
             str: the name of the next hop
         """
         cur_index = path.index(self.owner.name)
-        assert cur_index >= 1, f'{cur_index} must be larger equal than 1'
+        assert cur_index >= 1, f"{cur_index} must be larger equal than 1"
         next_hop = path[cur_index - 1]
         return next_hop
 
@@ -212,7 +232,9 @@ class RSVPProtocol(StackProtocol):
 
         if counter > 0:  # attempt reservation failed: not enough memory (timecard)
             for timecard in timecards:
-                timecard.remove(reservation)  # remove reservation from the timecard that have added the reservation
+                timecard.remove(
+                    reservation
+                )  # remove reservation from the timecard that have added the reservation
             return False
 
         return True
@@ -223,8 +245,9 @@ class RSVPProtocol(StackProtocol):
         raise Exception(f"RSVP protocol {self.name} received a message (disallowed)")
 
     def set_purification_mode(self, mode: str) -> None:
-        assert mode in ['once', 'until_target'], \
+        assert mode in ["once", "until_target"], (
             f'Purification mode {mode} not supported, should be either "once" or "until_target"'
+        )
         self.purification_mode = mode
 
 

@@ -12,20 +12,18 @@ def test_init():
     fs = FiberStretcher("fs", tl, np.pi)
 
     fs_circ = fs._circuit.get_unitary_matrix()
-    desired = np.array([[complex(1), complex(0)],
-                        [complex(0), complex(-1)]])
-    assert np.allclose(fs_circ, desired)   # array_equal() return False
+    desired = np.array([[complex(1), complex(0)], [complex(0), complex(-1)]])
+    assert np.allclose(fs_circ, desired)  # array_equal() return False
 
 
 def test_set_phase():
     tl = Timeline()
     fs = FiberStretcher("fs", tl)
-    fs.set_phase(np.pi/2)
+    fs.set_phase(np.pi / 2)
 
     fs_circ = fs._circuit.get_unitary_matrix()
-    desired = np.array([[complex(1), complex(0)],
-                        [complex(0), complex(0, 1)]])
-    assert np.allclose(fs_circ, desired)   # array_equal() return False
+    desired = np.array([[complex(1), complex(0)], [complex(0), complex(0, 1)]])
+    assert np.allclose(fs_circ, desired)  # array_equal() return False
 
 
 def test_get():
@@ -50,5 +48,5 @@ def test_get():
     fs.get(photon)
 
     photon_state = tl.quantum_manager.get(photon.quantum_state).state
-    desired = np.array([complex(np.sqrt(1/2)), complex(-np.sqrt(1/2))])
+    desired = np.array([complex(np.sqrt(1 / 2)), complex(-np.sqrt(1 / 2))])
     assert np.where(np.isclose(photon_state, desired))

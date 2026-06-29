@@ -11,18 +11,14 @@ from ..topology.router_net_topo import RouterNetTopo
 
 
 class RunGui:
-    DEFAULT_CONFIG = '/starlight.json'
+    DEFAULT_CONFIG = "/starlight.json"
 
     def __init__(self, name):
         graph = nx.DiGraph()
         tdm_table = pd.DataFrame()
         delay_table = pd.DataFrame()
         self.name = name
-        self.gui = QuantumGUI(
-            graph,
-            delays=delay_table,
-            tdm=tdm_table
-        ).get_app(name)
+        self.gui = QuantumGUI(graph, delays=delay_table, tdm=tdm_table).get_app(name)
 
     def load_graph(self, path_to_topology=None):
         # JSON
@@ -36,16 +32,13 @@ class RunGui:
 
         # Delay table initialization
         # TODO: rewrite for non-table format
-        pd.options.display.float_format = '{:.2e}'.format
-        table = network_in['cchannels_table']
-        delay_table = pd.DataFrame(table['table'])
-        delay_table.columns = table['labels']
+        pd.options.display.float_format = "{:.2e}".format
+        table = network_in["cchannels_table"]
+        delay_table = pd.DataFrame(table["table"])
+        delay_table.columns = table["labels"]
 
         # TDM table initialization
-        tdm_default = np.empty(
-            [len(table['labels']), len(table['labels'])],
-            dtype=int
-        )
+        tdm_default = np.empty([len(table["labels"]), len(table["labels"])], dtype=int)
         tdm_default.fill(20000)
 
         index = 0
@@ -55,18 +48,20 @@ class RunGui:
             index += 1
 
         tdm_table = pd.DataFrame(tdm_default)
-        tdm_table.columns = table['labels']
+        tdm_table.columns = table["labels"]
 
         # Network initialization
         graph = nx.DiGraph()
 
-        for node in network_in['nodes']:
-            new_node = GraphNode(node[Topology.NAME], node[Topology.TYPE], 'default_router')
+        for node in network_in["nodes"]:
+            new_node = GraphNode(
+                node[Topology.NAME], node[Topology.TYPE], "default_router"
+            )
             graph.add_node(
                 node[Topology.NAME],
                 label=node[Topology.NAME],
                 node_type=node[Topology.TYPE],
-                data=new_node.__dict__
+                data=new_node.__dict__,
             )
 
         for edge in network_in[Topology.ALL_Q_CONNECT]:
@@ -74,18 +69,16 @@ class RunGui:
                 edge[Topology.CONNECT_NODE_1],
                 edge[Topology.CONNECT_NODE_2],
                 data={
-                    'source': edge[Topology.CONNECT_NODE_1],
-                    'target': edge[Topology.CONNECT_NODE_2],
-                    'distance': edge[Topology.DISTANCE],
-                    'attenuation': edge[Topology.ATTENUATION],
-                    'link_type': 'Quantum'
-                }
+                    "source": edge[Topology.CONNECT_NODE_1],
+                    "target": edge[Topology.CONNECT_NODE_2],
+                    "distance": edge[Topology.DISTANCE],
+                    "attenuation": edge[Topology.ATTENUATION],
+                    "link_type": "Quantum",
+                },
             )
 
         # input = nx.readwrite.cytoscape_data(graph)['elements']
 
-        self.gui = QuantumGUI(
-            graph,
-            delays=delay_table,
-            tdm=tdm_table
-        ).get_app(self.name)
+        self.gui = QuantumGUI(graph, delays=delay_table, tdm=tdm_table).get_app(
+            self.name
+        )

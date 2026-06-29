@@ -58,7 +58,7 @@ class FiberStretcher(Entity):
             photon (Photon): photon to transmit.
         """
 
-        if photon.encoding_type['name'] == "absorptive":
+        if photon.encoding_type["name"] == "absorptive":
             key = photon.quantum_state
             self.timeline.quantum_manager.run_circuit(self._circuit, [key])
         self._receivers[0].get(photon)

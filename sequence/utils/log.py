@@ -22,7 +22,7 @@ def _init_logger():
 
 logger = _init_logger()  # global logger
 # LOG_FORMAT = '{asctime}  {simtime:<20,} {levelname:7} {module:20} {message}'
-LOG_FORMAT = '{simtime:<20,} {levelname:7} {module:22} {message}'   # no asctime
+LOG_FORMAT = "{simtime:<20,} {levelname:7} {module:22} {message}"  # no asctime
 _log_modules = []
 
 
@@ -45,7 +45,7 @@ def set_logger(name: str, timeline, logfile="out.log"):
         logger.removeHandler(h)
 
     handler = logging.FileHandler(logfile)
-    fmt = logging.Formatter(LOG_FORMAT, style='{')
+    fmt = logging.Formatter(LOG_FORMAT, style="{")
     f = ContextFilter(timeline)
 
     handler.setFormatter(fmt)
@@ -53,8 +53,8 @@ def set_logger(name: str, timeline, logfile="out.log"):
     logger.addFilter(f)
 
     # reset logging
-    open(logfile, 'w').close()
-    
+    open(logfile, "w").close()
+
 
 def set_logger_level(level: str):
     """Function to set output level of logger without requiring logging import.

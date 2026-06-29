@@ -27,7 +27,9 @@ from ..kernel.process import Process
 from ..utils.encoding import time_bin, fock
 from ..utils import log
 
-gmpy2.get_context().precision = 80  # 80 bits ~ 24 decimal digits ~ sufficient for 10,000 years of ps timing 
+gmpy2.get_context().precision = (
+    80  # 80 bits ~ 24 decimal digits ~ sufficient for 10,000 years of ps timing
+)
 from gmpy2 import mpfr, rint, ceil
 
 
@@ -51,8 +53,18 @@ class Detector(Entity):
     _meas_circuit = Circuit(1)
     _meas_circuit.measure(0)
 
-    def __init__(self, name: str, timeline: "Timeline", efficiency: float = 0.9, dark_count: float = 0, count_rate: float = 25e6, time_resolution: int = 150):
-        Entity.__init__(self, name, timeline)  # Detector is part of the QSDetector, and does not have its own name
+    def __init__(
+        self,
+        name: str,
+        timeline: "Timeline",
+        efficiency: float = 0.9,
+        dark_count: float = 0,
+        count_rate: float = 25e6,
+        time_resolution: int = 150,
+    ):
+        Entity.__init__(
+            self, name, timeline
+        )  # Detector is part of the QSDetector, and does not have its own name
         self.efficiency = efficiency
         self.dark_count = dark_count  # measured in 1/s
         self.count_rate = count_rate  # measured in Hz
@@ -82,7 +94,9 @@ class Detector(Entity):
         # if get a photon and it has single_atom encoding, measure
         if photon and photon.encoding_type["name"] == "single_atom":
             key = photon.quantum_state
-            res = self.timeline.quantum_manager.run_circuit(Detector._meas_circuit, [key], self.get_generator().random())
+            res = self.timeline.quantum_manager.run_circuit(
+                Detector._meas_circuit, [key], self.get_generator().random()
+            )
             # if we measure |0>, return (do not record detection)
             if not res[key]:
                 return
@@ -90,7 +104,7 @@ class Detector(Entity):
         if self.get_generator().random() < self.efficiency:
             self.record_detection()
         else:
-            log.logger.debug(f'Photon loss in detector {self.name}')
+            log.logger.debug(f"Photon loss in detector {self.name}")
 
     def add_dark_count(self) -> None:
         """Method to schedule false positive detection events.
@@ -102,12 +116,17 @@ class Detector(Entity):
             May schedule future calls to self.
         """
 
-        assert self.dark_count > 0, "Detector().add_dark_count called with 0 dark count rate"
-        time_to_next = int(self.get_generator().exponential(
-                1 / self.dark_count) * 1e12)  # time to next dark count
+        assert self.dark_count > 0, (
+            "Detector().add_dark_count called with 0 dark count rate"
+        )
+        time_to_next = int(
+            self.get_generator().exponential(1 / self.dark_count) * 1e12
+        )  # time to next dark count
         time = time_to_next + self.timeline.now()  # time of next dark count
 
-        process1 = Process(self, "add_dark_count", [])  # schedule photon detection and dark count add in future
+        process1 = Process(
+            self, "add_dark_count", []
+        )  # schedule photon detection and dark count add in future
         process2 = Process(self, "record_detection", [])
         event1 = Event(time, process1)
         event2 = Event(time, process2)
@@ -126,8 +145,8 @@ class Detector(Entity):
         if now > self.next_detection_time:
             index = rint(mpfr(now) / mpfr(self.time_resolution))
             time = int(index) * self.time_resolution
-            self.notify({'time': time})
-            period = int(ceil(mpfr("1e12") / mpfr(self.count_rate))) # period in ps
+            self.notify({"time": time})
+            period = int(ceil(mpfr("1e12") / mpfr(self.count_rate)))  # period in ps
             self.next_detection_time = now + period
 
     def notify(self, info: dict[str, Any]):
@@ -161,7 +180,9 @@ class QSDetector(Entity, ABC):
             component.attach(self)
             component.owner = self.owner
 
-    def update_detector_params(self, detector_id: int, arg_name: str, value: Any) -> None:
+    def update_detector_params(
+        self, detector_id: int, arg_name: str, value: Any
+    ) -> None:
         self.detectors[detector_id].__setattr__(arg_name, value)
 
     @abstractmethod
@@ -173,16 +194,25 @@ class QSDetector(Entity, ABC):
     def trigger(self, detector: Detector, info: dict[str, Any]) -> None:
         # TODO: rewrite
         detector_index = self.detectors.index(detector)
-        self.trigger_times[detector_index].append(info['time'])
+        self.trigger_times[detector_index].append(info["time"])
 
-    def set_detector(self, idx: int,  efficiency=0.9, dark_count=0, count_rate=int(25e6), time_resolution=150):
+    def set_detector(
+        self,
+        idx: int,
+        efficiency=0.9,
+        dark_count=0,
+        count_rate=int(25e6),
+        time_resolution=150,
+    ):
         """Method to set the properties of an attached detector.
 
         Args:
             idx (int): the index of attached detector whose properties are going to be set.
             For other parameters see the `Detector` class. Default values are same as in `Detector` class.
         """
-        assert 0 <= idx < len(self.detectors), "`idx` must be a valid index of attached detector."
+        assert 0 <= idx < len(self.detectors), (
+            "`idx` must be a valid index of attached detector."
+        )
 
         detector = self.detectors[idx]
         detector.efficiency = efficiency
@@ -194,7 +224,9 @@ class QSDetector(Entity, ABC):
         return self.trigger_times
 
     @abstractmethod
-    def set_basis_list(self, basis_list: list[int], start_time: int, frequency: float) -> None:
+    def set_basis_list(
+        self, basis_list: list[int], start_time: int, frequency: float
+    ) -> None:
         pass
 
 
@@ -250,7 +282,9 @@ class QSDetectorPolarization(QSDetector):
         self.trigger_times = [[], []]
         return times
 
-    def set_basis_list(self, basis_list: list[int], start_time: int, frequency: float) -> None:
+    def set_basis_list(
+        self, basis_list: list[int], start_time: int, frequency: float
+    ) -> None:
         self.splitter.set_basis_list(basis_list, start_time, frequency)
 
     def update_splitter_params(self, arg_name: str, value: Any) -> None:
@@ -276,9 +310,13 @@ class QSDetectorTimeBin(QSDetector):
     def __init__(self, name: str, timeline: "Timeline"):
         QSDetector.__init__(self, name, timeline)
         self.switch = Switch(name + ".switch", timeline)
-        self.detectors = [Detector(name + ".detector" + str(i), timeline) for i in range(3)]
+        self.detectors = [
+            Detector(name + ".detector" + str(i), timeline) for i in range(3)
+        ]
         self.switch.add_receiver(self.detectors[0])
-        self.interferometer = Interferometer(name + ".interferometer", timeline, time_bin["bin_separation"])
+        self.interferometer = Interferometer(
+            name + ".interferometer", timeline, time_bin["bin_separation"]
+        )
         self.interferometer.add_receiver(self.detectors[1])
         self.interferometer.add_receiver(self.detectors[2])
         self.switch.add_receiver(self.interferometer)
@@ -310,7 +348,9 @@ class QSDetectorTimeBin(QSDetector):
         times, self.trigger_times = self.trigger_times, [[], [], []]
         return times
 
-    def set_basis_list(self, basis_list: list[int], start_time: int, frequency: float) -> None:
+    def set_basis_list(
+        self, basis_list: list[int], start_time: int, frequency: float
+    ) -> None:
         self.switch.set_basis_list(basis_list, start_time, frequency)
 
     def update_interferometer_params(self, arg_name: str, value: Any) -> None:
@@ -361,15 +401,27 @@ class QSDetectorFockDirect(QSDetector):
 
         create0 = create * sqrt(self.detectors[0].efficiency)
         destroy0 = destroy * sqrt(self.detectors[0].efficiency)
-        series_elem_list = [((-1)**i) * fractional_matrix_power(create0, i+1).dot(
-            fractional_matrix_power(destroy0, i+1)) / factorial(i+1) for i in range(truncation)]
+        series_elem_list = [
+            ((-1) ** i)
+            * fractional_matrix_power(create0, i + 1).dot(
+                fractional_matrix_power(destroy0, i + 1)
+            )
+            / factorial(i + 1)
+            for i in range(truncation)
+        ]
         povm0_1 = sum(series_elem_list)
-        povm0_0 = eye(truncation+1) - povm0_1
+        povm0_0 = eye(truncation + 1) - povm0_1
 
         create1 = create * sqrt(self.detectors[1].efficiency)
         destroy1 = destroy * sqrt(self.detectors[1].efficiency)
-        series_elem_list = [((-1) ** i) * fractional_matrix_power(create1, i + 1).dot(
-            fractional_matrix_power(destroy1, i + 1)) / factorial(i + 1) for i in range(truncation)]
+        series_elem_list = [
+            ((-1) ** i)
+            * fractional_matrix_power(create1, i + 1).dot(
+                fractional_matrix_power(destroy1, i + 1)
+            )
+            / factorial(i + 1)
+            for i in range(truncation)
+        ]
         povm1_1 = sum(series_elem_list)
         povm1_0 = eye(truncation + 1) - povm1_1
 
@@ -377,14 +429,20 @@ class QSDetectorFockDirect(QSDetector):
 
     def get(self, photon: "Photon", **kwargs):
         src = kwargs["src"]
-        assert photon.encoding_type["name"] == "fock", "Photon must be in Fock representation."
-        input_port = self.src_list.index(src)  # determine at which input the Photon arrives, an index
+        assert photon.encoding_type["name"] == "fock", (
+            "Photon must be in Fock representation."
+        )
+        input_port = self.src_list.index(
+            src
+        )  # determine at which input the Photon arrives, an index
 
         # record arrival time
         arrival_time = self.timeline.now()
         self.arrival_times[input_port].append(arrival_time)
 
-        key = photon.quantum_state  # the photon's key pointing to the quantum state in quantum manager
+        key = (
+            photon.quantum_state
+        )  # the photon's key pointing to the quantum state in quantum manager
         samp = self.get_generator().random()  # random measurement sample
         if input_port == 0:
             result = self.timeline.quantum_manager.measure([key], self.povms[0:2], samp)
@@ -393,7 +451,9 @@ class QSDetectorFockDirect(QSDetector):
         else:
             raise Exception(f"too many input ports for QSDFockDirect {self.name}")
 
-        assert result in list(range(len(self.povms))), "The measurement outcome is not valid."
+        assert result in list(range(len(self.povms))), (
+            "The measurement outcome is not valid."
+        )
         if result == 1:
             # trigger time recording will be done by SPD
             self.detectors[input_port].record_detection()
@@ -404,7 +464,9 @@ class QSDetectorFockDirect(QSDetector):
         return trigger_times
 
     # does nothing for this class
-    def set_basis_list(self, basis_list: list[int], start_time: int, frequency: int) -> None:
+    def set_basis_list(
+        self, basis_list: list[int], start_time: int, frequency: int
+    ) -> None:
         pass
 
 
@@ -436,7 +498,9 @@ class QSDetectorFockInterference(QSDetector):
             the entangling measurement will be carried out. After measurement, the temporary list will be reset.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", src_list: list[str], phase: float = 0):
+    def __init__(
+        self, name: str, timeline: "Timeline", src_list: list[str], phase: float = 0
+    ):
         super().__init__(name, timeline)
         assert len(src_list) == 2
         self.src_list = src_list
@@ -473,9 +537,15 @@ class QSDetectorFockInterference(QSDetector):
 
         # Modified mode operators in Heisenberg picture by beamsplitter transformation
         # considering inefficiency and ignoring relative phase
-        create1 = (kron(efficiency1*create, identity) + exp(1j*phase)*kron(identity, efficiency2*create)) / sqrt(2)
+        create1 = (
+            kron(efficiency1 * create, identity)
+            + exp(1j * phase) * kron(identity, efficiency2 * create)
+        ) / sqrt(2)
         destroy1 = create1.conj().T
-        create2 = (kron(efficiency1*create, identity) - exp(1j*phase)*kron(identity, efficiency2*create)) / sqrt(2)
+        create2 = (
+            kron(efficiency1 * create, identity)
+            - exp(1j * phase) * kron(identity, efficiency2 * create)
+        ) / sqrt(2)
         destroy2 = create2.conj().T
 
         return create1, destroy1, create2, destroy2
@@ -491,15 +561,27 @@ class QSDetectorFockInterference(QSDetector):
         create1, destroy1, create2, destroy2 = self._generate_transformed_ladders()
 
         # for detector1 (index 0)
-        series_elem_list1 = [(-1)**i * fractional_matrix_power(create1, i+1).dot(
-            fractional_matrix_power(destroy1, i+1)) / factorial(i+1) for i in range(truncation)]
+        series_elem_list1 = [
+            (-1) ** i
+            * fractional_matrix_power(create1, i + 1).dot(
+                fractional_matrix_power(destroy1, i + 1)
+            )
+            / factorial(i + 1)
+            for i in range(truncation)
+        ]
         povm1_1 = sum(series_elem_list1)
-        povm0_1 = eye((truncation+1) ** 2) - povm1_1
+        povm0_1 = eye((truncation + 1) ** 2) - povm1_1
         # for detector2 (index 1)
-        series_elem_list2 = [(-1)**i * fractional_matrix_power(create2, i+1).dot(
-            fractional_matrix_power(destroy2, i+1)) / factorial(i+1) for i in range(truncation)]
+        series_elem_list2 = [
+            (-1) ** i
+            * fractional_matrix_power(create2, i + 1).dot(
+                fractional_matrix_power(destroy2, i + 1)
+            )
+            / factorial(i + 1)
+            for i in range(truncation)
+        ]
         povm1_2 = sum(series_elem_list2)
-        povm0_2 = eye((truncation+1) ** 2) - povm1_2
+        povm0_2 = eye((truncation + 1) ** 2) - povm1_2
 
         # POVM operators for 4 possible outcomes
         # Note: povm01 and povm10 are relevant to BSM
@@ -512,14 +594,19 @@ class QSDetectorFockInterference(QSDetector):
 
     def get(self, photon, **kwargs):
         src = kwargs["src"]
-        assert photon.encoding_type["name"] == "fock", "Photon must be in Fock representation."
-        input_port = self.src_list.index(src)  # determine at which input the Photon arrives, an index
+        assert photon.encoding_type["name"] == "fock", (
+            "Photon must be in Fock representation."
+        )
+        input_port = self.src_list.index(
+            src
+        )  # determine at which input the Photon arrives, an index
         # record arrival time
         arrival_time = self.timeline.now()
         self.arrival_times[input_port].append(arrival_time)
         # record in temporary photon list
         assert not self.temporary_photon_info[input_port], (
-            "At most 1 Photon instance should arrive at an input port at a time.")
+            "At most 1 Photon instance should arrive at an input port at a time."
+        )
         self.temporary_photon_info[input_port]["photon"] = photon
         self.temporary_photon_info[input_port]["time"] = arrival_time
 
@@ -528,7 +615,9 @@ class QSDetectorFockInterference(QSDetector):
         dict1 = self.temporary_photon_info[1]
         # if both two dictionaries are non-empty
         if dict0 and dict1:
-            assert dict0["time"] == dict1["time"], "To realize interference photons must arrive simultaneously."
+            assert dict0["time"] == dict1["time"], (
+                "To realize interference photons must arrive simultaneously."
+            )
             photon0 = dict0["photon"]
             photon1 = dict1["photon"]
             key0 = photon0.quantum_state
@@ -536,9 +625,13 @@ class QSDetectorFockInterference(QSDetector):
 
             # determine the outcome
             samp = self.get_generator().random()  # random measurement sample
-            result = self.timeline.quantum_manager.measure([key0, key1], self.povms, samp)
+            result = self.timeline.quantum_manager.measure(
+                [key0, key1], self.povms, samp
+            )
 
-            assert result in list(range(len(self.povms))), "The measurement outcome is not valid."
+            assert result in list(range(len(self.povms))), (
+                "The measurement outcome is not valid."
+            )
             if result == 0:
                 # no click for either detector, but still record the zero outcome
                 # record detection information
@@ -609,7 +702,9 @@ class QSDetectorFockInterference(QSDetector):
         return trigger_times
 
     # does nothing for this class
-    def set_basis_list(self, basis_list: list[int], start_time: int, frequency: float) -> None:
+    def set_basis_list(
+        self, basis_list: list[int], start_time: int, frequency: float
+    ) -> None:
         pass
 
     def set_phase(self, phase: float):
@@ -633,7 +728,9 @@ class FockDetector(Detector):
         photon_counter2 (int): counting photon for the ideal detector
     """
 
-    def __init__(self, name: str, timeline: "Timeline", efficiency: float, wavelength: int = 0):
+    def __init__(
+        self, name: str, timeline: "Timeline", efficiency: float, wavelength: int = 0
+    ):
         super().__init__(name, timeline, efficiency)
         self.name = name
         self.photon_counter = 0
@@ -642,15 +739,14 @@ class FockDetector(Detector):
         self.encoding_type = fock
         self.timeline = timeline
         self.efficiency = efficiency
-        self.measure_protocol= None
-    
+        self.measure_protocol = None
+
     def init(self):
         pass
 
-
     def get(self, photon: Photon = None, **kwargs) -> None:
         """Not ideal detector, there is a chance for photon loss.
-        
+
         Args:
             photon (Photon): photon
         """
@@ -658,9 +754,9 @@ class FockDetector(Detector):
             self.photon_counter += 1
             return self.photon_counter
 
-    def get_2(self, photon: Photon = None, **kwargs) -> None: #IDEAL
+    def get_2(self, photon: Photon = None, **kwargs) -> None:  # IDEAL
         """Ideal detector, no photon loss
-        
+
         Args:
             photon (Photon): photon
         """
@@ -674,20 +770,19 @@ class FockDetector(Detector):
             self.photon_counter += 1
         return self.photon_counter
 
-    def get_2x2(self, photon: Photon = None, **kwargs) -> None: #IDEAL
+    def get_2x2(self, photon: Photon = None, **kwargs) -> None:  # IDEAL
         self.photon_counter2 += 2
         return self.photon_counter2
 
-
     def measure(self, photon: Photon) -> None:
-        self.detector_photon_counter_ideal=0
-        self.spd_ideal=0
-        self.detector_photon_counter_real=0
-        self.spd_real=0
+        self.detector_photon_counter_ideal = 0
+        self.spd_ideal = 0
+        self.detector_photon_counter_real = 0
+        self.spd_real = 0
 
         if self.photon_counter2 == 1 or self.photon_counter2 == 1:
             self.detector_photon_counter_ideal += 1
-        
+
         if self.photon_counter2 >= 1 or self.photon_counter2 >= 1:
             self.spd_ideal += 1
 
@@ -697,8 +792,12 @@ class FockDetector(Detector):
         if self.photon_counter >= 1 or self.photon_counter >= 1:
             self.spd_real += 1
 
-        return self.detector_photon_counter_ideal, self.spd_ideal, self.detector_photon_counter_real, self.spd_real 
-    
+        return (
+            self.detector_photon_counter_ideal,
+            self.spd_ideal,
+            self.detector_photon_counter_real,
+            self.spd_real,
+        )
 
     def received_message(self, src: str, msg):
         pass

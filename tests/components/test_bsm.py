@@ -14,16 +14,16 @@ from sequence.constants import DENSITY_MATRIX_FORMALISM
 
 
 class Parent:
-        def __init__(self):
-            self.results = []
+    def __init__(self):
+        self.results = []
 
-        def bsm_update(self, src: BSM, msg: dict[str, Any]):
-            entity = msg.get("entity")
-            if entity == "BSM":
-                res = msg.get("res")
-                self.results.append(res)
-            else:
-                raise Exception("invalid update")
+    def bsm_update(self, src: BSM, msg: dict[str, Any]):
+        entity = msg.get("entity")
+        if entity == "BSM":
+            res = msg.get("res")
+            self.results.append(res)
+        else:
+            raise Exception("invalid update")
 
 
 def test_eq_psi_plus_density_matrix():
@@ -127,28 +127,28 @@ def test_polarization_update():
     detector_list = bsm.detectors
 
     # test Psi+
-    bsm.trigger(detector_list[0], {'time': 0})
-    bsm.trigger(detector_list[1], {'time': 0})
+    bsm.trigger(detector_list[0], {"time": 0})
+    bsm.trigger(detector_list[1], {"time": 0})
 
     assert len(parent.results) == 1
     assert parent.results[0] == 0
 
     # test Psi-
-    bsm.trigger(detector_list[0], {'time': 1})
-    bsm.trigger(detector_list[3], {'time': 1})
+    bsm.trigger(detector_list[0], {"time": 1})
+    bsm.trigger(detector_list[3], {"time": 1})
 
     assert len(parent.results) == 2
     assert parent.results[1] == 1
 
     # test not matching times
-    bsm.trigger(detector_list[0], {'time': 2})
-    bsm.trigger(detector_list[3], {'time': 3})
+    bsm.trigger(detector_list[0], {"time": 2})
+    bsm.trigger(detector_list[3], {"time": 3})
 
     assert len(parent.results) == 2
 
     # test invalid measurement
-    bsm.trigger(detector_list[0], {'time': 4})
-    bsm.trigger(detector_list[2], {'time': 4})
+    bsm.trigger(detector_list[0], {"time": 4})
+    bsm.trigger(detector_list[2], {"time": 4})
 
     assert len(parent.results) == 2
 
@@ -162,8 +162,20 @@ def test_time_bin_get():
     detector_list = bsm.detectors
 
     # get 2 photons in orthogonal states (map to Psi+)
-    p1 = Photon("p1", tl, encoding_type=time_bin, location=1, quantum_state=(complex(1), complex(0)))
-    p2 = Photon("p2", tl, encoding_type=time_bin, location=2, quantum_state=(complex(0), complex(1)))
+    p1 = Photon(
+        "p1",
+        tl,
+        encoding_type=time_bin,
+        location=1,
+        quantum_state=(complex(1), complex(0)),
+    )
+    p2 = Photon(
+        "p2",
+        tl,
+        encoding_type=time_bin,
+        location=2,
+        quantum_state=(complex(0), complex(1)),
+    )
     process = Process(bsm, "get", [p1])
     event = Event(0, process)
     tl.schedule(event)
@@ -175,8 +187,20 @@ def test_time_bin_get():
     assert len(parent.results) == 1
 
     # get 2 photons in same state (map to Phi+ / can't measure)
-    p3 = Photon("p3", tl, encoding_type=time_bin, location=1, quantum_state=(complex(1), complex(0)))
-    p4 = Photon("p4", tl, encoding_type=time_bin, location=2, quantum_state=(complex(1), complex(0)))
+    p3 = Photon(
+        "p3",
+        tl,
+        encoding_type=time_bin,
+        location=1,
+        quantum_state=(complex(1), complex(0)),
+    )
+    p4 = Photon(
+        "p4",
+        tl,
+        encoding_type=time_bin,
+        location=2,
+        quantum_state=(complex(1), complex(0)),
+    )
     process = Process(bsm, "get", [p3])
     event = Event(1e6, process)
     tl.schedule(event)
@@ -197,33 +221,33 @@ def test_time_bin_update():
     detector_list = bsm.detectors
 
     # test Psi+
-    bsm.trigger(detector_list[0], {'time': 0})
-    bsm.trigger(detector_list[0], {'time': 0 + time_bin["bin_separation"]})
+    bsm.trigger(detector_list[0], {"time": 0})
+    bsm.trigger(detector_list[0], {"time": 0 + time_bin["bin_separation"]})
 
     assert len(parent.results) == 1
     assert parent.results[0] == 0
 
     # test Psi-
-    bsm.trigger(detector_list[0], {'time': 1e6})
-    bsm.trigger(detector_list[1], {'time': 1e6 + time_bin["bin_separation"]})
+    bsm.trigger(detector_list[0], {"time": 1e6})
+    bsm.trigger(detector_list[1], {"time": 1e6 + time_bin["bin_separation"]})
 
     assert len(parent.results) == 2
     assert parent.results[1] == 1
 
     # test invalid time separation
-    bsm.trigger(detector_list[0], {'time': 2e6})
-    bsm.trigger(detector_list[0], {'time': 2e6})
+    bsm.trigger(detector_list[0], {"time": 2e6})
+    bsm.trigger(detector_list[0], {"time": 2e6})
 
     assert len(parent.results) == 2
 
-    bsm.trigger(detector_list[0], {'time': 3e6})
-    bsm.trigger(detector_list[0], {'time': 4e6})
+    bsm.trigger(detector_list[0], {"time": 3e6})
+    bsm.trigger(detector_list[0], {"time": 4e6})
 
     assert len(parent.results) == 2
 
 
 def test_single_atom_get():
-    class PhotonSendWrapper():
+    class PhotonSendWrapper:
         def __init__(self, mem1, mem2, bsm):
             self.bsm = bsm
             mem1.add_receiver(self)
@@ -237,8 +261,24 @@ def test_single_atom_get():
     bsm = make_bsm("bsm", tl, encoding_type="single_atom", detectors=detectors)
     parent = Parent()
     bsm.attach(parent)
-    mem_1 = Memory("mem_1", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
-    mem_2 = Memory("mem_2", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=500)
+    mem_1 = Memory(
+        "mem_1",
+        tl,
+        fidelity=1,
+        frequency=0,
+        efficiency=1,
+        coherence_time=1,
+        wavelength=500,
+    )
+    mem_2 = Memory(
+        "mem_2",
+        tl,
+        fidelity=1,
+        frequency=0,
+        efficiency=1,
+        coherence_time=1,
+        wavelength=500,
+    )
 
     _ = PhotonSendWrapper(mem_1, mem_2, bsm)
 
@@ -263,7 +303,9 @@ def test_single_atom_get():
     assert len(parent.results) == 2
     # check that we've entangled
     assert len(tl.quantum_manager.get(mem_1.qstate_key).state) == 4
-    assert tl.quantum_manager.get(mem_1.qstate_key) is tl.quantum_manager.get(mem_2.qstate_key)
+    assert tl.quantum_manager.get(mem_1.qstate_key) is tl.quantum_manager.get(
+        mem_2.qstate_key
+    )
 
 
 def test_absorptive_get():
@@ -341,4 +383,4 @@ def test_absorptive_get():
 
     assert len(set(monitor0.times) & set(monitor1.times)) == 0
     assert len(monitor0.times + monitor1.times) == NUM_TRIALS
-    assert abs(len(monitor0.times)/len(monitor1.times) - 1) < 0.1
+    assert abs(len(monitor0.times) / len(monitor1.times) - 1) < 0.1

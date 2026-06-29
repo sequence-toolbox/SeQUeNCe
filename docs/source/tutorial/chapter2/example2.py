@@ -30,7 +30,11 @@ class PingProtocol(Protocol):
 
     def received_message(self, src: str, message: Message):
         assert message.msg_type == MsgType.PONG
-        print("node {} received pong message at time {}".format(self.owner.name, self.owner.timeline.now()))
+        print(
+            "node {} received pong message at time {}".format(
+                self.owner.name, self.owner.timeline.now()
+            )
+        )
 
 
 class PongProtocol(Protocol):
@@ -39,13 +43,17 @@ class PongProtocol(Protocol):
         owner.protocols.append(self)
         self.other_name = other_name
         self.other_node = other_node
-    
+
     def init(self):
         pass
 
     def received_message(self, src: str, message: Message):
         assert message.msg_type == MsgType.PING
-        print("node {} received ping message at time {}".format(self.owner.name, self.owner.timeline.now()))
+        print(
+            "node {} received ping message at time {}".format(
+                self.owner.name, self.owner.timeline.now()
+            )
+        )
         new_msg = Message(MsgType.PONG, self.other_name)
         self.owner.send_message(self.other_node, new_msg)
 

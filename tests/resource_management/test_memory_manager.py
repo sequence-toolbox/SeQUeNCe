@@ -39,5 +39,3 @@ def test_update():
     assert manager[0].fidelity == 0.6
     assert manager[0].remote_node == "alice"
     assert manager[0].remote_memo == 0
-
-

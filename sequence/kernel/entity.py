@@ -26,6 +26,7 @@ class Entity(ABC):
         _observers (list[Any]): a list of observers for the entity.
         _receivers (list[Entity]): a list of entities that receive photons from current component.
     """
+
     def __init__(self, name: str, timeline: "Timeline") -> None:
         """Constructor for entity class.
 
@@ -33,10 +34,10 @@ class Entity(ABC):
             name (str): name of entity.
             timeline (Timeline): timeline for simulation.
         """
-        self.name: str                  = name
-        self.timeline: Timeline         = timeline
-        self.owner: "Entity" | None     = None
-        self._observers: list[Any]      = []
+        self.name: str = name
+        self.timeline: Timeline = timeline
+        self.owner: "Entity" | None = None
+        self._observers: list[Any] = []
         self._receivers: list["Entity"] = []
         timeline.add_entity(self)
 
@@ -126,8 +127,8 @@ class ClassicalEntity(Entity):
             name (str): name of entity.
             timeline (Timeline): timeline for simulation.
         """
-        self.name: str                       = name
-        self.timeline: Timeline              = timeline
+        self.name: str = name
+        self.timeline: Timeline = timeline
         self.owner: "ClassicalEntity" | None = None
         timeline.add_entity(self)
 
@@ -167,23 +168,25 @@ class ClassicalEntity(Entity):
 
     @property
     def _receivers(self):
-        raise AttributeError('ClassicalEntity does not support _receivers attribute')
+        raise AttributeError("ClassicalEntity does not support _receivers attribute")
 
     @property
     def _observers(self):
-        raise AttributeError('ClassicalEntity does not support _observers attribute')
+        raise AttributeError("ClassicalEntity does not support _observers attribute")
 
     def add_receiver(self, receiver):
-        raise NotImplementedError('ClassicalEntity does not support add_receiver method')
-    
+        raise NotImplementedError(
+            "ClassicalEntity does not support add_receiver method"
+        )
+
     def attach(self, observer):
-        raise NotImplementedError('ClassicalEntity does not support attach method')
+        raise NotImplementedError("ClassicalEntity does not support attach method")
 
     def detach(self, observer):
-        raise NotImplementedError('ClassicalEntity does not support detach method')
-    
+        raise NotImplementedError("ClassicalEntity does not support detach method")
+
     def notify(self, info):
-        raise NotImplementedError('ClassicalEntity does not support notify method')
-    
+        raise NotImplementedError("ClassicalEntity does not support notify method")
+
     def get(self, photon, **kwargs):
-        raise NotImplementedError('ClassicalEntity does not support get method')
+        raise NotImplementedError("ClassicalEntity does not support get method")

@@ -7,12 +7,17 @@ import pytest
 import stim
 
 from sequence.kernel.quantum_state import StabilizerState
-from sequence.kernel.quantum_manager import QuantumManagerDensity, QuantumManagerDensityFock, QuantumManagerKet, QuantumManagerStabilizer
+from sequence.kernel.quantum_manager import (
+    QuantumManagerDensity,
+    QuantumManagerDensityFock,
+    QuantumManagerKet,
+    QuantumManagerStabilizer,
+)
 from sequence.components.circuit import Circuit
 from sequence.constants import SECOND
 
 
-class DumbCircuit():
+class DumbCircuit:
     def __init__(self, size, matrix):
         self.size = size
         self.matrix = matrix
@@ -32,7 +37,7 @@ def test_qmanager_new():
     NUM_TESTS = 1000
 
     qm = QuantumManagerKet()
-    
+
     keys = []
     for _ in range(NUM_TESTS):
         keys.append(qm.new())
@@ -98,23 +103,26 @@ def test_qmanager_circuit():
     circuit2 = DumbCircuit(1, np.array([[0, 1], [1, 0]]))
     qm.run_circuit(circuit2, [key1])
     assert np.all(qm.get(key1).state == np.array([0, 0, 1, 0]))
-    assert (qm.get(key1) is qm.get(key2))
+    assert qm.get(key1) is qm.get(key2)
 
     # extension of circuit
     key1 = qm.new()
     key2 = qm.new()
-    qm.set([key1, key2], [0.5 ** 0.5, 0.5 ** 0.5, 0, 0])
+    qm.set([key1, key2], [0.5**0.5, 0.5**0.5, 0, 0])
     circuit1 = Circuit(1)
     circuit1.x(0)
     qm.run_circuit(circuit1, [key2])
     ket1 = qm.get(key1)
     if ket1.keys[0] > ket1.keys[1]:
         ket1.keys.reverse()
-        ket1.state = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ ket1.state
+        ket1.state = (
+            np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+            @ ket1.state
+        )
 
     key3 = qm.new()
     key4 = qm.new()
-    qm.set([key3, key4], [0.5 ** 0.5, 0.5 ** 0.5, 0, 0])
+    qm.set([key3, key4], [0.5**0.5, 0.5**0.5, 0, 0])
     circuit2 = Circuit(2)
     circuit2.x(1)
     qm.run_circuit(circuit2, [key3, key4])
@@ -122,7 +130,10 @@ def test_qmanager_circuit():
     ket2 = qm.get(key3)
     if ket2.keys[0] > ket2.keys[1]:
         ket2.keys.reverse()
-        ket2.state = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ ket2.state
+        ket2.state = (
+            np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+            @ ket2.state
+        )
 
     assert np.array_equal(qm.get(key1).state, qm.get(key3).state)
 
@@ -134,8 +145,7 @@ def test_qmanager_circuit_density():
     key = qm.new()
     circuit = DumbCircuit(1, np.array([[0, 1], [1, 0]]))
     qm.run_circuit(circuit, [key])
-    desired_state = np.array([[0, 0],
-                              [0, 1]])
+    desired_state = np.array([[0, 0], [0, 1]])
     assert np.array_equal(qm.get(key).state, desired_state)
 
     # two states
@@ -143,10 +153,7 @@ def test_qmanager_circuit_density():
     key2 = qm.new()
     circuit = DumbCircuit(2, np.identity(4))
     qm.run_circuit(circuit, [key1, key2])
-    desired_state = np.array([[1, 0, 0, 0],
-                              [0, 0, 0, 0],
-                              [0, 0, 0, 0],
-                              [0, 0, 0, 0]])
+    desired_state = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
     assert qm.get(key1) is qm.get(key2)
     assert np.array_equal(qm.get(key1).state, desired_state)
 
@@ -165,12 +172,9 @@ def test_qmanager_circuit_density():
     qm.run_circuit(circuit1, [key1, key2])
     circuit2 = DumbCircuit(1, np.array([[0, 1], [1, 0]]))
     qm.run_circuit(circuit2, [key1])
-    desired_state = np.array([[0, 0, 0, 0],
-                              [0, 0, 0, 0],
-                              [0, 0, 1, 0],
-                              [0, 0, 0, 0]])
+    desired_state = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])
     assert np.array_equal(qm.get(key1).state, desired_state)
-    assert (qm.get(key1) is qm.get(key2))
+    assert qm.get(key1) is qm.get(key2)
 
     # extension of circuit
     key1 = qm.new()
@@ -184,10 +188,7 @@ def test_qmanager_circuit_density():
     circuit1.x(0)
     qm.run_circuit(circuit1, [key2])
     density1 = qm.get(key1)
-    reversal = np.array([[1, 0, 0, 0],
-                         [0, 0, 1, 0],
-                         [0, 1, 0, 0],
-                         [0, 0, 0, 1]])
+    reversal = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
     if density1.keys[0] > density1.keys[1]:
         density1.keys.reverse()
         density1.state = reversal @ density1.state @ reversal.T
@@ -215,7 +216,7 @@ def test_qmanager_measure():
     # single state
     meas_0 = []
     meas_1 = []
-    state = [math.sqrt(1/2), math.sqrt(1/2)]
+    state = [math.sqrt(1 / 2), math.sqrt(1 / 2)]
     for _ in range(NUM_TESTS):
         key = qm.new()
         samp = np.random.random()
@@ -224,7 +225,7 @@ def test_qmanager_measure():
             meas_1.append(key)
         else:
             meas_0.append(key)
-    
+
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
     for key in meas_0:
         assert np.all(qm.get(key).state == np.array([1, 0]))
@@ -282,7 +283,7 @@ def test_qmanager_measure_density():
     # single state
     meas_0 = []
     meas_1 = []
-    state_single = [math.sqrt(1/2), math.sqrt(1/2)]
+    state_single = [math.sqrt(1 / 2), math.sqrt(1 / 2)]
     state = np.outer(state_single, state_single)
     for _ in range(NUM_TESTS):
         key = qm.new()
@@ -292,7 +293,7 @@ def test_qmanager_measure_density():
             meas_1.append(key)
         else:
             meas_0.append(key)
-    
+
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
     for key in meas_0:
         assert np.all(qm.get(key).state == np.array([[1, 0], [0, 0]]))
@@ -311,7 +312,7 @@ def test_qmanager_measure_density():
             meas_1.append(key)
         else:
             meas_0.append(key)
-    
+
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
 
     # single state in multi-qubit system
@@ -432,17 +433,17 @@ def test_qmanager_build_ladder_fock():
         state = array(state)
 
         state_create = create @ state
-        assert state_create[i+1] == sqrt(i+1)
-        assert sum(state_create) == sqrt(i+1)
+        assert state_create[i + 1] == sqrt(i + 1)
+        assert sum(state_create) == sqrt(i + 1)
 
     for i in range(TRUNCATION):
         state = [0] * (TRUNCATION + 1)
-        state[i+1] = 1
+        state[i + 1] = 1
         state = array(state)
 
         state_destroy = destroy @ state
-        assert state_destroy[i] == sqrt(i+1)
-        assert sum(state_destroy) == sqrt(i+1)
+        assert state_destroy[i] == sqrt(i + 1)
+        assert sum(state_destroy) == sqrt(i + 1)
 
 
 def test_qmanager_apply_operator_fock():
@@ -489,8 +490,14 @@ def test_qmanager_measure_fock():
 
     qm = QuantumManagerDensityFock(truncation=2)
     create, destroy = qm.build_ladder()
-    series_elem_list = [((-1) ** i) * fractional_matrix_power(create, i + 1).dot(
-        fractional_matrix_power(destroy, i + 1)) / math.factorial(i + 1) for i in range(TRUNCATION)]
+    series_elem_list = [
+        ((-1) ** i)
+        * fractional_matrix_power(create, i + 1).dot(
+            fractional_matrix_power(destroy, i + 1)
+        )
+        / math.factorial(i + 1)
+        for i in range(TRUNCATION)
+    ]
     povm1 = sum(series_elem_list)
     povm0 = eye(TRUNCATION + 1) - povm1
 
@@ -567,6 +574,7 @@ def test_qmanager_measure_fock():
 
 ### stabilizer ###
 
+
 def _stabilizers_as_strings(qm: QuantumManagerStabilizer, key: int) -> list[str]:
     return [str(stabilizer) for stabilizer in qm.get(key).canonical_stabilizers()]
 
@@ -640,19 +648,25 @@ def test_terminal_measurement_splits_measured_qubit_from_remaining_state():
     qm = QuantumManagerStabilizer(seed=100)
     key0 = qm.new()
     key1 = qm.new()
-    qm.run_circuit(stim.Circuit("H 0\nCX 0 1"), [key0, key1])                  # phi = (|00> + |11>) / sqrt(2)
+    qm.run_circuit(
+        stim.Circuit("H 0\nCX 0 1"), [key0, key1]
+    )  # phi = (|00> + |11>) / sqrt(2)
 
-    result = qm.run_circuit(stim.Circuit("M 0"), [key0, key1]) # qubit 0 measured
+    result = qm.run_circuit(stim.Circuit("M 0"), [key0, key1])  # qubit 0 measured
 
     measured_bit = result[key0]
-    expected_z = 1 if measured_bit == 0 else -1  # collapsed to one qubit with Z=+1 or Z=-1 depending on measurement outcome
+    expected_z = (
+        1 if measured_bit == 0 else -1
+    )  # collapsed to one qubit with Z=+1 or Z=-1 depending on measurement outcome
     assert set(result) == {key0}
     assert qm.get(key0) is not qm.get(key1)
     assert qm.get(key0).keys == [key0]
     assert qm.get(key1).keys == [key1]
     assert qm.get(key0).state.num_qubits == 1
     assert qm.get(key1).state.num_qubits == 1
-    assert qm.get(key0).state.peek_z(0) == expected_z # two qubits have the same Z stabilizer value after measurement
+    assert (
+        qm.get(key0).state.peek_z(0) == expected_z
+    )  # two qubits have the same Z stabilizer value after measurement
     assert qm.get(key1).state.peek_z(0) == expected_z
 
 
@@ -660,7 +674,9 @@ def test_duration_and_reset_duration():
     qm = QuantumManagerStabilizer()
     circuit = stim.Circuit("H 0\nCX 0 1\nM 0 1")
 
-    duration =  qm.ONE_QUBIT_GATE_TIME_PS + qm.TWO_QUBIT_GATE_TIME_PS + qm.MEASUREMENT_TIME_PS
+    duration = (
+        qm.ONE_QUBIT_GATE_TIME_PS + qm.TWO_QUBIT_GATE_TIME_PS + qm.MEASUREMENT_TIME_PS
+    )
     assert qm.get_circuit_duration(circuit) == duration
 
     assert qm.get_reset_duration(3) == 3 * qm.RESET_TIME_PS
@@ -676,22 +692,26 @@ def test_gate_and_measurement_statistics_with_noise_injection():
     one_qubit_gate_fid = 0
     two_qubit_gate_fid = 1
     measurement_fid = 0
-    qm = QuantumManagerStabilizer(seed=50,
-                                  one_qubit_gate_fid=one_qubit_gate_fid, 
-                                  two_qubit_gate_fid=two_qubit_gate_fid, 
-                                  measurement_fid=measurement_fid)
+    qm = QuantumManagerStabilizer(
+        seed=50,
+        one_qubit_gate_fid=one_qubit_gate_fid,
+        two_qubit_gate_fid=two_qubit_gate_fid,
+        measurement_fid=measurement_fid,
+    )
     key0 = qm.new()
     key1 = qm.new()
     circuit = stim.Circuit("H 0\nCX 0 1\nM 0")
 
     qm.run_circuit(circuit, [key0, key1], inject_gate_error=True)
 
-    error_statistics = {"gate_1q_count": 1, 
-                        "gate_2q_count": 1, 
-                        "measurement_count": 1, 
-                        "gate_1q_error_count": 1, 
-                        "gate_2q_error_count": 0, 
-                        "measurement_error_count": 1}
+    error_statistics = {
+        "gate_1q_count": 1,
+        "gate_2q_count": 1,
+        "measurement_count": 1,
+        "gate_1q_error_count": 1,
+        "gate_2q_error_count": 0,
+        "measurement_error_count": 1,
+    }
 
     assert qm.get_error_statistics() == error_statistics
 
@@ -721,7 +741,10 @@ def test_apply_idling_decoherence():
             assert num_qubits == 2
             assert measured_qubits == []
             assert keys == self.expected_keys
-            return self.fake_state, {self.expected_keys[0]: key0_local, self.expected_keys[1]: key1_local}
+            return self.fake_state, {
+                self.expected_keys[0]: key0_local,
+                self.expected_keys[1]: key1_local,
+            }
 
     key0 = 2
     key1 = 5
@@ -741,12 +764,22 @@ def test_apply_idling_decoherence():
     assert qm.last_idle_time_ps_by_key[key1] == now_ps
     assert len(fake_state.state.applied_circuits) == 2
 
-    for circuit, local_target, idle_sec in zip(fake_state.state.applied_circuits, [key0_local, key1_local], [key0_idle_sec, key1_idle_sec]):
+    for circuit, local_target, idle_sec in zip(
+        fake_state.state.applied_circuits,
+        [key0_local, key1_local],
+        [key0_idle_sec, key1_idle_sec],
+    ):
         instruction = list(circuit)[0]
         expected_px = (1.0 - np.exp(-idle_sec / 2.0)) / 4.0
         expected_py = expected_px
-        expected_pz = (1.0 + np.exp(-idle_sec / 2.0) - 2.0 * np.exp(-idle_sec / 4.0)) / 4.0
+        expected_pz = (
+            1.0 + np.exp(-idle_sec / 2.0) - 2.0 * np.exp(-idle_sec / 4.0)
+        ) / 4.0
 
         assert instruction.name == "PAULI_CHANNEL_1"
-        assert [int(target.value) for target in instruction.targets_copy()] == [local_target]
-        assert instruction.gate_args_copy() == pytest.approx([expected_px, expected_py, expected_pz])
+        assert [int(target.value) for target in instruction.targets_copy()] == [
+            local_target
+        ]
+        assert instruction.gate_args_copy() == pytest.approx(
+            [expected_px, expected_py, expected_pz]
+        )

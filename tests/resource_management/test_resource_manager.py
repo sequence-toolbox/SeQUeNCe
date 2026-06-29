@@ -4,7 +4,11 @@ import numpy
 from sequence.components.memory import MemoryArray
 from sequence.components.bsm import SingleAtomBSM
 from sequence.kernel.timeline import Timeline
-from sequence.resource_management.resource_manager import ResourceManager, ResourceManagerMessage, ResourceManagerMsgType
+from sequence.resource_management.resource_manager import (
+    ResourceManager,
+    ResourceManagerMessage,
+    ResourceManagerMsgType,
+)
 from sequence.resource_management.rule_manager import Rule
 from sequence.message import Message
 from sequence.topology.node import Node
@@ -67,7 +71,9 @@ class FakeNode2(Node):
             self.resource_manager.received_message(src, msg)
         else:
             if msg.receiver is None:
-                matching = [p for p in self.protocols if p.protocol_type == msg.protocol_type]
+                matching = [
+                    p for p in self.protocols if p.protocol_type == msg.protocol_type
+                ]
                 for p in matching:
                     p.received_message(src, msg)
             else:
@@ -163,8 +169,7 @@ def test_send_request():
     assert len(resource_manager.pending_protocols) == 0
     assert protocol.owner == node
     protocol = FakeProtocol("send")
-    node.resource_manager.send_request(protocol, "dst_id",
-                                       "req_condition_func", {})
+    node.resource_manager.send_request(protocol, "dst_id", "req_condition_func", {})
     tl.run()
     assert len(node.send_log) == 1
     assert protocol in resource_manager.pending_protocols
@@ -186,11 +191,14 @@ def test_received_message():
     # test receive REQUEST message
     protocol1 = FakeProtocol("waiting_protocol")
     resource_manager.waiting_protocols.append(protocol1)
-    req_msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST,
-                                     protocol="ini_protocol",
-                                     node="source",
-                                     memories=[],
-                                     req_condition_func=true_fun, req_args={})
+    req_msg = ResourceManagerMessage(
+        ResourceManagerMsgType.REQUEST,
+        protocol="ini_protocol",
+        node="source",
+        memories=[],
+        req_condition_func=true_fun,
+        req_args={},
+    )
     resource_manager.received_message("sender", req_msg)
     assert protocol1 in node.protocols
     assert protocol1 not in resource_manager.waiting_protocols
@@ -202,11 +210,14 @@ def test_received_message():
 
     protocol1 = FakeProtocol("waiting_protocol")
     resource_manager.waiting_protocols.append(protocol1)
-    req_msg = ResourceManagerMessage(ResourceManagerMsgType.REQUEST,
-                                     protocol="ini_protocol",
-                                     node="source",
-                                     memories=[],
-                                     req_condition_func=false_fun, req_args={})
+    req_msg = ResourceManagerMessage(
+        ResourceManagerMsgType.REQUEST,
+        protocol="ini_protocol",
+        node="source",
+        memories=[],
+        req_condition_func=false_fun,
+        req_args={},
+    )
     resource_manager.received_message("sender", req_msg)
     assert protocol1 not in node.protocols
     assert protocol1 in resource_manager.waiting_protocols
@@ -219,14 +230,16 @@ def test_received_message():
     # test receive RESPONSE message: is_approved==False and is_approved==True
     protocol2 = FakeProtocol("pending_protocol")
     resource_manager.pending_protocols.append(protocol2)
-    resp_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE,
-                                      protocol=protocol2.name,
-                                      node="source",
-                                      memories=[],
-                                      is_approved=False,
-                                      paired_protocol="paired_protocol",
-                                      paired_node="paired_node",
-                                      paired_memories=[])
+    resp_msg = ResourceManagerMessage(
+        ResourceManagerMsgType.RESPONSE,
+        protocol=protocol2.name,
+        node="source",
+        memories=[],
+        is_approved=False,
+        paired_protocol="paired_protocol",
+        paired_node="paired_node",
+        paired_memories=[],
+    )
     resource_manager.received_message("sender", resp_msg)
     assert protocol2 not in node.protocols
     assert protocol2 not in resource_manager.pending_protocols
@@ -235,14 +248,16 @@ def test_received_message():
 
     protocol2 = FakeProtocol("pending_protocol")
     resource_manager.pending_protocols.append(protocol2)
-    resp_msg = ResourceManagerMessage(ResourceManagerMsgType.RESPONSE,
-                                      protocol=protocol2.name,
-                                      node="source",
-                                      memories=[],
-                                      is_approved=True,
-                                      paired_protocol="paired_protocol",
-                                      paired_node="paired_node",
-                                      paired_memories=[])
+    resp_msg = ResourceManagerMessage(
+        ResourceManagerMsgType.RESPONSE,
+        protocol=protocol2.name,
+        node="source",
+        memories=[],
+        is_approved=True,
+        paired_protocol="paired_protocol",
+        paired_node="paired_node",
+        paired_memories=[],
+    )
     resource_manager.received_message("sender", resp_msg)
     assert protocol2 in node.protocols
     assert protocol2 not in resource_manager.pending_protocols
@@ -323,15 +338,18 @@ def test_ResourceManager1():
     def eg_rule_action1(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA.create(None, "EGA." + memory.name, "mid_node", "node2", memory)
+        protocol = EntanglementGenerationA.create(
+            None, "EGA." + memory.name, "mid_node", "node2", memory
+        )
         protocol.primary = True
         return [protocol, ["node2"], [eg_req_func], [{}]]
 
     def eg_rule_action2(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA.create(None, "EGA." + memory.name,
-                                           "mid_node", "node1", memory)
+        protocol = EntanglementGenerationA.create(
+            None, "EGA." + memory.name, "mid_node", "node1", memory
+        )
         return protocol, [None], [None], [{}]
 
     tl = Timeline()
@@ -350,8 +368,7 @@ def test_ResourceManager1():
     for src in [node1, node2, mid_node]:
         for dst in [node1, node2, mid_node]:
             if src.name != dst.name:
-                cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl, 0,
-                                      1e3)
+                cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl, 0, 1e3)
                 cc.set_ends(src, dst.name)
 
     qc0 = QuantumChannel("qc_n1_m", tl, 0, 1e3, frequency=8e7)
@@ -398,15 +415,18 @@ def test_ResourceManager2():
     def eg_rule_action1(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA.create(None, "EGA." + memory.name, "mid_node", "node2", memory)
+        protocol = EntanglementGenerationA.create(
+            None, "EGA." + memory.name, "mid_node", "node2", memory
+        )
         protocol.primary = True
         return [protocol, ["node2"], [eg_req_func], [{}]]
 
     def eg_rule_action2(memories_info, args):
         memories = [info.memory for info in memories_info]
         memory = memories[0]
-        protocol = EntanglementGenerationA.create(None, "EGA." + memory.name,
-                                           "mid_node", "node1", memory)
+        protocol = EntanglementGenerationA.create(
+            None, "EGA." + memory.name, "mid_node", "node1", memory
+        )
         return protocol, [None], [None], [{}]
 
     tl = Timeline()
@@ -425,8 +445,7 @@ def test_ResourceManager2():
     for src in [node1, node2, mid_node]:
         for dst in [node1, node2, mid_node]:
             if src.name != dst.name:
-                cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl, 0,
-                                      1e3)
+                cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl, 0, 1e3)
                 cc.set_ends(src, dst.name)
 
     qc0 = QuantumChannel("qc_n1_m", tl, 0, 1e3, frequency=8e7)
@@ -463,5 +482,13 @@ def test_ResourceManager2():
         assert info.state == "RAW"
 
     assert len(node1.protocols) == len(node2.protocols) == 0
-    assert len(node1.resource_manager.pending_protocols) == len(node2.resource_manager.pending_protocols) == 0
-    assert len(node1.resource_manager.waiting_protocols) == len(node2.resource_manager.waiting_protocols) == 0
+    assert (
+        len(node1.resource_manager.pending_protocols)
+        == len(node2.resource_manager.pending_protocols)
+        == 0
+    )
+    assert (
+        len(node1.resource_manager.waiting_protocols)
+        == len(node2.resource_manager.waiting_protocols)
+        == 0
+    )

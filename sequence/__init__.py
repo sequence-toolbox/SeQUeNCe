@@ -1,7 +1,20 @@
 from pathlib import Path
 
-__all__ = ['app', 'components', 'entanglement_management', 'kernel', 'network_management', 'qkd', 'resource_management',
-           'topology', 'utils', 'message', 'protocol', 'gui', 'read_version_from_pyproject']
+__all__ = [
+    "app",
+    "components",
+    "entanglement_management",
+    "kernel",
+    "network_management",
+    "qkd",
+    "resource_management",
+    "topology",
+    "utils",
+    "message",
+    "protocol",
+    "gui",
+    "read_version_from_pyproject",
+]
 
 
 def read_version_from_pyproject() -> str:

@@ -4,6 +4,7 @@ This module defines code to support the BBPSSW protocol for entanglement purific
 Success results are pre-determined based on network parameters.
 Also defined is the message type used by the BBPSSW code.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -18,6 +19,7 @@ if TYPE_CHECKING:
 from ...constants import BELL_DIAGONAL_STATE_FORMALISM
 from ...utils import log
 from .bbpssw_protocol import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType
+
 
 @BBPSSWProtocol.register(BELL_DIAGONAL_STATE_FORMALISM)
 class BBPSSW_BDS(BBPSSWProtocol):
@@ -39,7 +41,14 @@ class BBPSSW_BDS(BBPSSWProtocol):
         is_twirled (bool): whether we twirl the input and output BDS. True: BBPSSW, False: DEJMPS. (default True)
     """
 
-    def __init__(self, owner: Node, name: str, kept_memo: Memory, meas_memo: Memory, is_twirled=True):
+    def __init__(
+        self,
+        owner: Node,
+        name: str,
+        kept_memo: Memory,
+        meas_memo: Memory,
+        is_twirled=True,
+    ):
         """Constructor for purification protocol.
 
         args:
@@ -53,7 +62,7 @@ class BBPSSW_BDS(BBPSSWProtocol):
 
         self.is_twirled = is_twirled
         self.ep_matched = False
-        self.protocol_type = 'bbpssw_bds'
+        self.protocol_type = "bbpssw_bds"
 
     def start(self) -> None:
         """Method to start entanglement purification.
@@ -66,7 +75,10 @@ class BBPSSW_BDS(BBPSSWProtocol):
         """
         super().start()
         # get remote memories
-        remote_memos = [self.owner.timeline.get_entity_by_name(memo) for memo in self.remote_memories]
+        remote_memos = [
+            self.owner.timeline.get_entity_by_name(memo)
+            for memo in self.remote_memories
+        ]
         remote_kept_memo: Memory = remote_memos[0]
         remote_meas_memo: Memory = remote_memos[1]
 
@@ -94,7 +106,9 @@ class BBPSSW_BDS(BBPSSWProtocol):
         # Also determine BDS density matrix elements of kept entangled pair conditioned on successful purification,
         # immediately after start of purification
         p_success, new_bds = self.purification_res()
-        assert 1. >= p_success >= 0.5, 'Entanglement purification success probability should be higher than 1/2.'
+        assert 1.0 >= p_success >= 0.5, (
+            "Entanglement purification success probability should be higher than 1/2."
+        )
         p_1 = (1 + np.sqrt(2 * p_success - 1)) / 2
         if self.owner.get_generator().random() <= p_1:
             self.meas_res = 1
@@ -105,12 +119,21 @@ class BBPSSW_BDS(BBPSSWProtocol):
         #  not the time when purification result is determined (after CC)
 
         # modify entangled state of kept pair
-        if self.owner.name > self.remote_node_name:  # avoid both ends setting memory state
+        if (
+            self.owner.name > self.remote_node_name
+        ):  # avoid both ends setting memory state
             keys = [self.kept_memo.qstate_key, remote_kept_memo.qstate_key]
             self.owner.timeline.quantum_manager.set(keys, new_bds)
 
-        log.logger.debug(f'Starting BBPSSW from {self.owner} to {self.remote_node_name}')
-        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.remote_protocol_name, meas_res=self.meas_res, protocol_type=self.protocol_type)
+        log.logger.debug(
+            f"Starting BBPSSW from {self.owner} to {self.remote_node_name}"
+        )
+        message = BBPSSWMessage(
+            BBPSSWMsgType.PURIFICATION_RES,
+            self.remote_protocol_name,
+            meas_res=self.meas_res,
+            protocol_type=self.protocol_type,
+        )
         self.owner.send_message(self.remote_node_name, message)
 
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:
@@ -124,26 +147,35 @@ class BBPSSW_BDS(BBPSSWProtocol):
             Will call `update_resource_manager` method.
         """
         if msg.msg_type == BBPSSWMsgType.PURIFICATION_RES:
-            purification_success = (self.meas_res == msg.meas_res)
-            log.logger.info(self.owner.name + f'received result message, succeeded={purification_success}')
+            purification_success = self.meas_res == msg.meas_res
+            log.logger.info(
+                self.owner.name
+                + f"received result message, succeeded={purification_success}"
+            )
             assert src == self.remote_node_name
 
             self.update_resource_manager(self.meas_memo, "RAW")
 
             if purification_success:
-                log.logger.info(f'Purification success, measurement results: {self.meas_res}, {msg.meas_res}')
+                log.logger.info(
+                    f"Purification success, measurement results: {self.meas_res}, {msg.meas_res}"
+                )
                 remote_kept_memory_name = self.remote_memories[0]
-                remote_kept_memory: Memory = self.owner.timeline.get_entity_by_name(remote_kept_memory_name)
+                remote_kept_memory: Memory = self.owner.timeline.get_entity_by_name(
+                    remote_kept_memory_name
+                )
                 remote_kept_memory.bds_decohere()
                 self.kept_memo.bds_decohere()
                 self.kept_memo.fidelity = self.kept_memo.get_bds_fidelity()
                 self.update_resource_manager(self.kept_memo, state="PURIFIED")
             else:
-                log.logger.info(f'Purification failed because measure results: {self.meas_res}, {msg.meas_res}')
+                log.logger.info(
+                    f"Purification failed because measure results: {self.meas_res}, {msg.meas_res}"
+                )
                 self.update_resource_manager(self.kept_memo, state="RAW")
 
         else:
-            raise Exception(f'{msg.msg_type} unknown')
+            raise Exception(f"{msg.msg_type} unknown")
 
     def purification_res(self) -> tuple[float, npt.NDArray]:
         """Method to calculate the correct success probability of a purification trial with BDS input.
@@ -154,83 +186,160 @@ class BBPSSW_BDS(BBPSSWProtocol):
             tuple[float, np.array]: success probability and BDS density matrix elements of kept entangled pair.
         """
 
-        assert self.owner.timeline.quantum_manager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, (
-            "Input states should be Bell diagonal states.")
+        assert (
+            self.owner.timeline.quantum_manager.get_active_formalism()
+            == BELL_DIAGONAL_STATE_FORMALISM
+        ), "Input states should be Bell diagonal states."
 
-        kept_input_state = self.owner.timeline.quantum_manager.get(self.kept_memo.qstate_key)
-        meas_input_state = self.owner.timeline.quantum_manager.get(self.meas_memo.qstate_key)
+        kept_input_state = self.owner.timeline.quantum_manager.get(
+            self.kept_memo.qstate_key
+        )
+        meas_input_state = self.owner.timeline.quantum_manager.get(
+            self.meas_memo.qstate_key
+        )
 
-        own_node, remote_node = self.owner, self.owner.timeline.get_entity_by_name(self.remote_node_name)
+        own_node, remote_node = (
+            self.owner,
+            self.owner.timeline.get_entity_by_name(self.remote_node_name),
+        )
 
         # gate and measurement fidelities on protocol owner node
         own_node_gate_fid, own_node_meas_fid = own_node.gate_fid, own_node.meas_fid
         # gate and measurement fidelities on remote node
-        remote_node_gate_fid, remote_node_meas_fid = remote_node.gate_fid, remote_node.meas_fid
+        remote_node_gate_fid, remote_node_meas_fid = (
+            remote_node.gate_fid,
+            remote_node.meas_fid,
+        )
 
         if self.is_twirled:
-            kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = kept_input_state.state[0], (1 - kept_input_state.state[
-                0]) / 3, (1 - kept_input_state.state[0]) / 3, (1 - kept_input_state.state[
-                0]) / 3  # Diagonal elements of kept pair (twirled)
-            meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = meas_input_state.state[0], (1 - meas_input_state.state[
-                0]) / 3, (1 - meas_input_state.state[0]) / 3, (1 - meas_input_state.state[
-                0]) / 3  # Diagonal elements of measured pair (twirled)
+            kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = (
+                kept_input_state.state[0],
+                (1 - kept_input_state.state[0]) / 3,
+                (1 - kept_input_state.state[0]) / 3,
+                (1 - kept_input_state.state[0]) / 3,
+            )  # Diagonal elements of kept pair (twirled)
+            meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = (
+                meas_input_state.state[0],
+                (1 - meas_input_state.state[0]) / 3,
+                (1 - meas_input_state.state[0]) / 3,
+                (1 - meas_input_state.state[0]) / 3,
+            )  # Diagonal elements of measured pair (twirled)
         else:
-            kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = kept_input_state.state  # Diagonal elements of kept pair
-            meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = meas_input_state.state  # Diagonal elements of measured pair
+            kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = (
+                kept_input_state.state
+            )  # Diagonal elements of kept pair
+            meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = (
+                meas_input_state.state
+            )  # Diagonal elements of measured pair
 
         # assert 1. >= kept_elem_1 >= 0.5 and 1. >= meas_elem_1 >= 0.5, "Input states should have fidelity above 1/2."
         a, b = (kept_elem_1 + kept_elem_2), (meas_elem_1 + meas_elem_2)
 
         # calculate success probability with analytical formula
-        p_succ = 1 / 2 \
-                 + own_node_gate_fid * remote_node_gate_fid \
-                 * (own_node_meas_fid * (1 - remote_node_meas_fid) + (1 - own_node_meas_fid) * remote_node_meas_fid) \
-                 + own_node_gate_fid * remote_node_gate_fid * (a * b + (1 - a) * (1 - b)) \
-                 * (own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (1 - remote_node_meas_fid)
-                    - own_node_meas_fid * (1 - remote_node_meas_fid) - (1 - own_node_meas_fid) * remote_node_meas_fid) \
-                 - own_node_gate_fid * remote_node_gate_fid / 2
+        p_succ = (
+            1 / 2
+            + own_node_gate_fid
+            * remote_node_gate_fid
+            * (
+                own_node_meas_fid * (1 - remote_node_meas_fid)
+                + (1 - own_node_meas_fid) * remote_node_meas_fid
+            )
+            + own_node_gate_fid
+            * remote_node_gate_fid
+            * (a * b + (1 - a) * (1 - b))
+            * (
+                own_node_meas_fid * remote_node_meas_fid
+                + (1 - own_node_meas_fid) * (1 - remote_node_meas_fid)
+                - own_node_meas_fid * (1 - remote_node_meas_fid)
+                - (1 - own_node_meas_fid) * remote_node_meas_fid
+            )
+            - own_node_gate_fid * remote_node_gate_fid / 2
+        )
 
         # calculate the BDS elements
-        new_elem_1 = own_node_gate_fid * remote_node_gate_fid \
-                     * ((own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (
-                1 - remote_node_meas_fid)) * (kept_elem_1 * meas_elem_1 + kept_elem_2 * meas_elem_2)
-                        + (own_node_meas_fid * (1 - remote_node_meas_fid) + (
-                        1 - own_node_meas_fid) * remote_node_meas_fid) * (
-                                kept_elem_1 * meas_elem_3 + kept_elem_2 * meas_elem_4)) \
-                     + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+        new_elem_1 = (
+            own_node_gate_fid
+            * remote_node_gate_fid
+            * (
+                (
+                    own_node_meas_fid * remote_node_meas_fid
+                    + (1 - own_node_meas_fid) * (1 - remote_node_meas_fid)
+                )
+                * (kept_elem_1 * meas_elem_1 + kept_elem_2 * meas_elem_2)
+                + (
+                    own_node_meas_fid * (1 - remote_node_meas_fid)
+                    + (1 - own_node_meas_fid) * remote_node_meas_fid
+                )
+                * (kept_elem_1 * meas_elem_3 + kept_elem_2 * meas_elem_4)
+            )
+            + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+        )
 
-        new_elem_2 = own_node_gate_fid * remote_node_gate_fid \
-                     * ((own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (
-                1 - remote_node_meas_fid)) * (kept_elem_1 * meas_elem_2 + kept_elem_2 * meas_elem_1)
-                        + (own_node_meas_fid * (1 - remote_node_meas_fid) + (
-                        1 - own_node_meas_fid) * remote_node_meas_fid) * (
-                                kept_elem_1 * meas_elem_4 + kept_elem_2 * meas_elem_3)) \
-                     + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+        new_elem_2 = (
+            own_node_gate_fid
+            * remote_node_gate_fid
+            * (
+                (
+                    own_node_meas_fid * remote_node_meas_fid
+                    + (1 - own_node_meas_fid) * (1 - remote_node_meas_fid)
+                )
+                * (kept_elem_1 * meas_elem_2 + kept_elem_2 * meas_elem_1)
+                + (
+                    own_node_meas_fid * (1 - remote_node_meas_fid)
+                    + (1 - own_node_meas_fid) * remote_node_meas_fid
+                )
+                * (kept_elem_1 * meas_elem_4 + kept_elem_2 * meas_elem_3)
+            )
+            + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+        )
 
-        new_elem_3 = own_node_gate_fid * remote_node_gate_fid \
-                     * ((own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (
-                1 - remote_node_meas_fid)) * (kept_elem_3 * meas_elem_3 + kept_elem_4 * meas_elem_4)
-                        + (own_node_meas_fid * (1 - remote_node_meas_fid) + (
-                        1 - own_node_meas_fid) * remote_node_meas_fid) * (
-                                kept_elem_3 * meas_elem_1 + kept_elem_4 * meas_elem_2)) \
-                     + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+        new_elem_3 = (
+            own_node_gate_fid
+            * remote_node_gate_fid
+            * (
+                (
+                    own_node_meas_fid * remote_node_meas_fid
+                    + (1 - own_node_meas_fid) * (1 - remote_node_meas_fid)
+                )
+                * (kept_elem_3 * meas_elem_3 + kept_elem_4 * meas_elem_4)
+                + (
+                    own_node_meas_fid * (1 - remote_node_meas_fid)
+                    + (1 - own_node_meas_fid) * remote_node_meas_fid
+                )
+                * (kept_elem_3 * meas_elem_1 + kept_elem_4 * meas_elem_2)
+            )
+            + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+        )
 
-        new_elem_4 = own_node_gate_fid * remote_node_gate_fid \
-                     * ((own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (
-                1 - remote_node_meas_fid)) * (kept_elem_3 * meas_elem_4 + kept_elem_4 * meas_elem_3)
-                        + (own_node_meas_fid * (1 - remote_node_meas_fid) + (
-                        1 - own_node_meas_fid) * remote_node_meas_fid) * (
-                                kept_elem_3 * meas_elem_2 + kept_elem_4 * meas_elem_1)) \
-                     + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+        new_elem_4 = (
+            own_node_gate_fid
+            * remote_node_gate_fid
+            * (
+                (
+                    own_node_meas_fid * remote_node_meas_fid
+                    + (1 - own_node_meas_fid) * (1 - remote_node_meas_fid)
+                )
+                * (kept_elem_3 * meas_elem_4 + kept_elem_4 * meas_elem_3)
+                + (
+                    own_node_meas_fid * (1 - remote_node_meas_fid)
+                    + (1 - own_node_meas_fid) * remote_node_meas_fid
+                )
+                * (kept_elem_3 * meas_elem_2 + kept_elem_4 * meas_elem_1)
+            )
+            + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+        )
 
         if self.is_twirled:
             new_fid = new_elem_1 / p_succ  # normalization by success probability
-            bds_elems = np.array([new_fid, (1 - new_fid) / 3, (1 - new_fid) / 3, (1 - new_fid) / 3])
+            bds_elems = np.array(
+                [new_fid, (1 - new_fid) / 3, (1 - new_fid) / 3, (1 - new_fid) / 3]
+            )
         else:
             bds_elems = np.array([new_elem_1, new_elem_2, new_elem_3, new_elem_4])
             bds_elems = bds_elems / p_succ  # normalization by success probability
 
         log.logger.debug(
-            f"{self.name}, before: f = {kept_elem_1:.6f}, {meas_elem_1:.6f}; after: f = {bds_elems[0]:.6f}")
+            f"{self.name}, before: f = {kept_elem_1:.6f}, {meas_elem_1:.6f}; after: f = {bds_elems[0]:.6f}"
+        )
 
         return p_succ, bds_elems

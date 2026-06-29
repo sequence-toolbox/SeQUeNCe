@@ -5,12 +5,12 @@ from ..kernel.entity import Entity
 from ..utils.encoding import polarization
 
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
 
 
 class Mirror(Entity):
-    
     """Single photon reflecting device.
     This class models the reflection of a single photon, in the fashion of an experimental mirror.
     Can be attached to many devices to enable different measurement options.
@@ -24,8 +24,15 @@ class Mirror(Entity):
         phase_error (float): phase error applied to qubits.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", fidelity=0.98,
-                 destination="", encoding_type=polarization, phase_error=0):
+    def __init__(
+        self,
+        name: str,
+        timeline: "Timeline",
+        fidelity=0.98,
+        destination="",
+        encoding_type=polarization,
+        phase_error=0,
+    ):
         Entity.__init__(self, name, timeline)
         self.fidelity = fidelity
         self.destination = destination
