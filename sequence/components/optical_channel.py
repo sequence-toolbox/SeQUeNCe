@@ -19,7 +19,7 @@ from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..utils import log
-from ..constants import SPEED_OF_LIGHT, SECOND, EPSILON
+from ..constants import SPEED_OF_LIGHT, MICROSECOND, SECOND, EPSILON
 
 gmpy2.get_context().precision = (
     80  # 80 bits ~ 24 decimal digits ~ sufficient for 10,000 years of ps timing

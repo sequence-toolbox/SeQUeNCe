@@ -1,4 +1,6 @@
 from numpy import multiply
+
+from .photon import Photon
 from ..kernel.entity import Entity
 from ..utils.encoding import polarization
 

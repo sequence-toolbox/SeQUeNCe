@@ -247,14 +247,14 @@ if __name__ == "__main__":
     detector2_count = detector2.photon_counter
     detector2_count2 = detector2.photon_counter2
 
-    print("--------------------")
+    print(f"--------------------")
     cumulative_detector_photon_counter_real = 0
     cumulative_spd_real = 0
     cumulative_detector_photon_counter_ideal = 0
     cumulative_spd_ideal = 0
 
     for trial in range(NUM_TRIALS):
-        print("--------------------")
+        print(f"--------------------")
         print(f"Trial {trial}:")
 
         # Reset timeline

@@ -7,6 +7,8 @@ import numpy as np
 from .app import QuantumGUI
 from .graph_comp import GraphNode
 from ..topology.topology import Topology
+from ..topology.router_net_topo import RouterNetTopo
+
 
 class RunGui:
     DEFAULT_CONFIG = "/starlight.json"

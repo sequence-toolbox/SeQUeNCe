@@ -4,7 +4,7 @@ This module defines the LightSource class to supply individual photons and the S
 These classes should be connected to one or two entities, respectively, that are capable of receiving photons.
 """
 
-from numpy import multiply, sqrt, zeros, kron
+from numpy import multiply, sqrt, zeros, kron, outer
 
 from .photon import Photon
 from ..kernel.entity import Entity
