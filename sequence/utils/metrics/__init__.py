@@ -18,16 +18,16 @@ from .event_types import (
     register_event_type,
 )
 from .metric_types import (
-    DeliveryTimeMetric,
     CollectContext,
-    CounterPairMetric,
-    EventFieldListMetric,
-    LastValueMetric,
+    CounterMetric,
+    DeliveryTimeMetric,
+    FidelityMetric,
     Metric,
+    RateMetric,
 )
 from .registry import (
     clear_registry,
-    get_counter_pair,
+    get_counter,
     list_metrics,
     register_metric,
     reset_metrics,

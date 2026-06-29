@@ -46,7 +46,7 @@ class Metric(ABC):
 
 
 @dataclass
-class CounterPairMetric(Metric):
+class CounterMetric(Metric):
     """Tracks failure/success counts and a running success rate."""
 
     prefix: str
@@ -105,8 +105,8 @@ class CounterPairMetric(Metric):
 
 
 @dataclass
-class LastValueMetric(Metric):
-    """Collects the last scalar field value from matching events."""
+class RateMetric(Metric):
+    """Collects a rate value supplied at trial collection time (e.g. throughput)."""
 
     key: str
     event: EventType
@@ -128,8 +128,8 @@ class LastValueMetric(Metric):
 
 
 @dataclass
-class EventFieldListMetric(Metric):
-    """Collects a list of field values from matching events."""
+class FidelityMetric(Metric):
+    """Collects fidelity values from matching success events."""
 
     key: str
     event: EventType
@@ -154,7 +154,7 @@ class EventFieldListMetric(Metric):
 
 @dataclass
 class DeliveryTimeMetric(Metric):
-    """Time to deliver N purified pairs relative to reservation start."""
+    """Time to deliver N pairs relative to reservation start."""
 
     key: str = "delivery_time"
     delivery_event: EventType | None = None
