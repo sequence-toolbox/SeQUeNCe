@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 from ...constants import BELL_DIAGONAL_STATE_FORMALISM
 from ...utils import log, metrics
+from ...utils.metrics.event_types import EventTypes
 from .bbpssw_protocol import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType
 
 @BBPSSWProtocol.register(BELL_DIAGONAL_STATE_FORMALISM)
@@ -138,14 +139,15 @@ class BBPSSW_BDS(BBPSSWProtocol):
                 self.kept_memo.bds_decohere()
                 self.kept_memo.fidelity = self.kept_memo.get_bds_fidelity()
                 metrics.record(
-                    metrics.EP_SUCCESS,
+                    EventTypes.EP_SUCCESS,
                     self.owner.name,
+                    remote_node=self.remote_node_name,
                     fidelity=self.kept_memo.fidelity,
                 )
                 self.update_resource_manager(self.kept_memo, state="PURIFIED")
             else:
                 log.logger.info(f'Purification failed because measure results: {self.meas_res}, {msg.meas_res}')
-                metrics.record(metrics.EP_FAILURE, self.owner.name)
+                metrics.record(EventTypes.EP_FAILURE, self.owner.name, remote_node=self.remote_node_name)
                 self.update_resource_manager(self.kept_memo, state="RAW")
 
         else:
