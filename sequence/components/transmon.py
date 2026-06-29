@@ -129,7 +129,7 @@ class EmittingProtocol(Protocol):
 
         if self.transmon.photons_quantum_state[0] == KET1:
             if random.random() < self.transmon.efficiency:
-                print(f"Transmon receiver " + str(self.transmon._receivers[0]))
+                print(f"Transmon receiver {self.transmon._receivers[0]}")
                 self.transmon._receivers[0].receive_photon_from_transmon(photon)
             else:
                 print("Photon emission failed due to transmon efficiency")

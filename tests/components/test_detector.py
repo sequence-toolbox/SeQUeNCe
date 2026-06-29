@@ -6,7 +6,7 @@ from sequence.components.photon import Photon
 from sequence.kernel.timeline import Timeline
 from sequence.constants import FOCK_DENSITY_MATRIX_FORMALISM
 from sequence.kernel.quantum_manager import QuantumManager
-from sequence.utils.encoding import polarization, time_bin, absorptive, fock
+from sequence.utils.encoding import polarization, time_bin, fock
 
 SEED = 0
 
