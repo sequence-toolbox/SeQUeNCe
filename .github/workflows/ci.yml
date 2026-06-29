@@ -19,12 +19,13 @@ jobs:
   linting:
     name: Lint
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: ruff-action
         uses: astral-sh/ruff-action@v4.0.0
         with:
           version: 'latest'
-          args: check --diff
+          args: check
           src: './sequence'
 
   validation:
