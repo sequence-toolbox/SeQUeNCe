@@ -12,6 +12,7 @@ from ...kernel.process import Process
 from ...kernel.quantum_manager import QuantumManager
 from ...resource_management.memory_manager import MemoryInfo
 from ...utils import log, metrics
+from ...utils.metrics.event_types import EventTypes
 
 if TYPE_CHECKING:
     from ...components.memory import Memory
@@ -228,9 +229,14 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
 
     def _entanglement_succeed(self):
         log.logger.info(f'{self.owner.name} successful entanglement of memory {self.memory}')
-        metrics.record(metrics.EG_SUCCESS, self.owner.name, fidelity=self.raw_fidelity)
         self.memory.entangled_memory['node_id'] = self.remote_node_name
         self.memory.entangled_memory['memo_id'] = self.remote_memo_id
+        metrics.record(
+            EventTypes.EG_SUCCESS,
+            self.owner.name,
+            remote_node=self.remote_node_name,
+            fidelity=self.raw_fidelity,
+        )
         self.memory.fidelity = self.raw_fidelity
 
         self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
