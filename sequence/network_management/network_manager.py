@@ -2,7 +2,6 @@
 
 This module defines the NetworkManager ABC and the default NetworkManager, DistributedNetworkManager.
 """
-
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from enum import Enum, auto
@@ -26,7 +25,6 @@ from .rsvp import RSVPMessage, RSVPMsgType, RSVPProtocol
 class NetworkManagerMsgType(Enum):
     OUTBOUND = auto()
 
-
 class NetworkManagerMessage(Message):
     """Message used by the network manager.
 
@@ -48,31 +46,26 @@ class NetworkManager(ABC):
     """Network Manager Abstraction
     Has the following responsibilities: Take in a reservation request, complete scheduling in some manner, receive the
     decided path, and finally inform the ResourceManager to create Rules.
-
+    
     Attributes:
         name (str): name of the network manager instance.
         owner (QuantumRouter): node that network manager is attached to.
         memory_array_name (str): name of the memory array component in the node.
         memo_arr (MemoryArray): reference to the memory array component in the node.
-        timecards (list[MemoryTimeCard]): list of timecards for each memory in the node,
+        timecards (list[MemoryTimeCard]): list of timecards for each memory in the node, 
                                           each timecard is associated with a memory in the memory array.
     """
-
-    _registry: dict[str, type["NetworkManager"]] = {}
-    _global_type: str = "distributed"
+    _registry: dict[str, type['NetworkManager']] = {}
+    _global_type: str = 'distributed'
 
     def __init__(self, owner: QuantumRouter, memory_array_name: str, **kwargs):
         if kwargs:
-            log.logger.warning(
-                f"Network Manager ABC received kwargs: {list(kwargs.keys())}, ignoring."
-            )
-        self.name: str = "network_manager"
+            log.logger.warning(f'Network Manager ABC received kwargs: {list(kwargs.keys())}, ignoring.')
+        self.name: str = 'network_manager'
         self.owner = owner
         self.memory_array_name = memory_array_name
         self.memo_arr: MemoryArray = owner.components[memory_array_name]
-        self.timecards: list[MemoryTimeCard] = [
-            MemoryTimeCard(i) for i in range(len(self.memo_arr))
-        ]
+        self.timecards: list[MemoryTimeCard] = [MemoryTimeCard(i) for i in range(len(self.memo_arr))]
 
     @classmethod
     def register(cls, name, network_manager_cls=None):
@@ -80,33 +73,30 @@ class NetworkManager(ABC):
             cls._registry[name] = network_manager_cls
             return None
 
-        def decorator(network_manager_cls_dec: type["NetworkManager"]):
+        def decorator(network_manager_cls_dec: type['NetworkManager']):
             cls._registry[name] = network_manager_cls_dec
             return network_manager_cls_dec
-
         return decorator
 
     @classmethod
-    def create(cls, owner, memory_array_name: str, **kwargs: Any) -> "NetworkManager":
+    def create(cls, owner, memory_array_name: str, **kwargs: Any) -> 'NetworkManager':
         """Factory method to create network manager instance based on global type.
-
+        
         Args:
             owner (QuantumRouter): node that network manager is attached to.
             memory_array_name (str): name of the memory array component in the node.
             **kwargs: additional arguments to pass to the network manager constructor.
-
+        
         Returns:
             NetworkManager: instance of network manager based on global type.
         """
-        network_manager_cls: type["NetworkManager"] = cls._registry[cls._global_type]
+        network_manager_cls: type['NetworkManager'] = cls._registry[cls._global_type]
         return network_manager_cls(owner, memory_array_name, **kwargs)
 
     @classmethod
     def set_global_type(cls, network_manager_type: str) -> None:
         if network_manager_type not in cls._registry:
-            raise NotImplementedError(
-                f"Network Manager {network_manager_type} is not registered."
-            )
+            raise NotImplementedError(f'Network Manager {network_manager_type} is not registered.')
         else:
             cls._global_type = network_manager_type
 
@@ -120,16 +110,7 @@ class NetworkManager(ABC):
         pass
 
     @abstractmethod
-    def request(
-        self,
-        responder,
-        start_time,
-        end_time,
-        memory_size,
-        target_fidelity,
-        entanglement_number=1,
-        identity=0,
-    ):
+    def request(self, responder, start_time, end_time, memory_size, target_fidelity, entanglement_number=1, identity=0):
         """Handle Requests from the Application."""
         pass
 
@@ -148,12 +129,10 @@ class NetworkManager(ABC):
         Args:
             reservation (Reservation): reservation for which to generate rules.
         """
-        self.owner.resource_manager.generate_load_rules(
-            reservation.path, reservation, self.timecards, self.memory_array_name
-        )
+        self.owner.resource_manager.generate_load_rules(reservation.path, reservation, self.timecards, self.memory_array_name)
 
 
-@NetworkManager.register("distributed")
+@NetworkManager.register('distributed')
 class DistributedNetworkManager(NetworkManager):
     """The default Network Manager implementation.
 
@@ -162,19 +141,14 @@ class DistributedNetworkManager(NetworkManager):
         forwarding_table (dict[str, str]): mapping of destination node to next hop for forwarding.
         routing_protocol (Protocol): protocol used for updating forwarding table.
     """
-
-    def __init__(
-        self, owner: QuantumRouter, memory_array_name: str, component_templates=None
-    ):
+    def __init__(self, owner: QuantumRouter, memory_array_name: str, component_templates=None):
         super().__init__(owner, memory_array_name)
         if component_templates is None:
             component_templates = {}
         self.protocol_stack = []
         self.forwarding_table = {}
-        routing_type = component_templates.get("routing", ROUTING_STATIC)
-        self.routing_protocol = RoutingProtocol.create(
-            owner, name=routing_type, protocol_type=routing_type
-        )
+        routing_type = component_templates.get('routing', ROUTING_STATIC)
+        self.routing_protocol = RoutingProtocol.create(owner, name=routing_type, protocol_type=routing_type)
         # Create and load the stack to protocol_stack
         protocols: list = self.create_stack()
         self.load_stack(protocols)
@@ -192,7 +166,7 @@ class DistributedNetworkManager(NetworkManager):
 
     def get_forwarding_table(self) -> dict[str, str]:
         """Returns the forwarding table.
-
+        
         Returns:
             dict[str, str]: forwarding table mapping destination node to next hop.
         """
@@ -204,7 +178,7 @@ class DistributedNetworkManager(NetworkManager):
         Args:
             forwarding_table (dict): mapping of destination node to next hop.
         """
-        log.logger.info(f"{self.owner.name} set forwarding table: {forwarding_table}")
+        log.logger.info(f'{self.owner.name} set forwarding table: {forwarding_table}')
         self.forwarding_table = forwarding_table
 
     def get_routing_protocol(self):
@@ -212,16 +186,12 @@ class DistributedNetworkManager(NetworkManager):
 
     def create_stack(self) -> list[StackProtocol]:
         """Helper function to stand up the protocols
-
+        
         Returns:
             list[StackProtocol]: list of protocol instances in the stack, ordered from lowest to highest.
         """
-        rsvp = RSVPProtocol(
-            self.owner, f"{self.owner.name}.RSVP", self.memory_array_name
-        )
-        forwarding_protocol = ForwardingProtocol(
-            self.owner, f"{self.owner.name}.ForwardingProtocol"
-        )
+        rsvp = RSVPProtocol(self.owner, f'{self.owner.name}.RSVP', self.memory_array_name)
+        forwarding_protocol = ForwardingProtocol(self.owner, f'{self.owner.name}.ForwardingProtocol')
         rsvp.timecards = self.timecards
         forwarding_protocol.upper_protocols.append(rsvp)
         rsvp.lower_protocols.append(forwarding_protocol)
@@ -245,14 +215,12 @@ class DistributedNetworkManager(NetworkManager):
             dst (str): destination node of the message.
             msg (Message): message to be sent.
         """
-        outbound_msg = NetworkManagerMessage(
-            NetworkManagerMsgType.OUTBOUND, "network_manager", msg
-        )
+        outbound_msg = NetworkManagerMessage(NetworkManagerMsgType.OUTBOUND, 'network_manager', msg)
         super().push(dst, outbound_msg)
 
     def pop(self, msg: RSVPMessage):
         """Pop a message. This is a message coming from its internal RSVP protocol.
-
+        
         Args:
             msg (RSVPMessage): message received from another node.
         """
@@ -260,9 +228,7 @@ class DistributedNetworkManager(NetworkManager):
         if msg.msg_type == RSVPMsgType.APPROVE:
             self.generate_rules(reservation)
             if reservation.initiator == self.owner.name:
-                self.owner.get_reservation_result(
-                    reservation, True
-                )  # Deliver the result to the Node
+                self.owner.get_reservation_result(reservation, True) # Deliver the result to the Node
             elif reservation.responder == self.owner.name:
                 self.owner.get_other_reservation(reservation)
         elif msg.msg_type == RSVPMsgType.REJECT:
@@ -276,24 +242,13 @@ class DistributedNetworkManager(NetworkManager):
             src (str): name of source node that sent the message.
             msg (NetworkManagerMessage): the message received from the source node.
         """
-        log.logger.info(
-            f"{self.owner.name} network manager received message from {src}: {msg}"
-        )
+        log.logger.info(f'{self.owner.name} network manager received message from {src}: {msg}')
         self.forward.pop(src=src, msg=msg.payload)
 
-    def request(
-        self,
-        responder,
-        start_time,
-        end_time,
-        memory_size,
-        target_fidelity,
-        entanglement_number=1,
-        identity=0,
-    ):
+    def request(self, responder, start_time, end_time, memory_size, target_fidelity, entanglement_number=1, identity=0):
         """Handle Requests from the Application by pushing the request into the stack.
            The RSVP protocol at the top of the stack will handle it.
-
+        
         Args:
             responder (str): name of node with which entanglement is requested.
             start_time (int): reservation start time in picoseconds.
@@ -303,12 +258,4 @@ class DistributedNetworkManager(NetworkManager):
             entanglement_number (int): the number of entanglement pairs the request ask for.
             identity (int): the ID of a request
         """
-        self.rsvp.push(
-            responder,
-            start_time,
-            end_time,
-            memory_size,
-            target_fidelity,
-            entanglement_number,
-            identity,
-        )
+        self.rsvp.push(responder, start_time, end_time, memory_size, target_fidelity, entanglement_number, identity)

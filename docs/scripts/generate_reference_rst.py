@@ -92,11 +92,7 @@ def get_title(module_name: str) -> str:
 
 def discover_modules(source_dir: Path, relative_source_dir: str) -> list[str]:
     if relative_source_dir == ".":
-        modules = [
-            path.stem
-            for path in source_dir.glob("*.py")
-            if path.stem in ROOT_MISC_MODULES
-        ]
+        modules = [path.stem for path in source_dir.glob("*.py") if path.stem in ROOT_MISC_MODULES]
         return sorted(modules, key=str.lower)
 
     target = source_dir / relative_source_dir
@@ -128,16 +124,7 @@ def write_module_rst(module_path: str, output_file: Path) -> None:
 
 
 def write_top_rst(spec: SectionSpec, top_file: Path, entries: list[str]) -> None:
-    lines = [
-        spec.title,
-        "=" * len(spec.title),
-        "",
-        spec.description,
-        "",
-        ".. toctree::",
-        "    :maxdepth: 2",
-        "",
-    ]
+    lines = [spec.title, "=" * len(spec.title), "", spec.description, "", ".. toctree::", "    :maxdepth: 2", ""]
     lines.extend(f"    {entry}" for entry in entries)
     lines.append("")
     top_file.write_text("\n".join(lines), encoding="utf-8")
@@ -162,9 +149,7 @@ def main():
         entry_names = modules + list(spec.static_entries)
 
         for module in modules:
-            module_path = (
-                "sequence" if spec.source_dir == "." else f"sequence.{spec.source_dir}"
-            )
+            module_path = "sequence" if spec.source_dir == "." else f"sequence.{spec.source_dir}"
             full_module_path = f"{module_path}.{module}"
             write_module_rst(full_module_path, output_dir / f"{module}.rst")
 

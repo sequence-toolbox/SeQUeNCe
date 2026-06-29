@@ -24,7 +24,7 @@ def create_detector(efficiency=0.9, dark_count=0, count_rate=25e6, time_resoluti
             self.log = []
 
         def trigger(self, detector, msg):
-            self.log.append((self.timeline.now(), msg["time"], detector))
+            self.log.append((self.timeline.now(), msg['time'], detector))
 
     class Owner:
         def __init__(self):
@@ -34,14 +34,8 @@ def create_detector(efficiency=0.9, dark_count=0, count_rate=25e6, time_resoluti
             return self.generator
 
     tl = Timeline()
-    detector = Detector(
-        "",
-        tl,
-        efficiency=efficiency,
-        dark_count=dark_count,
-        count_rate=count_rate,
-        time_resolution=time_resolution,
-    )
+    detector = Detector("", tl, efficiency=efficiency, dark_count=dark_count,
+                        count_rate=count_rate, time_resolution=time_resolution)
     parent = Parent(tl)
     own = Owner()
     detector.attach(parent)
@@ -72,9 +66,7 @@ def test_Detector_get():
     tl.init()
     tl.stop_time = stop_time
     tl.run()
-    assert (len(parent.log) - stop_time / 1e12 * dark_count) / (
-        stop_time / 1e12 * dark_count
-    ) < 0.1
+    assert (len(parent.log) - stop_time / 1e12 * dark_count) / (stop_time / 1e12 * dark_count) < 0.1
 
     # count rate
     count_rate = 1e11
@@ -89,9 +81,8 @@ def test_Detector_get():
 
     # time_resolution
     time_resolution = 233
-    detector, parent, tl = create_detector(
-        efficiency=1, count_rate=1e12, time_resolution=time_resolution
-    )
+    detector, parent, tl = create_detector(efficiency=1, count_rate=1e12,
+                                           time_resolution=time_resolution)
     times = np.random.randint(0, 1e12, 100, dtype=np.int64)
     times.sort()
     for t in times:
@@ -126,11 +117,9 @@ def test_QSDetectorPolarization_set_basis_list():
     start_time = 0
     frequency = 1e6
     qsdetector.set_basis_list(basis_list, start_time, frequency)
-    assert (
-        qsdetector.splitter.basis_list == basis_list
-        and qsdetector.splitter.start_time == start_time
-        and qsdetector.splitter.frequency == frequency
-    )
+    assert qsdetector.splitter.basis_list == basis_list and \
+           qsdetector.splitter.start_time == start_time and \
+           qsdetector.splitter.frequency == frequency
 
 
 def test_QSDetectorPolarization_update_splitter_params():
@@ -146,10 +135,7 @@ def test_QSDetectorPolarization_update_detector_params():
     tl = Timeline()
     qsdetector = QSDetectorPolarization("qsd", tl)
     qsdetector.update_detector_params(0, "dark_count", 99)
-    assert (
-        qsdetector.detectors[0].dark_count == 99
-        and qsdetector.detectors[1].dark_count != 99
-    )
+    assert qsdetector.detectors[0].dark_count == 99 and qsdetector.detectors[1].dark_count != 99
 
 
 def test_QSDetector_update():
@@ -158,7 +144,7 @@ def test_QSDetector_update():
 
     args = [[0, 10], [1, 20], [1, 40]]
     for arg in args:
-        qsdetector.trigger(qsdetector.detectors[arg[0]], {"time": arg[1]})
+        qsdetector.trigger(qsdetector.detectors[arg[0]], {'time': arg[1]})
         trigger_times = qsdetector.trigger_times
         assert trigger_times[arg[0]][-1] == arg[1]
 
@@ -201,12 +187,8 @@ def test_QSDetectorTimeBin():
         tl.time = i * 1e12 / frequency
         basis = basis_list[i]
         bit = np.random.randint(2)
-        photon = Photon(
-            str(i),
-            tl,
-            encoding_type=time_bin,
-            quantum_state=time_bin["bases"][basis][bit],
-        )
+        photon = Photon(str(i), tl, encoding_type=time_bin,
+                        quantum_state=time_bin["bases"][basis][bit])
         qsdetector.get(photon)
 
     tl.time = 0
@@ -293,6 +275,7 @@ def test_QSDetectorFockInterference():
     psi_minus = [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]
     src_list = ["a", "b"]
 
+
     QuantumManager.set_global_manager_formalism(FOCK_DENSITY_MATRIX_FORMALISM)
     tl = Timeline()
 
@@ -347,7 +330,7 @@ def test_QSDetectorFockInterference():
     # measure entangled, pi/2 phase
     tl.time = 0
     clear_qsd_detectors(qsd)
-    qsd.set_phase(np.pi / 2)
+    qsd.set_phase(np.pi/2)
     for _ in range(NUM_TRIALS):
         p0 = Photon("", tl, encoding_type=fock, use_qm=True)
         p1 = Photon("", tl, encoding_type=fock, use_qm=True)

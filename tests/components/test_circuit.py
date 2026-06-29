@@ -9,7 +9,7 @@ from pytest import raises
 def test_h():
     circuit = Circuit(1)
     circuit.h(0)
-    coefficient = 1 / (2**0.5)
+    coefficient = 1 / (2 ** 0.5)
     expect = array([[coefficient, coefficient], [coefficient, -coefficient]])
     assert array_equal(expect, circuit.get_unitary_matrix())
 
@@ -52,31 +52,29 @@ def test_cz():
 def test_ccx():
     circuit = Circuit(3)
     circuit.ccx(0, 1, 2)
-    expect = array(
-        [
-            [1, 0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 1, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-        ]
-    )
+    expect = array([[1, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 1, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 1],
+                    [0, 0, 0, 0, 0, 0, 1, 0]])
     assert array_equal(expect, circuit.get_unitary_matrix())
 
 
 def test_swap():
     circuit = Circuit(2)
     circuit.swap(0, 1)
-    expect = array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+    expect = array([[1, 0, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 0, 1]])
     assert array_equal(expect, circuit.get_unitary_matrix())
 
 
 def test_t():
     from numpy import e, pi
-
     circuit = Circuit(1)
     circuit.t(0)
     expect = array([[1, 0], [0, e ** (complex(0, 1) * pi / 4)]])
@@ -100,38 +98,36 @@ def test_sdg():
 def test_root_iZ():
     circuit = Circuit(1)
     circuit.root_iZ(0)
-    expect = 1 / sqrt(2) * array([[complex(1, 1), 0], [0, complex(1, -1)]])
+    expect = 1/sqrt(2)*array([[complex(1, 1), 0], [0, complex(1, -1)]])
     assert array_equal(expect, circuit.get_unitary_matrix())
 
 
 def test_minus_root_iZ():
     circuit = Circuit(1)
     circuit.minus_root_iZ(0)
-    expect = 1 / sqrt(2) * array([[complex(1, -1), 0], [0, complex(1, 1)]])
+    expect = 1/sqrt(2)*array([[complex(1, -1), 0], [0, complex(1, 1)]])
     assert array_equal(expect, circuit.get_unitary_matrix())
 
 
 def test_root_iY():
     circuit = Circuit(1)
     circuit.root_iY(0)
-    expect = 1 / sqrt(2) * array([[1, 1], [-1, 1]])
+    expect = 1/sqrt(2)*array([[1, 1], [-1, 1]])
     assert array_equal(expect, circuit.get_unitary_matrix())
 
 
 def test_minus_root_iY():
     circuit = Circuit(1)
     circuit.minus_root_iY(0)
-    expect = 1 / sqrt(2) * array([[1, -1], [1, 1]])
+    expect = 1/sqrt(2)*array([[1, -1], [1, 1]])
     assert array_equal(expect, circuit.get_unitary_matrix())
 
 
 def test_phase():
     circuit = Circuit(1)
-    circuit.phase(0, np.pi / 2)
+    circuit.phase(0, np.pi/2)
     expect = array([[1, 0], [0, complex(0, 1)]])
-    assert np.allclose(
-        expect, circuit.get_unitary_matrix()
-    )  # array_equal() return False
+    assert np.allclose(expect, circuit.get_unitary_matrix())  # array_equal() return False
 
 
 def test_measure():
@@ -165,298 +161,22 @@ def test_Circuit():
     qc.measure(2)
     qc.measure(3)
 
-    expect = array(
-        [
-            [
-                1,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ],
-            [
-                0,
-                1,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ],
-            [
-                0,
-                0,
-                1,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ],
-            [
-                0,
-                0,
-                0,
-                1,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ],
-            [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                1,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ],
-            [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                1,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ],
-            [
-                0,
-                0,
-                0,
-                0,
-                1,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ],
-            [
-                0,
-                0,
-                0,
-                0,
-                0,
-                1,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ],
-            [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                1,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ],
-            [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                1,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ],
-            [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                1,
-                0,
-                0,
-                0,
-                0,
-            ],
-            [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                1,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ],
-            [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                1,
-            ],
-            [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                1,
-                0,
-            ],
-            [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                1,
-                0,
-                0,
-            ],
-            [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                1,
-                0,
-                0,
-                0,
-            ],
-        ]
-    )
+    expect = array([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+                    [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+                    [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+                    [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+                    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+                    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, ],
+                    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+                    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, ],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, ],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, ],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, ],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, ],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, ],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, ]])
     assert array_equal(expect, qc.get_unitary_matrix())
 
 
@@ -479,10 +199,9 @@ def test_serialization():
 
     serialized_info = circuit.serialize()
     assert serialized_info["size"] == CIRCUIT_SIZE
-    serailized_gates = [
-        {"arg": arg, "indices": gate_indices, "name": gate_type}
-        for gate_type, gate_indices, arg in GATES
-    ]
+    serailized_gates = [{"arg": arg, "indices": gate_indices, "name": gate_type} for
+                        gate_type, gate_indices, arg
+                        in GATES]
     assert serialized_info["gates"] == serailized_gates
     assert serialized_info["measured_qubits"] == MEASURES
 

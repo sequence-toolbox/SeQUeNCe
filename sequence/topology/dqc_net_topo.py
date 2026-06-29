@@ -23,13 +23,12 @@ class DQCNetTopo(Topo):
         cchannels (list[ClassicalChannel]): list of classical channel objects in network.
         tl (Timeline): the timeline used for simulation
     """
-
     BSM_NODE = "BSMNode"
     MEET_IN_THE_MID = "meet_in_the_middle"
-    MEMO_ARRAY_SIZE = "memo_size"  # communication memories
+    MEMO_ARRAY_SIZE = "memo_size"             # communication memories
     CONTROLLER = "Controller"
     DQC_NODE = "DQCNode"
-    DATA_MEMO_ARRAY_SIZE = "data_memo_size"  # data memories
+    DATA_MEMO_ARRAY_SIZE = "data_memo_size"   # data memories
 
     def __init__(self, config_source: str | dict):
         self.bsm_to_router_map = {}
@@ -51,7 +50,7 @@ class DQCNetTopo(Topo):
         self._generate_forwarding_table(config)
 
     def _add_timeline(self, config: dict):
-        stop_time = config.get(Topo.STOP_TIME, float("inf"))
+        stop_time = config.get(Topo.STOP_TIME, float('inf'))
         self.tl = Timeline(stop_time)
 
     def _map_bsm_routers(self, config):
@@ -76,13 +75,7 @@ class DQCNetTopo(Topo):
             elif node_type == self.DQC_NODE:
                 data_size = node.get(self.DATA_MEMO_ARRAY_SIZE, 0)
                 comm_size = node.get(self.MEMO_ARRAY_SIZE, 0)
-                node_obj = DQCNode(
-                    name,
-                    self.tl,
-                    memo_size=comm_size,
-                    data_memo_size=data_size,
-                    component_templates=template,
-                )
+                node_obj = DQCNode(name, self.tl, memo_size=comm_size, data_memo_size=data_size, component_templates=template)
             else:
                 raise ValueError(f"Unknown type of node '{node_type}'")
 
@@ -107,30 +100,19 @@ class DQCNetTopo(Topo):
             attenuation = q_connect[Topo.ATTENUATION]
             distance = q_connect[Topo.DISTANCE] // 2
             channel_type = q_connect[Topo.TYPE]
-            cc_delay = []  # generate classical channel delay
-            for cc in config.get(self.ALL_C_CHANNEL, []):  # classical channel
+            cc_delay = []                                   # generate classical channel delay
+            for cc in config.get(self.ALL_C_CHANNEL, []):   # classical channel
                 if cc[self.SRC] == node1 and cc[self.DST] == node2:
-                    delay = cc.get(
-                        self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT
-                    )
+                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
                     cc_delay.append(delay)
                 elif cc[self.SRC] == node2 and cc[self.DST] == node1:
-                    delay = cc.get(
-                        self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT
-                    )
+                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
                     cc_delay.append(delay)
 
             for cc in config.get(self.ALL_C_CONNECT, []):  # classical connection
-                if (
-                    cc[self.CONNECT_NODE_1] == node1
-                    and cc[self.CONNECT_NODE_2] == node2
-                ) or (
-                    cc[self.CONNECT_NODE_1] == node2
-                    and cc[self.CONNECT_NODE_2] == node1
-                ):
-                    delay = cc.get(
-                        self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT
-                    )
+                if (cc[self.CONNECT_NODE_1] == node1 and cc[self.CONNECT_NODE_2] == node2) \
+                        or (cc[self.CONNECT_NODE_1] == node2 and cc[self.CONNECT_NODE_2] == node1):
+                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
                     cc_delay.append(delay)
             if len(cc_delay) == 0:
                 assert 0, q_connect
@@ -140,47 +122,39 @@ class DQCNetTopo(Topo):
                 bsm_name = f"BSM.{node1}.{node2}.auto"  # the intermediate BSM node
                 bsm_seed = q_connect.get(Topo.SEED, 0)
                 bsm_template_name = q_connect.get(Topo.TEMPLATE, None)
-                bsm_info = {
-                    self.NAME: bsm_name,
-                    self.TYPE: self.BSM_NODE,
-                    self.SEED: bsm_seed,
-                    self.TEMPLATE: bsm_template_name,
-                }
+                bsm_info = {self.NAME: bsm_name,
+                            self.TYPE: self.BSM_NODE,
+                            self.SEED: bsm_seed,
+                            self.TEMPLATE: bsm_template_name}
                 config[self.ALL_NODE].append(bsm_info)
 
                 for src in [node1, node2]:
                     qc_name = f"QC.{src}.{bsm_name}"  # the quantum channel
-                    qc_info = {
-                        self.NAME: qc_name,
-                        self.SRC: src,
-                        self.DST: bsm_name,
-                        self.DISTANCE: distance,
-                        self.ATTENUATION: attenuation,
-                    }
+                    qc_info = {self.NAME: qc_name,
+                               self.SRC: src,
+                               self.DST: bsm_name,
+                               self.DISTANCE: distance,
+                               self.ATTENUATION: attenuation}
                     if self.ALL_Q_CHANNEL not in config:
                         config[self.ALL_Q_CHANNEL] = []
                     config[self.ALL_Q_CHANNEL].append(qc_info)
 
                     cc_name = f"CC.{src}.{bsm_name}"  # the classical channel
-                    cc_info = {
-                        self.NAME: cc_name,
-                        self.SRC: src,
-                        self.DST: bsm_name,
-                        self.DISTANCE: distance,
-                        self.DELAY: cc_delay,
-                    }
+                    cc_info = {self.NAME: cc_name,
+                               self.SRC: src,
+                               self.DST: bsm_name,
+                               self.DISTANCE: distance,
+                               self.DELAY: cc_delay}
                     if self.ALL_C_CHANNEL not in config:
                         config[self.ALL_C_CHANNEL] = []
                     config[self.ALL_C_CHANNEL].append(cc_info)
 
                     cc_name = f"CC.{bsm_name}.{src}"
-                    cc_info = {
-                        self.NAME: cc_name,
-                        self.SRC: bsm_name,
-                        self.DST: src,
-                        self.DISTANCE: distance,
-                        self.DELAY: cc_delay,
-                    }
+                    cc_info = {self.NAME: cc_name,
+                               self.SRC: bsm_name,
+                               self.DST: src,
+                               self.DISTANCE: distance,
+                               self.DELAY: cc_delay}
                     config[self.ALL_C_CHANNEL].append(cc_info)
             else:
                 raise NotImplementedError("Unknown type of quantum connection")
@@ -219,9 +193,9 @@ class DQCNetTopo(Topo):
                     pass
 
     def infer_qubit_to_node(self, total_wires: int) -> dict[int, str]:
-        """Auto-infer the {wire_index: node_name} map by
+        """Auto-infer the {wire_index: node_name} map by 
            first assigning every node's n_data qubits in JSON order, then every node's n_ancilla qubits.
-
+        
         Args:
             total_wires (int): The total number of wires (qubits) in the system.
         Returns:
@@ -231,27 +205,21 @@ class DQCNetTopo(Topo):
         next_wire = 0
         # 1) data wires
         for nd in self._raw_cfg["nodes"]:
-            name = nd["name"]
+            name   = nd["name"]
             n_data = nd.get("n_data", 1)
             for _ in range(n_data):
                 if next_wire >= total_wires:
-                    raise ValueError(
-                        f"Mapping overflow: more data qubits than {total_wires}"
-                    )
+                    raise ValueError(f"Mapping overflow: more data qubits than {total_wires}")
                 mapping[next_wire] = name
                 next_wire += 1
         # 3) (optionally) any communication‐only qubits, etc.
         #    If your circuit has exactly data+ancilla qubits, you can assert:
         if next_wire != total_wires:
-            raise ValueError(
-                f"Configured for {next_wire} wires but circuit has {total_wires}"
-            )
+            raise ValueError(f"Configured for {next_wire} wires but circuit has {total_wires}")
         return mapping
-
-    def infer_memory_owners(
-        self, total_wires: int, ancilla_inds: list[int]
-    ) -> tuple[dict[str, dict[int, int]], dict[str, dict[int, int]]]:
-        """Returns (data_owners, ancilla_owners) where each is node_name → { wire_index: slot_index_in_memory_array }.
+    
+    def infer_memory_owners(self, total_wires:  int, ancilla_inds: list[int]) -> tuple[dict[str,dict[int,int]], dict[str,dict[int,int]]]:
+        """ Returns (data_owners, ancilla_owners) where each is node_name → { wire_index: slot_index_in_memory_array }.
 
         Args:
             total_wires (int): The total number of wires (qubits) in the system.
@@ -259,7 +227,7 @@ class DQCNetTopo(Topo):
         """
         qubit_to_node = self.infer_qubit_to_node(total_wires)
 
-        data_owners = {name: {} for name in self.nodes.keys()}
+        data_owners    = {name:{} for name in self.nodes.keys()}
 
         for q, owner in qubit_to_node.items():
             slot = len(data_owners[owner])
@@ -271,4 +239,4 @@ class DQCNetTopo(Topo):
         return self.tl
 
     def get_nodes(self) -> dict[str, list[Node]]:
-        return self.nodes
+        return self.nodes  

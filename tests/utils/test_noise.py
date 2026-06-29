@@ -32,16 +32,12 @@ def depolarise_manual_two_qubit(rho: np.ndarray, p: float) -> np.ndarray:
     return out
 
 
-def depolarise_manual_two_qubit_embedded(
-    rho: np.ndarray, p: float, target_positions: list[int], n: int
-) -> np.ndarray:
+def depolarise_manual_two_qubit_embedded(rho: np.ndarray, p: float, target_positions: list[int], n: int) -> np.ndarray:
     """Manual two-qubit depolarising channel embedded in an n-qubit state."""
     out = (1 - p) * rho.copy()
     weight = p / (len(_TWO_QUBIT_PAULIS) - 1)
 
-    for target_paulis in [(a, b) for a in (_I, _X, _Y, _Z) for b in (_I, _X, _Y, _Z)][
-        1:
-    ]:
+    for target_paulis in [(a, b) for a in (_I, _X, _Y, _Z) for b in (_I, _X, _Y, _Z)][1:]:
         factors = []
         target_factor = 0
         for position in range(n):
@@ -66,16 +62,12 @@ def test_apply_depolarizing_noise_two_qubit():
     ket00 = np.kron([1, 0], [1, 0]).astype(complex)
     rho00 = np.outer(ket00, ket00.conj())
 
-    rho_noise = Noise.apply_depolarizing_noise(
-        rho=rho00, p=p, qubits=[0, 1], keys=[0, 1]
-    )
+    rho_noise = Noise.apply_depolarizing_noise(rho=rho00, p=p, qubits=[0, 1], keys=[0, 1])
     rho_manual = depolarise_manual_two_qubit(rho00, p)
 
     assert np.allclose(rho_noise, rho_manual, atol=1e-12), "Channel outputs differ"
     assert np.isclose(np.trace(rho_noise), 1.0, atol=1e-12), "Trace not preserved"
-    assert np.allclose(rho_noise, rho_noise.conj().T, atol=1e-12), (
-        "Result not Hermitian"
-    )
+    assert np.allclose(rho_noise, rho_noise.conj().T, atol=1e-12), "Result not Hermitian"
 
 
 def test_apply_depolarizing_noise_two_qubit_noncontiguous_keys():
@@ -88,18 +80,12 @@ def test_apply_depolarizing_noise_two_qubit_noncontiguous_keys():
     ket000 = np.kron(np.kron([1, 0], [1, 0]), [1, 0]).astype(complex)
     rho000 = np.outer(ket000, ket000.conj())
 
-    rho_noise = Noise.apply_depolarizing_noise(
-        rho=rho000, p=p, qubits=qubits, keys=keys
-    )
-    rho_manual = depolarise_manual_two_qubit_embedded(
-        rho000, p, target_positions=[keys.index(q) for q in qubits], n=len(keys)
-    )
+    rho_noise = Noise.apply_depolarizing_noise(rho=rho000, p=p, qubits=qubits, keys=keys)
+    rho_manual = depolarise_manual_two_qubit_embedded(rho000, p, target_positions=[keys.index(q) for q in qubits], n=len(keys))
 
     assert np.allclose(rho_noise, rho_manual, atol=1e-12), "Channel outputs differ"
     assert np.isclose(np.trace(rho_noise), 1.0, atol=1e-12), "Trace not preserved"
-    assert np.allclose(rho_noise, rho_noise.conj().T, atol=1e-12), (
-        "Result not Hermitian"
-    )
+    assert np.allclose(rho_noise, rho_noise.conj().T, atol=1e-12), "Result not Hermitian"
 
 
 def test_apply_depolarizing_noise_single_qubit():
@@ -112,18 +98,14 @@ def test_apply_depolarizing_noise_single_qubit():
     rho_noise = Noise.apply_depolarizing_noise(rho=rho0, p=p, qubits=[0], keys=[0])
     rho_manual = depolarise_manual_single_qubit(rho0, p)
 
-    assert np.allclose(rho_noise, rho_manual, atol=1e-12), (
-        "Single-qubit channel outputs differ"
-    )
+    assert np.allclose(rho_noise, rho_manual, atol=1e-12), "Single-qubit channel outputs differ"
     assert np.isclose(np.trace(rho_noise), 1.0, atol=1e-12), "Trace not preserved"
-    assert np.allclose(rho_noise, rho_noise.conj().T, atol=1e-12), (
-        "Result not Hermitian"
-    )
+    assert np.allclose(rho_noise, rho_noise.conj().T, atol=1e-12), "Result not Hermitian"
 
 
 def test_apply_measurement_noise():
     """Test measurement noise behavior at edge cases: 0 (no flip) and 1 (always flip)."""
-
+    
     # Case 1: error_rate = 0 → no flip should occur
     circuit = Circuit(size=1)
     Noise.apply_measurement_noise(circuit, meas_error_rate=0.0, qubit_index=0)
@@ -133,6 +115,4 @@ def test_apply_measurement_noise():
     circuit = Circuit(size=1)
     Noise.apply_measurement_noise(circuit, meas_error_rate=1.0, qubit_index=0)
     ops = [gate[0] for gate in circuit.gates]
-    assert "x" in ops or "X" in ops, (
-        "With error_rate=1, an X gate should have been applied"
-    )
+    assert "x" in ops or "X" in ops, "With error_rate=1, an X gate should have been applied"

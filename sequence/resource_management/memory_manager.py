@@ -5,13 +5,12 @@ There are three states of quantum memory represented by the string: "RAW", "OCCU
 
 * "RAW" denotes a free memory that is not entangling with other memories.
 * "OCCUPIED" denotes a memory that is allocated to protocols or applications.
-* "ENTANGLED" denotes a free memory that is entangling with other memories.
+* "ENTANGLED" denotes a free memory that is entangling with other memories. 
 
 This is done through instances of the MemoryInfo class, which track a single memory.
 """
 
 from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from .resource_manager import ResourceManager
     from ..components.memory import Memory, MemoryArray
@@ -38,9 +37,7 @@ class MemoryManager:
 
         self.memory_array = memory_array
         self.memory_array.attach(self)
-        self.memory_map = [
-            MemoryInfo(memory, index) for index, memory in enumerate(self.memory_array)
-        ]
+        self.memory_map = [MemoryInfo(memory, index) for index, memory in enumerate(self.memory_array)]
         self.resource_manager = None
 
     def set_resource_manager(self, resource_manager: "ResourceManager") -> None:
@@ -57,7 +54,7 @@ class MemoryManager:
             memory (Memory): memory to update.
             state (str): new state for memory.
         """
-        log.logger.debug(f"{memory.name} update to {state}")
+        log.logger.debug(f'{memory.name} update to {state}')
 
         info = self.get_info_by_memory(memory)
         if state == "RAW":
@@ -91,7 +88,7 @@ class MemoryInfo:
     """Class to track memory information parameters for memory manager.
 
     The memory info class chiefly tracks a memory's entanglement state, in one of 3 allowed states:
-
+    
     * RAW: Memory is unprocessed
     * OCCUPIED: Memory is occupied by some protocol
     * ENTANGLED: Memory has been successfully entangled
@@ -133,7 +130,7 @@ class MemoryInfo:
         self.entangle_time = -1
 
     def __str__(self) -> str:
-        return f"name={self.memory.name}, remote={self.remote_memo}, fidelity={self.fidelity:.6f}"
+        return f'name={self.memory.name}, remote={self.remote_memo}, fidelity={self.fidelity:.6f}'
 
     def to_raw(self) -> None:
         """Method to set memory to raw (unentangled) state."""

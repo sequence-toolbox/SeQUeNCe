@@ -7,7 +7,7 @@ from sequence.kernel.timeline import Timeline
 filename = "tests/utils/test.log"
 
 
-class DumbEntity:
+class DumbEntity():
     def __init__(self):
         pass
 
@@ -35,7 +35,7 @@ def test_track_module():
 
 
 def test_log():
-    open(filename, "w").close()
+    open(filename, 'w').close()
 
     assert file_len(filename) == 0
 

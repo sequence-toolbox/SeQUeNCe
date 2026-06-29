@@ -11,7 +11,7 @@ rng = np.random.default_rng()
 def test_init():
     tl = Timeline()
     photon = Photon("", tl)
-
+    
     assert photon.quantum_state.state == (complex(1), complex(0))
 
 
@@ -43,9 +43,7 @@ def test_set_state():
 
     # non-unit amplitudes
     test_state = (complex(2), complex(0))
-    with pytest.raises(
-        AssertionError, match="Illegal value with abs > 1 in quantum state"
-    ):
+    with pytest.raises(AssertionError, match="Illegal value with abs > 1 in quantum state"):
         photon.set_state(test_state)
 
     test_state = (complex(0), complex(0))
@@ -74,12 +72,10 @@ def test_measure_multiple():
     photon2 = Photon("p2", tl)
     photon1.combine_state(photon2)
 
-    basis = (
-        (complex(1), complex(0), complex(0), complex(0)),
-        (complex(0), complex(1), complex(0), complex(0)),
-        (complex(0), complex(0), complex(1), complex(0)),
-        (complex(0), complex(0), complex(0), complex(1)),
-    )
+    basis = ((complex(1), complex(0), complex(0), complex(0)),
+             (complex(0), complex(1), complex(0), complex(0)),
+             (complex(0), complex(0), complex(1), complex(0)),
+             (complex(0), complex(0), complex(0), complex(1)))
 
     assert Photon.measure_multiple(basis, [photon1, photon2], rng) == 0
 
@@ -88,28 +84,22 @@ def test_measure_multiple_collapses_state():
     """After measure_multiple, the shared FreeQuantumState must collapse to the
     measured basis vector (and stay shared between the entangled photons)."""
     tl = Timeline()
-    photon1 = Photon("p1", tl, quantum_state=(complex(2**-0.5), complex(2**-0.5)))
-    photon2 = Photon("p2", tl, quantum_state=(complex(2**-0.5), complex(2**-0.5)))
+    photon1 = Photon("p1", tl, quantum_state=(complex(2 ** -0.5), complex(2 ** -0.5)))
+    photon2 = Photon("p2", tl, quantum_state=(complex(2 ** -0.5), complex(2 ** -0.5)))
     photon1.combine_state(photon2)
 
-    basis = (
-        (complex(1), complex(0), complex(0), complex(0)),
-        (complex(0), complex(1), complex(0), complex(0)),
-        (complex(0), complex(0), complex(1), complex(0)),
-        (complex(0), complex(0), complex(0), complex(1)),
-    )
+    basis = ((complex(1), complex(0), complex(0), complex(0)),
+             (complex(0), complex(1), complex(0), complex(0)),
+             (complex(0), complex(0), complex(1), complex(0)),
+             (complex(0), complex(0), complex(0), complex(1)))
 
     res = Photon.measure_multiple(basis, [photon1, photon2], np.random.default_rng(0))
 
     expected = tuple(complex(1) if i == res else complex(0) for i in range(4))
-    assert tuple(photon1.quantum_state.state) == expected, (
-        "state did not collapse to measured basis vector"
-    )
+    assert tuple(photon1.quantum_state.state) == expected, "state did not collapse to measured basis vector"
     # both photons must keep sharing the same collapsed state object
     assert photon1.quantum_state.state is photon2.quantum_state.state
-    assert (
-        photon1.quantum_state.entangled_states is photon2.quantum_state.entangled_states
-    )
+    assert photon1.quantum_state.entangled_states is photon2.quantum_state.entangled_states
 
 
 def test_add_loss():

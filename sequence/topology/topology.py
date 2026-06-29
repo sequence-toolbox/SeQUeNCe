@@ -4,7 +4,6 @@ This module provides a definition of the Topology class, which can be used to
 manage a network's structure.
 Topology instances automatically perform many useful network functions.
 """
-
 import copy
 import json
 from abc import ABC, abstractmethod
@@ -32,9 +31,7 @@ class Topology(ABC):
         tl (Timeline): the timeline used for simulation
     """
 
-    ALL_C_CONNECT = (
-        "cconnections"  # a connection consist of two opposite direction channels
-    )
+    ALL_C_CONNECT = "cconnections"    # a connection consist of two opposite direction channels
     ALL_C_CHANNEL = "cchannels"
     ALL_NODE = "nodes"
     ALL_Q_CONNECT = "qconnections"
@@ -57,6 +54,7 @@ class Topology(ABC):
     MEASUREMENT_FIDELITY = "measurement_fidelity"
     FORMALISM = "formalism"  # "ket_vector", "density_matrix", "bell_diagonal", etc
 
+    
     def __init__(self, config_source: str | dict):
         """Constructor for topology class.
 
@@ -83,9 +81,7 @@ class Topology(ABC):
         elif isinstance(config_source, dict):
             config = copy.deepcopy(config_source)
         else:
-            raise TypeError(
-                f"Expected a file path (str) or a config object (dict), got {type(config_source)}"
-            )
+            raise TypeError(f'Expected a file path (str) or a config object (dict), got {type(config_source)}')
         return config
 
     def _get_templates(self, config: dict) -> None:

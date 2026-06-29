@@ -4,15 +4,11 @@ Nodes are marked as either processing or switch. Processing nodes are assumed to
 entanglement distribution. Switch nodes are assumed to never be end points.
 
 """
-
 from itertools import product
 from math import dist
 import networkx as nx
 
-
-def build_caveman(
-    cliques: int, size: int, length: float = 10.0, attenuation: float = 0.0002
-) -> nx.Graph:
+def build_caveman(cliques: int, size: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:
     """
     Create a caveman topology of l cliques of size k.
     Args:
@@ -25,15 +21,12 @@ def build_caveman(
     """
     G: nx.Graph = nx.connected_caveman_graph(cliques, size)
     for node in G.nodes:
-        G.nodes[node]["node_type"] = "processing"
-    nx.set_edge_attributes(G, length, name="length")
-    nx.set_edge_attributes(G, attenuation, name="attenuation")
+        G.nodes[node]['node_type'] = 'processing'
+    nx.set_edge_attributes(G, length, name='length')
+    nx.set_edge_attributes(G, attenuation, name='attenuation')
     return G
 
-
-def build_grid(
-    size_x: int, size_y: int, length: float = 10.0, attenuation: float = 0.0002
-) -> nx.Graph:
+def build_grid(size_x: int, size_y: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:
     """
     Create a grid graph
     Args:
@@ -47,14 +40,11 @@ def build_grid(
     G: nx.Graph = nx.grid_2d_graph(size_x, size_y)
     for node in G.nodes:
         G.nodes[node]["node_type"] = "processing"
-    nx.set_edge_attributes(G, length, name="length")
-    nx.set_edge_attributes(G, attenuation, name="attenuation")
+    nx.set_edge_attributes(G, length, name='length')
+    nx.set_edge_attributes(G, attenuation, name='attenuation')
     return G
 
-
-def build_star(
-    outer_nodes: int, length: float = 10.0, attenuation: float = 0.0002
-) -> nx.Graph:
+def build_star(outer_nodes: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:
     """
     Create a star graph.
     Args:
@@ -68,14 +58,11 @@ def build_star(
     G.nodes[0]["node_type"] = "switch"
     for i in range(1, outer_nodes + 1):
         G.nodes[i]["node_type"] = "processing"
-    nx.set_edge_attributes(G, length, name="length")
-    nx.set_edge_attributes(G, attenuation, name="attenuation")
+    nx.set_edge_attributes(G, length, name='length')
+    nx.set_edge_attributes(G, attenuation, name='attenuation')
     return G
 
-
-def build_linear(
-    nodes: int, length: float = 10.0, attenuation: float = 0.0002
-) -> nx.Graph:
+def build_linear(nodes: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:
     """
     Create a linear graph of size n
     Args:
@@ -88,14 +75,11 @@ def build_linear(
     G = nx.path_graph(nodes)
     for node in G.nodes:
         G.nodes[node]["node_type"] = "processing"
-    nx.set_edge_attributes(G, length, name="length")
-    nx.set_edge_attributes(G, attenuation, name="attenuation")
+    nx.set_edge_attributes(G, length, name='length')
+    nx.set_edge_attributes(G, attenuation, name='attenuation')
     return G
 
-
-def build_mesh(
-    size_x: int, size_y: int, length: float = 10.0, attenuation: float = 0.0002
-) -> nx.Graph:
+def build_mesh(size_x: int, size_y: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:
     """
     Create a fully connected grid graph.
     Args:
@@ -108,24 +92,14 @@ def build_mesh(
     """
     G = build_grid(size_x, size_y, length=length, attenuation=attenuation)
 
-    for x, y in G.nodes:
-        for dx, dy in [
-            (1, 1),
-            (1, -1),
-            (-1, 1),
-            (-1, -1),
-        ]:  # Diagonals from any node with max Deg = 4
-            if (x + dx, y + dy) in G.nodes:
-                v = (x + dx, y + dy)
-                G.add_edge(
-                    (x, y), v, length=dist((x, y), v) * length, attenuation=attenuation
-                )
+    for (x, y) in G.nodes:
+        for dx, dy in [(1,1), (1,-1), (-1, 1), (-1, -1)]: # Diagonals from any node with max Deg = 4
+            if (x+dx, y+dy) in G.nodes:
+                v = (x+dx, y+dy)
+                G.add_edge((x, y), v, length=dist((x, y), v) * length, attenuation=attenuation)
     return G
 
-
-def build_ring(
-    nodes: int, length: float = 10.0, attenuation: float = 0.0002
-) -> nx.Graph:
+def build_ring(nodes: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:
     """
     Build a cycle/ring graph cyclically connected nodes of size n
     Args:
@@ -140,20 +114,11 @@ def build_ring(
     G: nx.Graph = nx.cycle_graph(nodes)
     for node in G.nodes:
         G.nodes[node]["node_type"] = "processing"
-    nx.set_edge_attributes(G, length, name="length")
-    nx.set_edge_attributes(G, attenuation, name="attenuation")
+    nx.set_edge_attributes(G, length, name='length')
+    nx.set_edge_attributes(G, attenuation, name='attenuation')
     return G
 
-
-def build_waxman(
-    nodes,
-    area_size: float = 10.0,
-    attenuation: float = 0.0002,
-    alpha=0.1,
-    beta=0.4,
-    L=None,
-    seed=None,
-) -> nx.Graph:
+def build_waxman(nodes, area_size: float=10.0, attenuation: float=0.0002, alpha=0.1, beta=0.4, L=None, seed=None) -> nx.Graph:
     """
     Builds a random Waxman graph of size n.
     Each pair of nodes at distance d is joined by edge with probability p = beta * exp(-d/(alpha*L))
@@ -168,25 +133,15 @@ def build_waxman(
 
     Returns: NetworkX Graph
     """
-    G: nx.Graph = nx.waxman_graph(
-        nodes,
-        domain=(0, 0, area_size, area_size),
-        alpha=alpha,
-        beta=beta,
-        L=L,
-        seed=seed,
-    )
+    G: nx.Graph = nx.waxman_graph(nodes, domain=(0, 0, area_size, area_size), alpha=alpha, beta=beta, L=L, seed=seed)
     for node in G.nodes:
         G.nodes[node]["node_type"] = "processing"
     for u, v in G.edges:
-        G[u][v]["length"] = dist(G.nodes[u]["pos"], G.nodes[v]["pos"])
-        G[u][v]["attenuation"] = attenuation
+        G[u][v]['length'] = dist(G.nodes[u]['pos'], G.nodes[v]['pos'])
+        G[u][v]['attenuation'] = attenuation
     return G
 
-
-def build_tree(
-    branching_factor: int, nodes: int, length: float = 10.0, attenuation: float = 0.0002
-) -> nx.Graph:
+def build_tree(branching_factor: int, nodes: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:
     """
     Create a full r-ary tree of n nodes.
     Args:
@@ -200,14 +155,11 @@ def build_tree(
     G: nx.Graph = nx.full_rary_tree(branching_factor, nodes)
     for node in G.nodes:
         G.nodes[node]["node_type"] = "processing"
-    nx.set_edge_attributes(G, length, name="length")
-    nx.set_edge_attributes(G, attenuation, name="attenuation")
+    nx.set_edge_attributes(G, length, name='length')
+    nx.set_edge_attributes(G, attenuation, name='attenuation')
     return G
 
-
-def build_autonomous_system(
-    nodes: int, length: float = 10.0, attenuation: float = 0.0002, seed=None
-) -> nx.Graph:
+def build_autonomous_system(nodes: int, length: float=10.0, attenuation: float=0.0002, seed=None) -> nx.Graph:
     """
     Create an AS graph.
     Args:
@@ -221,14 +173,11 @@ def build_autonomous_system(
     G: nx.Graph = nx.random_internet_as_graph(nodes, seed=seed)
     for node in G.nodes:
         G.nodes[node]["node_type"] = "processing"
-    nx.set_edge_attributes(G, length, name="length")
-    nx.set_edge_attributes(G, attenuation, name="attenuation")
+    nx.set_edge_attributes(G, length, name='length')
+    nx.set_edge_attributes(G, attenuation, name='attenuation')
     return G
 
-
-def build_bcube(
-    k: int, n: int, length: float = 10.0, attenuation: float = 0.0002
-) -> nx.Graph:
+def build_bcube(k: int, n: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:
     """
     C. Guo et al., “BCube: a high performance, server-centric network architecture for modular data centers,”
     SIGCOMM Comput. Commun. Rev., vol. 39, no. 4, pp. 63–74, Aug. 2009, doi: 10.1145/1594977.1592577.
@@ -261,9 +210,7 @@ def build_bcube(
     return G
 
 
-def build_k_n(
-    k: int, n: int, length: float = 10.0, attenuation: float = 0.0002
-) -> nx.Graph:
+def build_k_n(k: int, n: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:
     """
     Create a Fat Tree; k-ary n-tree nx graph parameterized by k and n.
     Contains N=k^n processing nodes and n*k^(n-1) switches
@@ -297,12 +244,7 @@ def build_k_n(
             for w_l in range(k):
                 w_prime = list(w)
                 w_prime[l] = w_l
-                G.add_edge(
-                    (w, l),
-                    (tuple(w_prime), l + 1),
-                    length=length,
-                    attenuation=attenuation,
-                )
+                G.add_edge((w, l), (tuple(w_prime), l + 1), length=length, attenuation=attenuation)
 
     # Create Switch -> Node edges
     for w in product(range(k), repeat=n - 1):

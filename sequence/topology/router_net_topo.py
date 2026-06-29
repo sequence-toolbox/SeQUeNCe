@@ -2,10 +2,7 @@ import json
 import numpy as np
 from networkx import Graph, dijkstra_path, exception
 
-from ..network_management.routing import (
-    DistributedRoutingProtocol,
-    StaticRoutingProtocol,
-)
+from ..network_management.routing import DistributedRoutingProtocol, StaticRoutingProtocol
 from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
 from ..constants import KET_VECTOR_FORMALISM, SPEED_OF_LIGHT
@@ -26,10 +23,9 @@ class RouterNetTopo(Topo):
         cchannels (list[ClassicalChannel]): list of classical channel objects in network.
         tl (Timeline): the timeline used for simulation
     """
-
     BSM_NODE = "BSMNode"
     MEET_IN_THE_MID = "meet_in_the_middle"
-    MEMO_ARRAY_SIZE = "memo_size"  # NOTE meant for communication memories
+    MEMO_ARRAY_SIZE = "memo_size"     # NOTE meant for communication memories
     PORT = "port"
     PROC_NUM = "process_num"
     QUANTUM_ROUTER = "QuantumRouter"
@@ -67,14 +63,12 @@ class RouterNetTopo(Topo):
         self._generate_forwarding_table(config)
 
     def _add_timeline(self, config: dict):
-        stop_time = config.get(Topo.STOP_TIME, 10**23)
+        stop_time = config.get(Topo.STOP_TIME, 10 ** 23)
         formalism = config.get(Topo.FORMALISM, KET_VECTOR_FORMALISM)
         manager_kwargs = {}
         if Topo.TRUNC in config:
             manager_kwargs["truncation"] = config[Topo.TRUNC]
-        self.tl = Timeline(
-            stop_time=stop_time, formalism=formalism, manager_kwargs=manager_kwargs
-        )
+        self.tl = Timeline(stop_time=stop_time, formalism=formalism, manager_kwargs=manager_kwargs)
 
     def _map_bsm_routers(self, config: dict):
         for qc in config[Topo.ALL_Q_CHANNEL]:
@@ -97,9 +91,7 @@ class RouterNetTopo(Topo):
                 node_obj = BSMNode(name, self.tl, others, component_templates=template)
             elif node_type == self.QUANTUM_ROUTER:
                 memo_size = node.get(self.MEMO_ARRAY_SIZE, 0)
-                node_obj = QuantumRouter(
-                    name, self.tl, memo_size, component_templates=template
-                )
+                node_obj = QuantumRouter(name, self.tl, memo_size, component_templates=template)
             else:
                 raise ValueError(f"Unknown type of node '{node_type}'")
 
@@ -124,30 +116,19 @@ class RouterNetTopo(Topo):
             attenuation = q_connect[Topo.ATTENUATION]
             distance = q_connect[Topo.DISTANCE] // 2
             channel_type = q_connect[Topo.TYPE]
-            cc_delay = []  # generate classical channel delay
-            for cc in config.get(self.ALL_C_CHANNEL, []):  # classical channel
+            cc_delay = []                                   # generate classical channel delay
+            for cc in config.get(self.ALL_C_CHANNEL, []):   # classical channel
                 if cc[self.SRC] == node1 and cc[self.DST] == node2:
-                    delay = cc.get(
-                        self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT
-                    )
+                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
                     cc_delay.append(delay)
                 elif cc[self.SRC] == node2 and cc[self.DST] == node1:
-                    delay = cc.get(
-                        self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT
-                    )
+                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
                     cc_delay.append(delay)
 
             for cc in config.get(self.ALL_C_CONNECT, []):  # classical connection
-                if (
-                    cc[self.CONNECT_NODE_1] == node1
-                    and cc[self.CONNECT_NODE_2] == node2
-                ) or (
-                    cc[self.CONNECT_NODE_1] == node2
-                    and cc[self.CONNECT_NODE_2] == node1
-                ):
-                    delay = cc.get(
-                        self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT
-                    )
+                if (cc[self.CONNECT_NODE_1] == node1 and cc[self.CONNECT_NODE_2] == node2) \
+                        or (cc[self.CONNECT_NODE_1] == node2 and cc[self.CONNECT_NODE_2] == node1):
+                    delay = cc.get(self.DELAY, cc.get(self.DISTANCE, 1000) / SPEED_OF_LIGHT)
                     cc_delay.append(delay)
             if len(cc_delay) == 0:
                 assert 0, q_connect
@@ -157,47 +138,39 @@ class RouterNetTopo(Topo):
                 bsm_name = f"BSM.{node1}.{node2}"  # the intermediate BSM node
                 bsm_seed = q_connect.get(Topo.SEED, 0)
                 bsm_template_name = q_connect.get(Topo.TEMPLATE, None)
-                bsm_info = {
-                    self.NAME: bsm_name,
-                    self.TYPE: self.BSM_NODE,
-                    self.SEED: bsm_seed,
-                    self.TEMPLATE: bsm_template_name,
-                }
+                bsm_info = {self.NAME: bsm_name,
+                            self.TYPE: self.BSM_NODE,
+                            self.SEED: bsm_seed,
+                            self.TEMPLATE: bsm_template_name}
                 config[self.ALL_NODE].append(bsm_info)
 
                 for src in [node1, node2]:
                     qc_name = f"QC-{src}-{bsm_name}"  # the quantum channel
-                    qc_info = {
-                        self.NAME: qc_name,
-                        self.SRC: src,
-                        self.DST: bsm_name,
-                        self.DISTANCE: distance,
-                        self.ATTENUATION: attenuation,
-                    }
+                    qc_info = {self.NAME: qc_name,
+                               self.SRC: src,
+                               self.DST: bsm_name,
+                               self.DISTANCE: distance,
+                               self.ATTENUATION: attenuation}
                     if self.ALL_Q_CHANNEL not in config:
                         config[self.ALL_Q_CHANNEL] = []
                     config[self.ALL_Q_CHANNEL].append(qc_info)
 
                     cc_name = f"CC-{src}-{bsm_name}"  # the classical channel
-                    cc_info = {
-                        self.NAME: cc_name,
-                        self.SRC: src,
-                        self.DST: bsm_name,
-                        self.DISTANCE: distance,
-                        self.DELAY: cc_delay,
-                    }
+                    cc_info = {self.NAME: cc_name,
+                               self.SRC: src,
+                               self.DST: bsm_name,
+                               self.DISTANCE: distance,
+                               self.DELAY: cc_delay}
                     if self.ALL_C_CHANNEL not in config:
                         config[self.ALL_C_CHANNEL] = []
                     config[self.ALL_C_CHANNEL].append(cc_info)
 
                     cc_name = f"CC-{bsm_name}-{src}"
-                    cc_info = {
-                        self.NAME: cc_name,
-                        self.SRC: bsm_name,
-                        self.DST: src,
-                        self.DISTANCE: distance,
-                        self.DELAY: cc_delay,
-                    }
+                    cc_info = {self.NAME: cc_name,
+                               self.SRC: bsm_name,
+                               self.DST: src,
+                               self.DISTANCE: distance,
+                               self.DELAY: cc_delay}
                     config[self.ALL_C_CHANNEL].append(cc_info)
             else:
                 raise NotImplementedError("Unknown type of quantum connection")
@@ -248,19 +221,13 @@ class RouterNetTopo(Topo):
                         routing_protocol.update_forwarding_rule(dst_name, next_hop)
                     except exception.NetworkXNoPath:
                         pass
-
+    
         elif isinstance(routing_protocol, DistributedRoutingProtocol):
             # distributed routing, initialize the link cost and setup the FSM
             for q_router in self.nodes[self.QUANTUM_ROUTER]:
-                routing_protocol: DistributedRoutingProtocol = (
-                    q_router.network_manager.get_routing_protocol()
-                )
+                routing_protocol: DistributedRoutingProtocol = q_router.network_manager.get_routing_protocol()
                 for bsm, cost_info in costs.items():
                     if q_router.name in cost_info:
-                        neighbor = (
-                            cost_info[0]
-                            if cost_info[0] != q_router.name
-                            else cost_info[1]
-                        )
+                        neighbor = cost_info[0] if cost_info[0] != q_router.name else cost_info[1]
                         cost = cost_info[2]
                         routing_protocol.link_cost[neighbor] = cost

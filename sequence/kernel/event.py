@@ -26,7 +26,7 @@ class Event:
 
     def __init__(self, time: int, process: "Process", priority=inf):
         """Constructor for event class.
-
+        
         Args:
             time (int): the execution time of the event.
             process (Process): the process encapsulated in the event.
@@ -45,14 +45,10 @@ class Event:
         return (self.time != another.time) or (self.priority != another.priority)
 
     def __gt__(self, another):
-        return (self.time > another.time) or (
-            self.time == another.time and self.priority > another.priority
-        )
+        return (self.time > another.time) or (self.time == another.time and self.priority > another.priority)
 
     def __lt__(self, another):
-        return (self.time < another.time) or (
-            self.time == another.time and self.priority < another.priority
-        )
+        return (self.time < another.time) or (self.time == another.time and self.priority < another.priority)
 
     def set_invalid(self):
         self._is_removed = True

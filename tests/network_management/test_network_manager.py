@@ -4,11 +4,7 @@ from unittest.mock import Mock
 from sequence.network_management.forwarding import ForwardingProtocol
 from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.kernel.timeline import Timeline
-from sequence.network_management.network_manager import (
-    NetworkManager,
-    DistributedNetworkManager,
-    NetworkManagerMessage,
-)
+from sequence.network_management.network_manager import NetworkManager, DistributedNetworkManager, NetworkManagerMessage
 from sequence.message import Message
 from sequence.network_management.rsvp import RSVPProtocol, RSVPMsgType
 from sequence.network_management.reservation import Reservation
@@ -16,7 +12,6 @@ from sequence.network_management.memory_timecard import MemoryTimeCard
 from sequence.protocol import StackProtocol
 from sequence.topology.node import QuantumRouter, BSMNode
 import pytest
-
 
 class DistributedQuantumRouter(QuantumRouter):
     def __init__(self, name, timeline, memo_size=50):
@@ -52,15 +47,13 @@ class FakeProtocol(StackProtocol):
     def push(self, **kwargs):
         self.is_push = True
 
-
 @pytest.fixture
 def tl():
     return Timeline()
 
-
 @pytest.fixture
 def test_node(tl):
-    node = DistributedQuantumRouter("fake", tl)
+    node =  DistributedQuantumRouter("fake", tl)
     node.get_reservation_result = Mock()
     node.get_other_reservation = Mock()
 
@@ -68,13 +61,12 @@ def test_node(tl):
 
     return node
 
-
 @pytest.fixture
 def mock_reservation(test_node):
     reservation = Mock(spec=Reservation)
-    reservation.initiator = "n1"
-    reservation.responder = "n2"
-    reservation.path = ["n1", "n2"]
+    reservation.initiator = 'n1'
+    reservation.responder = 'n2'
+    reservation.path = ['n1', 'n2']
     reservation.start_time = 1e12
     reservation.end_time = 3e12
     reservation.memory_size = 50
@@ -82,15 +74,16 @@ def mock_reservation(test_node):
     return reservation
 
 
+
 # Test the Network Manager basics
 class TestNetworkManager:
     @pytest.mark.unit
     def test_network_manager_factory(self, test_node):
-        assert NetworkManager._global_type == "distributed"
+        assert NetworkManager._global_type == 'distributed'
         assert isinstance(test_node.network_manager, DistributedNetworkManager)
 
         with pytest.raises(NotImplementedError):
-            NetworkManager.set_global_type("dne")
+            NetworkManager.set_global_type('dne')
 
     @pytest.mark.unit
     def test_network_manager_timecards(self, test_node):
@@ -100,31 +93,23 @@ class TestNetworkManager:
 
     @pytest.mark.unit
     def test_network_manager_generate_rule(self, test_node, mock_reservation):
-        mock_reservation.path = ["n1", "n2"]
+        mock_reservation.path = ['n1', 'n2']
 
         test_node.network_manager.generate_rules(mock_reservation)
-        test_node.resource_manager.generate_load_rules.assert_called_once_with(
-            mock_reservation.path,
-            mock_reservation,
-            test_node.network_manager.timecards,
-            test_node.network_manager.memory_array_name,
-        )
-
+        test_node.resource_manager.generate_load_rules.assert_called_once_with(mock_reservation.path, mock_reservation, test_node.network_manager.timecards, test_node.network_manager.memory_array_name)
 
 # Test the default network manager
 class TestDistributedNetworkManager:
     @pytest.mark.unit
     def test_protocol_stack(self, test_node):
-        assert hasattr(test_node.network_manager, "protocol_stack")
+        assert hasattr(test_node.network_manager, 'protocol_stack')
         assert len(test_node.network_manager.protocol_stack) == 2
-        assert isinstance(
-            test_node.network_manager.protocol_stack[0], ForwardingProtocol
-        )
+        assert isinstance(test_node.network_manager.protocol_stack[0], ForwardingProtocol)
         assert isinstance(test_node.network_manager.protocol_stack[-1], RSVPProtocol)
 
     @pytest.mark.unit
     def test_routing_protocol(self, test_node):
-        assert hasattr(test_node.network_manager, "routing_protocol")
+        assert hasattr(test_node.network_manager, 'routing_protocol')
         assert test_node.network_manager.routing_protocol is not None
 
     @pytest.mark.unit
@@ -134,14 +119,9 @@ class TestDistributedNetworkManager:
         inbound_msg.msg_type = RSVPMsgType.APPROVE
         inbound_msg.reservation = mock_reservation
 
-        test_node.network_manager.pop(msg=inbound_msg)  # Call the func with mocks
+        test_node.network_manager.pop(msg=inbound_msg) # Call the func with mocks
 
-        test_node.resource_manager.generate_load_rules.assert_called_once_with(
-            mock_reservation.path,
-            mock_reservation,
-            test_node.network_manager.timecards,
-            test_node.network_manager.memory_array_name,
-        )
+        test_node.resource_manager.generate_load_rules.assert_called_once_with(mock_reservation.path, mock_reservation, test_node.network_manager.timecards, test_node.network_manager.memory_array_name)
 
         test_node.get_reservation_result.assert_called_once_with(mock_reservation, True)
         test_node.get_other_reservation.assert_not_called()
@@ -157,6 +137,7 @@ class TestDistributedNetworkManager:
         test_node.get_other_reservation.assert_called_once_with(mock_reservation)
         test_node.get_reservation_result.assert_not_called()
 
+
     @pytest.mark.unit
     def test_pop_reject(self, test_node, mock_reservation):
         mock_reservation.initiator = test_node.name
@@ -166,9 +147,7 @@ class TestDistributedNetworkManager:
 
         test_node.network_manager.pop(msg=inbound_msg)
 
-        test_node.get_reservation_result.assert_called_once_with(
-            mock_reservation, False
-        )
+        test_node.get_reservation_result.assert_called_once_with(mock_reservation, False)
 
     @pytest.mark.unit
     def test_pop_approve_intermediate(self, test_node, mock_reservation):
@@ -176,12 +155,9 @@ class TestDistributedNetworkManager:
         inbound_msg.msg_type = RSVPMsgType.APPROVE
         inbound_msg.reservation = mock_reservation
         test_node.network_manager.pop(msg=inbound_msg)
-        test_node.resource_manager.generate_load_rules.assert_called_once_with(
-            mock_reservation.path,
-            mock_reservation,
-            test_node.network_manager.timecards,
-            test_node.network_manager.memory_array_name,
-        )
+        test_node.resource_manager.generate_load_rules.assert_called_once_with(mock_reservation.path, mock_reservation,
+                                                                               test_node.network_manager.timecards,
+                                                                               test_node.network_manager.memory_array_name)
 
         test_node.get_reservation_result.assert_not_called()
         test_node.get_other_reservation.assert_not_called()
@@ -192,23 +168,21 @@ class TestDistributedNetworkManager:
         assert len(test_node.send_log) == 0
         test_node.network_manager.push(dst="dst", msg=outbound_msg)
         assert len(test_node.send_log) == 1
-        assert test_node.send_log[0][0] == "dst" and isinstance(
-            test_node.send_log[0][1], NetworkManagerMessage
-        )
+        assert test_node.send_log[0][0] == "dst" and isinstance(test_node.send_log[0][1], NetworkManagerMessage)
 
     def test_NetworkManager_received_message(self, test_node):
-        test_node.network_manager.protocol_stack[0].pop = Mock()
-        payload = "test_payload"
-        msg = NetworkManagerMessage(None, "network_manager", payload)
+       test_node.network_manager.protocol_stack[0].pop = Mock()
+       payload = "test_payload"
+       msg = NetworkManagerMessage(None, 'network_manager', payload)
 
-        # Call received_message
-        test_node.network_manager.received_message("source_node", msg)
+       # Call received_message
+       test_node.network_manager.received_message("source_node", msg)
 
-        # Verify protocol stack was called with unpacked payload
-        test_node.network_manager.protocol_stack[0].pop.assert_called_once_with(
-            src="source_node",
-            msg=payload,  # Note: payload is unwrapped from NetworkManagerMessage
-        )
+       # Verify protocol stack was called with unpacked payload
+       test_node.network_manager.protocol_stack[0].pop.assert_called_once_with(
+           src="source_node",
+           msg=payload  # Note: payload is unwrapped from NetworkManagerMessage
+       )
 
     def test_NetworkManager(self):
         tl = Timeline(1e10)
@@ -225,9 +199,8 @@ class TestDistributedNetworkManager:
         for src in [n1, n2, n3, m1, m2]:
             for dst in [n1, n2, n3, m1, m2]:
                 if src.name != dst.name:
-                    cc = ClassicalChannel(
-                        "cc_%s_%s" % (src.name, dst.name), tl, 10, delay=1e5
-                    )
+                    cc = ClassicalChannel("cc_%s_%s" % (src.name, dst.name), tl,
+                                          10, delay=1e5)
                     cc.set_ends(src, dst.name)
 
         qc = QuantumChannel("qc_n1_m1", tl, 0, 10)
@@ -290,3 +263,4 @@ class TestDistributedNetworkManager:
         assert n2.send_log[1][0] == "n1" and n2.receive_log[1][0] == "n3"
         assert len(n3.send_log) == len(n3.receive_log) == 1
         assert n3.send_log[0][0] == "n2" and n3.receive_log[0][0] == "n2"
+

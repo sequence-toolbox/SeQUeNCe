@@ -46,12 +46,10 @@ def test_cascade_run():
     pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
     pair_cascade_protocols(alice.protocol_stack[1], bob.protocol_stack[1])
 
-    qc0 = QuantumChannel(
-        "qc0", tl, distance=1e3, attenuation=2e-5, polarization_fidelity=0.97
-    )
-    qc1 = QuantumChannel(
-        "qc1", tl, distance=1e3, attenuation=2e-5, polarization_fidelity=0.97
-    )
+    qc0 = QuantumChannel("qc0", tl, distance=1e3, attenuation=2e-5,
+                         polarization_fidelity=0.97)
+    qc1 = QuantumChannel("qc1", tl, distance=1e3, attenuation=2e-5,
+                         polarization_fidelity=0.97)
     qc0.set_ends(alice, bob.name)
     qc1.set_ends(bob, alice.name)
     cc0 = ClassicalChannel("cc0", tl, distance=1e3)
@@ -77,5 +75,5 @@ def test_cascade_run():
     assert pa.counter == pb.counter == KEYNUM
     for k1, k2 in zip(pa.keys, pb.keys):
         assert k1 == k2
-        assert k1 < 2**KEYSIZE  # check that key is not too large
+        assert k1 < 2 ** KEYSIZE  # check that key is not too large
     assert alice.protocol_stack[1].error_bit_rate == 0

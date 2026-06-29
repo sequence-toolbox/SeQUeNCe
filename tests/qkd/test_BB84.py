@@ -35,7 +35,7 @@ class Parent(StackProtocol):
         pass
 
 
-def test_BB84_polarization():
+def test_BB84_polarization(): 
     tl = Timeline(1e12)  # stop time is 1 s
 
     alice = QKDNode("alice", tl, stack_size=1)
@@ -44,12 +44,10 @@ def test_BB84_polarization():
     bob.set_seed(1)
     pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
 
-    qc0 = QuantumChannel(
-        "qc0", tl, distance=10e3, polarization_fidelity=0.99, attenuation=0.00002
-    )
-    qc1 = QuantumChannel(
-        "qc1", tl, distance=10e3, polarization_fidelity=0.99, attenuation=0.00002
-    )
+    qc0 = QuantumChannel("qc0", tl, distance=10e3, polarization_fidelity=0.99,
+                         attenuation=0.00002)
+    qc1 = QuantumChannel("qc1", tl, distance=10e3, polarization_fidelity=0.99,
+                         attenuation=0.00002)
     qc0.set_ends(alice, bob.name)
     qc1.set_ends(bob, alice.name)
     cc0 = ClassicalChannel("cc0", tl, distance=10e3)
@@ -83,12 +81,10 @@ def test_BB84_time_bin():
     bob.set_seed(3)
     pair_bb84_protocols(alice.protocol_stack[0], bob.protocol_stack[0])
 
-    qc0 = QuantumChannel(
-        "qc0", tl, distance=10e3, polarization_fidelity=0.99, attenuation=0.00002
-    )
-    qc1 = QuantumChannel(
-        "qc1", tl, distance=10e3, polarization_fidelity=0.99, attenuation=0.00002
-    )
+    qc0 = QuantumChannel("qc0", tl, distance=10e3, polarization_fidelity=0.99,
+                         attenuation=0.00002)
+    qc1 = QuantumChannel("qc1", tl, distance=10e3, polarization_fidelity=0.99,
+                         attenuation=0.00002)
     qc0.set_ends(alice, bob.name)
     qc1.set_ends(bob, alice.name)
     cc0 = ClassicalChannel("cc0", tl, distance=10e3)

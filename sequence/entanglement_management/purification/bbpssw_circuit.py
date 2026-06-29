@@ -4,7 +4,6 @@ This module defines code to support the BBPSSW protocol for entanglement purific
 Success results are pre-determined based on network parameters.
 Also defined is the message type used by the BBPSSW code.
 """
-
 from __future__ import annotations
 from functools import lru_cache
 from typing import TYPE_CHECKING
@@ -18,7 +17,6 @@ if TYPE_CHECKING:
 from ...utils import log
 from ...constants import KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM
 from .bbpssw_protocol import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType
-
 
 @BBPSSWProtocol.register(KET_VECTOR_FORMALISM)
 @BBPSSWProtocol.register(DENSITY_MATRIX_FORMALISM)
@@ -89,18 +87,15 @@ class BBPSSWCircuit(BBPSSWProtocol):
         super().start()
         meas_samp = self.owner.get_generator().random()
         self.meas_res = self.owner.timeline.quantum_manager.run_circuit(
-            self.circuit,
-            [self.kept_memo.qstate_key, self.meas_memo.qstate_key],
-            meas_samp,
-        )
+            self.circuit, [self.kept_memo.qstate_key,
+                           self.meas_memo.qstate_key],
+            meas_samp)
         self.meas_res = self.meas_res[self.meas_memo.qstate_key]
         dst = self.kept_memo.entangled_memory["node_id"]
 
-        message = BBPSSWMessage(
-            BBPSSWMsgType.PURIFICATION_RES,
-            self.remote_protocol_name,
-            meas_res=self.meas_res,
-        )
+        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES,
+                                self.remote_protocol_name,
+                                meas_res=self.meas_res)
         self.owner.send_message(dst, message)
 
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:
@@ -115,11 +110,8 @@ class BBPSSWCircuit(BBPSSWProtocol):
         """
 
         log.logger.info(
-            self.owner.name
-            + " received result message, succeeded: {}".format(
-                self.meas_res == msg.meas_res
-            )
-        )
+            self.owner.name + " received result message, succeeded: {}".format(
+                self.meas_res == msg.meas_res))
         assert src == self.remote_node_name
 
         self.update_resource_manager(self.meas_memo, "RAW")
@@ -140,6 +132,4 @@ class BBPSSWCircuit(BBPSSWProtocol):
             f (float): fidelity of entanglement.
         """
 
-        return (f**2 + ((1 - f) / 3) ** 2) / (
-            f**2 + 2 * f * (1 - f) / 3 + 5 * ((1 - f) / 3) ** 2
-        )
+        return (f ** 2 + ((1 - f) / 3) ** 2) / (f ** 2 + 2 * f * (1 - f) / 3 + 5 * ((1 - f) / 3) ** 2)

@@ -10,14 +10,8 @@ class FakeNode(QuantumRouter):
         super().__init__(name, tl)
         self.reserve_log = []
 
-    def reserve_net_resource(
-        self,
-        responder: str,
-        start_time: int,
-        end_time: int,
-        memory_size: int,
-        target_fidelity: float,
-    ) -> None:
+    def reserve_net_resource(self, responder: str, start_time: int, end_time: int, memory_size: int,
+                             target_fidelity: float) -> None:
         self.reserve_log.append(responder)
 
 
@@ -44,7 +38,8 @@ def test_RandomRequestApp_update_last_rsvp_metrics():
     tl.time = 20
     assert app.request_time == 0
     app._update_last_rsvp_metrics()
-    assert len(app.get_all_throughput()) == 1 and app.get_all_throughput()[0] == 1
+    assert len(app.get_all_throughput()) == 1 and app.get_all_throughput()[
+        0] == 1
     assert app.request_time == 20
     assert app.memory_counter == 0
 

@@ -29,7 +29,6 @@ Example:
     generate-topology <topology> --help; Display parameters for a topology type.
     generate-topology custom <gml_path.gml>; Create a custom topology from a GML file.
 """
-
 import json
 import yaml
 from typing import Annotated
@@ -54,13 +53,9 @@ from .nx_converter import generate_config
 
 app = typer.Typer()
 
-QCLength = Annotated[float, typer.Option(help="Length of the quantum channel (km)")]
-QCAttenuation = Annotated[
-    float, typer.Option(help="Attenuation of the quantum channel (dB/m)")
-]
-CCDelay = Annotated[
-    float, typer.Option(help="Constant delay of the classical channel (ms)")
-]
+QCLength = Annotated[float, typer.Option(help='Length of the quantum channel (km)')]
+QCAttenuation = Annotated[float, typer.Option(help='Attenuation of the quantum channel (dB/m)')]
+CCDelay = Annotated[float, typer.Option(help="Constant delay of the classical channel (ms)")]
 MemorySize = Annotated[int, typer.Option(help="Number of quantum memories per node")]
 OutputFile = Annotated[str, typer.Option(help="Name of the output file")]
 OutputDirectory = Annotated[str, typer.Option(help="Name of the output directory")]
@@ -80,9 +75,7 @@ def get_template(template_path: str) -> dict:
         elif template_path.lower().endswith(".json"):
             data = json.load(f)
         else:
-            raise ValueError(
-                "Incompatible file type for template. Required: JSON or YAML"
-            )
+            raise ValueError("Incompatible file type for template. Required: JSON or YAML")
     return data
 
 
@@ -359,9 +352,7 @@ def autonomous_system(
     seed: Seed = None,
 ) -> None:
     template = get_template(template_path) if template_path else None
-    g = build_autonomous_system(
-        nodes, seed=seed, length=length, attenuation=attenuation
-    )
+    g = build_autonomous_system(nodes, seed=seed, length=length, attenuation=attenuation)
     generate_config(
         g,
         cc_delay=cc_delay,

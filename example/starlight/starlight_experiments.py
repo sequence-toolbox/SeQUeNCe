@@ -13,9 +13,7 @@ def get_component(node: "Node", component_type: str):
         if type(comp).__name__ == component_type:
             return comp
 
-    raise ValueError(
-        "No component of type {} on node {}".format(component_type, node.name)
-    )
+    raise ValueError("No component of type {} on node {}".format(component_type, node.name))
 
 
 if __name__ == "__main__":
@@ -33,9 +31,7 @@ if __name__ == "__main__":
     MEMO_EFFICIENCY = 0.75
     MEMO_FIDELITY = 0.9349367588934053
     for node in routers:
-        memory_array = node.get_components_by_type("MemoryArray")[
-            0
-        ]  # assume only 1 memory array
+        memory_array = node.get_components_by_type("MemoryArray")[0]  # assume only 1 memory array
         memory_array.update_memory_params("frequency", MEMO_FREQ)
         memory_array.update_memory_params("coherence_time", MEMO_EXPIRE)
         memory_array.update_memory_params("efficiency", MEMO_EFFICIENCY)
@@ -71,17 +67,9 @@ if __name__ == "__main__":
         app_node_name = node.name
         others = router_names[:]
         others.remove(app_node_name)
-        app = RandomRequestApp(
-            node,
-            others,
-            i,
-            min_dur=1e13,
-            max_dur=2e13,
-            min_size=10,
-            max_size=25,
-            min_fidelity=0.8,
-            max_fidelity=1.0,
-        )
+        app = RandomRequestApp(node, others, i,
+                               min_dur=1e13, max_dur=2e13, min_size=10,
+                               max_size=25, min_fidelity=0.8, max_fidelity=1.0)
         apps.append(app)
         app.start()
 
@@ -90,22 +78,16 @@ if __name__ == "__main__":
 
     for app in apps:
         print(app.node.name)
-        for reserve, wait_t, tp in zip(
-            app.reserves, app.get_wait_time(), app.get_all_throughput()
-        ):
-            print(
-                "    responder={}, start time={} sec, end time={} sec, "
-                "used memory={}, fidelity thredshold={}, wait time={} sec, "
-                "throughput={} pairs/sec".format(
-                    reserve[0],
-                    reserve[1] / 1e12,
-                    reserve[2] / 1e12,
-                    reserve[3],
-                    reserve[4],
-                    wait_t / 1e12,
-                    tp,
-                )
-            )
+        for reserve, wait_t, tp in zip(app.reserves, app.get_wait_time(),
+                                       app.get_all_throughput()):
+            print("    responder={}, start time={} sec, end time={} sec, "
+                  "used memory={}, fidelity thredshold={}, wait time={} sec, "
+                  "throughput={} pairs/sec".format(reserve[0],
+                                                   reserve[1] / 1e12,
+                                                   reserve[2] / 1e12,
+                                                   reserve[3],
+                                                   reserve[4],
+                                                   wait_t / 1e12, tp))
 
     initiators = []
     responders = []
@@ -124,9 +106,8 @@ if __name__ == "__main__":
         reserves = reserves[:min_size]
         _wait_times = _wait_times[:min_size]
         _throughputs = _throughputs[:min_size]
-        for reservation, wait_time, throughput in zip(
-            reserves, _wait_times, _throughputs
-        ):
+        for reservation, wait_time, throughput in zip(reserves, _wait_times,
+                                                      _throughputs):
             responder, s_t, e_t, size, fidelity = reservation
             initiators.append(initiator)
             responders.append(responder)
@@ -136,16 +117,10 @@ if __name__ == "__main__":
             fidelities.append(fidelity)
             wait_times.append(wait_time)
             throughputs.append(throughput)
-    log = {
-        "Initiator": initiators,
-        "Responder": responders,
-        "Start_time": start_times,
-        "End_time": end_times,
-        "Memory_size": memory_sizes,
-        "Fidelity": fidelities,
-        "Wait_time": wait_times,
-        "Throughput": throughputs,
-    }
+    log = {"Initiator": initiators, "Responder": responders,
+           "Start_time": start_times, "End_time": end_times,
+           "Memory_size": memory_sizes, "Fidelity": fidelities,
+           "Wait_time": wait_times, "Throughput": throughputs}
 
     df = pd.DataFrame(log)
     df.to_csv("request_with_perfect_network.csv")
@@ -157,25 +132,14 @@ if __name__ == "__main__":
     for node in routers:
         node_name = node.name
         for reservation in node.network_manager.protocol_stack[1].accepted_reservation:
-            s_t, e_t, size = (
-                reservation.start_time,
-                reservation.end_time,
-                reservation.memory_size,
-            )
-            if (
-                reservation.initiator != node.name
-                and reservation.responder != node.name
-            ):
+            s_t, e_t, size = reservation.start_time, reservation.end_time, reservation.memory_size
+            if reservation.initiator != node.name and reservation.responder != node.name:
                 size *= 2
             node_names.append(node_name)
             start_times.append(s_t)
             end_times.append(e_t)
             memory_sizes.append(size)
-    log = {
-        "Node": node_names,
-        "Start_time": start_times,
-        "End_time": end_times,
-        "Memory_size": memory_sizes,
-    }
+    log = {"Node": node_names, "Start_time": start_times,
+           "End_time": end_times, "Memory_size": memory_sizes}
     df = pd.DataFrame(log)
     df.to_csv("memory_usage_with_perfect_network.csv")

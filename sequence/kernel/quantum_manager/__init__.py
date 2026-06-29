@@ -6,12 +6,12 @@ from .bell_diagonal import QuantumManagerBellDiagonal
 from .stabilizer import QuantumManagerStabilizer
 
 __all__ = [
-    "QuantumManager",
-    "QuantumManagerKet",
-    "QuantumManagerDensity",
-    "QuantumManagerDensityFock",
-    "QuantumManagerBellDiagonal",
-    "QuantumManagerStabilizer",
+    'QuantumManager',
+    'QuantumManagerKet',
+    'QuantumManagerDensity',
+    'QuantumManagerDensityFock',
+    'QuantumManagerBellDiagonal',
+    'QuantumManagerStabilizer'
 ]
 
 

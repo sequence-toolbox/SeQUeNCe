@@ -11,14 +11,14 @@ def test_ClassicalChannel_set_ends():
     tl = Timeline()
     cc = ClassicalChannel("cc", tl, 1e3)
 
-    n1 = Node("n1", tl)
-    n2 = Node("n2", tl)
+    n1 = Node('n1', tl)
+    n2 = Node('n2', tl)
     assert len(n1.cchannels) == 0 and len(n2.cchannels) == 0
 
     cc.set_ends(n1, n2.name)
     assert cc.sender == n1
     assert cc.receiver == n2.name
-    assert "n2" in n1.cchannels
+    assert 'n2' in n1.cchannels
     assert n1.cchannels["n2"] == cc
     assert len(n2.cchannels) == 0
 
@@ -35,12 +35,12 @@ def test_ClassicalChannel_transmit():
     tl = Timeline()
     cc = ClassicalChannel("cc", tl, 1e3)
 
-    n1 = FakeNode("n1", tl)
-    n2 = FakeNode("n2", tl)
+    n1 = FakeNode('n1', tl)
+    n2 = FakeNode('n2', tl)
     cc.set_ends(n1, n2.name)
 
-    args = [["1-1", n1, 5], ["1-2", n1, 5]]
-    results = [[cc.delay, "n1", "1-1"], [1 + cc.delay, "n1", "1-2"]]
+    args = [['1-1', n1, 5], ['1-2', n1, 5]]
+    results = [[cc.delay, 'n1', '1-1'], [1 + cc.delay, 'n1', '1-2']]
 
     for arg in args:
         cc.transmit(arg[0], arg[1], arg[2])
@@ -51,9 +51,7 @@ def test_ClassicalChannel_transmit():
     for msg, res in zip(n2.msgs, results):
         assert msg == res
 
-
 test_ClassicalChannel_transmit()
-
 
 def test_QuantumChannel_init():
     tl = Timeline()
@@ -131,7 +129,7 @@ def test_QuantumChannel_schedule_transmit():
     time = qc.schedule_transmit(0)
     assert time == 1
 
-    # new time
+    # new time 
     tl.time = 2
     time = qc.schedule_transmit(0)
     assert time == 3

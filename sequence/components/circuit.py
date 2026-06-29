@@ -14,52 +14,56 @@ GATE_INFO_TYPE = list[str | list[int] | float]
 
 
 def x_gate():
-    mat = np.array([[0, 1], [1, 0]])
+    mat = np.array([[0, 1],
+                    [1, 0]])
     return Qobj(mat, dims=[[2], [2]])
 
 
 def y_gate():
-    mat = np.array([[0, -1.0j], [1.0j, 0]])
+    mat = np.array([[0, -1.j],
+                    [1.j, 0]])
     return Qobj(mat, dims=[[2], [2]])
 
 
 def z_gate():
-    mat = np.array([[1, 0], [0, -1]])
+    mat = np.array([[1, 0],
+                    [0, -1]])
     return Qobj(mat, dims=[[2], [2]])
 
 
 def s_gate():
-    mat = np.array([[1.0, 0], [0.0, 1.0j]])
+    mat = np.array([[1.,   0],
+                    [0., 1.j]])
     return Qobj(mat, dims=[[2], [2]])
-
 
 def sdg_gate():
-    mat = np.array([[1.0, 0], [0.0, -1.0j]])
+    mat = np.array([[1.,   0],
+                    [0., -1.j]])
     return Qobj(mat, dims=[[2], [2]])
-
 
 def t_gate():
-    mat = np.array([[1.0, 0], [0.0, e ** (1.0j * (pi / 4))]])
+    mat = np.array([[1.,   0],
+                    [0., e ** (1.j * (pi / 4))]])
     return Qobj(mat, dims=[[2], [2]])
-
 
 def root_iZ_gate():
-    mat = 1 / sqrt(2) * np.array([[1.0 + 1.0j, 0], [0, 1.0 - 1.0j]])
+    mat = 1/sqrt(2)*np.array([[1.+1.j,   0],
+                              [0, 1.-1.j]])
     return Qobj(mat, dims=[[2], [2]])
-
 
 def minus_root_iZ_gate():
-    mat = 1 / sqrt(2) * np.array([[1.0 - 1.0j, 0], [0, 1.0 + 1.0j]])
+    mat = 1/sqrt(2)*np.array([[1.-1.j,   0],
+                              [0, 1.+1.j]])
     return Qobj(mat, dims=[[2], [2]])
-
 
 def root_iY_gate():
-    mat = 1 / sqrt(2) * np.array([[1.0, 1.0], [-1.0, 1.0]])
+    mat = 1/sqrt(2)*np.array([[1.,   1.],
+                              [-1., 1.]])
     return Qobj(mat, dims=[[2], [2]])
 
-
 def minus_root_iY_gate():
-    mat = 1 / sqrt(2) * np.array([[1.0, -1.0], [1.0, 1.0]])
+    mat = 1/sqrt(2)*np.array([[1.,   -1.],
+                              [1., 1.]])
     return Qobj(mat, dims=[[2], [2]])
 
 
@@ -67,9 +71,9 @@ def validator(func):
     def wrapper(self, *args, **kwargs):
         for q in args:
             if type(q) is int:
-                assert q < self.size, "qubit index out of range"
-                assert q not in self.measured_qubits, "qubit has been measured"
-        if func.__name__ != "measure":
+                assert q < self.size, 'qubit index out of range'
+                assert q not in self.measured_qubits, 'qubit has been measured'
+        if func.__name__ != 'measure':
             self._cache = None
         return func(self, *args, **kwargs)
 
@@ -106,56 +110,54 @@ class Circuit:
 
         if self._cache is None:
             if len(self.gates) == 0:
-                self._cache = np.identity(2**self.size)
+                self._cache = np.identity(2 ** self.size)
                 return self._cache
 
             qc = QubitCircuit(self.size)
-            qc.user_gates = {
-                "X": x_gate,
-                "Y": y_gate,
-                "Z": z_gate,
-                "S": s_gate,
-                "Sdg": sdg_gate,
-                "T": t_gate,
-                "ROOTiZ": root_iZ_gate,
-                "MINUSROOTiZ": minus_root_iZ_gate,
-                "ROOTiY": root_iY_gate,
-                "MINUSROOTiY": minus_root_iY_gate,
-            }
+            qc.user_gates = {"X": x_gate,
+                             "Y": y_gate,
+                             "Z": z_gate,
+                             "S": s_gate,
+                             "Sdg": sdg_gate,
+                             "T": t_gate,
+                             "ROOTiZ": root_iZ_gate,
+                             "MINUSROOTiZ": minus_root_iZ_gate,
+                             "ROOTiY": root_iY_gate,
+                             "MINUSROOTiY": minus_root_iY_gate}
             for gate in self.gates:
                 name, indices, arg = gate
-                if name == "h":
-                    qc.add_gate("SNOT", indices[0])
-                elif name == "x":
-                    qc.add_gate("X", indices[0])
-                elif name == "y":
-                    qc.add_gate("Y", indices[0])
-                elif name == "z":
-                    qc.add_gate("Z", indices[0])
-                elif name == "cx":
-                    qc.add_gate("CNOT", controls=indices[0], targets=indices[1])
-                elif name == "cz":
-                    qc.add_gate("CZ", controls=indices[0], targets=indices[1])
-                elif name == "ccx":
-                    qc.add_gate("TOFFOLI", controls=indices[:2], targets=indices[2])
-                elif name == "swap":
-                    qc.add_gate("SWAP", indices)
-                elif name == "t":
-                    qc.add_gate("T", indices[0])
-                elif name == "s":
-                    qc.add_gate("S", indices[0])
-                elif name == "sdg":
-                    qc.add_gate("Sdg", indices[0])
-                elif name == "root_iZ":
-                    qc.add_gate("ROOTiZ", indices[0])
-                elif name == "minus_root_iZ":
-                    qc.add_gate("MINUSROOTiZ", indices[0])
-                elif name == "root_iY":
-                    qc.add_gate("ROOTiY", indices[0])
-                elif name == "minus_root_iY":
-                    qc.add_gate("MINUSROOTiY", indices[0])
-                elif name == "phase":
-                    qc.add_gate("PHASEGATE", indices[0], arg_value=arg)
+                if name == 'h':
+                    qc.add_gate('SNOT', indices[0])
+                elif name == 'x':
+                    qc.add_gate('X', indices[0])
+                elif name == 'y':
+                    qc.add_gate('Y', indices[0])
+                elif name == 'z':
+                    qc.add_gate('Z', indices[0])
+                elif name == 'cx':
+                    qc.add_gate('CNOT', controls=indices[0], targets=indices[1])
+                elif name == 'cz':
+                    qc.add_gate('CZ', controls=indices[0], targets=indices[1])
+                elif name == 'ccx':
+                    qc.add_gate('TOFFOLI', controls=indices[:2], targets=indices[2])
+                elif name == 'swap':
+                    qc.add_gate('SWAP', indices)
+                elif name == 't':
+                    qc.add_gate('T', indices[0])
+                elif name == 's':
+                    qc.add_gate('S', indices[0])
+                elif name == 'sdg':
+                    qc.add_gate('Sdg', indices[0])
+                elif name == 'root_iZ':
+                    qc.add_gate('ROOTiZ', indices[0])
+                elif name == 'minus_root_iZ':
+                    qc.add_gate('MINUSROOTiZ', indices[0])
+                elif name == 'root_iY':
+                    qc.add_gate('ROOTiY', indices[0])
+                elif name == 'minus_root_iY':
+                    qc.add_gate('MINUSROOTiY', indices[0])
+                elif name == 'phase':
+                    qc.add_gate('PHASEGATE', indices[0], arg_value=arg)
                 else:
                     raise NotImplementedError
             self._cache = gate_sequence_product(qc.propagators()).full()
@@ -163,15 +165,10 @@ class Circuit:
         return self._cache
 
     def serialize(self) -> dict:
-        gates = [
-            {"name": g_name, "indices": indices, "arg": arg}
-            for g_name, indices, arg in self.gates
-        ]
-        return {
-            "size": self.size,
-            "gates": gates,
-            "measured_qubits": self.measured_qubits,
-        }
+        gates = [{"name": g_name, "indices": indices, "arg": arg}
+                 for g_name, indices, arg in self.gates]
+        return {"size": self.size, "gates": gates,
+                "measured_qubits": self.measured_qubits}
 
     def deserialize(self, json_data: dict):
         self.size = json_data["size"]
@@ -191,7 +188,7 @@ class Circuit:
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(["h", [qubit], None])
+        self.gates.append(['h', [qubit], None])
 
     @validator
     def x(self, qubit: int):
@@ -201,7 +198,7 @@ class Circuit:
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(["x", [qubit], None])
+        self.gates.append(['x', [qubit], None])
 
     @validator
     def y(self, qubit: int):
@@ -211,7 +208,7 @@ class Circuit:
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(["y", [qubit], None])
+        self.gates.append(['y', [qubit], None])
 
     @validator
     def z(self, qubit: int):
@@ -221,7 +218,7 @@ class Circuit:
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(["z", [qubit], None])
+        self.gates.append(['z', [qubit], None])
 
     @validator
     def cx(self, control: int, target: int):
@@ -232,7 +229,7 @@ class Circuit:
             target (int): the index of target in the circuit.
         """
 
-        self.gates.append(["cx", [control, target], None])
+        self.gates.append(['cx', [control, target], None])
 
     @validator
     def cz(self, control: int, target: int):
@@ -243,7 +240,7 @@ class Circuit:
             target (int): the index of target in the circuit.
         """
 
-        self.gates.append(["cz", [control, target], None])
+        self.gates.append(['cz', [control, target], None])
 
     @validator
     def ccx(self, control1: int, control2: int, target: int):
@@ -255,7 +252,7 @@ class Circuit:
             target (int): the index of target in the circuit.
         """
 
-        self.gates.append(["ccx", [control1, control2, target], None])
+        self.gates.append(['ccx', [control1, control2, target], None])
 
     @validator
     def swap(self, qubit1: int, qubit2: int):
@@ -266,7 +263,7 @@ class Circuit:
             qubit2 (int): the index of qubit2 in the circuit.
         """
 
-        self.gates.append(["swap", [qubit1, qubit2], None])
+        self.gates.append(['swap', [qubit1, qubit2], None])
 
     @validator
     def t(self, qubit: int):
@@ -276,7 +273,7 @@ class Circuit:
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(["t", [qubit], None])
+        self.gates.append(['t', [qubit], None])
 
     @validator
     def s(self, qubit: int):
@@ -286,8 +283,8 @@ class Circuit:
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(["s", [qubit], None])
-
+        self.gates.append(['s', [qubit], None])
+    
     @validator
     def sdg(self, qubit: int):
         """Method to apply single Sdg gate on a qubit.
@@ -296,7 +293,7 @@ class Circuit:
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(["sdg", [qubit], None])
+        self.gates.append(['sdg', [qubit], None])
 
     @validator
     def root_iZ(self, qubit: int):
@@ -306,7 +303,7 @@ class Circuit:
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(["root_iZ", [qubit], None])
+        self.gates.append(['root_iZ', [qubit], None])
 
     @validator
     def minus_root_iZ(self, qubit: int):
@@ -316,7 +313,7 @@ class Circuit:
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(["minus_root_iZ", [qubit], None])
+        self.gates.append(['minus_root_iZ', [qubit], None])
 
     @validator
     def root_iY(self, qubit: int):
@@ -326,7 +323,7 @@ class Circuit:
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(["root_iY", [qubit], None])
+        self.gates.append(['root_iY', [qubit], None])
 
     @validator
     def minus_root_iY(self, qubit: int):
@@ -336,8 +333,8 @@ class Circuit:
             qubit (int): the index of qubit in the circuit.
         """
 
-        self.gates.append(["minus_root_iY", [qubit], None])
-
+        self.gates.append(['minus_root_iY', [qubit], None])
+    
     @validator
     def phase(self, qubit: int, theta: float):
         """Method to apply a phase gate to a qubit.
@@ -347,7 +344,7 @@ class Circuit:
             theta (float): phase to apply
         """
 
-        self.gates.append(["phase", [qubit], theta])
+        self.gates.append(['phase', [qubit], theta])
 
     @validator
     def measure(self, qubit: int):

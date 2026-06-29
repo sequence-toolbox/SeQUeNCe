@@ -29,9 +29,7 @@ class EntanglementProtocol(Protocol):
         self.memories = []
 
     @abstractmethod
-    def set_others(
-        self, remote_protocol: str, remote_node: str, memories: list[str]
-    ) -> None:
+    def set_others(self, remote_protocol: str, remote_node: str, memories: list[str]) -> None:
         """Method to set other entanglement protocol instance.
 
         Args:
@@ -81,3 +79,4 @@ class EntanglementProtocol(Protocol):
         """
 
         self.owner.resource_manager.update(self, memory, state)
+

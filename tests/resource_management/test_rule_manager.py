@@ -16,7 +16,7 @@ def test_Rule_do():
         def send_request(self, protocol, req_dst, req_condition, req_args):
             self.log.append((protocol.name, req_dst, req_condition, req_args))
 
-    class FakeProtocol:
+    class FakeProtocol():
         def __init__(self, name):
             self.name = name
             self.rule = None
@@ -35,56 +35,29 @@ def test_Rule_do():
     rule = Rule(1, fake_action, None, action_args, None)
     rule.set_rule_manager(rule_manager)
     assert rule.priority == 1 and len(rule.protocols) == 0
-    memory = Memory(
-        "mem",
-        tl,
-        fidelity=1,
-        frequency=0,
-        efficiency=1,
-        coherence_time=-1,
-        wavelength=500,
-    )
+    memory = Memory("mem", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
     memories_info = [MemoryInfo(memory, 0)]
     assert len(memory._observers) == 0
     rule.do(memories_info)
     assert len(rule.protocols) == 1 and rule.protocols[0].name == "protocol1"
     assert len(rule_manager.log) == 1
-    assert rule_manager.log[0] == ("protocol1", "req_dst1", "req_condition1", {})
+    assert rule_manager.log[0] == (
+        "protocol1", "req_dst1", "req_condition1", {})
     assert rule.protocols[0].rule == rule
     assert len(memory._observers) == 1
-    mem1 = Memory(
-        "1",
-        tl,
-        fidelity=1,
-        frequency=0,
-        efficiency=1,
-        coherence_time=-1,
-        wavelength=500,
-    )
-    mem2 = Memory(
-        "2",
-        tl,
-        fidelity=1,
-        frequency=0,
-        efficiency=1,
-        coherence_time=-1,
-        wavelength=500,
-    )
+    mem1 = Memory("1", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
+    mem2 = Memory("2", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
     memories_info = [MemoryInfo(mem1, 0), MemoryInfo(mem2, 1)]
     rule.do(memories_info)
     assert len(rule.protocols) == 2 and rule.protocols[1].name == "protocol2"
     assert len(rule_manager.log) == 2 and rule_manager.log[1] == (
-        "protocol2",
-        None,
-        None,
-        {},
-    )
+        "protocol2", None, None, {})
     assert rule.protocols[1].rule == rule
     assert len(mem1._observers) == len(mem2._observers) == 1
 
 
 def test_Rule_is_valid():
-    class FakeRuleManager:
+    class FakeRuleManager():
         def __init__(self):
             pass
 

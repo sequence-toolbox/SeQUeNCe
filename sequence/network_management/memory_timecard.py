@@ -79,8 +79,7 @@ class MemoryTimeCard:
                 end = mid - 1
             elif self.reservations[mid].end_time < reservation.start_time:
                 start = mid + 1
-            elif max(self.reservations[mid].start_time, reservation.start_time) <= min(
-                self.reservations[mid].end_time, reservation.end_time
-            ):
+            elif (max(self.reservations[mid].start_time, reservation.start_time) <=
+                  min(self.reservations[mid].end_time, reservation.end_time)):
                 return -1
         return start

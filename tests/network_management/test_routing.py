@@ -7,14 +7,14 @@ from sequence.constants import SECOND
 
 # Two node topology, check the FSM states and forwarding tables at both routers
 def test_distributed_routing_protocol_1():
-
+    
     topo = router_net_topo.RouterNetTopo("tests/network_management/line_topo.json")
     all_nodes = topo.get_nodes()
     routers = all_nodes[router_net_topo.RouterNetTopo.QUANTUM_ROUTER]
     for router in routers:
         routing_protocol = router.network_manager.get_routing_protocol()
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
-
+    
     tl = topo.get_timeline()
 
     tl.init()
@@ -25,7 +25,7 @@ def test_distributed_routing_protocol_1():
     # at router 0, the FSM for neighbor 1 should be in Full state
     fsm0_1 = routers[0].network_manager.get_routing_protocol().fsm.get(routers[1].name)
     assert fsm0_1.state == "Full"
-
+   
     # at router 1, the FSM for neighbor 0 should be in Full state
     fsm1_0 = routers[1].network_manager.get_routing_protocol().fsm.get(routers[0].name)
     assert fsm1_0.state == "Full"
@@ -41,7 +41,7 @@ def test_distributed_routing_protocol_1():
     assert forwarding_table_1[routers[0].name] == routers[0].name
 
 
-# Four node (R0, R1, R2, R3) ring topology,
+# Four node (R0, R1, R2, R3) ring topology, 
 # check the FSM states and forwarding tables at all four nodes.
 def test_distributed_routing_protocol_2():
     topo = router_net_topo.RouterNetTopo("tests/network_management/ring_topo.json")
@@ -50,7 +50,7 @@ def test_distributed_routing_protocol_2():
     for router in routers:
         routing_protocol = router.network_manager.get_routing_protocol()
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
-
+    
     tl = topo.get_timeline()
     tl.init()
     tl.run()
@@ -121,7 +121,7 @@ def test_distributed_routing_protocol_2():
 
 
 # Two node (R0, R1) topology
-# R1 is down at t=0.5 second,
+# R1 is down at t=0.5 second, 
 # check the FSM states and forwarding tables at both nodes.
 def test_distributed_routing_protocol_3():
     topo = router_net_topo.RouterNetTopo("tests/network_management/line_topo.json")
@@ -130,7 +130,7 @@ def test_distributed_routing_protocol_3():
     for router in routers:
         routing_protocol = router.network_manager.get_routing_protocol()
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
-
+    
     tl = topo.get_timeline()
 
     tl.init()
@@ -145,7 +145,7 @@ def test_distributed_routing_protocol_3():
     # at router 0, the FSM for neighbor 1 should be in Down state
     fsm0_1 = routers[0].network_manager.get_routing_protocol().fsm.get(routers[1].name)
     assert fsm0_1.state == "Down"
-
+    
     # at router 1, the FSM for neighbor 0 should be in Down state
     fsm1_0 = routers[1].network_manager.get_routing_protocol().fsm.get(routers[0].name)
     assert fsm1_0.state == "Down"
@@ -171,7 +171,7 @@ def test_distributed_routing_protocol_4():
     for router in routers:
         routing_protocol = router.network_manager.get_routing_protocol()
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
-
+    
     tl = topo.get_timeline()
 
     tl.init()
@@ -255,7 +255,7 @@ def test_distributed_routing_protocol_5():
     for router in routers:
         routing_protocol = router.network_manager.get_routing_protocol()
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
-
+    
     tl = topo.get_timeline()
 
 
@@ -347,7 +347,7 @@ def test_distributed_routing_protocol_6():
         routing_protocol = router.network_manager.get_routing_protocol()
         routing_protocol.refresh_enabled = False
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
-
+    
     tl = topo.get_timeline()
     tl.init()
     tl.run()
@@ -357,7 +357,7 @@ def test_distributed_routing_protocol_6():
     # at router 0, the FSM for neighbor 1 should be in Loading state
     fsm0_1 = routers[0].network_manager.get_routing_protocol().fsm.get(routers[1].name)
     assert fsm0_1.state == "Loading"
-
+    
     # at router 1, the FSM for neighbor 0 should be in Loading state
     fsm1_0 = routers[1].network_manager.get_routing_protocol().fsm.get(routers[0].name)
     assert fsm1_0.state == "Loading"
@@ -386,7 +386,7 @@ def test_distributed_routing_protocol_7():
         routing_protocol = router.network_manager.get_routing_protocol()
         routing_protocol.refresh_enabled = False
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
-
+    
     tl = topo.get_timeline()
 
     tl.init()
@@ -397,7 +397,7 @@ def test_distributed_routing_protocol_7():
     # at router 0, the FSM for neighbor 1 should be in Full state
     fsm0_1 = routers[0].network_manager.get_routing_protocol().fsm.get(routers[1].name)
     assert fsm0_1.state == "Full"
-
+    
     # at router 1, the FSM for neighbor 0 should be in Full state
     fsm1_0 = routers[1].network_manager.get_routing_protocol().fsm.get(routers[0].name)
     assert fsm1_0.state == "Full"
@@ -426,7 +426,7 @@ def test_distributed_routing_protocol_8():
         routing_protocol = router.network_manager.get_routing_protocol()
         routing_protocol.refresh_enabled = True
         assert isinstance(routing_protocol, DistributedRoutingProtocol)
-
+    
     tl = topo.get_timeline()
 
     tl.init()
@@ -437,7 +437,7 @@ def test_distributed_routing_protocol_8():
     # at router 0, the FSM for neighbor 1 should be in Full state
     fsm0_1 = routers[0].network_manager.get_routing_protocol().fsm.get(routers[1].name)
     assert fsm0_1.state == "Full"
-
+    
     # at router 1, the FSM for neighbor 0 should be in Full state
     fsm1_0 = routers[1].network_manager.get_routing_protocol().fsm.get(routers[0].name)
     assert fsm1_0.state == "Full"

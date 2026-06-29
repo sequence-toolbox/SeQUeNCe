@@ -38,10 +38,7 @@ def create_switch(tl, name, basis_list, photons):
 def test_Switch_get():
     tl = Timeline()
     # z-basis measure |e> and |l>
-    photons = [
-        Photon("", tl, encoding_type=time_bin, quantum_state=time_bin["bases"][0][i])
-        for i in range(2)
-    ]
+    photons = [Photon('', tl, encoding_type=time_bin, quantum_state=time_bin["bases"][0][i]) for i in range(2)]
     log1, log2 = create_switch(tl, "sw1", [0] * 2, photons)
     expects = [0, 1e12 / FREQ + time_bin["bin_separation"]]
     for i, log in enumerate(log1):
@@ -50,15 +47,8 @@ def test_Switch_get():
     assert len(log2) == 0
 
     # z-basis measure |e+l> and |e-l>
-    photons = [
-        Photon(
-            "",
-            tl,
-            encoding_type=time_bin,
-            quantum_state=time_bin["bases"][0][random.randint(2)],
-        )
-        for _ in range(2000)
-    ]
+    photons = [Photon('', tl, encoding_type=time_bin, quantum_state=time_bin["bases"][0][random.randint(2)]) for _ in
+               range(2000)]
     log1, log2 = create_switch(tl, "sw2", [0] * 2000, photons)
     assert len(log2) == 0
     counter1 = 0
@@ -74,15 +64,9 @@ def test_Switch_get():
     assert abs(counter2 / counter1 - 1) < 0.1
 
     # x-basis get photons
-    photons = [
-        Photon(
-            "",
-            tl,
-            encoding_type=time_bin,
-            quantum_state=time_bin["bases"][random.randint(2)][random.randint(2)],
-        )
-        for _ in range(2000)
-    ]
+    photons = [Photon('', tl,
+                      encoding_type=time_bin,
+                      quantum_state=time_bin["bases"][random.randint(2)][random.randint(2)]) for _ in range(2000)]
     log1, log2 = create_switch(tl, "sw3", [1] * 2000, photons)
     assert len(log1) == 0
     for time, photon in log1:

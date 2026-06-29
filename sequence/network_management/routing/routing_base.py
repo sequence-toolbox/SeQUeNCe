@@ -16,13 +16,13 @@ from ...utils import log
 
 
 # type labels for routing protocols:
-ROUTING_STATIC = "routing_static"
-ROUTING_DISTRIBUTED = "routing_distributed"
+ROUTING_STATIC      = 'routing_static'
+ROUTING_DISTRIBUTED = 'routing_distributed'
 
 
 class RoutingProtocol(Protocol, ABC):
-    """Abstract base class for routing protocols."""
-
+    """Abstract base class for routing protocols.
+    """
     _registry: dict[str, type[RoutingProtocol]] = {}
 
     def __init__(self, owner: QuantumRouter, name: str, protocol_type: str):
@@ -46,7 +46,7 @@ class RoutingProtocol(Protocol, ABC):
         if protocol_class is not None:
             cls._registry[protocol_type] = protocol_class
             return None
-
+        
         def decorator(protocol_class: type[RoutingProtocol]):
             cls._registry[protocol_type] = protocol_class
             return protocol_class
@@ -83,12 +83,12 @@ class RoutingProtocol(Protocol, ABC):
     @property
     def forwarding_table(self) -> dict[str, str]:
         """Returns the forwarding table.
-
+        
         Returns:
             dict[str, str]: forwarding table in format {name of destination node: name of next node}.
         """
         return self.owner.network_manager.get_forwarding_table()
-
+    
     def update_forwarding_rule(self, dst: str, next_node: str):
         """Updates dst to map to next_node in forwarding table.
            If dst not in forwarding table, effectively adds a new rule to the forwarding table.
@@ -99,9 +99,7 @@ class RoutingProtocol(Protocol, ABC):
         """
         forwarding_table = self.forwarding_table
         forwarding_table[dst] = next_node
-        log.logger.debug(
-            f"Updated forwarding rule at node {self.owner.name}: {dst} -> {next_node}"
-        )
+        log.logger.debug(f'Updated forwarding rule at node {self.owner.name}: {dst} -> {next_node}')
 
     def set_forwarding_table(self, forwarding_table: dict[str, str]):
         """Sets the whole forwarding table.
@@ -110,6 +108,4 @@ class RoutingProtocol(Protocol, ABC):
             forwarding_table (dict[str, str]): forwarding table in format {name of destination node: name of next node}.
         """
         self.owner.network_manager.set_forwarding_table(forwarding_table)
-        log.logger.debug(
-            f"Set forwarding table at node {self.owner.name} to: {forwarding_table}"
-        )
+        log.logger.debug(f'Set forwarding table at node {self.owner.name} to: {forwarding_table}')

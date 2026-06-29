@@ -10,19 +10,15 @@ from scipy.special import binom
 
 from .base import QuantumManager
 from ..quantum_state import DensityState
-from ..quantum_utils import (
-    density_partial_trace,
-    measure_entangled_state_with_cache_fock_density,
-    measure_multiple_with_cache_fock_density,
-    measure_state_with_cache_fock_density,
-)
+from ..quantum_utils import (density_partial_trace, measure_entangled_state_with_cache_fock_density, 
+                             measure_multiple_with_cache_fock_density, measure_state_with_cache_fock_density)
 from ...constants import FOCK_DENSITY_MATRIX_FORMALISM
 
 
 @QuantumManager.register(FOCK_DENSITY_MATRIX_FORMALISM)
 class QuantumManagerDensityFock(QuantumManager):
     """Class to track and manage Fock states with the density matrix formalism.
-
+    
     Attributes:
         truncation (int): maximally allowed number of excited states for elementary subsystems. Default is 1 for qubit.
         dim (int): subsystem Hilbert space dimension. dim = truncation + 1
@@ -64,21 +60,13 @@ class QuantumManagerDensityFock(QuantumManager):
             Array[int]: unitary swapping operator
         """
 
-        size = self.dim**num_systems
+        size = self.dim ** num_systems
         swap_unitary = zeros((size, size))
 
         for old_index in range(size):
             old_str = base_repr(old_index, self.dim)
             old_str = old_str.zfill(num_systems)
-            new_str = "".join(
-                (
-                    old_str[:i],
-                    old_str[j],
-                    old_str[i + 1 : j],
-                    old_str[i],
-                    old_str[j + 1 :],
-                )
-            )
+            new_str = ''.join((old_str[:i], old_str[j], old_str[i + 1:j], old_str[i], old_str[j + 1:]))
             new_index = int(new_str, base=self.dim)
             swap_unitary[new_index, old_index] = 1
 
@@ -116,6 +104,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
         # apply any necessary swaps to order keys
         if len(keys) > 1:
+
             # generate desired key order
             start_idx = all_keys.index(keys[0])
             if start_idx + len(keys) > len(all_keys):
@@ -131,9 +120,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
         return new_state, all_keys
 
-    def _prepare_operator(
-        self, all_keys: list[int], keys: list[int], operator
-    ) -> NDArray:
+    def _prepare_operator(self, all_keys: list[int], keys: list[int], operator) -> NDArray:
         # pad operator with identity
         left_dim = self.dim ** all_keys.index(keys[0])
         right_dim = self.dim ** (len(all_keys) - all_keys.index(keys[-1]) - 1)
@@ -169,7 +156,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
     def set_to_zero(self, key: int):
         """set the state to ground (zero) state.
-
+        
         Args:
             key (int): key of the state to set to ground state.
         """
@@ -179,14 +166,10 @@ class QuantumManagerDensityFock(QuantumManager):
     def build_ladder(self):
         """Generate matrix of creation and annihilation (ladder) operators on truncated Hilbert space."""
         truncation = self.truncation
-        data = array(
-            [sqrt(i + 1) for i in range(truncation)]
-        )  # elements in create/annihilation operator matrix
+        data = array([sqrt(i + 1) for i in range(truncation)])  # elements in create/annihilation operator matrix
         row = array([i + 1 for i in range(truncation)])
         col = array([i for i in range(truncation)])
-        create = csr_matrix(
-            (data, (row, col)), shape=(truncation + 1, truncation + 1)
-        ).toarray()
+        create = csr_matrix((data, (row, col)), shape=(truncation + 1, truncation + 1)).toarray()
         destroy = create.conj().T
 
         return create, destroy
@@ -208,14 +191,8 @@ class QuantumManagerDensityFock(QuantumManager):
         new_state, all_keys = self._prepare_state(keys)
         return self._measure(new_state, keys, all_keys, povms, meas_samp)
 
-    def _measure(
-        self,
-        state: list[list[complex]],
-        keys: list[int],
-        all_keys: list[int],
-        povms: list[NDArray],
-        meas_samp: float,
-    ) -> int:
+    def _measure(self, state: list[list[complex]], keys: list[int],
+                 all_keys: list[int], povms: list[NDArray], meas_samp: float) -> int:
         """Method to measure subsystems at given keys in POVM formalism.
 
         Modifies quantum state of all qubits given by all_keys, post-measurement operator determined
@@ -240,23 +217,19 @@ class QuantumManagerDensityFock(QuantumManager):
         # calculate meas probabilities and projected states
         if len(keys) == 1:
             if len(all_keys) == 1:
-                states, probs = measure_state_with_cache_fock_density(
-                    state_tuple, povm_tuple
-                )
+                states, probs = measure_state_with_cache_fock_density(state_tuple, povm_tuple)
 
             else:
                 key = keys[0]
                 num_states = len(all_keys)
                 state_index = all_keys.index(key)
-                states, probs = measure_entangled_state_with_cache_fock_density(
-                    state_tuple, state_index, num_states, povm_tuple, self.truncation
-                )
+                states, probs = measure_entangled_state_with_cache_fock_density(state_tuple, state_index, num_states, 
+                                                                                povm_tuple, self.truncation)
 
         else:
             indices = tuple([all_keys.index(key) for key in keys])
-            states, probs = measure_multiple_with_cache_fock_density(
-                state_tuple, indices, len(all_keys), povm_tuple, self.truncation
-            )
+            states, probs = measure_multiple_with_cache_fock_density(state_tuple, indices, len(all_keys), 
+                                                                     povm_tuple, self.truncation)
 
         # calculate result based on measurement sample.
         prob_sum = cumsum(probs)
@@ -280,25 +253,19 @@ class QuantumManagerDensityFock(QuantumManager):
         """
 
         for key in keys:
-            self.states[key] = (
-                None  # clear the stored state at key (particle destructively measured)
-            )
+            self.states[key] = None  # clear the stored state at key (particle destructively measured)
 
         # assign remaining state
         if len(keys) < len(all_keys):
             indices = tuple([all_keys.index(key) for key in keys])
             new_state_tuple = tuple(map(tuple, new_state))
-            remaining_state = density_partial_trace(
-                new_state_tuple, indices, len(all_keys), self.truncation
-            )
+            remaining_state = density_partial_trace(new_state_tuple, indices, len(all_keys), self.truncation)
             remaining_keys = [key for key in all_keys if key not in keys]
             self.set(remaining_keys, remaining_state)
 
         return result
 
-    def _build_loss_kraus_operators(
-        self, loss_rate: float, all_keys: list[int], key: int
-    ) -> list[array]:
+    def _build_loss_kraus_operators(self, loss_rate: float, all_keys: list[int], key: int) -> list[array]:
         """Method to build Kraus operators of a generalized amplitude damping channel.
 
         This represents the effect of photon loss.
@@ -316,14 +283,10 @@ class QuantumManagerDensityFock(QuantumManager):
         kraus_ops = []
 
         for k in range(self.dim):
-            total_kraus_op = zeros(
-                (self.dim ** len(all_keys), self.dim ** len(all_keys))
-            )
+            total_kraus_op = zeros((self.dim ** len(all_keys), self.dim ** len(all_keys)))
 
             for n in range(k, self.dim):
-                coeff = sqrt(binom(n, k)) * sqrt(
-                    ((1 - loss_rate) ** (n - k)) * (loss_rate**k)
-                )
+                coeff = sqrt(binom(n, k)) * sqrt(((1 - loss_rate) ** (n - k)) * (loss_rate ** k))
                 single_op = zeros((self.dim, self.dim))
                 single_op[n - k, n] = 1
                 total_op = self._prepare_operator(all_keys, [key], single_op)

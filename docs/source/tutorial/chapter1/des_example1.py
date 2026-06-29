@@ -21,7 +21,7 @@ tl.show_progress = False
 store = Store(tl)
 
 # open store at 7:00
-open_proc = Process(store, "open", [])
+open_proc = Process(store, 'open', [])
 open_event = Event(7, open_proc)
 tl.schedule(open_event)
 
@@ -30,7 +30,7 @@ tl.run()
 print(tl.time, store.opening)
 
 # close store at 19:00
-close_proc = Process(store, "close", [])
+close_proc = Process(store, 'close', [])
 close_event = Event(19, close_proc)
 tl.schedule(close_event)
 

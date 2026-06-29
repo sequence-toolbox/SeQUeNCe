@@ -16,17 +16,6 @@ jobs:
         with:
           task_types: '["feat","fix","docs","test","ci","refactor","perf","chore","revert"]'
 
-  linting:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: ruff-action
-        uses: astral-sh/ruff-action@v4.0.0
-        with:
-          version: 'latest'
-          args: check --diff
-          src: './sequence'
-
   validation:
     if: github.repository == 'sequence-toolbox/SeQUeNCe'
     name: Run Unit Tests

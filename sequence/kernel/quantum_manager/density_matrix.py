@@ -1,21 +1,15 @@
 """
 This module implements the quantum manager for density matrix states.
 """
-
 from __future__ import annotations
 
 from .base import QuantumManager, QuantumManagerDenseQubit
 from ..quantum_state import DensityState, OneDimensionInput, TwoDimensionInput
-from ..quantum_utils import (
-    measure_entangled_state_with_cache_density,
-    measure_multiple_with_cache_density,
-    measure_state_with_cache_density,
-)
+from ..quantum_utils import measure_entangled_state_with_cache_density, measure_multiple_with_cache_density, measure_state_with_cache_density
 from ...constants import DENSITY_MATRIX_FORMALISM
 
 from numpy import array
 from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from ...components.circuit import Circuit
 
@@ -27,15 +21,9 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
     def __init__(self):
         super().__init__()
 
-    def new(
-        self,
-        state: OneDimensionInput | TwoDimensionInput = (
-            (complex(1), complex(0)),
-            (complex(0), complex(0)),
-        ),
-    ) -> int:
+    def new( self, state: OneDimensionInput | TwoDimensionInput = ((complex(1), complex(0)), (complex(0), complex(0)))) -> int:
         """Method to create a new density matrix state.
-
+        
         Args:
             state (OneDimensionInput | TwoDimensionInput): 2D density matrix or 1D pure-state array.
 
@@ -47,11 +35,9 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
         self.states[key] = DensityState(state, [key])
         return key
 
-    def run_circuit(
-        self, circuit: Circuit, keys: list[int], meas_samp=None
-    ) -> dict[int, int]:
+    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> dict[int, int]:
         """Method to run a circuit on a given list of keys.
-
+        
         Args:
             circuit (Circuit): quantum circuit to apply.
             keys (list[int]): list of keys to apply circuit to.
@@ -77,9 +63,7 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
             keys = [all_keys[i] for i in circuit.measured_qubits]
             return self._measure(new_state, keys, all_keys, meas_samp)
 
-    def set(
-        self, keys: list[int], state: OneDimensionInput | TwoDimensionInput
-    ) -> None:
+    def set(self, keys: list[int], state: OneDimensionInput | TwoDimensionInput) -> None:
         """Method to set the quantum state at the given keys.
 
         The state argument may be a 1D pure-state vector or a 2D density matrix.
@@ -94,7 +78,7 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
 
     def set_to_zero(self, key: int):
         """Set the qubit at the given key to the |0><0| state.
-
+        
         Args:
             key (int): key of the qubit to set to |0><0|.
         """
@@ -102,7 +86,7 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
 
     def set_to_one(self, key: int):
         """Set the qubit at the given key to the |1><1| state.
-
+        
         Args:
             key (int): key of the qubit to set to |1><1|.
         """
@@ -125,7 +109,7 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
     def reorder_qubits_ascending_keys(self, state: DensityState) -> None:
         """Update the quantum state (in-place) to match the ascending order of keys.
            Meanwhile, the reordered state is also set in the quantum manager.
-
+        
         Args:
             state (DensityState): The quantum state to reorder.
         """
@@ -136,13 +120,7 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
             state.state = reordered_state
             self.set(target_all_keys, reordered_state.tolist())
 
-    def _measure(
-        self,
-        state: list[list[complex]],
-        keys: list[int],
-        all_keys: list[int],
-        meas_samp: float,
-    ) -> dict[int, int]:
+    def _measure(self, state: list[list[complex]], keys: list[int], all_keys: list[int], meas_samp: float) -> dict[int, int]:
         """Method to measure qubits at given keys.
 
         SHOULD NOT be called individually; only from circuit method (unless for unit testing purposes).
@@ -172,9 +150,7 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
                 key = keys[0]
                 num_states = len(all_keys)
                 state_index = all_keys.index(key)
-                state_0, state_1, prob_0 = measure_entangled_state_with_cache_density(
-                    tuple(map(tuple, state)), state_index, num_states
-                )
+                state_0, state_1, prob_0 = measure_entangled_state_with_cache_density(tuple(map(tuple, state)), state_index, num_states)
                 if meas_samp < prob_0:
                     new_state = array(state_0, dtype=complex)
                     result = 0
@@ -191,13 +167,11 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
             # calculate meas probabilities and projected states
             len_diff = len(all_keys) - len(keys)
             state_to_measure = tuple(map(tuple, state))
-            new_states, probabilities = measure_multiple_with_cache_density(
-                state_to_measure, len(keys), len_diff
-            )
+            new_states, probabilities = measure_multiple_with_cache_density(state_to_measure, len(keys), len_diff)
 
             # choose result, set as new state
             for i in range(int(2 ** len(keys))):
-                if meas_samp < sum(probabilities[: i + 1]):
+                if meas_samp < sum(probabilities[:i + 1]):
                     result = i
                     new_state = new_states[i]
                     break

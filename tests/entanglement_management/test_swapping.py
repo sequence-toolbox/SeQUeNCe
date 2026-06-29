@@ -30,18 +30,18 @@ class FakeNode(Node):
                 protocol.received_message(src, msg)
 
 
-phi_plus = [0.5**0.5, 0, 0, 0.5**0.5]
-phi_minus = [0.5**0.5, 0, 0, -(0.5**0.5)]
-psi_plus = [0, 0.5**0.5, 0.5**0.5, 0]
-psi_minus = [0, 0.5**0.5, -(0.5**0.5), 0]
+phi_plus = [0.5 ** 0.5, 0, 0, 0.5 ** 0.5]
+phi_minus = [0.5 ** 0.5, 0, 0, -(0.5 ** 0.5)]
+psi_plus = [0, 0.5 ** 0.5, 0.5 ** 0.5, 0]
+psi_minus = [0, 0.5 ** 0.5, -(0.5 ** 0.5), 0]
 
 
 def correct_order(state, keys):
     if keys[0] > keys[1]:
-        return (
-            numpy.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
-            @ state
-        )
+        return numpy.array([[1, 0, 0, 0],
+                            [0, 0, 1, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 0, 1]]) @ state
     else:
         return state
 
@@ -66,10 +66,10 @@ def config_three_nodes_network(state1, state2, seed_index):
         memory.fidelity = 1
     memo1, memo2, memo3, memo4 = memories
 
-    memo1.entangled_memory = {"node_id": "a2", "memo_id": memo2.name}
-    memo2.entangled_memory = {"node_id": "a1", "memo_id": memo1.name}
-    memo3.entangled_memory = {"node_id": "a3", "memo_id": memo4.name}
-    memo4.entangled_memory = {"node_id": "a2", "memo_id": memo3.name}
+    memo1.entangled_memory = {'node_id': 'a2', 'memo_id': memo2.name}
+    memo2.entangled_memory = {'node_id': 'a1', 'memo_id': memo1.name}
+    memo3.entangled_memory = {'node_id': 'a3', 'memo_id': memo4.name}
+    memo4.entangled_memory = {'node_id': 'a2', 'memo_id': memo3.name}
 
     tl.quantum_manager.set([memo1.qstate_key, memo2.qstate_key], state1)
     tl.quantum_manager.set([memo3.qstate_key, memo4.qstate_key], state2)
@@ -97,10 +97,9 @@ def create_scenario(state1, state2, seed_index):
 
     tl.run()
 
-    ket1, ket2, ket3, ket4 = map(
-        tl.quantum_manager.get,
-        [memo1.qstate_key, memo2.qstate_key, memo3.qstate_key, memo4.qstate_key],
-    )
+    ket1, ket2, ket3, ket4 = map(tl.quantum_manager.get,
+                                 [memo1.qstate_key, memo2.qstate_key,
+                                  memo3.qstate_key, memo4.qstate_key])
 
     assert id(ket1) == id(ket4)
     assert id(ket2) != id(ket3)
@@ -109,8 +108,8 @@ def create_scenario(state1, state2, seed_index):
     assert memo4.qstate_key in ket1.keys
     assert len(ket2.keys) == 1
 
-    assert memo2.entangled_memory == {"node_id": None, "memo_id": None}
-    assert memo3.entangled_memory == {"node_id": None, "memo_id": None}
+    assert memo2.entangled_memory == {'node_id': None, 'memo_id': None}
+    assert memo3.entangled_memory == {'node_id': None, 'memo_id': None}
     assert memo1.entangled_memory["node_id"] == "a3"
     assert memo4.entangled_memory["node_id"] == "a1"
     assert a1.resource_manager.log[-1] == (memo1, "ENTANGLED")
@@ -157,11 +156,11 @@ def test_phi_plus_phi_minus():
         if a3.msg_log[0][2].meas_res == [0, 0]:
             assert numpy.array_equal(state, phi_minus)
         elif a3.msg_log[0][2].meas_res == [0, 1]:
-            assert numpy.array_equal(state, [-(0.5**0.5), 0, 0, 0.5**0.5])
+            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, 0.5 ** 0.5])
         elif a3.msg_log[0][2].meas_res == [1, 0]:
             assert numpy.array_equal(state, phi_minus)
         else:
-            assert numpy.array_equal(state, [-(0.5**0.5), 0, 0, 0.5**0.5])
+            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, 0.5 ** 0.5])
 
 
 def test_phi_plus_psi_plus():
@@ -185,9 +184,9 @@ def test_phi_plus_psi_plus():
         elif a3.msg_log[0][2].meas_res == [0, 1]:
             assert numpy.array_equal(state, psi_plus)
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, [0, -(0.5**0.5), -(0.5**0.5), 0])
+            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
         else:
-            assert numpy.array_equal(state, [0, -(0.5**0.5), -(0.5**0.5), 0])
+            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
 
 
 def test_phi_plus_psi_minus():
@@ -209,9 +208,9 @@ def test_phi_plus_psi_minus():
         if a3.msg_log[0][2].meas_res == [0, 0]:
             assert numpy.array_equal(state, psi_minus)
         elif a3.msg_log[0][2].meas_res == [0, 1]:
-            assert numpy.array_equal(state, [0, -(0.5**0.5), (0.5**0.5), 0])
+            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, [0, -(0.5**0.5), (0.5**0.5), 0])
+            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
         else:
             assert numpy.array_equal(state, psi_minus)
 
@@ -254,11 +253,11 @@ def test_phi_minus_phi_minus():
         if a3.msg_log[0][2].meas_res == [0, 0]:
             assert numpy.array_equal(state, phi_plus)
         elif a3.msg_log[0][2].meas_res == [0, 1]:
-            assert numpy.array_equal(state, [-(0.5**0.5), 0, 0, -(0.5**0.5)])
+            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
         elif a3.msg_log[0][2].meas_res == [1, 0]:
             assert numpy.array_equal(state, phi_plus)
         else:
-            assert numpy.array_equal(state, [-(0.5**0.5), 0, 0, -(0.5**0.5)])
+            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
 
 
 def test_phi_minus_psi_plus():
@@ -282,9 +281,9 @@ def test_phi_minus_psi_plus():
         elif a3.msg_log[0][2].meas_res == [0, 1]:
             assert numpy.array_equal(state, psi_minus)
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, [0, -(0.5**0.5), (0.5**0.5), 0])
+            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
         else:
-            assert numpy.array_equal(state, [0, -(0.5**0.5), (0.5**0.5), 0])
+            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
 
 
 def test_phi_minus_psi_minus():
@@ -306,9 +305,9 @@ def test_phi_minus_psi_minus():
         if a3.msg_log[0][2].meas_res == [0, 0]:
             assert numpy.array_equal(state, psi_plus)
         elif a3.msg_log[0][2].meas_res == [0, 1]:
-            assert numpy.array_equal(state, [0, -(0.5**0.5), -(0.5**0.5), 0])
+            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, [0, -(0.5**0.5), -(0.5**0.5), 0])
+            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
         else:
             assert numpy.array_equal(state, psi_plus)
 
@@ -349,11 +348,11 @@ def test_psi_plus_phi_minus():
         k1, k2, k3, k4, a3 = create_scenario(psi_plus, phi_minus, i)
         state = correct_order(k1.state, k1.keys)
         if a3.msg_log[0][2].meas_res == [0, 0]:
-            assert numpy.array_equal(state, [0, -(0.5**0.5), (0.5**0.5), 0])
+            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
         elif a3.msg_log[0][2].meas_res == [0, 1]:
             assert numpy.array_equal(state, psi_minus)
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, [0, -(0.5**0.5), (0.5**0.5), 0])
+            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), (0.5 ** 0.5), 0])
         else:
             assert numpy.array_equal(state, psi_minus)
 
@@ -379,9 +378,9 @@ def test_psi_plus_psi_plus():
         elif a3.msg_log[0][2].meas_res == [0, 1]:
             assert numpy.array_equal(state, phi_plus)
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, [-(0.5**0.5), 0, 0, -(0.5**0.5)])
+            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
         else:
-            assert numpy.array_equal(state, [-(0.5**0.5), 0, 0, -(0.5**0.5)])
+            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
 
 
 def test_psi_plus_psi_minus():
@@ -401,13 +400,13 @@ def test_psi_plus_psi_minus():
         k1, k2, k3, k4, a3 = create_scenario(psi_plus, psi_minus, i)
         state = correct_order(k1.state, k1.keys)
         if a3.msg_log[0][2].meas_res == [0, 0]:
-            assert numpy.array_equal(state, [-(0.5**0.5), 0, 0, (0.5**0.5)])
+            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, (0.5 ** 0.5)])
         elif a3.msg_log[0][2].meas_res == [0, 1]:
             assert numpy.array_equal(state, phi_minus)
         elif a3.msg_log[0][2].meas_res == [1, 0]:
             assert numpy.array_equal(state, phi_minus)
         else:
-            assert numpy.array_equal(state, [-(0.5**0.5), 0, 0, (0.5**0.5)])
+            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, (0.5 ** 0.5)])
 
 
 def test_psi_minus_phi_plus():
@@ -446,11 +445,11 @@ def test_psi_minus_phi_minus():
         k1, k2, k3, k4, a3 = create_scenario(psi_minus, phi_minus, i)
         state = correct_order(k1.state, k1.keys)
         if a3.msg_log[0][2].meas_res == [0, 0]:
-            assert numpy.array_equal(state, [0, -(0.5**0.5), -(0.5**0.5), 0])
+            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
         elif a3.msg_log[0][2].meas_res == [0, 1]:
             assert numpy.array_equal(state, psi_plus)
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, [0, -(0.5**0.5), -(0.5**0.5), 0])
+            assert numpy.array_equal(state, [0, -(0.5 ** 0.5), -(0.5 ** 0.5), 0])
         else:
             assert numpy.array_equal(state, psi_plus)
 
@@ -476,9 +475,9 @@ def test_psi_minus_psi_plus():
         elif a3.msg_log[0][2].meas_res == [0, 1]:
             assert numpy.array_equal(state, phi_minus)
         elif a3.msg_log[0][2].meas_res == [1, 0]:
-            assert numpy.array_equal(state, [-(0.5**0.5), 0, 0, (0.5**0.5)])
+            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, (0.5 ** 0.5)])
         else:
-            assert numpy.array_equal(state, [-(0.5**0.5), 0, 0, (0.5**0.5)])
+            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, (0.5 ** 0.5)])
 
 
 def test_psi_minus_psi_minus():
@@ -498,24 +497,19 @@ def test_psi_minus_psi_minus():
         k1, k2, k3, k4, a3 = create_scenario(psi_minus, psi_minus, i)
         state = correct_order(k1.state, k1.keys)
         if a3.msg_log[0][2].meas_res == [0, 0]:
-            assert numpy.array_equal(state, [-(0.5**0.5), 0, 0, -(0.5**0.5)])
+            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
         elif a3.msg_log[0][2].meas_res == [0, 1]:
             assert numpy.array_equal(state, phi_plus)
         elif a3.msg_log[0][2].meas_res == [1, 0]:
             assert numpy.array_equal(state, phi_plus)
         else:
-            assert numpy.array_equal(state, [-(0.5**0.5), 0, 0, -(0.5**0.5)])
+            assert numpy.array_equal(state, [-(0.5 ** 0.5), 0, 0, -(0.5 ** 0.5)])
 
 
 def test_EntanglementSwappingMessage():
     # __init__ function
-    msg = EntanglementSwappingMessage(
-        SwappingMsgType.SWAP_RES,
-        "receiver",
-        fidelity=0.9,
-        remote_node="a1",
-        remote_memo=2,
-    )
+    msg = EntanglementSwappingMessage(SwappingMsgType.SWAP_RES, "receiver", fidelity=0.9, remote_node="a1",
+                                      remote_memo=2)
     assert msg.msg_type == SwappingMsgType.SWAP_RES
     assert msg.receiver == "receiver"
     assert msg.fidelity == 0.9
@@ -535,9 +529,7 @@ def test_EntanglementSwapping():
 
         es1 = EntanglementSwappingB.create(a1, "a1.ESb%d" % i, memo1)
         a1.protocols.append(es1)
-        es2 = EntanglementSwappingA.create(
-            a2, "a2.ESa%d" % i, memo2, memo3, success_prob=0.2
-        )
+        es2 = EntanglementSwappingA.create(a2, "a2.ESa%d" % i, memo2, memo3, success_prob=0.2)
         a2.protocols.append(es2)
         es3 = EntanglementSwappingB.create(a3, "a3.ESb%d" % i, memo4)
         a3.protocols.append(es3)

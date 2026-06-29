@@ -7,15 +7,12 @@ from sequence.network_management.reservation import Reservation
 
 
 from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from sequence.topology.node import QuantumRouter
 
 
 class PeriodicApp:
-    def __init__(
-        self, node: QuantumRouter, other: str, memory_size=25, target_fidelity=0.9
-    ):
+    def __init__(self, node: QuantumRouter, other: str, memory_size=25, target_fidelity=0.9):
         self.node = node
         self.node.set_app(self)
         self.other = other
@@ -25,13 +22,9 @@ class PeriodicApp:
     def start(self):
         now = self.node.timeline.now()
         nm = self.node.network_manager
-        nm.request(
-            self.other,
-            start_time=(now + 1e12),
-            end_time=(now + PERIOD),
-            memory_size=self.memory_size,
-            target_fidelity=self.target_fidelity,
-        )
+        nm.request(self.other, start_time=(now + 1e12), end_time=(now + PERIOD),
+                   memory_size=self.memory_size,
+                   target_fidelity=self.target_fidelity)
         # schedule future start
         process = Process(self, "start", [])
         event = Event(now + PERIOD, process)
@@ -45,11 +38,8 @@ class PeriodicApp:
 
     def get_memory(self, info: "MemoryInfo"):
         if info.state == "ENTANGLED" and info.remote_node == self.other:
-            print(
-                "\t{} app received memory {} ENTANGLED at time {}".format(
-                    self.node.name, info.index, self.node.timeline.now() * 1e-12
-                )
-            )
+            print("\t{} app received memory {} ENTANGLED at time {}".format(
+                self.node.name, info.index, self.node.timeline.now() * 1e-12))
             self.node.resource_manager.update(None, info.memory, "RAW")
 
 
@@ -76,16 +66,14 @@ class ResetApp:
         We then free the memory for future use.
         """
 
-        if (
-            info.state == "ENTANGLED"
-            and info.remote_node == self.other_node_name
-            and info.fidelity > self.target_fidelity
-        ):
+        if (info.state == "ENTANGLED" and info.remote_node == self.other_node_name
+                and info.fidelity > self.target_fidelity):
             self.node.resource_manager.update(None, info.memory, "RAW")
 
 
 if __name__ == "__main__":
-    log_filename = "log"
+
+    log_filename = 'log'
 
     network_config = "star_network.json"
     NUM_PERIODS = 5

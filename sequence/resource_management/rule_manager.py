@@ -3,7 +3,6 @@
 This module defines the rule manager, which is used by the resource manager to instantiate and control entanglement protocols.
 This is achieved through rules (also defined in this module), which if met define a set of actions to take.
 """
-
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from collections.abc import Callable
@@ -84,7 +83,7 @@ class RuleManager:
         if rule in self.rules:
             self.rules.remove(rule)
         else:
-            log.logger.info(f"{self.resource_manager.owner} rule not exist: {rule}")
+            log.logger.info(f'{self.resource_manager.owner} rule not exist: {rule}')
         return rule.protocols
 
     def get_memory_manager(self) -> MemoryManager:
@@ -92,24 +91,20 @@ class RuleManager:
         return self.resource_manager.get_memory_manager()
 
     def send_request(self, protocol, req_dst, req_condition_func, req_args):
-        log.logger.info(
-            f"{self.resource_manager.owner} Rule Manager send request for protocol {protocol.name} to {req_dst}"
-        )
-        return self.resource_manager.send_request(
-            protocol, req_dst, req_condition_func, req_args
-        )
+        log.logger.info(f'{self.resource_manager.owner} Rule Manager send request for protocol {protocol.name} to {req_dst}')
+        return self.resource_manager.send_request(protocol, req_dst, req_condition_func, req_args)
 
     def __len__(self):
         return len(self.rules)
 
     def __getitem__(self, item):
         return self.rules[item]
-
+    
     def __str__(self) -> str:
         if self.resource_manager:
-            return f"{self.resource_manager.owner.name} Rule Manager"
+            return f'{self.resource_manager.owner.name} Rule Manager'
         else:
-            return "Rule Manager"
+            return 'Rule Manager'
 
 
 class Rule:
@@ -127,14 +122,7 @@ class Rule:
         reservation (Reservation): associated reservation.
     """
 
-    def __init__(
-        self,
-        priority: int,
-        action: ActionFunc,
-        condition: ConditionFunc,
-        action_args: Arguments,
-        condition_args: Arguments,
-    ):
+    def __init__(self, priority: int, action: ActionFunc, condition: ConditionFunc, action_args: Arguments, condition_args: Arguments):
         """Constructor for rule class."""
 
         self.priority: int = priority
@@ -147,16 +135,10 @@ class Rule:
         self.reservation: "Reservation" | None = None
 
     def __str__(self):
-        action_name_list = str(self.action).split(" ")
-        action_name = (
-            action_name_list[1] if len(action_name_list) >= 2 else action_name_list[0]
-        )  # in case action_name = ['None']
-        condition_name_list = str(self.condition).split(" ")
-        condition_name = (
-            condition_name_list[1]
-            if len(condition_name_list) >= 2
-            else condition_name_list[0]
-        )
+        action_name_list = str(self.action).split(' ')
+        action_name = action_name_list[1] if len(action_name_list) >= 2 else action_name_list[0]  # in case action_name = ['None']
+        condition_name_list = str(self.condition).split(' ')
+        condition_name = condition_name_list[1] if len(condition_name_list) >= 2 else condition_name_list[0]
         return f"|action={action_name}, args={self.action_args}; condition={condition_name}; args={self.condition_args}|"
 
     def set_rule_manager(self, rule_manager: "RuleManager") -> None:
@@ -175,14 +157,10 @@ class Rule:
             memories_info (list[MemoryInfo]): list of memory infos for memories meeting requirements.
         """
 
-        protocol, req_dsts, req_condition_funcs, req_args = self.action(
-            memories_info, self.action_args
-        )
-        log.logger.info(f"{self.rule_manager} rule generates protocol {protocol.name}")
+        protocol, req_dsts, req_condition_funcs, req_args = self.action(memories_info, self.action_args)
+        log.logger.info(f'{self.rule_manager} rule generates protocol {protocol.name}')
 
-        protocol.rule = (
-            self  # the protocol is connected to the reservation via the rule
-        )
+        protocol.rule = self  # the protocol is connected to the reservation via the rule
         self.protocols.append(protocol)
         for info in memories_info:
             info.memory.detach(info.memory.memory_array)

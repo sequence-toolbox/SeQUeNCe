@@ -6,14 +6,12 @@ from sequence.kernel.process import Process
 MAX_TS = 100
 MIN_TS = 0
 
-
 class FakeOwner:
     def action(self):
         pass
 
-
 owner = FakeOwner()
-process = Process(owner, "action", [])
+process = Process(owner, 'action', [])
 
 
 def generate_event_list_with_random_time(seed: int, length: int) -> EventList:
@@ -96,7 +94,6 @@ def test_remove():
 
 def test_update_event_time():
     from numpy import random
-
     random.seed(0)
 
     # increase time

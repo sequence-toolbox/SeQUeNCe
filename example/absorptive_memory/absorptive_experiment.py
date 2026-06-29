@@ -5,11 +5,11 @@ Each memory node is connected with both entangling node and measurement node, bu
 
 Each memory node contains an AFC memory instance and an SPDC source instance.
 The entangling node contains a QSDetectorFockInterference instance (BSM device with a beamsplitter and two photon detectors behind).
-The measurement node contians a QSDetectorFockDirect instance and a QSDetectorFockInterference instance, for measurement of
+The measurement node contians a QSDetectorFockDirect instance and a QSDetectorFockInterference instance, for measurement of 
     diagonal and off-diagonal elements of the effective 4-d density matrix, respectively.
 
 If you find the codes in this repository useful, please cite this work as follows:
---- A. Zang, A. Kolar, J. Chung, M. Suchara, T. Zhong and R. Kettimuthu, "Simulation of Entanglement Generation between Absorptive Quantum Memories," 2022 IEEE International Conference on Quantum Computing and Engineering (QCE), Broomfield, CO, USA, 2022, pp. 617-623, doi: 10.1109/QCE53715.2022.00084.
+--- A. Zang, A. Kolar, J. Chung, M. Suchara, T. Zhong and R. Kettimuthu, "Simulation of Entanglement Generation between Absorptive Quantum Memories," 2022 IEEE International Conference on Quantum Computing and Engineering (QCE), Broomfield, CO, USA, 2022, pp. 617-623, doi: 10.1109/QCE53715.2022.00084. 
 """
 
 from typing import Callable, TYPE_CHECKING
@@ -26,10 +26,7 @@ from sequence.kernel.event import Event
 from sequence.kernel.process import Process
 from sequence.kernel.timeline import Timeline
 from sequence.constants import FOCK_DENSITY_MATRIX_FORMALISM
-from sequence.components.detector import (
-    QSDetectorFockDirect,
-    QSDetectorFockInterference,
-)
+from sequence.components.detector import QSDetectorFockDirect, QSDetectorFockInterference
 from sequence.components.light_source import SPDCSource
 from sequence.components.memory import AbsorptiveMemory
 from sequence.components.optical_channel import QuantumChannel
@@ -46,9 +43,7 @@ TRUNCATION = 2  # truncation of Fock space (=dimension-1)
 
 # photon sources
 TELECOM_WAVELENGTH = 1436  # telecom band wavelength of SPDC source idler photon
-WAVELENGTH = (
-    606  # wavelength of AFC memory resonant absorption, of SPDC source signal photon
-)
+WAVELENGTH = 606  # wavelength of AFC memory resonant absorption, of SPDC source signal photon
 SPDC_FREQUENCY = 80e6  # frequency of both SPDC sources' photon creation (same as memory frequency and detector count rate)
 MEAN_PHOTON_NUM1 = 0.1  # mean photon number of SPDC source on node 1
 MEAN_PHOTON_NUM2 = 0.1  # mean photon number of SPDC source on node 2
@@ -67,9 +62,7 @@ MEAS_DET2_DARK = 150
 DIST_ANL_ERC = 20  # distance between ANL and ERC, in km
 DIST_HC_ERC = 20  # distance between HC and ERC, in km
 ATTENUATION = 0.2  # attenuation rate of optical fibre (in dB/km)
-DELAY_CLASSICAL = (
-    5e-3  # delay for classical communication between BSM node and memory nodes (in s)
-)
+DELAY_CLASSICAL = 5e-3  # delay for classical communication between BSM node and memory nodes (in s)
 
 # memories
 MODE_NUM = 100  # number of temporal modes of AFC memory (same for both memories)
@@ -79,12 +72,8 @@ ABS_EFFICIENCY1 = 0.35  # absorption efficiency of AFC memory 1
 ABS_EFFICIENCY2 = 0.35  # absorption efficiency of AFC memory 2
 PREPARE_TIME1 = 0  # time required for AFC structure preparation of memory 1
 PREPARE_TIME2 = 0  # time required for AFC structure preparation of memory 2
-COHERENCE_TIME1 = (
-    -1
-)  # spin coherence time for AFC memory 1 spinwave storage, -1 means infinite time
-COHERENCE_TIME2 = (
-    -1
-)  # spin coherence time for AFC memory 2 spinwave storage, -1 means infinite time
+COHERENCE_TIME1 = -1  # spin coherence time for AFC memory 1 spinwave storage, -1 means infinite time
+COHERENCE_TIME2 = -1  # spin coherence time for AFC memory 2 spinwave storage, -1 means infinite time
 AFC_LIFETIME1 = -1  # AFC structure lifetime of memory 1, -1 means infinite time
 AFC_LIFETIME2 = -1  # AFC structure lifetime of memory 2, -1 means infinite time
 DECAY_RATE1 = 4.3e-8  # retrieval efficiency decay rate for memory 1
@@ -96,7 +85,7 @@ calculate_fidelity_direct = True
 calculate_rate_direct = True
 num_direct_trials = 200
 num_bs_trials_per_phase = 50
-phase_settings = np.linspace(0, 2 * np.pi, num=20, endpoint=False)
+phase_settings = np.linspace(0, 2*np.pi, num=20, endpoint=False)
 
 
 # function to generate standard pure Bell state for fidelity calculation
@@ -106,17 +95,17 @@ def build_bell_state(truncation, sign, phase=0, formalism="dm"):
     For comparison with results from imperfect parameter choices.
     """
 
-    basis0 = np.zeros(truncation + 1)
+    basis0 = np.zeros(truncation+1)
     basis0[0] = 1
-    basis1 = np.zeros(truncation + 1)
+    basis1 = np.zeros(truncation+1)
     basis1[1] = 1
     basis10 = np.kron(basis1, basis0)
     basis01 = np.kron(basis0, basis1)
-
+    
     if sign == "plus":
-        ket = (basis10 + np.exp(1j * phase) * basis01) / np.sqrt(2)
+        ket = (basis10 + np.exp(1j*phase)*basis01)/np.sqrt(2)
     elif sign == "minus":
-        ket = (basis10 - np.exp(1j * phase) * basis01) / np.sqrt(2)
+        ket = (basis10 - np.exp(1j*phase)*basis01)/np.sqrt(2)
     else:
         raise ValueError("Invalid Bell state sign type " + sign)
 
@@ -132,11 +121,11 @@ def build_bell_state(truncation, sign, phase=0, formalism="dm"):
 
 # retrieval efficiency as function of storage time for absorptive quantum memory, using exponential decay model
 def efficiency1(t: int) -> float:
-    return np.exp(-t * DECAY_RATE1)
+    return np.exp(-t*DECAY_RATE1)
 
 
 def efficiency2(t: int) -> float:
-    return np.exp(-t * DECAY_RATE2)
+    return np.exp(-t*DECAY_RATE2)
 
 
 def add_channel(node1: Node, node2: Node, timeline: Timeline, **kwargs):
@@ -148,15 +137,8 @@ def add_channel(node1: Node, node2: Node, timeline: Timeline, **kwargs):
 
 # protocol to control photon emission on end node
 class EmitProtocol(Protocol):
-    def __init__(
-        self,
-        owner: "EndNode",
-        name: str,
-        other_node: str,
-        photon_pair_num: int,
-        source_name: str,
-        memory_name: str,
-    ):
+    def __init__(self, owner: "EndNode", name: str, other_node: str, photon_pair_num: int,
+                 source_name: str, memory_name: str):
         """Constructor for Emission protocol.
 
         Args:
@@ -177,10 +159,8 @@ class EmitProtocol(Protocol):
     def start(self):
         if not self.owner.components[self.memory_name].is_prepared:
             self.owner.components[self.memory_name]._prepare_AFC()
-
-        states = (
-            [None] * self.num_output
-        )  # for Fock encoding only list length matters and list elements do not matter
+        
+        states = [None] * self.num_output  # for Fock encoding only list length matters and list elements do not matter
         source = self.owner.components[self.source_name]
         source.emit(states)
 
@@ -195,20 +175,9 @@ class EndNode(Node):
     The properties of attached devices are made customizable for each individual node.
     """
 
-    def __init__(
-        self,
-        name: str,
-        timeline: "Timeline",
-        other_node: str,
-        bsm_node: str,
-        measure_node: str,
-        mean_photon_num: float,
-        spdc_frequency: float,
-        memo_frequency: float,
-        abs_effi: float,
-        afc_efficiency: Callable,
-        mode_number: int,
-    ):
+    def __init__(self, name: str, timeline: "Timeline", other_node: str, bsm_node: str, measure_node: str,
+                 mean_photon_num: float, spdc_frequency: float, memo_frequency: float, abs_effi: float,
+                 afc_efficiency: Callable, mode_number: int):
         super().__init__(name, timeline)
 
         self.bsm_name = bsm_node
@@ -217,23 +186,11 @@ class EndNode(Node):
         # hardware setup
         self.spdc_name = name + ".spdc_source"
         self.memo_name = name + ".memory"
-        spdc = SPDCSource(
-            self.spdc_name,
-            timeline,
-            wavelengths=[TELECOM_WAVELENGTH, WAVELENGTH],
-            frequency=spdc_frequency,
-            mean_photon_num=mean_photon_num,
-        )
-        memory = AbsorptiveMemory(
-            self.memo_name,
-            timeline,
-            frequency=memo_frequency,
-            absorption_efficiency=abs_effi,
-            afc_efficiency=afc_efficiency,
-            mode_number=mode_number,
-            wavelength=WAVELENGTH,
-            destination=measure_node,
-        )
+        spdc = SPDCSource(self.spdc_name, timeline, wavelengths=[TELECOM_WAVELENGTH, WAVELENGTH],
+                          frequency=spdc_frequency, mean_photon_num=mean_photon_num)
+        memory = AbsorptiveMemory(self.memo_name, timeline, frequency=memo_frequency,
+                                  absorption_efficiency=abs_effi, afc_efficiency=afc_efficiency,
+                                  mode_number=mode_number, wavelength=WAVELENGTH, destination=measure_node)
         self.add_component(spdc)
         self.add_component(memory)
         spdc.add_receiver(self)
@@ -241,14 +198,7 @@ class EndNode(Node):
         memory.add_receiver(self)
 
         # protocols
-        self.emit_protocol = EmitProtocol(
-            self,
-            name + ".emit_protocol",
-            other_node,
-            mode_number,
-            self.spdc_name,
-            self.memo_name,
-        )
+        self.emit_protocol = EmitProtocol(self, name + ".emit_protocol", other_node, mode_number, self.spdc_name, self.memo_name)
 
     def get(self, photon: "Photon", **kwargs):
         dst = kwargs.get("dst")
@@ -274,25 +224,13 @@ class EntangleNode(Node):
         self.resolution = max([d.time_resolution for d in bsm.detectors])
 
         # detector parameter setup
-        bsm.set_detector(
-            0,
-            efficiency=BSM_DET1_EFFICIENCY,
-            count_rate=SPDC_FREQUENCY,
-            dark_count=BSM_DET1_DARK,
-        )
-        bsm.set_detector(
-            1,
-            efficiency=BSM_DET2_EFFICIENCY,
-            count_rate=SPDC_FREQUENCY,
-            dark_count=BSM_DET1_DARK,
-        )
+        bsm.set_detector(0, efficiency=BSM_DET1_EFFICIENCY, count_rate=SPDC_FREQUENCY, dark_count=BSM_DET1_DARK)
+        bsm.set_detector(1, efficiency=BSM_DET2_EFFICIENCY, count_rate=SPDC_FREQUENCY, dark_count=BSM_DET1_DARK)
 
     def receive_qubit(self, src: str, qubit) -> None:
         self.components[self.first_component_name].get(qubit, src=src)
 
-    def get_detector_entries(
-        self, detector_name: str, start_time: int, num_bins: int, frequency: float
-    ):
+    def get_detector_entries(self, detector_name: str, start_time: int, num_bins: int, frequency: float):
         """Returns detection events for density matrix measurement. Used to determine BSM result.
 
         Args:
@@ -311,19 +249,13 @@ class EntangleNode(Node):
         for time in trigger_times[0]:
             closest_bin = int(round((time - start_time) * frequency * 1e-12))
             expected_time = (float(closest_bin) * 1e12 / frequency) + start_time
-            if (
-                abs(expected_time - time) < self.resolution
-                and 0 <= closest_bin < num_bins
-            ):
+            if abs(expected_time - time) < self.resolution and 0 <= closest_bin < num_bins:
                 return_res[closest_bin] += 1
 
         for time in trigger_times[1]:
             closest_bin = int(round((time - start_time) * frequency * 1e-12))
             expected_time = (float(closest_bin) * 1e12 / frequency) + start_time
-            if (
-                abs(expected_time - time) < self.resolution
-                and 0 <= closest_bin < num_bins
-            ):
+            if abs(expected_time - time) < self.resolution and 0 <= closest_bin < num_bins:
                 return_res[closest_bin] += 2
 
         return return_res
@@ -334,54 +266,25 @@ class MeasureNode(Node):
         super().__init__(name, timeline)
 
         self.direct_detector_name = name + ".direct"
-        direct_detector = QSDetectorFockDirect(
-            self.direct_detector_name, timeline, other_nodes
-        )
+        direct_detector = QSDetectorFockDirect(self.direct_detector_name, timeline, other_nodes)
         self.add_component(direct_detector)
         direct_detector.attach(self)
 
         self.bs_detector_name = name + ".bs"
-        bs_detector = QSDetectorFockInterference(
-            self.bs_detector_name, timeline, other_nodes
-        )
+        bs_detector = QSDetectorFockInterference(self.bs_detector_name, timeline, other_nodes)
         self.add_component(bs_detector)
         bs_detector.add_receiver(self)
 
         self.set_first_component(self.direct_detector_name)
 
         # time resolution of SPDs
-        self.resolution = max(
-            [
-                d.time_resolution
-                for d in direct_detector.detectors + bs_detector.detectors
-            ]
-        )
+        self.resolution = max([d.time_resolution for d in direct_detector.detectors + bs_detector.detectors])
 
         # detector parameter setup
-        direct_detector.set_detector(
-            0,
-            efficiency=MEAS_DET1_EFFICIENCY,
-            count_rate=SPDC_FREQUENCY,
-            dark_count=MEAS_DET1_DARK,
-        )
-        direct_detector.set_detector(
-            1,
-            efficiency=MEAS_DET2_EFFICIENCY,
-            count_rate=SPDC_FREQUENCY,
-            dark_count=MEAS_DET2_DARK,
-        )
-        bs_detector.set_detector(
-            0,
-            efficiency=MEAS_DET1_EFFICIENCY,
-            count_rate=SPDC_FREQUENCY,
-            dark_count=MEAS_DET1_DARK,
-        )
-        bs_detector.set_detector(
-            1,
-            efficiency=MEAS_DET2_EFFICIENCY,
-            count_rate=SPDC_FREQUENCY,
-            dark_count=MEAS_DET2_DARK,
-        )
+        direct_detector.set_detector(0, efficiency=MEAS_DET1_EFFICIENCY, count_rate=SPDC_FREQUENCY, dark_count=MEAS_DET1_DARK)
+        direct_detector.set_detector(1, efficiency=MEAS_DET2_EFFICIENCY, count_rate=SPDC_FREQUENCY, dark_count=MEAS_DET2_DARK)
+        bs_detector.set_detector(0, efficiency=MEAS_DET1_EFFICIENCY, count_rate=SPDC_FREQUENCY, dark_count=MEAS_DET1_DARK)
+        bs_detector.set_detector(1, efficiency=MEAS_DET2_EFFICIENCY, count_rate=SPDC_FREQUENCY, dark_count=MEAS_DET2_DARK)
 
     def receive_qubit(self, src: str, qubit) -> None:
         self.components[self.first_component_name].get(qubit, src=src)
@@ -389,9 +292,7 @@ class MeasureNode(Node):
     def set_phase(self, phase: float):
         self.components[self.bs_detector_name].set_phase(phase)
 
-    def get_detector_entries(
-        self, detector_name: str, start_time: int, num_bins: int, frequency: float
-    ):
+    def get_detector_entries(self, detector_name: str, start_time: int, num_bins: int, frequency: float):
         """Returns detection events for density matrix measurement.
 
         Args:
@@ -410,25 +311,20 @@ class MeasureNode(Node):
         for time in trigger_times[0]:
             closest_bin = int(round((time - start_time) * frequency * 1e-12))
             expected_time = (float(closest_bin) * 1e12 / frequency) + start_time
-            if (
-                abs(expected_time - time) < self.resolution
-                and 0 <= closest_bin < num_bins
-            ):
+            if abs(expected_time - time) < self.resolution and 0 <= closest_bin < num_bins:
                 return_res[closest_bin] += 1
 
         for time in trigger_times[1]:
             closest_bin = int(round((time - start_time) * frequency * 1e-12))
             expected_time = (float(closest_bin) * 1e12 / frequency) + start_time
-            if (
-                abs(expected_time - time) < self.resolution
-                and 0 <= closest_bin < num_bins
-            ):
+            if abs(expected_time - time) < self.resolution and 0 <= closest_bin < num_bins:
                 return_res[closest_bin] += 2
 
         return return_res
 
 
 if __name__ == "__main__":
+
     """Setup Simulation"""
 
     """ For generating effective fidelity 2-d plot
@@ -575,32 +471,12 @@ if __name__ == "__main__":
     seeds = [1, 2, 3, 4]
     src_list = [anl_name, hc_name]  # the list of sources, note the order
 
-    anl = EndNode(
-        anl_name,
-        tl,
-        hc_name,
-        erc_name,
-        erc_2_name,
-        mean_photon_num=MEAN_PHOTON_NUM1,
-        spdc_frequency=SPDC_FREQUENCY,
-        memo_frequency=MEMO_FREQUENCY1,
-        abs_effi=ABS_EFFICIENCY1,
-        afc_efficiency=efficiency1,
-        mode_number=MODE_NUM,
-    )
-    hc = EndNode(
-        hc_name,
-        tl,
-        anl_name,
-        erc_name,
-        erc_2_name,
-        mean_photon_num=MEAN_PHOTON_NUM2,
-        spdc_frequency=SPDC_FREQUENCY,
-        memo_frequency=MEMO_FREQUENCY2,
-        abs_effi=ABS_EFFICIENCY2,
-        afc_efficiency=efficiency2,
-        mode_number=MODE_NUM,
-    )
+    anl = EndNode(anl_name, tl, hc_name, erc_name, erc_2_name, mean_photon_num=MEAN_PHOTON_NUM1,
+                  spdc_frequency=SPDC_FREQUENCY, memo_frequency=MEMO_FREQUENCY1, abs_effi=ABS_EFFICIENCY1,
+                  afc_efficiency=efficiency1, mode_number=MODE_NUM)
+    hc = EndNode(hc_name, tl, anl_name, erc_name, erc_2_name, mean_photon_num=MEAN_PHOTON_NUM2,
+                 spdc_frequency=SPDC_FREQUENCY, memo_frequency=MEMO_FREQUENCY2, abs_effi=ABS_EFFICIENCY2,
+                 afc_efficiency=efficiency2, mode_number=MODE_NUM)
     erc = EntangleNode(erc_name, tl, src_list)
     erc_2 = MeasureNode(erc_2_name, tl, src_list)
 
@@ -646,43 +522,19 @@ if __name__ == "__main__":
         bsm = erc.components[erc.bsm_name]
 
         # photon0: idler, photon1: signal
-        photon0_anl = Photon(
-            "",
-            tl,
-            wavelength=spdc_anl.wavelengths[0],
-            location=spdc_anl,
-            encoding_type=spdc_anl.encoding_type,
-            use_qm=True,
-        )
-        photon1_anl = Photon(
-            "",
-            tl,
-            wavelength=spdc_anl.wavelengths[1],
-            location=spdc_anl,
-            encoding_type=spdc_anl.encoding_type,
-            use_qm=True,
-        )
+        photon0_anl = Photon("", tl, wavelength=spdc_anl.wavelengths[0], location=spdc_anl,
+                             encoding_type=spdc_anl.encoding_type, use_qm=True)
+        photon1_anl = Photon("", tl, wavelength=spdc_anl.wavelengths[1], location=spdc_anl,
+                             encoding_type=spdc_anl.encoding_type, use_qm=True)
         # set shared state to squeezed state
         state_spdc_anl = spdc_anl._generate_tmsv_state()
         keys = [photon0_anl.quantum_state, photon1_anl.quantum_state]
         tl.quantum_manager.set(keys, state_spdc_anl)
 
-        photon0_hc = Photon(
-            "",
-            tl,
-            wavelength=spdc_hc.wavelengths[0],
-            location=spdc_hc,
-            encoding_type=spdc_hc.encoding_type,
-            use_qm=True,
-        )
-        photon1_hc = Photon(
-            "",
-            tl,
-            wavelength=spdc_hc.wavelengths[1],
-            location=spdc_hc,
-            encoding_type=spdc_hc.encoding_type,
-            use_qm=True,
-        )
+        photon0_hc = Photon("", tl, wavelength=spdc_hc.wavelengths[0], location=spdc_hc,
+                            encoding_type=spdc_hc.encoding_type, use_qm=True)
+        photon1_hc = Photon("", tl, wavelength=spdc_hc.wavelengths[1], location=spdc_hc,
+                            encoding_type=spdc_hc.encoding_type, use_qm=True)
         # set shared state to squeezed state
         state_spdc_hc = spdc_hc._generate_tmsv_state()
         keys = [photon0_hc.quantum_state, photon1_hc.quantum_state]
@@ -711,33 +563,27 @@ if __name__ == "__main__":
         new_state, all_keys = tl.quantum_manager._prepare_state(keys)
         indices = tuple([all_keys.index(key) for key in keys])
         state_tuple = tuple(map(tuple, new_state))
-        states, probs = measure_multiple_with_cache_fock_density(
-            state_tuple,
-            indices,
-            len(all_keys),
-            povm_tuple,
-            tl.quantum_manager.truncation,
-        )
+        states, probs = measure_multiple_with_cache_fock_density(state_tuple, indices, len(all_keys), povm_tuple,
+                                                                 tl.quantum_manager.truncation)
         state_plus, state_minus = states[1], states[2]
-
+    
         # calculate remaining state
         indices = tuple([all_keys.index(key) for key in keys])
         new_state_tuple = tuple(map(tuple, state_plus))
-        remaining_state = density_partial_trace(
-            new_state_tuple, indices, len(all_keys), tl.quantum_manager.truncation
-        )
+        remaining_state = density_partial_trace(new_state_tuple, indices, len(all_keys),
+                                                tl.quantum_manager.truncation)
         remaining_keys = [key for key in all_keys if key not in keys]
-
-        # effective Bell state generated
+            
+        # effective Bell state generated 
         def effective_state(state):
             state_copy = copy(state)
             state_copy[0][0] = 0
-            state_copy = state_copy / np.trace(state_copy)
-
+            state_copy = state_copy/np.trace(state_copy)
+            
             return state_copy
-
+        
         remaining_state_eff = effective_state(remaining_state)
-
+        
         # calculate the fidelity with reference Bell state
         bell_plus = build_bell_state(tl.quantum_manager.truncation, "plus")
         bell_minus = build_bell_state(tl.quantum_manager.truncation, "minus")
@@ -748,9 +594,7 @@ if __name__ == "__main__":
         """Pre-simulation explicit calculation of entanglement generation rate based on calculation above"""
 
         if calculate_rate_direct:
-            duration_photon = (
-                MODE_NUM / SPDC_FREQUENCY
-            )  # duration of emitted photon train from SPDC source
+            duration_photon = MODE_NUM / SPDC_FREQUENCY  # duration of emitted photon train from SPDC source
             delay_fiber_anl = anl.qchannels[erc_name].delay
             delay_fiber_hc = hc.qchannels[erc_name].delay
             assert delay_fiber_anl == delay_fiber_hc
@@ -761,9 +605,7 @@ if __name__ == "__main__":
             duration_tot = duration_photon + delay_fiber + delay_classical
 
             prob_herald = probs[1] + probs[2]  # calculate heralding probability
-            num_generated_avg = (
-                MODE_NUM * prob_herald
-            )  # average number of entangled pairs generated in one emission cycle
+            num_generated_avg = MODE_NUM * prob_herald  # average number of entangled pairs generated in one emission cycle
 
             rate = num_generated_avg / duration_tot
 
@@ -781,24 +623,14 @@ if __name__ == "__main__":
         tl.schedule(event)
 
         tl.run()
-        print(
-            "finished direct measurement trial {} out of {}".format(
-                i + 1, num_direct_trials
-            )
-        )
+        print("finished direct measurement trial {} out of {}".format(i+1, num_direct_trials))
 
         # collect data
 
         # BSM results determine relative sign of reference Bell state and herald successful entanglement
-        bsm_res = erc.get_detector_entries(
-            erc.bsm_name, start_time_bsm, MODE_NUM, SPDC_FREQUENCY
-        )
-        bsm_success_indices = [
-            i for i, res in enumerate(bsm_res) if res == 1 or res == 2
-        ]
-        meas_res = erc_2.get_detector_entries(
-            erc_2.direct_detector_name, start_time_meas, MODE_NUM, SPDC_FREQUENCY
-        )
+        bsm_res = erc.get_detector_entries(erc.bsm_name, start_time_bsm, MODE_NUM, SPDC_FREQUENCY)
+        bsm_success_indices = [i for i, res in enumerate(bsm_res) if res == 1 or res == 2]
+        meas_res = erc_2.get_detector_entries(erc_2.direct_detector_name, start_time_meas, MODE_NUM, SPDC_FREQUENCY)
 
         num_bsm_res = len(bsm_success_indices)
         meas_res_valid = [meas_res[i] for i in bsm_success_indices]
@@ -827,23 +659,16 @@ if __name__ == "__main__":
             tl.schedule(event)
 
             tl.run()
-            print(
-                "finished interference measurement trial {} out of {} for phase {} out ouf {}".format(
-                    j + 1, num_bs_trials_per_phase, i + 1, len(phase_settings)
-                )
-            )
+            print("finished interference measurement trial {} out of {} for phase {} out ouf {}".format(
+                j+1, num_bs_trials_per_phase, i+1, len(phase_settings)))
 
             # collect data
 
             # relative sign should influence interference pattern
-            bsm_res = erc.get_detector_entries(
-                erc.bsm_name, start_time_bsm, MODE_NUM, SPDC_FREQUENCY
-            )
+            bsm_res = erc.get_detector_entries(erc.bsm_name, start_time_bsm, MODE_NUM, SPDC_FREQUENCY)
             bsm_success_indices_1 = [i for i, res in enumerate(bsm_res) if res == 1]
             bsm_success_indices_2 = [i for i, res in enumerate(bsm_res) if res == 2]
-            meas_res = erc_2.get_detector_entries(
-                erc_2.bs_detector_name, start_time_meas, MODE_NUM, SPDC_FREQUENCY
-            )
+            meas_res = erc_2.get_detector_entries(erc_2.bs_detector_name, start_time_meas, MODE_NUM, SPDC_FREQUENCY)
             res_interference = {}
 
             # detector 1
@@ -875,12 +700,8 @@ if __name__ == "__main__":
     # open file to store experiment results
     Path("results").mkdir(parents=True, exist_ok=True)
     filename = "results/absorptive.json"
-    fh = open(filename, "w")
-    info = {
-        "num_direct_trials": num_direct_trials,
-        "num_bs_trials": num_bs_trials_per_phase,
-        "num_phase": len(phase_settings),
-        "direct results": results_direct_measurement,
-        "bs results": results_bs_measurement,
-    }
+    fh = open(filename, 'w')
+    info = {"num_direct_trials": num_direct_trials, "num_bs_trials": num_bs_trials_per_phase,
+            "num_phase": len(phase_settings),
+            "direct results": results_direct_measurement, "bs results": results_bs_measurement}
     dump(info, fh)

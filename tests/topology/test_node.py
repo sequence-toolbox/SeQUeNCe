@@ -51,9 +51,7 @@ def test_Node_send_message():
     tl.init()
     tl.run()
 
-    expect_node1_log = [
-        (CC_DELAY + MSG_NUM + i, "node2", str(i)) for i in range(MSG_NUM)
-    ]
+    expect_node1_log = [(CC_DELAY + MSG_NUM + i, "node2", str(i)) for i in range(MSG_NUM)]
     for actual, expect in zip(node1.log, expect_node1_log):
         assert actual == expect
 
@@ -136,9 +134,7 @@ def test_ClassicalNode_send_message():
     tl.init()
     tl.run()
 
-    expect_node1_log = [
-        (CC_DELAY + MSG_NUM + i, "node2", str(i)) for i in range(MSG_NUM)
-    ]
+    expect_node1_log = [(CC_DELAY + MSG_NUM + i, "node2", str(i)) for i in range(MSG_NUM)]
     for actual, expect in zip(node1.log, expect_node1_log):
         assert actual == expect
 

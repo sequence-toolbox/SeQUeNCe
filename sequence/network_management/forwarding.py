@@ -2,7 +2,6 @@
 
 This module defines the `ForwardingProtocol` and `ForwardingMessage` classes.
 """
-
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
@@ -13,7 +12,6 @@ from enum import Enum, auto
 from ..protocol import StackProtocol
 from ..message import Message
 from ..utils import log
-
 
 class ForwardingMessageType(Enum):
     OUTBOUND = auto()
@@ -83,18 +81,16 @@ class ForwardingProtocol(StackProtocol):
         assert dst != self.owner.name
         forwarding_table = self.forwarding_table
         new_msg = ForwardingMessage(ForwardingMessageType.OUTBOUND, self.name, msg)
-        if dst:  # if dst is not None, use the forwarding table
+        if dst:                                     # if dst is not None, use the forwarding table
             next_hop: str | None = forwarding_table.get(dst, None)
             if next_hop:
                 self._push(dst=next_hop, msg=new_msg)
             else:
-                log.logger.error(
-                    f"No forwarding rule for dst {dst} at node {self.owner.name}"
-                )
-        elif next_hop:  # if next_hop is not None, use next_hop
-            self._push(dst=next_hop, msg=new_msg)
+                log.logger.error(f'No forwarding rule for dst {dst} at node {self.owner.name}')
+        elif next_hop:                              # if next_hop is not None, use next_hop
+            self._push(dst=next_hop, msg=new_msg)  
         else:
-            raise Exception("Both dst and next_hop are None!")
+            raise Exception('Both dst and next_hop are None!')
 
     def pop(self, src: str, msg: ForwardingMessage):
         """Message to receive reservation messages.

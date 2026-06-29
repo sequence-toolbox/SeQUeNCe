@@ -3,7 +3,6 @@
 This module defines the Timeline class, which provides an interface for the simulation kernel and drives event execution.
 All entities are required to have an attached timeline for simulation.
 """
-
 from _thread import start_new_thread
 from datetime import timedelta
 from sys import stdout
@@ -22,13 +21,12 @@ from ..utils import log
 
 # for timeline formatting
 NANOSECONDS_PER_MILLISECOND = 10**6
-PICOSECONDS_PER_NANOSECOND = 10**3
+PICOSECONDS_PER_NANOSECOND  = 10**3
 NANOSECONDS_PER_MICROSECOND = 10**3
 MILLISECONDS_PER_SECOND = 10**3
-CARRIAGE_RETURN = "\r"
+CARRIAGE_RETURN = '\r'
 
 T = TypeVar("T", bound="Entity")
-
 
 class Timeline:
     """Class for a simulation timeline.
@@ -55,13 +53,7 @@ class Timeline:
         show_progress (bool): show/hide the progress bar of simulation.
         quantum_manager (QuantumManager): quantum state manager.
     """
-
-    def __init__(
-        self,
-        stop_time: int = 10**23,
-        formalism: str = None,
-        manager_kwargs: dict = None,
-    ):
+    def __init__(self, stop_time: int = 10 ** 23, formalism: str = None, manager_kwargs: dict = None):
         """Constructor for timeline.
 
         Args:
@@ -123,28 +115,19 @@ class Timeline:
             if event.time >= self.stop_time:
                 self.schedule(event)  # return to event list
                 break
-            assert self.time <= event.time, (
-                f"invalid event time for process scheduled on {event.process.owner}"
-            )
+            assert self.time <= event.time, f"invalid event time for process scheduled on {event.process.owner}"
             if event.is_invalid():
                 continue
 
             self.time = event.time
-            log.logger.debug(
-                f"Event #{self.run_counter}: process owner={event.process.owner}, activation={event.process.activation}"
-            )
+            log.logger.debug(f"Event #{self.run_counter}: process owner={event.process.owner}, activation={event.process.activation}")
             event.process.run()
             self.run_counter += 1
 
         self.is_running = False
         time_elapsed = time_ns() - tick
-        log.logger.info(
-            "Timeline end simulation. Execution Time: {}; Scheduled Event: {}; Executed Event: {}".format(
-                self.ns_to_human_time(time_elapsed),
-                self.schedule_counter,
-                self.run_counter,
-            )
-        )
+        log.logger.info("Timeline end simulation. Execution Time: {}; Scheduled Event: {}; Executed Event: {}".format(
+                         self.ns_to_human_time(time_elapsed), self.schedule_counter, self.run_counter))
 
     def stop(self) -> None:
         """Method to stop simulation."""
@@ -165,7 +148,7 @@ class Timeline:
         self.events.update_event_time(event, time)
 
     def add_entity(self, entity: "Entity") -> None:
-        assert entity.name not in self.entities, f"{entity.name} already exists!"
+        assert entity.name not in self.entities, f'{entity.name} already exists!'
         entity.timeline = self
         self.entities[entity.name] = entity
 
@@ -193,21 +176,18 @@ class Timeline:
 
         while self.is_running:
             execution_time = self.ns_to_human_time(time_ns() - start_time)
-            simulation_time = self.ns_to_human_time(
-                self.convert_to_nanoseconds(self.time)
-            )
-            stop_time = self.ns_to_human_time(
-                self.convert_to_nanoseconds(self.stop_time)
-            )
-            process_bar = f"{CARRIAGE_RETURN}execution time: {execution_time};     simulation time: {simulation_time} / {stop_time}"
+            simulation_time = self.ns_to_human_time(self.convert_to_nanoseconds(self.time))
+            stop_time = self.ns_to_human_time(self.convert_to_nanoseconds(self.stop_time))
+            process_bar = f'{CARRIAGE_RETURN}execution time: {execution_time};     simulation time: {simulation_time} / {stop_time}'
 
-            print(f"{process_bar}", end=CARRIAGE_RETURN)
+            print(f'{process_bar}', end=CARRIAGE_RETURN)
             stdout.flush()
             sleep(3)
 
     @staticmethod
     def ns_to_human_time(nanoseconds: float) -> str:
-        """Returns a string in the form [D day[s], ][H]H:MM:SS[.UUUUUU]"""
+        """Returns a string in the form [D day[s], ][H]H:MM:SS[.UUUUUU]
+        """
         milliseconds = nanoseconds / NANOSECONDS_PER_MILLISECOND
         return str(timedelta(milliseconds=milliseconds))
 

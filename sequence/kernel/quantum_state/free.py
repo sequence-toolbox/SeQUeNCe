@@ -4,11 +4,7 @@ import numpy as np
 from numpy.random import Generator
 
 from .base import State
-from ..quantum_utils import (
-    measure_state_with_cache,
-    measure_entangled_state_with_cache,
-    measure_multiple_with_cache,
-)
+from ..quantum_utils import measure_state_with_cache, measure_entangled_state_with_cache, measure_multiple_with_cache
 
 
 def swap_bits(num, pos1, pos2):
@@ -89,23 +85,17 @@ class FreeQuantumState(State):
         """
 
         # check formatting of state
-        assert all([abs(a) <= 1.01 for a in state]), (
-            "Illegal value with abs > 1 in quantum state"
-        )
-        assert abs(sum([abs(a) ** 2 for a in state]) - 1) < 1e-5, (
-            "Squared amplitudes do not sum to 1"
-        )
+        assert all([abs(a) <= 1.01 for a in state]), "Illegal value with abs > 1 in quantum state"
+        assert abs(sum([abs(a) ** 2 for a in state]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
 
         num_qubits = np.log2(len(state))
         assert 2 ** int(round(num_qubits)) == len(state), (
             "Length of amplitudes should be 2 ** n, where n is the number of qubits. "
-            f"Actual amplitude length: {len(state)}, num qubits: {num_qubits}"
-        )
+            f"Actual amplitude length: {len(state)}, num qubits: {num_qubits}")
         num_qubits = int(round(num_qubits))
         assert num_qubits == len(self.entangled_states), (
             "Length of amplitudes should be 2 ** n, where n is the number of qubits. "
-            f"Num qubits in state: {num_qubits}, num qubits in object: {len(self.entangled_states)}"
-        )
+            f"Num qubits in state: {num_qubits}, num qubits in object: {len(self.entangled_states)}")
 
         for qs in self.entangled_states:
             qs.state = state
@@ -148,9 +138,7 @@ class FreeQuantumState(State):
         if len(self.entangled_states) > 1:
             num_states = len(self.entangled_states)
             state_index = self.entangled_states.index(self)
-            state0, state1, prob = measure_entangled_state_with_cache(
-                self.state, basis, state_index, num_states
-            )
+            state0, state1, prob = measure_entangled_state_with_cache(self.state, basis, state_index, num_states)
             if rng.random() < prob:
                 new_state = state0
                 result = 0
@@ -211,14 +199,8 @@ class FreeQuantumState(State):
         # move states to beginning of entangled list and quantum state
         pos_state_0 = entangled_list.index(states[0])
         pos_state_1 = entangled_list.index(states[1])
-        entangled_list[0], entangled_list[pos_state_0] = (
-            entangled_list[pos_state_0],
-            entangled_list[0],
-        )
-        entangled_list[1], entangled_list[pos_state_1] = (
-            entangled_list[pos_state_1],
-            entangled_list[1],
-        )
+        entangled_list[0], entangled_list[pos_state_0] = entangled_list[pos_state_0], entangled_list[0]
+        entangled_list[1], entangled_list[pos_state_1] = entangled_list[pos_state_1], entangled_list[1]
         switched_state = [complex(0)] * len(state)
         for i, coefficient in enumerate(state):
             switched_i = swap_bits(i, pos_state_0, pos_state_1)
@@ -229,9 +211,7 @@ class FreeQuantumState(State):
         # math for probability calculations
         length_diff = len(entangled_list) - len(states)
 
-        new_states, probabilities = measure_multiple_with_cache(
-            state, basis, length_diff
-        )
+        new_states, probabilities = measure_multiple_with_cache(state, basis, length_diff)
 
         possible_results = np.arange(0, basis_dimension, 1)
         # result gives index of the basis vector that will be projected to

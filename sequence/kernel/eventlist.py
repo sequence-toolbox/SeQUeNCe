@@ -49,7 +49,8 @@ class EventList:
         event.set_invalid()
 
     def update_event_time(self, event: Event, time: int):
-        """Method to update the timestamp of event and maintain the min-heap structure."""
+        """Method to update the timestamp of event and maintain the min-heap structure.
+        """
         if time == event.time:
             return
 
