@@ -131,11 +131,7 @@ class LastValueMetric(Metric):
         return frozenset({self.key})
 
     def collect(self, ctx: CollectContext) -> dict[str, Any]:
-        records = [
-            record
-            for record in ctx.storage.get_by_owner(ctx.owner_name)
-            if record["event_type"] is self.event
-        ]
+        records = [record for record in ctx.storage.get_by_owner(ctx.owner_name) if record["event_type"] is self.event]
         if not records:
             return {self.key: float("nan")}
         return {self.key: records[-1][self.field]}
@@ -193,8 +189,7 @@ class DeliveryTimeMetric(Metric):
         delivery_records = [
             record
             for record in ctx.storage.get_by_owner(delivery_owner)
-            if self.delivery_event is not None
-            and record["event_type"] is self.delivery_event
+            if self.delivery_event is not None and record["event_type"] is self.delivery_event
         ]
         delivery_records.sort(key=lambda record: record["sim_time"])
         if len(delivery_records) < ctx.target_pairs:

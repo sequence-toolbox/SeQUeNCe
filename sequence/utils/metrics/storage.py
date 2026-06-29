@@ -34,14 +34,10 @@ class InMemoryStorage:
         return list(self._records)
 
     def get_by_event(self, event_type: EventType) -> list[dict[str, Any]]:
-        return [
-            record for record in self._records if record["event_type"] is event_type
-        ]
+        return [record for record in self._records if record["event_type"] is event_type]
 
     def get_by_owner(self, owner_name: str) -> list[dict[str, Any]]:
-        return [
-            record for record in self._records if record["owner_name"] == owner_name
-        ]
+        return [record for record in self._records if record["owner_name"] == owner_name]
 
     def clear(self) -> None:
         self._records.clear()

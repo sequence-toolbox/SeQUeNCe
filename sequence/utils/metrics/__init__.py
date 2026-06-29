@@ -128,25 +128,15 @@ def aggregate_trial_metrics(
         raise ValueError("Cannot aggregate an empty list of trials")
 
     aggregated: dict[str, float] = {}
-    scalar_metrics = [
-        key for key, value in trials[0].items() if not isinstance(value, (list, dict))
-    ]
-    list_metrics_keys = [
-        key for key, value in trials[0].items() if isinstance(value, list)
-    ]
+    scalar_metrics = [key for key, value in trials[0].items() if not isinstance(value, (list, dict))]
+    list_metrics_keys = [key for key, value in trials[0].items() if isinstance(value, list)]
 
     for metric in scalar_metrics:
         values = [trial[metric] for trial in trials]
-        finite_values = [
-            value
-            for value in values
-            if isinstance(value, (int, float)) and math.isfinite(value)
-        ]
+        finite_values = [value for value in values if isinstance(value, (int, float)) and math.isfinite(value)]
         if finite_values:
             aggregated[f"avg_{metric}"] = mean(finite_values)
-            aggregated[f"std_{metric}"] = (
-                stdev(finite_values) if len(finite_values) > 1 else 0.0
-            )
+            aggregated[f"std_{metric}"] = stdev(finite_values) if len(finite_values) > 1 else 0.0
         else:
             aggregated[f"avg_{metric}"] = float("nan")
             aggregated[f"std_{metric}"] = float("nan")
@@ -160,9 +150,7 @@ def aggregate_trial_metrics(
             all_values.extend(trial_values)
         if all_values:
             aggregated[f"avg_{metric}"] = mean(all_values)
-            aggregated[f"std_{metric}"] = (
-                stdev(all_values) if len(all_values) > 1 else 0.0
-            )
+            aggregated[f"std_{metric}"] = stdev(all_values) if len(all_values) > 1 else 0.0
         else:
             aggregated[f"avg_{metric}"] = float("nan")
             aggregated[f"std_{metric}"] = float("nan")

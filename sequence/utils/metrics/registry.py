@@ -14,9 +14,7 @@ def register_metric(metric: Metric) -> None:
     for existing in _metrics:
         overlap = existing.output_keys & new_keys
         if overlap:
-            raise ValueError(
-                f"Metric output keys {sorted(overlap)} already registered."
-            )
+            raise ValueError(f"Metric output keys {sorted(overlap)} already registered.")
     _metrics.append(metric)
     if isinstance(metric, CounterPairMetric):
         _counter_pairs[metric.prefix] = metric
