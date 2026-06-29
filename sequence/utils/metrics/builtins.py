@@ -3,12 +3,7 @@
 from __future__ import annotations
 
 from .event_types import register_event_type
-from .metric_types import (
-    DeliveryTimeMetric,
-    CounterPairMetric,
-    EventFieldListMetric,
-    LastValueMetric,
-)
+from .metric_types import DeliveryTimeMetric, CounterPairMetric, EventFieldListMetric, LastValueMetric
 from .registry import register_metric
 
 EG_FAILURE = register_event_type("EG_FAILURE")

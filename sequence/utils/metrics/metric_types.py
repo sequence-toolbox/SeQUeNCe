@@ -34,12 +34,7 @@ class Metric(ABC):
     def output_keys(self) -> frozenset[str]:
         """Keys produced by collect()."""
 
-    def on_record(
-        self,
-        event_type: EventType,
-        owner_name: str,
-        kwargs: dict[str, Any],
-    ) -> None:
+    def on_record(self, event_type: EventType, owner_name: str, kwargs: dict[str, Any]) -> None:
         """Update metric state when a matching event is recorded."""
 
     @abstractmethod
@@ -89,12 +84,7 @@ class CounterPairMetric(Metric):
             return 0.0
         return successes / attempts
 
-    def on_record(
-        self,
-        event_type: EventType,
-        owner_name: str,
-        kwargs: dict[str, Any],
-    ) -> None:
+    def on_record(self, event_type: EventType, owner_name: str, kwargs: dict[str, Any]) -> None:
         if event_type is self.failure_event:
             self._failures[owner_name] = self._failures.get(owner_name, 0) + 1
             kwargs[self.rate_field] = self.success_rate(owner_name)
