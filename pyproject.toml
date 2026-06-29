@@ -76,3 +76,10 @@ Homepage = "https://github.com/sequence-toolbox/SeQUeNCe"
 Documentation = "https://sequence-rtd-tutorial.readthedocs.io/"
 Issues = "https://github.com/sequence-toolbox/SeQUeNCe/issues"
 Changelog = "https://github.com/sequence-toolbox/SeQUeNCe/blob/master/CHANGELOG.md"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 120
+
