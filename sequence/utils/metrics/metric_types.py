@@ -153,9 +153,7 @@ class ReservationDeliveryMetric(Metric):
     """Tracks per-reservation pair delivery counts and assigns pair_index on record."""
 
     delivery_event: EventType
-    _pair_counters: dict[tuple[str, int], int] = field(
-        default_factory=dict, init=False, repr=False
-    )
+    _pair_counters: dict[tuple[str, int], int] = field(default_factory=dict, init=False, repr=False)
 
     @property
     def event_types(self) -> frozenset[EventType]:
