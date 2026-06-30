@@ -45,13 +45,21 @@ time_provider: TimeProvider = _system_time_provider
 
 
 def register_time_provider(provider: TimeProvider) -> None:
-    """Register the active time source for recorded events."""
+    """Register the active time source for recorded events.
+
+    Args:
+        provider: Object supplying timestamps via ``now()``.
+    """
     global time_provider
     time_provider = provider
 
 
 def enable(event_types: list[EventType]) -> None:
-    """Enable metrics recording for the given event types."""
+    """Enable metrics recording for the given event types.
+
+    Args:
+        event_types: Event types to record when ``record()`` is called.
+    """
     global _enabled, _enabled_events
     _enabled = True
     _enabled_events = set(event_types)
@@ -62,6 +70,9 @@ def configure(storage_type: str = "in_memory") -> None:
 
     Available storage options:
         - "in_memory": The default, uses ``InMemoryStorage``.
+
+    Args:
+        storage_type: Storage backend identifier.
     """
     global storage
     if storage_type == "in_memory":
@@ -70,7 +81,13 @@ def configure(storage_type: str = "in_memory") -> None:
 
 
 def record(event_type: EventType, owner_name: str, **kwargs: Any) -> None:
-    """Record a metrics event if metrics are enabled for this event type."""
+    """Record a metrics event if metrics are enabled for this event type.
+
+    Args:
+        event_type: Type of simulation event to record.
+        owner_name: Name of the node or component that owns the event.
+        **kwargs: Additional event-specific fields stored with the record.
+    """
     if not _enabled or event_type not in _enabled_events:
         return
 
@@ -97,7 +114,18 @@ def collect_trial_metrics(
     reservation_start_time: int | None = None,
     throughput: float | None = None,
 ) -> dict[str, Any]:
-    """Collect per-trial metrics for a node from the metrics module."""
+    """Collect per-trial metrics for a node from the metrics module.
+
+    Args:
+        owner_name: Node name to collect counter and fidelity metrics for.
+        delivery_owner: Node name used for delivery-time metrics; defaults to ``owner_name``.
+        target_pairs: Number of delivered pairs required to compute delivery time.
+        reservation_start_time: Simulation time when the reservation started (ps).
+        throughput: Application throughput to include in collected metrics.
+
+    Returns:
+        Mapping of metric output keys to per-trial values.
+    """
     ctx = CollectContext(
         owner_name=owner_name,
         storage=storage,
@@ -117,7 +145,15 @@ def aggregate_trial_metrics(
     *,
     list_metric_cap: int | None = 500,
 ) -> dict[str, float]:
-    """Aggregate trial metrics across multiple trials."""
+    """Aggregate trial metrics across multiple trials.
+
+    Args:
+        trials: Per-trial metric dictionaries from ``collect_trial_metrics``.
+        list_metric_cap: Maximum list elements per trial to include when aggregating list metrics.
+
+    Returns:
+        Mapping of ``avg_*`` and ``std_*`` keys to aggregated statistics.
+    """
     if not trials:
         raise ValueError("Cannot aggregate an empty list of trials")
 
