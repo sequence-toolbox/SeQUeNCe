@@ -114,7 +114,7 @@ def collect_reservation_data(owner_name: str | None = None) -> list[list]:
     """Collect per-reservation tabular metrics from recorded delivery events."""
     from collections import defaultdict
 
-    records = storage.get_by_event(PURIFIED_DELIVERY)
+    records = storage.get_by_event(DELIVERY)
     if owner_name is not None:
         records = [record for record in records if record["owner_name"] == owner_name]
 

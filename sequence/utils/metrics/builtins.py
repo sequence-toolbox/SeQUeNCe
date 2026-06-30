@@ -59,7 +59,7 @@ SWAPPED_FIDELITIES_METRIC = FidelityMetric(
     field="fidelity",
 )
 RESERVATION_DELIVERY_METRIC = ReservationDeliveryMetric(
-    delivery_event=PURIFIED_DELIVERY,
+    delivery_event=EventTypes.DELIVERY,
 )
 
 _BUILTIN_METRICS = (

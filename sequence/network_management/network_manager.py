@@ -227,7 +227,7 @@ class DistributedNetworkManager(NetworkManager):
         reservation: Reservation = msg.reservation
         if msg.msg_type == RSVPMsgType.APPROVE:
             metrics.record(
-                metrics.RESERVATION_APPROVED,
+                EventTypes.RESERVATION_APPROVED,
                 self.owner.name,
                 identity=reservation.identity,
                 initiator=reservation.initiator,
@@ -246,7 +246,7 @@ class DistributedNetworkManager(NetworkManager):
                 self.owner.get_other_reservation(reservation)
         elif msg.msg_type == RSVPMsgType.REJECT:
             metrics.record(
-                metrics.RESERVATION_REJECTED,
+                EventTypes.RESERVATION_REJECTED,
                 self.owner.name,
                 identity=reservation.identity,
                 initiator=reservation.initiator,

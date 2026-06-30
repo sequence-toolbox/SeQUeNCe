@@ -425,9 +425,9 @@ def test_register_metric_rejects_duplicate_output_keys():
 
 
 def test_reservation_approved_records_metadata():
-    metrics.enable([metrics.RESERVATION_APPROVED])
+    metrics.enable([EventTypes.RESERVATION_APPROVED])
     metrics.record(
-        metrics.RESERVATION_APPROVED,
+        EventTypes.RESERVATION_APPROVED,
         "n1",
         identity=1,
         initiator="n1",
@@ -446,9 +446,9 @@ def test_reservation_approved_records_metadata():
 
 
 def test_reservation_rejected_records_metadata():
-    metrics.enable([metrics.RESERVATION_REJECTED])
+    metrics.enable([EventTypes.RESERVATION_REJECTED])
     metrics.record(
-        metrics.RESERVATION_REJECTED,
+        EventTypes.RESERVATION_REJECTED,
         "n1",
         identity=2,
         initiator="n1",
@@ -461,12 +461,12 @@ def test_reservation_rejected_records_metadata():
         path=[],
     )
     record = metrics.storage.get_all()[0]
-    assert record["event_type"] is metrics.RESERVATION_REJECTED
+    assert record["event_type"] is EventTypes.RESERVATION_REJECTED
     assert record["path"] == []
 
 
 def test_purified_delivery_assigns_pair_index():
-    metrics.enable([metrics.PURIFIED_DELIVERY])
+    metrics.enable([EventTypes.DELIVERY])
     kwargs = {
         "identity": 7,
         "initiator": "n1",
@@ -479,9 +479,9 @@ def test_purified_delivery_assigns_pair_index():
         "path": ["n1", "n2"],
         "fidelity": 0.91,
     }
-    metrics.record(metrics.PURIFIED_DELIVERY, "n1", **kwargs)
-    metrics.record(metrics.PURIFIED_DELIVERY, "n1", **{**kwargs, "fidelity": 0.92})
-    metrics.record(metrics.PURIFIED_DELIVERY, "n2", **{**kwargs, "fidelity": 0.93})
+    metrics.record(EventTypes.DELIVERY, "n1", **kwargs)
+    metrics.record(EventTypes.DELIVERY, "n1", **{**kwargs, "fidelity": 0.92})
+    metrics.record(EventTypes.DELIVERY, "n2", **{**kwargs, "fidelity": 0.93})
 
     n1_records = metrics.storage.get_by_owner("n1")
     n2_records = metrics.storage.get_by_owner("n2")
@@ -491,7 +491,7 @@ def test_purified_delivery_assigns_pair_index():
 
 
 def test_collect_reservation_data_produces_expected_row():
-    metrics.enable([metrics.PURIFIED_DELIVERY])
+    metrics.enable([EventTypes.DELIVERY])
     start_time = int(1e12)
     end_time = int(2e12)
     base = {
@@ -516,8 +516,8 @@ def test_collect_reservation_data_produces_expected_row():
             return current
 
     metrics.register_time_provider(StubTimeProvider())
-    metrics.record(metrics.PURIFIED_DELIVERY, "n1", fidelity=0.91, **base)
-    metrics.record(metrics.PURIFIED_DELIVERY, "n1", fidelity=0.92, **base)
+    metrics.record(EventTypes.DELIVERY, "n1", fidelity=0.91, **base)
+    metrics.record(EventTypes.DELIVERY, "n1", fidelity=0.92, **base)
 
     rows = metrics.collect_reservation_data("n1")
     assert len(rows) == 1
