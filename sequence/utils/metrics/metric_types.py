@@ -216,11 +216,12 @@ class DeliveryTimeMetric(Metric):
         delivery_records.sort(key=lambda record: record["sim_time"])
         if len(delivery_records) < ctx.target_pairs:
             return {self.key: float("nan")}
-        start_time: float = float("nan")
-        target_time: float = float("nan")
-        if delivery_records:
-            start_time = delivery_records[0].get("start_time")
-            target_time = delivery_records[ctx.target_pairs - 1]["sim_time"]
+
+        start_time = delivery_records[0].get("start_time")
+        if start_time is None:
+            return {self.key: float("nan")}
+
+        target_time = delivery_records[ctx.target_pairs - 1]["sim_time"]
         return {
             self.key: (target_time - start_time) * 1e-12,
         }
