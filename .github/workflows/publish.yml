@@ -1,11 +1,10 @@
-name: CD Pipeline
+name: Publish to PyPi
 
 on:
   push:
     branches: [master]
   release:
     types: [published]
-  workflow_dispatch:
 
 jobs:
   build-release:
