@@ -52,6 +52,10 @@ _BUILTIN_METRICS = (
 
 
 def register_builtin_metrics() -> None:
-    """Register all built-in metrics."""
+    """Register all built-in metrics with the global registry.
+
+    Registers entanglement generation, purification, swapping, throughput,
+    fidelity, and delivery-time metrics defined in this module.
+    """
     for metric in _BUILTIN_METRICS:
         register_metric(metric)
