@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import math
 from statistics import mean, stdev
-from typing import Any
-from ...kernel.timeline import Timeline
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ...kernel.timeline import Timeline
 
 from . import builtins
 from .event_types import (
