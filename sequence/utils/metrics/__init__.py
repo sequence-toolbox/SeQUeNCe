@@ -9,6 +9,7 @@ from __future__ import annotations
 import math
 from statistics import mean, stdev
 from typing import Any
+from ...kernel.timeline import Timeline
 
 from . import builtins
 from .event_types import (
@@ -34,17 +35,16 @@ from .registry import (
     reset_metrics,
     unregister_metric,
 )
-from .storage import InMemoryStorage, SystemTimeProvider, TimeProvider
+from .storage import InMemoryStorage
 
 
 _enabled = False
 _enabled_events: set[EventType] = set()
 storage = InMemoryStorage()
-_system_time_provider = SystemTimeProvider()
-time_provider: TimeProvider = _system_time_provider
+time_provider: Timeline | None = None
 
 
-def register_time_provider(provider: TimeProvider) -> None:
+def register_time_provider(provider: Timeline) -> None:
     """Register the active time source for recorded events.
 
     Args:

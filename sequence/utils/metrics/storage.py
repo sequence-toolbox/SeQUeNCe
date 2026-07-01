@@ -2,30 +2,9 @@
 
 from __future__ import annotations
 
-from time import monotonic_ns
-from typing import Any, Protocol
+from typing import Any
 
 from .event_types import EventType
-
-
-class TimeProvider(Protocol):
-    """Protocol for objects that supply a timestamp for recorded events."""
-
-    def now(self) -> int:
-        """Return the current timestamp in picoseconds."""
-        raise NotImplementedError
-
-
-class SystemTimeProvider:
-    """Fallback time source using the current system clock."""
-
-    def now(self) -> int:
-        """Return the current system time in picoseconds.
-
-        Returns:
-            Current wall-clock time from ``time_ns()``.
-        """
-        return monotonic_ns() * 1000
 
 
 class InMemoryStorage:
