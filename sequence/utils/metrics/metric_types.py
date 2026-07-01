@@ -271,7 +271,7 @@ class DeliveryTimeMetric(Metric):
             if self.delivery_event is not None and record["event_type"] is self.delivery_event
         ]
         delivery_records.sort(key=lambda record: record["sim_time"])
-        if len(delivery_records) < ctx.target_pairs:
+        if ctx.target_pairs is None or len(delivery_records) < ctx.target_pairs:
             return {self.key: float("nan")}
         if ctx.reservation_start_time is None:
             return {self.key: float("nan")}
