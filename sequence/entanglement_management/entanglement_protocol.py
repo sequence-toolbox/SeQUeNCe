@@ -23,7 +23,7 @@ class EntanglementProtocol(Protocol):
         memories (list[Memory]): Any memories being operated on
     """
 
-    def __init__(self, owner: "Node", name: str, protocol_type: str = ""):
+    def __init__(self, owner: 'Node', name: str, protocol_type: str = ''):
         super().__init__(owner, name, protocol_type)
         self.rule = None
         self.memories = []
@@ -57,7 +57,7 @@ class EntanglementProtocol(Protocol):
         pass
 
     @abstractmethod
-    def memory_expire(self, memory: "Memory") -> None:
+    def memory_expire(self, memory: 'Memory') -> None:
         """Method to receive a memory expiration event (abstract)."""
 
         pass
@@ -67,7 +67,7 @@ class EntanglementProtocol(Protocol):
 
         pass
 
-    def update_resource_manager(self, memory: "Memory", state: str) -> None:
+    def update_resource_manager(self, memory: 'Memory', state: str) -> None:
         """Method to update attached memory to desired state.
 
         Args:
@@ -79,4 +79,3 @@ class EntanglementProtocol(Protocol):
         """
 
         self.owner.resource_manager.update(self, memory, state)
-

@@ -5,6 +5,7 @@ This module defines the Entity class, inherited by all physical simulation eleme
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
+
 from numpy.random import default_rng
 from numpy.random._generator import Generator
 
@@ -26,18 +27,19 @@ class Entity(ABC):
         _observers (list[Any]): a list of observers for the entity.
         _receivers (list[Entity]): a list of entities that receive photons from current component.
     """
-    def __init__(self, name: str, timeline: "Timeline") -> None:
+
+    def __init__(self, name: str, timeline: 'Timeline') -> None:
         """Constructor for entity class.
 
         Args:
             name (str): name of entity.
             timeline (Timeline): timeline for simulation.
         """
-        self.name: str                  = name
-        self.timeline: Timeline         = timeline
-        self.owner: "Entity" | None     = None
-        self._observers: list[Any]      = []
-        self._receivers: list["Entity"] = []
+        self.name: str = name
+        self.timeline: Timeline = timeline
+        self.owner: 'Entity' | None = None
+        self._observers: list[Any] = []
+        self._receivers: list['Entity'] = []
         timeline.add_entity(self)
 
     def __str__(self) -> str:
@@ -52,7 +54,7 @@ class Entity(ABC):
         """
         pass
 
-    def add_receiver(self, receiver: "Entity") -> None:
+    def add_receiver(self, receiver: 'Entity') -> None:
         """Method to add a receiver (to receive photons)."""
         self._receivers.append(receiver)
 
@@ -70,7 +72,7 @@ class Entity(ABC):
         for observer in self._observers:
             observer.update(self, info)
 
-    def get(self, photon: "Photon", **kwargs):
+    def get(self, photon: 'Photon', **kwargs):
         """Method for an entity to receive a photon.
 
         If entity is a node, may forward to external quantum channel.
@@ -80,7 +82,7 @@ class Entity(ABC):
             photon (Photon): photon received by the entity.
             **kwargs: other arguments required by a particular hardware component.
         """
-        raise Exception("get method called on non-receiving class.")
+        raise Exception('get method called on non-receiving class.')
 
     def remove_from_timeline(self) -> None:
         """Method to remove entity from attached timeline.
@@ -94,12 +96,12 @@ class Entity(ABC):
 
         If entity is not attached to a node, return default generator.
         """
-        if hasattr(self.owner, "get_generator"):
+        if hasattr(self.owner, 'get_generator'):
             return self.owner.get_generator()
         else:
             return default_rng()
 
-    def change_timeline(self, timeline: "Timeline"):
+    def change_timeline(self, timeline: 'Timeline'):
         self.remove_from_timeline()
         self.timeline = timeline
         self.timeline.add_entity(self)
@@ -119,16 +121,16 @@ class ClassicalEntity(Entity):
         owner (Entity): another entity that owns or aggregates the current entity.
     """
 
-    def __init__(self, name: str, timeline: "Timeline") -> None:
+    def __init__(self, name: str, timeline: 'Timeline') -> None:
         """Constructor for entity class.
 
         Args:
             name (str): name of entity.
             timeline (Timeline): timeline for simulation.
         """
-        self.name: str                       = name
-        self.timeline: Timeline              = timeline
-        self.owner: "ClassicalEntity" | None = None
+        self.name: str = name
+        self.timeline: Timeline = timeline
+        self.owner: 'ClassicalEntity' | None = None
         timeline.add_entity(self)
 
     def __str__(self) -> str:
@@ -155,12 +157,12 @@ class ClassicalEntity(Entity):
 
         If entity is not attached to a node, return default generator.
         """
-        if hasattr(self.owner, "get_generator"):
+        if hasattr(self.owner, 'get_generator'):
             return self.owner.get_generator()
         else:
             return default_rng()
 
-    def change_timeline(self, timeline: "Timeline"):
+    def change_timeline(self, timeline: 'Timeline'):
         self.remove_from_timeline()
         self.timeline = timeline
         self.timeline.add_entity(self)
@@ -175,15 +177,15 @@ class ClassicalEntity(Entity):
 
     def add_receiver(self, receiver):
         raise NotImplementedError('ClassicalEntity does not support add_receiver method')
-    
+
     def attach(self, observer):
         raise NotImplementedError('ClassicalEntity does not support attach method')
 
     def detach(self, observer):
         raise NotImplementedError('ClassicalEntity does not support detach method')
-    
+
     def notify(self, info):
         raise NotImplementedError('ClassicalEntity does not support notify method')
-    
+
     def get(self, photon, **kwargs):
         raise NotImplementedError('ClassicalEntity does not support get method')

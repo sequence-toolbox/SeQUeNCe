@@ -40,7 +40,7 @@ class FreeQuantumState(State):
         self.state = (complex(1), complex(0))
         self.entangled_states = [self]
 
-    def combine_state(self, another_state: "FreeQuantumState"):
+    def combine_state(self, another_state: 'FreeQuantumState'):
         """Method to tensor multiply two quantum states.
 
         Arguments:
@@ -85,17 +85,19 @@ class FreeQuantumState(State):
         """
 
         # check formatting of state
-        assert all([abs(a) <= 1.01 for a in state]), "Illegal value with abs > 1 in quantum state"
-        assert abs(sum([abs(a) ** 2 for a in state]) - 1) < 1e-5, "Squared amplitudes do not sum to 1"
+        assert all([abs(a) <= 1.01 for a in state]), 'Illegal value with abs > 1 in quantum state'
+        assert abs(sum([abs(a) ** 2 for a in state]) - 1) < 1e-5, 'Squared amplitudes do not sum to 1'
 
         num_qubits = np.log2(len(state))
         assert 2 ** int(round(num_qubits)) == len(state), (
-            "Length of amplitudes should be 2 ** n, where n is the number of qubits. "
-            f"Actual amplitude length: {len(state)}, num qubits: {num_qubits}")
+            'Length of amplitudes should be 2 ** n, where n is the number of qubits. '
+            f'Actual amplitude length: {len(state)}, num qubits: {num_qubits}'
+        )
         num_qubits = int(round(num_qubits))
         assert num_qubits == len(self.entangled_states), (
-            "Length of amplitudes should be 2 ** n, where n is the number of qubits. "
-            f"Num qubits in state: {num_qubits}, num qubits in object: {len(self.entangled_states)}")
+            'Length of amplitudes should be 2 ** n, where n is the number of qubits. '
+            f'Num qubits in state: {num_qubits}, num qubits in object: {len(self.entangled_states)}'
+        )
 
         for qs in self.entangled_states:
             qs.state = state

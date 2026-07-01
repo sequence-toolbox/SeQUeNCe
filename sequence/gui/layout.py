@@ -4,20 +4,16 @@ Can also be understood and the corresponding html for the
 dash web app
 """
 
-import os
-import base64
 import networkx as nx
-from dash import dcc
-from dash import html
-import dash_bootstrap_components as dbc
-from .menus import *
+
 from .css_styles import *
+from .menus import *
 
 
 def make_item(menu, label, num, icon):
     return dcc.Tab(
         children=menu,
-        label=' '+label,
+        label=' ' + label,
         value=num,
         className=icon,
         style={
@@ -25,12 +21,9 @@ def make_item(menu, label, num, icon):
             'text-align': 'left',
             'font-size': '18px',
             'padding-right': '10px',
-            'overflowX': 'hidden'
+            'overflowX': 'hidden',
         },
-        selected_style={
-            'text-align': 'left',
-            'font-size': '18px'
-        }
+        selected_style={'text-align': 'left', 'font-size': '18px'},
     )
 
 
@@ -45,99 +38,44 @@ def getSidebar(graph, delays, tdm):
                                 className='bi bi-list',
                                 style={
                                     'font-size': '2rem',
-                                }
+                                },
                             ),
                         ],
                         outline=True,
-                        color="secondary",
-                        className="mr-1",
-                        id="btn_sidebar",
+                        color='secondary',
+                        className='mr-1',
+                        id='btn_sidebar',
                         style={
-                            "margin-top": "10px",
-                            "margin-bottom": "20px",
-                        }
+                            'margin-top': '10px',
+                            'margin-bottom': '20px',
+                        },
                     ),
                 ],
-                className="d-grid"
+                className='d-grid',
             ),
-            
             dcc.Tabs(
                 [
-                    make_item(
-                        add_node_form,
-                        'Add Node',
-                        '1',
-                        'bi bi-plus-circle'
-                    ),
-                    make_item(
-                        add_edge,
-                        'Add Edge',
-                        '2',
-                        'bi bi-share-fill'
-                    ),
-                    make_item(
-                        selection_menu,
-                        'Edit',
-                        '8',
-                        'bi bi-pencil-square'
-                    ),
-                    make_item(
-                        delete_menu,
-                        'Delete',
-                        '3',
-                        'bi bi-trash'
-                    ),
-                    make_item(
-                        make_new_template,
-                        'Template',
-                        '4',
-                        'bi bi-input-cursor-text'
-                    ),
-                    make_item(
-                        getTopoTable(graph[0], graph[1]),
-                        'View',
-                        '5',
-                        'bi bi-table'
-                    ),
-                    make_item(
-                        CCD_menu(delays[0], delays[1]),
-                        'Latency',
-                        '6',
-                        'bi bi-clock'
-                    ),
-                    make_item(
-                        TDM_menu(tdm[0], tdm[1]),
-                        'Multiplexing',
-                        '7',
-                        'bi bi-clock-history'
-                    ),
-                    make_item(
-                        simulation_menu,
-                        'Run',
-                        '9',
-                        'bi bi-play'),
+                    make_item(add_node_form, 'Add Node', '1', 'bi bi-plus-circle'),
+                    make_item(add_edge, 'Add Edge', '2', 'bi bi-share-fill'),
+                    make_item(selection_menu, 'Edit', '8', 'bi bi-pencil-square'),
+                    make_item(delete_menu, 'Delete', '3', 'bi bi-trash'),
+                    make_item(make_new_template, 'Template', '4', 'bi bi-input-cursor-text'),
+                    make_item(getTopoTable(graph[0], graph[1]), 'View', '5', 'bi bi-table'),
+                    make_item(CCD_menu(delays[0], delays[1]), 'Latency', '6', 'bi bi-clock'),
+                    make_item(TDM_menu(tdm[0], tdm[1]), 'Multiplexing', '7', 'bi bi-clock-history'),
+                    make_item(simulation_menu, 'Run', '9', 'bi bi-play'),
                 ],
                 vertical=True,
                 id='tabs',
-                value='1'
+                value='1',
             ),
             html.Div(
-                getLogo(
-                    'argonne.png',
-                    '150px',
-                    'https://www.anl.gov/mcs/quantum-computing'
-
-                ),
+                getLogo('argonne.png', '150px', 'https://www.anl.gov/mcs/quantum-computing'),
                 id='argonne',
-                style={
-                    'position': 'relative',
-                    'bottom': '-20px',
-                    'left': '0px',
-                    'overflow': 'auto'
-                }
-            )
+                style={'position': 'relative', 'bottom': '-20px', 'left': '0px', 'overflow': 'auto'},
+            ),
         ],
-        id="sidebar_select",
+        id='sidebar_select',
         style=SIDEBAR_SELECT_STYLE,
     )
 
@@ -145,29 +83,18 @@ def getSidebar(graph, delays, tdm):
 def graph_element(graph, name):
     return html.Div(
         [
-            html.H4(
-                name,
-                id='project_name',
-                className="display-4",
-                style=PROJECT
-            ),
-            dbc.Button(
-                outline=True,
-                color="secondary",
-                className="bi bi-arrow-repeat",
-                id="refresh",
-                style=REFRESH
-            ),
+            html.H4(name, id='project_name', className='display-4', style=PROJECT),
+            dbc.Button(outline=True, color='secondary', className='bi bi-arrow-repeat', id='refresh', style=REFRESH),
             html.Div(
                 [
                     get_network(graph),
                 ],
-                id="page-content",
+                id='page-content',
                 style=GRAPH_DIV_STYLE,
-            )
+            ),
         ],
         # style=CONTENT_STYLE,
-        id='test'
+        id='test',
     )
 
 
@@ -178,15 +105,7 @@ DIRECTORY, _ = os.path.split(__file__)
 """
 Constant containing all available class in the GUI
 """
-TYPES = [
-    'QuantumRouter',
-    'PhotonSource',
-    'Detector',
-    'BSM_node',
-    'Memory',
-    'QKD',
-    'Entanglement'
-]
+TYPES = ['QuantumRouter', 'PhotonSource', 'Detector', 'BSM_node', 'Memory', 'QKD', 'Entanglement']
 
 
 """
@@ -204,7 +123,7 @@ def genImages():
         'Detector': 'detector.png',
         'QuantumErrorCorrection': 'quantum.png',
         'BSM_node': 'bsmnode.png',
-        'Temp': 'temp.png'
+        'Temp': 'temp.png',
     }
     for key, value in images.items():
         path = os.path.join(DIRECTORY, 'assets', value)
@@ -226,13 +145,7 @@ def getNodeImage(node_type):
 
 
 # Generate HTML Layout #
-def get_app_layout(
-    graph_data,
-    graph_table,
-    delay_table,
-    tdm_table,
-    name
-):
+def get_app_layout(graph_data, graph_table, delay_table, tdm_table, name):
     graph = nx.readwrite.cytoscape_data(graph_data)['elements']
     return html.Div(
         [
@@ -251,15 +164,12 @@ def get_app_layout(
                             getSidebar(graph_table, delay_table, tdm_table),
                         ],
                         id='sidebar',
-                        style=SIDEBAR_STYLE
+                        style=SIDEBAR_STYLE,
                     ),
                     graph_element(graph, name),
-                    html.Div(
-                        id='legend',
-                        style=LEGEND_STYLE
-                    )
+                    html.Div(id='legend', style=LEGEND_STYLE),
                 ],
-                style=PAGE
-            )
+                style=PAGE,
+            ),
         ],
     )

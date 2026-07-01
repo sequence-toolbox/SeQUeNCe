@@ -5,8 +5,9 @@ Interferometers are usually instantiated as part of a QSDetector object, defined
 """
 
 from math import sqrt
-from numpy import multiply
 from typing import TYPE_CHECKING
+
+from numpy import multiply
 
 if TYPE_CHECKING:
     from ..kernel.timeline import Timeline
@@ -29,7 +30,7 @@ class Interferometer(Entity):
         phase_error (float): phase error applied to measurement
     """
 
-    def __init__(self, name: str, timeline: "Timeline", path_diff, phase_error=0):
+    def __init__(self, name: str, timeline: 'Timeline', path_diff, phase_error=0):
         """Constructor for the interferometer class.
 
         Args:
@@ -46,9 +47,9 @@ class Interferometer(Entity):
     def init(self) -> None:
         """See base class."""
 
-        assert len(self._receivers) == 2, "Interferometer should only be attached to 2 outputs."
+        assert len(self._receivers) == 2, 'Interferometer should only be attached to 2 outputs.'
 
-    def get(self, photon: "Photon", **kwargs) -> None:
+    def get(self, photon: 'Photon', **kwargs) -> None:
         """Method to receive a photon for measurement.
 
         Arguments:
@@ -61,10 +62,11 @@ class Interferometer(Entity):
             May call get method of one attached receiver from the receivers attribute.
         """
 
-        assert photon.encoding_type["name"] == "time_bin", (
-            "Invalid photon encoding {} received by interferometer".format(photon.encoding_type["name"]))
+        assert photon.encoding_type['name'] == 'time_bin', (
+            'Invalid photon encoding {} received by interferometer'.format(photon.encoding_type['name'])
+        )
         if photon.use_qm:
-            raise NotImplementedError("Interferometer usage not configured for quantum manager.")
+            raise NotImplementedError('Interferometer usage not configured for quantum manager.')
 
         detector_num = self.get_generator().choice([0, 1])
         quantum_state = photon.quantum_state
@@ -85,7 +87,7 @@ class Interferometer(Entity):
         if self.get_generator().random() < self.phase_error:
             quantum_state.state = list(multiply([1, -1], quantum_state))
 
-        if quantum_state.state == (complex(sqrt(1/2)), complex(sqrt(1/2))):  # Early + Late
+        if quantum_state.state == (complex(sqrt(1 / 2)), complex(sqrt(1 / 2))):  # Early + Late
             if random_num <= 0.25:
                 time = 0
             elif random_num <= 0.5:
@@ -94,7 +96,7 @@ class Interferometer(Entity):
                 time = self.path_difference
             else:
                 return
-        if quantum_state.state == (complex(sqrt(1/2)), complex(-sqrt(1/2))):  # Early - Late
+        if quantum_state.state == (complex(sqrt(1 / 2)), complex(-sqrt(1 / 2))):  # Early - Late
             if random_num <= 0.25:
                 time = 0
             elif random_num <= 0.5:
@@ -104,6 +106,6 @@ class Interferometer(Entity):
             else:
                 return
 
-        process = Process(self._receivers[detector_num], "get", [])
+        process = Process(self._receivers[detector_num], 'get', [])
         event = Event(self.timeline.now() + time, process)
         self.timeline.schedule(event)

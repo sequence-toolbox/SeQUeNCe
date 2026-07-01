@@ -4,11 +4,14 @@ This module defines the Memory class to simulate single atom memories as well as
 Memories will attempt to send photons through the `send_qubit` interface of nodes.
 Photons should be routed to a BSM device for entanglement generation, or through optical hardware for purification and swapping.
 """
+
 from __future__ import annotations
+
+from collections.abc import Callable
 from copy import copy
 from math import inf
 from typing import Any, TYPE_CHECKING, Iterator
-from collections.abc import Callable
+
 from numpy import exp, array
 from scipy import stats
 
@@ -44,9 +47,20 @@ class MemoryArray(Entity):
         memories (list[Memory]): list of all memories.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", num_memories=10,
-                 fidelity=0.85, frequency=80e6, efficiency=1, coherence_time=-1, wavelength=500,
-                 decoherence_errors: list[float] = None, cutoff_ratio: float = 1, cutoff_flag: bool = True):
+    def __init__(
+        self,
+        name: str,
+        timeline: 'Timeline',
+        num_memories=10,
+        fidelity=0.85,
+        frequency=80e6,
+        efficiency=1,
+        coherence_time=-1,
+        wavelength=500,
+        decoherence_errors: list[float] = None,
+        cutoff_ratio: float = 1,
+        cutoff_flag: bool = True,
+    ):
         """Constructor for the Memory Array class.
 
         Args:
@@ -69,24 +83,36 @@ class MemoryArray(Entity):
 
         if decoherence_errors is not None:
             assert QuantumManager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, (
-                "Decoherence errors can only be set when formalism is Bell Diagonal")
+                'Decoherence errors can only be set when formalism is Bell Diagonal'
+            )
 
         # Set the default pauli errors if BDS formalism
         if QuantumManager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM and decoherence_errors is None:
-            decoherence_errors = [1/3, 1/3, 1/3]
+            decoherence_errors = [1 / 3, 1 / 3, 1 / 3]
 
         for i in range(num_memories):
-            memory_name = self.name + f"[{i}]"
+            memory_name = self.name + f'[{i}]'
             self.memory_name_to_index[memory_name] = i
-            memory = Memory(memory_name, timeline, fidelity, frequency, efficiency, coherence_time, wavelength, decoherence_errors, cutoff_ratio, cutoff_flag)
+            memory = Memory(
+                memory_name,
+                timeline,
+                fidelity,
+                frequency,
+                efficiency,
+                coherence_time,
+                wavelength,
+                decoherence_errors,
+                cutoff_ratio,
+                cutoff_flag,
+            )
             memory.attach(self)
             self.memories.append(memory)
             memory.set_memory_array(self)
 
-    def __getitem__(self, key: int) -> "Memory":
+    def __getitem__(self, key: int) -> 'Memory':
         return self.memories[key]
 
-    def __setitem__(self, key: int, value: "Memory"):
+    def __setitem__(self, key: int, value: 'Memory'):
         self.memories[key] = value
 
     def __len__(self) -> int:
@@ -104,7 +130,7 @@ class MemoryArray(Entity):
         for memory in self.memories:
             memory.owner = self.owner
 
-    def memory_expire(self, memory: "Memory"):
+    def memory_expire(self, memory: 'Memory'):
         """Method to receive expiration events from memories.
 
         Args:
@@ -117,46 +143,46 @@ class MemoryArray(Entity):
         for memory in self.memories:
             memory.__setattr__(arg_name, value)
 
-    def add_receiver(self, receiver: "Entity") -> None:
+    def add_receiver(self, receiver: 'Entity') -> None:
         """Add receiver to each memory in the memory array to receive photons.
-        
+
         Args:
             receiver (Entity): receiver of the memory
         """
         for memory in self.memories:
             memory.add_receiver(receiver)
 
-    def get_memory_by_name(self, name: str) -> "Memory":
+    def get_memory_by_name(self, name: str) -> 'Memory':
         """Given the memory's name, get the memory object.
-        
+
         Args:
             name (str): name of memory
         Returns:
             (Memory): the memory object
         """
         index = self.memory_name_to_index.get(name, -1)
-        assert index >= 0, "Oops! name={} not exist!"
+        assert index >= 0, 'Oops! name={} not exist!'
         return self.memories[index]
 
 
 # define helper functions for analytical BDS decoherence implementation, reference see recurrence protocol paper
 def _p_id(x_rate, y_rate, z_rate, t):
-    val = (1 + exp(-2*(x_rate+y_rate)*t) + exp(-2*(x_rate+z_rate)*t) + exp(-2*(z_rate+y_rate)*t)) / 4
+    val = (1 + exp(-2 * (x_rate + y_rate) * t) + exp(-2 * (x_rate + z_rate) * t) + exp(-2 * (z_rate + y_rate) * t)) / 4
     return val
 
 
 def _p_xerr(x_rate, y_rate, z_rate, t):
-    val = (1 - exp(-2*(x_rate+y_rate)*t) - exp(-2*(x_rate+z_rate)*t) + exp(-2*(z_rate+y_rate)*t)) / 4
+    val = (1 - exp(-2 * (x_rate + y_rate) * t) - exp(-2 * (x_rate + z_rate) * t) + exp(-2 * (z_rate + y_rate) * t)) / 4
     return val
 
 
 def _p_yerr(x_rate, y_rate, z_rate, t):
-    val = (1 - exp(-2*(x_rate+y_rate)*t) + exp(-2*(x_rate+z_rate)*t) - exp(-2*(z_rate+y_rate)*t)) / 4
+    val = (1 - exp(-2 * (x_rate + y_rate) * t) + exp(-2 * (x_rate + z_rate) * t) - exp(-2 * (z_rate + y_rate) * t)) / 4
     return val
 
 
 def _p_zerr(x_rate, y_rate, z_rate, t):
-    val = (1 + exp(-2*(x_rate+y_rate)*t) - exp(-2*(x_rate+z_rate)*t) - exp(-2*(z_rate+y_rate)*t)) / 4
+    val = (1 + exp(-2 * (x_rate + y_rate) * t) - exp(-2 * (x_rate + z_rate) * t) - exp(-2 * (z_rate + y_rate) * t)) / 4
     return val
 
 
@@ -190,8 +216,19 @@ class Memory(Entity):
         is_in_application (bool): whether the quantum memory is involved in application after successful distribution of EPR pair
     """
 
-    def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
-                 efficiency: float, coherence_time: float, wavelength: int, decoherence_errors: list[float] = None, cutoff_ratio: float = 1, cutoff_flag: bool = True):
+    def __init__(
+        self,
+        name: str,
+        timeline: 'Timeline',
+        fidelity: float,
+        frequency: float,
+        efficiency: float,
+        coherence_time: float,
+        wavelength: int,
+        decoherence_errors: list[float] = None,
+        cutoff_ratio: float = 1,
+        cutoff_flag: bool = True,
+    ):
         """Constructor for the Memory class.
 
         Args:
@@ -219,25 +256,27 @@ class Memory(Entity):
         self.frequency = frequency
         self.efficiency = efficiency
         self.coherence_time = coherence_time  # coherence time in seconds
-        self.decoherence_rate = 1 / self.coherence_time if self.coherence_time > 0 else 0 # rate of decoherence to implement time dependent decoherence
+        self.decoherence_rate = (
+            1 / self.coherence_time if self.coherence_time > 0 else 0
+        )  # rate of decoherence to implement time dependent decoherence
         self.wavelength = wavelength
         self.qstate_key = timeline.quantum_manager.new()
         self.memory_array = None
 
         self.decoherence_errors = decoherence_errors
         if self.decoherence_errors is not None:
-            error_msg = "Decoherence errors refer to probabilities for each Pauli error to happen if an error happens, thus should be normalized."
+            error_msg = 'Decoherence errors refer to probabilities for each Pauli error to happen if an error happens, thus should be normalized.'
             assert len(self.decoherence_errors) == 3 and abs(sum(self.decoherence_errors) - 1) < EPSILON, error_msg
         self.cutoff_flag = cutoff_flag
         self.cutoff_ratio = cutoff_ratio
-        assert 0 < self.cutoff_ratio, "Ratio of cutoff time and coherence time should be greater than 0."
+        assert 0 < self.cutoff_ratio, 'Ratio of cutoff time and coherence time should be greater than 0.'
         self.generation_time = -1
         self.last_update_time = -1
         self.is_in_application = False
 
         # for photons
         self.encoding = copy(single_atom)
-        self.encoding["raw_fidelity"] = self.raw_fidelity
+        self.encoding['raw_fidelity'] = self.raw_fidelity
 
         # for photons in general single-heralded EG protocols
         self.encoding_sh = copy(single_heralded)
@@ -261,7 +300,7 @@ class Memory(Entity):
     def set_memory_array(self, memory_array: MemoryArray):
         self.memory_array = memory_array
 
-    def excite(self, dst="", protocol="bk") -> None:
+    def excite(self, dst='', protocol='bk') -> None:
         """Method to excite memory and potentially emit a photon.
 
         If it is possible to emit a photon, the photon may be marked as null based on the state of the memory.
@@ -280,17 +319,31 @@ class Memory(Entity):
             return
 
         # create photon
-        if protocol == "bk":
-            photon = Photon("", self.timeline, wavelength=self.wavelength, location=self.name, encoding_type=self.encoding,
-                            quantum_state=self.qstate_key, use_qm=True)
-        elif protocol == "sh":
-            photon = Photon("", self.timeline, wavelength=self.wavelength, location=self.name, encoding_type=self.encoding_sh, 
-                            quantum_state=self.qstate_key, use_qm=True)
+        if protocol == 'bk':
+            photon = Photon(
+                '',
+                self.timeline,
+                wavelength=self.wavelength,
+                location=self.name,
+                encoding_type=self.encoding,
+                quantum_state=self.qstate_key,
+                use_qm=True,
+            )
+        elif protocol == 'sh':
+            photon = Photon(
+                '',
+                self.timeline,
+                wavelength=self.wavelength,
+                location=self.name,
+                encoding_type=self.encoding_sh,
+                quantum_state=self.qstate_key,
+                use_qm=True,
+            )
             # keep track of memory initialization time
             self.generation_time = self.timeline.now()
             self.last_update_time = self.timeline.now()
         else:
-            raise ValueError(f"Invalid protocol type {protocol} specified for meomory.exite()")
+            raise ValueError(f'Invalid protocol type {protocol} specified for meomory.exite()')
 
         photon.timeline = None  # facilitate cross-process exchange of photons
         photon.is_null = True
@@ -313,12 +366,12 @@ class Memory(Entity):
             Some simplified applications do not necessarily need to modify the is_in_application attribute.
             Some more complicated applications, such as probe state preparation for distributed quantum sensing,
             may change is_in_application attribute to keep memory from expiring during study.
-        
+
         Side Effects:
             Will notify upper entities of expiration via the `pop` interface.
             Will modify the quantum state of the memory.
         """
-        #log.logger.debug(f'Memory {self.name} has expired at time {self.timeline.now()}')
+        # log.logger.debug(f'Memory {self.name} has expired at time {self.timeline.now()}')
         if self.is_in_application:
             pass
 
@@ -384,8 +437,9 @@ class Memory(Entity):
 
         else:
             time = (self.timeline.now() - self.last_update_time) * 1e-12  # duration of memory idling (in s)
-            if time > 0 and self.last_update_time > 0:  # time > 0 means time has progressed, self.last_update_time > 0 means the memory has not been reset
-
+            if (
+                time > 0 and self.last_update_time > 0
+            ):  # time > 0 means time has progressed, self.last_update_time > 0 means the memory has not been reset
                 x_rate = self.decoherence_rate * self.decoherence_errors[0]
                 y_rate = self.decoherence_rate * self.decoherence_errors[1]
                 z_rate = self.decoherence_rate * self.decoherence_errors[2]
@@ -395,14 +449,13 @@ class Memory(Entity):
                 p_Z = _p_zerr(x_rate, y_rate, z_rate, time)
 
                 state_now = self.timeline.quantum_manager.states[self.qstate_key].state  # current diagonal elements
-                transform_mtx = array([[p_I, p_Z, p_X, p_Y],
-                                       [p_Z, p_I, p_Y, p_X],
-                                       [p_X, p_Y, p_I, p_Z],
-                                       [p_Y, p_X, p_Z, p_I]])  # transform matrix for diagonal elements
+                transform_mtx = array(
+                    [[p_I, p_Z, p_X, p_Y], [p_Z, p_I, p_Y, p_X], [p_X, p_Y, p_I, p_Z], [p_Y, p_X, p_Z, p_I]]
+                )  # transform matrix for diagonal elements
                 state_new = transform_mtx @ state_now  # new diagonal elements after decoherence transformation
-            
+
                 log.logger.debug(f'{self.name}: before f={state_now[0]:.6f}, after f={state_new[0]:.6f}')
-                
+
                 # update the quantum state stored in quantum manager for self and entangled memory
                 keys = self.timeline.quantum_manager.states[self.qstate_key].keys
                 self.timeline.quantum_manager.set(keys, state_new)
@@ -417,8 +470,8 @@ class Memory(Entity):
             self.timeline.remove_event(self.expiration_event)
 
         decay_time = self.timeline.now() + int(self.cutoff_ratio * self.coherence_time * 1e12)
-        #log.logger.debug(f'Memory {self.name} is set to expire at time {decay_time}')
-        process = Process(self, "expire", [])
+        # log.logger.debug(f'Memory {self.name} is set to expire at time {decay_time}')
+        process = Process(self, 'expire', [])
         event = Event(decay_time, process)
         self.timeline.schedule(event)
 
@@ -432,11 +485,11 @@ class Memory(Entity):
         Args:
             time (int): new expiration time.
         """
-        #log.logger.debug(f'Memory expiry is updated')
+        # log.logger.debug(f'Memory expiry is updated')
         time = max(time, self.timeline.now())
         if self.expiration_event is None:
             if time >= self.timeline.now():
-                process = Process(self, "expire", [])
+                process = Process(self, 'expire', [])
                 event = Event(time, process)
                 self.timeline.schedule(event)
         else:
@@ -449,7 +502,7 @@ class Memory(Entity):
         for observer in self._observers:
             observer.memory_expire(self)
 
-    def detach(self, observer: "EntanglementProtocol | MemoryArray"):  # observer could be a MemoryArray
+    def detach(self, observer: 'EntanglementProtocol | MemoryArray'):  # observer could be a MemoryArray
         if observer in self._observers:
             self._observers.remove(observer)
 
@@ -519,10 +572,25 @@ class AbsorptiveMemory(Entity):
         stored_photons (list[dict]): photons stored in memory temporal modes.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", frequency: float, absorption_efficiency: float,
-                 afc_efficiency: Callable, mode_number: int, wavelength: int, prepare_time: int = 0,
-                 afc_lifetime: float = -1, coherence_time: float = -1, fidelity: float = 1, overlap_error: float = 0,
-                 is_spinwave=False, is_reversed=False, destination=None, spin_efficiency=const):
+    def __init__(
+        self,
+        name: str,
+        timeline: 'Timeline',
+        frequency: float,
+        absorption_efficiency: float,
+        afc_efficiency: Callable,
+        mode_number: int,
+        wavelength: int,
+        prepare_time: int = 0,
+        afc_lifetime: float = -1,
+        coherence_time: float = -1,
+        fidelity: float = 1,
+        overlap_error: float = 0,
+        is_spinwave=False,
+        is_reversed=False,
+        destination=None,
+        spin_efficiency=const,
+    ):
         """Constructor for the AbsorptiveMemory class.
 
         Args:
@@ -609,7 +677,7 @@ class AbsorptiveMemory(Entity):
         Will schedule a preparation event in the future, after which `is_prepared` is set to true.
         """
 
-        process = Process(self, "_prepare_AFC", [])
+        process = Process(self, '_prepare_AFC', [])
         event = Event(self.timeline.now() + self.prepare_time, process)
         self.timeline.schedule(event)
 
@@ -621,7 +689,7 @@ class AbsorptiveMemory(Entity):
         """
 
         if self.is_prepared:
-            raise Exception("AFC has already been prepared")
+            raise Exception('AFC has already been prepared')
         else:
             self.is_prepared = True
 
@@ -629,12 +697,12 @@ class AbsorptiveMemory(Entity):
             if self.afc_lifetime > 0:
                 self._schedule_expiration()
 
-    def get(self, photon: "Photon", **kwargs):
+    def get(self, photon: 'Photon', **kwargs):
         """Method to receive a photon to store in the absorptive memory."""
 
         # AFC needs to be prepared first
         if not self.is_prepared:
-            raise Exception("AFC is not prepared yet.")
+            raise Exception('AFC is not prepared yet.')
 
         self.photon_counter += 1
         now = self.timeline.now()
@@ -647,7 +715,7 @@ class AbsorptiveMemory(Entity):
 
         # require resonant absorption of photons
         # if photon uses Fock representation, inefficiency will be reflected with loss channel
-        if photon.encoding_type["name"] == "fock" and photon.wavelength == self.wavelength:
+        if photon.encoding_type['name'] == 'fock' and photon.wavelength == self.wavelength:
             # invoke loss channel due to absorption inefficiency
             key = photon.quantum_state  # if using Fock representation, the `quantum_state` field is the state key.
             loss = 1 - self.absorption_efficiency  # loss rate due to absorption inefficiency
@@ -657,11 +725,11 @@ class AbsorptiveMemory(Entity):
             # store photon information, NOTE the difference between information recorded for different encodings
             # in this case, store more than one photon
             if self.stored_photons[index] is None:
-                self.stored_photons[index] = {"photons": [photon], "times": [absorb_time]}
+                self.stored_photons[index] = {'photons': [photon], 'times': [absorb_time]}
                 self.excited_photons.append(photon)
             else:
-                self.stored_photons[index]["photons"].append(photon)
-                self.stored_photons[index]["times"].append(absorb_time)
+                self.stored_photons[index]['photons'].append(photon)
+                self.stored_photons[index]['times'].append(absorb_time)
 
         # otherwise, use random counter w/ efficiency
         elif photon.wavelength == self.wavelength and self.get_generator().random() < self.absorption_efficiency:
@@ -669,11 +737,11 @@ class AbsorptiveMemory(Entity):
             # photon_counter might be larger than mode_number, multi-photon events counted by "number"
             # if "overlap" is True, memory fidelity will be corrected by overlap_error
             if self.stored_photons[index] is None:
-                self.stored_photons[index] = {"photon": photon, "time": absorb_time, "number": 1, "overlap": False}
+                self.stored_photons[index] = {'photon': photon, 'time': absorb_time, 'number': 1, 'overlap': False}
                 self.excited_photons.append(photon)
             else:
-                self.stored_photons[index]["number"] += 1
-                self.stored_photons[index]["overlap"] = True
+                self.stored_photons[index]['number'] += 1
+                self.stored_photons[index]['overlap'] = True
 
         # determine absorb_start_time
         if self.photon_counter == 1:
@@ -681,15 +749,15 @@ class AbsorptiveMemory(Entity):
 
             # schedule re-emission if memory is not spinwave type
             if not self.is_spinwave:
-                process = Process(self, "retrieve", [])
+                process = Process(self, 'retrieve', [])
                 event = Event(self.absorb_start_time + self.total_time, process)
                 self.timeline.schedule(event)
             else:
                 # if spinwave type, and if finite spin coherence time, schedule spinwave decoherence induced storage resetting
-                if self.coherence_time>0:
+                if self.coherence_time > 0:
                     self._schedule_storage_reset()
 
-    def retrieve(self, dst=""):
+    def retrieve(self, dst=''):
         """Method to re-emit all stored photons in normal/reverse sequence on demand.
 
         Efficiency is a function of time.
@@ -698,7 +766,7 @@ class AbsorptiveMemory(Entity):
         # AFC needs to be prepared first
         # for simplicity, do not allow memory to re-emit if AFC expires
         if not self.is_prepared:
-            raise Exception("AFC is not prepared yet or has expired.")
+            raise Exception('AFC is not prepared yet or has expired.')
 
         # do nothing if there are no photons stored
         if len(self.excited_photons) == 0:
@@ -708,16 +776,14 @@ class AbsorptiveMemory(Entity):
         store_time = now - self.absorb_start_time - self.total_time
 
         for index in range(self.mode_number):
-
             if self.stored_photons[index] is not None:
                 stored_photons = self.stored_photons[index]
 
                 # check if using Fock representation (will include
                 # if photon uses Fock representation, no need for random number judgement
                 # inefficiency will be reflected with loss channel
-                if "photons" in stored_photons:
-                    for photon, absorb_time in zip(stored_photons["photons"], stored_photons["times"]):
-
+                if 'photons' in stored_photons:
+                    for photon, absorb_time in zip(stored_photons['photons'], stored_photons['times']):
                         key = photon.quantum_state
                         # loss rate due to emission inefficiency
                         loss = 1 - self.afc_efficiency(self.total_time) * self.spin_efficiency(store_time)
@@ -726,7 +792,7 @@ class AbsorptiveMemory(Entity):
 
                         if self.is_reversed:
                             if not self.is_spinwave:
-                                raise Exception("AFC memory can only have normal order of re-emission")
+                                raise Exception('AFC memory can only have normal order of re-emission')
                             emit_time = self.total_time - self.mode_bin - absorb_time  # reversed order of re-emission
                         else:
                             emit_time = absorb_time  # normal order of re-emission
@@ -734,17 +800,17 @@ class AbsorptiveMemory(Entity):
                         if self.destination is not None:
                             dst = self.destination
 
-                        process = Process(self._receivers[0], "get", [photon], {"dst": dst})
+                        process = Process(self._receivers[0], 'get', [photon], {'dst': dst})
                         event = Event(self.timeline.now() + emit_time, process)
                         self.timeline.schedule(event)
 
                 elif self.get_generator().random() < self.afc_efficiency(store_time):
-                    photon = stored_photons["photon"]
-                    absorb_time = stored_photons["time"]
+                    photon = stored_photons['photon']
+                    absorb_time = stored_photons['time']
 
                     if self.is_reversed:
                         if not self.is_spinwave:
-                            raise Exception("AFC memory can only have normal order of re-emission")
+                            raise Exception('AFC memory can only have normal order of re-emission')
                         emit_time = self.total_time - self.mode_bin - absorb_time  # reversed order of re-emission
                     else:
                         emit_time = absorb_time  # normal order of re-emission
@@ -752,7 +818,7 @@ class AbsorptiveMemory(Entity):
                     if self.destination is not None:
                         dst = self.destination
 
-                    process = Process(self._receivers[0], "get", [photon], {"dst": dst})
+                    process = Process(self._receivers[0], 'get', [photon], {'dst': dst})
                     event = Event(self.timeline.now() + emit_time, process)
                     self.timeline.schedule(event)
 
@@ -771,7 +837,7 @@ class AbsorptiveMemory(Entity):
 
         # AFC needs to be prepared first
         if not self.is_prepared:
-            raise Exception("AFC is not prepared yet.")
+            raise Exception('AFC is not prepared yet.')
 
         # if stored photons have not been re-emitted when memory expires
         if self.excited_photons:
@@ -818,7 +884,7 @@ class AbsorptiveMemory(Entity):
             self.timeline.remove_event(self.expiration_event)
 
         decay_time = self.timeline.now() + int(self.afc_lifetime * 1e12)
-        process = Process(self, "expire", [])
+        process = Process(self, 'expire', [])
         event = Event(decay_time, process)
         self.timeline.schedule(event)
 
@@ -832,7 +898,7 @@ class AbsorptiveMemory(Entity):
         """
 
         reset_time = self.timeline.now() + int(self.total_time + self.coherence_time * 1e12)
-        process = Process(self, "storage_reset", [])
+        process = Process(self, 'storage_reset', [])
         event = Event(reset_time, process)
         self.timeline.schedule(event)
 
@@ -848,7 +914,7 @@ class AbsorptiveMemory(Entity):
         time = max(time, self.timeline.now())
         if self.expiration_event is None:
             if time >= self.timeline.now():
-                process = Process(self, "expire", [])
+                process = Process(self, 'expire', [])
                 event = Event(time, process)
                 self.timeline.schedule(event)
         else:
@@ -891,8 +957,17 @@ class MemoryWithRandomCoherenceTime(Memory):
         entangled_memory (dict[str, Any]): tracks entanglement state of memory.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", fidelity: float, frequency: float,
-                 efficiency: float, coherence_time: float, coherence_time_stdev: float, wavelength: int):
+    def __init__(
+        self,
+        name: str,
+        timeline: 'Timeline',
+        fidelity: float,
+        frequency: float,
+        efficiency: float,
+        coherence_time: float,
+        coherence_time_stdev: float,
+        wavelength: int,
+    ):
         """Constructor for the Memory class.
 
         Args:
@@ -906,31 +981,28 @@ class MemoryWithRandomCoherenceTime(Memory):
             wavelength (int): wavelength (in nm) of photons emitted by memories.
         """
 
-        super().__init__(name, timeline, fidelity, frequency, 
-                         efficiency, coherence_time, wavelength)
-        
+        super().__init__(name, timeline, fidelity, frequency, efficiency, coherence_time, wavelength)
+
         # coherence time standard deviation in seconds
         self.coherence_time_stdev = coherence_time_stdev
-        self.random_coherence_time = (coherence_time_stdev > 0.0 and
-                                      self.coherence_time > 0.0)
-        
+        self.random_coherence_time = coherence_time_stdev > 0.0 and self.coherence_time > 0.0
+
     def coherence_time_distribution(self) -> None:
         return stats.truncnorm.rvs(
             -0.95 * self.coherence_time / self.coherence_time_stdev,
             19.0 * self.coherence_time / self.coherence_time_stdev,
             self.coherence_time,
-            self.coherence_time_stdev)
+            self.coherence_time_stdev,
+        )
 
     def _schedule_expiration(self) -> None:
         if self.expiration_event is not None:
             self.timeline.remove_event(self.expiration_event)
-            
-        coherence_period = (self.coherence_time_distribution()
-                            if self.random_coherence_time else 
-                            self.coherence_time)
+
+        coherence_period = self.coherence_time_distribution() if self.random_coherence_time else self.coherence_time
 
         decay_time = self.timeline.now() + int(coherence_period * 1e12)
-        process = Process(self, "expire", [])
+        process = Process(self, 'expire', [])
         event = Event(decay_time, process)
         self.timeline.schedule(event)
 

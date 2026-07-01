@@ -3,6 +3,7 @@
 This module defines the Timeline class, which provides an interface for the simulation kernel and drives event execution.
 All entities are required to have an attached timeline for simulation.
 """
+
 from _thread import start_new_thread
 from datetime import timedelta
 from sys import stdout
@@ -21,12 +22,13 @@ from ..utils import log
 
 # for timeline formatting
 NANOSECONDS_PER_MILLISECOND = 10**6
-PICOSECONDS_PER_NANOSECOND  = 10**3
+PICOSECONDS_PER_NANOSECOND = 10**3
 NANOSECONDS_PER_MICROSECOND = 10**3
 MILLISECONDS_PER_SECOND = 10**3
 CARRIAGE_RETURN = '\r'
 
-T = TypeVar("T", bound="Entity")
+T = TypeVar('T', bound='Entity')
+
 
 class Timeline:
     """Class for a simulation timeline.
@@ -53,7 +55,8 @@ class Timeline:
         show_progress (bool): show/hide the progress bar of simulation.
         quantum_manager (QuantumManager): quantum state manager.
     """
-    def __init__(self, stop_time: int = 10 ** 23, formalism: str = None, manager_kwargs: dict = None):
+
+    def __init__(self, stop_time: int = 10**23, formalism: str = None, manager_kwargs: dict = None):
         """Constructor for timeline.
 
         Args:
@@ -62,7 +65,7 @@ class Timeline:
             manager_kwargs (dict): keyword arguments forwarded to the selected quantum manager.
         """
         self.events: EventList = EventList()
-        self.entities: dict[str, "Entity"] = {}
+        self.entities: dict[str, 'Entity'] = {}
         self.time: int = 0
         self.stop_time: int = stop_time
         self.schedule_counter: int = 0
@@ -81,7 +84,7 @@ class Timeline:
         """Returns current simulation time."""
         return self.time
 
-    def schedule(self, event: "Event") -> None:
+    def schedule(self, event: 'Event') -> None:
         """Method to schedule an event."""
         if type(event.process.owner) is str:
             event.process.owner = self.get_entity_by_name(event.process.owner)
@@ -91,7 +94,7 @@ class Timeline:
 
     def init(self) -> None:
         """Method to initialize all simulated entities."""
-        log.logger.info("Timeline initial network")
+        log.logger.info('Timeline initial network')
         for entity in self.entities.values():
             entity.init()
 
@@ -102,7 +105,7 @@ class Timeline:
         Events are continuously popped and executed, until the simulation time limit is reached or events are exhausted.
         A progress bar may also be displayed, if the `show_progress` flag is set.
         """
-        log.logger.info("Timeline start simulation")
+        log.logger.info('Timeline start simulation')
         tick = time_ns()
         self.is_running = True
 
@@ -115,30 +118,35 @@ class Timeline:
             if event.time >= self.stop_time:
                 self.schedule(event)  # return to event list
                 break
-            assert self.time <= event.time, f"invalid event time for process scheduled on {event.process.owner}"
+            assert self.time <= event.time, f'invalid event time for process scheduled on {event.process.owner}'
             if event.is_invalid():
                 continue
 
             self.time = event.time
-            log.logger.debug(f"Event #{self.run_counter}: process owner={event.process.owner}, activation={event.process.activation}")
+            log.logger.debug(
+                f'Event #{self.run_counter}: process owner={event.process.owner}, activation={event.process.activation}'
+            )
             event.process.run()
             self.run_counter += 1
 
         self.is_running = False
         time_elapsed = time_ns() - tick
-        log.logger.info("Timeline end simulation. Execution Time: {}; Scheduled Event: {}; Executed Event: {}".format(
-                         self.ns_to_human_time(time_elapsed), self.schedule_counter, self.run_counter))
+        log.logger.info(
+            'Timeline end simulation. Execution Time: {}; Scheduled Event: {}; Executed Event: {}'.format(
+                self.ns_to_human_time(time_elapsed), self.schedule_counter, self.run_counter
+            )
+        )
 
     def stop(self) -> None:
         """Method to stop simulation."""
-        log.logger.info("Timeline is stopped")
+        log.logger.info('Timeline is stopped')
         self.stop_time = self.now()
 
-    def remove_event(self, event: "Event") -> None:
+    def remove_event(self, event: 'Event') -> None:
         """Remove an event from the event list"""
         self.events.remove(event)
 
-    def update_event_time(self, event: "Event", time: int) -> None:
+    def update_event_time(self, event: 'Event', time: int) -> None:
         """Method to change execution time of an event.
 
         Args:
@@ -147,7 +155,7 @@ class Timeline:
         """
         self.events.update_event_time(event, time)
 
-    def add_entity(self, entity: "Entity") -> None:
+    def add_entity(self, entity: 'Entity') -> None:
         assert entity.name not in self.entities, f'{entity.name} already exists!'
         entity.timeline = self
         self.entities[entity.name] = entity
@@ -186,8 +194,7 @@ class Timeline:
 
     @staticmethod
     def ns_to_human_time(nanoseconds: float) -> str:
-        """Returns a string in the form [D day[s], ][H]H:MM:SS[.UUUUUU]
-        """
+        """Returns a string in the form [D day[s], ][H]H:MM:SS[.UUUUUU]"""
         milliseconds = nanoseconds / NANOSECONDS_PER_MILLISECOND
         return str(timedelta(milliseconds=milliseconds))
 

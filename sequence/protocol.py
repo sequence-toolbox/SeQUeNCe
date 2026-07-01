@@ -21,7 +21,7 @@ class Protocol(ABC):
         protocol_type (str): type of protocol instance (e.g. 'single_heralded').
     """
 
-    def __init__(self, owner: "Node", name: str, protocol_type: str = ""):
+    def __init__(self, owner: 'Node', name: str, protocol_type: str = ''):
         """Constructor for protocol.
 
         Args:
@@ -35,7 +35,7 @@ class Protocol(ABC):
         self.protocol_type = protocol_type
 
     @abstractmethod
-    def received_message(self, src: str, msg: "Message"):
+    def received_message(self, src: str, msg: 'Message'):
         """Receive classical message from another node."""
 
         pass
@@ -59,7 +59,7 @@ class StackProtocol(Protocol):
         lower_protocols (list[StackProtocol]): Protocols to push to.
     """
 
-    def __init__(self, owner: "Node", name: str):
+    def __init__(self, owner: 'Node', name: str):
         """Constructor for stack protocol class.
 
         Args:
@@ -93,7 +93,7 @@ class StackProtocol(Protocol):
         for protocol in self.upper_protocols:
             protocol.pop(**kwargs)
 
-    def received_message(self, src: str, msg: "Message"):
+    def received_message(self, src: str, msg: 'Message'):
         """Method to receive messages from distant nodes."""
 
         pass

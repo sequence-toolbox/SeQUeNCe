@@ -3,9 +3,11 @@
 This module defines the rule manager, which is used by the resource manager to instantiate and control entanglement protocols.
 This is achieved through rules (also defined in this module), which if met define a set of actions to take.
 """
+
 from __future__ import annotations
-from typing import TYPE_CHECKING
+
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from .action_condition_set import Arguments, ActionReturn
 from ..utils import log
@@ -16,8 +18,8 @@ if TYPE_CHECKING:
     from .resource_manager import ResourceManager
     from ..network_management.reservation import Reservation
 
-ActionFunc = Callable[[list["MemoryInfo"], Arguments], ActionReturn]
-ConditionFunc = Callable[["MemoryInfo", "MemoryManager", Arguments], list["MemoryInfo"]]
+ActionFunc = Callable[[list['MemoryInfo'], Arguments], ActionReturn]
+ConditionFunc = Callable[['MemoryInfo', 'MemoryManager', Arguments], list['MemoryInfo']]
 
 
 class RuleManager:
@@ -37,7 +39,7 @@ class RuleManager:
         self.rules = []
         self.resource_manager = None
 
-    def set_resource_manager(self, resource_manager: "ResourceManager"):
+    def set_resource_manager(self, resource_manager: 'ResourceManager'):
         """Method to set overseeing resource manager.
 
         Args:
@@ -46,7 +48,7 @@ class RuleManager:
 
         self.resource_manager = resource_manager
 
-    def load(self, rule: "Rule") -> bool:
+    def load(self, rule: 'Rule') -> bool:
         """Method to load rule into ruleset.
 
         Tries to insert rule into internal `rules` list based on priority.
@@ -70,7 +72,7 @@ class RuleManager:
         self.rules.insert(left, rule)
         return True
 
-    def expire(self, rule: "Rule") -> list["EntanglementProtocol"]:
+    def expire(self, rule: 'Rule') -> list['EntanglementProtocol']:
         """Method to remove expired protocol.
 
         Args:
@@ -91,7 +93,9 @@ class RuleManager:
         return self.resource_manager.get_memory_manager()
 
     def send_request(self, protocol, req_dst, req_condition_func, req_args):
-        log.logger.info(f'{self.resource_manager.owner} Rule Manager send request for protocol {protocol.name} to {req_dst}')
+        log.logger.info(
+            f'{self.resource_manager.owner} Rule Manager send request for protocol {protocol.name} to {req_dst}'
+        )
         return self.resource_manager.send_request(protocol, req_dst, req_condition_func, req_args)
 
     def __len__(self):
@@ -99,7 +103,7 @@ class RuleManager:
 
     def __getitem__(self, item):
         return self.rules[item]
-    
+
     def __str__(self) -> str:
         if self.resource_manager:
             return f'{self.resource_manager.owner.name} Rule Manager'
@@ -122,7 +126,14 @@ class Rule:
         reservation (Reservation): associated reservation.
     """
 
-    def __init__(self, priority: int, action: ActionFunc, condition: ConditionFunc, action_args: Arguments, condition_args: Arguments):
+    def __init__(
+        self,
+        priority: int,
+        action: ActionFunc,
+        condition: ConditionFunc,
+        action_args: Arguments,
+        condition_args: Arguments,
+    ):
         """Constructor for rule class."""
 
         self.priority: int = priority
@@ -132,16 +143,20 @@ class Rule:
         self.condition_args: Arguments = condition_args
         self.protocols: list[EntanglementProtocol] = []
         self.rule_manager = None
-        self.reservation: "Reservation" | None = None
+        self.reservation: 'Reservation' | None = None
 
     def __str__(self):
         action_name_list = str(self.action).split(' ')
-        action_name = action_name_list[1] if len(action_name_list) >= 2 else action_name_list[0]  # in case action_name = ['None']
+        action_name = (
+            action_name_list[1] if len(action_name_list) >= 2 else action_name_list[0]
+        )  # in case action_name = ['None']
         condition_name_list = str(self.condition).split(' ')
         condition_name = condition_name_list[1] if len(condition_name_list) >= 2 else condition_name_list[0]
-        return f"|action={action_name}, args={self.action_args}; condition={condition_name}; args={self.condition_args}|"
+        return (
+            f'|action={action_name}, args={self.action_args}; condition={condition_name}; args={self.condition_args}|'
+        )
 
-    def set_rule_manager(self, rule_manager: "RuleManager") -> None:
+    def set_rule_manager(self, rule_manager: 'RuleManager') -> None:
         """Method to assign rule to a rule manager.
 
         Args:
@@ -150,7 +165,7 @@ class Rule:
 
         self.rule_manager = rule_manager
 
-    def do(self, memories_info: list["MemoryInfo"]) -> None:
+    def do(self, memories_info: list['MemoryInfo']) -> None:
         """Method to perform rule activation and send requirements to other nodes.
 
         Args:
@@ -168,7 +183,7 @@ class Rule:
         for dst, req_func, args in zip(req_dsts, req_condition_funcs, req_args):
             self.rule_manager.send_request(protocol, dst, req_func, args)
 
-    def is_valid(self, memory_info: "MemoryInfo") -> list["MemoryInfo"]:
+    def is_valid(self, memory_info: 'MemoryInfo') -> list['MemoryInfo']:
         """Method to check for memories meeting condition.
 
         Args:
@@ -181,10 +196,10 @@ class Rule:
         manager = self.rule_manager.get_memory_manager()
         return self.condition(memory_info, manager, self.condition_args)
 
-    def set_reservation(self, reservation: "Reservation") -> None:
+    def set_reservation(self, reservation: 'Reservation') -> None:
         self.reservation = reservation
 
-    def get_reservation(self) -> "Reservation":
+    def get_reservation(self) -> 'Reservation':
         if self.reservation is None:
-            raise RuntimeError("Reservation is not set.")
+            raise RuntimeError('Reservation is not set.')
         return self.reservation

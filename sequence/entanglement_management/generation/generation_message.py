@@ -54,7 +54,7 @@ class EntanglementGenerationMessage(Message):
         fields = {
             GenerationMsgType.NEGOTIATE: ['qc_delay', 'frequency'],
             GenerationMsgType.NEGOTIATE_ACK: ['emit_time'],
-            GenerationMsgType.MEAS_RES: ['detector', 'time', 'resolution']
+            GenerationMsgType.MEAS_RES: ['detector', 'time', 'resolution'],
         }
 
         if msg_type in fields:

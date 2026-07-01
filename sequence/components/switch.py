@@ -27,7 +27,7 @@ class Switch(Entity):
         basis_list (list[int]): 0/1 list denoting which receiver to rout photons to each period.
     """
 
-    def __init__(self, name: str, timeline: "Timeline"):
+    def __init__(self, name: str, timeline: 'Timeline'):
         """Constructor for the switch class.
 
         Args:
@@ -45,7 +45,7 @@ class Switch(Entity):
 
         pass
 
-    def set_basis_list(self, basis_list: "list[int]", start_time: int, frequency: float) -> None:
+    def set_basis_list(self, basis_list: 'list[int]', start_time: int, frequency: float) -> None:
         self.basis_list = basis_list
         self.start_time = start_time
         self.frequency = frequency
@@ -60,7 +60,7 @@ class Switch(Entity):
             May call `get` method of attached receivers.
         """
 
-        assert photon.encoding_type["name"] == "time_bin"
+        assert photon.encoding_type['name'] == 'time_bin'
 
         index = int((self.timeline.now() - self.start_time) * self.frequency * 1e-12)
         if index < 0 or index >= len(self.basis_list):
@@ -70,18 +70,18 @@ class Switch(Entity):
 
         # check if receiver is detector; schedule in late/early time bin
         if self.basis_list[index] == 0:
-            if Photon.measure(photon.encoding_type["bases"][0], photon, self.get_generator()):
-                time = self.timeline.now() + photon.encoding_type["bin_separation"]
-                process = Process(receiver, "get", [photon])
+            if Photon.measure(photon.encoding_type['bases'][0], photon, self.get_generator()):
+                time = self.timeline.now() + photon.encoding_type['bin_separation']
+                process = Process(receiver, 'get', [photon])
                 event = Event(time, process)
                 self.timeline.schedule(event)
             else:
                 time = self.timeline.now()
-                process = Process(receiver, "get", [photon])
+                process = Process(receiver, 'get', [photon])
                 event = Event(time, process)
                 self.timeline.schedule(event)
         else:
             time = self.timeline.now()
-            process = Process(receiver, "get", [photon])
+            process = Process(receiver, 'get', [photon])
             event = Event(time, process)
             self.timeline.schedule(event)

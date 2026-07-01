@@ -1,7 +1,7 @@
 import json
 
-from .topology import Topology as Topo
 from .node import QKDNode
+from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
 
 
@@ -18,7 +18,8 @@ class QKDTopo(Topo):
         cchannels (list[ClassicalChannel]): list of classical channel objects in network.
         tl (Timeline): the timeline used for simulation
     """
-    QKD_NODE = "QKDNode"
+
+    QKD_NODE = 'QKDNode'
 
     def _load(self, filename):
         topo_config = json.load(open(filename))
@@ -44,10 +45,9 @@ class QKDTopo(Topo):
             template = self.templates.get(template_name, {})
 
             if node_type == self.QKD_NODE:
-                node = QKDNode(name, self.tl,
-                               seed=seed, component_templates=template)
+                node = QKDNode(name, self.tl, seed=seed, component_templates=template)
             else:
-                raise NotImplementedError("Unknown type of node")
+                raise NotImplementedError('Unknown type of node')
 
             if node_type in self.nodes:
                 self.nodes[node_type].append(node)

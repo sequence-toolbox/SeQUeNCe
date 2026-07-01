@@ -3,7 +3,9 @@
 This module defines the RandomRequestApp, which will create random entanglement requests repeatedly.
 Useful for testing network properties and throughputs.
 """
+
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -49,9 +51,18 @@ class RandomRequestApp(RequestApp):
         max_fidelity (float): the maximum required fidelity of entanglement.
     """
 
-    def __init__(self, node: QuantumRouter, others: list[str], seed: int,
-                 min_dur: int, max_dur: int, min_size: int, max_size: int,
-                 min_fidelity: float, max_fidelity: float):
+    def __init__(
+        self,
+        node: QuantumRouter,
+        others: list[str],
+        seed: int,
+        min_dur: int,
+        max_dur: int,
+        min_size: int,
+        max_size: int,
+        min_fidelity: float,
+        max_fidelity: float,
+    ):
         """Constructor for the random application class.
 
         Args:
@@ -91,7 +102,7 @@ class RandomRequestApp(RequestApp):
         """Method to start the application.
 
         This method will:
-        
+
         1. Choose a random destination node from the `others` list.
         2. Choose a start time between 1-2 seconds in the future.
         3. Choose a random duration between min_dur and max_dur to set end_time
@@ -148,14 +159,14 @@ class RandomRequestApp(RequestApp):
 
         super().get_reservation_result(reservation, result)
         if result:
-            process = Process(self, "start", [])
+            process = Process(self, 'start', [])
             self.reserves.append([self.responder, self.start_t, self.end_t, self.memo_size, self.fidelity])
             self.paths.append(self.path)
             event = Event(self.end_t + 1, process)
             self.node.timeline.schedule(event)
             self.wait_time.append(self.start_t - self.request_time)
         else:
-            process = Process(self, "retry", [self.responder, self.fidelity])
+            process = Process(self, 'retry', [self.responder, self.fidelity])
             event = Event(self.node.timeline.now() + 1e12, process)
             self.node.timeline.schedule(event)
 

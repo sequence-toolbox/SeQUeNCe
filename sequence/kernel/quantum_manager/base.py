@@ -15,9 +15,10 @@ Supported manager formalisms include:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from numpy.typing import NDArray
 from threading import Lock
 from typing import TYPE_CHECKING, Any
+
+from numpy.typing import NDArray
 from qutip_qip.circuit import QubitCircuit
 from qutip_qip.operations import gate_sequence_product, Gate
 
@@ -43,6 +44,7 @@ class QuantumManager(ABC):
         states (dict[int, State]): mapping of state keys to quantum state objects.
         _least_available (int): tracking the total number of quantum states in the quantum network
     """
+
     _registry: dict = {}
     _global_formalism_lock = Lock()
     _global_formalism: str = KET_VECTOR_FORMALISM
@@ -93,8 +95,7 @@ class QuantumManager(ABC):
 
     @classmethod
     def create(cls, *args, **kwargs) -> QuantumManager:
-        """Create a new instance of the quantum manager.
-        """
+        """Create a new instance of the quantum manager."""
         active_formalism = cls.get_active_formalism()
         if active_formalism not in cls._registry:
             raise ValueError(f"Quantum manager '{active_formalism}' is not registered.")
@@ -137,7 +138,7 @@ class QuantumManager(ABC):
 
     def remove(self, key: int) -> None:
         """Method to remove state stored at key.
-        
+
         Args:
             key (int): The key of the state to remove.
         """
@@ -155,8 +156,8 @@ class QuantumManager(ABC):
 class QuantumManagerDenseQubit(QuantumManager):
     """Shared circuit helpers for dense qubit managers.
 
-    "Dense" means the full state is stored directly as a numerical vector or matrix. 
-    "Qubit" means each subsystem is a two-level quantum system. 
+    "Dense" means the full state is stored directly as a numerical vector or matrix.
+    "Qubit" means each subsystem is a two-level quantum system.
 
     This class is the parent for ket-vector and density-matrix managers:
     - Ket vector: qubit + dense vector.
@@ -186,17 +187,17 @@ class QuantumManagerDenseQubit(QuantumManager):
     def _validate_circuit_run(circuit: Circuit, keys: list[int], meas_samp=None) -> None:
         """Validate common dense-qubit circuit inputs."""
         if len(keys) != circuit.size:
-            raise ValueError("mismatch between circuit size and supplied qubits")
+            raise ValueError('mismatch between circuit size and supplied qubits')
         if circuit.measured_qubits and meas_samp is None:
-            raise ValueError("must specify random sample when measuring qubits")
+            raise ValueError('must specify random sample when measuring qubits')
 
     def _prepare_circuit(self, circuit: Circuit, keys: list[int]) -> tuple[NDArray, list[int], NDArray]:
         """Prepare state and circuit matrices for dense-qubit execution.
-        
+
         Args:
             circuit (Circuit): quantum circuit to apply.
             keys (list[int]): list of keys for quantum states to apply circuit to.
-        
+
         Returns:
             tuple: tuple containing the new state, all keys, and the circuit matrix.
                    Note: the returned circuit matrix contains any necessary swaps to align qubits of new state
@@ -221,7 +222,7 @@ class QuantumManagerDenseQubit(QuantumManager):
         if circuit.size < len(all_keys):
             # pad size of circuit matrix if necessary
             diff = len(all_keys) - circuit.size
-            circ_mat = kron(circ_mat, identity(2 ** diff))
+            circ_mat = kron(circ_mat, identity(2**diff))
 
         # apply any necessary swaps
         if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
@@ -233,11 +234,11 @@ class QuantumManagerDenseQubit(QuantumManager):
     @staticmethod
     def _swap_qubits(all_keys: list[int], keys: list[int]) -> tuple[list[int], NDArray]:
         """Swap qubits in the circuit.
-        
+
         Args:
             all_keys (list[int]): The list of all qubit keys.
             keys (list[int]): The list of qubit keys to swap.
-        
+
         Returns:
             tuple: updated list of all keys and the swap matrix.
         """
@@ -245,7 +246,7 @@ class QuantumManagerDenseQubit(QuantumManager):
         for i, key in enumerate(keys):
             j = all_keys.index(key)
             if j != i:
-                gate = Gate("SWAP", targets=[i, j])
+                gate = Gate('SWAP', targets=[i, j])
                 swap_circuit.add_gate(gate)
                 all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
         swap_mat = gate_sequence_product(swap_circuit.propagators()).full()

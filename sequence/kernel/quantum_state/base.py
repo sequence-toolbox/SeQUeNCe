@@ -21,4 +21,4 @@ class State(ABC):
         self.keys: list = []
 
     def __str__(self):
-        return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])
+        return '\n'.join(['Keys:', str(self.keys), 'State:', str(self.state)])

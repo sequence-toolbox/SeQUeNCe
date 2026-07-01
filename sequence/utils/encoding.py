@@ -13,39 +13,33 @@ Attributes:
 from math import sqrt
 
 
-polarization =\
-    {"name": "polarization",
-     "bases": [((complex(1), complex(0)), (complex(0), complex(1))),
-               ((complex(sqrt(1 / 2)), complex(sqrt(1 / 2))), (complex(-sqrt(1 / 2)), complex(sqrt(1 / 2))))]
-     }
+polarization = {
+    'name': 'polarization',
+    'bases': [
+        ((complex(1), complex(0)), (complex(0), complex(1))),
+        ((complex(sqrt(1 / 2)), complex(sqrt(1 / 2))), (complex(-sqrt(1 / 2)), complex(sqrt(1 / 2)))),
+    ],
+}
 
-time_bin = \
-    {"name": "time_bin",
-     "bases": [((complex(1), complex(0)), (complex(0), complex(1))),
-               ((complex(sqrt(1 / 2)), complex(sqrt(1 / 2))), (complex(sqrt(1 / 2)), complex(-sqrt(1 / 2))))],
-     "bin_separation": 1400  # measured in ps
-     }
+time_bin = {
+    'name': 'time_bin',
+    'bases': [
+        ((complex(1), complex(0)), (complex(0), complex(1))),
+        ((complex(sqrt(1 / 2)), complex(sqrt(1 / 2))), (complex(sqrt(1 / 2)), complex(-sqrt(1 / 2)))),
+    ],
+    'bin_separation': 1400,  # measured in ps
+}
 
 # single_atom must be copied by a memory object so the fidelity field can be overwritten
-single_atom = \
-    {"name": "single_atom",
-     "bases": [((complex(1), complex(0)), (complex(0), complex(1))), None],
-     "raw_fidelity": 1,
-     "keep_photon": True
-     }
+single_atom = {
+    'name': 'single_atom',
+    'bases': [((complex(1), complex(0)), (complex(0), complex(1))), None],
+    'raw_fidelity': 1,
+    'keep_photon': True,
+}
 
-absorptive = \
-    {"name": "absorptive",
-     "bases": [((complex(1), complex(0)), (complex(0), complex(1))), None]
-     }
+absorptive = {'name': 'absorptive', 'bases': [((complex(1), complex(0)), (complex(0), complex(1))), None]}
 
-fock = \
-    {"name": "fock",
-     "bases": None
-     }
+fock = {'name': 'fock', 'bases': None}
 
-single_heralded = \
-    {"name": "single_heralded",
-     "bases": None,
-     "keep_photon": True
-     }
+single_heralded = {'name': 'single_heralded', 'bases': None, 'keep_photon': True}

@@ -4,6 +4,7 @@ This module provides a definition for the reservation protocol used by the netwo
 This includes the Reservation, MemoryTimeCard, and QCap classes, which are used by the network manager to track reservations.
 Also included is the definition of the message type used by the reservation protocol.
 """
+
 from __future__ import annotations
 
 
@@ -22,8 +23,17 @@ class Reservation:
         identity (int): the ID of a request.
     """
 
-    def __init__(self, initiator: str, responder: str, start_time: int,
-                 end_time: int, memory_size: int, fidelity: float, entanglement_number: int = 1, identity: int = 0):
+    def __init__(
+        self,
+        initiator: str,
+        responder: str,
+        start_time: int,
+        end_time: int,
+        memory_size: int,
+        fidelity: float,
+        entanglement_number: int = 1,
+        identity: int = 0,
+    ):
         """Constructor for the reservation class.
 
         Args:
@@ -53,9 +63,11 @@ class Reservation:
         assert self.memory_size > 0
 
     def __str__(self) -> str:
-        return (f'|identity={self.identity}; initiator={self.initiator}; responder={self.responder}; path={self.path}; '
-                f'start_time={self.start_time:,}; end_time={self.end_time:,}; target_fidelity={self.fidelity}; '
-                f'entanglement_number={self.entanglement_number}; memory_size={self.memory_size}|')
+        return (
+            f'|identity={self.identity}; initiator={self.initiator}; responder={self.responder}; path={self.path}; '
+            f'start_time={self.start_time:,}; end_time={self.end_time:,}; target_fidelity={self.fidelity}; '
+            f'entanglement_number={self.entanglement_number}; memory_size={self.memory_size}|'
+        )
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -63,20 +75,31 @@ class Reservation:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Reservation):
             return False
-        return (other.initiator == self.initiator
+        return (
+            other.initiator == self.initiator
             and other.responder == self.responder
             and other.start_time == self.start_time
             and other.end_time == self.end_time
             and other.memory_size == self.memory_size
             and other.fidelity == self.fidelity
-            and other.entanglement_number == self.entanglement_number)
+            and other.entanglement_number == self.entanglement_number
+        )
 
-    def __lt__(self, other: "Reservation") -> bool:
+    def __lt__(self, other: 'Reservation') -> bool:
         return self.identity < other.identity
 
     def __hash__(self):
-        return hash((self.initiator, self.responder, self.start_time, self.end_time, self.memory_size, 
-                     self.fidelity, self.entanglement_number))
-    
+        return hash(
+            (
+                self.initiator,
+                self.responder,
+                self.start_time,
+                self.end_time,
+                self.memory_size,
+                self.fidelity,
+                self.entanglement_number,
+            )
+        )
+
     def set_path(self, path: list[str]):
         self.path = path

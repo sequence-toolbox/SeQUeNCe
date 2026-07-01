@@ -29,12 +29,13 @@ Example:
     generate-topology <topology> --help; Display parameters for a topology type.
     generate-topology custom <gml_path.gml>; Create a custom topology from a GML file.
 """
+
 import json
-import yaml
 from typing import Annotated
 
 import networkx as nx
 import typer
+import yaml
 
 from .graphs import (
     build_autonomous_system,
@@ -55,43 +56,43 @@ app = typer.Typer()
 
 QCLength = Annotated[float, typer.Option(help='Length of the quantum channel (km)')]
 QCAttenuation = Annotated[float, typer.Option(help='Attenuation of the quantum channel (dB/m)')]
-CCDelay = Annotated[float, typer.Option(help="Constant delay of the classical channel (ms)")]
-MemorySize = Annotated[int, typer.Option(help="Number of quantum memories per node")]
-OutputFile = Annotated[str, typer.Option(help="Name of the output file")]
-OutputDirectory = Annotated[str, typer.Option(help="Name of the output directory")]
-StopTime = Annotated[float | None, typer.Option(help="Stop time of the simulation (s)")]
-Formalism = Annotated[str, typer.Option(help="Formalism of the QuantumManager")]
-Template = Annotated[str, typer.Option(help="Path of the template JSON or YAML file")]
-GateFidelity = Annotated[float, typer.Option(help="Fidelity of the CNOT Gate")]
-MeasurementFidelity = Annotated[float, typer.Option(help="Fidelity of the Measurement")]
-Seed = Annotated[int | None, typer.Option(help="RNG seed for random graph generation")]
-GMLPath = Annotated[str, typer.Argument(help="Path of the .gml file.")]
+CCDelay = Annotated[float, typer.Option(help='Constant delay of the classical channel (ms)')]
+MemorySize = Annotated[int, typer.Option(help='Number of quantum memories per node')]
+OutputFile = Annotated[str, typer.Option(help='Name of the output file')]
+OutputDirectory = Annotated[str, typer.Option(help='Name of the output directory')]
+StopTime = Annotated[float | None, typer.Option(help='Stop time of the simulation (s)')]
+Formalism = Annotated[str, typer.Option(help='Formalism of the QuantumManager')]
+Template = Annotated[str, typer.Option(help='Path of the template JSON or YAML file')]
+GateFidelity = Annotated[float, typer.Option(help='Fidelity of the CNOT Gate')]
+MeasurementFidelity = Annotated[float, typer.Option(help='Fidelity of the Measurement')]
+Seed = Annotated[int | None, typer.Option(help='RNG seed for random graph generation')]
+GMLPath = Annotated[str, typer.Argument(help='Path of the .gml file.')]
 
 
 def get_template(template_path: str) -> dict:
-    with open(template_path, "r") as f:
-        if template_path.lower().endswith((".yaml", ".yml")):
+    with open(template_path, 'r') as f:
+        if template_path.lower().endswith(('.yaml', '.yml')):
             data = yaml.safe_load(f)
-        elif template_path.lower().endswith(".json"):
+        elif template_path.lower().endswith('.json'):
             data = json.load(f)
         else:
-            raise ValueError("Incompatible file type for template. Required: JSON or YAML")
+            raise ValueError('Incompatible file type for template. Required: JSON or YAML')
     return data
 
 
 @app.command()
 def caveman(
-    cliques: Annotated[int, typer.Argument(help="Number of cliques")],
-    size: Annotated[int, typer.Argument(help="Size of cliques")],
+    cliques: Annotated[int, typer.Argument(help='Number of cliques')],
+    size: Annotated[int, typer.Argument(help='Size of cliques')],
     length: QCLength = 10,
     attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
-    output: OutputFile = "output.json",
-    directory: OutputDirectory = "tmp",
+    output: OutputFile = 'output.json',
+    directory: OutputDirectory = 'tmp',
     stop_time: StopTime = None,
-    formalism: Formalism = "bell_diagonal",
-    template_path: Template = "",
+    formalism: Formalism = 'bell_diagonal',
+    template_path: Template = '',
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
@@ -113,17 +114,17 @@ def caveman(
 
 @app.command()
 def grid(
-    size_x: Annotated[int, typer.Argument(help="Number of nodes on the x-axis")],
-    size_y: Annotated[int, typer.Argument(help="Number of nodes on the y-axis")],
+    size_x: Annotated[int, typer.Argument(help='Number of nodes on the x-axis')],
+    size_y: Annotated[int, typer.Argument(help='Number of nodes on the y-axis')],
     length: QCLength = 10,
     attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
-    output: OutputFile = "output.json",
-    directory: OutputDirectory = "tmp",
+    output: OutputFile = 'output.json',
+    directory: OutputDirectory = 'tmp',
     stop_time: StopTime = None,
-    formalism: Formalism = "bell_diagonal",
-    template_path: Template = "",
+    formalism: Formalism = 'bell_diagonal',
+    template_path: Template = '',
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
@@ -145,18 +146,16 @@ def grid(
 
 @app.command()
 def star(
-    outer_nodes: Annotated[
-        int, typer.Argument(help="Number of nodes connected to the center")
-    ],
+    outer_nodes: Annotated[int, typer.Argument(help='Number of nodes connected to the center')],
     length: QCLength = 10,
     attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
-    output: OutputFile = "output.json",
-    directory: OutputDirectory = "tmp",
+    output: OutputFile = 'output.json',
+    directory: OutputDirectory = 'tmp',
     stop_time: StopTime = None,
-    formalism: Formalism = "bell_diagonal",
-    template_path: Template = "",
+    formalism: Formalism = 'bell_diagonal',
+    template_path: Template = '',
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
@@ -178,16 +177,16 @@ def star(
 
 @app.command()
 def linear(
-    nodes: Annotated[int, typer.Argument(help="Number of nodes in the chain")],
+    nodes: Annotated[int, typer.Argument(help='Number of nodes in the chain')],
     length: QCLength = 10,
     attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
-    output: OutputFile = "output.json",
-    directory: OutputDirectory = "tmp",
+    output: OutputFile = 'output.json',
+    directory: OutputDirectory = 'tmp',
     stop_time: StopTime = None,
-    formalism: Formalism = "bell_diagonal",
-    template_path: Template = "",
+    formalism: Formalism = 'bell_diagonal',
+    template_path: Template = '',
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
@@ -209,17 +208,17 @@ def linear(
 
 @app.command()
 def mesh(
-    size_x: Annotated[int, typer.Argument(help="Number of nodes on the x-axis")],
-    size_y: Annotated[int, typer.Argument(help="Number of nodes on the y-axis")],
+    size_x: Annotated[int, typer.Argument(help='Number of nodes on the x-axis')],
+    size_y: Annotated[int, typer.Argument(help='Number of nodes on the y-axis')],
     length: QCLength = 10,
     attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
-    output: OutputFile = "output.json",
-    directory: OutputDirectory = "tmp",
+    output: OutputFile = 'output.json',
+    directory: OutputDirectory = 'tmp',
     stop_time: StopTime = None,
-    formalism: Formalism = "bell_diagonal",
-    template_path: Template = "",
+    formalism: Formalism = 'bell_diagonal',
+    template_path: Template = '',
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
@@ -241,16 +240,16 @@ def mesh(
 
 @app.command()
 def ring(
-    nodes: Annotated[int, typer.Argument(help="Number of nodes in the ring")],
+    nodes: Annotated[int, typer.Argument(help='Number of nodes in the ring')],
     length: QCLength = 10,
     attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
-    output: OutputFile = "output.json",
-    directory: OutputDirectory = "tmp",
+    output: OutputFile = 'output.json',
+    directory: OutputDirectory = 'tmp',
     stop_time: StopTime = None,
-    formalism: Formalism = "bell_diagonal",
-    template_path: Template = "",
+    formalism: Formalism = 'bell_diagonal',
+    template_path: Template = '',
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
@@ -272,15 +271,15 @@ def ring(
 
 @app.command()
 def waxman(
-    nodes: Annotated[int, typer.Argument(help="Number of nodes in the Waxman graph")],
+    nodes: Annotated[int, typer.Argument(help='Number of nodes in the Waxman graph')],
     attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
-    output: OutputFile = "output.json",
-    directory: OutputDirectory = "tmp",
+    output: OutputFile = 'output.json',
+    directory: OutputDirectory = 'tmp',
     stop_time: StopTime = None,
-    formalism: Formalism = "bell_diagonal",
-    template_path: Template = "",
+    formalism: Formalism = 'bell_diagonal',
+    template_path: Template = '',
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
     seed: Seed = None,
@@ -303,19 +302,17 @@ def waxman(
 
 @app.command()
 def tree(
-    branching_factor: Annotated[
-        int, typer.Argument(help="Branching factor of the tree")
-    ],
-    nodes: Annotated[int, typer.Argument(help="Number of nodes in the tree")],
+    branching_factor: Annotated[int, typer.Argument(help='Branching factor of the tree')],
+    nodes: Annotated[int, typer.Argument(help='Number of nodes in the tree')],
     length: QCLength = 10,
     attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
-    output: OutputFile = "output.json",
-    directory: OutputDirectory = "tmp",
+    output: OutputFile = 'output.json',
+    directory: OutputDirectory = 'tmp',
     stop_time: StopTime = None,
-    formalism: Formalism = "bell_diagonal",
-    template_path: Template = "",
+    formalism: Formalism = 'bell_diagonal',
+    template_path: Template = '',
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
@@ -337,16 +334,16 @@ def tree(
 
 @app.command()
 def autonomous_system(
-    nodes: Annotated[int, typer.Argument(help="Number of nodes in the AS graph")],
+    nodes: Annotated[int, typer.Argument(help='Number of nodes in the AS graph')],
     length: QCLength = 10,
     attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
-    output: OutputFile = "output.json",
-    directory: OutputDirectory = "tmp",
+    output: OutputFile = 'output.json',
+    directory: OutputDirectory = 'tmp',
     stop_time: StopTime = None,
-    formalism: Formalism = "bell_diagonal",
-    template_path: Template = "",
+    formalism: Formalism = 'bell_diagonal',
+    template_path: Template = '',
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
     seed: Seed = None,
@@ -369,17 +366,17 @@ def autonomous_system(
 
 @app.command()
 def bcube(
-    k: Annotated[int, typer.Argument(help="Number of BCube levels (k >= 1)")],
-    n: Annotated[int, typer.Argument(help="Number of ports per switch")],
+    k: Annotated[int, typer.Argument(help='Number of BCube levels (k >= 1)')],
+    n: Annotated[int, typer.Argument(help='Number of ports per switch')],
     length: QCLength = 10,
     attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
-    output: OutputFile = "output.json",
-    directory: OutputDirectory = "tmp",
+    output: OutputFile = 'output.json',
+    directory: OutputDirectory = 'tmp',
     stop_time: StopTime = None,
-    formalism: Formalism = "bell_diagonal",
-    template_path: Template = "",
+    formalism: Formalism = 'bell_diagonal',
+    template_path: Template = '',
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
@@ -401,17 +398,17 @@ def bcube(
 
 @app.command()
 def k_n(
-    k: Annotated[int, typer.Argument(help="Number of ports per switch")],
-    n: Annotated[int, typer.Argument(help="Number of levels in the fat tree")],
+    k: Annotated[int, typer.Argument(help='Number of ports per switch')],
+    n: Annotated[int, typer.Argument(help='Number of levels in the fat tree')],
     length: QCLength = 10,
     attenuation: QCAttenuation = 0.0002,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
-    output: OutputFile = "output.json",
-    directory: OutputDirectory = "tmp",
+    output: OutputFile = 'output.json',
+    directory: OutputDirectory = 'tmp',
     stop_time: StopTime = None,
-    formalism: Formalism = "bell_diagonal",
-    template_path: Template = "",
+    formalism: Formalism = 'bell_diagonal',
+    template_path: Template = '',
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
@@ -436,11 +433,11 @@ def custom(
     gml_path: GMLPath,
     cc_delay: CCDelay = 1,
     memory_size: MemorySize = 1,
-    output: OutputFile = "output.json",
-    directory: OutputDirectory = "tmp",
+    output: OutputFile = 'output.json',
+    directory: OutputDirectory = 'tmp',
     stop_time: StopTime = None,
-    formalism: Formalism = "bell_diagonal",
-    template_path: Template = "",
+    formalism: Formalism = 'bell_diagonal',
+    template_path: Template = '',
     measurement_fidelity: MeasurementFidelity = 1,
     gate_fidelity: GateFidelity = 1,
 ) -> None:
@@ -460,5 +457,5 @@ def custom(
     )
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app()

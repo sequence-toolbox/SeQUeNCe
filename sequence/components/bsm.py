@@ -26,7 +26,7 @@ from ..utils.encoding import *
 from ..utils import log
 
 
-def make_bsm(name, timeline: "Timeline", encoding_type='time_bin', phase_error=0, detectors=[]):
+def make_bsm(name, timeline: 'Timeline', encoding_type='time_bin', phase_error=0, detectors=[]):
     """Function to construct BSM of specified type.
 
     Arguments:
@@ -37,21 +37,20 @@ def make_bsm(name, timeline: "Timeline", encoding_type='time_bin', phase_error=0
         detectors (list[dict[str, any]): list of detector objects given as dicts (default []).
     """
 
-    if encoding_type == "polarization":
+    if encoding_type == 'polarization':
         return PolarizationBSM(name, timeline, phase_error, detectors)
-    elif encoding_type == "time_bin":
+    elif encoding_type == 'time_bin':
         return TimeBinBSM(name, timeline, phase_error, detectors)
-    elif encoding_type == "single_atom":
+    elif encoding_type == 'single_atom':
         return SingleAtomBSM(name, timeline, phase_error, detectors)
-    elif encoding_type == "absorptive":
+    elif encoding_type == 'absorptive':
         return AbsorptiveBSM(name, timeline, phase_error, detectors)
     else:
-        raise Exception(f"invalid encoding {encoding_type} given for BSM {name}")
+        raise Exception(f'invalid encoding {encoding_type} given for BSM {name}')
 
 
-def _set_state_with_fidelity(keys: list[int], desired_state: list[complex], fidelity: float, rng, qm: "QuantumManager"):
-    possible_states = [BSM._phi_plus, BSM._phi_minus,
-                       BSM._psi_plus, BSM._psi_minus]
+def _set_state_with_fidelity(keys: list[int], desired_state: list[complex], fidelity: float, rng, qm: 'QuantumManager'):
+    possible_states = [BSM._phi_plus, BSM._phi_minus, BSM._psi_plus, BSM._psi_minus]
     assert desired_state in possible_states
 
     if qm.get_active_formalism() == KET_VECTOR_FORMALISM:
@@ -69,29 +68,33 @@ def _set_state_with_fidelity(keys: list[int], desired_state: list[complex], fide
         qm.set(keys, state)
 
     else:
-        raise Exception(f"Invalid quantum manager with formalism {qm.get_active_formalism()}")
+        raise Exception(f'Invalid quantum manager with formalism {qm.get_active_formalism()}')
 
 
-def _set_pure_state(keys: list[int], ket_state: list[complex], qm: "QuantumManager"):
+def _set_pure_state(keys: list[int], ket_state: list[complex], qm: 'QuantumManager'):
     if qm.get_active_formalism() == KET_VECTOR_FORMALISM:
         qm.set(keys, ket_state)
     elif qm.get_active_formalism() == DENSITY_MATRIX_FORMALISM:
         state = outer(ket_state, ket_state)
         qm.set(keys, state)
     else:
-        raise NotImplementedError("formalism of quantum state {} is not implemented in the set_pure_quantum_state "
-                                  "function of bsm.py".format(qm.get_active_formalism()))
+        raise NotImplementedError(
+            'formalism of quantum state {} is not implemented in the set_pure_quantum_state function of bsm.py'.format(
+                qm.get_active_formalism()
+            )
+        )
 
 
-def _eq_psi_plus(state: "State", formalism: str):
+def _eq_psi_plus(state: 'State', formalism: str):
     if formalism == KET_VECTOR_FORMALISM:
         return array_equal(state.state, BSM._psi_plus)
     elif formalism == DENSITY_MATRIX_FORMALISM:
         d_state = outer(BSM._psi_plus, BSM._psi_plus)
         return array_equal(state.state, d_state)
     else:
-        raise NotImplementedError("formalism of quantum state {} is not implemented in the eq_phi_plus "
-                                  "function of bsm.py".format(formalism))
+        raise NotImplementedError(
+            'formalism of quantum state {} is not implemented in the eq_phi_plus function of bsm.py'.format(formalism)
+        )
 
 
 class BSM(Entity):
@@ -110,7 +113,7 @@ class BSM(Entity):
     _psi_plus = [complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)]
     _psi_minus = [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]
 
-    def __init__(self, name: str, timeline: "Timeline", phase_error: float = 0, detectors=None):
+    def __init__(self, name: str, timeline: 'Timeline', phase_error: float = 0, detectors=None):
         """Constructor for base BSM object.
 
         Args:
@@ -122,7 +125,7 @@ class BSM(Entity):
         """
 
         super().__init__(name, timeline)
-        self.encoding = "None"
+        self.encoding = 'None'
         self.phase_error = phase_error
         self.photons = []
         self.photon_arrival_time = -1
@@ -132,7 +135,7 @@ class BSM(Entity):
         if detectors is not None:
             for i, d in enumerate(detectors):
                 if d is not None:
-                    detector = Detector(f"{self.name}_{i}", timeline, **d)
+                    detector = Detector(f'{self.name}_{i}', timeline, **d)
                     detector.attach(self)
                     detector.owner = self
                 else:
@@ -140,17 +143,18 @@ class BSM(Entity):
                 self.detectors.append(detector)
 
         # define bell basis vectors
-        self.bell_basis = ((complex(sqrt(1 / 2)), complex(0), complex(0), complex(sqrt(1 / 2))),
-                           (complex(sqrt(1 / 2)), complex(0), complex(0), -complex(sqrt(1 / 2))),
-                           (complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)),
-                           (complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)))
-
+        self.bell_basis = (
+            (complex(sqrt(1 / 2)), complex(0), complex(0), complex(sqrt(1 / 2))),
+            (complex(sqrt(1 / 2)), complex(0), complex(0), -complex(sqrt(1 / 2))),
+            (complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)),
+            (complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)),
+        )
 
     def init(self):
         """Implementation of Entity interface (see base class)."""
 
         # get resolution
-        if not self.encoding == "shell":
+        if not self.encoding == 'shell':
             self.resolution = max(d.time_resolution for d in self.detectors)
 
         self.photons = []
@@ -164,9 +168,10 @@ class BSM(Entity):
             photon (Photon): photon to measure.
         """
 
-        assert photon.encoding_type["name"] == self.encoding, (
+        assert photon.encoding_type['name'] == self.encoding, (
             f"BSM expecting photon with encoding '{self.encoding}' "
-            f"received photon with encoding '{photon.encoding_type['name']}'")
+            f"received photon with encoding '{photon.encoding_type['name']}'"
+        )
 
         # check if photon arrived later than current photon
         if self.photon_arrival_time < self.timeline.now():
@@ -199,6 +204,7 @@ class BSM(Entity):
         for detector in self.detectors:
             detector.__setattr__(arg_name, value)
 
+
 class PolarizationBSM(BSM):
     """Class modeling a polarization BSM device.
 
@@ -223,7 +229,7 @@ class PolarizationBSM(BSM):
         """
 
         super().__init__(name, timeline, phase_error, detectors)
-        self.encoding = "polarization"
+        self.encoding = 'polarization'
         self.last_res = [None, None]
         assert len(self.detectors) == 4
 
@@ -271,7 +277,7 @@ class PolarizationBSM(BSM):
             self.detectors[3 - detector_num].get()
 
         else:
-            raise Exception("Invalid result from photon.measure_multiple")
+            raise Exception('Invalid result from photon.measure_multiple')
 
     def trigger(self, detector: Detector, info: dict[str, Any]):
         """See base class.
@@ -283,7 +289,7 @@ class PolarizationBSM(BSM):
         """
 
         detector_num = self.detectors.index(detector)
-        time = info["time"]
+        time = info['time']
 
         # check if matching time
         if abs(time - self.last_res[0]) < self.resolution:
@@ -324,7 +330,7 @@ class TimeBinBSM(BSM):
         """
 
         super().__init__(name, timeline, phase_error, detectors)
-        self.encoding = "time_bin"
+        self.encoding = 'time_bin'
         self.encoding_type = time_bin
         self.last_res = [-1, -1]
         assert len(self.detectors) == 2
@@ -357,17 +363,17 @@ class TimeBinBSM(BSM):
             return
 
         early_time = self.timeline.now()
-        late_time = early_time + self.encoding_type["bin_separation"]
+        late_time = early_time + self.encoding_type['bin_separation']
 
         # measured as Psi+
         # send both photons to the same detector at the early and late time
         if res == 2:
             detector_num = self.get_generator().choice([0, 1])
 
-            process = Process(self.detectors[detector_num], "get", [])
+            process = Process(self.detectors[detector_num], 'get', [])
             event = Event(int(round(early_time)), process)
             self.timeline.schedule(event)
-            process = Process(self.detectors[detector_num], "get", [])
+            process = Process(self.detectors[detector_num], 'get', [])
             event = Event(int(round(late_time)), process)
             self.timeline.schedule(event)
 
@@ -376,16 +382,16 @@ class TimeBinBSM(BSM):
         elif res == 3:
             detector_num = self.get_generator().choice([0, 1])
 
-            process = Process(self.detectors[detector_num], "get", [])
+            process = Process(self.detectors[detector_num], 'get', [])
             event = Event(int(round(early_time)), process)
             self.timeline.schedule(event)
-            process = Process(self.detectors[1 - detector_num], "get", [])
+            process = Process(self.detectors[1 - detector_num], 'get', [])
             event = Event(int(round(late_time)), process)
             self.timeline.schedule(event)
 
         # invalid result from measurement
         else:
-            raise Exception("Invalid result from photon.measure_multiple")
+            raise Exception('Invalid result from photon.measure_multiple')
 
     def trigger(self, detector: Detector, info: dict[str, Any]):
         """See base class.
@@ -397,10 +403,10 @@ class TimeBinBSM(BSM):
         """
 
         detector_num = self.detectors.index(detector)
-        time = info["time"]
+        time = info['time']
 
         # check if valid time
-        if round((time - self.last_res[0]) / self.encoding_type["bin_separation"]) == 1:
+        if round((time - self.last_res[0]) / self.encoding_type['bin_separation']) == 1:
             # if time - self.last_res[0] < self.resolution + self.encoding_type["bin_separation"]:
             # pop result message
             # Psi+
@@ -425,8 +431,9 @@ class SingleAtomBSM(BSM):
         timeline (Timeline): timeline for simulation
         phase_error (float): phase error applied to measurement.
         detectors (list[Detector]): list of attached photon detection devices
-        resolution (int): maximum time resolution achievable with attached detectors  
+        resolution (int): maximum time resolution achievable with attached detectors
     """
+
     _meas_circuit = Circuit(1)
     _meas_circuit.measure(0)
 
@@ -444,7 +451,7 @@ class SingleAtomBSM(BSM):
         if detectors is None:
             detectors = [{}, {}]
         super().__init__(name, timeline, phase_error, detectors)
-        self.encoding = "single_atom"
+        self.encoding = 'single_atom'
         assert len(self.detectors) == 2
 
     def get(self, photon, **kwargs):
@@ -458,7 +465,7 @@ class SingleAtomBSM(BSM):
         """
 
         super().get(photon)
-        log.logger.debug(self.name + " received photon")
+        log.logger.debug(self.name + ' received photon')
 
         if len(self.photons) == 2:
             qm = self.timeline.quantum_manager
@@ -466,17 +473,18 @@ class SingleAtomBSM(BSM):
             key0, key1 = p0.quantum_state, p1.quantum_state
             keys = [key0, key1]
             state0, state1 = qm.get(key0), qm.get(key1)
-            meas0, meas1 = (qm.run_circuit(self._meas_circuit, [key], self.get_generator().random())[key]
-                            for key in keys)
+            meas0, meas1 = (
+                qm.run_circuit(self._meas_circuit, [key], self.get_generator().random())[key] for key in keys
+            )
 
-            log.logger.debug(self.name + f" measured photons as {meas0}, {meas1}")
+            log.logger.debug(self.name + f' measured photons as {meas0}, {meas1}')
 
             if meas0 ^ meas1:  # meas0, meas1 = 1, 0 or 0, 1
-                detector_num = self.get_generator().choice([0, 1])   # randomly select a detector number
+                detector_num = self.get_generator().choice([0, 1])  # randomly select a detector number
                 if len(state0.keys) == 1:
                     # if we're in stage 1: we set state to psi+/psi- to mark the
                     # first triggered detector
-                    log.logger.info(self.name + " passed stage 1")
+                    log.logger.info(self.name + ' passed stage 1')
                     if detector_num == 0:
                         _set_pure_state(keys, BSM._psi_minus, qm)
                     else:
@@ -484,19 +492,21 @@ class SingleAtomBSM(BSM):
                 elif len(state0.keys) == 2:
                     # if we're in stage 2: check if the same detector is triggered
                     # twice to assign state to psi+ or psi-
-                    log.logger.info(self.name + " passed stage 2")
+                    log.logger.info(self.name + ' passed stage 2')
                     if _eq_psi_plus(state0, qm.get_active_formalism()) ^ detector_num:
-                        _set_state_with_fidelity(keys, BSM._psi_minus, p0.encoding_type["raw_fidelity"],
-                                                 self.get_generator(), qm)
+                        _set_state_with_fidelity(
+                            keys, BSM._psi_minus, p0.encoding_type['raw_fidelity'], self.get_generator(), qm
+                        )
                     else:
-                        _set_state_with_fidelity(keys, BSM._psi_plus, p0.encoding_type["raw_fidelity"],
-                                                 self.get_generator(), qm)
+                        _set_state_with_fidelity(
+                            keys, BSM._psi_plus, p0.encoding_type['raw_fidelity'], self.get_generator(), qm
+                        )
                 else:
-                    raise NotImplementedError("Unknown state")
+                    raise NotImplementedError('Unknown state')
 
                 photon = p0 if meas0 else p1
                 if self.get_generator().random() > photon.loss:
-                    log.logger.info(f"Triggering detector {detector_num}")
+                    log.logger.info(f'Triggering detector {detector_num}')
                     # middle BSM node notify two end nodes via EntanglementGenerationB.bsm_update()
                     self.detectors[detector_num].get()
                 else:
@@ -525,7 +535,7 @@ class SingleAtomBSM(BSM):
         """
 
         detector_num = self.detectors.index(detector)
-        time = info["time"]
+        time = info['time']
 
         res = detector_num
         info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
@@ -549,7 +559,7 @@ class AbsorptiveBSM(BSM):
         if detectors is None:
             detectors = [{}, {}]
         super().__init__(name, timeline, phase_error, detectors)
-        self.encoding = "absorptive"
+        self.encoding = 'absorptive'
         assert len(self.detectors) == 2
 
     def get(self, photon, **kwargs):
@@ -601,12 +611,11 @@ class AbsorptiveBSM(BSM):
         """
 
         detector_num = self.detectors.index(detector)
-        time = info["time"]
+        time = info['time']
 
         res = detector_num
         info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
         self.notify(info)
-
 
 
 class SingleHeraldedBSM(BSM):
@@ -614,12 +623,12 @@ class SingleHeraldedBSM(BSM):
 
     We assume that in the single-heralded entanglement generation protocols,
         two memories each emit one photon entangled with memory state,
-        EG is successful only if both photons arrive at the BSM, 
+        EG is successful only if both photons arrive at the BSM,
         and conditioned on both arrivals there is 1/2 probability (assuming linear optics)
         that the BSM can give distinguishable output,
         in the end whether successful EG is heralded still depends on detection (efficiency / dark counts).
 
-    In this relatively simplified model, we do not perform explicit measurement and communicate explicit outcome, 
+    In this relatively simplified model, we do not perform explicit measurement and communicate explicit outcome,
         but assume that local correction based on classical feedforward is a ``free'' operation,
         and successfully generated EPR pair is in Phi+ form.
     This is to be aligned with analytical formulae, and note that the 4 BDS elements are in I, Z, X, Y order.
@@ -632,7 +641,14 @@ class SingleHeraldedBSM(BSM):
         resolution (int): maximum time resolution achievable with attached detectors.
     """
 
-    def __init__(self, name: str, timeline: "Timeline", phase_error: float = 0, detectors: list[dict] = None, success_rate: float = 0.5):
+    def __init__(
+        self,
+        name: str,
+        timeline: 'Timeline',
+        phase_error: float = 0,
+        detectors: list[dict] = None,
+        success_rate: float = 0.5,
+    ):
         """Constructor for the single atom BSM class.
 
         Args:
@@ -646,9 +662,9 @@ class SingleHeraldedBSM(BSM):
         if detectors is None:
             detectors = [{}, {}]
         else:
-            assert len(detectors) == 2, f"length of detectors = {len(detectors)}, must be 2"
+            assert len(detectors) == 2, f'length of detectors = {len(detectors)}, must be 2'
         super().__init__(name, timeline, phase_error, detectors)
-        self.encoding = "single_heralded"
+        self.encoding = 'single_heralded'
         assert len(self.detectors) == 2
         self.success_rate = success_rate
 
@@ -667,7 +683,7 @@ class SingleHeraldedBSM(BSM):
         """
 
         super().get(photon)
-        log.logger.debug(self.name + " received photon")
+        log.logger.debug(self.name + ' received photon')
 
         # assumed simultaneous arrival of both photons
         if len(self.photons) == 2:
@@ -700,16 +716,17 @@ class SingleHeraldedBSM(BSM):
         """
 
         detector_num = self.detectors.index(detector)
-        time = info["time"]
+        time = info['time']
 
         res = detector_num
         info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
         self.notify(info)
 
+
 class ShellBSM(BSM):
     def __init__(self, name, timeline):
         super(BSM, self).__init__(name, timeline)
-        self.encoding = "shell"
+        self.encoding = 'shell'
 
     def get(self, photon, **kwargs):
         """Override of abstract method.

@@ -2,9 +2,9 @@
 This module implements the quantum manager for Bell diagonal states.
 """
 
+from .base import QuantumManager
 from ..quantum_state import BellDiagonalState
 from ...constants import BELL_DIAGONAL_STATE_FORMALISM
-from .base import QuantumManager
 
 
 @QuantumManager.register(BELL_DIAGONAL_STATE_FORMALISM)
@@ -41,14 +41,14 @@ class QuantumManagerBellDiagonal(QuantumManager):
 
     def get(self, key: int):
         if key not in self.states:
-            raise Exception("Attempt to get Bell diagonal state before entanglement.")
+            raise Exception('Attempt to get Bell diagonal state before entanglement.')
 
         return super().get(key)
 
     def set(self, keys: list[int], diag_elems: list[float]) -> None:
         """Method to set the state of given keys to a Bell diagonal state with given diagonal elements.
         If the keys list is not of length 2, the keys will be removed from the quantum manager
-        
+
         Args:
             keys (list[int]): list of quantum manager keys to modify.
             diag_elems (list[float]): list of 4 diagonal elements of Bell diagonal state, in I, Z, X, Y order.

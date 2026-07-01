@@ -1,6 +1,9 @@
 import itertools
+
 import numpy as np
+
 from sequence.components.circuit import Circuit
+
 
 class Noise:
     """
@@ -12,15 +15,15 @@ class Noise:
     - Measurement bit-flip errors
     - Noisy two-qubit gate application in circuits
 
-    These methods support both circuit-level (via SeQUeNCe `Circuit` objects) and 
-    density-matrix-level simulations, enabling realistic modeling of quantum errors 
+    These methods support both circuit-level (via SeQUeNCe `Circuit` objects) and
+    density-matrix-level simulations, enabling realistic modeling of quantum errors
     for testing protocols like quantum error correction or entanglement generation.
 
     All methods are stateless and can be used independently within simulation pipelines.
     """
 
     @staticmethod
-    def apply_measurement_noise(circuit: "Circuit", meas_error_rate: float, qubit_index: int = 0): 
+    def apply_measurement_noise(circuit: 'Circuit', meas_error_rate: float, qubit_index: int = 0):
         """
         Applies classical measurement noise by flipping the qubit with probability η.
 
@@ -51,7 +54,6 @@ class Noise:
         """
         if np.random.random() < meas_error_rate:
             circuit.x(qubit_index)
-
 
     @staticmethod
     def apply_depolarizing_noise(rho: np.ndarray, p: float, qubits: list[int], keys: list[int]) -> np.ndarray:
@@ -117,21 +119,21 @@ class Noise:
         """
         # check probability
         if not (0.0 <= p <= 1.0):
-            raise ValueError("Depolarizing probability must be between 0 and 1.")
+            raise ValueError('Depolarizing probability must be between 0 and 1.')
 
         # determine number of qubits and validate rho shape
         n = len(keys)
-        dim = 2 ** n
+        dim = 2**n
         if rho.shape != (dim, dim):
-            raise ValueError(f"rho must have shape ({dim}, {dim}).")
+            raise ValueError(f'rho must have shape ({dim}, {dim}).')
 
         # validate qubit list
         k = len(qubits)
         if k not in (1, 2):
-            raise ValueError("qubits must have length 1 or 2.")
+            raise ValueError('qubits must have length 1 or 2.')
         for q in qubits:
             if q not in keys:
-                raise ValueError("each target qubit must appear in keys.")
+                raise ValueError('each target qubit must appear in keys.')
 
         # define single-qubit Pauli matrices
         I = np.eye(2, dtype=complex)

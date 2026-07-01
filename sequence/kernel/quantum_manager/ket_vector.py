@@ -1,15 +1,22 @@
 """
 This module implements the quantum manager for ket vector states.
 """
+
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from numpy import array
 
 from .base import QuantumManager, QuantumManagerDenseQubit
 from ..quantum_state import KetState, OneDimensionInput
-from ..quantum_utils import measure_entangled_state_with_cache_ket, measure_multiple_with_cache_ket, measure_state_with_cache_ket
+from ..quantum_utils import (
+    measure_entangled_state_with_cache_ket,
+    measure_multiple_with_cache_ket,
+    measure_state_with_cache_ket,
+)
 from ...constants import KET_VECTOR_FORMALISM
 
-from numpy import array
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ...components.circuit import Circuit
 
@@ -37,12 +44,12 @@ class QuantumManagerKet(QuantumManagerDenseQubit):
 
     def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> dict[int, int]:
         """Method to run a circuit on a given list of keys.
-        
+
         Args:
             circuit (Circuit): quantum circuit to apply.
             keys (list[int]): list of keys to apply circuit to.
             meas_samp (float): random sample used for measurement result.
-        
+
         Returns:
             If measurement, dict[int, int]: dictionary mapping qstate keys to measurement results.
             If non-measurement, dict: empty dictionary.
@@ -91,7 +98,7 @@ class QuantumManagerKet(QuantumManagerDenseQubit):
     def reorder_qubits_ascending_keys(self, state: KetState) -> None:
         """Update the quantum state (in-place) to match the ascending order of keys.
            Meanwhile, the reordered state is also set in the quantum manager.
-        
+
         Args:
             state (KetState): The quantum state to reorder.
         """
@@ -166,7 +173,7 @@ class QuantumManagerKet(QuantumManagerDenseQubit):
 
             # choose result, set as new state
             for i in range(int(2 ** len(keys))):
-                if meas_samp < sum(probabilities[:i + 1]):
+                if meas_samp < sum(probabilities[: i + 1]):
                     result = i
                     new_state = new_states[i]
                     break

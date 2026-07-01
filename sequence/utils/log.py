@@ -22,11 +22,11 @@ def _init_logger():
 
 logger = _init_logger()  # global logger
 # LOG_FORMAT = '{asctime}  {simtime:<20,} {levelname:7} {module:20} {message}'
-LOG_FORMAT = '{simtime:<20,} {levelname:7} {module:22} {message}'   # no asctime
+LOG_FORMAT = '{simtime:<20,} {levelname:7} {module:22} {message}'  # no asctime
 _log_modules = []
 
 
-def set_logger(name: str, timeline, logfile="out.log"):
+def set_logger(name: str, timeline, logfile='out.log'):
     """Function to link logger to output file.
 
     The provided timeline is used to add simulation timestamps to the logs.
@@ -54,7 +54,7 @@ def set_logger(name: str, timeline, logfile="out.log"):
 
     # reset logging
     open(logfile, 'w').close()
-    
+
 
 def set_logger_level(level: str):
     """Function to set output level of logger without requiring logging import.
@@ -79,7 +79,7 @@ def remove_module(module_name: str):
     """Sets a given module to no longer be tracked."""
 
     global _log_modules
-    assert module_name in _log_modules, "Module is not currently logged: " + module_name
+    assert module_name in _log_modules, 'Module is not currently logged: ' + module_name
     _log_modules.remove(module_name)
 
 

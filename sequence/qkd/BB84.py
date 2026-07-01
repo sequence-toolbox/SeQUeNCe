@@ -21,7 +21,7 @@ from ..kernel.process import Process
 from ..utils import log
 
 
-def pair_bb84_protocols(sender: "BB84", receiver: "BB84") -> None:
+def pair_bb84_protocols(sender: 'BB84', receiver: 'BB84') -> None:
     """Function to pair BB84 protocol instances.
 
     Args:
@@ -65,18 +65,18 @@ class BB84Message(Message):
         Message.__init__(self, msg_type, receiver)
         self.protocol_type = BB84
         if self.msg_type is BB84MsgType.BEGIN_PHOTON_PULSE:
-            self.frequency = kwargs["frequency"]
-            self.light_time = kwargs["light_time"]
-            self.start_time = kwargs["start_time"]
-            self.wavelength = kwargs["wavelength"]
+            self.frequency = kwargs['frequency']
+            self.light_time = kwargs['light_time']
+            self.start_time = kwargs['start_time']
+            self.wavelength = kwargs['wavelength']
         elif self.msg_type is BB84MsgType.RECEIVED_QUBITS:
             pass
         elif self.msg_type is BB84MsgType.BASIS_LIST:
-            self.bases = kwargs["bases"]
+            self.bases = kwargs['bases']
         elif self.msg_type is BB84MsgType.MATCHING_INDICES:
-            self.indices = kwargs["indices"]
+            self.indices = kwargs['indices']
         else:
-            raise Exception(f"BB84 generated invalid message type {msg_type}")
+            raise Exception(f'BB84 generated invalid message type {msg_type}')
 
 
 class BB84(StackProtocol):
@@ -103,7 +103,7 @@ class BB84(StackProtocol):
         self.end_run_times (list[int]): simulation time for end of each request.
     """
 
-    def __init__(self, owner: "QKDNode", name: str, lightsource: str, qsdetector: str, role=-1):
+    def __init__(self, owner: 'QKDNode', name: str, lightsource: str, qsdetector: str, role=-1):
         """Constructor for BB84 class.
 
         Args:
@@ -162,9 +162,9 @@ class BB84(StackProtocol):
         """
 
         if self.role != 0:
-            raise AssertionError("generate key must be called from Alice")
+            raise AssertionError('generate key must be called from Alice')
 
-        log.logger.info(self.name + f" generating keys, keylen={length}, keynum={key_num}")
+        log.logger.info(self.name + f' generating keys, keylen={length}, keynum={key_num}')
 
         self.key_lengths.append(length)
         self.another.key_lengths.append(length)
@@ -190,7 +190,7 @@ class BB84(StackProtocol):
             Will send a BEGIN_PHOTON_PULSE method to other protocol instance.
         """
 
-        log.logger.debug(self.name + " starting protocol")
+        log.logger.debug(self.name + ' starting protocol')
 
         if len(self.key_lengths) > 0:
             # reset buffers for self and another
@@ -213,13 +213,20 @@ class BB84(StackProtocol):
             self.light_time = self.key_lengths[0] / (self.ls_freq * ls.mean_photon_num)
 
             # send message that photon pulse is beginning, then send bits
-            self.start_time = int(self.owner.timeline.now()) + round(self.owner.cchannels[self.another.owner.name].delay)
-            message = BB84Message(BB84MsgType.BEGIN_PHOTON_PULSE, self.another.name,
-                                  frequency=self.ls_freq, light_time=self.light_time,
-                                  start_time=self.start_time, wavelength=ls.wavelength)
+            self.start_time = int(self.owner.timeline.now()) + round(
+                self.owner.cchannels[self.another.owner.name].delay
+            )
+            message = BB84Message(
+                BB84MsgType.BEGIN_PHOTON_PULSE,
+                self.another.name,
+                frequency=self.ls_freq,
+                light_time=self.light_time,
+                start_time=self.start_time,
+                wavelength=ls.wavelength,
+            )
             self.owner.send_message(self.another.owner.name, message)
 
-            process = Process(self, "begin_photon_pulse", [])
+            process = Process(self, 'begin_photon_pulse', [])
             event = Event(self.start_time, process)
             self.owner.timeline.schedule(event)
 
@@ -238,9 +245,9 @@ class BB84(StackProtocol):
             Will invoke emit method of node lightsource.
             Will schedule another `begin_photon_pulse` event after the emit period.
         """
-        
-        log.logger.debug(self.name + " starting photon pulse")
-        
+
+        log.logger.debug(self.name + ' starting photon pulse')
+
         if self.working and self.owner.timeline.now() < self.end_run_times[0]:
             self.owner.destination = self.another.owner.name
 
@@ -254,7 +261,7 @@ class BB84(StackProtocol):
             encoding_type = lightsource.encoding_type
             state_list = []
             for i, bit in enumerate(bit_list):
-                state = (encoding_type["bases"][basis_list[i]])[bit]
+                state = (encoding_type['bases'][basis_list[i]])[bit]
                 state_list.append(state)
             lightsource.emit(state_list)
 
@@ -263,7 +270,7 @@ class BB84(StackProtocol):
 
             # schedule another
             self.start_time = self.owner.timeline.now()
-            process = Process(self, "begin_photon_pulse", [])
+            process = Process(self, 'begin_photon_pulse', [])
             event = Event(self.start_time + int(round(self.light_time * 1e12)), process)
             self.owner.timeline.schedule(event)
 
@@ -279,14 +286,14 @@ class BB84(StackProtocol):
 
             # wait for quantum channel to clear of photons, then start protocol
             time = self.owner.timeline.now() + self.owner.qchannels[self.another.owner.name].delay + 1
-            process = Process(self, "start_protocol", [])
+            process = Process(self, 'start_protocol', [])
             event = Event(time, process)
             self.owner.timeline.schedule(event)
 
     def set_measure_basis_list(self) -> None:
         """Method to set measurement basis list."""
 
-        log.logger.debug(self.name + " setting measurement basis")
+        log.logger.debug(self.name + ' setting measurement basis')
 
         num_pulses = int(self.light_time * self.ls_freq)
         basis_list = numpy.random.choice([0, 1], num_pulses)
@@ -296,7 +303,7 @@ class BB84(StackProtocol):
     def end_photon_pulse(self) -> None:
         """Method to process sent qubits."""
 
-        log.logger.debug(self.name + " ending photon pulse")
+        log.logger.debug(self.name + ' ending photon pulse')
 
         if self.working and self.owner.timeline.now() < self.end_run_times[0]:
             # get bits
@@ -308,7 +315,7 @@ class BB84(StackProtocol):
             # schedule another if necessary
             if self.owner.timeline.now() + self.light_time * 1e12 - 1 < self.end_run_times[0]:
                 # schedule another
-                process = Process(self, "end_photon_pulse", [])
+                process = Process(self, 'end_photon_pulse', [])
                 event = Event(self.start_time + int(round(self.light_time * 1e12) - 1), process)
                 self.owner.timeline.schedule(event)
 
@@ -316,7 +323,7 @@ class BB84(StackProtocol):
             message = BB84Message(BB84MsgType.RECEIVED_QUBITS, self.another.name)
             self.owner.send_message(self.another.owner.name, message)
 
-    def received_message(self, src: str, msg: "Message") -> None:
+    def received_message(self, src: str, msg: 'Message') -> None:
         """Method to receive messages.
 
         Will perform different processing actions based on the message received.
@@ -331,7 +338,9 @@ class BB84(StackProtocol):
                 self.ls_freq = msg.frequency
                 self.light_time = msg.light_time
 
-                log.logger.debug(self.name + f" received BEGIN_PHOTON_PULSE, ls_freq={self.ls_freq}, light_time={self.light_time}")
+                log.logger.debug(
+                    self.name + f' received BEGIN_PHOTON_PULSE, ls_freq={self.ls_freq}, light_time={self.light_time}'
+                )
 
                 self.start_time = int(msg.start_time) + self.owner.qchannels[src].delay
 
@@ -339,18 +348,18 @@ class BB84(StackProtocol):
                 self.set_measure_basis_list()
 
                 # schedule end_photon_pulse()
-                process = Process(self, "end_photon_pulse", [])
+                process = Process(self, 'end_photon_pulse', [])
                 event = Event(self.start_time + round(self.light_time * 1e12) - 1, process)
                 self.owner.timeline.schedule(event)
 
             elif msg.msg_type is BB84MsgType.RECEIVED_QUBITS:  # (Current node is Alice): can send basis
-                log.logger.debug(self.name + " received RECEIVED_QUBITS message")
+                log.logger.debug(self.name + ' received RECEIVED_QUBITS message')
                 bases = self.basis_lists.pop(0)
                 message = BB84Message(BB84MsgType.BASIS_LIST, self.another.name, bases=bases)
                 self.owner.send_message(self.another.owner.name, message)
 
             elif msg.msg_type is BB84MsgType.BASIS_LIST:  # (Current node is Bob): compare bases
-                log.logger.debug(self.name + " received BASIS_LIST message")
+                log.logger.debug(self.name + ' received BASIS_LIST message')
                 # parse alice basis list
                 basis_list_alice = msg.bases
 
@@ -367,8 +376,10 @@ class BB84(StackProtocol):
                 message = BB84Message(BB84MsgType.MATCHING_INDICES, self.another.name, indices=indices)
                 self.owner.send_message(self.another.owner.name, message)
 
-            elif msg.msg_type is BB84MsgType.MATCHING_INDICES:  # (Current node is Alice): create key from matching indices
-                log.logger.debug(self.name + " received MATCHING_INDICES message")
+            elif (
+                msg.msg_type is BB84MsgType.MATCHING_INDICES
+            ):  # (Current node is Alice): create key from matching indices
+                log.logger.debug(self.name + ' received MATCHING_INDICES message')
                 # parse matching indices
                 indices = msg.indices
 
@@ -383,7 +394,7 @@ class BB84(StackProtocol):
                     throughput = self.key_lengths[0] * 1e12 / (self.owner.timeline.now() - self.last_key_time)
 
                     while len(self.key_bits) >= self.key_lengths[0] and self.keys_left_list[0] > 0:
-                        log.logger.info(self.name + " generated a valid key")
+                        log.logger.info(self.name + ' generated a valid key')
                         self.set_key()  # convert from binary list to int
                         self._pop(info=self.key)
                         self.another.set_key()
@@ -414,6 +425,6 @@ class BB84(StackProtocol):
     def set_key(self):
         """Method to convert `bit_list` field (list[int]) to a single key (int)."""
 
-        key_bits = self.key_bits[0:self.key_lengths[0]]
-        del self.key_bits[0:self.key_lengths[0]]
-        self.key = int("".join(str(x) for x in key_bits), 2)  # convert from binary list to int
+        key_bits = self.key_bits[0 : self.key_lengths[0]]
+        del self.key_bits[0 : self.key_lengths[0]]
+        self.key = int(''.join(str(x) for x in key_bits), 2)  # convert from binary list to int

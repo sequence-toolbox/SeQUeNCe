@@ -4,6 +4,7 @@ This module provides a definition of the Topology class, which can be used to
 manage a network's structure.
 Topology instances automatically perform many useful network functions.
 """
+
 import copy
 import json
 from abc import ABC, abstractmethod
@@ -31,30 +32,29 @@ class Topology(ABC):
         tl (Timeline): the timeline used for simulation
     """
 
-    ALL_C_CONNECT = "cconnections"    # a connection consist of two opposite direction channels
-    ALL_C_CHANNEL = "cchannels"
-    ALL_NODE = "nodes"
-    ALL_Q_CONNECT = "qconnections"
-    ALL_Q_CHANNEL = "qchannels"
-    ATTENUATION = "attenuation"
-    CONNECT_NODE_1 = "node1"
-    CONNECT_NODE_2 = "node2"
-    DELAY = "delay"
-    DISTANCE = "distance"
-    DST = "destination"
-    NAME = "name"
-    SEED = "seed"
-    SRC = "source"
-    STOP_TIME = "stop_time"
-    TRUNC = "truncation"
-    TYPE = "type"
-    ALL_TEMPLATES = "templates"
-    TEMPLATE = "template"
-    GATE_FIDELITY = "gate_fidelity"
-    MEASUREMENT_FIDELITY = "measurement_fidelity"
-    FORMALISM = "formalism"  # "ket_vector", "density_matrix", "bell_diagonal", etc
+    ALL_C_CONNECT = 'cconnections'  # a connection consist of two opposite direction channels
+    ALL_C_CHANNEL = 'cchannels'
+    ALL_NODE = 'nodes'
+    ALL_Q_CONNECT = 'qconnections'
+    ALL_Q_CHANNEL = 'qchannels'
+    ATTENUATION = 'attenuation'
+    CONNECT_NODE_1 = 'node1'
+    CONNECT_NODE_2 = 'node2'
+    DELAY = 'delay'
+    DISTANCE = 'distance'
+    DST = 'destination'
+    NAME = 'name'
+    SEED = 'seed'
+    SRC = 'source'
+    STOP_TIME = 'stop_time'
+    TRUNC = 'truncation'
+    TYPE = 'type'
+    ALL_TEMPLATES = 'templates'
+    TEMPLATE = 'template'
+    GATE_FIDELITY = 'gate_fidelity'
+    MEASUREMENT_FIDELITY = 'measurement_fidelity'
+    FORMALISM = 'formalism'  # "ket_vector", "density_matrix", "bell_diagonal", etc
 
-    
     def __init__(self, config_source: str | dict):
         """Constructor for topology class.
 
@@ -93,7 +93,7 @@ class Topology(ABC):
             src_str, dst_str = qc[self.SRC], qc[self.DST]
             src_node = self.tl.get_entity_by_name(src_str)
             if src_node is not None:
-                name = qc.get(self.NAME, f"qc-{src_str}-{dst_str}")
+                name = qc.get(self.NAME, f'qc-{src_str}-{dst_str}')
                 distance = qc[self.DISTANCE]
                 attenuation = qc[self.ATTENUATION]
                 qc_obj = QuantumChannel(name, self.tl, attenuation, distance)
@@ -105,7 +105,7 @@ class Topology(ABC):
             src_str, dst_str = cc[self.SRC], cc[self.DST]
             src_node = self.tl.get_entity_by_name(src_str)
             if src_node is not None:
-                name = cc.get(self.NAME, f"cc-{src_str}-{dst_str}")
+                name = cc.get(self.NAME, f'cc-{src_str}-{dst_str}')
                 distance = cc.get(self.DISTANCE, 1000)
                 delay = cc.get(self.DELAY, 0)
                 cc_obj = ClassicalChannel(name, self.tl, distance, delay)
@@ -119,25 +119,25 @@ class Topology(ABC):
             distance = c_connect.get(self.DISTANCE, 1000)
             delay = c_connect.get(self.DELAY, 0)
             for src_str, dst_str in zip([node1, node2], [node2, node1]):
-                name = f"cc-{src_str}-{dst_str}"
+                name = f'cc-{src_str}-{dst_str}'
                 src_obj = self.tl.get_entity_by_name(src_str)
                 if src_obj is not None:
                     cc_obj = ClassicalChannel(name, self.tl, distance, delay)
                     cc_obj.set_ends(src_obj, dst_str)
                     self.cchannels.append(cc_obj)
 
-    def get_timeline(self) -> "Timeline":
-        assert self.tl is not None, "timeline is not set properly."
+    def get_timeline(self) -> 'Timeline':
+        assert self.tl is not None, 'timeline is not set properly.'
         return self.tl
 
     def get_nodes_by_type(self, type: str) -> list[Node]:
         return self.nodes[type]
 
-    def get_qchannels(self) -> list["QuantumChannel"]:
+    def get_qchannels(self) -> list['QuantumChannel']:
         return self.qchannels
 
-    def get_cchannels(self) -> list["ClassicalChannel"]:
+    def get_cchannels(self) -> list['ClassicalChannel']:
         return self.cchannels
 
-    def get_nodes(self) -> dict[str, list["Node"]]:
+    def get_nodes(self) -> dict[str, list['Node']]:
         return self.nodes

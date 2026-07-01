@@ -3,8 +3,8 @@ from math import sqrt
 from typing import TYPE_CHECKING, Any
 
 from .generation_message import EntanglementGenerationMessage, GenerationMsgType
-from ...resource_management.memory_manager import MemoryInfo
 from ...constants import BARRET_KOK
+from ...resource_management.memory_manager import MemoryInfo
 
 if TYPE_CHECKING:
     from ...components.memory import Memory
@@ -16,8 +16,8 @@ from ...utils import log
 
 
 class QuantumCircuitMixin:
-    """Mixin class providing common quantum circuits used in entanglement generation protocols.
-    """
+    """Mixin class providing common quantum circuits used in entanglement generation protocols."""
+
     _plus_state = [sqrt(1 / 2), sqrt(1 / 2)]
     _flip_circuit = Circuit(1)
     _flip_circuit.x(0)
@@ -28,7 +28,7 @@ class QuantumCircuitMixin:
 class EntanglementGenerationA(EntanglementProtocol, ABC):
     """Abstract base class for Entanglement Generation Protocol A.
        This class provides a framework for implementing entanglement generation protocols
-    
+
     Class Attributes:
         _registry (dict[str, type['EntanglementGenerationA']]): A registry mapping protocol names to their corresponding classes.
         _global_type (str): The globally set protocol type used when creating new instances. Defaults to BARRET_KOK, other options: SINGLE_HERALDED
@@ -50,10 +50,11 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         primary (bool): Indicates if this node is the primary node in the protocol (based on lexicographical order of node names).
         _qstate_key (int): The key of the quantum states associated with the memory used in the protocol.
     """
+
     _registry: dict[str, type['EntanglementGenerationA']] = {}
     _global_type: str = BARRET_KOK
 
-    def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs):
+    def __init__(self, owner: 'Node', name: str, middle: str, other: str, memory: 'Memory', **kwargs):
         super().__init__(owner, name, BARRET_KOK)
         self.middle: str = middle
         self.remote_node_name: str = other
@@ -102,7 +103,9 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         return decorator
 
     @classmethod
-    def create(cls, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs) -> 'EntanglementGenerationA':
+    def create(
+        cls, owner: 'Node', name: str, middle: str, other: str, memory: 'Memory', **kwargs
+    ) -> 'EntanglementGenerationA':
         protocol_name = cls.get_global_type()
         try:
             protocol_class = cls._registry[protocol_name]
@@ -120,7 +123,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         return list(cls._registry.keys())
 
     def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
-        assert self.remote_protocol_name == '', "Remote protocol name has been set before, cannot set again."
+        assert self.remote_protocol_name == '', 'Remote protocol name has been set before, cannot set again.'
 
         self.remote_protocol_name = protocol
         self.remote_memo_id = memories[0]
@@ -135,7 +138,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
             Will send message through attached node.
         """
 
-        log.logger.info(f"{self.owner.name} {self.name} protocol start with partner {self.remote_protocol_name}")
+        log.logger.info(f'{self.owner.name} {self.name} protocol start with partner {self.remote_protocol_name}')
 
         if self not in self.owner.protocols:
             return
@@ -143,11 +146,13 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         if self.update_memory() and self.primary:
             self.qc_delay = self.owner.qchannels[self.middle].delay
             frequency = self.memory.frequency
-            message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE,
-                                                    self.remote_protocol_name,
-                                                    protocol_type=self.protocol_type,
-                                                    qc_delay=self.qc_delay,
-                                                    frequency=frequency)
+            message = EntanglementGenerationMessage(
+                GenerationMsgType.NEGOTIATE,
+                self.remote_protocol_name,
+                protocol_type=self.protocol_type,
+                qc_delay=self.qc_delay,
+                frequency=frequency,
+            )
             self.owner.send_message(self.remote_node_name, message)
 
     def update_memory(self) -> bool | None:
@@ -166,7 +171,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
     def is_ready(self) -> bool:
         return self.remote_protocol_name != ''
 
-    def memory_expire(self, memory: "Memory") -> None:
+    def memory_expire(self, memory: 'Memory') -> None:
         assert memory == self.memory, "Memory to expire does not match the protocol's memory"
         self.update_resource_manager(memory, MemoryInfo.RAW)
         for event in self.scheduled_events:
@@ -175,7 +180,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
 
     @abstractmethod
     def _entanglement_succeed(self):
-        raise NotImplementedError("This method must be implemented in a subclass")
+        raise NotImplementedError('This method must be implemented in a subclass')
 
     def _entanglement_fail(self):
         for event in self.scheduled_events:
@@ -189,7 +194,7 @@ class EntanglementGenerationB(EntanglementProtocol, ABC):
     _registry: dict[str, type['EntanglementGenerationB']] = {}
     _global_type: str = BARRET_KOK
 
-    def __init__(self, owner: "BSMNode", name: str, others: list[str], **kwargs) -> None:
+    def __init__(self, owner: 'BSMNode', name: str, others: list[str], **kwargs) -> None:
         super().__init__(owner, name)
         self.protocol_type = BARRET_KOK
         assert len(others) == 2
@@ -218,7 +223,7 @@ class EntanglementGenerationB(EntanglementProtocol, ABC):
         return decorator
 
     @classmethod
-    def create(cls, owner: "BSMNode", name: str, others, **kwargs) -> 'EntanglementGenerationB':
+    def create(cls, owner: 'BSMNode', name: str, others, **kwargs) -> 'EntanglementGenerationB':
         protocol_name: str = cls.get_global_type()
         try:
             protocol_class = cls._registry[protocol_name]
@@ -247,5 +252,5 @@ class EntanglementGenerationB(EntanglementProtocol, ABC):
     def is_ready(self) -> bool:
         return True
 
-    def memory_expire(self, memory: "Memory") -> None:
+    def memory_expire(self, memory: 'Memory') -> None:
         raise Exception(f'EntanglementGenerationB protocol {self.name} should not receive memory expiration;.')

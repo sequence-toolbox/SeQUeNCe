@@ -1,10 +1,11 @@
-"""Base class for BBPSSW entanglement purification protocol.
-"""
+"""Base class for BBPSSW entanglement purification protocol."""
+
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from enum import Enum, auto
 from typing import TYPE_CHECKING
-from collections.abc import Callable
 
 from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
 from sequence.utils.log import logger
@@ -32,13 +33,13 @@ class BBPSSWMessage(Message):
         receiver (str): name of destination protocol instance.
     """
 
-    def __init__(self, msg_type: BBPSSWMsgType, receiver: str, meas_res: int, protocol_type: str='bbpssw'):
+    def __init__(self, msg_type: BBPSSWMsgType, receiver: str, meas_res: int, protocol_type: str = 'bbpssw'):
         super().__init__(msg_type, receiver)
         self.meas_res = meas_res
         self.protocol_type = protocol_type
 
     def __str__(self):
-        return f"\"BBPSSW: type={self.msg_type}, meas_res={self.meas_res}\""
+        return f'"BBPSSW: type={self.msg_type}, meas_res={self.meas_res}"'
 
 
 class BBPSSWProtocol(EntanglementProtocol, ABC):
@@ -88,7 +89,9 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         cls._global_formalism = formalism
 
     @classmethod
-    def register(cls, name: str, protocol_class: type['BBPSSWProtocol'] | None = None) -> Callable[[type['BBPSSWProtocol']], type['BBPSSWProtocol']] | None:
+    def register(
+        cls, name: str, protocol_class: type['BBPSSWProtocol'] | None = None
+    ) -> Callable[[type['BBPSSWProtocol']], type['BBPSSWProtocol']] | None:
         """Register a BBPSSW protocol class. Can be used as a decorator or as a normal function.
 
         Recommended Usage: Use a decorator to register a BBPSSW protocol class on the user side.
@@ -131,8 +134,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         return decorator
 
     @classmethod
-    def create(cls, owner: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory",
-               **kwargs) -> 'BBPSSWProtocol':
+    def create(cls, owner: 'Node', name: str, kept_memo: 'Memory', meas_memo: 'Memory', **kwargs) -> 'BBPSSWProtocol':
         """Create an instance of a registered BBPSSW protocol.
 
         Args:
@@ -191,9 +193,11 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         kept_entangled_memo = self.kept_memo.entangled_memory['node_id']
         meas_entangled_memo = self.meas_memo.entangled_memory['node_id']
         assert self.is_ready(), (
-            "Protocol is not ready to start. Remote node not set, please use set_others() function to set it.")
+            'Protocol is not ready to start. Remote node not set, please use set_others() function to set it.'
+        )
         assert kept_entangled_memo == meas_entangled_memo, (
-            f'Mismatch of entangled memories {kept_entangled_memo} and {meas_entangled_memo} on node {self.owner.name}.')
+            f'Mismatch of entangled memories {kept_entangled_memo} and {meas_entangled_memo} on node {self.owner.name}.'
+        )
         assert self.kept_memo.fidelity > 0.5, f'Fidelity of kept memory is too low: {self.kept_memo.fidelity}.'
         assert self.meas_memo.fidelity > 0.5, f'Fidelity of measurement memory is too low: {self.meas_memo.fidelity}.'
 
@@ -201,17 +205,16 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:
         """Method to receive messages.
 
-         args:
-            src (str): Name of the node that sent the message.
-            msg (BBPSSWMessage): Message received.
+        args:
+           src (str): Name of the node that sent the message.
+           msg (BBPSSWMessage): Message received.
 
-         Side Effects:
-            Will call `update_resource_manager` method.
-         """
+        Side Effects:
+           Will call `update_resource_manager` method.
+        """
         raise NotImplementedError
 
-
-    def memory_expire(self, memory: "Memory") -> None:
+    def memory_expire(self, memory: 'Memory') -> None:
         """Method to receive memory expiration events.
 
         args:

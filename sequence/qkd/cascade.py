@@ -19,7 +19,8 @@ from ..message import Message
 from ..protocol import StackProtocol
 from ..utils import log
 
-def pair_cascade_protocols(sender: "Cascade", receiver: "Cascade") -> None:
+
+def pair_cascade_protocols(sender: 'Cascade', receiver: 'Cascade') -> None:
     """Method to pair cascade protocol instance.
 
     Args:
@@ -72,36 +73,36 @@ class CascadeMessage(Message):
         super().__init__(msg_type, receiver)
         self.protocol_type = Cascade
         if msg_type is CascadeMsgType.KEY:
-            self.key = kwargs["key"]
+            self.key = kwargs['key']
         elif msg_type is CascadeMsgType.PARAMS:
-            self.k = kwargs["k"]
-            self.keylen = kwargs["keylen"]
-            self.frame_num = kwargs["frame_num"]
-            self.run_time = kwargs["run_time"]
+            self.k = kwargs['k']
+            self.keylen = kwargs['keylen']
+            self.frame_num = kwargs['frame_num']
+            self.run_time = kwargs['run_time']
         elif msg_type is CascadeMsgType.CHECKSUMS:
-            self.key_id = kwargs["key_id"]
-            self.checksums = kwargs["checksums"]
+            self.key_id = kwargs['key_id']
+            self.checksums = kwargs['checksums']
         elif msg_type is CascadeMsgType.SEND_FOR_BINARY:
-            self.key_id = kwargs["key_id"]
-            self.pass_id = kwargs["pass_id"]
-            self.block_id = kwargs["block_id"]
-            self.start = kwargs["start"]
-            self.end = kwargs["end"]
+            self.key_id = kwargs['key_id']
+            self.pass_id = kwargs['pass_id']
+            self.block_id = kwargs['block_id']
+            self.start = kwargs['start']
+            self.end = kwargs['end']
         elif msg_type is CascadeMsgType.RECEIVE_FOR_BINARY:
-            self.key_id = kwargs["key_id"]
-            self.pass_id = kwargs["pass_id"]
-            self.block_id = kwargs["block_id"]
-            self.start = kwargs["start"]
-            self.end = kwargs["end"]
-            self.checksum = kwargs["checksum"]
+            self.key_id = kwargs['key_id']
+            self.pass_id = kwargs['pass_id']
+            self.block_id = kwargs['block_id']
+            self.start = kwargs['start']
+            self.end = kwargs['end']
+            self.checksum = kwargs['checksum']
         elif msg_type is CascadeMsgType.GENERATE_KEY:
-            self.keylen = kwargs["keylen"]
-            self.frame_num = kwargs["frame_num"]
-            self.run_time = kwargs["run_time"]
+            self.keylen = kwargs['keylen']
+            self.frame_num = kwargs['frame_num']
+            self.run_time = kwargs['run_time']
         elif msg_type == CascadeMsgType.KEY_IS_VALID:
-            self.key_id = kwargs["key_id"]
+            self.key_id = kwargs['key_id']
         else:
-            raise Exception(f"Invalid cascade message type {msg_type}")
+            raise Exception(f'Invalid cascade message type {msg_type}')
 
 
 class Cascade(StackProtocol):
@@ -146,7 +147,7 @@ class Cascade(StackProtocol):
         privacy_throughput (int): throughput of not revealed bits.
     """
 
-    def __init__(self, owner: "QKDNode", name: str, w=4, role=-1, secure_params=100):
+    def __init__(self, owner: 'QKDNode', name: str, w=4, role=-1, secure_params=100):
         """Constructor for cascade class.
 
         Args:
@@ -215,17 +216,21 @@ class Cascade(StackProtocol):
 
         if self.state == 1:
             self.create_checksum_table()
-        
+
         if self.state == 0 and self.role == 1:
             message = CascadeMessage(CascadeMsgType.KEY, self.another.name, key=self.bits[0])
             self.send_by_cc(message)
 
         elif self.state == 1 and self.role == 0:
-            message = CascadeMessage(CascadeMsgType.CHECKSUMS, self.another.name,
-                                     key_id=len(self.checksum_tables)-1, checksums=self.checksum_tables[-1])
+            message = CascadeMessage(
+                CascadeMsgType.CHECKSUMS,
+                self.another.name,
+                key_id=len(self.checksum_tables) - 1,
+                checksums=self.checksum_tables[-1],
+            )
             self.send_by_cc(message)
 
-    def received_message(self, src: str, msg: "Message") -> None:
+    def received_message(self, src: str, msg: 'Message') -> None:
         """Method to receive messages from other protocol instance.
 
         Different messages will cause different actions.
@@ -249,9 +254,9 @@ class Cascade(StackProtocol):
             def get_k1(p, lower, upper):
                 while lower <= upper:
                     k1 = int((lower + upper) / 2)
-                    if (k1 * p - (1 - (1 - 2 * p)**k1) / 2) < (-(math.log(1 / 2) / 2)):
+                    if (k1 * p - (1 - (1 - 2 * p) ** k1) / 2) < (-(math.log(1 / 2) / 2)):
                         lower = k1 + 1
-                    elif (k1 * p - (1 - (1 - 2 * p)**k1) / 2) > (-(math.log(1 / 2) / 2)):
+                    elif (k1 * p - (1 - (1 - 2 * p) ** k1) / 2) > (-(math.log(1 / 2) / 2)):
                         upper = k1 - 1
                     else:
                         return k1
@@ -276,15 +281,20 @@ class Cascade(StackProtocol):
             self.k1 = get_k1(p, 0, 10000)
             self.state = 1
 
-            message = CascadeMessage(CascadeMsgType.PARAMS, self.another.name,
-                                     k=self.k1, keylen=self.keylen, frame_num=self.frame_num,
-                                     run_time=self.run_time)
+            message = CascadeMessage(
+                CascadeMsgType.PARAMS,
+                self.another.name,
+                k=self.k1,
+                keylen=self.keylen,
+                frame_num=self.frame_num,
+                run_time=self.run_time,
+            )
             self.send_by_cc(message)
 
         elif msg.msg_type is CascadeMsgType.PARAMS:
             """
             Receiver receive k, keylen from sender
-            """ 
+            """
             self.k1 = msg.k
             self.keylen = msg.keylen
             self.frame_num = msg.frame_num
@@ -293,13 +303,20 @@ class Cascade(StackProtocol):
             self.end_time = self.start_time + self.run_time
             self.state = 1
 
-            log.logger.debug(self.name + f' state={self.state} receive_params with params={[self.k1, self.keylen, self.frame_num]}')
+            log.logger.debug(
+                self.name + f' state={self.state} receive_params with params={[self.k1, self.keylen, self.frame_num]}'
+            )
             if self.role == 0:
                 raise Exception(f"Cascade protocol sender '{self.name}' got params message")
 
             # Schedule a key generation event for Cascade sender
-            message = CascadeMessage(CascadeMsgType.GENERATE_KEY, self.another.name,
-                                     keylen=self.keylen, frame_num=self.frame_num, run_time=self.run_time)
+            message = CascadeMessage(
+                CascadeMsgType.GENERATE_KEY,
+                self.another.name,
+                keylen=self.keylen,
+                frame_num=self.frame_num,
+                run_time=self.run_time,
+            )
             self.send_by_cc(message)
 
         elif msg.msg_type is CascadeMsgType.CHECKSUMS:
@@ -323,16 +340,25 @@ class Cascade(StackProtocol):
             start = msg.start
             end = msg.end
 
-            log.logger.debug(self.name + f' state={self.state} send_for_binary, params={[pass_id, block_id, start, end]}')
+            log.logger.debug(
+                self.name + f' state={self.state} send_for_binary, params={[pass_id, block_id, start, end]}'
+            )
 
             checksum = 0
             block_id_to_index = self.block_id_to_index_lists[key_id]
             for pos in block_id_to_index[pass_id][block_id][start:end]:
-                checksum ^= ((self.bits[key_id] >> pos) & 1)
+                checksum ^= (self.bits[key_id] >> pos) & 1
 
-            message = CascadeMessage(CascadeMsgType.RECEIVE_FOR_BINARY, self.another.name,
-                                     key_id=key_id, pass_id=pass_id, block_id=block_id,
-                                     start=start, end=end, checksum=checksum)
+            message = CascadeMessage(
+                CascadeMsgType.RECEIVE_FOR_BINARY,
+                self.another.name,
+                key_id=key_id,
+                pass_id=pass_id,
+                block_id=block_id,
+                start=start,
+                end=end,
+                checksum=checksum,
+            )
             self.send_by_cc(message)
 
         elif msg.msg_type is CascadeMsgType.RECEIVE_FOR_BINARY:
@@ -347,7 +373,10 @@ class Cascade(StackProtocol):
             end = msg.end
             checksum = msg.checksum
 
-            log.logger.debug(self.name + f' state={self.state} receive_for_binary, params={[key_id, pass_id, block_id, start, end, checksum]}')
+            log.logger.debug(
+                self.name
+                + f' state={self.state} receive_for_binary, params={[key_id, pass_id, block_id, start, end, checksum]}'
+            )
 
             def flip_bit_at_pos(val, pos):
                 """
@@ -363,7 +392,7 @@ class Cascade(StackProtocol):
             checksum_table = self.checksum_tables[key_id]
             key = self.bits[key_id]
             for pos in block_id_to_index[pass_id][block_id][start:end]:
-                _checksum ^= ((key >> pos) & 1)
+                _checksum ^= (key >> pos) & 1
 
             if checksum != _checksum:
                 if end - start == 1:
@@ -391,7 +420,7 @@ class Cascade(StackProtocol):
             key_id = msg.key_id
 
             for i in range(int(self.frame_len / self.keylen)):
-                self.valid_keys.append((self.bits[key_id] >> (i*self.keylen)) & ((1 << self.keylen)-1))
+                self.valid_keys.append((self.bits[key_id] >> (i * self.keylen)) & ((1 << self.keylen) - 1))
                 if self.frame_num > 0:
                     log.logger.info(self.name + f' state={self.state} got valid key')
                     self._pop(key=self.valid_keys[-1])
@@ -416,8 +445,7 @@ class Cascade(StackProtocol):
 
         log.logger.info(self.name + f' state={self.state} generate_key, keylen={keylen}, keynum={frame_num}')
         if self.role == 1:
-            raise Exception(
-                f"Cascase.generate_key() called on receiver '{self.name}'")
+            raise Exception(f"Cascase.generate_key() called on receiver '{self.name}'")
 
         if self.state == 0:
             log.logger.debug(self.name + ' generate_key with state 0')
@@ -447,7 +475,7 @@ class Cascade(StackProtocol):
         index_to_block_id = [[]]
         for pass_id in range(1, self.w + 1):
             index_to_block_relation = []
-            block_size = self.k1 * (2**(pass_id - 1))
+            block_size = self.k1 * (2 ** (pass_id - 1))
 
             if pass_id == 1:
                 for i in range(self.frame_len):
@@ -471,7 +499,7 @@ class Cascade(StackProtocol):
         block_id_to_index = [[]]
         for pass_id in range(1, self.w + 1):
             block_to_index_relation = []
-            block_size = self.k1 * (2**(pass_id - 1))
+            block_size = self.k1 * (2 ** (pass_id - 1))
             block_num = math.ceil(self.frame_len / block_size)
             for _ in range(block_num):
                 block_to_index_relation.append([None] * block_size)
@@ -496,14 +524,14 @@ class Cascade(StackProtocol):
         # create checksum_table
         checksum_table = [[]]
         for pass_id in range(1, len(index_to_block_id)):
-            block_size = self.k1 * (2**(pass_id - 1))
+            block_size = self.k1 * (2 ** (pass_id - 1))
             block_num = math.ceil(self.frame_len / block_size)
             checksum_table.append([0] * block_num)
             for i in range(self.frame_len):
                 block_id = index_to_block_id[pass_id][i]
-                checksum_table[pass_id][block_id] ^= ((self.bits[-1] >> i) & 1)
+                checksum_table[pass_id][block_id] ^= (self.bits[-1] >> i) & 1
         self.checksum_tables.append(checksum_table)
-   
+
     def check_checksum(self, key_id: int) -> bool:
         """Method to check a checksum.
 
@@ -528,7 +556,7 @@ class Cascade(StackProtocol):
                     return False
 
         for i in range(int(self.frame_len / self.keylen)):
-            self.valid_keys.append((self.bits[key_id] >> (i*self.keylen)) & ((1 << self.keylen)-1))
+            self.valid_keys.append((self.bits[key_id] >> (i * self.keylen)) & ((1 << self.keylen) - 1))
             if self.frame_num > 0:
                 log.logger.info(self.name + f' state={self.state} got_valid_key')
                 self._pop(key=self.valid_keys[-1])
@@ -547,7 +575,7 @@ class Cascade(StackProtocol):
         """Method to end cascade protocol."""
 
         self.state = 2
-    
+
     def interactive_binary_search(self, key_id: int, pass_id: int, block_id: int, start: int, end: int) -> None:
         """Method to search for errors in key.
 
@@ -565,22 +593,38 @@ class Cascade(StackProtocol):
             Will send SEND_FOR_BINARY messages to other protocol.
         """
 
-        log.logger.debug(self.name + ' state={} interactive_binary_search, params={}'.format(
-            self.state, [key_id, pass_id, block_id, start, end]))
+        log.logger.debug(
+            self.name
+            + ' state={} interactive_binary_search, params={}'.format(
+                self.state, [key_id, pass_id, block_id, start, end]
+            )
+        )
 
         # first half checksum
-        message = CascadeMessage(CascadeMsgType.SEND_FOR_BINARY, self.another.name,
-                                 key_id=key_id, pass_id=pass_id, block_id=block_id,
-                                 start=start, end=int((end+start) / 2))
+        message = CascadeMessage(
+            CascadeMsgType.SEND_FOR_BINARY,
+            self.another.name,
+            key_id=key_id,
+            pass_id=pass_id,
+            block_id=block_id,
+            start=start,
+            end=int((end + start) / 2),
+        )
         self.send_by_cc(message)
 
         # last half checksum
-        message = CascadeMessage(CascadeMsgType.SEND_FOR_BINARY, self.another.name,
-                                 key_id=key_id, pass_id=pass_id, block_id=block_id,
-                                 start=int((end+start) / 2), end=end)
+        message = CascadeMessage(
+            CascadeMsgType.SEND_FOR_BINARY,
+            self.another.name,
+            key_id=key_id,
+            pass_id=pass_id,
+            block_id=block_id,
+            start=int((end + start) / 2),
+            end=end,
+        )
         self.send_by_cc(message)
 
-    def send_by_cc(self, message: "CascadeMessage") -> None:
+    def send_by_cc(self, message: 'CascadeMessage') -> None:
         """Method to send classical messages."""
 
         if self.owner.timeline.now() > self.end_time and self.state != 2:
@@ -599,7 +643,7 @@ class Cascade(StackProtocol):
             counter = 0
             for i in range(len(self.t1)):
                 if self.t2[i] != -1:
-                    self.latency += self.t2[i]-self.t1[i]
+                    self.latency += self.t2[i] - self.t1[i]
                     counter += 1
             if counter > 0:
                 self.latency /= counter
@@ -609,7 +653,15 @@ class Cascade(StackProtocol):
 
         if self.owner.timeline.now() - self.start_time:
             self.throughput = 1e12 * len(self.valid_keys) * self.keylen / (self.owner.timeline.now() - self.start_time)
-            self.privacy_throughput = 1e12 * (len(self.valid_keys) * self.keylen - int(len(self.valid_keys)/40) * self.secure_params - self.disclosed_bits_counter) / (self.owner.timeline.now() - self.start_time)
+            self.privacy_throughput = (
+                1e12
+                * (
+                    len(self.valid_keys) * self.keylen
+                    - int(len(self.valid_keys) / 40) * self.secure_params
+                    - self.disclosed_bits_counter
+                )
+                / (self.owner.timeline.now() - self.start_time)
+            )
 
         counter = 0
         for j in range(min(len(self.valid_keys), len(self.another.valid_keys))):

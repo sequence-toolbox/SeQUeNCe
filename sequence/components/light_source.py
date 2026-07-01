@@ -4,14 +4,14 @@ This module defines the LightSource class to supply individual photons and the S
 These classes should be connected to one or two entities, respectively, that are capable of receiving photons.
 """
 
-from numpy import multiply, sqrt, zeros, kron, outer
+from numpy import multiply, sqrt, zeros, kron
 
 from .photon import Photon
 from ..kernel.entity import Entity
 from ..kernel.event import Event
 from ..kernel.process import Process
-from ..utils.encoding import polarization, fock
 from ..utils import log
+from ..utils.encoding import polarization, fock
 
 
 class LightSource(Entity):
@@ -31,8 +31,17 @@ class LightSource(Entity):
         photon_counter (int): counter for number of photons emitted.
     """
 
-    def __init__(self, name, timeline, frequency=8e7, wavelength=1550, bandwidth=0, mean_photon_num=0.1,
-                 encoding_type=polarization, phase_error=0):
+    def __init__(
+        self,
+        name,
+        timeline,
+        frequency=8e7,
+        wavelength=1550,
+        bandwidth=0,
+        mean_photon_num=0.1,
+        encoding_type=polarization,
+        phase_error=0,
+    ):
         """Constructor for the LightSource class.
 
         Arguments:
@@ -71,7 +80,7 @@ class LightSource(Entity):
             state_list (list[list[complex]]): list of complex coefficient arrays to send as photon-encoded qubits.
         """
 
-        log.logger.info(f"{self.name} emitting {len(state_list)} photons")
+        log.logger.info(f'{self.name} emitting {len(state_list)} photons')
 
         time = self.timeline.now()
         period = int(round(1e12 / self.frequency))
@@ -84,12 +93,15 @@ class LightSource(Entity):
 
             for _ in range(num_photons):
                 wavelength = self.linewidth * self.get_generator().standard_normal() + self.wavelength
-                new_photon = Photon(str(i), self.timeline,
-                                    wavelength=wavelength,
-                                    location=self.owner,
-                                    encoding_type=self.encoding_type,
-                                    quantum_state=state)
-                process = Process(self._receivers[0], "get", [new_photon])
+                new_photon = Photon(
+                    str(i),
+                    self.timeline,
+                    wavelength=wavelength,
+                    location=self.owner,
+                    encoding_type=self.encoding_type,
+                    quantum_state=state,
+                )
+                process = Process(self._receivers[0], 'get', [new_photon])
                 event = Event(time, process)
                 self.timeline.schedule(event)
                 self.photon_counter += 1
@@ -115,15 +127,24 @@ class SPDCSource(LightSource):
         phase_error (float): phase error applied to qubits.
     """
 
-    def __init__(self, name, timeline, wavelengths=None, frequency=8e7, mean_photon_num=0.1,
-                 encoding_type=fock, phase_error=0, bandwidth=0):
+    def __init__(
+        self,
+        name,
+        timeline,
+        wavelengths=None,
+        frequency=8e7,
+        mean_photon_num=0.1,
+        encoding_type=fock,
+        phase_error=0,
+        bandwidth=0,
+    ):
         super().__init__(name, timeline, frequency, 0, bandwidth, mean_photon_num, encoding_type, phase_error)
         self.wavelengths = wavelengths
         if self.wavelengths is None or len(self.wavelengths) != 2:
             self.set_wavelength()
 
     def init(self):
-        assert len(self._receivers) == 2, "SPDC source must connect to 2 receivers."
+        assert len(self._receivers) == 2, 'SPDC source must connect to 2 receivers.'
 
     def _generate_tmsv_state(self):
         """Method to generate two-mode squeezed vacuum state of two output photonic modes
@@ -137,17 +158,17 @@ class SPDCSource(LightSource):
 
         # create state component amplitudes list
         amp_list = [(sqrt(mean_num / (mean_num + 1)) ** m) / sqrt(mean_num + 1) for m in range(truncation)]
-        amp_square_list = [amp ** 2 for amp in amp_list]
+        amp_square_list = [amp**2 for amp in amp_list]
         amp_list.append(sqrt(1 - sum(amp_square_list)))
 
         # create two-mode state vector
-        state_vec = zeros((truncation+1) ** 2)
+        state_vec = zeros((truncation + 1) ** 2)
 
-        for i in range(truncation+1):
+        for i in range(truncation + 1):
             amp = amp_list[i]
-            basis = zeros(truncation+1)
+            basis = zeros(truncation + 1)
             basis[i] = 1
-            basis = kron(basis,basis)
+            basis = kron(basis, basis)
             state_vec += amp * basis
 
         return state_vec
@@ -164,25 +185,31 @@ class SPDCSource(LightSource):
                 For these encoding types only the length of list matters and elements can be arbitrary.
         """
 
-        log.logger.info(f"SPDC sourcee {self.name} emitting {len(state_list)} photons")
+        log.logger.info(f'SPDC sourcee {self.name} emitting {len(state_list)} photons')
 
         time = self.timeline.now()
 
-        if self.encoding_type["name"] == "fock":
+        if self.encoding_type['name'] == 'fock':
             # Use Fock encoding.
             # The two generated photons should be entangled and should have keys pointing to same Fock state.
             for _ in state_list:
                 # generate two new photons
-                new_photon0 = Photon("", self.timeline,
-                                     wavelength=self.wavelengths[0],
-                                     location=self,
-                                     encoding_type=self.encoding_type,
-                                     use_qm=True)
-                new_photon1 = Photon("", self.timeline,
-                                     wavelength=self.wavelengths[1],
-                                     location=self,
-                                     encoding_type=self.encoding_type,
-                                     use_qm=True)
+                new_photon0 = Photon(
+                    '',
+                    self.timeline,
+                    wavelength=self.wavelengths[0],
+                    location=self,
+                    encoding_type=self.encoding_type,
+                    use_qm=True,
+                )
+                new_photon1 = Photon(
+                    '',
+                    self.timeline,
+                    wavelength=self.wavelengths[1],
+                    location=self,
+                    encoding_type=self.encoding_type,
+                    use_qm=True,
+                )
 
                 # set shared state to squeezed state
                 state = self._generate_tmsv_state()
@@ -193,21 +220,27 @@ class SPDCSource(LightSource):
                 self.photon_counter += 1
                 time += 1e12 / self.frequency
 
-        elif self.encoding_type["name"] == "absorptive":
+        elif self.encoding_type['name'] == 'absorptive':
             for _ in state_list:
                 num_photon_pairs = self.get_generator().poisson(self.mean_photon_num)
 
                 for _ in range(num_photon_pairs):
-                    new_photon0 = Photon("", self.timeline,
-                                         wavelength=self.wavelengths[0],
-                                         location=self,
-                                         encoding_type=self.encoding_type,
-                                         use_qm=True)
-                    new_photon1 = Photon("", self.timeline,
-                                         wavelength=self.wavelengths[1],
-                                         location=self,
-                                         encoding_type=self.encoding_type,
-                                         use_qm=True)
+                    new_photon0 = Photon(
+                        '',
+                        self.timeline,
+                        wavelength=self.wavelengths[0],
+                        location=self,
+                        encoding_type=self.encoding_type,
+                        use_qm=True,
+                    )
+                    new_photon1 = Photon(
+                        '',
+                        self.timeline,
+                        wavelength=self.wavelengths[1],
+                        location=self,
+                        encoding_type=self.encoding_type,
+                        use_qm=True,
+                    )
 
                     new_photon0.combine_state(new_photon1)
                     new_photon0.set_state((complex(0), complex(0), complex(0), complex(1)))
@@ -216,16 +249,22 @@ class SPDCSource(LightSource):
 
                 if num_photon_pairs == 0:
                     # send two null photons for purposes of entanglement
-                    new_photon0 = Photon("", self.timeline,
-                                         wavelength=self.wavelengths[0],
-                                         location=self,
-                                         encoding_type=self.encoding_type,
-                                         use_qm=True)
-                    new_photon1 = Photon("", self.timeline,
-                                         wavelength=self.wavelengths[1],
-                                         location=self,
-                                         encoding_type=self.encoding_type,
-                                         use_qm=True)
+                    new_photon0 = Photon(
+                        '',
+                        self.timeline,
+                        wavelength=self.wavelengths[0],
+                        location=self,
+                        encoding_type=self.encoding_type,
+                        use_qm=True,
+                    )
+                    new_photon1 = Photon(
+                        '',
+                        self.timeline,
+                        wavelength=self.wavelengths[1],
+                        location=self,
+                        encoding_type=self.encoding_type,
+                        use_qm=True,
+                    )
 
                     new_photon0.is_null = True
                     new_photon1.is_null = True
@@ -237,21 +276,26 @@ class SPDCSource(LightSource):
 
         else:
             for state in state_list:
-                num_photon_pairs = self.get_generator().poisson(
-                self.mean_photon_num)
+                num_photon_pairs = self.get_generator().poisson(self.mean_photon_num)
 
                 if self.get_generator().random() < self.phase_error:
                     state = multiply([1, -1], state)
 
                 for _ in range(num_photon_pairs):
-                    new_photon0 = Photon("", self.timeline,
-                                         wavelength=self.wavelengths[0],
-                                         location=self,
-                                         encoding_type=self.encoding_type)
-                    new_photon1 = Photon("", self.timeline,
-                                         wavelength=self.wavelengths[1],
-                                         location=self,
-                                         encoding_type=self.encoding_type)
+                    new_photon0 = Photon(
+                        '',
+                        self.timeline,
+                        wavelength=self.wavelengths[0],
+                        location=self,
+                        encoding_type=self.encoding_type,
+                    )
+                    new_photon1 = Photon(
+                        '',
+                        self.timeline,
+                        wavelength=self.wavelengths[1],
+                        location=self,
+                        encoding_type=self.encoding_type,
+                    )
 
                     new_photon0.combine_state(new_photon1)
                     new_photon0.set_state((state[0], complex(0), complex(0), state[1]))
@@ -260,14 +304,12 @@ class SPDCSource(LightSource):
 
                 time += 1e12 / self.frequency
 
-    def send_photons(self, time, photons: list["Photon"]):
-        log.logger.debug("SPDC source {} sending photons to {} at time {}".format(
-            self.name, self._receivers, time
-        ))
+    def send_photons(self, time, photons: list['Photon']):
+        log.logger.debug('SPDC source {} sending photons to {} at time {}'.format(self.name, self._receivers, time))
 
         assert len(photons) == 2
         for dst, photon in zip(self._receivers, photons):
-            process = Process(dst, "get", [photon])
+            process = Process(dst, 'get', [photon])
             event = Event(int(round(time)), process)
             self.timeline.schedule(event)
 

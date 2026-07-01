@@ -13,6 +13,7 @@ Also defined in this module is the message type used by these protocols.
 """
 
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import Enum, auto
@@ -30,8 +31,8 @@ if TYPE_CHECKING:
 
 
 class SwappingMsgType(Enum):
-    """Defines possible message types for entanglement generation.
-    """
+    """Defines possible message types for entanglement generation."""
+
     SWAP_RES = auto()
 
 
@@ -52,25 +53,27 @@ class EntanglementSwappingMessage(Message):
     def __init__(self, msg_type: SwappingMsgType, receiver: str, **kwargs):
         Message.__init__(self, msg_type, receiver)
         if self.msg_type is SwappingMsgType.SWAP_RES:
-            self.fidelity = kwargs.get("fidelity")
-            self.remote_node = kwargs.get("remote_node")
-            self.remote_memo = kwargs.get("remote_memo")
-            self.expire_time = kwargs.get("expire_time")
-            self.meas_res = kwargs.get("meas_res")
+            self.fidelity = kwargs.get('fidelity')
+            self.remote_node = kwargs.get('remote_node')
+            self.remote_memo = kwargs.get('remote_memo')
+            self.expire_time = kwargs.get('expire_time')
+            self.meas_res = kwargs.get('meas_res')
         else:
-            raise Exception(f"Entanglement swapping protocol create unkown type of message: {msg_type}")
+            raise Exception(f'Entanglement swapping protocol create unkown type of message: {msg_type}')
 
     def __str__(self):
         if self.msg_type == SwappingMsgType.SWAP_RES:
-            return "EntanglementSwappingMessage: msg_type: {}; fidelity: {:.2f}; remote_node: {}; remote_memo: {}; ".format(
-                self.msg_type, self.fidelity, self.remote_node, self.remote_memo)
+            return 'EntanglementSwappingMessage: msg_type: {}; fidelity: {:.2f}; remote_node: {}; remote_memo: {}; '.format(
+                self.msg_type, self.fidelity, self.remote_node, self.remote_memo
+            )
 
 
 class EntanglementSwappingA(EntanglementProtocol, ABC):
     """Base class for Entanglement Swapping A protocol.
 
-        The default formalism is KET_VECTOR_FORMALISM.
+    The default formalism is KET_VECTOR_FORMALISM.
     """
+
     _registry: dict[str, type['EntanglementSwappingA']] = {}
     _global_formalism: str = KET_VECTOR_FORMALISM
 
@@ -94,7 +97,7 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
         self.right_node = right_memo.entangled_memory['node_id']
         self.right_remote_memo = right_memo.entangled_memory['memo_id']
         self.success_prob = success_prob
-        assert 1 >= self.success_prob >= 0, "Entanglement swapping success probability must be between 0 and 1."
+        assert 1 >= self.success_prob >= 0, 'Entanglement swapping success probability must be between 0 and 1.'
         self.is_success = False
         self.left_protocol_name = None
         self.right_protocol_name = None
@@ -107,7 +110,7 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
             formalism (str): global formalism for all Entanglement Swapping A protocol instances.
         """
         if formalism not in cls._registry:
-            raise ValueError(f"Protocol type {formalism} not found in registry.")
+            raise ValueError(f'Protocol type {formalism} not found in registry.')
         cls._global_formalism = formalism
 
     @classmethod
@@ -120,8 +123,9 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
         return cls._global_formalism
 
     @classmethod
-    def register(cls, name: str, protocol_class: type['EntanglementSwappingA'] = None
-                 ) -> Callable[[type['EntanglementSwappingA']], type['EntanglementSwappingA']] | None:
+    def register(
+        cls, name: str, protocol_class: type['EntanglementSwappingA'] = None
+    ) -> Callable[[type['EntanglementSwappingA']], type['EntanglementSwappingA']] | None:
         """Register a specific type of Entanglement Swapping A protocol.
 
         This method should be used as a decorator to register different types of Entanglement Swapping A protocols.
@@ -135,7 +139,7 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
             If protocol_class is None, returns a decorator function. Otherwise, returns None.
         """
         if name in cls._registry:
-            raise ValueError(f"Protocol type {name} already registered.")
+            raise ValueError(f'Protocol type {name} already registered.')
 
         if protocol_class is not None:
             cls._registry[name] = protocol_class
@@ -143,15 +147,16 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
 
         def decorator(protocol_class: type['EntanglementSwappingA']) -> type['EntanglementSwappingA']:
             if name in cls._registry:
-                raise ValueError(f"Protocol type {name} already registered.")
+                raise ValueError(f'Protocol type {name} already registered.')
             cls._registry[name] = protocol_class
             return protocol_class
-        
+
         return decorator
 
     @classmethod
-    def create(cls, owner: Node, name: str, left_memo: Memory, right_memo: Memory, 
-               success_prob: float = 1, **kwargs) -> 'EntanglementSwappingA':
+    def create(
+        cls, owner: Node, name: str, left_memo: Memory, right_memo: Memory, success_prob: float = 1, **kwargs
+    ) -> 'EntanglementSwappingA':
         """Factory method to create an Entanglement Swapping A protocol instance of the global formalism.
 
         Args:
@@ -187,12 +192,12 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
 
     def is_ready(self) -> bool:
         """Check if the protocol is ready.
-        
+
         Returns:
             bool: True if the protocol is ready to start, False otherwise.
         """
         return (self.left_protocol_name is not None) and (self.right_protocol_name is not None)
-    
+
     def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
         """Method to set other entanglement protocol instance.
 
@@ -201,30 +206,28 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
             node (str): other node name.
             memories (list[str]): the list of memories name used on other node.
         """
-        if node == self.left_memo.entangled_memory["node_id"]:
+        if node == self.left_memo.entangled_memory['node_id']:
             self.left_protocol_name = protocol
-        elif node == self.right_memo.entangled_memory["node_id"]:
+        elif node == self.right_memo.entangled_memory['node_id']:
             self.right_protocol_name = protocol
         else:
-            raise Exception("Cannot pair protocol %s with %s" % (self.name, protocol))
+            raise Exception('Cannot pair protocol %s with %s' % (self.name, protocol))
 
     def success_probability(self) -> float:
         """A simple model for BSM success probability.
 
-        Returns:             
+        Returns:
             float: the probability of a successful swapping operation.
         """
         return self.success_prob
 
     @abstractmethod
     def start(self) -> None:
-        """Method to start entanglement swapping process (abstract).
-        """
+        """Method to start entanglement swapping process (abstract)."""
         pass
 
     def received_message(self, src: str, msg: Message) -> None:
-        """Method to receive messages (should not be used on A protocol).
-        """
+        """Method to receive messages (should not be used on A protocol)."""
         raise Exception("EntanglementSwappingA protocol '{}' should not receive messages.".format(self.name))
 
     def memory_expire(self, memory: Memory) -> None:
@@ -266,8 +269,9 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
 class EntanglementSwappingB(EntanglementProtocol, ABC):
     """Base class for Entanglement Swapping B protocol.
 
-        The default formalism is KET_VECTOR_FORMALISM.
+    The default formalism is KET_VECTOR_FORMALISM.
     """
+
     _registry: dict[str, type['EntanglementSwappingB']] = {}
     _global_formalism: str = KET_VECTOR_FORMALISM
 
@@ -288,7 +292,7 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
     @classmethod
     def set_formalism(cls, formalism: str) -> None:
         """Set the global formalism for all Entanglement Swapping B protocol instances.
-        
+
         Valid Built-formalisms:
             1. Bell Diagonal -> bds
             2. Circuit -> circuit (DEFAULT)
@@ -297,7 +301,7 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
             formalism (str): global formalism for all Entanglement Swapping B protocol instances.
         """
         if formalism not in cls._registry:
-            raise ValueError(f"Protocol type {formalism} not found in registry.")
+            raise ValueError(f'Protocol type {formalism} not found in registry.')
         cls._global_formalism = formalism
 
     @classmethod
@@ -310,8 +314,9 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
         return cls._global_formalism
 
     @classmethod
-    def register(cls, name: str, protocol_class: type['EntanglementSwappingB'] = None
-                 ) -> Callable[[type['EntanglementSwappingB']], type['EntanglementSwappingB']] | None:
+    def register(
+        cls, name: str, protocol_class: type['EntanglementSwappingB'] = None
+    ) -> Callable[[type['EntanglementSwappingB']], type['EntanglementSwappingB']] | None:
         """Register a specific type of Entanglement Swapping B protocol.
 
         This method should be used as a decorator to register different types of Entanglement Swapping B protocols.
@@ -324,14 +329,14 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
             If protocol_class is None, returns a decorator function. Otherwise, returns None.
         """
         if name in cls._registry:
-            raise ValueError(f"{name} already registered.")
+            raise ValueError(f'{name} already registered.')
 
         if protocol_class is not None:
             cls._registry[name] = protocol_class
-        
+
         def decorator(protocol_class: type['EntanglementSwappingB']) -> type['EntanglementSwappingB']:
             if name in cls._registry:
-                raise ValueError(f"{name} already registered.")
+                raise ValueError(f'{name} already registered.')
             cls._registry[name] = protocol_class
             return protocol_class
 
@@ -339,8 +344,7 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
 
     @classmethod
     def create(cls, owner: Node, name: str, hold_memo: Memory, **kwargs) -> 'EntanglementSwappingB':
-        """Factory method to create an Entanglement Swapping B protocol instance of the global formalism.
-        """
+        """Factory method to create an Entanglement Swapping B protocol instance of the global formalism."""
         protocol_name = EntanglementSwappingB.get_formalism()
         try:
             protocol_class = cls._registry[protocol_name]
@@ -363,7 +367,7 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
         self.remote_protocol_name = protocol
 
     def start(self) -> None:
-        log.logger.info(f"{self.owner.name} end protocol start with partner {self.remote_node_name}")
+        log.logger.info(f'{self.owner.name} end protocol start with partner {self.remote_node_name}')
 
     def memory_expire(self, memory: Memory) -> None:
         """Method to deal with expired memories.
@@ -389,4 +393,3 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
             msg (EntanglementSwappingMessage): message sent.
         """
         pass
-

@@ -4,5 +4,6 @@ from .routing_static import StaticRoutingProtocol
 
 __all__ = ['RoutingProtocol', 'DistributedRoutingProtocol', 'StaticRoutingProtocol']
 
+
 def __dir__():
     return sorted(__all__)

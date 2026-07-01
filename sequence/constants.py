@@ -21,13 +21,13 @@ KET0: Final = (1, 0)
 KET1: Final = (0, 1)
 
 #: Normalization factor 1/sqrt(2) used by Bell states.
-SQRT_HALF: Final = 0.5 ** 0.5
+SQRT_HALF: Final = 0.5**0.5
 #: Bell state |Phi+>.
-PHI_PLUS:  Final = (SQRT_HALF, 0, 0,  SQRT_HALF)
+PHI_PLUS: Final = (SQRT_HALF, 0, 0, SQRT_HALF)
 #: Bell state |Phi->.
 PHI_MINUS: Final = (SQRT_HALF, 0, 0, -SQRT_HALF)
 #: Bell state |Psi+>.
-PSI_PLUS:  Final = (0, SQRT_HALF,  SQRT_HALF, 0)
+PSI_PLUS: Final = (0, SQRT_HALF, SQRT_HALF, 0)
 #: Bell state |Psi->.
 PSI_MINUS: Final = (0, SQRT_HALF, -SQRT_HALF, 0)
 
@@ -35,24 +35,24 @@ PSI_MINUS: Final = (0, SQRT_HALF, -SQRT_HALF, 0)
 EPSILON: Final = 1e-8
 
 #: Number of picoseconds in one nanosecond.
-NANOSECOND:  Final = 10**3
+NANOSECOND: Final = 10**3
 #: Number of picoseconds in one microsecond.
 MICROSECOND: Final = 10**6
 #: Number of picoseconds in one millisecond.
 MILLISECOND: Final = 10**9
 #: Number of picoseconds in one second.
-SECOND:      Final = 10**12
+SECOND: Final = 10**12
 
 #: Built-in ket-vector formalism identifier.
-KET_VECTOR_FORMALISM: Final = "ket_vector"
+KET_VECTOR_FORMALISM: Final = 'ket_vector'
 #: Built-in density-matrix formalism identifier.
-DENSITY_MATRIX_FORMALISM: Final = "density_matrix"
+DENSITY_MATRIX_FORMALISM: Final = 'density_matrix'
 #: Built-in Fock density-matrix formalism identifier.
-FOCK_DENSITY_MATRIX_FORMALISM: Final = "fock_density"
+FOCK_DENSITY_MATRIX_FORMALISM: Final = 'fock_density'
 #: Built-in Bell-diagonal-state formalism identifier.
-BELL_DIAGONAL_STATE_FORMALISM: Final = "bell_diagonal"
+BELL_DIAGONAL_STATE_FORMALISM: Final = 'bell_diagonal'
 #: Built-in stabilizer-state formalism identifier.
-STABILIZER_FORMALISM: Final = "stabilizer"
+STABILIZER_FORMALISM: Final = 'stabilizer'
 
 #: Built-in Barrett-Kok generation protocol identifier.
 BARRET_KOK: Final = 'barret_kok'

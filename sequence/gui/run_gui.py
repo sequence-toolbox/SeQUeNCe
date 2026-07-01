@@ -1,13 +1,13 @@
 import json
 import os
+
 import networkx as nx
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from .app import QuantumGUI
 from .graph_comp import GraphNode
 from ..topology.topology import Topology
-from ..topology.router_net_topo import RouterNetTopo
 
 
 class RunGui:
@@ -18,11 +18,7 @@ class RunGui:
         tdm_table = pd.DataFrame()
         delay_table = pd.DataFrame()
         self.name = name
-        self.gui = QuantumGUI(
-            graph,
-            delays=delay_table,
-            tdm=tdm_table
-        ).get_app(name)
+        self.gui = QuantumGUI(graph, delays=delay_table, tdm=tdm_table).get_app(name)
 
     def load_graph(self, path_to_topology=None):
         # JSON
@@ -42,10 +38,7 @@ class RunGui:
         delay_table.columns = table['labels']
 
         # TDM table initialization
-        tdm_default = np.empty(
-            [len(table['labels']), len(table['labels'])],
-            dtype=int
-        )
+        tdm_default = np.empty([len(table['labels']), len(table['labels'])], dtype=int)
         tdm_default.fill(20000)
 
         index = 0
@@ -63,10 +56,7 @@ class RunGui:
         for node in network_in['nodes']:
             new_node = GraphNode(node[Topology.NAME], node[Topology.TYPE], 'default_router')
             graph.add_node(
-                node[Topology.NAME],
-                label=node[Topology.NAME],
-                node_type=node[Topology.TYPE],
-                data=new_node.__dict__
+                node[Topology.NAME], label=node[Topology.NAME], node_type=node[Topology.TYPE], data=new_node.__dict__
             )
 
         for edge in network_in[Topology.ALL_Q_CONNECT]:
@@ -78,14 +68,10 @@ class RunGui:
                     'target': edge[Topology.CONNECT_NODE_2],
                     'distance': edge[Topology.DISTANCE],
                     'attenuation': edge[Topology.ATTENUATION],
-                    'link_type': 'Quantum'
-                }
+                    'link_type': 'Quantum',
+                },
             )
 
         # input = nx.readwrite.cytoscape_data(graph)['elements']
 
-        self.gui = QuantumGUI(
-            graph,
-            delays=delay_table,
-            tdm=tdm_table
-        ).get_app(self.name)
+        self.gui = QuantumGUI(graph, delays=delay_table, tdm=tdm_table).get_app(self.name)

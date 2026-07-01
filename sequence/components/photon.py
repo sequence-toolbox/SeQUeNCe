@@ -3,7 +3,9 @@
 This module defines the Photon class for tracking individual photons.
 Photons may be encoded directly with polarization or time bin schemes, or may herald the encoded state of single atom memories.
 """
+
 from typing import Any, TYPE_CHECKING
+
 from numpy import log2
 
 if TYPE_CHECKING:
@@ -44,7 +46,16 @@ class Photon:
     _measure_circuit = Circuit(1)
     _measure_circuit.measure(0)
 
-    def __init__(self, name: str, timeline: "Timeline", wavelength=0, location=None, encoding_type=polarization, quantum_state=None, use_qm=False):
+    def __init__(
+        self,
+        name: str,
+        timeline: 'Timeline',
+        wavelength=0,
+        location=None,
+        encoding_type=polarization,
+        quantum_state=None,
+        use_qm=False,
+    ):
         """Constructor for the photon class.
 
         Args:
@@ -60,7 +71,7 @@ class Photon:
             use_qm (bool): determines if the quantum state is obtained from the quantum manager or stored locally.
         """
 
-        if encoding_type["name"] == "absorptive" and not use_qm:
+        if encoding_type['name'] == 'absorptive' and not use_qm:
             raise ValueError("Photons with 'absorptive' encoding scheme must use quantum manager.")
 
         self.name: str = name
@@ -84,10 +95,12 @@ class Photon:
                 quantum_state = (complex(1), complex(0))
             else:
                 assert type(quantum_state) is tuple
-                assert all([abs(a) < 1 + EPSILON for a in quantum_state]), "Illegal value with abs > 1 in photon state"
-                assert abs(sum([abs(a) ** 2 for a in quantum_state]) - 1) < EPSILON, "Squared amplitudes do not sum to 1"
+                assert all([abs(a) < 1 + EPSILON for a in quantum_state]), 'Illegal value with abs > 1 in photon state'
+                assert abs(sum([abs(a) ** 2 for a in quantum_state]) - 1) < EPSILON, (
+                    'Squared amplitudes do not sum to 1'
+                )
                 num_qubits = log2(len(quantum_state))
-                assert num_qubits == 1, "Length of amplitudes for single photon should be 2"
+                assert num_qubits == 1, 'Length of amplitudes for single photon should be 2'
             self.quantum_state = FreeQuantumState()
             self.quantum_state.state = quantum_state
 
@@ -104,13 +117,12 @@ class Photon:
 
         if self.use_qm:
             qm = self.timeline.quantum_manager
-            all_keys = qm.get(self.quantum_state).keys + \
-                self.timeline.quantum_manager.get(photon.quantum_state).keys
+            all_keys = qm.get(self.quantum_state).keys + self.timeline.quantum_manager.get(photon.quantum_state).keys
             qm.run_circuit(Photon._entangle_circuit, all_keys)
         else:
             self.quantum_state.combine_state(photon.quantum_state)
 
-    def random_noise(self, rng: "Generator"):
+    def random_noise(self, rng: 'Generator'):
         """Method to add random noise to photon's state (see `QuantumState` module)."""
 
         self.quantum_state.random_noise(rng)
@@ -124,7 +136,7 @@ class Photon:
             self.quantum_state.set_state(state)
 
     @staticmethod
-    def measure(basis, photon: "Photon", rng: "Generator"):
+    def measure(basis, photon: 'Photon', rng: 'Generator'):
         """Method to measure a photon (see `QuantumState` module).
 
         Args:
@@ -157,7 +169,7 @@ class Photon:
             return photon.quantum_state.measure(basis, rng)
 
     @staticmethod
-    def measure_multiple(basis, photons: list["Photon"], rng: "Generator"):
+    def measure_multiple(basis, photons: list['Photon'], rng: 'Generator'):
         """Method to measure 2 entangled photons (see `FreeQuantumState` module).
 
         Args:
@@ -169,13 +181,13 @@ class Photon:
             int: 0-3 value giving the result of measurement in given basis.
         """
 
-        assert len(photons) == 2, "Photon.measure_multiple() must be called on two photons only."
+        assert len(photons) == 2, 'Photon.measure_multiple() must be called on two photons only.'
         if photons[0].use_qm:
-            raise NotImplementedError("Photon.measure_multiple() not implemented for quantum manager.")
+            raise NotImplementedError('Photon.measure_multiple() not implemented for quantum manager.')
 
         return FreeQuantumState.measure_multiple(basis, [photons[0].quantum_state, photons[1].quantum_state], rng)
 
     def add_loss(self, loss: float):
         assert 0 <= loss <= 1
-        assert self.encoding_type.get("keep_photon", False)
+        assert self.encoding_type.get('keep_photon', False)
         self.loss = 1 - (1 - self.loss) * (1 - loss)

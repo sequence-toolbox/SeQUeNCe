@@ -1,7 +1,7 @@
 from __future__ import annotations
+
 from enum import Enum, auto
 from typing import TYPE_CHECKING
-
 
 if TYPE_CHECKING:
     from ..topology.node import QuantumRouter
@@ -37,7 +37,7 @@ class RSVPMessage(Message):
         path (list[str]): cumulative node list for an entanglement path (if `msg_type == APPROVE` or `msg_type == REJECT`)
     """
 
-    def __init__(self, msg_type, receiver: str, reservation: "Reservation", **kwargs):
+    def __init__(self, msg_type, receiver: str, reservation: 'Reservation', **kwargs):
         super().__init__(msg_type, receiver)
         self.reservation = reservation
         match self.msg_type:
@@ -48,10 +48,10 @@ class RSVPMessage(Message):
             case RSVPMsgType.APPROVE:
                 self.path = kwargs['path']
             case _:
-                raise Exception("Unknown message type")
+                raise Exception('Unknown message type')
 
     def __str__(self):
-        return f"|type={self.msg_type}; reservation={self.reservation}|"
+        return f'|type={self.msg_type}; reservation={self.reservation}|'
 
 
 class RSVPProtocol(StackProtocol):
@@ -88,8 +88,16 @@ class RSVPProtocol(StackProtocol):
         self.purification_mode = 'until_target'  # once or until_target. QoS
         self.accepted_reservations = []
 
-    def push(self, responder: str, start_time: int, end_time: int, memory_size: int, target_fidelity: float,
-             entanglement_number: int = 1, identity: int = 0):
+    def push(
+        self,
+        responder: str,
+        start_time: int,
+        end_time: int,
+        memory_size: int,
+        target_fidelity: float,
+        entanglement_number: int = 1,
+        identity: int = 0,
+    ):
         """Method to receive reservation requests from higher level protocol.
 
         Will evaluate the request and determine if the node can meet it.
@@ -108,8 +116,16 @@ class RSVPProtocol(StackProtocol):
             May push/pop to lower/upper attached protocols (or network manager).
         """
 
-        reservation = Reservation(self.owner.name, responder, start_time, end_time, memory_size, target_fidelity,
-                                  entanglement_number, identity)
+        reservation = Reservation(
+            self.owner.name,
+            responder,
+            start_time,
+            end_time,
+            memory_size,
+            target_fidelity,
+            entanglement_number,
+            identity,
+        )
         if self.schedule(reservation):
             msg = RSVPMessage(RSVPMsgType.REQUEST, self.name, reservation)
             qcap = QCap(self.owner.name)
@@ -119,7 +135,7 @@ class RSVPProtocol(StackProtocol):
             msg = RSVPMessage(RSVPMsgType.REJECT, self.name, reservation, path=[])
             self._pop(msg=msg)
 
-    def pop(self, src: str, msg: "RSVPMessage"):
+    def pop(self, src: str, msg: 'RSVPMessage'):
         """Method to receive messages from lower protocols.
         Messages may be of 3 types, causing different network manager behavior:
 
@@ -173,7 +189,7 @@ class RSVPProtocol(StackProtocol):
                 next_hop = self.next_hop_when_tracing_back(msg.path)
                 self._push(dst=None, msg=msg, next_hop=next_hop)
         else:
-            raise Exception("Unknown type of message", msg.msg_type)
+            raise Exception('Unknown type of message', msg.msg_type)
 
     def next_hop_when_tracing_back(self, path: list[str]) -> str:
         """the next hop when going back from the responder to the initiator
@@ -188,7 +204,7 @@ class RSVPProtocol(StackProtocol):
         next_hop = path[cur_index - 1]
         return next_hop
 
-    def schedule(self, reservation: "Reservation") -> bool:
+    def schedule(self, reservation: 'Reservation') -> bool:
         """Method to attempt a reservation request. If an attempt succeeded, return True; otherwise, return False.
 
         Args:
@@ -220,11 +236,12 @@ class RSVPProtocol(StackProtocol):
     def received_message(self, src, msg):
         """Method to receive messages directly (should not be used; receive through network manager)."""
 
-        raise Exception(f"RSVP protocol {self.name} received a message (disallowed)")
+        raise Exception(f'RSVP protocol {self.name} received a message (disallowed)')
 
     def set_purification_mode(self, mode: str) -> None:
-        assert mode in ['once', 'until_target'], \
+        assert mode in ['once', 'until_target'], (
             f'Purification mode {mode} not supported, should be either "once" or "until_target"'
+        )
         self.purification_mode = mode
 
 

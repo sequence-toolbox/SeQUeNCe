@@ -1,8 +1,8 @@
 from .base import QuantumManager
-from .ket_vector import QuantumManagerKet
+from .bell_diagonal import QuantumManagerBellDiagonal
 from .density_matrix import QuantumManagerDensity
 from .fock_density_matrix import QuantumManagerDensityFock
-from .bell_diagonal import QuantumManagerBellDiagonal
+from .ket_vector import QuantumManagerKet
 from .stabilizer import QuantumManagerStabilizer
 
 __all__ = [
@@ -11,7 +11,7 @@ __all__ = [
     'QuantumManagerDensity',
     'QuantumManagerDensityFock',
     'QuantumManagerBellDiagonal',
-    'QuantumManagerStabilizer'
+    'QuantumManagerStabilizer',
 ]
 
 

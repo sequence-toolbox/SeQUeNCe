@@ -48,7 +48,7 @@ class FiberStretcher(Entity):
         self._circuit = Circuit(1)
         self._circuit.phase(0, phase)
 
-    def get(self, photon: "Photon", **kwargs):
+    def get(self, photon: 'Photon', **kwargs):
         """Method to receive a photon.
 
         Applies the local phase quantum circuit, then forwards to first receiver.
@@ -58,7 +58,7 @@ class FiberStretcher(Entity):
             photon (Photon): photon to transmit.
         """
 
-        if photon.encoding_type['name'] == "absorptive":
+        if photon.encoding_type['name'] == 'absorptive':
             key = photon.quantum_state
             self.timeline.quantum_manager.run_circuit(self._circuit, [key])
         self._receivers[0].get(photon)

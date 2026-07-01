@@ -24,9 +24,9 @@ class Event:
         _is_removed (bool): the flag to denotes if it's a valid event
     """
 
-    def __init__(self, time: int, process: "Process", priority=inf):
+    def __init__(self, time: int, process: 'Process', priority=inf):
         """Constructor for event class.
-        
+
         Args:
             time (int): the execution time of the event.
             process (Process): the process encapsulated in the event.

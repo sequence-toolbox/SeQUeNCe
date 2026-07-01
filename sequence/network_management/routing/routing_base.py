@@ -4,6 +4,7 @@ All routing protocols should inherit from this class and implement the required 
 """
 
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -16,13 +17,13 @@ from ...utils import log
 
 
 # type labels for routing protocols:
-ROUTING_STATIC      = 'routing_static'
+ROUTING_STATIC = 'routing_static'
 ROUTING_DISTRIBUTED = 'routing_distributed'
 
 
 class RoutingProtocol(Protocol, ABC):
-    """Abstract base class for routing protocols.
-    """
+    """Abstract base class for routing protocols."""
+
     _registry: dict[str, type[RoutingProtocol]] = {}
 
     def __init__(self, owner: QuantumRouter, name: str, protocol_type: str):
@@ -46,7 +47,7 @@ class RoutingProtocol(Protocol, ABC):
         if protocol_class is not None:
             cls._registry[protocol_type] = protocol_class
             return None
-        
+
         def decorator(protocol_class: type[RoutingProtocol]):
             cls._registry[protocol_type] = protocol_class
             return protocol_class
@@ -68,7 +69,7 @@ class RoutingProtocol(Protocol, ABC):
             protocol_class = cls._registry[protocol_type]
             return protocol_class(owner, name)
         except KeyError:
-            raise ValueError(f"Routing protocol type {protocol_type} not registered.")
+            raise ValueError(f'Routing protocol type {protocol_type} not registered.')
 
     @abstractmethod
     def init(self):
@@ -83,12 +84,12 @@ class RoutingProtocol(Protocol, ABC):
     @property
     def forwarding_table(self) -> dict[str, str]:
         """Returns the forwarding table.
-        
+
         Returns:
             dict[str, str]: forwarding table in format {name of destination node: name of next node}.
         """
         return self.owner.network_manager.get_forwarding_table()
-    
+
     def update_forwarding_rule(self, dst: str, next_node: str):
         """Updates dst to map to next_node in forwarding table.
            If dst not in forwarding table, effectively adds a new rule to the forwarding table.

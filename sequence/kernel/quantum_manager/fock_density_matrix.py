@@ -3,6 +3,7 @@ This module implements the quantum manager for Fock states with the density matr
 """
 
 from math import sqrt
+
 from numpy import array, base_repr, cumsum, identity, kron, zeros
 from numpy.typing import NDArray
 from scipy.sparse import csr_matrix
@@ -10,15 +11,19 @@ from scipy.special import binom
 
 from .base import QuantumManager
 from ..quantum_state import DensityState
-from ..quantum_utils import (density_partial_trace, measure_entangled_state_with_cache_fock_density, 
-                             measure_multiple_with_cache_fock_density, measure_state_with_cache_fock_density)
+from ..quantum_utils import (
+    density_partial_trace,
+    measure_entangled_state_with_cache_fock_density,
+    measure_multiple_with_cache_fock_density,
+    measure_state_with_cache_fock_density,
+)
 from ...constants import FOCK_DENSITY_MATRIX_FORMALISM
 
 
 @QuantumManager.register(FOCK_DENSITY_MATRIX_FORMALISM)
 class QuantumManagerDensityFock(QuantumManager):
     """Class to track and manage Fock states with the density matrix formalism.
-    
+
     Attributes:
         truncation (int): maximally allowed number of excited states for elementary subsystems. Default is 1 for qubit.
         dim (int): subsystem Hilbert space dimension. dim = truncation + 1
@@ -60,13 +65,13 @@ class QuantumManagerDensityFock(QuantumManager):
             Array[int]: unitary swapping operator
         """
 
-        size = self.dim ** num_systems
+        size = self.dim**num_systems
         swap_unitary = zeros((size, size))
 
         for old_index in range(size):
             old_str = base_repr(old_index, self.dim)
             old_str = old_str.zfill(num_systems)
-            new_str = ''.join((old_str[:i], old_str[j], old_str[i + 1:j], old_str[i], old_str[j + 1:]))
+            new_str = ''.join((old_str[:i], old_str[j], old_str[i + 1 : j], old_str[i], old_str[j + 1 :]))
             new_index = int(new_str, base=self.dim)
             swap_unitary[new_index, old_index] = 1
 
@@ -104,7 +109,6 @@ class QuantumManagerDensityFock(QuantumManager):
 
         # apply any necessary swaps to order keys
         if len(keys) > 1:
-
             # generate desired key order
             start_idx = all_keys.index(keys[0])
             if start_idx + len(keys) > len(all_keys):
@@ -156,7 +160,7 @@ class QuantumManagerDensityFock(QuantumManager):
 
     def set_to_zero(self, key: int):
         """set the state to ground (zero) state.
-        
+
         Args:
             key (int): key of the state to set to ground state.
         """
@@ -191,8 +195,9 @@ class QuantumManagerDensityFock(QuantumManager):
         new_state, all_keys = self._prepare_state(keys)
         return self._measure(new_state, keys, all_keys, povms, meas_samp)
 
-    def _measure(self, state: list[list[complex]], keys: list[int],
-                 all_keys: list[int], povms: list[NDArray], meas_samp: float) -> int:
+    def _measure(
+        self, state: list[list[complex]], keys: list[int], all_keys: list[int], povms: list[NDArray], meas_samp: float
+    ) -> int:
         """Method to measure subsystems at given keys in POVM formalism.
 
         Modifies quantum state of all qubits given by all_keys, post-measurement operator determined
@@ -223,13 +228,15 @@ class QuantumManagerDensityFock(QuantumManager):
                 key = keys[0]
                 num_states = len(all_keys)
                 state_index = all_keys.index(key)
-                states, probs = measure_entangled_state_with_cache_fock_density(state_tuple, state_index, num_states, 
-                                                                                povm_tuple, self.truncation)
+                states, probs = measure_entangled_state_with_cache_fock_density(
+                    state_tuple, state_index, num_states, povm_tuple, self.truncation
+                )
 
         else:
             indices = tuple([all_keys.index(key) for key in keys])
-            states, probs = measure_multiple_with_cache_fock_density(state_tuple, indices, len(all_keys), 
-                                                                     povm_tuple, self.truncation)
+            states, probs = measure_multiple_with_cache_fock_density(
+                state_tuple, indices, len(all_keys), povm_tuple, self.truncation
+            )
 
         # calculate result based on measurement sample.
         prob_sum = cumsum(probs)
@@ -286,7 +293,7 @@ class QuantumManagerDensityFock(QuantumManager):
             total_kraus_op = zeros((self.dim ** len(all_keys), self.dim ** len(all_keys)))
 
             for n in range(k, self.dim):
-                coeff = sqrt(binom(n, k)) * sqrt(((1 - loss_rate) ** (n - k)) * (loss_rate ** k))
+                coeff = sqrt(binom(n, k)) * sqrt(((1 - loss_rate) ** (n - k)) * (loss_rate**k))
                 single_op = zeros((self.dim, self.dim))
                 single_op[n - k, n] = 1
                 total_op = self._prepare_operator(all_keys, [key], single_op)

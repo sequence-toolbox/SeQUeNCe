@@ -7,17 +7,17 @@ NOTE: this file currently only works for sequential simulation files.
 """
 
 import argparse
-from graphviz import Graph
-from json import load
 from collections import defaultdict
+from json import load
 
-from sequence.topology.router_net_topo import RouterNetTopo
-from sequence.topology.qkd_topo import QKDTopo
+from graphviz import Graph
+
 from sequence.topology.dqc_net_topo import DQCNetTopo
-
+from sequence.topology.qkd_topo import QKDTopo
+from sequence.topology.router_net_topo import RouterNetTopo
 
 parser = argparse.ArgumentParser()
-parser.add_argument('config_file', help="path to json file defining network")
+parser.add_argument('config_file', help='path to json file defining network')
 parser.add_argument('-d', '--directory', type=str, default='tmp', help='directory to save the figure')
 parser.add_argument('-f', '--filename', type=str, default='topology', help='filename of the figure')
 parser.add_argument('-m', '--draw_middle', action='store_true')
@@ -30,8 +30,8 @@ draw_middle = args.draw_middle
 # Determine type of network
 with open(args.config_file, 'r') as fh:
     config = load(fh)
-nodes = config["nodes"]
-node_type = nodes[0]["type"]
+nodes = config['nodes']
+node_type = nodes[0]['type']
 
 if node_type == RouterNetTopo.BSM_NODE or node_type == RouterNetTopo.QUANTUM_ROUTER:
     topo = RouterNetTopo(args.config_file)

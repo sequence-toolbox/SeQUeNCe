@@ -5,6 +5,7 @@ Routing tables may be created manually, or generated and installed automatically
 """
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -19,10 +20,10 @@ class StaticRoutingProtocol(RoutingProtocol):
     """Class to update forwarding table manually.
 
     The `StaticRoutingProtocol` class writes to the forwarding table (from the `NetworkManager`).
-    Static in this context means that the forwarding table is manually configured (by a network administrator), 
+    Static in this context means that the forwarding table is manually configured (by a network administrator),
     not automatically updated via a routing protocol (i.e. computer program).
     """
-    
+
     def __init__(self, owner: QuantumRouter, name: str):
         """Constructor for routing protocol.
 
@@ -35,7 +36,7 @@ class StaticRoutingProtocol(RoutingProtocol):
     def init(self):
         pass
 
-    def received_message(self, src: str, msg: "Message"):
+    def received_message(self, src: str, msg: 'Message'):
         """Method to directly receive messages from node (should not be used)."""
 
-        raise Exception("StaticRouting protocol should not call this function")
+        raise Exception('StaticRouting protocol should not call this function')
