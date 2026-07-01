@@ -244,7 +244,7 @@ class FidelityMetric(Metric):
         values = [
             record[self.field]
             for record in ctx.storage.get_by_owner(ctx.owner_name)
-            if record["event_type"] is self.event and self.field in record
+            if record["event_type"] == self.event and self.field in record
         ]
         return {self.key: values}
 
