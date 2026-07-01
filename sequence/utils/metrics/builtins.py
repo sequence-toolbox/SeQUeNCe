@@ -3,7 +3,13 @@
 from __future__ import annotations
 
 from .event_types import EventTypes
-from .metric_types import CounterMetric, DeliveryTimeMetric, FidelityMetric, RateMetric
+from .metric_types import (
+    CounterMetric,
+    DeliveryTimeMetric,
+    FidelityMetric,
+    Metric,
+    RateMetric,
+)
 from .registry import register_metric
 
 EG_METRIC = CounterMetric(
@@ -40,16 +46,6 @@ SWAPPED_FIDELITIES_METRIC = FidelityMetric(
     field="fidelity",
 )
 
-_BUILTIN_METRICS = (
-    EG_METRIC,
-    EP_METRIC,
-    THROUGHPUT_METRIC,
-    PURIFIED_FIDELITIES_METRIC,
-    DELIVERY_TIME_METRIC,
-    ES_METRIC,
-    SWAPPED_FIDELITIES_METRIC,
-)
-
 
 def register_builtin_metrics() -> None:
     """Register all built-in metrics with the global registry.
@@ -57,5 +53,16 @@ def register_builtin_metrics() -> None:
     Registers entanglement generation, purification, swapping, throughput,
     fidelity, and delivery-time metrics defined in this module.
     """
-    for metric in _BUILTIN_METRICS:
+
+    BUILTIN_METRICS: list[Metric] = [
+        EG_METRIC,
+        EP_METRIC,
+        THROUGHPUT_METRIC,
+        PURIFIED_FIDELITIES_METRIC,
+        DELIVERY_TIME_METRIC,
+        ES_METRIC,
+        SWAPPED_FIDELITIES_METRIC,
+    ]
+
+    for metric in BUILTIN_METRICS:
         register_metric(metric)
