@@ -10,6 +10,7 @@ concurrency:
 
 jobs:
   release:
+    environment: release
     runs-on: ubuntu-latest
     if: github.repository == 'sequence-toolbox/SeQUeNCe'
     permissions:
@@ -26,19 +27,13 @@ jobs:
         with:
           fetch-depth: '0'
           token: ${{ steps.generate-token.outputs.token }}
-          ref: master
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-      - name: Sync dependencies
-        run: uv sync --only-group release
+          ref: ${{ github.ref_name }}
+
       - name: Stamp and release
-        run: |
-          uv run semantic-release -v version --skip-build --no-commit --no-tag --no-changelog
-          uv lock --upgrade-package sequence
-          git add uv.lock
-          uv run semantic-release -v version
-        env:
-          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-          GIT_COMMIT_AUTHOR: "sequence-release-bot[bot] <ID+sequence-release-bot[bot]@users.noreply.github.com>"
+        uses: python-semantic-release/python-semantic-release@v10.5.3
+        with:
+          github_token: ${{ steps.generate-token.outputs.token }}
+          git_committer_email: 298530268+sequence-release-bot[bot]@users.noreply.github.com
+          git_committer_name: sequence-release-bot[bot]
+          vcs_release: true
+          changelog: true
