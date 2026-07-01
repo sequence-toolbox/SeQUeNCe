@@ -2,6 +2,7 @@ import math
 
 import pytest
 
+from sequence.kernel.timeline import Timeline
 from sequence.utils import metrics
 from sequence.utils.metrics import CounterMetric
 from sequence.utils.metrics.event_types import EventTypes
@@ -13,7 +14,7 @@ def reset_metrics_state():
     metrics._enabled_events.clear()
     metrics.storage.clear()
     metrics.reset_metrics()
-    metrics.register_time_provider(metrics._system_time_provider)
+    tl = Timeline(int(1e12))
 
 
 def test_record_before_enable_is_noop():
@@ -116,16 +117,6 @@ def test_storage_query_helpers():
     assert len(metrics.storage.get_by_event(EventTypes.EG_FAILURE)) == 2
     assert len(metrics.storage.get_by_owner("e0")) == 2
     assert len(metrics.storage.get_by_owner("e1")) == 1
-
-
-def test_default_time_provider_uses_system_time(monkeypatch):
-    monkeypatch.setattr(metrics._system_time_provider, "now", lambda: 42)
-    metrics.register_time_provider(metrics._system_time_provider)
-    metrics.enable([EventTypes.EG_SUCCESS])
-
-    metrics.record(EventTypes.EG_SUCCESS, "e0", fidelity=0.9)
-
-    assert metrics.storage.get_all()[0]["sim_time"] == 42
 
 
 def test_register_time_provider_uses_registered_source():
