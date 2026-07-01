@@ -281,7 +281,7 @@ class DeliveryTimeMetric(Metric):
         delivery_records = [
             record
             for record in ctx.storage.get_by_owner(delivery_owner)
-            if self.delivery_event is not None and record["event_type"] is self.delivery_event
+            if self.delivery_event is not None and record["event_type"] == self.delivery_event
         ]
         delivery_records.sort(key=lambda record: record["sim_time"])
         if ctx.target_pairs is None or len(delivery_records) < ctx.target_pairs:
