@@ -42,7 +42,7 @@ from .storage import InMemoryStorage
 
 _enabled = False
 _enabled_events: set[EventType] = set()
-storage = InMemoryStorage()
+storage: InMemoryStorage = InMemoryStorage()
 time_provider: Timeline | None = None
 
 
