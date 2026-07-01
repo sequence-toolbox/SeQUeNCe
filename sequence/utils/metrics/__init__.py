@@ -80,7 +80,8 @@ def configure(storage_type: str = "in_memory") -> None:
     if storage_type == "in_memory":
         storage = InMemoryStorage()
         reset_metrics()
-
+        return
+    raise ValueError(f"Unknown storage_type '{storage_type}'. Supported: 'in_memory'.")
 
 def record(event_type: EventType, owner_name: str, **kwargs: Any) -> None:
     """Record a metrics event if metrics are enabled for this event type.
