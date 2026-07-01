@@ -26,7 +26,7 @@ class CollectContext:
     owner_name: str
     storage: InMemoryStorage
     delivery_owner: str | None = None
-    target_pairs: int = 500
+    target_pairs: int | None = None
     reservation_start_time: int | None = None
     throughput: float | None = None
 
