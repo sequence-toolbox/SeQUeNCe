@@ -120,11 +120,9 @@ def test_storage_query_helpers():
 
 
 def test_register_time_provider_uses_registered_source():
-    class StubTimeProvider:
-        def now(self) -> int:
-            return 12345
-
-    metrics.register_time_provider(StubTimeProvider())
+    timeline = Timeline(int(1e12))
+    timeline.time = 12345
+    metrics.register_time_provider(timeline)
     metrics.enable([EventTypes.EG_SUCCESS])
 
     metrics.record(EventTypes.EG_SUCCESS, "e0", fidelity=0.9)
@@ -281,17 +279,17 @@ def test_delivery_does_not_affect_ep_counters():
 
 
 def test_collect_trial_metrics_ep_fields_and_delivery_time():
-    class StubTimeProvider:
+    class AdvancingTimeline(Timeline):
         def __init__(self) -> None:
-            self._time = int(1e12)
+            super().__init__(int(1e12))
+            self.time = int(1e12)
 
         def now(self) -> int:
-            current = self._time
-            self._time += int(1e11)
+            current = self.time
+            self.time += int(1e11)
             return current
 
-    provider = StubTimeProvider()
-    metrics.register_time_provider(provider)
+    metrics.register_time_provider(AdvancingTimeline())
     metrics.enable([EventTypes.EP_SUCCESS, EventTypes.DELIVERY])
 
     metrics.record(EventTypes.EP_SUCCESS, "left", fidelity=0.7)
