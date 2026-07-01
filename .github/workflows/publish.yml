@@ -69,7 +69,9 @@ jobs:
           name: python-release-package-dist
           path: dist/
       - name: Publish dist to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@v1.14.0
+        with:
+          attestations: true
 
   publish-to-test-pypi:
     name: Publish dist to TestPyPi
@@ -91,7 +93,7 @@ jobs:
           name: python-test-package-dist
           path: dist/
       - name: Publish dist to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@v1.14.0
         with:
           attestations: true
           repository-url: https://test.pypi.org/legacy/
