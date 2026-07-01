@@ -13,7 +13,7 @@ class TimeProvider(Protocol):
 
     def now(self) -> int:
         """Return the current timestamp in picoseconds."""
-        ...
+        raise NotImplementedError
 
 
 class SystemTimeProvider:
