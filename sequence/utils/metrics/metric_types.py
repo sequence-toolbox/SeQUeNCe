@@ -55,11 +55,17 @@ class Metric(ABC):
     def on_record(self, event_type: EventType, owner_name: str, kwargs: dict[str, Any]) -> None:
         """Update metric state when a matching event is recorded.
 
+        This method is called for every metric when it is recorded.
+        Default implementation is a no-op. 
+        This method is completely optional for any metric subclasses.
+        Should only be implemented if you need a hook when a metric is recorded.
+
         Args:
             event_type: Type of the recorded event.
             owner_name: Name of the node or component that owns the event.
             kwargs: Mutable event payload; metrics may add derived fields.
         """
+        pass
 
     @abstractmethod
     def collect(self, ctx: CollectContext) -> dict[str, Any]:
@@ -73,7 +79,14 @@ class Metric(ABC):
         """
 
     def reset(self) -> None:
-        """Clear per-trial metric state."""
+        """Clear per-trial metric state.
+        
+        This method is called for every metric by default when all metrics are reset.
+        Default implementation is a no-op. 
+        This method is completely optional for any metric subclasses.
+        Should only be implemented if you need a hook when the metric is reset.
+        """
+        pass
 
 
 @dataclass
