@@ -142,6 +142,13 @@ def collect_trial_metrics(
     return result
 
 
+def _mean_and_std(values: list[float]) -> tuple[float, float]:
+    finite_values = [value for value in values if math.isfinite(value)]
+    if not finite_values:
+        return float("nan"), float("nan")
+    return mean(finite_values), stdev(finite_values) if len(finite_values) > 1 else 0.0
+
+
 def aggregate_trial_metrics(
     trials: list[dict[str, Any]],
     *,
@@ -164,14 +171,10 @@ def aggregate_trial_metrics(
     list_metrics_keys = [key for key, value in trials[0].items() if isinstance(value, list)]
 
     for metric in scalar_metrics:
-        values = [trial[metric] for trial in trials]
-        finite_values = [value for value in values if isinstance(value, (int, float)) and math.isfinite(value)]
-        if finite_values:
-            aggregated[f"avg_{metric}"] = mean(finite_values)
-            aggregated[f"std_{metric}"] = stdev(finite_values) if len(finite_values) > 1 else 0.0
-        else:
-            aggregated[f"avg_{metric}"] = float("nan")
-            aggregated[f"std_{metric}"] = float("nan")
+        values = [float(trial[metric]) for trial in trials if isinstance(trial[metric], (int, float))]
+        avg, std = _mean_and_std(values)
+        aggregated[f"avg_{metric}"] = avg
+        aggregated[f"std_{metric}"] = std
 
     for metric in list_metrics_keys:
         all_values: list[float] = []
@@ -180,12 +183,9 @@ def aggregate_trial_metrics(
             if list_metric_cap is not None:
                 trial_values = trial_values[:list_metric_cap]
             all_values.extend(trial_values)
-        if all_values:
-            aggregated[f"avg_{metric}"] = mean(all_values)
-            aggregated[f"std_{metric}"] = stdev(all_values) if len(all_values) > 1 else 0.0
-        else:
-            aggregated[f"avg_{metric}"] = float("nan")
-            aggregated[f"std_{metric}"] = float("nan")
+        avg, std = _mean_and_std(all_values)
+        aggregated[f"avg_{metric}"] = avg
+        aggregated[f"std_{metric}"] = std
 
     return aggregated
 
