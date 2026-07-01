@@ -39,7 +39,7 @@ class InMemoryStorage:
         Returns:
             Records whose ``event_type`` matches the given value.
         """
-        return [record for record in self._records if record["event_type"] is event_type]
+        return [record for record in self._records if record["event_type"] == event_type]
 
     def get_by_owner(self, owner_name: str) -> list[dict[str, Any]]:
         """Return records for a given owner.
