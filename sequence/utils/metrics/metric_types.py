@@ -160,10 +160,10 @@ class CounterMetric(Metric):
             owner_name: Name of the node or component that owns the event.
             kwargs: Event payload; updated with the current success rate.
         """
-        if event_type is self.failure_event:
+        if event_type == self.failure_event:
             self._failures[owner_name] = self._failures.get(owner_name, 0) + 1
             kwargs[self.rate_field] = self.success_rate(owner_name)
-        elif event_type is self.success_event:
+        elif event_type == self.success_event:
             self._successes[owner_name] = self._successes.get(owner_name, 0) + 1
             kwargs[self.rate_field] = self.success_rate(owner_name)
 
