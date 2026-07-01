@@ -112,7 +112,7 @@ def collect_trial_metrics(
     owner_name: str,
     *,
     delivery_owner: str | None = None,
-    target_pairs: int = 500,
+    target_pairs: int | None = None,
     reservation_start_time: int | None = None,
     throughput: float | None = None,
 ) -> dict[str, Any]:
