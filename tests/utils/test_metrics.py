@@ -14,7 +14,7 @@ def reset_metrics_state():
     metrics._enabled_events.clear()
     metrics.storage.clear()
     metrics.reset_metrics()
-    tl = Timeline(int(1e12))
+    Timeline(int(1e12))
 
 
 def test_record_before_enable_is_noop():
