@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from time import time_ns
+from time import monotonic_ns
 from typing import Any, Protocol
 
 from .event_types import EventType
@@ -25,7 +25,7 @@ class SystemTimeProvider:
         Returns:
             Current wall-clock time from ``time_ns()``.
         """
-        return time_ns()
+        return monotonic_ns() * 1000
 
 
 class InMemoryStorage:
