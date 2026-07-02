@@ -201,6 +201,10 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
             node (str): other node name.
             memories (list[str]): the list of memories name used on other node.
         """
+        # `memories` is intentionally unused here: the swapping protocol keys off the
+        # left/right memos it already holds. It is kept to match the shared
+        # EntanglementProtocol.set_others() interface (ResourceManager calls it
+        # positionally, and the generation protocols do use it). See issue #170.
         if node == self.left_memo.entangled_memory["node_id"]:
             self.left_protocol_name = protocol
         elif node == self.right_memo.entangled_memory["node_id"]:
@@ -359,6 +363,8 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
             node (str): other node name.
             memories (list[str]): the list of memory names used on other node.
         """
+        # `memories` is intentionally unused here (as in EntanglementSwappingA): kept to
+        # match the shared EntanglementProtocol.set_others() interface. See issue #170.
         self.remote_node_name = node
         self.remote_protocol_name = protocol
 
