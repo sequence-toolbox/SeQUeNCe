@@ -15,7 +15,6 @@ jobs:
     if: github.repository == 'sequence-toolbox/SeQUeNCe'
     permissions:
       contents: write
-      pull-requests: write
 
     steps:
       - name: Create App Token
