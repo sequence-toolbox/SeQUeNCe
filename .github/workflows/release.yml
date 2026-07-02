@@ -1,0 +1,39 @@
+name: Generate Release
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    environment: release
+    runs-on: ubuntu-latest
+    if: github.repository == 'sequence-toolbox/SeQUeNCe'
+    permissions:
+      contents: read
+    steps:
+      - name: Create App Token
+        id: generate-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      - name: Checkout Master
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: '0'
+          token: ${{ steps.generate-token.outputs.token }}
+          ref: ${{ github.ref_name }}
+
+      - name: Stamp and release
+        uses: python-semantic-release/python-semantic-release@v10.5.3
+        with:
+          github_token: ${{ steps.generate-token.outputs.token }}
+          git_committer_email: 298530268+sequence-release-bot[bot]@users.noreply.github.com
+          git_committer_name: sequence-release-bot[bot]
+          vcs_release: true
+          changelog: true
