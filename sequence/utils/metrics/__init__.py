@@ -83,6 +83,7 @@ def configure(storage_type: str = "in_memory") -> None:
         return
     raise ValueError(f"Unknown storage_type '{storage_type}'. Supported: 'in_memory'.")
 
+
 def record(event_type: EventType, owner_name: str, **kwargs: Any) -> None:
     """Record a metrics event if metrics are enabled for this event type.
 
@@ -192,3 +193,36 @@ def aggregate_trial_metrics(
 
 
 builtins.register_builtin_metrics()
+
+# Exported symbols
+__all__ = [
+    # From event_types
+    "EventType",
+    "EventTypes",
+    "get_event_type",
+    "list_event_types",
+    "register_event_type",
+    # From metric_types
+    "CollectContext",
+    "CounterMetric",
+    "DeliveryTimeMetric",
+    "FidelityMetric",
+    "Metric",
+    "RateMetric",
+    # From registry
+    "clear_registry",
+    "get_counter",
+    "list_metrics",
+    "register_metric",
+    "reset_metrics",
+    "unregister_metric",
+    # From storage
+    "InMemoryStorage",
+    # Top-level symbols in this module
+    "register_time_provider",
+    "enable",
+    "configure",
+    "record",
+    "collect_trial_metrics",
+    "aggregate_trial_metrics",
+]
