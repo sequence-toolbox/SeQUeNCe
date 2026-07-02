@@ -22,7 +22,7 @@ jobs:
       - name: Build wheel and tarball
         run: uv build
       - name: Store dist as an artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-release-package-dist
           path: dist/
@@ -45,7 +45,7 @@ jobs:
       - name: Build wheel and tarball for test
         run: uv build
       - name: Store test dist as an artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-test-package-dist
           path: dist/
