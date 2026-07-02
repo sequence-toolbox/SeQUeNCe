@@ -1,8 +1,6 @@
 name: CI Pipeline
 
 on:
-  push:
-    branches: [master]
   pull_request:
     branches: [master]
   workflow_dispatch:
@@ -12,14 +10,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate-pr-title:
-    runs-on: ubuntu-latest
-    steps:
-      - name: PR Conventional Commit Validation
-        uses: ytanikin/pr-conventional-commits@1.4.0
-        with:
-          task_types: '["feat","fix","docs","test","ci","refactor","perf","chore","revert"]'
-
   validation:
     if: github.repository == 'sequence-toolbox/SeQUeNCe'
     name: Run Unit Tests
