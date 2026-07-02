@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'release' && github.repository == 'sequence-toolbox/SeQUeNCe'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: true
       - name: Install uv
@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.repository == 'sequence-toolbox/SeQUeNCe'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: true
       - name: Install uv
