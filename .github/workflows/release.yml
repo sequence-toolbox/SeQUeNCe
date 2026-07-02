@@ -14,7 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'sequence-toolbox/SeQUeNCe'
     permissions:
-      contents: read
+      contents: write
+      pull-requests: write
+
     steps:
       - name: Create App Token
         id: generate-token
