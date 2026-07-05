@@ -1,4 +1,4 @@
-name: Publish to PyPi
+name: Publish to PyPI
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-release:
-    name: Build the release
+    name: Build the PyPI release
     runs-on: ubuntu-latest
     if: github.event_name == 'release' && github.repository == 'sequence-toolbox/SeQUeNCe'
     steps:
@@ -21,14 +21,14 @@ jobs:
           enable-cache: true
       - name: Build wheel and tarball
         run: uv build
-      - name: Store dist as an artifact
+      - name: Store PyPI dist as an artifact
         uses: actions/upload-artifact@v7
         with:
           name: python-release-package-dist
           path: dist/
 
   build-test-release:
-    name: Build the test release
+    name: Build the TestPyPI release
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.repository == 'sequence-toolbox/SeQUeNCe'
     steps:
@@ -42,16 +42,16 @@ jobs:
       - name: Modify package name for TestPyPI
         run: |
           sed -i 's/^name = "sequence"/name = "ssequence"/' pyproject.toml
-      - name: Build wheel and tarball for test
+      - name: Build TestPyPI wheel and tarball
         run: uv build
-      - name: Store test dist as an artifact
+      - name: Store TestPyPI dist as an artifact
         uses: actions/upload-artifact@v7
         with:
           name: python-test-package-dist
           path: dist/
 
   publish-to-pypi:
-    name: Publish dist to PyPi
+    name: Publish dist to PyPI
     if: github.event_name == 'release' && github.event.action == 'published' && github.repository == 'sequence-toolbox/SeQUeNCe'
     needs:
       - build-release
@@ -63,18 +63,18 @@ jobs:
       id-token: write
 
     steps:
-      - name: Download all the dists
+      - name: Download PyPI dist
         uses: actions/download-artifact@v8
         with:
           name: python-release-package-dist
           path: dist/
-      - name: Publish dist to TestPyPI
+      - name: Publish dist to PyPI
         uses: pypa/gh-action-pypi-publish@v1.14.0
         with:
           attestations: true
 
   publish-to-test-pypi:
-    name: Publish dist to TestPyPi
+    name: Publish dist to TestPyPI
     if: github.event_name == 'push' && github.repository == 'sequence-toolbox/SeQUeNCe'
     needs:
       - build-test-release
@@ -87,7 +87,7 @@ jobs:
       id-token: write
 
     steps:
-      - name: Download all the test dists
+      - name: Download TestPyPI dist
         uses: actions/download-artifact@v8
         with:
           name: python-test-package-dist
