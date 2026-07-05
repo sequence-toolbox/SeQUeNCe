@@ -328,6 +328,7 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
 
         if protocol_class is not None:
             cls._registry[name] = protocol_class
+            return None
         
         def decorator(protocol_class: type['EntanglementSwappingB']) -> type['EntanglementSwappingB']:
             if name in cls._registry:
@@ -347,6 +348,15 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
             return protocol_class(owner, name, hold_memo, **kwargs)
         except KeyError:
             raise ValueError(f"Protocol class '{protocol_name}' is not registered.")
+
+    @classmethod
+    def list_protocols(cls) -> list[str]:
+        """List all registered Entanglement Swapping B protocols.
+
+        Returns:
+            A list of names of all registered Entanglement Swapping B protocols.
+        """
+        return list(cls._registry.keys())
 
     def is_ready(self) -> bool:
         return self.remote_protocol_name is not None

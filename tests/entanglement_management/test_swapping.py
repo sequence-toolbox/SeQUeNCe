@@ -2,8 +2,19 @@ import numpy
 import pytest
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
+from sequence.constants import BELL_DIAGONAL_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM, KET_VECTOR_FORMALISM
 from sequence.kernel.timeline import Timeline
-from sequence.entanglement_management.swapping import *
+from sequence.message import Message
+from sequence.entanglement_management.swapping import (
+    EntanglementSwappingA,
+    EntanglementSwappingA_BDS,
+    EntanglementSwappingA_Circuit,
+    EntanglementSwappingB,
+    EntanglementSwappingB_BDS,
+    EntanglementSwappingB_Circuit,
+    EntanglementSwappingMessage,
+    SwappingMsgType,
+)
 from sequence.topology.node import Node
 
 
@@ -23,7 +34,7 @@ class FakeNode(Node):
         self.msg_log = []
         self.resource_manager = ResourceManager()
 
-    def receive_message(self, src: str, msg: "Message"):
+    def receive_message(self, src: str, msg: Message):
         self.msg_log.append((self.timeline.now(), src, msg))
         for protocol in self.protocols:
             if protocol.name == msg.receiver:
@@ -44,6 +55,62 @@ def correct_order(state, keys):
                             [0, 0, 0, 1]]) @ state
     else:
         return state
+
+
+def test_swapping_protocol_registry_contract_and_factory_selection():
+    old_a_registry = EntanglementSwappingA._registry.copy()
+    old_b_registry = EntanglementSwappingB._registry.copy()
+    old_a_formalism = EntanglementSwappingA.get_formalism()
+    old_b_formalism = EntanglementSwappingB.get_formalism()
+
+    class CustomSwappingA(EntanglementSwappingA):
+        def start(self) -> None:
+            pass
+
+    class CustomSwappingB(EntanglementSwappingB):
+        def received_message(self, src, msg) -> None:
+            pass
+
+    try:
+        protocols_a = set(EntanglementSwappingA.list_protocols())
+        protocols_b = set(EntanglementSwappingB.list_protocols())
+
+        assert {KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM, BELL_DIAGONAL_STATE_FORMALISM}.issubset(protocols_a)
+        assert {KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM, BELL_DIAGONAL_STATE_FORMALISM}.issubset(protocols_b)
+
+        tl, nodes, memories = config_three_nodes_network(phi_plus, phi_plus, 0)
+        a1, a2, _ = nodes
+        memo1, memo2, memo3, _ = memories
+
+        EntanglementSwappingA.set_formalism(KET_VECTOR_FORMALISM)
+        EntanglementSwappingB.set_formalism(KET_VECTOR_FORMALISM)
+        assert isinstance(EntanglementSwappingA.create(a2, "a2.ESa0", memo2, memo3), EntanglementSwappingA_Circuit)
+        assert isinstance(EntanglementSwappingB.create(a1, "a1.ESb0", memo1), EntanglementSwappingB_Circuit)
+
+        EntanglementSwappingA.set_formalism(BELL_DIAGONAL_STATE_FORMALISM)
+        EntanglementSwappingB.set_formalism(BELL_DIAGONAL_STATE_FORMALISM)
+        assert isinstance(EntanglementSwappingA.create(a2, "a2.ESa1", memo2, memo3), EntanglementSwappingA_BDS)
+        assert isinstance(EntanglementSwappingB.create(a1, "a1.ESb1", memo1), EntanglementSwappingB_BDS)
+
+        custom_a = "__test_swapping_a__"
+        custom_b = "__test_swapping_b__"
+        assert EntanglementSwappingA.register(custom_a, CustomSwappingA) is None
+        assert EntanglementSwappingB.register(custom_b, CustomSwappingB) is None
+
+        with pytest.raises(ValueError, match="already registered"):
+            EntanglementSwappingA.register(custom_a, CustomSwappingA)
+        with pytest.raises(ValueError, match="already registered"):
+            EntanglementSwappingB.register(custom_b, CustomSwappingB)
+
+        EntanglementSwappingA.set_formalism(custom_a)
+        EntanglementSwappingB.set_formalism(custom_b)
+        assert isinstance(EntanglementSwappingA.create(a2, "a2.ESa2", memo2, memo3), CustomSwappingA)
+        assert isinstance(EntanglementSwappingB.create(a1, "a1.ESb2", memo1), CustomSwappingB)
+    finally:
+        EntanglementSwappingA._registry = old_a_registry
+        EntanglementSwappingB._registry = old_b_registry
+        EntanglementSwappingA.set_formalism(old_a_formalism)
+        EntanglementSwappingB.set_formalism(old_b_formalism)
 
 
 def config_three_nodes_network(state1, state2, seed_index):
@@ -552,8 +619,8 @@ def test_EntanglementSwapping():
             assert a3.resource_manager.log[-1] == (memo4, "ENTANGLED")
         else:
             counter2 += 1
-            assert memo1.entangled_memory["node_id"] == None
-            assert memo4.entangled_memory["node_id"] == None
+            assert memo1.entangled_memory["node_id"] is None
+            assert memo4.entangled_memory["node_id"] is None
             assert memo1.fidelity == memo4.fidelity == 0
             assert a1.resource_manager.log[-1] == (memo1, "RAW")
             assert a3.resource_manager.log[-1] == (memo4, "RAW")
