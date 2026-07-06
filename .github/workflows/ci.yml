@@ -1,26 +1,35 @@
 name: CI Pipeline
 
 on:
-  push:
-    branches: [master]
   pull_request:
     branches: [master]
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validation:
     if: github.repository == 'sequence-toolbox/SeQUeNCe'
     name: Run Unit Tests
-    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      code-quality: write
     strategy:
+      fail-fast: false
       matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
         python-version:
           - "3.12"
           - "3.13"
           - "3.14"
-
+    runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Install uv and set py version
       uses: astral-sh/setup-uv@v7
@@ -28,8 +37,8 @@ jobs:
         python-version: ${{ matrix.python-version }}
         enable-cache: true
 
-    - name: Install project
-      run: uv sync --locked --all-extras --dev
+    - name: Install sequence
+      run: uv sync --locked --all-extras --dev --no-editable
 
     - name: Run tests
       run: uv run pytest --cov=. --cov-report=xml

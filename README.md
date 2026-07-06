@@ -13,6 +13,7 @@
 
 [![PyPi](https://img.shields.io/pypi/v/sequence)](https://pypi.org/project/sequence/)
 ![pyversions](https://img.shields.io/pypi/pyversions/sequence)
+[![CI Pipeline](https://github.com/sequence-toolbox/SeQUeNCe/actions/workflows/ci.yml/badge.svg)](https://github.com/sequence-toolbox/SeQUeNCe/actions/workflows/ci.yml)
 [![Documentation](https://img.shields.io/readthedocs/sequence-rtd-tutorial)](https://sequence-rtd-tutorial.readthedocs.io/)
 [![QuTiP](https://img.shields.io/badge/integration-QuTiP-blue)](https://qutip.org/)
 [![Stim](https://img.shields.io/badge/integration-Stim-blue)](https://github.com/quantumlib/Stim)
