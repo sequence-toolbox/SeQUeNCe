@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 from .eventlist import EventList
 from .quantum_manager import QuantumManager
-from ..utils import log
+from ..utils import log, metrics
 
 # for timeline formatting
 NANOSECONDS_PER_MILLISECOND = 10**6
@@ -76,6 +76,7 @@ class Timeline:
         if manager_kwargs is None:
             manager_kwargs = {}
         self.quantum_manager: QuantumManager = QuantumManager.create(**manager_kwargs)
+        metrics.register_time_provider(self)
 
     def now(self) -> int:
         """Returns current simulation time."""
