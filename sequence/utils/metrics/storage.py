@@ -26,7 +26,7 @@ class InMemoryStorage:
         """Return all stored metric records.
 
         Returns:
-            Copy of every record appended since construction or last ``clear()``.
+            Copy of every record appended since construction or last `clear()`.
         """
         return list(self._records)
 
@@ -37,7 +37,7 @@ class InMemoryStorage:
             event_type: Event type to filter on.
 
         Returns:
-            Records whose ``event_type`` matches the given value.
+            Records whose `event_type` matches the given value.
         """
         return [record for record in self._records if record["event_type"] == event_type]
 
@@ -48,7 +48,7 @@ class InMemoryStorage:
             owner_name: Owner name to filter on.
 
         Returns:
-            Records whose ``owner_name`` matches the given value.
+            Records whose `owner_name` matches the given value.
         """
         return [record for record in self._records if record["owner_name"] == owner_name]
 

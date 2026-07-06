@@ -71,7 +71,7 @@ def configure(storage_type: str = "in_memory") -> None:
     """Configure metrics storage.
 
     Available storage options:
-        - "in_memory": The default, uses ``InMemoryStorage``.
+        - "in_memory": The default, uses `InMemoryStorage`.
 
     Args:
         storage_type: Storage backend identifier.
@@ -122,7 +122,7 @@ def collect_trial_metrics(
 
     Args:
         owner_name: Node name to collect counter and fidelity metrics for.
-        delivery_owner: Node name used for delivery-time metrics; defaults to ``owner_name``.
+        delivery_owner: Node name used for delivery-time metrics; defaults to `owner_name`.
         target_pairs: Number of delivered pairs required to compute delivery time.
         reservation_start_time: Simulation time when the reservation started (ps).
         throughput: Application throughput to include in collected metrics.
@@ -159,7 +159,7 @@ def aggregate_trial_metrics(
     """Aggregate trial metrics across multiple trials.
 
     Args:
-        trials: Per-trial metric dictionaries from ``collect_trial_metrics``.
+        trials: Per-trial metric dictionaries from `collect_trial_metrics`.
         list_metric_cap: Maximum list elements per trial to include when aggregating list metrics.
 
     Returns:

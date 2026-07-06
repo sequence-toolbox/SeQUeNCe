@@ -17,7 +17,7 @@ class CollectContext:
     Attributes:
         owner_name: Node name for counter and fidelity metrics.
         storage: In-memory store of recorded events for the trial.
-        delivery_owner: Node name for delivery-time metrics; defaults to ``owner_name``.
+        delivery_owner: Node name for delivery-time metrics; defaults to `owner_name`.
         target_pairs: Number of delivered pairs required to compute delivery time.
         reservation_start_time: Simulation time when the reservation started (ps).
         throughput: Application throughput supplied at collection time.
@@ -40,7 +40,7 @@ class Metric(ABC):
         """Event types this metric reacts to during recording.
 
         Returns:
-            Frozen set of event types handled by ``on_record``.
+            Frozen set of event types handled by `on_record`.
         """
 
     @property
@@ -56,7 +56,7 @@ class Metric(ABC):
         """Update metric state when a matching event is recorded.
 
         This method is called for every metric when it is recorded.
-        Default implementation is a no-op. 
+        Default implementation is a no-op.
         This method is completely optional for any metric subclasses.
         Should only be implemented if you need a hook when a metric is recorded.
 
@@ -80,9 +80,9 @@ class Metric(ABC):
 
     def reset(self) -> None:
         """Clear per-trial metric state.
-        
+
         This method is called for every metric by default when all metrics are reset.
-        Default implementation is a no-op. 
+        Default implementation is a no-op.
         This method is completely optional for any metric subclasses.
         Should only be implemented if you need a hook when the metric is reset.
         """
@@ -206,7 +206,7 @@ class RateMetric(Metric):
         """Return the throughput value supplied at collection time.
 
         Args:
-            ctx: Collection context; uses ``throughput`` when set.
+            ctx: Collection context; uses `throughput` when set.
 
         Returns:
             Mapping with the configured rate key and throughput or NaN.
