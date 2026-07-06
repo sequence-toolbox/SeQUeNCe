@@ -2342,7 +2342,7 @@ wheels = [
 
 [[package]]
 name = "qutip-qip"
-version = "0.4.1"
+version = "0.4.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
@@ -2350,9 +2350,9 @@ dependencies = [
     { name = "qutip" },
     { name = "scipy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b3/74/19bb890570b0ad854f099858f5e5a64cc2268c3ea14ccd52309d10508925/qutip_qip-0.4.1.tar.gz", hash = "sha256:110f15602086f22f90767b5dd22de566f5429b037865409df09c61ac1f664191", size = 161744, upload-time = "2025-04-07T17:26:02.555Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/63/e9/9f4174514a33ae47a572a98273c14ec2b50dc7e02fc98c51753404082bae/qutip_qip-0.4.2.tar.gz", hash = "sha256:9c7ecd7be72de2b6ade4a5c139dfa449f0f2c9663a21fd8f964f98898f0a3eab", size = 161769, upload-time = "2026-06-23T08:15:10.97Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/99/85/50622645103786162a196e054f7875ce55f6ec3336797123286abc7eb472/qutip_qip-0.4.1-py3-none-any.whl", hash = "sha256:562050f96c445d6862d83d56f5dc3064662ddaf1889825fc9e9ed8fb8d868ece", size = 140822, upload-time = "2025-04-07T17:26:01.159Z" },
+    { url = "https://files.pythonhosted.org/packages/36/a1/e006622842ca5e1a667b461cda3ebfa0798439502be2f9b37779e386b92d/qutip_qip-0.4.2-py3-none-any.whl", hash = "sha256:1188517b88ecd26ac8a32d1110f4267d8251167e57c42dbaa67856c8a30445a4", size = 140747, upload-time = "2026-06-23T08:15:09.796Z" },
 ]
 
 [[package]]
