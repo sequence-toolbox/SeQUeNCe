@@ -17,7 +17,7 @@ class CollectContext:
     Attributes:
         owner_name: Node name for counter and fidelity metrics.
         storage: In-memory store of recorded events for the trial.
-        delivery_owner: Node name for delivery-time metrics; defaults to `owner_name`.
+        delivery_owner: Node name for delivery-time metrics.
         target_pairs: Number of delivered pairs required to compute delivery time.
         reservation_start_time: Simulation time when the reservation started (ps).
         throughput: Application throughput supplied at collection time.
