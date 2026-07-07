@@ -26,7 +26,10 @@ EP_METRIC = CounterMetric(
     success_event=EventTypes.EP_SUCCESS,
     rate_field="ep_success_rate",
 )
-THROUGHPUT_METRIC = RateMetric(key="app_throughput")
+THROUGHPUT_METRIC = RateMetric(
+    key="app_throughput",
+    delivery_event=EventTypes.DELIVERY,
+)
 PURIFIED_FIDELITIES_METRIC = FidelityMetric(
     key="purified_fidelities",
     event=EventTypes.EP_SUCCESS,
