@@ -189,6 +189,7 @@ class RateMetric(Metric):
     """Computes application throughput from recorded deliveries at collection time."""
 
     key: str = "app_throughput"
+    delivery_event: EventType | None = None
 
     @property
     def event_types(self) -> frozenset[EventType]:
@@ -202,14 +203,33 @@ class RateMetric(Metric):
         """Compute throughput as delivered pairs per second over the reservation window.
 
         Args:
-            ctx: Collection context; uses `throughput` when set.
+            ctx: Collection context with delivery owner and stored delivery events.
 
         Returns:
-            Mapping with the configured rate key and throughput or NaN.
+            Mapping with the configured rate key in pairs per second, or NaN if data is insufficient.
         """
-        if ctx.throughput is None:
+        if self.delivery_event is None:
             return {self.key: float("nan")}
-        return {self.key: ctx.throughput}
+
+        delivery_owner = ctx.delivery_owner or ctx.owner_name
+        delivery_records = [
+            record
+            for record in ctx.storage.get_by_owner(delivery_owner)
+            if record["event_type"] == self.delivery_event
+        ]
+        if not delivery_records:
+            return {self.key: float("nan")}
+
+        delivery_records.sort(key=lambda record: record["sim_time"])
+        start_time = delivery_records[0].get("start_time")
+        if start_time is None:
+            return {self.key: float("nan")}
+
+        elapsed_ps = delivery_records[-1]["sim_time"] - start_time
+        if elapsed_ps <= 0:
+            return {self.key: float("nan")}
+
+        return {self.key: len(delivery_records) / elapsed_ps * 1e12}
 
 
 @dataclass
