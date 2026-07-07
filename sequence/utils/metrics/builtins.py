@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from .event_types import EventTypes, register_event_type
 from .metric_types import (
-    DeliveryTimeMetric,
     CounterMetric,
+    DeliveryTimeMetric,
     FidelityMetric,
     Metric,
     RateMetric,
+    ReservationDeliveryMetric,
 )
 from .registry import register_metric
 
