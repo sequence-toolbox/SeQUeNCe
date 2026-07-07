@@ -13,18 +13,6 @@ from .metric_types import (
 )
 from .registry import register_metric
 
-EG_FAILURE = register_event_type("EG_FAILURE")
-EG_SUCCESS = register_event_type("EG_SUCCESS")
-THROUGHPUT = register_event_type("THROUGHPUT")
-EP_FAILURE = register_event_type("EP_FAILURE")
-EP_SUCCESS = register_event_type("EP_SUCCESS")
-PURIFIED_DELIVERY = register_event_type("PURIFIED_DELIVERY")
-ES_FAILURE = register_event_type("ES_FAILURE")
-ES_SUCCESS = register_event_type("ES_SUCCESS")
-RESERVATION_APPROVED = register_event_type("RESERVATION_APPROVED")
-RESERVATION_REJECTED = register_event_type("RESERVATION_REJECTED")
-RESERVATION_COMPLETE = register_event_type("RESERVATION_COMPLETE")
-
 
 EG_METRIC = CounterMetric(
     prefix="eg",
