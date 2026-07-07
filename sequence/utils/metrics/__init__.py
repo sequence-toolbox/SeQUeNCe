@@ -246,19 +246,11 @@ def aggregate_trial_metrics(
         raise ValueError("Cannot aggregate an empty list of trials")
 
     aggregated: dict[str, float] = {}
-    scalar_metrics = [
-        key for key, value in trials[0].items() if not isinstance(value, (list, dict))
-    ]
-    list_metrics_keys = [
-        key for key, value in trials[0].items() if isinstance(value, list)
-    ]
+    scalar_metrics = [key for key, value in trials[0].items() if not isinstance(value, (list, dict))]
+    list_metrics_keys = [key for key, value in trials[0].items() if isinstance(value, list)]
 
     for metric in scalar_metrics:
-        values = [
-            float(trial[metric])
-            for trial in trials
-            if isinstance(trial[metric], (int, float))
-        ]
+        values = [float(trial[metric]) for trial in trials if isinstance(trial[metric], (int, float))]
         avg, std = _mean_and_std(values)
         aggregated[f"avg_{metric}"] = avg
         aggregated[f"std_{metric}"] = std
