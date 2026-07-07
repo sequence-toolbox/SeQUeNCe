@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .event_types import EventTypes, register_event_type
+from .event_types import EventTypes
 from .metric_types import (
     CounterMetric,
     DeliveryTimeMetric,
