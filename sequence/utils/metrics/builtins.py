@@ -1,14 +1,14 @@
-"""Built-in event types and metrics."""
+"""Built-in metrics for the metrics module."""
 
 from __future__ import annotations
 
 from .event_types import register_event_type
+from .event_types import EventTypes, register_event_type
 from .metric_types import (
     DeliveryTimeMetric,
-    CounterPairMetric,
-    EventFieldListMetric,
-    LastValueMetric,
-    ReservationDeliveryMetric,
+    CounterMetric,
+    FidelityMetric,
+    RateMetric,
 )
 from .registry import register_metric
 
@@ -24,41 +24,38 @@ RESERVATION_APPROVED = register_event_type("RESERVATION_APPROVED")
 RESERVATION_REJECTED = register_event_type("RESERVATION_REJECTED")
 RESERVATION_COMPLETE = register_event_type("RESERVATION_COMPLETE")
 
-EG_METRIC = CounterPairMetric(
+
+EG_METRIC = CounterMetric(
     prefix="eg",
-    failure_event=EG_FAILURE,
-    success_event=EG_SUCCESS,
+    failure_event=EventTypes.EG_FAILURE,
+    success_event=EventTypes.EG_SUCCESS,
     rate_field="success_rate",
 )
-EP_METRIC = CounterPairMetric(
+EP_METRIC = CounterMetric(
     prefix="ep",
-    failure_event=EP_FAILURE,
-    success_event=EP_SUCCESS,
+    failure_event=EventTypes.EP_FAILURE,
+    success_event=EventTypes.EP_SUCCESS,
     rate_field="ep_success_rate",
 )
-THROUGHPUT_METRIC = LastValueMetric(
-    key="app_throughput",
-    event=THROUGHPUT,
-    field="throughput",
-)
-PURIFIED_FIDELITIES_METRIC = EventFieldListMetric(
+THROUGHPUT_METRIC = RateMetric(key="app_throughput")
+PURIFIED_FIDELITIES_METRIC = FidelityMetric(
     key="purified_fidelities",
-    event=EP_SUCCESS,
+    event=EventTypes.EP_SUCCESS,
     field="fidelity",
 )
 DELIVERY_TIME_METRIC = DeliveryTimeMetric(
     key="delivery_time",
-    delivery_event=PURIFIED_DELIVERY,
+    delivery_event=EventTypes.DELIVERY,
 )
-ES_METRIC = CounterPairMetric(
+ES_METRIC = CounterMetric(
     prefix="es",
-    failure_event=ES_FAILURE,
-    success_event=ES_SUCCESS,
+    failure_event=EventTypes.ES_FAILURE,
+    success_event=EventTypes.ES_SUCCESS,
     rate_field="es_success_rate",
 )
-SWAPPED_FIDELITIES_METRIC = EventFieldListMetric(
+SWAPPED_FIDELITIES_METRIC = FidelityMetric(
     key="swapped_fidelities",
-    event=ES_SUCCESS,
+    event=EventTypes.ES_SUCCESS,
     field="fidelity",
 )
 RESERVATION_DELIVERY_METRIC = ReservationDeliveryMetric(

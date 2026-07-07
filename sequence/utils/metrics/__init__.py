@@ -13,23 +13,24 @@ from typing import Any
 from . import builtins
 from .event_types import (
     EventType,
+    EventTypes,
     get_event_type,
     list_event_types,
     register_event_type,
 )
 from .metric_types import (
-    DeliveryTimeMetric,
     CollectContext,
-    CounterPairMetric,
-    EventFieldListMetric,
-    LastValueMetric,
+    CounterMetric,
+    DeliveryTimeMetric,
+    FidelityMetric,
     Metric,
+    RateMetric,
     ReservationDeliveryMetric,
 )
 from .registry import (
     clear_registry,
-    get_counter_pair,
     get_reservation_delivery_metric,
+    get_counter,
     list_metrics,
     register_metric,
     reset_metrics,
@@ -37,18 +38,6 @@ from .registry import (
 )
 from .storage import InMemoryStorage, SystemTimeProvider, TimeProvider
 
-# Built-in event type aliases
-EG_FAILURE = builtins.EG_FAILURE
-EG_SUCCESS = builtins.EG_SUCCESS
-THROUGHPUT = builtins.THROUGHPUT
-EP_FAILURE = builtins.EP_FAILURE
-EP_SUCCESS = builtins.EP_SUCCESS
-PURIFIED_DELIVERY = builtins.PURIFIED_DELIVERY
-ES_FAILURE = builtins.ES_FAILURE
-ES_SUCCESS = builtins.ES_SUCCESS
-RESERVATION_APPROVED = builtins.RESERVATION_APPROVED
-RESERVATION_REJECTED = builtins.RESERVATION_REJECTED
-RESERVATION_COMPLETE = builtins.RESERVATION_COMPLETE
 
 _enabled = False
 _enabled_events: set[EventType] = set()
@@ -194,25 +183,15 @@ def aggregate_trial_metrics(
         raise ValueError("Cannot aggregate an empty list of trials")
 
     aggregated: dict[str, float] = {}
-    scalar_metrics = [
-        key for key, value in trials[0].items() if not isinstance(value, (list, dict))
-    ]
-    list_metrics_keys = [
-        key for key, value in trials[0].items() if isinstance(value, list)
-    ]
+    scalar_metrics = [key for key, value in trials[0].items() if not isinstance(value, (list, dict))]
+    list_metrics_keys = [key for key, value in trials[0].items() if isinstance(value, list)]
 
     for metric in scalar_metrics:
         values = [trial[metric] for trial in trials]
-        finite_values = [
-            value
-            for value in values
-            if isinstance(value, (int, float)) and math.isfinite(value)
-        ]
+        finite_values = [value for value in values if isinstance(value, (int, float)) and math.isfinite(value)]
         if finite_values:
             aggregated[f"avg_{metric}"] = mean(finite_values)
-            aggregated[f"std_{metric}"] = (
-                stdev(finite_values) if len(finite_values) > 1 else 0.0
-            )
+            aggregated[f"std_{metric}"] = stdev(finite_values) if len(finite_values) > 1 else 0.0
         else:
             aggregated[f"avg_{metric}"] = float("nan")
             aggregated[f"std_{metric}"] = float("nan")
@@ -226,9 +205,7 @@ def aggregate_trial_metrics(
             all_values.extend(trial_values)
         if all_values:
             aggregated[f"avg_{metric}"] = mean(all_values)
-            aggregated[f"std_{metric}"] = (
-                stdev(all_values) if len(all_values) > 1 else 0.0
-            )
+            aggregated[f"std_{metric}"] = stdev(all_values) if len(all_values) > 1 else 0.0
         else:
             aggregated[f"avg_{metric}"] = float("nan")
             aggregated[f"std_{metric}"] = float("nan")

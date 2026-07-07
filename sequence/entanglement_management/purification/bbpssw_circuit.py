@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from ...topology.node import Node
 
 from ...utils import log, metrics
+from ...utils.metrics.event_types import EventTypes
 from ...constants import KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM
 from .bbpssw_protocol import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType
 
@@ -118,13 +119,14 @@ class BBPSSWCircuit(BBPSSWProtocol):
         if self.meas_res == msg.meas_res:
             self.kept_memo.fidelity = self.improved_fidelity(self.kept_memo.fidelity)
             metrics.record(
-                metrics.EP_SUCCESS,
+                EventTypes.EP_SUCCESS,
                 self.owner.name,
+                remote_node=self.remote_node_name,
                 fidelity=self.kept_memo.fidelity,
             )
             self.update_resource_manager(self.kept_memo, state="PURIFIED")
         else:
-            metrics.record(metrics.EP_FAILURE, self.owner.name)
+            metrics.record(EventTypes.EP_FAILURE, self.owner.name, remote_node=self.remote_node_name)
             self.update_resource_manager(self.kept_memo, state="RAW")
 
     @staticmethod

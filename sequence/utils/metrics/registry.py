@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from .metric_types import CounterPairMetric, Metric, ReservationDeliveryMetric
+from .metric_types import CounterMetric, Metric, ReservationDeliveryMetric
 
 _metrics: list[Metric] = []
-_counter_pairs: dict[str, CounterPairMetric] = {}
 _reservation_delivery_metric: ReservationDeliveryMetric | None = None
+_counters: dict[str, CounterMetric] = {}
 
 
 def register_metric(metric: Metric) -> None:
@@ -15,12 +15,10 @@ def register_metric(metric: Metric) -> None:
     for existing in _metrics:
         overlap = existing.output_keys & new_keys
         if overlap:
-            raise ValueError(
-                f"Metric output keys {sorted(overlap)} already registered."
-            )
+            raise ValueError(f"Metric output keys {sorted(overlap)} already registered.")
     _metrics.append(metric)
-    if isinstance(metric, CounterPairMetric):
-        _counter_pairs[metric.prefix] = metric
+    if isinstance(metric, CounterMetric):
+        _counters[metric.prefix] = metric
     if isinstance(metric, ReservationDeliveryMetric):
         global _reservation_delivery_metric
         _reservation_delivery_metric = metric
@@ -30,8 +28,8 @@ def unregister_metric(metric: Metric) -> None:
     """Remove a metric from the registry."""
     if metric in _metrics:
         _metrics.remove(metric)
-    if isinstance(metric, CounterPairMetric):
-        _counter_pairs.pop(metric.prefix, None)
+    if isinstance(metric, CounterMetric):
+        _counters.pop(metric.prefix, None)
     if isinstance(metric, ReservationDeliveryMetric):
         global _reservation_delivery_metric
         if _reservation_delivery_metric is metric:
@@ -43,12 +41,12 @@ def list_metrics() -> list[Metric]:
     return list(_metrics)
 
 
-def get_counter_pair(prefix: str) -> CounterPairMetric:
-    """Return a registered counter-pair metric by prefix."""
+def get_counter(prefix: str) -> CounterMetric:
+    """Return a registered counter metric by prefix."""
     try:
-        return _counter_pairs[prefix]
+        return _counters[prefix]
     except KeyError as exc:
-        raise KeyError(f"No CounterPairMetric registered with prefix '{prefix}'.") from exc
+        raise KeyError(f"No CounterMetric registered with prefix '{prefix}'.") from exc
 
 
 def get_reservation_delivery_metric() -> ReservationDeliveryMetric:
@@ -68,5 +66,4 @@ def clear_registry() -> None:
     """Remove all metrics from the registry (for tests)."""
     global _reservation_delivery_metric
     _metrics.clear()
-    _counter_pairs.clear()
-    _reservation_delivery_metric = None
+    _counters.clear()

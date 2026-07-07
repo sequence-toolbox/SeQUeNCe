@@ -33,12 +33,7 @@ class Metric(ABC):
     def output_keys(self) -> frozenset[str]:
         """Keys produced by collect()."""
 
-    def on_record(
-        self,
-        event_type: EventType,
-        owner_name: str,
-        kwargs: dict[str, Any],
-    ) -> None:
+    def on_record(self, event_type: EventType, owner_name: str, kwargs: dict[str, Any]) -> None:
         """Update metric state when a matching event is recorded."""
 
     @abstractmethod
@@ -50,7 +45,7 @@ class Metric(ABC):
 
 
 @dataclass
-class CounterPairMetric(Metric):
+class CounterMetric(Metric):
     """Tracks failure/success counts and a running success rate."""
 
     prefix: str
@@ -88,12 +83,7 @@ class CounterPairMetric(Metric):
             return 0.0
         return successes / attempts
 
-    def on_record(
-        self,
-        event_type: EventType,
-        owner_name: str,
-        kwargs: dict[str, Any],
-    ) -> None:
+    def on_record(self, event_type: EventType, owner_name: str, kwargs: dict[str, Any]) -> None:
         if event_type is self.failure_event:
             self._failures[owner_name] = self._failures.get(owner_name, 0) + 1
             kwargs[self.rate_field] = self.success_rate(owner_name)
@@ -114,35 +104,28 @@ class CounterPairMetric(Metric):
 
 
 @dataclass
-class LastValueMetric(Metric):
-    """Collects the last scalar field value from matching events."""
+class RateMetric(Metric):
+    """Collects a rate value supplied at trial collection time (e.g. throughput)."""
 
-    key: str
-    event: EventType
-    field: str
+    key: str = "app_throughput"
 
     @property
     def event_types(self) -> frozenset[EventType]:
-        return frozenset({self.event})
+        return frozenset()
 
     @property
     def output_keys(self) -> frozenset[str]:
         return frozenset({self.key})
 
     def collect(self, ctx: CollectContext) -> dict[str, Any]:
-        records = [
-            record
-            for record in ctx.storage.get_by_owner(ctx.owner_name)
-            if record["event_type"] is self.event
-        ]
-        if not records:
+        if ctx.throughput is None:
             return {self.key: float("nan")}
-        return {self.key: records[-1][self.field]}
+        return {self.key: ctx.throughput}
 
 
 @dataclass
-class EventFieldListMetric(Metric):
-    """Collects a list of field values from matching events."""
+class FidelityMetric(Metric):
+    """Collects fidelity values from matching success events."""
 
     key: str
     event: EventType
@@ -207,7 +190,7 @@ class ReservationDeliveryMetric(Metric):
 
 @dataclass
 class DeliveryTimeMetric(Metric):
-    """Time to deliver N purified pairs relative to reservation start."""
+    """Time to deliver N pairs relative to reservation start."""
 
     key: str = "delivery_time"
     delivery_event: EventType | None = None
@@ -228,8 +211,7 @@ class DeliveryTimeMetric(Metric):
         delivery_records = [
             record
             for record in ctx.storage.get_by_owner(delivery_owner)
-            if self.delivery_event is not None
-            and record["event_type"] is self.delivery_event
+            if self.delivery_event is not None and record["event_type"] is self.delivery_event
         ]
         delivery_records.sort(key=lambda record: record["sim_time"])
         if len(delivery_records) < ctx.target_pairs:
