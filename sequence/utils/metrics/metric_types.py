@@ -50,9 +50,7 @@ class Metric(ABC):
             Frozen set of keys written into per-trial result dictionaries.
         """
 
-    def on_record(
-        self, event_type: EventType, owner_name: str, kwargs: dict[str, Any]
-    ) -> None:
+    def on_record(self, event_type: EventType, owner_name: str, kwargs: dict[str, Any]) -> None:
         """Update metric state when a matching event is recorded.
 
         This method is called for every metric when it is recorded.
@@ -152,9 +150,7 @@ class CounterMetric(Metric):
             return 0.0
         return successes / attempts
 
-    def on_record(
-        self, event_type: EventType, owner_name: str, kwargs: dict[str, Any]
-    ) -> None:
+    def on_record(self, event_type: EventType, owner_name: str, kwargs: dict[str, Any]) -> None:
         """Increment failure or success counts and update the rate field in kwargs.
 
         Args:
@@ -256,9 +252,7 @@ class ReservationDeliveryMetric(Metric):
     """Tracks per-reservation pair delivery counts and assigns pair_index on record."""
 
     delivery_event: EventType
-    _pair_counters: dict[tuple[str, int], int] = field(
-        default_factory=dict, init=False, repr=False
-    )
+    _pair_counters: dict[tuple[str, int], int] = field(default_factory=dict, init=False, repr=False)
 
     @property
     def event_types(self) -> frozenset[EventType]:
@@ -323,8 +317,7 @@ class DeliveryTimeMetric(Metric):
         delivery_records = [
             record
             for record in ctx.storage.get_by_owner(delivery_owner)
-            if self.delivery_event is not None
-            and record["event_type"] == self.delivery_event
+            if self.delivery_event is not None and record["event_type"] == self.delivery_event
         ]
         delivery_records.sort(key=lambda record: record["sim_time"])
         if ctx.target_pairs is None or len(delivery_records) < ctx.target_pairs:
