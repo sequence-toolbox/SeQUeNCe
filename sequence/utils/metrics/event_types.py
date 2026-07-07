@@ -68,3 +68,7 @@ class EventTypes:
     DELIVERY = register_event_type("DELIVERY")
     ES_FAILURE = register_event_type("ES_FAILURE")
     ES_SUCCESS = register_event_type("ES_SUCCESS")
+    THROUGHPUT = register_event_type("THROUGHPUT")
+    RESERVATION_APPROVED = register_event_type("RESERVATION_APPROVED")
+    RESERVATION_REJECTED = register_event_type("RESERVATION_REJECTED")
+    RESERVATION_COMPLETE = register_event_type("RESERVATION_COMPLETE")
