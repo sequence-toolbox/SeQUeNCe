@@ -1,4 +1,4 @@
-__all__ = ['random_request']
+__all__ = ['app', 'random_request']
 
 def __dir__():
     return sorted(__all__)
