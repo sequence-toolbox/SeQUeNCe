@@ -1,20 +1,22 @@
 # SeQUeNCe in 3 Minutes
 
-In this introductory three-minute tutorial, we will briefly cover the necessary basics of SeQUeNCe. We will request one entanglement pair between two quantum routers, Alice and Bob. The goal of this tutorial is to gain a general understanding of SeQUeNCe's topology generator to create a two-node network, attach a single application to the routers, and submit an entanglement request through the network manager.
+In this introductory three-minute tutorial, we will briefly cover the necessary basics of SeQUeNCe. We will request entanglement pairs between two quantum routers, Alice and Bob. The goal of this tutorial is to gain a basic usage of SeQUeNCe.
+
+The whole tutorial can be found at <a href="https://github.com/sequence-toolbox/SeQUeNCe/blob/master/docs/source/tutorial/sequence3min/three_minute.py" target="_blank" rel="noopener">three_minute.py</a>, and is broken down into 5 steps, discussed in detail in the following sections.
+
 
 ### Step 1: Generate the Two-Node Topology
 
-Before building the simulation, we first need a network configuration file that defines the two nodes and the channels between them. For this tutorial, we will use SeQUeNCe's built-in topology generator, which is implemented in [config_generator_cli.py](../../../../sequence/utils/config_generator_cli.py).
-
-The following command generates a simple two-node linear topology and saves it as a JSON file:
+Before building the simulation, we first need a network configuration file that defines the two nodes and the channels between them. For this tutorial, we will use SeQUeNCe's built-in topology generator, which is implemented in <a href="https://github.com/sequence-toolbox/SeQUeNCe/blob/master/sequence/utils/config_generator_cli.py" target="_blank" rel="noopener">config_generator_cli.py</a>. 
+The `generate-topology` command-line executable is installed automatically when SeQUeNCe is installed, so it is available from the same Python environment without any additional setup. 
 
 ```bash
 generate-topology linear 2 --memory-size 1 --output two_node.json --directory docs/source/tutorial/sequence3min
 ```
 
-This command creates a topology with two quantum routers connected through a Bell-state measurement node. The generated file, `two_node.json`, can then be loaded directly by SeQUeNCe when running the tutorial simulation.
-
-If you are working in a different directory, change the value passed to `--directory` so that the JSON file is saved in the same location as your tutorial files. Alternatively, if you downloaded SeQUeNCe with the tutorial files included, you may use the provided `two_node.json` file directly instead of regenerating it.
+This command creates a topology with two quantum routers connected through a Bell-state measurement node. The generated file, `two_node.json` is under the directory `docs/source/tutorial/sequence3min`. 
+If you want to change directory, simply change the value passed to `--directory`. 
+Alternatively, if you downloaded SeQUeNCe with the tutorial files included, you may use the provided `two_node.json` file directly instead of regenerating it.
 
 ### Step 2: Import the Required Modules
 
@@ -27,7 +29,7 @@ from sequence.constants import SINGLE_HERALDED, SECOND
 from sequence.entanglement_management.generation import EntanglementGenerationA, EntanglementGenerationB
 ```
 
-This tutorial uses the single-heralded entanglement-generation protocol. Because the generated topology uses a `SingleHeraldedBSM`, we set both the router-side and BSM-side generation protocols to `SINGLE_HERALDED` before loading the network.
+This tutorial uses the single-heralded entanglement-generation protocol. We set both the router-side and BSM-side generation protocols to `SINGLE_HERALDED` before loading the network.
 
 ```python
 EntanglementGenerationA.set_global_type(SINGLE_HERALDED)
@@ -78,7 +80,3 @@ You will see the following:
 Entangled pair count between Alice and Bob: 105
 The throughput is 70.0 pairs per second
 ```
-
----
-
-The full code can be found at [three_minute.py](three_minute.py)
