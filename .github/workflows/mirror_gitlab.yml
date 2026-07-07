@@ -1,7 +1,7 @@
 name: Mirror to GitLab
 on:
   push:
-    branches: [ '**' ]
+    branches-ignore: [ 'dependabot/**' ]
     tags: [ '**' ]
   delete:
   workflow_dispatch:
@@ -11,12 +11,13 @@ permissions:
 
 concurrency:
   group: mirror-to-gitlab
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   mirror:
-    if: github.repository == 'sequence-toolbox/SeQUeNCe'
+    if: github.repository == 'sequence-toolbox/SeQUeNCe' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout full history
         uses: actions/checkout@v7

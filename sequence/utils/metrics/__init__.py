@@ -14,6 +14,15 @@ if TYPE_CHECKING:
     from ...kernel.timeline import Timeline
 
 from . import builtins
+from .builtins import (
+    DELIVERY_TIME_METRIC,
+    EG_METRIC,
+    EP_METRIC,
+    ES_METRIC,
+    PURIFIED_FIDELITIES_METRIC,
+    SWAPPED_FIDELITIES_METRIC,
+    THROUGHPUT_METRIC,
+)
 from .event_types import (
     EventType,
     EventTypes,
@@ -58,15 +67,22 @@ def register_time_provider(provider: Timeline) -> None:
     time_provider = provider
 
 
-def enable(event_types: list[EventType]) -> None:
-    """Enable metrics recording for the given event types.
+def enable(metrics_to_enable: list[Metric]) -> None:
+    """Enable metrics recording for the given metrics.
+
+    The event types required by each metric are automatically derived from
+    each metric's `event_types` property and added to the recording filter.
+    Metrics with empty `event_types` (e.g. `RateMetric`) contribute no
+    events to the filter; enabling them alone will not cause any events to
+    be recorded. That will only affect what is collected in
+    `collect_trial_metrics`.
 
     Args:
-        event_types: Event types to record when ``record()`` is called.
+        metrics_to_enable: Metrics whose event types should be recorded.
     """
     global _enabled, _enabled_events
     _enabled = True
-    _enabled_events = set(event_types)
+    _enabled_events = set().union(*(m.event_types for m in metrics_to_enable))
 
 
 def configure(storage_type: str = "in_memory") -> None:
@@ -265,6 +281,14 @@ builtins.register_builtin_metrics()
 
 # Exported symbols
 __all__ = [
+    # From builtins
+    "DELIVERY_TIME_METRIC",
+    "EG_METRIC",
+    "EP_METRIC",
+    "ES_METRIC",
+    "PURIFIED_FIDELITIES_METRIC",
+    "SWAPPED_FIDELITIES_METRIC",
+    "THROUGHPUT_METRIC",
     # From event_types
     "EventType",
     "EventTypes",

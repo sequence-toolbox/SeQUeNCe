@@ -23,20 +23,22 @@ def test_record_before_enable_is_noop():
 
 
 def test_enable_filters_event_types():
-    metrics.enable([EventTypes.EG_SUCCESS])
+    # Enable only EP_METRIC; EG events must be filtered out.
+    metrics.enable([metrics.EP_METRIC])
 
     metrics.record(EventTypes.EG_FAILURE, "e0", fidelity=0.9)
     metrics.record(EventTypes.EG_SUCCESS, "e0", fidelity=0.9)
+    metrics.record(EventTypes.EP_SUCCESS, "e0", fidelity=0.9)
 
     records = metrics.storage.get_all()
     assert len(records) == 1
-    assert records[0]["event_type"] is EventTypes.EG_SUCCESS
+    assert records[0]["event_type"] is EventTypes.EP_SUCCESS
     assert records[0]["owner_name"] == "e0"
     assert records[0]["fidelity"] == 0.9
 
 
 def test_record_stores_arbitrary_kwargs():
-    metrics.enable([EventTypes.EG_FAILURE])
+    metrics.enable([metrics.EG_METRIC])
 
     metrics.record(EventTypes.EG_FAILURE, "e1", fidelity=0.8, custom_metric=42)
 
@@ -46,7 +48,7 @@ def test_record_stores_arbitrary_kwargs():
 
 
 def test_configure_replaces_storage():
-    metrics.enable([EventTypes.EG_FAILURE, EventTypes.EG_SUCCESS])
+    metrics.enable([metrics.EG_METRIC])
     metrics.record(EventTypes.EG_FAILURE, "e0")
     metrics.record(EventTypes.EG_SUCCESS, "e0")
     assert len(metrics.storage.get_all()) == 2
@@ -57,7 +59,7 @@ def test_configure_replaces_storage():
 
 
 def test_reset_metrics_clears_per_node_counts():
-    metrics.enable([EventTypes.EG_FAILURE, EventTypes.EG_SUCCESS, EventTypes.EP_FAILURE, EventTypes.EP_SUCCESS])
+    metrics.enable([metrics.EG_METRIC, metrics.EP_METRIC])
     metrics.record(EventTypes.EG_FAILURE, "e0")
     metrics.record(EventTypes.EG_SUCCESS, "e0")
     metrics.record(EventTypes.EP_FAILURE, "e0")
@@ -76,7 +78,7 @@ def test_reset_metrics_clears_per_node_counts():
 
 
 def test_per_node_counters_are_independent():
-    metrics.enable([EventTypes.EG_FAILURE, EventTypes.EG_SUCCESS])
+    metrics.enable([metrics.EG_METRIC])
 
     metrics.record(EventTypes.EG_FAILURE, "e0")
     metrics.record(EventTypes.EG_FAILURE, "e0")
@@ -93,7 +95,7 @@ def test_per_node_counters_are_independent():
 
 
 def test_completion_events_record_running_success_rate():
-    metrics.enable([EventTypes.EG_FAILURE, EventTypes.EG_SUCCESS])
+    metrics.enable([metrics.EG_METRIC])
 
     metrics.record(EventTypes.EG_FAILURE, "e0")
     metrics.record(EventTypes.EG_SUCCESS, "e0")
@@ -108,7 +110,7 @@ def test_completion_events_record_running_success_rate():
 
 
 def test_storage_query_helpers():
-    metrics.enable([EventTypes.EG_FAILURE, EventTypes.EG_SUCCESS])
+    metrics.enable([metrics.EG_METRIC])
 
     metrics.record(EventTypes.EG_FAILURE, "e0", fidelity=0.9)
     metrics.record(EventTypes.EG_SUCCESS, "e0", fidelity=0.9)
@@ -123,7 +125,7 @@ def test_register_time_provider_uses_registered_source():
     timeline = Timeline(int(1e12))
     timeline.time = 12345
     metrics.register_time_provider(timeline)
-    metrics.enable([EventTypes.EG_SUCCESS])
+    metrics.enable([metrics.EG_METRIC])
 
     metrics.record(EventTypes.EG_SUCCESS, "e0", fidelity=0.9)
 
@@ -131,7 +133,7 @@ def test_register_time_provider_uses_registered_source():
 
 
 def test_throughput_does_not_affect_eg_counters():
-    metrics.enable([EventTypes.EG_FAILURE, EventTypes.EG_SUCCESS])
+    metrics.enable([metrics.EG_METRIC])
 
     metrics.record(EventTypes.EG_FAILURE, "e0")
     metrics.record(EventTypes.EG_SUCCESS, "e0")
@@ -143,7 +145,7 @@ def test_throughput_does_not_affect_eg_counters():
 
 
 def test_collect_trial_metrics_returns_node_snapshot():
-    metrics.enable([EventTypes.EG_FAILURE, EventTypes.EG_SUCCESS])
+    metrics.enable([metrics.EG_METRIC])
 
     metrics.record(EventTypes.EG_FAILURE, "e0", fidelity=0.8)
     metrics.record(EventTypes.EG_SUCCESS, "e0", fidelity=0.8)
@@ -157,7 +159,7 @@ def test_collect_trial_metrics_returns_node_snapshot():
 
 
 def test_collect_trial_metrics_without_throughput_is_nan():
-    metrics.enable([EventTypes.EG_SUCCESS])
+    metrics.enable([metrics.EG_METRIC])
     metrics.record(EventTypes.EG_SUCCESS, "e0", fidelity=0.9)
 
     trial = metrics.collect_trial_metrics("e0")
@@ -225,7 +227,7 @@ def test_aggregate_trial_metrics_ignores_non_finite_values():
 
 
 def test_ep_counters_and_success_rate():
-    metrics.enable([EventTypes.EP_FAILURE, EventTypes.EP_SUCCESS])
+    metrics.enable([metrics.EP_METRIC])
 
     metrics.record(EventTypes.EP_FAILURE, "left")
     metrics.record(EventTypes.EP_SUCCESS, "left", fidelity=0.75)
@@ -241,7 +243,7 @@ def test_ep_counters_and_success_rate():
 
 
 def test_es_counters_and_success_rate():
-    metrics.enable([EventTypes.ES_FAILURE, EventTypes.ES_SUCCESS])
+    metrics.enable([metrics.ES_METRIC])
 
     metrics.record(EventTypes.ES_FAILURE, "middle")
     metrics.record(EventTypes.ES_SUCCESS, "middle", fidelity=0.75)
@@ -257,7 +259,7 @@ def test_es_counters_and_success_rate():
 
 
 def test_collect_trial_metrics_swapped_fidelities():
-    metrics.enable([EventTypes.ES_SUCCESS])
+    metrics.enable([metrics.ES_METRIC])
 
     metrics.record(EventTypes.ES_SUCCESS, "middle", fidelity=0.7)
     metrics.record(EventTypes.ES_SUCCESS, "middle", fidelity=0.75)
@@ -268,7 +270,7 @@ def test_collect_trial_metrics_swapped_fidelities():
 
 
 def test_delivery_does_not_affect_ep_counters():
-    metrics.enable([EventTypes.EP_FAILURE, EventTypes.EP_SUCCESS, EventTypes.DELIVERY])
+    metrics.enable([metrics.EP_METRIC, metrics.DELIVERY_TIME_METRIC])
 
     metrics.record(EventTypes.EP_SUCCESS, "left", fidelity=0.8)
     metrics.record(EventTypes.DELIVERY, "right", fidelity=0.8, pair_number=1)
@@ -290,7 +292,7 @@ def test_collect_trial_metrics_ep_fields_and_delivery_time():
             return current
 
     metrics.register_time_provider(AdvancingTimeline())
-    metrics.enable([EventTypes.EP_SUCCESS, EventTypes.DELIVERY])
+    metrics.enable([metrics.EP_METRIC, metrics.DELIVERY_TIME_METRIC])
 
     metrics.record(EventTypes.EP_SUCCESS, "left", fidelity=0.7)
     metrics.record(EventTypes.EP_SUCCESS, "left", fidelity=0.75)
@@ -316,7 +318,7 @@ def test_collect_trial_metrics_ep_fields_and_delivery_time():
 
 
 def test_collect_trial_metrics_delivery_time_nan_when_target_not_reached():
-    metrics.enable([EventTypes.DELIVERY])
+    metrics.enable([metrics.DELIVERY_TIME_METRIC])
     metrics.record(EventTypes.DELIVERY, "right", fidelity=0.9, pair_number=1)
 
     trial = metrics.collect_trial_metrics(
@@ -329,7 +331,7 @@ def test_collect_trial_metrics_delivery_time_nan_when_target_not_reached():
 
 
 def test_collect_trial_metrics_delivery_owner_defaults_to_owner():
-    metrics.enable([EventTypes.DELIVERY])
+    metrics.enable([metrics.DELIVERY_TIME_METRIC])
     metrics.record(EventTypes.DELIVERY, "right", fidelity=0.9, pair_number=1)
 
     trial = metrics.collect_trial_metrics(
@@ -390,7 +392,7 @@ def test_register_metric_adds_to_collect_trial_metrics():
     )
     metrics.register_metric(swap_metric)
 
-    metrics.enable([swap_failure, swap_success])
+    metrics.enable([swap_metric])
     metrics.record(swap_failure, "n0")
     metrics.record(swap_success, "n0")
 
