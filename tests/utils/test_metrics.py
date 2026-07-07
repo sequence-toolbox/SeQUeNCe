@@ -150,12 +150,39 @@ def test_collect_trial_metrics_returns_node_snapshot():
     metrics.record(EventTypes.EG_FAILURE, "e0", fidelity=0.8)
     metrics.record(EventTypes.EG_SUCCESS, "e0", fidelity=0.8)
 
-    trial = metrics.collect_trial_metrics("e0", throughput=12.5)
+    trial = metrics.collect_trial_metrics("e0")
 
     assert trial["eg_failures"] == 1
     assert trial["eg_success"] == 1
     assert trial["eg_success_rate"] == 0.5
-    assert trial["app_throughput"] == 12.5
+    assert math.isnan(trial["app_throughput"])
+
+
+def test_collect_trial_metrics_computes_throughput_from_deliveries():
+    timeline = Timeline(int(1e12))
+    timeline.time = int(1e12)
+    metrics.register_time_provider(timeline)
+    metrics.enable([EventTypes.DELIVERY])
+
+    metrics.record(
+        EventTypes.DELIVERY,
+        "right",
+        fidelity=0.9,
+        pair_number=1,
+        start_time=int(1e12),
+    )
+    timeline.time = int(2e12)
+    metrics.record(
+        EventTypes.DELIVERY,
+        "right",
+        fidelity=0.9,
+        pair_number=2,
+        start_time=int(1e12),
+    )
+
+    trial = metrics.collect_trial_metrics("left", delivery_owner="right")
+
+    assert trial["app_throughput"] == pytest.approx(2.0)
 
 
 def test_collect_trial_metrics_without_throughput_is_nan():
@@ -315,6 +342,7 @@ def test_collect_trial_metrics_ep_fields_and_delivery_time():
     assert trial["ep_success"] == 2
     assert trial["purified_fidelities"] == [0.7, 0.75]
     assert trial["delivery_time"] == pytest.approx(0.4)
+    assert trial["app_throughput"] == pytest.approx(7.5)
 
 
 def test_collect_trial_metrics_delivery_time_nan_when_target_not_reached():
@@ -331,8 +359,14 @@ def test_collect_trial_metrics_delivery_time_nan_when_target_not_reached():
 
 
 def test_collect_trial_metrics_delivery_owner_defaults_to_owner():
-    metrics.enable([metrics.DELIVERY_TIME_METRIC])
-    metrics.record(EventTypes.DELIVERY, "right", fidelity=0.9, pair_number=1)
+    metrics.enable([EventTypes.DELIVERY])
+    metrics.record(
+        EventTypes.DELIVERY,
+        "right",
+        fidelity=0.9,
+        pair_number=1,
+        start_time=0,
+    )
 
     trial = metrics.collect_trial_metrics(
         "right",
