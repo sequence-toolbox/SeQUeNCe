@@ -12,6 +12,7 @@ from sequence.network_management.memory_timecard import MemoryTimeCard
 from sequence.protocol import StackProtocol
 from sequence.topology.node import QuantumRouter, BSMNode
 from sequence.utils import metrics
+from sequence.utils.metrics.event_types import EventTypes
 import pytest
 
 class DistributedQuantumRouter(QuantumRouter):

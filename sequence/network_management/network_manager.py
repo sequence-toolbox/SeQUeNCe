@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 from ..components.memory import MemoryArray
 from ..message import Message
 from ..utils import log, metrics
+from ..utils.metrics.event_types import EventTypes
 from .forwarding import ForwardingProtocol
 from .memory_timecard import MemoryTimeCard
 from .reservation import Reservation
