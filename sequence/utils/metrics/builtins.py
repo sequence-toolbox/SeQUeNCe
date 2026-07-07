@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from .event_types import register_event_type
 from .event_types import EventTypes, register_event_type
 from .metric_types import (
     DeliveryTimeMetric,
     CounterMetric,
     FidelityMetric,
+    Metric,
     RateMetric,
 )
 from .registry import register_metric
@@ -62,19 +62,24 @@ RESERVATION_DELIVERY_METRIC = ReservationDeliveryMetric(
     delivery_event=EventTypes.DELIVERY,
 )
 
-_BUILTIN_METRICS = (
-    EG_METRIC,
-    EP_METRIC,
-    THROUGHPUT_METRIC,
-    PURIFIED_FIDELITIES_METRIC,
-    DELIVERY_TIME_METRIC,
-    ES_METRIC,
-    SWAPPED_FIDELITIES_METRIC,
-    RESERVATION_DELIVERY_METRIC,
-)
-
 
 def register_builtin_metrics() -> None:
-    """Register all built-in metrics."""
-    for metric in _BUILTIN_METRICS:
+    """Register all built-in metrics with the global registry.
+
+    Registers entanglement generation, purification, swapping, throughput,
+    fidelity, and delivery-time metrics defined in this module.
+    """
+
+    BUILTIN_METRICS: list[Metric] = [
+        EG_METRIC,
+        EP_METRIC,
+        THROUGHPUT_METRIC,
+        PURIFIED_FIDELITIES_METRIC,
+        DELIVERY_TIME_METRIC,
+        ES_METRIC,
+        SWAPPED_FIDELITIES_METRIC,
+        RESERVATION_DELIVERY_METRIC,
+    ]
+
+    for metric in BUILTIN_METRICS:
         register_metric(metric)

@@ -1,11 +1,10 @@
-name: CD Pipeline
+name: Publish to PyPi
 
 on:
   push:
     branches: [master]
   release:
     types: [published]
-  workflow_dispatch:
 
 jobs:
   build-release:
@@ -13,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'release' && github.repository == 'sequence-toolbox/SeQUeNCe'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: true
       - name: Install uv
@@ -23,7 +22,7 @@ jobs:
       - name: Build wheel and tarball
         run: uv build
       - name: Store dist as an artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-release-package-dist
           path: dist/
@@ -33,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.repository == 'sequence-toolbox/SeQUeNCe'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: true
       - name: Install uv
@@ -46,7 +45,7 @@ jobs:
       - name: Build wheel and tarball for test
         run: uv build
       - name: Store test dist as an artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-test-package-dist
           path: dist/
@@ -65,12 +64,14 @@ jobs:
 
     steps:
       - name: Download all the dists
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: python-release-package-dist
           path: dist/
       - name: Publish dist to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@v1.14.0
+        with:
+          attestations: true
 
   publish-to-test-pypi:
     name: Publish dist to TestPyPi
@@ -87,12 +88,12 @@ jobs:
 
     steps:
       - name: Download all the test dists
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: python-test-package-dist
           path: dist/
       - name: Publish dist to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@v1.14.0
         with:
           attestations: true
           repository-url: https://test.pypi.org/legacy/

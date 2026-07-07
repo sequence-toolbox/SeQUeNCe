@@ -9,13 +9,24 @@ _registry: dict[str, EventType] = {}
 
 @dataclass(frozen=True, slots=True)
 class EventType:
-    """Identifies a type of recordable simulation event."""
+    """Identifies a type of recordable simulation event.
+
+    Attributes:
+        name: Unique string identifier for the event type.
+    """
 
     name: str
 
 
 def register_event_type(name: str) -> EventType:
-    """Register an event type. Returns the existing instance if already registered."""
+    """Register an event type.
+
+    Args:
+        name: Unique name for the event type.
+
+    Returns:
+        The registered event type, or the existing instance if already registered.
+    """
     if name in _registry:
         return _registry[name]
     event_type = EventType(name)
@@ -24,7 +35,14 @@ def register_event_type(name: str) -> EventType:
 
 
 def get_event_type(name: str) -> EventType:
-    """Return a registered event type by name."""
+    """Return a registered event type by name.
+
+    Args:
+        name: Name of the event type to look up.
+
+    Returns:
+        The registered event type.
+    """
     try:
         return _registry[name]
     except KeyError as exc:
@@ -32,7 +50,11 @@ def get_event_type(name: str) -> EventType:
 
 
 def list_event_types() -> list[EventType]:
-    """Return all registered event types."""
+    """Return all registered event types.
+
+    Returns:
+        All event types registered so far.
+    """
     return list(_registry.values())
 
 
