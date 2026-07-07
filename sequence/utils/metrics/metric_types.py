@@ -19,8 +19,6 @@ class CollectContext:
         storage: In-memory store of recorded events for the trial.
         delivery_owner: Node name for delivery-time metrics.
         target_pairs: Number of delivered pairs required to compute delivery time.
-        reservation_start_time: Simulation time when the reservation started (ps).
-        throughput: Application throughput supplied at collection time.
     """
 
     owner_name: str
@@ -188,7 +186,7 @@ class CounterMetric(Metric):
 
 @dataclass
 class RateMetric(Metric):
-    """Collects a rate value supplied at trial collection time (e.g. throughput)."""
+    """Computes application throughput from recorded deliveries at collection time."""
 
     key: str = "app_throughput"
 
@@ -201,7 +199,7 @@ class RateMetric(Metric):
         return frozenset({self.key})
 
     def collect(self, ctx: CollectContext) -> dict[str, Any]:
-        """Return the throughput value supplied at collection time.
+        """Compute throughput as delivered pairs per second over the reservation window.
 
         Args:
             ctx: Collection context; uses `throughput` when set.

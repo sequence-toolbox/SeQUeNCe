@@ -140,8 +140,6 @@ def collect_trial_metrics(
         owner_name: Node name to collect counter and fidelity metrics for.
         delivery_owner: Node name used for delivery-time metrics; defaults to `owner_name`.
         target_pairs: Number of delivered pairs required to compute delivery time.
-        reservation_start_time: Simulation time when the reservation started (ps).
-        throughput: Application throughput to include in collected metrics.
 
     Returns:
         Mapping of metric output keys to per-trial values.
