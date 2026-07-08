@@ -26,7 +26,6 @@ from .builtins import (
 from .event_types import (
     EventType,
     EventTypes,
-    get_event_type,
     list_event_types,
     register_event_type,
 )
@@ -282,7 +281,6 @@ __all__ = [
     # From event_types
     "EventType",
     "EventTypes",
-    "get_event_type",
     "list_event_types",
     "register_event_type",
     # From metric_types
