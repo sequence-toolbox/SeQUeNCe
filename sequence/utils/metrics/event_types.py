@@ -34,21 +34,6 @@ def register_event_type(name: str) -> EventType:
     return event_type
 
 
-def get_event_type(name: str) -> EventType:
-    """Return a registered event type by name.
-
-    Args:
-        name: Name of the event type to look up.
-
-    Returns:
-        The registered event type.
-    """
-    try:
-        return _registry[name]
-    except KeyError as exc:
-        raise KeyError(f"Event type '{name}' is not registered.") from exc
-
-
 def list_event_types() -> list[EventType]:
     """Return all registered event types.
 
