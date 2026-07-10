@@ -213,9 +213,7 @@ class RateMetric(Metric):
 
         delivery_owner = ctx.delivery_owner or ctx.owner_name
         delivery_records = [
-            record
-            for record in ctx.storage.get_by_owner(delivery_owner)
-            if record["event_type"] == self.delivery_event
+            record for record in ctx.storage.get_by_owner(delivery_owner) if record["event_type"] == self.delivery_event
         ]
         if not delivery_records:
             return {self.key: float("nan")}
@@ -283,12 +281,7 @@ class ReservationDeliveryMetric(Metric):
     def served_pairs(self, owner_name: str, identity: int) -> int:
         return self._pair_counters.get((owner_name, identity), 0)
 
-    def on_record(
-        self,
-        event_type: EventType,
-        owner_name: str,
-        kwargs: dict[str, Any],
-    ) -> None:
+    def on_record(self, event_type: EventType, owner_name: str, kwargs: dict[str, Any]) -> None:
         if event_type is not self.delivery_event:
             return
         identity = kwargs.get("identity", 0)
