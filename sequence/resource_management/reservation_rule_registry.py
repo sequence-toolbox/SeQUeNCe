@@ -1,12 +1,17 @@
-"""Registry utilities for reservation-generated resource-management rules.
+"""Utilities for building reservation-generated resource-management rules.
 
-This module defines reservation-specific Rule subclasses and a registry that
-maps reservation rule names to Rule constructors. The default resource-management
-rule generator uses this registry to construct the built-in rules, while users
-may replace or disable individual rules without subclassing the generator.
+This module defines the fixed reservation rule slots used by the default
+reservation rule generator.  Users may replace or disable the builders for
+these existing slots, but the reservation rule order and creation predicates
+remain static.
 """
 
-from typing import Final
+from __future__ import annotations
+
+from dataclasses import dataclass
+from inspect import signature
+from typing import TYPE_CHECKING, Final
+from collections.abc import Callable, Iterable
 
 from .action_condition_set import (
     eg_rule_action_await,
@@ -23,6 +28,10 @@ from .action_condition_set import (
     es_rule_condition_B_end,
 )
 from .rule_manager import Rule
+
+if TYPE_CHECKING:
+    from ..network_management.reservation import Reservation
+    from ..topology.node import QuantumRouter
 
 
 EG_AWAIT: Final[str] = "eg_await"
@@ -43,128 +52,119 @@ RESERVATION_RULE_NAMES: Final[tuple[str, ...]] = (
     ES_B,
 )
 
-ReservationRuleConstructor = type[Rule]
+
+@dataclass(frozen=True)
+class ReservationRuleContext:
+    """Inputs needed to build reservation-generated resource-management rules."""
+
+    owner: QuantumRouter
+    path: list[str]
+    reservation: Reservation
+    memory_indices: list[int]
+    index: int
 
 
-class EGAwaitRule(Rule):
-    """Entanglement-generation await rule for non-left-end nodes."""
-
-    def __init__(
-        self,
-        owner,
-        path,
-        reservation,
-        memory_indices,
-        index,
-        priority: int = 10,
-    ) -> None:
-        condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
-        action_args = {
-            "mid": owner.map_to_middle_node[path[index - 1]],
-            "path": path,
-            "index": index,
-        }
-        super().__init__(priority, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
+ReservationRulePredicate = Callable[[ReservationRuleContext], bool]
+ReservationRuleBuilder = Callable[[ReservationRuleContext], Rule]
 
 
-class EGRequestRule(Rule):
-    """Entanglement-generation request rule for non-right-end nodes."""
+@dataclass(frozen=True)
+class ReservationRuleSpec:
+    """Static specification for one built-in reservation rule slot."""
 
-    def __init__(
-        self,
-        owner,
-        path,
-        reservation,
-        memory_indices,
-        index,
-        priority: int = 10,
-    ) -> None:
-        if index == 0:
-            condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
-        else:
-            condition_args = {"memory_indices": memory_indices[reservation.memory_size:]}
-
-        action_args = {
-            "mid": owner.map_to_middle_node[path[index + 1]],
-            "path": path,
-            "index": index,
-            "name": owner.name,
-            "reservation": reservation,
-        }
-        super().__init__(priority, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
+    name: str
+    predicate: ReservationRulePredicate
+    builder: ReservationRuleBuilder
 
 
-class EPRequestRule(Rule):
-    """Entanglement-purification request rule."""
+def _applies_eg_await(context: ReservationRuleContext) -> bool:
+    return context.index > 0
 
-    def __init__(
-        self,
-        _owner,
-        _path,
-        reservation,
-        memory_indices,
-        _index,
-        priority: int = 10,
-    ) -> None:
+
+def _applies_eg_request(context: ReservationRuleContext) -> bool:
+    return context.index < len(context.path) - 1
+
+
+def _applies_ep_request(context: ReservationRuleContext) -> bool:
+    return context.index > 0
+
+
+def _applies_ep_await(context: ReservationRuleContext) -> bool:
+    return context.index < len(context.path) - 1
+
+
+def _applies_es_b_end(context: ReservationRuleContext) -> bool:
+    return context.index == 0 or context.index == len(context.path) - 1
+
+
+def _applies_es_middle(context: ReservationRuleContext) -> bool:
+    return 0 < context.index < len(context.path) - 1
+
+
+def _build_eg_await_rule(context: ReservationRuleContext) -> Rule:
+    condition_args = {"memory_indices": context.memory_indices[:context.reservation.memory_size]}
+    action_args = {
+        "mid": context.owner.map_to_middle_node[context.path[context.index - 1]],
+        "path": context.path,
+        "index": context.index,
+    }
+    return Rule(10, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
+
+
+def _build_eg_request_rule(context: ReservationRuleContext) -> Rule:
+    if context.index == 0:
+        condition_args = {"memory_indices": context.memory_indices[:context.reservation.memory_size]}
+    else:
+        condition_args = {"memory_indices": context.memory_indices[context.reservation.memory_size:]}
+
+    action_args = {
+        "mid": context.owner.map_to_middle_node[context.path[context.index + 1]],
+        "path": context.path,
+        "index": context.index,
+        "name": context.owner.name,
+        "reservation": context.reservation,
+    }
+    return Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
+
+
+def _build_ep_request_rule(context: ReservationRuleContext) -> Rule:
+    condition_args = {
+        "memory_indices": context.memory_indices[:context.reservation.memory_size],
+        "reservation": context.reservation,
+        "purification_mode": context.reservation.purification_mode,
+    }
+    return Rule(10, ep_rule_action_request, ep_rule_condition_request, {}, condition_args)
+
+
+def _build_ep_await_rule(context: ReservationRuleContext) -> Rule:
+    if context.index == 0:
         condition_args = {
-            "memory_indices": memory_indices[:reservation.memory_size],
-            "reservation": reservation,
-            "purification_mode": reservation.purification_mode,
+            "memory_indices": context.memory_indices,
+            "fidelity": context.reservation.fidelity,
+            "purification_mode": context.reservation.purification_mode,
         }
-        super().__init__(priority, ep_rule_action_request, ep_rule_condition_request, {}, condition_args)
-
-
-class EPAwaitRule(Rule):
-    """Entanglement-purification await rule."""
-
-    def __init__(
-        self,
-        _owner,
-        path,
-        reservation,
-        memory_indices,
-        index,
-        priority: int = 10,
-    ) -> None:
-        if index == 0:
-            condition_args = {
-                "memory_indices": memory_indices,
-                "fidelity": reservation.fidelity,
-                "purification_mode": reservation.purification_mode,
-            }
-        else:
-            condition_args = {
-                "memory_indices": memory_indices[reservation.memory_size:],
-                "fidelity": reservation.fidelity,
-                "purification_mode": reservation.purification_mode,
-            }
-
-        super().__init__(priority, ep_rule_action_await, ep_rule_condition_await, {}, condition_args)
-
-
-class ESBEndRule(Rule):
-    """Endpoint entanglement-swapping B rule."""
-
-    def __init__(
-        self,
-        _owner,
-        path,
-        reservation,
-        memory_indices,
-        index,
-        priority: int = 10,
-    ) -> None:
-        if index == 0:
-            target_remote = path[-1]
-        else:
-            target_remote = path[0]
-
+    else:
         condition_args = {
-            "memory_indices": memory_indices,
-            "target_remote": target_remote,
-            "fidelity": reservation.fidelity,
+            "memory_indices": context.memory_indices[context.reservation.memory_size:],
+            "fidelity": context.reservation.fidelity,
+            "purification_mode": context.reservation.purification_mode,
         }
-        super().__init__(priority, es_rule_action_B, es_rule_condition_B_end, {}, condition_args)
+
+    return Rule(10, ep_rule_action_await, ep_rule_condition_await, {}, condition_args)
+
+
+def _build_es_b_end_rule(context: ReservationRuleContext) -> Rule:
+    if context.index == 0:
+        target_remote = context.path[-1]
+    else:
+        target_remote = context.path[0]
+
+    condition_args = {
+        "memory_indices": context.memory_indices,
+        "target_remote": target_remote,
+        "fidelity": context.reservation.fidelity,
+    }
+    return Rule(10, es_rule_action_B, es_rule_condition_B_end, {}, condition_args)
 
 
 def _get_swapping_neighbors(owner_name: str, path: list[str]) -> tuple[str, str]:
@@ -181,111 +181,88 @@ def _get_swapping_neighbors(owner_name: str, path: list[str]) -> tuple[str, str]
     return reduced_path[reduced_index - 1], reduced_path[reduced_index + 1]
 
 
-class ESARule(Rule):
-    """Middle-node entanglement-swapping A rule."""
-
-    def __init__(
-        self,
-        owner,
-        path,
-        reservation,
-        memory_indices,
-        _index,
-        priority: int = 10,
-    ) -> None:
-        left, right = _get_swapping_neighbors(owner.name, path)
-        condition_args = {
-            "memory_indices": memory_indices,
-            "left": left,
-            "right": right,
-            "fidelity": reservation.fidelity,
-        }
-        super().__init__(priority, es_rule_action_A, es_rule_condition_A, {}, condition_args)
+def _build_es_a_rule(context: ReservationRuleContext) -> Rule:
+    left, right = _get_swapping_neighbors(context.owner.name, context.path)
+    condition_args = {
+        "memory_indices": context.memory_indices,
+        "left": left,
+        "right": right,
+        "fidelity": context.reservation.fidelity,
+    }
+    action_args = {
+        "swapping_success_prob": context.owner.swapping_success_prob,
+        "swapping_degradation": context.owner.swapping_degradation,
+    }
+    return Rule(10, es_rule_action_A, es_rule_condition_A, action_args, condition_args)
 
 
-class ESBRule(Rule):
-    """Middle-node entanglement-swapping B rule."""
-
-    def __init__(
-        self,
-        owner,
-        path,
-        reservation,
-        memory_indices,
-        _index,
-        priority: int = 10,
-    ) -> None:
-        left, right = _get_swapping_neighbors(owner.name, path)
-        condition_args = {
-            "memory_indices": memory_indices,
-            "left": left,
-            "right": right,
-            "fidelity": reservation.fidelity,
-        }
-        super().__init__(priority, es_rule_action_B, es_rule_condition_B, {}, condition_args)
+def _build_es_b_rule(context: ReservationRuleContext) -> Rule:
+    left, right = _get_swapping_neighbors(context.owner.name, context.path)
+    condition_args = {
+        "memory_indices": context.memory_indices,
+        "left": left,
+        "right": right,
+        "fidelity": context.reservation.fidelity,
+    }
+    return Rule(10, es_rule_action_B, es_rule_condition_B, {}, condition_args)
 
 
-DEFAULT_RESERVATION_RULE_CONSTRUCTORS: Final[dict[str, ReservationRuleConstructor]] = {
-    EG_AWAIT: EGAwaitRule,
-    EG_REQUEST: EGRequestRule,
-    EP_REQUEST: EPRequestRule,
-    EP_AWAIT: EPAwaitRule,
-    ES_B_END: ESBEndRule,
-    ES_A: ESARule,
-    ES_B: ESBRule,
-}
-
-DEFAULT_RESERVATION_RULE_ORDER: Final[tuple[str, ...]] = (
-    EG_AWAIT,
-    EG_REQUEST,
-    EP_REQUEST,
-    EP_AWAIT,
-    ES_B_END,
-    ES_A,
-    ES_B,
+DEFAULT_RESERVATION_RULE_SPECS: Final[tuple[ReservationRuleSpec, ...]] = (
+    ReservationRuleSpec(EG_AWAIT, _applies_eg_await, _build_eg_await_rule),
+    ReservationRuleSpec(EG_REQUEST, _applies_eg_request, _build_eg_request_rule),
+    ReservationRuleSpec(EP_REQUEST, _applies_ep_request, _build_ep_request_rule),
+    ReservationRuleSpec(EP_AWAIT, _applies_ep_await, _build_ep_await_rule),
+    ReservationRuleSpec(ES_B_END, _applies_es_b_end, _build_es_b_end_rule),
+    ReservationRuleSpec(ES_A, _applies_es_middle, _build_es_a_rule),
+    ReservationRuleSpec(ES_B, _applies_es_middle, _build_es_b_rule),
 )
 
 
 class ReservationRuleRegistry:
-    """Registry for reservation Rule constructors."""
+    """Registry for replacing or disabling existing reservation rule builders."""
 
-    def __init__(self, constructors: dict[str, ReservationRuleConstructor] | None = None) -> None:
-        self._constructors: dict[str, ReservationRuleConstructor] = {}
-        if constructors is not None:
-            for name, constructor in constructors.items():
-                self.register(name, constructor)
+    def __init__(self, specs: Iterable[ReservationRuleSpec] | None = None) -> None:
+        if specs is None:
+            specs = DEFAULT_RESERVATION_RULE_SPECS
+        self._builders: dict[str, ReservationRuleBuilder] = {}
+        for spec in specs:
+            self._validate_name(spec.name)
+            self._validate_builder(spec.builder)
+            if spec.name in self._builders:
+                msg = f"Duplicate reservation rule name: {spec.name}"
+                raise ValueError(msg)
+            self._builders[spec.name] = spec.builder
 
-    def register(self, name: str, constructor: ReservationRuleConstructor) -> None:
-        """Register or replace a reservation Rule constructor."""
+    def replace(self, name: str, builder: ReservationRuleBuilder) -> None:
+        """Replace the builder for an existing reservation rule slot."""
         self._validate_name(name)
-        if not issubclass(constructor, Rule):
-            msg = "Reservation rule constructors must be Rule subclasses"
-            raise TypeError(msg)
-        self._constructors[name] = constructor
+        self._validate_builder(builder)
+        self._builders[name] = builder
 
     def disable(self, name: str) -> None:
-        """Disable a reservation Rule constructor."""
+        """Disable an existing reservation rule slot."""
         self._validate_name(name)
-        self._constructors.pop(name, None)
+        self._builders.pop(name, None)
 
-    def get(self, name: str) -> ReservationRuleConstructor | None:
-        """Return the constructor registered for a rule name, if any."""
+    def get(self, name: str) -> ReservationRuleBuilder | None:
+        """Return the builder for a rule slot, or None if it is disabled."""
         self._validate_name(name)
-        return self._constructors.get(name)
+        return self._builders.get(name)
 
-    def build(self, name: str, *args, **kwargs) -> Rule | None:
-        """Build a rule by name.
+    def build(self, name: str, context: ReservationRuleContext) -> Rule | None:
+        """Build the named rule for the supplied context.
 
-        Returns None when the rule is disabled.
+        Returns None when the rule slot is disabled.
         """
-        constructor = self.get(name)
-        if constructor is None:
+        builder = self.get(name)
+        if builder is None:
             return None
-        return constructor(*args, **kwargs)
 
-    def copy(self) -> "ReservationRuleRegistry":
-        """Return a shallow copy of this registry."""
-        return ReservationRuleRegistry(self._constructors.copy())
+        rule = builder(context)
+        if not isinstance(rule, Rule):
+            msg = f"Reservation rule builder for {name!r} must return a Rule"
+            raise TypeError(msg)
+        return rule
 
     @staticmethod
     def _validate_name(name: str) -> None:
@@ -293,48 +270,34 @@ class ReservationRuleRegistry:
             msg = f"Unknown reservation rule name: {name}"
             raise ValueError(msg)
 
+    @staticmethod
+    def _validate_builder(builder: ReservationRuleBuilder) -> None:
+        if not callable(builder):
+            msg = "Reservation rule builders must be callable"
+            raise TypeError(msg)
+
+        try:
+            signature(builder).bind(object())
+        except (TypeError, ValueError) as exc:
+            msg = "Reservation rule builders must accept a ReservationRuleContext argument"
+            raise TypeError(msg) from exc
+
 
 class ReservationRuleGenerator:
     """Rule generator for reservation-based resource-management rules."""
 
     def __init__(self) -> None:
-        self.registry = ReservationRuleRegistry(DEFAULT_RESERVATION_RULE_CONSTRUCTORS)
+        self.registry = ReservationRuleRegistry()
 
     def create_rules(self, owner, path, reservation, memory_indices, index) -> list[Rule]:
-        """Create reservation rules using the configured rule registry."""
+        """Create reservation rules in SeQUeNCe's static rule-slot order."""
+        context = ReservationRuleContext(owner, path, reservation, memory_indices, index)
         rules: list[Rule] = []
 
-        if index > 0:
-            rule = self.registry.build(EG_AWAIT, owner, path, reservation, memory_indices, index)
-            if rule is not None:
-                rules.append(rule)
-
-        if index < len(path) - 1:
-            rule = self.registry.build(EG_REQUEST, owner, path, reservation, memory_indices, index)
-            if rule is not None:
-                rules.append(rule)
-
-        if index > 0:
-            rule = self.registry.build(EP_REQUEST, owner, path, reservation, memory_indices, index)
-            if rule is not None:
-                rules.append(rule)
-
-        if index < len(path) - 1:
-            rule = self.registry.build(EP_AWAIT, owner, path, reservation, memory_indices, index)
-            if rule is not None:
-                rules.append(rule)
-
-        if index == 0 or index == len(path) - 1:
-            rule = self.registry.build(ES_B_END, owner, path, reservation, memory_indices, index)
-            if rule is not None:
-                rules.append(rule)
-        else:
-            rule = self.registry.build(ES_A, owner, path, reservation, memory_indices, index)
-            if rule is not None:
-                rules.append(rule)
-
-            rule = self.registry.build(ES_B, owner, path, reservation, memory_indices, index)
-            if rule is not None:
-                rules.append(rule)
+        for spec in DEFAULT_RESERVATION_RULE_SPECS:
+            if spec.predicate(context):
+                rule = self.registry.build(spec.name, context)
+                if rule is not None:
+                    rules.append(rule)
 
         return rules

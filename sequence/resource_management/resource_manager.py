@@ -140,8 +140,11 @@ class ResourceManager:
         self.memory_to_protocol_map = {}
         self.rule_generator = ReservationRuleGenerator()
 
+    def init(self):
+        pass
+
     def get_reservation_rule_registry(self) -> ReservationRuleRegistry:
-        """Return the registry used to build reservation rules."""
+        """Return the registry used to replace or disable reservation rule builders."""
         return self.rule_generator.registry
 
     def generate_load_rules(self, path: list[str], reservation: Reservation, timecards: list[MemoryTimeCard], memory_array_name: str):
@@ -153,7 +156,6 @@ class ResourceManager:
             timecards (list[MemoryTimeCard]): timecards involved in the reservation at this node.
             memory_array_name (str): name of memory array component to use for rule conditions and actions at this node.
         """
-        rules = []
         memory_indices = []
         for card in timecards:
             if reservation in card.reservations:
