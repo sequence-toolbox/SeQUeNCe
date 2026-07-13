@@ -14,13 +14,12 @@ from __future__ import annotations
 
 import math
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..network_management.reservation import Reservation
     from ..resource_management.memory_manager import MemoryInfo
     from ..topology.node import QuantumRouter
-    from ..utils.metrics.event_types import EventType
 
 
 class App(ABC):
