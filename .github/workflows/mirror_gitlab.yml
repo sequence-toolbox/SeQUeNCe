@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: mirror-to-gitlab
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   mirror:
