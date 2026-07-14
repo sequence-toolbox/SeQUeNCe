@@ -14,6 +14,15 @@ if TYPE_CHECKING:
     from ...kernel.timeline import Timeline
 
 from . import builtins
+from .builtins import (
+    DELIVERY_TIME_METRIC,
+    EG_METRIC,
+    EP_METRIC,
+    ES_METRIC,
+    PURIFIED_FIDELITIES_METRIC,
+    SWAPPED_FIDELITIES_METRIC,
+    THROUGHPUT_METRIC,
+)
 from .event_types import (
     EventType,
     EventTypes,
@@ -202,6 +211,14 @@ builtins.register_builtin_metrics()
 
 # Exported symbols
 __all__ = [
+    # From builtins
+    "DELIVERY_TIME_METRIC",
+    "EG_METRIC",
+    "EP_METRIC",
+    "ES_METRIC",
+    "PURIFIED_FIDELITIES_METRIC",
+    "SWAPPED_FIDELITIES_METRIC",
+    "THROUGHPUT_METRIC",
     # From event_types
     "EventType",
     "EventTypes",
