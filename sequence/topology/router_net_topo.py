@@ -5,9 +5,8 @@ from networkx import Graph, dijkstra_path, exception
 from ..network_management.routing import DistributedRoutingProtocol, StaticRoutingProtocol
 from .topology import Topology as Topo
 from ..kernel.timeline import Timeline
-from ..kernel.quantum_manager import KET_VECTOR_FORMALISM, QuantumManager
+from ..constants import KET_VECTOR_FORMALISM, SPEED_OF_LIGHT
 from .node import BSMNode, QuantumRouter
-from ..constants import SPEED_OF_LIGHT
 
 
 class RouterNetTopo(Topo):
@@ -66,9 +65,10 @@ class RouterNetTopo(Topo):
     def _add_timeline(self, config: dict):
         stop_time = config.get(Topo.STOP_TIME, 10 ** 23)
         formalism = config.get(Topo.FORMALISM, KET_VECTOR_FORMALISM)
-        truncation = config.get(Topo.TRUNC, 1)
-        QuantumManager.set_global_manager_formalism(formalism)
-        self.tl = Timeline(stop_time=stop_time, truncation=truncation)
+        manager_kwargs = {}
+        if Topo.TRUNC in config:
+            manager_kwargs["truncation"] = config[Topo.TRUNC]
+        self.tl = Timeline(stop_time=stop_time, formalism=formalism, manager_kwargs=manager_kwargs)
 
     def _map_bsm_routers(self, config: dict):
         for qc in config[Topo.ALL_Q_CHANNEL]:

@@ -51,6 +51,8 @@ DENSITY_MATRIX_FORMALISM: Final = "density_matrix"
 FOCK_DENSITY_MATRIX_FORMALISM: Final = "fock_density"
 #: Built-in Bell-diagonal-state formalism identifier.
 BELL_DIAGONAL_STATE_FORMALISM: Final = "bell_diagonal"
+#: Built-in stabilizer-state formalism identifier.
+STABILIZER_FORMALISM: Final = "stabilizer"
 
 #: Built-in Barrett-Kok generation protocol identifier.
 BARRET_KOK: Final = 'barret_kok'
