@@ -72,7 +72,8 @@ def enable(metrics_to_enable: list[Metric]) -> None:
     each metric's `event_types` property and added to the recording filter.
     Metrics with empty `event_types` (e.g. `RateMetric`) contribute no
     events to the filter; enabling them alone will not cause any events to
-    be recorded.
+    be recorded. That will only affect what is collected in
+    `collect_trial_metrics`.
 
     Args:
         metrics_to_enable: Metrics whose event types should be recorded.
