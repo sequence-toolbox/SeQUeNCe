@@ -56,15 +56,21 @@ def register_time_provider(provider: Timeline) -> None:
     time_provider = provider
 
 
-def enable(event_types: list[EventType]) -> None:
-    """Enable metrics recording for the given event types.
+def enable(metrics_to_enable: list[Metric]) -> None:
+    """Enable metrics recording for the given metrics.
+
+    The event types required by each metric are automatically derived from
+    each metric's `event_types` property and added to the recording filter.
+    Metrics with empty `event_types` (e.g. `RateMetric`) contribute no
+    events to the filter; enabling them alone will not cause any events to
+    be recorded.
 
     Args:
-        event_types: Event types to record when ``record()`` is called.
+        metrics_to_enable: Metrics whose event types should be recorded.
     """
     global _enabled, _enabled_events
     _enabled = True
-    _enabled_events = set(event_types)
+    _enabled_events = set().union(*(m.event_types for m in metrics_to_enable))
 
 
 def configure(storage_type: str = "in_memory") -> None:
