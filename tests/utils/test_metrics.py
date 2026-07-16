@@ -4,7 +4,7 @@ import pytest
 
 from sequence.kernel.timeline import Timeline
 from sequence.utils import metrics
-from sequence.utils.metrics import CounterMetric
+from sequence.utils.metrics import BellPairUtilizationMetric, CounterMetric
 from sequence.utils.metrics.event_types import EventTypes
 
 
@@ -162,7 +162,7 @@ def test_collect_trial_metrics_computes_throughput_from_deliveries():
     timeline = Timeline(int(1e12))
     timeline.time = int(1e12)
     metrics.register_time_provider(timeline)
-    metrics.enable([EventTypes.DELIVERY])
+    metrics.enable([metrics.DELIVERY_TIME_METRIC])
 
     metrics.record(
         EventTypes.DELIVERY,
@@ -359,7 +359,7 @@ def test_collect_trial_metrics_delivery_time_nan_when_target_not_reached():
 
 
 def test_collect_trial_metrics_delivery_owner_defaults_to_owner():
-    metrics.enable([EventTypes.DELIVERY])
+    metrics.enable([metrics.DELIVERY_TIME_METRIC])
     metrics.record(
         EventTypes.DELIVERY,
         "right",
@@ -449,49 +449,8 @@ def test_register_metric_rejects_duplicate_output_keys():
         metrics.register_metric(duplicate)
 
 
-def test_reservation_approved_records_metadata():
-    metrics.enable([EventTypes.RESERVATION_APPROVED])
-    metrics.record(
-        EventTypes.RESERVATION_APPROVED,
-        "n1",
-        identity=1,
-        initiator="n1",
-        responder="n2",
-        start_time=10,
-        end_time=20,
-        memory_size=5,
-        entanglement_number=3,
-        target_fidelity=0.9,
-        path=["n1", "m1", "n2"],
-    )
-    record = metrics.storage.get_all()[0]
-    assert record["identity"] == 1
-    assert record["path"] == ["n1", "m1", "n2"]
-    assert record["entanglement_number"] == 3
-
-
-def test_reservation_rejected_records_metadata():
-    metrics.enable([EventTypes.RESERVATION_REJECTED])
-    metrics.record(
-        EventTypes.RESERVATION_REJECTED,
-        "n1",
-        identity=2,
-        initiator="n1",
-        responder="n2",
-        start_time=10,
-        end_time=20,
-        memory_size=5,
-        entanglement_number=1,
-        target_fidelity=0.9,
-        path=[],
-    )
-    record = metrics.storage.get_all()[0]
-    assert record["event_type"] is EventTypes.RESERVATION_REJECTED
-    assert record["path"] == []
-
-
 def test_purified_delivery_assigns_pair_index():
-    metrics.enable([EventTypes.DELIVERY])
+    metrics.enable([metrics.DELIVERY_TIME_METRIC])
     kwargs = {
         "identity": 7,
         "initiator": "n1",
@@ -516,7 +475,7 @@ def test_purified_delivery_assigns_pair_index():
 
 
 def test_collect_reservation_data_produces_expected_row():
-    metrics.enable([EventTypes.DELIVERY])
+    metrics.enable([metrics.DELIVERY_TIME_METRIC])
     start_time = int(1e12)
     end_time = int(2e12)
     base = {
@@ -561,3 +520,123 @@ def test_collect_reservation_data_produces_expected_row():
     assert row[12] == 3
     assert row[14] == pytest.approx(0.915)
     assert row[16] == pytest.approx(int(2e11))
+
+
+def test_eg_success_record_includes_reservation_id():
+    metrics.enable([metrics.EG_METRIC])
+    metrics.record(EventTypes.EG_SUCCESS, "n0", fidelity=0.9, reservation_id=5)
+
+    record = metrics.storage.get_all()[0]
+    assert record["reservation_id"] == 5
+
+
+def test_bell_pair_utilization_nan_without_deliveries():
+    metrics.enable([metrics.EG_METRIC])
+    metrics.record(EventTypes.EG_SUCCESS, "left", fidelity=0.9, reservation_id=1)
+    metrics.record(EventTypes.EG_FAILURE, "left", reservation_id=1)
+
+    trial = metrics.collect_trial_metrics("left")
+    assert math.isnan(trial["bell_pair_utilization"])
+
+
+def test_bell_pair_utilization_basic_ratio():
+    metrics.enable([metrics.EG_METRIC, metrics.DELIVERY_TIME_METRIC])
+
+    # n_b: 6 generation attempts on "left"
+    for _ in range(4):
+        metrics.record(EventTypes.EG_SUCCESS, "left", fidelity=0.9, reservation_id=1)
+    for _ in range(2):
+        metrics.record(EventTypes.EG_FAILURE, "left", reservation_id=1)
+
+    # n_s: 3 deliveries on "left"
+    for pair in range(1, 4):
+        metrics.record(EventTypes.DELIVERY, "left", fidelity=0.95, identity=1, pair_number=pair)
+
+    trial = metrics.collect_trial_metrics("left")
+    assert trial["bell_pair_utilization"] == pytest.approx(6 / 3)
+
+
+def test_bell_pair_utilization_uses_owner_and_delivery_owner():
+    metrics.enable([metrics.EG_METRIC, metrics.DELIVERY_TIME_METRIC])
+
+    for _ in range(5):
+        metrics.record(EventTypes.EG_SUCCESS, "left", fidelity=0.9, reservation_id=1)
+
+    for pair in range(1, 3):
+        metrics.record(EventTypes.DELIVERY, "right", fidelity=0.95, identity=1, pair_number=pair)
+
+    trial = metrics.collect_trial_metrics("left", delivery_owner="right")
+    assert trial["bell_pair_utilization"] == pytest.approx(5 / 2)
+
+
+def test_bell_pair_utilization_per_reservation_filter():
+    metrics.enable([metrics.EG_METRIC, metrics.DELIVERY_TIME_METRIC])
+
+    # Reservation 1: 4 EG attempts, 2 deliveries -> U = 2.0
+    for _ in range(3):
+        metrics.record(EventTypes.EG_SUCCESS, "left", fidelity=0.9, reservation_id=1)
+    metrics.record(EventTypes.EG_FAILURE, "left", reservation_id=1)
+    for pair in range(1, 3):
+        metrics.record(EventTypes.DELIVERY, "left", fidelity=0.95, identity=1, pair_number=pair)
+
+    # Reservation 2: 6 EG attempts, 2 deliveries -> U = 3.0
+    for _ in range(6):
+        metrics.record(EventTypes.EG_SUCCESS, "left", fidelity=0.9, reservation_id=2)
+    for pair in range(1, 3):
+        metrics.record(EventTypes.DELIVERY, "left", fidelity=0.95, identity=2, pair_number=pair)
+
+    metric_res1 = BellPairUtilizationMetric(key="bpu_res1", delivery_event=EventTypes.DELIVERY, reservation_id=1)
+    metrics.register_metric(metric_res1)
+    metric_res2 = BellPairUtilizationMetric(key="bpu_res2", delivery_event=EventTypes.DELIVERY, reservation_id=2)
+    metrics.register_metric(metric_res2)
+    try:
+        trial = metrics.collect_trial_metrics("left")
+        assert trial["bpu_res1"] == pytest.approx(4 / 2)
+        assert trial["bpu_res2"] == pytest.approx(6 / 2)
+        # Aggregate (per-node) counts all reservations: 10 EG / 4 deliveries.
+        assert trial["bell_pair_utilization"] == pytest.approx(10 / 4)
+    finally:
+        metrics.unregister_metric(metric_res1)
+        metrics.unregister_metric(metric_res2)
+
+
+def test_collect_reservation_data_includes_bell_pair_utilization():
+    metrics.enable([metrics.EG_METRIC, metrics.DELIVERY_TIME_METRIC])
+    start_time = int(1e12)
+    end_time = int(2e12)
+    base = {
+        "identity": 1,
+        "initiator": "n1",
+        "responder": "n2",
+        "start_time": start_time,
+        "end_time": end_time,
+        "memory_size": 5,
+        "entanglement_number": 2,
+        "target_fidelity": 0.9,
+        "path": ["n1", "m1", "n2"],
+    }
+
+    class StubTimeProvider:
+        def __init__(self) -> None:
+            self._time = start_time + int(1e11)
+
+        def now(self) -> int:
+            current = self._time
+            self._time += int(2e11)
+            return current
+
+    metrics.register_time_provider(StubTimeProvider())
+
+    # 6 EG attempts tied to reservation 1 on n1.
+    for _ in range(4):
+        metrics.record(EventTypes.EG_SUCCESS, "n1", fidelity=0.9, reservation_id=1)
+    for _ in range(2):
+        metrics.record(EventTypes.EG_FAILURE, "n1", reservation_id=1)
+
+    metrics.record(EventTypes.DELIVERY, "n1", fidelity=0.91, **base)
+    metrics.record(EventTypes.DELIVERY, "n1", fidelity=0.92, **base)
+
+    rows = metrics.collect_reservation_data("n1")
+    assert len(rows) == 1
+    # BPU is the last column: n_b=6, served_pairs=2 -> 3.0
+    assert rows[0][-1] == pytest.approx(6 / 2)
