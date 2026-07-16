@@ -35,13 +35,13 @@ class App(ABC):
         name (str): Human-readable name for the application instance.
     """
 
-    def __init__(self, node: "QuantumRouter"):
-        self.node: "QuantumRouter" = node
+    def __init__(self, node: QuantumRouter):
+        self.node: QuantumRouter = node
         self.node.set_app(self)
         self.name: str = f"{self.node.name}.{self.__class__.__name__}"
 
     @abstractmethod
-    def get_memory(self, info: "MemoryInfo") -> None:
+    def get_memory(self, info: MemoryInfo) -> None:
         """Called when an entangled memory becomes available.
 
         Args:
@@ -49,7 +49,7 @@ class App(ABC):
         """
 
     @abstractmethod
-    def get_reservation_result(self, reservation: "Reservation", result: bool) -> None:
+    def get_reservation_result(self, reservation: Reservation, result: bool) -> None:
         """Called when a reservation result is received from the network manager.
 
         Args:
@@ -58,7 +58,7 @@ class App(ABC):
         """
 
     @abstractmethod
-    def get_other_reservation(self, reservation: "Reservation") -> None:
+    def get_other_reservation(self, reservation: Reservation) -> None:
         """Called when a reservation initiated by another node is approved and
         uses this node as the responder.
 
