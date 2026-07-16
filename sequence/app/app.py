@@ -5,7 +5,6 @@ must implement.  The three abstract callback methods, `get_memory`, `get_reserva
 and `get_other_reservation` are correspond to the calls that `QuantumRouter` already
 makes on whatever application is attached via `set_app`.
 
-`get_throughput` is provided as a concrete default that returns `float("nan")`.
 Subclasses that track throughput (e.g. `RequestApp`) should override it with a
 meaningful implementation.
 """
@@ -67,18 +66,6 @@ class App(ABC):
         Args:
             reservation (Reservation): The approved reservation.
         """
-
-    def get_throughput(self) -> float:
-        """Return application throughput.
-
-        The default implementation returns ``NaN``.  Subclasses that track
-        entanglement delivery should override this with a meaningful
-        calculation.
-
-        Returns:
-            float: Throughput value, or ``NaN`` if not applicable.
-        """
-        return math.nan
 
     def set_name(self, name: str) -> None:
         """Override the default application name.
