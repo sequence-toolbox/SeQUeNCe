@@ -186,6 +186,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
             self.owner.name,
             remote_node=self.remote_node_name,
             fidelity=self.fidelity,
+            reservation_id=self.rule.reservation.identity,
         )
         log.logger.info(f'{self.owner.name} failed entanglement of memory {self.memory}')
 

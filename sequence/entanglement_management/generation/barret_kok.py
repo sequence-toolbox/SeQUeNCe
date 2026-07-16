@@ -231,6 +231,7 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
             self.owner.name,
             remote_node=self.remote_node_name,
             fidelity=self.fidelity,
+            reservation_id=self.rule.reservation.identity,
         )
         self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
 

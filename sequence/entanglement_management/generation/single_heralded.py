@@ -236,6 +236,7 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
             self.owner.name,
             remote_node=self.remote_node_name,
             fidelity=self.raw_fidelity,
+            reservation_id=self.rule.reservation.identity,
         )
         self.memory.fidelity = self.raw_fidelity
 

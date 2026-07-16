@@ -123,10 +123,12 @@ class BBPSSWCircuit(BBPSSWProtocol):
                 self.owner.name,
                 remote_node=self.remote_node_name,
                 fidelity=self.kept_memo.fidelity,
+                reservation_id=self.rule.reservation.identity,
             )
             self.update_resource_manager(self.kept_memo, state="PURIFIED")
         else:
-            metrics.record(EventTypes.EP_FAILURE, self.owner.name, remote_node=self.remote_node_name)
+            metrics.record(EventTypes.EP_FAILURE, self.owner.name, remote_node=self.remote_node_name,
+                           reservation_id=self.rule.reservation.identity)
             self.update_resource_manager(self.kept_memo, state="RAW")
 
     @staticmethod
