@@ -31,7 +31,7 @@ jobs:
           ref: ${{ github.ref_name }}
 
       - name: Stamp and release
-        uses: python-semantic-release/python-semantic-release@v10.5.3
+        uses: python-semantic-release/python-semantic-release@v10.6.1
         with:
           github_token: ${{ steps.generate-token.outputs.token }}
           git_committer_email: 298530268+sequence-release-bot[bot]@users.noreply.github.com

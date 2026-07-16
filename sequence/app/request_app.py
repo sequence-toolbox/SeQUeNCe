@@ -6,12 +6,13 @@ if TYPE_CHECKING:
     from ..network_management.reservation import Reservation
     from ..resource_management.memory_manager import MemoryInfo
 
+from .app import App
 from ..kernel.event import Event
 from ..kernel.process import Process
 from ..utils import log
 
 
-class RequestApp:
+class RequestApp(App):
     """Code for the request application.
 
         This application will create a request for entanglement.
@@ -35,8 +36,7 @@ class RequestApp:
     """
 
     def __init__(self, node: QuantumRouter):
-        self.node: QuantumRouter = node
-        self.node.set_app(self)
+        super().__init__(node)
         self.responder: str = ""
         self.start_t: int = -1
         self.end_t: int = -1
@@ -46,7 +46,6 @@ class RequestApp:
         self.memory_counter: int = 0
         self.path: list[str] = []
         self.memo_to_reservation: dict[int, Reservation] = {}
-        self.name: str = f"{self.node.name}.RequestApp"
 
     def start(self, responder: str, start_t: int, end_t: int, memo_size: int, fidelity: float):
         """Method to start the application.
@@ -167,8 +166,3 @@ class RequestApp:
                 event = Event(reservation.end_time, process)
                 self.node.timeline.schedule(event)
 
-    def set_name(self, name: str):
-        self.name = name
-
-    def __str__(self) -> str:
-        return self.name
