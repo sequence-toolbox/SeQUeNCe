@@ -30,6 +30,7 @@ from .event_types import (
     register_event_type,
 )
 from .metric_types import (
+    BellPairUtilizationMetric,
     CollectContext,
     CounterMetric,
     DeliveryTimeMetric,
@@ -167,6 +168,13 @@ def collect_reservation_data(owner_name: str | None = None) -> list[list]:
     for record in records:
         groups[(record["owner_name"], record["identity"])].append(record)
 
+    # Count entanglement generation attempts (n_b) per (node, reservation) for
+    # the Bell pair utilization rate. See BellPairUtilizationMetric / Eq. (7).
+    eg_counts: dict[tuple[str, int], int] = defaultdict(int)
+    for record in storage.get_all():
+        if record["event_type"] in (EventTypes.EG_SUCCESS, EventTypes.EG_FAILURE):
+            eg_counts[(record["owner_name"], record.get("reservation_id"))] += 1
+
     data: list[list] = []
     for (node, _), deliveries in groups.items():
         if not deliveries:
@@ -192,6 +200,8 @@ def collect_reservation_data(owner_name: str | None = None) -> list[list]:
         durations = [n - c for c, n in zip(timestamps, timestamps[1:])]
         avg_duration = mean(durations) if durations else 0.0
         std_duration = stdev(durations) if len(durations) > 1 else 0.0
+        n_b = eg_counts.get((node, first["identity"]), 0)
+        bell_pair_utilization = n_b / served_pairs if served_pairs > 0 else float("nan")
 
         data.append(
             [
@@ -213,6 +223,7 @@ def collect_reservation_data(owner_name: str | None = None) -> list[list]:
                 std_fidelity,
                 avg_duration,
                 std_duration,
+                bell_pair_utilization,
             ]
         )
     return data
@@ -284,12 +295,14 @@ __all__ = [
     "list_event_types",
     "register_event_type",
     # From metric_types
+    "BellPairUtilizationMetric",
     "CollectContext",
     "CounterMetric",
     "DeliveryTimeMetric",
     "FidelityMetric",
     "Metric",
     "RateMetric",
+    "ReservationDeliveryMetric",
     # From registry
     "clear_registry",
     "get_counter",

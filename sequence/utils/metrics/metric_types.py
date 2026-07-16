@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, override
 
-from .event_types import EventType
+from .event_types import EventType, EventTypes
 from .storage import InMemoryStorage
 
 
@@ -342,3 +342,77 @@ class DeliveryTimeMetric(Metric):
         return {
             self.key: (target_time - start_time) * 1e-12,
         }
+
+
+@dataclass
+class BellPairUtilizationMetric(Metric):
+    """Bell pair utilization rate ``U = n_b / n_s``.
+
+    Implements Eq. (7) of Ni et al. "Joint Optimization of Routing and
+    Purification to Meet Fidelity Targets in Quantum Networks"
+    (arXiv:2505.12459). It measures how many low-fidelity Bell pairs are
+    consumed for every successfully established entanglement request.
+
+    * ``n_b`` is the total number of entanglement generation attempts
+      (``EG_SUCCESS`` + ``EG_FAILURE``) recorded for the owner node.
+    * ``n_s`` is the number of delivered pairs (``DELIVERY`` events) recorded
+      for the delivery owner.
+
+    When ``reservation_id`` is ``None`` the metric aggregates over all
+    reservations on the node. When set, only records tagged with the matching
+    reservation identity are counted, giving per-reservation utilization.
+
+    Attributes:
+        key: Output key written into per-trial result dictionaries.
+        delivery_event: Event type used to count successful deliveries (``n_s``).
+        reservation_id: Optional reservation identity used to filter records.
+    """
+
+    key: str = "bell_pair_utilization"
+    delivery_event: EventType | None = None
+    reservation_id: int | None = None
+
+    @property
+    def event_types(self) -> frozenset[EventType]:
+        return frozenset()
+
+    @property
+    def output_keys(self) -> frozenset[str]:
+        return frozenset({self.key})
+
+    @override
+    def collect(self, ctx: CollectContext) -> dict[str, Any]:
+        """Compute the Bell pair utilization rate for the trial.
+
+        Args:
+            ctx: Collection context with owner node (for ``n_b``), delivery
+                owner (for ``n_s``), and stored events.
+
+        Returns:
+            Mapping with the configured key set to ``n_b / n_s``, or NaN if
+            there are no deliveries.
+        """
+        if self.delivery_event is None:
+            return {self.key: float("nan")}
+
+        delivery_owner = ctx.delivery_owner or ctx.owner_name
+        delivery_records = [
+            record
+            for record in ctx.storage.get_by_owner(delivery_owner)
+            if record["event_type"] == self.delivery_event
+            and (self.reservation_id is None or record.get("identity") == self.reservation_id)
+        ]
+        n_s = len(delivery_records)
+        if n_s == 0:
+            return {self.key: float("nan")}
+
+        eg_events = (EventTypes.EG_SUCCESS, EventTypes.EG_FAILURE)
+        eg_records = [
+            record
+            for record in ctx.storage.get_by_owner(ctx.owner_name)
+            if record["event_type"] in eg_events
+            and (self.reservation_id is None or record.get("reservation_id") == self.reservation_id)
+        ]
+        n_b = len(eg_records)
+
+        return {self.key: n_b / n_s}

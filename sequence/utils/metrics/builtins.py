@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from .event_types import EventTypes
 from .metric_types import (
+    BellPairUtilizationMetric,
     CounterMetric,
     DeliveryTimeMetric,
     FidelityMetric,
@@ -53,6 +54,10 @@ SWAPPED_FIDELITIES_METRIC = FidelityMetric(
 RESERVATION_DELIVERY_METRIC = ReservationDeliveryMetric(
     delivery_event=EventTypes.DELIVERY,
 )
+BELL_PAIR_UTILIZATION_METRIC = BellPairUtilizationMetric(
+    key="bell_pair_utilization",
+    delivery_event=EventTypes.DELIVERY,
+)
 
 
 def register_builtin_metrics() -> None:
@@ -71,6 +76,7 @@ def register_builtin_metrics() -> None:
         ES_METRIC,
         SWAPPED_FIDELITIES_METRIC,
         RESERVATION_DELIVERY_METRIC,
+        BELL_PAIR_UTILIZATION_METRIC,
     ]
 
     for metric in BUILTIN_METRICS:
