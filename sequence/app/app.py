@@ -47,6 +47,7 @@ class App(ABC):
         Args:
             info (MemoryInfo): Information about the available memory.
         """
+        pass
 
     @abstractmethod
     def get_reservation_result(self, reservation: Reservation, result: bool) -> None:
@@ -56,6 +57,7 @@ class App(ABC):
             reservation (Reservation): The reservation that completed.
             result (bool): Whether the reservation was approved.
         """
+        pass
 
     @abstractmethod
     def get_other_reservation(self, reservation: Reservation) -> None:
@@ -65,6 +67,7 @@ class App(ABC):
         Args:
             reservation (Reservation): The approved reservation.
         """
+        pass
 
     def set_name(self, name: str) -> None:
         """Override the default application name.
