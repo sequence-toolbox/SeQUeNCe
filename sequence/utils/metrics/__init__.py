@@ -29,15 +29,7 @@ from .event_types import (
     list_event_types,
     register_event_type,
 )
-from .metric_types import (
-    CollectContext,
-    CounterMetric,
-    DeliveryTimeMetric,
-    FidelityMetric,
-    Metric,
-    ThroughputMetric,
-    ReservationDeliveryMetric,
-)
+from .metric_types import CollectContext, CounterMetric, DeliveryTimeMetric, FidelityMetric, Metric, ThroughputMetric
 from .registry import (
     clear_registry,
     get_counter,
@@ -289,7 +281,6 @@ __all__ = [
     "FidelityMetric",
     "Metric",
     "ThroughputMetric",
-    "ReservationDeliveryMetric"
     # From registry
     "clear_registry",
     "get_counter",
