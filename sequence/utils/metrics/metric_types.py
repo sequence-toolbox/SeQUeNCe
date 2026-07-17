@@ -264,39 +264,6 @@ class FidelityMetric(Metric):
 
 
 @dataclass
-class ReservationDeliveryMetric(Metric):
-    """Tracks per-reservation pair delivery counts and assigns pair_index on record."""
-
-    delivery_event: EventType
-    _pair_counters: dict[tuple[str, int], int] = field(default_factory=dict, init=False, repr=False)
-
-    @property
-    def event_types(self) -> frozenset[EventType]:
-        return frozenset({self.delivery_event})
-
-    @property
-    def output_keys(self) -> frozenset[str]:
-        return frozenset()
-
-    def served_pairs(self, owner_name: str, identity: int) -> int:
-        return self._pair_counters.get((owner_name, identity), 0)
-
-    def on_record(self, event_type: EventType, owner_name: str, kwargs: dict[str, Any]) -> None:
-        if event_type is not self.delivery_event:
-            return
-        identity = kwargs.get("identity", 0)
-        key = (owner_name, identity)
-        self._pair_counters[key] = self._pair_counters.get(key, 0) + 1
-        kwargs["pair_index"] = self._pair_counters[key]
-
-    def collect(self, ctx: CollectContext) -> dict[str, Any]:
-        return {}
-
-    def reset(self) -> None:
-        self._pair_counters.clear()
-
-
-@dataclass
 class DeliveryTimeMetric(Metric):
     """Time to deliver N pairs relative to reservation start."""
 
