@@ -185,7 +185,7 @@ class CounterMetric(Metric):
 
 
 @dataclass
-class RateMetric(Metric):
+class ThroughputMetric(Metric):
     """Computes application throughput from recorded deliveries at collection time."""
 
     key: str = "app_throughput"

@@ -8,7 +8,7 @@ from .metric_types import (
     DeliveryTimeMetric,
     FidelityMetric,
     Metric,
-    RateMetric,
+    ThroughputMetric,
     ReservationDeliveryMetric,
 )
 from .registry import register_metric
@@ -26,7 +26,7 @@ EP_METRIC = CounterMetric(
     success_event=EventTypes.EP_SUCCESS,
     rate_field="ep_success_rate",
 )
-THROUGHPUT_METRIC = RateMetric(
+THROUGHPUT_METRIC = ThroughputMetric(
     key="app_throughput",
     delivery_event=EventTypes.DELIVERY,
 )

@@ -35,7 +35,7 @@ from .metric_types import (
     DeliveryTimeMetric,
     FidelityMetric,
     Metric,
-    RateMetric,
+    ThroughputMetric,
     ReservationDeliveryMetric,
 )
 from .registry import (
@@ -288,7 +288,7 @@ __all__ = [
     "DeliveryTimeMetric",
     "FidelityMetric",
     "Metric",
-    "RateMetric",
+    "ThroughputMetric",
     "ReservationDeliveryMetric"
     # From registry
     "clear_registry",
