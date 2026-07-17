@@ -162,7 +162,7 @@ def test_collect_trial_metrics_computes_throughput_from_deliveries():
     timeline = Timeline(int(1e12))
     timeline.time = int(1e12)
     metrics.register_time_provider(timeline)
-    metrics.enable([EventTypes.DELIVERY])
+    metrics.enable([metrics.DELIVERY_TIME_METRIC])
 
     metrics.record(
         EventTypes.DELIVERY,
@@ -491,7 +491,7 @@ def test_reservation_rejected_records_metadata():
 
 
 def test_purified_delivery_assigns_pair_index():
-    metrics.enable([EventTypes.DELIVERY])
+    metrics.enable([metrics.DELIVERY_TIME_METRIC])
     kwargs = {
         "identity": 7,
         "initiator": "n1",
@@ -516,7 +516,7 @@ def test_purified_delivery_assigns_pair_index():
 
 
 def test_collect_reservation_data_produces_expected_row():
-    metrics.enable([EventTypes.DELIVERY])
+    metrics.enable([metrics.DELIVERY_TIME_METRIC])
     start_time = int(1e12)
     end_time = int(2e12)
     base = {
