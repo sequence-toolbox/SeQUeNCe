@@ -330,11 +330,11 @@ class ResourceManager:
                 self.update(protocol, memory, MemoryInfo.RAW)
 
         # below do the job of line 264~270 (commented code) in generate_load_rules, which updates the memory to RAW when the reservation is expired.
-        memory_indices = rule.condition_args["memory_indices"]
+        memory_indices = rule.condition_args.get("memory_indices", ())
         for memory_index in memory_indices:
             memory = self.memory_manager.memory_array[memory_index]
             info = self.memory_manager.get_info_by_memory(memory)
-            if info.state is not MemoryInfo.RAW:
+            if info.state != MemoryInfo.RAW:
                 self.memory_manager.update(memory, MemoryInfo.RAW)
 
 
