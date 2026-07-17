@@ -11,8 +11,6 @@ from sequence.network_management.reservation import Reservation
 from sequence.network_management.memory_timecard import MemoryTimeCard
 from sequence.protocol import StackProtocol
 from sequence.topology.node import QuantumRouter, BSMNode
-from sequence.utils import metrics
-from sequence.utils.metrics.event_types import EventTypes
 import pytest
 
 class DistributedQuantumRouter(QuantumRouter):
@@ -66,7 +64,6 @@ def test_node(tl):
 @pytest.fixture
 def mock_reservation(test_node):
     reservation = Mock(spec=Reservation)
-    reservation.identity = 0
     reservation.initiator = 'n1'
     reservation.responder = 'n2'
     reservation.path = ['n1', 'n2']
@@ -74,16 +71,7 @@ def mock_reservation(test_node):
     reservation.end_time = 3e12
     reservation.memory_size = 50
     reservation.fidelity = 1
-    reservation.entanglement_number = 1
     return reservation
-
-
-@pytest.fixture(autouse=True)
-def reset_metrics_state():
-    metrics._enabled = False
-    metrics._enabled_events.clear()
-    metrics.storage.clear()
-    metrics.reset_metrics()
 
 
 
@@ -173,7 +161,6 @@ class TestDistributedNetworkManager:
 
         test_node.get_reservation_result.assert_not_called()
         test_node.get_other_reservation.assert_not_called()
-
 
     def test_NetworkManager_push(self, test_node, mock_reservation):
         outbound_msg = Mock()
