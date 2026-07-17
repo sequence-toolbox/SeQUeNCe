@@ -40,7 +40,6 @@ from .metric_types import (
 )
 from .registry import (
     clear_registry,
-    get_reservation_delivery_metric,
     get_counter,
     list_metrics,
     register_metric,
@@ -290,6 +289,7 @@ __all__ = [
     "FidelityMetric",
     "Metric",
     "RateMetric",
+    "ReservationDeliveryMetric"
     # From registry
     "clear_registry",
     "get_counter",
