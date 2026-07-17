@@ -46,13 +46,30 @@ def list_event_types() -> list[EventType]:
 class EventTypes:
     """Namespace for built-in simulation event types."""
 
+    # Entanglement Management Events
     EG_FAILURE = register_event_type("EG_FAILURE")
     EG_SUCCESS = register_event_type("EG_SUCCESS")
     EP_FAILURE = register_event_type("EP_FAILURE")
     EP_SUCCESS = register_event_type("EP_SUCCESS")
-    DELIVERY = register_event_type("DELIVERY")
     ES_FAILURE = register_event_type("ES_FAILURE")
     ES_SUCCESS = register_event_type("ES_SUCCESS")
+
+    # Network Management Events
     RESERVATION_APPROVED = register_event_type("RESERVATION_APPROVED")
     RESERVATION_REJECTED = register_event_type("RESERVATION_REJECTED")
-    RESERVATION_COMPLETE = register_event_type("RESERVATION_COMPLETE")
+    RESERVATION_REQUESTED = register_event_type("RESERVATION_REQUESTED")
+    RESERVATION_HOP_REJECT = register_event_type("RESERVATION_HOP_REJECT")
+    RESERVATION_REACHED_RESPONDER = register_event_type("RESERVATION_REACHED_RESPONDER")
+
+    # Forwarding
+    FORWARDING_TABLE_MISS = register_event_type("FORWARDING_TABLE_MISS")
+
+    # Routing
+    NEIGHBOR_DOWN = register_event_type("NEIGHBOR_DOWN")
+    NEIGHBOR_FULL = register_event_type("NEIGHBOR_FULL")
+    ROUTE_RECOMPUTED = register_event_type("ROUTE_RECOMPUTED")
+    LSA_ORIGINATED = register_event_type("LSA_ORIGINATED")
+    LSDB_UPDATED = register_event_type("LSDB_UPDATED")
+
+    # Application Events
+    DELIVERY = register_event_type("DELIVERY")
