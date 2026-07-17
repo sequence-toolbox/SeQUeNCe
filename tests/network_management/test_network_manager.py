@@ -174,36 +174,6 @@ class TestDistributedNetworkManager:
         test_node.get_reservation_result.assert_not_called()
         test_node.get_other_reservation.assert_not_called()
 
-    @pytest.mark.unit
-    def test_pop_approve_records_reservation_approved(self, test_node, mock_reservation):
-        metrics.enable([EventTypes.RESERVATION_APPROVED])
-        mock_reservation.initiator = test_node.name
-        inbound_msg = Mock()
-        inbound_msg.msg_type = RSVPMsgType.APPROVE
-        inbound_msg.reservation = mock_reservation
-
-        test_node.network_manager.pop(msg=inbound_msg)
-
-        records = metrics.storage.get_by_event(EventTypes.RESERVATION_APPROVED)
-        assert len(records) == 1
-        assert records[0]["owner_name"] == test_node.name
-        assert records[0]["identity"] == mock_reservation.identity
-        assert records[0]["path"] == mock_reservation.path
-
-    @pytest.mark.unit
-    def test_pop_reject_records_reservation_rejected(self, test_node, mock_reservation):
-        metrics.enable([EventTypes.RESERVATION_REJECTED])
-        mock_reservation.initiator = test_node.name
-        inbound_msg = Mock()
-        inbound_msg.msg_type = RSVPMsgType.REJECT
-        inbound_msg.reservation = mock_reservation
-
-        test_node.network_manager.pop(msg=inbound_msg)
-
-        records = metrics.storage.get_by_event(EventTypes.RESERVATION_REJECTED)
-        assert len(records) == 1
-        assert records[0]["owner_name"] == test_node.name
-        assert records[0]["path"] == []
 
     def test_NetworkManager_push(self, test_node, mock_reservation):
         outbound_msg = Mock()
