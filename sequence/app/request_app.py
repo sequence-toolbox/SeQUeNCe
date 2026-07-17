@@ -1,4 +1,5 @@
 from __future__ import annotations
+import warnings
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -142,6 +143,11 @@ class RequestApp(App):
                 self.node.resource_manager.update(None, info.memory, "RAW")
 
     def get_throughput(self) -> float:
+        warnings.warn(
+            "get_throughput is deprecated and will be removed in a future release, use THROUGHPUT_METRIC from the metrics module instead",
+            category=FutureWarning,
+            stacklevel=2,
+        )
         return self.memory_counter / (self.end_t - self.start_t) * 1e12
 
 
