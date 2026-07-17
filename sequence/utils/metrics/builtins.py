@@ -6,7 +6,7 @@ from .event_types import EventTypes
 from .metric_types import CounterMetric, DeliveryTimeMetric, FidelityMetric, Metric, ThroughputMetric
 from .registry import register_metric
 
-
+# Entanglement Management Metrics
 EG_METRIC = CounterMetric(
     prefix="eg",
     failure_event=EventTypes.EG_FAILURE,
@@ -19,29 +19,41 @@ EP_METRIC = CounterMetric(
     success_event=EventTypes.EP_SUCCESS,
     rate_field="ep_success_rate",
 )
-THROUGHPUT_METRIC = ThroughputMetric(
-    key="app_throughput",
-    delivery_event=EventTypes.DELIVERY,
-)
-PURIFIED_FIDELITIES_METRIC = FidelityMetric(
-    key="purified_fidelities",
-    event=EventTypes.EP_SUCCESS,
-    field="fidelity",
-)
-DELIVERY_TIME_METRIC = DeliveryTimeMetric(
-    key="delivery_time",
-    delivery_event=EventTypes.DELIVERY,
-)
 ES_METRIC = CounterMetric(
     prefix="es",
     failure_event=EventTypes.ES_FAILURE,
     success_event=EventTypes.ES_SUCCESS,
     rate_field="es_success_rate",
 )
+PURIFIED_FIDELITIES_METRIC = FidelityMetric(
+    key="purified_fidelities",
+    event=EventTypes.EP_SUCCESS,
+    field="fidelity",
+)
 SWAPPED_FIDELITIES_METRIC = FidelityMetric(
     key="swapped_fidelities",
     event=EventTypes.ES_SUCCESS,
     field="fidelity",
+)
+
+# Network Management Metrics
+RESERVATION_APPROVAL_RATE = CounterMetric(
+    prefix="reservation_approval_rate",
+    failure_event=EventTypes.RESERVATION_REJECTED,
+    success_event=EventTypes.RESERVATION_APPROVED,
+    rate_field="reservation_approval_rate",
+)
+
+# Resource Management Metrics
+
+# Application Metrics
+THROUGHPUT_METRIC = ThroughputMetric(
+    key="app_throughput",
+    delivery_event=EventTypes.DELIVERY,
+)
+DELIVERY_TIME_METRIC = DeliveryTimeMetric(
+    key="delivery_time",
+    delivery_event=EventTypes.DELIVERY,
 )
 
 
@@ -55,10 +67,10 @@ def register_builtin_metrics() -> None:
     BUILTIN_METRICS: list[Metric] = [
         EG_METRIC,
         EP_METRIC,
+        ES_METRIC,
         THROUGHPUT_METRIC,
         PURIFIED_FIDELITIES_METRIC,
         DELIVERY_TIME_METRIC,
-        ES_METRIC,
         SWAPPED_FIDELITIES_METRIC,
     ]
 
