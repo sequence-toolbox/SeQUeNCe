@@ -179,7 +179,6 @@ class ResourceManager:
                            "path": path, "index": index}
             rule = Rule(priority, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
-            priority += 1
 
         if index < len(path) - 1:
             if index == 0:
@@ -191,16 +190,15 @@ class ResourceManager:
                            "path": path, "index": index, "name": self.owner.name, "reservation": reservation}
             rule = Rule(priority, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
-            priority += 1
 
         # 2. create rules for entanglement purification
+        priority += 1
         if index > 0:
             condition_args = {"memory_indices": memory_indices[:reservation.memory_size], "reservation": reservation,
                               "purification_mode": reservation.purification_mode}
             action_args = {}
             rule = Rule(priority, ep_rule_action_request, ep_rule_condition_request, action_args, condition_args)
             rules.append(rule)
-            priority += 1
 
         if index < len(path) - 1:
             if index == 0:
@@ -214,16 +212,15 @@ class ResourceManager:
             action_args = {}
             rule = Rule(priority, ep_rule_action_await, ep_rule_condition_await, action_args, condition_args)
             rules.append(rule)
-            priority += 1
 
         # 3. create rules for entanglement swapping
+        priority += 1
         if index == 0:
             condition_args = {"memory_indices": memory_indices, "target_remote": path[-1],
                               "fidelity": reservation.fidelity}
             action_args = {}
             rule = Rule(priority, es_rule_action_B, es_rule_condition_B_end, action_args, condition_args)
             rules.append(rule)
-            priority += 1
 
         elif index == len(path) - 1:
             action_args = {}
@@ -231,7 +228,6 @@ class ResourceManager:
                               "fidelity": reservation.fidelity}
             rule = Rule(priority, es_rule_action_B, es_rule_condition_B_end, action_args, condition_args)
             rules.append(rule)
-            priority += 1
 
         else:
             _path = path[:]
@@ -250,12 +246,10 @@ class ResourceManager:
                            "swapping_degradation": self.owner.swapping_degradation}
             rule = Rule(priority, es_rule_action_A, es_rule_condition_A, action_args, condition_args)
             rules.append(rule)
-            priority += 1
 
             action_args = {}
             rule = Rule(priority, es_rule_action_B, es_rule_condition_B, action_args, condition_args)
             rules.append(rule)
-            priority += 1
 
         for rule in rules:
             rule.set_reservation(reservation)
