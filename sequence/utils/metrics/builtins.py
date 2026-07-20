@@ -68,10 +68,10 @@ def register_builtin_metrics() -> None:
         EG_METRIC,
         EP_METRIC,
         ES_METRIC,
-        THROUGHPUT_METRIC,
         PURIFIED_FIDELITIES_METRIC,
-        DELIVERY_TIME_METRIC,
         SWAPPED_FIDELITIES_METRIC,
+        THROUGHPUT_METRIC,
+        DELIVERY_TIME_METRIC,
     ]
 
     for metric in BUILTIN_METRICS:
