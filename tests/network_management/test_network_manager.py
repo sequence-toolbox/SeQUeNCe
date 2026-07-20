@@ -71,6 +71,8 @@ def mock_reservation(test_node):
     reservation.end_time = 3e12
     reservation.memory_size = 50
     reservation.fidelity = 1
+    reservation.entanglement_number = 1
+    reservation.identity = 0
     return reservation
 
 
