@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any, override
 
 from .event_types import EventType
-from .storage import InMemoryStorage
+from .storage import InMemoryStorage, Record
 
 
 @dataclass
@@ -48,7 +48,7 @@ class Metric(ABC):
             Frozen set of keys written into per-trial result dictionaries.
         """
 
-    def on_record(self, event_type: EventType, owner_name: str, kwargs: dict[str, Any]) -> None:
+    def on_record(self, event_type: EventType, owner_name: str, record: Record) -> None:
         """Update metric state when a matching event is recorded.
 
         This method is called for every metric when it is recorded.
@@ -59,7 +59,7 @@ class Metric(ABC):
         Args:
             event_type: Type of the recorded event.
             owner_name: Name of the node or component that owns the event.
-            kwargs: Mutable event payload; metrics may add derived fields.
+            record: The stored record being written.
         """
         pass
 
@@ -148,20 +148,18 @@ class CounterMetric(Metric):
             return 0.0
         return successes / attempts
 
-    def on_record(self, event_type: EventType, owner_name: str, kwargs: dict[str, Any]) -> None:
-        """Increment failure or success counts and update the rate field in kwargs.
+    def on_record(self, event_type: EventType, owner_name: str, record: Record) -> None:
+        """Increment failure or success counts.
 
         Args:
             event_type: Recorded event type; must match failure or success event.
             owner_name: Name of the node or component that owns the event.
-            kwargs: Event payload; updated with the current success rate.
+            record: The stored record being written.
         """
         if event_type == self.failure_event:
             self._failures[owner_name] = self._failures.get(owner_name, 0) + 1
-            kwargs[self.rate_field] = self.success_rate(owner_name)
         elif event_type == self.success_event:
             self._successes[owner_name] = self._successes.get(owner_name, 0) + 1
-            kwargs[self.rate_field] = self.success_rate(owner_name)
 
     def collect(self, ctx: CollectContext) -> dict[str, Any]:
         """Return failure, success, and success-rate counts for the trial owner.
