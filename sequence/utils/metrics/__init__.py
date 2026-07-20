@@ -172,30 +172,30 @@ def collect_reservation_data(owner_name: str | None = None) -> list[list]:
 
     records = storage.get_by_event(EventTypes.DELIVERY)
     if owner_name is not None:
-        records = [record for record in records if record["owner_name"] == owner_name]
+        records = [record for record in records if record.owner_name == owner_name]
 
-    groups: dict[tuple[str, int], list[dict[str, Any]]] = defaultdict(list)
+    groups: dict[tuple[str, int], list[Record]] = defaultdict(list)
     for record in records:
-        groups[(record["owner_name"], record["identity"])].append(record)
+        groups[(record.owner_name, record.data.identity)].append(record)
 
     data: list[list] = []
     for (node, _), deliveries in groups.items():
         if not deliveries:
             continue
-        deliveries.sort(key=lambda record: record["sim_time"])
-        timestamps = [record["sim_time"] for record in deliveries]
-        fidelities = [record["fidelity"] for record in deliveries]
+        deliveries.sort(key=lambda record: record.sim_time)
+        timestamps = [record.sim_time for record in deliveries]
+        fidelities = [record.data.fidelity for record in deliveries]
 
         first = deliveries[0]
-        start_time = first["start_time"]
-        end_time = first["end_time"]
+        start_time = first.data.start_time
+        end_time = first.data.end_time
         reserved_time = end_time - start_time
         served_pairs = len(deliveries)
         throughput = served_pairs / reserved_time * 1e12 if reserved_time > 0 else 0.0
         completion_time = timestamps[-1]
-        entanglement_number = first["entanglement_number"]
+        entanglement_number = first.data.entanglement_number
         fulfilled = served_pairs == entanglement_number
-        path = first.get("path", [])
+        path = first.data.path
         path_length = len(path)
         first_pair = timestamps[0]
         avg_fidelity = mean(fidelities) if fidelities else 0.0
@@ -207,9 +207,9 @@ def collect_reservation_data(owner_name: str | None = None) -> list[list]:
         data.append(
             [
                 node,
-                first["identity"],
-                first["initiator"],
-                first["responder"],
+                first.data.identity,
+                first.data.initiator,
+                first.data.responder,
                 start_time,
                 end_time,
                 reserved_time,
