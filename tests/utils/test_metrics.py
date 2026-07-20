@@ -256,65 +256,6 @@ def test_collect_trial_metrics_without_throughput_is_nan():
     assert math.isnan(trial["app_throughput"])
 
 
-def test_aggregate_trial_metrics_computes_avg_and_std():
-    trials = [
-        {
-            "eg_failures": 10,
-            "eg_success": 5,
-            "eg_success_rate": 0.5,
-            "app_throughput": 1.0,
-        },
-        {
-            "eg_failures": 12,
-            "eg_success": 6,
-            "eg_success_rate": 0.5,
-            "app_throughput": 2.0,
-        },
-    ]
-
-    aggregated = metrics.aggregate_trial_metrics(trials)
-
-    assert aggregated["avg_eg_failures"] == 11
-    assert aggregated["avg_eg_success"] == 5.5
-    assert aggregated["avg_app_throughput"] == 1.5
-    assert aggregated["std_eg_failures"] == pytest.approx(1.4142135623730951)
-
-
-def test_aggregate_trial_metrics_single_trial_has_zero_std():
-    trials = [
-        {
-            "eg_failures": 3,
-            "eg_success": 1,
-            "eg_success_rate": 0.25,
-            "app_throughput": 4.0,
-        }
-    ]
-
-    aggregated = metrics.aggregate_trial_metrics(trials)
-
-    assert aggregated["avg_eg_failures"] == 3
-    assert aggregated["std_eg_failures"] == 0.0
-
-
-def test_aggregate_trial_metrics_empty_list_raises():
-    with pytest.raises(ValueError, match="empty list"):
-        metrics.aggregate_trial_metrics([])
-
-
-def test_aggregate_trial_metrics_ignores_non_finite_values():
-    trials = [
-        {"eg_success_rate": 0.5, "app_throughput": float("nan")},
-        {"eg_success_rate": 0.6, "app_throughput": 2.0},
-        {"eg_success_rate": 0.4, "app_throughput": 4.0},
-    ]
-
-    aggregated = metrics.aggregate_trial_metrics(trials)
-
-    assert aggregated["avg_eg_success_rate"] == pytest.approx(0.5)
-    assert aggregated["avg_app_throughput"] == 3.0
-    assert aggregated["std_app_throughput"] == pytest.approx(1.4142135623730951)
-
-
 def test_ep_counters_and_success_rate():
     metrics.enable([metrics.EP_METRIC])
 
@@ -426,6 +367,65 @@ def test_collect_trial_metrics_delivery_owner_defaults_to_owner():
     )
 
     assert not math.isnan(trial["delivery_time"])
+
+
+def test_aggregate_trial_metrics_computes_avg_and_std():
+    trials = [
+        {
+            "eg_failures": 10,
+            "eg_success": 5,
+            "eg_success_rate": 0.5,
+            "app_throughput": 1.0,
+        },
+        {
+            "eg_failures": 12,
+            "eg_success": 6,
+            "eg_success_rate": 0.5,
+            "app_throughput": 2.0,
+        },
+    ]
+
+    aggregated = metrics.aggregate_trial_metrics(trials)
+
+    assert aggregated["avg_eg_failures"] == 11
+    assert aggregated["avg_eg_success"] == 5.5
+    assert aggregated["avg_app_throughput"] == 1.5
+    assert aggregated["std_eg_failures"] == pytest.approx(1.4142135623730951)
+
+
+def test_aggregate_trial_metrics_single_trial_has_zero_std():
+    trials = [
+        {
+            "eg_failures": 3,
+            "eg_success": 1,
+            "eg_success_rate": 0.25,
+            "app_throughput": 4.0,
+        }
+    ]
+
+    aggregated = metrics.aggregate_trial_metrics(trials)
+
+    assert aggregated["avg_eg_failures"] == 3
+    assert aggregated["std_eg_failures"] == 0.0
+
+
+def test_aggregate_trial_metrics_empty_list_raises():
+    with pytest.raises(ValueError, match="empty list"):
+        metrics.aggregate_trial_metrics([])
+
+
+def test_aggregate_trial_metrics_ignores_non_finite_values():
+    trials = [
+        {"eg_success_rate": 0.5, "app_throughput": float("nan")},
+        {"eg_success_rate": 0.6, "app_throughput": 2.0},
+        {"eg_success_rate": 0.4, "app_throughput": 4.0},
+    ]
+
+    aggregated = metrics.aggregate_trial_metrics(trials)
+
+    assert aggregated["avg_eg_success_rate"] == pytest.approx(0.5)
+    assert aggregated["avg_app_throughput"] == 3.0
+    assert aggregated["std_app_throughput"] == pytest.approx(1.4142135623730951)
 
 
 def test_aggregate_trial_metrics_flattens_purified_fidelities():
