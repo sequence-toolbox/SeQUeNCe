@@ -216,7 +216,6 @@ class ThroughputMetric(Metric):
 
         delivery_records.sort(key=lambda record: record.sim_time)
         start_time = delivery_records[0].data.start_time
-
         elapsed_ps = delivery_records[-1].sim_time - start_time
         if elapsed_ps <= 0:
             return {self.key: float("nan")}
@@ -285,16 +284,18 @@ class DeliveryTimeMetric(Metric):
         """
         delivery_owner = ctx.delivery_owner or ctx.owner_name
         delivery_records = [
-            record
-            for record in ctx.storage.get_by_owner(delivery_owner)
-            if self.delivery_event is not None and record.event_type == self.delivery_event
+            record for record in ctx.storage.get_by_owner(delivery_owner) if record.event_type == self.delivery_event
         ]
-        delivery_records.sort(key=lambda record: record.sim_time)
-        if ctx.target_pairs is None or len(delivery_records) < ctx.target_pairs:
+        if not delivery_records:
             return {self.key: float("nan")}
 
+        delivery_records.sort(key=lambda record: record.sim_time)
         start_time = delivery_records[0].data.start_time
+
+        if ctx.target_pairs is None or len(delivery_records) < ctx.target_pairs:
+            return {self.key: float("nan")}
         target_time = delivery_records[ctx.target_pairs - 1].sim_time
+
         return {
             self.key: (target_time - start_time) * 1e-12,
         }
