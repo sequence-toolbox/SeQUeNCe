@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, override
 
@@ -230,11 +231,11 @@ class ThroughputMetric(Metric):
 
 @dataclass
 class FidelityMetric(Metric):
-    """Collects fidelity values from matching success events."""
+    """Collects a specific attribute from matching events."""
 
     key: str
     event: EventType
-    field: str
+    extractor: Callable[[Any], int | float | str | list[str]]
 
     @property
     def event_types(self) -> frozenset[EventType]:
@@ -254,9 +255,9 @@ class FidelityMetric(Metric):
             Mapping of the configured key to a list of fidelity values.
         """
         values = [
-            record[self.field]
+            self.extractor(record.data)
             for record in ctx.storage.get_by_owner(ctx.owner_name)
-            if record["event_type"] == self.event and self.field in record
+            if record.event_type == self.event
         ]
         return {self.key: values}
 
@@ -293,17 +294,17 @@ class DeliveryTimeMetric(Metric):
         delivery_records = [
             record
             for record in ctx.storage.get_by_owner(delivery_owner)
-            if self.delivery_event is not None and record["event_type"] == self.delivery_event
+            if self.delivery_event is not None and record.event_type == self.delivery_event
         ]
-        delivery_records.sort(key=lambda record: record["sim_time"])
+        delivery_records.sort(key=lambda record: record.sim_time)
         if ctx.target_pairs is None or len(delivery_records) < ctx.target_pairs:
             return {self.key: float("nan")}
 
-        start_time = delivery_records[0].get("start_time")
+        start_time = delivery_records[0].data.start_time
         if start_time is None:
             return {self.key: float("nan")}
 
-        target_time = delivery_records[ctx.target_pairs - 1]["sim_time"]
+        target_time = delivery_records[ctx.target_pairs - 1].sim_time
         return {
             self.key: (target_time - start_time) * 1e-12,
         }
