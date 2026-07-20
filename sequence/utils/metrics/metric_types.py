@@ -187,8 +187,8 @@ class CounterMetric(Metric):
 class ThroughputMetric(Metric):
     """Computes application throughput from recorded deliveries at collection time."""
 
-    key: str = "app_throughput"
-    delivery_event: EventType | None = None
+    key: str
+    delivery_event: EventType
 
     @property
     def event_types(self) -> frozenset[EventType]:
@@ -207,9 +207,6 @@ class ThroughputMetric(Metric):
         Returns:
             Mapping with the configured rate key in pairs per second, or NaN if data is insufficient.
         """
-        if self.delivery_event is None:
-            return {self.key: float("nan")}
-
         delivery_owner = ctx.delivery_owner or ctx.owner_name
         delivery_records = [
             record for record in ctx.storage.get_by_owner(delivery_owner) if record.event_type == self.delivery_event
@@ -218,9 +215,7 @@ class ThroughputMetric(Metric):
             return {self.key: float("nan")}
 
         delivery_records.sort(key=lambda record: record.sim_time)
-        start_time = getattr(delivery_records[0].data, "start_time", None)
-        if start_time is None:
-            return {self.key: float("nan")}
+        start_time = delivery_records[0].data.start_time
 
         elapsed_ps = delivery_records[-1].sim_time - start_time
         if elapsed_ps <= 0:
@@ -266,13 +261,11 @@ class EventAttributeMetric(Metric):
 class DeliveryTimeMetric(Metric):
     """Time to deliver N pairs relative to reservation start."""
 
-    key: str = "delivery_time"
-    delivery_event: EventType | None = None
+    key: str
+    delivery_event: EventType
 
     @property
     def event_types(self) -> frozenset[EventType]:
-        if self.delivery_event is None:
-            return frozenset()
         return frozenset({self.delivery_event})
 
     @property
@@ -301,9 +294,6 @@ class DeliveryTimeMetric(Metric):
             return {self.key: float("nan")}
 
         start_time = delivery_records[0].data.start_time
-        if start_time is None:
-            return {self.key: float("nan")}
-
         target_time = delivery_records[ctx.target_pairs - 1].sim_time
         return {
             self.key: (target_time - start_time) * 1e-12,
