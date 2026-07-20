@@ -235,7 +235,7 @@ class EventAttributeMetric(Metric):
 
     key: str
     event: EventType
-    extractor: Callable[[Any], int | float | str | list[str]]
+    extractor: Callable[[Any], Any]
 
     @property
     def event_types(self) -> frozenset[EventType]:
