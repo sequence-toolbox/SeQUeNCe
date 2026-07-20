@@ -38,7 +38,7 @@ from .registry import (
     reset_metrics,
     unregister_metric,
 )
-from .storage import InMemoryStorage
+from .storage import InMemoryStorage, Record
 
 
 _enabled = False
@@ -95,27 +95,47 @@ def configure(storage_type: str = "in_memory") -> None:
 def record(event_type: EventType, owner_name: str, **kwargs: Any) -> None:
     """Record a metrics event if metrics are enabled for this event type.
 
+    When the event type has a registered `payload_type`, the kwargs are
+    used to construct a typed payload dataclass instance. A `TypeError`
+    is raised immediately if required fields are missing or unexpected
+    fields are provided.
+
+    When the event type has no `payload_type` (i.e. `None`), no
+    additional kwargs are permitted.
+
     Args:
         event_type: Type of simulation event to record.
         owner_name: Name of the node or component that owns the event.
-        **kwargs: Additional event-specific fields stored with the record.
+        **kwargs: Payload fields matching the event type's payload dataclass.
+
+    Raises:
+        TypeError: If required payload fields are missing, unexpected fields
+            are provided, or kwargs are passed for a None-payload event type.
     """
     if not _enabled or event_type not in _enabled_events:
         return
 
-    record_kwargs = dict(kwargs)
+    if event_type.payload_type is None:
+        if kwargs:
+            raise TypeError(
+                f"metrics.record({event_type.name!r}) accepts no payload fields, but got: {sorted(kwargs.keys())}"
+            )
+        data = None
+    else:
+        data = event_type.payload_type(**kwargs)
+
+    record = Record(
+        event_type=event_type,
+        owner_name=owner_name,
+        sim_time=time_provider.now(),
+        data=data,
+    )
+
     for metric in list_metrics():
         if event_type in metric.event_types:
-            metric.on_record(event_type, owner_name, record_kwargs)
+            metric.on_record(event_type, owner_name, record)
 
-    storage.append(
-        {
-            "event_type": event_type,
-            "owner_name": owner_name,
-            "sim_time": time_provider.now(),
-            **record_kwargs,
-        }
-    )
+    storage.append(record)
 
 
 def collect_trial_metrics(
