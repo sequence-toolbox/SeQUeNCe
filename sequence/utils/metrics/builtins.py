@@ -38,7 +38,7 @@ SWAPPED_FIDELITIES_METRIC = EventAttributeMetric(
 
 # Network Management Metrics
 RESERVATION_APPROVAL_RATE = CounterMetric(
-    prefix="reservation_approval_rate",
+    prefix="reservation_approval",
     failure_event=EventTypes.RESERVATION_REJECTED,
     success_event=EventTypes.RESERVATION_APPROVED,
     rate_field="reservation_approval_rate",
