@@ -28,12 +28,12 @@ ES_METRIC = CounterMetric(
 PURIFIED_FIDELITIES_METRIC = FidelityMetric(
     key="purified_fidelities",
     event=EventTypes.EP_SUCCESS,
-    field="fidelity",
+    extractor=lambda data: data.fidelity,
 )
 SWAPPED_FIDELITIES_METRIC = FidelityMetric(
     key="swapped_fidelities",
     event=EventTypes.ES_SUCCESS,
-    field="fidelity",
+    extractor=lambda data: data.fidelity,
 )
 
 # Network Management Metrics
