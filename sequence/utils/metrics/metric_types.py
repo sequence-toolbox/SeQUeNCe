@@ -255,7 +255,7 @@ class EventAttributeMetric(Metric):
             Mapping of the configured key to a list of fidelity values.
         """
         values = [
-            self.extractor(record.data)
+            self.extractor(record)
             for record in ctx.storage.get_by_owner(ctx.owner_name)
             if record.event_type == self.event
         ]
