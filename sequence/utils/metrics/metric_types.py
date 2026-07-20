@@ -230,7 +230,7 @@ class ThroughputMetric(Metric):
 
 
 @dataclass
-class FidelityMetric(Metric):
+class EventAttributeMetric(Metric):
     """Collects a specific attribute from matching events."""
 
     key: str

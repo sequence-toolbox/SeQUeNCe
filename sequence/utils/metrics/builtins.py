@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from .event_types import EventTypes
-from .metric_types import CounterMetric, DeliveryTimeMetric, FidelityMetric, Metric, ThroughputMetric
+from .metric_types import CounterMetric, DeliveryTimeMetric, EventAttributeMetric, Metric, ThroughputMetric
 from .registry import register_metric
 
 # Entanglement Management Metrics
@@ -25,12 +25,12 @@ ES_METRIC = CounterMetric(
     success_event=EventTypes.ES_SUCCESS,
     rate_field="es_success_rate",
 )
-PURIFIED_FIDELITIES_METRIC = FidelityMetric(
+PURIFIED_FIDELITIES_METRIC = EventAttributeMetric(
     key="purified_fidelities",
     event=EventTypes.EP_SUCCESS,
     extractor=lambda data: data.fidelity,
 )
-SWAPPED_FIDELITIES_METRIC = FidelityMetric(
+SWAPPED_FIDELITIES_METRIC = EventAttributeMetric(
     key="swapped_fidelities",
     event=EventTypes.ES_SUCCESS,
     extractor=lambda data: data.fidelity,
