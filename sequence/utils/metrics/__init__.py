@@ -164,14 +164,12 @@ def collect_trial_metrics(
         Mapping of metric output keys to per-trial values.
     """
     ctx = CollectContext(
-        owner_name=owner_name,
-        storage=storage,
         delivery_owner=delivery_owner or owner_name,
         target_pairs=target_pairs,
     )
     result: dict[str, Any] = {}
-    for metric in _enabled_metrics:
-        result.update(metric.collect(ctx))
+    for metric in list_metrics():
+        result.update(metric.collect(owner_name, storage, ctx))
     return result
 
 
