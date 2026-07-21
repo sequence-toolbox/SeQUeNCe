@@ -173,69 +173,6 @@ def collect_trial_metrics(
     return result
 
 
-def collect_reservation_data(owner_name: str | None = None) -> list[list]:
-    """Collect per-reservation tabular metrics from recorded delivery events."""
-    from collections import defaultdict
-
-    records = storage.get_by_event(EventTypes.DELIVERY)
-    if owner_name is not None:
-        records = [record for record in records if record.owner_name == owner_name]
-
-    groups: dict[tuple[str, int], list[Record]] = defaultdict(list)
-    for record in records:
-        groups[(record.owner_name, record.data.identity)].append(record)
-
-    data: list[list] = []
-    for (node, _), deliveries in groups.items():
-        if not deliveries:
-            continue
-        deliveries.sort(key=lambda record: record.sim_time)
-        timestamps = [record.sim_time for record in deliveries]
-        fidelities = [record.data.fidelity for record in deliveries]
-
-        first = deliveries[0]
-        start_time = first.data.start_time
-        end_time = first.data.end_time
-        reserved_time = end_time - start_time
-        served_pairs = len(deliveries)
-        throughput = served_pairs / reserved_time * 1e12 if reserved_time > 0 else 0.0
-        completion_time = timestamps[-1]
-        entanglement_number = first.data.entanglement_number
-        fulfilled = served_pairs == entanglement_number
-        path = first.data.path
-        path_length = len(path)
-        first_pair = timestamps[0]
-        avg_fidelity = mean(fidelities) if fidelities else 0.0
-        std_fidelity = stdev(fidelities) if len(fidelities) > 1 else 0.0
-        durations = [n - c for c, n in zip(timestamps, timestamps[1:])]
-        avg_duration = mean(durations) if durations else 0.0
-        std_duration = stdev(durations) if len(durations) > 1 else 0.0
-
-        data.append(
-            [
-                node,
-                first.data.identity,
-                first.data.initiator,
-                first.data.responder,
-                start_time,
-                end_time,
-                reserved_time,
-                entanglement_number,
-                served_pairs,
-                throughput,
-                completion_time,
-                fulfilled,
-                path_length,
-                first_pair,
-                avg_fidelity,
-                std_fidelity,
-                avg_duration,
-                std_duration,
-            ]
-        )
-    return data
-
-
 def _mean_and_std(values: list[float]) -> tuple[float, float]:
     finite_values = [value for value in values if math.isfinite(value)]
     if not finite_values:
