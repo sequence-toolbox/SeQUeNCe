@@ -13,7 +13,7 @@ class EventType:
 
     Attributes:
         name: Unique string identifier for the event type.
-        payload_type: Dataclass type for the event payload, or ``None``
+        payload_type: Dataclass type for the event payload, or `None`
             if the event carries no additional data beyond event type
             and owner name.
     """
@@ -27,7 +27,7 @@ def register_event_type(name: str, payload_type: type | None = None) -> EventTyp
 
     Args:
         name: Unique name for the event type.
-        payload_type: Dataclass type for the event payload, or ``None``
+        payload_type: Dataclass type for the event payload, or `None`
             if the event carries no additional data.
 
     Returns:

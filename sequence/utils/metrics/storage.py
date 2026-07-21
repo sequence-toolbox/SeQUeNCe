@@ -16,7 +16,7 @@ class Record:
         event_type: The type of event that was recorded.
         owner_name: Name of the node or component that owns the event.
         sim_time: Simulation timestamp when the event was recorded.
-        data: Typed payload dataclass instance, or ``None`` if the event
+        data: Typed payload dataclass instance, or `None` if the event
             type carries no additional data.
     """
 

@@ -1,7 +1,7 @@
 """Centralized metrics tracking for SeQUeNCe simulations.
 
 This module provides a global registry for recording simulation events.
-Metrics are disabled by default; call ``enable()`` to opt in to recording.
+Metrics are disabled by default; call `enable()` to opt in to recording.
 """
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ def register_time_provider(provider: Timeline) -> None:
     """Register the active time source for recorded events.
 
     Args:
-        provider: Object supplying timestamps via ``now()``.
+        provider: Object supplying timestamps via `now()`.
     """
     global time_provider
     time_provider = provider
@@ -255,7 +255,7 @@ def aggregate_trial_metrics(
         list_metric_cap: Maximum list elements per trial to include when aggregating list metrics.
 
     Returns:
-        Mapping of ``avg_*`` and ``std_*`` keys to aggregated statistics.
+        Mapping of `avg_*` and `std_*` keys to aggregated statistics.
     """
     if not trials:
         raise ValueError("Cannot aggregate an empty list of trials")
