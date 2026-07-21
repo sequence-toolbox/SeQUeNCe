@@ -51,7 +51,7 @@ from .storage import InMemoryStorage, Record
 _enabled = False
 _enabled_events: set[EventType] = set()
 storage: InMemoryStorage = InMemoryStorage()
-time_provider: Timeline | None = None
+time_provider: Timeline
 
 
 def register_time_provider(provider: Timeline) -> None:
