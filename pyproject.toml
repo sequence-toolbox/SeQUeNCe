@@ -131,3 +131,5 @@ default_bump_level = 0
 parse_squash_commits = true
 ignore_merge_commits = true
 
+[tool.ruff]
+line-length = 120
