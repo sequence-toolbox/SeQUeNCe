@@ -16,14 +16,10 @@ class CollectContext:
     """Context passed to metrics when collecting trial results.
 
     Attributes:
-        owner_name: Node name for counter and fidelity metrics.
-        storage: In-memory store of recorded events for the trial.
         delivery_owner: Node name for delivery-time metrics.
         target_pairs: Number of delivered pairs required to compute delivery time.
     """
 
-    owner_name: str
-    storage: InMemoryStorage
     delivery_owner: str | None = None
     target_pairs: int | None = None
 
@@ -65,10 +61,12 @@ class Metric(ABC):
         pass
 
     @abstractmethod
-    def collect(self, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
         """Return trial result keys and values for this metric.
 
         Args:
+            owner_name: Node name for counter and fidelity metrics.
+            storage: In-memory store of recorded events for the trial.
             ctx: Collection context with owner, storage, and trial parameters.
 
         Returns:
@@ -162,7 +160,7 @@ class CounterMetric(Metric):
         elif event_type == self.success_event:
             self._successes[owner_name] = self._successes.get(owner_name, 0) + 1
 
-    def collect(self, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
         """Return failure, success, and success-rate counts for the trial owner.
 
         Args:
@@ -172,9 +170,9 @@ class CounterMetric(Metric):
             Mapping of prefixed failure, success, and success-rate keys.
         """
         return {
-            f"{self.prefix}_failures": self.failures(ctx.owner_name),
-            f"{self.prefix}_success": self.successes(ctx.owner_name),
-            f"{self.prefix}_success_rate": self.success_rate(ctx.owner_name),
+            f"{self.prefix}_failures": self.failures(owner_name),
+            f"{self.prefix}_success": self.successes(owner_name),
+            f"{self.prefix}_success_rate": self.success_rate(owner_name),
         }
 
     def reset(self) -> None:
@@ -198,7 +196,7 @@ class ThroughputMetric(Metric):
     def output_keys(self) -> frozenset[str]:
         return frozenset({self.key})
 
-    def collect(self, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
         """Compute throughput as delivered pairs per second over the reservation window.
 
         Args:
@@ -207,9 +205,9 @@ class ThroughputMetric(Metric):
         Returns:
             Mapping with the configured rate key in pairs per second, or NaN if data is insufficient.
         """
-        delivery_owner = ctx.delivery_owner or ctx.owner_name
+        delivery_owner = ctx.delivery_owner or owner_name
         delivery_records = [
-            record for record in ctx.storage.get_by_owner(delivery_owner) if record.event_type == self.delivery_event
+            record for record in storage.get_by_owner(delivery_owner) if record.event_type == self.delivery_event
         ]
         if not delivery_records:
             return {self.key: float("nan")}
@@ -239,7 +237,7 @@ class EventAttributeMetric(Metric):
     def output_keys(self) -> frozenset[str]:
         return frozenset({self.key})
 
-    def collect(self, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
         """Collect fidelity values from matching success events for the owner.
 
         Args:
@@ -250,7 +248,7 @@ class EventAttributeMetric(Metric):
         """
         values = [
             self.extractor(record)
-            for record in ctx.storage.get_by_owner(ctx.owner_name)
+            for record in storage.get_by_owner(owner_name)
             if record.event_type == self.event
         ]
         return {self.key: values}
@@ -272,7 +270,7 @@ class DeliveryTimeMetric(Metric):
         return frozenset({self.key})
 
     @override
-    def collect(self, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
         """Compute elapsed time to deliver the target number of pairs.
 
         Args:
@@ -282,9 +280,9 @@ class DeliveryTimeMetric(Metric):
         Returns:
             Mapping with delivery time in seconds, or NaN if data is insufficient.
         """
-        delivery_owner = ctx.delivery_owner or ctx.owner_name
+        delivery_owner = ctx.delivery_owner or owner_name
         delivery_records = [
-            record for record in ctx.storage.get_by_owner(delivery_owner) if record.event_type == self.delivery_event
+            record for record in storage.get_by_owner(delivery_owner) if record.event_type == self.delivery_event
         ]
         if not delivery_records:
             return {self.key: float("nan")}
