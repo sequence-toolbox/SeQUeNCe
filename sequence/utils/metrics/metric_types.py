@@ -43,7 +43,7 @@ class Metric(ABC):
     @property
     @abstractmethod
     def output_keys(self) -> frozenset[str]:
-        """Keys produced by ``collect()``.
+        """Keys produced by `collect()`.
 
         Returns:
             Frozen set of keys written into per-trial result dictionaries.
