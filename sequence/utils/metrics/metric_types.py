@@ -296,6 +296,4 @@ class DeliveryTimeMetric(Metric):
             return {self.key: float("nan")}
         target_time = delivery_records[ctx.target_pairs - 1].sim_time
 
-        return {
-            self.key: (target_time - start_time) * 1e-12,
-        }
+        return {self.key: (target_time - start_time) * 1e-12}
