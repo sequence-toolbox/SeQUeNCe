@@ -62,6 +62,7 @@ class ReservationRuleContext:
     reservation: Reservation
     memory_indices: list[int]
     index: int
+    priority: int = 10
 
 
 ReservationRulePredicate = Callable[[ReservationRuleContext], bool]
@@ -108,7 +109,7 @@ def _build_eg_await_rule(context: ReservationRuleContext) -> Rule:
         "path": context.path,
         "index": context.index,
     }
-    return Rule(10, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
+    return Rule(context.priority, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
 
 
 def _build_eg_request_rule(context: ReservationRuleContext) -> Rule:
@@ -124,7 +125,7 @@ def _build_eg_request_rule(context: ReservationRuleContext) -> Rule:
         "name": context.owner.name,
         "reservation": context.reservation,
     }
-    return Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
+    return Rule(context.priority, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
 
 
 def _build_ep_request_rule(context: ReservationRuleContext) -> Rule:
@@ -133,7 +134,7 @@ def _build_ep_request_rule(context: ReservationRuleContext) -> Rule:
         "reservation": context.reservation,
         "purification_mode": context.reservation.purification_mode,
     }
-    return Rule(10, ep_rule_action_request, ep_rule_condition_request, {}, condition_args)
+    return Rule(context.priority, ep_rule_action_request, ep_rule_condition_request, {}, condition_args)
 
 
 def _build_ep_await_rule(context: ReservationRuleContext) -> Rule:
@@ -150,7 +151,7 @@ def _build_ep_await_rule(context: ReservationRuleContext) -> Rule:
             "purification_mode": context.reservation.purification_mode,
         }
 
-    return Rule(10, ep_rule_action_await, ep_rule_condition_await, {}, condition_args)
+    return Rule(context.priority, ep_rule_action_await, ep_rule_condition_await, {}, condition_args)
 
 
 def _build_es_b_end_rule(context: ReservationRuleContext) -> Rule:
@@ -164,11 +165,19 @@ def _build_es_b_end_rule(context: ReservationRuleContext) -> Rule:
         "target_remote": target_remote,
         "fidelity": context.reservation.fidelity,
     }
-    return Rule(10, es_rule_action_B, es_rule_condition_B_end, {}, condition_args)
+    return Rule(context.priority, es_rule_action_B, es_rule_condition_B_end, {}, condition_args)
 
 
 def _get_swapping_neighbors(owner_name: str, path: list[str]) -> tuple[str, str]:
-    """Return the left and right neighbors used for middle-node swapping rules."""
+    """Return the neighbors used by middle-node swapping rules.
+
+    SeQUeNCe creates swapping rules by repeatedly reducing the path to the
+    nodes that remain after each swapping layer. If the current node is at an
+    even index in the reduced path, that layer is skipped and the path is
+    reduced again. Once the current node is at an odd index, its immediate
+    reduced-path neighbors are the left and right entanglement-swapping
+    partners.
+    """
     reduced_path = path[:]
     while reduced_path.index(owner_name) % 2 == 0:
         new_path = []
@@ -193,7 +202,7 @@ def _build_es_a_rule(context: ReservationRuleContext) -> Rule:
         "swapping_success_prob": context.owner.swapping_success_prob,
         "swapping_degradation": context.owner.swapping_degradation,
     }
-    return Rule(10, es_rule_action_A, es_rule_condition_A, action_args, condition_args)
+    return Rule(context.priority, es_rule_action_A, es_rule_condition_A, action_args, condition_args)
 
 
 def _build_es_b_rule(context: ReservationRuleContext) -> Rule:
@@ -204,7 +213,7 @@ def _build_es_b_rule(context: ReservationRuleContext) -> Rule:
         "right": right,
         "fidelity": context.reservation.fidelity,
     }
-    return Rule(10, es_rule_action_B, es_rule_condition_B, {}, condition_args)
+    return Rule(context.priority, es_rule_action_B, es_rule_condition_B, {}, condition_args)
 
 
 DEFAULT_RESERVATION_RULE_SPECS: Final[tuple[ReservationRuleSpec, ...]] = (
@@ -289,9 +298,29 @@ class ReservationRuleGenerator:
     def __init__(self) -> None:
         self.registry = ReservationRuleRegistry()
 
-    def create_rules(self, owner, path, reservation, memory_indices, index) -> list[Rule]:
-        """Create reservation rules in SeQUeNCe's static rule-slot order."""
-        context = ReservationRuleContext(owner, path, reservation, memory_indices, index)
+    def create_rules(
+        self,
+        owner: "QuantumRouter",
+        path: list[str],
+        reservation: "Reservation",
+        memory_indices: list[int],
+        index: int,
+        priority: int = 10,
+    ) -> list[Rule]:
+        """Create reservation rules in SeQUeNCe's static rule-slot order.
+
+        Args:
+            owner: Router whose resource manager will load the generated rules.
+            path: Reservation path from initiator to responder.
+            reservation: Reservation used to generate the rules.
+            memory_indices: Local memory indices assigned to the reservation.
+            index: Position of ``owner`` in ``path``.
+            priority: Priority assigned to generated rules.
+
+        Returns:
+            Reservation-generated rules whose static predicates apply at this node.
+        """
+        context = ReservationRuleContext(owner, path, reservation, memory_indices, index, priority)
         rules: list[Rule] = []
 
         for spec in DEFAULT_RESERVATION_RULE_SPECS:

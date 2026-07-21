@@ -35,7 +35,7 @@ class Reservation:
 
 
 def _custom_rule_builder(context: ReservationRuleContext) -> Rule:
-    return Rule(10, eg_rule_action_request, lambda *_args: [], {"custom": context.index}, {})
+    return Rule(context.priority, eg_rule_action_request, lambda *_args: [], {"custom": context.index}, {})
 
 
 def test_registry_can_disable_individual_rule_builder():
@@ -93,6 +93,22 @@ def test_generator_uses_replacement_builder():
     assert not any(rule.action is eg_rule_action_request and "custom" not in rule.action_args for rule in rules)
 
 
+def test_generator_passes_rule_priority_to_default_builders():
+    generator = ReservationRuleGenerator()
+
+    rules = generator.create_rules(
+        Owner(),
+        ["node1", "node2"],
+        Reservation(),
+        [0],
+        0,
+        priority=27,
+    )
+
+    assert rules
+    assert all(rule.priority == 27 for rule in rules)
+
+
 def test_generator_uses_registry_to_disable_rule():
     generator = ReservationRuleGenerator()
     registry = generator.registry
@@ -127,8 +143,8 @@ def test_generator_uses_static_default_rule_spec_order():
     generator = ReservationRuleGenerator()
 
     def marker_builder(name):
-        def build(_context: ReservationRuleContext) -> Rule:
-            return Rule(10, eg_rule_action_request, lambda *_args: [], {"slot": name}, {})
+        def build(context: ReservationRuleContext) -> Rule:
+            return Rule(context.priority, eg_rule_action_request, lambda *_args: [], {"slot": name}, {})
 
         return build
 
@@ -143,7 +159,7 @@ def test_generator_uses_static_default_rule_spec_order():
         1,
     )
 
-    context = ReservationRuleContext(Owner(), ["node0", "node1", "node2"], Reservation(), [0, 1], 1)
+    context = ReservationRuleContext(Owner(), ["node0", "node1", "node2"], Reservation(), [0, 1], 1, 10)
     expected_names = [spec.name for spec in DEFAULT_RESERVATION_RULE_SPECS if spec.predicate(context)]
     actual_names = [rule.action_args["slot"] for rule in rules]
 

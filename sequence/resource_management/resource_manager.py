@@ -144,17 +144,66 @@ class ResourceManager:
         pass
 
     def get_reservation_rule_registry(self) -> ReservationRuleRegistry:
-        """Return the registry used to replace or disable reservation rule builders."""
+        """Return the registry used to replace or disable reservation rule builders.
+
+        Replacement builders receive a ``ReservationRuleContext`` and return the full
+        ``Rule``, so they can customize rule priority, condition arguments, and action
+        arguments.
+
+        Example:
+            A caller can customize the built-in EG request rule by replacing its
+            builder::
+
+                def build_eg_request(context):
+                    memory_size = context.reservation.memory_size
+                    if context.index == 0:
+                        memory_indices = context.memory_indices[:memory_size]
+                    else:
+                        memory_indices = context.memory_indices[memory_size:]
+
+                    action_args = {
+                        "mid": context.owner.map_to_middle_node[context.path[context.index + 1]],
+                        "path": context.path,
+                        "index": context.index,
+                        "name": context.owner.name,
+                        "reservation": context.reservation,
+                        "memo_type": context.owner.memo_type,
+                    }
+                    condition_args = {"memory_indices": memory_indices}
+
+                    return Rule(
+                        context.priority,
+                        eg_rule_action_request,
+                        eg_rule_condition,
+                        action_args,
+                        condition_args,
+                    )
+
+                registry = router.resource_manager.get_reservation_rule_registry()
+                registry.replace(EG_REQUEST, build_eg_request)
+        """
         return self.rule_generator.registry
 
-    def generate_load_rules(self, path: list[str], reservation: Reservation, timecards: list[MemoryTimeCard], memory_array_name: str):
+    def generate_load_rules(
+        self,
+        path: list[str],
+        reservation: Reservation,
+        timecards: list[MemoryTimeCard],
+        memory_array_name: str,
+        rule_priority: int = 10,
+    ) -> None:
         """Generate and load rules for a given reservation.
 
         Args:
-            path (list[str]): path from the reservation's initiator to responder.
-            reservation (Reservation): the request's reservation
-            timecards (list[MemoryTimeCard]): timecards involved in the reservation at this node.
-            memory_array_name (str): name of memory array component to use for rule conditions and actions at this node.
+            path: Path from the reservation's initiator to responder.
+            reservation: The reservation used to generate the rules.
+            timecards: Time cards involved in the reservation at this node.
+            memory_array_name: Name of memory array component to use for rule
+                conditions and actions at this node.
+            rule_priority: Priority assigned to the generated rules.
+
+        Returns:
+            None.
         """
         memory_indices = []
         for card in timecards:
@@ -169,6 +218,7 @@ class ResourceManager:
             reservation,
             memory_indices,
             index,
+            priority=rule_priority,
         )
         for rule in rules:
             rule.set_reservation(reservation)
