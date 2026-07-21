@@ -94,6 +94,7 @@ class CounterMetric(Metric):
     rate_field: str
     _failures: dict[str, int] = field(default_factory=dict, init=False, repr=False)
     _successes: dict[str, int] = field(default_factory=dict, init=False, repr=False)
+    __hash__ = object.__hash__
 
     @property
     def event_types(self) -> frozenset[EventType]:
@@ -187,6 +188,7 @@ class ThroughputMetric(Metric):
 
     key: str
     delivery_event: EventType
+    __hash__ = object.__hash__
 
     @property
     def event_types(self) -> frozenset[EventType]:
@@ -228,6 +230,7 @@ class EventAttributeMetric(Metric):
     key: str
     event: EventType
     extractor: Callable[[Any], Any]
+    __hash__ = object.__hash__
 
     @property
     def event_types(self) -> frozenset[EventType]:
@@ -260,6 +263,7 @@ class DeliveryTimeMetric(Metric):
 
     key: str
     delivery_event: EventType
+    __hash__ = object.__hash__
 
     @property
     def event_types(self) -> frozenset[EventType]:
