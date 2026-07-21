@@ -140,7 +140,7 @@ def record(event_type: EventType, owner_name: str, **kwargs: Any) -> None:
         data=data,
     )
 
-    for metric in list_metrics():
+    for metric in _enabled_metrics:
         if event_type in metric.event_types:
             metric.on_record(event_type, owner_name, record)
 
