@@ -50,6 +50,7 @@ from .storage import InMemoryStorage, Record
 
 _enabled = False
 _enabled_events: set[EventType] = set()
+_enabled_metrics: set[Metric] = set()
 storage: InMemoryStorage = InMemoryStorage()
 time_provider: Timeline
 
@@ -77,8 +78,9 @@ def enable(metrics_to_enable: list[Metric]) -> None:
     Args:
         metrics_to_enable: Metrics whose event types should be recorded.
     """
-    global _enabled, _enabled_events
+    global _enabled, _enabled_events, _enabled_metrics
     _enabled = True
+    _enabled_metrics = set(metrics_to_enable)
     _enabled_events = set().union(*(m.event_types for m in metrics_to_enable))
 
 
@@ -168,7 +170,7 @@ def collect_trial_metrics(
         target_pairs=target_pairs,
     )
     result: dict[str, Any] = {}
-    for metric in list_metrics():
+    for metric in _enabled_metrics:
         result.update(metric.collect(ctx))
     return result
 
