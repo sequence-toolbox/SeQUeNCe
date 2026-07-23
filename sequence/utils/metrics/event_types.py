@@ -143,6 +143,81 @@ class DeliveryData:
     path: list[str]
 
 
+@dataclass(frozen=True, slots=True)
+class ReservationRequestedData:
+    """Payload for a reservation requested event."""
+
+    responder: str
+    start_time: int
+    end_time: int
+    memory_size: int
+    target_fidelity: float
+    identity: int
+
+
+@dataclass(frozen=True, slots=True)
+class ReservationHopRejectData:
+    """Payload for a reservation hop rejection event."""
+
+    initiator: str
+    responder: str
+    identity: int
+    path_so_far: list[str]
+
+
+@dataclass(frozen=True, slots=True)
+class ReservationReachedResponderData:
+    """Payload for a reservation reached responder event."""
+
+    initiator: str
+    identity: int
+    path: list[str]
+
+
+@dataclass(frozen=True, slots=True)
+class ForwardingTableMissData:
+    """Payload for a forwarding table miss event."""
+
+    dst: str
+
+
+@dataclass(frozen=True, slots=True)
+class NeighborDownData:
+    """Payload for a neighbor down event."""
+
+    neighbor: str
+
+
+@dataclass(frozen=True, slots=True)
+class NeighborFullData:
+    """Payload for a neighbor full adjacency event."""
+
+    neighbor: str
+
+
+@dataclass(frozen=True, slots=True)
+class RouteRecomputedData:
+    """Payload for a route recomputed event."""
+
+    num_routes: int
+
+
+@dataclass(frozen=True, slots=True)
+class LSAOriginatedData:
+    """Payload for an LSA originated event."""
+
+    seq_number: int
+    num_links: int
+
+
+@dataclass(frozen=True, slots=True)
+class LsdbUpdatedData:
+    """Payload for an LSDB updated event."""
+
+    src: str
+    num_updated_lsas: int
+
+
 class EventTypes:
     """Namespace for built-in simulation event types."""
 
@@ -157,19 +232,19 @@ class EventTypes:
     # Network Management Events #
     RESERVATION_APPROVED = register_event_type("RESERVATION_APPROVED", ReservationApprovedData)
     RESERVATION_REJECTED = register_event_type("RESERVATION_REJECTED", ReservationRejectedData)
-    RESERVATION_REQUESTED = register_event_type("RESERVATION_REQUESTED")
-    RESERVATION_HOP_REJECT = register_event_type("RESERVATION_HOP_REJECT")
-    RESERVATION_REACHED_RESPONDER = register_event_type("RESERVATION_REACHED_RESPONDER")
+    RESERVATION_REQUESTED = register_event_type("RESERVATION_REQUESTED", ReservationRequestedData)
+    RESERVATION_HOP_REJECT = register_event_type("RESERVATION_HOP_REJECT", ReservationHopRejectData)
+    RESERVATION_REACHED_RESPONDER = register_event_type("RESERVATION_REACHED_RESPONDER", ReservationReachedResponderData)
 
     # Forwarding
-    FORWARDING_TABLE_MISS = register_event_type("FORWARDING_TABLE_MISS")
+    FORWARDING_TABLE_MISS = register_event_type("FORWARDING_TABLE_MISS", ForwardingTableMissData)
 
     # Routing
-    NEIGHBOR_DOWN = register_event_type("NEIGHBOR_DOWN")
-    NEIGHBOR_FULL = register_event_type("NEIGHBOR_FULL")
-    ROUTE_RECOMPUTED = register_event_type("ROUTE_RECOMPUTED")
-    LSA_ORIGINATED = register_event_type("LSA_ORIGINATED")
-    LSDB_UPDATED = register_event_type("LSDB_UPDATED")
+    NEIGHBOR_DOWN = register_event_type("NEIGHBOR_DOWN", NeighborDownData)
+    NEIGHBOR_FULL = register_event_type("NEIGHBOR_FULL", NeighborFullData)
+    ROUTE_RECOMPUTED = register_event_type("ROUTE_RECOMPUTED", RouteRecomputedData)
+    LSA_ORIGINATED = register_event_type("LSA_ORIGINATED", LSAOriginatedData)
+    LSDB_UPDATED = register_event_type("LSDB_UPDATED", LsdbUpdatedData)
 
     # Application Events #
     DELIVERY = register_event_type("DELIVERY", DeliveryData)
