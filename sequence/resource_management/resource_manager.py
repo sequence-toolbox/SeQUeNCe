@@ -171,12 +171,13 @@ class ResourceManager:
         index: int = path.index(self.owner.name)
 
         # Create Rules
+        priority = 10
         # 1. create rules for entanglement generation
         if index > 0:
             condition_args = {"memory_indices": memory_indices[:reservation.memory_size]}
             action_args = {"mid": self.owner.map_to_middle_node[path[index - 1]],
                            "path": path, "index": index}
-            rule = Rule(10, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
+            rule = Rule(priority, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
 
         if index < len(path) - 1:
@@ -187,15 +188,16 @@ class ResourceManager:
 
             action_args = {"mid": self.owner.map_to_middle_node[path[index + 1]],
                            "path": path, "index": index, "name": self.owner.name, "reservation": reservation}
-            rule = Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
+            rule = Rule(priority, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
             rules.append(rule)
 
         # 2. create rules for entanglement purification
+        priority += 1
         if index > 0:
             condition_args = {"memory_indices": memory_indices[:reservation.memory_size], "reservation": reservation,
                               "purification_mode": reservation.purification_mode}
             action_args = {}
-            rule = Rule(10, ep_rule_action_request, ep_rule_condition_request, action_args, condition_args)
+            rule = Rule(priority, ep_rule_action_request, ep_rule_condition_request, action_args, condition_args)
             rules.append(rule)
 
         if index < len(path) - 1:
@@ -208,22 +210,23 @@ class ResourceManager:
                                   "purification_mode": reservation.purification_mode}
 
             action_args = {}
-            rule = Rule(10, ep_rule_action_await, ep_rule_condition_await, action_args, condition_args)
+            rule = Rule(priority, ep_rule_action_await, ep_rule_condition_await, action_args, condition_args)
             rules.append(rule)
 
         # 3. create rules for entanglement swapping
+        priority += 1
         if index == 0:
             condition_args = {"memory_indices": memory_indices, "target_remote": path[-1],
                               "fidelity": reservation.fidelity}
             action_args = {}
-            rule = Rule(10, es_rule_action_B, es_rule_condition_B_end, action_args, condition_args)
+            rule = Rule(priority, es_rule_action_B, es_rule_condition_B_end, action_args, condition_args)
             rules.append(rule)
 
         elif index == len(path) - 1:
             action_args = {}
             condition_args = {"memory_indices": memory_indices, "target_remote": path[0],
                               "fidelity": reservation.fidelity}
-            rule = Rule(10, es_rule_action_B, es_rule_condition_B_end, action_args, condition_args)
+            rule = Rule(priority, es_rule_action_B, es_rule_condition_B_end, action_args, condition_args)
             rules.append(rule)
 
         else:
@@ -241,11 +244,11 @@ class ResourceManager:
                               "fidelity": reservation.fidelity}
             action_args = {"swapping_success_prob": self.owner.swapping_success_prob, 
                            "swapping_degradation": self.owner.swapping_degradation}
-            rule = Rule(10, es_rule_action_A, es_rule_condition_A, action_args, condition_args)
+            rule = Rule(priority, es_rule_action_A, es_rule_condition_A, action_args, condition_args)
             rules.append(rule)
 
             action_args = {}
-            rule = Rule(10, es_rule_action_B, es_rule_condition_B, action_args, condition_args)
+            rule = Rule(priority, es_rule_action_B, es_rule_condition_B, action_args, condition_args)
             rules.append(rule)
 
         for rule in rules:
@@ -261,12 +264,13 @@ class ResourceManager:
             event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
             self.owner.timeline.schedule(event)
 
-        for card in timecards:
-            if reservation in card.reservations:
-                process = Process(self.owner.resource_manager, "update",
-                                  [None, self.owner.components[memory_array_name][card.memory_index], "RAW"])
-                event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
-                self.owner.timeline.schedule(event)
+        # NOTE: the following is covered by the "expire" process above. Thus, not needed.
+        # for card in timecards:
+        #     if reservation in card.reservations:
+        #         process = Process(self.owner.resource_manager, "update",
+        #                           [None, self.owner.components[memory_array_name][card.memory_index], "RAW"])
+        #         event = Event(reservation.end_time, process, self.owner.timeline.schedule_counter)
+        #         self.owner.timeline.schedule(event)
 
     def load(self, rule: Rule) -> bool:
         """Method to load rules for entanglement management.
@@ -318,6 +322,15 @@ class ResourceManager:
 
             for memory in protocol.memories:
                 self.update(protocol, memory, MemoryInfo.RAW)
+
+        # below do the job of line 264~270 (commented code) in generate_load_rules, which updates the memory to RAW when the reservation is expired.
+        memory_indices = rule.condition_args.get("memory_indices", ())
+        for memory_index in memory_indices:
+            memory = self.memory_manager.memory_array[memory_index]
+            info = self.memory_manager.get_info_by_memory(memory)
+            if info.state != MemoryInfo.RAW:
+                self.memory_manager.update(memory, MemoryInfo.RAW)
+
 
     def update(self, protocol: EntanglementProtocol | None, memory: Memory, state: str) -> None:
         """Method to update state of memory after completion of entanglement management protocol.
@@ -469,6 +482,7 @@ class ResourceManager:
             
             case ResourceManagerMsgType.EARLY_EXPIRE:
                 self.expire_rules_by_reservation(msg.reservation)
+                self.owner.network_manager.remove_reservation_from_timecards(msg.reservation)
 
     def memory_expire(self, memory: Memory):
         """Method to receive memory expiration events."""

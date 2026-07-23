@@ -11,7 +11,7 @@ from heapq import heappop, heappush
 from typing import TYPE_CHECKING, Iterator
 
 if TYPE_CHECKING:
-    from sequence.topology.node import QuantumRouter
+    from ...topology.node import QuantumRouter
 
 from .routing_base import RoutingProtocol, ROUTING_DISTRIBUTED
 from ...constants import EPSILON, SECOND

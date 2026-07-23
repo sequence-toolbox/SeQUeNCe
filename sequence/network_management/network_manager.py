@@ -131,6 +131,18 @@ class NetworkManager(ABC):
         """
         self.owner.resource_manager.generate_load_rules(reservation.path, reservation, self.timecards, self.memory_array_name)
 
+    def remove_reservation_from_timecards(self, reservation: Reservation):
+        """Remove a reservation from the timecards. 
+        
+        Useful when a request is served before the end_time and then early expired the reservation.
+
+        Args:
+            reservation (Reservation): reservation to remove from timecards.
+        """
+        for timecard in self.timecards:
+            if reservation in timecard.reservations:
+                timecard.remove(reservation)
+
 
 @NetworkManager.register('distributed')
 class DistributedNetworkManager(NetworkManager):
