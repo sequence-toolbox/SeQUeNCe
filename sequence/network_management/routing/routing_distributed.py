@@ -474,6 +474,7 @@ class DistributedRoutingProtocol(RoutingProtocol):
                     self.originate_and_flood()
             case "Full":
                 metrics.record(EventTypes.NEIGHBOR_FULL, self.owner.name, neighbor=neighbor)
+                fsm.state = new_state
             case _:
                 fsm.state = new_state
 
