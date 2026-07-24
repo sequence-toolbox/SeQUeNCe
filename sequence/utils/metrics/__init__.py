@@ -156,7 +156,7 @@ def collect_trial_metrics(
     """Collect per-trial metrics for a node from the metrics module.
 
     Args:
-        owner_name: Node name to collect counter and fidelity metrics for.
+        owner_name: Node name to collect metrics for.
         delivery_owner: Node name used for delivery-time metrics; defaults to `owner_name`.
         target_pairs: Number of delivered pairs required to compute delivery time.
 

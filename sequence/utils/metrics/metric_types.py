@@ -65,9 +65,9 @@ class Metric(ABC):
         """Return trial result keys and values for this metric.
 
         Args:
-            owner_name: Node name for counter and fidelity metrics.
+            owner_name: Node name for metrics to be collected.
             storage: In-memory store of recorded events for the trial.
-            ctx: Collection context with owner, storage, and trial parameters.
+            ctx: Empty
 
         Returns:
             Mapping of output keys to per-trial values.
@@ -165,7 +165,9 @@ class CounterMetric(Metric):
         """Return failure, success, and success-rate counts for the trial owner.
 
         Args:
-            ctx: Collection context with the owner name to report.
+            owner_name: Node name for metrics to be collected.
+            storage: In-memory store of recorded events for the trial.
+            ctx: Empty
 
         Returns:
             Mapping of prefixed failure, success, and success-rate keys.
@@ -202,7 +204,9 @@ class ThroughputMetric(Metric):
         """Compute throughput as delivered pairs per second over the reservation window.
 
         Args:
-            ctx: Collection context with delivery owner and stored delivery events.
+            owner_name: Node name for metrics to be collected.
+            storage: In-memory store of recorded events for the trial.
+            ctx: Empty
 
         Returns:
             Mapping with the configured rate key in pairs per second, or NaN if data is insufficient.
@@ -244,7 +248,9 @@ class EventAttributeMetric(Metric):
         """Collect fidelity values from matching success events for the owner.
 
         Args:
-            ctx: Collection context with owner name and event storage.
+            owner_name: Node name for metrics to be collected.
+            storage: In-memory store of recorded events for the trial.
+            ctx: Empty
 
         Returns:
             Mapping of the configured key to a list of fidelity values.
@@ -278,8 +284,9 @@ class DeliveryTimeMetric(Metric):
         """Compute elapsed time to deliver the target number of pairs.
 
         Args:
-            ctx: Collection context with delivery owner, target pair count,
-                reservation start time, and stored delivery events.
+            owner_name: Node name for metrics to be collected.
+            storage: In-memory store of recorded events for the trial.
+            ctx: Collection context with delivery owner, target pair count.
 
         Returns:
             Mapping with delivery time in seconds, or NaN if data is insufficient.
