@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, override
 
 from .event_types import EventType
-from .storage import InMemoryStorage
+from .storage import InMemoryStorage, Record
 
 
 @dataclass
@@ -15,20 +16,12 @@ class CollectContext:
     """Context passed to metrics when collecting trial results.
 
     Attributes:
-        owner_name: Node name for counter and fidelity metrics.
-        storage: In-memory store of recorded events for the trial.
         delivery_owner: Node name for delivery-time metrics.
         target_pairs: Number of delivered pairs required to compute delivery time.
-        reservation_start_time: Simulation time when the reservation started (ps).
-        throughput: Application throughput supplied at collection time.
     """
 
-    owner_name: str
-    storage: InMemoryStorage
     delivery_owner: str | None = None
     target_pairs: int | None = None
-    reservation_start_time: int | None = None
-    throughput: float | None = None
 
 
 class Metric(ABC):
@@ -46,13 +39,13 @@ class Metric(ABC):
     @property
     @abstractmethod
     def output_keys(self) -> frozenset[str]:
-        """Keys produced by ``collect()``.
+        """Keys produced by `collect()`.
 
         Returns:
             Frozen set of keys written into per-trial result dictionaries.
         """
 
-    def on_record(self, event_type: EventType, owner_name: str, kwargs: dict[str, Any]) -> None:
+    def on_record(self, event_type: EventType, owner_name: str, record: Record) -> None:
         """Update metric state when a matching event is recorded.
 
         This method is called for every metric when it is recorded.
@@ -63,15 +56,17 @@ class Metric(ABC):
         Args:
             event_type: Type of the recorded event.
             owner_name: Name of the node or component that owns the event.
-            kwargs: Mutable event payload; metrics may add derived fields.
+            record: The stored record being written.
         """
         pass
 
     @abstractmethod
-    def collect(self, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
         """Return trial result keys and values for this metric.
 
         Args:
+            owner_name: Node name for counter and fidelity metrics.
+            storage: In-memory store of recorded events for the trial.
             ctx: Collection context with owner, storage, and trial parameters.
 
         Returns:
@@ -99,6 +94,7 @@ class CounterMetric(Metric):
     rate_field: str
     _failures: dict[str, int] = field(default_factory=dict, init=False, repr=False)
     _successes: dict[str, int] = field(default_factory=dict, init=False, repr=False)
+    __hash__ = object.__hash__
 
     @property
     def event_types(self) -> frozenset[EventType]:
@@ -152,22 +148,20 @@ class CounterMetric(Metric):
             return 0.0
         return successes / attempts
 
-    def on_record(self, event_type: EventType, owner_name: str, kwargs: dict[str, Any]) -> None:
-        """Increment failure or success counts and update the rate field in kwargs.
+    def on_record(self, event_type: EventType, owner_name: str, record: Record) -> None:
+        """Increment failure or success counts.
 
         Args:
             event_type: Recorded event type; must match failure or success event.
             owner_name: Name of the node or component that owns the event.
-            kwargs: Event payload; updated with the current success rate.
+            record: The stored record being written.
         """
         if event_type == self.failure_event:
             self._failures[owner_name] = self._failures.get(owner_name, 0) + 1
-            kwargs[self.rate_field] = self.success_rate(owner_name)
         elif event_type == self.success_event:
             self._successes[owner_name] = self._successes.get(owner_name, 0) + 1
-            kwargs[self.rate_field] = self.success_rate(owner_name)
 
-    def collect(self, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
         """Return failure, success, and success-rate counts for the trial owner.
 
         Args:
@@ -177,9 +171,9 @@ class CounterMetric(Metric):
             Mapping of prefixed failure, success, and success-rate keys.
         """
         return {
-            f"{self.prefix}_failures": self.failures(ctx.owner_name),
-            f"{self.prefix}_success": self.successes(ctx.owner_name),
-            f"{self.prefix}_success_rate": self.success_rate(ctx.owner_name),
+            f"{self.prefix}_failures": self.failures(owner_name),
+            f"{self.prefix}_success": self.successes(owner_name),
+            f"{self.prefix}_success_rate": self.success_rate(owner_name),
         }
 
     def reset(self) -> None:
@@ -189,10 +183,12 @@ class CounterMetric(Metric):
 
 
 @dataclass
-class RateMetric(Metric):
-    """Collects a rate value supplied at trial collection time (e.g. throughput)."""
+class ThroughputMetric(Metric):
+    """Computes application throughput from recorded deliveries at collection time."""
 
-    key: str = "app_throughput"
+    key: str
+    delivery_event: EventType
+    __hash__ = object.__hash__
 
     @property
     def event_types(self) -> frozenset[EventType]:
@@ -202,27 +198,39 @@ class RateMetric(Metric):
     def output_keys(self) -> frozenset[str]:
         return frozenset({self.key})
 
-    def collect(self, ctx: CollectContext) -> dict[str, Any]:
-        """Return the throughput value supplied at collection time.
+    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
+        """Compute throughput as delivered pairs per second over the reservation window.
 
         Args:
-            ctx: Collection context; uses `throughput` when set.
+            ctx: Collection context with delivery owner and stored delivery events.
 
         Returns:
-            Mapping with the configured rate key and throughput or NaN.
+            Mapping with the configured rate key in pairs per second, or NaN if data is insufficient.
         """
-        if ctx.throughput is None:
+        delivery_owner = ctx.delivery_owner or owner_name
+        delivery_records = [
+            record for record in storage.get_by_owner(delivery_owner) if record.event_type == self.delivery_event
+        ]
+        if not delivery_records:
             return {self.key: float("nan")}
-        return {self.key: ctx.throughput}
+
+        delivery_records.sort(key=lambda record: record.sim_time)
+        start_time = delivery_records[0].data.start_time
+        elapsed_ps = delivery_records[-1].sim_time - start_time
+        if elapsed_ps <= 0:
+            return {self.key: float("nan")}
+
+        return {self.key: len(delivery_records) / elapsed_ps * 1e12}
 
 
 @dataclass
-class FidelityMetric(Metric):
-    """Collects fidelity values from matching success events."""
+class EventAttributeMetric(Metric):
+    """Collects a specific attribute from matching events."""
 
     key: str
     event: EventType
-    field: str
+    extractor: Callable[[Any], Any]
+    __hash__ = object.__hash__
 
     @property
     def event_types(self) -> frozenset[EventType]:
@@ -232,7 +240,7 @@ class FidelityMetric(Metric):
     def output_keys(self) -> frozenset[str]:
         return frozenset({self.key})
 
-    def collect(self, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
         """Collect fidelity values from matching success events for the owner.
 
         Args:
@@ -242,9 +250,9 @@ class FidelityMetric(Metric):
             Mapping of the configured key to a list of fidelity values.
         """
         values = [
-            record[self.field]
-            for record in ctx.storage.get_by_owner(ctx.owner_name)
-            if record["event_type"] == self.event and self.field in record
+            self.extractor(record)
+            for record in storage.get_by_owner(owner_name)
+            if record.event_type == self.event
         ]
         return {self.key: values}
 
@@ -253,13 +261,12 @@ class FidelityMetric(Metric):
 class DeliveryTimeMetric(Metric):
     """Time to deliver N pairs relative to reservation start."""
 
-    key: str = "delivery_time"
-    delivery_event: EventType | None = None
+    key: str
+    delivery_event: EventType
+    __hash__ = object.__hash__
 
     @property
     def event_types(self) -> frozenset[EventType]:
-        if self.delivery_event is None:
-            return frozenset()
         return frozenset({self.delivery_event})
 
     @property
@@ -267,7 +274,7 @@ class DeliveryTimeMetric(Metric):
         return frozenset({self.key})
 
     @override
-    def collect(self, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
         """Compute elapsed time to deliver the target number of pairs.
 
         Args:
@@ -277,18 +284,18 @@ class DeliveryTimeMetric(Metric):
         Returns:
             Mapping with delivery time in seconds, or NaN if data is insufficient.
         """
-        delivery_owner = ctx.delivery_owner or ctx.owner_name
+        delivery_owner = ctx.delivery_owner or owner_name
         delivery_records = [
-            record
-            for record in ctx.storage.get_by_owner(delivery_owner)
-            if self.delivery_event is not None and record["event_type"] == self.delivery_event
+            record for record in storage.get_by_owner(delivery_owner) if record.event_type == self.delivery_event
         ]
-        delivery_records.sort(key=lambda record: record["sim_time"])
+        if not delivery_records:
+            return {self.key: float("nan")}
+
+        delivery_records.sort(key=lambda record: record.sim_time)
+        start_time = delivery_records[0].data.start_time
+
         if ctx.target_pairs is None or len(delivery_records) < ctx.target_pairs:
             return {self.key: float("nan")}
-        if ctx.reservation_start_time is None:
-            return {self.key: float("nan")}
-        target_time = delivery_records[ctx.target_pairs - 1]["sim_time"]
-        return {
-            self.key: (target_time - ctx.reservation_start_time) * 1e-12,
-        }
+        target_time = delivery_records[ctx.target_pairs - 1].sim_time
+
+        return {self.key: (target_time - start_time) * 1e-12}

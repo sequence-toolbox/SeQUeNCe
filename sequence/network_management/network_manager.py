@@ -14,7 +14,8 @@ if TYPE_CHECKING:
 
 from ..components.memory import MemoryArray
 from ..message import Message
-from ..utils import log
+from ..utils import log, metrics
+from ..utils.metrics.event_types import EventTypes
 from .forwarding import ForwardingProtocol
 from .memory_timecard import MemoryTimeCard
 from .reservation import Reservation
@@ -226,12 +227,38 @@ class DistributedNetworkManager(NetworkManager):
         """
         reservation: Reservation = msg.reservation
         if msg.msg_type == RSVPMsgType.APPROVE:
+            metrics.record(
+                EventTypes.RESERVATION_APPROVED,
+                self.owner.name,
+                identity=reservation.identity,
+                initiator=reservation.initiator,
+                responder=reservation.responder,
+                start_time=reservation.start_time,
+                end_time=reservation.end_time,
+                memory_size=reservation.memory_size,
+                entanglement_number=reservation.entanglement_number,
+                target_fidelity=reservation.fidelity,
+                path=list(reservation.path),
+            )
             self.generate_rules(reservation)
             if reservation.initiator == self.owner.name:
                 self.owner.get_reservation_result(reservation, True) # Deliver the result to the Node
             elif reservation.responder == self.owner.name:
                 self.owner.get_other_reservation(reservation)
         elif msg.msg_type == RSVPMsgType.REJECT:
+            metrics.record(
+                EventTypes.RESERVATION_REJECTED,
+                self.owner.name,
+                identity=reservation.identity,
+                initiator=reservation.initiator,
+                responder=reservation.responder,
+                start_time=reservation.start_time,
+                end_time=reservation.end_time,
+                memory_size=reservation.memory_size,
+                entanglement_number=reservation.entanglement_number,
+                target_fidelity=reservation.fidelity,
+                path=[],
+            )
             if reservation.initiator == self.owner.name:
                 self.owner.get_reservation_result(reservation, False)
 

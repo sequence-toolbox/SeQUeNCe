@@ -18,7 +18,8 @@ from ...constants import EPSILON, SECOND
 from ...kernel.event import Event
 from ...kernel.process import Process
 from ...message import Message
-from ...utils import log
+from ...utils import log, metrics
+from ...utils.metrics import EventTypes
 
 
 class DistRoutingMsgType(Enum):
@@ -410,6 +411,7 @@ class DistributedRoutingProtocol(RoutingProtocol):
         updated = self.lsdb.install(withdrawal, now)
         if updated:
             forwarding_table = self.run_spf()
+            metrics.record(EventTypes.ROUTE_RECOMPUTED, self.owner.name, num_routes=len(forwarding_table))
             self.set_forwarding_table(forwarding_table)
         self.flood_to_all_neighbors(withdrawal)
         self.lsdb.purge_withdrawn(now)
@@ -468,7 +470,11 @@ class DistributedRoutingProtocol(RoutingProtocol):
                 fsm.reset()
                 if neighbor in self.adj_cost:
                     del self.adj_cost[neighbor]
+                    metrics.record(EventTypes.NEIGHBOR_DOWN, self.owner.name, neighbor=neighbor)
                     self.originate_and_flood()
+            case "Full":
+                metrics.record(EventTypes.NEIGHBOR_FULL, self.owner.name, neighbor=neighbor)
+                fsm.state = new_state
             case _:
                 fsm.state = new_state
 
@@ -541,6 +547,7 @@ class DistributedRoutingProtocol(RoutingProtocol):
         # install into own LSDB, always newer for self-originated LSA
         self.lsdb.install(lsa, self.owner.timeline.now())
         forwarding_table = self.run_spf()  # recompute routes
+        metrics.record(EventTypes.ROUTE_RECOMPUTED, self.owner.name, num_routes=len(forwarding_table))
         self.set_forwarding_table(forwarding_table)
         self.flood_to_all_neighbors(lsa)
 
@@ -563,6 +570,9 @@ class DistributedRoutingProtocol(RoutingProtocol):
             time = self.last_originated_time + self.MAX_AGE
             event = Event(time, process, priority=self.owner.timeline.schedule_counter)
             self.owner.timeline.schedule(event)
+        metrics.record(
+            EventTypes.LSA_ORIGINATED, self.owner.name, seq_number=lsa.header.seq_number, num_links=len(links)
+        )
         return lsa
 
     def originate_withdrawal(self) -> LSA:
@@ -773,7 +783,9 @@ class DistributedRoutingProtocol(RoutingProtocol):
                         if fsm_neighbor.state == "Loading" and len(fsm_neighbor.pending_requested) == 0:
                             self.set_state(neighbor, "Full")
         if lsdb_updated:  # recompute routes if LSDB is updated
+            metrics.record(EventTypes.LSDB_UPDATED, self.owner.name, src=src, num_updated_lsas=len(acks))
             forwarding_table = self.run_spf()
+            metrics.record(EventTypes.ROUTE_RECOMPUTED, self.owner.name, num_routes=len(forwarding_table))
             self.set_forwarding_table(forwarding_table)
         # send LSAck back to sender, even if no LSAs are updated (empty acks list)
         lsack_payload = LSAckPayload(sender=self.owner.name, acks=acks)

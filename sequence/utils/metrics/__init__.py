@@ -1,7 +1,7 @@
 """Centralized metrics tracking for SeQUeNCe simulations.
 
 This module provides a global registry for recording simulation events.
-Metrics are disabled by default; call ``enable()`` to opt in to recording.
+Metrics are disabled by default; call `enable()` to opt in to recording.
 """
 
 from __future__ import annotations
@@ -26,7 +26,6 @@ from .builtins import (
 from .event_types import (
     EventType,
     EventTypes,
-    get_event_type,
     list_event_types,
     register_event_type,
 )
@@ -34,9 +33,9 @@ from .metric_types import (
     CollectContext,
     CounterMetric,
     DeliveryTimeMetric,
-    FidelityMetric,
+    EventAttributeMetric,
     Metric,
-    RateMetric,
+    ThroughputMetric,
 )
 from .registry import (
     clear_registry,
@@ -46,20 +45,21 @@ from .registry import (
     reset_metrics,
     unregister_metric,
 )
-from .storage import InMemoryStorage
+from .storage import InMemoryStorage, Record
 
 
 _enabled = False
 _enabled_events: set[EventType] = set()
+_enabled_metrics: set[Metric] = set()
 storage: InMemoryStorage = InMemoryStorage()
-time_provider: Timeline | None = None
+time_provider: Timeline
 
 
 def register_time_provider(provider: Timeline) -> None:
     """Register the active time source for recorded events.
 
     Args:
-        provider: Object supplying timestamps via ``now()``.
+        provider: Object supplying timestamps via `now()`.
     """
     global time_provider
     time_provider = provider
@@ -78,8 +78,9 @@ def enable(metrics_to_enable: list[Metric]) -> None:
     Args:
         metrics_to_enable: Metrics whose event types should be recorded.
     """
-    global _enabled, _enabled_events
+    global _enabled, _enabled_events, _enabled_metrics
     _enabled = True
+    _enabled_metrics = set(metrics_to_enable)
     _enabled_events = set().union(*(m.event_types for m in metrics_to_enable))
 
 
@@ -103,27 +104,47 @@ def configure(storage_type: str = "in_memory") -> None:
 def record(event_type: EventType, owner_name: str, **kwargs: Any) -> None:
     """Record a metrics event if metrics are enabled for this event type.
 
+    When the event type has a registered `payload_type`, the kwargs are
+    used to construct a typed payload dataclass instance. A `TypeError`
+    is raised immediately if required fields are missing or unexpected
+    fields are provided.
+
+    When the event type has no `payload_type` (i.e. `None`), no
+    additional kwargs are permitted.
+
     Args:
         event_type: Type of simulation event to record.
         owner_name: Name of the node or component that owns the event.
-        **kwargs: Additional event-specific fields stored with the record.
+        **kwargs: Payload fields matching the event type's payload dataclass.
+
+    Raises:
+        TypeError: If required payload fields are missing, unexpected fields
+            are provided, or kwargs are passed for a None-payload event type.
     """
     if not _enabled or event_type not in _enabled_events:
         return
 
-    record_kwargs = dict(kwargs)
-    for metric in list_metrics():
-        if event_type in metric.event_types:
-            metric.on_record(event_type, owner_name, record_kwargs)
+    if event_type.payload_type is None:
+        if kwargs:
+            raise TypeError(
+                f"metrics.record({event_type.name!r}) accepts no payload fields, but got: {sorted(kwargs.keys())}"
+            )
+        data = None
+    else:
+        data = event_type.payload_type(**kwargs)
 
-    storage.append(
-        {
-            "event_type": event_type,
-            "owner_name": owner_name,
-            "sim_time": time_provider.now(),
-            **record_kwargs,
-        }
+    record = Record(
+        event_type=event_type,
+        owner_name=owner_name,
+        sim_time=time_provider.now(),
+        data=data,
     )
+
+    for metric in _enabled_metrics:
+        if event_type in metric.event_types:
+            metric.on_record(event_type, owner_name, record)
+
+    storage.append(record)
 
 
 def collect_trial_metrics(
@@ -131,8 +152,6 @@ def collect_trial_metrics(
     *,
     delivery_owner: str | None = None,
     target_pairs: int | None = None,
-    reservation_start_time: int | None = None,
-    throughput: float | None = None,
 ) -> dict[str, Any]:
     """Collect per-trial metrics for a node from the metrics module.
 
@@ -140,23 +159,17 @@ def collect_trial_metrics(
         owner_name: Node name to collect counter and fidelity metrics for.
         delivery_owner: Node name used for delivery-time metrics; defaults to `owner_name`.
         target_pairs: Number of delivered pairs required to compute delivery time.
-        reservation_start_time: Simulation time when the reservation started (ps).
-        throughput: Application throughput to include in collected metrics.
 
     Returns:
         Mapping of metric output keys to per-trial values.
     """
     ctx = CollectContext(
-        owner_name=owner_name,
-        storage=storage,
         delivery_owner=delivery_owner or owner_name,
         target_pairs=target_pairs,
-        reservation_start_time=reservation_start_time,
-        throughput=throughput,
     )
     result: dict[str, Any] = {}
     for metric in list_metrics():
-        result.update(metric.collect(ctx))
+        result.update(metric.collect(owner_name, storage, ctx))
     return result
 
 
@@ -179,7 +192,7 @@ def aggregate_trial_metrics(
         list_metric_cap: Maximum list elements per trial to include when aggregating list metrics.
 
     Returns:
-        Mapping of ``avg_*`` and ``std_*`` keys to aggregated statistics.
+        Mapping of `avg_*` and `std_*` keys to aggregated statistics.
     """
     if not trials:
         raise ValueError("Cannot aggregate an empty list of trials")
@@ -223,16 +236,15 @@ __all__ = [
     # From event_types
     "EventType",
     "EventTypes",
-    "get_event_type",
     "list_event_types",
     "register_event_type",
     # From metric_types
     "CollectContext",
     "CounterMetric",
     "DeliveryTimeMetric",
-    "FidelityMetric",
+    "EventAttributeMetric",
     "Metric",
-    "RateMetric",
+    "ThroughputMetric",
     # From registry
     "clear_registry",
     "get_counter",

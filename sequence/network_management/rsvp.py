@@ -10,6 +10,8 @@ from .memory_timecard import MemoryTimeCard
 from .reservation import Reservation
 from ..message import Message
 from ..protocol import StackProtocol
+from ..utils import metrics
+from ..utils.metrics.event_types import EventTypes
 
 ENTANGLED = 'ENTANGLED'
 RAW = 'RAW'
@@ -114,6 +116,16 @@ class RSVPProtocol(StackProtocol):
             msg = RSVPMessage(RSVPMsgType.REQUEST, self.name, reservation)
             qcap = QCap(self.owner.name)
             msg.qcaps.append(qcap)
+            metrics.record(
+                EventTypes.RESERVATION_REQUESTED,
+                self.owner.name,
+                responder=responder,
+                start_time=start_time,
+                end_time=end_time,
+                memory_size=memory_size,
+                target_fidelity=target_fidelity,
+                identity=identity,
+            )
             self._push(dst=responder, msg=msg)
         else:
             msg = RSVPMessage(RSVPMsgType.REJECT, self.name, reservation, path=[])
@@ -150,12 +162,27 @@ class RSVPProtocol(StackProtocol):
                 if self.owner.name == msg.reservation.responder:
                     self.accepted_reservations.append(msg.reservation)
                     msg.reservation.set_path(path)
+                    metrics.record(
+                        EventTypes.RESERVATION_REACHED_RESPONDER,
+                        self.owner.name,
+                        initiator=msg.reservation.initiator,
+                        identity=msg.reservation.identity,
+                        path=path,
+                    )
                     new_msg = RSVPMessage(RSVPMsgType.APPROVE, self.name, msg.reservation, path=path)
                     self._pop(msg=new_msg)
                     self._push(dst=None, msg=new_msg, next_hop=src)
                 else:
                     self._push(dst=msg.reservation.responder, msg=msg)
             else:  # schedule failed
+                metrics.record(
+                    EventTypes.RESERVATION_HOP_REJECT,
+                    self.owner.name,
+                    initiator=msg.reservation.initiator,
+                    responder=msg.reservation.responder,
+                    identity=msg.reservation.identity,
+                    path_so_far=path,
+                )
                 new_msg = RSVPMessage(RSVPMsgType.REJECT, self.name, msg.reservation, path=path)
                 self._push(dst=None, msg=new_msg, next_hop=src)
         elif msg.msg_type == RSVPMsgType.REJECT:
