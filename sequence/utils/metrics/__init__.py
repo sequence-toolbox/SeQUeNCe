@@ -169,7 +169,8 @@ def collect_trial_metrics(
     )
     result: dict[str, Any] = {}
     for metric in list_metrics():
-        result.update(metric.collect(owner_name, storage, ctx))
+        if metric in _enabled_metrics:
+            result.update(metric.collect(owner_name, storage, ctx))
     return result
 
 
