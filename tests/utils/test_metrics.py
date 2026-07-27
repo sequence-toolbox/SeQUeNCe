@@ -4,7 +4,7 @@ import pytest
 
 from sequence.kernel.timeline import Timeline
 from sequence.utils import metrics
-from sequence.utils.metrics import CounterMetric
+from sequence.utils.metrics import CounterMetric, THROUGHPUT_METRIC
 from sequence.utils.metrics.event_types import EventTypes
 
 
@@ -219,7 +219,7 @@ def test_throughput_does_not_affect_eg_counters():
 
 
 def test_collect_trial_metrics_returns_node_snapshot():
-    metrics.enable([metrics.EG_METRIC])
+    metrics.enable([metrics.EG_METRIC, THROUGHPUT_METRIC])
 
     metrics.record(EventTypes.EG_FAILURE, "e0", **_eg_failure_kwargs(fidelity=0.8))
     metrics.record(EventTypes.EG_SUCCESS, "e0", **_eg_success_kwargs(fidelity=0.8))
@@ -236,7 +236,7 @@ def test_collect_trial_metrics_computes_throughput_from_deliveries():
     timeline = Timeline(int(1e12))
     timeline.time = int(1e12)
     metrics.register_time_provider(timeline)
-    metrics.enable([metrics.DELIVERY_TIME_METRIC])
+    metrics.enable([metrics.DELIVERY_TIME_METRIC, metrics.THROUGHPUT_METRIC])
 
     metrics.record(EventTypes.DELIVERY, "right", **_delivery_kwargs())
     timeline.time = int(2e12)
@@ -248,7 +248,7 @@ def test_collect_trial_metrics_computes_throughput_from_deliveries():
 
 
 def test_collect_trial_metrics_without_throughput_is_nan():
-    metrics.enable([metrics.EG_METRIC])
+    metrics.enable([metrics.EG_METRIC, metrics.THROUGHPUT_METRIC])
     metrics.record(EventTypes.EG_SUCCESS, "e0", **_eg_success_kwargs())
 
     trial = metrics.collect_trial_metrics("e0")
@@ -283,7 +283,7 @@ def test_es_counters_and_success_rate():
 
 
 def test_collect_trial_metrics_swapped_fidelities():
-    metrics.enable([metrics.ES_METRIC])
+    metrics.enable([metrics.ES_METRIC, metrics.SWAPPED_FIDELITIES_METRIC])
 
     metrics.record(EventTypes.ES_SUCCESS, "middle", **_es_success_kwargs(fidelity=0.7))
     metrics.record(EventTypes.ES_SUCCESS, "middle", **_es_success_kwargs(fidelity=0.75))
@@ -316,7 +316,7 @@ def test_collect_trial_metrics_ep_fields_and_delivery_time():
             return current
 
     metrics.register_time_provider(AdvancingTimeline())
-    metrics.enable([metrics.EP_METRIC, metrics.DELIVERY_TIME_METRIC])
+    metrics.enable([metrics.EP_METRIC, metrics.DELIVERY_TIME_METRIC, metrics.PURIFIED_FIDELITIES_METRIC, metrics.THROUGHPUT_METRIC])
 
     metrics.record(EventTypes.EP_SUCCESS, "left", **_ep_success_kwargs(fidelity=0.7))
     metrics.record(EventTypes.EP_SUCCESS, "left", **_ep_success_kwargs(fidelity=0.75))
