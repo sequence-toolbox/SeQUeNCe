@@ -245,7 +245,7 @@ class EventAttributeMetric(Metric):
         return frozenset({self.key})
 
     def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
-        """Collect fidelity values from matching success events for the owner.
+        """Collect specific attribute values from matching events for the owner.
 
         Args:
             owner_name: Node name for metrics to be collected.
@@ -253,7 +253,7 @@ class EventAttributeMetric(Metric):
             ctx: Empty
 
         Returns:
-            Mapping of the configured key to a list of fidelity values.
+            Mapping of the configured key to a list of attribute values.
         """
         values = [
             self.extractor(record)
