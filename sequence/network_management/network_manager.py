@@ -132,9 +132,9 @@ class NetworkManager(ABC):
         self.owner.resource_manager.generate_load_rules(reservation.path, reservation, self.timecards, self.memory_array_name)
 
     def remove_reservation_from_timecards(self, reservation: Reservation):
-        """Remove a reservation from the timecards. 
+        """Remove a reservation from all timecards. 
         
-        Useful when a request is served before the end_time and then early expired the reservation.
+        Useful when a request is served before its end_time and the reservation is early expired.
 
         Args:
             reservation (Reservation): reservation to remove from timecards.

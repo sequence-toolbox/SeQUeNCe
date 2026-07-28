@@ -321,13 +321,12 @@ class ResourceManager:
             for memory in protocol.memories:
                 self.update(protocol, memory, MemoryInfo.RAW)
 
-        # Update the memory associated with the rule to RAW, when it is not RAW (NOTE: might delete this)
+        # Update the memory associated with the rule to RAW
         memory_indices = rule.condition_args.get("memory_indices", ())
         for memory_index in memory_indices:
-            memory = self.memory_manager.memory_array[memory_index]
-            info = self.memory_manager.get_info_by_memory(memory)
+            info = self.memory_manager[memory_index]
             if info.state != MemoryInfo.RAW:
-                self.memory_manager.update(memory, MemoryInfo.RAW)
+                self.update(None, memory, MemoryInfo.RAW)
 
 
     def update(self, protocol: EntanglementProtocol | None, memory: Memory, state: str) -> None:
@@ -485,7 +484,7 @@ class ResourceManager:
     def memory_expire(self, memory: Memory):
         """Method to receive memory expiration events."""
 
-        self.update(None, memory, "RAW")
+        self.update(None, memory, MemoryInfo.RAW)
 
     def release_remote_protocol(self, dst: str, protocol: str) -> None:
         """Method to release protocols from memories on distant nodes.

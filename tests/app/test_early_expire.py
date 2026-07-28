@@ -1,5 +1,5 @@
 from collections import defaultdict
-from sequence.topology.node import Node, QuantumRouter
+from sequence.topology.node import QuantumRouter
 from sequence.app.request_app import RequestApp
 from sequence.network_management.reservation import Reservation
 from sequence.constants import MILLISECOND, SECOND
