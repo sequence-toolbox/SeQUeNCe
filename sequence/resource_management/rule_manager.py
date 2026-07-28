@@ -70,20 +70,21 @@ class RuleManager:
         self.rules.insert(left, rule)
         return True
 
-    def expire(self, rule: "Rule") -> list["EntanglementProtocol"]:
+    def expire(self, rule: "Rule") -> list["EntanglementProtocol"] | None:
         """Method to remove expired protocol.
 
         Args:
             rule (Rule): rule to remove.
 
         Returns:
-            list[EntanglementProtocol]: list of protocols created by rule (if any).
+            list[EntanglementProtocol] | None: list of protocols created by rule (if any).
                 Note that when a protocol finishes, it will be removed from rule.protocols.
+                If the rule is not found in the rule manager, None is returned.
         """
         if rule in self.rules:
             self.rules.remove(rule)
         else:
-            log.logger.info(f'{self.resource_manager.owner} rule not exist: {rule}')
+            return None
         return rule.protocols
 
     def get_memory_manager(self) -> MemoryManager:

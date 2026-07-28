@@ -140,8 +140,7 @@ class NetworkManager(ABC):
             reservation (Reservation): reservation to remove from timecards.
         """
         for timecard in self.timecards:
-            if reservation in timecard.reservations:
-                timecard.remove(reservation)
+            timecard.remove(reservation)
 
 
 @NetworkManager.register('distributed')
