@@ -324,7 +324,8 @@ class ResourceManager:
         # Update the memory associated with the rule to RAW
         memory_indices = rule.condition_args.get("memory_indices", ())
         for memory_index in memory_indices:
-            info = self.memory_manager[memory_index]
+            memory = self.memory_manager.memory_array[memory_index]
+            info = self.memory_manager.get_info_by_memory(memory)
             if info.state != MemoryInfo.RAW:
                 self.update(None, memory, MemoryInfo.RAW)
 
