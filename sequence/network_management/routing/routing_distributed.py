@@ -175,8 +175,8 @@ class NeighborFSM:
         last_hello_received (int): time of last hello received
         pending_requested (set[str]): which LSAs are requested but not yet received
         master (bool): whether this node is master in DBD exchange
-        scheduled_dbd_resend_event (Event): scheduled DBD retransmission event for the master,
-                                            to be canceled when receiving expected DBD from the slave or when neighbor goes down
+        scheduled_dbd_resend_event (Event): scheduled DBD retransmission event for the master,to be canceled 
+                                            when receiving expected DBD from the slave or when neighbor goes down
     """
 
     STATES = ["Down", "Init", "TwoWay", "ExStart", "Exchange", "Loading", "Full"]  # there are 7 states in total
@@ -570,15 +570,14 @@ class DistributedRoutingProtocol(RoutingProtocol):
             time = self.last_originated_time + self.MAX_AGE
             event = Event(time, process, priority=self.owner.timeline.schedule_counter)
             self.owner.timeline.schedule(event)
-        metrics.record(
-            EventTypes.LSA_ORIGINATED, self.owner.name, seq_number=lsa.header.seq_number, num_links=len(links)
-        )
+        metrics.record(EventTypes.LSA_ORIGINATED, self.owner.name, seq_number=lsa.header.seq_number, 
+                       num_links=len(links))
         return lsa
 
     def originate_withdrawal(self) -> LSA:
         """Originate a withdrawal LSA (MAX_AGE) for this router."""
-        now = self.owner.timeline.now()
-        header = LSAHeader(advertising_router=self.owner.name, seq_number=self.seq_number, originated_time=now - self.MAX_AGE)
+        origin_time = self.owner.timeline.now() - self.MAX_AGE
+        header = LSAHeader(advertising_router=self.owner.name, seq_number=self.seq_number, originated_time=origin_time)
         lsa = LSA(header=header, links=[])
         self.seq_number += 1
         return lsa
@@ -640,12 +639,8 @@ class DistributedRoutingProtocol(RoutingProtocol):
                             next_cur_nodes.append(p)
                 cur_nodes = next_cur_nodes
             if candidates:
-                forwarding_table[dst] = min(
-                    candidates
-                )  # choose the lexicographically smallest next hop
-        log.logger.info(
-            f"{self.owner.name}: Computed routing table: dist={dist}, forwarding_table={forwarding_table}"
-        )
+                forwarding_table[dst] = min(candidates)  # choose the lexicographically smallest next hop
+        log.logger.info(f"{self.owner.name}: Computed routing table: dist={dist}, forwarding_table={forwarding_table}")
         return forwarding_table
 
     def get_age(self, item: LSA | LSAHeader) -> int:
@@ -671,7 +666,8 @@ class DistributedRoutingProtocol(RoutingProtocol):
             lsa (LSA): LSA to be flooded.
             exclude_neighbor (str | None): neighbor to exclude from flooding.
         """
-        log.logger.debug(f"{self.owner.name}: Flooding {lsa} to neighbors {list(self.adj_cost.keys())}, excluding {exclude_neighbor}")
+        log.logger.debug(f"{self.owner.name}: Flooding {lsa} to neighbors {list(self.adj_cost.keys())}, "
+                         f"excluding {exclude_neighbor}")
         for neighbor in self.adj_cost.keys():
             if neighbor == exclude_neighbor:
                 continue
