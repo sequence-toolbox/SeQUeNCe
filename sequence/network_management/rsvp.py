@@ -162,13 +162,6 @@ class RSVPProtocol(StackProtocol):
                 if self.owner.name == msg.reservation.responder:
                     self.accepted_reservations.append(msg.reservation)
                     msg.reservation.set_path(path)
-                    metrics.record(
-                        EventTypes.RESERVATION_REACHED_RESPONDER,
-                        self.owner.name,
-                        initiator=msg.reservation.initiator,
-                        identity=msg.reservation.identity,
-                        path=path,
-                    )
                     new_msg = RSVPMessage(RSVPMsgType.APPROVE, self.name, msg.reservation, path=path)
                     self._pop(msg=new_msg)
                     self._push(dst=None, msg=new_msg, next_hop=src)

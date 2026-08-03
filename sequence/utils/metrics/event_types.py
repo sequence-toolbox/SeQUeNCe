@@ -165,15 +165,6 @@ class ReservationHopRejectData:
     path_so_far: list[str]
 
 
-@dataclass(frozen=True, slots=True)
-class ReservationReachedResponderData:
-    """Payload for a reservation reached responder event."""
-
-    initiator: str
-    identity: int
-    path: list[str]
-
-
 class EventTypes:
     """Namespace for built-in simulation event types."""
 
@@ -190,9 +181,6 @@ class EventTypes:
     RESERVATION_REJECTED = register_event_type("RESERVATION_REJECTED", ReservationRejectedData)
     RESERVATION_REQUESTED = register_event_type("RESERVATION_REQUESTED", ReservationRequestedData)
     RESERVATION_HOP_REJECT = register_event_type("RESERVATION_HOP_REJECT", ReservationHopRejectData)
-    RESERVATION_REACHED_RESPONDER = register_event_type(
-        "RESERVATION_REACHED_RESPONDER", ReservationReachedResponderData
-    )
 
     # Application Events #
     DELIVERY = register_event_type("DELIVERY", DeliveryData)
