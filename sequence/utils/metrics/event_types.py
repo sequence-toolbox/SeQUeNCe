@@ -174,50 +174,6 @@ class ReservationReachedResponderData:
     path: list[str]
 
 
-@dataclass(frozen=True, slots=True)
-class ForwardingTableMissData:
-    """Payload for a forwarding table miss event."""
-
-    dst: str
-
-
-@dataclass(frozen=True, slots=True)
-class NeighborDownData:
-    """Payload for a neighbor down event."""
-
-    neighbor: str
-
-
-@dataclass(frozen=True, slots=True)
-class NeighborFullData:
-    """Payload for a neighbor full adjacency event."""
-
-    neighbor: str
-
-
-@dataclass(frozen=True, slots=True)
-class RouteRecomputedData:
-    """Payload for a route recomputed event."""
-
-    num_routes: int
-
-
-@dataclass(frozen=True, slots=True)
-class LSAOriginatedData:
-    """Payload for an LSA originated event."""
-
-    seq_number: int
-    num_links: int
-
-
-@dataclass(frozen=True, slots=True)
-class LsdbUpdatedData:
-    """Payload for an LSDB updated event."""
-
-    src: str
-    num_updated_lsas: int
-
-
 class EventTypes:
     """Namespace for built-in simulation event types."""
 
@@ -234,17 +190,9 @@ class EventTypes:
     RESERVATION_REJECTED = register_event_type("RESERVATION_REJECTED", ReservationRejectedData)
     RESERVATION_REQUESTED = register_event_type("RESERVATION_REQUESTED", ReservationRequestedData)
     RESERVATION_HOP_REJECT = register_event_type("RESERVATION_HOP_REJECT", ReservationHopRejectData)
-    RESERVATION_REACHED_RESPONDER = register_event_type("RESERVATION_REACHED_RESPONDER", ReservationReachedResponderData)
-
-    # Forwarding
-    FORWARDING_TABLE_MISS = register_event_type("FORWARDING_TABLE_MISS", ForwardingTableMissData)
-
-    # Routing
-    NEIGHBOR_DOWN = register_event_type("NEIGHBOR_DOWN", NeighborDownData)
-    NEIGHBOR_FULL = register_event_type("NEIGHBOR_FULL", NeighborFullData)
-    ROUTE_RECOMPUTED = register_event_type("ROUTE_RECOMPUTED", RouteRecomputedData)
-    LSA_ORIGINATED = register_event_type("LSA_ORIGINATED", LSAOriginatedData)
-    LSDB_UPDATED = register_event_type("LSDB_UPDATED", LsdbUpdatedData)
+    RESERVATION_REACHED_RESPONDER = register_event_type(
+        "RESERVATION_REACHED_RESPONDER", ReservationReachedResponderData
+    )
 
     # Application Events #
     DELIVERY = register_event_type("DELIVERY", DeliveryData)
