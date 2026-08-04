@@ -42,7 +42,7 @@ class Metric(ABC):
     @property
     @abstractmethod
     def output_keys(self) -> frozenset[str]:
-        """Keys produced by ``collect()``.
+        """Keys produced by `collect()`.
 
         Returns:
             Frozen set of keys written into per-trial result dictionaries.
@@ -346,25 +346,25 @@ class DeliveryTimeMetric(Metric):
 
 @dataclass
 class BellPairUtilizationMetric(Metric):
-    """Bell pair utilization rate ``U = n_b / n_s``.
+    """Bell pair utilization rate `U = n_b / n_s`.
 
     Implements Eq. (7) of Ni et al. "Joint Optimization of Routing and
     Purification to Meet Fidelity Targets in Quantum Networks"
     (arXiv:2505.12459). It measures how many low-fidelity Bell pairs are
     consumed for every successfully established entanglement request.
 
-    * ``n_b`` is the total number of entanglement generation attempts
-      (``EG_SUCCESS`` + ``EG_FAILURE``) recorded for the owner node.
-    * ``n_s`` is the number of delivered pairs (``DELIVERY`` events) recorded
+    * `n_b` is the total number of entanglement generation attempts
+      (`EG_SUCCESS` + `EG_FAILURE`) recorded for the owner node.
+    * `n_s` is the number of delivered pairs (`DELIVERY` events) recorded
       for the delivery owner.
 
-    When ``reservation_id`` is ``None`` the metric aggregates over all
+    When `reservation_id` is `None` the metric aggregates over all
     reservations on the node. When set, only records tagged with the matching
     reservation identity are counted, giving per-reservation utilization.
 
     Attributes:
         key: Output key written into per-trial result dictionaries.
-        delivery_event: Event type used to count successful deliveries (``n_s``).
+        delivery_event: Event type used to count successful deliveries (`n_s`).
         reservation_id: Optional reservation identity used to filter records.
     """
 
@@ -385,11 +385,11 @@ class BellPairUtilizationMetric(Metric):
         """Compute the Bell pair utilization rate for the trial.
 
         Args:
-            ctx: Collection context with owner node (for ``n_b``), delivery
-                owner (for ``n_s``), and stored events.
+            ctx: Collection context with owner node (for `n_b`), delivery
+                owner (for `n_s`), and stored events.
 
         Returns:
-            Mapping with the configured key set to ``n_b / n_s``, or NaN if
+            Mapping with the configured key set to `n_b / n_s`, or NaN if
             there are no deliveries.
         """
         if self.delivery_event is None:
