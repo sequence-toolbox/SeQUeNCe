@@ -1,4 +1,5 @@
 from __future__ import annotations
+from sequence.app.app import App
 from sequence.kernel.process import Process
 from sequence.kernel.event import Event
 from sequence.topology.router_net_topo import RouterNetTopo
@@ -11,10 +12,9 @@ if TYPE_CHECKING:
     from sequence.topology.node import QuantumRouter
 
 
-class PeriodicApp:
+class PeriodicApp(App):
     def __init__(self, node: QuantumRouter, other: str, memory_size=25, target_fidelity=0.9):
-        self.node = node
-        self.node.set_app(self)
+        super().__init__(node)
         self.other = other
         self.memory_size = memory_size
         self.target_fidelity = target_fidelity
@@ -36,6 +36,9 @@ class PeriodicApp:
         else:
             print("Reservation failed at time", self.node.timeline.now() * 1e-12)
 
+    def get_other_reservation(self, reservation: "Reservation"):
+        pass
+
     def get_memory(self, info: "MemoryInfo"):
         if info.state == "ENTANGLED" and info.remote_node == self.other:
             print("\t{} app received memory {} ENTANGLED at time {}".format(
@@ -43,12 +46,14 @@ class PeriodicApp:
             self.node.resource_manager.update(None, info.memory, "RAW")
 
 
-class ResetApp:
+class ResetApp(App):
     def __init__(self, node, other_node_name, target_fidelity=0.9):
-        self.node = node
-        self.node.set_app(self)
+        super().__init__(node)
         self.other_node_name = other_node_name
         self.target_fidelity = target_fidelity
+
+    def get_reservation_result(self, reservation: "Reservation", result: bool):
+        pass
 
     def get_other_reservation(self, reservation):
         """called when receiving the request from the initiating node.

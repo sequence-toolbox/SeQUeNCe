@@ -10,6 +10,7 @@ if __name__ == "__main__":
     EntanglementGenerationA.set_global_type(SINGLE_HERALDED)
     EntanglementGenerationB.set_global_type(SINGLE_HERALDED)
 
+    # assume the current working directory is the SeQUeNCe repository root
     network_topo = RouterNetTopo(config_source="docs/source/tutorial/sequence3min/two_node.json")
     tl = network_topo.get_timeline()
 
