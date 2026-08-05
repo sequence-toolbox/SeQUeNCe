@@ -165,6 +165,15 @@ class ReservationHopRejectData:
     path_so_far: list[str]
 
 
+@dataclass(frozen=True, slots=True)
+class FidelityViolationData:
+    """Payload for a fidelity threshold violation event."""
+
+    fidelity: float
+    target_fidelity: float
+    identity: int
+
+
 class EventTypes:
     """Namespace for built-in simulation event types."""
 
@@ -184,3 +193,4 @@ class EventTypes:
 
     # Application Events #
     DELIVERY = register_event_type("DELIVERY", DeliveryData)
+    FIDELITY_VIOLATION = register_event_type("FIDELITY_VIOLATION", FidelityViolationData)
