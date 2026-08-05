@@ -48,6 +48,21 @@ def _delivery_kwargs(**overrides):
     }
 
 
+def _reservation_outcome_kwargs(**overrides):
+    return {
+        "identity": 1,
+        "initiator": "n1",
+        "responder": "n2",
+        "start_time": int(1e12),
+        "end_time": int(2e12),
+        "memory_size": 5,
+        "entanglement_number": 1,
+        "target_fidelity": 0.9,
+        "path": ["n1", "n2"],
+        **overrides,
+    }
+
+
 @pytest.fixture(autouse=True)
 def reset_metrics_state():
     metrics._enabled = False
@@ -536,4 +551,41 @@ def test_bell_pair_utilization_enable_records_eg_and_delivery():
     assert {record.event_type for record in records} == {
         EventTypes.EG_SUCCESS,
         EventTypes.DELIVERY,
+    }
+
+
+def test_admission_rate_computes_approved_over_total():
+    metrics.enable([metrics.ADMISSION_RATE_METRIC])
+
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs())
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs(identity=2))
+    metrics.record(EventTypes.RESERVATION_REJECTED, "n0", **_reservation_outcome_kwargs(identity=3, path=[]))
+    metrics.record(EventTypes.RESERVATION_APPROVED, "other", **_reservation_outcome_kwargs(identity=4))
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["admission_failures"] == 1
+    assert trial["admission_success"] == 2
+    assert trial["admission_success_rate"] == pytest.approx(2 / 3)
+
+
+def test_admission_rate_zero_without_outcomes():
+    metrics.enable([metrics.ADMISSION_RATE_METRIC])
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["admission_failures"] == 0
+    assert trial["admission_success"] == 0
+    assert trial["admission_success_rate"] == 0.0
+
+
+def test_admission_rate_enable_records_approved_and_rejected():
+    metrics.enable([metrics.ADMISSION_RATE_METRIC])
+
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs())
+    metrics.record(EventTypes.RESERVATION_REJECTED, "n0", **_reservation_outcome_kwargs(path=[]))
+
+    records = metrics.storage.get_all()
+    assert len(records) == 2
+    assert {record.event_type for record in records} == {
+        EventTypes.RESERVATION_APPROVED,
+        EventTypes.RESERVATION_REJECTED,
     }
