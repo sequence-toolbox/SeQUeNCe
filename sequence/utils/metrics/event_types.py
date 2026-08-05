@@ -166,6 +166,16 @@ class ReservationHopRejectData:
 
 
 @dataclass(frozen=True, slots=True)
+class MemoryUpdateData:
+    """Payload for a memory-state update event used for occupancy metrics."""
+
+    occupied_count: int
+    entangled_count: int
+    purified_count: int
+    total_memories: int
+
+
+@dataclass(frozen=True, slots=True)
 class FidelityViolationData:
     """Payload for a fidelity threshold violation event."""
 
@@ -191,6 +201,8 @@ class EventTypes:
     RESERVATION_REQUESTED = register_event_type("RESERVATION_REQUESTED", ReservationRequestedData)
     RESERVATION_HOP_REJECT = register_event_type("RESERVATION_HOP_REJECT", ReservationHopRejectData)
 
+    # Resource Management Events #
+    MEMORY_UPDATE = register_event_type("MEMORY_UPDATE", MemoryUpdateData)
     # Application Events #
     DELIVERY = register_event_type("DELIVERY", DeliveryData)
     FIDELITY_VIOLATION = register_event_type("FIDELITY_VIOLATION", FidelityViolationData)
