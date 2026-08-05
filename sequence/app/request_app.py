@@ -10,7 +10,8 @@ if TYPE_CHECKING:
 from .app import App
 from ..kernel.event import Event
 from ..kernel.process import Process
-from ..utils import log
+from ..utils import log, metrics
+from ..utils.metrics.event_types import EventTypes
 
 
 class RequestApp(App):
@@ -135,9 +136,40 @@ class RequestApp(App):
 
         if info.index in self.memo_to_reservation:
             reservation = self.memo_to_reservation[info.index]
-            if info.remote_node == reservation.initiator and info.fidelity >= reservation.fidelity:
+            remote_is_peer = (
+                info.remote_node == reservation.initiator
+                or info.remote_node == reservation.responder
+            )
+            if not remote_is_peer:
+                return
+
+            if info.fidelity < reservation.fidelity:
+                metrics.record(
+                    EventTypes.FIDELITY_VIOLATION,
+                    self.node.name,
+                    fidelity=info.fidelity,
+                    target_fidelity=reservation.fidelity,
+                    identity=reservation.identity,
+                )
+                return
+
+            metrics.record(
+                EventTypes.DELIVERY,
+                self.node.name,
+                fidelity=info.fidelity,
+                identity=reservation.identity,
+                initiator=reservation.initiator,
+                responder=reservation.responder,
+                start_time=reservation.start_time,
+                end_time=reservation.end_time,
+                memory_size=reservation.memory_size,
+                entanglement_number=reservation.entanglement_number,
+                target_fidelity=reservation.fidelity,
+                path=list(reservation.path),
+            )
+            if info.remote_node == reservation.initiator:
                 self.node.resource_manager.update(None, info.memory, "RAW")
-            elif info.remote_node == reservation.responder and info.fidelity >= reservation.fidelity:
+            elif info.remote_node == reservation.responder:
                 self.memory_counter += 1
                 log.logger.info(f"Successfully generated entanglement. Counter is at {self.memory_counter}.")
                 self.node.resource_manager.update(None, info.memory, "RAW")
