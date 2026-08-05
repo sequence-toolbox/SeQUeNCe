@@ -72,7 +72,6 @@ TIME_TO_SERVE_METRIC = TimeToServeMetric(
     key="time_to_serve",
     delivery_event=EventTypes.DELIVERY,
 )
-# Ni et al., QCNC 2026, doi: 10.1109/QCNC69040.2026.00044
 BELL_PAIR_UTILIZATION_METRIC = BellPairUtilizationMetric(
     key="bell_pair_utilization",
     pair_event=EventTypes.EG_SUCCESS,
