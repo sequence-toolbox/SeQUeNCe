@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 from . import builtins
 from .builtins import (
+    BELL_PAIR_UTILIZATION_METRIC,
     DELIVERY_TIME_METRIC,
     EG_METRIC,
     EP_METRIC,
@@ -30,6 +31,7 @@ from .event_types import (
     register_event_type,
 )
 from .metric_types import (
+    BellPairUtilizationMetric,
     CollectContext,
     CounterMetric,
     DeliveryTimeMetric,
@@ -227,6 +229,7 @@ builtins.register_builtin_metrics()
 # Exported symbols
 __all__ = [
     # From builtins
+    "BELL_PAIR_UTILIZATION_METRIC",
     "DELIVERY_TIME_METRIC",
     "EG_METRIC",
     "EP_METRIC",
@@ -240,6 +243,7 @@ __all__ = [
     "list_event_types",
     "register_event_type",
     # From metric_types
+    "BellPairUtilizationMetric",
     "CollectContext",
     "CounterMetric",
     "DeliveryTimeMetric",

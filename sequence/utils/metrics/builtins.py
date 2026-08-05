@@ -3,7 +3,14 @@
 from __future__ import annotations
 
 from .event_types import EventTypes
-from .metric_types import CounterMetric, DeliveryTimeMetric, EventAttributeMetric, Metric, ThroughputMetric
+from .metric_types import (
+    BellPairUtilizationMetric,
+    CounterMetric,
+    DeliveryTimeMetric,
+    EventAttributeMetric,
+    Metric,
+    ThroughputMetric,
+)
 from .registry import register_metric
 
 # Entanglement Management Metrics
@@ -55,14 +62,16 @@ DELIVERY_TIME_METRIC = DeliveryTimeMetric(
     key="delivery_time",
     delivery_event=EventTypes.DELIVERY,
 )
+# Ni et al., QCNC 2026, doi: 10.1109/QCNC69040.2026.00044
+BELL_PAIR_UTILIZATION_METRIC = BellPairUtilizationMetric(
+    key="bell_pair_utilization",
+    pair_event=EventTypes.EG_SUCCESS,
+    delivery_event=EventTypes.DELIVERY,
+)
 
 
 def register_builtin_metrics() -> None:
-    """Register all built-in metrics with the global registry.
-
-    Registers entanglement generation, purification, swapping, throughput,
-    fidelity, and delivery-time metrics defined in this module.
-    """
+    """Register all built-in metrics with the global registry."""
 
     BUILTIN_METRICS: list[Metric] = [
         EG_METRIC,
@@ -72,6 +81,7 @@ def register_builtin_metrics() -> None:
         SWAPPED_FIDELITIES_METRIC,
         THROUGHPUT_METRIC,
         DELIVERY_TIME_METRIC,
+        BELL_PAIR_UTILIZATION_METRIC,
     ]
 
     for metric in BUILTIN_METRICS:

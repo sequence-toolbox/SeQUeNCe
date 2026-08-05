@@ -306,3 +306,61 @@ class DeliveryTimeMetric(Metric):
         target_time = delivery_records[ctx.target_pairs - 1].sim_time
 
         return {self.key: (target_time - start_time) * 1e-12}
+
+
+@dataclass
+class BellPairUtilizationMetric(Metric):
+    """Bell pair utilization rate U = n_b / n_s.
+
+    In SeQUeNCe, n_b is the number of recorded pair-generation successes
+    (``pair_event``, typically ``EG_SUCCESS``) across storage, and n_s is
+    the number of recorded deliveries (``delivery_event``) for the delivery
+    owner.
+
+    Defined in G. Ni, H. Claussen and L. Ho, "Joint Optimization of Routing
+    and Purification to Meet Fidelity Targets in Quantum Networks," 2026
+    International Conference on Quantum Communications, Networking, and
+    Computing (QCNC), Kobe, Japan, 2026, pp. 259-263,
+    doi: 10.1109/QCNC69040.2026.00044.
+    """
+
+    key: str
+    pair_event: EventType
+    delivery_event: EventType
+    __hash__ = object.__hash__
+
+    @property
+    def event_types(self) -> frozenset[EventType]:
+        return frozenset({self.pair_event, self.delivery_event})
+
+    @property
+    def output_keys(self) -> frozenset[str]:
+        return frozenset({self.key})
+
+    @override
+    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
+        """Compute bell pair utilization U = n_b / n_s.
+
+        Here n_b is the number of ``pair_event`` records across all owners in
+        storage (generated low-fidelity Bell pairs), and n_s is the number of
+        ``delivery_event`` records for the delivery owner (successfully
+        established entanglement deliveries). Returns NaN when n_s is 0.
+
+        Args:
+            owner_name: Node name for metrics to be collected.
+            storage: In-memory store of recorded events for the trial.
+            ctx: Collection context; ``delivery_owner`` selects which node's
+                deliveries count toward n_s (defaults to ``owner_name``).
+
+        Returns:
+            Mapping with the configured key to U, or NaN if there are no deliveries.
+        """
+        delivery_owner = ctx.delivery_owner or owner_name
+        n_b = len(storage.get_by_event(self.pair_event))
+        n_s = len([
+            record for record in storage.get_by_owner(delivery_owner)
+            if record.event_type == self.delivery_event
+        ])
+        if n_s == 0:
+            return {self.key: float("nan")}
+        return {self.key: n_b / n_s}
