@@ -202,6 +202,7 @@ class EventTypes:
     EP_SUCCESS = register_event_type("EP_SUCCESS", EPSuccessData)
     ES_FAILURE = register_event_type("ES_FAILURE", ESFailureData)
     ES_SUCCESS = register_event_type("ES_SUCCESS", ESSuccessData)
+    SWAP_FIDELITY_VIOLATION = register_event_type("SWAP_FIDELITY_VIOLATION", FidelityViolationData)
 
     # Network Management Events #
     RESERVATION_APPROVED = register_event_type("RESERVATION_APPROVED", ReservationApprovedData)
@@ -215,4 +216,4 @@ class EventTypes:
 
     # Application Events #
     DELIVERY = register_event_type("DELIVERY", DeliveryData)
-    FIDELITY_VIOLATION = register_event_type("FIDELITY_VIOLATION", FidelityViolationData)
+    DELIVERY_FIDELITY_VIOLATION = register_event_type("DELIVERY_FIDELITY_VIOLATION", FidelityViolationData)
