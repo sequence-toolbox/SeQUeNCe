@@ -499,3 +499,41 @@ def test_register_metric_rejects_duplicate_output_keys():
     )
     with pytest.raises(ValueError, match="already registered"):
         metrics.register_metric(duplicate)
+
+
+def test_bell_pair_utilization_computes_eg_over_deliveries():
+    metrics.enable([metrics.BELL_PAIR_UTILIZATION_METRIC])
+
+    metrics.record(EventTypes.EG_SUCCESS, "left", **_eg_success_kwargs())
+    metrics.record(EventTypes.EG_SUCCESS, "right", **_eg_success_kwargs())
+    metrics.record(EventTypes.EG_SUCCESS, "mid", **_eg_success_kwargs())
+    metrics.record(EventTypes.EG_SUCCESS, "mid", **_eg_success_kwargs())
+    metrics.record(EventTypes.DELIVERY, "right", **_delivery_kwargs())
+    metrics.record(EventTypes.DELIVERY, "right", **_delivery_kwargs(fidelity=0.91))
+
+    trial = metrics.collect_trial_metrics("left", delivery_owner="right")
+    # n_b = 4 EG_SUCCESS (all owners), n_s = 2 DELIVERY on right
+    assert trial["bell_pair_utilization"] == pytest.approx(4 / 2)
+
+
+def test_bell_pair_utilization_nan_without_deliveries():
+    metrics.enable([metrics.BELL_PAIR_UTILIZATION_METRIC])
+
+    metrics.record(EventTypes.EG_SUCCESS, "e0", **_eg_success_kwargs())
+
+    trial = metrics.collect_trial_metrics("e0")
+    assert math.isnan(trial["bell_pair_utilization"])
+
+
+def test_bell_pair_utilization_enable_records_eg_and_delivery():
+    metrics.enable([metrics.BELL_PAIR_UTILIZATION_METRIC])
+
+    metrics.record(EventTypes.EG_SUCCESS, "e0", **_eg_success_kwargs())
+    metrics.record(EventTypes.DELIVERY, "e0", **_delivery_kwargs())
+
+    records = metrics.storage.get_all()
+    assert len(records) == 2
+    assert {record.event_type for record in records} == {
+        EventTypes.EG_SUCCESS,
+        EventTypes.DELIVERY,
+    }
