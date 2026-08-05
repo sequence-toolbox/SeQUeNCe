@@ -496,7 +496,19 @@ class ResourceManager:
 
     def memory_expire(self, memory: Memory):
         """Method to receive memory expiration events."""
-
+        memo_info = self.memory_manager.get_info_by_memory(memory)
+        identity = None
+        app = getattr(self.owner, "app", None)
+        if app is not None:
+            reservation = getattr(app, "memo_to_reservation", {}).get(memo_info.index)
+            if reservation is not None:
+                identity = reservation.identity
+        metrics.record(
+            EventTypes.MEMORY_EXPIRED,
+            self.owner.name,
+            memory_index=memo_info.index,
+            identity=identity,
+        )
         self.update(None, memory, "RAW")
 
     def release_remote_protocol(self, dst: str, protocol: str) -> None:

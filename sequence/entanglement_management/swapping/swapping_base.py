@@ -241,6 +241,7 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
             Will invoke `release_remote_protocol` or `release_remote_memory` method of resource manager.
         """
         assert self.is_ready() is False
+        self.record_memory_expired(memory)
         if self.left_protocol_name:
             self.release_remote_protocol(self.left_node)
         else:
@@ -375,6 +376,7 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
             Will update memory in attached resource manager.
         """
 
+        self.record_memory_expired(memory)
         self.update_resource_manager(self.memory, MemoryInfo.RAW)
 
     def release(self) -> None:

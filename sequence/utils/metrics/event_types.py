@@ -176,6 +176,14 @@ class MemoryUpdateData:
 
 
 @dataclass(frozen=True, slots=True)
+class MemoryExpiredData:
+    """Payload for a memory decoherence/expiry event."""
+
+    memory_index: int
+    identity: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class FidelityViolationData:
     """Payload for a fidelity threshold violation event."""
 
@@ -203,6 +211,8 @@ class EventTypes:
 
     # Resource Management Events #
     MEMORY_UPDATE = register_event_type("MEMORY_UPDATE", MemoryUpdateData)
+    MEMORY_EXPIRED = register_event_type("MEMORY_EXPIRED", MemoryExpiredData)
+
     # Application Events #
     DELIVERY = register_event_type("DELIVERY", DeliveryData)
     FIDELITY_VIOLATION = register_event_type("FIDELITY_VIOLATION", FidelityViolationData)

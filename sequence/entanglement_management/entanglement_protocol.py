@@ -8,6 +8,8 @@ if TYPE_CHECKING:
     from ..components.memory import Memory
 
 from ..protocol import Protocol
+from ..utils import metrics
+from ..utils.metrics.event_types import EventTypes
 
 
 class EntanglementProtocol(Protocol):
@@ -80,3 +82,15 @@ class EntanglementProtocol(Protocol):
 
         self.owner.resource_manager.update(self, memory, state)
 
+    def record_memory_expired(self, memory: "Memory") -> None:
+        """Record a MEMORY_EXPIRED metrics event for the given memory."""
+        memo_info = self.owner.resource_manager.memory_manager.get_info_by_memory(memory)
+        identity = None
+        if self.rule is not None and self.rule.reservation is not None:
+            identity = self.rule.reservation.identity
+        metrics.record(
+            EventTypes.MEMORY_EXPIRED,
+            self.owner.name,
+            memory_index=memo_info.index,
+            identity=identity,
+        )
