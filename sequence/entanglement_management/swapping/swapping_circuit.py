@@ -92,6 +92,18 @@ class EntanglementSwappingA_Circuit(EntanglementSwappingA):
                 right_node=self.right_node,
                 fidelity=fidelity,
             )
+            if (
+                self.rule is not None
+                and self.rule.reservation is not None
+                and fidelity < self.rule.reservation.fidelity
+            ):
+                metrics.record(
+                    EventTypes.SWAP_FIDELITY_VIOLATION,
+                    self.owner.name,
+                    fidelity=fidelity,
+                    target_fidelity=self.rule.reservation.fidelity,
+                    identity=self.rule.reservation.identity,
+                )
             self.is_success = True
 
             expire_time = min(self.left_memo.get_expire_time(), self.right_memo.get_expire_time())
