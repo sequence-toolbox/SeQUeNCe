@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 from . import builtins
 from .builtins import (
+    ADMISSION_RATE_METRIC,
     BELL_PAIR_UTILIZATION_METRIC,
     DELIVERY_TIME_METRIC,
     EG_METRIC,
@@ -229,6 +230,7 @@ builtins.register_builtin_metrics()
 # Exported symbols
 __all__ = [
     # From builtins
+    "ADMISSION_RATE_METRIC",
     "BELL_PAIR_UTILIZATION_METRIC",
     "DELIVERY_TIME_METRIC",
     "EG_METRIC",

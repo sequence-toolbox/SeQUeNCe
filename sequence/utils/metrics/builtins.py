@@ -44,12 +44,22 @@ SWAPPED_FIDELITIES_METRIC = EventAttributeMetric(
 )
 
 # Network Management Metrics
-RESERVATION_APPROVAL_RATE = CounterMetric(
-    prefix="reservation_approval",
+ADMISSION_RATE_METRIC = CounterMetric(
+    prefix="admission",
     failure_event=EventTypes.RESERVATION_REJECTED,
     success_event=EventTypes.RESERVATION_APPROVED,
-    rate_field="reservation_approval_rate",
+    rate_field="admission_rate",
 )
+ADMISSION_RATE_METRIC.__doc__ = """Admission rate = n_approved / (n_approved + n_rejected).
+
+In SeQUeNCe, n_approved is ``RESERVATION_APPROVED`` and n_rejected is
+``RESERVATION_REJECTED``. The collected ``admission_success_rate`` is the
+admission rate (fraction of reservation requests that are approved).
+
+Defined in C. Cicconetti, M. Conti and A. Passarella, "Quality of Service
+in Quantum Networks," in IEEE Network, vol. 36, no. 5, pp. 24-31,
+September/October 2022, doi: 10.1109/MNET.001.2200163.
+"""
 
 # Resource Management Metrics
 
@@ -79,6 +89,7 @@ def register_builtin_metrics() -> None:
         ES_METRIC,
         PURIFIED_FIDELITIES_METRIC,
         SWAPPED_FIDELITIES_METRIC,
+        ADMISSION_RATE_METRIC,
         THROUGHPUT_METRIC,
         DELIVERY_TIME_METRIC,
         BELL_PAIR_UTILIZATION_METRIC,
