@@ -80,7 +80,7 @@ class TeleportApp(RequestApp):
                 reservation = self.memo_to_reservation[info.index]
                 if info.fidelity < reservation.fidelity:
                     metrics.record(
-                        EventTypes.FIDELITY_VIOLATION,
+                        EventTypes.DELIVERY_FIDELITY_VIOLATION,
                         self.node.name,
                         fidelity=info.fidelity,
                         target_fidelity=reservation.fidelity,

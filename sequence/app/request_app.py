@@ -145,7 +145,7 @@ class RequestApp(App):
 
             if info.fidelity < reservation.fidelity:
                 metrics.record(
-                    EventTypes.FIDELITY_VIOLATION,
+                    EventTypes.DELIVERY_FIDELITY_VIOLATION,
                     self.node.name,
                     fidelity=info.fidelity,
                     target_fidelity=reservation.fidelity,
