@@ -16,8 +16,8 @@ class CollectContext:
     """Context passed to metrics when collecting trial results.
 
     Attributes:
-        delivery_owner: Node name for delivery-time metrics.
-        target_pairs: Number of delivered pairs required to compute delivery time.
+        delivery_owner: Node name for time-to-serve and throughput delivery lookup.
+        target_pairs: Number of delivered pairs required to compute time to serve.
     """
 
     delivery_owner: str | None = None
@@ -264,8 +264,18 @@ class EventAttributeMetric(Metric):
 
 
 @dataclass
-class DeliveryTimeMetric(Metric):
-    """Time to deliver N pairs relative to reservation start."""
+class TimeToServeMetric(Metric):
+    """On-demand end-to-end latency (time to serve) for delivered entangled pairs.
+
+    In SeQUeNCe, time to serve is ``(sim_time of N-th DELIVERY − reservation.start_time)``
+    in seconds, with ``N = target_pairs``. For ``target_pairs=1``, this is the
+    on-demand latency from request/service start until one EPR pair is distributed.
+
+    Defined in A. Zang, J. Chung, R. Kettimuthu, M. Suchara and T. Zhong,
+    "Analytical Performance Estimations for Quantum Repeater Network Scenarios,"
+    2024 IEEE International Conference on Quantum Computing and Engineering (QCE),
+    Montreal, QC, Canada, 2024, pp. 1960-1966, doi: 10.1109/QCE60285.2024.00226.
+    """
 
     key: str
     delivery_event: EventType
@@ -281,15 +291,20 @@ class DeliveryTimeMetric(Metric):
 
     @override
     def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
-        """Compute elapsed time to deliver the target number of pairs.
+        """Compute time to serve from reservation start to the N-th delivery.
+
+        Returns ``(sim_time of N-th delivery − reservation.start_time)`` in
+        seconds, where ``N = ctx.target_pairs``. Returns NaN if there are no
+        deliveries, ``target_pairs`` is unset, or fewer than ``N`` deliveries
+        were recorded.
 
         Args:
             owner_name: Node name for metrics to be collected.
             storage: In-memory store of recorded events for the trial.
-            ctx: Collection context with delivery owner, target pair count.
+            ctx: Collection context with delivery owner and target pair count.
 
         Returns:
-            Mapping with delivery time in seconds, or NaN if data is insufficient.
+            Mapping with time to serve in seconds, or NaN if data is insufficient.
         """
         delivery_owner = ctx.delivery_owner or owner_name
         delivery_records = [

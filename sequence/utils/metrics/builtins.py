@@ -6,10 +6,10 @@ from .event_types import EventTypes
 from .metric_types import (
     BellPairUtilizationMetric,
     CounterMetric,
-    DeliveryTimeMetric,
     EventAttributeMetric,
     Metric,
     ThroughputMetric,
+    TimeToServeMetric,
 )
 from .registry import register_metric
 
@@ -68,8 +68,8 @@ THROUGHPUT_METRIC = ThroughputMetric(
     key="app_throughput",
     delivery_event=EventTypes.DELIVERY,
 )
-DELIVERY_TIME_METRIC = DeliveryTimeMetric(
-    key="delivery_time",
+TIME_TO_SERVE_METRIC = TimeToServeMetric(
+    key="time_to_serve",
     delivery_event=EventTypes.DELIVERY,
 )
 # Ni et al., QCNC 2026, doi: 10.1109/QCNC69040.2026.00044
@@ -91,7 +91,7 @@ def register_builtin_metrics() -> None:
         SWAPPED_FIDELITIES_METRIC,
         ADMISSION_RATE_METRIC,
         THROUGHPUT_METRIC,
-        DELIVERY_TIME_METRIC,
+        TIME_TO_SERVE_METRIC,
         BELL_PAIR_UTILIZATION_METRIC,
     ]
 

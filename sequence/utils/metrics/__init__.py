@@ -17,13 +17,13 @@ from . import builtins
 from .builtins import (
     ADMISSION_RATE_METRIC,
     BELL_PAIR_UTILIZATION_METRIC,
-    DELIVERY_TIME_METRIC,
     EG_METRIC,
     EP_METRIC,
     ES_METRIC,
     PURIFIED_FIDELITIES_METRIC,
     SWAPPED_FIDELITIES_METRIC,
     THROUGHPUT_METRIC,
+    TIME_TO_SERVE_METRIC,
 )
 from .event_types import (
     EventType,
@@ -35,10 +35,10 @@ from .metric_types import (
     BellPairUtilizationMetric,
     CollectContext,
     CounterMetric,
-    DeliveryTimeMetric,
     EventAttributeMetric,
     Metric,
     ThroughputMetric,
+    TimeToServeMetric,
 )
 from .registry import (
     clear_registry,
@@ -160,8 +160,8 @@ def collect_trial_metrics(
 
     Args:
         owner_name: Node name to collect metrics for.
-        delivery_owner: Node name used for delivery-time metrics; defaults to `owner_name`.
-        target_pairs: Number of delivered pairs required to compute delivery time.
+        delivery_owner: Node name used for time-to-serve metrics; defaults to `owner_name`.
+        target_pairs: Number of delivered pairs required to compute time to serve.
 
     Returns:
         Mapping of metric output keys to per-trial values.
@@ -232,13 +232,13 @@ __all__ = [
     # From builtins
     "ADMISSION_RATE_METRIC",
     "BELL_PAIR_UTILIZATION_METRIC",
-    "DELIVERY_TIME_METRIC",
     "EG_METRIC",
     "EP_METRIC",
     "ES_METRIC",
     "PURIFIED_FIDELITIES_METRIC",
     "SWAPPED_FIDELITIES_METRIC",
     "THROUGHPUT_METRIC",
+    "TIME_TO_SERVE_METRIC",
     # From event_types
     "EventType",
     "EventTypes",
@@ -248,10 +248,10 @@ __all__ = [
     "BellPairUtilizationMetric",
     "CollectContext",
     "CounterMetric",
-    "DeliveryTimeMetric",
     "EventAttributeMetric",
     "Metric",
     "ThroughputMetric",
+    "TimeToServeMetric",
     # From registry
     "clear_registry",
     "get_counter",
