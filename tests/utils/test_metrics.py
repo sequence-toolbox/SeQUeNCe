@@ -251,7 +251,7 @@ def test_collect_trial_metrics_computes_throughput_from_deliveries():
     timeline = Timeline(int(1e12))
     timeline.time = int(1e12)
     metrics.register_time_provider(timeline)
-    metrics.enable([metrics.DELIVERY_TIME_METRIC, metrics.THROUGHPUT_METRIC])
+    metrics.enable([metrics.TIME_TO_SERVE_METRIC, metrics.THROUGHPUT_METRIC])
 
     metrics.record(EventTypes.DELIVERY, "right", **_delivery_kwargs())
     timeline.time = int(2e12)
@@ -309,7 +309,7 @@ def test_collect_trial_metrics_swapped_fidelities():
 
 
 def test_delivery_does_not_affect_ep_counters():
-    metrics.enable([metrics.EP_METRIC, metrics.DELIVERY_TIME_METRIC])
+    metrics.enable([metrics.EP_METRIC, metrics.TIME_TO_SERVE_METRIC])
 
     metrics.record(EventTypes.EP_SUCCESS, "left", **_ep_success_kwargs(fidelity=0.8))
     metrics.record(EventTypes.DELIVERY, "right", **_delivery_kwargs(fidelity=0.8))
@@ -319,7 +319,7 @@ def test_delivery_does_not_affect_ep_counters():
     assert ep.failures("right") == 0
 
 
-def test_collect_trial_metrics_ep_fields_and_delivery_time():
+def test_collect_trial_metrics_ep_fields_and_time_to_serve():
     class AdvancingTimeline(Timeline):
         def __init__(self) -> None:
             super().__init__(int(1e12))
@@ -331,7 +331,7 @@ def test_collect_trial_metrics_ep_fields_and_delivery_time():
             return current
 
     metrics.register_time_provider(AdvancingTimeline())
-    metrics.enable([metrics.EP_METRIC, metrics.DELIVERY_TIME_METRIC, metrics.PURIFIED_FIDELITIES_METRIC, metrics.THROUGHPUT_METRIC])
+    metrics.enable([metrics.EP_METRIC, metrics.TIME_TO_SERVE_METRIC, metrics.PURIFIED_FIDELITIES_METRIC, metrics.THROUGHPUT_METRIC])
 
     metrics.record(EventTypes.EP_SUCCESS, "left", **_ep_success_kwargs(fidelity=0.7))
     metrics.record(EventTypes.EP_SUCCESS, "left", **_ep_success_kwargs(fidelity=0.75))
@@ -351,12 +351,12 @@ def test_collect_trial_metrics_ep_fields_and_delivery_time():
 
     assert trial["ep_success"] == 2
     assert trial["purified_fidelities"] == [0.7, 0.75]
-    assert trial["delivery_time"] == pytest.approx(0.4)
+    assert trial["time_to_serve"] == pytest.approx(0.4)
     assert trial["app_throughput"] == pytest.approx(7.5)
 
 
-def test_collect_trial_metrics_delivery_time_nan_when_target_not_reached():
-    metrics.enable([metrics.DELIVERY_TIME_METRIC])
+def test_collect_trial_metrics_time_to_serve_nan_when_target_not_reached():
+    metrics.enable([metrics.TIME_TO_SERVE_METRIC])
     metrics.record(EventTypes.DELIVERY, "right", **_delivery_kwargs())
 
     trial = metrics.collect_trial_metrics(
@@ -365,11 +365,11 @@ def test_collect_trial_metrics_delivery_time_nan_when_target_not_reached():
         target_pairs=500,
     )
 
-    assert math.isnan(trial["delivery_time"])
+    assert math.isnan(trial["time_to_serve"])
 
 
 def test_collect_trial_metrics_delivery_owner_defaults_to_owner():
-    metrics.enable([metrics.DELIVERY_TIME_METRIC])
+    metrics.enable([metrics.TIME_TO_SERVE_METRIC])
     metrics.record(
         EventTypes.DELIVERY,
         "right",
@@ -381,7 +381,7 @@ def test_collect_trial_metrics_delivery_owner_defaults_to_owner():
         target_pairs=1,
     )
 
-    assert not math.isnan(trial["delivery_time"])
+    assert not math.isnan(trial["time_to_serve"])
 
 
 def test_aggregate_trial_metrics_computes_avg_and_std():
@@ -448,12 +448,12 @@ def test_aggregate_trial_metrics_flattens_purified_fidelities():
         {
             "ep_success_rate": 0.6,
             "purified_fidelities": [0.7, 0.75],
-            "delivery_time": 10.0,
+            "time_to_serve": 10.0,
         },
         {
             "ep_success_rate": 0.7,
             "purified_fidelities": [0.8],
-            "delivery_time": 9.0,
+            "time_to_serve": 9.0,
         },
     ]
 
@@ -461,19 +461,19 @@ def test_aggregate_trial_metrics_flattens_purified_fidelities():
 
     assert aggregated["avg_purified_fidelities"] == pytest.approx(0.75)
     assert aggregated["std_purified_fidelities"] == pytest.approx(0.05)
-    assert aggregated["avg_delivery_time"] == 9.5
+    assert aggregated["avg_time_to_serve"] == 9.5
 
 
-def test_aggregate_trial_metrics_handles_nan_delivery_time():
+def test_aggregate_trial_metrics_handles_nan_time_to_serve():
     trials = [
-        {"delivery_time": float("nan"), "purified_fidelities": [0.7]},
-        {"delivery_time": 12.0, "purified_fidelities": [0.8]},
+        {"time_to_serve": float("nan"), "purified_fidelities": [0.7]},
+        {"time_to_serve": 12.0, "purified_fidelities": [0.8]},
     ]
 
     aggregated = metrics.aggregate_trial_metrics(trials)
 
-    assert aggregated["avg_delivery_time"] == 12.0
-    assert aggregated["std_delivery_time"] == 0.0
+    assert aggregated["avg_time_to_serve"] == 12.0
+    assert aggregated["std_time_to_serve"] == 0.0
 
 
 def test_register_event_type_is_idempotent():
