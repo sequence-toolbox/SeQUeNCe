@@ -307,6 +307,75 @@ def test_DEJMPS_BDS_matches_dejmps_recurrence_for_bell_diagonal_states():
     assert purified_bds == pytest.approx(expected_bds)
     assert np.sum(purified_bds) == pytest.approx(1)
 
+
+# Pure Bell states in SeQUeNCe BDS order:
+# 0 = Phi+, 1 = Phi-, 2 = Psi+, 3 = Psi-.
+PURE_BDS_STATES = np.eye(4)
+
+# Independent ideal DEJMPS transition table obtained from the protocol's
+# bilateral rotations, bilateral CNOTs, and equal-outcome postselection.
+# Entries not listed here fail postselection with probability 1.
+DEJMPS_PURE_STATE_TRANSITIONS = {
+    (0, 0): 0,
+    (0, 3): 1,
+    (3, 0): 1,
+    (3, 3): 0,
+    (2, 2): 2,
+    (2, 1): 3,
+    (1, 2): 3,
+    (1, 1): 2,
+}
+
+
+@pytest.mark.parametrize(
+    ("kept_index", "meas_index"),
+    [
+        (kept_index, meas_index)
+        for kept_index in range(4)
+        for meas_index in range(4)
+    ],
+)
+def test_DEJMPS_BDS_matches_pure_bell_state_transition_table(
+    kept_index, meas_index
+):
+    """Check all 16 ideal pure-Bell input combinations independently."""
+    kept_state = PURE_BDS_STATES[kept_index]
+    meas_state = PURE_BDS_STATES[meas_index]
+
+    expected_output_index = DEJMPS_PURE_STATE_TRANSITIONS.get(
+        (kept_index, meas_index)
+    )
+
+    if expected_output_index is None:
+        # No successful branch exists, so the conditional output state is
+        # undefined and purification_res() normalizes a zero vector by zero.
+        with np.errstate(divide="ignore", invalid="ignore"):
+            protocol, (p_success, purified_bds) = bds_protocol_result(
+                DEJMPS_BDS,
+                kept_state,
+                meas_state,
+                input_fidelity=kept_state[0],
+            )
+    else:
+        protocol, (p_success, purified_bds) = bds_protocol_result(
+            DEJMPS_BDS,
+            kept_state,
+            meas_state,
+            input_fidelity=kept_state[0],
+        )
+
+    assert protocol.is_twirled is False
+
+    if expected_output_index is None:
+        assert p_success == pytest.approx(0)
+        return
+
+    assert p_success == pytest.approx(1)
+    assert purified_bds == pytest.approx(
+        PURE_BDS_STATES[expected_output_index]
+    )
+
+
 def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline, Memory, Memory, Memory, Memory, BBPSSWProtocol, BBPSSWProtocol]:
     """create the whole quantum network (timeline, nodes, channels, memory, protocols)
     """
