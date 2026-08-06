@@ -465,6 +465,83 @@ class ReservationSuccessRateMetric(Metric):
 
 
 @dataclass
+class JainFairnessIndexMetric(Metric):
+    """Jain's fairness index over per-reservation delivery allocations.
+
+    Computes
+    ``J = (sum x_i)^2 / (n * sum x_i^2)`` where each ``x_i`` is the number of
+    ``delivery_event`` records (typically ``DELIVERY``) for a unique
+    reservation ``identity`` from ``approved_event`` records (typically
+    ``RESERVATION_APPROVED``). Approved identities with no deliveries get
+    ``x_i = 0`` so starvation is reflected. The index is network-wide.
+
+    Defined in R. Jain, D. Chiu, and W. Hawe, "A Quantitative Measure Of
+    Fairness And Discrimination For Resource Allocation In Shared Computer
+    Systems," Sep. 24, 1998, arXiv:cs/9809099.
+    doi: 10.48550/arXiv.cs/9809099.
+
+    Used for multi-tenant equity in C. Tian et al., "RADAR-Q: Resource-Aware
+    Distributed Asynchronous Routing for Entanglement Distribution in
+    Multi-Tenant Quantum Networks," arXiv:2603.27570, 2026.
+    """
+
+    key: str
+    approved_event: EventType
+    delivery_event: EventType
+    __hash__ = object.__hash__
+
+    @property
+    def event_types(self) -> frozenset[EventType]:
+        return frozenset({self.approved_event, self.delivery_event})
+
+    @property
+    def output_keys(self) -> frozenset[str]:
+        return frozenset({self.key})
+
+    @override
+    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
+        """Compute Jain's fairness index over reservation delivery counts.
+
+        Builds the set of unique ``identity`` values from all
+        ``approved_event`` records in storage. For each identity, ``x_i`` is
+        the number of ``delivery_event`` records with that identity
+        (network-wide). Returns
+        ``(sum x_i)^2 / (n * sum x_i^2)``, or NaN when there are no approvals
+        or when every ``x_i`` is 0.
+
+        Args:
+            owner_name: Node name for metrics to be collected (unused; index is
+                network-wide).
+            storage: In-memory store of recorded events for the trial.
+            ctx: Collection context (unused for this metric).
+
+        Returns:
+            Mapping with the configured key to Jain's index in ``[1/n, 1]``,
+            or NaN.
+        """
+        approved_identities: set[int] = set()
+        for record in storage.get_by_event(self.approved_event):
+            approved_identities.add(record.data.identity)
+
+        n = len(approved_identities)
+        if n == 0:
+            return {self.key: float("nan")}
+
+        delivery_counts: dict[int, int] = {identity: 0 for identity in approved_identities}
+        for record in storage.get_by_event(self.delivery_event):
+            identity = record.data.identity
+            if identity in delivery_counts:
+                delivery_counts[identity] += 1
+
+        allocations = list(delivery_counts.values())
+        sum_x = sum(allocations)
+        sum_x2 = sum(x * x for x in allocations)
+        if sum_x2 == 0:
+            return {self.key: float("nan")}
+        return {self.key: (sum_x * sum_x) / (n * sum_x2)}
+
+
+@dataclass
 class MemoryUtilizationRatioMetric(Metric):
     """Time-averaged fraction of busy quantum memories at a node.
 

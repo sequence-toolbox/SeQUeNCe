@@ -799,3 +799,59 @@ def test_delivery_fidelity_violation_rate_enable_records_both():
         EventTypes.DELIVERY_FIDELITY_VIOLATION,
         EventTypes.DELIVERY,
     }
+
+
+def test_jains_fairness_index_equal_allocations():
+    metrics.enable([metrics.JAINS_FAIRNESS_INDEX_METRIC])
+
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs(identity=1))
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n1", **_reservation_outcome_kwargs(identity=2))
+    metrics.record(EventTypes.DELIVERY, "n0", **_delivery_kwargs(identity=1, entanglement_number=1))
+    metrics.record(EventTypes.DELIVERY, "n1", **_delivery_kwargs(identity=2, entanglement_number=1))
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["jains_fairness_index"] == pytest.approx(1.0)
+
+
+def test_jains_fairness_index_unequal_with_starvation():
+    metrics.enable([metrics.JAINS_FAIRNESS_INDEX_METRIC])
+
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs(identity=1))
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n1", **_reservation_outcome_kwargs(identity=2))
+    for _ in range(4):
+        metrics.record(EventTypes.DELIVERY, "n0", **_delivery_kwargs(identity=1, entanglement_number=1))
+
+    trial = metrics.collect_trial_metrics("n0")
+    # x = [4, 0] → (4)^2 / (2 * 16) = 0.5
+    assert trial["jains_fairness_index"] == pytest.approx(0.5)
+
+
+def test_jains_fairness_index_nan_without_approvals():
+    metrics.enable([metrics.JAINS_FAIRNESS_INDEX_METRIC])
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert math.isnan(trial["jains_fairness_index"])
+
+
+def test_jains_fairness_index_nan_when_all_starved():
+    metrics.enable([metrics.JAINS_FAIRNESS_INDEX_METRIC])
+
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs(identity=1))
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n1", **_reservation_outcome_kwargs(identity=2))
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert math.isnan(trial["jains_fairness_index"])
+
+
+def test_jains_fairness_index_enable_records_approved_and_delivery():
+    metrics.enable([metrics.JAINS_FAIRNESS_INDEX_METRIC])
+
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs())
+    metrics.record(EventTypes.DELIVERY, "n0", **_delivery_kwargs(entanglement_number=1))
+
+    records = metrics.storage.get_all()
+    assert len(records) == 2
+    assert {record.event_type for record in records} == {
+        EventTypes.RESERVATION_APPROVED,
+        EventTypes.DELIVERY,
+    }

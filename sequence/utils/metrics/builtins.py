@@ -7,6 +7,7 @@ from .metric_types import (
     BellPairUtilizationMetric,
     CounterMetric,
     EventAttributeMetric,
+    JainFairnessIndexMetric,
     MemoryUtilizationRatioMetric,
     Metric,
     ReservationSuccessRateMetric,
@@ -64,6 +65,11 @@ September/October 2022, doi: 10.1109/MNET.001.2200163.
 """
 RESERVATION_SUCCESS_RATE_METRIC = ReservationSuccessRateMetric(
     key="reservation_success_rate",
+    approved_event=EventTypes.RESERVATION_APPROVED,
+    delivery_event=EventTypes.DELIVERY,
+)
+JAINS_FAIRNESS_INDEX_METRIC = JainFairnessIndexMetric(
+    key="jains_fairness_index",
     approved_event=EventTypes.RESERVATION_APPROVED,
     delivery_event=EventTypes.DELIVERY,
 )
@@ -139,6 +145,7 @@ def register_builtin_metrics() -> None:
         SWAPPED_FIDELITIES_METRIC,
         ADMISSION_RATE_METRIC,
         RESERVATION_SUCCESS_RATE_METRIC,
+        JAINS_FAIRNESS_INDEX_METRIC,
         MEMORY_UTILIZATION_RATIO_METRIC,
         MEMORY_DECOHERENCE_RATE_METRIC,
         THROUGHPUT_METRIC,
