@@ -9,6 +9,7 @@ from .metric_types import (
     EventAttributeMetric,
     MemoryUtilizationRatioMetric,
     Metric,
+    ReservationSuccessRateMetric,
     ThroughputMetric,
     TimeToServeMetric,
 )
@@ -61,6 +62,11 @@ Defined in C. Cicconetti, M. Conti and A. Passarella, "Quality of Service
 in Quantum Networks," in IEEE Network, vol. 36, no. 5, pp. 24-31,
 September/October 2022, doi: 10.1109/MNET.001.2200163.
 """
+RESERVATION_SUCCESS_RATE_METRIC = ReservationSuccessRateMetric(
+    key="reservation_success_rate",
+    approved_event=EventTypes.RESERVATION_APPROVED,
+    delivery_event=EventTypes.DELIVERY,
+)
 
 # Resource Management Metrics
 MEMORY_UTILIZATION_RATIO_METRIC = MemoryUtilizationRatioMetric(
@@ -110,6 +116,7 @@ def register_builtin_metrics() -> None:
         PURIFIED_FIDELITIES_METRIC,
         SWAPPED_FIDELITIES_METRIC,
         ADMISSION_RATE_METRIC,
+        RESERVATION_SUCCESS_RATE_METRIC,
         MEMORY_UTILIZATION_RATIO_METRIC,
         MEMORY_DECOHERENCE_RATE_METRIC,
         THROUGHPUT_METRIC,

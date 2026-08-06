@@ -23,6 +23,7 @@ from .builtins import (
     MEMORY_DECOHERENCE_RATE_METRIC,
     MEMORY_UTILIZATION_RATIO_METRIC,
     PURIFIED_FIDELITIES_METRIC,
+    RESERVATION_SUCCESS_RATE_METRIC,
     SWAPPED_FIDELITIES_METRIC,
     THROUGHPUT_METRIC,
     TIME_TO_SERVE_METRIC,
@@ -40,6 +41,7 @@ from .metric_types import (
     EventAttributeMetric,
     MemoryUtilizationRatioMetric,
     Metric,
+    ReservationSuccessRateMetric,
     ThroughputMetric,
     TimeToServeMetric,
 )
@@ -241,6 +243,7 @@ __all__ = [
     "MEMORY_DECOHERENCE_RATE_METRIC",
     "MEMORY_UTILIZATION_RATIO_METRIC",
     "PURIFIED_FIDELITIES_METRIC",
+    "RESERVATION_SUCCESS_RATE_METRIC",
     "SWAPPED_FIDELITIES_METRIC",
     "THROUGHPUT_METRIC",
     "TIME_TO_SERVE_METRIC",
@@ -256,6 +259,7 @@ __all__ = [
     "EventAttributeMetric",
     "MemoryUtilizationRatioMetric",
     "Metric",
+    "ReservationSuccessRateMetric",
     "ThroughputMetric",
     "TimeToServeMetric",
     # From registry

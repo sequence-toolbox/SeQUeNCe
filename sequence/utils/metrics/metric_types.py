@@ -383,6 +383,88 @@ class BellPairUtilizationMetric(Metric):
 
 
 @dataclass
+class ReservationSuccessRateMetric(Metric):
+    """Fraction of approved reservations that fully complete delivery.
+
+    SeQUeNCe operationalization of request success from Ni et al. The paper
+    reports successful requests per time slot; without a global slot length,
+    this metric uses
+    ``n_completed / n_approved`` over unique reservation identities.
+
+    In SeQUeNCe, ``n_approved`` is the number of unique ``identity`` values
+    among ``approved_event`` records (typically ``RESERVATION_APPROVED``) for
+    the owner, and ``n_completed`` counts those identities that accumulate at
+    least ``entanglement_number`` ``delivery_event`` records (typically
+    ``DELIVERY``) for the delivery owner.
+
+    Defined in G. Ni, H. Claussen and L. Ho, "Joint Optimization of Routing
+    and Purification to Meet Fidelity Targets in Quantum Networks," 2026
+    International Conference on Quantum Communications, Networking, and
+    Computing (QCNC), Kobe, Japan, 2026, pp. 259-263,
+    doi: 10.1109/QCNC69040.2026.00044.
+    """
+
+    key: str
+    approved_event: EventType
+    delivery_event: EventType
+    __hash__ = object.__hash__
+
+    @property
+    def event_types(self) -> frozenset[EventType]:
+        return frozenset({self.approved_event, self.delivery_event})
+
+    @property
+    def output_keys(self) -> frozenset[str]:
+        return frozenset({self.key})
+
+    @override
+    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
+        """Compute reservation success rate = n_completed / n_approved.
+
+        Builds the set of unique ``identity`` values from the owner's
+        ``approved_event`` records. An identity is completed when the delivery
+        owner has at least ``entanglement_number`` ``delivery_event`` records
+        with that identity (``entanglement_number`` taken from the approval
+        payload). Returns 0.0 when there are no approved reservations.
+
+        Args:
+            owner_name: Node name for metrics to be collected.
+            storage: In-memory store of recorded events for the trial.
+            ctx: Collection context; ``delivery_owner`` selects which node's
+                deliveries count toward completion (defaults to ``owner_name``).
+
+        Returns:
+            Mapping with the configured key to the completion fraction.
+        """
+        delivery_owner = ctx.delivery_owner or owner_name
+        approved_by_identity: dict[int, int] = {}
+        for record in storage.get_by_owner(owner_name):
+            if record.event_type != self.approved_event:
+                continue
+            identity = record.data.identity
+            if identity not in approved_by_identity:
+                approved_by_identity[identity] = record.data.entanglement_number
+
+        n_approved = len(approved_by_identity)
+        if n_approved == 0:
+            return {self.key: 0.0}
+
+        delivery_counts: dict[int, int] = {}
+        for record in storage.get_by_owner(delivery_owner):
+            if record.event_type != self.delivery_event:
+                continue
+            identity = record.data.identity
+            delivery_counts[identity] = delivery_counts.get(identity, 0) + 1
+
+        n_completed = sum(
+            1
+            for identity, entanglement_number in approved_by_identity.items()
+            if delivery_counts.get(identity, 0) >= entanglement_number
+        )
+        return {self.key: n_completed / n_approved}
+
+
+@dataclass
 class MemoryUtilizationRatioMetric(Metric):
     """Time-averaged fraction of busy quantum memories at a node.
 

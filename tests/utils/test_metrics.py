@@ -686,3 +686,65 @@ def test_memory_decoherence_rate_enable_records_expired_and_eg():
         EventTypes.MEMORY_EXPIRED,
         EventTypes.EG_SUCCESS,
     }
+
+
+def test_reservation_success_rate_partial_completion():
+    metrics.enable([metrics.RESERVATION_SUCCESS_RATE_METRIC])
+
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs(identity=1))
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs(identity=2))
+    metrics.record(
+        EventTypes.DELIVERY,
+        "n0",
+        **_delivery_kwargs(identity=1, entanglement_number=1),
+    )
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["reservation_success_rate"] == pytest.approx(0.5)
+
+
+def test_reservation_success_rate_requires_entanglement_number_deliveries():
+    metrics.enable([metrics.RESERVATION_SUCCESS_RATE_METRIC])
+
+    metrics.record(
+        EventTypes.RESERVATION_APPROVED,
+        "n0",
+        **_reservation_outcome_kwargs(identity=1, entanglement_number=2),
+    )
+    metrics.record(
+        EventTypes.DELIVERY,
+        "n0",
+        **_delivery_kwargs(identity=1, entanglement_number=2),
+    )
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["reservation_success_rate"] == 0.0
+
+    metrics.record(
+        EventTypes.DELIVERY,
+        "n0",
+        **_delivery_kwargs(identity=1, entanglement_number=2, fidelity=0.91),
+    )
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["reservation_success_rate"] == 1.0
+
+
+def test_reservation_success_rate_zero_without_approvals():
+    metrics.enable([metrics.RESERVATION_SUCCESS_RATE_METRIC])
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["reservation_success_rate"] == 0.0
+
+
+def test_reservation_success_rate_enable_records_approved_and_delivery():
+    metrics.enable([metrics.RESERVATION_SUCCESS_RATE_METRIC])
+
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs())
+    metrics.record(EventTypes.DELIVERY, "n0", **_delivery_kwargs(entanglement_number=1))
+
+    records = metrics.storage.get_all()
+    assert len(records) == 2
+    assert {record.event_type for record in records} == {
+        EventTypes.RESERVATION_APPROVED,
+        EventTypes.DELIVERY,
+    }
