@@ -644,3 +644,45 @@ def test_memory_utilization_ratio_enable_records_memory_update():
     assert records[0].event_type is EventTypes.MEMORY_UPDATE
     assert records[0].data.occupied_count == 3
     assert records[0].data.total_memories == 10
+
+
+def _memory_expired_kwargs(**overrides):
+    return {"memory_index": 0, "identity": None, **overrides}
+
+
+def test_memory_decoherence_rate_computes_expired_over_total():
+    metrics.enable([metrics.MEMORY_DECOHERENCE_RATE_METRIC])
+
+    metrics.record(EventTypes.MEMORY_EXPIRED, "n0", **_memory_expired_kwargs())
+    metrics.record(EventTypes.MEMORY_EXPIRED, "n0", **_memory_expired_kwargs(memory_index=1))
+    metrics.record(EventTypes.EG_SUCCESS, "n0", **_eg_success_kwargs())
+    metrics.record(EventTypes.EG_SUCCESS, "other", **_eg_success_kwargs())
+    metrics.record(EventTypes.MEMORY_EXPIRED, "other", **_memory_expired_kwargs())
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["memory_decoherence_failures"] == 1
+    assert trial["memory_decoherence_success"] == 2
+    assert trial["memory_decoherence_success_rate"] == pytest.approx(2 / 3)
+
+
+def test_memory_decoherence_rate_zero_without_events():
+    metrics.enable([metrics.MEMORY_DECOHERENCE_RATE_METRIC])
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["memory_decoherence_failures"] == 0
+    assert trial["memory_decoherence_success"] == 0
+    assert trial["memory_decoherence_success_rate"] == 0.0
+
+
+def test_memory_decoherence_rate_enable_records_expired_and_eg():
+    metrics.enable([metrics.MEMORY_DECOHERENCE_RATE_METRIC])
+
+    metrics.record(EventTypes.MEMORY_EXPIRED, "n0", **_memory_expired_kwargs())
+    metrics.record(EventTypes.EG_SUCCESS, "n0", **_eg_success_kwargs())
+
+    records = metrics.storage.get_all()
+    assert len(records) == 2
+    assert {record.event_type for record in records} == {
+        EventTypes.MEMORY_EXPIRED,
+        EventTypes.EG_SUCCESS,
+    }

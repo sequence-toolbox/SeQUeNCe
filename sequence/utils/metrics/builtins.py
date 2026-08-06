@@ -67,6 +67,22 @@ MEMORY_UTILIZATION_RATIO_METRIC = MemoryUtilizationRatioMetric(
     key="memory_utilization_ratio",
     update_event=EventTypes.MEMORY_UPDATE,
 )
+MEMORY_DECOHERENCE_RATE_METRIC = CounterMetric(
+    prefix="memory_decoherence",
+    failure_event=EventTypes.EG_SUCCESS,
+    success_event=EventTypes.MEMORY_EXPIRED,
+    rate_field="memory_decoherence_rate",
+)
+MEMORY_DECOHERENCE_RATE_METRIC.__doc__ = """Memory decoherence rate = n_expired / (n_expired + n_eg_success).
+
+In SeQUeNCe, n_expired is ``MEMORY_EXPIRED`` and n_eg_success is
+``EG_SUCCESS``. Expiry is the counted ``success_event`` so the collected
+``memory_decoherence_rate`` is the decoherence loss fraction.
+
+C. Tian et al., "RADAR-Q: Resource-Aware Distributed Asynchronous Routing
+for Entanglement Distribution in Multi-Tenant Quantum Networks,"
+arXiv:2603.27570, 2026.
+"""
 
 # Application Metrics
 THROUGHPUT_METRIC = ThroughputMetric(
@@ -95,6 +111,7 @@ def register_builtin_metrics() -> None:
         SWAPPED_FIDELITIES_METRIC,
         ADMISSION_RATE_METRIC,
         MEMORY_UTILIZATION_RATIO_METRIC,
+        MEMORY_DECOHERENCE_RATE_METRIC,
         THROUGHPUT_METRIC,
         TIME_TO_SERVE_METRIC,
         BELL_PAIR_UTILIZATION_METRIC,
