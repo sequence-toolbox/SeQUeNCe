@@ -226,7 +226,16 @@ def dejmps_bds_expected(kept_state, meas_state):
     return p_success, output
 
 
-def bds_protocol_result(protocol_class, kept_state, meas_state, input_fidelity):
+def bds_protocol_result(
+    protocol_class,
+    kept_state,
+    meas_state,
+    input_fidelity,
+    own_gate_fid=1,
+    remote_gate_fid=1,
+    own_meas_fid=1,
+    remote_meas_fid=1,
+):
     old_protocol_formalism = BBPSSWProtocol.get_formalism()
     old_manager_formalism = QuantumManager.get_active_formalism()
 
@@ -237,8 +246,10 @@ def bds_protocol_result(protocol_class, kept_state, meas_state, input_fidelity):
         tl = Timeline()
         a1 = FakeNode("a1", tl)
         a2 = FakeNode("a2", tl)
-        a1.gate_fid = a2.gate_fid = 1
-        a1.meas_fid = a2.meas_fid = 1
+        a1.gate_fid = own_gate_fid
+        a2.gate_fid = remote_gate_fid
+        a1.meas_fid = own_meas_fid
+        a2.meas_fid = remote_meas_fid
 
         kept1 = Memory("kept1", tl, fidelity=input_fidelity, frequency=0, efficiency=1,
                        coherence_time=1, wavelength=HALF_MICRON)
@@ -347,7 +358,7 @@ def test_DEJMPS_BDS_matches_pure_bell_state_transition_table(
     )
 
     if expected_output_index is None:
-        # No successful branch exists, so the conditional output state is
+        # No successful branch exists, so the state conditioned on success is
         # undefined and purification_res() normalizes a zero vector by zero.
         with np.errstate(divide="ignore", invalid="ignore"):
             protocol, (p_success, purified_bds) = bds_protocol_result(
@@ -371,9 +382,84 @@ def test_DEJMPS_BDS_matches_pure_bell_state_transition_table(
         return
 
     assert p_success == pytest.approx(1)
-    assert purified_bds == pytest.approx(
-        PURE_BDS_STATES[expected_output_index]
+    assert purified_bds == pytest.approx(PURE_BDS_STATES[expected_output_index])
+
+
+# With exactly one reported measurement bit flipped, the ideal DEJMPS
+# rejection table becomes the accepted table. These expected output states
+# come from the one-sided-measurement-error terms in the analytical map.
+DEJMPS_ONE_SIDED_MEASUREMENT_FLIP_TRANSITIONS = {
+    (0, 1): 1,
+    (0, 2): 0,
+    (1, 0): 3,
+    (1, 3): 2,
+    (2, 0): 2,
+    (2, 3): 3,
+    (3, 1): 0,
+    (3, 2): 1,
+}
+
+
+@pytest.mark.parametrize(
+    ("own_meas_fid", "remote_meas_fid"),
+    [(1, 0), (0, 1)],
+)
+@pytest.mark.parametrize(
+    ("kept_index", "meas_index", "expected_output_index"),
+    [
+        (kept_index, meas_index, expected_output_index)
+        for (kept_index, meas_index), expected_output_index
+        in DEJMPS_ONE_SIDED_MEASUREMENT_FLIP_TRANSITIONS.items()
+    ],
+)
+def test_DEJMPS_BDS_one_sided_measurement_flip_accepts_rejected_branch(
+    kept_index,
+    meas_index,
+    expected_output_index,
+    own_meas_fid,
+    remote_meas_fid,
+):
+    """Check false acceptance caused by exactly one flipped reported bit."""
+    kept_state = PURE_BDS_STATES[kept_index]
+    meas_state = PURE_BDS_STATES[meas_index]
+
+    protocol, (p_success, purified_bds) = bds_protocol_result(
+        DEJMPS_BDS,
+        kept_state,
+        meas_state,
+        input_fidelity=kept_state[0],
+        own_meas_fid=own_meas_fid,
+        remote_meas_fid=remote_meas_fid,
     )
+
+    assert protocol.is_twirled is False
+    assert p_success == pytest.approx(1)
+    assert purified_bds == pytest.approx(PURE_BDS_STATES[expected_output_index])
+
+
+@pytest.mark.parametrize(
+    ("own_gate_fid", "remote_gate_fid"),
+    [(0, 1), (1, 0)],
+)
+def test_DEJMPS_BDS_complete_gate_failure_returns_maximally_mixed_state(
+    own_gate_fid, remote_gate_fid
+):
+    """Check SeQUeNCe's inherited complete-gate-failure noise model."""
+    kept_state = np.array([0.72, 0.08, 0.11, 0.09])
+    meas_state = np.array([0.68, 0.06, 0.18, 0.08])
+
+    protocol, (p_success, purified_bds) = bds_protocol_result(
+        DEJMPS_BDS,
+        kept_state,
+        meas_state,
+        input_fidelity=kept_state[0],
+        own_gate_fid=own_gate_fid,
+        remote_gate_fid=remote_gate_fid,
+    )
+
+    assert protocol.is_twirled is False
+    assert p_success == pytest.approx(0.5)
+    assert purified_bds == pytest.approx(np.full(4, 0.25))
 
 
 def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline, Memory, Memory, Memory, Memory, BBPSSWProtocol, BBPSSWProtocol]:
