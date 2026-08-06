@@ -7,6 +7,7 @@ from .metric_types import (
     BellPairUtilizationMetric,
     CounterMetric,
     EventAttributeMetric,
+    MemoryUtilizationRatioMetric,
     Metric,
     ThroughputMetric,
     TimeToServeMetric,
@@ -62,6 +63,10 @@ September/October 2022, doi: 10.1109/MNET.001.2200163.
 """
 
 # Resource Management Metrics
+MEMORY_UTILIZATION_RATIO_METRIC = MemoryUtilizationRatioMetric(
+    key="memory_utilization_ratio",
+    update_event=EventTypes.MEMORY_UPDATE,
+)
 
 # Application Metrics
 THROUGHPUT_METRIC = ThroughputMetric(
@@ -89,6 +94,7 @@ def register_builtin_metrics() -> None:
         PURIFIED_FIDELITIES_METRIC,
         SWAPPED_FIDELITIES_METRIC,
         ADMISSION_RATE_METRIC,
+        MEMORY_UTILIZATION_RATIO_METRIC,
         THROUGHPUT_METRIC,
         TIME_TO_SERVE_METRIC,
         BELL_PAIR_UTILIZATION_METRIC,

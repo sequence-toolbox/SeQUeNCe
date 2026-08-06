@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -379,3 +380,93 @@ class BellPairUtilizationMetric(Metric):
         if n_s == 0:
             return {self.key: float("nan")}
         return {self.key: n_b / n_s}
+
+
+@dataclass
+class MemoryUtilizationRatioMetric(Metric):
+    """Time-averaged fraction of busy quantum memories at a node.
+
+    Busy memories are those in ``OCCUPIED``, ``ENTANGLED``, or ``PURIFIED``
+    state. The utilization ratio is computed from piecewise-constant
+    ``MEMORY_UPDATE`` snapshots as the time-weighted average of
+    ``(occupied + entangled + purified) / total_memories``.
+
+    Defined in C. Tian et al., "RADAR-Q: Resource-Aware Distributed
+    Asynchronous Routing for Entanglement Distribution in Multi-Tenant
+    Quantum Networks," arXiv:2603.27570, 2026.
+    """
+
+    key: str
+    update_event: EventType
+    __hash__ = object.__hash__
+
+    @property
+    def event_types(self) -> frozenset[EventType]:
+        return frozenset({self.update_event})
+
+    @property
+    def output_keys(self) -> frozenset[str]:
+        return frozenset({self.key})
+
+    @staticmethod
+    def _busy_fraction(data: Any) -> float:
+        total = data.total_memories
+        if total <= 0:
+            return float("nan")
+        busy = data.occupied_count + data.entangled_count + data.purified_count
+        return busy / total
+
+    @override
+    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
+        """Compute time-averaged memory utilization ratio for the owner.
+
+        Sorts the owner's ``update_event`` records by ``sim_time`` and
+        integrates the busy fraction
+        ``(occupied_count + entangled_count + purified_count) / total_memories``
+        as a piecewise-constant function between updates. The final interval
+        extends from the last update to the registered metrics time provider's
+        ``now()`` when available. Returns NaN if there are no updates or if
+        ``total_memories`` is 0. If the total duration is 0, returns the
+        instantaneous fraction at the last (or only) sample.
+
+        Args:
+            owner_name: Node name for metrics to be collected.
+            storage: In-memory store of recorded events for the trial.
+            ctx: Collection context (unused for this metric).
+
+        Returns:
+            Mapping with the configured key to utilization ratio in ``[0, 1]``,
+            or NaN.
+        """
+        records = [
+            record for record in storage.get_by_owner(owner_name)
+            if record.event_type == self.update_event
+        ]
+        if not records:
+            return {self.key: float("nan")}
+
+        records.sort(key=lambda record: record.sim_time)
+        if records[0].data.total_memories <= 0:
+            return {self.key: float("nan")}
+
+        from sequence.utils import metrics as metrics_mod
+
+        end_time = records[-1].sim_time
+        time_provider = getattr(metrics_mod, "time_provider", None)
+        if time_provider is not None and hasattr(time_provider, "now"):
+            end_time = max(end_time, time_provider.now())
+
+        weighted_sum = 0.0
+        for i, record in enumerate(records):
+            frac = self._busy_fraction(record.data)
+            if math.isnan(frac):
+                return {self.key: float("nan")}
+            next_time = records[i + 1].sim_time if i + 1 < len(records) else end_time
+            duration = next_time - record.sim_time
+            if duration > 0:
+                weighted_sum += frac * duration
+
+        total_duration = end_time - records[0].sim_time
+        if total_duration <= 0:
+            return {self.key: self._busy_fraction(records[-1].data)}
+        return {self.key: weighted_sum / total_duration}

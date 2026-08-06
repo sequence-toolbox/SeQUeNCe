@@ -589,3 +589,58 @@ def test_admission_rate_enable_records_approved_and_rejected():
         EventTypes.RESERVATION_APPROVED,
         EventTypes.RESERVATION_REJECTED,
     }
+
+
+def _memory_update_kwargs(**overrides):
+    return {
+        "occupied_count": 0,
+        "entangled_count": 0,
+        "purified_count": 0,
+        "total_memories": 10,
+        **overrides,
+    }
+
+
+def test_memory_utilization_ratio_time_weighted_average():
+    timeline = Timeline(int(1e12))
+    timeline.time = 0
+    metrics.register_time_provider(timeline)
+    metrics.enable([metrics.MEMORY_UTILIZATION_RATIO_METRIC])
+
+    # t=0..100: 2/10 busy; t=100..300: 5/10 busy; collect at t=300
+    timeline.time = 0
+    metrics.record(
+        EventTypes.MEMORY_UPDATE,
+        "n0",
+        **_memory_update_kwargs(occupied_count=1, entangled_count=1),
+    )
+    timeline.time = 100
+    metrics.record(
+        EventTypes.MEMORY_UPDATE,
+        "n0",
+        **_memory_update_kwargs(occupied_count=2, entangled_count=2, purified_count=1),
+    )
+    timeline.time = 300
+
+    trial = metrics.collect_trial_metrics("n0")
+    # (0.2 * 100 + 0.5 * 200) / 300 = 0.4
+    assert trial["memory_utilization_ratio"] == pytest.approx(0.4)
+
+
+def test_memory_utilization_ratio_nan_without_updates():
+    metrics.enable([metrics.MEMORY_UTILIZATION_RATIO_METRIC])
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert math.isnan(trial["memory_utilization_ratio"])
+
+
+def test_memory_utilization_ratio_enable_records_memory_update():
+    metrics.enable([metrics.MEMORY_UTILIZATION_RATIO_METRIC])
+
+    metrics.record(EventTypes.MEMORY_UPDATE, "n0", **_memory_update_kwargs(occupied_count=3))
+
+    records = metrics.storage.get_all()
+    assert len(records) == 1
+    assert records[0].event_type is EventTypes.MEMORY_UPDATE
+    assert records[0].data.occupied_count == 3
+    assert records[0].data.total_memories == 10
