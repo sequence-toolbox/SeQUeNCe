@@ -183,8 +183,20 @@ class BBPSSW_BDS(BBPSSWProtocol):
                 0]) / 3, (1 - meas_input_state.state[0]) / 3, (1 - meas_input_state.state[
                 0]) / 3  # Diagonal elements of measured pair (twirled)
         else:
-            kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = kept_input_state.state  # Diagonal elements of kept pair
-            meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = meas_input_state.state  # Diagonal elements of measured pair
+            # SeQUeNCe BDS order is [Phi+, Phi-, Psi+, Psi-].
+            # DEJMPS formulas use paper order [Phi+, Psi-, Psi+, Phi-].
+            kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = (
+                kept_input_state.state[0],
+                kept_input_state.state[3],
+                kept_input_state.state[2],
+                kept_input_state.state[1],
+            )
+            meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = (
+                meas_input_state.state[0],
+                meas_input_state.state[3],
+                meas_input_state.state[2],
+                meas_input_state.state[1],
+            )
 
         # assert 1. >= kept_elem_1 >= 0.5 and 1. >= meas_elem_1 >= 0.5, "Input states should have fidelity above 1/2."
         a, b = (kept_elem_1 + kept_elem_2), (meas_elem_1 + meas_elem_2)
@@ -235,6 +247,10 @@ class BBPSSW_BDS(BBPSSWProtocol):
             new_fid = new_elem_1 / p_succ  # normalization by success probability
             bds_elems = np.array([new_fid, (1 - new_fid) / 3, (1 - new_fid) / 3, (1 - new_fid) / 3])
         else:
+            # Inputs were converted from SeQUeNCe order [Phi+, Phi-, Psi+, Psi-]
+            # to DEJMPS paper order [Phi+, Psi-, Psi+, Phi-] before applying the
+            # recurrence. The formulas below produce SeQUeNCe order
+            # [Phi+, Phi-, Psi+, Psi-] directly.
             bds_elems = np.array([new_elem_1, new_elem_2, new_elem_3, new_elem_4])
             bds_elems = bds_elems / p_succ  # normalization by success probability
 

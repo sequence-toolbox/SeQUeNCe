@@ -15,14 +15,17 @@ from sequence.constants import (
 )
 from sequence.entanglement_management.purification import (
     BBPSSW_BDS,
+    DEJMPS_BDS,
     BBPSSWCircuit,
     BBPSSWMessage,
     BBPSSWMsgType,
     BBPSSWProtocol,
+    DEJMPS_BDS_PROTOCOL,
 )
 from sequence.kernel.quantum_manager import QuantumManager
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
+from sequence.message import Message
 
 np.random.seed(0)
 
@@ -61,7 +64,7 @@ class FakeNode(Node):
         self.msg_log = []
         self.resource_manager = FakeResourceManager(self)
 
-    def receive_message(self, src: str, msg: "Message"):
+    def receive_message(self, src: str, msg: Message):
         self.msg_log.append((self.timeline.now(), src, msg))
         for protocol in self.protocols:
             if protocol.name == msg.receiver:
@@ -117,6 +120,33 @@ def test_BBPSSW_registered_formalisms_and_factory_selection():
         QuantumManager.set_global_manager_formalism(old_manager_formalism)
 
 
+def test_DEJMPS_BDS_registered_as_explicit_protocol_selector():
+    old_protocol_formalism = BBPSSWProtocol.get_formalism()
+    old_manager_formalism = QuantumManager.get_active_formalism()
+
+    try:
+        assert DEJMPS_BDS_PROTOCOL in set(BBPSSWProtocol.list_protocols())
+
+        QuantumManager.set_global_manager_formalism(BELL_DIAGONAL_STATE_FORMALISM)
+        BBPSSWProtocol.set_formalism(DEJMPS_BDS_PROTOCOL)
+
+        tl = Timeline()
+        node = FakeNode("a1", tl)
+        kept = Memory("kept", tl, fidelity=1, frequency=0, efficiency=1,
+                      coherence_time=1, wavelength=HALF_MICRON)
+        measured = Memory("measured", tl, fidelity=1, frequency=0, efficiency=1,
+                          coherence_time=1, wavelength=HALF_MICRON)
+
+        protocol = BBPSSWProtocol.create(node, "a1.ep1", kept, measured)
+
+        assert isinstance(protocol, DEJMPS_BDS)
+        assert protocol.is_twirled is False
+        assert protocol.protocol_type == DEJMPS_BDS_PROTOCOL
+    finally:
+        BBPSSWProtocol.set_formalism(old_protocol_formalism)
+        QuantumManager.set_global_manager_formalism(old_manager_formalism)
+
+
 def test_BBPSSW_BDS_improves_fidelity_for_equal_noisy_pairs():
     old_protocol_formalism = BBPSSWProtocol.get_formalism()
     old_manager_formalism = QuantumManager.get_active_formalism()
@@ -132,7 +162,7 @@ def test_BBPSSW_BDS_improves_fidelity_for_equal_noisy_pairs():
 
         tl = Timeline()
         a1 = FakeNode("a1", tl)
-        a2 = FakeNode("a2", tl)
+        FakeNode("a2", tl)
         kept1 = Memory("kept1", tl, fidelity=input_fidelity, frequency=0, efficiency=1,
                        coherence_time=1, wavelength=HALF_MICRON)
         kept2 = Memory("kept2", tl, fidelity=input_fidelity, frequency=0, efficiency=1,
@@ -171,6 +201,111 @@ def test_BBPSSW_BDS_improves_fidelity_for_equal_noisy_pairs():
         BBPSSWProtocol.set_formalism(old_protocol_formalism)
         QuantumManager.set_global_manager_formalism(old_manager_formalism)
 
+
+
+def dejmps_bds_expected(kept_state, meas_state):
+    """Return ideal DEJMPS success probability and output in SeQUeNCe BDS order.
+
+    SeQUeNCe uses [Phi+, Phi-, Psi+, Psi-].
+    DEJMPS uses paper order [Phi+, Psi-, Psi+, Phi-].
+    """
+    k_phi_plus, k_phi_minus, k_psi_plus, k_psi_minus = kept_state
+    m_phi_plus, m_phi_minus, m_psi_plus, m_psi_minus = meas_state
+
+    p_success = (
+        (k_phi_plus + k_psi_minus) * (m_phi_plus + m_psi_minus)
+        + (k_psi_plus + k_phi_minus) * (m_psi_plus + m_phi_minus)
+    )
+    output = np.array([
+        k_phi_plus * m_phi_plus + k_psi_minus * m_psi_minus,
+        k_phi_plus * m_psi_minus + m_phi_plus * k_psi_minus,
+        k_psi_plus * m_psi_plus + k_phi_minus * m_phi_minus,
+        m_psi_plus * k_phi_minus + k_psi_plus * m_phi_minus,
+    ]) / p_success
+
+    return p_success, output
+
+
+def bds_protocol_result(protocol_class, kept_state, meas_state, input_fidelity):
+    old_protocol_formalism = BBPSSWProtocol.get_formalism()
+    old_manager_formalism = QuantumManager.get_active_formalism()
+
+    try:
+        QuantumManager.set_global_manager_formalism(BELL_DIAGONAL_STATE_FORMALISM)
+        BBPSSWProtocol.set_formalism(BELL_DIAGONAL_STATE_FORMALISM)
+
+        tl = Timeline()
+        a1 = FakeNode("a1", tl)
+        a2 = FakeNode("a2", tl)
+        a1.gate_fid = a2.gate_fid = 1
+        a1.meas_fid = a2.meas_fid = 1
+
+        kept1 = Memory("kept1", tl, fidelity=input_fidelity, frequency=0, efficiency=1,
+                       coherence_time=1, wavelength=HALF_MICRON)
+        kept2 = Memory("kept2", tl, fidelity=input_fidelity, frequency=0, efficiency=1,
+                       coherence_time=1, wavelength=HALF_MICRON)
+        meas1 = Memory("meas1", tl, fidelity=input_fidelity, frequency=0, efficiency=1,
+                       coherence_time=1, wavelength=HALF_MICRON)
+        meas2 = Memory("meas2", tl, fidelity=input_fidelity, frequency=0, efficiency=1,
+                       coherence_time=1, wavelength=HALF_MICRON)
+
+        tl.init()
+        tl.quantum_manager.set([kept1.qstate_key, kept2.qstate_key], kept_state)
+        tl.quantum_manager.set([meas1.qstate_key, meas2.qstate_key], meas_state)
+        kept1.entangled_memory = {"node_id": "a2", "memo_id": "kept2"}
+        kept2.entangled_memory = {"node_id": "a1", "memo_id": "kept1"}
+        meas1.entangled_memory = {"node_id": "a2", "memo_id": "meas2"}
+        meas2.entangled_memory = {"node_id": "a1", "memo_id": "meas1"}
+
+        protocol = protocol_class(a1, "a1.ep1", kept1, meas1)
+        protocol.set_others("a2.ep2", "a2", [kept2.name, meas2.name])
+
+        return protocol, protocol.purification_res()
+    finally:
+        BBPSSWProtocol.set_formalism(old_protocol_formalism)
+        QuantumManager.set_global_manager_formalism(old_manager_formalism)
+
+
+def test_BBPSSW_BDS_twirls_non_werner_bds_input():
+    input_fidelity = 0.7
+    kept_state = np.array([0.7, 0.2, 0.05, 0.05])
+    meas_state = np.array([0.7, 0.04, 0.20, 0.06])
+
+    expected_success_probability = success_probability(input_fidelity)
+    expected_fidelity = (
+        input_fidelity ** 2 + ((1 - input_fidelity) / 3) ** 2
+    ) / expected_success_probability
+    expected_bds = np.array([
+        expected_fidelity,
+        (1 - expected_fidelity) / 3,
+        (1 - expected_fidelity) / 3,
+        (1 - expected_fidelity) / 3,
+    ])
+
+    protocol, (p_success, purified_bds) = bds_protocol_result(
+        BBPSSW_BDS, kept_state, meas_state, input_fidelity
+    )
+
+    assert protocol.is_twirled is True
+    assert p_success == pytest.approx(expected_success_probability)
+    assert purified_bds == pytest.approx(expected_bds)
+
+
+def test_DEJMPS_BDS_matches_dejmps_recurrence_for_bell_diagonal_states():
+    kept_state = np.array([0.72, 0.08, 0.11, 0.09])
+    meas_state = np.array([0.68, 0.06, 0.18, 0.08])
+    expected_success_probability, expected_bds = dejmps_bds_expected(kept_state, meas_state)
+
+    protocol, (p_success, purified_bds) = bds_protocol_result(
+        DEJMPS_BDS, kept_state, meas_state, input_fidelity=kept_state[0]
+    )
+
+    assert isinstance(protocol, BBPSSW_BDS)
+    assert protocol.is_twirled is False
+    assert protocol.protocol_type == 'dejmps_bds'
+    assert p_success == pytest.approx(expected_success_probability)
+    assert purified_bds == pytest.approx(expected_bds)
+    assert np.sum(purified_bds) == pytest.approx(1)
 
 def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline, Memory, Memory, Memory, Memory, BBPSSWProtocol, BBPSSWProtocol]:
     """create the whole quantum network (timeline, nodes, channels, memory, protocols)
@@ -758,7 +893,8 @@ def test_BBPSSW_fidelity():
             assert a2.resource_manager.log[-1] == (kept2, PURIFIED)
         else:
             assert kept1.fidelity == 0
-            assert kept1.entangled_memory["node_id"] == kept2.entangled_memory["node_id"] == None
+            assert kept1.entangled_memory["node_id"] is None
+            assert kept2.entangled_memory["node_id"] is None
             assert a1.resource_manager.log[-1] == (kept1, RAW)
             assert a2.resource_manager.log[-1] == (kept2, RAW)
 
