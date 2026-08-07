@@ -38,7 +38,6 @@ from .event_types import (
 )
 from .metric_types import (
     BellPairUtilizationMetric,
-    CollectContext,
     CounterMetric,
     EventAttributeMetric,
     JainFairnessIndexMetric,
@@ -158,30 +157,19 @@ def record(event_type: EventType, owner_name: str, **kwargs: Any) -> None:
     storage.append(record)
 
 
-def collect_trial_metrics(
-    owner_name: str,
-    *,
-    delivery_owner: str | None = None,
-    target_pairs: int | None = None,
-) -> dict[str, Any]:
+def collect_trial_metrics(owner_name: str) -> dict[str, Any]:
     """Collect per-trial metrics for a node from the metrics module.
 
     Args:
         owner_name: Node name to collect metrics for.
-        delivery_owner: Node name used for time-to-serve metrics; defaults to `owner_name`.
-        target_pairs: Number of delivered pairs required to compute time to serve.
 
     Returns:
         Mapping of metric output keys to per-trial values.
     """
-    ctx = CollectContext(
-        delivery_owner=delivery_owner or owner_name,
-        target_pairs=target_pairs,
-    )
     result: dict[str, Any] = {}
     for metric in list_metrics():
         if metric in _enabled_metrics:
-            result.update(metric.collect(owner_name, storage, ctx))
+            result.update(metric.collect(owner_name, storage))
     return result
 
 
@@ -259,7 +247,6 @@ __all__ = [
     "register_event_type",
     # From metric_types
     "BellPairUtilizationMetric",
-    "CollectContext",
     "CounterMetric",
     "EventAttributeMetric",
     "JainFairnessIndexMetric",

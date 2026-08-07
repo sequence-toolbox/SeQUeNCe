@@ -253,11 +253,19 @@ def test_collect_trial_metrics_computes_throughput_from_deliveries():
     metrics.register_time_provider(timeline)
     metrics.enable([metrics.TIME_TO_SERVE_METRIC, metrics.THROUGHPUT_METRIC])
 
-    metrics.record(EventTypes.DELIVERY, "right", **_delivery_kwargs())
+    metrics.record(
+        EventTypes.DELIVERY,
+        "right",
+        **_delivery_kwargs(initiator="left", responder="right"),
+    )
     timeline.time = int(2e12)
-    metrics.record(EventTypes.DELIVERY, "right", **_delivery_kwargs(fidelity=0.91))
+    metrics.record(
+        EventTypes.DELIVERY,
+        "right",
+        **_delivery_kwargs(initiator="left", responder="right", fidelity=0.91),
+    )
 
-    trial = metrics.collect_trial_metrics("left", delivery_owner="right")
+    trial = metrics.collect_trial_metrics("left")
 
     assert trial["app_throughput"] == pytest.approx(2.0)
 
@@ -340,14 +348,15 @@ def test_collect_trial_metrics_ep_fields_and_time_to_serve():
         metrics.record(
             EventTypes.DELIVERY,
             "right",
-            **_delivery_kwargs(fidelity=0.7 + i * 0.01),
+            **_delivery_kwargs(
+                initiator="left",
+                responder="right",
+                fidelity=0.7 + i * 0.01,
+                entanglement_number=3,
+            ),
         )
 
-    trial = metrics.collect_trial_metrics(
-        "left",
-        delivery_owner="right",
-        target_pairs=3,
-    )
+    trial = metrics.collect_trial_metrics("left")
 
     assert trial["ep_success"] == 2
     assert trial["purified_fidelities"] == [0.7, 0.75]
@@ -357,13 +366,13 @@ def test_collect_trial_metrics_ep_fields_and_time_to_serve():
 
 def test_collect_trial_metrics_time_to_serve_nan_when_target_not_reached():
     metrics.enable([metrics.TIME_TO_SERVE_METRIC])
-    metrics.record(EventTypes.DELIVERY, "right", **_delivery_kwargs())
-
-    trial = metrics.collect_trial_metrics(
-        "left",
-        delivery_owner="right",
-        target_pairs=500,
+    metrics.record(
+        EventTypes.DELIVERY,
+        "right",
+        **_delivery_kwargs(initiator="left", responder="right", entanglement_number=500),
     )
+
+    trial = metrics.collect_trial_metrics("left")
 
     assert math.isnan(trial["time_to_serve"])
 
@@ -373,13 +382,10 @@ def test_collect_trial_metrics_delivery_owner_defaults_to_owner():
     metrics.record(
         EventTypes.DELIVERY,
         "right",
-        **_delivery_kwargs(start_time=0),
+        **_delivery_kwargs(start_time=0, entanglement_number=1),
     )
 
-    trial = metrics.collect_trial_metrics(
-        "right",
-        target_pairs=1,
-    )
+    trial = metrics.collect_trial_metrics("right")
 
     assert not math.isnan(trial["time_to_serve"])
 
@@ -523,11 +529,19 @@ def test_bell_pair_utilization_computes_eg_over_deliveries():
     metrics.record(EventTypes.EG_SUCCESS, "right", **_eg_success_kwargs())
     metrics.record(EventTypes.EG_SUCCESS, "mid", **_eg_success_kwargs())
     metrics.record(EventTypes.EG_SUCCESS, "mid", **_eg_success_kwargs())
-    metrics.record(EventTypes.DELIVERY, "right", **_delivery_kwargs())
-    metrics.record(EventTypes.DELIVERY, "right", **_delivery_kwargs(fidelity=0.91))
+    metrics.record(
+        EventTypes.DELIVERY,
+        "right",
+        **_delivery_kwargs(initiator="left", responder="right"),
+    )
+    metrics.record(
+        EventTypes.DELIVERY,
+        "right",
+        **_delivery_kwargs(initiator="left", responder="right", fidelity=0.91),
+    )
 
-    trial = metrics.collect_trial_metrics("left", delivery_owner="right")
-    # n_b = 4 EG_SUCCESS (all owners), n_s = 2 DELIVERY on right
+    trial = metrics.collect_trial_metrics("left")
+    # n_b = 4 EG_SUCCESS (all owners), n_s = 2 DELIVERY associated with left
     assert trial["bell_pair_utilization"] == pytest.approx(4 / 2)
 
 

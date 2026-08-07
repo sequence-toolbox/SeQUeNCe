@@ -12,17 +12,23 @@ from .event_types import EventType
 from .storage import InMemoryStorage, Record
 
 
-@dataclass
-class CollectContext:
-    """Context passed to metrics when collecting trial results.
+def delivery_records_for(
+    owner_name: str,
+    storage: InMemoryStorage,
+    delivery_event: EventType,
+) -> list[Record]:
+    """Return DELIVERY-like records associated with a node.
 
-    Attributes:
-        delivery_owner: Node name for time-to-serve and throughput delivery lookup.
-        target_pairs: Number of delivered pairs required to compute time to serve.
+    A record matches when its owner is ``owner_name``, or when the payload
+    ``initiator`` or ``responder`` equals ``owner_name``.
     """
-
-    delivery_owner: str | None = None
-    target_pairs: int | None = None
+    return [
+        record
+        for record in storage.get_by_event(delivery_event)
+        if record.owner_name == owner_name
+        or record.data.initiator == owner_name
+        or record.data.responder == owner_name
+    ]
 
 
 class Metric(ABC):
@@ -62,13 +68,12 @@ class Metric(ABC):
         pass
 
     @abstractmethod
-    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage) -> dict[str, Any]:
         """Return trial result keys and values for this metric.
 
         Args:
             owner_name: Node name for metrics to be collected.
             storage: In-memory store of recorded events for the trial.
-            ctx: Empty
 
         Returns:
             Mapping of output keys to per-trial values.
@@ -162,13 +167,12 @@ class CounterMetric(Metric):
         elif event_type == self.success_event:
             self._successes[owner_name] = self._successes.get(owner_name, 0) + 1
 
-    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage) -> dict[str, Any]:
         """Return failure, success, and success-rate counts for the trial owner.
 
         Args:
             owner_name: Node name for metrics to be collected.
             storage: In-memory store of recorded events for the trial.
-            ctx: Empty
 
         Returns:
             Mapping of prefixed failure, success, and success-rate keys.
@@ -201,21 +205,17 @@ class ThroughputMetric(Metric):
     def output_keys(self) -> frozenset[str]:
         return frozenset({self.key})
 
-    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage) -> dict[str, Any]:
         """Compute throughput as delivered pairs per second over the reservation window.
 
         Args:
             owner_name: Node name for metrics to be collected.
             storage: In-memory store of recorded events for the trial.
-            ctx: Empty
 
         Returns:
             Mapping with the configured rate key in pairs per second, or NaN if data is insufficient.
         """
-        delivery_owner = ctx.delivery_owner or owner_name
-        delivery_records = [
-            record for record in storage.get_by_owner(delivery_owner) if record.event_type == self.delivery_event
-        ]
+        delivery_records = delivery_records_for(owner_name, storage, self.delivery_event)
         if not delivery_records:
             return {self.key: float("nan")}
 
@@ -245,13 +245,12 @@ class EventAttributeMetric(Metric):
     def output_keys(self) -> frozenset[str]:
         return frozenset({self.key})
 
-    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage) -> dict[str, Any]:
         """Collect specific attribute values from matching events for the owner.
 
         Args:
             owner_name: Node name for metrics to be collected.
             storage: In-memory store of recorded events for the trial.
-            ctx: Empty
 
         Returns:
             Mapping of the configured key to a list of attribute values.
@@ -269,8 +268,9 @@ class TimeToServeMetric(Metric):
     """On-demand end-to-end latency (time to serve) for delivered entangled pairs.
 
     In SeQUeNCe, time to serve is ``(sim_time of N-th DELIVERY − reservation.start_time)``
-    in seconds, with ``N = target_pairs``. For ``target_pairs=1``, this is the
-    on-demand latency from request/service start until one EPR pair is distributed.
+    in seconds, with ``N = entanglement_number`` from the first matching delivery.
+    For ``entanglement_number=1``, this is the on-demand latency from request/service
+    start until one EPR pair is distributed.
 
     Defined in A. Zang, J. Chung, R. Kettimuthu, M. Suchara and T. Zhong,
     "Analytical Performance Estimations for Quantum Repeater Network Scenarios,"
@@ -291,35 +291,32 @@ class TimeToServeMetric(Metric):
         return frozenset({self.key})
 
     @override
-    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage) -> dict[str, Any]:
         """Compute time to serve from reservation start to the N-th delivery.
 
         Returns ``(sim_time of N-th delivery − reservation.start_time)`` in
-        seconds, where ``N = ctx.target_pairs``. Returns NaN if there are no
-        deliveries, ``target_pairs`` is unset, or fewer than ``N`` deliveries
-        were recorded.
+        seconds, where ``N`` is ``entanglement_number`` from the chronologically
+        first matching delivery. Returns NaN if there are no deliveries or
+        fewer than ``N`` deliveries were recorded.
 
         Args:
             owner_name: Node name for metrics to be collected.
             storage: In-memory store of recorded events for the trial.
-            ctx: Collection context with delivery owner and target pair count.
 
         Returns:
             Mapping with time to serve in seconds, or NaN if data is insufficient.
         """
-        delivery_owner = ctx.delivery_owner or owner_name
-        delivery_records = [
-            record for record in storage.get_by_owner(delivery_owner) if record.event_type == self.delivery_event
-        ]
+        delivery_records = delivery_records_for(owner_name, storage, self.delivery_event)
         if not delivery_records:
             return {self.key: float("nan")}
 
         delivery_records.sort(key=lambda record: record.sim_time)
         start_time = delivery_records[0].data.start_time
+        target_pairs = delivery_records[0].data.entanglement_number
 
-        if ctx.target_pairs is None or len(delivery_records) < ctx.target_pairs:
+        if len(delivery_records) < target_pairs:
             return {self.key: float("nan")}
-        target_time = delivery_records[ctx.target_pairs - 1].sim_time
+        target_time = delivery_records[target_pairs - 1].sim_time
 
         return {self.key: (target_time - start_time) * 1e-12}
 
@@ -354,29 +351,23 @@ class BellPairUtilizationMetric(Metric):
         return frozenset({self.key})
 
     @override
-    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage) -> dict[str, Any]:
         """Compute bell pair utilization U = n_b / n_s.
 
         Here n_b is the number of ``pair_event`` records across all owners in
         storage (generated low-fidelity Bell pairs), and n_s is the number of
-        ``delivery_event`` records for the delivery owner (successfully
+        ``delivery_event`` records associated with ``owner_name`` (successfully
         established entanglement deliveries). Returns NaN when n_s is 0.
 
         Args:
             owner_name: Node name for metrics to be collected.
             storage: In-memory store of recorded events for the trial.
-            ctx: Collection context; ``delivery_owner`` selects which node's
-                deliveries count toward n_s (defaults to ``owner_name``).
 
         Returns:
             Mapping with the configured key to U, or NaN if there are no deliveries.
         """
-        delivery_owner = ctx.delivery_owner or owner_name
         n_b = len(storage.get_by_event(self.pair_event))
-        n_s = len([
-            record for record in storage.get_by_owner(delivery_owner)
-            if record.event_type == self.delivery_event
-        ])
+        n_s = len(delivery_records_for(owner_name, storage, self.delivery_event))
         if n_s == 0:
             return {self.key: float("nan")}
         return {self.key: n_b / n_s}
@@ -394,8 +385,8 @@ class ReservationSuccessRateMetric(Metric):
     In SeQUeNCe, ``n_approved`` is the number of unique ``identity`` values
     among ``approved_event`` records (typically ``RESERVATION_APPROVED``) for
     the owner, and ``n_completed`` counts those identities that accumulate at
-    least ``entanglement_number`` ``delivery_event`` records (typically
-    ``DELIVERY``) for the delivery owner.
+    least ``entanglement_number`` associated ``delivery_event`` records
+    (typically ``DELIVERY``).
 
     Defined in G. Ni, H. Claussen and L. Ho, "Joint Optimization of Routing
     and Purification to Meet Fidelity Targets in Quantum Networks," 2026
@@ -418,25 +409,22 @@ class ReservationSuccessRateMetric(Metric):
         return frozenset({self.key})
 
     @override
-    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage) -> dict[str, Any]:
         """Compute reservation success rate = n_completed / n_approved.
 
         Builds the set of unique ``identity`` values from the owner's
-        ``approved_event`` records. An identity is completed when the delivery
-        owner has at least ``entanglement_number`` ``delivery_event`` records
+        ``approved_event`` records. An identity is completed when there are at
+        least ``entanglement_number`` associated ``delivery_event`` records
         with that identity (``entanglement_number`` taken from the approval
         payload). Returns 0.0 when there are no approved reservations.
 
         Args:
             owner_name: Node name for metrics to be collected.
             storage: In-memory store of recorded events for the trial.
-            ctx: Collection context; ``delivery_owner`` selects which node's
-                deliveries count toward completion (defaults to ``owner_name``).
 
         Returns:
             Mapping with the configured key to the completion fraction.
         """
-        delivery_owner = ctx.delivery_owner or owner_name
         approved_by_identity: dict[int, int] = {}
         for record in storage.get_by_owner(owner_name):
             if record.event_type != self.approved_event:
@@ -450,9 +438,7 @@ class ReservationSuccessRateMetric(Metric):
             return {self.key: 0.0}
 
         delivery_counts: dict[int, int] = {}
-        for record in storage.get_by_owner(delivery_owner):
-            if record.event_type != self.delivery_event:
-                continue
+        for record in delivery_records_for(owner_name, storage, self.delivery_event):
             identity = record.data.identity
             delivery_counts[identity] = delivery_counts.get(identity, 0) + 1
 
@@ -499,7 +485,7 @@ class JainFairnessIndexMetric(Metric):
         return frozenset({self.key})
 
     @override
-    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage) -> dict[str, Any]:
         """Compute Jain's fairness index over reservation delivery counts.
 
         Builds the set of unique ``identity`` values from all
@@ -513,7 +499,6 @@ class JainFairnessIndexMetric(Metric):
             owner_name: Node name for metrics to be collected (unused; index is
                 network-wide).
             storage: In-memory store of recorded events for the trial.
-            ctx: Collection context (unused for this metric).
 
         Returns:
             Mapping with the configured key to Jain's index in ``[1/n, 1]``,
@@ -576,7 +561,7 @@ class MemoryUtilizationRatioMetric(Metric):
         return busy / total
 
     @override
-    def collect(self, owner_name: str, storage: InMemoryStorage, ctx: CollectContext) -> dict[str, Any]:
+    def collect(self, owner_name: str, storage: InMemoryStorage) -> dict[str, Any]:
         """Compute time-averaged memory utilization ratio for the owner.
 
         Sorts the owner's ``update_event`` records by ``sim_time`` and
@@ -591,7 +576,6 @@ class MemoryUtilizationRatioMetric(Metric):
         Args:
             owner_name: Node name for metrics to be collected.
             storage: In-memory store of recorded events for the trial.
-            ctx: Collection context (unused for this metric).
 
         Returns:
             Mapping with the configured key to utilization ratio in ``[0, 1]``,
