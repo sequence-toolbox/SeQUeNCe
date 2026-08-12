@@ -48,7 +48,7 @@ dependencies = [
 generate-topology = "sequence.utils.config_generator_cli:app"
 
 [build-system]
-requires = ["uv_build>=0.11.11,<0.12"]
+requires = ["uv_build>=0.11.11,<0.13"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
