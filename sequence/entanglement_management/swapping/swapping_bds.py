@@ -114,7 +114,7 @@ class EntanglementSwappingA_BDS(EntanglementSwappingA):
                                                 expire_time=expire_time,
                                                 meas_res=[])
         else:
-            log.logger.info(f'swapping failed!')
+            log.logger.info(f'{self.owner.name} Swapping failed!')
             metrics.record(
                 EventTypes.ES_FAILURE,
                 self.owner.name,
@@ -168,7 +168,7 @@ class EntanglementSwappingA_BDS(EntanglementSwappingA):
         else:
             bds_elems = [new_elem_1, new_elem_2, new_elem_3, new_elem_4]
         
-        log.logger.info(f'{self.owner.name} before swapping, f = {left_state.state[0]:.6f}, {right_state.state[0]:.6f}; after swapping, f = {bds_elems[0]:.6f}')
+        log.logger.debug(f'{self.owner.name} before swapping, f = {left_state.state[0]:.6f}, {right_state.state[0]:.6f}; after swapping, f = {bds_elems[0]:.6f}')
 
         return bds_elems
 

@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from ..components.optical_channel import QuantumChannel, ClassicalChannel
     from ..components.memory import Memory
     from ..components.photon import Photon
+    from ..app.app import App
     from ..app.request_app import RequestApp
     from ..app.teleport_app import TeleportApp
 
@@ -441,12 +442,12 @@ class QuantumRouter(Node):
         """
         self.resource_manager.memory_expire(memory)
 
-    def set_app(self, app: "RequestApp"):
+    def set_app(self, app: "App"):
         """Method to add an application to the node.
         NOTE: a quantum router can only have one application at a time.
 
         Args:
-            app (RequestApp): the application to add.
+            app (App): the application to add.
         """
         self.app = app
 
