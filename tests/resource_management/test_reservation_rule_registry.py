@@ -93,7 +93,24 @@ def test_generator_uses_replacement_builder():
     assert not any(rule.action is eg_rule_action_request and "custom" not in rule.action_args for rule in rules)
 
 
-def test_generator_passes_rule_priority_to_default_builders():
+def test_generator_applies_default_priority_offsets():
+    generator = ReservationRuleGenerator()
+
+    rules = generator.create_rules(
+        Owner(),
+        ["node1", "node2"],
+        Reservation(),
+        [0],
+        0,
+    )
+
+    # At an endpoint, the applicable default slots are EG_REQUEST,
+    # EP_AWAIT, and ES_B_END. Preserve SeQUeNCe's legacy ordering:
+    # EG = 10, EP = 20, ES = 30.
+    assert [rule.priority for rule in rules] == [10, 20, 30]
+
+
+def test_generator_uses_custom_base_priority_with_default_offsets():
     generator = ReservationRuleGenerator()
 
     rules = generator.create_rules(
@@ -105,8 +122,25 @@ def test_generator_passes_rule_priority_to_default_builders():
         priority=27,
     )
 
-    assert rules
-    assert all(rule.priority == 27 for rule in rules)
+    # ``priority`` is the EG/base priority; EP and ES remain offset by
+    # +10 and +20 respectively.
+    assert [rule.priority for rule in rules] == [27, 37, 47]
+
+
+def test_generator_applies_priority_offsets_to_all_default_rule_builders():
+    generator = ReservationRuleGenerator()
+
+    rules = generator.create_rules(
+        Owner(),
+        ["node0", "node1", "node2"],
+        Reservation(),
+        [0, 1],
+        1,
+    )
+
+    # At a middle node, the applicable slots are:
+    # EG_AWAIT, EG_REQUEST, EP_REQUEST, EP_AWAIT, ES_A, ES_B.
+    assert [rule.priority for rule in rules] == [10, 10, 20, 20, 30, 30]
 
 
 def test_generator_uses_registry_to_disable_rule():
