@@ -197,9 +197,8 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
         """Method to set other entanglement protocol instance.
 
         Note:
-            ``memories`` is intentionally unused here (swapping keys off the
-            left/right memos it already holds); it is kept to match the shared
-            EntanglementProtocol.set_others() interface. See issue #170.
+            ``memories`` is intentionally unused; swapping uses the memos it
+            already holds. Kept for interface compatibility (see issue #170).
 
         Args:
             protocol (str): other protocol name.
@@ -359,13 +358,15 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
     def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
         """Method to set other entanglement protocol instance.
 
+        Note:
+            ``memories`` is intentionally unused; swapping uses the memos it
+            already holds. Kept for interface compatibility (see issue #170).
+
         Args:
             protocol (str): other protocol name.
             node (str): other node name.
             memories (list[str]): the list of memory names used on other node.
         """
-        # `memories` is intentionally unused here (as in EntanglementSwappingA): kept to
-        # match the shared EntanglementProtocol.set_others() interface. See issue #170.
         self.remote_node_name = node
         self.remote_protocol_name = protocol
 
